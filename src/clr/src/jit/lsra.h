@@ -717,6 +717,7 @@ private:
 
 #ifdef _TARGET_ARM_
     bool isSecondHalfReg(RegRecord* regRec, Interval* interval);
+    RegRecord* getSecondHalfRegRec(RegRecord* regRec);
     RegRecord* findAnotherHalfRegRec(RegRecord* regRec);
     bool canSpillDoubleReg(RegRecord* physRegRecord, LsraLocation refLocation, unsigned* recentAssignedRefWeight);
     void unassignDoublePhysReg(RegRecord* doubleRegRecord);
@@ -950,8 +951,7 @@ private:
         unsigned fromBBNum;
         unsigned toBBNum;
     };
-    typedef SimplerHashTable<unsigned, SmallPrimitiveKeyFuncs<unsigned>, SplitEdgeInfo, JitSimplerHashBehavior>
-                                SplitBBNumToTargetBBNumMap;
+    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, SplitEdgeInfo> SplitBBNumToTargetBBNumMap;
     SplitBBNumToTargetBBNumMap* splitBBNumToTargetBBNumMap;
     SplitBBNumToTargetBBNumMap* getSplitBBNumToTargetBBNumMap()
     {
@@ -1003,7 +1003,6 @@ private:
         GenTree* operand, bool& first, LsraTupleDumpMode mode, char* operandString, const unsigned operandStringLength);
     void TupleStyleDump(LsraTupleDumpMode mode);
 
-    bool         dumpTerse;
     LsraLocation maxNodeLocation;
 
     // Width of various fields - used to create a streamlined dump during allocation that shows the
@@ -1030,11 +1029,19 @@ private:
     // How many rows have we printed since last printing a "title row"?
     static const int MAX_ROWS_BETWEEN_TITLES = 50;
     int              rowCountSinceLastTitle;
+    // Current mask of registers being printed in the dump.
+    regMaskTP lastDumpedRegisters;
+    regMaskTP registersToDump;
+    int       lastUsedRegNumIndex;
+    bool shouldDumpReg(regNumber regNum)
+    {
+        return (registersToDump & genRegMask(regNum)) != 0;
+    }
 
     void dumpRegRecordHeader();
     void dumpRegRecordTitle();
+    void dumpRegRecordTitleIfNeeded();
     void dumpRegRecordTitleLines();
-    int  getLastUsedRegNumIndex();
     void dumpRegRecords();
     // An abbreviated RefPosition dump for printing with column-based register state
     void dumpRefPositionShort(RefPosition* refPosition, BasicBlock* currentBlock);
@@ -1043,8 +1050,7 @@ private:
     // A dump of Referent, in exactly regColumnWidth characters
     void dumpIntervalName(Interval* interval);
 
-    // Events during the allocation phase that cause some dump output, which differs depending
-    // upon whether dumpTerse is set:
+    // Events during the allocation phase that cause some dump output
     enum LsraDumpEvent{
         // Conflicting def/use
         LSRA_EVENT_DEFUSE_CONFLICT, LSRA_EVENT_DEFUSE_FIXED_DELAY_USE, LSRA_EVENT_DEFUSE_CASE1, LSRA_EVENT_DEFUSE_CASE2,
@@ -1099,17 +1105,17 @@ private:
 
 private:
 #if MEASURE_MEM_ALLOC
-    IAllocator* lsraIAllocator;
+    CompAllocator* lsraAllocator;
 #endif
 
-    IAllocator* getAllocator(Compiler* comp)
+    CompAllocator* getAllocator(Compiler* comp)
     {
 #if MEASURE_MEM_ALLOC
-        if (lsraIAllocator == nullptr)
+        if (lsraAllocator == nullptr)
         {
-            lsraIAllocator = new (comp, CMK_LSRA) CompAllocator(comp, CMK_LSRA);
+            lsraAllocator = new (comp, CMK_LSRA) CompAllocator(comp, CMK_LSRA);
         }
-        return lsraIAllocator;
+        return lsraAllocator;
 #else
         return comp->getAllocator();
 #endif

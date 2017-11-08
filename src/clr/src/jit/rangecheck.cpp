@@ -17,9 +17,11 @@ static const int MAX_VISIT_BUDGET = 8192;
 RangeCheck::RangeCheck(Compiler* pCompiler)
     : m_pOverflowMap(nullptr)
     , m_pRangeMap(nullptr)
+    , m_pSearchPath(nullptr)
     , m_fMappedDefs(false)
     , m_pDefTable(nullptr)
     , m_pCompiler(pCompiler)
+    , m_alloc(pCompiler, CMK_RangeCheck)
     , m_nVisitBudget(MAX_VISIT_BUDGET)
 {
 }
@@ -34,7 +36,7 @@ RangeCheck::RangeMap* RangeCheck::GetRangeMap()
 {
     if (m_pRangeMap == nullptr)
     {
-        m_pRangeMap = new (m_pCompiler->getAllocator()) RangeMap(m_pCompiler->getAllocator());
+        m_pRangeMap = new (&m_alloc) RangeMap(&m_alloc);
     }
     return m_pRangeMap;
 }
@@ -44,7 +46,7 @@ RangeCheck::OverflowMap* RangeCheck::GetOverflowMap()
 {
     if (m_pOverflowMap == nullptr)
     {
-        m_pOverflowMap = new (m_pCompiler->getAllocator()) OverflowMap(m_pCompiler->getAllocator());
+        m_pOverflowMap = new (&m_alloc) OverflowMap(&m_alloc);
     }
     return m_pOverflowMap;
 }
@@ -233,7 +235,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, GenTreePtr stmt, GenTreeP
     }
 
     JITDUMP("ArrSize for lengthVN:%03X = %d\n", arrLenVn, arrSize);
-    if (m_pCompiler->vnStore->IsVNConstant(idxVn) && arrSize > 0)
+    if (m_pCompiler->vnStore->IsVNConstant(idxVn) && (arrSize > 0))
     {
         ssize_t  idxVal    = -1;
         unsigned iconFlags = 0;
@@ -244,7 +246,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, GenTreePtr stmt, GenTreeP
 
         JITDUMP("[RangeCheck::OptimizeRangeCheck] Is index %d in <0, arrLenVn VN%X sz:%d>.\n", idxVal, arrLenVn,
                 arrSize);
-        if (arrSize > 0 && idxVal < arrSize && idxVal >= 0)
+        if ((idxVal < arrSize) && (idxVal >= 0))
         {
             JITDUMP("Removing range check\n");
             m_pCompiler->optRemoveRangeCheck(treeParent, stmt);
@@ -254,11 +256,10 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, GenTreePtr stmt, GenTreeP
 
     GetRangeMap()->RemoveAll();
     GetOverflowMap()->RemoveAll();
+    m_pSearchPath = new (&m_alloc) SearchPath(&m_alloc);
 
     // Get the range for this index.
-    SearchPath* path = new (m_pCompiler->getAllocator()) SearchPath(m_pCompiler->getAllocator());
-
-    Range range = GetRange(block, stmt, treeIndex, path, false DEBUGARG(0));
+    Range range = GetRange(block, treeIndex, false DEBUGARG(0));
 
     // If upper or lower limit is found to be unknown (top), or it was found to
     // be unknown because of over budget or a deep search, then return early.
@@ -269,15 +270,15 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, GenTreePtr stmt, GenTreeP
         return;
     }
 
-    if (DoesOverflow(block, stmt, treeIndex, path))
+    if (DoesOverflow(block, treeIndex))
     {
         JITDUMP("Method determined to overflow.\n");
         return;
     }
 
     JITDUMP("Range value %s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
-    path->RemoveAll();
-    Widen(block, stmt, treeIndex, path, &range);
+    m_pSearchPath->RemoveAll();
+    Widen(block, treeIndex, &range);
 
     // If upper or lower limit is unknown, then return.
     if (range.UpperLimit().IsUnknown() || range.LowerLimit().IsUnknown())
@@ -294,7 +295,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, GenTreePtr stmt, GenTreeP
     return;
 }
 
-void RangeCheck::Widen(BasicBlock* block, GenTreePtr stmt, GenTreePtr tree, SearchPath* path, Range* pRange)
+void RangeCheck::Widen(BasicBlock* block, GenTreePtr tree, Range* pRange)
 {
 #ifdef DEBUG
     if (m_pCompiler->verbose)
@@ -311,18 +312,27 @@ void RangeCheck::Widen(BasicBlock* block, GenTreePtr stmt, GenTreePtr tree, Sear
     if (range.LowerLimit().IsDependent() || range.LowerLimit().IsUnknown())
     {
         // To determine the lower bound, ask if the loop increases monotonically.
-        bool increasing = IsMonotonicallyIncreasing(tree, path);
+        bool increasing = IsMonotonicallyIncreasing(tree);
         JITDUMP("IsMonotonicallyIncreasing %d", increasing);
         if (increasing)
         {
             GetRangeMap()->RemoveAll();
-            *pRange = GetRange(block, stmt, tree, path, true DEBUGARG(0));
+            *pRange = GetRange(block, tree, true DEBUGARG(0));
         }
     }
 }
 
-bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreePtr op1, GenTreePtr op2, genTreeOps oper, SearchPath* path)
+bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
 {
+#ifdef LEGACY_BACKEND
+    assert(binop->OperIs(GT_ADD, GT_ASG_ADD));
+#else
+    assert(binop->OperIs(GT_ADD));
+#endif
+
+    GenTree* op1 = binop->gtGetOp1();
+    GenTree* op2 = binop->gtGetOp2();
+
     JITDUMP("[RangeCheck::IsBinOpMonotonicallyIncreasing] [%06d], [%06d]\n", Compiler::dspTreeID(op1),
             Compiler::dspTreeID(op2));
     // Check if we have a var + const.
@@ -338,10 +348,10 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreePtr op1, GenTreePtr op2, 
     switch (op2->OperGet())
     {
         case GT_LCL_VAR:
-            return IsMonotonicallyIncreasing(op1, path) && IsMonotonicallyIncreasing(op2, path);
+            return IsMonotonicallyIncreasing(op1) && IsMonotonicallyIncreasing(op2);
 
         case GT_CNS_INT:
-            return oper == GT_ADD && op2->AsIntConCommon()->IconValue() >= 0 && IsMonotonicallyIncreasing(op1, path);
+            return (op2->AsIntConCommon()->IconValue() >= 0) && IsMonotonicallyIncreasing(op1);
 
         default:
             JITDUMP("Not monotonic because expression is not recognized.\n");
@@ -349,36 +359,35 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreePtr op1, GenTreePtr op2, 
     }
 }
 
-bool RangeCheck::IsMonotonicallyIncreasing(GenTreePtr expr, SearchPath* path)
+bool RangeCheck::IsMonotonicallyIncreasing(GenTreePtr expr)
 {
     JITDUMP("[RangeCheck::IsMonotonicallyIncreasing] [%06d]\n", Compiler::dspTreeID(expr));
-    if (path->Lookup(expr))
+
+    // Add hashtable entry for expr.
+    bool alreadyPresent = m_pSearchPath->Set(expr, nullptr);
+    if (alreadyPresent)
     {
         return true;
     }
 
-    // Add hashtable entry for expr.
-    path->Set(expr, nullptr);
-
     // Remove hashtable entry for expr when we exit the present scope.
-    auto                                         code = [&] { path->Remove(expr); };
+    auto                                         code = [this, expr] { m_pSearchPath->Remove(expr); };
     jitstd::utility::scoped_code<decltype(code)> finally(code);
 
-    // If the rhs expr is constant, then it is not part of the dependency
-    // loop which has to increase monotonically.
-    ValueNum vn = expr->gtVNPair.GetConservative();
-    if (path->GetCount() > MAX_SEARCH_DEPTH)
+    if (m_pSearchPath->GetCount() > MAX_SEARCH_DEPTH)
     {
         return false;
     }
-    else if (m_pCompiler->vnStore->IsVNConstant(vn))
+    // If expr is constant, then it is not part of the dependency
+    // loop which has to increase monotonically.
+    else if (m_pCompiler->vnStore->IsVNConstant(expr->gtVNPair.GetConservative()))
     {
         return true;
     }
     // If the rhs expr is local, then try to find the def of the local.
     else if (expr->IsLocal())
     {
-        Location* loc = GetDef(expr);
+        Location* loc = GetDef(expr->AsLclVarCommon());
         if (loc == nullptr)
         {
             return false;
@@ -388,11 +397,11 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTreePtr expr, SearchPath* path)
         switch (asg->OperGet())
         {
             case GT_ASG:
-                return IsMonotonicallyIncreasing(asg->gtGetOp2(), path);
+                return IsMonotonicallyIncreasing(asg->gtGetOp2());
 
 #ifdef LEGACY_BACKEND
             case GT_ASG_ADD:
-                return IsBinOpMonotonicallyIncreasing(asg->gtGetOp1(), asg->gtGetOp2(), GT_ADD, path);
+                return IsBinOpMonotonicallyIncreasing(asg->AsOp());
 #endif
 
             default:
@@ -407,18 +416,18 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTreePtr expr, SearchPath* path)
     }
     else if (expr->OperGet() == GT_ADD)
     {
-        return IsBinOpMonotonicallyIncreasing(expr->gtGetOp1(), expr->gtGetOp2(), GT_ADD, path);
+        return IsBinOpMonotonicallyIncreasing(expr->AsOp());
     }
     else if (expr->OperGet() == GT_PHI)
     {
         for (GenTreeArgList* args = expr->gtOp.gtOp1->AsArgList(); args != nullptr; args = args->Rest())
         {
             // If the arg is already in the path, skip.
-            if (path->Lookup(args->Current()))
+            if (m_pSearchPath->Lookup(args->Current()))
             {
                 continue;
             }
-            if (!IsMonotonicallyIncreasing(args->Current(), path))
+            if (!IsMonotonicallyIncreasing(args->Current()))
             {
                 JITDUMP("Phi argument not monotonic\n");
                 return false;
@@ -457,12 +466,9 @@ RangeCheck::Location* RangeCheck::GetDef(unsigned lclNum, unsigned ssaNum)
     return loc;
 }
 
-RangeCheck::Location* RangeCheck::GetDef(GenTreePtr tree)
+RangeCheck::Location* RangeCheck::GetDef(GenTreeLclVarCommon* lcl)
 {
-    assert(tree->IsLocal());
-    unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
-    unsigned ssaNum = tree->AsLclVarCommon()->GetSsaNum();
-    return GetDef(lclNum, ssaNum);
+    return GetDef(lcl->GetLclNum(), lcl->GetSsaNum());
 }
 
 // Add the def location to the hash table.
@@ -470,7 +476,7 @@ void RangeCheck::SetDef(UINT64 hash, Location* loc)
 {
     if (m_pDefTable == nullptr)
     {
-        m_pDefTable = new (m_pCompiler->getAllocator()) VarToLocMap(m_pCompiler->getAllocator());
+        m_pDefTable = new (&m_alloc) VarToLocMap(&m_alloc);
     }
 #ifdef DEBUG
     Location* loc2;
@@ -485,14 +491,13 @@ void RangeCheck::SetDef(UINT64 hash, Location* loc)
 }
 
 // Merge assertions on the edge flowing into the block about a variable.
-void RangeCheck::MergeEdgeAssertions(GenTreePtr tree, ASSERT_VALARG_TP assertions, Range* pRange)
+void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP assertions, Range* pRange)
 {
     if (BitVecOps::IsEmpty(m_pCompiler->apTraits, assertions))
     {
         return;
     }
 
-    GenTreeLclVarCommon* lcl = (GenTreeLclVarCommon*)tree;
     if (lcl->gtSsaNum == SsaConfig::RESERVED_SSA_NUM)
     {
         return;
@@ -505,24 +510,6 @@ void RangeCheck::MergeEdgeAssertions(GenTreePtr tree, ASSERT_VALARG_TP assertion
         AssertionIndex assertionIndex = GetAssertionIndex(index);
 
         Compiler::AssertionDsc* curAssertion = m_pCompiler->optGetAssertion(assertionIndex);
-
-        // Current assertion is about compare against constant or checked bound.
-        if (!curAssertion->IsCheckedBoundArithBound() && !curAssertion->IsCheckedBoundBound() &&
-            !curAssertion->IsConstantBound())
-        {
-            continue;
-        }
-
-#ifdef DEBUG
-        if (m_pCompiler->verbose)
-        {
-            m_pCompiler->optPrintAssertion(curAssertion, assertionIndex);
-        }
-#endif
-
-        assert(m_pCompiler->vnStore->IsVNCompareCheckedBoundArith(curAssertion->op1.vn) ||
-               m_pCompiler->vnStore->IsVNCompareCheckedBound(curAssertion->op1.vn) ||
-               m_pCompiler->vnStore->IsVNConstantBound(curAssertion->op1.vn));
 
         Limit      limit(Limit::keUndef);
         genTreeOps cmpOper = GT_NONE;
@@ -541,23 +528,20 @@ void RangeCheck::MergeEdgeAssertions(GenTreePtr tree, ASSERT_VALARG_TP assertion
                 continue;
             }
 
-            switch (info.arrOper)
+            if ((info.arrOper != GT_ADD) && (info.arrOper != GT_SUB))
             {
-                case GT_SUB:
-                case GT_ADD:
-                {
-                    // If the operand that operates on the bound is not constant, then done.
-                    if (!m_pCompiler->vnStore->IsVNConstant(info.arrOp) ||
-                        m_pCompiler->vnStore->TypeOfVN(info.arrOp) != TYP_INT)
-                    {
-                        break;
-                    }
-                    int cons = m_pCompiler->vnStore->ConstantValue<int>(info.arrOp);
-                    limit    = Limit(Limit::keBinOpArray, info.vnBound, info.arrOper == GT_SUB ? -cons : cons);
-                }
+                continue;
             }
 
-            cmpOper = (genTreeOps)info.cmpOper;
+            // If the operand that operates on the bound is not constant, then done.
+            if (!m_pCompiler->vnStore->IsVNInt32Constant(info.arrOp))
+            {
+                continue;
+            }
+
+            int cons = m_pCompiler->vnStore->ConstantValue<int>(info.arrOp);
+            limit    = Limit(Limit::keBinOpArray, info.vnBound, info.arrOper == GT_SUB ? -cons : cons);
+            cmpOper  = (genTreeOps)info.cmpOper;
         }
         // Current assertion is of the form (i < len) != 0
         else if (curAssertion->IsCheckedBoundBound())
@@ -595,18 +579,16 @@ void RangeCheck::MergeEdgeAssertions(GenTreePtr tree, ASSERT_VALARG_TP assertion
                 continue;
             }
 
-            limit   = Limit(Limit::keConstant, ValueNumStore::NoVN, info.constVal);
+            limit   = Limit(Limit::keConstant, info.constVal);
             cmpOper = (genTreeOps)info.cmpOper;
         }
+        // Current assertion is not supported, ignore it
         else
-        {
-            noway_assert(false);
-        }
-
-        if (limit.IsUndef())
         {
             continue;
         }
+
+        assert(limit.IsBinOpArray() || limit.IsArray() || limit.IsConstant());
 
         // Make sure the assertion is of the form != 0 or == 0.
         if (curAssertion->op2.vn != m_pCompiler->vnStore->VNZeroForType(TYP_INT))
@@ -619,8 +601,6 @@ void RangeCheck::MergeEdgeAssertions(GenTreePtr tree, ASSERT_VALARG_TP assertion
             m_pCompiler->optPrintAssertion(curAssertion, assertionIndex);
         }
 #endif
-
-        noway_assert(limit.IsBinOpArray() || limit.IsArray() || limit.IsConstant());
 
         ValueNum arrLenVN = m_pCurBndsChk->gtArrLen->gtVNPair.GetConservative();
 
@@ -738,8 +718,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreePtr tree, ASSERT_VALARG_TP assertion
 
 // Merge assertions from the pred edges of the block, i.e., check for any assertions about "op's" value numbers for phi
 // arguments. If not a phi argument, check if we assertions about local variables.
-void RangeCheck::MergeAssertion(
-    BasicBlock* block, GenTreePtr stmt, GenTreePtr op, SearchPath* path, Range* pRange DEBUGARG(int indent))
+void RangeCheck::MergeAssertion(BasicBlock* block, GenTreePtr op, Range* pRange DEBUGARG(int indent))
 {
     JITDUMP("Merging assertions from pred edges of BB%02d for op [%06d] $%03x\n", block->bbNum, Compiler::dspTreeID(op),
             op->gtVNPair.GetConservative());
@@ -775,36 +754,38 @@ void RangeCheck::MergeAssertion(
     if (!BitVecOps::MayBeUninit(assertions))
     {
         // Perform the merge step to fine tune the range value.
-        MergeEdgeAssertions(op, assertions, pRange);
+        MergeEdgeAssertions(op->AsLclVarCommon(), assertions, pRange);
     }
 }
 
 // Compute the range for a binary operation.
-Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block,
-                                       GenTreePtr  stmt,
-                                       GenTreePtr  op1,
-                                       GenTreePtr  op2,
-                                       genTreeOps  oper,
-                                       SearchPath* path,
-                                       bool monotonic DEBUGARG(int indent))
+Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool monotonic DEBUGARG(int indent))
 {
+#ifdef LEGACY_BACKEND
+    assert(binop->OperIs(GT_ADD, GT_ASG_ADD));
+#else
+    assert(binop->OperIs(GT_ADD));
+#endif
+
+    GenTree* op1 = binop->gtGetOp1();
+    GenTree* op2 = binop->gtGetOp2();
+
     Range* op1RangeCached = nullptr;
     Range  op1Range       = Limit(Limit::keUndef);
-    bool   inPath1        = path->Lookup(op1);
     // Check if the range value is already cached.
     if (!GetRangeMap()->Lookup(op1, &op1RangeCached))
     {
         // If we already have the op in the path, then, just rely on assertions, else
         // find the range.
-        if (!inPath1)
-        {
-            op1Range = GetRange(block, stmt, op1, path, monotonic DEBUGARG(indent));
-        }
-        else
+        if (m_pSearchPath->Lookup(op1))
         {
             op1Range = Range(Limit(Limit::keDependent));
         }
-        MergeAssertion(block, stmt, op1, path, &op1Range DEBUGARG(indent + 1));
+        else
+        {
+            op1Range = GetRange(block, op1, monotonic DEBUGARG(indent));
+        }
+        MergeAssertion(block, op1, &op1Range DEBUGARG(indent + 1));
     }
     else
     {
@@ -813,28 +794,26 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block,
 
     Range* op2RangeCached;
     Range  op2Range = Limit(Limit::keUndef);
-    bool   inPath2  = path->Lookup(op2);
     // Check if the range value is already cached.
     if (!GetRangeMap()->Lookup(op2, &op2RangeCached))
     {
         // If we already have the op in the path, then, just rely on assertions, else
         // find the range.
-        if (!inPath2)
-        {
-            op2Range = GetRange(block, stmt, op2, path, monotonic DEBUGARG(indent));
-        }
-        else
+        if (m_pSearchPath->Lookup(op2))
         {
             op2Range = Range(Limit(Limit::keDependent));
         }
-        MergeAssertion(block, stmt, op2, path, &op2Range DEBUGARG(indent + 1));
+        else
+        {
+            op2Range = GetRange(block, op2, monotonic DEBUGARG(indent));
+        }
+        MergeAssertion(block, op2, &op2Range DEBUGARG(indent + 1));
     }
     else
     {
         op2Range = *op2RangeCached;
     }
 
-    assert(oper == GT_ADD); // For now just GT_ADD.
     Range r = RangeOps::Add(op1Range, op2Range);
     JITDUMP("BinOp add ranges %s %s = %s\n", op1Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
             op2Range.ToString(m_pCompiler->getAllocatorDebugOnly()), r.ToString(m_pCompiler->getAllocatorDebugOnly()));
@@ -842,11 +821,12 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block,
 }
 
 // Compute the range for a local var definition.
-Range RangeCheck::ComputeRangeForLocalDef(
-    BasicBlock* block, GenTreePtr stmt, GenTreePtr expr, SearchPath* path, bool monotonic DEBUGARG(int indent))
+Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
+                                          GenTreeLclVarCommon* lcl,
+                                          bool monotonic DEBUGARG(int indent))
 {
     // Get the program location of the def.
-    Location* loc = GetDef(expr);
+    Location* loc = GetDef(lcl);
 
     // If we can't reach the def, then return unknown range.
     if (loc == nullptr)
@@ -868,13 +848,13 @@ Range RangeCheck::ComputeRangeForLocalDef(
         // If the operator of the definition is assignment, then compute the range of the rhs.
         case GT_ASG:
         {
-            Range range = GetRange(loc->block, loc->stmt, asg->gtGetOp2(), path, monotonic DEBUGARG(indent));
+            Range range = GetRange(loc->block, asg->gtGetOp2(), monotonic DEBUGARG(indent));
             if (!BitVecOps::MayBeUninit(block->bbAssertionIn))
             {
                 JITDUMP("Merge assertions from BB%02d:%s for assignment about [%06d]\n", block->bbNum,
                         BitVecOps::ToString(m_pCompiler->apTraits, block->bbAssertionIn),
                         Compiler::dspTreeID(asg->gtGetOp1()));
-                MergeEdgeAssertions(asg->gtGetOp1(), block->bbAssertionIn, &range);
+                MergeEdgeAssertions(asg->gtGetOp1()->AsLclVarCommon(), block->bbAssertionIn, &range);
                 JITDUMP("done merging\n");
             }
             return range;
@@ -885,8 +865,7 @@ Range RangeCheck::ComputeRangeForLocalDef(
             // If the operator of the definition is +=, then compute the range of the operands of +.
             // Note that gtGetOp1 will return op1 to be the lhs; in the formulation of ssa, we have
             // a side table for defs and the lhs of a += is considered to be a use for SSA numbering.
-            return ComputeRangeForBinOp(loc->block, loc->stmt, asg->gtGetOp1(), asg->gtGetOp2(), GT_ADD, path,
-                                        monotonic DEBUGARG(indent));
+            return ComputeRangeForBinOp(loc->block, asg->AsOp(), monotonic DEBUGARG(indent));
 #endif
 
         default:
@@ -941,26 +920,6 @@ bool RangeCheck::GetLimitMax(Limit& limit, int* pMax)
         }
         break;
 
-        case Limit::keSsaVar:
-        case Limit::keBinOp:
-            if (m_pCompiler->vnStore->IsVNConstant(limit.vn) && m_pCompiler->vnStore->TypeOfVN(limit.vn) == TYP_INT)
-            {
-                max1 = m_pCompiler->vnStore->ConstantValue<int>(limit.vn);
-            }
-            else
-            {
-                return false;
-            }
-            if (limit.type == Limit::keBinOp)
-            {
-                if (IntAddOverflows(max1, limit.GetConstant()))
-                {
-                    return false;
-                }
-                max1 += limit.GetConstant();
-            }
-            break;
-
         default:
             return false;
     }
@@ -986,14 +945,17 @@ bool RangeCheck::AddOverflows(Limit& limit1, Limit& limit2)
 }
 
 // Does the bin operation overflow.
-bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreePtr stmt, GenTreePtr op1, GenTreePtr op2, SearchPath* path)
+bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop)
 {
-    if (!path->Lookup(op1) && DoesOverflow(block, stmt, op1, path))
+    GenTree* op1 = binop->gtGetOp1();
+    GenTree* op2 = binop->gtGetOp2();
+
+    if (!m_pSearchPath->Lookup(op1) && DoesOverflow(block, op1))
     {
         return true;
     }
 
-    if (!path->Lookup(op2) && DoesOverflow(block, stmt, op2, path))
+    if (!m_pSearchPath->Lookup(op2) && DoesOverflow(block, op2))
     {
         return true;
     }
@@ -1014,13 +976,13 @@ bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreePtr stmt, GenTreePt
     // If dependent, check if we can use some assertions.
     if (op1Range->UpperLimit().IsDependent())
     {
-        MergeAssertion(block, stmt, op1, path, op1Range DEBUGARG(0));
+        MergeAssertion(block, op1, op1Range DEBUGARG(0));
     }
 
     // If dependent, check if we can use some assertions.
     if (op2Range->UpperLimit().IsDependent())
     {
-        MergeAssertion(block, stmt, op2, path, op2Range DEBUGARG(0));
+        MergeAssertion(block, op2, op2Range DEBUGARG(0));
     }
 
     JITDUMP("Checking bin op overflow %s %s\n", op1Range->ToString(m_pCompiler->getAllocatorDebugOnly()),
@@ -1034,10 +996,10 @@ bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreePtr stmt, GenTreePt
 }
 
 // Check if the var definition the rhs involves arithmetic that overflows.
-bool RangeCheck::DoesVarDefOverflow(BasicBlock* block, GenTreePtr stmt, GenTreePtr expr, SearchPath* path)
+bool RangeCheck::DoesVarDefOverflow(GenTreeLclVarCommon* lcl)
 {
     // Get the definition.
-    Location* loc = GetDef(expr);
+    Location* loc = GetDef(lcl);
     if (loc == nullptr)
     {
         return true;
@@ -1048,12 +1010,12 @@ bool RangeCheck::DoesVarDefOverflow(BasicBlock* block, GenTreePtr stmt, GenTreeP
     switch (asg->OperGet())
     {
         case GT_ASG:
-            return DoesOverflow(loc->block, loc->stmt, asg->gtGetOp2(), path);
+            return DoesOverflow(loc->block, asg->gtGetOp2());
 
 #ifdef LEGACY_BACKEND
         case GT_ASG_ADD:
             // For GT_ASG_ADD, op2 is use, op1 is also use since we side table for defs in useasg case.
-            return DoesBinOpOverflow(loc->block, loc->stmt, asg->gtGetOp1(), asg->gtGetOp2(), path);
+            return DoesBinOpOverflow(loc->block, asg->AsOp());
 #endif
 
         default:
@@ -1066,16 +1028,16 @@ bool RangeCheck::DoesVarDefOverflow(BasicBlock* block, GenTreePtr stmt, GenTreeP
     return true;
 }
 
-bool RangeCheck::DoesPhiOverflow(BasicBlock* block, GenTreePtr stmt, GenTreePtr expr, SearchPath* path)
+bool RangeCheck::DoesPhiOverflow(BasicBlock* block, GenTreePtr expr)
 {
     for (GenTreeArgList* args = expr->gtOp.gtOp1->AsArgList(); args != nullptr; args = args->Rest())
     {
         GenTreePtr arg = args->Current();
-        if (path->Lookup(arg))
+        if (m_pSearchPath->Lookup(arg))
         {
             continue;
         }
-        if (DoesOverflow(block, stmt, args->Current(), path))
+        if (DoesOverflow(block, arg))
         {
             return true;
         }
@@ -1083,52 +1045,49 @@ bool RangeCheck::DoesPhiOverflow(BasicBlock* block, GenTreePtr stmt, GenTreePtr 
     return false;
 }
 
-bool RangeCheck::DoesOverflow(BasicBlock* block, GenTreePtr stmt, GenTreePtr expr, SearchPath* path)
+bool RangeCheck::DoesOverflow(BasicBlock* block, GenTreePtr expr)
 {
     bool overflows = false;
     if (!GetOverflowMap()->Lookup(expr, &overflows))
     {
-        overflows = ComputeDoesOverflow(block, stmt, expr, path);
+        overflows = ComputeDoesOverflow(block, expr);
     }
     return overflows;
 }
 
-bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTreePtr stmt, GenTreePtr expr, SearchPath* path)
+bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTreePtr expr)
 {
     JITDUMP("Does overflow [%06d]?\n", Compiler::dspTreeID(expr));
-    path->Set(expr, block);
+    m_pSearchPath->Set(expr, block);
 
     bool overflows = true;
 
-    // Remove hashtable entry for expr when we exit the present scope.
-    Range    range = Limit(Limit::keUndef);
-    ValueNum vn    = expr->gtVNPair.GetConservative();
-    if (path->GetCount() > MAX_SEARCH_DEPTH)
+    if (m_pSearchPath->GetCount() > MAX_SEARCH_DEPTH)
     {
         overflows = true;
     }
     // If the definition chain resolves to a constant, it doesn't overflow.
-    else if (m_pCompiler->vnStore->IsVNConstant(vn))
+    else if (m_pCompiler->vnStore->IsVNConstant(expr->gtVNPair.GetConservative()))
     {
         overflows = false;
     }
     // Check if the var def has rhs involving arithmetic that overflows.
     else if (expr->IsLocal())
     {
-        overflows = DoesVarDefOverflow(block, stmt, expr, path);
+        overflows = DoesVarDefOverflow(expr->AsLclVarCommon());
     }
     // Check if add overflows.
     else if (expr->OperGet() == GT_ADD)
     {
-        overflows = DoesBinOpOverflow(block, stmt, expr->gtGetOp1(), expr->gtGetOp2(), path);
+        overflows = DoesBinOpOverflow(block, expr->AsOp());
     }
     // Walk through phi arguments to check if phi arguments involve arithmetic that overflows.
     else if (expr->OperGet() == GT_PHI)
     {
-        overflows = DoesPhiOverflow(block, stmt, expr, path);
+        overflows = DoesPhiOverflow(block, expr);
     }
     GetOverflowMap()->Set(expr, overflows);
-    path->Remove(expr);
+    m_pSearchPath->Remove(expr);
     return overflows;
 }
 
@@ -1139,10 +1098,9 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTreePtr stmt, GenTree
 // value as "dependent" (dep).
 // If the loop is proven to be "monotonic", then make liberal decisions while merging phi node.
 // eg.: merge((0, dep), (dep, dep)) = (0, dep)
-Range RangeCheck::ComputeRange(
-    BasicBlock* block, GenTreePtr stmt, GenTreePtr expr, SearchPath* path, bool monotonic DEBUGARG(int indent))
+Range RangeCheck::ComputeRange(BasicBlock* block, GenTreePtr expr, bool monotonic DEBUGARG(int indent))
 {
-    bool  newlyAdded = !path->Set(expr, block);
+    bool  newlyAdded = !m_pSearchPath->Set(expr, block);
     Range range      = Limit(Limit::keUndef);
 
     ValueNum vn = expr->gtVNPair.GetConservative();
@@ -1164,7 +1122,7 @@ Range RangeCheck::ComputeRange(
         JITDUMP("GetRange not tractable within max node visit budget.\n");
     }
     // Prevent unbounded recursion.
-    else if (path->GetCount() > MAX_SEARCH_DEPTH)
+    else if (m_pSearchPath->GetCount() > MAX_SEARCH_DEPTH)
     {
         // Unknown is lattice top, anything that merges with Unknown will yield Unknown.
         range = Range(Limit(Limit::keUnknown));
@@ -1189,33 +1147,32 @@ Range RangeCheck::ComputeRange(
     // If local, find the definition from the def map and evaluate the range for rhs.
     else if (expr->IsLocal())
     {
-        range = ComputeRangeForLocalDef(block, stmt, expr, path, monotonic DEBUGARG(indent + 1));
-        MergeAssertion(block, stmt, expr, path, &range DEBUGARG(indent + 1));
+        range = ComputeRangeForLocalDef(block, expr->AsLclVarCommon(), monotonic DEBUGARG(indent + 1));
+        MergeAssertion(block, expr, &range DEBUGARG(indent + 1));
     }
     // If add, then compute the range for the operands and add them.
     else if (expr->OperGet() == GT_ADD)
     {
-        range = ComputeRangeForBinOp(block, stmt, expr->gtGetOp1(), expr->gtGetOp2(), GT_ADD, path,
-                                     monotonic DEBUGARG(indent + 1));
+        range = ComputeRangeForBinOp(block, expr->AsOp(), monotonic DEBUGARG(indent + 1));
     }
     // If phi, then compute the range for arguments, calling the result "dependent" when looping begins.
     else if (expr->OperGet() == GT_PHI)
     {
-        Range argRange = Range(Limit(Limit::keUndef));
         for (GenTreeArgList* args = expr->gtOp.gtOp1->AsArgList(); args != nullptr; args = args->Rest())
         {
-            if (path->Lookup(args->Current()))
+            Range argRange = Range(Limit(Limit::keUndef));
+            if (m_pSearchPath->Lookup(args->Current()))
             {
                 JITDUMP("PhiArg [%06d] is already being computed\n", Compiler::dspTreeID(args->Current()));
                 argRange = Range(Limit(Limit::keDependent));
             }
             else
             {
-                argRange = GetRange(block, stmt, args->Current(), path, monotonic DEBUGARG(indent + 1));
+                argRange = GetRange(block, args->Current(), monotonic DEBUGARG(indent + 1));
             }
             assert(!argRange.LowerLimit().IsUndef());
             assert(!argRange.UpperLimit().IsUndef());
-            MergeAssertion(block, stmt, args->Current(), path, &argRange DEBUGARG(indent + 1));
+            MergeAssertion(block, args->Current(), &argRange DEBUGARG(indent + 1));
             JITDUMP("Merging ranges %s %s:", range.ToString(m_pCompiler->getAllocatorDebugOnly()),
                     argRange.ToString(m_pCompiler->getAllocatorDebugOnly()));
             range = RangeOps::Merge(range, argRange, monotonic);
@@ -1228,8 +1185,8 @@ Range RangeCheck::ComputeRange(
         range = Range(Limit(Limit::keUnknown));
     }
 
-    GetRangeMap()->Set(expr, new (m_pCompiler->getAllocator()) Range(range));
-    path->Remove(expr);
+    GetRangeMap()->Set(expr, new (&m_alloc) Range(range));
+    m_pSearchPath->Remove(expr);
     return range;
 }
 
@@ -1244,8 +1201,7 @@ void Indent(int indent)
 #endif
 
 // Get the range, if it is already computed, use the cached range value, else compute it.
-Range RangeCheck::GetRange(
-    BasicBlock* block, GenTreePtr stmt, GenTreePtr expr, SearchPath* path, bool monotonic DEBUGARG(int indent))
+Range RangeCheck::GetRange(BasicBlock* block, GenTreePtr expr, bool monotonic DEBUGARG(int indent))
 {
 #ifdef DEBUG
     if (m_pCompiler->verbose)
@@ -1259,8 +1215,8 @@ Range RangeCheck::GetRange(
 #endif
 
     Range* pRange = nullptr;
-    Range  range  = GetRangeMap()->Lookup(expr, &pRange) ? *pRange : ComputeRange(block, stmt, expr, path,
-                                                                                monotonic DEBUGARG(indent));
+    Range  range =
+        GetRangeMap()->Lookup(expr, &pRange) ? *pRange : ComputeRange(block, expr, monotonic DEBUGARG(indent));
 
 #ifdef DEBUG
     if (m_pCompiler->verbose)
@@ -1278,14 +1234,10 @@ Range RangeCheck::GetRange(
 // If this is a tree local definition add its location to the def map.
 void RangeCheck::MapStmtDefs(const Location& loc)
 {
-    GenTreePtr tree = loc.tree;
-    if (!tree->IsLocal())
-    {
-        return;
-    }
+    GenTreeLclVarCommon* tree = loc.tree;
 
-    unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
-    unsigned ssaNum = tree->AsLclVarCommon()->GetSsaNum();
+    unsigned lclNum = tree->GetLclNum();
+    unsigned ssaNum = tree->GetSsaNum();
     if (ssaNum == SsaConfig::RESERVED_SSA_NUM)
     {
         return;
@@ -1300,7 +1252,7 @@ void RangeCheck::MapStmtDefs(const Location& loc)
             // To avoid ind(addr) use asgs
             if (loc.parent->OperIsAssignment())
             {
-                SetDef(HashCode(lclNum, ssaNum), new (m_pCompiler->getAllocator()) Location(loc));
+                SetDef(HashCode(lclNum, ssaNum), new (&m_alloc) Location(loc));
             }
         }
     }
@@ -1309,7 +1261,7 @@ void RangeCheck::MapStmtDefs(const Location& loc)
     {
         if (loc.parent->OperGet() == GT_ASG)
         {
-            SetDef(HashCode(lclNum, ssaNum), new (m_pCompiler->getAllocator()) Location(loc));
+            SetDef(HashCode(lclNum, ssaNum), new (&m_alloc) Location(loc));
         }
     }
 }
@@ -1327,8 +1279,14 @@ struct MapMethodDefsData
 
 Compiler::fgWalkResult MapMethodDefsVisitor(GenTreePtr* ptr, Compiler::fgWalkData* data)
 {
-    MapMethodDefsData* rcd = ((MapMethodDefsData*)data->pCallbackData);
-    rcd->rc->MapStmtDefs(RangeCheck::Location(rcd->block, rcd->stmt, *ptr, data->parent));
+    GenTree*           tree = *ptr;
+    MapMethodDefsData* rcd  = ((MapMethodDefsData*)data->pCallbackData);
+
+    if (tree->IsLocal())
+    {
+        rcd->rc->MapStmtDefs(RangeCheck::Location(rcd->block, rcd->stmt, tree->AsLclVarCommon(), data->parent));
+    }
+
     return Compiler::WALK_CONTINUE;
 }
 

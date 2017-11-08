@@ -325,7 +325,6 @@
     <Compile Include="$(BclSourcesRoot)\System\OutOfMemoryException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Delegate.cs" />
     <Compile Include="$(BclSourcesRoot)\System\MulticastDelegate.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\BCLDebug.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Activator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\AppDomain.cs" />
     <Compile Include="$(BclSourcesRoot)\System\AppDomainSetup.cs" />
@@ -532,15 +531,9 @@
     <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Assert.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\AssertFilter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\AssertFilters.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Debugger.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\DebuggerAttributes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\ICustomDebuggerNotification.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\log.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\LoggingLevels.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\LogSwitch.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Stacktrace.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Stackframe.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\EditAndContinueHelper.cs" />
