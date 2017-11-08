@@ -41,11 +41,6 @@ namespace System.Json
 
         public void Add(JsonValue item)
         {
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
-
             _list.Add(item);
         }
 
