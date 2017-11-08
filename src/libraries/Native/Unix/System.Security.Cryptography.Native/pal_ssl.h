@@ -391,7 +391,7 @@ Shims the ssl_get0_alpn_selected method.
 extern "C" void CryptoNative_SslGet0AlpnSelected(SSL* ssl, const uint8_t** protocol, uint32_t* len);
 
 /*
-Shime the SSL_set_tlsext_host_name method.
+Shims the SSL_set_tlsext_host_name method.
 */
 extern "C" int32_t CryptoNative_SslSetTlsExtHostName(SSL* ssl, const uint8_t* name);
 
