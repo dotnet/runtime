@@ -49,7 +49,7 @@ if (WIN32)
     list(APPEND SUPERPMI_SHIM_COUNTER_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/superpmi-shim-counter.def)
 endif (WIN32)
 
-add_library(superpmi-shim-counter
+_add_library(superpmi-shim-counter
     SHARED
     ${SUPERPMI_SHIM_COUNTER_SOURCES}
 )

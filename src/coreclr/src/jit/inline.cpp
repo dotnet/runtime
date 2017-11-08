@@ -474,6 +474,12 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
         m_Sibling->DumpXml(file, indent);
     }
 
+    // Optionally suppress failing inline records
+    if ((JitConfig.JitInlineDumpXml() == 3) && !m_Success)
+    {
+        return;
+    }
+
     const bool  isRoot     = m_Parent == nullptr;
     const bool  hasChild   = m_Child != nullptr;
     const char* inlineType = m_Success ? "Inline" : "FailedInline";
@@ -739,6 +745,8 @@ InlineStrategy::InlineStrategy(Compiler* compiler)
     : m_Compiler(compiler)
     , m_RootContext(nullptr)
     , m_LastSuccessfulPolicy(nullptr)
+    , m_LastContext(nullptr)
+    , m_PrejitRootDecision(InlineDecision::UNDECIDED)
     , m_CallCount(0)
     , m_CandidateCount(0)
     , m_AlwaysCandidateCount(0)
@@ -1493,7 +1501,7 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     // If we're dumping "minimal" Xml, and we didn't do
     // any inlines into this method, then there's nothing
     // to emit here.
-    if ((m_InlineCount == 0) && (JitConfig.JitInlineDumpXml() == 2))
+    if ((m_InlineCount == 0) && (JitConfig.JitInlineDumpXml() >= 2))
     {
         return;
     }
@@ -1565,6 +1573,15 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     fprintf(file, "%*s<JitTime>%u</JitTime>\n", indent + 2, "", microsecondsSpentJitting);
     fprintf(file, "%*s<SizeEstimate>%u</SizeEstimate>\n", indent + 2, "", m_CurrentSizeEstimate / 10);
     fprintf(file, "%*s<TimeEstimate>%u</TimeEstimate>\n", indent + 2, "", m_CurrentTimeEstimate);
+
+    // For prejit roots also propagate out the assessment of the root method
+    if (isPrejitRoot)
+    {
+        fprintf(file, "%*s<PrejitDecision>%s</PrejitDecision>\n", indent + 2, "",
+                InlGetDecisionString(m_PrejitRootDecision));
+        fprintf(file, "%*s<PrejitObservation>%s</PrejitObservation>\n", indent + 2, "",
+                InlGetObservationString(m_PrejitRootObservation));
+    }
 
     // Root context will be null if we're not optimizing the method.
     //

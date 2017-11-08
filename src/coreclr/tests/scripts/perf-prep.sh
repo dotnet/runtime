@@ -68,7 +68,7 @@ python3.5 ./tests/scripts/Microsoft.BenchView.JSONFormat/tools/machinedata.py
 
 if [ $throughput -eq 1 ]; then
     # Download throughput benchmarks
-    if [ -d "Microsoft.Benchview.ThroughputBenchmarks.x64.Windows_NT" ]; then
+    if [ ! -d "Microsoft.Benchview.ThroughputBenchmarks.x64.Windows_NT" ]; then
         mkdir Microsoft.Benchview.ThroughputBenchmarks.x64.Windows_NT
         cd Microsoft.Benchview.ThroughputBenchmarks.x64.Windows_NT
 

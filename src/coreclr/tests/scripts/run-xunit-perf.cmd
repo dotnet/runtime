@@ -10,7 +10,7 @@ setlocal ENABLEDELAYEDEXPANSION
   set BENCHVIEW_RUN_TYPE=local
   set CORECLR_REPO=%CD%
   set LV_SANDBOX_DIR=%CORECLR_REPO%\bin\sandbox
-  set LV_BENCHMARKS_OUTPUT_DIR=%LV_SANDBOX_DIR%\Logs
+  set LV_SANDBOX_OUTPUT_DIR=%LV_SANDBOX_DIR%\Logs
   set TEST_FILE_EXT=exe
   set TEST_ARCH=x64
   set TEST_ARCHITECTURE=x64
@@ -36,8 +36,8 @@ setlocal ENABLEDELAYEDEXPANSION
   call :set_collection_config   || exit /b 1
   call :verify_benchview_tools  || exit /b 1
   call :verify_core_overlay     || exit /b 1
-  call :set_perf_run_log        || exit /b 1
   call :setup_sandbox           || exit /b 1
+  call :set_perf_run_log        || exit /b 1
   call :build_perfharness       || exit /b 1
 
   call :run_cmd xcopy /sy "%CORECLR_REPO%\bin\tests\Windows_NT.%TEST_ARCH%.%TEST_CONFIG%\Tests\Core_Root"\* . >> %RUNLOG% || exit /b 1
@@ -96,21 +96,39 @@ setlocal
   rem CORE_ROOT environment variable is used by some benchmarks such as Roslyn / CscBench.
   set CORE_ROOT=%LV_SANDBOX_DIR%
   set LV_RUNID=Perf-%ETW_COLLECTION%
-  set BENCHNAME_LOG_FILE_NAME=%LV_BENCHMARKS_OUTPUT_DIR%\%LV_RUNID%-%BENCHNAME%.log
 
+  if defined IS_SCENARIO_TEST (
+    set "LV_BENCHMARK_OUTPUT_DIR=%LV_SANDBOX_OUTPUT_DIR%\Scenarios"
+  ) else (
+    set "LV_BENCHMARK_OUTPUT_DIR=%LV_SANDBOX_OUTPUT_DIR%\Microbenchmarks"
+  )
+  set "LV_BENCHMARK_OUTPUT_DIR=%LV_BENCHMARK_OUTPUT_DIR%\%ETW_COLLECTION%\%BENCHNAME%"
+
+  set BENCHNAME_LOG_FILE_NAME=%LV_BENCHMARK_OUTPUT_DIR%\%LV_RUNID%-%BENCHNAME%.log
+
+  if not defined LV_BENCHMARK_OUTPUT_DIR (
+    call :print_error LV_BENCHMARK_OUTPUT_DIR was not defined.
+    exit /b 1
+  )
+  if not exist "%LV_BENCHMARK_OUTPUT_DIR%" mkdir "%LV_BENCHMARK_OUTPUT_DIR%"
+  if not exist "%LV_BENCHMARK_OUTPUT_DIR%" (
+    call :print_error Failed to create the "%LV_BENCHMARK_OUTPUT_DIR%" directory.
+    exit /b 1
+  )
 
   echo/
   echo/  ----------
   echo/  Running %LV_RUNID% %BENCHNAME%
   echo/  ----------
 
-  set LV_CMD=
+  set "LV_COMMON_ARGS="%LV_SANDBOX_DIR%\%BENCHNAME%.%TEST_FILE_EXT%" --perf:outputdir "%LV_BENCHMARK_OUTPUT_DIR%" --perf:runid "%LV_RUNID%""
   if defined IS_SCENARIO_TEST (
-    set "LV_CMD=%STABILITY_PREFIX% corerun.exe "%LV_SANDBOX_DIR%\%BENCHNAME%.%TEST_FILE_EXT%" --perf:outputdir "%LV_BENCHMARKS_OUTPUT_DIR%" --perf:runid "%LV_RUNID%" --target-architecture "%TEST_ARCHITECTURE%" --perf:collect %COLLECTION_FLAGS%"
+    set "LV_COMMON_ARGS=%LV_COMMON_ARGS% --target-architecture "%TEST_ARCHITECTURE%""
   ) else (
-    set "LV_CMD=%STABILITY_PREFIX% corerun.exe PerfHarness.dll "%LV_SANDBOX_DIR%\%BENCHNAME%.%TEST_FILE_EXT%" --perf:outputdir "%LV_BENCHMARKS_OUTPUT_DIR%" --perf:runid "%LV_RUNID%" --perf:collect %COLLECTION_FLAGS%"
+    set "LV_COMMON_ARGS=PerfHarness.dll %LV_COMMON_ARGS%"
   )
 
+  set "LV_CMD=%STABILITY_PREFIX% corerun.exe %LV_COMMON_ARGS% --perf:collect %COLLECTION_FLAGS%"
   call :print_to_console $ !LV_CMD!
   call :run_cmd !LV_CMD! 1>"%BENCHNAME_LOG_FILE_NAME%" 2>&1
 
@@ -229,7 +247,7 @@ rem ****************************************************************************
     goto :parse_command_line_arguments
   )
   IF /I [%~1] == [-outputdir] (
-    set LV_BENCHMARKS_OUTPUT_DIR=%~2
+    set LV_SANDBOX_OUTPUT_DIR=%~2
     shift
     shift
     goto :parse_command_line_arguments
@@ -297,11 +315,12 @@ rem ****************************************************************************
 rem ****************************************************************************
 rem   Sets the script's output log file.
 rem ****************************************************************************
-  if NOT EXIST "%CORECLR_REPO%\bin\Logs" (
-    call :print_error Cannot find the Logs folder '%CORECLR_REPO%\bin\Logs'.
+  if NOT EXIST "%LV_SANDBOX_OUTPUT_DIR%" mkdir "%LV_SANDBOX_OUTPUT_DIR%"
+  if NOT EXIST "%LV_SANDBOX_OUTPUT_DIR%" (
+    call :print_error Cannot create the Logs folder "%LV_SANDBOX_OUTPUT_DIR%".
     exit /b 1
   )
-  set RUNLOG=%CORECLR_REPO%\bin\Logs\perfrun.log
+  set "RUNLOG=%LV_SANDBOX_OUTPUT_DIR%\perfrun.log"
   exit /b 0
 
 :setup_sandbox
@@ -315,17 +334,14 @@ rem ****************************************************************************
   )
 
   if exist "%LV_SANDBOX_DIR%" rmdir /s /q "%LV_SANDBOX_DIR%"
-  if exist "%LV_SANDBOX_DIR%" call :print_error Failed to remove the "%LV_SANDBOX_DIR%" folder& exit /b 1
+  if exist "%LV_SANDBOX_DIR%" (
+    call :print_error Failed to remove the "%LV_SANDBOX_DIR%" folder
+    exit /b 1
+  )
 
   if not exist "%LV_SANDBOX_DIR%" mkdir "%LV_SANDBOX_DIR%"
   if not exist "%LV_SANDBOX_DIR%" (
     call :print_error Failed to create the "%LV_SANDBOX_DIR%" folder.
-    exit /b 1
-  )
-
-  if not exist "%LV_BENCHMARKS_OUTPUT_DIR%" mkdir "%LV_BENCHMARKS_OUTPUT_DIR%"
-  if not exist "%LV_BENCHMARKS_OUTPUT_DIR%" (
-    call :print_error Failed to create the "%LV_BENCHMARKS_OUTPUT_DIR%" folder.
     exit /b 1
   )
 
@@ -336,6 +352,10 @@ rem ****************************************************************************
 rem ****************************************************************************
 rem   Restores and publish the PerfHarness.
 rem ****************************************************************************
+  call :run_cmd "%CORECLR_REPO%\Tools\dotnetcli\dotnet.exe" --info || (
+    call :print_error Failed to get information about the CLI tool.
+    exit /b 1
+  )
   call :run_cmd "%CORECLR_REPO%\Tools\dotnetcli\dotnet.exe" restore "%CORECLR_REPO%\tests\src\Common\PerfHarness\PerfHarness.csproj" || (
     call :print_error Failed to restore PerfHarness.csproj
     exit /b 1
@@ -366,14 +386,12 @@ rem ****************************************************************************
 
   rem Currently xUnit Performance Api saves the scenario output
   rem   files on the current working directory.
-  set LV_PATTERN="%LV_BENCHMARKS_OUTPUT_DIR%\%LV_RUNID%-%BENCHNAME%.xml"
-  rem The first pattern is the general case, the second is used by IlLink
-  if defined IS_SCENARIO_TEST set LV_PATTERN="%LV_BENCHMARKS_OUTPUT_DIR%\%LV_RUNID%-%BENCHNAME%.xml" "%LV_BENCHMARKS_OUTPUT_DIR%\%LV_RUNID%-*-%BENCHNAME%.xml"
-
+  set "LV_PATTERN=%LV_BENCHMARK_OUTPUT_DIR%\%LV_RUNID%-*.xml"
   for %%f in (%LV_PATTERN%) do (
     if exist "%%~f" (
       call :run_cmd py.exe "%BENCHVIEW_PATH%\measurement.py" %LV_MEASUREMENT_ARGS% "%%~f" || (
-        call :print_error Failed to generate BenchView measurement data.
+        call :print_error
+        type "%%~f"
         exit /b 1
       )
     )

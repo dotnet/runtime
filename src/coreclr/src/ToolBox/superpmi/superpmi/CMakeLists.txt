@@ -49,7 +49,7 @@ add_precompiled_header(
     SUPERPMI_SOURCES
 )
 
-add_executable(superpmi
+_add_executable(superpmi
     ${SUPERPMI_SOURCES}
 )
 
