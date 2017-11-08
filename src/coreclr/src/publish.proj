@@ -37,7 +37,8 @@
     <!-- create the container if it doesn't exist -->
     <CreateAzureContainer AccountKey="$(AccountKey)"
                           AccountName="$(AccountName)"
-                          ContainerName="$(ContainerName)" />
+                          ContainerName="$(ContainerName)"
+                          IsPublic="true" />
 
     <PushToBlobFeed Condition="'$(PublishFlatContainer)' == 'false'"
                     ExpectedFeedUrl="$(ExpectedFeedUrl)"
@@ -71,7 +72,8 @@
    <!-- create the container if it doesn't exist -->
     <CreateAzureContainer AccountKey="$(AccountKey)"
                           AccountName="$(AccountName)"
-                          ContainerName="$(ContainerName)" />
+                          ContainerName="$(ContainerName)"
+                          IsPublic="true" />
 
     <PushToBlobFeed Condition="'$(PublishFlatContainer)' == 'false'"
                     ExpectedFeedUrl="$(ExpectedFeedUrl)"
@@ -106,7 +108,8 @@
     <!-- create the container if it doesn't exist -->
     <CreateAzureContainer AccountKey="$(AccountKey)"
                           AccountName="$(AccountName)"
-                          ContainerName="$(ContainerName)" />
+                          ContainerName="$(ContainerName)"
+                          IsPublic="true" />
 
     <PushToBlobFeed Condition="'$(PublishFlatContainer)' == 'false'"
                     ExpectedFeedUrl="$(ExpectedFeedUrl)"
