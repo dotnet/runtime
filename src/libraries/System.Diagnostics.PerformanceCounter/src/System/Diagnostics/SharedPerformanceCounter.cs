@@ -8,7 +8,6 @@ using System.Threading;
 using System.Collections;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Security.Permissions;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 
@@ -533,7 +532,6 @@ namespace System.Diagnostics
             // but of course that's only a probabilisitic statement.
 
             // Must be able to assign to the out param.
-            RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
             }
@@ -637,8 +635,6 @@ namespace System.Diagnostics
                         data.FileMappingName = DefaultFileMappingName;
                         data.MutexName = _categoryName;
 
-                        RegistryPermission registryPermission = new RegistryPermission(PermissionState.Unrestricted);
-                        registryPermission.Assert();
                         RegistryKey categoryKey = null;
                         try
                         {
@@ -717,7 +713,6 @@ namespace System.Diagnostics
                         {
                             if (categoryKey != null)
                                 categoryKey.Close();
-                            RegistryPermission.RevertAssert();
                         }
                     }
                 }
@@ -760,7 +755,6 @@ namespace System.Diagnostics
             Mutex mutex = null;
             CounterEntry* counterPointer = null;
             InstanceEntry* instancePointer = null;
-            RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 SharedUtils.EnterMutexWithoutGlobal(_categoryData.MutexName, ref mutex);
@@ -1068,7 +1062,6 @@ namespace System.Diagnostics
                             if (activateUnusedInstances)
                             {
                                 Mutex mutex = null;
-                                RuntimeHelpers.PrepareConstrainedRegions();
                                 try
                                 {
                                     SharedUtils.EnterMutexWithoutGlobal(_categoryData.MutexName, ref mutex);
@@ -1211,7 +1204,6 @@ namespace System.Diagnostics
                 return;
 
             Mutex mutex = null;
-            RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 SharedUtils.EnterMutexWithoutGlobal(_categoryData.MutexName, ref mutex);
@@ -1409,7 +1401,6 @@ namespace System.Diagnostics
             InstanceEntry* instancePointer = (InstanceEntry*)(ResolveOffset(categoryPointer->FirstInstanceOffset, s_instanceEntrySize));
 
             Mutex mutex = null;
-            RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 SharedUtils.EnterMutexWithoutGlobal(_categoryData.MutexName, ref mutex);
@@ -1451,7 +1442,6 @@ namespace System.Diagnostics
             bool temp;
 
             Mutex mutex = null;
-            RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 SharedUtils.EnterMutexWithoutGlobal(_categoryData.MutexName, ref mutex);
@@ -1516,7 +1506,6 @@ namespace System.Diagnostics
         {
             bool sectionEntered = false;
 
-            RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 if (!_categoryData.UseUniqueSharedMemory)
