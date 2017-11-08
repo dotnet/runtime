@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using Xunit;
 
@@ -73,10 +72,6 @@ namespace System.Management.Tests
             var processId = (uint)methodArgs[3];
             Assert.True(0u != processId, $"Unexpected process ID: {processId}");
 
-            // Before terminating the process open a handle to it so the processId cannot be re-used until
-            // it is disposed. This ensures that the processId is not re-used right after the call to Terminate
-            // and the expected exception is always thrown.
-            using (SafeProcessHandle processHandle = Interop.Kernel32.OpenProcess(Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION, false, (int)processId))
             using (Process targetProcess = Process.GetProcessById((int)processId))
             using (var process = new ManagementObject($"Win32_Process.Handle=\"{processId}\""))
             {
@@ -87,9 +82,6 @@ namespace System.Management.Tests
                 Assert.Equal(0u, resultCode);
 
                 Assert.True(targetProcess.HasExited);
-
-                ManagementException managementException = Assert.Throws<ManagementException>(() => process.Get());
-                Assert.Equal(ManagementStatus.NotFound, managementException.ErrorCode);
             }
         }
     }
