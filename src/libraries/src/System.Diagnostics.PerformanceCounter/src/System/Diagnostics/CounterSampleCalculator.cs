@@ -5,7 +5,6 @@
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Security.Permissions;
 using System.Globalization;
 
 namespace System.Diagnostics
@@ -235,9 +234,8 @@ namespace System.Diagnostics
             if (s_perfCounterDllLoaded)
                 return;
 
-            new FileIOPermission(PermissionState.Unrestricted).Assert();
-
             string installPath = SharedUtils.GetLatestBuildDllDirectory(".");
+
             string perfcounterPath = Path.Combine(installPath, "perfcounter.dll");
             if (Interop.Kernel32.LoadLibrary(perfcounterPath) == IntPtr.Zero)
             {

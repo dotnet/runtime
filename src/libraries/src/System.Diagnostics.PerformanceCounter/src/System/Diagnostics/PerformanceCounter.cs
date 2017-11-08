@@ -165,8 +165,6 @@ namespace System.Diagnostics
                 string currentCategoryName = _categoryName;
                 string currentMachineName = _machineName;
 
-                PerformanceCounterPermission permission = new PerformanceCounterPermission(PerformanceCounterPermissionAccess.Read, currentMachineName, currentCategoryName);
-                permission.Demand();
                 Initialize();
 
                 if (_helpMsg == null)
@@ -212,9 +210,6 @@ namespace System.Diagnostics
 
                     // This is the same thing that NextSample does, except that it doesn't try to get the actual counter
                     // value.  If we wanted the counter value, we would need to have an instance name. 
-                    PerformanceCounterPermission permission = new PerformanceCounterPermission(PerformanceCounterPermissionAccess.Read, currentMachineName, currentCategoryName);
-                    permission.Demand();
-
                     Initialize();
                     CategorySample categorySample = PerformanceCounterLib.GetCategorySample(currentMachineName, currentCategoryName);
                     CounterDefinitionSample counterSample = categorySample.GetCounterDefinitionSample(_counterName);
@@ -369,8 +364,6 @@ namespace System.Diagnostics
         /// </summary>
         public static void CloseSharedResources()
         {
-            PerformanceCounterPermission permission = new PerformanceCounterPermission(PerformanceCounterPermissionAccess.Read, ".", "*");
-            permission.Demand();
             PerformanceCounterLib.CloseAllLibraries();
         }
 
@@ -466,7 +459,6 @@ namespace System.Diagnostics
         private void InitializeImpl()
         {
             bool tookLock = false;
-            RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 Monitor.Enter(InstanceLockObject, ref tookLock);
@@ -483,10 +475,6 @@ namespace System.Diagnostics
 
                     if (ReadOnly)
                     {
-                        PerformanceCounterPermission permission = new PerformanceCounterPermission(PerformanceCounterPermissionAccess.Read, currentMachineName, currentCategoryName);
-
-                        permission.Demand();
-
                         if (!PerformanceCounterLib.CounterExists(currentMachineName, currentCategoryName, _counterName))
                             throw new InvalidOperationException(SR.Format(SR.CounterExists, currentCategoryName, _counterName));
 
@@ -509,9 +497,6 @@ namespace System.Diagnostics
                     }
                     else
                     {
-                        PerformanceCounterPermission permission = new PerformanceCounterPermission(PerformanceCounterPermissionAccess.Write, currentMachineName, currentCategoryName);
-                        permission.Demand();
-
                         if (currentMachineName != "." && !string.Equals(currentMachineName, PerformanceCounterLib.ComputerName, StringComparison.OrdinalIgnoreCase))
                             throw new InvalidOperationException(SR.Format(SR.RemoteWriting));
 
@@ -555,9 +540,6 @@ namespace System.Diagnostics
         {
             string currentCategoryName = _categoryName;
             string currentMachineName = _machineName;
-
-            PerformanceCounterPermission permission = new PerformanceCounterPermission(PerformanceCounterPermissionAccess.Read, currentMachineName, currentCategoryName);
-            permission.Demand();
 
             Initialize();
             CategorySample categorySample = PerformanceCounterLib.GetCategorySample(currentMachineName, currentCategoryName);
