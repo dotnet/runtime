@@ -2848,36 +2848,54 @@ unsigned Compiler::gtSetListOrder(GenTree* list, bool isListCallArgs, bool callA
     return nxtlvl;
 }
 
-/*****************************************************************************
- *
- *  This routine is a helper routine for gtSetEvalOrder() and is used to
- *  mark the interior address computation nodes with the GTF_ADDRMODE_NO_CSE flag
- *  which prevents them from being considered for CSE's.
- *
- *  Furthermore this routine is a factoring of the logic used to walk down
- *  the child nodes of a GT_IND tree, similar to optParseArrayRef().
- *
- *  Previously we had this logic repeated three times inside of gtSetEvalOrder().
- *  Here we combine those three repeats into this routine and use the
- *  bool constOnly to modify the behavior of this routine for the first call.
- *
- *  The object here is to mark all of the interior GT_ADD's and GT_NOP's
- *  with the GTF_ADDRMODE_NO_CSE flag and to set op1 and op2 to the terminal nodes
- *  which are later matched against 'adr' and 'idx'.
- *
- *  *pbHasRangeCheckBelow is set to false if we traverse a range check GT_NOP
- *  node in our walk. It remains unchanged otherwise.
- *
- *  TODO-Cleanup: It is essentially impossible to determine
- *  what it is supposed to do, or to write a reasonable specification comment
- *  for it that describes what it is supposed to do. There are obviously some
- *  very specific tree patterns that it expects to see, but those are not documented.
- *  The fact that it writes back to its op1WB and op2WB arguments, and traverses
- *  down both op1 and op2 trees, but op2 is only related to op1 in the (!constOnly)
- *  case (which really seems like a bug) is very confusing.
- */
-
-void Compiler::gtWalkOp(GenTree** op1WB, GenTree** op2WB, GenTree* adr, bool constOnly)
+//-----------------------------------------------------------------------------
+// gtWalkOp: Traverse and mark an address expression
+//
+// Arguments:
+//    op1WB - An out parameter which is either the address expression, or one
+//            of its operands.
+//    op2WB - An out parameter which starts as either null or one of the operands
+//            of the address expression.
+//    base  - The base address of the addressing mode, or null if 'constOnly' is false
+//    constOnly - True if we will only traverse into ADDs with constant op2.
+//
+// This routine is a helper routine for gtSetEvalOrder() and is used to identify the
+// base and index nodes, which will be validated against those identified by
+// genCreateAddrMode().
+// It also marks the ADD nodes involved in the address expression with the
+// GTF_ADDRMODE_NO_CSE flag which prevents them from being considered for CSE's.
+//
+// Its two output parameters are modified under the following conditions:
+//
+// It is called once with the original address expression as 'op1WB', and
+// with 'constOnly' set to false. On this first invocation, *op1WB is always
+// an ADD node, and it will consider the operands of the ADD even if its op2 is
+// not a constant. However, when it encounters a non-constant or the base in the
+// op2 position, it stops iterating. That operand is returned in the 'op2WB' out
+// parameter, and will be considered on the third invocation of this method if
+// it is an ADD.
+//
+// It is called the second time with the two operands of the original expression, in
+// the original order, and the third time in reverse order. For these invocations
+// 'constOnly' is true, so it will only traverse cascaded ADD nodes if they have a
+// constant op2.
+//
+// The result, after three invocations, is that the values of the two out parameters
+// correspond to the base and index in some fashion. This method doesn't attempt
+// to determine or validate the scale or offset, if any.
+//
+// Assumptions (presumed to be ensured by genCreateAddrMode()):
+//    If an ADD has a constant operand, it is in the op2 position.
+//
+// Notes:
+//    This method, and its invocation sequence, are quite confusing, and since they
+//    were not originally well-documented, this specification is a possibly-imperfect
+//    reconstruction.
+//    The motivation for the handling of the NOP case is unclear.
+//    Note that 'op2WB' is only modified in the initial (!constOnly) case,
+//    or if a NOP is encountered in the op1 position.
+//
+void Compiler::gtWalkOp(GenTree** op1WB, GenTree** op2WB, GenTree* base, bool constOnly)
 {
     GenTreePtr op1 = *op1WB;
     GenTreePtr op2 = *op2WB;
@@ -2891,7 +2909,7 @@ void Compiler::gtWalkOp(GenTree** op1WB, GenTree** op2WB, GenTree* adr, bool con
         op1->gtFlags |= GTF_ADDRMODE_NO_CSE;
 
         if (!constOnly)
-        { // TODO-Cleanup: It seems bizarre that this is !constOnly
+        {
             op2 = op1->gtOp.gtOp2;
         }
         op1 = op1->gtOp.gtOp1;
@@ -2907,7 +2925,7 @@ void Compiler::gtWalkOp(GenTree** op1WB, GenTree** op2WB, GenTree* adr, bool con
             op2 = tmp;
         }
 
-        if (!constOnly && ((op2 == adr) || (!op2->IsCnsIntOrI())))
+        if (!constOnly && ((op2 == base) || (!op2->IsCnsIntOrI())))
         {
             break;
         }
@@ -3868,39 +3886,49 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                             INDEBUG(GenTreePtr op1Save = addr);
 
-                            /* Walk addr looking for non-overflow GT_ADDs */
-                            gtWalkOp(&addr, &op2, base, false);
+                            // Walk 'addr' identifying non-overflow ADDs that will be part of the address mode.
+                            // Note that we will be modifying 'op1' and 'op2' so that eventually they should
+                            // map to the base and index.
+                            op1 = addr;
+                            gtWalkOp(&op1, &op2, base, false);
 
-                            // addr and op2 are now children of the root GT_ADD of the addressing mode
-                            assert(addr != op1Save);
+                            // op1 and op2 are now descendents of the root GT_ADD of the addressing mode.
+                            assert(op1 != op1Save);
                             assert(op2 != nullptr);
 
-                            /* Walk addr looking for non-overflow GT_ADDs of constants */
-                            gtWalkOp(&addr, &op2, nullptr, true);
+                            // Walk the operands again (the third operand is unused in this case).
+                            // This time we will only consider adds with constant op2's, since
+                            // we have already found either a non-ADD op1 or a non-constant op2.
+                            gtWalkOp(&op1, &op2, nullptr, true);
 
-                            // TODO-Cleanup: It seems very strange that we might walk down op2 now, even though the
-                            // prior
-                            //           call to gtWalkOp() may have altered op2.
+#if defined(_TARGET_XARCH_) || defined(LEGACY_BACKEND)
+                            // For XARCH we will fold GT_ADDs in the op2 position into the addressing mode, so we call
+                            // gtWalkOp on both operands of the original GT_ADD.
+                            // This is not done for ARMARCH. Though the stated reason is that we don't try to create a
+                            // scaled index, in fact we actually do create them (even base + index*scale + offset).
 
-                            /* Walk op2 looking for non-overflow GT_ADDs of constants */
-                            gtWalkOp(&op2, &addr, nullptr, true);
+                            // At this point, 'op2' may itself be an ADD of a constant that should be folded
+                            // into the addressing mode.
+                            // Walk op2 looking for non-overflow GT_ADDs of constants.
+                            gtWalkOp(&op2, &op1, nullptr, true);
+#endif // defined(_TARGET_XARCH_) || defined(LEGACY_BACKEND)
 
                             // OK we are done walking the tree
-                            // Now assert that addr and op2 correspond with base and idx
+                            // Now assert that op1 and op2 correspond with base and idx
                             // in one of the several acceptable ways.
 
-                            // Note that sometimes addr/op2 is equal to idx/base
-                            // and other times addr/op2 is a GT_COMMA node with
+                            // Note that sometimes op1/op2 is equal to idx/base
+                            // and other times op1/op2 is a GT_COMMA node with
                             // an effective value that is idx/base
 
                             if (mul > 1)
                             {
-                                if ((addr != base) && (addr->gtOper == GT_LSH))
+                                if ((op1 != base) && (op1->gtOper == GT_LSH))
                                 {
-                                    addr->gtFlags |= GTF_ADDRMODE_NO_CSE;
-                                    if (addr->gtOp.gtOp1->gtOper == GT_MUL)
+                                    op1->gtFlags |= GTF_ADDRMODE_NO_CSE;
+                                    if (op1->gtOp.gtOp1->gtOper == GT_MUL)
                                     {
-                                        addr->gtOp.gtOp1->gtFlags |= GTF_ADDRMODE_NO_CSE;
+                                        op1->gtOp.gtOp1->gtFlags |= GTF_ADDRMODE_NO_CSE;
                                     }
                                     assert((base == nullptr) || (op2 == base) ||
                                            (op2->gtEffectiveVal() == base->gtEffectiveVal()) ||
@@ -3919,7 +3947,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                                         op2op1->gtFlags |= GTF_ADDRMODE_NO_CSE;
                                         op2op1 = op2op1->gtOp.gtOp1;
                                     }
-                                    assert(addr->gtEffectiveVal() == base);
+                                    assert(op1->gtEffectiveVal() == base);
                                     assert(op2op1 == idx);
                                 }
                             }
@@ -3927,27 +3955,27 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                             {
                                 assert(mul == 0);
 
-                                if ((addr == idx) || (addr->gtEffectiveVal() == idx))
+                                if ((op1 == idx) || (op1->gtEffectiveVal() == idx))
                                 {
                                     if (idx != nullptr)
                                     {
-                                        if ((addr->gtOper == GT_MUL) || (addr->gtOper == GT_LSH))
+                                        if ((op1->gtOper == GT_MUL) || (op1->gtOper == GT_LSH))
                                         {
-                                            if ((addr->gtOp.gtOp1->gtOper == GT_NOP) ||
-                                                (addr->gtOp.gtOp1->gtOper == GT_MUL &&
-                                                 addr->gtOp.gtOp1->gtOp.gtOp1->gtOper == GT_NOP))
+                                            if ((op1->gtOp.gtOp1->gtOper == GT_NOP) ||
+                                                (op1->gtOp.gtOp1->gtOper == GT_MUL &&
+                                                 op1->gtOp.gtOp1->gtOp.gtOp1->gtOper == GT_NOP))
                                             {
-                                                addr->gtFlags |= GTF_ADDRMODE_NO_CSE;
-                                                if (addr->gtOp.gtOp1->gtOper == GT_MUL)
+                                                op1->gtFlags |= GTF_ADDRMODE_NO_CSE;
+                                                if (op1->gtOp.gtOp1->gtOper == GT_MUL)
                                                 {
-                                                    addr->gtOp.gtOp1->gtFlags |= GTF_ADDRMODE_NO_CSE;
+                                                    op1->gtOp.gtOp1->gtFlags |= GTF_ADDRMODE_NO_CSE;
                                                 }
                                             }
                                         }
                                     }
                                     assert((op2 == base) || (op2->gtEffectiveVal() == base));
                                 }
-                                else if ((addr == base) || (addr->gtEffectiveVal() == base))
+                                else if ((op1 == base) || (op1->gtEffectiveVal() == base))
                                 {
                                     if (idx != nullptr)
                                     {
@@ -3970,7 +3998,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                                 }
                                 else
                                 {
-                                    // addr isn't base or idx. Is this possible? Or should there be an assert?
+                                    // op1 isn't base or idx. Is this possible? Or should there be an assert?
                                 }
                             }
                             goto DONE;
