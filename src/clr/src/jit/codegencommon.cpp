@@ -11224,8 +11224,9 @@ var_types Compiler::GetHfaType(GenTreePtr tree)
 {
 #ifdef FEATURE_HFA
     return GetHfaType(gtGetStructHandleIfPresent(tree));
-#endif
+#else
     return TYP_UNDEF;
+#endif
 }
 
 unsigned Compiler::GetHfaCount(GenTreePtr tree)
