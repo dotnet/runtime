@@ -33,7 +33,7 @@
       },
       "inputs": {
         "filename": "sync.cmd",
-        "arguments": "-ab -AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_ContainerName) -BlobNamePrefix=$(PB_BlobNamePrefix)",
+        "arguments": "-ab -AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_ContainerName) -BlobNamePrefix=$(PB_BlobNamePrefix) -- /p:DownloadFlatFiles=true /p:BlobNameExtension=\".symbols.nupkg\" /p:DownloadDirectory=$(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(ConfigurationGroup)\\symbolpkg",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "false"
       }
