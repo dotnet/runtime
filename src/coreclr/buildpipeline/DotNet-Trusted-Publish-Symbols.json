@@ -176,7 +176,7 @@
       "allowOverride": true
     },
     "AzureContainerSymbolPackageGlob": {
-      "value": "symbolpkg\\*\\*\\*.nupkg",
+      "value": "symbolpkg\\*.nupkg",
       "allowOverride": true
     },
     "PB_AzureContainerSymbolPackageGlob": {
