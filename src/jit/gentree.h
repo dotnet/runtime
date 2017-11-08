@@ -931,7 +931,14 @@ public:
 #define GTF_CALL_POP_ARGS           0x04000000 // GT_CALL -- caller pop arguments?
 #define GTF_CALL_HOISTABLE          0x02000000 // GT_CALL -- call is hoistable
 #ifdef LEGACY_BACKEND
+#ifdef _TARGET_ARM_
+// The GTF_CALL_REG_SAVE flag indicates that the call preserves all integer registers. This is used for
+// the PollGC helper. However, since the PollGC helper on ARM follows the standard calling convention,
+// for that target we don't use this flag.
+#define GTF_CALL_REG_SAVE           0x00000000
+#else
 #define GTF_CALL_REG_SAVE           0x01000000 // GT_CALL -- This call preserves all integer regs
+#endif // _TARGET_ARM_
 #endif // LEGACY_BACKEND
                                                // For additional flags for GT_CALL node see GTF_CALL_M_*
 
