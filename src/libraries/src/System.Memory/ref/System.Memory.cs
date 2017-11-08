@@ -115,6 +115,7 @@ namespace System
         public static ReadOnlySpan<byte> AsBytes<T>(this ReadOnlySpan<T> source) where T : struct { throw null; }
         
         public static ReadOnlySpan<TTo> NonPortableCast<TFrom, TTo>(this ReadOnlySpan<TFrom> source) where TFrom : struct where TTo : struct { throw null; }
+
         public static bool TryGetString(this ReadOnlyMemory<char> readOnlyMemory, out string text, out int start, out int length) { throw null; }
     }
 
@@ -356,3 +357,10 @@ namespace System.Buffers.Text
     }
 }
 
+namespace System.Runtime.InteropServices
+{
+    public static class MemoryMarshal
+    {
+        public static Memory<T> AsMemory<T>(ReadOnlyMemory<T> readOnlyMemory) { throw null; }
+    }
+}
