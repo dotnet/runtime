@@ -24,13 +24,6 @@
 //
 CLRConfig::GetConfigValueFunction CLRConfig::s_GetConfigValueCallback = NULL;
 
-//
-// Initialize the PerformanceDefaults::LookupConfigValue function pointer to NULL. If not initialized, CLRConfig
-// will ignore LookupOptions::MayHavePerformanceDefault.
-//
-CLRConfig::GetPerformanceDefaultValueFunction CLRConfig::s_GetPerformanceDefaultValueCallback = NULL;
-
-
 // 
 // Creating structs using the macro table in CLRConfigValues.h
 // 
@@ -182,22 +175,6 @@ BOOL CLRConfig::IsConfigEnabled(const ConfigDWORDInfo & info)
         }
     }
 
-    //
-    // If we get here, the option was not listed in REGUTIL or EEConfig; check whether the option
-    // has a PerformanceDefault-specified value before falling back to the built-in default
-    //
-    DWORD performanceDefaultValue;
-    if (CheckLookupOption(info, MayHavePerformanceDefault) &&
-        s_GetPerformanceDefaultValueCallback != NULL &&
-        s_GetPerformanceDefaultValueCallback(info.name, &performanceDefaultValue))
-    {
-        if (!SUCCEEDED(REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &result, level, prependCOMPlus)))
-        {
-            if(performanceDefaultValue>0)
-                return TRUE;
-        }
-    }
-
     if(info.defaultValue>0)
         return TRUE;
     else
@@ -334,25 +311,6 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, bool acceptExplici
                 *isDefault = false;
                 return resultMaybe;
             }
-        }
-    }
-
-    //
-    // If we get here, the option was not listed in REGUTIL or EEConfig; check whether the option
-    // has a PerformanceDefault-specified value before falling back to the built-in default
-    //
-    DWORD performanceDefaultValue;
-    if (CheckLookupOption(info, MayHavePerformanceDefault) &&
-        s_GetPerformanceDefaultValueCallback != NULL &&
-        s_GetPerformanceDefaultValueCallback(info.name, &performanceDefaultValue))
-    {
-        // TODO: We ignore explicitly defined default values above, but we do not want to let performance defaults override these.
-        // TODO: Ideally, the above would use hresult for success and this check would be removed.
-        DWORD resultMaybe;
-        if (!SUCCEEDED(REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &resultMaybe, level, prependCOMPlus)))
-        {
-            *isDefault = true;
-            return performanceDefaultValue;
         }
     }
 
@@ -493,10 +451,6 @@ HRESULT CLRConfig::GetConfigValue(const ConfigStringInfo & info, __deref_out_z L
             result = wszTrimmedResult;
         }
     }
-
-    // If we ever want a PerformanceDefault for a string value, you can replace this assert
-    // with code that follows the pattern for DWORD values above.
-    _ASSERTE(!CheckLookupOption(info, MayHavePerformanceDefault));
 
     *outVal = result;
     RETURN S_OK;
@@ -646,17 +600,6 @@ void CLRConfig::RegisterGetConfigValueCallback(GetConfigValueFunction func)
     LIMITED_METHOD_CONTRACT;
     s_GetConfigValueCallback = func;
 }
-
-// 
-// Register PerformanceDefaults' LookupConfigValue so CLRConfig can support 'MayHavePerformanceDefault' values
-// 
-//static 
-void CLRConfig::RegisterGetPerformanceDefaultValueCallback(GetPerformanceDefaultValueFunction func)
-{
-    LIMITED_METHOD_CONTRACT;
-    s_GetPerformanceDefaultValueCallback = func;
-}
-
 
 // 
 // Helper method to translate LookupOptions to REGUTIL::CORConfigLevel.

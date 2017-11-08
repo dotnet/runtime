@@ -3985,8 +3985,16 @@ void emitter::emitIns_R_R(
             assert(isValidVectorDatasize(size));
             assert(isValidArrangement(size, opt));
             elemsize = optGetElemsize(opt);
-            assert(size != EA_16BYTE);    // Narrowing must start with wide format
-            assert(elemsize != EA_1BYTE); // Narrowing must start with more than one byte src
+            // size is determined by instruction
+            if (ins == INS_xtn)
+            {
+                assert(size == EA_8BYTE);
+            }
+            else // ins == INS_xtn2
+            {
+                assert(size == EA_16BYTE);
+            }
+            assert(elemsize != EA_8BYTE); // Narrowing must not end with 8 byte data
             fmt = IF_DV_2M;
             break;
 
@@ -4132,23 +4140,13 @@ void emitter::emitIns_R_R(
 
         case INS_fcvtl:
         case INS_fcvtl2:
-            assert(isVectorRegister(reg1));
-            assert(isVectorRegister(reg2));
-            assert(isValidVectorDatasize(size));
-            assert(isValidArrangement(size, opt));
-            elemsize = optGetElemsize(opt);
-            assert(elemsize == EA_4BYTE); // Widening from Float to Double, opt should correspond to src layout
-            fmt = IF_DV_2G;
-            break;
-
         case INS_fcvtn:
         case INS_fcvtn2:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isValidVectorDatasize(size));
-            assert(isValidArrangement(size, opt));
-            elemsize = optGetElemsize(opt);
-            assert(elemsize == EA_8BYTE); // Narrowing from Double to Float, opt should correspond to src layout
+            assert(insOptsNone(opt));
+            assert(size == EA_8BYTE); // Narrowing from Double or Widening to Double (Half not supported)
             fmt = IF_DV_2G;
             break;
 
@@ -6278,7 +6276,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         else
         {
             regNumber rsvdReg = codeGen->rsGetRsvdReg();
-            codeGen->instGen_Set_Reg_To_Imm(size, rsvdReg, imm);
+            codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
             fmt = IF_DR_3A; // add reg1,reg2,rsvdReg
         }
     }
@@ -6320,7 +6318,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         if (useRegForImm)
         {
             regNumber rsvdReg = codeGen->rsGetRsvdReg();
-            codeGen->instGen_Set_Reg_To_Imm(size, rsvdReg, imm);
+            codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
             fmt = IF_LS_3A;
         }
     }
@@ -6360,7 +6358,6 @@ void emitter::emitIns_R_R_S_S(
     assert(isGeneralRegisterOrZR(reg2));
     assert(offs >= 0);
 
-    emitAttr       size  = EA_SIZE(attr1);
     insFormat      fmt   = IF_LS_3B;
     int            disp  = 0;
     const unsigned scale = 3;
@@ -6401,7 +6398,7 @@ void emitter::emitIns_R_R_S_S(
     if (useRegForAdr)
     {
         regNumber rsvd = codeGen->rsGetRsvdReg();
-        emitIns_R_R_Imm(INS_add, EA_8BYTE, rsvd, reg3, imm);
+        emitIns_R_R_Imm(INS_add, EA_PTRSIZE, rsvd, reg3, imm);
         reg3 = rsvd;
         imm  = 0;
     }
@@ -6547,7 +6544,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
         // The reserved register is not stored in idReg3() since that field overlaps with iiaLclVar.
         // It is instead implicit when idSetIsLclVar() is set, with this encoding format.
         regNumber rsvdReg = codeGen->rsGetRsvdReg();
-        codeGen->instGen_Set_Reg_To_Imm(size, rsvdReg, imm);
+        codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
         fmt = IF_LS_3A;
     }
 
@@ -6586,7 +6583,6 @@ void emitter::emitIns_S_S_R_R(
     assert(isGeneralRegisterOrZR(reg2));
     assert(offs >= 0);
 
-    emitAttr       size  = EA_SIZE(attr1);
     insFormat      fmt   = IF_LS_3B;
     int            disp  = 0;
     const unsigned scale = 3;
@@ -6627,7 +6623,7 @@ void emitter::emitIns_S_S_R_R(
     if (useRegForAdr)
     {
         regNumber rsvd = codeGen->rsGetRsvdReg();
-        emitIns_R_R_Imm(INS_add, EA_8BYTE, rsvd, reg3, imm);
+        emitIns_R_R_Imm(INS_add, EA_PTRSIZE, rsvd, reg3, imm);
         reg3 = rsvd;
         imm  = 0;
     }
@@ -11506,75 +11502,6 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
         // Then load/store dataReg from/to [addrReg]
         emitIns_R_R(ins, ldstAttr, dataReg, addr->gtRegNum);
     }
-}
-
-// Generates an integer data section constant and returns a field handle representing
-// the data offset to access the constant via a load instruction.
-// This is called during ngen for any relocatable constants
-//
-CORINFO_FIELD_HANDLE emitter::emitLiteralConst(ssize_t cnsValIn, emitAttr attr /*=EA_8BYTE*/)
-{
-    ssize_t constValue = cnsValIn;
-    void*   cnsAddr    = &constValue;
-    bool    dblAlign;
-
-    if (attr == EA_4BYTE)
-    {
-        dblAlign = false;
-    }
-    else
-    {
-        assert(attr == EA_8BYTE);
-        dblAlign = true;
-    }
-
-    // Access to inline data is 'abstracted' by a special type of static member
-    // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
-    // to constant data, not a real static field.
-
-    UNATIVE_OFFSET cnsSize = (attr == EA_4BYTE) ? 4 : 8;
-    UNATIVE_OFFSET cnum    = emitDataConst(cnsAddr, cnsSize, dblAlign);
-    return emitComp->eeFindJitDataOffs(cnum);
-}
-
-// Generates a float or double data section constant and returns field handle representing
-// the data offset to access the constant.  This is called by emitInsBinary() in case
-// of contained float of double constants.
-CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(GenTreeDblCon* tree, emitAttr attr /*=EA_UNKNOWN*/)
-{
-    if (attr == EA_UNKNOWN)
-    {
-        attr = emitTypeSize(tree->TypeGet());
-    }
-    else
-    {
-        assert(emitTypeSize(tree->TypeGet()) == attr);
-    }
-
-    double constValue = tree->gtDblCon.gtDconVal;
-    void*  cnsAddr;
-    float  f;
-    bool   dblAlign;
-
-    if (attr == EA_4BYTE)
-    {
-        f        = forceCastToFloat(constValue);
-        cnsAddr  = &f;
-        dblAlign = false;
-    }
-    else
-    {
-        cnsAddr  = &constValue;
-        dblAlign = true;
-    }
-
-    // Access to inline data is 'abstracted' by a special type of static member
-    // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
-    // to constant data, not a real static field.
-
-    UNATIVE_OFFSET cnsSize = (attr == EA_4BYTE) ? 4 : 8;
-    UNATIVE_OFFSET cnum    = emitDataConst(cnsAddr, cnsSize, dblAlign);
-    return emitComp->eeFindJitDataOffs(cnum);
 }
 
 // The callee must call genConsumeReg() for any non-contained srcs

@@ -60,7 +60,7 @@ endif(CLR_CMAKE_PLATFORM_DARWIN)
 
 # Create object library to enable creation of proper dependency of mscordaccore.exp on mscordac.obj and
 # mscordaccore on both the mscordaccore.exp and mscordac.obj.
-add_library(mscordacobj OBJECT mscordac.cpp)
+_add_library(mscordacobj OBJECT mscordac.cpp)
 
 add_library_clr(mscordaccore SHARED ${CLR_DAC_SOURCES} $<TARGET_OBJECTS:mscordacobj>)
 

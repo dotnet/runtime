@@ -267,37 +267,24 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 break;
 
             case InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER:
-                // DefaultPolicy ignores this for prejit roots.
-                if (!m_IsPrejitRoot)
-                {
-                    m_LooksLikeWrapperMethod = value;
-                }
+                m_LooksLikeWrapperMethod = value;
+                break;
+
+            case InlineObservation::CALLEE_ARG_FEEDS_TEST:
+                m_ArgFeedsTest++;
                 break;
 
             case InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST:
-                // DefaultPolicy ignores this for prejit roots.
-                if (!m_IsPrejitRoot)
-                {
-                    m_ArgFeedsConstantTest++;
-                }
+                m_ArgFeedsConstantTest++;
                 break;
 
             case InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK:
-                // DefaultPolicy ignores this for prejit roots.
-                if (!m_IsPrejitRoot)
-                {
-                    m_ArgFeedsRangeCheck++;
-                }
+                m_ArgFeedsRangeCheck++;
                 break;
 
             case InlineObservation::CALLEE_HAS_SWITCH:
             case InlineObservation::CALLEE_UNSUPPORTED_OPCODE:
-                // DefaultPolicy ignores these for prejit roots.
-                if (!m_IsPrejitRoot)
-                {
-                    // Pass these on, they should cause inlining to fail.
-                    propagate = true;
-                }
+                propagate = true;
                 break;
 
             case InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST:
@@ -648,6 +635,13 @@ double DefaultPolicy::DetermineMultiplier()
     {
         multiplier += 3.0;
         JITDUMP("\nInline candidate has const arg that feeds a conditional.  Multiplier increased to %g.", multiplier);
+    }
+    // For prejit roots we do not see the call sites. To be suitably optimisitic
+    // assume that call sites may pass constants.
+    else if (m_IsPrejitRoot && ((m_ArgFeedsConstantTest > 0) || (m_ArgFeedsTest > 0)))
+    {
+        multiplier += 3.0;
+        JITDUMP("\nPrejit root candidate has arg that feeds a conditional.  Multiplier increased to %g.", multiplier);
     }
 
     switch (m_CallsiteFrequency)
@@ -1158,25 +1152,6 @@ void DiscretionaryPolicy::NoteBool(InlineObservation obs, bool value)
 {
     switch (obs)
     {
-        case InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER:
-            m_LooksLikeWrapperMethod = value;
-            break;
-
-        case InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST:
-            assert(value);
-            m_ArgFeedsConstantTest++;
-            break;
-
-        case InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK:
-            assert(value);
-            m_ArgFeedsRangeCheck++;
-            break;
-
-        case InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST:
-            assert(value);
-            m_ConstantArgFeedsConstantTest++;
-            break;
-
         case InlineObservation::CALLEE_IS_CLASS_CTOR:
             m_IsClassCtor = value;
             break;

@@ -81,6 +81,7 @@ class Constants {
                'jitstress2_jitstressregs0x1000' : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '0x1000'],
                'tailcallstress'                 : ['COMPlus_TailcallStress' : '1'],
                'jitsse2only'                    : ['COMPlus_EnableAVX' : '0', 'COMPlus_EnableSSE3_4' : '0'],
+               'jitnosimd'                      : ['COMPlus_FeatureSIMD' : '0'],
                'corefx_baseline'                : [ : ], // corefx baseline
                'corefx_minopts'                 : ['COMPlus_JITMinOpts' : '1'],
                'corefx_tieredcompilation'       : ['COMPlus_EXPERIMENTAL_TieredCompilation' : '1'],
@@ -604,6 +605,7 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
         case 'jitstress2_jitstressregs0x1000':
         case 'tailcallstress':
         case 'jitsse2only':
+        case 'jitnosimd':
         case 'corefx_baseline':
         case 'corefx_minopts':
         case 'corefx_jitstress1':
@@ -871,6 +873,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                         case 'jitstress2_jitstressregs0x1000':
                         case 'tailcallstress':
                         case 'jitsse2only':
+                        case 'jitnosimd':
                         case 'gcstress0x3':
                         case 'gcstress0xc':
                         case 'zapdisable':
@@ -1046,6 +1049,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                         case 'jitstress2_jitstressregs0x1000':
                         case 'tailcallstress':
                         case 'jitsse2only':
+                        case 'jitnosimd':
                         case 'gcstress0x3':
                         case 'gcstress0xc':
                         case 'zapdisable':
@@ -1378,6 +1382,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                 case 'jitstress2_jitstressregs0x1000':
                 case 'tailcallstress':
                 case 'jitsse2only':
+                case 'jitnosimd':
                 case 'gcstress0x3':
                 case 'gcstress0xc':
                 case 'zapdisable':
@@ -1664,7 +1669,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                             def workspaceRelativeFxRoot = "_/fx"
                             def absoluteFxRoot = "%WORKSPACE%\\_\\fx"
 
-                            buildCommands += "python -u %WORKSPACE%\\tests\\scripts\\run-corefx-tests.py -arch ${arch} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${branch} -env_script ${envScriptPath}"
+                            buildCommands += "python -u %WORKSPACE%\\tests\\scripts\\run-corefx-tests.py -arch ${arch} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${branch} -env_script ${envScriptPath}"
 
                             setTestJobTimeOut(newJob, scenario)
 
@@ -1819,18 +1824,13 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     if (scenario == 'standalone_gc') {
                         standaloneGc = 'buildstandalonegc'
                     }
-                    
-                    def disablePgo = ''
-                    if (lowerConfiguration == 'release') {
-                        disablePgo = 'nopgooptimize'
-                    }
 
                     if (!enableCorefxTesting) {
                         // We run pal tests on all OS but generate mscorlib (and thus, nuget packages)
                         // only on supported OS platforms.
                         def bootstrapRid = Utilities.getBoostrapPublishRid(os)
                         def bootstrapRidEnv = bootstrapRid != null ? "__PUBLISH_RID=${bootstrapRid} " : ''
-                        buildCommands += "${bootstrapRidEnv}./build.sh verbose ${lowerConfiguration} ${architecture} ${standaloneGc} ${disablePgo}"
+                        buildCommands += "${bootstrapRidEnv}./build.sh verbose ${lowerConfiguration} ${architecture} ${standaloneGc}"
                         buildCommands += "src/pal/tests/palsuite/runpaltests.sh \${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration} \${WORKSPACE}/bin/paltestout"
 
                         // Set time out
@@ -1857,7 +1857,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         def workspaceRelativeFxRoot = "_/fx"
                         def absoluteFxRoot = "\$WORKSPACE/${workspaceRelativeFxRoot}"
 
-                        buildCommands += "python -u \$WORKSPACE/tests/scripts/run-corefx-tests.py -arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${branch} -env_script ${scriptFileName}"
+                        buildCommands += "python -u \$WORKSPACE/tests/scripts/run-corefx-tests.py -arch ${architecture} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${branch} -env_script ${scriptFileName}"
 
                         setTestJobTimeOut(newJob, scenario)
 

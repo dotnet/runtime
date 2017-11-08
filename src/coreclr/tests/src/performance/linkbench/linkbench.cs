@@ -237,7 +237,7 @@ namespace LinkBench
         public static string AssetsDir;
         private static Benchmark CurrentBenchmark;
 
-        private static Benchmark[] Benchmarks =
+        public static readonly Benchmark[] Benchmarks =
         {
             // If no benchmark name is specified at the command line, 
             // all benchmarks are set to be run by default.
@@ -272,107 +272,41 @@ namespace LinkBench
                 () => Benchmark.AddLinkerReference("roslyn\\src\\Compilers\\CSharp\\csc\\csc.csproj"), true)
         };
 
-        static int UsageError()
+        public static int Main(string[] args)
         {
-            Console.WriteLine("Usage: LinkBench [--nosetup] [--nobuild] [--perf:runid <id>] [<benchmarks>]");
-            Console.WriteLine("  --nosetup: Don't clone and fixup benchmark repositories");
-            Console.WriteLine("  --nobuild: Don't build and link benchmarks");
-            Console.WriteLine("  --perf:runid: Specify the ID to append to benchmark result files");
-            Console.WriteLine("  --perf:outputdir: Specify the output directory used by xUnit Performance");
-            Console.WriteLine("    Benchmarks: HelloWorld, WebAPI, MusicStore, MusicStore_R2R, CoreFX, Roslyn");
-            Console.WriteLine("                Default is to run all the above benchmarks.");
-            return -4;
-        }
+            var options = BenchmarkOptions.Parse(args);
 
-        public static int Main(String [] args)
-        {
-            bool doSetup = true;
-            bool doBuild = true;
-            string runId = "";
-            string outputdir = ".";
-            string runOne = null;
             bool benchmarkSpecified = false;
-
-            for (int i = 0; i < args.Length; i++)
+            foreach (Benchmark benchmark in Benchmarks)
             {
-                if (String.Compare(args[i], "--nosetup", true) == 0)
+                if (options.BenchmarkNames.Contains(benchmark.Name, StringComparer.OrdinalIgnoreCase))
                 {
-                    doSetup = false;
-                }
-                else if (String.Compare(args[i], "--nobuild", true) == 0)
-                {
-                    doSetup = false;
-                    doBuild = false;
-                }
-                else if (String.Compare(args[i], "--perf:runid", true) == 0)
-                {
-                    if (i + 1 < args.Length)
-                    {
-                        runId = args[++i] + "-";
-                    }
-                    else
-                    {
-                        Console.WriteLine("Missing runID ");
-                        return UsageError();
-                    }
-                }
-                else if (String.Compare(args[i], "--perf:outputdir", true) == 0)
-                {
-                    if (i + 1 < args.Length)
-                    {
-                        outputdir = args[++i];
-                    }
-                    else
-                    {
-                        Console.WriteLine("Missing output directory.");
-                        return UsageError();
-                    }
-                }
-                else if (args[i].Equals("--target-architecture", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (i + 1 < args.Length)
-                    {
-                        ++i; // Ignore this argument.
-                    }
-                    else
-                    {
-                        Console.WriteLine("Missing target architecture.");
-                        return UsageError();
-                    }
-                }
-                else if (args[i][0] == '-')
-                {
-                    Console.WriteLine("Unknown Option {0}", args[i]);
-                    return UsageError();
-                }
-                else
-                {
-                    foreach (Benchmark benchmark in Benchmarks)
-                    {
-                        if (String.Compare(args[i], benchmark.Name, true) == 0)
-                        {
-                            benchmark.SetToRun();
-                            benchmarkSpecified = true;
-                            break;
-                        }
-                    }
-
-                    if (!benchmarkSpecified)
-                    {
-                        Console.WriteLine("Unknown Benchmark {0}", args[i]);
-                    }
+                    benchmark.SetToRun();
+                    benchmarkSpecified = true;
+                    break;
                 }
             }
 
-            // If benchmarks are not explicitly specified, run the default set of benchmarks
-            if (!benchmarkSpecified)
+            var arguments = new List<string>();
+            string runId = "";
+            for (int i = 0; i < args.Length; i++)
             {
-                foreach (Benchmark benchmark in Benchmarks)
+                if (string.Compare(args[i], "--perf:runid", true) == 0)
                 {
-                    if (benchmark.runByDefault)
+                    if (i + 1 < args.Length)
                     {
-                        benchmark.SetToRun();
+                        runId = args[++i];
                     }
+                    else
+                    {
+                        Console.WriteLine("Missing --perf:runid");
+                        Console.WriteLine(BenchmarkOptions.Usage());
+                        Environment.Exit(1);
+                    }
+                }
+                else
+                {
+                    arguments.Add(args[i]);
                 }
             }
 
@@ -398,12 +332,12 @@ namespace LinkBench
             Environment.SetEnvironmentVariable("LinkBenchRoot", LinkBenchRoot);
             Environment.SetEnvironmentVariable("__dotnet", LinkBenchRoot + "\\.Net\\dotnet.exe");
             Environment.SetEnvironmentVariable("__dotnet2", LinkBenchRoot + "\\.Net2\\dotnet.exe");
-            
 
-            // Update the build files to facilitate the link step
-            if (doSetup)
+
+            PrintHeader("Update the build files to facilitate the link step.");
+            if (options.DoSetup)
             {
-                // Clone the benchmarks
+                PrintHeader("Clone the benchmarks.");
                 using (var setup = new Process())
                 {
                     setup.StartInfo.FileName = ScriptDir + "clone.cmd";
@@ -411,13 +345,12 @@ namespace LinkBench
                     setup.WaitForExit();
                     if (setup.ExitCode != 0)
                     {
-                        Console.WriteLine("Benchmark Setup failed");
+                        PrintHeader("Benchmark Setup failed");
                         return -2;
                     }
                 }
 
-                // Setup the benchmarks
-
+                PrintHeader("Setup the benchmarks.");
                 foreach (Benchmark benchmark in Benchmarks)
                 {
                     if (benchmark.doRun && benchmark.Setup != null)
@@ -427,7 +360,7 @@ namespace LinkBench
                 }
             }
 
-            if (doBuild)
+            if (options.DoBuild)
             {
                 // Run the setup Script, which clones, builds and links the benchmarks.
                 using (var setup = new Process())
@@ -456,15 +389,12 @@ namespace LinkBench
             {
                 CurrentBenchmark = Benchmarks[i];
                 if (!CurrentBenchmark.doRun)
-                {
                     continue;
-                }
 
-                string[] scriptArgs = {
-                    "--perf:runid", runId + CurrentBenchmark.Name,
-                    "--perf:outputdir", outputdir
-                };
-                using (var h = new XunitPerformanceHarness(scriptArgs))
+                var newArgs = new List<string>(arguments);
+                newArgs.AddRange(new[] { "--perf:runid", $"{runId}-{CurrentBenchmark.Name}", });
+                Console.WriteLine($"{string.Join(" ", newArgs)}");
+                using (var h = new XunitPerformanceHarness(newArgs.ToArray()))
                 {
                     var configuration = new ScenarioConfiguration(new TimeSpan(2000000), emptyCmd);
                     h.RunScenario(configuration, PostRun);
@@ -472,6 +402,14 @@ namespace LinkBench
             }
 
             return 0;
+        }
+
+        private static void PrintHeader(string message)
+        {
+            Console.WriteLine();
+            Console.WriteLine("**********************************************************************");
+            Console.WriteLine($"** [{DateTime.Now}] {message}");
+            Console.WriteLine("**********************************************************************");
         }
 
         private static ScenarioBenchmark PostRun()

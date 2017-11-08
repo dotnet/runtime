@@ -1910,7 +1910,7 @@ PendingArgsStack::PendingArgsStack(unsigned maxDepth, Compiler* pComp)
     /* Do we need an array as well as the mask ? */
 
     if (pasMaxDepth > BITS_IN_pasMask)
-        pasTopArray = (BYTE*)pComp->compGetMemA(pasMaxDepth - BITS_IN_pasMask);
+        pasTopArray = (BYTE*)pComp->compGetMem(pasMaxDepth - BITS_IN_pasMask);
 }
 
 //-----------------------------------------------------------------------------
@@ -3744,11 +3744,10 @@ void GCInfo::gcFindPtrsInFrame(const void* infoBlock, const void* codeBlock, uns
 #else // !JIT32_GCENCODER
 
 #include "gcinfoencoder.h"
-#include "simplerhash.h"
 
 // Do explicit instantiation.
-template class SimplerHashTable<RegSlotIdKey, RegSlotIdKey, GcSlotId, JitSimplerHashBehavior>;
-template class SimplerHashTable<StackSlotIdKey, StackSlotIdKey, GcSlotId, JitSimplerHashBehavior>;
+template class JitHashTable<RegSlotIdKey, RegSlotIdKey, GcSlotId>;
+template class JitHashTable<StackSlotIdKey, StackSlotIdKey, GcSlotId>;
 
 #ifdef DEBUG
 

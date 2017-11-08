@@ -4302,16 +4302,6 @@ __forceinline void* Compiler::compGetMemArray(size_t numElem, size_t elemSize, C
     return compGetMem(numElem * elemSize, cmk);
 }
 
-__forceinline void* Compiler::compGetMemArrayA(size_t numElem, size_t elemSize, CompMemKind cmk)
-{
-    if (numElem > (MAX_MEMORY_PER_ALLOCATION / elemSize))
-    {
-        NOMEM();
-    }
-
-    return compGetMemA(numElem * elemSize, cmk);
-}
-
 /******************************************************************************
  *
  *  Roundup the allocated size so that if this memory block is aligned,
@@ -4319,30 +4309,9 @@ __forceinline void* Compiler::compGetMemArrayA(size_t numElem, size_t elemSize, 
  *  The JIT will always try to keep all the blocks aligned.
  */
 
-inline void* Compiler::compGetMemA(size_t sz, CompMemKind cmk)
-{
-    assert(sz);
-
-    size_t allocSz = roundUp(sz, sizeof(size_t));
-
-#if MEASURE_MEM_ALLOC
-    genMemStats.AddAlloc(allocSz, cmk);
-#endif
-
-    void* ptr = compAllocator->allocateMemory(allocSz);
-
-    // Verify that the current block is aligned. Only then will the next
-    // block allocated be on an aligned boundary.
-    assert((size_t(ptr) & (sizeof(size_t) - 1)) == 0);
-
-    return ptr;
-}
-
 inline void Compiler::compFreeMem(void* ptr)
 {
 }
-
-#define compFreeMem(ptr) compFreeMem((void*)ptr)
 
 inline bool Compiler::compIsProfilerHookNeeded()
 {
@@ -5110,16 +5079,6 @@ inline void* __cdecl operator new[](size_t sz, Compiler* context, CompMemKind cm
 inline void* __cdecl operator new(size_t sz, void* p, const jitstd::placement_t& /* syntax_difference */)
 {
     return p;
-}
-
-inline void* __cdecl operator new(size_t sz, IAllocator* alloc)
-{
-    return alloc->Alloc(sz);
-}
-
-inline void* __cdecl operator new[](size_t sz, IAllocator* alloc)
-{
-    return alloc->Alloc(sz);
 }
 
 /*****************************************************************************/
