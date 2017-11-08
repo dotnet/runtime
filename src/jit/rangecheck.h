@@ -93,7 +93,7 @@ struct Limit
     {
     }
 
-    Limit(LimitType type, int cns) : cns(cns), type(type)
+    Limit(LimitType type, int cns) : cns(cns), vn(ValueNumStore::NoVN), type(type)
     {
         assert(type == keConstant);
     }
