@@ -721,9 +721,9 @@ void LinearScan::applyCalleeSaveHeuristics(RefPosition* rp)
     Interval* theInterval = rp->getInterval();
 
 #ifdef DEBUG
-    regMaskTP calleeSaveMask = calleeSaveRegs(getRegisterType(theInterval, rp));
     if (doReverseCallerCallee())
     {
+        regMaskTP calleeSaveMask = calleeSaveRegs(theInterval->registerType);
         rp->registerAssignment =
             getConstrainedRegMask(rp->registerAssignment, calleeSaveMask, rp->minRegCandidateCount);
     }
@@ -1119,7 +1119,7 @@ LinearScanInterface* getLinearScanAllocator(Compiler* comp)
 LinearScan::LinearScan(Compiler* theCompiler)
     : compiler(theCompiler)
 #if MEASURE_MEM_ALLOC
-    , lsraIAllocator(nullptr)
+    , lsraAllocator(nullptr)
 #endif // MEASURE_MEM_ALLOC
     , intervals(LinearScanMemoryAllocatorInterval(theCompiler))
     , refPositions(LinearScanMemoryAllocatorRefPosition(theCompiler))
@@ -1131,7 +1131,6 @@ LinearScan::LinearScan(Compiler* theCompiler)
     // Get the value of the environment variable that controls stress for register allocation
     lsraStressMask = JitConfig.JitStressRegs();
 #if 0
-#ifdef DEBUG
     if (lsraStressMask != 0)
     {
         // The code in this #if can be used to debug JitStressRegs issues according to
@@ -1163,10 +1162,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
             printf("");         // in our logic this causes a flush
         }
     }
-#endif // DEBUG
-#endif
-
-    dumpTerse = (JitConfig.JitDumpTerseLsra() != 0);
+#endif // 0
 #endif // DEBUG
 
     enregisterLocalVars = ((compiler->opts.compFlags & CLFLG_REGVAR) != 0) && compiler->lvaTrackedCount > 0;
@@ -3029,7 +3025,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
         // CORINFO_HELP_ASSIGN_BYREF helper, which kills callee-saved RSI and RDI, if
         // LSRA doesn't assign RSI/RDI, they wouldn't get marked as modified until codegen,
         // which is too late.
-        compiler->codeGen->regSet.rsSetRegsModified(killMask DEBUGARG(dumpTerse));
+        compiler->codeGen->regSet.rsSetRegsModified(killMask DEBUGARG(true));
 
         addRefsForPhysRegMask(killMask, currentLoc, RefTypeKill, true);
 
@@ -6153,8 +6149,15 @@ bool LinearScan::isSpillCandidate(Interval*     current,
 #endif
     {
         RefPosition* nextPhysRegPosition = physRegRecord->getNextRefPosition();
-        assert((nextPhysRegPosition->nodeLocation == refLocation && candidateBit != refPosition->registerAssignment)
-                   ARM64_ONLY(|| (physRegRecord->regNum == REG_IP0) || (physRegRecord->regNum == REG_IP1)));
+#ifdef _TARGET_ARM64_
+        // On ARM64, we may need to actually allocate IP0 and IP1 in some cases, but we don't include it in
+        // the allocation order for tryAllocateFreeReg.
+        if ((physRegRecord->regNum != REG_IP0) && (physRegRecord->regNum != REG_IP1))
+#endif // _TARGET_ARM64_
+        {
+            assert((nextPhysRegPosition != nullptr) && (nextPhysRegPosition->nodeLocation == refLocation) &&
+                   (candidateBit != refPosition->registerAssignment));
+        }
         return false;
     }
 
@@ -6635,7 +6638,7 @@ void LinearScan::checkAndAssignInterval(RegRecord* regRec, Interval* interval)
 void LinearScan::assignPhysReg(RegRecord* regRec, Interval* interval)
 {
     regMaskTP assignedRegMask = genRegMask(regRec->regNum);
-    compiler->codeGen->regSet.rsSetRegsModified(assignedRegMask DEBUGARG(dumpTerse));
+    compiler->codeGen->regSet.rsSetRegsModified(assignedRegMask DEBUGARG(true));
 
     checkAndAssignInterval(regRec, interval);
     interval->assignedReg = regRec;
@@ -6940,15 +6943,6 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
         assert(anotherRegRec->assignedInterval == nullptr);
     }
 #endif // _TARGET_ARM_
-
-#ifdef DEBUG
-    if (VERBOSE && !dumpTerse)
-    {
-        printf("unassigning %s: ", getRegName(regRec->regNum));
-        assignedInterval->dump();
-        printf("\n");
-    }
-#endif // DEBUG
 
     RefPosition* nextRefPosition = nullptr;
     if (spillRefPosition != nullptr)
@@ -7807,12 +7801,11 @@ void LinearScan::allocateRegisters()
 
         printf("\n\nAllocating Registers\n"
                "--------------------\n");
-        if (dumpTerse)
-        {
-            dumpRegRecordHeader();
-            // Now print an empty indent
-            printf(indentFormat, "");
-        }
+        // Start with a small set of commonly used registers, so that we don't keep having to print a new title.
+        registersToDump = LsraLimitSmallIntSet | LsraLimitSmallFPSet;
+        dumpRegRecordHeader();
+        // Now print an empty "RefPosition", since we complete the dump of the regs at the beginning of the loop.
+        printf(indentFormat, "");
     }
 #endif // DEBUG
 
@@ -7838,16 +7831,9 @@ void LinearScan::allocateRegisters()
         activeRefPosition = nullptr;
         if (VERBOSE)
         {
-            if (dumpTerse)
-            {
-                // We're really dumping the RegRecords "after" the previous RefPosition, but it's more convenient
-                // to do this here, since there are a number of "continue"s in this loop.
-                dumpRegRecords();
-            }
-            else
-            {
-                printf("\n");
-            }
+            // We're really dumping the RegRecords "after" the previous RefPosition, but it's more convenient
+            // to do this here, since there are a number of "continue"s in this loop.
+            dumpRegRecords();
         }
 #endif // DEBUG
 
@@ -7912,6 +7898,10 @@ void LinearScan::allocateRegisters()
             assert((refType == RefTypeBB) || (refType == RefTypeKillGCRefs));
         }
 
+#ifdef DEBUG
+        activeRefPosition = currentRefPosition;
+#endif // DEBUG
+
         // For the purposes of register resolution, we handle the DummyDefs before
         // the block boundary - so the RefTypeBB is after all the DummyDefs.
         // However, for the purposes of allocation, we want to handle the block
@@ -7929,35 +7919,14 @@ void LinearScan::allocateRegisters()
             if (currentBlock == nullptr)
             {
                 currentBlock = startBlockSequence();
+                INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_START_BB, nullptr, REG_NA, compiler->fgFirstBB));
             }
             else
             {
                 processBlockEndAllocation(currentBlock);
                 currentBlock = moveToNextBlock();
             }
-#ifdef DEBUG
-            if (VERBOSE && currentBlock != nullptr && !dumpTerse)
-            {
-                currentBlock->dspBlockHeader(compiler);
-                printf("\n");
-            }
-#endif // DEBUG
         }
-
-#ifdef DEBUG
-        activeRefPosition = currentRefPosition;
-        if (VERBOSE)
-        {
-            if (dumpTerse)
-            {
-                dumpRefPositionShort(currentRefPosition, currentBlock);
-            }
-            else
-            {
-                currentRefPosition->dump();
-            }
-        }
-#endif // DEBUG
 
         if (refType == RefTypeBB)
         {
@@ -8014,12 +7983,6 @@ void LinearScan::allocateRegisters()
         {
             currentInterval  = currentRefPosition->getInterval();
             assignedRegister = currentInterval->physReg;
-#if DEBUG
-            if (VERBOSE && !dumpTerse)
-            {
-                currentInterval->dump();
-            }
-#endif // DEBUG
 
             // Identify the special cases where we decide up-front not to allocate
             bool allocate = true;
@@ -8442,11 +8405,11 @@ void LinearScan::allocateRegisters()
                     if (currentInterval->isConstant && (currentRefPosition->treeNode != nullptr) &&
                         currentRefPosition->treeNode->IsReuseRegVal())
                     {
-                        dumpLsraAllocationEvent(LSRA_EVENT_REUSE_REG, nullptr, assignedRegister, currentBlock);
+                        dumpLsraAllocationEvent(LSRA_EVENT_REUSE_REG, currentInterval, assignedRegister, currentBlock);
                     }
                     else
                     {
-                        dumpLsraAllocationEvent(LSRA_EVENT_ALLOC_REG, nullptr, assignedRegister, currentBlock);
+                        dumpLsraAllocationEvent(LSRA_EVENT_ALLOC_REG, currentInterval, assignedRegister, currentBlock);
                     }
                 }
             }
@@ -8533,12 +8496,9 @@ void LinearScan::allocateRegisters()
 #ifdef DEBUG
     if (VERBOSE)
     {
-        if (dumpTerse)
-        {
-            // Dump the RegRecords after the last RefPosition is handled.
-            dumpRegRecords();
-            printf("\n");
-        }
+        // Dump the RegRecords after the last RefPosition is handled.
+        dumpRegRecords();
+        printf("\n");
 
         dumpRefPositions("AFTER ALLOCATION");
         dumpVarRefPositions("AFTER ALLOCATION");
@@ -11022,7 +10982,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 }
                 else
                 {
-                    compiler->codeGen->regSet.rsSetRegsModified(genRegMask(tempReg) DEBUGARG(dumpTerse));
+                    compiler->codeGen->regSet.rsSetRegsModified(genRegMask(tempReg) DEBUGARG(true));
 #ifdef _TARGET_ARM_
                     if (sourceIntervals[fromReg]->registerType == TYP_DOUBLE)
                     {
@@ -12130,358 +12090,173 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
     {
         return;
     }
+    if ((interval != nullptr) && (reg != REG_NA) && (reg != REG_STK))
+    {
+        registersToDump |= genRegMask(reg);
+        dumpRegRecordTitleIfNeeded();
+    }
+
     switch (event)
     {
         // Conflicting def/use
         case LSRA_EVENT_DEFUSE_CONFLICT:
-            if (!dumpTerse)
-            {
-                printf("  Def and Use have conflicting register requirements:");
-            }
-            else
-            {
-                printf("DUconflict ");
-                dumpRegRecords();
-            }
-            break;
-        case LSRA_EVENT_DEFUSE_FIXED_DELAY_USE:
-            if (!dumpTerse)
-            {
-                printf(" Can't change useAssignment ");
-            }
+            dumpRefPositionShort(activeRefPosition, currentBlock);
+            printf("DUconflict ");
+            dumpRegRecords();
             break;
         case LSRA_EVENT_DEFUSE_CASE1:
-            if (!dumpTerse)
-            {
-                printf(" case #1, use the defRegAssignment\n");
-            }
-            else
-            {
-                printf(indentFormat, " case #1 use defRegAssignment");
-                dumpRegRecords();
-                dumpEmptyRefPosition();
-            }
+            printf(indentFormat, "  Case #1 use defRegAssignment");
+            dumpRegRecords();
             break;
         case LSRA_EVENT_DEFUSE_CASE2:
-            if (!dumpTerse)
-            {
-                printf(" case #2, use the useRegAssignment\n");
-            }
-            else
-            {
-                printf(indentFormat, " case #2 use useRegAssignment");
-                dumpRegRecords();
-                dumpEmptyRefPosition();
-            }
+            printf(indentFormat, "  Case #2 use useRegAssignment");
+            dumpRegRecords();
             break;
         case LSRA_EVENT_DEFUSE_CASE3:
-            if (!dumpTerse)
-            {
-                printf(" case #3, change the defRegAssignment to the use regs\n");
-            }
-            else
-            {
-                printf(indentFormat, " case #3 use useRegAssignment");
-                dumpRegRecords();
-                dumpEmptyRefPosition();
-            }
+            printf(indentFormat, "  Case #3 use useRegAssignment");
+            dumpRegRecords();
+            dumpRegRecords();
             break;
         case LSRA_EVENT_DEFUSE_CASE4:
-            if (!dumpTerse)
-            {
-                printf(" case #4, change the useRegAssignment to the def regs\n");
-            }
-            else
-            {
-                printf(indentFormat, " case #4 use defRegAssignment");
-                dumpRegRecords();
-                dumpEmptyRefPosition();
-            }
+            printf(indentFormat, "  Case #4 use defRegAssignment");
+            dumpRegRecords();
             break;
         case LSRA_EVENT_DEFUSE_CASE5:
-            if (!dumpTerse)
-            {
-                printf(" case #5, Conflicting Def and Use single-register requirements require copies - set def to all "
-                       "regs of the appropriate type\n");
-            }
-            else
-            {
-                printf(indentFormat, " case #5 set def to all regs");
-                dumpRegRecords();
-                dumpEmptyRefPosition();
-            }
+            printf(indentFormat, "  Case #5 set def to all regs");
+            dumpRegRecords();
             break;
         case LSRA_EVENT_DEFUSE_CASE6:
-            if (!dumpTerse)
-            {
-                printf(" case #6, Conflicting Def and Use register requirements require a copy\n");
-            }
-            else
-            {
-                printf(indentFormat, " case #6 need a copy");
-                dumpRegRecords();
-                dumpEmptyRefPosition();
-            }
+            printf(indentFormat, "  Case #6 need a copy");
+            dumpRegRecords();
             break;
 
         case LSRA_EVENT_SPILL:
-            if (!dumpTerse)
-            {
-                printf("Spilled:\n");
-                interval->dump();
-            }
-            else
-            {
-                assert(interval != nullptr && interval->assignedReg != nullptr);
-                printf("Spill %-4s ", getRegName(interval->assignedReg->regNum));
-                dumpRegRecords();
-                dumpEmptyRefPosition();
-            }
-            break;
-        case LSRA_EVENT_SPILL_EXTENDED_LIFETIME:
-            if (!dumpTerse)
-            {
-                printf("  Spilled extended lifetime var V%02u at last use; not marked for actual spill.",
-                       interval->intervalIndex);
-            }
+            dumpRefPositionShort(activeRefPosition, currentBlock);
+            assert(interval != nullptr && interval->assignedReg != nullptr);
+            printf("Spill %-4s ", getRegName(interval->assignedReg->regNum));
+            dumpRegRecords();
             break;
 
         // Restoring the previous register
         case LSRA_EVENT_RESTORE_PREVIOUS_INTERVAL_AFTER_SPILL:
             assert(interval != nullptr);
-            if (!dumpTerse)
-            {
-                printf("  Assign register %s to previous interval Ivl:%d after spill\n", getRegName(reg),
-                       interval->intervalIndex);
-            }
-            else
-            {
-                // If we spilled, then the dump is already pre-indented, but we need to pre-indent for the subsequent
-                // allocation
-                // with a dumpEmptyRefPosition().
-                printf("SRstr %-4s ", getRegName(reg));
-                dumpRegRecords();
-                dumpEmptyRefPosition();
-            }
+            dumpRefPositionShort(activeRefPosition, currentBlock);
+            printf("SRstr %-4s ", getRegName(reg));
+            dumpRegRecords();
             break;
+
         case LSRA_EVENT_RESTORE_PREVIOUS_INTERVAL:
             assert(interval != nullptr);
-            if (!dumpTerse)
+            if (activeRefPosition == nullptr)
             {
-                printf("  Assign register %s to previous interval Ivl:%d\n", getRegName(reg), interval->intervalIndex);
+                printf(emptyRefPositionFormat, "");
             }
             else
             {
-                if (activeRefPosition == nullptr)
-                {
-                    printf(emptyRefPositionFormat, "");
-                }
-                printf("Restr %-4s ", getRegName(reg));
-                dumpRegRecords();
-                if (activeRefPosition != nullptr)
-                {
-                    printf(emptyRefPositionFormat, "");
-                }
+                dumpRefPositionShort(activeRefPosition, currentBlock);
+            }
+            printf("Restr %-4s ", getRegName(reg));
+            dumpRegRecords();
+            if (activeRefPosition != nullptr)
+            {
+                printf(emptyRefPositionFormat, "");
             }
             break;
 
         // Done with GC Kills
         case LSRA_EVENT_DONE_KILL_GC_REFS:
-            printf("DoneKillGC ");
+            printf(indentFormat, "  DoneKillGC ");
             break;
 
         // Block boundaries
         case LSRA_EVENT_START_BB:
             assert(currentBlock != nullptr);
-            if (!dumpTerse)
-            {
-                printf("\n\n  Live Vars(Regs) at start of BB%02u (from pred BB%02u):", currentBlock->bbNum,
-                       blockInfo[currentBlock->bbNum].predBBNum);
-                dumpVarToRegMap(inVarToRegMaps[currentBlock->bbNum]);
-            }
-            break;
-        case LSRA_EVENT_END_BB:
-            if (!dumpTerse)
-            {
-                printf("\n\n  Live Vars(Regs) after BB%02u:", currentBlock->bbNum);
-                dumpVarToRegMap(outVarToRegMaps[currentBlock->bbNum]);
-            }
-            break;
-
-        case LSRA_EVENT_FREE_REGS:
-            if (!dumpTerse)
-            {
-                printf("Freeing registers:\n");
-            }
-            break;
-
-        // Characteristics of the current RefPosition
-        case LSRA_EVENT_INCREMENT_RANGE_END:
-            if (!dumpTerse)
-            {
-                printf("  Incrementing nextPhysRegLocation for %s\n", getRegName(reg));
-            }
-            // else ???
-            break;
-        case LSRA_EVENT_LAST_USE:
-            if (!dumpTerse)
-            {
-                printf("    Last use, marked to be freed\n");
-            }
-            break;
-        case LSRA_EVENT_LAST_USE_DELAYED:
-            if (!dumpTerse)
-            {
-                printf("    Last use, marked to be freed (delayed)\n");
-            }
-            break;
-        case LSRA_EVENT_NEEDS_NEW_REG:
-            if (!dumpTerse)
-            {
-                printf("    Needs new register; mark %s to be freed\n", getRegName(reg));
-            }
-            else
-            {
-                printf("Free  %-4s ", getRegName(reg));
-                dumpRegRecords();
-                dumpEmptyRefPosition();
-            }
+            dumpRefPositionShort(activeRefPosition, currentBlock);
             break;
 
         // Allocation decisions
-        case LSRA_EVENT_FIXED_REG:
-        case LSRA_EVENT_EXP_USE:
-            if (!dumpTerse)
-            {
-                printf("No allocation\n");
-            }
-            else
-            {
-                printf("Keep  %-4s ", getRegName(reg));
-            }
+        case LSRA_EVENT_NEEDS_NEW_REG:
+            dumpRefPositionShort(activeRefPosition, currentBlock);
+            printf("Free  %-4s ", getRegName(reg));
+            dumpRegRecords();
             break;
+
         case LSRA_EVENT_ZERO_REF:
             assert(interval != nullptr && interval->isLocalVar);
-            if (!dumpTerse)
-            {
-                printf("Marking V%02u as last use there are no actual references\n", interval->varNum);
-            }
-            else
-            {
-                printf("NoRef      ");
-                dumpRegRecords();
-                dumpEmptyRefPosition();
-            }
+            dumpRefPositionShort(activeRefPosition, currentBlock);
+            printf("NoRef      ");
+            dumpRegRecords();
             break;
+
+        case LSRA_EVENT_FIXED_REG:
+        case LSRA_EVENT_EXP_USE:
         case LSRA_EVENT_KEPT_ALLOCATION:
-            if (!dumpTerse)
-            {
-                printf("already allocated %4s\n", getRegName(reg));
-            }
-            else
-            {
-                printf("Keep  %-4s ", getRegName(reg));
-            }
+            dumpRefPositionShort(activeRefPosition, currentBlock);
+            printf("Keep  %-4s ", getRegName(reg));
             break;
+
         case LSRA_EVENT_COPY_REG:
             assert(interval != nullptr && interval->recentRefPosition != nullptr);
-            if (!dumpTerse)
-            {
-                printf("allocated %s as copyReg\n\n", getRegName(reg));
-            }
-            else
-            {
-                printf("Copy  %-4s ", getRegName(reg));
-            }
+            dumpRefPositionShort(activeRefPosition, currentBlock);
+            printf("Copy  %-4s ", getRegName(reg));
             break;
+
         case LSRA_EVENT_MOVE_REG:
             assert(interval != nullptr && interval->recentRefPosition != nullptr);
-            if (!dumpTerse)
-            {
-                printf("  needs a new register; marked as moveReg\n");
-            }
-            else
-            {
-                printf("Move  %-4s ", getRegName(reg));
-                dumpRegRecords();
-                dumpEmptyRefPosition();
-            }
+            dumpRefPositionShort(activeRefPosition, currentBlock);
+            printf("Move  %-4s ", getRegName(reg));
+            dumpRegRecords();
             break;
+
         case LSRA_EVENT_ALLOC_REG:
-            if (!dumpTerse)
-            {
-                printf("allocated %s\n", getRegName(reg));
-            }
-            else
-            {
-                printf("Alloc %-4s ", getRegName(reg));
-            }
+            dumpRefPositionShort(activeRefPosition, currentBlock);
+            printf("Alloc %-4s ", getRegName(reg));
             break;
+
         case LSRA_EVENT_REUSE_REG:
-            if (!dumpTerse)
-            {
-                printf("reused constant in %s\n", getRegName(reg));
-            }
-            else
-            {
-                printf("Reuse %-4s ", getRegName(reg));
-            }
+            dumpRefPositionShort(activeRefPosition, currentBlock);
+            printf("Reuse %-4s ", getRegName(reg));
             break;
+
         case LSRA_EVENT_ALLOC_SPILLED_REG:
-            if (!dumpTerse)
-            {
-                printf("allocated spilled register %s\n", getRegName(reg));
-            }
-            else
-            {
-                printf("Steal %-4s ", getRegName(reg));
-            }
+            dumpRefPositionShort(activeRefPosition, currentBlock);
+            printf("Steal %-4s ", getRegName(reg));
             break;
+
         case LSRA_EVENT_NO_ENTRY_REG_ALLOCATED:
             assert(interval != nullptr && interval->isLocalVar);
-            if (!dumpTerse)
-            {
-                printf("Not allocating an entry register for V%02u due to low ref count\n", interval->varNum);
-            }
-            else
-            {
-                printf("LoRef      ");
-            }
+            dumpRefPositionShort(activeRefPosition, currentBlock);
+            printf("LoRef      ");
             break;
+
         case LSRA_EVENT_NO_REG_ALLOCATED:
-            if (!dumpTerse)
-            {
-                printf("no register allocated\n");
-            }
-            else
-            {
-                printf("NoReg      ");
-            }
+            dumpRefPositionShort(activeRefPosition, currentBlock);
+            printf("NoReg      ");
             break;
+
         case LSRA_EVENT_RELOAD:
-            if (!dumpTerse)
-            {
-                printf("    Marked for reload\n");
-            }
-            else
-            {
-                printf("ReLod %-4s ", getRegName(reg));
-                dumpRegRecords();
-                dumpEmptyRefPosition();
-            }
+            dumpRefPositionShort(activeRefPosition, currentBlock);
+            printf("ReLod %-4s ", getRegName(reg));
+            dumpRegRecords();
             break;
+
         case LSRA_EVENT_SPECIAL_PUTARG:
-            if (!dumpTerse)
-            {
-                printf("    Special case of putArg - using lclVar that's in the expected reg\n");
-            }
-            else
-            {
-                printf("PtArg %-4s ", getRegName(reg));
-            }
+            dumpRefPositionShort(activeRefPosition, currentBlock);
+            printf("PtArg %-4s ", getRegName(reg));
             break;
+
+        // We currently don't dump anything for these events.
+        case LSRA_EVENT_DEFUSE_FIXED_DELAY_USE:
+        case LSRA_EVENT_SPILL_EXTENDED_LIFETIME:
+        case LSRA_EVENT_END_BB:
+        case LSRA_EVENT_FREE_REGS:
+        case LSRA_EVENT_INCREMENT_RANGE_END:
+        case LSRA_EVENT_LAST_USE:
+        case LSRA_EVENT_LAST_USE_DELAYED:
+            break;
+
         default:
-            break;
+            unreached();
     }
 }
 
@@ -12601,23 +12376,27 @@ void LinearScan::dumpRegRecordHeader()
     sprintf_s(legendFormat, MAX_LEGEND_FORMAT_CHARS, "%%-%d.%ds%%-%d.%ds%%-%ds%%s", nodeLocationWidth + 1,
               nodeLocationWidth + 1, refPositionWidth + 2, refPositionWidth + 2, regColumnWidth + 1);
 
-    // Finally, print a "title row" including the legend and the reg names
-    dumpRegRecordTitle();
+    // Print a "title row" including the legend and the reg names.
+    lastDumpedRegisters = RBM_NONE;
+    dumpRegRecordTitleIfNeeded();
 }
 
-int LinearScan::getLastUsedRegNumIndex()
+void LinearScan::dumpRegRecordTitleIfNeeded()
 {
-    int       lastUsedRegNumIndex = 0;
-    regMaskTP usedRegsMask        = compiler->codeGen->regSet.rsGetModifiedRegsMask();
-    int       lastRegNumIndex     = compiler->compFloatingPointUsed ? REG_FP_LAST : REG_INT_LAST;
-    for (int regNumIndex = 0; regNumIndex <= lastRegNumIndex; regNumIndex++)
+    if ((lastDumpedRegisters != registersToDump) || (rowCountSinceLastTitle > MAX_ROWS_BETWEEN_TITLES))
     {
-        if ((usedRegsMask & genRegMask((regNumber)regNumIndex)) != 0)
+        lastUsedRegNumIndex = 0;
+        int lastRegNumIndex = compiler->compFloatingPointUsed ? REG_FP_LAST : REG_INT_LAST;
+        for (int regNumIndex = 0; regNumIndex <= lastRegNumIndex; regNumIndex++)
         {
-            lastUsedRegNumIndex = regNumIndex;
+            if ((registersToDump & genRegMask((regNumber)regNumIndex)) != 0)
+            {
+                lastUsedRegNumIndex = regNumIndex;
+            }
         }
+        dumpRegRecordTitle();
+        lastDumpedRegisters = registersToDump;
     }
-    return lastUsedRegNumIndex;
 }
 
 void LinearScan::dumpRegRecordTitleLines()
@@ -12626,13 +12405,16 @@ void LinearScan::dumpRegRecordTitleLines()
     {
         printf("%s", line);
     }
-    int lastUsedRegNumIndex = getLastUsedRegNumIndex();
     for (int regNumIndex = 0; regNumIndex <= lastUsedRegNumIndex; regNumIndex++)
     {
-        printf("%s", middleBox);
-        for (int i = 0; i < regColumnWidth; i++)
+        regNumber regNum = (regNumber)regNumIndex;
+        if (shouldDumpReg(regNum))
         {
-            printf("%s", line);
+            printf("%s", middleBox);
+            for (int i = 0; i < regColumnWidth; i++)
+            {
+                printf("%s", line);
+            }
         }
     }
     printf("%s\n", rightBox);
@@ -12647,12 +12429,14 @@ void LinearScan::dumpRegRecordTitle()
     // Print out the register name column headers
     char columnFormatArray[MAX_FORMAT_CHARS];
     sprintf_s(columnFormatArray, MAX_FORMAT_CHARS, "%s%%-%d.%ds", columnSeparator, regColumnWidth, regColumnWidth);
-    int lastUsedRegNumIndex = getLastUsedRegNumIndex();
     for (int regNumIndex = 0; regNumIndex <= lastUsedRegNumIndex; regNumIndex++)
     {
-        regNumber   regNum  = (regNumber)regNumIndex;
-        const char* regName = getRegName(regNum);
-        printf(columnFormatArray, regName);
+        regNumber regNum = (regNumber)regNumIndex;
+        if (shouldDumpReg(regNum))
+        {
+            const char* regName = getRegName(regNum);
+            printf(columnFormatArray, regName);
+        }
     }
     printf("%s\n", columnSeparator);
 
@@ -12664,41 +12448,32 @@ void LinearScan::dumpRegRecordTitle()
 void LinearScan::dumpRegRecords()
 {
     static char columnFormatArray[18];
-    int         lastUsedRegNumIndex = getLastUsedRegNumIndex();
-    regMaskTP   usedRegsMask        = compiler->codeGen->regSet.rsGetModifiedRegsMask();
 
     for (int regNumIndex = 0; regNumIndex <= lastUsedRegNumIndex; regNumIndex++)
     {
-        printf("%s", columnSeparator);
-        RegRecord& regRecord = physRegs[regNumIndex];
-        Interval*  interval  = regRecord.assignedInterval;
-        if (interval != nullptr)
+        if (shouldDumpReg((regNumber)regNumIndex))
         {
-            dumpIntervalName(interval);
-            char activeChar = interval->isActive ? 'a' : 'i';
-            printf("%c", activeChar);
-        }
-        else if (regRecord.isBusyUntilNextKill)
-        {
-            printf(columnFormatArray, "Busy");
-        }
-        else if ((usedRegsMask & genRegMask((regNumber)regNumIndex)) == 0)
-        {
-            sprintf_s(columnFormatArray, MAX_FORMAT_CHARS, "%%-%ds", regColumnWidth);
-            printf(columnFormatArray, "----");
-        }
-        else
-        {
-            sprintf_s(columnFormatArray, MAX_FORMAT_CHARS, "%%-%ds", regColumnWidth);
-            printf(columnFormatArray, "");
+            printf("%s", columnSeparator);
+            RegRecord& regRecord = physRegs[regNumIndex];
+            Interval*  interval  = regRecord.assignedInterval;
+            if (interval != nullptr)
+            {
+                dumpIntervalName(interval);
+                char activeChar = interval->isActive ? 'a' : 'i';
+                printf("%c", activeChar);
+            }
+            else if (regRecord.isBusyUntilNextKill)
+            {
+                printf(columnFormatArray, "Busy");
+            }
+            else
+            {
+                sprintf_s(columnFormatArray, MAX_FORMAT_CHARS, "%%-%ds", regColumnWidth);
+                printf(columnFormatArray, "");
+            }
         }
     }
     printf("%s\n", columnSeparator);
-
-    if (rowCountSinceLastTitle > MAX_ROWS_BETWEEN_TITLES)
-    {
-        dumpRegRecordTitle();
-    }
     rowCountSinceLastTitle++;
 }
 
@@ -12727,7 +12502,14 @@ void LinearScan::dumpEmptyRefPosition()
 //
 void LinearScan::dumpRefPositionShort(RefPosition* refPosition, BasicBlock* currentBlock)
 {
-    BasicBlock* block = currentBlock;
+    BasicBlock*         block                  = currentBlock;
+    static RefPosition* lastPrintedRefPosition = nullptr;
+    if (refPosition == lastPrintedRefPosition)
+    {
+        dumpEmptyRefPosition();
+        return;
+    }
+    lastPrintedRefPosition = refPosition;
     if (refPosition->refType == RefTypeBB)
     {
         // Always print a title row before a RefTypeBB (except for the first, because we
@@ -12886,18 +12668,15 @@ void LinearScan::verifyFinalAllocation()
         Interval*    interval           = nullptr;
         RegRecord*   regRecord          = nullptr;
         regNumber    regNum             = REG_NA;
+        activeRefPosition               = currentRefPosition;
+
         if (currentRefPosition->refType == RefTypeBB)
         {
             regsToFree |= delayRegsToFree;
             delayRegsToFree = RBM_NONE;
-            // For BB RefPositions, wait until we dump the "end of block" info before dumping the basic RefPosition
-            // info.
         }
         else
         {
-            // For other RefPosition types, we can dump the basic RefPosition info now.
-            DBEXEC(VERBOSE, dumpRefPositionShort(currentRefPosition, currentBlock));
-
             if (currentRefPosition->isPhysRegRef)
             {
                 regRecord                    = currentRefPosition->getReg();

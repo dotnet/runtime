@@ -4624,8 +4624,8 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
     JITDUMP("------------------------------------------------------------\n");
     JITDUMP("Deriving cloning conditions for L%02u\n", loopNum);
 
-    LoopDsc*                      loop     = &optLoopTable[loopNum];
-    ExpandArrayStack<LcOptInfo*>* optInfos = context->GetLoopOptInfo(loopNum);
+    LoopDsc*                         loop     = &optLoopTable[loopNum];
+    JitExpandArrayStack<LcOptInfo*>* optInfos = context->GetLoopOptInfo(loopNum);
 
     if (loop->lpTestOper() == GT_LT)
     {
@@ -4669,7 +4669,7 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
                 JITDUMP("> limit %d is invalid\n", limit);
                 return false;
             }
-            ident = LC_Ident(limit, LC_Ident::Const);
+            ident = LC_Ident(static_cast<unsigned>(limit), LC_Ident::Const);
         }
         else if (loop->lpFlags & LPFLG_VAR_LIMIT)
         {
@@ -4852,11 +4852,11 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
 //
 bool Compiler::optComputeDerefConditions(unsigned loopNum, LoopCloneContext* context)
 {
-    ExpandArrayStack<LC_Deref*> nodes(getAllocator());
-    int                         maxRank = -1;
+    JitExpandArrayStack<LC_Deref*> nodes(getAllocator());
+    int                            maxRank = -1;
 
     // Get the dereference-able arrays.
-    ExpandArrayStack<LC_Array>* deref = context->EnsureDerefs(loopNum);
+    JitExpandArrayStack<LC_Array>* deref = context->EnsureDerefs(loopNum);
 
     // For each array in the dereference list, construct a tree,
     // where the nodes are array and index variables and an edge 'u-v'
@@ -4927,7 +4927,8 @@ bool Compiler::optComputeDerefConditions(unsigned loopNum, LoopCloneContext* con
     }
 
     // Derive conditions into an 'array of level x array of conditions' i.e., levelCond[levels][conds]
-    ExpandArrayStack<ExpandArrayStack<LC_Condition>*>* levelCond = context->EnsureBlockConditions(loopNum, condBlocks);
+    JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* levelCond =
+        context->EnsureBlockConditions(loopNum, condBlocks);
     for (unsigned i = 0; i < nodes.Size(); ++i)
     {
         nodes[i]->DeriveLevelConditions(levelCond);
@@ -4983,7 +4984,7 @@ void Compiler::optDebugLogLoopCloning(BasicBlock* block, GenTreePtr insertBefore
 //
 void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext* context DEBUGARG(bool dynamicPath))
 {
-    ExpandArrayStack<LcOptInfo*>* optInfos = context->GetLoopOptInfo(loopNum);
+    JitExpandArrayStack<LcOptInfo*>* optInfos = context->GetLoopOptInfo(loopNum);
     for (unsigned i = 0; i < optInfos->Size(); ++i)
     {
         LcOptInfo* optInfo = optInfos->GetRef(i);
@@ -5133,7 +5134,7 @@ void Compiler::optCloneLoops()
     // For each loop, derive cloning conditions for the optimization candidates.
     for (unsigned i = 0; i < optLoopCount; ++i)
     {
-        ExpandArrayStack<LcOptInfo*>* optInfos = context.GetLoopOptInfo(i);
+        JitExpandArrayStack<LcOptInfo*>* optInfos = context.GetLoopOptInfo(i);
         if (optInfos == nullptr)
         {
             continue;
@@ -5457,8 +5458,8 @@ BasicBlock* Compiler::optInsertLoopChoiceConditions(LoopCloneContext* context,
     JITDUMP("Inserting loop cloning conditions\n");
     assert(context->HasBlockConditions(loopNum));
 
-    BasicBlock*                                        curCond   = head;
-    ExpandArrayStack<ExpandArrayStack<LC_Condition>*>* levelCond = context->GetBlockConditions(loopNum);
+    BasicBlock*                                              curCond   = head;
+    JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* levelCond = context->GetBlockConditions(loopNum);
     for (unsigned i = 0; i < levelCond->Size(); ++i)
     {
         bool isHeaderBlock = (curCond == head);
@@ -6648,7 +6649,7 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
     // Find the set of definitely-executed blocks.
     // Ideally, the definitely-executed blocks are the ones that post-dominate the entry block.
     // Until we have post-dominators, we'll special-case for single-exit blocks.
-    ExpandArrayStack<BasicBlock*> defExec(getAllocatorLoopHoist());
+    JitExpandArrayStack<BasicBlock*> defExec(getAllocatorLoopHoist());
     if (pLoopDsc->lpFlags & LPFLG_ONE_EXIT)
     {
         assert(pLoopDsc->lpExit != nullptr);

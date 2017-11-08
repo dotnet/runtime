@@ -34,7 +34,7 @@ CompMemKindMacro(UnwindInfo)
 CompMemKindMacro(hashBv)
 CompMemKindMacro(bitset)
 CompMemKindMacro(FixedBitVect)
-CompMemKindMacro(AsIAllocator)
+CompMemKindMacro(Generic)
 CompMemKindMacro(IndirAssignMap)
 CompMemKindMacro(FieldSeqStore)
 CompMemKindMacro(ZeroOffsetFieldMap)
@@ -51,6 +51,7 @@ CompMemKindMacro(Codegen)
 CompMemKindMacro(LoopOpt)
 CompMemKindMacro(LoopHoist)
 CompMemKindMacro(Unknown)
+CompMemKindMacro(RangeCheck)
 //clang-format on
 
 #undef CompMemKindMacro

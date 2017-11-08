@@ -698,7 +698,7 @@ inline size_t unsigned_abs(ssize_t x)
 class Histogram
 {
 public:
-    Histogram(IAllocator* allocator, const unsigned* const sizeTable);
+    Histogram(HostAllocator* allocator, const unsigned* const sizeTable);
     ~Histogram();
 
     void dump(FILE* output);
@@ -707,7 +707,7 @@ public:
 private:
     void ensureAllocated();
 
-    IAllocator*           m_allocator;
+    HostAllocator*        m_allocator;
     unsigned              m_sizeCount;
     const unsigned* const m_sizeTable;
     unsigned*             m_counts;
@@ -822,6 +822,10 @@ const int MIN_SHORT_AS_INT = -32768;
 
 /*****************************************************************************/
 
+// CompMemKind values are used to tag memory allocations performed via
+// the compiler's allocator so that the memory usage of various compiler
+// components can be tracked separately (when MEASURE_MEM_ALLOC is defined).
+
 enum CompMemKind
 {
 #define CompMemKindMacro(kind) CMK_##kind,
@@ -830,6 +834,98 @@ enum CompMemKind
 };
 
 class Compiler;
+
+// Allows general purpose code (e.g. collection classes) to allocate memory
+// of a pre-determined kind via the compiler's allocator.
+
+class CompAllocator
+{
+    Compiler* const m_comp;
+#if MEASURE_MEM_ALLOC
+    CompMemKind const m_cmk;
+#endif
+public:
+    CompAllocator(Compiler* comp, CompMemKind cmk)
+        : m_comp(comp)
+#if MEASURE_MEM_ALLOC
+        , m_cmk(cmk)
+#endif
+    {
+    }
+
+    // Allocates a block of memory at least `sz` in size.
+    // Zero-length allocation are not allowed.
+    inline void* Alloc(size_t sz);
+
+    // Allocates a block of memory at least `elems * elemSize` in size.
+    // Zero-length allocation are not allowed.
+    inline void* ArrayAlloc(size_t elems, size_t elemSize);
+
+    // For the compiler's ArenaAllocator, free operations are no-ops.
+    void Free(void* p)
+    {
+    }
+};
+
+// Global operator new overloads that work with CompAllocator
+
+inline void* __cdecl operator new(size_t n, CompAllocator* alloc)
+{
+    return alloc->Alloc(n);
+}
+
+inline void* __cdecl operator new[](size_t n, CompAllocator* alloc)
+{
+    return alloc->Alloc(n);
+}
+
+// A CompAllocator wrapper that implements IAllocator and allows zero-length
+// memory allocations (the compiler's ArenAllocator does not support zero-length
+// allocation).
+
+class CompIAllocator : public IAllocator
+{
+    CompAllocator* const m_alloc;
+    char                 m_zeroLenAllocTarg;
+
+public:
+    CompIAllocator(CompAllocator* alloc) : m_alloc(alloc)
+    {
+    }
+
+    // Allocates a block of memory at least `sz` in size.
+    virtual void* Alloc(size_t sz) override
+    {
+        if (sz == 0)
+        {
+            return &m_zeroLenAllocTarg;
+        }
+        else
+        {
+            return m_alloc->Alloc(sz);
+        }
+    }
+
+    // Allocates a block of memory at least `elems * elemSize` in size.
+    virtual void* ArrayAlloc(size_t elemSize, size_t numElems) override
+    {
+        if ((elemSize == 0) || (numElems == 0))
+        {
+            return &m_zeroLenAllocTarg;
+        }
+        else
+        {
+            return m_alloc->ArrayAlloc(elemSize, numElems);
+        }
+    }
+
+    // Frees the block of memory pointed to by p.
+    virtual void Free(void* p) override
+    {
+        m_alloc->Free(p);
+    }
+};
+
 class JitTls
 {
 #ifdef DEBUG

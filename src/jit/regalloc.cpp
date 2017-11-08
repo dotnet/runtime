@@ -360,7 +360,7 @@ inline regMaskTP Compiler::genReturnRegForTree(GenTreePtr tree)
 {
     var_types type = tree->TypeGet();
 
-    if (type == TYP_STRUCT && IsHfa(tree))
+    if (varTypeIsStruct(type) && IsHfa(tree))
     {
         int retSlots = GetHfaCount(tree);
         return ((1 << retSlots) - 1) << REG_FLOATRET;
@@ -751,7 +751,7 @@ regNumber Compiler::raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc
 #endif // _TARGET_ARM_
 
 #if FEATURE_MULTIREG_ARGS
-    if (argDsc->lvType == TYP_STRUCT)
+    if (varTypeIsStruct(argDsc->lvType))
     {
         if (argDsc->lvIsHfaRegArg())
         {
@@ -1342,7 +1342,7 @@ RET:
         while (iter.NextElem(&varNum))
         {
             // We'll need this for one of the calls...
-            VarSetOps::OldStyleClearD(this, varAsSet);
+            VarSetOps::ClearD(this, varAsSet);
             VarSetOps::AddElemD(this, varAsSet, varNum);
 
             // If this varBit and lastUse?
@@ -6352,7 +6352,7 @@ void Compiler::rpPredictRegUse()
         /*  Zero the variable/register interference graph */
         for (unsigned i = 0; i < REG_COUNT; i++)
         {
-            VarSetOps::OldStyleClearD(this, raLclRegIntf[i]);
+            VarSetOps::ClearD(this, raLclRegIntf[i]);
         }
 
         // if there are PInvoke calls and compLvFrameListRoot is enregistered,
@@ -6805,7 +6805,7 @@ void Compiler::rpRecordPrediction()
         if (rpBestRecordedPrediction == NULL)
         {
             rpBestRecordedPrediction =
-                reinterpret_cast<VarRegPrediction*>(compGetMemArrayA(lvaCount, sizeof(VarRegPrediction)));
+                reinterpret_cast<VarRegPrediction*>(compGetMemArray(lvaCount, sizeof(VarRegPrediction)));
         }
         for (unsigned k = 0; k < lvaCount; k++)
         {
