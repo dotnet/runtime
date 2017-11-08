@@ -10957,6 +10957,7 @@ void CodeGen::genGenerateStackProbe()
 }
 #endif // STACK_PROBES
 
+#ifdef LEGACY_BACKEND
 /*****************************************************************************
  *
  *  Record the constant and return a tree node that yields its address.
@@ -11000,6 +11001,7 @@ GenTreePtr CodeGen::genMakeConst(const void* cnsAddr, var_types cnsType, GenTree
 
     return new (compiler, GT_CLS_VAR) GenTreeClsVar(cnsType, compiler->eeFindJitDataOffs(cnum), nullptr);
 }
+#endif // LEGACY_BACKEND
 
 #if defined(_TARGET_XARCH_) && !FEATURE_STACK_FP_X87
 // Save compCalleeFPRegsPushed with the smallest register number saved at [RSP+offset], working
@@ -11221,12 +11223,10 @@ bool Compiler::IsHfa(GenTreePtr tree)
 var_types Compiler::GetHfaType(GenTreePtr tree)
 {
 #ifdef FEATURE_HFA
-    if (tree->TypeGet() == TYP_STRUCT)
-    {
-        return GetHfaType(gtGetStructHandleIfPresent(tree));
-    }
-#endif
+    return GetHfaType(gtGetStructHandleIfPresent(tree));
+#else
     return TYP_UNDEF;
+#endif
 }
 
 unsigned Compiler::GetHfaCount(GenTreePtr tree)
