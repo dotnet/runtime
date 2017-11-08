@@ -18,9 +18,11 @@ namespace System
         // NOTE: With the current implementation, Memory<T> and ReadOnlyMemory<T> must have the same layout,
         // as code uses Unsafe.As to cast between them.
 
-        // The highest order bit of _index is used to discern whether _object is an array or an owned memory
+        // The highest order bit of _index is used to discern whether _object is an array/string or an owned memory
         // if (_index >> 31) == 1, object _object is an OwnedMemory<T>
-        // else, object _object is a T[].
+        // else, object _object is a T[] or a string.  It can only be a string if the Memory<T> was created by
+        // using unsafe / marshaling code to reinterpret a ReadOnlyMemory<char> wrapped around a string as
+        // a Memory<T>.
         private readonly object _object;
         private readonly int _index;
         private readonly int _length;
@@ -178,8 +180,22 @@ namespace System
             get
             {
                 if (_index < 0)
+                {
                     return ((OwnedMemory<T>)_object).Span.Slice(_index & RemoveOwnedFlagBitMask, _length);
-                return new Span<T>((T[])_object, _index, _length);
+                }
+                else if (typeof(T) == typeof(char) && _object is string s)
+                {
+                    // This is dangerous, returning a writable span for a string that should be immutable.
+                    // However, we need to handle the case where a ReadOnlyMemory<char> was created from a string
+                    // and then cast to a Memory<T>.  Such a cast can only be done with unsafe or marshaling code,
+                    // in which case that's the dangerous operation performed by the dev, and we're just following
+                    // suit here to make it work as best as possible.
+                    return new Span<T>(ref Unsafe.As<char, T>(ref s.GetRawStringData()), s.Length).Slice(_index, _length);
+                }
+                else
+                {
+                    return new Span<T>((T[])_object, _index, _length);
+                }
             }
         }
 
@@ -192,6 +208,17 @@ namespace System
                 {
                     memoryHandle = ((OwnedMemory<T>)_object).Pin();
                     memoryHandle.AddOffset((_index & RemoveOwnedFlagBitMask) * Unsafe.SizeOf<T>());
+                }
+                else if (typeof(T) == typeof(char) && _object is string s)
+                {
+                    // This case can only happen if a ReadOnlyMemory<char> was created around a string
+                    // and then that was cast to a Memory<char> using unsafe / marshaling code.  This needs
+                    // to work, however, so that code that uses a single Memory<char> field to store either
+                    // a readable ReadOnlyMemory<char> or a writable Memory<char> can still be pinned and
+                    // used for interop purposes.
+                    GCHandle handle = GCHandle.Alloc(s, GCHandleType.Pinned);
+                    void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref s.GetRawStringData()), _index);
+                    memoryHandle = new MemoryHandle(null, pointer, handle);
                 }
                 else
                 {
@@ -232,8 +259,12 @@ namespace System
             }
             else
             {
-                arraySegment = new ArraySegment<T>((T[])_object, _index, _length);
-                return true;
+                T[] arr = _object as T[];
+                if (typeof(T) != typeof(char) || arr != null)
+                {
+                    arraySegment = new ArraySegment<T>(arr, _index, _length);
+                    return true;
+                }
             }
 
             arraySegment = default(ArraySegment<T>);
