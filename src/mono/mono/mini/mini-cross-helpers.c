@@ -9,7 +9,7 @@
 #include "config.h"
 
 #include "mini.h"
-#ifdef ENABLE_INTERPRETER
+#ifndef DISABLE_INTERPRETER
 #include "interp/interp.h"
 #endif
 #include "tasklets.h"

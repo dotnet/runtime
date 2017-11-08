@@ -280,7 +280,7 @@ DECL_OFFSET(SeqPointInfo, ss_tramp_addr)
 DECL_OFFSET(SeqPointInfo, bp_addrs)
 #endif
 
-#ifdef ENABLE_INTERPRETER
+#ifndef DISABLE_INTERPRETER
 DECL_OFFSET(InterpMethodArguments, ilen)
 DECL_OFFSET(InterpMethodArguments, iargs)
 DECL_OFFSET(InterpMethodArguments, flen)

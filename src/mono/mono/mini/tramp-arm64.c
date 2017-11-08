@@ -21,7 +21,7 @@
 #include <mono/arch/arm64/arm64-codegen.h>
 #include <mono/metadata/abi-details.h>
 
-#ifdef ENABLE_INTERPRETER
+#ifndef DISABLE_INTERPRETER
 #include "interp/interp.h"
 #endif
 
@@ -618,7 +618,7 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 gpointer
 mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 {
-#ifdef ENABLE_INTERPRETER
+#ifndef DISABLE_INTERPRETER
 	const int gregs_num = INTERP_ICALL_TRAMP_IARGS;
 	const int fregs_num = INTERP_ICALL_TRAMP_FARGS;
 
@@ -762,7 +762,7 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 #else
 	g_assert_not_reached ();
 	return NULL;
-#endif /* ENABLE_INTERPRETER */
+#endif /* DISABLE_INTERPRETER */
 }
 
 #else /* DISABLE_JIT */

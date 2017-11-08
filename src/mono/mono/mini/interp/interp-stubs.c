@@ -1,6 +1,6 @@
 #include <config.h>
 
-#ifndef ENABLE_INTERPRETER
+#ifdef DISABLE_INTERPRETER
 
 #include "interp.h"
 

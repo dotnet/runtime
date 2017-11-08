@@ -22,7 +22,7 @@
 #include "mini.h"
 #include "lldb.h"
 
-#ifdef ENABLE_INTERPRETER
+#ifndef DISABLE_INTERPRETER
 #include "interp/interp.h"
 #endif
 
@@ -1398,7 +1398,7 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean ad
 
 	error_init (error);
 
-#ifdef ENABLE_INTERPRETER
+#ifndef DISABLE_INTERPRETER
 	if (mono_use_interpreter) {
 		gpointer ret = mono_interp_create_trampoline (domain, method, error);
 		if (!mono_error_ok (error))

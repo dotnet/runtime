@@ -1351,6 +1351,11 @@ static const char info[] =
 	"softdebug "
 #endif
 		"\n"
+#ifndef DISABLE_INTERPRETER
+	"\tInterpreter:   yes\n"
+#else
+	"\tInterpreter:   no\n"
+#endif
 #ifdef MONO_ARCH_LLVM_SUPPORTED
 #ifdef ENABLE_LLVM
 	"\tLLVM:          yes(" LLVM_VERSION ")\n"
@@ -1566,6 +1571,28 @@ apply_root_domain_configuration_file_bindings (MonoDomain *domain, char *root_do
 
 	mono_domain_parse_assembly_bindings (domain, 0, 0, root_domain_configuration_file);
 
+}
+
+static void
+mono_enable_interp (const char *opts)
+{
+#ifndef DISABLE_INTERPRETER
+	mono_use_interpreter = TRUE;
+	if (opts)
+		mono_interp_parse_options (opts);
+#endif
+
+#ifdef DISABLE_INTERPRETER
+	g_warning ("Mono IL interpreter support is missing\n");
+#endif
+
+#ifdef MONO_CROSS_COMPILE
+	g_error ("--interpreter on cross-compile runtimes not supported\n");
+#endif
+
+#if !defined(TARGET_AMD64) && !defined(TARGET_ARM) && !defined(TARGET_ARM64)
+	g_error ("--interpreter not supported on this architecture.\n");
+#endif
 }
 
 /**
@@ -1920,18 +1947,9 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--nollvm") == 0){
 			mono_use_llvm = FALSE;
 		} else if ((strcmp (argv [i], "--interpreter") == 0) || !strcmp (argv [i], "--interp")) {
-#ifdef ENABLE_INTERPRETER
-			mono_use_interpreter = TRUE;
-#else
-			fprintf (stderr, "Mono Warning: --interpreter not enabled in this runtime.\n");
-#endif
+			mono_enable_interp (NULL);
 		} else if (strncmp (argv [i], "--interp=", 9) == 0) {
-#ifdef ENABLE_INTERPRETER
-			mono_use_interpreter = TRUE;
-			mono_interp_parse_options (argv [i] + 9);
-#else
-			fprintf (stderr, "Mono Warning: --interp= not enabled in this runtime.\n");
-#endif
+			mono_enable_interp (argv [i] + 9);
 		} else if (strncmp (argv [i], "--assembly-loader=", strlen("--assembly-loader=")) == 0) {
 			gchar *arg = argv [i] + strlen ("--assembly-loader=");
 			if (strcmp (arg, "strict") == 0)
@@ -2074,7 +2092,7 @@ mono_main (int argc, char* argv[])
 	case DO_SINGLE_METHOD_REGRESSION:
 		mono_do_single_method_regression = TRUE;
 	case DO_REGRESSION:
-#ifdef ENABLE_INTERPRETER
+#ifndef DISABLE_INTERPRETER
 		if (mono_use_interpreter) {
 			if (mono_interp_regression_list (2, argc -i, argv + i)) {
 				g_print ("Regression ERRORS!\n");

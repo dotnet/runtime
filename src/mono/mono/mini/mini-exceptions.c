@@ -228,7 +228,7 @@ mono_exceptions_init (void)
 #ifdef MONO_ARCH_HAVE_EXCEPTIONS_INIT
 	mono_arch_exceptions_init ();
 #endif
-#ifdef ENABLE_INTERPRETER
+#ifndef DISABLE_INTERPRETER
 	if (mono_use_interpreter)
 		cbs.mono_walk_stack_with_ctx = interp_walk_stack_with_ctx;
 	else
