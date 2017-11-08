@@ -5107,6 +5107,8 @@ void Compiler::fgObserveInlineConstants(OPCODE opcode, const FgStack& stack, boo
     {
         if (FgStack::IsArgument(slot0))
         {
+            compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_TEST);
+
             unsigned varNum = FgStack::SlotTypeToArgNum(slot0);
             if (impInlineInfo->inlArgInfo[varNum].argNode->OperIsConst())
             {
@@ -5116,6 +5118,8 @@ void Compiler::fgObserveInlineConstants(OPCODE opcode, const FgStack& stack, boo
 
         if (FgStack::IsArgument(slot1))
         {
+            compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_TEST);
+
             unsigned varNum = FgStack::SlotTypeToArgNum(slot1);
             if (impInlineInfo->inlArgInfo[varNum].argNode->OperIsConst())
             {
