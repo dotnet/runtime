@@ -49,10 +49,7 @@ namespace System.MemoryTests
             ReadOnlyMemory<char> m = input.AsReadOnlyMemory();
             Assert.Equal(input.Substring(offset, count), new string(m.Slice(offset, count).ToArray()));
             Assert.Equal(input.Substring(offset, count), new string(m.Slice(offset, count).Span.ToArray()));
-            if (offset + count == input.Length)
-            {
-                Assert.Equal(input.Substring(offset), new string(m.Slice(offset).ToArray()));
-            }
+            Assert.Equal(input.Substring(offset), new string(m.Slice(offset).ToArray()));
         }
 
         [Fact]

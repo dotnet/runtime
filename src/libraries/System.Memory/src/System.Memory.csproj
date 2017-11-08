@@ -115,6 +115,7 @@
     <Compile Include="System\Buffers\IRetainable.cs" />
     <Compile Include="System\Buffers\MemoryHandle.cs" />
     <Compile Include="System\Buffers\OwnedMemory.cs" />
+    <Compile Include="System\Runtime\InteropServices\MemoryMarshal.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Common or Common-branched source files -->
