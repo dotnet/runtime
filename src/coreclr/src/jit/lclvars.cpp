@@ -147,7 +147,7 @@ void Compiler::lvaInitTypeRef()
         if (howToReturnStruct == SPK_PrimitiveType)
         {
             assert(returnType != TYP_UNKNOWN);
-            assert(returnType != TYP_STRUCT);
+            assert(!varTypeIsStruct(returnType));
 
             info.compRetNativeType = returnType;
 
