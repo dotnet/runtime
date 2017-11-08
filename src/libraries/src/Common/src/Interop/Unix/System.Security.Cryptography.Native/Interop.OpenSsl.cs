@@ -125,6 +125,12 @@ internal static partial class Interop
                         throw CreateSslException(SR.net_allocate_ssl_context_failed);
                     }
 
+                    if (!sslAuthenticationOptions.IsServer)
+                    {
+                        // Similar to windows behavior, set SNI on openssl by default for client context, ignore errors.
+                        Ssl.SslSetTlsExtHostName(context, sslAuthenticationOptions.TargetHost);
+                    }
+
                     if (hasCertificateAndKey)
                     {
                         bool hasCertReference = false;
