@@ -2805,52 +2805,6 @@ void emitter::emitInsStoreLcl(instruction ins, emitAttr attr, GenTreeLclVarCommo
     codeGen->genUpdateLife(varNode);
 }
 
-CORINFO_FIELD_HANDLE emitter::emitLiteralConst(ssize_t cnsValIn, emitAttr attr /*= EA_8BYTE*/)
-{
-    NYI("emitLiteralConst");
-    return nullptr;
-}
-
-// Generates a float or double data section constant and returns field handle representing
-// the data offset to access the constant.  This is called by emitInsBinary() in case
-// of contained float of double constants.
-CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(GenTreeDblCon* tree, emitAttr attr /*=EA_UNKNOWN*/)
-{
-    if (attr == EA_UNKNOWN)
-    {
-        attr = emitTypeSize(tree->TypeGet());
-    }
-    else
-    {
-        assert(emitTypeSize(tree->TypeGet()) == attr);
-    }
-
-    double constValue = tree->gtDblCon.gtDconVal;
-    void*  cnsAddr;
-    float  f;
-    bool   dblAlign;
-
-    if (attr == EA_4BYTE)
-    {
-        f        = forceCastToFloat(constValue);
-        cnsAddr  = &f;
-        dblAlign = false;
-    }
-    else
-    {
-        cnsAddr  = &constValue;
-        dblAlign = true;
-    }
-
-    // Access to inline data is 'abstracted' by a special type of static member
-    // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
-    // to constant data, not a real static field.
-
-    UNATIVE_OFFSET cnsSize = (attr == EA_4BYTE) ? 4 : 8;
-    UNATIVE_OFFSET cnum    = emitDataConst(cnsAddr, cnsSize, dblAlign);
-    return emitComp->eeFindJitDataOffs(cnum);
-}
-
 // The callee must call genConsumeReg() for all sources, including address registers
 // of both source and destination, and genProduceReg() for the destination register, if any.
 
@@ -2958,7 +2912,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
         else if (dblConst != nullptr)
         {
             // Emit a data section constant for float or double constant.
-            CORINFO_FIELD_HANDLE hnd = emitFltOrDblConst(dblConst);
+            CORINFO_FIELD_HANDLE hnd = emitFltOrDblConst(dblConst->AsDblCon()->gtDconVal, emitTypeSize(dblConst));
 
             emitIns_R_C(ins, attr, dst->gtRegNum, hnd, 0);
         }

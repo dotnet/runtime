@@ -663,16 +663,5 @@ namespace System.Diagnostics
             Debug.Assert(mb != null);
             return !(mb.IsDefined(typeof(StackTraceHiddenAttribute)) || (mb.DeclaringType?.IsDefined(typeof(StackTraceHiddenAttribute)) ?? false));
         }
-
-        // This helper is called from within the EE to construct a string representation
-        // of the current stack trace.
-        private static String GetManagedStackTraceStringHelper(bool fNeedFileInfo)
-        {
-            // Note all the frames in System.Diagnostics will be skipped when capturing 
-            // a normal stack trace (not from an exception) so we don't need to explicitly
-            // skip the GetManagedStackTraceStringHelper frame.
-            StackTrace st = new StackTrace(0, fNeedFileInfo);
-            return st.ToString();
-        }
     }
 }

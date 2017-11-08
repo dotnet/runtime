@@ -674,7 +674,7 @@
         "settings": {
           "__BuildOS": "default",
           "Project": "./src/publish.proj",
-          "MsBuildFileLogging": "/flp:v=detailed;LogFile=publish-packages.log"
+          "MsBuildFileLogging": "/flp:v=detailed;LogFile=publish-packages.log /clp:v=detailed"
         }
       }
     },

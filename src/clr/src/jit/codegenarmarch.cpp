@@ -1716,6 +1716,15 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     emitAttr    attr       = emitTypeSize(tree);
     instruction ins        = ins_Load(targetType);
 
+#ifdef FEATURE_SIMD
+    // Handling of Vector3 type values loaded through indirection.
+    if (tree->TypeGet() == TYP_SIMD12)
+    {
+        genLoadIndTypeSIMD12(tree);
+        return;
+    }
+#endif // FEATURE_SIMD
+
     genConsumeAddress(tree->Addr());
     if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
     {
@@ -2833,13 +2842,7 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
     emitAttr  movSize     = emitActualTypeSize(dstType);
     bool      movRequired = false;
 
-#ifdef _TARGET_ARM_
-    if (varTypeIsLong(srcType))
-    {
-        genLongToIntCast(treeNode);
-        return;
-    }
-#endif // _TARGET_ARM_
+    assert(genTypeSize(srcType) <= genTypeSize(TYP_I_IMPL));
 
     regNumber targetReg = treeNode->gtRegNum;
     regNumber sourceReg = castOp->gtRegNum;
@@ -3098,7 +3101,7 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
                                       unsigned prologSize,
                                       unsigned epilogSize DEBUGARG(void* codePtr))
 {
-    IAllocator*    allowZeroAlloc = new (compiler, CMK_GC) AllowZeroAllocator(compiler->getAllocatorGC());
+    IAllocator*    allowZeroAlloc = new (compiler, CMK_GC) CompIAllocator(compiler->getAllocatorGC());
     GcInfoEncoder* gcInfoEncoder  = new (compiler, CMK_GC)
         GcInfoEncoder(compiler->info.compCompHnd, compiler->info.compMethodInfo, allowZeroAlloc, NOMEM);
     assert(gcInfoEncoder != nullptr);

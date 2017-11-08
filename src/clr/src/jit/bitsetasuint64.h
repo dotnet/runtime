@@ -44,11 +44,6 @@ public:
         lhs = rhs;
     }
 
-    static void OldStyleClearD(Env env, UINT64& bs)
-    {
-        bs = 0;
-    }
-
     static void ClearD(Env env, UINT64& bs)
     {
         bs = 0;
