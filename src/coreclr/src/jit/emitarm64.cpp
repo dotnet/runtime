@@ -3985,8 +3985,16 @@ void emitter::emitIns_R_R(
             assert(isValidVectorDatasize(size));
             assert(isValidArrangement(size, opt));
             elemsize = optGetElemsize(opt);
-            assert(size == (ins == INS_xtn) ? EA_8BYTE : EA_16BYTE); // Size is determined by instruction
-            assert(elemsize != EA_8BYTE);                            // Narrowing must not end with 8 byte data
+            // size is determined by instruction
+            if (ins == INS_xtn)
+            {
+                assert(size == EA_8BYTE);
+            }
+            else // ins == INS_xtn2
+            {
+                assert(size == EA_16BYTE);
+            }
+            assert(elemsize != EA_8BYTE); // Narrowing must not end with 8 byte data
             fmt = IF_DV_2M;
             break;
 
