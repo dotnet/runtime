@@ -148,7 +148,7 @@ namespace System.Threading.Channels.Tests
 
             object queue = DebuggerAttributes.GetFieldValue(c, "_items");
             DebuggerAttributes.ValidateDebuggerDisplayReferences(queue);
-            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(queue);
+            DebuggerAttributes.InvokeDebuggerTypeProxyProperties(queue);
         }
 
         [Fact]
