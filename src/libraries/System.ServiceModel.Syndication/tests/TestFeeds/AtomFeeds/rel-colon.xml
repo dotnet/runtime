@@ -4,13 +4,13 @@ Description:  ValidXMLBase
 Expect:       !Error
 -->
 
-<feed xmlns="http://www.w3.org/2005/Atom" xml:base="http://example.org">
+<feed xmlns="http://www.w3.org/2005/Atom" xml:base="http://contoso.com">
 
   <title>Example Feed</title>
   <link href="index.html"/>
   <updated>2003-12-13T18:30:02Z</updated>
   <author>
-    <name>John Doe</name>
+    <name>Author Name</name>
   </author>
   <id>urn:uuid:60a76c80-d399-11d9-b93C-0003939e0af6</id>
 
