@@ -1,0 +1,18 @@
+<!--
+  Description:  textInput contains title
+  Expect:       !MissingTitle{parent:textInput,element:title}
+-->
+
+<rss version="2.0">
+<channel>
+<title>RSS 2.0 test case</title>
+<link>http://www.contoso.com/testcases/rss20/</link>
+<description>textInput contains title</description>
+<textInput>
+<title>Search Slashdot</title>
+<description>Search Slashdot stories</description>
+<name>query</name>
+<link>http://contoso.com/test</link>
+</textInput>
+</channel>
+</rss>
