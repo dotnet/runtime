@@ -10,8 +10,8 @@ category-no-label.xml
 category-no-scheme.xml
 category-scheme-invalid-iri.xml
 category-scheme-rel-iri.xml
-###category-entry-ext.xml   The method or operation is not implemented.
-###category-feed-ext.xml    The method or operation is not implemented.
+category-entry-ext.xml
+category-feed-ext.xml
 category-feed.xml
 contains-email.xml
 content-application-xthml.xml
@@ -49,14 +49,14 @@ example_text_title.xml
 example_xhtml_summary1.xml
 example_xhtml_summary2.xml
 example_xhtml_summary3.xml
-###extension-unknown-noerror.xml    The method or operation is not implemented.
+extension-unknown-noerror.xml
 extensive-noerror.xml
 extensive-nowarn.xml
 generator-escaped-html.xml
 generator-no-text.xml
 generator_relative_ref.xml
-###icon_invalid_uri.xml    This operation is not supported for a relative URI.
-###icon_relative_ref.xml
+icon_invalid_uri.xml
+icon_relative_ref.xml
 id-dot-segments.xml
 id-empty-fragment-id.xml
 id-empty-path.xml
@@ -80,10 +80,10 @@ infoset-quote-single.xml
 invalid-email.xml
 invalid-uri.xml
 invalid-xml-base.xml
-###invalid-xml-lang.xml    The method or operation is not implemented.
+invalid-xml-lang.xml
 invalid_html.xml
-###license-noerror.xml    The method or operation is not implemented.
-###link-extensions.xml    Generated result file is different 
+license-noerror.xml
+link-extensions.xml
 link-full-uri.xml
 link-href-relative.xml
 link-hreflang-invalid-language.xml
@@ -106,7 +106,7 @@ missing-title-source.xml
 missing-updated-source.xml
 missing_xhtml_div.xml
 missing_xhtml_ns.xml
-###multi-enclosure-test.xml   The method or operation is not implemented.
+multi-enclosure-test.xml
 multiple-alternates-differing-source.xml
 multiple-alternates-differing.xml
 multiple-alternates-matching-source.xml
@@ -119,14 +119,14 @@ multiple-categories.xml
 multiple-contributors-entry.xml
 multiple-contributors-source.xml
 multiple-contributors.xml
-###multiple-icons-source.xml   This operation is not supported for a relative URI.
-###multiple-icons.xml          This operation is not supported for a relative URI.
+multiple-icons-source.xml
+multiple-icons.xml
 multiple-related-matching.xml
 no-content-or-alternate.xml
 no-content-or-summary.xml
 no-name.xml
 prefixed-namespace.xml
-###rdf-extensions.xml    The method or operation is not implemented.
+rdf-extensions.xml
 rel-colon.xml
 related-same-rel-type-hreflang.xml
 relative-ref.xml
@@ -138,8 +138,8 @@ summary-content-base64.xml
 summary-content-src.xml
 text_with_escaped_html.xml
 title-blank.xml
-###trackback-about-entry.xml    The method or operation is not implemented.
-### trackback-ping-entry.xml    The method or operation is not implemented.
+trackback-about-entry.xml
+trackback-ping-entry.xml
 trackback-ping-outside-entry.xml
 type-html.xml
 type-multipart-alternative.xml
@@ -159,17 +159,17 @@ ws-content-src.xml
 ws-entry-id.xml
 ws-entry-published.xml
 ws-entry-updated.xml
-#ws-feed-icon.xml
+ws-feed-icon.xml
 ws-feed-id.xml
 ws-feed-logo.xml
 ws-feed-updated.xml
 ws-generator-uri.xml
 ws-link-href.xml
 ws-link-rel.xml
-###xhtml-extensions.xml   The method or operation is not implemented.
+xhtml-extensions.xml
 xml-base-ambiguous.xml
 xml-base-elem-ne-doc.xml
 xml-base.xml
 xml-lang-blank.xml
-###xml-lang.xml    The method or operation is not implemented.
+xml-lang.xml
 zero-entries.xml

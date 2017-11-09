@@ -7,20 +7,25 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="$(MsBuildThisFileDirectory)**\*.cs" 
-             Exclude="$(MsBuildThisFileDirectory)async\**\*.cs" />
+    <Compile Include="$(MsBuildThisFileDirectory)**\*.cs" Exclude="$(MsBuildThisFileDirectory)async\**\*.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(MsBuildThisFileDirectory)\TestFeeds\*.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="$(MsBuildThisFileDirectory)\TestFeeds\AtomFeeds\*.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+	<Content Include="$(MsBuildThisFileDirectory)\TestFeeds\RssFeeds\*.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MsBuildThisFileDirectory)\TestFeeds\atom_feeds.dat">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+	<None Include="$(MsBuildThisFileDirectory)\TestFeeds\rss_feeds.dat">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
