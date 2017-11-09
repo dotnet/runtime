@@ -18,6 +18,8 @@ if [ "$1" == "-?" ] || [ "$1" == "-h" ]; then
     usage
 fi
 
+# Implement VBCSCompiler.exe kill logic once VBCSCompiler.exe is ported to unixes
+
 __working_tree_root="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 if [ "$*" == "-all" ]
