@@ -56,9 +56,6 @@ public:
     static bool CatchAtSafePoint(Thread * pThread);
 
     static void GcEnumAllocContexts(enum_alloc_context_func* fn, void* param);
-
-    static Thread* CreateBackgroundThread(GCBackgroundThreadFunction threadStart, void* arg);
-
     // Diagnostics methods.
     static void DiagGCStart(int gen, bool isInduced);
     static void DiagUpdateGenerationBounds();
@@ -81,7 +78,8 @@ public:
     static bool GetStringConfigValue(const char* key, const char** value);
     static void FreeStringConfigValue(const char* key);
     static bool IsGCThread();
-    static bool IsGCSpecialThread();
+    static bool WasCurrentThreadCreatedByGC();
+    static bool CreateThread(void (*threadStart)(void*), void* arg, bool is_suspendable, const char* name);
 };
 
 #endif // __GCENV_EE_H__

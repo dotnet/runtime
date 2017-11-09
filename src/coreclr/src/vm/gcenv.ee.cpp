@@ -409,67 +409,6 @@ DWORD WINAPI BackgroundThreadStub(void* arg)
     return result;
 }
 
-Thread* GCToEEInterface::CreateBackgroundThread(GCBackgroundThreadFunction threadStart, void* arg)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    BackgroundThreadStubArgs threadStubArgs;
-
-    threadStubArgs.arg = arg;
-    threadStubArgs.thread = NULL;
-    threadStubArgs.threadStart = threadStart;
-    threadStubArgs.hasStarted = false;
-
-    if (!threadStubArgs.threadStartedEvent.CreateAutoEventNoThrow(FALSE))
-    {
-        return NULL;
-    }
-
-    EX_TRY
-    {
-        threadStubArgs.thread = SetupUnstartedThread(FALSE);
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    if (threadStubArgs.thread == NULL)
-    {
-        threadStubArgs.threadStartedEvent.CloseEvent();
-        return NULL;
-    }
-
-    if (threadStubArgs.thread->CreateNewThread(0, (LPTHREAD_START_ROUTINE)BackgroundThreadStub, &threadStubArgs, W("Background GC")))
-    {
-        threadStubArgs.thread->SetBackground (TRUE, FALSE);
-        threadStubArgs.thread->StartThread();
-
-        // Wait for the thread to be in its main loop
-        uint32_t res = threadStubArgs.threadStartedEvent.Wait(INFINITE, FALSE);
-        threadStubArgs.threadStartedEvent.CloseEvent();
-        _ASSERTE(res == WAIT_OBJECT_0);
-
-        if (!threadStubArgs.hasStarted)
-        {
-            // The thread has failed to start and the Thread object was destroyed in the Thread::HasStarted
-            // failure code path.
-            return NULL;
-        }
-
-        return threadStubArgs.thread;
-    }
-
-    // Destroy the Thread object
-    threadStubArgs.thread->DecExternalCount(FALSE);
-    return NULL;
-}
-
 //
 // Diagnostics code
 //
@@ -1175,7 +1114,196 @@ bool GCToEEInterface::IsGCThread()
     return !!::IsGCThread();
 }
 
-bool GCToEEInterface::IsGCSpecialThread()
+bool GCToEEInterface::WasCurrentThreadCreatedByGC()
 {
     return !!::IsGCSpecialThread();
+}
+
+struct SuspendableThreadStubArguments
+{
+    void* Argument;
+    void (*ThreadStart)(void*);
+    Thread* Thread;
+    bool HasStarted;
+    CLREvent ThreadStartedEvent;
+};
+
+struct ThreadStubArguments
+{
+    void* Argument;
+    void (*ThreadStart)(void*);
+    HANDLE Thread;
+    bool HasStarted;
+    CLREvent ThreadStartedEvent;
+};
+
+namespace
+{
+    const size_t MaxThreadNameSize = 255;
+
+    bool CreateSuspendableThread(
+        void (*threadStart)(void*),
+        void* argument,
+        const char* name)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        SuspendableThreadStubArguments args;
+        args.Argument = argument;
+        args.ThreadStart = threadStart;
+        args.Thread = nullptr;
+        args.HasStarted = false;
+        if (!args.ThreadStartedEvent.CreateAutoEventNoThrow(FALSE))
+        {
+            return false;
+        }
+
+        EX_TRY
+        {
+            args.Thread = SetupUnstartedThread(FALSE);
+        }
+        EX_CATCH
+        {
+        }
+        EX_END_CATCH(SwallowAllExceptions)
+
+        if (!args.Thread)
+        {
+            args.ThreadStartedEvent.CloseEvent();
+            return false;
+        }
+
+        auto threadStub = [](void* argument) -> DWORD
+        {
+            SuspendableThreadStubArguments* args = static_cast<SuspendableThreadStubArguments*>(argument);
+            assert(args != nullptr);
+
+            ClrFlsSetThreadType(ThreadType_GC);
+            args->Thread->SetGCSpecial(true);
+            STRESS_LOG_RESERVE_MEM(GC_STRESSLOG_MULTIPLY);
+            args->HasStarted = !!args->Thread->HasStarted(false);
+
+            Thread* thread = args->Thread;
+            auto threadStart = args->ThreadStart;
+            void* threadArgument = args->Argument;
+            bool hasStarted = args->HasStarted;
+            args->ThreadStartedEvent.Set();
+
+            // The stubArgs cannot be used once the event is set, since that releases wait on the
+            // event in the function that created this thread and the stubArgs go out of scope.
+            if (hasStarted)
+            {
+                threadStart(threadArgument);
+                DestroyThread(thread);
+            }
+
+            return 0;
+        };
+
+        InlineSString<MaxThreadNameSize> wideName;
+        const WCHAR* namePtr;
+        EX_TRY
+        {
+            if (name != nullptr)
+            {
+                wideName.SetUTF8(name);
+                namePtr = wideName.GetUnicode();
+            }
+        }
+        EX_CATCH
+        {
+            // we're not obligated to provide a name - if it's not valid,
+            // just report nullptr as the name.
+            namePtr = nullptr;
+        }
+        EX_END_CATCH(SwallowAllExceptions)
+
+        if (!args.Thread->CreateNewThread(0, threadStub, &args, namePtr))
+        {
+            args.Thread->DecExternalCount(FALSE);
+            args.ThreadStartedEvent.CloseEvent();
+            return false;
+        }
+
+        args.Thread->SetBackground(TRUE, FALSE);
+        args.Thread->StartThread();
+
+        // Wait for the thread to be in its main loop
+        uint32_t res = args.ThreadStartedEvent.Wait(INFINITE, FALSE);
+        args.ThreadStartedEvent.CloseEvent();
+        _ASSERTE(res == WAIT_OBJECT_0);
+
+        if (!args.HasStarted)
+        {
+            // The thread has failed to start and the Thread object was destroyed in the Thread::HasStarted
+            // failure code path.
+            return false;
+        }
+
+        return true;
+    }
+
+    bool CreateNonSuspendableThread(
+        void (*threadStart)(void*),
+        void* argument,
+        const char* name)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        ThreadStubArguments args;
+        args.Argument = argument;
+        args.ThreadStart = threadStart;
+        args.Thread = INVALID_HANDLE_VALUE;
+        if (!args.ThreadStartedEvent.CreateAutoEventNoThrow(FALSE))
+        {
+            return false;
+        }
+
+        auto threadStub = [](void* argument) -> DWORD
+        {
+            ThreadStubArguments* args = static_cast<ThreadStubArguments*>(argument);
+            assert(args != nullptr);
+
+            ClrFlsSetThreadType(ThreadType_GC);
+            STRESS_LOG_RESERVE_MEM(GC_STRESSLOG_MULTIPLY);
+
+            args->HasStarted = true;
+            auto threadStart = args->ThreadStart;
+            void* threadArgument = args->Argument;
+            args->ThreadStartedEvent.Set();
+
+            // The stub args cannot be used once the event is set, since that releases wait on the
+            // event in the function that created this thread and the stubArgs go out of scope.
+            threadStart(threadArgument);
+            return 0;
+        };
+
+        args.Thread = Thread::CreateUtilityThread(Thread::StackSize_Medium, threadStub, &args);
+        if (args.Thread == INVALID_HANDLE_VALUE)
+        {
+            args.ThreadStartedEvent.CloseEvent();
+            return false;
+        }
+
+        // Wait for the thread to be in its main loop
+        uint32_t res = args.ThreadStartedEvent.Wait(INFINITE, FALSE);
+        args.ThreadStartedEvent.CloseEvent();
+        _ASSERTE(res == WAIT_OBJECT_0);
+
+        CloseHandle(args.Thread);
+        return true;
+    }
+} // anonymous namespace
+
+bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool is_suspendable, const char* name)
+{
+    LIMITED_METHOD_CONTRACT;
+    if (is_suspendable)
+    {
+        return CreateSuspendableThread(threadStart, arg, name);
+    }
+    else
+    {
+        return CreateNonSuspendableThread(threadStart, arg, name);
+    }
 }
