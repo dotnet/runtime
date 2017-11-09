@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Sockets.Tests", 
 		{43311AFB-D7C4-4E5A-B1DE-855407F90D1B} = {43311AFB-D7C4-4E5A-B1DE-855407F90D1B}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Sockets.Async.Performance.Tests", "tests\PerformanceTests\System.Net.Sockets.Async.Performance.Tests.csproj", "{BB5C85AD-C51A-4903-80E9-6F6E1AC1AD34}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Sockets.Async.Performance.Tests", "tests\ManualPerformanceTests\System.Net.Sockets.Async.Performance.Tests.csproj", "{BB5C85AD-C51A-4903-80E9-6F6E1AC1AD34}"
 	ProjectSection(ProjectDependencies) = postProject
 		{43311AFB-D7C4-4E5A-B1DE-855407F90D1B} = {43311AFB-D7C4-4E5A-B1DE-855407F90D1B}
 	EndProjectSection
