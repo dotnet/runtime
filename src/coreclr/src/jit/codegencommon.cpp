@@ -4574,7 +4574,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 {
                     destRegNum = varDsc->lvRegNum;
                 }
-#if FEATURE_MULTIREG_ARGS && defined(FEATURE_SIMD) && defined(_TARGET_AMD64_)
+#if FEATURE_MULTIREG_ARGS && defined(FEATURE_SIMD) && defined(_TARGET_64BIT_)
                 else
                 {
                     assert(regArgTab[argNum].slot == 2);
@@ -5190,7 +5190,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 destRegNum  = REG_NEXT(varDsc->lvRegNum);
             }
 #endif // !_TARGET_64BIT_
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) && defined(FEATURE_SIMD)
+#if (defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) || defined(_TARGET_ARM64_)) && defined(FEATURE_SIMD)
             else
             {
                 assert(regArgTab[argNum].slot == 2);
@@ -5201,7 +5201,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 noway_assert(regNum != destRegNum);
                 continue;
             }
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) && defined(FEATURE_SIMD)
+#endif // (defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) || defined(_TARGET_ARM64_)) && defined(FEATURE_SIMD)
             noway_assert(destRegNum != REG_NA);
             if (destRegNum != regNum)
             {
@@ -5227,6 +5227,17 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 /* Move it to the new register */
 
                 emitAttr size = emitActualTypeSize(destMemType);
+
+#if defined(_TARGET_ARM64_)
+                if (varTypeIsSIMD(varDsc) && argNum < (argMax - 1) && regArgTab[argNum + 1].slot == 2)
+                {
+                    // For a SIMD type that is passed in two integer registers,
+                    // Limit the copy below to the first 8 bytes from the first integer register.
+                    // Handle the remaining 8 bytes from the second slot in the code further below
+                    assert(EA_SIZE(size) >= 8);
+                    size = EA_8BYTE;
+                }
+#endif
 
                 getEmitter()->emitIns_R_R(ins_Copy(destMemType), size, destRegNum, regNum);
 
@@ -5261,6 +5272,23 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 destRegNum = regNum;
             }
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) && defined(FEATURE_SIMD)
+#if defined(_TARGET_ARM64_) && defined(FEATURE_SIMD)
+            if (varTypeIsSIMD(varDsc) && argNum < (argMax - 1) && regArgTab[argNum + 1].slot == 2)
+            {
+                // For a SIMD type that is passed in two integer registers,
+                // Code above copies the first integer argument register into the lower 8 bytes
+                // of the target register. Here we must handle the second 8 bytes of the slot pair by
+                // inserting the second integer register into the upper 8 bytes of the target
+                // SIMD floating point register.
+                argRegCount          = 2;
+                int       nextArgNum = argNum + 1;
+                regNumber nextRegNum = genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].getRegType(compiler));
+                noway_assert(regArgTab[nextArgNum].varNum == varNum);
+                noway_assert(genIsValidIntReg(nextRegNum));
+                noway_assert(genIsValidFloatReg(destRegNum));
+                getEmitter()->emitIns_R_R_I(INS_mov, EA_8BYTE, destRegNum, nextRegNum, 1);
+            }
+#endif // defined(_TARGET_ARM64_) && defined(FEATURE_SIMD)
             // Mark the rest of the argument registers corresponding to this multi-reg type as
             // being processed and no longer live.
             for (int regSlot = 1; regSlot < argRegCount; regSlot++)
@@ -10957,6 +10985,7 @@ void CodeGen::genGenerateStackProbe()
 }
 #endif // STACK_PROBES
 
+#ifdef LEGACY_BACKEND
 /*****************************************************************************
  *
  *  Record the constant and return a tree node that yields its address.
@@ -11000,6 +11029,7 @@ GenTreePtr CodeGen::genMakeConst(const void* cnsAddr, var_types cnsType, GenTree
 
     return new (compiler, GT_CLS_VAR) GenTreeClsVar(cnsType, compiler->eeFindJitDataOffs(cnum), nullptr);
 }
+#endif // LEGACY_BACKEND
 
 #if defined(_TARGET_XARCH_) && !FEATURE_STACK_FP_X87
 // Save compCalleeFPRegsPushed with the smallest register number saved at [RSP+offset], working
@@ -11221,12 +11251,10 @@ bool Compiler::IsHfa(GenTreePtr tree)
 var_types Compiler::GetHfaType(GenTreePtr tree)
 {
 #ifdef FEATURE_HFA
-    if (tree->TypeGet() == TYP_STRUCT)
-    {
-        return GetHfaType(gtGetStructHandleIfPresent(tree));
-    }
-#endif
+    return GetHfaType(gtGetStructHandleIfPresent(tree));
+#else
     return TYP_UNDEF;
+#endif
 }
 
 unsigned Compiler::GetHfaCount(GenTreePtr tree)

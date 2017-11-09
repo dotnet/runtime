@@ -68,11 +68,11 @@ struct StackSlotIdKey
     }
 };
 
-typedef SimplerHashTable<RegSlotIdKey, RegSlotIdKey, GcSlotId, JitSimplerHashBehavior>     RegSlotMap;
-typedef SimplerHashTable<StackSlotIdKey, StackSlotIdKey, GcSlotId, JitSimplerHashBehavior> StackSlotMap;
+typedef JitHashTable<RegSlotIdKey, RegSlotIdKey, GcSlotId>     RegSlotMap;
+typedef JitHashTable<StackSlotIdKey, StackSlotIdKey, GcSlotId> StackSlotMap;
 #endif
 
-typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, VARSET_TP*, JitSimplerHashBehavior> NodeToVarsetPtrMap;
+typedef JitHashTable<GenTreePtr, JitPtrKeyFuncs<GenTree>, VARSET_TP*> NodeToVarsetPtrMap;
 
 class GCInfo
 {

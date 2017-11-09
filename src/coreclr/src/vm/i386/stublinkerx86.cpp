@@ -5925,6 +5925,17 @@ static void AppendGCLayout(ULONGARRAY &gcLayout, size_t baseOffset, BOOL fIsType
         _ASSERTE(pMT);
         _ASSERTE(pMT->IsValueType());
 
+        if (pMT->IsByRefLike())
+        {
+            FindByRefPointerOffsetsInByRefLikeObject(
+                pMT,
+                baseOffset,
+                [&](size_t pointerOffset)
+                {
+                    *gcLayout.AppendThrowing() = (ULONG)(pointerOffset | 1); // "| 1" to mark it as an interior pointer
+                });
+        }
+
         // walk the GC descriptors, reporting the correct offsets
         if (pMT->ContainsPointers())
         {

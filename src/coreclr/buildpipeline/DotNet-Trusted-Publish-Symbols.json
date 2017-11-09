@@ -33,7 +33,7 @@
       },
       "inputs": {
         "filename": "sync.cmd",
-        "arguments": "-ab -AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_ContainerName) -BlobNamePrefix=$(PB_BlobNamePrefix)",
+        "arguments": "-ab -AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_ContainerName) -BlobNamePrefix=$(PB_BlobNamePrefix)$(PB_BuildType)/symbolpkg/ -- /p:DownloadFlatFiles=true /p:BlobNameExtension=\".nupkg\" /p:DownloadDirectory=$(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(PB_BuildType)\\symbolpkg",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -54,7 +54,7 @@
         "scriptName": "",
         "arguments": "-BuildType $(PB_BuildType) -SymPkgGlob $(PB_AzureContainerSymbolPackageGlob) -Branch $(SourceBranch)",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
-        "inlineScript": "param($BuildType, $SymPkgGlob, $Branch)\nif ($BuildType -ne \"Release\") { exit }\n$archive = $Branch.StartsWith(\"release/\")\n\n$target = \"GetAllSymbolFilesToPublish\"\nif ($archive) { $target = \"SubmitSymbolsRequest\" }\n\n.\\run.cmd build -- `\n/t:$target `\n/p:SymbolPackagesToPublishGlob=$SymPkgGlob `\n/p:ArchiveSymbols=$archive `\n/v:D",
+        "inlineScript": "param($BuildType, $SymPkgGlob, $Branch)\nif ($BuildType -ne \"Release\") { exit }\n$archive = $Branch.StartsWith(\"release/\")\n\n$target = \"UnzipSymbolPackagesForPublish\"\nif ($archive) { $target = \"SubmitSymbolsRequest\" }\n\n.\\run.cmd build -- `\n/t:$target `\n/p:SymbolPackagesToPublishGlob=$SymPkgGlob `\n/p:ArchiveSymbols=$archive `\n/p:SkipCreateWindowsPdbsFromPortablePdbs=true `\n/v:D",
         "failOnStandardError": "true"
       }
     },
@@ -176,7 +176,7 @@
       "allowOverride": true
     },
     "AzureContainerSymbolPackageGlob": {
-      "value": "symbolpkg\\*\\*\\*.nupkg",
+      "value": "symbolpkg\\*.nupkg",
       "allowOverride": true
     },
     "PB_AzureContainerSymbolPackageGlob": {

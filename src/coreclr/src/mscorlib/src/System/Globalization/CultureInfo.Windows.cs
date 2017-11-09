@@ -234,8 +234,7 @@ namespace System.Globalization
         {
             // If a call to GetCultureInfoForUserPreferredLanguageInAppX() generated a recursive
             // call to itself, return null, since we don't want to stack overflow.  For example, 
-            // this can happen if some code in this method ends up calling CultureInfo.CurrentCulture
-            // (which is common on check'd build because of BCLDebug logging which calls Int32.ToString()).  
+            // this can happen if some code in this method ends up calling CultureInfo.CurrentCulture.
             // In this case, returning null will mean CultureInfo.CurrentCulture gets the default Win32 
             // value, which should be fine. 
             if (ts_IsDoingAppXCultureInfoLookup)
