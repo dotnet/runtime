@@ -7,6 +7,7 @@
  *
  * (C) 2004 Ximian, Inc.  http://www.ximian.com
  */
+#include <config.h>
 #include <string.h>
 #include <stdio.h>
 

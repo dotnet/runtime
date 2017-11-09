@@ -3,6 +3,7 @@
  * Copyright 2016 Microsoft
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
+#include <config.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/tabledefs.h>
 

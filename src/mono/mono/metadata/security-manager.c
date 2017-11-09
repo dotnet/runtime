@@ -9,6 +9,7 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
+#include <config.h>
 #include "security-manager.h"
 
 /* Class lazy loading functions */

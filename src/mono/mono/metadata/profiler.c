@@ -4,6 +4,7 @@
  * See the LICENSE file in the project root for more information.
  */
 
+#include <config.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mono-config-dirs.h>

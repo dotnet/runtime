@@ -8,6 +8,7 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
+#include <config.h>
 #include <string.h>
 #include "mono/metadata/tokentype.h"
 #include "mono/metadata/opcodes.h"
