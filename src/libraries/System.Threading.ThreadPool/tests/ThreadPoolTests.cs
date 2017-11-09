@@ -135,7 +135,6 @@ namespace System.Threading.ThreadPools.Tests
                 VerifyMinThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
 
                 Assert.True(ThreadPool.SetMinThreads(0, 0));
-                VerifyMinThreads(0, 0);
                 Assert.True(ThreadPool.SetMaxThreads(1, 1));
                 VerifyMaxThreads(1, 1);
                 Assert.True(ThreadPool.SetMinThreads(1, 1));
@@ -168,8 +167,8 @@ namespace System.Threading.ThreadPools.Tests
             try
             {
                 Assert.True(ThreadPool.SetMinThreads(0, 0));
-                VerifyMinThreads(0, 0);
-                Assert.False(ThreadPool.SetMaxThreads(0, 0));
+                Assert.False(ThreadPool.SetMaxThreads(0, 1));
+                Assert.False(ThreadPool.SetMaxThreads(1, 0));
                 VerifyMaxThreads(maxw, maxc);
             }
             finally
