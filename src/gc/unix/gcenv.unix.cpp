@@ -402,6 +402,31 @@ size_t GCToOSInterface::GetLargestOnDieCacheSize(bool trueSize)
     return 0;
 }
 
+// Sets the calling thread's affinity to only run on the processor specified
+// in the GCThreadAffinity structure.
+// Parameters:
+//  affinity - The requested affinity for the calling thread. At most one processor
+//             can be provided.
+// Return:
+//  true if setting the affinity was successful, false otherwise.
+bool GCToOSInterface::SetThreadAffinity(GCThreadAffinity* affinity)
+{
+    // [LOCALGC TODO] Thread affinity for unix
+    return false;
+}
+
+// Boosts the calling thread's thread priority to a level higher than the default
+// for new threads.
+// Parameters:
+//  None.
+// Return:
+//  true if the priority boost was successful, false otherwise.
+bool GCToOSInterface::BoostThreadPriority()
+{
+    // [LOCALGC TODO] Thread priority for unix
+    return false;
+}
+
 /*++
 Function:
   GetFullAffinityMask
@@ -652,68 +677,6 @@ uint32_t GCToOSInterface::GetLowPrecisionTimeStamp()
     }
 
     return retval;
-}
-
-// Parameters of the GC thread stub
-struct GCThreadStubParam
-{
-    GCThreadFunction GCThreadFunction;
-    void* GCThreadParam;
-};
-
-// GC thread stub to convert GC thread function to an OS specific thread function
-static void* GCThreadStub(void* param)
-{
-    GCThreadStubParam *stubParam = (GCThreadStubParam*)param;
-    GCThreadFunction function = stubParam->GCThreadFunction;
-    void* threadParam = stubParam->GCThreadParam;
-
-    delete stubParam;
-
-    function(threadParam);
-
-    return NULL;
-}
-
-// Create a new thread for GC use
-// Parameters:
-//  function - the function to be executed by the thread
-//  param    - parameters of the thread
-//  affinity - processor affinity of the thread
-// Return:
-//  true if it has succeeded, false if it has failed
-bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThreadAffinity* affinity)
-{
-    std::unique_ptr<GCThreadStubParam> stubParam(new (std::nothrow) GCThreadStubParam());
-    if (!stubParam)
-    {
-        return false;
-    }
-
-    stubParam->GCThreadFunction = function;
-    stubParam->GCThreadParam = param;
-
-    pthread_attr_t attrs;
-
-    int st = pthread_attr_init(&attrs);
-    assert(st == 0);
-
-    // Create the thread as detached, that means not joinable
-    st = pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
-    assert(st == 0);
-
-    pthread_t threadId;
-    st = pthread_create(&threadId, &attrs, GCThreadStub, stubParam.get());
-
-    if (st == 0)
-    {
-        stubParam.release();
-    }
-
-    int st2 = pthread_attr_destroy(&attrs);
-    assert(st2 == 0);
-
-    return (st == 0);
 }
 
 // Gets the total number of processors on the machine, not taking
