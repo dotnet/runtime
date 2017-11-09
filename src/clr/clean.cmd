@@ -1,105 +1,42 @@
 @if not defined _echo @echo off
 setlocal EnableDelayedExpansion
 
-echo Running clean.cmd
+set NO_DASHES_ARG=%1
+if /I [%NO_DASHES_ARG:-=%] == [?] goto Usage
+if /I [%NO_DASHES_ARG:-=%] == [h] goto Usage
 
-set bin=false
-set packages=false
-set tools = false
-
-if [%1]==[] (
-  set bin=true
-  set packages=true
-  set tools=true
-  goto Begin
+:: Check if VBCSCompiler.exe is running
+tasklist /fi "imagename eq VBCSCompiler.exe" |find ":" > nul
+:: Compiler is running if errorlevel == 1
+if errorlevel 1 (
+	echo Stop VBCSCompiler.exe execution.
+	for /f "tokens=2 delims=," %%F in ('tasklist /nh /fi "imagename eq VBCSCompiler.exe" /fo csv') do taskkill /f /PID %%~F
 )
 
-:Loop
-if [%1]==[] goto Begin
-
-if /I [%1] == [-?] goto Usage
-if /I [%1] == [-help] goto Usage
-
-if /I [%1] == [-p] (
-    set packages=true
-    set thisArgs=!thisArgs!%1
-    goto Next
+:: Strip all dashes off the argument and use invariant
+:: compare to match as many versions of "all" that we can
+:: All other argument validation happens inside Run.exe
+if not defined NO_DASHES_ARG goto no_args
+if /I [%NO_DASHES_ARG:-=%] == [all] (
+  echo Cleaning entire working directory ...
+  call git clean -xdf
+  exit /b !ERRORLEVEL!
 )
 
-if /I [%1] == [-b] (
-    set bin=true
-    set thisArgs=!thisArgs!%1
-    goto Next
-)
-
-if /I [%1] == [-t] (
-    set tools=true
-    set thisArgs=!thisArgs!%1
-    goto Next
-)
-
-if /I [%1] == [-all] (
-    set tools=true
-    set bin=true
-    set packages=true
-    goto Begin
-)
-
-:Next
-shift /1
-goto Loop
-
-:Begin
-:: Set __ProjectDir to be the directory of this script
-set "__ProjectDir=%~dp0"
-:: remove trailing slash
-if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
-set "__RootBinDir=%__ProjectDir%\bin"
-
-if [%bin%] == [true] (
-	if exist "%__RootBinDir%" (
-		echo Deleting bin directory
-		rd /s /q "%__RootBinDir%"
-		if NOT [!ERRORLEVEL!]==[0] (
-  			echo ERROR: An error occurred while deleting the bin directory - error code is !ERRORLEVEL!
-  			exit /b 1
-  		)
-	)
-)
-
-if [%tools%] == [true] (
-	if exist "%__ProjectDir%\Tools" (
-		echo Deleting tools directory
-		rd /s /q "%__ProjectDir%\Tools"
-		if NOT [!ERRORLEVEL!]==[0] (
-  			echo ERROR: An error occurred while deleting the Tools directory - error code is !ERRORLEVEL!
-  			exit /b 1
-  		)
-  	)
-)
-
-if [%packages%] == [true] (
-	if exist "%__ProjectDir%\packages" (
-		echo Deleting packages directory
-		rd /s /q "%__ProjectDir%\packages"
-		if NOT [!ERRORLEVEL!]==[0] (
-  			echo ERROR: An error occurred while deleting the packages directory - error code is !ERRORLEVEL!
-  			exit /b 1
-  		)
-  	)
-)
-
-echo Clean was successful
-exit /b 0
+:no_args
+if [%1]==[] set __args=-b
+call %~dp0run.cmd clean %__args% %*
+exit /b %ERRORLEVEL%
 
 :Usage
 echo.
+echo Usage: clean [-b] [-p] [-c] [-all]
 echo Repository cleaning script.
 echo Options:
-echo     -b     - Cleans the bin directory
-echo     -p     - Cleans the packages directory
-echo     -t     - Cleans the tools directory
-echo     -all   - Cleans everything
+echo     -b     - Delete the binary output directory.
+echo     -p     - Delete the repo-local NuGet package directory.
+echo     -c     - Deletes the user-local NuGet package cache.
+echo     -all   - Cleans repository and restores it to pristine state.
 echo.
-echo If no option is specified then clean.cmd -b -p -t is implied.
+echo ^If no option is specified then "clean -b" is implied.
 exit /b
