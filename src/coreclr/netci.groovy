@@ -1798,7 +1798,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     
                     // Zip up the tests directory so that we don't use so much space/time copying
                     // 10s of thousands of files around.
-                    buildCommands += "powershell -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${architecture}.${configuration}', '.\\bin\\tests\\tests.zip')\"";
+                    buildCommands += "powershell -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${buildArchitecture}.${configuration}', '.\\bin\\tests\\tests.zip')\"";
 
                     // Add archival.
                     Utilities.addArchival(newJob, "bin/Product/**,bin/tests/tests.zip", "bin/Product/**/.nuget/**")
@@ -2803,6 +2803,10 @@ combinedScenarios.each { scenario ->
                                     addArchSpecificExclude(architecture, excludeTag)
                                 }
 
+                                else {
+                                    addExclude("pri1")
+                                }
+
                                 smartyCommand += "/lstFile Tests.lst"
 
                                 def testListArch = [
@@ -2860,7 +2864,7 @@ combinedScenarios.each { scenario ->
                         Utilities.addXUnitDotNETResults(newJob, '**/coreclrtests.xml')
                     }
                     else {
-                        Utilities.addArchival(newJob, "bin/tests/${osGroup}.${architecture}.${configuration}/Smarty.Run.0/*.smrt")
+                        Utilities.addArchival(newJob, "bin/tests/${osGroup}.${architecture}.${configuration}/Smarty.Run.0/*.smrt", '', true, false)
                     }
 
                     // Create a build flow to join together the build and tests required to run this
