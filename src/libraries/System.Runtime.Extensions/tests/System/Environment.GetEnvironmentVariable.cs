@@ -19,7 +19,6 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentNullException>("variable", () => Environment.GetEnvironmentVariable(null));
             AssertExtensions.Throws<ArgumentNullException>("variable", () => Environment.SetEnvironmentVariable(null, "test"));
             AssertExtensions.Throws<ArgumentException>("variable", () => Environment.SetEnvironmentVariable("", "test"));
-            AssertExtensions.Throws<ArgumentException>("value", null, () => Environment.SetEnvironmentVariable("test", new string('s', 65 * 1024)));
 
             AssertExtensions.Throws<ArgumentException>("variable", () => Environment.SetEnvironmentVariable("", "test", EnvironmentVariableTarget.Machine));
             AssertExtensions.Throws<ArgumentNullException>("variable", () => Environment.SetEnvironmentVariable(null, "test", EnvironmentVariableTarget.User));
