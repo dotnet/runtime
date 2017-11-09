@@ -266,4 +266,3 @@ function(add_executable_clr)
     _add_executable(${ARGV})
     add_dependencies(${ARGV0} GeneratedEventingFiles)
 endfunction()
-

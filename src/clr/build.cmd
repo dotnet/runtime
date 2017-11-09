@@ -30,7 +30,7 @@ if defined VisualStudioVersion (
     goto :Run
 ) 
 
-echo %__MsgPrefix%"Searching for Visual Studio 2017 or 2015 installation"
+echo %__MsgPrefix%Searching ^for Visual Studio 2017 or 2015 installation
 set _VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 if exist %_VSWHERE% (
 for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -prerelease -property installationPath`) do set _VSCOMNTOOLS=%%i\Common7\Tools
@@ -315,8 +315,8 @@ echo %__MsgPrefix%Checking prerequisites
 :: Eval the output from probe-win1.ps1
 for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__SourceDir%\pal\tools\probe-win.ps1"""') do %%a
 
-REM NumberOfEnabledCore is an WMI property providing number of enabled cores on machine
-REM processor(s) and later is used to set optimal level of CL parallelism during native build step
+REM NumberOfCores is an WMI property providing number of physical cores on machine
+REM processor(s). It is used to set optimal level of CL parallelism during native build step
 if not defined NumberOfCores (
 REM Determine number of physical processor cores available on machine
 for /f "tokens=*" %%I in (
@@ -439,7 +439,7 @@ if %__BuildNative% EQU 1 (
     set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
     set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
 
-    @call %__ProjectDir%\run.cmd build -Project=%__IntermediatesDir%\install.vcxproj -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! -configuration=%__BuildType% %__NativePlatformArgs% %__RunArgs% -ExtraParameters="/p:ForceImportBeforeCppTargets=%__ProjectDir%/clr.nativebuild.props /m:2" %__UnprocessedBuildArgs%
+    @call %__ProjectDir%\run.cmd build -Project=%__IntermediatesDir%\install.vcxproj -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! -configuration=%__BuildType% %__NativePlatformArgs% %__RunArgs% -MSBuildNodeCount="/m:2" %__UnprocessedBuildArgs%
 
     if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: native component build failed. Refer to the build log files for details:
@@ -509,7 +509,7 @@ if /i "%__DoCrossArchBuild%"=="1" (
     set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
     set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
 
-    @call %__ProjectDir%\run.cmd build -Project=%__CrossCompIntermediatesDir%\install.vcxproj -configuration=%__BuildType% -platform=%__CrossArch% -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! %__RunArgs% -ExtraParameters="/p:ForceImportBeforeCppTargets=%__ProjectDir%/clr.nativebuild.props /m:2" %__UnprocessedBuildArgs%
+    @call %__ProjectDir%\run.cmd build -Project=%__CrossCompIntermediatesDir%\install.vcxproj -configuration=%__BuildType% -platform=%__CrossArch% -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! %__RunArgs% -MSBuildNodeCount="/m:2" %__UnprocessedBuildArgs%
 
         if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: cross-arch components build failed. Refer to the build log files for details:

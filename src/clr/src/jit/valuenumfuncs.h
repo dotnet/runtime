@@ -136,8 +136,6 @@ ValueNumFuncDef(GT_UN, 2, false, false, false)
 ValueNumFuncDef(ADD_UN, 2, true, false, false)
 ValueNumFuncDef(SUB_UN, 2, false, false, false)
 ValueNumFuncDef(MUL_UN, 2, true, false, false)
-ValueNumFuncDef(DIV_UN, 2, false, false, false)
-ValueNumFuncDef(MOD_UN, 2, false, false, false)
 
 ValueNumFuncDef(StrCns, 2, false, true, false)
 

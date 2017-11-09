@@ -147,6 +147,12 @@ namespace System
         }
 
         [CLSCompliant(false)]
+        public static bool TryParse(ReadOnlySpan<char> s, out uint result)
+        {
+            return Number.TryParseUInt32(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+        }
+
+        [CLSCompliant(false)]
         public static bool TryParse(String s, NumberStyles style, IFormatProvider provider, out UInt32 result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
@@ -160,8 +166,13 @@ namespace System
             return Number.TryParseUInt32(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
+        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
         [CLSCompliant(false)]
-        public static bool TryParse(ReadOnlySpan<char> s, out UInt32 result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
+        public static bool TryParse(ReadOnlySpan<char> s, out UInt32 result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null) =>
+            TryParse(s, style, provider, out result);
+
+        [CLSCompliant(false)]
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out uint result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             return Number.TryParseUInt32(s, style, NumberFormatInfo.GetInstance(provider), out result);
