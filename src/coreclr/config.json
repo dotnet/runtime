@@ -180,6 +180,12 @@
       "values": [],
       "defaultValue": "/t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true"
     },
+    "MSBuildNodeCount": {
+      "description": "Sets the value of the number of processors available for MSBuild.",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": "/maxcpucount"
+    },
     "NativeVersionSourceFile": {
       "description": "Provides location for version.cpp",
       "valueType": "property",
@@ -508,7 +514,8 @@
           "MsBuildEventLogging": "default",
           "RestoreDefaultOptimizationDataPackage": "false",
           "PortableBuild": "true",
-          "UsePartialNGENOptimization": "false"
+          "UsePartialNGENOptimization": "false",
+          "MSBuildNodeCount": "default"
         }
       }
     },
@@ -667,7 +674,7 @@
         "settings": {
           "__BuildOS": "default",
           "Project": "./src/publish.proj",
-          "MsBuildFileLogging": "/flp:v=detailed;LogFile=publish-packages.log"
+          "MsBuildFileLogging": "/flp:v=detailed;LogFile=publish-packages.log /clp:v=detailed"
         }
       }
     },
@@ -708,11 +715,11 @@
     "msbuild": {
       "osSpecific": {
         "windows": {
-          "defaultParameters": "/nologo /verbosity:minimal /clp:Summary /maxcpucount /nodeReuse:false",
+          "defaultParameters": "/nologo /verbosity:minimal /clp:Summary /nodeReuse:false",
           "path": "Tools/msbuild.cmd"
         },
         "unix": {
-          "defaultParameters": "/nologo /verbosity:minimal /clp:Summary /maxcpucount",
+          "defaultParameters": "/nologo /verbosity:minimal /clp:Summary",
           "path": "Tools/msbuild.sh"
         }
       },

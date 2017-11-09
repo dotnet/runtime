@@ -2215,7 +2215,7 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
 // Returns true if this local var is a multireg struct
 bool Compiler::lvaIsMultiregStruct(LclVarDsc* varDsc)
 {
-    if (varDsc->TypeGet() == TYP_STRUCT)
+    if (varTypeIsStruct(varDsc->TypeGet()))
     {
         CORINFO_CLASS_HANDLE clsHnd = varDsc->lvVerTypeInfo.GetClassHandleForValueClass();
         structPassingKind    howToPassStruct;
@@ -2265,7 +2265,7 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
         size_t lvSize = varDsc->lvSize();
         assert((lvSize % sizeof(void*)) ==
                0); // The struct needs to be a multiple of sizeof(void*) bytes for getClassGClayout() to be valid.
-        varDsc->lvGcLayout = (BYTE*)compGetMemA((lvSize / sizeof(void*)) * sizeof(BYTE), CMK_LvaTable);
+        varDsc->lvGcLayout = (BYTE*)compGetMem((lvSize / sizeof(void*)) * sizeof(BYTE), CMK_LvaTable);
         unsigned  numGCVars;
         var_types simdBaseType = TYP_UNKNOWN;
         varDsc->lvType         = impNormStructType(typeHnd, varDsc->lvGcLayout, &numGCVars, &simdBaseType);

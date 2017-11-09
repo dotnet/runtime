@@ -366,6 +366,15 @@ namespace System
             }
             return TimeSpanParse.TryParse(s.AsReadOnlySpan(), null, out result);
         }
+        public static bool TryParse(ReadOnlySpan<char> s, out TimeSpan result)
+        {
+            return TimeSpanParse.TryParse(s, null, out result);
+        }
+
+        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
+        public static bool TryParse(ReadOnlySpan<char> input, out TimeSpan result, IFormatProvider formatProvider = null) =>
+            TryParse(input, formatProvider, out result);
+
         public static Boolean TryParse(String input, IFormatProvider formatProvider, out TimeSpan result)
         {
             if (input == null)
@@ -375,7 +384,7 @@ namespace System
             }
             return TimeSpanParse.TryParse(input.AsReadOnlySpan(), formatProvider, out result);
         }
-        public static bool TryParse(ReadOnlySpan<char> input, out TimeSpan result, IFormatProvider formatProvider = null)
+        public static bool TryParse(ReadOnlySpan<char> input, IFormatProvider formatProvider, out TimeSpan result)
         {
             return TimeSpanParse.TryParse(input, formatProvider, out result);
         }
@@ -388,6 +397,10 @@ namespace System
             }
             return TimeSpanParse.TryParseExact(input.AsReadOnlySpan(), format, formatProvider, TimeSpanStyles.None, out result);
         }
+        public static bool TryParseExact(ReadOnlySpan<char> input, string format, IFormatProvider formatProvider, out TimeSpan result)
+        {
+            return TimeSpanParse.TryParseExact(input, format, formatProvider, TimeSpanStyles.None, out result);
+        }
         public static Boolean TryParseExact(String input, String[] formats, IFormatProvider formatProvider, out TimeSpan result)
         {
             if (input == null)
@@ -397,6 +410,15 @@ namespace System
             }
             return TimeSpanParse.TryParseExactMultiple(input.AsReadOnlySpan(), formats, formatProvider, TimeSpanStyles.None, out result);
         }
+        public static bool TryParseExact(ReadOnlySpan<char> input, string[] formats, IFormatProvider formatProvider, out TimeSpan result)
+        {
+            return TimeSpanParse.TryParseExactMultiple(input, formats, formatProvider, TimeSpanStyles.None, out result);
+        }
+
+        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
+        public static bool TryParseExact(ReadOnlySpan<char> input, string format, IFormatProvider formatProvider, out TimeSpan result, TimeSpanStyles styles = TimeSpanStyles.None) =>
+            TryParseExact(input, format, formatProvider, styles, out result);
+
         public static Boolean TryParseExact(String input, String format, IFormatProvider formatProvider, TimeSpanStyles styles, out TimeSpan result)
         {
             ValidateStyles(styles, nameof(styles));
@@ -407,7 +429,7 @@ namespace System
             }
             return TimeSpanParse.TryParseExact(input.AsReadOnlySpan(), format, formatProvider, styles, out result);
         }
-        public static bool TryParseExact(ReadOnlySpan<char> input, string format, IFormatProvider formatProvider, out TimeSpan result, TimeSpanStyles styles = TimeSpanStyles.None)
+        public static bool TryParseExact(ReadOnlySpan<char> input, string format, IFormatProvider formatProvider, TimeSpanStyles styles, out TimeSpan result)
         {
             ValidateStyles(styles, nameof(styles));
             return TimeSpanParse.TryParseExact(input, format, formatProvider, styles, out result);
@@ -422,7 +444,12 @@ namespace System
             }
             return TimeSpanParse.TryParseExactMultiple(input.AsReadOnlySpan(), formats, formatProvider, styles, out result);
         }
-        public static bool TryParseExact(ReadOnlySpan<char> input, string[] formats, IFormatProvider formatProvider, out TimeSpan result, TimeSpanStyles styles = TimeSpanStyles.None)
+
+        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
+        public static bool TryParseExact(ReadOnlySpan<char> input, string[] formats, IFormatProvider formatProvider, out TimeSpan result, TimeSpanStyles styles = TimeSpanStyles.None) =>
+            TryParseExact(input, formats, formatProvider, styles, out result);
+
+        public static bool TryParseExact(ReadOnlySpan<char> input, string[] formats, IFormatProvider formatProvider, TimeSpanStyles styles, out TimeSpan result)
         {
             ValidateStyles(styles, nameof(styles));
             return TimeSpanParse.TryParseExactMultiple(input, formats, formatProvider, styles, out result);

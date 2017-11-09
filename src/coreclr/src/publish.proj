@@ -4,11 +4,16 @@
 
   <Import Project="$(PackagesDir)/$(FeedTasksPackage.ToLower())/$(FeedTasksPackageVersion)/build/$(FeedTasksPackage).targets" />
 
+  <UsingTask TaskName="CreateAzureContainer" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll"/>
+  <UsingTask TaskName="UploadToAzure" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll"/>
+
   <PropertyGroup>
     <PackagesPattern Condition="'$(PackagesPattern)' == ''">$(PackagesBinDir)pkg\*.nupkg</PackagesPattern>
     <TestNativeBinariesPattern Condition="'$(TestNativeBinariesPattern)' == ''">$(OutputPath)\bin\**</TestNativeBinariesPattern>
     <SymbolsPackagesPattern Condition="'$(SymbolPackagesPattern)' == ''">$(PackagesBinDir)symbolpkg\*.nupkg</SymbolsPackagesPattern>
     <PublishFlatContainer Condition="'$(PublishFlatContainer)' == ''">true</PublishFlatContainer>
+    <RelativePathWithSlash>$(RelativePath)</RelativePathWithSlash>
+    <RelativePathWithSlash Condition="'$(RelativePathWithSlash)' != '' and !HasTrailingSlash('$(RelativePathWithSlash)')">$(RelativePathWithSlash)/</RelativePathWithSlash>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -19,32 +24,71 @@
 
   <Target Name="PublishPackages" Condition="'$(__PublishPackages)' == 'true' and ('$(OfficialPublish)' != 'true' or '$(__BuildType)' == 'Release')">
     <PropertyGroup>
-      <ExpectedFeedUrl>https://$(AccountName).blob.core.windows.net/$(ContainerName)/$(RelativePath)index.json</ExpectedFeedUrl>
+      <ExpectedFeedUrl>https://$(AccountName).blob.core.windows.net/$(ContainerName)/$(RelativePathWithSlash)index.json</ExpectedFeedUrl>
     </PropertyGroup>
     <ItemGroup>
       <ItemsToPush Remove="*.nupkg" />
       <ItemsToPush Include="$(PackagesPattern)" Exclude="$(SymbolsPackagesPattern)"/>
+      <ItemsToPush>
+        <RelativeBlobPath>$(RelativePathWithSlash)$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\' ,'/'))</RelativeBlobPath>
+      </ItemsToPush>
     </ItemGroup>
-    <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
+
+    <!-- create the container if it doesn't exist -->
+    <CreateAzureContainer AccountKey="$(AccountKey)"
+                          AccountName="$(AccountName)"
+                          ContainerName="$(ContainerName)"
+                          IsPublic="true" />
+
+    <PushToBlobFeed Condition="'$(PublishFlatContainer)' == 'false'"
+                    ExpectedFeedUrl="$(ExpectedFeedUrl)"
                     AccountKey="$(AccountKey)"
                     ItemsToPush="@(ItemsToPush)"
-                    PublishFlatContainer="$(PublishFlatContainer)"
-                    Overwrite="$(OverwriteOnPublish)" 
-                    IndexDirectory="$(__IntermediatesDir)"/>
+                    RetryAttempts="10"
+                    RetryDelayInSeconds="120"
+                    Overwrite="$(OverwriteOnPublish)" />
+
+    <!-- now upload the items -->
+    <UploadToAzure  Condition="'$(PublishFlatContainer)' == 'true'"
+                    AccountKey="$(AccountKey)"
+                    AccountName="$(AccountName)"
+                    ContainerName="$(ContainerName)"
+                    Items="@(ItemsToPush)"
+                    Overwrite="$(OverwriteOnPublish)" />
   </Target>
 
   <Target Name="PublishSymbolPackages" Condition="'$(__PublishSymbols)' == 'true' and ('$(OfficialPublish)' != 'true' or '$(__BuildType)' == 'Release')">
     <PropertyGroup>
-      <ExpectedFeedUrl>https://$(AccountName).blob.core.windows.net/$(ContainerName)/$(RelativePath)index.json</ExpectedFeedUrl>
+      <ExpectedFeedUrl>https://$(AccountName).blob.core.windows.net/$(ContainerName)/$(RelativePathWithSlash)index.json</ExpectedFeedUrl>
     </PropertyGroup>
     <ItemGroup>
       <ItemsToPush Remove="*.nupkg" />
       <ItemsToPush Include="$(SymbolsPackagesPattern)"/>
+      <ItemsToPush>
+        <RelativeBlobPath>$(RelativePathWithSlash)$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\' ,'/'))</RelativeBlobPath>
+      </ItemsToPush>
     </ItemGroup>
-    <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
+
+   <!-- create the container if it doesn't exist -->
+    <CreateAzureContainer AccountKey="$(AccountKey)"
+                          AccountName="$(AccountName)"
+                          ContainerName="$(ContainerName)"
+                          IsPublic="true" />
+
+    <PushToBlobFeed Condition="'$(PublishFlatContainer)' == 'false'"
+                    ExpectedFeedUrl="$(ExpectedFeedUrl)"
                     AccountKey="$(AccountKey)"
                     ItemsToPush="@(ItemsToPush)"
-                    PublishFlatContainer="$(PublishFlatContainer)"
+                    RetryAttempts="10"
+                    RetryDelayInSeconds="120"
+                    Overwrite="$(OverwriteOnPublish)" />
+
+    <!-- now upload the items -->
+    <UploadToAzure  Condition="'$(PublishFlatContainer)' == 'true'"
+                    AccountKey="$(AccountKey)"
+                    AccountName="$(AccountName)"
+                    ContainerName="$(ContainerName)"
+                    Items="@(ItemsToPush)"
                     Overwrite="$(OverwriteOnPublish)" />
   </Target>
 
@@ -55,15 +99,34 @@
     </PropertyGroup>
     <ItemGroup>
       <ItemsToPush Remove="*.nupkg" />
-      <ItemsToPush Include="$(TestNativeBinariesPattern)"/>
+      <ItemsToPush Include="$(TestNativeBinariesPattern)" />
+      <ItemsToPush>
+        <RelativeBlobPath>$(RelativePath)/$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\' ,'/'))</RelativeBlobPath>
+      </ItemsToPush>
     </ItemGroup>
-    <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
+
+    <!-- create the container if it doesn't exist -->
+    <CreateAzureContainer AccountKey="$(AccountKey)"
+                          AccountName="$(AccountName)"
+                          ContainerName="$(ContainerName)"
+                          IsPublic="true" />
+
+    <PushToBlobFeed Condition="'$(PublishFlatContainer)' == 'false'"
+                    ExpectedFeedUrl="$(ExpectedFeedUrl)"
                     AccountKey="$(AccountKey)"
                     ItemsToPush="@(ItemsToPush)"
-                    PublishFlatContainer="$(PublishFlatContainer)"
+                    RetryAttempts="10"
+                    RetryDelayInSeconds="120"
+                    Overwrite="$(OverwriteOnPublish)" />
+
+    <!-- now upload the items -->
+    <UploadToAzure  Condition="'$(PublishFlatContainer)' == 'true'"
+                    AccountKey="$(AccountKey)"
+                    AccountName="$(AccountName)"
+                    ContainerName="$(ContainerName)"
+                    Items="@(ItemsToPush)"
                     Overwrite="$(OverwriteOnPublish)" />
   </Target>
-
 
   <Target Name="Build" DependsOnTargets="PublishPackages;PublishSymbolPackages;PublishTestNativeBinaries"/>
 </Project>
