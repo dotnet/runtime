@@ -1471,8 +1471,8 @@ void emitter::emitBegProlog()
     /* Nothing is live on entry to the prolog */
 
     // These were initialized to Empty at the start of compilation.
-    VarSetOps::OldStyleClearD(emitComp, emitInitGCrefVars);
-    VarSetOps::OldStyleClearD(emitComp, emitPrevGCrefVars);
+    VarSetOps::ClearD(emitComp, emitInitGCrefVars);
+    VarSetOps::ClearD(emitComp, emitPrevGCrefVars);
     emitInitGCrefRegs = RBM_NONE;
     emitPrevGCrefRegs = RBM_NONE;
     emitInitByrefRegs = RBM_NONE;
@@ -4560,7 +4560,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
     /* Assume no live GC ref variables on entry */
 
-    VarSetOps::OldStyleClearD(emitComp, emitThisGCrefVars); // This is initialized to Empty at the start of codegen.
+    VarSetOps::ClearD(emitComp, emitThisGCrefVars); // This is initialized to Empty at the start of codegen.
     emitThisGCrefRegs = emitThisByrefRegs = RBM_NONE;
     emitThisGCrefVset                     = true;
 
@@ -5362,6 +5362,69 @@ UNATIVE_OFFSET emitter::emitDataConst(const void* cnsAddr, unsigned cnsSize, boo
 
     return cnum;
 }
+
+#ifndef LEGACY_BACKEND
+
+//------------------------------------------------------------------------
+// emitAnyConst: Create a data section constant of arbitrary size.
+//
+// Arguments:
+//    cnsAddr  - pointer to the data to be placed in the data section
+//    cnsSize  - size of the data
+//    dblAlign - whether to align the data section to an 8 byte boundary
+//
+// Return Value:
+//    A field handle representing the data offset to access the constant.
+//
+CORINFO_FIELD_HANDLE emitter::emitAnyConst(const void* cnsAddr, unsigned cnsSize, bool dblAlign)
+{
+    UNATIVE_OFFSET cnum = emitDataConst(cnsAddr, cnsSize, dblAlign);
+    return emitComp->eeFindJitDataOffs(cnum);
+}
+
+//------------------------------------------------------------------------
+// emitFltOrDblConst: Create a float or double data section constant.
+//
+// Arguments:
+//    constValue - constant value
+//    attr       - constant size
+//
+// Return Value:
+//    A field handle representing the data offset to access the constant.
+//
+// Notes:
+//    If attr is EA_4BYTE then the double value is converted to a float value.
+//    If attr is EA_8BYTE then 8 byte alignment is automatically requested.
+//
+CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr)
+{
+    assert((attr == EA_4BYTE) || (attr == EA_8BYTE));
+
+    void* cnsAddr;
+    float f;
+    bool  dblAlign;
+
+    if (attr == EA_4BYTE)
+    {
+        f        = forceCastToFloat(constValue);
+        cnsAddr  = &f;
+        dblAlign = false;
+    }
+    else
+    {
+        cnsAddr  = &constValue;
+        dblAlign = true;
+    }
+
+    // Access to inline data is 'abstracted' by a special type of static member
+    // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
+    // to constant data, not a real static field.
+
+    UNATIVE_OFFSET cnsSize = (attr == EA_4BYTE) ? 4 : 8;
+    UNATIVE_OFFSET cnum    = emitDataConst(cnsAddr, cnsSize, dblAlign);
+    return emitComp->eeFindJitDataOffs(cnum);
+}
+#endif
 
 /*****************************************************************************
  *

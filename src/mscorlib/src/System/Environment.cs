@@ -42,7 +42,7 @@ namespace System
     internal static partial class Environment
     {
         // Assume the following constants include the terminating '\0' - use <, not <=
-        private const int MaxEnvVariableValueLength = 32767;  // maximum length for environment variable name and value
+
         // System environment variables are stored in the registry, and have 
         // a size restriction that is separate from both normal environment 
         // variables and registry value name lengths, according to MSDN.
@@ -476,8 +476,6 @@ namespace System
 
         private static void ValidateVariableAndValue(string variable, ref string value)
         {
-            const int MaxEnvVariableValueLength = 32767;
-
             if (variable == null)
             {
                 throw new ArgumentNullException(nameof(variable));
@@ -490,10 +488,6 @@ namespace System
             {
                 throw new ArgumentException(SR.Argument_StringFirstCharIsZero, nameof(variable));
             }
-            if (variable.Length >= MaxEnvVariableValueLength)
-            {
-                throw new ArgumentException(SR.Argument_LongEnvVarValue, nameof(variable));
-            }
             if (variable.IndexOf('=') != -1)
             {
                 throw new ArgumentException(SR.Argument_IllegalEnvVarName, nameof(variable));
@@ -503,10 +497,6 @@ namespace System
             {
                 // Explicitly null out value if it's empty
                 value = null;
-            }
-            else if (value.Length >= MaxEnvVariableValueLength)
-            {
-                throw new ArgumentException(SR.Argument_LongEnvVarValue, nameof(value));
             }
         }
 
@@ -703,6 +693,9 @@ namespace System
                         // The error message from Win32 is "The filename or extension is too long",
                         // which is not accurate.
                         throw new ArgumentException(SR.Format(SR.Argument_LongEnvVarValue));
+                    case Win32Native.ERROR_NOT_ENOUGH_MEMORY:
+                    case Win32Native.ERROR_NO_SYSTEM_RESOURCES:
+                        throw new OutOfMemoryException(Interop.Kernel32.GetMessage(errorCode));
                     default:
                         throw new ArgumentException(Interop.Kernel32.GetMessage(errorCode));
                 }

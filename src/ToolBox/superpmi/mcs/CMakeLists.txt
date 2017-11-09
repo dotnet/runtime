@@ -49,7 +49,7 @@ add_precompiled_header(
     MCS_SOURCES
 )
 
-add_executable(mcs
+_add_executable(mcs
     ${MCS_SOURCES}
 )
 

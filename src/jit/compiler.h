@@ -33,14 +33,14 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "instr.h"
 #include "regalloc.h"
 #include "sm.h"
-#include "simplerhash.h"
+#include "jithashtable.h"
 #include "cycletimer.h"
 #include "blockset.h"
 #include "jitstd.h"
 #include "arraystack.h"
 #include "hashbv.h"
 #include "fp.h"
-#include "expandarray.h"
+#include "jitexpandarray.h"
 #include "tinyarray.h"
 #include "valuenum.h"
 #include "reglist.h"
@@ -105,10 +105,6 @@ class Compiler;
 //
 // Declare global operator new overloads that use the Compiler::compGetMem() function for allocation.
 //
-
-// Or the more-general IAllocator interface.
-void* __cdecl operator new(size_t n, IAllocator* alloc);
-void* __cdecl operator new[](size_t n, IAllocator* alloc);
 
 // I wanted to make the second argument optional, with default = CMK_Unknown, but that
 // caused these to be ambiguous with the global placement new operators.
@@ -201,7 +197,7 @@ public:
     }
 };
 
-typedef ExpandArray<LclSsaVarDsc> PerSsaArray;
+typedef JitExpandArray<LclSsaVarDsc> PerSsaArray;
 
 class LclVarDsc
 {
@@ -425,7 +421,7 @@ public:
     unsigned lvHfaSlots() const
     {
         assert(lvIsHfa());
-        assert(lvType == TYP_STRUCT);
+        assert(varTypeIsStruct(lvType));
 #ifdef _TARGET_ARM_
         return lvExactSize / sizeof(float);
 #else  //  _TARGET_ARM64_
@@ -1479,38 +1475,10 @@ struct TestLabelAndNum
     }
 };
 
-typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, TestLabelAndNum, JitSimplerHashBehavior> NodeToTestDataMap;
+typedef JitHashTable<GenTreePtr, JitPtrKeyFuncs<GenTree>, TestLabelAndNum> NodeToTestDataMap;
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif // DEBUG
-
-// This class implements the "IAllocator" interface, so that we can use
-// utilcode collection classes in the JIT, and have them use the JIT's allocator.
-
-class CompAllocator : public IAllocator
-{
-    Compiler* m_comp;
-#if MEASURE_MEM_ALLOC
-    CompMemKind m_cmk;
-#endif
-public:
-    CompAllocator(Compiler* comp, CompMemKind cmk)
-        : m_comp(comp)
-#if MEASURE_MEM_ALLOC
-        , m_cmk(cmk)
-#endif
-    {
-    }
-
-    inline void* Alloc(size_t sz);
-
-    inline void* ArrayAlloc(size_t elems, size_t elemSize);
-
-    // For the compiler's no-release allocator, free operations are no-ops.
-    void Free(void* p)
-    {
-    }
-};
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1905,8 +1873,7 @@ public:
     flowList* BlockPredsWithEH(BasicBlock* blk);
 
     // This table is useful for memoization of the method above.
-    typedef SimplerHashTable<BasicBlock*, PtrKeyFuncs<BasicBlock>, flowList*, JitSimplerHashBehavior>
-                        BlockToFlowListMap;
+    typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, flowList*> BlockToFlowListMap;
     BlockToFlowListMap* m_blockToEHPreds;
     BlockToFlowListMap* GetBlockToEHPreds()
     {
@@ -3266,7 +3233,7 @@ private:
     PendingDsc* impPendingFree; // Freed up dscs that can be reused
 
     // We keep a byte-per-block map (dynamically extended) in the top-level Compiler object of a compilation.
-    ExpandArray<BYTE> impPendingBlockMembers;
+    JitExpandArray<BYTE> impPendingBlockMembers;
 
     // Return the byte for "b" (allocating/extending impPendingBlockMembers if necessary.)
     // Operates on the map in the top-level ancestor.
@@ -3354,8 +3321,8 @@ private:
     // When we compute a "spill clique" (see above) these byte-maps are allocated to have a byte per basic
     // block, and represent the predecessor and successor members of the clique currently being computed.
     // *** Access to these will need to be locked in a parallel compiler.
-    ExpandArray<BYTE> impSpillCliquePredMembers;
-    ExpandArray<BYTE> impSpillCliqueSuccMembers;
+    JitExpandArray<BYTE> impSpillCliquePredMembers;
+    JitExpandArray<BYTE> impSpillCliqueSuccMembers;
 
     enum SpillCliqueDir
     {
@@ -3935,7 +3902,7 @@ public:
     // "x", and a def of a new SSA name for "x".  The tree only has one local variable for "x", so it has to choose
     // whether to treat that as the use or def.  It chooses the "use", and thus the old SSA name.  This map allows us
     // to record/recover the "def" SSA number, given the lcl var node for "x" in such a tree.
-    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, unsigned, JitSimplerHashBehavior> NodeToUnsignedMap;
+    typedef JitHashTable<GenTreePtr, JitPtrKeyFuncs<GenTree>, unsigned> NodeToUnsignedMap;
     NodeToUnsignedMap* m_opAsgnVarDefSsaNums;
     NodeToUnsignedMap* GetOpAsgnVarDefSsaNums()
     {
@@ -3997,16 +3964,15 @@ public:
         {
         }
     };
-    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, IndirectAssignmentAnnotation*, JitSimplerHashBehavior>
-                          NodeToIndirAssignMap;
+    typedef JitHashTable<GenTreePtr, JitPtrKeyFuncs<GenTree>, IndirectAssignmentAnnotation*> NodeToIndirAssignMap;
     NodeToIndirAssignMap* m_indirAssignMap;
     NodeToIndirAssignMap* GetIndirAssignMap()
     {
         if (m_indirAssignMap == nullptr)
         {
             // Create a CompAllocator that labels sub-structure with CMK_IndirAssignMap, and use that for allocation.
-            IAllocator* ialloc = new (this, CMK_IndirAssignMap) CompAllocator(this, CMK_IndirAssignMap);
-            m_indirAssignMap   = new (ialloc) NodeToIndirAssignMap(ialloc);
+            CompAllocator* ialloc = new (this, CMK_IndirAssignMap) CompAllocator(this, CMK_IndirAssignMap);
+            m_indirAssignMap      = new (ialloc) NodeToIndirAssignMap(ialloc);
         }
         return m_indirAssignMap;
     }
@@ -4351,11 +4317,10 @@ public:
         // The switch block "switchBlk" just had an entry with value "from" modified to the value "to".
         // Update "this" as necessary: if "from" is no longer an element of the jump table of "switchBlk",
         // remove it from "this", and ensure that "to" is a member.  Use "alloc" to do any required allocation.
-        void UpdateTarget(IAllocator* alloc, BasicBlock* switchBlk, BasicBlock* from, BasicBlock* to);
+        void UpdateTarget(CompAllocator* alloc, BasicBlock* switchBlk, BasicBlock* from, BasicBlock* to);
     };
 
-    typedef SimplerHashTable<BasicBlock*, PtrKeyFuncs<BasicBlock>, SwitchUniqueSuccSet, JitSimplerHashBehavior>
-        BlockToSwitchDescMap;
+    typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, SwitchUniqueSuccSet> BlockToSwitchDescMap;
 
 private:
     // Maps BasicBlock*'s that end in switch statements to SwitchUniqueSuccSets that allow
@@ -5104,7 +5069,7 @@ protected:
     void optHoistLoopCode();
 
     // To represent sets of VN's that have already been hoisted in outer loops.
-    typedef SimplerHashTable<ValueNum, SmallPrimitiveKeyFuncs<ValueNum>, bool, JitSimplerHashBehavior> VNToBoolMap;
+    typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, bool> VNToBoolMap;
     typedef VNToBoolMap VNSet;
 
     struct LoopHoistContext
@@ -5330,20 +5295,12 @@ public:
         int lpLoopVarFPCount;     // The register count for the FP LclVars that are read/written inside this loop
         int lpVarInOutFPCount;    // The register count for the FP LclVars that are alive inside or accross this loop
 
-        typedef SimplerHashTable<CORINFO_FIELD_HANDLE,
-                                 PtrKeyFuncs<struct CORINFO_FIELD_STRUCT_>,
-                                 bool,
-                                 JitSimplerHashBehavior>
-                        FieldHandleSet;
+        typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<struct CORINFO_FIELD_STRUCT_>, bool> FieldHandleSet;
         FieldHandleSet* lpFieldsModified; // This has entries (mappings to "true") for all static field and object
                                           // instance fields modified
                                           // in the loop.
 
-        typedef SimplerHashTable<CORINFO_CLASS_HANDLE,
-                                 PtrKeyFuncs<struct CORINFO_CLASS_STRUCT_>,
-                                 bool,
-                                 JitSimplerHashBehavior>
-                        ClassHandleSet;
+        typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<struct CORINFO_CLASS_STRUCT_>, bool> ClassHandleSet;
         ClassHandleSet* lpArrayElemTypesModified; // Bits set indicate the set of sz array element types such that
                                                   // arrays of that type are modified
                                                   // in the loop.
@@ -5660,7 +5617,7 @@ protected:
     CSEdsc**            optCSEhash;
     CSEdsc**            optCSEtab;
 
-    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, GenTreePtr, JitSimplerHashBehavior> NodeToNodeMap;
+    typedef JitHashTable<GenTreePtr, JitPtrKeyFuncs<GenTree>, GenTreePtr> NodeToNodeMap;
 
     NodeToNodeMap* optCseCheckedBoundMap; // Maps bound nodes to ancestor compares that should be
                                           // re-numbered with the bound to improve range check elimination
@@ -5780,8 +5737,7 @@ protected:
 public:
     // VN based copy propagation.
     typedef ArrayStack<GenTreePtr> GenTreePtrStack;
-    typedef SimplerHashTable<unsigned, SmallPrimitiveKeyFuncs<unsigned>, GenTreePtrStack*, JitSimplerHashBehavior>
-        LclNumToGenTreePtrStack;
+    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, GenTreePtrStack*> LclNumToGenTreePtrStack;
 
     // Kill set to track variables with intervening definitions.
     VARSET_TP optCopyPropKillSet;
@@ -6135,11 +6091,11 @@ protected:
 #ifdef DEBUG
     GenTreePtr optAssertionPropCurrentTree;
 #endif
-    AssertionIndex*         optComplementaryAssertionMap;
-    ExpandArray<ASSERT_TP>* optAssertionDep; // table that holds dependent assertions (assertions
-                                             // using the value of a local var) for each local var
-    AssertionDsc*  optAssertionTabPrivate;   // table that holds info about value assignments
-    AssertionIndex optAssertionCount;        // total number of assertions in the assertion table
+    AssertionIndex*            optComplementaryAssertionMap;
+    JitExpandArray<ASSERT_TP>* optAssertionDep; // table that holds dependent assertions (assertions
+                                                // using the value of a local var) for each local var
+    AssertionDsc*  optAssertionTabPrivate;      // table that holds info about value assignments
+    AssertionIndex optAssertionCount;           // total number of assertions in the assertion table
     AssertionIndex optMaxAssertionCount;
 
 public:
@@ -6155,8 +6111,7 @@ public:
         return optAssertionCount;
     }
     ASSERT_TP* bbJtrueAssertionOut;
-    typedef SimplerHashTable<ValueNum, SmallPrimitiveKeyFuncs<ValueNum>, ASSERT_TP, JitSimplerHashBehavior>
-                          ValueNumToAssertsMap;
+    typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, ASSERT_TP> ValueNumToAssertsMap;
     ValueNumToAssertsMap* optValueNumToAsserts;
 
     // Assertion prop helpers.
@@ -7076,8 +7031,7 @@ public:
     // whose return type is other than TYP_VOID. 2) GT_CALL node is a frequently used
     // structure and IL offset is needed only when generating debuggable code. Therefore
     // it is desirable to avoid memory size penalty in retail scenarios.
-    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, IL_OFFSETX, JitSimplerHashBehavior>
-                           CallSiteILOffsetTable;
+    typedef JitHashTable<GenTreePtr, JitPtrKeyFuncs<GenTree>, IL_OFFSETX> CallSiteILOffsetTable;
     CallSiteILOffsetTable* genCallSite2ILOffsetMap;
 
     unsigned    genReturnLocal; // Local number for the return value when applicable.
@@ -7926,8 +7880,8 @@ public:
 //       the importing is completely finished.
 
 #ifdef LEGACY_BACKEND
-    ExpandArrayStack<GenTreePtr>* compQMarks; // The set of QMark nodes created in the current compilation, so
-                                              // we can iterate over these efficiently.
+    JitExpandArrayStack<GenTreePtr>* compQMarks; // The set of QMark nodes created in the current compilation, so
+                                                 // we can iterate over these efficiently.
 #endif
 
 #if CPU_USES_BLOCK_MOVE
@@ -8785,10 +8739,7 @@ public:
 #endif // LOOP_HOIST_STATS
 
     void* compGetMemArray(size_t numElem, size_t elemSize, CompMemKind cmk = CMK_Unknown);
-    void* compGetMemArrayA(size_t numElem, size_t elemSize, CompMemKind cmk = CMK_Unknown);
     void* compGetMem(size_t sz, CompMemKind cmk = CMK_Unknown);
-    void* compGetMemA(size_t sz, CompMemKind cmk = CMK_Unknown);
-    static void* compGetMemCallback(void*, size_t, CompMemKind cmk = CMK_Unknown);
     void compFreeMem(void*);
 
     bool compIsForImportOnly();
@@ -8808,13 +8759,24 @@ public:
 
     //-------------------------------------------------------------------------
 
-    typedef ListNode<VarScopeDsc*> VarScopeListNode;
+    struct VarScopeListNode
+    {
+        VarScopeDsc*             data;
+        VarScopeListNode*        next;
+        static VarScopeListNode* Create(VarScopeDsc* value, CompAllocator* alloc)
+        {
+            VarScopeListNode* node = new (alloc) VarScopeListNode;
+            node->data             = value;
+            node->next             = nullptr;
+            return node;
+        }
+    };
 
     struct VarScopeMapInfo
     {
         VarScopeListNode*       head;
         VarScopeListNode*       tail;
-        static VarScopeMapInfo* Create(VarScopeListNode* node, IAllocator* alloc)
+        static VarScopeMapInfo* Create(VarScopeListNode* node, CompAllocator* alloc)
         {
             VarScopeMapInfo* info = new (alloc) VarScopeMapInfo;
             info->head            = node;
@@ -8826,8 +8788,7 @@ public:
     // Max value of scope count for which we would use linear search; for larger values we would use hashtable lookup.
     static const unsigned MAX_LINEAR_FIND_LCL_SCOPELIST = 32;
 
-    typedef SimplerHashTable<unsigned, SmallPrimitiveKeyFuncs<unsigned>, VarScopeMapInfo*, JitSimplerHashBehavior>
-        VarNumToScopeDscMap;
+    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, VarScopeMapInfo*> VarNumToScopeDscMap;
 
     // Map to keep variables' scope indexed by varNum containing it's scope dscs at the index.
     VarNumToScopeDscMap* compVarScopeMap;
@@ -8888,16 +8849,13 @@ protected:
     ArenaAllocator* compAllocator;
 
 public:
-    // This one presents an implementation of the "IAllocator" abstract class that uses "compAllocator",
-    // suitable for use by utilcode collection types.
-    IAllocator* compAsIAllocator;
-
+    CompAllocator* compAllocatorGeneric; // An allocator that uses the CMK_Generic tracker.
 #if MEASURE_MEM_ALLOC
-    IAllocator* compAsIAllocatorBitset;    // An allocator that uses the CMK_bitset tracker.
-    IAllocator* compAsIAllocatorGC;        // An allocator that uses the CMK_GC tracker.
-    IAllocator* compAsIAllocatorLoopHoist; // An allocator that uses the CMK_LoopHoist tracker.
+    CompAllocator* compAllocatorBitset;    // An allocator that uses the CMK_bitset tracker.
+    CompAllocator* compAllocatorGC;        // An allocator that uses the CMK_GC tracker.
+    CompAllocator* compAllocatorLoopHoist; // An allocator that uses the CMK_LoopHoist tracker.
 #ifdef DEBUG
-    IAllocator* compAsIAllocatorDebugOnly; // An allocator that uses the CMK_DebugOnly tracker.
+    CompAllocator* compAllocatorDebugOnly; // An allocator that uses the CMK_DebugOnly tracker.
 #endif                                     // DEBUG
 #endif                                     // MEASURE_MEM_ALLOC
 
@@ -8938,46 +8896,46 @@ public:
     // Assumes called as part of process shutdown; does any compiler-specific work associated with that.
     static void ProcessShutdownWork(ICorStaticInfo* statInfo);
 
-    IAllocator* getAllocator()
+    CompAllocator* getAllocator()
     {
-        return compAsIAllocator;
+        return compAllocatorGeneric;
     }
 
 #if MEASURE_MEM_ALLOC
-    IAllocator* getAllocatorBitset()
+    CompAllocator* getAllocatorBitset()
     {
-        return compAsIAllocatorBitset;
+        return compAllocatorBitset;
     }
-    IAllocator* getAllocatorGC()
+    CompAllocator* getAllocatorGC()
     {
-        return compAsIAllocatorGC;
+        return compAllocatorGC;
     }
-    IAllocator* getAllocatorLoopHoist()
+    CompAllocator* getAllocatorLoopHoist()
     {
-        return compAsIAllocatorLoopHoist;
+        return compAllocatorLoopHoist;
     }
 #else  // !MEASURE_MEM_ALLOC
-    IAllocator* getAllocatorBitset()
+    CompAllocator* getAllocatorBitset()
     {
-        return compAsIAllocator;
+        return compAllocatorGeneric;
     }
-    IAllocator* getAllocatorGC()
+    CompAllocator* getAllocatorGC()
     {
-        return compAsIAllocator;
+        return compAllocatorGeneric;
     }
-    IAllocator* getAllocatorLoopHoist()
+    CompAllocator* getAllocatorLoopHoist()
     {
-        return compAsIAllocator;
+        return compAllocatorGeneric;
     }
 #endif // !MEASURE_MEM_ALLOC
 
 #ifdef DEBUG
-    IAllocator* getAllocatorDebugOnly()
+    CompAllocator* getAllocatorDebugOnly()
     {
 #if MEASURE_MEM_ALLOC
-        return compAsIAllocatorDebugOnly;
+        return compAllocatorDebugOnly;
 #else  // !MEASURE_MEM_ALLOC
-        return compAsIAllocator;
+        return compAllocatorGeneric;
 #endif // !MEASURE_MEM_ALLOC
     }
 #endif // DEBUG
@@ -9393,7 +9351,7 @@ public:
         return compRoot->m_nodeTestData;
     }
 
-    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, int, JitSimplerHashBehavior> NodeToIntMap;
+    typedef JitHashTable<GenTreePtr, JitPtrKeyFuncs<GenTree>, int> NodeToIntMap;
 
     // Returns the set (i.e., the domain of the result map) of nodes that are keys in m_nodeTestData, and
     // currently occur in the AST graph.
@@ -9423,13 +9381,13 @@ public:
         if (compRoot->m_fieldSeqStore == nullptr)
         {
             // Create a CompAllocator that labels sub-structure with CMK_FieldSeqStore, and use that for allocation.
-            IAllocator* ialloc        = new (this, CMK_FieldSeqStore) CompAllocator(this, CMK_FieldSeqStore);
+            CompAllocator* ialloc     = new (this, CMK_FieldSeqStore) CompAllocator(this, CMK_FieldSeqStore);
             compRoot->m_fieldSeqStore = new (ialloc) FieldSeqStore(ialloc);
         }
         return compRoot->m_fieldSeqStore;
     }
 
-    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, FieldSeqNode*, JitSimplerHashBehavior> NodeToFieldSeqMap;
+    typedef JitHashTable<GenTreePtr, JitPtrKeyFuncs<GenTree>, FieldSeqNode*> NodeToFieldSeqMap;
 
     // Some nodes of "TYP_BYREF" or "TYP_I_IMPL" actually represent the address of a field within a struct, but since
     // the offset of the field is zero, there's no "GT_ADD" node.  We normally attach a field sequence to the constant
@@ -9444,8 +9402,8 @@ public:
         {
             // Create a CompAllocator that labels sub-structure with CMK_ZeroOffsetFieldMap, and use that for
             // allocation.
-            IAllocator* ialloc   = new (this, CMK_ZeroOffsetFieldMap) CompAllocator(this, CMK_ZeroOffsetFieldMap);
-            m_zeroOffsetFieldMap = new (ialloc) NodeToFieldSeqMap(ialloc);
+            CompAllocator* ialloc = new (this, CMK_ZeroOffsetFieldMap) CompAllocator(this, CMK_ZeroOffsetFieldMap);
+            m_zeroOffsetFieldMap  = new (ialloc) NodeToFieldSeqMap(ialloc);
         }
         return m_zeroOffsetFieldMap;
     }
@@ -9462,8 +9420,7 @@ public:
     // CoreRT. Such case is handled same as the default case.
     void fgAddFieldSeqForZeroOffset(GenTreePtr op1, FieldSeqNode* fieldSeq);
 
-    typedef SimplerHashTable<const GenTree*, PtrKeyFuncs<GenTree>, ArrayInfo, JitSimplerHashBehavior>
-                        NodeToArrayInfoMap;
+    typedef JitHashTable<const GenTree*, JitPtrKeyFuncs<GenTree>, ArrayInfo> NodeToArrayInfoMap;
     NodeToArrayInfoMap* m_arrayInfoMap;
 
     NodeToArrayInfoMap* GetArrayInfoMap()
@@ -9472,7 +9429,7 @@ public:
         if (compRoot->m_arrayInfoMap == nullptr)
         {
             // Create a CompAllocator that labels sub-structure with CMK_ArrayInfoMap, and use that for allocation.
-            IAllocator* ialloc       = new (this, CMK_ArrayInfoMap) CompAllocator(this, CMK_ArrayInfoMap);
+            CompAllocator* ialloc    = new (this, CMK_ArrayInfoMap) CompAllocator(this, CMK_ArrayInfoMap);
             compRoot->m_arrayInfoMap = new (ialloc) NodeToArrayInfoMap(ialloc);
         }
         return compRoot->m_arrayInfoMap;
@@ -9527,7 +9484,7 @@ public:
         if (compRoot->m_memorySsaMap[memoryKind] == nullptr)
         {
             // Create a CompAllocator that labels sub-structure with CMK_ArrayInfoMap, and use that for allocation.
-            IAllocator* ialloc                   = new (this, CMK_ArrayInfoMap) CompAllocator(this, CMK_ArrayInfoMap);
+            CompAllocator* ialloc                = new (this, CMK_ArrayInfoMap) CompAllocator(this, CMK_ArrayInfoMap);
             compRoot->m_memorySsaMap[memoryKind] = new (ialloc) NodeToUnsignedMap(ialloc);
         }
         return compRoot->m_memorySsaMap[memoryKind];

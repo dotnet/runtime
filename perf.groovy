@@ -87,28 +87,22 @@ def static getOSGroup(def os) {
 
                             batchFile("tests\\runtest.cmd ${configuration} ${architecture} GenerateLayoutOnly")
 
-                            def runXUnitPerfCommonArgs = "-arch ${arch} -configuration ${configuration} -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -runtype ${runType} ${testEnv} -optLevel ${opt_level} -jitName ${jit} -stabilityPrefix \"START \"CORECLR_PERF_RUN\" /B /WAIT /HIGH /AFFINITY 0x2\""
+                            def runXUnitPerfCommonArgs = "-arch ${arch} -configuration ${configuration} -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -runtype ${runType} ${testEnv} -optLevel ${opt_level} -jitName ${jit} -outputdir \"%WORKSPACE%\\bin\\sandbox_logs\" -stabilityPrefix \"START \"CORECLR_PERF_RUN\" /B /WAIT /HIGH /AFFINITY 0x2\""
 
                             // Run with just stopwatch: Profile=Off
                             batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\perflab\\Perflab -library")
-                            batchFile("xcopy.exe /VYQK bin\\sandbox\\Logs\\Perf-*.* bin\\toArchive\\sandbox\\Logs\\Perflab\\Off\\")
-
                             batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\Jit\\Performance\\CodeQuality")
-                            batchFile("xcopy.exe /VYQK bin\\sandbox\\Logs\\Perf-*.* bin\\toArchive\\sandbox\\Logs\\CodeQuality\\Off\\")
 
                             // Run with the full set of counters enabled: Profile=On
                             if (opt_level != 'min_opt') {
                                 batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\perflab\\Perflab -library -collectionFlags default+BranchMispredictions+CacheMisses+InstructionRetired+gcapi")
-                                batchFile("xcopy.exe /VYQK bin\\sandbox\\Logs\\Perf-*.* bin\\toArchive\\sandbox\\Logs\\Perflab\\On\\")
-
                                 batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\Jit\\Performance\\CodeQuality -collectionFlags default+BranchMispredictions+CacheMisses+InstructionRetired+gcapi")
-                                batchFile("xcopy.exe /VYQK bin\\sandbox\\Logs\\Perf-*.* bin\\toArchive\\sandbox\\Logs\\CodeQuality\\On\\")
                             }
                         }
                     }
 
                     def archiveSettings = new ArchivalSettings()
-                    archiveSettings.addFiles('bin/toArchive/**')
+                    archiveSettings.addFiles('bin/sandbox_logs/**')
                     archiveSettings.addFiles('machinedata.json')
 
                     Utilities.addArchival(newJob, archiveSettings)
@@ -605,22 +599,20 @@ parallel(
 
                             batchFile("tests\\runtest.cmd ${configuration} ${architecture} GenerateLayoutOnly")
 
-                            def runXUnitPerfCommonArgs = "-arch ${arch} -configuration ${configuration} -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -runtype ${runType} ${testEnv} -optLevel ${opt_level} -jitName ${jit} -scenarioTest"
+                            def runXUnitPerfCommonArgs = "-arch ${arch} -configuration ${configuration} -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -runtype ${runType} ${testEnv} -optLevel ${opt_level} -jitName ${jit} -outputdir \"%WORKSPACE%\\bin\\sandbox_logs\" -stabilityPrefix \"START \"CORECLR_PERF_RUN\" /B /WAIT /HIGH\" -scenarioTest"
 
                             // Profile=Off
                             batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\Scenario\\JitBench -group CoreCLR-Scenarios")
-                            batchFile("xcopy.exe /VYQK bin\\sandbox\\Logs\\Perf-*.* bin\\toArchive\\sandbox\\Logs\\Scenario\\JitBench\\Off\\")
 
                             // Profile=On
                             if (opt_level != 'min_opt') {
                                 batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\Scenario\\JitBench -group CoreCLR-Scenarios -collectionFlags BranchMispredictions+CacheMisses+InstructionRetired")
-                                batchFile("xcopy.exe /VYQK bin\\sandbox\\Logs\\Perf-*.* bin\\toArchive\\sandbox\\Logs\\Scenario\\JitBench\\On\\")
                             }
                         }
                     }
 
                     def archiveSettings = new ArchivalSettings()
-                    archiveSettings.addFiles('bin/toArchive/**')
+                    archiveSettings.addFiles('bin/sandbox_logs/**')
                     archiveSettings.addFiles('machinedata.json')
 
                     Utilities.addArchival(newJob, archiveSettings)
@@ -800,16 +792,15 @@ parallel(
 
                             batchFile("tests\\runtest.cmd ${configuration} ${architecture} GenerateLayoutOnly")
 
-                            def runXUnitPerfCommonArgs = "-arch ${arch} -configuration ${configuration} -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -runtype ${runType} ${testEnv} -optLevel ${opt_level} -jitName ${jit} -scenarioTest"
+                            def runXUnitPerfCommonArgs = "-arch ${arch} -configuration ${configuration} -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -runtype ${runType} ${testEnv} -optLevel ${opt_level} -jitName ${jit} -outputdir \"%WORKSPACE%\\bin\\sandbox_logs\" -scenarioTest"
 
                             // Scenario: ILLink
                             batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\linkbench\\linkbench -group ILLink -nowarmup")
-                            batchFile("xcopy.exe /VYQK bin\\sandbox\\Logs\\Perf-*.* bin\\toArchive\\sandbox\\Logs\\Scenario\\LinkBench\\")
                         }
                     }
 
                     def archiveSettings = new ArchivalSettings()
-                    archiveSettings.addFiles('bin/toArchive/**')
+                    archiveSettings.addFiles('bin/sandbox_logs/**')
                     archiveSettings.addFiles('machinedata.json')
 
                     // Set the label (currently we are only measuring size, therefore we are running on VM).

@@ -1457,8 +1457,6 @@ void EEDbgInterfaceImpl::DebuggerModifyingLogSwitch (int iNewLevel,
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    
-    Log::DebuggerModifyingLogSwitch (iNewLevel, pLogSwitchName);
 }
 
 
