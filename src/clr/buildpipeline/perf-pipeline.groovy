@@ -245,11 +245,6 @@ def innerLoopBuilds = [
         simpleNode('Windows_NT','latest') {
             windowsBuild('x86', config, 'pgo', false)
         }
-    },
-    "linux x64 pgo build": {
-        simpleNode('RHEL7.2', 'latest-or-auto') {
-            linuxBuild('x64', config, 'pgo', false)
-        }
     }
 ]
 
@@ -268,6 +263,11 @@ if (!isPR()) {
                windowsBuild('x86', config, 'nopgo', false)
            }
         },
+        "linux x64 pgo build": {
+            simpleNode('RHEL7.2', 'latest-or-auto') {
+                linuxBuild('x64', config, 'pgo', false)
+            }
+        },
         "linux x64 nopgo build": {
            simpleNode('RHEL7.2', 'latest-or-auto') {
                linuxBuild('x64', config, 'nopgo', false)
@@ -276,7 +276,7 @@ if (!isPR()) {
     ]
 }
 
-def baselineBuilds = [:]
+/*def baselineBuilds = [:]
 
 if (isPR()) {
    baselineBuilds = [
@@ -289,17 +289,12 @@ if (isPR()) {
            simpleNode('Windows_NT','latest') {
                windowsBuild('x86', config, 'pgo', true)
            }
-       },
-       "linux x64 pgo baseline build": {
-           simpleNode('RHEL7.2', 'latest-or-auto') {
-               linuxBuild('x64', config, 'pgo', true)
-           }
        }
    ]
-}
+}*/
 
 stage ('Build Product') {
-    parallel innerLoopBuilds + outerLoopBuilds + baselineBuilds
+    parallel innerLoopBuilds + outerLoopBuilds //+ baselineBuilds
 }
 
 // Pipeline builds don't allow outside scripts (ie ArrayList.Add) if running from a script from SCM, so manually list these for now.
@@ -309,7 +304,7 @@ def innerLoopTests = [:]
 
 ['x64', 'x86'].each { arch ->
     ['full_opt'].each { opt_level ->
-        [true,false].each { isBaseline ->
+        [false].each { isBaseline ->
             String baseline = ""
             if (isBaseline) {
                 baseline = " baseline"
@@ -318,14 +313,6 @@ def innerLoopTests = [:]
                 innerLoopTests["windows ${arch} ryujit ${opt_level} pgo${baseline} perf"] = {
                     simpleNode('windows_server_2016_clr_perf', 180) {
                         windowsPerf(arch, config, uploadString, runType, opt_level, 'ryujit', 'pgo', 'perf', isBaseline)
-                    }
-                }
-
-                if (arch == 'x64') {
-                    innerLoopTests["linux ${arch} ryujit ${opt_level} pgo${baseline} perf"] = {
-                        simpleNode('linux_clr_perf', 180) {
-                            linuxPerf('x64', 'Ubuntu14.04', config, uploadString, runType, opt_level, 'pgo', isBaseline)
-                        }
                     }
                 }
             }
