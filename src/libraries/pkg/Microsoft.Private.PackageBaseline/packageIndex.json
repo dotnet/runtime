@@ -3460,7 +3460,16 @@
     },
     "System.Runtime.Caching": {
       "InboxOn": {
-        "net45": "4.0.0.0"
+        "net45": "4.0.0.0",
+        "monoandroid10": "Any",
+        "monotouch10": "Any",
+        "xamarinios10": "Any",
+        "xamarinmac20": "Any",
+        "xamarintvos10": "Any",
+        "xamarinwatchos10": "Any"
+      },
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.5.0"
       }
     },
     "System.Runtime.CompilerServices.Unsafe": {
