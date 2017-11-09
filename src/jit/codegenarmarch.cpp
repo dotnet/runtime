@@ -1605,7 +1605,7 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
     unsigned varNum = tree->gtLclNum;
     assert(varNum < compiler->lvaCount);
 
-    if (varTypeIsFloating(targetType))
+    if (varTypeIsFloating(targetType) || varTypeIsSIMD(targetType))
     {
         emit->emitIns_R_S(ins_Load(targetType), size, targetReg, varNum, offs);
     }
