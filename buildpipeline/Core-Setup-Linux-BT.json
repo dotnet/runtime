@@ -887,6 +887,46 @@
     {
       "environment": {},
       "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Package - OpenSuse",
+      "timeoutInMinutes": 0,
+      "refName": "Task38",
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildProperties) $(DistroSpecificMSBuildArguments) /p:OutputRid=opensuse.42-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish - OpenSuse",
+      "timeoutInMinutes": 0,
+      "refName": "Task39",
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs) /p:OutputRid=opensuse.42-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
       "continueOnError": true,
       "alwaysRun": false,
       "displayName": "Cleanup Docker",
