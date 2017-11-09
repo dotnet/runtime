@@ -2,82 +2,35 @@
 
 usage()
 {
-    echo "Usage: clean [-b] [-t] [-p]"
+    echo "Usage: clean [-b] [-p] [-c] [-all]"
     echo "Repository cleaning script."
-    echo "  -b         Clean bin directory"
-    echo "  -t         Clean tools directory"
-    echo "  -p         Clean packages directory"
-    echo "  -all       Clean everything"
+    echo "  -b         Delete the binary output directory."
+    echo "  -p         Delete the repo-local NuGet package directory."
+    echo "  -c         Delete the user-local NuGet package caches."
+    echo "  -all       Cleans repository and restores it to pristine state."
     echo
-    echo "If no option is specified, then \"clean.sh -b -t -p\" is implied."
+    echo "If no option is specified, then \"clean.sh -b\" is implied."
     exit 1
 }
 
-# Obtain the location of the bash script to figure out where the root of the repo is.
-__ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+if [ "$1" == "-?" ] || [ "$1" == "-h" ]; then
+    usage
+fi
 
-echo Cleaning previous output for the selected configuration
+# Implement VBCSCompiler.exe kill logic once VBCSCompiler.exe is ported to unixes
 
-# Parse arguments
+__working_tree_root="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+if [ "$*" == "-all" ]
+then
+   echo "Removing all untracked files in the working tree"
+   git clean -xdf $__working_tree_root
+   exit $?
+fi
+
 if [ $# == 0 ]; then
-    clean_bin=true
-    clean_tools=true
-    clean_packages=true
+    __args=-b
 fi
 
-while [[ $# -gt 0 ]]
-do
-    opt="$1"
-    case $opt in
-        -h|--help)
-        usage
-        ;;
-        -b)
-        clean_bin=true
-        ;;
-        -t)
-        clean_tools=true
-        ;;
-        -p)
-        clean_packages=true
-        ;;
-        -all)
-    	clean_bin=true
-    	clean_tools=true
-    	clean_packages=true
-    	;;
-        *)
-    esac
-    shift
-done
-
-if [ "$clean_bin" == true ]; then
-	echo "Deleting bin directory"
-	rm -rf "$__ProjectRoot/bin"
-	if [ $? -ne 0 ]; then
-        echo "Error while deleting bin directory - error code was $?"
-        exit 1
-    fi
-fi
-
-if [ "$clean_tools" == true ]; then
-	echo "Deleting tools directory"
-	rm -rf "$__ProjectRoot/Tools"
-	if [ $? -ne 0 ]; then
-        echo "Error while deleting tools directory - error code was $?"
-        exit 1
-    fi
-fi
-
-if [ "$clean_packages" == true ]; then
-	echo "Deleting packages directory"
-	rm -rf "$__ProjectRoot/packages"
-	if [ $? -ne 0 ]; then
-        echo "Error while deleting packages directory - error code was $?"
-        exit 1
-    fi
-fi
-
-echo "Clean was successful"
-
-exit 0
+$__working_tree_root/run.sh clean $__args $*
+exit $?
