@@ -12,7 +12,7 @@ namespace System.ComponentModel.DataAnnotations
     ///     <see cref="ResourceType" />
     /// </summary>
     [AttributeUsage(
-        AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Method,
+        AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Method | AttributeTargets.Class,
         AllowMultiple = false)]
     public sealed class DisplayAttribute : Attribute
     {
