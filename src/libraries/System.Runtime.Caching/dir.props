@@ -2,7 +2,10 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\dir.props" />
   <PropertyGroup>
+    <!-- this assembly is inbox in desktop, do not version it unless you
+         plan on shipping a new desktop version out of band. Instead add API
+         to a different assembly. -->
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
-    <AssemblyKey>Open</AssemblyKey>
+    <AssemblyKey>MSFT</AssemblyKey>
   </PropertyGroup>
 </Project>
