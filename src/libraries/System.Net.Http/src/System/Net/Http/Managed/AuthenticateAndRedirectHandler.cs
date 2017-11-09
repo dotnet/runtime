@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,6 +16,7 @@ namespace System.Net.Http
         private readonly ICredentials _credentials;
         private readonly bool _allowRedirect;
         private readonly int _maxAutomaticRedirections;
+        private AuthenticationHelper.DigestResponse _digestResponse;
 
         public AuthenticateAndRedirectHandler(bool preAuthenticate, ICredentials credentials, bool allowRedirect, int maxAutomaticRedirections, HttpMessageHandler innerHandler)
         {
@@ -37,10 +39,75 @@ namespace System.Net.Http
         {
             HttpResponseMessage response;
             uint redirectCount = 0;
-            bool useCredentialCache = false;
             while (true)
             {
-                response = await SendRequestAsync(request, useCredentialCache, cancellationToken).ConfigureAwait(false);
+                // Just as with WinHttpHandler and CurlHandler, for security reasons, we drop the server credential if it is
+                // anything other than a CredentialCache on redirection. We allow credentials in a CredentialCache since they
+                // are specifically tied to URIs.
+                ICredentials currentCredential = redirectCount > 0 ? _credentials as CredentialCache : _credentials;
+
+                if (currentCredential != null && _preAuthenticate)
+                {
+                    // Try using previous digest response WWWAuthenticate header
+                    if (_digestResponse != null)
+                    {
+                        await AuthenticationHelper.TrySetDigestAuthToken(request, currentCredential, _digestResponse, HttpKnownHeaderNames.Authorization).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        AuthenticationHelper.TrySetBasicAuthToken(request, currentCredential);
+                    }
+                }
+
+                response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+                if (currentCredential != null && !_preAuthenticate && response.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    AuthenticationHeaderValue selectedAuth = GetSupportedAuthScheme(response.Headers.WwwAuthenticate);
+                    if (selectedAuth != null)
+                    {
+                        switch (selectedAuth.Scheme)
+                        {
+                            case AuthenticationHelper.Digest:
+                                // Update digest response with new parameter from WWWAuthenticate
+                                _digestResponse = new AuthenticationHelper.DigestResponse(selectedAuth.Parameter);
+                                if (await AuthenticationHelper.TrySetDigestAuthToken(request, currentCredential, _digestResponse, HttpKnownHeaderNames.Authorization).ConfigureAwait(false))
+                                {
+                                    response.Dispose();
+                                    response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+                                    // Retry in case of nonce timeout in server.
+                                    if (response.StatusCode == HttpStatusCode.Unauthorized)
+                                    {
+                                        foreach (AuthenticationHeaderValue ahv in response.Headers.WwwAuthenticate)
+                                        {
+                                            if (ahv.Scheme == AuthenticationHelper.Digest)
+                                            {
+                                                _digestResponse = new AuthenticationHelper.DigestResponse(ahv.Parameter);
+                                                if (AuthenticationHelper.IsServerNonceStale(_digestResponse) &&
+                                                    await AuthenticationHelper.TrySetDigestAuthToken(request, currentCredential, _digestResponse, HttpKnownHeaderNames.Authorization).ConfigureAwait(false))
+                                                {
+                                                    response.Dispose();
+                                                    response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                                                }
+
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                break;
+
+                            case AuthenticationHelper.Basic:
+                                if (AuthenticationHelper.TrySetBasicAuthToken(request, currentCredential))
+                                {
+                                    response.Dispose();
+                                    response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                                }
+                                break;
+                        }
+                    }
+                }
 
                 if (!RequestNeedsRedirect(response))
                 {
@@ -49,11 +116,6 @@ namespace System.Net.Http
 
                 // Clear the authorization header, if the request requires redirect.
                 request.Headers.Authorization = null;
-
-                // Just as with WinHttpHandler and CurlHandler, for security reasons, we drop the server credential if it is
-                // anything other than a CredentialCache. We allow credentials in a CredentialCache since they
-                // are specifically tied to URIs.
-                useCredentialCache = true;
 
                 Uri location = response.Headers.Location;
                 if (location == null)
@@ -96,6 +158,63 @@ namespace System.Net.Http
             }
 
             return response;
+        }
+
+        private bool RequestNeedsRedirect(HttpResponseMessage response)
+        {
+            // Return if redirect is not requested.
+            if (!_allowRedirect)
+                return false;
+
+            bool needRedirect = false;
+            switch (response.StatusCode)
+            {
+                case HttpStatusCode.Moved:
+                case HttpStatusCode.Found:
+                case HttpStatusCode.SeeOther:
+                case HttpStatusCode.TemporaryRedirect:
+                    needRedirect = true;
+                    break;
+
+                case HttpStatusCode.MultipleChoices:
+                    needRedirect = response.Headers.Location != null; // Don't redirect if no Location specified
+                    break;
+            }
+
+            return needRedirect;
+        }
+
+        private static bool RequestRequiresForceGet(HttpStatusCode statusCode, HttpMethod requestMethod)
+        {
+            if (statusCode == HttpStatusCode.Moved ||
+                statusCode == HttpStatusCode.Found ||
+                statusCode == HttpStatusCode.SeeOther ||
+                statusCode == HttpStatusCode.MultipleChoices)
+            {
+                return requestMethod == HttpMethod.Post;
+            }
+
+            return false;
+        }
+
+        private static AuthenticationHeaderValue GetSupportedAuthScheme(HttpHeaderValueCollection<AuthenticationHeaderValue> authenticateValues)
+        {
+            AuthenticationHeaderValue basicAuthenticationHeaderValue = null;
+
+            // Only Digest and Basic auth supported, ignore others.
+            foreach (AuthenticationHeaderValue ahv in authenticateValues)
+            {
+                if (ahv.Scheme == AuthenticationHelper.Digest)
+                {
+                    return ahv;
+                }
+                else if (ahv.Scheme == AuthenticationHelper.Basic)
+                {
+                    basicAuthenticationHeaderValue = ahv;
+                }
+            }
+
+            return basicAuthenticationHeaderValue;
         }
 
         protected override void Dispose(bool disposing)

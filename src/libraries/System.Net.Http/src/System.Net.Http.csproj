@@ -120,7 +120,6 @@
   </ItemGroup>
   <!-- Managed HttpClientHandler implementation -->
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
-    <Compile Include="System\Net\Http\Managed\AuthenticateAndRedirectHandler.Helpers.cs" />
     <Compile Include="System\Net\Http\Managed\AuthenticateAndRedirectHandler.cs" />
     <Compile Include="System\Net\Http\Managed\AuthenticationHelper.Basic.cs" />
     <Compile Include="System\Net\Http\Managed\AuthenticationHelper.Digest.cs" />
