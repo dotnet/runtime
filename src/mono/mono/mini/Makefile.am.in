@@ -464,6 +464,7 @@ common_sources = \
 	aot-compiler.c		\
 	aot-runtime.c		\
 	aot-runtime-wasm.c	\
+	wasm_m2n_invoke.g.h	\
 	graph.c			\
 	mini-codegen.c		\
 	mini-exceptions.c	\

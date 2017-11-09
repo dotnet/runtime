@@ -99,118 +99,6 @@ handle_enum:
 #define FIDX(x) (x)
 #endif
 
-static void
-wasm_invoke_v (void *target_func, InterpMethodArguments *margs)
-{
-	void (*func)(void) = target_func;
-	func ();
-}
-
-static void
-wasm_invoke_vi (void *target_func, InterpMethodArguments *margs)
-{
-	void (*func)(gpointer a) = target_func;
-	func (margs->iargs [0]);
-}
-
-static void
-wasm_invoke_vii (void *target_func, InterpMethodArguments *margs)
-{
-	void (*func)(gpointer a, gpointer b) = target_func;
-	func (margs->iargs [0], margs->iargs [1]);
-}
-
-static void
-wasm_invoke_viii (void *target_func, InterpMethodArguments *margs)
-{
-	void (*func)(gpointer a, gpointer b, gpointer c) = target_func;
-	func (margs->iargs [0], margs->iargs [1], margs->iargs [2]);
-}
-
-static void
-wasm_invoke_viiii (void *target_func, InterpMethodArguments *margs)
-{
-	void (*func)(gpointer a, gpointer b, gpointer c, gpointer d) = target_func;
-	func (margs->iargs [0], margs->iargs [1], margs->iargs [2], margs->iargs [3]);
-}
-
-static void
-wasm_invoke_viiiii (void *target_func, InterpMethodArguments *margs)
-{
-	void (*func)(gpointer a, gpointer b, gpointer c, gpointer d, gpointer e) = target_func;
-	func (margs->iargs [0], margs->iargs [1], margs->iargs [2], margs->iargs [3], margs->iargs [4]);
-}
-
-static void
-wasm_invoke_viiiiii (void *target_func, InterpMethodArguments *margs)
-{
-	void (*func)(gpointer a, gpointer b, gpointer c, gpointer d, gpointer e, gpointer f) = target_func;
-	func (margs->iargs [0], margs->iargs [1], margs->iargs [2], margs->iargs [3], margs->iargs [4], margs->iargs [5]);
-}
-
-static void
-wasm_invoke_i (void *target_func, InterpMethodArguments *margs)
-{
-	int (*func)(void) = target_func;
-	int res = func ();
-	*(int*)margs->retval = res;
-}
-
-static void
-wasm_invoke_ii (void *target_func, InterpMethodArguments *margs)
-{
-	int (*func)(gpointer a) = target_func;
-	int res = func (margs->iargs [0]);
-	*(int*)margs->retval = res;
-}
-
-static void
-wasm_invoke_iii (void *target_func, InterpMethodArguments *margs)
-{
-	int (*func)(gpointer a, gpointer b) = target_func;
-	int res = func (margs->iargs [0], margs->iargs [1]);
-	*(int*)margs->retval = res;
-}
-
-static void
-wasm_invoke_iiii (void *target_func, InterpMethodArguments *margs)
-{
-	int (*func)(gpointer a, gpointer b, gpointer c) = target_func;
-	int res = func (margs->iargs [0], margs->iargs [1], margs->iargs [2]);
-	*(int*)margs->retval = res;
-}
-
-static void
-wasm_invoke_iiiii (void *target_func, InterpMethodArguments *margs)
-{
-	int (*func)(gpointer a, gpointer b, gpointer c, gpointer d) = target_func;
-	int res = func (margs->iargs [0], margs->iargs [1], margs->iargs [2], margs->iargs [3]);
-	*(int*)margs->retval = res;
-}
-
-static void
-wasm_invoke_iiiiii (void *target_func, InterpMethodArguments *margs)
-{
-	int (*func)(gpointer a, gpointer b, gpointer c, gpointer d, gpointer e) = target_func;
-	int res = func (margs->iargs [0], margs->iargs [1], margs->iargs [2], margs->iargs [3], margs->iargs [4]);
-	*(int*)margs->retval = res;
-}
-
-static void
-wasm_invoke_iiiiiii (void *target_func, InterpMethodArguments *margs)
-{
-	int (*func)(gpointer a, gpointer b, gpointer c, gpointer d, gpointer e, gpointer f) = target_func;
-	int res = func (margs->iargs [0], margs->iargs [1], margs->iargs [2], margs->iargs [3], margs->iargs [4], margs->iargs [5]);
-	*(int*)margs->retval = res;
-}
-
-static void
-wasm_invoke_iiiiiiiii (void *target_func, InterpMethodArguments *margs)
-{
-	int (*func)(gpointer a, gpointer b, gpointer c, gpointer d, gpointer e, gpointer f, gpointer g, gpointer h) = target_func;
-	int res = func (margs->iargs [0], margs->iargs [1], margs->iargs [2], margs->iargs [3], margs->iargs [4], margs->iargs [5], margs->iargs [6], margs->iargs [7]);
-	*(int*)margs->retval = res;
-}
 
 
 typedef union {
@@ -221,122 +109,16 @@ typedef union {
 	} pair;
 } interp_pair;
 
-static void
-wasm_invoke_l (void *target_func, InterpMethodArguments *margs)
+static inline gint64
+get_long_arg (InterpMethodArguments *margs, int idx)
 {
-	gint64 (*func)(void) = target_func;
-
-	gint64 res = func ();
-	*(gint64*)margs->retval = res;
-}
-
-static void
-wasm_invoke_ll (void *target_func, InterpMethodArguments *margs)
-{
-	gint64 (*func)(gint64 a) = target_func;
-
 	interp_pair p;
-	p.pair.lo = (gint32)margs->iargs [0];
-	p.pair.hi = (gint32)margs->iargs [1];
-
-	gint64 res = func (p.l);
-	*(gint64*)margs->retval = res;
+	p.pair.lo = (gint32)margs->iargs [idx];
+	p.pair.hi = (gint32)margs->iargs [idx + 1];
+	return p.l;
 }
 
-static void
-wasm_invoke_li (void *target_func, InterpMethodArguments *margs)
-{
-	gint64 (*func)(gpointer a) = target_func;
-	gint64 res = func (margs->iargs [0]);
-	*(gint64*)margs->retval = res;
-}
-
-static void
-wasm_invoke_lil (void *target_func, InterpMethodArguments *margs)
-{
-	gint64 (*func)(gpointer a, gint64 b) = target_func;
-
-	interp_pair p;
-	p.pair.lo = (gint32)margs->iargs [1];
-	p.pair.hi = (gint32)margs->iargs [2];
-
-	gint64 res = func (margs->iargs [0], p.l);
-	*(gint64*)margs->retval = res;
-}
-
-static void
-wasm_invoke_dd (void *target_func, InterpMethodArguments *margs)
-{
-	double (*func)(double a) = target_func;
-
-	double res = func (margs->fargs [FIDX (0)]);
-	*(double*)margs->retval = res;
-}
-
-static void
-wasm_invoke_ddd (void *target_func, InterpMethodArguments *margs)
-{
-	double (*func)(double a, double b) = target_func;
-
-	double res = func (margs->fargs [FIDX (0)], margs->fargs [FIDX (1)]);
-	*(double*)margs->retval = res;
-}
-
-
-	
-static void
-wasm_invoke_vif (void *target_func, InterpMethodArguments *margs)
-{
-	void (*func)(gpointer a, float b) = target_func;
-
-	func (margs->iargs [0], 
-		*(float*)&margs->fargs [FIDX (0)]);
-}
-
-static void
-wasm_invoke_viff (void *target_func, InterpMethodArguments *margs)
-{
-	void (*func)(gpointer a, float b, float c) = target_func;
-
-	func (margs->iargs [0],
-		*(float*)&margs->fargs [FIDX (0)],
-		*(float*)&margs->fargs [FIDX (1)]);
-}
-
-static void
-wasm_invoke_viffff (void *target_func, InterpMethodArguments *margs)
-{
-	void (*func)(gpointer a, float b, float c, float d, float e) = target_func;
-
-	func (margs->iargs [0],
-		*(float*)&margs->fargs [FIDX (0)],
-		*(float*)&margs->fargs [FIDX (1)],
-		*(float*)&margs->fargs [FIDX (2)],
-		*(float*)&margs->fargs [FIDX (3)]);
-}
-
-static void
-wasm_invoke_vifffffi (void *target_func, InterpMethodArguments *margs)
-{
-	void (*func)(gpointer a, float b, float c, float d, float e, float f, int g) = target_func;
-
-	func (margs->iargs [0],
-		*(float*)&margs->fargs [FIDX (0)],
-		*(float*)&margs->fargs [FIDX (1)],
-		*(float*)&margs->fargs [FIDX (2)],
-		*(float*)&margs->fargs [FIDX (3)],
-		*(float*)&margs->fargs [FIDX (4)],
-		*(float*)&margs->iargs [1]);
-}
-
-static void
-wasm_invoke_ff (void *target_func, InterpMethodArguments *margs)
-{
-	float (*func)(float a) = target_func;
-
-	float res = func (*(float*)&margs->fargs [FIDX (0)]);
-	*(float*)margs->retval = res;
-}
+#include "wasm_m2n_invoke.g.h"
 
 static void
 wasm_enter_icall_trampoline (void *target_func, InterpMethodArguments *margs)
@@ -354,62 +136,7 @@ wasm_enter_icall_trampoline (void *target_func, InterpMethodArguments *margs)
 		cookie [1 + sig->hasthis + i ] = type_to_c (sig->params [i]);
 	cookie [c_count] = 0;
 
-	if (!strcmp ("V", cookie))
-		wasm_invoke_v (target_func, margs);
-	else if (!strcmp ("VI", cookie))
-		wasm_invoke_vi (target_func, margs);
-	else if (!strcmp ("VII", cookie))
-		wasm_invoke_vii (target_func, margs);
-	else if (!strcmp ("VIII", cookie))
-		wasm_invoke_viii (target_func, margs);
-	else if (!strcmp ("VIIII", cookie))
-		wasm_invoke_viiii (target_func, margs);
-	else if (!strcmp ("VIIIII", cookie))
-		wasm_invoke_viiiii (target_func, margs);
-	else if (!strcmp ("VIIIIII", cookie))
-		wasm_invoke_viiiiii (target_func, margs);
-	else if (!strcmp ("I", cookie))
-		wasm_invoke_i (target_func, margs);
-	else if (!strcmp ("II", cookie))
-		wasm_invoke_ii (target_func, margs);
-	else if (!strcmp ("III", cookie))
-		wasm_invoke_iii (target_func, margs);
-	else if (!strcmp ("IIII", cookie))
-		wasm_invoke_iiii (target_func, margs);
-	else if (!strcmp ("IIIII", cookie))
-		wasm_invoke_iiiii (target_func, margs);
-	else if (!strcmp ("IIIIII", cookie))
-		wasm_invoke_iiiiii (target_func, margs);
-	else if (!strcmp ("IIIIIII", cookie))
-		wasm_invoke_iiiiiii (target_func, margs);
-	else if (!strcmp ("IIIIIIIII", cookie))
-		wasm_invoke_iiiiiiiii (target_func, margs);
-	else if (!strcmp ("L", cookie))
-		wasm_invoke_l (target_func, margs);
-	else if (!strcmp ("LL", cookie))
-		wasm_invoke_ll (target_func, margs);
-	else if (!strcmp ("LI", cookie))
-		wasm_invoke_li (target_func, margs);
-	else if (!strcmp ("LIL", cookie))
-		wasm_invoke_lil (target_func, margs);
-	else if (!strcmp ("DD", cookie))
-		wasm_invoke_dd (target_func, margs);
-	else if (!strcmp ("DDD", cookie))
-		wasm_invoke_ddd (target_func, margs);
-	else if (!strcmp ("VIF", cookie))
-		wasm_invoke_vif (target_func, margs);
-	else if (!strcmp ("VIFF", cookie))
-		wasm_invoke_viff (target_func, margs);
-	else if (!strcmp ("VIFFFF", cookie))
-		wasm_invoke_viffff (target_func, margs);
-	else if (!strcmp ("VIFFFFFI", cookie))
-		wasm_invoke_vifffffi (target_func, margs);
-	else if (!strcmp ("FF", cookie))
-		wasm_invoke_ff (target_func, margs);
-	else {
-		printf ("CANNOT HANDLE COOKIE %s\n", cookie);
-		g_assert (0);
-	}
+	icall_trampoline_dispatch (cookie, target_func, margs);
 }
 
 gpointer
