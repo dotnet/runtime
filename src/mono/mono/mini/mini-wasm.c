@@ -162,7 +162,19 @@ The following functions don't belong here, but are due to laziness.
 gboolean
 mono_w32file_get_volume_information (const gunichar2 *path, gunichar2 *volumename, gint volumesize, gint *outserial, gint *maxcomp, gint *fsflags, gunichar2 *fsbuffer, gint fsbuffersize)
 {
-	g_error ("mono_w32file_get_volume_information");
+	glong len;
+	gboolean status = FALSE;
+
+	gunichar2 *ret = g_utf8_to_utf16 ("memfs", -1, NULL, &len, NULL);
+	if (ret != NULL && len < fsbuffersize) {
+		memcpy (fsbuffer, ret, len * sizeof (gunichar2));
+		fsbuffer [len] = 0;
+		status = TRUE;
+	}
+	if (ret != NULL)
+		g_free (ret);
+
+	return status;
 }
 
 
