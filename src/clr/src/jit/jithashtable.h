@@ -353,6 +353,12 @@ public:
         return m_tableCount;
     }
 
+    // Get the allocator used by this hash table.
+    Allocator* GetAllocator()
+    {
+        return m_alloc;
+    }
+
 private:
     struct Node;
 
