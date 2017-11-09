@@ -6,8 +6,7 @@
   <UsingTask TaskName="BuildFPMToolPreReqs" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
 
   <PropertyGroup>
-    <IsRPMBasedDistro Condition="$(PackageTargetRid.StartsWith('rhel')) or
-                                    $(PackageTargetRid.StartsWith('centos'))">true</IsRPMBasedDistro>
+    <IsRPMBasedDistro Condition="'$(InstallerExtension)' == '.rpm'">true</IsRPMBasedDistro>
     <BuildRpmPackage Condition="'$(IsRPMBasedDistro)' == true and '$(TargetArchitecture)' == 'x64'">true</BuildRpmPackage>
   </PropertyGroup>
 
@@ -192,6 +191,7 @@
       <InputRoot>$(SharedFrameworkPublishRoot)</InputRoot>
       <RpmFile>$(SharedFrameworkInstallerFile)</RpmFile>
       <ConfigJsonName>dotnet-sharedframework-rpm_config.json</ConfigJsonName>
+      <ConfigJsonName Condition="$(PackageTargetRid.StartsWith('opensuse'))">dotnet-sharedframework-opensuse-rpm_config.json</ConfigJsonName>
       <ConfigJsonFile>$(rpmPackagingConfigPath)$(ConfigJsonName)</ConfigJsonFile>
       <RpmIntermediatesDir>$(PackagesIntermediateDir)$(RpmPackageName)/$(RpmPackageVersion)</RpmIntermediatesDir>
     </PropertyGroup>
