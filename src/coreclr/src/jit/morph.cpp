@@ -1608,7 +1608,7 @@ void fgArgInfo::ArgsComplete()
         bool isMultiRegArg = (curArgTabEntry->numRegs > 1);
 #endif
 
-        if ((argx->TypeGet() == TYP_STRUCT) && (curArgTabEntry->needTmp == false))
+        if ((varTypeIsStruct(argx->TypeGet())) && (curArgTabEntry->needTmp == false))
         {
             if (isMultiRegArg && ((argx->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0))
             {
@@ -3856,7 +3856,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
 #endif // not _TARGET_X86_
                     // We still have a struct unless we converted the GT_OBJ into a GT_IND above...
-                    if ((structBaseType == TYP_STRUCT) &&
+                    if (varTypeIsStruct(structBaseType) &&
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
                         !passStructInRegisters
 #else  // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
@@ -6275,7 +6275,7 @@ GenTreePtr Compiler::fgMorphStackArgForVarArgs(unsigned lclNum, var_types varTyp
 
         // Access the argument through the local
         GenTreePtr tree;
-        if (varType == TYP_STRUCT)
+        if (varTypeIsStruct(varType))
         {
             tree = gtNewBlockVal(ptrArg, varDsc->lvExactSize);
         }
