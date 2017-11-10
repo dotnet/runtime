@@ -852,7 +852,6 @@ load_simd_vreg_class (MonoCompile *cfg, MonoClass *klass, MonoInst *src, gboolea
 		return src->sreg1;
 	} else if (src->opcode == OP_LDADDR) {
 		int res = ((MonoInst*)src->inst_p0)->dreg;
-		NULLIFY_INS (src);
 		return res;
 	} else if (spec [MONO_INST_DEST] == 'x') {
 		return src->dreg;
