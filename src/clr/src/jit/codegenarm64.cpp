@@ -1709,7 +1709,17 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
         regNumber dataReg = REG_NA;
         if (data->isContainedIntOrIImmed())
         {
+            // This is only possible for a zero-init.
             assert(data->IsIntegralConst(0));
+
+            if (varTypeIsSIMD(targetType))
+            {
+                assert(targetReg != REG_NA);
+                getEmitter()->emitIns_R_I(INS_movi, EA_16BYTE, targetReg, 0x00, INS_OPTS_16B);
+                genProduceReg(tree);
+                return;
+            }
+
             dataReg = REG_ZR;
         }
         else
