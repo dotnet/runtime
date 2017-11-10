@@ -44,8 +44,6 @@
                     ExpectedFeedUrl="$(ExpectedFeedUrl)"
                     AccountKey="$(AccountKey)"
                     ItemsToPush="@(ItemsToPush)"
-                    RetryAttempts="10"
-                    RetryDelayInSeconds="120"
                     Overwrite="$(OverwriteOnPublish)" />
 
     <!-- now upload the items -->
@@ -79,8 +77,6 @@
                     ExpectedFeedUrl="$(ExpectedFeedUrl)"
                     AccountKey="$(AccountKey)"
                     ItemsToPush="@(ItemsToPush)"
-                    RetryAttempts="10"
-                    RetryDelayInSeconds="120"
                     Overwrite="$(OverwriteOnPublish)" />
 
     <!-- now upload the items -->
@@ -115,8 +111,6 @@
                     ExpectedFeedUrl="$(ExpectedFeedUrl)"
                     AccountKey="$(AccountKey)"
                     ItemsToPush="@(ItemsToPush)"
-                    RetryAttempts="10"
-                    RetryDelayInSeconds="120"
                     Overwrite="$(OverwriteOnPublish)" />
 
     <!-- now upload the items -->
