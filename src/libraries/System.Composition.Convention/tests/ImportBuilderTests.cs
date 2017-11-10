@@ -10,7 +10,7 @@ using System.Linq;
 using System.Reflection;
 using Xunit;
 
-namespace System.ComponentModel.Composition
+namespace System.Composition.Convention
 {
     public class ImportBuilderTests
     {
