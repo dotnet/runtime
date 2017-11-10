@@ -82,7 +82,6 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\SemanticChecker.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\SubstitutionContext.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\AggregateSymbol.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\AssemblyQualifiedNamespaceSymbol.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\EventSymbol.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\FieldSymbol.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\IndexerSymbol.cs" />
