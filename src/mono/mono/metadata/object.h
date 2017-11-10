@@ -12,25 +12,25 @@ MONO_BEGIN_DECLS
 
 typedef mono_byte MonoBoolean;
 
-typedef struct _MonoString MonoString;
-typedef struct _MonoArray MonoArray;
-typedef struct _MonoReflectionMethod MonoReflectionMethod;
-typedef struct _MonoReflectionAssembly MonoReflectionAssembly;
-typedef struct _MonoReflectionModule MonoReflectionModule;
-typedef struct _MonoReflectionField MonoReflectionField;
-typedef struct _MonoReflectionProperty MonoReflectionProperty;
-typedef struct _MonoReflectionEvent MonoReflectionEvent;
-typedef struct _MonoReflectionType MonoReflectionType;
-typedef struct _MonoDelegate MonoDelegate;
-typedef struct _MonoException MonoException;
+typedef struct _MonoString MONO_RT_MANAGED_ATTR MonoString;
+typedef struct _MonoArray MONO_RT_MANAGED_ATTR MonoArray;
+typedef struct _MonoReflectionMethod MONO_RT_MANAGED_ATTR MonoReflectionMethod;
+typedef struct _MonoReflectionAssembly MONO_RT_MANAGED_ATTR MonoReflectionAssembly;
+typedef struct _MonoReflectionModule MONO_RT_MANAGED_ATTR MonoReflectionModule;
+typedef struct _MonoReflectionField MONO_RT_MANAGED_ATTR MonoReflectionField;
+typedef struct _MonoReflectionProperty MONO_RT_MANAGED_ATTR MonoReflectionProperty;
+typedef struct _MonoReflectionEvent MONO_RT_MANAGED_ATTR MonoReflectionEvent;
+typedef struct _MonoReflectionType MONO_RT_MANAGED_ATTR MonoReflectionType;
+typedef struct _MonoDelegate MONO_RT_MANAGED_ATTR MonoDelegate;
+typedef struct _MonoException MONO_RT_MANAGED_ATTR MonoException;
 typedef struct _MonoThreadsSync MonoThreadsSync;
-typedef struct _MonoThread MonoThread;
+typedef struct _MonoThread MONO_RT_MANAGED_ATTR MonoThread;
 typedef struct _MonoDynamicAssembly MonoDynamicAssembly;
 typedef struct _MonoDynamicImage MonoDynamicImage;
-typedef struct _MonoReflectionMethodBody MonoReflectionMethodBody;
-typedef struct _MonoAppContext MonoAppContext;
+typedef struct _MonoReflectionMethodBody MONO_RT_MANAGED_ATTR MonoReflectionMethodBody;
+typedef struct _MonoAppContext MONO_RT_MANAGED_ATTR MonoAppContext;
 
-typedef struct _MonoObject {
+typedef struct MONO_RT_MANAGED_ATTR _MonoObject {
 	MonoVTable *vtable;
 	MonoThreadsSync *synchronisation;
 } MonoObject;

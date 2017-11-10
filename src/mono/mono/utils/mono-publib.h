@@ -108,16 +108,32 @@ mono_set_allocator_vtable (MonoAllocatorVTable* vtable);
 
 #if defined (MONO_INSIDE_RUNTIME)
 
-#if defined (__clang__)
-#define MONO_RT_EXTERNAL_ONLY __attribute__ ((__unavailable__ ("The mono runtime must not call this function")))
-#elif defined (__GNUC__)
-#define MONO_RT_EXTERNAL_ONLY __attribute__ ((__error__ ("The mono runtime must not call this function")))
+#if defined (__CENTRINEL__)
+/* Centrinel is an analyzer that warns about raw pointer to managed objects
+ * inside Mono.
+ */
+#define MONO_RT_MANAGED_ATTR __CENTRINEL_MANAGED_ATTR
+#define MONO_RT_CENTRINEL_SUPPRESS __CENTRINEL_SUPPRESS_ATTR(1)
 #else
-#define MONO_RT_EXTERNAL_ONLY
+#define MONO_RT_MANAGED_ATTR
+#define MONO_RT_CENTRINEL_SUPPRESS
+#endif
+
+#if defined (__clang__)
+#define MONO_RT_EXTERNAL_ONLY \
+	__attribute__ ((__unavailable__ ("The mono runtime must not call this function"))) \
+	MONO_RT_CENTRINEL_SUPPRESS
+#elif defined (__GNUC__)
+#define MONO_RT_EXTERNAL_ONLY \
+	__attribute__ ((__error__ ("The mono runtime must not call this function"))) \
+	MONO_RT_CENTRINEL_SUPPRESS
+#else
+#define MONO_RT_EXTERNAL_ONLY MONO_RT_CENTRINEL_SUPPRESS
 #endif /* __clang__ */
 
 #else
 #define MONO_RT_EXTERNAL_ONLY
+#define MONO_RT_MANAGED_ATTR
 #endif /* MONO_INSIDE_RUNTIME */
 
 #ifdef __GNUC__
