@@ -106,8 +106,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal enum CheckLvalueKind
     {
         Assignment,
-        OutParameter,
-        Increment,
+        Increment
     }
 
     internal enum BinOpFuncKind
@@ -1077,15 +1076,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private static ErrorCode GetStandardLvalueError(CheckLvalueKind kind)
         {
             Debug.Assert(kind >= CheckLvalueKind.Assignment && kind <= CheckLvalueKind.Increment);
-            switch (kind)
-            {
-                case CheckLvalueKind.OutParameter:
-                    return ErrorCode.ERR_RefLvalueExpected;
-                case CheckLvalueKind.Increment:
-                    return ErrorCode.ERR_IncrementLvalueExpected;
-                default:
-                    return ErrorCode.ERR_AssgLvalueExpected;
-            }
+            return kind == CheckLvalueKind.Increment
+                ? ErrorCode.ERR_IncrementLvalueExpected
+                : ErrorCode.ERR_AssgLvalueExpected;
         }
 
         private void CheckLvalueProp(ExprProperty prop)
@@ -1132,15 +1125,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return true;
             }
 
+            Debug.Assert(!(expr is ExprLocal));
+
             switch (expr.Kind)
             {
                 case ExpressionKind.Property:
-                    if (kind == CheckLvalueKind.OutParameter)
-                    {
-                        // passing a property as ref or out
-                        throw ErrorContext.Error(ErrorCode.ERR_RefProperty);
-                    }
-
                     ExprProperty prop = (ExprProperty)expr;
                     if (!prop.MethWithTypeSet)
                     {
@@ -1176,7 +1165,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     throw ErrorContext.Error(GetStandardLvalueError(kind));
 
                 case ExpressionKind.MemberGroup:
-                    ErrorCode err = (kind == CheckLvalueKind.OutParameter) ? ErrorCode.ERR_RefReadonlyLocalCause : ErrorCode.ERR_AssgReadonlyLocalCause;
+                    ErrorCode err = ErrorCode.ERR_AssgReadonlyLocalCause;
                     throw ErrorContext.Error(err, ((ExprMemberGroup)expr).Name, new ErrArgIds(MessageID.MethodGroup));
             }
 
