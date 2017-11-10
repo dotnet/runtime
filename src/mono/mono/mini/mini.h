@@ -2474,6 +2474,11 @@ guint32 mono_arch_get_plt_info_offset           (guint8 *plt_entry, mgreg_t *reg
 GSList *mono_arch_get_trampolines               (gboolean aot);
 gpointer mono_arch_get_enter_icall_trampoline   (MonoTrampInfo **info);
 
+#ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
+void mono_arch_set_native_call_context          (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig);
+void mono_arch_get_native_call_context          (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig);
+#endif
+
 /*New interruption machinery */
 void
 mono_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), gpointer user_data);

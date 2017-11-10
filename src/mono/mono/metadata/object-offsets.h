@@ -287,6 +287,12 @@ DECL_OFFSET(InterpMethodArguments, flen)
 DECL_OFFSET(InterpMethodArguments, fargs)
 DECL_OFFSET(InterpMethodArguments, retval)
 DECL_OFFSET(InterpMethodArguments, is_float_ret)
+#if defined(TARGET_AMD64)
+DECL_OFFSET(CallContext, gregs)
+DECL_OFFSET(CallContext, fregs)
+DECL_OFFSET(CallContext, stack_size)
+DECL_OFFSET(CallContext, stack)
+#endif
 #endif
 
 #endif //DISABLE_JIT_OFFSETS
