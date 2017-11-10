@@ -34,7 +34,7 @@
       },
       "inputs": {
         "filename": "clean.cmd",
-        "arguments": "",
+        "arguments": "-all",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
