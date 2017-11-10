@@ -10,7 +10,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal enum symbmask_t : long
     {
         MASK_NamespaceSymbol = 1 << SYMKIND.SK_NamespaceSymbol,
-        MASK_AssemblyQualifiedNamespaceSymbol = 1 << SYMKIND.SK_AssemblyQualifiedNamespaceSymbol,
         MASK_AggregateSymbol = 1 << SYMKIND.SK_AggregateSymbol,
         MASK_TypeParameterSymbol = 1 << SYMKIND.SK_TypeParameterSymbol,
         MASK_FieldSymbol = 1 << SYMKIND.SK_FieldSymbol,
