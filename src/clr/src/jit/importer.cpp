@@ -17919,8 +17919,24 @@ void Compiler::impCheckCanInline(GenTreePtr             call,
     }
 }
 
+//------------------------------------------------------------------------
+// impInlineRecordArgInfo: record information about an inline candidate argument
+//
+// Arguments:
+//   pInlineInfo - inline info for the inline candidate
+//   curArgVal - tree for the caller actual argument value
+//   argNum - logical index of this argument
+//   inlineResult - result of ongoing inline evaluation
+//
+// Notes:
+//
+//   Checks for various inline blocking conditions and makes notes in
+//   the inline info arg table about the properties of the actual. These
+//   properties are used later by impFetchArg to determine how best to
+//   pass the argument into the inlinee.
+
 void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
-                                      GenTreePtr    curArgVal,
+                                      GenTree*      curArgVal,
                                       unsigned      argNum,
                                       InlineResult* inlineResult)
 {
@@ -17972,9 +17988,18 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
         }
     }
 
+    // If the arg is a local that is address-taken, we can't safely
+    // directly substitute it into the inlinee.
+    //
+    // Previously we'd accomplish this by setting "argHasLdargaOp" but
+    // that has a stronger meaning: that the arg value can change in
+    // the method body. Using that flag prevents type propagation,
+    // which is safe in this case.
+    //
+    // Instead mark the arg as having a caller local ref.
     if (!inlCurArgInfo->argIsInvariant && gtHasLocalsWithAddrOp(curArgVal))
     {
-        inlCurArgInfo->argHasLdargaOp = true;
+        inlCurArgInfo->argHasCallerLocalRef = true;
     }
 
 #ifdef DEBUG
@@ -18000,6 +18025,10 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
         {
             printf(" has global refs");
         }
+        if (inlCurArgInfo->argHasCallerLocalRef)
+        {
+            printf(" has caller local ref");
+        }
         if (inlCurArgInfo->argHasSideEff)
         {
             printf(" has side effects");
@@ -18024,9 +18053,32 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
 #endif
 }
 
-/*****************************************************************************
- *
- */
+//------------------------------------------------------------------------
+// impInlineInitVars: setup inline information for inlinee args and locals
+//
+// Arguments:
+//    pInlineInfo - inline info for the inline candidate
+//
+// Notes:
+//    This method primarily adds caller-supplied info to the inlArgInfo
+//    and sets up the lclVarInfo table.
+//
+//    For args, the inlArgInfo records properties of the actual argument
+//    including the tree node that produces the arg value. This node is
+//    usually the tree node present at the call, but may also differ in
+//    various ways:
+//    - when the call arg is a GT_RET_EXPR, we search back through the ret
+//      expr chain for the actual node. Note this will either be the original
+//      call (which will be a failed inline by this point), or the return
+//      expression from some set of inlines.
+//    - when argument type casting is needed the necessary casts are added
+//      around the argument node.
+//    - if an argment can be simplified by folding then the node here is the
+//      folded value.
+//
+//   The method may make observations that lead to marking this candidate as
+//   a failed inline. If this happens the initialization is abandoned immediately
+//   to try and reduce the jit time cost for a failed inline.
 
 void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 {
@@ -18056,8 +18108,8 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
     if (thisArg)
     {
         inlArgInfo[0].argIsThis = true;
-
-        impInlineRecordArgInfo(pInlineInfo, thisArg, argCnt, inlineResult);
+        GenTree* actualThisArg  = thisArg->gtRetExprVal();
+        impInlineRecordArgInfo(pInlineInfo, actualThisArg, argCnt, inlineResult);
 
         if (inlineResult->IsFailure())
         {
@@ -18093,9 +18145,9 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         }
 
         assert(argTmp->gtOper == GT_LIST);
-        GenTreePtr argVal = argTmp->gtOp.gtOp1;
-
-        impInlineRecordArgInfo(pInlineInfo, argVal, argCnt, inlineResult);
+        GenTree* arg       = argTmp->gtOp.gtOp1;
+        GenTree* actualArg = arg->gtRetExprVal();
+        impInlineRecordArgInfo(pInlineInfo, actualArg, argCnt, inlineResult);
 
         if (inlineResult->IsFailure())
         {
@@ -18537,9 +18589,9 @@ GenTreePtr Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, 
         PREFIX_ASSUME(op1 != nullptr);
         argInfo.argTmpNum = BAD_VAR_NUM;
     }
-    else if (argInfo.argIsLclVar && !argCanBeModified)
+    else if (argInfo.argIsLclVar && !argCanBeModified && !argInfo.argHasCallerLocalRef)
     {
-        // Directly substitute caller locals
+        // Directly substitute unaliased caller locals for args that cannot be modified
         //
         // Use the caller-supplied node if this is the first use.
         op1               = argInfo.argNode;
@@ -18628,7 +18680,7 @@ GenTreePtr Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, 
                 }
                 else
                 {
-                    // Arg might be modified, use the delcared type of
+                    // Arg might be modified, use the declared type of
                     // the argument.
                     lvaSetClass(tmpNum, lclInfo.lclVerTypeInfo.GetClassHandleForObjRef());
                 }
@@ -18659,13 +18711,14 @@ GenTreePtr Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, 
             // If we require strict exception order, then arguments must
             // be evaluated in sequence before the body of the inlined method.
             // So we need to evaluate them to a temp.
-            // Also, if arguments have global references, we need to
+            // Also, if arguments have global or local references, we need to
             // evaluate them to a temp before the inlined body as the
             // inlined body may be modifying the global ref.
             // TODO-1stClassStructs: We currently do not reuse an existing lclVar
             // if it is a struct, because it requires some additional handling.
 
-            if (!varTypeIsStruct(lclTyp) && !argInfo.argHasSideEff && !argInfo.argHasGlobRef)
+            if (!varTypeIsStruct(lclTyp) && !argInfo.argHasSideEff && !argInfo.argHasGlobRef &&
+                !argInfo.argHasCallerLocalRef)
             {
                 /* Get a *LARGE* LCL_VAR node */
                 op1 = gtNewLclLNode(tmpNum, genActualType(lclTyp), lclNum);
