@@ -498,7 +498,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             bool fConstrained;
             Expr pObject = pMemGroup.OptionalObject;
             CType callingObjectType = pObject?.Type;
-            PostBindMethod(ref mwi, pObject);
+            PostBindMethod(ref mwi);
             pObject = AdjustMemberObject(mwi, pObject, out fConstrained);
             pMemGroup.OptionalObject = pObject;
 
@@ -1184,17 +1184,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return true;
         }
 
-        private void PostBindMethod(ref MethWithInst pMWI, Expr pObject)
+        private void PostBindMethod(ref MethWithInst pMWI)
         {
-            MethWithInst mwiOrig = pMWI;
-
-            // If it is virtual, find a remap of the method to something more specific.  This
-            // may alter where the method is found.
-            if (pObject != null && pObject.Type.isSimpleType())
-            {
-                RemapToOverride(GetSymbolLoader(), pMWI, pObject.Type);
-            }
-
             if (pMWI.Meth().RetType != null)
             {
                 checkUnsafe(pMWI.Meth().RetType);
@@ -1387,51 +1378,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                        !pObject.Type.isStructOrEnum()
                    // non-struct types are lvalues (such as non-struct method returns)
                    );
-        }
-        ////////////////////////////////////////////////////////////////////////////////
-        // For a base call we need to remap from the virtual to the specific override 
-        // to invoke.  This is also used to map a virtual on pObject (like ToString) to 
-        // the specific override when the pObject is a simple type (int, bool, char, 
-        // etc). In these cases it is safe to assume that any override won't later be 
-        // removed.... We start searching from "typeObj" up the superclass hierarchy 
-        // until we find a method with an exact signature match.
-
-        private static void RemapToOverride(SymbolLoader symbolLoader, SymWithType pswt, CType typeObj)
-        {
-            // For a property/indexer we remap the accessors, not the property/indexer.
-            // Since every event has both accessors we remap the event instead of the accessors.
-            Debug.Assert(pswt && (pswt.Sym is MethodSymbol || pswt.Sym is EventSymbol || pswt.Sym is MethodOrPropertySymbol));
-            Debug.Assert(typeObj != null);
-
-            // Don't remap static or interface methods.
-            if (typeObj is NullableType nubTypeObj)
-            {
-                typeObj = nubTypeObj.GetAts();
-            }
-
-            // Don't remap non-virtual members
-            if (!(typeObj is AggregateType atsObj) || atsObj.isInterfaceType() || !pswt.Sym.IsVirtual())
-            {
-                return;
-            }
-
-            symbmask_t mask = pswt.Sym.mask();
-
-            // Search for an override version of the method.
-            while (atsObj != null && atsObj.getAggregate() != pswt.Sym.parent)
-            {
-                for (Symbol symT = symbolLoader.LookupAggMember(pswt.Sym.name, atsObj.getAggregate(), mask);
-                     symT != null;
-                     symT = SymbolLoader.LookupNextSym(symT, atsObj.getAggregate(), mask))
-                {
-                    if (symT.IsOverride() && (symT.SymBaseVirtual() == pswt.Sym || symT.SymBaseVirtual() == pswt.Sym.SymBaseVirtual()))
-                    {
-                        pswt.Set(symT, atsObj);
-                        return;
-                    }
-                }
-                atsObj = atsObj.GetBaseClass();
-            }
         }
 
         private void verifyMethodArgs(IExprWithArgs call, CType callingObjectType)
