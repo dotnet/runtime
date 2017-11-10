@@ -1613,7 +1613,7 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
         instruction ins  = ins_Load(targetType);
         emitAttr    attr = emitTypeSize(targetType);
 
-        attr = emit->emitInsAdjustLoadStoreAttr(ins, attr);
+        attr = varTypeIsFloating(targetType) ? attr : emit->emitInsAdjustLoadStoreAttr(ins, attr);
 
         emit->emitIns_R_S(ins, attr, tree->gtRegNum, varNum, 0);
         genProduceReg(tree);
@@ -1666,7 +1666,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 
     emitAttr attr = emitTypeSize(targetType);
 
-    attr = emit->emitInsAdjustLoadStoreAttr(ins, attr);
+    attr = varTypeIsFloating(targetType) ? attr : emit->emitInsAdjustLoadStoreAttr(ins, attr);
 
     emit->emitIns_S_R(ins, attr, dataReg, varNum, offset);
 
@@ -1726,7 +1726,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
             instruction ins  = ins_Store(targetType);
             emitAttr    attr = emitTypeSize(targetType);
 
-            attr = emit->emitInsAdjustLoadStoreAttr(ins, attr);
+            attr = varTypeIsFloating(targetType) ? attr : emit->emitInsAdjustLoadStoreAttr(ins, attr);
 
             emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0);
 
