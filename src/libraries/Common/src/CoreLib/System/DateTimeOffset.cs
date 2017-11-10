@@ -37,9 +37,8 @@ namespace System
         internal const Int64 MaxOffset = TimeSpan.TicksPerHour * 14;
         internal const Int64 MinOffset = -MaxOffset;
 
-        private const long UnixEpochTicks = TimeSpan.TicksPerDay * DateTime.DaysTo1970; // 621,355,968,000,000,000
-        private const long UnixEpochSeconds = UnixEpochTicks / TimeSpan.TicksPerSecond; // 62,135,596,800
-        private const long UnixEpochMilliseconds = UnixEpochTicks / TimeSpan.TicksPerMillisecond; // 62,135,596,800,000
+        private const long UnixEpochSeconds = DateTime.UnixEpochTicks / TimeSpan.TicksPerSecond; // 62,135,596,800
+        private const long UnixEpochMilliseconds = DateTime.UnixEpochTicks / TimeSpan.TicksPerMillisecond; // 62,135,596,800,000
 
         internal const long UnixMinSeconds = DateTime.MinTicks / TimeSpan.TicksPerSecond - UnixEpochSeconds;
         internal const long UnixMaxSeconds = DateTime.MaxTicks / TimeSpan.TicksPerSecond - UnixEpochSeconds;
@@ -47,6 +46,7 @@ namespace System
         // Static Fields
         public static readonly DateTimeOffset MinValue = new DateTimeOffset(DateTime.MinTicks, TimeSpan.Zero);
         public static readonly DateTimeOffset MaxValue = new DateTimeOffset(DateTime.MaxTicks, TimeSpan.Zero);
+        public static readonly DateTimeOffset UnixEpoch = new DateTimeOffset(DateTime.UnixEpochTicks, TimeSpan.Zero);
 
         // Instance Fields
         private DateTime _dateTime;
@@ -528,7 +528,7 @@ namespace System
                     SR.Format(SR.ArgumentOutOfRange_Range, UnixMinSeconds, UnixMaxSeconds));
             }
 
-            long ticks = seconds * TimeSpan.TicksPerSecond + UnixEpochTicks;
+            long ticks = seconds * TimeSpan.TicksPerSecond + DateTime.UnixEpochTicks;
             return new DateTimeOffset(ticks, TimeSpan.Zero);
         }
 
@@ -543,7 +543,7 @@ namespace System
                     SR.Format(SR.ArgumentOutOfRange_Range, MinMilliseconds, MaxMilliseconds));
             }
 
-            long ticks = milliseconds * TimeSpan.TicksPerMillisecond + UnixEpochTicks;
+            long ticks = milliseconds * TimeSpan.TicksPerMillisecond + DateTime.UnixEpochTicks;
             return new DateTimeOffset(ticks, TimeSpan.Zero);
         }
 
@@ -718,7 +718,7 @@ namespace System
             //
             // For example, consider the DateTimeOffset 12/31/1969 12:59:59.001 +0
             //   ticks            = 621355967990010000
-            //   ticksFromEpoch   = ticks - UnixEpochTicks                   = -9990000
+            //   ticksFromEpoch   = ticks - DateTime.UnixEpochTicks          = -9990000
             //   secondsFromEpoch = ticksFromEpoch / TimeSpan.TicksPerSecond = 0
             //
             // Notice that secondsFromEpoch is rounded *up* by the truncation induced by integer division,
