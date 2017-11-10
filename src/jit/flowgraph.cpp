@@ -23229,11 +23229,7 @@ GenTreePtr Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                         //
                         // Chase through any GT_RET_EXPRs to find the actual argument
                         // expression.
-                        GenTree* actualArgNode = argNode;
-                        while (actualArgNode->gtOper == GT_RET_EXPR)
-                        {
-                            actualArgNode = actualArgNode->gtRetExpr.gtInlineCandidate;
-                        }
+                        GenTree* actualArgNode = argNode->gtRetExprVal();
 
                         // For case (1)
                         //
