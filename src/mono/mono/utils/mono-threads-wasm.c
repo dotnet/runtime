@@ -10,7 +10,8 @@
 
 #define round_down(addr, val) ((void*)((addr) & ~((val) - 1)))
 
-EMSCRIPTEN_KEEPALIVE int
+EMSCRIPTEN_KEEPALIVE
+static int
 wasm_get_stack_base (void)
 {
 	return EM_ASM_INT ({
@@ -18,7 +19,8 @@ wasm_get_stack_base (void)
 	});
 }
 
-EMSCRIPTEN_KEEPALIVE int
+EMSCRIPTEN_KEEPALIVE
+static int
 wasm_get_stack_size (void)
 {
 	return EM_ASM_INT ({
@@ -132,7 +134,7 @@ mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 gboolean
 mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_data, gsize* const stack_size, MonoNativeThreadId *tid)
 {
-	g_error ("WASM doesn't support threading");
+	g_warning ("WASM doesn't support threading");
 	return FALSE;
 }
 
