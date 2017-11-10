@@ -78,23 +78,10 @@ namespace System.Drawing
                     }
                     Marshal.FreeHGlobal(buf);
                 }
-
-                // under MS 1.x this event is raised only for the default application domain
-#if !NETSTANDARD1_6
-                AppDomain.CurrentDomain.ProcessExit += new EventHandler(ProcessExit);
-#endif
             }
 
             [DllImport("libc")]
             static extern int uname(IntPtr buf);
-
-            private static void ProcessExit(object sender, EventArgs e)
-            {
-                // Called all pending objects and claim any pending handle before
-                // shutting down
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-            }
 
             private static void LoadFunctionPointers()
             {
