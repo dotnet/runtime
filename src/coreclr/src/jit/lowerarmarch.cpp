@@ -679,6 +679,11 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc)
 #ifdef FEATURE_SIMD
     if (varTypeIsSIMD(storeLoc))
     {
+        if (op1->IsIntegralConst(0))
+        {
+            // For an InitBlk we want op1 to be contained
+            MakeSrcContained(storeLoc, op1);
+        }
         return;
     }
 #endif // FEATURE_SIMD
