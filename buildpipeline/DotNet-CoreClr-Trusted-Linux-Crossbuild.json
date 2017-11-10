@@ -67,7 +67,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs) ./clean.sh",
+        "arguments": "run --rm $(DockerCommonRunArgs) ./clean.sh -all",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
