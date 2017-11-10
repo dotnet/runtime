@@ -451,7 +451,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(exprTypeDest != null);
             Debug.Assert(exprTypeDest.Type != null);
             CType typeDest = exprTypeDest.Type;
-            pexprDest = null;
             // If the source is a constant, and cast is really simple (no change in fundamental
             // type, no flags), then create a new constant node with the new type instead of
             // creating a cast node. This allows compile-time constants to be easily recognized.
@@ -480,7 +479,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             pexprDest = exprCast;
             Debug.Assert(exprCast.Argument != null);
-            return;
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -504,7 +502,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             pObject = AdjustMemberObject(mwi, pObject, out fConstrained);
             pMemGroup.OptionalObject = pObject;
 
-            CType pReturnType = null;
+            CType pReturnType;
             if ((flags & (MemLookFlags.Ctor | MemLookFlags.NewObj)) == (MemLookFlags.Ctor | MemLookFlags.NewObj))
             {
                 pReturnType = mwi.Ats;
@@ -659,12 +657,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             bool fConstrained;
             MethWithType mwtGet;
             MethWithType mwtSet;
-            Expr pObjectThrough = null;
 
             // We keep track of the type of the pObject which we're doing the call through so that we can report 
             // protection access errors later, either below when binding the get, or later when checking that
             // the setter is actually an lvalue.
-            pObjectThrough = pObject;
+            Expr pObjectThrough = pObject;
 
             PostBindProperty(pwt, pObject, out mwtGet, out mwtSet);
 
@@ -1765,7 +1762,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             @params.CopyItems(0, @params.Count - 1, prgtype);
 
             CType type = @params[@params.Count - 1];
-            CType elementType = null;
 
             if (!(type is ArrayType arr))
             {
@@ -1775,7 +1771,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             // At this point, we have an array sym.
-            elementType = arr.GetElementType();
+            CType elementType = arr.GetElementType();
 
             for (int itype = @params.Count - 1; itype < count; itype++)
             {
