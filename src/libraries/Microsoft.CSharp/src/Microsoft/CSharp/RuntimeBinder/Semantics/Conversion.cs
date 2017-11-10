@@ -1040,7 +1040,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // If lifting of the source is required, we need to figure out the intermediate conversion
                     // from the type of the source to the type of the UD conversion parameter. Note that typeFrom
                     // is not a nullable type.
-                    Expr pConversionArgument = null;
+                    Expr pConversionArgument;
                     if (typeFrom != typeSrcBase)
                     {
                         // There is an intermediate conversion.
@@ -1060,6 +1060,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             pConversionArgument = exprSrc;
                         }
                     }
+
                     Debug.Assert(pConversionArgument != null);
                     ExprCall pConversionCall = ExprFactory.CreateCall(0, typeDst, pConversionArgument, pMemGroup, mwiBest);
                     pConversionCall.NullableCallLiftKind = NullableCallLiftKind.NotLiftedIntermediateConversion;

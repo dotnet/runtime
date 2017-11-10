@@ -265,10 +265,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             // the CType in which the method is being called has no relationship with the 
             // CType on which the method is defined surely this is NOACCESS and not NOACCESSTHRU
-            if (found == false)
-                return ACCESSERROR.ACCESSERROR_NOACCESS;
-
-            return (atsThru == null) ? ACCESSERROR.ACCESSERROR_NOACCESS : ACCESSERROR.ACCESSERROR_NOACCESSTHRU;
+            return found ? ACCESSERROR.ACCESSERROR_NOACCESSTHRU : ACCESSERROR.ACCESSERROR_NOACCESS;
         }
 
         public static bool CheckBogus(Symbol sym)

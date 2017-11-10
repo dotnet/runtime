@@ -80,7 +80,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 Debug.Assert(iv >= 0);
 
-                TypeParameterType tpt = null;
+                TypeParameterType tpt;
                 if (iv >= this.prgptvs.Count)
                 {
                     TypeParameterSymbol pTypeParameter = new TypeParameterSymbol();
@@ -1124,7 +1124,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             var key = Tuple.Create(assemblyThatDefinesAttribute, assemblyToCheck);
             if (!_internalsVisibleToCalculated.TryGetValue(key, out result))
             {
-                AssemblyName assyName = null;
+                AssemblyName assyName;
 
                 // Assembly.GetName() requires FileIOPermission to FileIOPermissionAccess.PathDiscovery.
                 // If we don't have that (we're in low trust), then we are going to effectively turn off
