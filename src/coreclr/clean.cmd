@@ -2,9 +2,11 @@
 setlocal EnableDelayedExpansion
 
 set NO_DASHES_ARG=%1
+if not defined NO_DASHES_ARG goto no_help
 if /I [%NO_DASHES_ARG:-=%] == [?] goto Usage
 if /I [%NO_DASHES_ARG:-=%] == [h] goto Usage
 
+:no_help
 :: Check if VBCSCompiler.exe is running
 tasklist /fi "imagename eq VBCSCompiler.exe" |find ":" > nul
 :: Compiler is running if errorlevel == 1
