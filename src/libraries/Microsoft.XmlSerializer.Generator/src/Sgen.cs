@@ -162,7 +162,7 @@ namespace Microsoft.XmlSerializer.Generator
                 if(disableRun)
                 {
                     Console.WriteLine("This tool is not intended to be used directly.");
-                    Console.WriteLine("Please refer to https://github.com/dotnet/core/blob/master/samples/xmlserializergenerator-instructions.md on how to use it.");
+                    Console.WriteLine("Please refer to https://go.microsoft.com/fwlink/?linkid=858594 on how to use it.");
                     return 0;
                 }
 
