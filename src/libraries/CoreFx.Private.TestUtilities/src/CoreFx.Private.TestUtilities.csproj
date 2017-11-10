@@ -57,7 +57,7 @@
     <ReferenceFromRuntime Include="xunit.core" />
     <ReferenceFromRuntime Include="Xunit.NetCore.Extensions" />
     <ReferenceFromRuntime Include="xunit.assert" />
-    <ReferenceFromRuntime Include="Microsoft.DotNet.PlatformAbstractions" />
+    <ReferenceFromRuntime Condition="'$(TargetGroup)' != 'uapaot'" Include="Microsoft.DotNet.PlatformAbstractions" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Reference Include="System.Security.Principal.Windows" />
