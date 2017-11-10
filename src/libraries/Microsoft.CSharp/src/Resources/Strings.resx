@@ -160,20 +160,11 @@
   <data name="AssgReadonly" xml:space="preserve">
     <value>A readonly field cannot be assigned to (except in a constructor or a variable initializer)</value>
   </data>
-  <data name="RefReadonly" xml:space="preserve">
-    <value>A readonly field cannot be passed ref or out (except in a constructor)</value>
-  </data>
   <data name="AssgReadonlyStatic" xml:space="preserve">
     <value>A static readonly field cannot be assigned to (except in a static constructor or a variable initializer)</value>
   </data>
-  <data name="RefReadonlyStatic" xml:space="preserve">
-    <value>A static readonly field cannot be passed ref or out (except in a static constructor)</value>
-  </data>
   <data name="AssgReadonlyProp" xml:space="preserve">
     <value>Property or indexer '{0}' cannot be assigned to -- it is read only</value>
-  </data>
-  <data name="RefProperty" xml:space="preserve">
-    <value>A property or indexer may not be passed as an out or ref parameter</value>
   </data>
   <data name="UnsafeNeeded" xml:space="preserve">
     <value>Dynamic calls cannot be used in conjunction with pointers</value>
@@ -253,9 +244,6 @@
   <data name="BadArgTypes" xml:space="preserve">
     <value>The best overloaded method match for '{0}' has some invalid arguments</value>
   </data>
-  <data name="RefLvalueExpected" xml:space="preserve">
-    <value>A ref or out argument must be an assignable variable</value>
-  </data>
   <data name="BadProtectedAccess" xml:space="preserve">
     <value>Cannot access protected member '{0}' via a qualifier of type '{1}'; the qualifier must be of type '{2}' (or derived from it)</value>
   </data>
@@ -271,32 +259,17 @@
   <data name="BadDelArgTypes" xml:space="preserve">
     <value>Delegate '{0}' has some invalid arguments</value>
   </data>
-  <data name="AssgReadonlyLocal" xml:space="preserve">
-    <value>Cannot assign to '{0}' because it is read-only</value>
-  </data>
-  <data name="RefReadonlyLocal" xml:space="preserve">
-    <value>Cannot pass '{0}' as a ref or out argument because it is read-only</value>
-  </data>
   <data name="ReturnNotLValue" xml:space="preserve">
     <value>Cannot modify the return value of '{0}' because it is not a variable</value>
   </data>
   <data name="AssgReadonly2" xml:space="preserve">
     <value>Members of readonly field '{0}' cannot be modified (except in a constructor or a variable initializer)</value>
   </data>
-  <data name="RefReadonly2" xml:space="preserve">
-    <value>Members of readonly field '{0}' cannot be passed ref or out (except in a constructor)</value>
-  </data>
   <data name="AssgReadonlyStatic2" xml:space="preserve">
     <value>Fields of static readonly field '{0}' cannot be assigned to (except in a static constructor or a variable initializer)</value>
   </data>
-  <data name="RefReadonlyStatic2" xml:space="preserve">
-    <value>Fields of static readonly field '{0}' cannot be passed ref or out (except in a static constructor)</value>
-  </data>
   <data name="AssgReadonlyLocalCause" xml:space="preserve">
     <value>Cannot assign to '{0}' because it is a '{1}'</value>
-  </data>
-  <data name="RefReadonlyLocalCause" xml:space="preserve">
-    <value>Cannot pass '{0}' as a ref or out argument because it is a '{1}'</value>
   </data>
   <data name="BadCtorArgCount" xml:space="preserve">
     <value>'{0}' does not contain a constructor that takes '{1}' arguments</value>
