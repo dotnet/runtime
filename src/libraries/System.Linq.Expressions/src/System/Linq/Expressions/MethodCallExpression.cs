@@ -420,7 +420,7 @@ namespace System.Linq.Expressions
                     if (en.Current == _arg0)
                     {
                         en.MoveNext();
-                        if( en.Current == _arg1)
+                        if (en.Current == _arg1)
                         {
                             en.MoveNext();
                             return en.Current == _arg2;

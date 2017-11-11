@@ -200,7 +200,7 @@ namespace System.Collections.Generic
                 arrayIndex += toCopy;
             }
         }
-        
+
         /// <summary>
         /// Copies the contents of this builder to the specified array.
         /// </summary>
