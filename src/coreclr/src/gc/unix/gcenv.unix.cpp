@@ -330,7 +330,12 @@ bool GCToOSInterface::VirtualCommit(void* address, size_t size)
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
 {
-    return mprotect(address, size, PROT_NONE) == 0;
+    // TODO: This can fail, however the GC does not handle the failure gracefully
+    // Explicitly calling mmap instead of mprotect here makes it
+    // that much more clear to the operating system that we no
+    // longer need these pages. Also, GC depends on re-commited pages to
+    // be zeroed-out.
+    return mmap(address, size, PROT_NONE, MAP_FIXED | MAP_ANON | MAP_PRIVATE, -1, 0) != NULL;
 }
 
 // Reset virtual memory range. Indicates that data in the memory range specified by address and size is no
