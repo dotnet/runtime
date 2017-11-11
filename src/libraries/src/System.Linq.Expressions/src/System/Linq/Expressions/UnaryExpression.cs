@@ -164,7 +164,7 @@ namespace System.Linq.Expressions
             // temp
             ParameterExpression temp = Parameter(Operand.Type, name: null);
             return Block(
-                new  TrueReadOnlyCollection<ParameterExpression>(temp),
+                new TrueReadOnlyCollection<ParameterExpression>(temp),
                 new TrueReadOnlyCollection<Expression>(
                     Assign(temp, Operand),
                     Assign(Operand, FunctionalOp(temp)),

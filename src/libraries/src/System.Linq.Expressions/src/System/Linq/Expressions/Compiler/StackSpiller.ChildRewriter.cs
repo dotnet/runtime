@@ -333,7 +333,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 var parameters = method.GetParametersCached();
 
-                for (int i = 0, n = parameters.Length; i < n;  i++)
+                for (int i = 0, n = parameters.Length; i < n; i++)
                 {
                     if (parameters[i].ParameterType.IsByRef)
                     {

@@ -231,7 +231,7 @@ namespace System.Dynamic.Utils
             // nonbool==>bool and nonbool==>bool? which are only legal from
             // bool-backed enums.
             return IsConvertible(source) && IsConvertible(dest)
-                   && (GetNonNullableType(dest) != typeof(bool) 
+                   && (GetNonNullableType(dest) != typeof(bool)
                    || source.IsEnum && source.GetEnumUnderlyingType() == typeof(bool));
         }
 
@@ -689,7 +689,7 @@ namespace System.Dynamic.Utils
         {
             do
             {
-                MethodInfo result = type.GetAnyStaticMethodValidated(name, new[] {type});
+                MethodInfo result = type.GetAnyStaticMethodValidated(name, new[] { type });
                 if (result != null && result.IsSpecialName && !result.ContainsGenericParameters)
                 {
                     return result;
@@ -836,6 +836,5 @@ namespace System.Dynamic.Utils
         }
 
 #endif
-
     }
 }
