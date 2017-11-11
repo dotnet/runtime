@@ -3540,7 +3540,6 @@ public:
 private:
     STRINGREF   _className;  //Needed for serialization.
     OBJECTREF   _exceptionMethod;  //Needed for serialization.
-    STRINGREF   _exceptionMethodString; //Needed for serialization.
     STRINGREF   _message;
     OBJECTREF   _data;
     OBJECTREF   _innerException;
