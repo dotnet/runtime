@@ -12,8 +12,8 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Agent.BuildDirectory)/s/clean.sh -all",
-        "arguments": "",
+        "filename": "$(Agent.BuildDirectory)/s/clean.sh",
+        "arguments": "-all",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
