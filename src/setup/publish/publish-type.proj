@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <UsingTask TaskName="DownloadFromAzure" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll" />
+
+  <Import Project="$(PackagesDir)/$(FeedTasksPackage.ToLower())/$(FeedTasksPackageVersion)/build/$(FeedTasksPackage).targets" />
+
+  <PropertyGroup>
+    <BuildDependsOn>
+      ValidateProperties;
+      DownloadFilesFromContainer;
+      SignSymbolPackages
+    </BuildDependsOn>
+
+    <BuildDependsOn Condition="$(PublishType.Contains('blob')">
+      $(BuildDependsOn);
+      ValidateBlobFeedProperties;
+      PublishPackagesToBlobFeed;
+      PublishFilesToBlobFeed;
+    </BuildDependsOn>
+
+    <BuildDependsOn Condition="$(PublishType.Contains('versions')">
+      $(BuildDependsOn);
+      UpdateVersionsRepo
+    </BuildDependsOn>
+  </PropertyGroup>
+
+  <Target Name="Build" DependsOnTargets="$(BuildDependsOn)" />
+
+  <Target Name="ValidateProperties">
+    <Error Condition="'$(AzureAccessToken)' == ''" Text="Missing required property 'AzureAccessToken'" />
+    <Error Condition="'$(AzureAccountName)' == ''" Text="Missing required property 'AzureAccountName'" />
+    <Error Condition="'$(ContainerName)' == ''" Text="Missing required property 'ContainerName'" />
+    <Message Condition="'$(WindowsSdkDir)' == ''" Text="Windows SDK not found. Symbols packages will not be signed." />
+  </Target>
+
+  <Target Name="ValidateBlobFeedProperties">
+    <Error Condition="'$(PublishBlobFeedUrl)' == ''" Text="Missing required property 'PublishBlobFeedUrl'" />
+    <Error Condition="'$(PublishBlobFeedKey)' == ''" Text="Missing required property 'PublishBlobFeedKey'" />
+
+    <PropertyGroup>
+      <!-- map the properties to the values expexed by the Feeds.targets file -->
+      <ExpectedFeedUrl>$(PublishBlobFeedUrl)</ExpectedFeedUrl>
+      <AccountKey>$(PublishBlobFeedKey)</AccountKey>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="DownloadFilesFromContainer">
+    <!-- TODO: We should also think about pulling down the checksums or recomputing them -->
+    <PropertyGroup>
+      <DownloadDirectory Condition="'$(DownloadDirectory)' == ''">$(BinDir)PackageDownload/</DownloadDirectory>
+      <PublishDirectory Condition="'$(PublishDirectory)' == ''">$(BinDir)ForPublishing/</PublishDirectory>
+      <!-- if we're not signing packages, publish directly from the download directory, as we won't be
+	       copying them to the indexed directory -->
+      <PublishDirectory Condition="'$(WindowsSdkDir)' == '' OR '$(SignType)' != 'real'">$(DownloadDirectory)</PublishDirectory>
+    </PropertyGroup>
+    <MakeDir Directories="$(DownloadDirectory)" Condition="!Exists('$(DownloadDirectory)')" />
+
+    <DownloadFromAzure AccountName="$(AzureAccountName)"
+                       AccountKey="$(AzureAccessToken)"
+                       ContainerName="$(ContainerName)"
+                       BlobNamePrefix="$(BinariesRelativePath)"
+                       DownloadDirectory="$(DownloadDirectory)" />
+
+    <ItemGroup>
+      <!-- ShippedNugetPackage item is used for updating versions repo -->
+      <ShippedNuGetPackage Include="$(DownloadDirectory)**\*.nupkg" Exclude="$(DownloadDirectory)**\*.symbols.nupkg" />
+
+      <!-- Setup item groups for PublishPackagesToBlobFeed and PublishFilesToBlobFeed -->
+      <PackagesToPublish Include="$(DownloadDirectory)**\*.nupkg" />
+      <FilesToPublish Include="$(DownloadDirectory)**\*.*" Exclude="$(PackagesToPublish)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="FindDownloadedPackagesForSigning">
+    <ItemGroup>
+      <!-- Find the downloaded symbol packages -->
+      <SymbolPackagesToEmbedIndex Include="$(DownloadDirectory)**\*.symbols.nupkg" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <UnsignedSymbolsDirectory Condition="'$(UnsignedSymbolsDirectory)' == ''">$(BinDir)UnsignedSymbolsDirectory/</UnsignedSymbolsDirectory>
+      <!-- Glob matching packages that we want to embed symbol signatures in. Used in BuildTools. -->
+      <SymbolPackagesToPublishGlob Condition="'$(SymbolPackagesToPublishGlob)' == ''">$(DownloadDirectory)**\*.symbols.nupkg</SymbolPackagesToPublishGlob>
+    </PropertyGroup>
+
+    <!-- Move all the symbol packages to an unsigned directory -->
+    <MakeDir Directories="$(UnsignedSymbolsDirectory)" />
+    <Move SourceFiles="@(SymbolPackagesToEmbedIndex)" DestinationFolder="$(UnsignedSymbolsDirectory)" />
+  </Target>
+
+  <Target Name="SignSymbolPackages"
+          DependsOnTargets="FindDownloadedPackagesForSigning;InjectSignedSymbolCatalogIntoSymbolPackages"
+          Condition="'$(WindowsSdkDir)' != '' AND '$(SignType)' == 'real'">
+    <ItemGroup>
+      <EmbedIndexArgPairs Include="@(SymbolPackagesToEmbedIndex -> '$(UnsignedSymbolsDirectory)%(Filename)%(Extension) %(Identity)')" />
+    </ItemGroup>
+
+    <!-- Inline the EmbedIndex.ps1 script used in CoreFX and CoreCLR: directly call EmbedIndex. -->
+    <Exec Command="$(DotNetToolDir)\dotnet $(EmbedIndexToolDir)\tools\EmbedIndex.dll %(EmbedIndexArgPairs.Identity)" />
+  </Target>
+
+  <!--
+    Target wrapping UpdatePublishedVersions: ensures that ShippedNuGetPackage items are created and
+    disables versions repo update if no auth token is defined. Otherwise, not specifying an auth
+    token would cause an error.
+  -->
+  <Target Name="UpdateVersionsRepo"
+          Condition="'$(GitHubAuthToken)' != ''"
+          DependsOnTargets="UpdatePublishedVersions" />
+
+  <Import Project="$(ToolsDir)VersionTools.targets" Condition="Exists('$(ToolsDir)VersionTools.targets')" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
