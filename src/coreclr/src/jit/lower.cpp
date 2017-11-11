@@ -688,7 +688,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 //                 |____ (ICon)        (The actual case constant)
                 GenTreePtr gtCaseCond =
                     comp->gtNewOperNode(GT_EQ, TYP_INT, comp->gtNewLclvNode(tempLclNum, tempLclType),
-                                        comp->gtNewIconNode(i, TYP_INT));
+                                        comp->gtNewIconNode(i, tempLclType));
                 /* Increment the lvRefCnt and lvRefCntWtd for temp */
                 tempVarDsc->incRefCnts(blockWeight, comp);
 
