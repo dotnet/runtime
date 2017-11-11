@@ -86,7 +86,8 @@ namespace System.Runtime.CompilerServices
             if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw System.Linq.Expressions.Error.TypeMustBeDerivedFromSystemDelegate();
 
             CacheDict<Type, Func<CallSiteBinder, CallSite>> ctors = s_siteCtors;
-            if (ctors == null) {
+            if (ctors == null)
+            {
                 // It's okay to just set this, worst case we're just throwing away some data
                 s_siteCtors = ctors = new CacheDict<Type, Func<CallSiteBinder, CallSite>>(100);
             }

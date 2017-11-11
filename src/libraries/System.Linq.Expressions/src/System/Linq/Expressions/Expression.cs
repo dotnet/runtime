@@ -260,7 +260,7 @@ comparand: null
                     PropertyInfo prop = member as PropertyInfo;
                     if (prop != null)
                     {
-                        if(prop.CanWrite)
+                        if (prop.CanWrite)
                         {
                             return;
                         }

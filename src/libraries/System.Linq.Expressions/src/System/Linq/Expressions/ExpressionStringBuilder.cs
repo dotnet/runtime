@@ -162,47 +162,112 @@ namespace System.Linq.Expressions
                     // CLR 4. We changed them to "AndAlso" and "OrElse" to
                     // be 3.5 compatible, but it turns out 3.5 shipped with
                     // "&&" and "||". Oops.
-                    case ExpressionType.AndAlso:               op = "AndAlso";                   break;
-                    case ExpressionType.OrElse:                op = "OrElse";                    break;
-                    case ExpressionType.Assign:                op = "=";                         break;
-                    case ExpressionType.Equal:                 op = "==";                        break;
-                    case ExpressionType.NotEqual:              op = "!=";                        break;
-                    case ExpressionType.GreaterThan:           op = ">";                         break;
-                    case ExpressionType.LessThan:              op = "<";                         break;
-                    case ExpressionType.GreaterThanOrEqual:    op = ">=";                        break;
-                    case ExpressionType.LessThanOrEqual:       op = "<=";                        break;
+                    case ExpressionType.AndAlso:
+                        op = "AndAlso";
+                        break;
+                    case ExpressionType.OrElse:
+                        op = "OrElse";
+                        break;
+                    case ExpressionType.Assign:
+                        op = "=";
+                        break;
+                    case ExpressionType.Equal:
+                        op = "==";
+                        break;
+                    case ExpressionType.NotEqual:
+                        op = "!=";
+                        break;
+                    case ExpressionType.GreaterThan:
+                        op = ">";
+                        break;
+                    case ExpressionType.LessThan:
+                        op = "<";
+                        break;
+                    case ExpressionType.GreaterThanOrEqual:
+                        op = ">=";
+                        break;
+                    case ExpressionType.LessThanOrEqual:
+                        op = "<=";
+                        break;
                     case ExpressionType.Add:
-                    case ExpressionType.AddChecked:            op = "+";                         break;
+                    case ExpressionType.AddChecked:
+                        op = "+";
+                        break;
                     case ExpressionType.AddAssign:
-                    case ExpressionType.AddAssignChecked:      op = "+=";                        break;
+                    case ExpressionType.AddAssignChecked:
+                        op = "+=";
+                        break;
                     case ExpressionType.Subtract:
-                    case ExpressionType.SubtractChecked:       op = "-";                         break;
+                    case ExpressionType.SubtractChecked:
+                        op = "-";
+                        break;
                     case ExpressionType.SubtractAssign:
-                    case ExpressionType.SubtractAssignChecked: op = "-=";                        break;
-                    case ExpressionType.Divide:                op = "/";                         break;
-                    case ExpressionType.DivideAssign:          op = "/=";                        break;
-                    case ExpressionType.Modulo:                op = "%";                         break;
-                    case ExpressionType.ModuloAssign:          op = "%=";                        break;
+                    case ExpressionType.SubtractAssignChecked:
+                        op = "-=";
+                        break;
+                    case ExpressionType.Divide:
+                        op = "/";
+                        break;
+                    case ExpressionType.DivideAssign:
+                        op = "/=";
+                        break;
+                    case ExpressionType.Modulo:
+                        op = "%";
+                        break;
+                    case ExpressionType.ModuloAssign:
+                        op = "%=";
+                        break;
                     case ExpressionType.Multiply:
-                    case ExpressionType.MultiplyChecked:       op = "*";                         break;
+                    case ExpressionType.MultiplyChecked:
+                        op = "*";
+                        break;
                     case ExpressionType.MultiplyAssign:
-                    case ExpressionType.MultiplyAssignChecked: op = "*=";                        break;
-                    case ExpressionType.LeftShift:             op = "<<";                        break;
-                    case ExpressionType.LeftShiftAssign:       op = "<<=";                       break;
-                    case ExpressionType.RightShift:            op = ">>";                        break;
-                    case ExpressionType.RightShiftAssign:      op = ">>=";                       break;
-                    case ExpressionType.And:                   op = IsBool(node) ? "And" : "&";  break;
-                    case ExpressionType.AndAssign:             op = IsBool(node) ? "&&=" : "&="; break;
-                    case ExpressionType.Or:                    op = IsBool(node) ? "Or"  : "|";  break;
-                    case ExpressionType.OrAssign:              op = IsBool(node) ? "||=" : "|="; break;
-                    case ExpressionType.ExclusiveOr:           op = "^";                         break;
-                    case ExpressionType.ExclusiveOrAssign:     op = "^=";                        break;
-                    case ExpressionType.Power:                 op = "**";                        break; // This was changed in CoreFx from ^ to **
-                    case ExpressionType.PowerAssign:           op = "**=";                       break;
-                    case ExpressionType.Coalesce:              op = "??";                        break;
+                    case ExpressionType.MultiplyAssignChecked:
+                        op = "*=";
+                        break;
+                    case ExpressionType.LeftShift:
+                        op = "<<";
+                        break;
+                    case ExpressionType.LeftShiftAssign:
+                        op = "<<=";
+                        break;
+                    case ExpressionType.RightShift:
+                        op = ">>";
+                        break;
+                    case ExpressionType.RightShiftAssign:
+                        op = ">>=";
+                        break;
+                    case ExpressionType.And:
+                        op = IsBool(node) ? "And" : "&";
+                        break;
+                    case ExpressionType.AndAssign:
+                        op = IsBool(node) ? "&&=" : "&=";
+                        break;
+                    case ExpressionType.Or:
+                        op = IsBool(node) ? "Or" : "|";
+                        break;
+                    case ExpressionType.OrAssign:
+                        op = IsBool(node) ? "||=" : "|=";
+                        break;
+                    case ExpressionType.ExclusiveOr:
+                        op = "^";
+                        break;
+                    case ExpressionType.ExclusiveOrAssign:
+                        op = "^=";
+                        break;
+                    case ExpressionType.Power:
+                        op = "**";
+                        break; // This was changed in CoreFx from ^ to **
+                    case ExpressionType.PowerAssign:
+                        op = "**=";
+                        break;
+                    case ExpressionType.Coalesce:
+                        op = "??";
+                        break;
                     default:
                         throw new InvalidOperationException();
                 }
+
                 Out('(');
                 Visit(node.Left);
                 Out(' ');
@@ -552,22 +617,22 @@ namespace System.Linq.Expressions
             switch (node.NodeType)
             {
                 case ExpressionType.Negate:
-                case ExpressionType.NegateChecked:       Out('-');               break;
-                case ExpressionType.Not:                 Out("Not(");            break;
-                case ExpressionType.IsFalse:             Out("IsFalse(");        break;
-                case ExpressionType.IsTrue:              Out("IsTrue(");         break;
-                case ExpressionType.OnesComplement:      Out("~(");              break;
-                case ExpressionType.ArrayLength:         Out("ArrayLength(");    break;
-                case ExpressionType.Convert:             Out("Convert(");        break;
-                case ExpressionType.ConvertChecked:      Out("ConvertChecked("); break;
-                case ExpressionType.Throw:               Out("throw(");          break;
-                case ExpressionType.TypeAs:              Out('(');               break;
-                case ExpressionType.UnaryPlus:           Out('+');               break;
-                case ExpressionType.Unbox:               Out("Unbox(");          break;
-                case ExpressionType.Increment:           Out("Increment(");      break;
-                case ExpressionType.Decrement:           Out("Decrement(");      break;
-                case ExpressionType.PreIncrementAssign:  Out("++");              break;
-                case ExpressionType.PreDecrementAssign:  Out("--");              break;
+                case ExpressionType.NegateChecked: Out('-'); break;
+                case ExpressionType.Not: Out("Not("); break;
+                case ExpressionType.IsFalse: Out("IsFalse("); break;
+                case ExpressionType.IsTrue: Out("IsTrue("); break;
+                case ExpressionType.OnesComplement: Out("~("); break;
+                case ExpressionType.ArrayLength: Out("ArrayLength("); break;
+                case ExpressionType.Convert: Out("Convert("); break;
+                case ExpressionType.ConvertChecked: Out("ConvertChecked("); break;
+                case ExpressionType.Throw: Out("throw("); break;
+                case ExpressionType.TypeAs: Out('('); break;
+                case ExpressionType.UnaryPlus: Out('+'); break;
+                case ExpressionType.Unbox: Out("Unbox("); break;
+                case ExpressionType.Increment: Out("Increment("); break;
+                case ExpressionType.Decrement: Out("Decrement("); break;
+                case ExpressionType.PreIncrementAssign: Out("++"); break;
+                case ExpressionType.PreDecrementAssign: Out("--"); break;
                 case ExpressionType.Quote:
                 case ExpressionType.PostIncrementAssign:
                 case ExpressionType.PostDecrementAssign:
@@ -587,16 +652,18 @@ namespace System.Linq.Expressions
                 case ExpressionType.PreIncrementAssign:
                 case ExpressionType.Quote:
                     break;
-                case ExpressionType.TypeAs:              Out(" As ");
-                                                         Out(node.Type.Name);
-                                                         Out(')');               break;
+                case ExpressionType.TypeAs:
+                    Out(" As ");
+                    Out(node.Type.Name);
+                    Out(')'); break;
                 case ExpressionType.Convert:
-                case ExpressionType.ConvertChecked:      Out(", ");
-                                                         Out(node.Type.Name);
-                                                         Out(')');               break; // These were changed in CoreFx to add the type name
-                case ExpressionType.PostIncrementAssign: Out("++");              break;
-                case ExpressionType.PostDecrementAssign: Out("--");              break;
-                default:                                 Out(')');               break;
+                case ExpressionType.ConvertChecked:
+                    Out(", ");
+                    Out(node.Type.Name);
+                    Out(')'); break; // These were changed in CoreFx to add the type name
+                case ExpressionType.PostIncrementAssign: Out("++"); break;
+                case ExpressionType.PostDecrementAssign: Out("--"); break;
+                default: Out(')'); break;
             }
             return node;
         }
@@ -635,10 +702,10 @@ namespace System.Linq.Expressions
             string op;
             switch (node.Kind)
             {
-                case GotoExpressionKind.Goto:     op = "goto";     break;
-                case GotoExpressionKind.Break:    op = "break";    break;
+                case GotoExpressionKind.Goto: op = "goto"; break;
+                case GotoExpressionKind.Break: op = "break"; break;
                 case GotoExpressionKind.Continue: op = "continue"; break;
-                case GotoExpressionKind.Return:   op = "return";   break;
+                case GotoExpressionKind.Return: op = "return"; break;
                 default:
                     throw new InvalidOperationException();
             }

@@ -111,7 +111,7 @@ namespace System.Runtime.CompilerServices
             {
                 if (node.Variable != null)
                 {
-                    _shadowedVars.Push(new HashSet<ParameterExpression>{ node.Variable });
+                    _shadowedVars.Push(new HashSet<ParameterExpression> { node.Variable });
                 }
                 Expression b = Visit(node.Body);
                 Expression f = Visit(node.Filter);
