@@ -144,7 +144,8 @@ namespace System.IO.Compression
         /// The ZipArchive that this entry belongs to. If this entry has been deleted, this will return null.
         /// </summary>
         public ZipArchive Archive => _archive;
-        
+
+        [CLSCompliant(false)]
         public uint Crc32 => _crc32;
 
         /// <summary>
