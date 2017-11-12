@@ -50,7 +50,7 @@ Daily Builds
 |   **RHEL 7.2 (x64)**       |   [![][rhel7-badge-master]][rhel7-version-master]<br>[Host][rhel7-host-master] ([Checksum][rhel7-host-checksum-master])<br>[Host FX Resolver][rhel7-hostfxr-master] ([Checksum][rhel7-hostfxr-checksum-master])<br>[Shared Framework][rhel7-sharedfx-master] ([Checksum][rhel7-sharedfx-checksum-master])<br>  |   [![][rhel7-badge-2.0.X]][rhel7-version-2.0.X]<br>[Host][rhel7-host-2.0.X] ([Checksum][rhel7-host-checksum-2.0.X])<br>[Host FX Resolver][rhel7-hostfxr-2.0.X] ([Checksum][rhel7-hostfxr-checksum-2.0.X])<br>[Shared Framework][rhel7-sharedfx-2.0.X] ([Checksum][rhel7-sharedfx-checksum-2.0.X])<br>   |   [![][rhel-badge-1.1.X]][rhel-version-1.1.X]<br>[tar.gz][rhel-targz-1.1.X]   |    [![][rhel-badge-preview]][rhel-version-preview]<br>[tar.gz][rhel-targz-preview]   |
 |   **Fedora 23 (x64)**      |   N/A   |   N/A   |   [![][fedora-23-badge-1.1.X]][fedora-23-version-1.1.X]<br>[tar.gz][fedora-23-targz-1.1.X]   |   [![][fedora-23-badge-preview]][fedora-23-version-preview]<br>[tar.gz][fedora-23-targz-preview]   |
 |   **Fedora 24 (x64)**      |   N/A   |   N/A   |   [![][fedora-24-badge-1.1.X]][fedora-24-version-1.1.X]<br>[tar.gz][fedora-24-targz-1.1.X]   |   N/A   |
-|   **OpenSUSE 42.1 (x64)**  |   N/A   |   N/A   |   [![][opensuse-42.1-badge-1.1.X]][opensuse-42.1-version-1.1.X]<br>[tar.gz][opensuse-42.1-targz-1.1.X]   |   N/A   |
+|   **OpenSUSE 42.1 (x64)**  |  [![][OpenSUSE-42-badge-master]][OpenSUSE-42-version-master]<br>[Host][OpenSUSE-42-host-master] ([Checksum][OpenSUSE-42-host-checksum-master])<br>[Host FX Resolver][OpenSUSE-42-hostfxr-master] ([Checksum][OpenSUSE-42-hostfxr-checksum-master])<br>[Shared Framework][OpenSUSE-42-sharedfx-master] ([Checksum][OpenSUSE-42-sharedfx-checksum-master])<br>   |   N/A   |   [![][opensuse-42.1-badge-1.1.X]][opensuse-42.1-version-1.1.X]<br>[tar.gz][opensuse-42.1-targz-1.1.X]   |   N/A   |
 
 *Note: Our .deb packages are put together slightly differently than the other OS specific installers. Instead of combining everything, we have separate component packages that depend on each other. If you're installing these directly from the .deb files (via dpkg or similar), then you'll need to install them in the order presented above.*
 
@@ -394,6 +394,14 @@ Daily Builds
 [fedora-24-version-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/dnvm/latest.sharedfx.fedora.24.x64.version
 [fedora-24-targz-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/dotnet-fedora.24-x64.latest.tar.gz
 
+[OpenSUSE-42-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_opensuse.42-x64_Release_version_badge.svg
+[OpenSUSE-42-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.opensuse.42.x64.version
+[OpenSUSE-42-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-opensuse.42-x64.rpm
+[OpenSUSE-42-host-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-opensuse.42-x64.rpm.sha512
+[OpenSUSE-42-hostfxr-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-latest-opensuse.42-x64.rpm
+[OpenSUSE-42-hostfxr-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-latest-opensuse.42-x64.rpm.sha512
+[OpenSUSE-42-sharedfx-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-opensuse.42-x64.rpm
+[OpenSUSE-42-sharedfx-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-opensuse.42-x64.rpm.sha512
 
 [opensuse-42.1-badge-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/sharedfx_openSUSE_42_1_x64_Release_version_badge.svg
 [opensuse-42.1-version-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/dnvm/latest.sharedfx.opensuse.42.1.x64.version
