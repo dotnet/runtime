@@ -8,10 +8,10 @@ using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System
 {
-#if CORECLR
-    internal
-#else
+#if CORERT
     public sealed
+#else
+    internal
 #endif
     partial class DefaultBinder : Binder
     {
