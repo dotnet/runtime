@@ -547,7 +547,7 @@ namespace System.Net.Security
         // This method assumes that a SSPI context is already in a good shape.
         // For example it is either a fresh context or already authenticated context that needs renegotiation.
         //
-        internal void ProcessAuthentication(LazyAsyncResult lazyResult, CancellationToken cancellationToken)
+        internal void ProcessAuthentication(LazyAsyncResult lazyResult)
         {
             if (Interlocked.Exchange(ref _nestedAuth, 1) == 1)
             {
@@ -560,7 +560,7 @@ namespace System.Net.Security
                 AsyncProtocolRequest asyncRequest = null;
                 if (lazyResult != null)
                 {
-                    asyncRequest = new AsyncProtocolRequest(lazyResult, cancellationToken);
+                    asyncRequest = new AsyncProtocolRequest(lazyResult);
                     asyncRequest.Buffer = null;
 #if DEBUG
                     lazyResult._debugAsyncChain = asyncRequest;
@@ -639,13 +639,6 @@ namespace System.Net.Security
         //
         private void ForceAuthentication(bool receiveFirst, byte[] buffer, AsyncProtocolRequest asyncRequest)
         {
-            if (asyncRequest != null && asyncRequest.CancellationToken.IsCancellationRequested)
-            {
-                // Cancel async operation, before I/O starts.
-                asyncRequest.CompleteUserWithError(new OperationCanceledException(asyncRequest.CancellationToken));
-                return;
-            }
-
             if (CheckEnqueueHandshake(buffer, asyncRequest))
             {
                 // Async handshake is enqueued and will resume later.
@@ -750,13 +743,6 @@ namespace System.Net.Security
         //
         private void StartSendBlob(byte[] incoming, int count, AsyncProtocolRequest asyncRequest)
         {
-            if (asyncRequest != null && asyncRequest.CancellationToken.IsCancellationRequested)
-            {
-                // Cancel async operation if cancellation requested.
-                asyncRequest.CompleteUserWithError(new OperationCanceledException(asyncRequest.CancellationToken));
-                return;
-            }
-
             ProtocolToken message = Context.NextMessage(incoming, 0, count);
             _securityStatus = message.Status;
 
@@ -783,7 +769,7 @@ namespace System.Net.Security
                 else
                 {
                     asyncRequest.AsyncState = message;
-                    Task t = InnerStream.WriteAsync(message.Payload, 0, message.Size, asyncRequest.CancellationToken);
+                    Task t = InnerStream.WriteAsync(message.Payload, 0, message.Size);
                     if (t.IsCompleted)
                     {
                         t.GetAwaiter().GetResult();
@@ -794,7 +780,7 @@ namespace System.Net.Security
                         if (!ar.CompletedSynchronously)
                         {
 #if DEBUG
-                            asyncRequest._debugAsyncChain = ar;
+                            asyncRequest._DebugAsyncChain = ar;
 #endif
                             return;
                         }
@@ -811,13 +797,6 @@ namespace System.Net.Security
         //
         private void CheckCompletionBeforeNextReceive(ProtocolToken message, AsyncProtocolRequest asyncRequest)
         {
-            if (asyncRequest != null && asyncRequest.CancellationToken.IsCancellationRequested)
-            {
-                // Cancel async operation if cancellation requested.
-                asyncRequest.CompleteUserWithError(new OperationCanceledException(asyncRequest.CancellationToken));
-                return;
-            }
-
             if (message.Failed)
             {
                 StartSendAuthResetSignal(null, asyncRequest, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_auth_SSPI, message.GetException())));
@@ -847,12 +826,6 @@ namespace System.Net.Security
         //
         private void StartReceiveBlob(byte[] buffer, AsyncProtocolRequest asyncRequest)
         {
-            if (asyncRequest != null && asyncRequest.CancellationToken.IsCancellationRequested)
-            {
-                asyncRequest.CompleteUserWithError(new OperationCanceledException(asyncRequest.CancellationToken));
-                return;
-            }
-
             if (_pendingReHandshake)
             {
                 if (CheckEnqueueHandshakeRead(ref buffer, asyncRequest))
@@ -868,7 +841,7 @@ namespace System.Net.Security
                 }
             }
 
-            // This is first server read.
+            //This is first server read.
             buffer = EnsureBufferSize(buffer, 0, SecureChannel.ReadHeaderSize);
 
             int readBytes = 0;
@@ -891,14 +864,9 @@ namespace System.Net.Security
             StartReadFrame(buffer, readBytes, asyncRequest);
         }
 
+        //
         private void StartReadFrame(byte[] buffer, int readBytes, AsyncProtocolRequest asyncRequest)
         {
-            if (asyncRequest != null && asyncRequest.CancellationToken.IsCancellationRequested)
-            {
-                asyncRequest.CompleteUserWithError(new OperationCanceledException(asyncRequest.CancellationToken));
-                return;
-            }
-
             if (readBytes == 0)
             {
                 // EOF received
@@ -945,18 +913,11 @@ namespace System.Net.Security
                     readBytes = 0;
                 }
             }
-
             ProcessReceivedBlob(buffer, readBytes + restBytes, asyncRequest);
         }
 
         private void ProcessReceivedBlob(byte[] buffer, int count, AsyncProtocolRequest asyncRequest)
         {
-            if (asyncRequest != null && asyncRequest.CancellationToken.IsCancellationRequested)
-            {
-                asyncRequest.CompleteUserWithError(new OperationCanceledException(asyncRequest.CancellationToken));
-                return;
-            }
-
             if (count == 0)
             {
                 // EOF received.
@@ -1021,7 +982,7 @@ namespace System.Net.Security
             else
             {
                 asyncRequest.AsyncState = exception;
-                Task t = InnerStream.WriteAsync(message.Payload, 0, message.Size, asyncRequest.CancellationToken);
+                Task t = InnerStream.WriteAsync(message.Payload, 0, message.Size);
                 if (t.IsCompleted)
                 {
                     t.GetAwaiter().GetResult();
@@ -1109,7 +1070,6 @@ namespace System.Net.Security
                     exception.Throw();
                 }
 
-                // Not allowing cancellation in the callback.
                 sslState.CheckCompletionBeforeNextReceive((ProtocolToken)asyncState, asyncRequest);
             }
             catch (Exception e)
