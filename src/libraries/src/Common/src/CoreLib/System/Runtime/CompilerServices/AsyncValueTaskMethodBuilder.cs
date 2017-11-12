@@ -25,14 +25,14 @@ namespace System.Runtime.CompilerServices
         /// <summary>Creates an instance of the <see cref="AsyncValueTaskMethodBuilder{TResult}"/> struct.</summary>
         /// <returns>The initialized instance.</returns>
         public static AsyncValueTaskMethodBuilder<TResult> Create() =>
-#if CORECLR
-            // _methodBuilder should be initialized to AsyncTaskMethodBuilder<TResult>.Create(), but on coreclr
-            // that Create() is a nop, so we can just return the default here.
-            default(AsyncValueTaskMethodBuilder<TResult>);
-#else
+#if CORERT
             // corert's AsyncTaskMethodBuilder<TResult>.Create() currently does additional debugger-related
             // work, so we need to delegate to it.
             new AsyncValueTaskMethodBuilder<TResult>() { _methodBuilder = AsyncTaskMethodBuilder<TResult>.Create() };
+#else
+            // _methodBuilder should be initialized to AsyncTaskMethodBuilder<TResult>.Create(), but on coreclr
+            // that Create() is a nop, so we can just return the default here.
+            default(AsyncValueTaskMethodBuilder<TResult>);
 #endif
 
         /// <summary>Begins running the builder with the associated state machine.</summary>

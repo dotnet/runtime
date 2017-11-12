@@ -6,11 +6,10 @@ namespace System.Reflection
 {
     public abstract partial class MethodInfo : MethodBase
     {
-#if CORECLR
-        internal
+#if CORERT        
+        public // Needs to be public so that Reflection.Core can see it.
 #else
-        // Not an api but needs to be public so that Reflection.Core can access it.
-        public
+        internal
 #endif
         virtual int GenericParameterCount => GetGenericArguments().Length;
     }
