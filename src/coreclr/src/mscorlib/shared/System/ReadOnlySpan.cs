@@ -173,9 +173,7 @@ namespace System
                 return Unsafe.Add(ref _pointer.Value, index);
             }
 #else
-#if CORERT
             [Intrinsic]
-#endif
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [NonVersionable]
             get
