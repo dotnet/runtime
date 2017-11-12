@@ -11,10 +11,10 @@ namespace System
     /// This only exists for compatibility with .NET Framework.
     /// </summary>
     [Serializable]
-#if CORECLR
-    internal
+#if CORERT
+    public
 #else
-    public  // On CoreRT this must be public.
+    internal
 #endif
     sealed class UnitySerializationHolder : ISerializable, IObjectReference
     {
