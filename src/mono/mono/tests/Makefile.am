@@ -957,6 +957,7 @@ DISABLED_TESTS = \
 
 # bug-48015.exe: be careful when re-enabling, it happens that it returns with
 #                exit code 0, but doesn't actually execute the test.
+# block_guard_restore_aligment_on_exit.exe: flaky (10% of the time it hangs and thus times out)
 INTERP_DISABLED_TESTS = \
 	$(KNOWN_FAILING_TESTS) \
 	$(INTERP_PLATFORM_DISABLED_TESTS) \
@@ -968,6 +969,7 @@ INTERP_DISABLED_TESTS = \
 	array_load_exception.exe \
 	async-exc-compilation.exe \
 	async-with-cb-throws.exe \
+	block_guard_restore_aligment_on_exit.exe \
 	bug-335131.2.exe \
 	bug-415577.exe \
 	bug-45841-fpstack-exceptions.exe \
