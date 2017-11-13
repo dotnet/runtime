@@ -475,6 +475,7 @@ TESTS_CS_SRC=		\
 	appdomain-unload-asmload.cs	\
 	appdomain-unload-exception.cs	\
 	unload-appdomain-on-shutdown.cs	\
+	appdomain-marshalbyref-assemblyload.cs \
 	bug-47295.cs	\
 	loader.cs	\
 	pinvoke2.cs	\
@@ -818,6 +819,7 @@ PROFILE_DISABLED_TESTS += \
 	appdomain-unload-callback.exe	\
 	appdomain-unload-doesnot-raise-pending-events.exe	\
 	unload-appdomain-on-shutdown.exe	\
+	appdomain-marshalbyref-assemblyload.exe \
 	assemblyresolve_event2.2.exe	\
 	assemblyresolve_event6.exe	\
 	bug-544446.exe	\
@@ -937,12 +939,14 @@ LLVM = $(filter --llvm, $(MONO_ENV_OPTIONS))
 # reverted.
 # bug-Xamarin-5278.exe got broken by 5d26590e79da139a284459299aee95c25f4cd835
 # appdomain-thread-abort.exe: https://bugzilla.xamarin.com/show_bug.cgi?id=47054
+# appdomain-marshalbyref-assemblyload.exe: https://bugzilla.xamarin.com/show_bug.cgi?id=49308
 KNOWN_FAILING_TESTS = \
 	delegate-async-exception.exe	\
 	bug-348522.2.exe	\
 	bug-459094.exe \
 	delegate-invoke.exe \
-	bug-Xamarin-5278.exe
+	bug-Xamarin-5278.exe \
+	appdomain-marshalbyref-assemblyload.exe
 
 DISABLED_TESTS = \
 	$(KNOWN_FAILING_TESTS) \
@@ -1810,6 +1814,23 @@ generic-delegate2.2.exe: $(srcdir)/generic-delegate2.2.cs generic-delegate2-lib.
 bug-3903.exe: bug-3903.cs
 	$(MCS_NO_LIB)  $(srcdir)/bug-3903.cs -nostdlib -r:$(srcdir)/../../external/binary-reference-assemblies/v2.0/mscorlib.dll -r:$(srcdir)/../../external/binary-reference-assemblies/v2.0/System.Core.dll -out:$@
 
+EXTRA_DIST += appdomain-marshalbyref-assemblyload-MidAssembly.cs appdomain-marshalbyref-assemblyload-LeafAssembly.cs
+
+LeafAssembly.dll: appdomain-marshalbyref-assemblyload-LeafAssembly.cs
+	mkdir -p appdomain-marshalbyref-assemblyload1
+	$(MCS) -target:library -out:$@ $<
+
+appdomain-marshalbyref-assemblyload2/LeafAssembly.dll: appdomain-marshalbyref-assemblyload-LeafAssembly.cs
+	mkdir -p appdomain-marshalbyref-assemblyload2
+	$(MCS) -target:library -out:$@ $< -define:UNDEFINE_OTHER_METHOD
+
+MidAssembly.dll: appdomain-marshalbyref-assemblyload-MidAssembly.cs LeafAssembly.dll
+	mkdir -p appdomain-marshalbyref-assemblyload1
+	$(MCS) -target:library -out:$@ $< -r:LeafAssembly.dll
+
+appdomain-marshalbyref-assemblyload.exe: appdomain-marshalbyref-assemblyload.cs MidAssembly.dll LeafAssembly.dll appdomain-marshalbyref-assemblyload2/LeafAssembly.dll
+	$(MCS) -out:$@ $< -r:MidAssembly.dll -r:LeafAssembly.dll
+
 gshared:
 	$(MAKE) test-generic-sharing
 
@@ -2047,4 +2068,4 @@ internalsvisibleto-correctcase-2-sign2048.dll internalsvisibleto-wrongcase-2-sig
 	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-compilertest-sign2048.exe -warn:0 -r:internalsvisibleto-correctcase-2-sign2048.dll -r:internalsvisibleto-wrongcase-2-sign2048.dll -d:SIGN2048 internalsvisibleto-compilertest.cs
 
 
-CLEANFILES = $(TESTS_CS) $(TESTS_IL) $(TESTS_BENCH) $(TESTS_STRESS) $(TESTSAOT_CS) $(TESTSAOT_IL) $(TESTSAOT_BENCH) $(TESTSAOT_STRESS) *.dll *.stdout *.aotlog *.exe stest.dat
+CLEANFILES = $(TESTS_CS) $(TESTS_IL) $(TESTS_BENCH) $(TESTS_STRESS) $(TESTSAOT_CS) $(TESTSAOT_IL) $(TESTSAOT_BENCH) $(TESTSAOT_STRESS) *.dll *.stdout *.aotlog *.exe stest.dat LeafAssembly.dll MidAssembly.dll appdomain-marshalbyref-assemblyload2/*.dll 
