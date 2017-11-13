@@ -6759,7 +6759,6 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 				if (need_free) {
 					mono_mb_emit_ldloc (mb, src_ptr);
 					mono_mb_emit_stloc (mb, loc);
-					mono_mb_emit_ldloc (mb, loc);
 
 					emit_struct_free (mb, eklass, loc);
 				}
