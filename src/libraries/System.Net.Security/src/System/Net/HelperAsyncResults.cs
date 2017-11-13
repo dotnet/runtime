@@ -21,7 +21,7 @@ namespace System.Net
     internal class AsyncProtocolRequest
     {
 #if DEBUG
-        internal object _debugAsyncChain;         // Optionally used to track chains of async calls.
+        internal object _DebugAsyncChain;         // Optionally used to track chains of async calls.
 #endif
 
         private AsyncProtocolCallback _callback;
@@ -34,15 +34,12 @@ namespace System.Net
         public LazyAsyncResult UserAsyncResult;
         public int Result;
         public object AsyncState;
-        public readonly CancellationToken CancellationToken;
 
         public byte[] Buffer; // Temporary buffer reused by a protocol.
         public int Offset;
         public int Count;
 
-        public AsyncProtocolRequest(LazyAsyncResult userAsyncResult) : this(userAsyncResult, CancellationToken.None) { }
-
-        public AsyncProtocolRequest(LazyAsyncResult userAsyncResult, CancellationToken cancellationToken)
+        public AsyncProtocolRequest(LazyAsyncResult userAsyncResult)
         {
             if (userAsyncResult == null)
             {
@@ -52,9 +49,7 @@ namespace System.Net
             {
                 NetEventSource.Fail(this, "userAsyncResult is already completed.");
             }
-
             UserAsyncResult = userAsyncResult;
-            CancellationToken = cancellationToken;
         }
 
         public void Reset(LazyAsyncResult userAsyncResult)
@@ -77,7 +72,7 @@ namespace System.Net
             Offset = 0;
             Count = 0;
 #if DEBUG
-            _debugAsyncChain = 0;
+            _DebugAsyncChain = 0;
 #endif
         }
 

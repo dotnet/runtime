@@ -975,9 +975,9 @@ namespace Microsoft.CSharp.RuntimeBinder
             if (arrinit != null)
             {
                 Expr list = arrinit.OptionalArguments;
-                Expr p = list;
                 while (list != null)
                 {
+                    Expr p;
                     if (list is ExprList pList)
                     {
                         p = pList.OptionalElement;
@@ -988,6 +988,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                         p = list;
                         list = null;
                     }
+
                     expressions.Add(GetExpression(p));
                 }
 

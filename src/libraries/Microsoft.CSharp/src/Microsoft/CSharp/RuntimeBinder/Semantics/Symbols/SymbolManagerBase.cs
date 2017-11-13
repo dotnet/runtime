@@ -35,7 +35,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             this.tableTypeArrays = new Dictionary<TypeArrayKey, TypeArray>();
             _rootNS = _symFactory.CreateNamespace(NameManager.Lookup(""), null);
-            GetNsAid(_rootNS);
 
             ////////////////////////////////////////////////////////////////////////////////
             // Build the data structures needed to make FPreLoad fast. Make sure the 
@@ -68,11 +67,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public static TypeArray EmptyTypeArray()
         {
             return s_taEmpty;
-        }
-
-        public AssemblyQualifiedNamespaceSymbol GetRootNsAid()
-        {
-            return GetNsAid(_rootNS);
         }
 
         public NamespaceSymbol GetRootNS()
@@ -223,20 +217,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 return NameManager.Add(string.Format(CultureInfo.InvariantCulture, "{0:X}", u1.GetHashCode()));
             }
-        }
-
-        private AssemblyQualifiedNamespaceSymbol GetNsAid(NamespaceSymbol ns)
-        {
-            Name name = GetNameFromPtrs(0, 0);
-            Debug.Assert(name != null);
-
-            AssemblyQualifiedNamespaceSymbol nsa = LookupGlobalSymCore(name, ns, symbmask_t.MASK_AssemblyQualifiedNamespaceSymbol) as AssemblyQualifiedNamespaceSymbol
-                // Create a new one.
-                ?? _symFactory.CreateNamespaceAid(name, ns);
-
-            Debug.Assert(nsa.GetNS() == ns);
-
-            return nsa;
         }
 
         ////////////////////////////////////////////////////////////////////////////////

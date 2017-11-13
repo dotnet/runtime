@@ -241,12 +241,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        // Returns the virtual that this sym overrides (if IsOverride() is true), null otherwise.
-        public Symbol SymBaseVirtual()
-        {
-            return (this as MethodOrPropertySymbol)?.swtSlot.Sym;
-        }
-
         /*
          * returns true if this symbol is a normal symbol visible to the user
          */
