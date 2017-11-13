@@ -2905,6 +2905,7 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
 
         if (addr != nullptr)
         {
+            assert(pAddr == nullptr);
             accessType = IAT_VALUE;
         }
         else
