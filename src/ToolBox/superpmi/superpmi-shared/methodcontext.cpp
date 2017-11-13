@@ -1886,6 +1886,10 @@ void MethodContext::dmpGetBuiltinClass(DWORD key, DWORDLONG value)
 }
 CORINFO_CLASS_HANDLE MethodContext::repGetBuiltinClass(CorInfoClassId classId)
 {
+	AssertCodeMsg(GetBuiltinClass != nullptr, EXCEPTIONCODE_MC,
+		"Encountered an empty LWM while looking for %016llX", (DWORDLONG)classId);
+	AssertCodeMsg(GetBuiltinClass->GetIndex((DWORDLONG)classId) != -1, EXCEPTIONCODE_MC,
+		"Didn't find %016llX", (DWORDLONG)classId);
     CORINFO_CLASS_HANDLE value = (CORINFO_CLASS_HANDLE)GetBuiltinClass->Get((DWORD)classId);
     DEBUG_REP(dmpGetBuiltinClass((DWORDLONG)classId, (DWORDLONG)value));
     return value;
@@ -2142,6 +2146,14 @@ void MethodContext::recGetHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection
     DLDL value;
     value.A = (DWORDLONG)*ppIndirection;
     value.B = (DWORDLONG)result;
+
+	if (GetHelperFtn->GetIndex((DWORD)ftnNum) != -1)
+	{
+		DLDL oldValue = GetHelperFtn->Get((DWORD)ftnNum);
+
+		AssertCodeMsg(oldValue.A == value.A && oldValue.B == oldValue.B, EXCEPTIONCODE_MC, "collision! old: %016llX %016llX, new: %016llX %016llX \n", oldValue.A, oldValue.B, value.A, value.B);
+	
+	}
 
     GetHelperFtn->Add((DWORD)ftnNum, value);
     DEBUG_REC(dmpGetHelperFtn((DWORD)ftnNum, value));
