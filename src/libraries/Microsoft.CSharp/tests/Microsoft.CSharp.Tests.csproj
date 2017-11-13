@@ -10,6 +10,7 @@
     <Compile Include="ArrayHandling.cs" />
     <Compile Include="BindingErrors.cs" />
     <Compile Include="CSharpArgumentInfoTests.cs" />
+    <Compile Include="DelegateInDynamicTests.cs" />
     <Compile Include="EnumArithmeticTests.cs" />
     <Compile Include="IndexingTests.cs" />
     <Compile Include="IntegerBinaryOperationTests.cs" />
