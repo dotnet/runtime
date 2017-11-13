@@ -149,6 +149,7 @@ namespace System.Threading.ThreadPools.Tests
         [Fact]
         // Desktop framework doesn't check for this and instead, hits an assertion failure
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "ThreadPool.SetMinThreads and SetMaxThreads are not supported on UapAot.")]
         public static void SetMinMaxThreadsTest_ChangedInDotNetCore()
         {

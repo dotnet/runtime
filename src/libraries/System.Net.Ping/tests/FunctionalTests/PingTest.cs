@@ -466,6 +466,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "GC has different behavior on Mono")]
         public void CanBeFinalized()
         {
             FinalizingPing.CreateAndRelease();
