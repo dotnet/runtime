@@ -15,9 +15,13 @@ namespace System.Drawing
         {
             private const string LibraryName = "libgdiplus";
             public static IntPtr Display = IntPtr.Zero;
-            public static bool UseX11Drawable = false;
-            public static bool UseCarbonDrawable = false;
-            public static bool UseCocoaDrawable = false;
+
+            // Indicates whether X11 is available. It's available on Linux but not on recent macOS versions
+            // When set to false, where Carbon Drawing is used instead.
+            // macOS users can force X11 by setting the SYSTEM_DRAWING_COMMON_FORCE_X11 flag.
+            public static bool UseX11Drawable { get; } =
+                !RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
+                Environment.GetEnvironmentVariable("SYSTEM_DRAWING_COMMON_FORCE_X11") != null;
 
             private static IntPtr LoadNativeLibrary()
             {
@@ -48,40 +52,8 @@ namespace System.Drawing
 
             private static void PlatformInitialize()
             {
-                InitializeSystemContext();
                 LoadFunctionPointers();
             }
-
-            private static void InitializeSystemContext()
-            {
-                if (Environment.GetEnvironmentVariable("not_supported_MONO_MWF_USE_NEW_X11_BACKEND") != null || Environment.GetEnvironmentVariable("MONO_MWF_MAC_FORCE_X11") != null)
-                {
-                    UseX11Drawable = true;
-                }
-                else
-                {
-                    IntPtr buf = Marshal.AllocHGlobal(8192);
-                    // This is kind of a hack but gets us sysname from uname (struct utsname *name) on
-                    // linux and darwin
-                    if (uname(buf) != 0)
-                    {
-                        // WTH: We couldn't detect the OS; lets default to X11
-                        UseX11Drawable = true;
-                    }
-                    else
-                    {
-                        string os = Marshal.PtrToStringAnsi(buf);
-                        if (os == "Darwin")
-                            UseCarbonDrawable = true;
-                        else
-                            UseX11Drawable = true;
-                    }
-                    Marshal.FreeHGlobal(buf);
-                }
-            }
-
-            [DllImport("libc")]
-            static extern int uname(IntPtr buf);
 
             private static void LoadFunctionPointers()
             {
