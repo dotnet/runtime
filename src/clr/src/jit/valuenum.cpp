@@ -4545,9 +4545,9 @@ void Compiler::fgValueNumber()
     {
         ValueNumPair noVnp;
         // Make sure the memory SSA names have no value numbers.
-        for (unsigned i = 0; i < lvMemoryNumSsaNames; i++)
+        for (unsigned i = 0; i < lvMemoryPerSsaData.GetCount(); i++)
         {
-            lvMemoryPerSsaData.GetRef(i).m_vnPair = noVnp;
+            lvMemoryPerSsaData.GetSsaDefByIndex(i)->m_vnPair = noVnp;
         }
         for (BasicBlock* blk = fgFirstBB; blk != nullptr; blk = blk->bbNext)
         {
