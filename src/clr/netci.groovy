@@ -1793,8 +1793,15 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 
                     def buildArchitecture = 'arm'
 
+                    // For 'arm' (the RyuJIT/arm32 architecture), tell build.cmd to use RyuJIT/arm32 for crossgen compilation.
+                    // RyuJIT/arm32 is currently not the default JIT; it is an aljit. So, this is a special case.
+                    def armCrossgenOpt = ''
+                    if (architecture == 'arm') {
+                        armCrossgenOpt = '-altjitcrossgen'
+                    }
+
                     // This is now a build only job. Do not run tests. Use the flow job.
-                    buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${buildArchitecture} -priority=${priority}"
+                    buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${buildArchitecture} -priority=${priority} ${armCrossgenOpt}"
                     
                     // Zip up the tests directory so that we don't use so much space/time copying
                     // 10s of thousands of files around.
