@@ -2871,7 +2871,7 @@ combinedScenarios.each { scenario ->
                         Utilities.addXUnitDotNETResults(newJob, '**/coreclrtests.xml')
                     }
                     else {
-                        Utilities.addArchival(newJob, "bin/tests/${osGroup}.${architecture}.${configuration}/Smarty.Run.0/*.smrt", '', true, false)
+                        Utilities.addArchival(newJob, "bin/tests/${osGroup}.${architecture}.${configuration}/Smarty.run.0/*.smrt", '', true, false)
                     }
 
                     // Create a build flow to join together the build and tests required to run this
