@@ -117,7 +117,7 @@ namespace System.Linq.Expressions.Compiler
 
                 Debug.Assert(TypeUtils.AreReferenceAssignable(p1.Type, b.Left.Type.GetNonNullableType()));
                 Debug.Assert(TypeUtils.AreReferenceAssignable(p2.Type, b.Right.Type.GetNonNullableType()));
-                EmitLift(b.NodeType, resultType, mc, new[] {p1, p2}, new[] {b.Left, b.Right});
+                EmitLift(b.NodeType, resultType, mc, new[] { p1, p2 }, new[] { b.Left, b.Right });
             }
             else
             {

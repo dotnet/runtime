@@ -345,11 +345,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     else
                     {
                         // We have some ambiguities, lets sort them out.
-                        CandidateFunctionMember pAmbig1 = null;
-                        CandidateFunctionMember pAmbig2 = null;
-
                         CType pTypeThrough = _pGroup.OptionalObject?.Type;
-                        pmethBest = _pExprBinder.FindBestMethod(_methList, pTypeThrough, _pArguments, out pAmbig1, out pAmbig2);
+                        pmethBest = _pExprBinder.FindBestMethod(_methList, pTypeThrough, _pArguments, out CandidateFunctionMember pAmbig1, out CandidateFunctionMember pAmbig2);
 
                         if (null == pmethBest)
                         {
@@ -543,7 +540,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 CType pParamType = type;
                 CType pRawParamType = type.StripNubs();
 
-                Expr optionalArgument = null;
+                Expr optionalArgument;
                 if (methprop.HasDefaultParameterValue(index))
                 {
                     CType pConstValType = methprop.GetDefaultParameterValueConstValType(index);

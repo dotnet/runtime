@@ -165,6 +165,9 @@
     <ItemGroup>
       <_NETStandardFile Include="$(NETStandardPackageRefPath)\*.dll" />
 
+      <!-- Suppress errors caused by removing S.CM.C shim from inbox -->
+      <SuppressNETStandardMissingFile Include="System.ComponentModel.Composition" />
+
       <_NETStandardMissingFile Include="@(_NETStandardFile->'%(FileName)')" Exclude="@(ClosureFile->'%(FileName)')" />
       <_NETStandardMissingFileError Include="@(_NETStandardMissingFile)" Exclude="@(SuppressNETStandardMissingFile)" />
       <_NETStandardSuppressedMissingFile Include="@(_NETStandardMissingFile)" Exclude="@(_NETStandardMissingFileError)" />

@@ -664,9 +664,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 if (o is Type)
                 {
                     Type t = o as Type;
-                    Name name = null;
-                    name = GetName(t);
-                    next = _symbolTable.LookupSym(name, current, symbmask_t.MASK_AggregateSymbol) as AggregateSymbol;
+                    next = _symbolTable.LookupSym(GetName(t), current, symbmask_t.MASK_AggregateSymbol) as AggregateSymbol;
 
                     // Make sure we match arity as well when we find an aggregate.
                     if (next != null)

@@ -69,8 +69,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateFile2.cs">
       <Link>Common\Interop\Windows\Interop.CreateFile2.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.UnsafeCreateFile.uap.cs">
-      <Link>Common\Interop\Windows\Interop.UnsafeCreateFile.uap.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.UnsafeCreateFile.Uap.cs">
+      <Link>Common\Interop\Windows\Interop.UnsafeCreateFile.Uap.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.COPYFILE2_EXTENDED_PARAMETERS.cs">
       <Link>Common\Interop\Windows\Interop.COPYFILE2_EXTENDED_PARAMETERS.cs</Link>

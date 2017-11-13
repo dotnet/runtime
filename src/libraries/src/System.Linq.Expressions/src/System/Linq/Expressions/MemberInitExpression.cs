@@ -80,7 +80,7 @@ namespace System.Linq.Expressions
             }
 
             block[count + 1] = keepOnStack ? (Expression)objVar : Utils.Empty;
-            return Block(new[] {objVar}, block);
+            return Block(new[] { objVar }, block);
         }
 
         internal static Expression ReduceListInit(
@@ -97,7 +97,7 @@ namespace System.Linq.Expressions
             }
 
             block[count + 1] = keepOnStack ? (Expression)listVar : Utils.Empty;
-            return Block(new[] {listVar}, block);
+            return Block(new[] { listVar }, block);
         }
 
         internal static Expression ReduceMemberBinding(ParameterExpression objVar, MemberBinding binding)
