@@ -572,6 +572,9 @@ class MsbuildGenerator {
 
 		case "/-getresourcestrings":
 			return true;
+
+		case "/features":
+			return true;
 		}
 
 		Console.WriteLine ("Failing with : {0}", arg);
