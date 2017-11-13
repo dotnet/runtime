@@ -1619,8 +1619,8 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
         case O1K_EXACT_TYPE:
         case O1K_SUBTYPE:
             assert(assertion->op1.lcl.lclNum < lvaCount);
-            assert(optLocalAssertionProp || ((assertion->op1.lcl.ssaNum - SsaConfig::UNINIT_SSA_NUM) <
-                                             lvaTable[assertion->op1.lcl.lclNum].lvNumSsaNames));
+            assert(optLocalAssertionProp ||
+                   lvaTable[assertion->op1.lcl.lclNum].lvPerSsaData.IsValidSsaNum(assertion->op1.lcl.ssaNum));
             break;
         case O1K_ARR_BND:
             // It would be good to check that bnd.vnIdx and bnd.vnLen are valid value numbers.
