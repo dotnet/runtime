@@ -247,7 +247,7 @@
       },
       "inputs": {
         "filename": "msbuild",
-        "arguments": "src\\publish.proj /t:PublishPackages /p:CloudDropAccessToken=$(AzureBlobFeedAccessToken) /p:CloudDropAccountName=$(AzureBlobFeedAccountName) /p:ContainerName=$(AzureBlobFeedContainerName) /p:__PublishPackages=true /p:OverwriteOnPublish=true /p:PackagesPattern=../packages/AzureTransfer/Release/pkg/*.nupkg /p:__BuildType=$(ConfigurationGroup) /p:OfficialPublish=true /p:PublishFlatContainer=false /fileloggerparameters:Verbosity=diag;LogFile=publishpkg.log",
+        "arguments": "src\\publish.proj /t:PublishPackages /p:ExpectedFeedUrl=$(PB_PublishBlobFeedUrl) /p:CloudDropAccessToken=$(PB_PublishBlobFeedKey) /p:CloudDropAccountName=$(AzureBlobFeedAccountName) /p:ContainerName=$(AzureBlobFeedContainerName) /p:__PublishPackages=true /p:OverwriteOnPublish=true /p:PackagesPattern=../packages/AzureTransfer/Release/pkg/*.nupkg /p:__BuildType=$(ConfigurationGroup) /p:OfficialPublish=true /p:PublishFlatContainer=false /fileloggerparameters:Verbosity=diag;LogFile=publishpkg.log",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -266,7 +266,7 @@
       },
       "inputs": {
         "filename": "msbuild",
-        "arguments": "src\\publish.proj /t:PublishSymbolPackages /p:CloudDropAccessToken=$(AzureBlobFeedAccessToken) /p:CloudDropAccountName=$(AzureBlobFeedAccountName) /p:ContainerName=$(AzureBlobFeedContainerName) /p:__PublishSymbols=true /p:OverwriteOnPublish=true /p:SymbolsPackagesPattern=../packages/AzureTransfer/Release/symbolpkg/*.nupkg /p:__BuildType=$(ConfigurationGroup) /p:OfficialPublish=true /p:PublishFlatContainer=true /fileloggerparameters:Verbosity=diag;LogFile=publishpkg.log",
+        "arguments": "src\\publish.proj /t:PublishSymbolPackages /p:ExpectedFeedUrl=$(PB_PublishBlobFeedUrl) /p:CloudDropAccessToken=$(PB_PublishBlobFeedKey) /p:CloudDropAccountName=$(AzureBlobFeedAccountName) /p:ContainerName=$(AzureBlobFeedContainerName) /p:__PublishSymbols=true /p:OverwriteOnPublish=true /p:SymbolsPackagesPattern=../packages/AzureTransfer/Release/symbolpkg/*.nupkg /p:__BuildType=$(ConfigurationGroup) /p:OfficialPublish=true /p:PublishFlatContainer=false /fileloggerparameters:Verbosity=diag;LogFile=publishpkg.log",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -638,6 +638,14 @@
       "value": "400"
     },
     "PB_PublishType": {
+      "value": "",
+      "allowOverride": true
+    },
+    "PB_PublishBlobFeedUrl": {
+      "value": "",
+      "allowOverride": true
+    },
+    "PB_PublishBlobFeedKey": {
       "value": "",
       "allowOverride": true
     }
