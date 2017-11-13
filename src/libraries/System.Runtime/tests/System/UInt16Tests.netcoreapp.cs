@@ -15,7 +15,7 @@ namespace System.Tests
         {
             Assert.Equal(expected, ushort.Parse(value.AsReadOnlySpan(), style, provider));
 
-            Assert.True(ushort.TryParse(value.AsReadOnlySpan(), out ushort result, style, provider));
+            Assert.True(ushort.TryParse(value.AsReadOnlySpan(), style, provider, out ushort result));
             Assert.Equal(expected, result);
         }
 
@@ -27,7 +27,7 @@ namespace System.Tests
             {
                 Assert.Throws(exceptionType, () => ushort.Parse(value.AsReadOnlySpan(), style, provider));
 
-                Assert.False(ushort.TryParse(value.AsReadOnlySpan(), out ushort result, style, provider));
+                Assert.False(ushort.TryParse(value.AsReadOnlySpan(), style, provider, out ushort result));
                 Assert.Equal(0, (short)result);
             }
         }
