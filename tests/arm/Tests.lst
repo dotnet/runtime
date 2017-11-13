@@ -4681,7 +4681,7 @@ RelativePath=GC\Regressions\dev10bugs\536168\536168\536168.cmd
 WorkingDir=GC\Regressions\dev10bugs\536168\536168
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_FAIL;Pri1
 HostStyle=0
 
 [ldvirtftn.cmd_589]
@@ -16617,7 +16617,7 @@ RelativePath=GC\Features\LOHFragmentation\lohfragmentation\lohfragmentation.cmd
 WorkingDir=GC\Features\LOHFragmentation\lohfragmentation
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_FAIL;Pri1
 HostStyle=0
 
 [CharIsLetter1.cmd_2089]
@@ -34785,7 +34785,7 @@ RelativePath=GC\Features\BackgroundGC\foregroundgc\foregroundgc.cmd
 WorkingDir=GC\Features\BackgroundGC\foregroundgc
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_FAIL;Pri1
 HostStyle=0
 
 [_il_relldsfld_mul.cmd_4367]
