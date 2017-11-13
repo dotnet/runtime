@@ -21833,7 +21833,7 @@ RelativePath=JIT\SIMD\VectorConvert_r\VectorConvert_r.cmd
 WorkingDir=JIT\SIMD\VectorConvert_r
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_FAIL;14665
 HostStyle=0
 
 [b13466.cmd_2743]
@@ -43017,7 +43017,7 @@ RelativePath=JIT\SIMD\VectorConvert_ro\VectorConvert_ro.cmd
 WorkingDir=JIT\SIMD\VectorConvert_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_FAIL;14665
 HostStyle=0
 
 [b53650.cmd_5397]
