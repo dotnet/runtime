@@ -132,7 +132,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return false;
 
             // Loop through symbols.
-            Symbol symCur = null;
+            Symbol symCur;
             for (symCur = GetSymbolLoader().LookupAggMember(_name, typeCur.getAggregate(), symbmask_t.MASK_ALL);
                  symCur != null;
                  symCur = SymbolLoader.LookupNextSym(symCur, typeCur.getAggregate(), symbmask_t.MASK_ALL))
@@ -415,9 +415,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 Debug.Assert(!typeCur.isInterfaceType());
 
-                bool fHideByName = false;
-
-                SearchSingleType(typeCur, out fHideByName);
+                SearchSingleType(typeCur, out bool fHideByName);
 
                 if (_swtFirst && !_fMulti)
                 {
@@ -485,9 +483,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 Debug.Assert(typeCur != null && typeCur.isInterfaceType());
 
-                bool fHideByName = false;
-
-                if (!typeCur.fAllHidden && SearchSingleType(typeCur, out fHideByName))
+                if (!typeCur.fAllHidden && SearchSingleType(typeCur, out bool fHideByName))
                 {
                     fHideByName |= !_fMulti;
 

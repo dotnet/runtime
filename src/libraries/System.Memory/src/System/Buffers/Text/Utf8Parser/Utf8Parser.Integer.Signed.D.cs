@@ -64,15 +64,13 @@ namespace System.Buffers.Text
                 num = text[index];
                 if (!ParserHelpers.IsDigit(num))
                     goto Done;
-                if (answer > SByte.MaxValue / 10 + 1)
-                    goto FalseExit; // Overflow
+                index++;
                 answer = answer * 10 + num - '0';
-
                 // if sign < 0, (-1 * sign + 1) / 2 = 1
                 // else, (-1 * sign + 1) / 2 = 0
-                if ((uint)answer > (uint)SByte.MaxValue + (-1 * sign + 1) / 2)
+                if ((uint)answer > (uint)sbyte.MaxValue + (-1 * sign + 1) / 2)
                     goto FalseExit; // Overflow
-                index++;
+
                 if ((uint)index >= (uint)text.Length)
                     goto Done;
                 if (!ParserHelpers.IsDigit(text[index]))
@@ -89,7 +87,7 @@ FalseExit:
 
 Done:
             bytesConsumed = index;
-            value = (SByte)(answer * sign);
+            value = (sbyte)(answer * sign);
             return true;
         }
 
@@ -167,15 +165,13 @@ Done:
                 num = text[index];
                 if (!ParserHelpers.IsDigit(num))
                     goto Done;
-                if (answer > Int16.MaxValue / 10 + 1)
-                    goto FalseExit; // Overflow
+                index++;
                 answer = answer * 10 + num - '0';
-
                 // if sign < 0, (-1 * sign + 1) / 2 = 1
                 // else, (-1 * sign + 1) / 2 = 0
-                if ((uint)answer > (uint)Int16.MaxValue + (-1 * sign + 1) / 2)
+                if ((uint)answer > (uint)short.MaxValue + (-1 * sign + 1) / 2)
                     goto FalseExit; // Overflow
-                index++;
+
                 if ((uint)index >= (uint)text.Length)
                     goto Done;
                 if (!ParserHelpers.IsDigit(text[index]))
@@ -310,15 +306,15 @@ Done:
                 num = text[index];
                 if (!ParserHelpers.IsDigit(num))
                     goto Done;
-                if (answer > Int32.MaxValue / 10 + 1)
+                index++;
+                if (answer > int.MaxValue / 10)
                     goto FalseExit; // Overflow
                 answer = answer * 10 + num - '0';
-
                 // if sign < 0, (-1 * sign + 1) / 2 = 1
                 // else, (-1 * sign + 1) / 2 = 0
-                if ((uint)answer > (uint)Int32.MaxValue + (-1 * sign + 1) / 2)
+                if ((uint)answer > (uint)int.MaxValue + (-1 * sign + 1) / 2)
                     goto FalseExit; // Overflow
-                index++;
+
                 if ((uint)index >= (uint)text.Length)
                     goto Done;
                 if (!ParserHelpers.IsDigit(text[index]))

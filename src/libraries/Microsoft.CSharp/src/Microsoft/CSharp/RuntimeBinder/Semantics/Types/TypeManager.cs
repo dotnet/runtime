@@ -80,7 +80,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 Debug.Assert(iv >= 0);
 
-                TypeParameterType tpt = null;
+                TypeParameterType tpt;
                 if (iv >= this.prgptvs.Count)
                 {
                     TypeParameterSymbol pTypeParameter = new TypeParameterSymbol();
@@ -391,46 +391,39 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return SubstType(typeSrc, typeArgsCls, typeArgsMeth, SubstTypeFlags.NormNone);
         }
 
-        public TypeArray SubstTypeArray(TypeArray taSrc, SubstContext pctx)
+        public TypeArray SubstTypeArray(TypeArray taSrc, SubstContext ctx)
         {
-            if (taSrc == null || taSrc.Count == 0 || pctx == null || pctx.FNop())
-                return taSrc;
-
-            CType[] prgpts = new CType[taSrc.Count];
-            for (int ipts = 0; ipts < taSrc.Count; ipts++)
+            if (taSrc != null && taSrc.Count != 0 && ctx != null && !ctx.FNop())
             {
-                prgpts[ipts] = this.SubstTypeCore(taSrc[ipts], pctx);
+                CType[] srcs = taSrc.Items;
+                for (int i = 0; i < srcs.Length; i++)
+                {
+                    CType src = srcs[i];
+                    CType dst = SubstTypeCore(src, ctx);
+                    if (src != dst)
+                    {
+                        CType[] dsts = new CType[srcs.Length];
+                        Array.Copy(srcs, dsts, i);
+                        dsts[i] = dst;
+                        while (++i < srcs.Length)
+                        {
+                            dsts[i] = SubstTypeCore(srcs[i], ctx);
+                        }
+
+                        return _BSymmgr.AllocParams(dsts);
+                    }
+                }
             }
-            return _BSymmgr.AllocParams(taSrc.Count, prgpts);
-        }
 
-        private TypeArray SubstTypeArray(TypeArray taSrc, TypeArray typeArgsCls, TypeArray typeArgsMeth, SubstTypeFlags grfst)
-        {
-            if (taSrc == null || taSrc.Count == 0)
-                return taSrc;
-
-            var ctx = new SubstContext(typeArgsCls, typeArgsMeth, grfst);
-
-            if (ctx.FNop())
-                return taSrc;
-
-            CType[] prgpts = new CType[taSrc.Count];
-            for (int ipts = 0; ipts < taSrc.Count; ipts++)
-            {
-                prgpts[ipts] = SubstTypeCore(taSrc[ipts], ctx);
-            }
-            return _BSymmgr.AllocParams(taSrc.Count, prgpts);
+            return taSrc;
         }
 
         public TypeArray SubstTypeArray(TypeArray taSrc, TypeArray typeArgsCls, TypeArray typeArgsMeth)
-        {
-            return this.SubstTypeArray(taSrc, typeArgsCls, typeArgsMeth, SubstTypeFlags.NormNone);
-        }
+            => taSrc == null || taSrc.Count == 0
+            ? taSrc
+            : SubstTypeArray(taSrc, new SubstContext(typeArgsCls, typeArgsMeth, SubstTypeFlags.NormNone));
 
-        public TypeArray SubstTypeArray(TypeArray taSrc, TypeArray typeArgsCls)
-        {
-            return this.SubstTypeArray(taSrc, typeArgsCls, (TypeArray)null, SubstTypeFlags.NormNone);
-        }
+        public TypeArray SubstTypeArray(TypeArray taSrc, TypeArray typeArgsCls) => SubstTypeArray(taSrc, typeArgsCls, null);
 
         private CType SubstTypeCore(CType type, SubstContext pctx)
         {
@@ -1124,7 +1117,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             var key = Tuple.Create(assemblyThatDefinesAttribute, assemblyToCheck);
             if (!_internalsVisibleToCalculated.TryGetValue(key, out result))
             {
-                AssemblyName assyName = null;
+                AssemblyName assyName;
 
                 // Assembly.GetName() requires FileIOPermission to FileIOPermissionAccess.PathDiscovery.
                 // If we don't have that (we're in low trust), then we are going to effectively turn off

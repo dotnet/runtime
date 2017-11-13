@@ -1378,6 +1378,23 @@
     ]
   },
   {
+    "Name": "System.Runtime.Caching",
+    "Description": "Provides classes to use caching facilities.",
+    "CommonTypes": [
+      "System.Runtime.Caching.CacheEntryChangeMonitor",
+      "System.Runtime.Caching.CacheEntryRemovedArguments",
+      "System.Runtime.Caching.CacheEntryUpdateArguments",
+      "System.Runtime.Caching.CacheItem",
+      "System.Runtime.Caching.CacheItemPolicy",
+      "System.Runtime.Caching.ChangeMonitor",
+      "System.Runtime.Caching.FileChangeMonitor",
+      "System.Runtime.Caching.HostFileChangeMonitor",
+      "System.Runtime.Caching.MemoryCache",
+      "System.Runtime.Caching.ObjectCache",
+      "System.Runtime.Caching.SqlChangeMonitor",
+    ]
+  },
+  {
     "Name": "System.Runtime.CompilerServices.Unsafe",
     "Description": "Provides the System.Runtime.CompilerServices.Unsafe class, which provides generic, low-level functionality for manipulating pointers.",
     "CommonTypes": [

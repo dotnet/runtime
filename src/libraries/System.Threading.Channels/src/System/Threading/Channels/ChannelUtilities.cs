@@ -83,9 +83,10 @@ namespace System.Threading.Channels
         /// <param name="error">The error with which to complete each interactor.</param>
         internal static void FailInteractors<T, TInner>(Dequeue<T> interactors, Exception error) where T : Interactor<TInner>
         {
+            Debug.Assert(error != null);
             while (!interactors.IsEmpty)
             {
-                interactors.DequeueHead().Fail(error ?? CreateInvalidCompletionException());
+                interactors.DequeueHead().Fail(error);
             }
         }
 

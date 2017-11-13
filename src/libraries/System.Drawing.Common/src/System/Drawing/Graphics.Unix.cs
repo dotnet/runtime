@@ -197,19 +197,10 @@ namespace System.Drawing
             {
                 CopyFromScreenX11(sourceX, sourceY, destinationX, destinationY, blockRegionSize, copyPixelOperation);
             }
-            else if (SafeNativeMethods.Gdip.UseCarbonDrawable)
+            else
             {
-                CopyFromScreenMac(sourceX, sourceY, destinationX, destinationY, blockRegionSize, copyPixelOperation);
+                throw new PlatformNotSupportedException();
             }
-            else if (SafeNativeMethods.Gdip.UseCocoaDrawable)
-            {
-                CopyFromScreenMac(sourceX, sourceY, destinationX, destinationY, blockRegionSize, copyPixelOperation);
-            }
-        }
-
-        private void CopyFromScreenMac(int sourceX, int sourceY, int destinationX, int destinationY, Size blockRegionSize, CopyPixelOperation copyPixelOperation)
-        {
-            throw new NotImplementedException();
         }
 
         private void CopyFromScreenX11(int sourceX, int sourceY, int destinationX, int destinationY, Size blockRegionSize, CopyPixelOperation copyPixelOperation)
@@ -233,18 +224,6 @@ namespace System.Drawing
             visual.visualid = LibX11Functions.XVisualIDFromVisual(defvisual);
             vPtr = LibX11Functions.XGetVisualInfo(SafeNativeMethods.Gdip.Display, 0x1 /* VisualIDMask */, ref visual, ref nitems);
             visual = (XVisualInfo)Marshal.PtrToStructure(vPtr, typeof(XVisualInfo));
-#if false
-            Console.WriteLine ("visual\t{0}", visual.visual);
-            Console.WriteLine ("visualid\t{0}", visual.visualid);
-            Console.WriteLine ("screen\t{0}", visual.screen);
-            Console.WriteLine ("depth\t{0}", visual.depth);
-            Console.WriteLine ("klass\t{0}", visual.klass);
-            Console.WriteLine ("red_mask\t{0:X}", visual.red_mask);
-            Console.WriteLine ("green_mask\t{0:X}", visual.green_mask);
-            Console.WriteLine ("blue_mask\t{0:X}", visual.blue_mask);
-            Console.WriteLine ("colormap_size\t{0}", visual.colormap_size);
-            Console.WriteLine ("bits_per_rgb\t{0}", visual.bits_per_rgb);
-#endif
             image = LibX11Functions.XGetImage(SafeNativeMethods.Gdip.Display, window, sourceX, sourceY, blockRegionSize.Width,
                 blockRegionSize.Height, AllPlanes, 2 /* ZPixmap*/);
             if (image == IntPtr.Zero)
@@ -298,7 +277,7 @@ namespace System.Drawing
             int status;
             if (!disposed)
             {
-                if (SafeNativeMethods.Gdip.UseCarbonDrawable || SafeNativeMethods.Gdip.UseCocoaDrawable)
+                if (!SafeNativeMethods.Gdip.UseX11Drawable)
                 {
                     Flush();
                     if (maccontext != null)
@@ -1711,18 +1690,7 @@ namespace System.Drawing
         {
             IntPtr graphics;
 
-            if (SafeNativeMethods.Gdip.UseCocoaDrawable)
-            {
-                CocoaContext context = MacSupport.GetCGContextForNSView(hwnd);
-                SafeNativeMethods.Gdip.GdipCreateFromContext_macosx(context.ctx, context.width, context.height, out graphics);
-
-                Graphics g = new Graphics(graphics);
-                g.maccontext = context;
-
-                return g;
-            }
-
-            if (SafeNativeMethods.Gdip.UseCarbonDrawable)
+            if (!SafeNativeMethods.Gdip.UseX11Drawable)
             {
                 CarbonContext context = MacSupport.GetCGContextForView(hwnd);
                 SafeNativeMethods.Gdip.GdipCreateFromContext_macosx(context.ctx, context.width, context.height, out graphics);
@@ -1732,7 +1700,7 @@ namespace System.Drawing
 
                 return g;
             }
-            if (SafeNativeMethods.Gdip.UseX11Drawable)
+            else
             {
                 if (SafeNativeMethods.Gdip.Display == IntPtr.Zero)
                 {
@@ -1746,13 +1714,7 @@ namespace System.Drawing
                 }
 
                 return FromXDrawable(hwnd, SafeNativeMethods.Gdip.Display);
-
             }
-
-            int status = SafeNativeMethods.Gdip.GdipCreateFromHWND(hwnd, out graphics);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-
-            return new Graphics(graphics);
         }
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]

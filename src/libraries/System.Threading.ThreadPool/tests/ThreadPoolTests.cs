@@ -135,7 +135,6 @@ namespace System.Threading.ThreadPools.Tests
                 VerifyMinThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
 
                 Assert.True(ThreadPool.SetMinThreads(0, 0));
-                VerifyMinThreads(0, 0);
                 Assert.True(ThreadPool.SetMaxThreads(1, 1));
                 VerifyMaxThreads(1, 1);
                 Assert.True(ThreadPool.SetMinThreads(1, 1));
@@ -150,6 +149,7 @@ namespace System.Threading.ThreadPools.Tests
         [Fact]
         // Desktop framework doesn't check for this and instead, hits an assertion failure
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "ThreadPool.SetMinThreads and SetMaxThreads are not supported on UapAot.")]
         public static void SetMinMaxThreadsTest_ChangedInDotNetCore()
         {
@@ -168,8 +168,8 @@ namespace System.Threading.ThreadPools.Tests
             try
             {
                 Assert.True(ThreadPool.SetMinThreads(0, 0));
-                VerifyMinThreads(0, 0);
-                Assert.False(ThreadPool.SetMaxThreads(0, 0));
+                Assert.False(ThreadPool.SetMaxThreads(0, 1));
+                Assert.False(ThreadPool.SetMaxThreads(1, 0));
                 VerifyMaxThreads(maxw, maxc);
             }
             finally

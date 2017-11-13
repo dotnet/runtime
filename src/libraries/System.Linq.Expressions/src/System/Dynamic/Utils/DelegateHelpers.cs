@@ -152,6 +152,5 @@ namespace System.Dynamic.Utils
         }
 
 #endif
-
     }
 }

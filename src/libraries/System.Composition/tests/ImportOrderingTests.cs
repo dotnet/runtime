@@ -49,6 +49,7 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
+        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public void CollectionsImportedWithAnOrderingAttributeComeInOrder()
         {
             var container = CreateExtendedContainer(typeof(HasImportedItems), typeof(Item1), typeof(Item4), typeof(Item2), typeof(Item3));
@@ -62,6 +63,7 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
+        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public void IfAnItemIsMissingMetadataAnInformativeExceptionIsThrown()
         {
             var container = CreateExtendedContainer(typeof(HasImportedItems), typeof(Item1), typeof(ItemWithoutOrder));

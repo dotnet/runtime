@@ -582,6 +582,7 @@ namespace System.Net.Http.Functional.Tests
             }, UseManagedHandler.ToString()).Dispose();
         }
 
+        [ActiveIssue(23209)]
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SendAsync_ExpectedDiagnosticCancelledActivityLogging()

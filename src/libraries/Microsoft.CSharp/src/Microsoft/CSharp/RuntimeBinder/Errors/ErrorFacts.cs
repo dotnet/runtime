@@ -77,20 +77,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 case ErrorCode.ERR_AssgReadonly:
                     codeStr = SR.AssgReadonly;
                     break;
-                case ErrorCode.ERR_RefReadonly:
-                    codeStr = SR.RefReadonly;
-                    break;
                 case ErrorCode.ERR_AssgReadonlyStatic:
                     codeStr = SR.AssgReadonlyStatic;
                     break;
-                case ErrorCode.ERR_RefReadonlyStatic:
-                    codeStr = SR.RefReadonlyStatic;
-                    break;
                 case ErrorCode.ERR_AssgReadonlyProp:
                     codeStr = SR.AssgReadonlyProp;
-                    break;
-                case ErrorCode.ERR_RefProperty:
-                    codeStr = SR.RefProperty;
                     break;
                 case ErrorCode.ERR_UnsafeNeeded:
                     codeStr = SR.UnsafeNeeded;
@@ -170,9 +161,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 case ErrorCode.ERR_BadArgTypes:
                     codeStr = SR.BadArgTypes;
                     break;
-                case ErrorCode.ERR_RefLvalueExpected:
-                    codeStr = SR.RefLvalueExpected;
-                    break;
                 case ErrorCode.ERR_BadProtectedAccess:
                     codeStr = SR.BadProtectedAccess;
                     break;
@@ -188,32 +176,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 case ErrorCode.ERR_BadDelArgTypes:
                     codeStr = SR.BadDelArgTypes;
                     break;
-                case ErrorCode.ERR_AssgReadonlyLocal:
-                    codeStr = SR.AssgReadonlyLocal;
-                    break;
-                case ErrorCode.ERR_RefReadonlyLocal:
-                    codeStr = SR.RefReadonlyLocal;
-                    break;
                 case ErrorCode.ERR_ReturnNotLValue:
                     codeStr = SR.ReturnNotLValue;
                     break;
                 case ErrorCode.ERR_AssgReadonly2:
                     codeStr = SR.AssgReadonly2;
                     break;
-                case ErrorCode.ERR_RefReadonly2:
-                    codeStr = SR.RefReadonly2;
-                    break;
                 case ErrorCode.ERR_AssgReadonlyStatic2:
                     codeStr = SR.AssgReadonlyStatic2;
                     break;
-                case ErrorCode.ERR_RefReadonlyStatic2:
-                    codeStr = SR.RefReadonlyStatic2;
-                    break;
                 case ErrorCode.ERR_AssgReadonlyLocalCause:
                     codeStr = SR.AssgReadonlyLocalCause;
-                    break;
-                case ErrorCode.ERR_RefReadonlyLocalCause:
-                    codeStr = SR.RefReadonlyLocalCause;
                     break;
                 case ErrorCode.ERR_BadCtorArgCount:
                     codeStr = SR.BadCtorArgCount;

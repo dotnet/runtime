@@ -23,6 +23,15 @@ namespace System.Diagnostics
             return GetField(obj, fieldName).GetValue(obj);
         }
 
+        internal static void InvokeDebuggerTypeProxyProperties(object obj)
+        {
+            DebuggerAttributeInfo info = ValidateDebuggerTypeProxyProperties(obj.GetType(), obj);
+            foreach (PropertyInfo pi in info.Properties)
+            {
+                pi.GetValue(info.Instance, null);
+            }
+        }
+
         internal static DebuggerAttributeInfo ValidateDebuggerTypeProxyProperties(object obj)
         {
             return ValidateDebuggerTypeProxyProperties(obj.GetType(), obj);

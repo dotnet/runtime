@@ -24,7 +24,6 @@ namespace System.SpanTests
             spanLong.Validate(1, -3, 7, -15, 31);
         }
 
-        [ActiveIssue(23952, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public static void ObjectArrayAsReadOnlySpan()
         {

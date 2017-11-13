@@ -50,7 +50,7 @@
     <PackageReference Include="Microsoft.3rdpartytools.MarkdownLog">
       <Version>0.10.0-alpha-experimental</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.DotNet.PlatformAbstractions">
+    <PackageReference Condition="'$(TargetGroup)' != 'uapaot'" Include="Microsoft.DotNet.PlatformAbstractions">
       <Version>$(MicrosoftDotNetPlatformAbstractionsPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="CommandLineParser">
@@ -98,7 +98,7 @@
     <PackageToInclude Include="xunit.runner.utility"/>
     <PackageToInclude Include="Microsoft.xunit.netcore.extensions"/>
     <PackageToInclude Include="Newtonsoft.Json"/>
-    <PackageToInclude Include="Microsoft.DotNet.PlatformAbstractions" />
+    <PackageToInclude Condition="'$(TargetGroup)' != 'uapaot'" Include="Microsoft.DotNet.PlatformAbstractions" />
     <PackageToInclude Include="$(XUnitRunnerPackageId)" />
   </ItemGroup>
 

@@ -61,60 +61,6 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public void SslStream_StreamToStream_ClientCancellation_Throws()
-        {
-            VirtualNetwork network = new VirtualNetwork();
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new SslStream(clientStream))
-            using (var server = new SslStream(serverStream))
-            using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
-            {
-                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions();
-                clientOptions.RemoteCertificateValidationCallback = AllowAnyServerCertificate;
-                clientOptions.TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false);
-
-                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions();
-                serverOptions.ServerCertificate = certificate;
-
-                CancellationTokenSource cts = new CancellationTokenSource();
-                cts.Cancel();
-
-                Task clientTask = Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.AuthenticateAsClientAsync(clientOptions, cts.Token));
-                Task serverTask = Assert.ThrowsAsync<TimeoutException>(() => server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None));
-
-                Assert.True(Task.WaitAll(new[] { clientTask, serverTask }, TestConfiguration.PassingTestTimeoutMilliseconds));
-            }
-        }
-
-        [Fact]
-        public void SslStream_StreamToStream_ServerCancellation_Throws()
-        {
-            VirtualNetwork network = new VirtualNetwork();
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new SslStream(clientStream))
-            using (var server = new SslStream(serverStream))
-            using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
-            {
-                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions();
-                clientOptions.RemoteCertificateValidationCallback = AllowAnyServerCertificate;
-                clientOptions.TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false);
-
-                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions();
-                serverOptions.ServerCertificate = certificate;
-
-                CancellationTokenSource cts = new CancellationTokenSource();
-                cts.Cancel();
-
-                Task clientTask = Assert.ThrowsAsync<TimeoutException>(() => client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None));
-                Task serverTask = Assert.ThrowsAnyAsync<OperationCanceledException>(() => server.AuthenticateAsServerAsync(serverOptions, cts.Token));
-
-                Assert.True(Task.WaitAll(new[] { clientTask, serverTask }, TestConfiguration.PassingTestTimeoutMilliseconds));
-            }
-        }
-
-        [Fact]
         public void SslStream_StreamToStream_DuplicateOptions_Throws()
         {
             RemoteCertificateValidationCallback rCallback = (sender, certificate, chain, errors) => { return true; };
@@ -193,8 +139,8 @@ namespace System.Net.Security.Tests
                     ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http2 },
                     ServerCertificate = certificate,
                 };
-
-                Task t1 = Assert.ThrowsAsync<TimeoutException>(() => client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None));
+                
+                Task t1 = Assert.ThrowsAsync<AuthenticationException>(() => client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None));
                 Task t2 = Assert.ThrowsAsync<AuthenticationException>(() => server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None));
 
                 Assert.True(Task.WaitAll(new[] { t1, t2 }, TestConfiguration.PassingTestTimeoutMilliseconds));
