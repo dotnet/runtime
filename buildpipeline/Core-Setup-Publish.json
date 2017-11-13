@@ -222,8 +222,8 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Publish",
-      "condition": "and(succeeded(), ne(variables.PB_PublishType, ''))",
+      "displayName": "Publish (no PublishType)",
+      "condition": "and(succeeded(), eq(variables.PB_PublishType, 'nopublishtype'))",
       "timeoutInMinutes": 0,
       "task": {
         "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
@@ -235,6 +235,34 @@
         "platform": "$(PB_TargetArchitecture)",
         "configuration": "$(BuildConfiguration)",
         "msbuildArguments": "/p:Configuration=$(BuildConfiguration) $(PB_CommonMSBuildArgs) /p:SignType=$(PB_SignType) /p:NuGetFeedUrl=$(NUGET_FEED_URL) /p:NuGetSymbolsFeedUrl=$(NUGET_SYMBOLS_FEED_URL) /p:NuGetApiKey=$(NUGET_API_KEY) /p:AzureAccountName=$(PB_AzureAccountName) /p:ContainerName=$(PB_ContainerName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:ChecksumAzureAccountName=$(PB_ChecksumAzureAccountName) /p:ChecksumContainerName=$(PB_ChecksumContainerName) /p:ChecksumAzureAccessToken=$(PB_ChecksumAzureAccessToken) /p:PackagesUrl=$(PB_PackagesUrl) /p:SymbolPackagesUrl=$(PB_SymbolPackagesUrl) /p:TransportFeedAccessToken=$(PB_TransportFeedAccessToken) /p:OfficialPublish=true /p:GitHubUser=$(PB_GitHubUser) /p:GitHubEmail=$(PB_GitHubEmail) /p:GitHubAuthToken=$(GITHUB_PASSWORD) /p:VersionsRepoOwner=$(PB_VersionsRepoOwner) /p:VersionsRepo=$(PB_VersionsRepo) /p:VersionsRepoPath=build-info/dotnet/$(PB_RepoName)/$(SourceBranch) /p:Finalize=true /p:DotNetToolDir=$(DotNetToolDir) /p:EmbedIndexToolDir=$(EmbedIndexToolDir) /flp:v=detailed;LogFile=$(PB_SourcesDirectory)\\publish.log",
+        "clean": "false",
+        "maximumCpuCount": "false",
+        "restoreNugetPackages": "false",
+        "logProjectEvents": "false",
+        "createLogFile": "false",
+        "msbuildLocationMethod": "version",
+        "msbuildVersion": "Latest",
+        "msbuildArchitecture": "x64",
+        "msbuildLocation": ""
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish via PublishType",
+      "condition": "and(succeeded(), ne(variables.PB_PublishType, ''))",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "solution": "$(PB_SourcesDirectory)\\publish\\publish-type.proj",
+        "platform": "$(PB_TargetArchitecture)",
+        "configuration": "$(BuildConfiguration)",
+        "msbuildArguments": "/p:Configuration=$(BuildConfiguration) $(PB_CommonMSBuildArgs) /p:PublishType=$(PB_PublishType) /p:SignType=$(PB_SignType) /p:AzureAccountName=$(PB_AzureAccountName) /p:ContainerName=$(PB_ContainerName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:PublishBlobFeedUrl=$(PB_PublishBlobFeedUrl) /p:PublishBlobFeedKey=$(PB_PublishBlobFeedKey) /p:OfficialPublish=true /p:GitHubUser=$(PB_GitHubUser) /p:GitHubEmail=$(PB_GitHubEmail) /p:GitHubAuthToken=$(GITHUB_PASSWORD) /p:VersionsRepoOwner=$(PB_VersionsRepoOwner) /p:VersionsRepo=$(PB_VersionsRepo) /p:VersionsRepoPath=build-info/dotnet/$(PB_RepoName)/$(SourceBranch) /p:DotNetToolDir=$(DotNetToolDir) /p:EmbedIndexToolDir=$(EmbedIndexToolDir) /flp:v=detailed;LogFile=$(PB_SourcesDirectory)\\publish-blob.log",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",

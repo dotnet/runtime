@@ -50,7 +50,7 @@
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>1.0.0-prerelease-02202-02</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>1.0.0-prerelease-02210-05</FeedTasksPackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
