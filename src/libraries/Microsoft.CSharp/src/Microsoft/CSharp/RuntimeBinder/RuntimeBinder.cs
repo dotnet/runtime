@@ -276,7 +276,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 bindingContext.ContextForMemberLookup = null;
             }
 
-            bindingContext.CheckedConstant = bindingContext.CheckedNormal = payload.IsChecked;
+            bindingContext.Checked = payload.IsChecked;
         }
 
         /////////////////////////////////////////////////////////////////////////////////
