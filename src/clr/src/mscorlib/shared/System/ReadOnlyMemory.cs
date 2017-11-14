@@ -75,7 +75,7 @@ namespace System
             _length = length;
         }
 
-        /// <summary>Creates a new memory over the existing object, start, and length.  No validation is performed.</summary>
+        /// <summary>Creates a new memory over the existing object, start, and length. No validation is performed.</summary>
         /// <param name="obj">The target object.</param>
         /// <param name="start">The index at which to begin the memory.</param>
         /// <param name="length">The number of items in the memory.</param>
@@ -104,7 +104,7 @@ namespace System
         /// <summary>
         /// Returns an empty <see cref="ReadOnlyMemory{T}"/>
         /// </summary>
-        public static ReadOnlyMemory<T> Empty { get; } = Array.Empty<T>();
+        public static ReadOnlyMemory<T> Empty => default;
 
         /// <summary>
         /// The number of items in the memory.
@@ -169,9 +169,13 @@ namespace System
                 {
                     return new ReadOnlySpan<T>(ref Unsafe.As<char, T>(ref s.GetRawStringData()), s.Length).Slice(_index, _length);
                 }
-                else
+                else if (_object != null)
                 {
                     return new ReadOnlySpan<T>((T[])_object, _index, _length);
+                }
+                else
+                {
+                    return default;
                 }
             }
         }
@@ -206,7 +210,7 @@ namespace System
         /// </param>
         public unsafe MemoryHandle Retain(bool pin = false)
         {
-            MemoryHandle memoryHandle;
+            MemoryHandle memoryHandle = default;
             if (pin)
             {
                 if (_index < 0)
@@ -220,9 +224,8 @@ namespace System
                     void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref s.GetRawStringData()), _index);
                     memoryHandle = new MemoryHandle(null, pointer, handle);
                 }
-                else
+                else if (_object is T[] array)
                 {
-                    var array = (T[])_object;
                     var handle = GCHandle.Alloc(array, GCHandleType.Pinned);
                     void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref array.GetRawSzArrayData()), _index);
                     memoryHandle = new MemoryHandle(null, pointer, handle);
@@ -234,10 +237,6 @@ namespace System
                 {
                     ((OwnedMemory<T>)_object).Retain();
                     memoryHandle = new MemoryHandle((OwnedMemory<T>)_object);
-                }
-                else
-                {
-                    memoryHandle = new MemoryHandle(null);
                 }
             }
             return memoryHandle;
@@ -258,14 +257,10 @@ namespace System
                     return true;
                 }
             }
-            else
+            else if (_object is T[] arr)
             {
-                T[] arr = _object as T[];
-                if (typeof(T) != typeof(char) || arr != null)
-                {
-                    arraySegment = new ArraySegment<T>(arr, _index, _length);
-                    return true;
-                }
+                arraySegment = new ArraySegment<T>(arr, _index, _length);
+                return true;
             }
 
             arraySegment = default;
@@ -313,7 +308,7 @@ namespace System
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override int GetHashCode()
         {
-            return CombineHashCodes(_object.GetHashCode(), _index.GetHashCode(), _length.GetHashCode());
+            return _object != null ? CombineHashCodes(_object.GetHashCode(), _index.GetHashCode(), _length.GetHashCode()) : 0;
         }
         
         private static int CombineHashCodes(int left, int right)
