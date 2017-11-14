@@ -2671,11 +2671,11 @@ protected:
     PER_HEAP
     void kill_gc_thread();
     PER_HEAP
-    uint32_t bgc_thread_function();
+    void bgc_thread_function();
     PER_HEAP_ISOLATED
     void do_background_gc();
     static
-    uint32_t __stdcall bgc_thread_stub (void* arg);
+    void bgc_thread_stub (void* arg);
 
 #endif //BACKGROUND_GC
  

@@ -1219,11 +1219,19 @@ private:
     VARSET_TP fpCalleeSaveCandidateVars;
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 #if defined(_TARGET_AMD64_)
-    static const var_types LargeVectorType     = TYP_SIMD32;
+    static bool varTypeNeedsPartialCalleeSave(var_types type)
+    {
+        return (emitTypeSize(type) == 32);
+    }
     static const var_types LargeVectorSaveType = TYP_SIMD16;
 #elif defined(_TARGET_ARM64_)
-    static const var_types LargeVectorType      = TYP_SIMD16;
-    static const var_types LargeVectorSaveType  = TYP_DOUBLE;
+    static bool varTypeNeedsPartialCalleeSave(var_types type)
+    {
+        // ARM64 ABI FP Callee save registers only require Callee to save lower 8 Bytes
+        // For SIMD types longer then 8 bytes Caller is responsible for saving and restoring Upper bytes.
+        return (emitTypeSize(type) == 16);
+    }
+    static const var_types LargeVectorSaveType = TYP_DOUBLE;
 #else // !defined(_TARGET_AMD64_) && !defined(_TARGET_ARM64_)
 #error("Unknown target architecture for FEATURE_SIMD")
 #endif // !defined(_TARGET_AMD64_) && !defined(_TARGET_ARM64_)

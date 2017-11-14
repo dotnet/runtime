@@ -1740,7 +1740,7 @@ static BOOL try_enter_spin_lock(GCSpinLock *pSpinLock)
 inline
 static void leave_spin_lock(GCSpinLock *pSpinLock)
 {
-    bool gc_thread_p = GCToEEInterface::IsGCSpecialThread();
+    bool gc_thread_p = GCToEEInterface::WasCurrentThreadCreatedByGC();
 //    _ASSERTE((pSpinLock->holding_thread == GCToEEInterface::GetThread()) || gc_thread_p || pSpinLock->released_by_gc_p);
     pSpinLock->released_by_gc_p = gc_thread_p;
     pSpinLock->holding_thread = (Thread*) -1;
@@ -5351,23 +5351,7 @@ void set_thread_affinity_mask_for_heap(int heap_number, GCThreadAffinity* affini
 bool gc_heap::create_gc_thread ()
 {
     dprintf (3, ("Creating gc thread\n"));
-
-    GCThreadAffinity affinity;
-    affinity.Group = GCThreadAffinity::None;
-    affinity.Processor = GCThreadAffinity::None;
-
-    if (!gc_thread_no_affinitize_p)
-    {
-        // We are about to set affinity for GC threads. It is a good place to set up NUMA and
-        // CPU groups because the process mask, processor number, and group number are all
-        // readily available.
-        if (CPUGroupInfo::CanEnableGCCPUGroups()) 
-            set_thread_group_affinity_for_heap(heap_number, &affinity);
-        else
-            set_thread_affinity_mask_for_heap(heap_number, &affinity);
-    }
-
-    return GCToOSInterface::CreateThread(gc_thread_stub, this, &affinity);
+    return GCToEEInterface::CreateThread(gc_thread_stub, this, false, "Server GC");
 }
 
 #ifdef _MSC_VER
@@ -24917,27 +24901,29 @@ void gc_heap::compact_phase (int condemned_gen_number,
 #endif //_MSC_VER
 void gc_heap::gc_thread_stub (void* arg)
 {
-    ClrFlsSetThreadType (ThreadType_GC);
-    STRESS_LOG_RESERVE_MEM (GC_STRESSLOG_MULTIPLY);
-
-#ifndef FEATURE_REDHAWK
-    // We commit the thread's entire stack to ensure we're robust in low memory conditions.
-    BOOL fSuccess = Thread::CommitThreadStack(NULL);
-
-    if (!fSuccess)
-    {
-#ifdef BACKGROUND_GC
-        // For background GC we revert to doing a blocking GC.
-        return;
-#else
-        STRESS_LOG0(LF_GC, LL_ALWAYS, "Thread::CommitThreadStack failed.");
-        _ASSERTE(!"Thread::CommitThreadStack failed.");
-        GCToEEInterface::HandleFatalError(COR_E_STACKOVERFLOW);
-#endif //BACKGROUND_GC
-    }
-#endif // FEATURE_REDHAWK
-
     gc_heap* heap = (gc_heap*)arg;
+    if (!gc_thread_no_affinitize_p)
+    {
+        GCThreadAffinity affinity;
+        affinity.Group = GCThreadAffinity::None;
+        affinity.Processor = GCThreadAffinity::None;
+
+        // We are about to set affinity for GC threads. It is a good place to set up NUMA and
+        // CPU groups because the process mask, processor number, and group number are all
+        // readily available.
+        if (CPUGroupInfo::CanEnableGCCPUGroups())
+            set_thread_group_affinity_for_heap(heap->heap_number, &affinity);
+        else
+            set_thread_affinity_mask_for_heap(heap->heap_number, &affinity);
+
+        if (!GCToOSInterface::SetThreadAffinity(&affinity))
+        {
+            dprintf(1, ("Failed to set thread affinity for server GC thread"));
+        }
+    }
+
+    // server GC threads run at a higher priority than normal.
+    GCToOSInterface::BoostThreadPriority();
     _alloca (256*heap->heap_number);
     heap->gc_thread_function();
 }
@@ -24953,10 +24939,12 @@ void gc_heap::gc_thread_stub (void* arg)
 #pragma warning(push)
 #pragma warning(disable:4702) // C4702: unreachable code: gc_thread_function may not return
 #endif //_MSC_VER
-uint32_t __stdcall gc_heap::bgc_thread_stub (void* arg)
+void gc_heap::bgc_thread_stub (void* arg)
 {
     gc_heap* heap = (gc_heap*)arg;
-    return heap->bgc_thread_function();
+    heap->bgc_thread = GCToEEInterface::GetThread();
+    assert(heap->bgc_thread != nullptr);
+    heap->bgc_thread_function();
 }
 #ifdef _MSC_VER
 #pragma warning(pop)
@@ -26700,7 +26688,6 @@ BOOL gc_heap::prepare_bgc_thread(gc_heap* gh)
     BOOL success = FALSE;
     BOOL thread_created = FALSE;
     dprintf (2, ("Preparing gc thread"));
-
     gh->bgc_threads_timeout_cs.Enter();
     if (!(gh->bgc_thread_running))
     {
@@ -26730,9 +26717,7 @@ BOOL gc_heap::create_bgc_thread(gc_heap* gh)
 
     //dprintf (2, ("Creating BGC thread"));
 
-    gh->bgc_thread = GCToEEInterface::CreateBackgroundThread(gh->bgc_thread_stub, gh);
-    gh->bgc_thread_running = (gh->bgc_thread != NULL);    
-
+    gh->bgc_thread_running = GCToEEInterface::CreateThread(gh->bgc_thread_stub, gh, true, "Background GC");
     return gh->bgc_thread_running;
 }
 
@@ -26908,7 +26893,7 @@ void gc_heap::kill_gc_thread()
     recursive_gc_sync::shutdown();
 }
 
-uint32_t gc_heap::bgc_thread_function()
+void gc_heap::bgc_thread_function()
 {
     assert (background_gc_done_event.IsValid());
     assert (bgc_start_event.IsValid());
@@ -27066,7 +27051,7 @@ uint32_t gc_heap::bgc_thread_function()
     FireEtwGCTerminateConcurrentThread_V1(GetClrInstanceId());
 
     dprintf (3, ("bgc_thread thread exiting"));
-    return 0;
+    return;
 }
 
 #endif //BACKGROUND_GC
@@ -34028,7 +34013,7 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
 
 #ifdef BACKGROUND_GC
         // don't trigger a GC from the GC threads but still trigger GCs from user threads.
-        if (GCToEEInterface::IsGCSpecialThread())
+        if (GCToEEInterface::WasCurrentThreadCreatedByGC())
         {
             return FALSE;
         }

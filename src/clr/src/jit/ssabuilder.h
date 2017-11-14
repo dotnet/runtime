@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// ==++==
-//
-
-//
-
-//
-// ==--==
-
-/*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XX                                                                           XX
-XX                                  SSA                                      XX
-XX                                                                           XX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-*/
-
 #pragma once
 #pragma warning(disable : 4503) // 'identifier' : decorated name length exceeded, name was truncated
 
@@ -62,7 +45,7 @@ private:
 
 public:
     // Constructor
-    SsaBuilder(Compiler* pCompiler, CompAllocator* pAllocator);
+    SsaBuilder(Compiler* pCompiler);
 
     // Requires stmt nodes to be already sequenced in evaluation order. Analyzes the graph
     // for introduction of phi-nodes as GT_PHI tree nodes at the beginning of each block.
@@ -105,7 +88,7 @@ private:
     // as children.) Requires "preIndex" and "postIndex" to be initialized to 0 at entry into recursion.
     // Computes arrays "m_pDomPreOrder" and "m_pDomPostOrder" of block indices such that the blocks of a
     // "domTree" are in pre and postorder respectively.
-    void DomTreeWalk(BasicBlock* curBlock, const BlkToBlkSetMap& domTree, int* preIndex, int* postIndex);
+    void DomTreeWalk(BasicBlock* curBlock, BlkToBlkSetMap* domTree, int* preIndex, int* postIndex);
 #endif
 
     // Requires all blocks to have computed "bbIDom." Requires "domTree" to be a preallocated BlkToBlkSetMap.
@@ -190,13 +173,8 @@ private:
 #endif
 
 private:
-#ifdef SSA_FEATURE_USEDEF
-    // Use Def information after SSA. To query the uses and def of a given ssa var,
-    // probe these data structures.
-    // Do not move these outside of this class, use accessors/interface methods.
-    VarToUses m_uses;
-    VarToDef  m_defs;
-#endif
+    Compiler*     m_pCompiler;
+    CompAllocator m_allocator;
 
 #ifdef SSA_FEATURE_DOMARR
     // To answer queries of type a DOM b.
@@ -205,8 +183,11 @@ private:
     int* m_pDomPostOrder;
 #endif
 
-    Compiler* m_pCompiler;
-
-    // Used to allocate space for jitstd data structures.
-    jitstd::allocator<void> m_allocator;
+#ifdef SSA_FEATURE_USEDEF
+    // Use Def information after SSA. To query the uses and def of a given ssa var,
+    // probe these data structures.
+    // Do not move these outside of this class, use accessors/interface methods.
+    VarToUses m_uses;
+    VarToDef  m_defs;
+#endif
 };
