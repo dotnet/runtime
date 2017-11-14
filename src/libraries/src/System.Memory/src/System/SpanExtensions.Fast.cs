@@ -47,6 +47,20 @@ namespace System
         /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is null.</exception>
         public static ReadOnlySpan<char> AsReadOnlySpan(this string text) => Span.AsReadOnlySpan(text);
 
+        /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target string.</summary>
+        /// <param name="text">The target string.</param>
+        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is a null reference (Nothing in Visual Basic).</exception>
+        public static ReadOnlyMemory<char> AsReadOnlyMemory(this string text) => Span.AsReadOnlyMemory(text);
+
+        /// <summary>Attempts to get the underlying <see cref="string"/> from a <see cref="ReadOnlyMemory{T}"/>.</summary>
+        /// <param name="readOnlyMemory">The memory that may be wrapping a <see cref="string"/> object.</param>
+        /// <param name="text">The string.</param>
+        /// <param name="start">The starting location in <paramref name="text"/>.</param>
+        /// <param name="length">The number of items in <paramref name="text"/>.</param>
+        /// <returns></returns>
+        public static bool TryGetString(this ReadOnlyMemory<char> readOnlyMemory, out string text, out int start, out int length) =>
+            Span.TryGetString(readOnlyMemory, out text, out start, out length);
+
         /// <summary>
         /// Casts a Span of one primitive type <typeparamref name="TFrom"/> to another primitive type <typeparamref name="TTo"/>.
         /// These types may not contain pointers or references. This is checked at runtime in order to preserve type safety.
