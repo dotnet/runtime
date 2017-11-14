@@ -94,7 +94,7 @@
 /* #undef DISABLE_SSA */
 
 /* Disable interpreter */
-#define DISABLE_INTERPRETER 1
+/* #undef DISABLE_INTERPRETER */
 
 /* Enable DTrace probes */
 /* #undef ENABLE_DTRACE */

@@ -929,15 +929,13 @@ gpointer
 mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 {
 #ifndef DISABLE_INTERPRETER
-	const int gregs_num = INTERP_ICALL_TRAMP_IARGS;
-	const int fregs_num = INTERP_ICALL_TRAMP_FARGS;
-	guint8 *start = NULL, *code, *label_gexits [gregs_num], *label_fexits [fregs_num], *label_leave_tramp [3], *label_is_float_ret;
+	guint8 *start = NULL, *code, *label_gexits [INTERP_ICALL_TRAMP_IARGS], *label_fexits [INTERP_ICALL_TRAMP_FARGS], *label_leave_tramp [3], *label_is_float_ret;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
 	static int farg_regs[] = {AMD64_XMM0, AMD64_XMM1, AMD64_XMM2, AMD64_XMM3};
 	int buf_len, i, framesize = 0, off_rbp, off_methodargs, off_targetaddr;
 
-	g_assert ((sizeof (farg_regs) / sizeof (farg_regs [0])) >= fregs_num);
+	g_assert ((sizeof (farg_regs) / sizeof (farg_regs [0])) >= INTERP_ICALL_TRAMP_FARGS);
 	buf_len = 512 + MONO_TRAMPOLINE_UNWINDINFO_SIZE(0);
 	start = code = (guint8 *) mono_global_codeman_reserve (buf_len);
 
@@ -949,7 +947,7 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 	framesize += sizeof (mgreg_t);
 	off_targetaddr = -framesize;
 
-	framesize += (gregs_num - PARAM_REGS) * sizeof (mgreg_t);
+	framesize += (INTERP_ICALL_TRAMP_IARGS - PARAM_REGS) * sizeof (mgreg_t);
 
 	amd64_push_reg (code, AMD64_RBP);
 	amd64_mov_reg_reg (code, AMD64_RBP, AMD64_RSP, sizeof (mgreg_t));
@@ -969,7 +967,7 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 	/* load pointer to fargs into R11 */
 	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, MONO_STRUCT_OFFSET (InterpMethodArguments, fargs), sizeof (mgreg_t));
 
-	for (i = 0; i < fregs_num; ++i) {
+	for (i = 0; i < INTERP_ICALL_TRAMP_FARGS; ++i) {
 		amd64_test_reg_reg (code, AMD64_RAX, AMD64_RAX);
 		label_fexits [i] = code;
 		x86_branch8 (code, X86_CC_Z, 0, FALSE);
@@ -978,7 +976,7 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 		amd64_dec_reg_size (code, AMD64_RAX, 1);
 	}
 
-	for (i = 0; i < fregs_num; i++)
+	for (i = 0; i < INTERP_ICALL_TRAMP_FARGS; i++)
 		x86_patch (label_fexits [i], code);
 
 	/* load pointer to InterpMethodArguments* into R11 */
@@ -987,7 +985,7 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_R11, MONO_STRUCT_OFFSET (InterpMethodArguments, ilen), sizeof (mgreg_t));
 
 	int stack_offset = 0;
-	for (i = 0; i < gregs_num; i++) {
+	for (i = 0; i < INTERP_ICALL_TRAMP_IARGS; i++) {
 		amd64_test_reg_reg (code, AMD64_RAX, AMD64_RAX);
 		label_gexits [i] = code;
 		x86_branch32 (code, X86_CC_Z, 0, FALSE);
@@ -1007,7 +1005,7 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 		amd64_dec_reg_size (code, AMD64_RAX, 1);
 	}
 
-	for (i = 0; i < gregs_num; i++)
+	for (i = 0; i < INTERP_ICALL_TRAMP_IARGS; i++)
 		x86_patch (label_gexits [i], code);
 
 	/* load target addr */

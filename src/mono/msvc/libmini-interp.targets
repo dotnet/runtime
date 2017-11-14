@@ -7,17 +7,13 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\mini\interp\hacks.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\mini\interp\interp.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\mini\interp\interp-internals.h" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp\interp.c">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp\interp.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp\interp-stubs.c">
       <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp\interp-stubs.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\mini\interp\mintops.h" />
     <None Include="$(MonoSourceLocation)\mono\mini\interp\mintops.def" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp\mintops.c">
-      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp\transform.c">
-      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp\mintops.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp\transform.c" />
   </ItemGroup>
 </Project>
