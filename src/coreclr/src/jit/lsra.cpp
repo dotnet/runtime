@@ -2332,7 +2332,7 @@ void LinearScan::identifyCandidates()
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
             // Additionally, when we are generating AVX on non-UNIX amd64, we keep a separate set of the LargeVectorType
             // vars.
-            if (varDsc->lvType == LargeVectorType)
+            if (varTypeNeedsPartialCalleeSave(varDsc->lvType))
             {
                 largeVectorVarCount++;
                 VarSetOps::AddElemD(compiler, largeVectorVars, varDsc->lvVarIndex);
@@ -3044,7 +3044,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                 unsigned   varNum = compiler->lvaTrackedToVarNum[varIndex];
                 LclVarDsc* varDsc = compiler->lvaTable + varNum;
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                if (varDsc->lvType == LargeVectorType)
+                if (varTypeNeedsPartialCalleeSave(varDsc->lvType))
                 {
                     if (!VarSetOps::IsMember(compiler, largeVectorCalleeSaveCandidateVars, varIndex))
                     {
@@ -3478,7 +3478,7 @@ LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation current
             while (iter.NextElem(&varIndex))
             {
                 Interval* varInterval    = getIntervalForLocalVar(varIndex);
-                Interval* tempInterval   = newInterval(LargeVectorType);
+                Interval* tempInterval   = newInterval(varInterval->registerType);
                 tempInterval->isInternal = true;
                 RefPosition* pos =
                     newRefPosition(tempInterval, currentLoc, RefTypeUpperVectorSaveDef, tree, RBM_FLT_CALLEE_SAVED);
@@ -8334,6 +8334,8 @@ void LinearScan::allocateRegisters()
                 if (refType == RefTypeUpperVectorSaveDef)
                 {
                     // TODO-CQ: Determine whether copying to two integer callee-save registers would be profitable.
+                    // TODO-ARM64-CQ: Determine whether copying to one integer callee-save registers would be
+                    // profitable.
 
                     // SaveDef position occurs after the Use of args and at the same location as Kill/Def
                     // positions of a call node.  But SaveDef position cannot use any of the arg regs as
@@ -9013,7 +9015,7 @@ void LinearScan::insertUpperVectorSaveAndReload(GenTreePtr tree, RefPosition* re
     Interval* lclVarInterval = refPosition->getInterval()->relatedInterval;
     assert(lclVarInterval->isLocalVar == true);
     LclVarDsc* varDsc = compiler->lvaTable + lclVarInterval->varNum;
-    assert(varDsc->lvType == LargeVectorType);
+    assert(varTypeNeedsPartialCalleeSave(varDsc->lvType));
     regNumber lclVarReg = lclVarInterval->physReg;
     if (lclVarReg == REG_NA)
     {
@@ -9029,14 +9031,14 @@ void LinearScan::insertUpperVectorSaveAndReload(GenTreePtr tree, RefPosition* re
 
     // First, insert the save before the call.
 
-    GenTreePtr saveLcl                = compiler->gtNewLclvNode(lclVarInterval->varNum, LargeVectorType);
+    GenTreePtr saveLcl                = compiler->gtNewLclvNode(lclVarInterval->varNum, varDsc->lvType);
     saveLcl->gtLsraInfo.isLsraAdded   = true;
     saveLcl->gtRegNum                 = lclVarReg;
     saveLcl->gtLsraInfo.isLocalDefUse = false;
 
     GenTreeSIMD* simdNode =
         new (compiler, GT_SIMD) GenTreeSIMD(LargeVectorSaveType, saveLcl, nullptr, SIMDIntrinsicUpperSave,
-                                            varDsc->lvBaseType, genTypeSize(LargeVectorType));
+                                            varDsc->lvBaseType, genTypeSize(varDsc->lvType));
     simdNode->gtLsraInfo.isLsraAdded = true;
     simdNode->gtRegNum               = spillReg;
     if (spillToMem)
@@ -9048,13 +9050,13 @@ void LinearScan::insertUpperVectorSaveAndReload(GenTreePtr tree, RefPosition* re
 
     // Now insert the restore after the call.
 
-    GenTreePtr restoreLcl                = compiler->gtNewLclvNode(lclVarInterval->varNum, LargeVectorType);
+    GenTreePtr restoreLcl                = compiler->gtNewLclvNode(lclVarInterval->varNum, varDsc->lvType);
     restoreLcl->gtLsraInfo.isLsraAdded   = true;
     restoreLcl->gtRegNum                 = lclVarReg;
     restoreLcl->gtLsraInfo.isLocalDefUse = false;
 
-    simdNode = new (compiler, GT_SIMD)
-        GenTreeSIMD(LargeVectorType, restoreLcl, nullptr, SIMDIntrinsicUpperRestore, varDsc->lvBaseType, 32);
+    simdNode = new (compiler, GT_SIMD) GenTreeSIMD(varDsc->lvType, restoreLcl, nullptr, SIMDIntrinsicUpperRestore,
+                                                   varDsc->lvBaseType, genTypeSize(varDsc->lvType));
     simdNode->gtLsraInfo.isLsraAdded = true;
     simdNode->gtRegNum               = spillReg;
     if (spillToMem)

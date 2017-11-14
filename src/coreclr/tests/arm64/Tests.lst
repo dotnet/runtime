@@ -21665,7 +21665,7 @@ RelativePath=GC\Features\HeapExpansion\bestfit-threaded\bestfit-threaded.cmd
 WorkingDir=GC\Features\HeapExpansion\bestfit-threaded
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=LONG_RUNNING;EXPECTED_PASS
+Categories=LONG_RUNNING;EXPECTED_FAIL;15016
 HostStyle=0
 
 [bestfit_1.cmd_2935]
@@ -22033,7 +22033,7 @@ RelativePath=GC\Regressions\v2.0-rtm\494226\494226\494226.cmd
 WorkingDir=GC\Regressions\v2.0-rtm\494226\494226
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=RT;LONG_RUNNING;EXPECTED_PASS
+Categories=RT;LONG_RUNNING;EXPECTED_FAIL;15016
 HostStyle=0
 
 [544701.cmd_2988]
@@ -25753,7 +25753,7 @@ RelativePath=GC\Scenarios\LeakWheel\leakwheel\leakwheel.cmd
 WorkingDir=GC\Scenarios\LeakWheel\leakwheel
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=LONG_RUNNING;EXPECTED_PASS
+Categories=LONG_RUNNING;EXPECTED_FAIL;15016
 HostStyle=0
 
 [minleakgen.cmd_3456]
@@ -68985,7 +68985,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\v2.1\DDB\B168384\LdfldaHack\LdfldaHack.c
 WorkingDir=JIT\Regression\CLR-x86-JIT\v2.1\DDB\B168384\LdfldaHack
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=JIT;DBG_FAIL;EXPECTED_PASS
+Categories=JIT;DBG_FAIL;EXPECTED_FAIL;15016
 HostStyle=0
 
 [b170362.cmd_8969]

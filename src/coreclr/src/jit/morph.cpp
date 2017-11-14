@@ -10269,14 +10269,14 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
 //    The destination must be known (by the caller) to be on the stack.
 //
 // Notes:
-//    If we have a CopyObj with a dest on the stack, and its size is small enouch
+//    If we have a CopyObj with a dest on the stack, and its size is small enough
 //    to be completely unrolled (i.e. between [16..64] bytes), we will convert it into a
 //    GC Unsafe CopyBlk that is non-interruptible.
 //    This is not supported for the JIT32_GCENCODER, in which case this method is a no-op.
 //
 void Compiler::fgMorphUnsafeBlk(GenTreeObj* dest)
 {
-#if defined(CPBLK_UNROLL_LIMIT) && !defined(JIT32_GCENCODER)
+#if defined(CPBLK_UNROLL_LIMIT) && !defined(JIT32_GCENCODER) && !defined(LEGACY_BACKEND)
     assert(dest->gtGcPtrCount != 0);
     unsigned blockWidth = dest->AsBlk()->gtBlkSize;
 #ifdef DEBUG
@@ -10737,7 +10737,7 @@ GenTreePtr Compiler::fgMorphCopyBlock(GenTreePtr tree)
 
             // If we have a CopyObj with a dest on the stack
             // we will convert it into an GC Unsafe CopyBlk that is non-interruptible
-            // when its size is small enouch to be completely unrolled (i.e. between [16..64] bytes).
+            // when its size is small enough to be completely unrolled (i.e. between [16..64] bytes).
             // (This is not supported for the JIT32_GCENCODER, for which fgMorphUnsafeBlk is a no-op.)
             //
             if (destOnStack && (dest->OperGet() == GT_OBJ))
