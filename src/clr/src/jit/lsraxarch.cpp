@@ -2219,7 +2219,7 @@ void LinearScan::TreeNodeInfoInitSIMD(GenTreeSIMD* simdTree)
                 // No need to set isInternalRegDelayFree since targetReg is a
                 // an int type reg and guaranteed to be different from xmm/ymm
                 // regs.
-                info->internalFloatCount = compiler->canUseAVX() ? 2 : 1;
+                info->internalFloatCount = (compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported) ? 2 : 1;
                 info->setInternalCandidates(this, allSIMDRegs());
             }
             info->srcCount = 2;
@@ -2431,6 +2431,12 @@ void LinearScan::TreeNodeInfoInitSIMD(GenTreeSIMD* simdTree)
 
 void LinearScan::TreeNodeInfoInitHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 {
+    NamedIntrinsic intrinsicID = intrinsicTree->gtHWIntrinsicId;
+    InstructionSet isa         = compiler->isaOfHWIntrinsic(intrinsicID);
+    if (isa == InstructionSet_AVX || isa == InstructionSet_AVX2)
+    {
+        SetContainsAVXFlags(true, 32);
+    }
     TreeNodeInfo* info = &(intrinsicTree->gtLsraInfo);
     if (intrinsicTree->gtGetOp2IfPresent() != nullptr)
     {
@@ -2804,13 +2810,10 @@ void LinearScan::TreeNodeInfoInitMul(GenTreePtr tree)
 //
 void LinearScan::SetContainsAVXFlags(bool isFloatingPointType /* = true */, unsigned sizeOfSIMDVector /* = 0*/)
 {
-    if (isFloatingPointType)
+    if (isFloatingPointType && compiler->canUseVexEncoding())
     {
-        if (compiler->getFloatingPointCodegenLevel() == SIMD_AVX2_Supported)
-        {
-            compiler->getEmitter()->SetContainsAVX(true);
-        }
-        if (sizeOfSIMDVector == 32 && compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported)
+        compiler->getEmitter()->SetContainsAVX(true);
+        if (sizeOfSIMDVector == 32)
         {
             compiler->getEmitter()->SetContains256bitAVX(true);
         }
