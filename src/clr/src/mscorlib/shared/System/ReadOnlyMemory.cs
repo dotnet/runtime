@@ -176,6 +176,29 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// Copies the contents of the read-only memory into the destination. If the source
+        /// and destination overlap, this method behaves as if the original values are in
+        /// a temporary location before the destination is overwritten.
+        ///
+        /// <param name="destination">The Memory to copy items into.</param>
+        /// <exception cref="System.ArgumentException">
+        /// Thrown when the destination is shorter than the source.
+        /// </exception>
+        /// </summary>
+        public void CopyTo(Memory<T> destination) => Span.CopyTo(destination.Span);
+
+        /// <summary>
+        /// Copies the contents of the readonly-only memory into the destination. If the source
+        /// and destination overlap, this method behaves as if the original values are in
+        /// a temporary location before the destination is overwritten.
+        ///
+        /// <returns>If the destination is shorter than the source, this method
+        /// return false and no data is written to the destination.</returns>
+        /// </summary>
+        /// <param name="destination">The span to copy items into.</param>
+        public bool TryCopyTo(Memory<T> destination) => Span.TryCopyTo(destination.Span);
+
         /// <summary>Creates a handle for the memory.</summary>
         /// <param name="pin">
         /// If pin is true, the GC will not move the array until the returned <see cref="MemoryHandle"/>
