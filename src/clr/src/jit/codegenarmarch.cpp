@@ -1223,7 +1223,49 @@ void CodeGen::genMultiRegCallStoreToLocal(GenTreePtr treeNode)
     {
         // Right now the only enregistrable multi-reg return types supported are SIMD types.
         assert(varTypeIsSIMD(treeNode));
-        NYI("GT_STORE_LCL_VAR of a SIMD enregisterable struct");
+        assert(regCount != 0);
+
+        regNumber dst = treeNode->gtRegNum;
+
+        // Treat dst register as a homogenous vector with element size equal to the src size
+        // Insert pieces in reverse order
+        for (int i = regCount - 1; i >= 0; --i)
+        {
+            var_types type = pRetTypeDesc->GetReturnRegType(i);
+            regNumber reg  = call->GetRegNumByIdx(i);
+            if (op1->IsCopyOrReload())
+            {
+                // GT_COPY/GT_RELOAD will have valid reg for those positions
+                // that need to be copied or reloaded.
+                regNumber reloadReg = op1->AsCopyOrReload()->GetRegNumByIdx(i);
+                if (reloadReg != REG_NA)
+                {
+                    reg = reloadReg;
+                }
+            }
+
+            assert(reg != REG_NA);
+            if (varTypeIsFloating(type))
+            {
+                // If the register piece was passed in a floating point register
+                // Use a vector mov element instruction
+                // src is not a vector, so it is in the first element reg[0]
+                // mov dst[i], reg[0]
+                // This effectively moves from `reg[0]` to `dst[i]`, leaving other dst bits unchanged till further
+                // iterations
+                // For the case where reg == dst, if we iterate so that we write dst[0] last, we eliminate the need for
+                // a temporary
+                getEmitter()->emitIns_R_R_I_I(INS_mov, emitTypeSize(type), dst, reg, i, 0);
+            }
+            else
+            {
+                // If the register piece was passed in an integer register
+                // Use a vector mov from general purpose register instruction
+                // mov dst[i], reg
+                // This effectively moves from `reg` to `dst[i]`
+                getEmitter()->emitIns_R_R_I(INS_mov, emitTypeSize(type), dst, reg, i);
+            }
+        }
     }
     else
     {
