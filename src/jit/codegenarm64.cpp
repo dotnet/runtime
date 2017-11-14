@@ -4695,7 +4695,8 @@ void CodeGen::genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode)
     assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicUpperSave);
 
     GenTree* op1 = simdNode->gtGetOp1();
-    assert(op1->IsLocal() && op1->TypeGet() == TYP_SIMD16);
+    assert(op1->IsLocal());
+    assert(emitTypeSize(op1->TypeGet()) == 16);
     regNumber targetReg = simdNode->gtRegNum;
     regNumber op1Reg    = genConsumeReg(op1);
     assert(op1Reg != REG_NA);
@@ -4731,7 +4732,8 @@ void CodeGen::genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode)
     assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicUpperRestore);
 
     GenTree* op1 = simdNode->gtGetOp1();
-    assert(op1->IsLocal() && op1->TypeGet() == TYP_SIMD16);
+    assert(op1->IsLocal());
+    assert(emitTypeSize(op1->TypeGet()) == 16);
     regNumber srcReg    = simdNode->gtRegNum;
     regNumber lclVarReg = genConsumeReg(op1);
     unsigned  varNum    = op1->AsLclVarCommon()->gtLclNum;
