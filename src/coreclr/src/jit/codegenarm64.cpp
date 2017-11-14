@@ -4061,13 +4061,12 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
     var_types targetType = simdNode->TypeGet();
 
     genConsumeOperands(simdNode);
-    regNumber op1Reg = op1->gtRegNum;
+    regNumber op1Reg = op1->IsIntegralConst(0) ? REG_ZR : op1->gtRegNum;
 
-    // TODO-ARM64-CQ Add support contain int const zero
     // TODO-ARM64-CQ Add LD1R to allow SIMDIntrinsicInit from contained memory
     // TODO-ARM64-CQ Add MOVI to allow SIMDIntrinsicInit from contained immediate small constants
 
-    assert(!op1->isContained());
+    assert(op1->isContained() == op1->IsIntegralConst(0));
     assert(!op1->isUsedFromMemory());
 
     assert(genIsValidFloatReg(targetReg));
