@@ -459,7 +459,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // as the original tree for the constant. Otherwise, return the cast expr.
 
             ExprCast exprCast = GetExprFactory().CreateCast(exprFlags, exprTypeDest, exprSrc);
-            if (Context.CheckedNormal)
+            if (Context.Checked)
             {
                 exprCast.Flags |= EXPRFLAG.EXF_CHECKOVERFLOW;
             }

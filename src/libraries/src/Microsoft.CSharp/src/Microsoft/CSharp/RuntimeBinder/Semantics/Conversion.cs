@@ -490,7 +490,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         // Decimal is a SimpleType represented in a FT_STRUCT
                         throw ErrorContext.Error(ErrorCode.ERR_ConstOutOfRange, ((ExprConstant)exprConst).Val.DecimalVal.ToString(CultureInfo.InvariantCulture), dest);
                     }
-                    else if (simpleConstToSimpleDestination && Context.CheckedConstant)
+
+                    if (simpleConstToSimpleDestination && Context.Checked)
                     {
                         // check if we failed because we are in checked mode...
                         bool okNow = canExplicitConversionBeBoundInUncheckedContext(expr, expr.Type, destExpr, flags | CONVERTTYPE.NOUDC);
@@ -1173,7 +1174,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return ConstCastResult.Success;
             }
 
-            if (explicitConversion && Context.CheckedConstant && !isConstantInRange(constSrc, typeDest, true))
+            if (explicitConversion && Context.Checked && !isConstantInRange(constSrc, typeDest, true))
             {
                 return ConstCastResult.CheckFailure;
             }
