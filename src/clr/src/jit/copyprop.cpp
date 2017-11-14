@@ -348,7 +348,7 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curS
                 GenTreePtrStack* stack;
                 if (!curSsaName->Lookup(lclNum, &stack))
                 {
-                    stack = new (getAllocator()) GenTreePtrStack(this);
+                    stack = new (curSsaName->GetAllocator()) GenTreePtrStack(this);
                 }
                 stack->Push(tree);
                 curSsaName->Set(lclNum, stack);
@@ -361,7 +361,7 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curS
                 GenTreePtrStack* stack;
                 if (!curSsaName->Lookup(lclNum, &stack))
                 {
-                    stack = new (getAllocator()) GenTreePtrStack(this);
+                    stack = new (curSsaName->GetAllocator()) GenTreePtrStack(this);
                     stack->Push(tree);
                     curSsaName->Set(lclNum, stack);
                 }
@@ -408,10 +408,11 @@ void Compiler::optVnCopyProp()
     {
         return;
     }
-    jitstd::allocator<void> allocator(getAllocator());
+
+    CompAllocator allocator(this, CMK_CopyProp);
 
     // Compute the domTree to use.
-    BlkToBlkSetMap* domTree = new (getAllocator()) BlkToBlkSetMap(getAllocator());
+    BlkToBlkSetMap* domTree = new (&allocator) BlkToBlkSetMap(&allocator);
     domTree->Reallocate(fgBBcount * 3 / 2); // Prime the allocation
     SsaBuilder::ComputeDominators(this, domTree);
 
@@ -430,10 +431,9 @@ void Compiler::optVnCopyProp()
     VarSetOps::AssignNoCopy(this, optCopyPropKillSet, VarSetOps::MakeEmpty(this));
 
     // The map from lclNum to its recently live definitions as a stack.
-    LclNumToGenTreePtrStack curSsaName(getAllocator());
+    LclNumToGenTreePtrStack curSsaName(&allocator);
 
-    BlockWorkStack* worklist =
-        new (allocate_any<BlockWorkStack>(allocator), jitstd::placement_t()) BlockWorkStack(allocator);
+    BlockWorkStack* worklist = new (&allocator) BlockWorkStack(&allocator);
 
     worklist->push_back(BlockWork(fgFirstBB));
     while (!worklist->empty())

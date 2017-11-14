@@ -329,6 +329,50 @@ size_t GCToOSInterface::GetLargestOnDieCacheSize(bool trueSize)
     return ::GetLargestOnDieCacheSize(trueSize);
 }
 
+// Sets the calling thread's affinity to only run on the processor specified
+// in the GCThreadAffinity structure.
+// Parameters:
+//  affinity - The requested affinity for the calling thread. At most one processor
+//             can be provided.
+// Return:
+//  true if setting the affinity was successful, false otherwise.
+bool GCToOSInterface::SetThreadAffinity(GCThreadAffinity* affinity)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    assert(affinity != nullptr);
+    if (affinity->Group != GCThreadAffinity::None)
+    {
+        assert(affinity->Processor != GCThreadAffinity::None);
+        
+        GROUP_AFFINITY ga;
+        ga.Group = (WORD)affinity->Group;
+        ga.Reserved[0] = 0; // reserve must be filled with zero
+        ga.Reserved[1] = 0; // otherwise call may fail
+        ga.Reserved[2] = 0;
+        ga.Mask = (size_t)1 << affinity->Processor;
+        return !!SetThreadGroupAffinity(GetCurrentThread(), &ga, nullptr);
+    }
+    else if (affinity->Processor != GCThreadAffinity::None)
+    {
+        return !!SetThreadAffinityMask(GetCurrentThread(), (DWORD_PTR)1 << affinity->Processor);
+    }
+
+    // Given affinity must specify at least one processor to use.
+    return false;
+}
+
+// Boosts the calling thread's thread priority to a level higher than the default
+// for new threads.
+// Parameters:
+//  None.
+// Return:
+//  true if the priority boost was successful, false otherwise.
+bool GCToOSInterface::BoostThreadPriority()
+{
+    return !!SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+}
+
 // Get affinity mask of the current process
 // Parameters:
 //  processMask - affinity mask for the specified process
@@ -603,85 +647,6 @@ uint32_t GCToOSInterface::GetLowPrecisionTimeStamp()
     LIMITED_METHOD_CONTRACT;
 
     return ::GetTickCount();
-}
-
-// Parameters of the GC thread stub
-struct GCThreadStubParam
-{
-    GCThreadFunction GCThreadFunction;
-    void* GCThreadParam;
-};
-
-// GC thread stub to convert GC thread function to an OS specific thread function
-static DWORD WINAPI GCThreadStub(void* param)
-{
-    WRAPPER_NO_CONTRACT;
-
-    GCThreadStubParam *stubParam = (GCThreadStubParam*)param;
-    GCThreadFunction function = stubParam->GCThreadFunction;
-    void* threadParam = stubParam->GCThreadParam;
-
-    delete stubParam;
-
-    function(threadParam);
-
-    return 0;
-}
-
-// Create a new thread
-// Parameters:
-//  function - the function to be executed by the thread
-//  param    - parameters of the thread
-//  affinity - processor affinity of the thread
-// Return:
-//  true if it has succeeded, false if it has failed
-bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThreadAffinity* affinity)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    uint32_t thread_id;
-
-    NewHolder<GCThreadStubParam> stubParam = new (nothrow) GCThreadStubParam();
-    if (stubParam == NULL)
-    {
-        return false;
-    }
-
-    stubParam->GCThreadFunction = function;
-    stubParam->GCThreadParam = param;
-
-    HANDLE gc_thread = Thread::CreateUtilityThread(Thread::StackSize_Medium, GCThreadStub, stubParam, CREATE_SUSPENDED, (DWORD*)&thread_id);
-
-    if (!gc_thread)
-    {
-        return false;
-    }
-
-    stubParam.SuppressRelease();
-
-    SetThreadPriority(gc_thread, /* THREAD_PRIORITY_ABOVE_NORMAL );*/ THREAD_PRIORITY_HIGHEST );
-
-    if (affinity->Group != GCThreadAffinity::None)
-    {
-        _ASSERTE(affinity->Processor != GCThreadAffinity::None);
-        GROUP_AFFINITY ga;
-        ga.Group = (WORD)affinity->Group;
-        ga.Reserved[0] = 0; // reserve must be filled with zero
-        ga.Reserved[1] = 0; // otherwise call may fail
-        ga.Reserved[2] = 0;
-        ga.Mask = (size_t)1 << affinity->Processor;
-
-        CPUGroupInfo::SetThreadGroupAffinity(gc_thread, &ga, NULL);
-    }
-    else if (affinity->Processor != GCThreadAffinity::None)
-    {
-        SetThreadAffinityMask(gc_thread, (DWORD_PTR)1 << affinity->Processor);
-    }
-
-    ResumeThread(gc_thread);
-    CloseHandle(gc_thread);
-
-    return true;
 }
 
 uint32_t GCToOSInterface::GetTotalProcessorCount()

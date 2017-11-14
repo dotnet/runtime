@@ -796,8 +796,11 @@ void LinearScan::TreeNodeInfoInitSIMD(GenTreeSIMD* simdTree)
         GenTree* op1;
         GenTree* op2;
 
-        case SIMDIntrinsicCast:
         case SIMDIntrinsicInit:
+            info->srcCount = simdTree->gtGetOp1()->isContained() ? 0 : 1;
+            break;
+
+        case SIMDIntrinsicCast:
         case SIMDIntrinsicSqrt:
         case SIMDIntrinsicAbs:
         case SIMDIntrinsicConvertToSingle:

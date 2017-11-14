@@ -25,7 +25,7 @@ def windowsBuild(String arch, String config, String pgo, boolean isBaseline) {
     stash name: "nt-${arch}-${pgo}${baselineString}-test-artifacts", includes: 'bin/tests/**'
 }
 
-def windowsPerf(String arch, String config, String uploadString, String runType, String opt_level, String jit, String pgo, String scenario, boolean isBaseline) {
+def windowsPerf(String arch, String config, String uploadString, String runType, String opt_level, String jit, String pgo, String scenario, boolean isBaseline, boolean isProfileOn) {
     withCredentials([string(credentialsId: 'CoreCLR Perf BenchView Sas', variable: 'BV_UPLOAD_SAS_TOKEN')]) {
         checkout scm
         String baselineString = ""
@@ -56,24 +56,26 @@ def windowsPerf(String arch, String config, String uploadString, String runType,
         bat "tests\\runtest.cmd ${config} ${arch} GenerateLayoutOnly"
 
         // We run run-xunit-perf differently for each of the different job types
+
+        String profileArg = isProfileOn ? "BranchMispredictions+CacheMisses+InstructionRetired" : "stopwatch"
+
         String runXUnitCommonArgs = "-arch ${arch} -configuration ${config} -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} ${pgoTestFlag} -runtype ${runType} ${testEnv} -optLevel ${opt_level} -jitName ${jit} -outputdir \"%WORKSPACE%\\bin\\sandbox_logs\""
         if (scenario == 'perf') {
             String runXUnitPerfCommonArgs = "${runXUnitCommonArgs} -stabilityPrefix \"START \"CORECLR_PERF_RUN\" /B /WAIT /HIGH /AFFINITY 0x2\""
             String runXUnitPerflabArgs = "${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${arch}.${config}\\performance\\perflab\\Perflab -library"
-            bat "tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerflabArgs} -collectionFlags stopwatch"
-            bat "tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerflabArgs} -collectionFlags default+BranchMispredictions+CacheMisses+InstructionRetired+gcapi"
+
+            profileArg = isProfileOn ? "default+${profileArg}+gcapi" : profileArg
+            bat "tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerflabArgs} -collectionFlags ${profileArg}"
 
             String runXUnitCodeQualityArgs = "${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${arch}.${config}\\Jit\\Performance\\CodeQuality"
-            bat "tests\\scripts\\run-xunit-perf.cmd ${runXUnitCodeQualityArgs} -collectionFlags stopwatch"
-            bat "tests\\scripts\\run-xunit-perf.cmd ${runXUnitCodeQualityArgs} -collectionFlags default+BranchMispredictions+CacheMisses+InstructionRetired+gcapi"
+            bat "tests\\scripts\\run-xunit-perf.cmd ${runXUnitCodeQualityArgs} -collectionFlags ${profileArg}"
         }
         else if (scenario == 'jitbench') {
             String runXUnitPerfCommonArgs = "${runXUnitCommonArgs} -stabilityPrefix \"START \"CORECLR_PERF_RUN\" /B /WAIT /HIGH\" -scenarioTest"
             runXUnitPerfCommonArgs = "${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${arch}.${config}\\performance\\Scenario\\JitBench -group CoreCLR-Scenarios"
-            bat "tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -collectionFlags stopwatch"
 
-            if (opt_level != 'min_opt') {
-                bat "tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -collectionFlags BranchMispredictions+CacheMisses+InstructionRetired"
+            if (!(opt_level == 'min_opt' && isProfileOn)) {
+                bat "tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -collectionFlags ${profileArgs}"
             }
         }
         else if (scenario == 'illink') {
@@ -245,11 +247,6 @@ def innerLoopBuilds = [
         simpleNode('Windows_NT','latest') {
             windowsBuild('x86', config, 'pgo', false)
         }
-    },
-    "linux x64 pgo build": {
-        simpleNode('RHEL7.2', 'latest-or-auto') {
-            linuxBuild('x64', config, 'pgo', false)
-        }
     }
 ]
 
@@ -268,6 +265,11 @@ if (!isPR()) {
                windowsBuild('x86', config, 'nopgo', false)
            }
         },
+        "linux x64 pgo build": {
+            simpleNode('RHEL7.2', 'latest-or-auto') {
+                linuxBuild('x64', config, 'pgo', false)
+            }
+        },
         "linux x64 nopgo build": {
            simpleNode('RHEL7.2', 'latest-or-auto') {
                linuxBuild('x64', config, 'nopgo', false)
@@ -276,7 +278,7 @@ if (!isPR()) {
     ]
 }
 
-def baselineBuilds = [:]
+/*def baselineBuilds = [:]
 
 if (isPR()) {
    baselineBuilds = [
@@ -289,17 +291,12 @@ if (isPR()) {
            simpleNode('Windows_NT','latest') {
                windowsBuild('x86', config, 'pgo', true)
            }
-       },
-       "linux x64 pgo baseline build": {
-           simpleNode('RHEL7.2', 'latest-or-auto') {
-               linuxBuild('x64', config, 'pgo', true)
-           }
        }
    ]
-}
+}*/
 
 stage ('Build Product') {
-    parallel innerLoopBuilds + outerLoopBuilds + baselineBuilds
+    parallel innerLoopBuilds + outerLoopBuilds //+ baselineBuilds
 }
 
 // Pipeline builds don't allow outside scripts (ie ArrayList.Add) if running from a script from SCM, so manually list these for now.
@@ -309,7 +306,7 @@ def innerLoopTests = [:]
 
 ['x64', 'x86'].each { arch ->
     ['full_opt'].each { opt_level ->
-        [true,false].each { isBaseline ->
+        [false].each { isBaseline ->
             String baseline = ""
             if (isBaseline) {
                 baseline = " baseline"
@@ -317,15 +314,7 @@ def innerLoopTests = [:]
             if (isPR() || !isBaseline) {
                 innerLoopTests["windows ${arch} ryujit ${opt_level} pgo${baseline} perf"] = {
                     simpleNode('windows_server_2016_clr_perf', 180) {
-                        windowsPerf(arch, config, uploadString, runType, opt_level, 'ryujit', 'pgo', 'perf', isBaseline)
-                    }
-                }
-
-                if (arch == 'x64') {
-                    innerLoopTests["linux ${arch} ryujit ${opt_level} pgo${baseline} perf"] = {
-                        simpleNode('linux_clr_perf', 180) {
-                            linuxPerf('x64', 'Ubuntu14.04', config, uploadString, runType, opt_level, 'pgo', isBaseline)
-                        }
+                        windowsPerf(arch, config, uploadString, runType, opt_level, 'ryujit', 'pgo', 'perf', isBaseline, true)
                     }
                 }
             }
@@ -353,15 +342,17 @@ if (!isPR()) {
         ['min_opt', 'full_opt'].each { opt_level ->
             ['ryujit'].each { jit ->
                 ['pgo', 'nopgo'].each { pgo_enabled ->
-                    outerLoopTests["windows ${arch} ${jit} ${opt_level} ${pgo_enabled} perf"] = {
-                        simpleNode('windows_server_2016_clr_perf', 180) {
-                            windowsPerf(arch, config, uploadString, runType, opt_level, jit, pgo_enabled, 'perf', false)
+                    [true, false].each { isProfileOn ->
+                        outerLoopTests["windows ${arch} ${jit} ${opt_level} ${pgo_enabled} perf"] = {
+                            simpleNode('windows_server_2016_clr_perf', 180) {
+                                windowsPerf(arch, config, uploadString, runType, opt_level, jit, pgo_enabled, 'perf', false, isProfileOn)
+                            }
                         }
-                    }
 
-                    outerLoopTests["windows ${arch} ${jit} ${opt_level} ${pgo_enabled} throughput"] = {
-                        simpleNode('windows_server_2016_clr_perf', 180) {
-                            windowsThroughput(arch, 'Windows_NT', config, runType, opt_level, jit, pgo_enabled, false)
+                        outerLoopTests["windows ${arch} ${jit} ${opt_level} ${pgo_enabled} throughput"] = {
+                            simpleNode('windows_server_2016_clr_perf', 180) {
+                                windowsThroughput(arch, 'Windows_NT', config, runType, opt_level, jit, pgo_enabled, false, isProfileOn)
+                            }
                         }
                     }
                 }

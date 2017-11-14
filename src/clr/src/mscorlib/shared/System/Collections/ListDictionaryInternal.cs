@@ -19,11 +19,11 @@ namespace System.Collections
     ///    will be smaller and faster than a Hashtable if the number of elements is 10 or less.
     ///    This should not be used if performance is important for large numbers of elements.
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
-#if CORECLR
-    internal
-#else
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+#if CORERT
     public
+#else
+    internal
 #endif
     class ListDictionaryInternal : IDictionary
     {
