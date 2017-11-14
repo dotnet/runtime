@@ -561,7 +561,7 @@ uintptr_t HndCompareExchangeHandleExtraInfo(OBJECTHANDLE handle, uint32_t uType,
     }
 
     _ASSERTE(!"Shouldn't be trying to call HndCompareExchangeHandleExtraInfo on handle types without extra info");
-    return NULL;
+    return (uintptr_t)NULL;
 }
 #endif // !DACCESS_COMPILE
 
