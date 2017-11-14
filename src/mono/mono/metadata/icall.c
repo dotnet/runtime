@@ -5643,12 +5643,19 @@ ves_icall_Mono_RuntimeMarshal_FreeAssemblyName (MonoAssemblyName *aname, gboolea
 		g_free (aname);
 }
 
-ICALL_EXPORT gboolean
-ves_icall_System_Reflection_AssemblyName_ParseAssemblyName (const char *name, MonoAssemblyName *aname, gboolean *is_version_definited, gboolean *is_token_defined)
+ICALL_EXPORT MonoBoolean
+ves_icall_System_Reflection_AssemblyName_ParseAssemblyName (const char *name, MonoAssemblyName *aname, MonoBoolean *is_version_defined_arg, MonoBoolean *is_token_defined_arg)
 {
-	*is_version_definited = *is_token_defined = FALSE;
+	gboolean is_version_defined = FALSE;
+	gboolean is_token_defined = FALSE;
+	gboolean result = FALSE;
 
-	return mono_assembly_name_parse_full (name, aname, TRUE, is_version_definited, is_token_defined);
+	result = mono_assembly_name_parse_full (name, aname, TRUE, &is_version_defined, &is_token_defined);
+
+	*is_version_defined_arg = (MonoBoolean)is_version_defined;
+	*is_token_defined_arg = (MonoBoolean)is_token_defined;
+
+	return result;
 }
 
 ICALL_EXPORT MonoReflectionTypeHandle
