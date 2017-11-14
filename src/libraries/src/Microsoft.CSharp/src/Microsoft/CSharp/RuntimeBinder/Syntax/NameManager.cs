@@ -112,6 +112,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             new Name("RemoveEventHandler"),
             new Name("InvocationList"),
             new Name("GetOrCreateEventRegistrationTokenTable"),
+            new Name("void"),
+            new Name(""),
             /* Above here corresponds with PredefinedName enum */
             new Name("true"),
             new Name("false"),
@@ -128,9 +130,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             new Name("checked"),
             new Name("is"),
             new Name("typeof"),
-            new Name("unchecked"),
-            new Name("void"),
-            new Name("")
+            new Name("unchecked")
         };
 
         private static readonly NameTable s_names = GetKnownNames();
@@ -162,12 +162,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             Debug.Assert(key != null);
             Debug.Assert(key.Length >= length);
             return s_names.Add(key, length);
-        }
-
-        internal static Name Lookup(string key)
-        {
-            Debug.Assert(key != null);
-            return s_names.Lookup(key);
         }
 
         internal static Name GetPredefinedName(PredefinedName id)

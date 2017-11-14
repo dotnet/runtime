@@ -152,11 +152,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
 
         private void ErrAppendParentCore(Symbol parent, SubstContext pctx)
         {
-            if (null == parent)
+            if (parent == null || parent == NamespaceSymbol.Root)
+            {
                 return;
-
-            if (parent == getBSymmgr().GetRootNS())
-                return;
+            }
 
             if (pctx != null && !pctx.FNop() && parent is AggregateSymbol agg && 0 != agg.GetTypeVarsAll().Count)
             {
@@ -391,7 +390,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     break;
 
                 case SYMKIND.SK_NamespaceSymbol:
-                    if (sym == getBSymmgr().GetRootNS())
+                    if (sym == NamespaceSymbol.Root)
                     {
                         ErrAppendId(MessageID.GlobalNamespace);
                     }
@@ -572,7 +571,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     }
 
                 case TypeKind.TK_VoidType:
-                    ErrAppendName(NameManager.Lookup(TokenFacts.GetText(TokenKind.Void)));
+                    ErrAppendName(NameManager.GetPredefinedName(PredefinedName.PN_VOID));
                     break;
 
                 case TypeKind.TK_ParameterModifierType:
@@ -676,16 +675,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         private TypeManager GetTypeManager()
         {
             return m_globalSymbols.GetTypes();
-        }
-
-        private BSYMMGR getBSymmgr()
-        {
-            return m_globalSymbols.GetGlobalSymbols();
-        }
-
-        private int GetTypeID(CType type)
-        {
-            return 0;
         }
 
         private void ErrId(out string s, MessageID id)
