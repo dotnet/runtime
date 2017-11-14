@@ -1360,7 +1360,7 @@ void xxxTableScanQueuedBlocksAsync(PTR_HandleTable pTable, PTR_TableSegment pSeg
 
 #ifndef DACCESS_COMPILE
     // loop through, unlock all the blocks we had locked, and reset the queue nodes
-    ProcessScanQueue(pAsyncInfo, UnlockAndForgetQueuedBlocks, NULL, FALSE);
+    ProcessScanQueue(pAsyncInfo, UnlockAndForgetQueuedBlocks, (uintptr_t)NULL, FALSE);
 #endif
 
     // we are done processing this segment
@@ -1836,7 +1836,7 @@ void CALLBACK xxxTableScanHandlesAsync(PTR_HandleTable pTable,
         asyncInfo.pScanQueue = initialNode.pNext;
 
         // loop through and free all the queue nodes
-        ProcessScanQueue(&asyncInfo, FreeScanQNode, NULL, TRUE);
+        ProcessScanQueue(&asyncInfo, FreeScanQNode, (uintptr_t)NULL, TRUE);
     }
 
     // unlink our async scanning info from the table
