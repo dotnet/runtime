@@ -5357,7 +5357,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     // when there's preceding 256-bit AVX to legacy SSE transition penalty.
     if (call->IsPInvoke() && (call->gtCallType == CT_USER_FUNC) && getEmitter()->Contains256bitAVX())
     {
-        assert(compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported);
+        assert(compiler->canUseVexEncoding());
         instGen(INS_vzeroupper);
     }
 
