@@ -254,7 +254,7 @@
       <ExpectedFeedUrl>$(PackagesUrl)</ExpectedFeedUrl>
     </PropertyGroup>
     <ItemGroup>
-      <ItemsToPush Remove="*.nupkg" />
+      <ItemsToPush Remove="@(ItemsToPush)" />
       <ItemsToPush Include="@(_DownloadedStandardPackages)"/>
     </ItemGroup>
     <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
@@ -270,7 +270,7 @@
       <ExpectedFeedUrl>$(SymbolPackagesUrl)</ExpectedFeedUrl>
     </PropertyGroup>
     <ItemGroup>
-      <ItemsToPush Remove="*.nupkg" />
+      <ItemsToPush Remove="@(ItemsToPush)" />
       <ItemsToPush Include="@(_DownloadedSymbolsPackages)"/>
     </ItemGroup>
     <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
