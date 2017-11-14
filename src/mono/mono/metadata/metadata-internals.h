@@ -954,5 +954,8 @@ mono_loader_set_strict_strong_names (gboolean enabled);
 gboolean
 mono_loader_get_strict_strong_names (void);
 
+char*
+mono_signature_get_managed_fmt_string (MonoMethodSignature *sig);
+
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 

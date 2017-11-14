@@ -523,9 +523,8 @@ find_method (MonoClass *in_class, MonoClass *ic, const char* name, MonoMethodSig
 
 	//we did not find the method
 	if (!result && mono_error_ok (error)) {
-		char *desc = mono_signature_get_desc (sig, FALSE);
-		mono_error_set_method_load (error, initial_class, name, "Could not find method with signature %s", desc);
-		g_free (desc);
+		char *desc = mono_signature_get_managed_fmt_string (sig);
+		mono_error_set_method_load (error, initial_class, g_strdup (name), desc, "");
 	}
 		
  out:
@@ -842,7 +841,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 	sig_idx = cols [MONO_MEMBERREF_SIGNATURE];
 
 	if (!mono_verifier_verify_memberref_method_signature (image, sig_idx, NULL)) {
-		mono_error_set_method_load (error, klass, mname, "Verifier rejected method signature");
+		mono_error_set_method_load (error, klass, g_strdup (mname), NULL, "Verifier rejected method signature");
 		goto fail;
 	}
 
@@ -885,17 +884,10 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 	}
 
 	if (!method && mono_error_ok (error)) {
-		char *msig = mono_signature_get_desc (sig, FALSE);
-		GString *s = g_string_new (mname);
-		if (sig->generic_param_count)
-			g_string_append_printf (s, "<[%d]>", sig->generic_param_count);
-		g_string_append_printf (s, "(%s)", msig);
-		g_free (msig);
-		msig = g_string_free (s, FALSE);
 
-		mono_error_set_method_load (error, klass, mname, "Could not find method %s", msig);
+		char *desc = mono_signature_get_managed_fmt_string (sig);
 
-		g_free (msig);
+		mono_error_set_method_load (error, klass, g_strdup (mname), desc, "Failed to load due to unknown reasons");
 	}
 
 	return method;
@@ -2484,15 +2476,15 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 	/* Verify metadata consistency */
 	if (signature->generic_param_count) {
 		if (!container || !container->is_method) {
-			mono_error_set_method_load (error, m->klass, m->name, "Signature claims method has generic parameters, but generic_params table says it doesn't for method 0x%08x from image %s", idx, img->name);
+			mono_error_set_method_load (error, m->klass, g_strdup (m->name), mono_signature_get_managed_fmt_string (signature), "Signature claims method has generic parameters, but generic_params table says it doesn't for method 0x%08x from image %s", idx, img->name);
 			return NULL;
 		}
 		if (container->type_argc != signature->generic_param_count) {
-			mono_error_set_method_load (error, m->klass, m->name, "Inconsistent generic parameter count.  Signature says %d, generic_params table says %d for method 0x%08x from image %s", signature->generic_param_count, container->type_argc, idx, img->name);
+			mono_error_set_method_load (error, m->klass, g_strdup (m->name), mono_signature_get_managed_fmt_string (signature), "Inconsistent generic parameter count.  Signature says %d, generic_params table says %d for method 0x%08x from image %s", signature->generic_param_count, container->type_argc, idx, img->name);
 			return NULL;
 		}
 	} else if (container && container->is_method && container->type_argc) {
-		mono_error_set_method_load (error, m->klass, m->name, "generic_params table claims method has generic parameters, but signature says it doesn't for method 0x%08x from image %s", idx, img->name);
+		mono_error_set_method_load (error, m->klass, g_strdup (m->name), mono_signature_get_managed_fmt_string (signature), "generic_params table claims method has generic parameters, but signature says it doesn't for method 0x%08x from image %s", idx, img->name);
 		return NULL;
 	}
 	if (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
@@ -2528,8 +2520,9 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 			break;
 		case PINVOKE_ATTRIBUTE_CALL_CONV_GENERIC:
 		case PINVOKE_ATTRIBUTE_CALL_CONV_GENERICINST:
-		default:
-			mono_error_set_method_load (error, m->klass, m->name, "unsupported calling convention : 0x%04x for method 0x%08x from image %s", piinfo->piflags, idx, img->name);
+		default: {
+			mono_error_set_method_load (error, m->klass, g_strdup (m->name), mono_signature_get_managed_fmt_string (signature), "unsupported calling convention : 0x%04x for method 0x%08x from image %s", piinfo->piflags, idx, img->name);
+		}
 			return NULL;
 		}
 		signature->call_convention = conv;

@@ -30,6 +30,11 @@ mono_exception_from_token_two_strings_checked (MonoImage *image, uint32_t token,
 					       MonoString *a1, MonoString *a2,
 					       MonoError *error);
 
+MonoException *
+mono_exception_from_name_four_strings_checked (MonoImage *image, const char *name_space,
+				      const char *name, MonoString *a1, MonoString *a2, MonoString *a3, MonoString *a4,
+				      MonoError *error);
+
 
 typedef int (*MonoGetSeqPointFunc) (MonoDomain *domain, MonoMethod *method, gint32 native_offset);
 
