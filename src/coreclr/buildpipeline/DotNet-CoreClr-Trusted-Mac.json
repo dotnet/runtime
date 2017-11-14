@@ -13,7 +13,7 @@
       },
       "inputs": {
         "filename": "$(Agent.BuildDirectory)/s/clean.sh",
-        "arguments": "",
+        "arguments": "-all",
         "workingFolder": "",
         "failOnStandardError": "false"
       }

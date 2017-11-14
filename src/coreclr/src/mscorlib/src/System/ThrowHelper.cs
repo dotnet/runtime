@@ -432,7 +432,8 @@ namespace System
         keyValuePair,
         input,
         ownedMemory,
-        pointer
+        pointer,
+        start
     }
 
     //
