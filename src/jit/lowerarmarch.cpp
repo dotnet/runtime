@@ -766,7 +766,11 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
         GenTree* op2;
 
         case SIMDIntrinsicInit:
-            // TODO-ARM64-CQ Support containing 0
+            op1 = simdNode->gtOp.gtOp1;
+            if (op1->IsIntegralConst(0))
+            {
+                MakeSrcContained(simdNode, op1);
+            }
             break;
 
         case SIMDIntrinsicInitArray:
