@@ -517,7 +517,8 @@ get_darwin_locale (void)
 	}
 
 	mono_memory_barrier ();
-	return g_strdup (cached_locale = darwin_locale);
+	cached_locale = darwin_locale;
+	return g_strdup (cached_locale);
 }
 #endif
 
