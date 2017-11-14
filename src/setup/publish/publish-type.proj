@@ -12,14 +12,14 @@
       SignSymbolPackages
     </BuildDependsOn>
 
-    <BuildDependsOn Condition="$(PublishType.Contains('blob')">
+    <BuildDependsOn Condition="$(PublishType.Contains('blob'))">
       $(BuildDependsOn);
       ValidateBlobFeedProperties;
       PublishPackagesToBlobFeed;
       PublishFilesToBlobFeed;
     </BuildDependsOn>
 
-    <BuildDependsOn Condition="$(PublishType.Contains('versions')">
+    <BuildDependsOn Condition="$(PublishType.Contains('versions'))">
       $(BuildDependsOn);
       UpdateVersionsRepo
     </BuildDependsOn>
