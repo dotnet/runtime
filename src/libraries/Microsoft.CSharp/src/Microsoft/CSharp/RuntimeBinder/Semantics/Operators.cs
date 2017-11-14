@@ -1229,7 +1229,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (pArgument.Type == null ||
                 !CalculateExprAndUnaryOpKinds(
                            op,
-                           Context.CheckedNormal,
+                           Context.Checked,
                            out ek/*out*/,
                            out unaryOpKind/*out*/,
                            out flags/*out*/))
@@ -2245,14 +2245,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             switch (ek)
             {
                 case ExpressionKind.Add:
-                    if (Context.CheckedNormal)
+                    if (Context.Checked)
                     {
                         flags |= EXPRFLAG.EXF_CHECKOVERFLOW;
                     }
                     pBinopKind = BinOpKind.Add;
                     break;
                 case ExpressionKind.Subtract:
-                    if (Context.CheckedNormal)
+                    if (Context.Checked)
                     {
                         flags |= EXPRFLAG.EXF_CHECKOVERFLOW;
                     }
@@ -2263,14 +2263,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // EXPRKIND.EK_DIV and EXPRKIND.EK_MOD need to be treated special for hasSideEffects, 
                     // hence the EXPRFLAG.EXF_ASSGOP. Yes, this is a hack.
                     flags |= EXPRFLAG.EXF_ASSGOP;
-                    if (Context.CheckedNormal)
+                    if (Context.Checked)
                     {
                         flags |= EXPRFLAG.EXF_CHECKOVERFLOW;
                     }
                     pBinopKind = BinOpKind.Mul;
                     break;
                 case ExpressionKind.Multiply:
-                    if (Context.CheckedNormal)
+                    if (Context.Checked)
                     {
                         flags |= EXPRFLAG.EXF_CHECKOVERFLOW;
                     }
