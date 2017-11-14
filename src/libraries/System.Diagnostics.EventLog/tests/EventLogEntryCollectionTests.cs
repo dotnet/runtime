@@ -69,6 +69,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [ActiveIssue(24874)]
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void CheckingEntryEqualityAndIndex()
         {
@@ -99,6 +100,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [ActiveIssue(24874)]
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void CheckingEntryInEquality()
         {
