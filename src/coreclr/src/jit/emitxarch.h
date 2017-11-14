@@ -147,14 +147,14 @@ code_t AddVexPrefixIfNeededAndNotPresent(instruction ins, code_t code, emitAttr 
     return code;
 }
 
-bool useAVXEncodings;
-bool UseAVX()
+bool useVEXEncodings;
+bool UseVEXEncoding()
 {
-    return useAVXEncodings;
+    return useVEXEncodings;
 }
-void SetUseAVX(bool value)
+void SetUseVEXEncoding(bool value)
 {
-    useAVXEncodings = value;
+    useVEXEncodings = value;
 }
 
 bool containsAVXInstruction = false;
@@ -185,11 +185,11 @@ bool IsThreeOperandAVXInstruction(instruction ins)
 }
 bool Is4ByteAVXInstruction(instruction ins);
 #else  // LEGACY_BACKEND
-bool UseAVX()
+bool UseVEXEncoding()
 {
     return false;
 }
-void SetUseAVX(bool value)
+void SetUseVEXEncoding(bool value)
 {
 }
 bool ContainsAVX()

@@ -428,7 +428,7 @@ public:
 
 #ifdef _TARGET_XARCH_
         SetUseSSE4(false);
-        SetUseAVX(false);
+        SetUseVEXEncoding(false);
 #endif // _TARGET_XARCH_
     }
 
