@@ -243,15 +243,6 @@ public:
     // Thread and process
     //
 
-    // Create a new thread
-    // Parameters:
-    //  function - the function to be executed by the thread
-    //  param    - parameters of the thread
-    //  affinity - processor affinity of the thread
-    // Return:
-    //  true if it has succeeded, false if it has failed
-    static bool CreateThread(GCThreadFunction function, void* param, GCThreadAffinity* affinity);
-
     // Causes the calling thread to sleep for the specified number of milliseconds
     // Parameters:
     //  sleepMSec   - time to sleep before switching to another thread
@@ -306,6 +297,23 @@ public:
     // Return:
     //  The number of processors
     static uint32_t GetCurrentProcessCpuCount();
+
+    // Sets the calling thread's affinity to only run on the processor specified
+    // in the GCThreadAffinity structure.
+    // Parameters:
+    //  affinity - The requested affinity for the calling thread. At most one processor
+    //             can be provided.
+    // Return:
+    //  true if setting the affinity was successful, false otherwise.
+    static bool SetThreadAffinity(GCThreadAffinity* affinity);
+
+    // Boosts the calling thread's thread priority to a level higher than the default
+    // for new threads.
+    // Parameters:
+    //  None.
+    // Return:
+    //  true if the priority boost was successful, false otherwise.
+    static bool BoostThreadPriority();
 
     // Get affinity mask of the current process
     // Parameters:

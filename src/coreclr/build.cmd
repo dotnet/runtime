@@ -46,6 +46,23 @@ call "%_VSCOMNTOOLS%\VsDevCmd.bat"
 
 :Run
 
+REM Make the work-around to a bug in the microsoft.dotnet.buildtools.coreclr package until it is fixed.  
+reg query HKEY_CLASSES_ROOT\WOW6432Node\CLSID\{3BFCEA48-620F-4B6B-81F7-B9AF75454C7D}\InprocServer32 > NUL: 2>&1
+if NOT '%ERRORLEVEL%' == '0' (
+    echo.
+    echo.**********************************************************************************
+    echo.Error: We have detected that the msdia120.dll is not registered.   
+    echo.This is necessary for the build to complete without a Class_Not_Registered error.
+    echo.
+    echo.You can fix this by 
+    echo.  1. Launching the "Developer Command Prompt for VS2017" with Administrative privileges
+    echo.  2. Running  regsvr32.exe "%%VSINSTALLDIR%%\Common7\IDE\msdia120.dll"  
+    echo.
+    echo.This will only need to be done once for the lifetime of the machine.
+    echo.For more details see: https://github.com/dotnet/coreclr/issues/11305
+    exit /b 1
+)
+
 if defined VS150COMNTOOLS (
   set "__VSToolsRoot=%VS150COMNTOOLS%"
   set "__VCToolsRoot=%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build"
@@ -122,6 +139,7 @@ set __BuildTests=1
 set __BuildPackages=1
 set __BuildNativeCoreLib=1
 set __RestoreOptData=1
+set __AltJitCrossgen=0
 
 @REM CMD has a nasty habit of eating "=" on the argument list, so passing:
 @REM    -priority=1
@@ -189,6 +207,7 @@ if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&set processedArgs=!proc
 if /i "%1" == "-nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-ibcinstrument"       (set __IbcTuning=/Tuning&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "-altjitcrossgen"      (set __AltJitCrossgen=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 REM TODO these are deprecated remove them eventually
 REM don't add more, use the - syntax instead
@@ -211,9 +230,6 @@ if /i "%1" == "nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!proc
 if /i "%1" == "enforcepgo"          (set __EnforcePgo=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "ibcinstrument"       (set __IbcTuning=/Tuning&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
-
-@REM The following can be deleted once the CI system that passes it is updated to not pass it.
-if /i "%1" == "altjitcrossgen"      (set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if [!processedArgs!]==[] (
   set __UnprocessedBuildArgs=%__args%
@@ -511,7 +527,7 @@ if /i "%__DoCrossArchBuild%"=="1" (
 
     @call %__ProjectDir%\run.cmd build -Project=%__CrossCompIntermediatesDir%\install.vcxproj -configuration=%__BuildType% -platform=%__CrossArch% -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! %__RunArgs% -MSBuildNodeCount="/m:2" %__UnprocessedBuildArgs%
 
-        if not !errorlevel! == 0 (
+    if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: cross-arch components build failed. Refer to the build log files for details:
         echo     !__BuildLog!
         echo     !__BuildWrn!
@@ -585,7 +601,8 @@ REM Need diasymreader.dll on your path for /CreatePdb
 set PATH=%PATH%;%WinDir%\Microsoft.Net\Framework64\V4.0.30319;%WinDir%\Microsoft.Net\Framework\V4.0.30319
 
 if %__BuildNativeCoreLib% EQU 1 (
-    echo %__MsgPrefix%Generating native image of System.Private.CoreLib for %__BuildOS%.%__BuildArch%.%__BuildType%
+    echo %__MsgPrefix%Generating native image of System.Private.CoreLib for %__BuildOS%.%__BuildArch%.%__BuildType%. Logging to "%__CrossGenCoreLibLog%".
+    if exist "%__CrossGenCoreLibLog%" del "%__CrossGenCoreLibLog%"
 
     REM Need VS native tools environment for the **target** arch when running instrumented binaries
     if %__PgoInstrument% EQU 1 (
@@ -612,9 +629,23 @@ if %__BuildNativeCoreLib% EQU 1 (
         REM End HACK
     )
 
+    if %__AltJitCrossgen% EQU 1 (
+        REM Set altjit flags for the crossgen run. Note that this entire crossgen section is within a setlocal/endlocal scope,
+        REM so we don't need to save or unset these afterwards.
+        echo %__MsgPrefix%Setting altjit environment variables.
+        echo %__MsgPrefix%Setting altjit environment variables. >> "%__CrossGenCoreLibLog%"
+        set COMPlus_AltJit=*
+        set COMPlus_AltJitNgen=*
+        set COMPlus_AltJitName=protojit.dll
+        set COMPlus_AltJitAssertOnNYI=1
+        set COMPlus_NoGuiOnAssert=1
+        set COMPlus_ContinueOnAssert=0
+    )
+
     set NEXTCMD="%__CrossgenExe%" %__IbcTuning% /Platform_Assemblies_Paths "%__BinDir%"\IL /out "%__BinDir%\System.Private.CoreLib.dll" "%__BinDir%\IL\System.Private.CoreLib.dll"
     echo %__MsgPrefix%!NEXTCMD!
-    !NEXTCMD! > "%__CrossGenCoreLibLog%" 2>&1
+    echo %__MsgPrefix%!NEXTCMD! >> "%__CrossGenCoreLibLog%"
+    !NEXTCMD! >> "%__CrossGenCoreLibLog%" 2>&1
     if NOT !errorlevel! == 0 (
         echo %__MsgPrefix%Error: CrossGen System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
         :: Put it in the same log, helpful for Jenkins
@@ -624,6 +655,7 @@ if %__BuildNativeCoreLib% EQU 1 (
 
     set NEXTCMD="%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /CreatePdb "%__BinDir%\PDB" "%__BinDir%\System.Private.CoreLib.dll"
     echo %__MsgPrefix%!NEXTCMD!
+    echo %__MsgPrefix%!NEXTCMD! >> "%__CrossGenCoreLibLog%"
     !NEXTCMD! >> "%__CrossGenCoreLibLog%" 2>&1
     if NOT !errorlevel! == 0 (
         echo %__MsgPrefix%Error: CrossGen /CreatePdb System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
@@ -824,6 +856,7 @@ echo -disableoss: Disable Open Source Signing for System.Private.CoreLib.
 echo -priority=^<N^> : specify a set of test that will be built and run, with priority N.
 echo -officialbuildid=^<ID^>: specify the official build ID to be used by this build.
 echo -Rebuild: passes /t:rebuild to the build projects.
+echo -altjitcrossgen: run crossgen using altjit ^(used for JIT testing^).
 echo portable : build for portable RID.
 echo.
 echo If "all" is specified, then all build architectures and types are built. If, in addition,

@@ -253,9 +253,10 @@ endif (FEATURE_MERGE_JIT_AND_ENGINE)
 
 add_subdirectory(standalone)
 
-if (CLR_CMAKE_PLATFORM_ARCH_ARM)
+if (CLR_CMAKE_TARGET_ARCH_ARM)
+    # Build RyuJIT/arm32 protojit to run on both x86 host (crossgen build) and arm host (native).
     add_subdirectory(protojit)
-endif (CLR_CMAKE_PLATFORM_ARCH_ARM)
+endif (CLR_CMAKE_TARGET_ARCH_ARM)
 
 if (CLR_CMAKE_PLATFORM_ARCH_I386 OR CLR_CMAKE_PLATFORM_ARCH_AMD64)
     # On x86, build RyuJIT/ARM32 cross-compiling altjit.

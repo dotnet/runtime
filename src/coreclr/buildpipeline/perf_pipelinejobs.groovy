@@ -24,5 +24,8 @@ def pipeline = perfPipeline
 //               'OGroup':'Windows_NT']
 // pipeline.triggerPipelinOnGithubPRComment(triggerName, params)
 
-pipeline.triggerPipelineOnEveryGithubPR(triggerName)
+params = ['XUNIT_PERFORMANCE_MAX_ITERATION':'6',
+          'XUNIT_PERFORMANCE_MAX_ITERATION_INNER_SPECIFIED':'6']
+
+pipeline.triggerPipelineOnEveryGithubPR(triggerName, params)
 pipeline.triggerPipelineOnGithubPush()

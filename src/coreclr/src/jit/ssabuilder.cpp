@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// ==++==
-//
-
-//
-
-//
-// ==--==
-
-/*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XX                                                                           XX
-XX                                  SSA                                      XX
-XX                                                                           XX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-*/
-
 #include "jitpch.h"
 #include "ssaconfig.h"
 #include "ssarenamestate.h"
@@ -79,7 +62,7 @@ void Compiler::fgSsaBuild()
         fgResetForSsa();
     }
 
-    SsaBuilder builder(this, new (this, CMK_SSA) CompAllocator(this, CMK_SSA));
+    SsaBuilder builder(this);
     builder.Build();
     fgSsaPassesCompleted++;
 #ifdef DEBUG
@@ -159,17 +142,16 @@ void Compiler::fgResetForSsa()
  *
  *  @remarks Initializes the class and member pointers/objects that use constructors.
  */
-SsaBuilder::SsaBuilder(Compiler* pCompiler, CompAllocator* pAllocator)
+SsaBuilder::SsaBuilder(Compiler* pCompiler)
     : m_pCompiler(pCompiler)
-    , m_allocator(pAllocator)
-
+    , m_allocator(pCompiler, CMK_SSA)
 #ifdef SSA_FEATURE_DOMARR
-    , m_pDomPreOrder(NULL)
-    , m_pDomPostOrder(NULL)
+    , m_pDomPreOrder(nullptr)
+    , m_pDomPostOrder(nullptr)
 #endif
 #ifdef SSA_FEATURE_USEDEF
-    , m_uses(jitstd::allocator<void>(pAllocator))
-    , m_defs(jitstd::allocator<void>(pAllocator))
+    , m_uses(&m_allocator)
+    , m_defs(&m_allocator)
 #endif
 {
 }
@@ -425,7 +407,7 @@ void SsaBuilder::ConstructDomTreeForBlock(Compiler* pCompiler, BasicBlock* block
     BlkSet* pBlkSet;
     if (!domTree->Lookup(bbIDom, &pBlkSet))
     {
-        pBlkSet = new (pCompiler->getAllocator()) BlkSet(pCompiler->getAllocator());
+        pBlkSet = new (domTree->GetAllocator()) BlkSet(domTree->GetAllocator());
         domTree->Set(bbIDom, pBlkSet);
     }
 
@@ -484,8 +466,8 @@ void SsaBuilder::ComputeDominators(BasicBlock** postOrder, int count, BlkToBlkSe
     // Allocate space for constant time computation of (a DOM b?) query.
     unsigned bbArrSize = m_pCompiler->fgBBNumMax + 1; // We will use 1-based bbNums as indices into these arrays, so
                                                       // add 1.
-    m_pDomPreOrder  = jitstd::utility::allocate<int>(m_allocator, bbArrSize);
-    m_pDomPostOrder = jitstd::utility::allocate<int>(m_allocator, bbArrSize);
+    m_pDomPreOrder  = new (&m_allocator) int[bbArrSize];
+    m_pDomPostOrder = new (&m_allocator) int[bbArrSize];
 
     // Initial counters.
     int preIndex  = 0;
@@ -532,7 +514,7 @@ void SsaBuilder::DisplayDominators(BlkToBlkSetMap* domTree)
 // dominance frontiers by a closure operation.
 BlkToBlkSetMap* SsaBuilder::ComputeIteratedDominanceFrontier(BasicBlock** postOrder, int count)
 {
-    BlkToBlkSetMap* frontier = new (m_pCompiler->getAllocator()) BlkToBlkSetMap(m_pCompiler->getAllocator());
+    BlkToBlkSetMap* frontier = new (&m_allocator) BlkToBlkSetMap(&m_allocator);
 
     DBG_SSA_JITDUMP("Computing IDF: First computing DF.\n");
 
@@ -582,7 +564,7 @@ BlkToBlkSetMap* SsaBuilder::ComputeIteratedDominanceFrontier(BasicBlock** postOr
                 BlkSet* pBlkSet;
                 if (!frontier->Lookup(b1, &pBlkSet))
                 {
-                    pBlkSet = new (m_pCompiler->getAllocator()) BlkSet(m_pCompiler->getAllocator());
+                    pBlkSet = new (&m_allocator) BlkSet(&m_allocator);
                     frontier->Set(b1, pBlkSet);
                 }
                 pBlkSet->Set(block, true);
@@ -620,16 +602,16 @@ BlkToBlkSetMap* SsaBuilder::ComputeIteratedDominanceFrontier(BasicBlock** postOr
 
     // Now do the closure operation to make the dominance frontier into an IDF.
     // There's probably a better way to do this...
-    BlkToBlkSetMap* idf = new (m_pCompiler->getAllocator()) BlkToBlkSetMap(m_pCompiler->getAllocator());
+    BlkToBlkSetMap* idf = new (&m_allocator) BlkToBlkSetMap(&m_allocator);
     for (BlkToBlkSetMap::KeyIterator kiFrontBlks = frontier->Begin(); !kiFrontBlks.Equal(frontier->End());
          kiFrontBlks++)
     {
         // Create IDF(b)
-        BlkSet* blkIdf = new (m_pCompiler->getAllocator()) BlkSet(m_pCompiler->getAllocator());
+        BlkSet* blkIdf = new (&m_allocator) BlkSet(&m_allocator);
         idf->Set(kiFrontBlks.Get(), blkIdf);
 
         // Keep track of what got newly added to the IDF, so we can go after their DFs.
-        BlkSet* delta = new (m_pCompiler->getAllocator()) BlkSet(m_pCompiler->getAllocator());
+        BlkSet* delta = new (&m_allocator) BlkSet(&m_allocator);
         delta->Set(kiFrontBlks.Get(), true);
 
         // Now transitively add DF+(delta) to IDF(b), each step gathering new "delta."
@@ -1743,9 +1725,8 @@ void SsaBuilder::RenameVariables(BlkToBlkSetMap* domTree, SsaRenameState* pRenam
         }
     };
     typedef jitstd::vector<BlockWork> BlockWorkStack;
-    BlockWorkStack*                   blocksToDo =
-        new (jitstd::utility::allocate<BlockWorkStack>(m_allocator), jitstd::placement_t()) BlockWorkStack(m_allocator);
 
+    BlockWorkStack* blocksToDo = new (&m_allocator) BlockWorkStack(&m_allocator);
     blocksToDo->push_back(BlockWork(m_pCompiler->fgFirstBB)); // Probably have to include other roots of dom tree.
 
     while (blocksToDo->size() != 0)
@@ -1870,7 +1851,7 @@ void SsaBuilder::Build()
 
     if (blockCount > DEFAULT_MIN_OPTS_BB_COUNT)
     {
-        postOrder = new (m_pCompiler->getAllocator()) BasicBlock*[blockCount];
+        postOrder = new (&m_allocator) BasicBlock*[blockCount];
     }
     else
     {
@@ -1886,7 +1867,7 @@ void SsaBuilder::Build()
     ComputeImmediateDom(postOrder, count);
 
     // Compute the dominator tree.
-    BlkToBlkSetMap* domTree = new (m_pCompiler->getAllocator()) BlkToBlkSetMap(m_pCompiler->getAllocator());
+    BlkToBlkSetMap* domTree = new (&m_allocator) BlkToBlkSetMap(&m_allocator);
     ComputeDominators(postOrder, count, domTree);
     EndPhase(PHASE_BUILD_SSA_DOMS);
 
@@ -1894,8 +1875,8 @@ void SsaBuilder::Build()
     InsertPhiFunctions(postOrder, count);
 
     // Rename local variables and collect UD information for each ssa var.
-    SsaRenameState* pRenameState = new (jitstd::utility::allocate<SsaRenameState>(m_allocator), jitstd::placement_t())
-        SsaRenameState(m_allocator, m_pCompiler->lvaCount, m_pCompiler->byrefStatesMatchGcHeapStates);
+    SsaRenameState* pRenameState = new (&m_allocator)
+        SsaRenameState(&m_allocator, m_pCompiler->lvaCount, m_pCompiler->byrefStatesMatchGcHeapStates);
     RenameVariables(domTree, pRenameState);
     EndPhase(PHASE_BUILD_SSA_RENAME);
 

@@ -58,13 +58,14 @@ namespace JitBench
                     scenarioName += " NoNgen";
                 }
 
-                var program = new JitBenchHarness("JitBench");
+                var program = new JitBenchHarness();
                 try
                 {
-                    var scenarioConfiguration = new ScenarioConfiguration(TimeSpan.FromMilliseconds(60000), startInfo) {
+                    var scenarioConfiguration = new ScenarioTestConfiguration(TimeSpan.FromMilliseconds(60000), startInfo) {
                         Iterations = (int)options.Iterations,
                         PreIterationDelegate = program.PreIteration,
                         PostIterationDelegate = program.PostIteration,
+                        Scenario = new ScenarioBenchmark("JitBench"),
                     };
                     var processesOfInterest = new string[] {
                         "dotnet.exe",
@@ -85,8 +86,8 @@ namespace JitBench
                     if (!Directory.Exists(startInfo.WorkingDirectory))
                         throw new DirectoryNotFoundException(startInfo.WorkingDirectory);
 
-                    h.RunScenario(scenarioConfiguration, teardownDelegate: () => {
-                        return program.PostRun("MusicStore", processesOfInterest, modulesOfInterest);
+                    h.RunScenario(scenarioConfiguration, teardownDelegate: (ScenarioBenchmark scenarioBenchmark) => {
+                        program.PostRun(scenarioBenchmark, "MusicStore", processesOfInterest, modulesOfInterest);
                     });
                 }
                 catch
@@ -98,9 +99,8 @@ namespace JitBench
             }
         }
 
-        public JitBenchHarness(string scenarioBenchmarkName)
+        public JitBenchHarness()
         {
-            _scenarioBenchmarkName = scenarioBenchmarkName;
             _stdout = new StringBuilder();
             _stderr = new StringBuilder();
             IterationsData = new List<IterationData>();
@@ -389,7 +389,7 @@ namespace JitBench
         private const string JitBenchTargetFramework = "netcoreapp2.1";
         private const string EnvironmentFileName = "JitBenchEnvironment.txt";
 
-        private void PreIteration(Scenario scenario)
+        private void PreIteration(ScenarioTest scenario)
         {
             PrintHeader("Setting up data standard output/error process handlers.");
 
@@ -476,14 +476,13 @@ namespace JitBench
             _stderr.Clear();
         }
 
-        private ScenarioBenchmark PostRun(
+        private void PostRun(
+            ScenarioBenchmark scenarioBenchmark,
             string scenarioTestModelName,
             IReadOnlyCollection<string> processesOfInterest,
             IReadOnlyCollection<string> modulesOfInterest)
         {
             PrintHeader("Post-Processing scenario data.");
-
-            var scenarioBenchmark = new ScenarioBenchmark(_scenarioBenchmarkName);
 
             foreach (var iter in IterationsData)
             {
@@ -553,12 +552,6 @@ namespace JitBench
                         scenarioBenchmark, iter.ScenarioExecutionResult, processesOfInterest, modulesOfInterest);
                 }
             }
-
-            for (int i = scenarioBenchmark.Tests.Count - 1; i >= 0; i--)
-                if (scenarioBenchmark.Tests[i].Performance.IterationModels.All(iter => iter.Iteration.Count == 0))
-                    scenarioBenchmark.Tests.RemoveAt(i);
-
-            return scenarioBenchmark;
         }
 
         private static ScenarioBenchmark AddEtwData(
@@ -704,7 +697,6 @@ namespace JitBench
 #else
         private const int NumberOfIterations = 11;
 #endif
-        private readonly string _scenarioBenchmarkName;
         private readonly StringBuilder _stdout;
         private readonly StringBuilder _stderr;
 
