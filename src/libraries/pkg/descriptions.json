@@ -1391,7 +1391,6 @@
       "System.Runtime.Caching.HostFileChangeMonitor",
       "System.Runtime.Caching.MemoryCache",
       "System.Runtime.Caching.ObjectCache",
-      "System.Runtime.Caching.SqlChangeMonitor",
     ]
   },
   {
