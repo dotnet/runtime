@@ -3274,7 +3274,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
         }
         else
 #endif // FEATURE_SIMD
-            if (compiler->canUseAVX())
+            if (compiler->canUseVexEncoding())
         {
             return (aligned) ? INS_movapd : INS_movupd;
         }
@@ -3439,7 +3439,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
         }
         else
 #endif // FEATURE_SIMD
-            if (compiler->canUseAVX())
+            if (compiler->canUseVexEncoding())
         {
             return (aligned) ? INS_movapd : INS_movupd;
         }

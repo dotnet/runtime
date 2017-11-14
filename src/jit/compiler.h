@@ -7323,11 +7323,11 @@ private:
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     */
 
-    // Get highest available level for floating point codegen
-    SIMDLevel getFloatingPointCodegenLevel()
+    // Get highest available level for SIMD codegen
+    SIMDLevel getSIMDSupportLevel()
     {
 #if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
-        if (canUseAVX())
+        if (compSupports(InstructionSet_AVX2))
         {
             return SIMD_AVX2_Supported;
         }
@@ -7340,18 +7340,6 @@ private:
         // min bar is SSE2
         assert(canUseSSE2());
         return SIMD_SSE2_Supported;
-#else
-        assert(!"getFPInstructionSet() is not implemented for target arch");
-        unreached();
-        return SIMD_Not_Supported;
-#endif
-    }
-
-    // Get highest available level for SIMD codegen
-    SIMDLevel getSIMDSupportLevel()
-    {
-#if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
-        return getFloatingPointCodegenLevel();
 #else
         assert(!"Available instruction set(s) for SIMD codegen is not defined for target arch");
         unreached();
@@ -7635,13 +7623,13 @@ private:
     var_types getSIMDVectorType()
     {
 #if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
-        if (canUseAVX())
+        if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
         {
             return TYP_SIMD32;
         }
         else
         {
-            assert(canUseSSE2());
+            assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
             return TYP_SIMD16;
         }
 #elif defined(_TARGET_ARM64_)
@@ -7673,13 +7661,13 @@ private:
     unsigned getSIMDVectorRegisterByteLength()
     {
 #if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
-        if (canUseAVX())
+        if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
         {
             return YMM_REGSIZE_BYTES;
         }
         else
         {
-            assert(canUseSSE2());
+            assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(_TARGET_ARM64_)
@@ -7828,19 +7816,19 @@ private:
 #endif
     }
 
-    bool canUseAVX() const
+    bool compSupports(InstructionSet isa) const
     {
 #ifdef _TARGET_XARCH_
-        return opts.compCanUseAVX;
+        return (opts.compSupportsISA & (1ULL << isa)) != 0;
 #else
         return false;
 #endif
     }
 
-    bool compSupports(InstructionSet isa)
+    bool canUseVexEncoding() const
     {
 #ifdef _TARGET_XARCH_
-        return (opts.compSupportsISA & (1ULL << isa)) != 0;
+        return compSupports(InstructionSet_AVX);
 #else
         return false;
 #endif
@@ -7954,7 +7942,6 @@ public:
 #ifdef _TARGET_XARCH_
         bool compCanUseSSE2; // Allow CodeGen to use "movq XMM" instructions
         bool compCanUseSSE4; // Allow CodeGen to use SSE3, SSSE3, SSE4.1 and SSE4.2 instructions
-        bool compCanUseAVX;  // Allow CodeGen to use AVX 256-bit vectors for SIMD operations
 #endif                       // _TARGET_XARCH_
 
 #ifdef _TARGET_XARCH_
