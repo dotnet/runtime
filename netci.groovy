@@ -2362,7 +2362,7 @@ combinedScenarios.each { scenario ->
 
                 Constants.configurationList.each { configuration ->
 
-                    if (architecture == 'arm64') {
+                    if (architecture == 'arm64' && os != "Windows_NT") {
                         if (scenario != 'default' && scenario != 'r2r' && scenario != 'gcstress0x3' && scenario != 'gcstress0xc') {
                             return
                         }
