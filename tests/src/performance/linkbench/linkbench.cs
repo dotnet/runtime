@@ -396,7 +396,10 @@ namespace LinkBench
                 Console.WriteLine($"{string.Join(" ", newArgs)}");
                 using (var h = new XunitPerformanceHarness(newArgs.ToArray()))
                 {
-                    var configuration = new ScenarioConfiguration(new TimeSpan(2000000), emptyCmd);
+                    var configuration = new ScenarioTestConfiguration(new TimeSpan(2000000), emptyCmd)
+                    {
+                        Scenario = new ScenarioBenchmark(CurrentBenchmark.Name) { Namespace = "LinkBench" },
+                    };
                     h.RunScenario(configuration, PostRun);
                 }
             }
@@ -412,15 +415,10 @@ namespace LinkBench
             Console.WriteLine("**********************************************************************");
         }
 
-        private static ScenarioBenchmark PostRun()
+        private static void PostRun(ScenarioBenchmark scenario)
         {
             // The XUnit output doesn't print the benchmark name, so print it now.
             Console.WriteLine("{0}", CurrentBenchmark.Name);
-
-            var scenario = new ScenarioBenchmark(CurrentBenchmark.Name)
-            {
-                Namespace = "LinkBench"
-            };
 
             CurrentBenchmark.Compute();
 
@@ -430,8 +428,6 @@ namespace LinkBench
             addMeasurement(ref scenario, "Total Uninked", SizeMetric, CurrentBenchmark.UnlinkedDirSize);
             addMeasurement(ref scenario, "Total Linked", SizeMetric, CurrentBenchmark.LinkedDirSize);
             addMeasurement(ref scenario, "Total Reduction", PercMetric, CurrentBenchmark.DirSizeReduction);
-
-            return scenario;
         }
 
         private static void addMeasurement(ref ScenarioBenchmark scenario, string name, MetricModel metric, double value)

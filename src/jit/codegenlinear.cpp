@@ -902,7 +902,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             emitter*    emit       = getEmitter();
 
             // Fixes Issue #3326
-            attr = emit->emitInsAdjustLoadStoreAttr(ins, attr);
+            attr = varTypeIsFloating(targetType) ? attr : emit->emitInsAdjustLoadStoreAttr(ins, attr);
 
             // Load local variable from its home location.
             inst_RV_TT(ins, dstReg, unspillTree, 0, attr);
