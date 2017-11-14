@@ -525,7 +525,7 @@ namespace System.Diagnostics.Tracing
             /// </summary>
             private static unsafe void WriteNibble(ref byte* ptr, byte* endPtr, uint value)
             {
-                Debug.Assert(0 <= value && value < 16);
+                Debug.Assert(value < 16);
                 Debug.Assert(ptr < endPtr);
 
                 if (*ptr != 0)
