@@ -25,6 +25,7 @@ static NameAndMask event_list[] = {
 	{ "counter", PROFLOG_COUNTER_EVENTS },
 	{ "jit", PROFLOG_JIT_EVENTS },
 
+	{ "counters", PROFLOG_COUNTER_EVENTS },
 	{ "alloc", PROFLOG_ALLOC_ALIAS, PROFLOG_ALLOC_ALIAS | PROFLOG_GC_ROOT_EVENTS },
 	{ "legacy", PROFLOG_LEGACY_ALIAS },
 };
@@ -92,7 +93,7 @@ parse_arg (const char *arg, ProfilerConfig *config)
 		set_sample_freq (config, val);
 		config->sampling_mode = MONO_PROFILER_SAMPLE_MODE_PROCESS;
 		config->enable_mask |= PROFLOG_SAMPLE_EVENTS;
-	} else if (match_option (arg, "sample-real", &val)) {
+	} else if (match_option (arg, "sample-real", &val) || (compat_args_parsing && match_option (arg, "sampling-real", &val))) {
 		set_sample_freq (config, val);
 		config->sampling_mode = MONO_PROFILER_SAMPLE_MODE_REAL;
 		config->enable_mask |= PROFLOG_SAMPLE_EVENTS;
