@@ -24,7 +24,7 @@
 
   <Target Name="PublishPackages" Condition="'$(__PublishPackages)' == 'true' and ('$(OfficialPublish)' != 'true' or '$(__BuildType)' == 'Release')">
     <PropertyGroup>
-      <ExpectedFeedUrl>https://$(AccountName).blob.core.windows.net/$(ContainerName)/$(RelativePathWithSlash)index.json</ExpectedFeedUrl>
+      <ExpectedFeedUrl Condition="'$(ExpectedFeedUrl)' == ''">https://$(AccountName).blob.core.windows.net/$(ContainerName)/$(RelativePathWithSlash)index.json</ExpectedFeedUrl>
     </PropertyGroup>
     <ItemGroup>
       <ItemsToPush Remove="*.nupkg" />
@@ -44,8 +44,6 @@
                     ExpectedFeedUrl="$(ExpectedFeedUrl)"
                     AccountKey="$(AccountKey)"
                     ItemsToPush="@(ItemsToPush)"
-                    RetryAttempts="10"
-                    RetryDelayInSeconds="120"
                     Overwrite="$(OverwriteOnPublish)" />
 
     <!-- now upload the items -->
@@ -59,7 +57,7 @@
 
   <Target Name="PublishSymbolPackages" Condition="'$(__PublishSymbols)' == 'true' and ('$(OfficialPublish)' != 'true' or '$(__BuildType)' == 'Release')">
     <PropertyGroup>
-      <ExpectedFeedUrl>https://$(AccountName).blob.core.windows.net/$(ContainerName)/$(RelativePathWithSlash)index.json</ExpectedFeedUrl>
+      <ExpectedFeedUrl Condition="'$(ExpectedFeedUrl)' == ''">https://$(AccountName).blob.core.windows.net/$(ContainerName)/$(RelativePathWithSlash)index.json</ExpectedFeedUrl>
     </PropertyGroup>
     <ItemGroup>
       <ItemsToPush Remove="*.nupkg" />
@@ -79,8 +77,6 @@
                     ExpectedFeedUrl="$(ExpectedFeedUrl)"
                     AccountKey="$(AccountKey)"
                     ItemsToPush="@(ItemsToPush)"
-                    RetryAttempts="10"
-                    RetryDelayInSeconds="120"
                     Overwrite="$(OverwriteOnPublish)" />
 
     <!-- now upload the items -->
@@ -95,7 +91,7 @@
   <Target Name="PublishTestNativeBinaries" Condition="'$(PublishTestNativeBins)' == 'true' and '$(OfficialPublish)' != 'true'">
     <PropertyGroup>
       <RelativePath Condition="'$(RelativePath)' == ''">$(__BuildType)/TestNativeBins</RelativePath>
-      <ExpectedFeedUrl>https://$(AccountName).blob.core.windows.net/$(ContainerName)/$(RelativePath)/index.json</ExpectedFeedUrl>
+      <ExpectedFeedUrl Condition="'$(ExpectedFeedUrl)' == ''">https://$(AccountName).blob.core.windows.net/$(ContainerName)/$(RelativePath)/index.json</ExpectedFeedUrl>
     </PropertyGroup>
     <ItemGroup>
       <ItemsToPush Remove="*.nupkg" />
@@ -115,8 +111,6 @@
                     ExpectedFeedUrl="$(ExpectedFeedUrl)"
                     AccountKey="$(AccountKey)"
                     ItemsToPush="@(ItemsToPush)"
-                    RetryAttempts="10"
-                    RetryDelayInSeconds="120"
                     Overwrite="$(OverwriteOnPublish)" />
 
     <!-- now upload the items -->

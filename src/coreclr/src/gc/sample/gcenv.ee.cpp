@@ -231,12 +231,6 @@ void GCToEEInterface::SyncBlockCachePromotionsGranted(int /*max_gen*/)
 {
 }
 
-Thread* GCToEEInterface::CreateBackgroundThread(GCBackgroundThreadFunction threadStart, void* arg)
-{
-    // TODO: Implement for background GC
-    return NULL;
-}
-
 void GCToEEInterface::DiagGCStart(int gen, bool isInduced)
 {
 }
@@ -321,7 +315,7 @@ bool GCToEEInterface::IsGCThread()
     return false;
 }
 
-bool GCToEEInterface::IsGCSpecialThread()
+bool GCToEEInterface::WasCurrentThreadCreatedByGC()
 {
     return false;
 }
@@ -329,4 +323,9 @@ bool GCToEEInterface::IsGCSpecialThread()
 MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
 {
     return g_pFreeObjectMethodTable;
+}
+
+bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool is_suspendable, const char* name)
+{
+    return false;
 }

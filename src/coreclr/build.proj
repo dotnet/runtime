@@ -11,6 +11,8 @@
 
   <Import Project="dir.traversal.targets" />
 
+  <Import Project="$(ToolsDir)clean.targets" />
+
   <!-- The following properties are in place to keep the behavior of build.cmd while we work on the dev workflow steps. -->
   <PropertyGroup>
     <!-- To disable the restoration of packages, set RestoreDuringBuild=false or pass /p:RestoreDuringBuild=false.-->
@@ -44,6 +46,11 @@
   <Target Name="RestoreNETCorePlatforms" AfterTargets="Build" Condition="'$(RestoreDuringBuild)'=='true'">
     <Exec Command="$(DotnetRestoreCommand) $(SourceDir).nuget/init/init.csproj"
           StandardOutputImportance="Low" />
+  </Target>
+
+  <Target Name="CleanAllProjects">
+    <Message Condition="Exists($(RootBinDir))" Importance="High" Text="Removing $(RootBinDir)"/>
+    <RemoveDir Directories="$(RootBinDir)" />
   </Target>
   
 </Project>
