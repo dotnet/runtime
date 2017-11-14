@@ -14,11 +14,8 @@ namespace System.Runtime.Serialization
     {
         private Dictionary<XmlQualifiedName, DataContract> _contracts;
         private Dictionary<DataContract, object> _processedContracts;
-        private DataContractDictionary _knownTypesForObject;
         private ICollection<Type> _referencedTypes;
         private ICollection<Type> _referencedCollectionTypes;
-        private Dictionary<XmlQualifiedName, object> _referencedTypesDictionary;
-        private Dictionary<XmlQualifiedName, object> _referencedCollectionTypesDictionary;
 
 #if SUPPORT_SURROGATE
         private IDataContractSurrogate _dataContractSurrogate;
@@ -91,11 +88,6 @@ namespace System.Runtime.Serialization
             }
         }
 #endif
-        internal DataContractDictionary KnownTypesForObject
-        {
-            get { return _knownTypesForObject; }
-            set { _knownTypesForObject = value; }
-        }
 
         internal void Add(Type type)
         {
@@ -310,34 +302,12 @@ namespace System.Runtime.Serialization
         {
             SurrogateDataTable[key] = surrogateData;
         }
-#endif
 
-        public DataContract this[XmlQualifiedName key]
-        {
-            get
-            {
-                DataContract dataContract = DataContract.GetBuiltInDataContract(key.Name, key.Namespace);
-                if (dataContract == null)
-                {
-                    Contracts.TryGetValue(key, out dataContract);
-                }
-                return dataContract;
-            }
-        }
-
-#if SUPPORT_SURROGATE
         public IDataContractSurrogate DataContractSurrogate
         {
             get { return _dataContractSurrogate; }
         }
 #endif
-
-        public bool Remove(XmlQualifiedName key)
-        {
-            if (DataContract.GetBuiltInDataContract(key.Name, key.Namespace) != null)
-                return false;
-            return Contracts.Remove(key);
-        }
 
         public IEnumerator<KeyValuePair<XmlQualifiedName, DataContract>> GetEnumerator()
         {
@@ -368,178 +338,5 @@ namespace System.Runtime.Serialization
             ProcessedContracts.Add(dataContract, info);
         }
 #endif
-
-        private Dictionary<XmlQualifiedName, object> GetReferencedTypes()
-        {
-            if (_referencedTypesDictionary == null)
-            {
-                _referencedTypesDictionary = new Dictionary<XmlQualifiedName, object>();
-                //Always include Nullable as referenced type
-                //Do not allow surrogating Nullable<T>
-                _referencedTypesDictionary.Add(DataContract.GetStableName(Globals.TypeOfNullable), Globals.TypeOfNullable);
-                if (_referencedTypes != null)
-                {
-                    foreach (Type type in _referencedTypes)
-                    {
-                        if (type == null)
-                            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.ReferencedTypesCannotContainNull)));
-
-                        AddReferencedType(_referencedTypesDictionary, type);
-                    }
-                }
-            }
-            return _referencedTypesDictionary;
-        }
-
-        private Dictionary<XmlQualifiedName, object> GetReferencedCollectionTypes()
-        {
-            if (_referencedCollectionTypesDictionary == null)
-            {
-                _referencedCollectionTypesDictionary = new Dictionary<XmlQualifiedName, object>();
-                if (_referencedCollectionTypes != null)
-                {
-                    foreach (Type type in _referencedCollectionTypes)
-                    {
-                        if (type == null)
-                            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.ReferencedCollectionTypesCannotContainNull)));
-                        AddReferencedType(_referencedCollectionTypesDictionary, type);
-                    }
-                }
-                XmlQualifiedName genericDictionaryName = DataContract.GetStableName(Globals.TypeOfDictionaryGeneric);
-                if (!_referencedCollectionTypesDictionary.ContainsKey(genericDictionaryName) && GetReferencedTypes().ContainsKey(genericDictionaryName))
-                    AddReferencedType(_referencedCollectionTypesDictionary, Globals.TypeOfDictionaryGeneric);
-            }
-            return _referencedCollectionTypesDictionary;
-        }
-
-        private void AddReferencedType(Dictionary<XmlQualifiedName, object> referencedTypes, Type type)
-        {
-            if (IsTypeReferenceable(type))
-            {
-                XmlQualifiedName stableName;
-                try
-                {
-                    stableName = this.GetStableName(type);
-                }
-                catch (InvalidDataContractException)
-                {
-                    // Type not referenceable if we can't get a stable name.
-                    return;
-                }
-                catch (InvalidOperationException)
-                {
-                    // Type not referenceable if we can't get a stable name.
-                    return;
-                }
-
-                object value;
-                if (referencedTypes.TryGetValue(stableName, out value))
-                {
-                    Type referencedType = value as Type;
-                    if (referencedType != null)
-                    {
-                        if (referencedType != type)
-                        {
-                            referencedTypes.Remove(stableName);
-                            List<Type> types = new List<Type>();
-                            types.Add(referencedType);
-                            types.Add(type);
-                            referencedTypes.Add(stableName, types);
-                        }
-                    }
-                    else
-                    {
-                        List<Type> types = (List<Type>)value;
-                        if (!types.Contains(type))
-                            types.Add(type);
-                    }
-                }
-                else
-                    referencedTypes.Add(stableName, type);
-            }
-        }
-        internal bool TryGetReferencedType(XmlQualifiedName stableName, DataContract dataContract, out Type type)
-        {
-            return TryGetReferencedType(stableName, dataContract, false/*useReferencedCollectionTypes*/, out type);
-        }
-
-        internal bool TryGetReferencedCollectionType(XmlQualifiedName stableName, DataContract dataContract, out Type type)
-        {
-            return TryGetReferencedType(stableName, dataContract, true/*useReferencedCollectionTypes*/, out type);
-        }
-
-        private bool TryGetReferencedType(XmlQualifiedName stableName, DataContract dataContract, bool useReferencedCollectionTypes, out Type type)
-        {
-            object value;
-            Dictionary<XmlQualifiedName, object> referencedTypes = useReferencedCollectionTypes ? GetReferencedCollectionTypes() : GetReferencedTypes();
-            if (referencedTypes.TryGetValue(stableName, out value))
-            {
-                type = value as Type;
-                if (type != null)
-                    return true;
-                else
-                {
-                    // Throw ambiguous type match exception
-                    List<Type> types = (List<Type>)value;
-                    StringBuilder errorMessage = new StringBuilder();
-                    bool containsGenericType = false;
-                    for (int i = 0; i < types.Count; i++)
-                    {
-                        Type conflictingType = types[i];
-                        if (!containsGenericType)
-                            containsGenericType = conflictingType.IsGenericTypeDefinition;
-                        errorMessage.AppendFormat("{0}\"{1}\" ", Environment.NewLine, conflictingType.AssemblyQualifiedName);
-                        if (dataContract != null)
-                        {
-                            DataContract other = this.GetDataContract(conflictingType);
-                            errorMessage.Append(SR.Format(((other != null && other.Equals(dataContract)) ? SR.ReferencedTypeMatchingMessage : SR.ReferencedTypeNotMatchingMessage)));
-                        }
-                    }
-                    if (containsGenericType)
-                    {
-                        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(
-                            (useReferencedCollectionTypes ? SR.AmbiguousReferencedCollectionTypes1 : SR.AmbiguousReferencedTypes1),
-                            errorMessage.ToString())));
-                    }
-                    else
-                    {
-                        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(
-                            (useReferencedCollectionTypes ? SR.AmbiguousReferencedCollectionTypes3 : SR.AmbiguousReferencedTypes3),
-                            XmlConvert.DecodeName(stableName.Name),
-                            stableName.Namespace,
-                            errorMessage.ToString())));
-                    }
-                }
-            }
-            type = null;
-            return false;
-        }
-
-        private static bool IsTypeReferenceable(Type type)
-        {
-            Type itemType;
-
-            try
-            {
-                return (type.IsSerializable ||
-                        type.IsDefined(Globals.TypeOfDataContractAttribute, false) ||
-                        (Globals.TypeOfIXmlSerializable.IsAssignableFrom(type) && !type.IsGenericTypeDefinition) ||
-                        CollectionDataContract.IsCollection(type, out itemType) ||
-                        ClassDataContract.IsNonAttributedTypeValidForSerialization(type));
-            }
-            catch (Exception ex)
-            {
-                // An exception can be thrown in the designer when a project has a runtime binding redirection for a referenced assembly or a reference dependent assembly.
-                // Type.IsDefined is known to throw System.IO.FileLoadException.
-                // ClassDataContract.IsNonAttributedTypeValidForSerialization is known to throw System.IO.FileNotFoundException.
-                // We guard against all non-critical exceptions.
-                if (DiagnosticUtility.IsFatal(ex))
-                {
-                    throw;
-                }
-            }
-
-            return false;
-        }
     }
 }
