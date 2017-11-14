@@ -393,5 +393,7 @@ namespace System.Net
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Context set, calling callback.");
             base.Complete(IntPtr.Zero);
         }
+
+        internal virtual EndPoint RemoteEndPoint => null;
     }
 }
