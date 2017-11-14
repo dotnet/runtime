@@ -60,6 +60,29 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
         }
 
         [Fact]
+        public void Muxer_activation_of_Build_Output_Portable_DLL_with_DepsJson_having_Assembly_with_Different_File_Extension_Fails()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+
+            // Change *.dll to *.exe
+            var appDll = fixture.TestProject.AppDll;
+            var appExe = appDll.Replace(".dll", ".exe");
+            File.Copy(appDll, appExe);
+            File.Delete(appDll);
+
+            dotnet.Exec("exec", appExe)
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Fail()
+                .And
+                .HaveStdErrContaining("has already been found but with a different file extension");
+        }
+
+        [Fact]
         public void Muxer_activation_of_Apps_with_AltDirectorySeparatorChar()
         {
             var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture

@@ -148,9 +148,13 @@ private:
 
     pal::string_t m_app_dir;
 
-    // Map of simple name -> full path of local/fx assemblies populated
-    // in priority order of their extensions.
+    // Map of simple name -> full path of local/fx assemblies
     typedef std::unordered_map<pal::string_t, pal::string_t> dir_assemblies_t;
+
+    void add_tpa_asset(
+        const pal::string_t& asset_name,
+        const pal::string_t& asset_path,
+        dir_assemblies_t* items);
 
     std::unordered_map<pal::string_t, pal::string_t> m_patch_roll_forward_cache;
     std::unordered_map<pal::string_t, pal::string_t> m_prerelease_roll_forward_cache;

@@ -26,32 +26,6 @@ const pal::string_t ManifestListMessage = _X(
 namespace
 {
 // -----------------------------------------------------------------------------
-// A uniqifying append helper that doesn't let two entries with the same
-// "asset_name" be part of the "output" paths.
-//
-void add_tpa_asset(
-    const pal::string_t& asset_name,
-    const pal::string_t& asset_path,
-    std::unordered_set<pal::string_t>* items,
-    pal::string_t* output)
-{
-    if (items->count(asset_name))
-    {
-        return;
-    }
-
-    trace::verbose(_X("Adding tpa entry: %s"), asset_path.c_str());
-
-    // Workaround for CoreFX not being able to resolve sym links.
-    pal::string_t real_asset_path = asset_path;
-    pal::realpath(&real_asset_path);
-    output->append(real_asset_path);
-
-    output->push_back(PATH_SEPARATOR);
-    items->insert(asset_name);
-}
-
-// -----------------------------------------------------------------------------
 // A uniqifying append helper that doesn't let two "paths" to be identical in
 // the "output" string.
 //
@@ -89,7 +63,41 @@ void add_unique_path(
     existing->insert(real);
 }
 
+// Return the filename from deps path; a deps path always uses a '/' for the separator.
+pal::string_t get_deps_filename(const pal::string_t& path)
+{
+    if (path.empty())
+    {
+        return path;
+    }
+
+    auto name_pos = path.find_last_of('/');
+    if (name_pos == pal::string_t::npos)
+    {
+        return path;
+    }
+
+    return path.substr(name_pos + 1);
+}
+
 } // end of anonymous namespace
+
+  // -----------------------------------------------------------------------------
+  // A uniqifying append helper that doesn't let two entries with the same
+  // "asset_name" be part of the "items" paths.
+  //
+void deps_resolver_t::add_tpa_asset(
+    const pal::string_t& asset_name,
+    const pal::string_t& asset_path,
+    dir_assemblies_t* items)
+{
+    std::unordered_map<pal::string_t, pal::string_t>::iterator existing = items->find(asset_name);
+    if (existing == items->end())
+    {
+        trace::verbose(_X("Adding tpa entry: %s"), asset_path.c_str());
+        items->emplace(asset_name, asset_path);
+    }
+}
 
 // -----------------------------------------------------------------------------
 // Load local assemblies by priority order of their file extensions and
@@ -355,14 +363,14 @@ bool report_missing_assembly_in_manifest(const deps_entry_t& entry, bool continu
 }
 
 /**
- *  Resovle the TPA assembly locations
+ *  Resolve the TPA assembly locations
  */
 bool deps_resolver_t::resolve_tpa_list(
         pal::string_t* output,
         std::unordered_set<pal::string_t>* breadcrumb)
 {
     const std::vector<deps_entry_t> empty(0);
-    std::unordered_set<pal::string_t> items;
+    dir_assemblies_t items;
 
     auto process_entry = [&](const pal::string_t& deps_dir, deps_json_t* deps, const deps_entry_t& entry) -> bool
     {
@@ -371,10 +379,7 @@ bool deps_resolver_t::resolve_tpa_list(
             breadcrumb->insert(entry.library_name + _X(",") + entry.library_version);
             breadcrumb->insert(entry.library_name);
         }
-        if (items.count(entry.asset_name))
-        {
-            return true;
-        }
+
         // Ignore placeholders
         if (ends_with(entry.relative_path, _X("/_._"), false))
         {
@@ -385,14 +390,36 @@ bool deps_resolver_t::resolve_tpa_list(
 
         trace::info(_X("Processing TPA for deps entry [%s, %s, %s]"), entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
 
-        if (probe_deps_entry(entry, deps_dir, &candidate))
+        pal::string_t asset_path;
+
+        dir_assemblies_t::iterator existing = items.find(entry.asset_name);
+        if (existing == items.end())
         {
-            add_tpa_asset(entry.asset_name, candidate, &items, output);
-            return true;
+            if (probe_deps_entry(entry, deps_dir, &asset_path))
+            {
+                add_tpa_asset(entry.asset_name, asset_path, &items);
+                return true;
+            }
+
+            return report_missing_assembly_in_manifest(entry);
         }
         else
         {
-            return report_missing_assembly_in_manifest(entry);
+            // Verify the extension is the same as the previous verfied entry
+            if (get_deps_filename(entry.relative_path) == get_filename(existing->second))
+            {
+                return true;
+            }
+
+            trace::error(_X(
+                "Error:\n"
+                "  An assembly specified in the application dependencies manifest (%s) has already been found but with a different file extension:\n"
+                "    package: '%s', version: '%s'\n"
+                "    path: '%s'\n"
+                "    previously found assembly: '%s'"),
+                entry.deps_file.c_str(), entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str(), existing->second.c_str());
+
+            return false;
         }
     };
 
@@ -400,8 +427,7 @@ bool deps_resolver_t::resolve_tpa_list(
     // TODO: Remove: the deps should contain the managed DLL.
     // Workaround for: csc.deps.json doesn't have the csc.dll
     pal::string_t managed_app_asset = get_filename_without_ext(m_managed_app);
-    add_tpa_asset(managed_app_asset, m_managed_app, &items, output);
-
+    add_tpa_asset(managed_app_asset, m_managed_app, &items);
     const auto& deps_entries = m_deps->get_entries(deps_entry_t::asset_types::runtime);
     for (const auto& entry : deps_entries)
     {
@@ -421,7 +447,7 @@ bool deps_resolver_t::resolve_tpa_list(
         get_dir_assemblies(m_app_dir, _X("local"), &local_assemblies);
         for (const auto& kv : local_assemblies)
         {
-            add_tpa_asset(kv.first, kv.second, &items, output);
+            add_tpa_asset(kv.first, kv.second, &items);
         }
     }
 
@@ -447,6 +473,16 @@ bool deps_resolver_t::resolve_tpa_list(
         {
             return false;
         }
+    }
+
+    // Convert the paths into a string and return it 
+    for (const auto& item : items)
+    {
+        // Workaround for CoreFX not being able to resolve sym links.
+        pal::string_t real_asset_path = item.second;
+        pal::realpath(&real_asset_path);
+        output->append(real_asset_path);
+        output->push_back(PATH_SEPARATOR);
     }
 
     return true;
