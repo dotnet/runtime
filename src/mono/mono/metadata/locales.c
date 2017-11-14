@@ -448,7 +448,8 @@ region_info_entry_from_lcid (int lcid)
 static gchar*
 get_darwin_locale (void)
 {
-	static gchar *darwin_locale = NULL;
+	static gchar *cached_locale = NULL;
+	gchar *darwin_locale = NULL;
 	CFLocaleRef locale = NULL;
 	CFStringRef locale_language = NULL;
 	CFStringRef locale_country = NULL;
@@ -459,8 +460,8 @@ get_darwin_locale (void)
 	CFIndex len;
 	int i;
 
-	if (darwin_locale != NULL)
-		return g_strdup (darwin_locale);
+	if (cached_locale != NULL)
+		return g_strdup (cached_locale);
 
 	locale = CFLocaleCopyCurrent ();
 
@@ -502,7 +503,7 @@ get_darwin_locale (void)
 				if (!CFStringGetCString (locale_cfstr, darwin_locale, len, kCFStringEncodingMacRoman)) {
 					g_free (darwin_locale);
 					CFRelease (locale);
-					darwin_locale = NULL;
+					cached_locale = NULL;
 					return NULL;
 				}
 
@@ -515,7 +516,8 @@ get_darwin_locale (void)
 		CFRelease (locale);
 	}
 
-	return g_strdup (darwin_locale);
+	mono_memory_barrier ();
+	return g_strdup (cached_locale = darwin_locale);
 }
 #endif
 
