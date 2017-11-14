@@ -2107,29 +2107,6 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
             assert(op1->TypeGet() == TYP_BYREF);
             assert(genActualType(op2->TypeGet()) == genActualType(baseType) || initFromFirstArgIndir);
 
-#if AVX_WITHOUT_AVX2
-            // NOTE: This #define, AVX_WITHOUT_AVX2, is never defined.  This code is kept here
-            // in case we decide to implement AVX support (32 byte vectors) with AVX only.
-            // On AVX (as opposed to AVX2), broadcast is supported only for float and double,
-            // and requires taking a mem address of the value.
-            // If not a constant, take the addr of op2.
-            if (simdIntrinsicID == SIMDIntrinsicInit && canUseAVX())
-            {
-                if (!op2->OperIsConst())
-                {
-                    // It is better to assign op2 to a temp and take the addr of temp
-                    // rather than taking address of op2 since the latter would make op2
-                    // address-taken and ineligible for register allocation.
-                    //
-                    // op2 = GT_COMMA(tmp=op2, GT_ADDR(tmp))
-                    unsigned   tmpNum = lvaGrabTemp(true DEBUGARG("Val addr for vector Init"));
-                    GenTreePtr asg    = gtNewTempAssign(tmpNum, op2);
-                    GenTreePtr tmp    = gtNewLclvNode(tmpNum, op2->TypeGet());
-                    tmp               = gtNewOperNode(GT_ADDR, TYP_BYREF, tmp);
-                    op2               = gtNewOperNode(GT_COMMA, TYP_BYREF, asg, tmp);
-                }
-            }
-#endif
             // For integral base types of size less than TYP_INT, expand the initializer
             // to fill size of TYP_INT bytes.
             if (varTypeIsSmallInt(baseType))
