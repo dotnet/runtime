@@ -154,7 +154,7 @@
     <value>Specified file length was too large for the file system.</value>
   </data>
   <data name="Argument_InvalidPathChars" xml:space="preserve">
-    <value>Illegal characters in path.</value>
+    <value>Illegal characters in path '{0}'.</value>
   </data>
   <data name="Argument_PathEmpty" xml:space="preserve">
     <value>Path cannot be the empty string or all whitespace.</value>
@@ -413,5 +413,8 @@
   </data>
   <data name="IO_InvalidReadLength" xml:space="preserve">
     <value>The read operation returned an invalid length.</value>
+  </data>
+  <data name="IO_PathTooLong_Path" xml:space="preserve">
+    <value>The path '{0}' is too long, or a component of the specified path is too long.</value>
   </data>
 </root>
