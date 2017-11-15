@@ -58,7 +58,9 @@ fire_process_exit_event (MonoDomain *domain, gpointer user_data)
 	ERROR_DECL (error);
 	MonoObject *exc = NULL;
 	MonoMethod *method = mono_class_get_method_from_name (mono_defaults.appdomain_class, "RunProcessExit", -1);
-	g_assert (method);
+	//No point in crashing during shutdown if the managed event is not available
+	if (!method)
+		return;
 
 	MonoDomain *current_domain = mono_domain_get ();
 	mono_thread_push_appdomain_ref (domain);

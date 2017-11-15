@@ -132,6 +132,7 @@ HANDLES(ICALL(APPDOM_13, "InternalSetDomainByID", ves_icall_System_AppDomain_Int
 HANDLES(ICALL(APPDOM_14, "InternalUnload", ves_icall_System_AppDomain_InternalUnload))
 HANDLES(ICALL(APPDOM_15, "LoadAssembly", ves_icall_System_AppDomain_LoadAssembly))
 HANDLES(ICALL(APPDOM_16, "LoadAssemblyRaw", ves_icall_System_AppDomain_LoadAssemblyRaw))
+HANDLES(ICALL(APPDOM_24, "NonFatalUnhandledException", ves_icall_System_AppDomain_NonFatalUnhandledException))
 HANDLES(ICALL(APPDOM_17, "SetData", ves_icall_System_AppDomain_SetData))
 HANDLES(ICALL(APPDOM_18, "createDomain", ves_icall_System_AppDomain_createDomain))
 HANDLES(ICALL(APPDOM_19, "getCurDomain", ves_icall_System_AppDomain_getCurDomain))

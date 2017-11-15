@@ -2345,7 +2345,15 @@ void
 ves_icall_System_AppDomain_DoUnhandledException (MonoExceptionHandle exc, MonoError *error)
 {
 	error_init (error);
-	mono_unhandled_exception_checked (MONO_HANDLE_CAST (MonoObject, exc), error);
+	mono_unhandled_exception_checked (MONO_HANDLE_CAST (MonoObject, exc), TRUE, error);
+	mono_error_assert_ok (error);
+}
+
+void
+ves_icall_System_AppDomain_NonFatalUnhandledException (MonoExceptionHandle exc, MonoError *error)
+{
+	error_init (error);
+	mono_unhandled_exception_checked (MONO_HANDLE_CAST (MonoObject, exc), FALSE, error);
 	mono_error_assert_ok (error);
 }
 

@@ -4653,7 +4653,7 @@ mono_unhandled_exception (MonoObject *exc_raw)
 	HANDLE_FUNCTION_ENTER ();
 	MONO_HANDLE_DCL (MonoObject, exc);
 	error_init (error);
-	mono_unhandled_exception_checked (exc, error);
+	mono_unhandled_exception_checked (exc, TRUE, error);
 	mono_error_assert_ok (error);
 	HANDLE_FUNCTION_RETURN ();
 }
@@ -4661,6 +4661,7 @@ mono_unhandled_exception (MonoObject *exc_raw)
 /**
  * mono_unhandled_exception:
  * @exc: exception thrown
+ * @fatal: if true abort execution
  *
  * This is a VM internal routine.
  *
@@ -4671,7 +4672,7 @@ mono_unhandled_exception (MonoObject *exc_raw)
  * a warning to the console 
  */
 void
-mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error)
+mono_unhandled_exception_checked (MonoObjectHandle exc, gboolean fatal, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -4717,8 +4718,8 @@ mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error)
 	}
 
 	/* set exitcode only if we will abort the process */
-	if ((main_thread && mono_thread_internal_current () == main_thread->internal_thread)
-		 || mono_runtime_unhandled_exception_policy_get () == MONO_UNHANDLED_POLICY_CURRENT)
+	if (fatal && ((main_thread && mono_thread_internal_current () == main_thread->internal_thread)
+		 || mono_runtime_unhandled_exception_policy_get () == MONO_UNHANDLED_POLICY_CURRENT))
 	{
 		mono_environment_exitcode_set (1);
 	}
