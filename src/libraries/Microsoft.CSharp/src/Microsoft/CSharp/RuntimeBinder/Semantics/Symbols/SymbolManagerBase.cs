@@ -174,19 +174,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return null;
         }
 
-        public Name GetNameFromPtrs(object u1, object u2)
-        {
-            // Note: this won't produce the same names as the native logic
-            if (u2 != null)
-            {
-                return NameManager.Add(string.Format(CultureInfo.InvariantCulture, "{0:X}-{1:X}", u1.GetHashCode(), u2.GetHashCode()));
-            }
-            else
-            {
-                return NameManager.Add(string.Format(CultureInfo.InvariantCulture, "{0:X}", u1.GetHashCode()));
-            }
-        }
-
         ////////////////////////////////////////////////////////////////////////////////
         // Allocate a type array; used to represent a parameter list.
         // We use a hash table to make sure that allocating the same type array twice 

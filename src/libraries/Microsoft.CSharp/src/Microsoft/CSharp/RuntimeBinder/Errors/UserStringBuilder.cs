@@ -503,14 +503,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     ErrorType err = (ErrorType)pType;
                     if (err.HasParent)
                     {
-                        Debug.Assert(err.nameText != null && err.typeArgs != null);
+                        Debug.Assert(err.nameText != null);
                         ErrAppendName(err.nameText);
-                        ErrAppendTypeParameters(err.typeArgs, pctx, true);
                     }
                     else
                     {
                         // Load the string "<error>".
-                        Debug.Assert(null == err.typeArgs);
                         ErrAppendId(MessageID.ERRORSYM);
                     }
                     break;
