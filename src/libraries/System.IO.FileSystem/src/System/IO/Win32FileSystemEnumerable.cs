@@ -223,7 +223,7 @@ namespace System.IO
             {
                 PathInternal.CheckInvalidPathChars(fullPath);
                 if (PathInternal.HasWildCardCharacters(fullPath))
-                    throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(fullPath));
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidPathChars, fullPath), nameof(fullPath));
 
                 _searchData = new PathPair(userPath, normalizedSearchPath);
                 CommonInit();
