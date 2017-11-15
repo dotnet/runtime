@@ -21,7 +21,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         ERR_ObjectRequired = 120,
         ERR_AmbigCall = 121,
         ERR_BadAccess = 122,
-        ERR_MethDelegateMismatch = 123,
         ERR_AssgLvalueExpected = 131,
         ERR_NoConstructors = 143,
         ERR_PropertyLacksGet = 154,
