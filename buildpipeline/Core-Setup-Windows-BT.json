@@ -533,7 +533,7 @@
     {
       "enabled": true,
       "continueOnError": true,
-      "alwaysRun": false,
+      "alwaysRun": true,
       "displayName": "Copy Files to: $(Build.StagingDirectory)\\BuildLogs",
       "timeoutInMinutes": 0,
       "refName": "CopyFiles1",
@@ -554,7 +554,7 @@
     {
       "enabled": true,
       "continueOnError": true,
-      "alwaysRun": false,
+      "alwaysRun": true,
       "displayName": "Publish Artifact: BuildLogs",
       "timeoutInMinutes": 0,
       "refName": "PublishBuildArtifacts2",
