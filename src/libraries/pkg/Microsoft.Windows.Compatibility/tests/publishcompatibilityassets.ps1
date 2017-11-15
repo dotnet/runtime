@@ -50,7 +50,7 @@ function _restoreAndPublish($targetFramework, $rid, $runtimeFramework, $refDirNa
 
 	Write-Output (-join("Published succedded for: ", $targetFramework))
 	
-	$refPath = -join($repoRoot, "\bin\ref\ApiPort\", $refDirName)
+	$refPath = -join($repoRoot, "\bin\ref\", $refDirName)
 
 	if (Test-Path $refPath)
 	{
