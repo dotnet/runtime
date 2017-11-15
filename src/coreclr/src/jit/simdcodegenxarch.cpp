@@ -692,15 +692,33 @@ void CodeGen::genSIMDScalarMove(
             break;
 
         case SMT_ZeroInitUpper:
-        {
-            // insertps is a 128-bit only instruction, and clears the upper 128 bits, which is what we want.
-            // The insertpsImm selects which fields are copied and zero'd of the lower 128 bits, so we choose
-            // to zero all but the lower bits.
-            unsigned int insertpsImm =
-                (INSERTPS_TARGET_SELECT(0) | INSERTPS_ZERO(1) | INSERTPS_ZERO(2) | INSERTPS_ZERO(3));
-            inst_RV_RV_IV(INS_insertps, EA_16BYTE, targetReg, srcReg, insertpsImm);
+            if (compiler->canUseVexEncoding())
+            {
+                // insertps is a 128-bit only instruction, and clears the upper 128 bits, which is what we want.
+                // The insertpsImm selects which fields are copied and zero'd of the lower 128 bits, so we choose
+                // to zero all but the lower bits.
+                unsigned int insertpsImm =
+                    (INSERTPS_TARGET_SELECT(0) | INSERTPS_ZERO(1) | INSERTPS_ZERO(2) | INSERTPS_ZERO(3));
+                inst_RV_RV_IV(INS_insertps, EA_16BYTE, targetReg, srcReg, insertpsImm);
+            }
+            else
+            {
+                if (srcReg == targetReg)
+                {
+                    // There is no guarantee that upper bits of op1Reg are zero.
+                    // We achieve this by using left logical shift 12-bytes and right logical shift 12 bytes.
+                    instruction ins = getOpForSIMDIntrinsic(SIMDIntrinsicShiftLeftInternal, TYP_SIMD16);
+                    getEmitter()->emitIns_R_I(ins, EA_16BYTE, srcReg, 12);
+                    ins = getOpForSIMDIntrinsic(SIMDIntrinsicShiftRightInternal, TYP_SIMD16);
+                    getEmitter()->emitIns_R_I(ins, EA_16BYTE, srcReg, 12);
+                }
+                else
+                {
+                    genSIMDZero(targetType, TYP_FLOAT, targetReg);
+                    inst_RV_RV(ins_Store(baseType), targetReg, srcReg);
+                }
+            }
             break;
-        }
 
         case SMT_ZeroInitUpper_SrcHasUpperZeros:
             if (srcReg != targetReg)
