@@ -2067,6 +2067,7 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 	const gunichar2 *lpDirectory;
 	gunichar2 *args;
 	gboolean ret;
+	gboolean handler_needswait = FALSE;
 
 	if (!proc_start_info->filename) {
 		/* w2k returns TRUE for this, for some reason. */
@@ -2107,6 +2108,7 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 
 #ifdef HOST_DARWIN
 		handler = g_strdup ("/usr/bin/open");
+		handler_needswait = TRUE;
 #else
 		/*
 		 * On Linux, try: xdg-open, the FreeDesktop standard way of doing it,
@@ -2155,6 +2157,18 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 			ret = FALSE;
 			goto done;
 		}
+
+		if (handler_needswait) {
+			gint32 exitcode;
+			MonoW32HandleWaitRet waitret;
+			waitret = process_wait (process_info->process_handle, MONO_INFINITE_WAIT, NULL);
+			ves_icall_Microsoft_Win32_NativeMethods_GetExitCodeProcess (process_info->process_handle, &exitcode);
+			if (exitcode != 0) {
+				ret = FALSE;
+				goto cleanup;
+			}
+		}
+cleanup:
 		/* Shell exec should not return a process handle when it spawned a GUI thing, like a browser. */
 		mono_w32handle_close (process_info->process_handle);
 		process_info->process_handle = NULL;
