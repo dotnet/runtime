@@ -588,7 +588,9 @@ namespace System.Net.Sockets.Tests
                 args.RemoteEndPoint = new IPEndPoint(connectTo, port);
                 args.UserToken = waitHandle;
 
-                socket.ConnectAsync(args);
+                bool pending = socket.ConnectAsync(args);
+                if (!pending)
+                    waitHandle.Set();
 
                 Assert.True(waitHandle.WaitOne(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
                 if (args.SocketError != SocketError.Success)
@@ -627,7 +629,9 @@ namespace System.Net.Sockets.Tests
                 args.RemoteEndPoint = new DnsEndPoint("localhost", port);
                 args.UserToken = waitHandle;
 
-                socket.ConnectAsync(args);
+                bool pending = socket.ConnectAsync(args);
+                if (!pending)
+                    waitHandle.Set();
 
                 Assert.True(waitHandle.WaitOne(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
                 if (args.SocketError != SocketError.Success)
@@ -651,7 +655,9 @@ namespace System.Net.Sockets.Tests
                 args.RemoteEndPoint = new DnsEndPoint("localhost", port);
                 args.UserToken = waitHandle;
 
-                Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args);
+                bool pending = Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args);
+                if (!pending)
+                    waitHandle.Set();
 
                 Assert.True(waitHandle.WaitOne(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
                 if (args.SocketError != SocketError.Success)
