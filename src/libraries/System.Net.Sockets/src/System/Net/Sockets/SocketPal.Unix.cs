@@ -838,12 +838,12 @@ namespace System.Net.Sockets
             return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
-        public static unsafe SocketError Bind(SafeCloseSocket handle, byte[] buffer, int nameLen)
+        public static unsafe SocketError Bind(SafeCloseSocket handle, ProtocolType socketProtocolType, byte[] buffer, int nameLen)
         {
             Interop.Error err;
             fixed (byte* rawBuffer = buffer)
             {
-                err = Interop.Sys.Bind(handle, rawBuffer, nameLen);
+                err = Interop.Sys.Bind(handle, socketProtocolType, rawBuffer, nameLen);
             }
 
             return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
