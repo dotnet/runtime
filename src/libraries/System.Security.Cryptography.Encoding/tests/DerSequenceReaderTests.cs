@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Numerics;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Encoding.Tests
@@ -81,6 +82,129 @@ namespace System.Security.Cryptography.Encoding.Tests
 
             // And... done.
             Assert.False(reader.HasData);
+        }
+
+        [Theory]
+        [InlineData("Universal 31", "1F1F" + "0C" + "50323031375930324D313844")]
+        [InlineData("Universal 32", "1F20" + "0A" + "5030304830304D303053")]
+        [InlineData("Universal 127", "1F7F" + "01" + "00")]
+        [InlineData("Universal 128", "1F8100" + "01" + "00")]
+        [InlineData("Application 31", "5F1F" + "01" + "00")]
+        [InlineData("Application 32", "5F20" + "01" + "00")]
+        [InlineData("Application 127", "5F7F" + "01" + "00")]
+        [InlineData("Application 128", "5F8100" + "01" + "00")]
+        [InlineData("Context 31", "9F1F" + "01" + "00")]
+        [InlineData("Context 32", "9F20" + "01" + "00")]
+        [InlineData("Context 127", "9F7F" + "01" + "00")]
+        [InlineData("Context 128", "9F8100" + "01" + "00")]
+        [InlineData("Private 31", "DF1F" + "01" + "00")]
+        [InlineData("Private 32", "DF20" + "01" + "00")]
+        [InlineData("Private 127", "DF7F" + "01" + "00")]
+        [InlineData("Private 128", "DF8100" + "01" + "00")]
+        public static void NoSupportForMultiByteTags(string caseName, string hexInput)
+        {
+            byte[] bytes = hexInput.HexToByteArray();
+            DerSequenceReader reader = DerSequenceReader.CreateForPayload(bytes);
+
+            Assert.Throws<CryptographicException>(() => reader.PeekTag());
+            Assert.Throws<CryptographicException>(() => reader.SkipValue());
+            Assert.Throws<CryptographicException>(() => reader.ReadNextEncodedValue());
+        }
+
+        [Theory]
+        [InlineData("0401")]
+        [InlineData("0485")]
+        [InlineData("048500000000")]
+        [InlineData("04850000000000")]
+        [InlineData("048480000000")]
+        [InlineData("0484FFFFFFFF")]
+        [InlineData("0484FFFFFFFA")]
+        [InlineData("0485FF00000000")]
+        public static void InvalidLengthSpecified(string hexInput)
+        {
+            byte[] bytes = hexInput.HexToByteArray();
+            DerSequenceReader reader = DerSequenceReader.CreateForPayload(bytes);
+
+            // Doesn't throw.
+            reader.PeekTag();
+
+            // Since EatTag will have succeeded the reader needs to be reconstructed after each test.
+            Assert.Throws<CryptographicException>(() => reader.SkipValue());
+            reader = DerSequenceReader.CreateForPayload(bytes);
+
+            Assert.Throws<CryptographicException>(() => reader.ReadOctetString());
+            reader = DerSequenceReader.CreateForPayload(bytes);
+
+            Assert.Throws<CryptographicException>(() => reader.ReadNextEncodedValue());
+        }
+
+        [Fact]
+        public static void InteriorLengthTooLong()
+        {
+            byte[] bytes =
+            {
+                // CONSTRUCTED SEQUENCE (8 bytes)
+                0x30, 0x08,
+
+                // CONSTRUCTED SEQUENCE (2 bytes)
+                0x30, 0x02,
+
+                // OCTET STRING (0 bytes)
+                0x04, 0x00,
+
+                // OCTET STRING (after the inner sequence, 3 bytes, but that exceeds the sequence bounds)
+                0x04, 0x03, 0x01, 0x02, 0x03
+            };
+
+            DerSequenceReader reader = new DerSequenceReader(bytes);
+            DerSequenceReader nested = reader.ReadSequence();
+            Assert.Equal(0, nested.ReadOctetString().Length);
+            Assert.False(nested.HasData);
+            Assert.Throws<CryptographicException>(() => reader.ReadOctetString());
+        }
+
+        [Fact]
+        public static void InteriorLengthTooLong_Nested()
+        {
+            byte[] bytes =
+            {
+                // CONSTRUCTED SEQUENCE (9 bytes)
+                0x30, 0x09,
+
+                // CONSTRUCTED SEQUENCE (2 bytes)
+                0x30, 0x02,
+
+                // OCTET STRING (1 byte, but 0 remain for the inner sequence)
+                0x04, 0x01,
+
+                // OCTET STRING (in the outer sequence, after the inner sequence, 3 bytes)
+                0x04, 0x03, 0x01, 0x02, 0x03
+            };
+
+            DerSequenceReader reader = new DerSequenceReader(bytes);
+            DerSequenceReader nested = reader.ReadSequence();
+            Assert.Throws<CryptographicException>(() => nested.ReadOctetString());
+        }
+
+        [Fact]
+        public static void LengthTooLong_ForBounds()
+        {
+            byte[] bytes =
+            {
+                // CONSTRUCTED SEQUENCE (9 bytes)
+                0x30, 0x09,
+
+                // CONSTRUCTED SEQUENCE (2 bytes)
+                0x30, 0x02,
+
+                // OCTET STRING (0 bytes)
+                0x04, 0x00,
+
+                // OCTET STRING (after the inner sequence, 3 bytes)
+                0x04, 0x03, 0x01, 0x02, 0x03
+            };
+
+            Assert.Throws<CryptographicException>(() => new DerSequenceReader(bytes, 0, bytes.Length - 1));
         }
     }
 }
