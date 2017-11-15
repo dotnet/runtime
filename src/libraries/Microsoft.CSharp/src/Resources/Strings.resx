@@ -61,17 +61,8 @@
   <data name="InternalCompilerError" xml:space="preserve">
     <value>An unexpected exception occurred while binding a dynamic operation</value>
   </data>
-  <data name="BindRequireArguments" xml:space="preserve">
-    <value>Cannot bind call with no calling object</value>
-  </data>
   <data name="BindCallFailedOverloadResolution" xml:space="preserve">
     <value>Overload resolution failed</value>
-  </data>
-  <data name="BindBinaryOperatorRequireTwoArguments" xml:space="preserve">
-    <value>Binary operators must be invoked with two arguments</value>
-  </data>
-  <data name="BindUnaryOperatorRequireOneArgument" xml:space="preserve">
-    <value>Unary operators must be invoked with one argument</value>
   </data>
   <data name="BindPropertyFailedMethodGroup" xml:space="preserve">
     <value>The name '{0}' is bound to a method and cannot be used like a property</value>
@@ -81,9 +72,6 @@
   </data>
   <data name="BindInvokeFailedNonDelegate" xml:space="preserve">
     <value>Cannot invoke a non-delegate type</value>
-  </data>
-  <data name="BindBinaryAssignmentRequireTwoArguments" xml:space="preserve">
-    <value>Binary operators cannot be invoked with one argument</value>
   </data>
   <data name="BindBinaryAssignmentFailedNullReference" xml:space="preserve">
     <value>Cannot perform member assignment on a null reference</value>

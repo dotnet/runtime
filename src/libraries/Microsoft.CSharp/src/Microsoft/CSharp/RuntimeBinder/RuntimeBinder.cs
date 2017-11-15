@@ -99,12 +99,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             // than 1/1000 sec for the whole 4000 of them.
 
             ICSharpBinder binder = payload as ICSharpBinder;
-            if (binder == null)
-            {
-                Debug.Assert(false, "Unknown payload kind");
-                throw Error.InternalCompilerError();
-            }
-
+            Debug.Assert(binder != null);
 
             lock (_bindLock)
             {
@@ -146,10 +141,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             DynamicMetaObject[] args,
             out DynamicMetaObject deferredBinding)
         {
-            if (args.Length < 1)
-            {
-                throw Error.BindRequireArguments();
-            }
+            Debug.Assert(args.Length >= 1);
 
             InitializeCallingContext(payload);
             ArgumentObject[] arguments = CreateArgumentArray(payload, parameters, args);
@@ -1157,10 +1149,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             ArgumentObject[] arguments,
             LocalVariableSymbol[] locals)
         {
-            if (arguments.Length != 1)
-            {
-                throw Error.BindUnaryOperatorRequireOneArgument();
-            }
+            Debug.Assert(arguments.Length == 1);
 
             OperatorKind op = GetOperatorKind(payload.Operation);
             Expr arg1 = CreateArgumentEXPR(arguments[0], locals[0]);
@@ -1204,10 +1193,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 ArgumentObject[] arguments,
                 LocalVariableSymbol[] locals)
         {
-            if (arguments.Length != 2)
-            {
-                throw Error.BindBinaryOperatorRequireTwoArguments();
-            }
+            Debug.Assert(arguments.Length == 2);
 
             ExpressionKind ek = Operators.GetExpressionKind(GetOperatorKind(payload.Operation, payload.IsLogicalOperation));
             Expr arg1 = CreateArgumentEXPR(arguments[0], locals[0]);
@@ -1469,10 +1455,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             ArgumentObject[] arguments,
             LocalVariableSymbol[] locals)
         {
-            if (arguments.Length < 2)
-            {
-                throw Error.BindBinaryAssignmentRequireTwoArguments();
-            }
+            Debug.Assert(arguments.Length >= 2);
 
             string name = payload.Name;
 
