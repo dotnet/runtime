@@ -3655,10 +3655,6 @@ private:
     // The default context for this domain
     Context *m_pDefaultContext;
 
-    SString         m_applicationBase;
-    SString         m_privateBinPaths;
-    SString         m_configFile;
-
     ArrayList        m_failedAssemblies;
 
     DomainAssembly * m_anonymouslyHostedDynamicMethodsAssembly;
