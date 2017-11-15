@@ -182,9 +182,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 case ErrorCode.ERR_AssgReadonlyStatic2:
                     codeStr = SR.AssgReadonlyStatic2;
                     break;
-                case ErrorCode.ERR_AssgReadonlyLocalCause:
-                    codeStr = SR.AssgReadonlyLocalCause;
-                    break;
                 case ErrorCode.ERR_BadCtorArgCount:
                     codeStr = SR.BadCtorArgCount;
                     break;
