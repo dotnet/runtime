@@ -916,7 +916,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             ArgInfos pOriginalArgInfo = new ArgInfos {carg = carg};
             FillInArgInfoFromArgList(pOriginalArgInfo, args);
 
-            GroupToArgsBinder binder = new GroupToArgsBinder(this, bindFlags, grp, pargInfo, pOriginalArgInfo, bHasNamedArgumentSpecifiers, null/*atsDelegate*/);
+            GroupToArgsBinder binder = new GroupToArgsBinder(this, bindFlags, grp, pargInfo, pOriginalArgInfo, bHasNamedArgumentSpecifiers);
             bool retval = binder.Bind(bReportErrors: true);
 
             pResults = binder.GetResultsOfBind();

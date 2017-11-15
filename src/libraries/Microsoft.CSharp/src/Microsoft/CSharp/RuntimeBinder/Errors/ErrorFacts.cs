@@ -59,9 +59,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 case ErrorCode.ERR_BadAccess:
                     codeStr = SR.BadAccess;
                     break;
-                case ErrorCode.ERR_MethDelegateMismatch:
-                    codeStr = SR.MethDelegateMismatch;
-                    break;
                 case ErrorCode.ERR_AssgLvalueExpected:
                     codeStr = SR.AssgLvalueExpected;
                     break;

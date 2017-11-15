@@ -33,7 +33,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private readonly ArgInfos _pArguments;
             private readonly ArgInfos _pOriginalArguments;
             private readonly bool _bHasNamedArguments;
-            private readonly AggregateType _pDelegate;
             private AggregateType _pCurrentType;
             private MethodOrPropertySymbol _pCurrentSym;
             private TypeArray _pCurrentTypeArgs;
@@ -57,7 +56,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private readonly List<CType> _HiddenTypes;
             private bool _bArgumentsChangedForNamedOrOptionalArguments;
 
-            public GroupToArgsBinder(ExpressionBinder exprBinder, BindingFlag bindFlags, ExprMemberGroup grp, ArgInfos args, ArgInfos originalArgs, bool bHasNamedArguments, AggregateType atsDelegate)
+            public GroupToArgsBinder(ExpressionBinder exprBinder, BindingFlag bindFlags, ExprMemberGroup grp, ArgInfos args, ArgInfos originalArgs, bool bHasNamedArguments)
             {
                 Debug.Assert(grp != null);
                 Debug.Assert(exprBinder != null);
@@ -70,7 +69,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 _pArguments = args;
                 _pOriginalArguments = originalArgs;
                 _bHasNamedArguments = bHasNamedArguments;
-                _pDelegate = atsDelegate;
                 _pCurrentType = null;
                 _pCurrentSym = null;
                 _pCurrentTypeArgs = null;
@@ -95,7 +93,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert(_pGroup.SymKind == SYMKIND.SK_MethodSymbol || _pGroup.SymKind == SYMKIND.SK_PropertySymbol && 0 != (_pGroup.Flags & EXPRFLAG.EXF_INDEXER));
 
                 // We need the Exprs for error reporting for non-delegates
-                Debug.Assert(_pDelegate != null || _pArguments.fHasExprs);
+                Debug.Assert(_pArguments.fHasExprs);
 
                 LookForCandidates();
                 if (!GetResultOfBind(bReportErrors))
@@ -1193,7 +1191,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
 
-            private Exception ReportErrorsOnFailure()
+            private RuntimeBinderException ReportErrorsOnFailure()
             {
                 // First and foremost, report if the user specified a name more than once.
                 if (_pDuplicateSpecifiedName != null)
@@ -1234,7 +1232,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 if (_results.GetBestResult())
                 {
                     // If we had some invalid arguments for best matching.
-                    return ReportErrorsForBestMatching(bUseDelegateErrors, nameErr);
+                    return ReportErrorsForBestMatching(bUseDelegateErrors);
                 }
 
                 if (_results.GetUninferableResult() || _mpwiCantInferInstArg)
@@ -1281,11 +1279,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return GetErrorContext().Error(ErrorCode.ERR_NamedArgumentUsedInPositional, _pNameUsedInPositionalArgument);
                 }
 
-                if (_pDelegate != null)
-                {
-                    return GetErrorContext().Error(ErrorCode.ERR_MethDelegateMismatch, nameErr, _pDelegate);
-                }
-
                 // The number of arguments must be wrong.
 
                 if (_fCandidatesUnsupported)
@@ -1308,15 +1301,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return GetErrorContext().Error(ErrorCode.ERR_BadArgCount, nameErr, _pArguments.carg);
             }
 
-            private RuntimeBinderException ReportErrorsForBestMatching(bool bUseDelegateErrors, Name nameErr)
+            private RuntimeBinderException ReportErrorsForBestMatching(bool bUseDelegateErrors)
             {
-                // Best matching overloaded method 'name' had some invalid arguments.
-                if (_pDelegate != null)
-                {
-                    return GetErrorContext().Error(
-                        ErrorCode.ERR_MethDelegateMismatch, nameErr, _pDelegate, _results.GetBestResult());
-                }
-
                 if (bUseDelegateErrors)
                 {
                     // Point to the Delegate, not the Invoke method
