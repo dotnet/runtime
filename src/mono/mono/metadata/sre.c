@@ -1216,11 +1216,16 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObjectHandle obj,
 		/*g_print ("got token 0x%08x for %s\n", token, f->field->name);*/
 	} else if (strcmp (klass->name, "MonoArrayMethod") == 0) {
 		MonoReflectionArrayMethodHandle m = MONO_HANDLE_CAST (MonoReflectionArrayMethod, obj);
-		/* always returns a fresh token */
+		/* mono_image_get_array_token caches tokens by signature */
 		guint32 array_token = mono_image_get_array_token (assembly, m, error);
 		goto_if_nok (error, leave);
 		token = array_token;
-		how_collide = MONO_DYN_IMAGE_TOK_NEW;
+		/* ModuleBuilder:GetArrayMethod() always returns a fresh
+		 * MonoArrayMethod instance even given the same method name and
+		 * signature.  But they're all interchangeable, so it's okay to
+		 * replace.
+		 */
+		how_collide = MONO_DYN_IMAGE_TOK_REPLACE;
 	} else if (strcmp (klass->name, "SignatureHelper") == 0) {
 		MonoReflectionSigHelperHandle s = MONO_HANDLE_CAST (MonoReflectionSigHelper, obj);
 		/* always returns a fresh token */
