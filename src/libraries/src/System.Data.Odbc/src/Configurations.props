@@ -5,7 +5,7 @@
       netcoreapp2.0-Linux;
       netcoreapp2.0-OSX;
       netcoreapp2.0-Windows_NT;
-      netfx;
+      netfx-Windows_NT;
       netstandard;
     </BuildConfigurations>
   </PropertyGroup>

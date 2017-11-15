@@ -4,13 +4,14 @@
 
 internal static partial class Interop
 {
-    private static partial class Libraries
+    internal static partial class Libraries
     {
         internal const string CoreFoundationLibrary = "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation";
         internal const string CoreServicesLibrary   = "/System/Library/Frameworks/CoreServices.framework/CoreServices";
         internal const string libproc = "libproc";
         internal const string LibSystemCommonCrypto = "/usr/lib/system/libcommonCrypto";
         internal const string LibSystemKernel = "/usr/lib/system/libsystem_kernel";
+        internal const string Odbc32 = "libodbc.2.dylib";
         internal const string SystemConfigurationLibrary = "/System/Library/Frameworks/SystemConfiguration.framework/SystemConfiguration";
         internal const string AppleCryptoNative = "System.Security.Cryptography.Native.Apple";
     }
