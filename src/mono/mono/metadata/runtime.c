@@ -60,17 +60,28 @@ fire_process_exit_event (MonoDomain *domain, gpointer user_data)
 	MonoMethod *method = mono_class_get_method_from_name (mono_defaults.appdomain_class, "RunProcessExit", -1);
 	g_assert (method);
 
-	MonoObject *res_obj = mono_runtime_try_invoke (method, domain->domain, NULL, &exc, error);
-	if (!is_ok (error)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_EXEC, "Failed to fire process exit on domain %s due to %s", domain->friendly_name, mono_error_get_message (&error));
-		mono_error_cleanup (error);
-	} else if (exc) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_EXEC, "Failed to fire process exit on domain %s threw exception: %s", domain->friendly_name, exc->vtable->klass->name);
-	} else {
-		gboolean res = *(int*)mono_object_unbox (res_obj);
-		if (!res)
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_EXEC, "Fire process exit on domain %s timedout", domain->friendly_name);
+	MonoDomain *current_domain = mono_domain_get ();
+	mono_thread_push_appdomain_ref (domain);
+	if (mono_domain_set (domain, FALSE)) {
+		MonoObject *res_obj = mono_runtime_try_invoke (method, domain->domain, NULL, &exc, error);
+		if (!is_ok (error)) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_EXEC, "Failed to fire process exit on domain %s due to %s", domain->friendly_name, mono_error_get_message (error));
+			mono_error_cleanup (error);
+		} else if (exc) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_EXEC, "Failed to fire process exit on domain %s threw exception: %s", domain->friendly_name, exc->vtable->klass->name);
+		} else {
+			gboolean res = *(int*)mono_object_unbox (res_obj);
+			if (!res)
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_EXEC, "Fire process exit on domain %s timedout", domain->friendly_name);
+		}
+
+		mono_domain_set (current_domain, TRUE);
 	}
+	mono_thread_pop_appdomain_ref ();
+
+
+
+
 }
 
 static void
