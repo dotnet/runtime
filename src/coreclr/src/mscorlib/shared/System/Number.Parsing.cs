@@ -381,7 +381,7 @@ namespace System
             return i;
         }
 
-        private unsafe static bool ParseNumber(ref char* str, NumberStyles options, ref NumberBuffer number, ref ValueStringBuilder sb, NumberFormatInfo numfmt, bool parseDecimal)
+        private unsafe static bool ParseNumber(ref char* str, NumberStyles options, ref NumberBuffer number, NumberFormatInfo numfmt, bool parseDecimal)
         {
             const int StateSign = 0x0001;
             const int StateParens = 0x0002;
@@ -414,9 +414,6 @@ namespace System
             }
 
             int state = 0;
-            bool bigNumber = !sb.IsDefault; // When a ValueStringBuilder is provided then we use it in place of the number.digits char[50]
-            int maxParseDigits = bigNumber ? int.MaxValue : NumberMaxDigits;
-
             char* p = str;
             char ch = *p;
             char* next;
@@ -460,14 +457,11 @@ namespace System
                 {
                     state |= StateDigits;
 
-                    if (ch != '0' || (state & StateNonZero) != 0 || (bigNumber && ((options & NumberStyles.AllowHexSpecifier) != 0)))
+                    if (ch != '0' || (state & StateNonZero) != 0)
                     {
-                        if (digCount < maxParseDigits)
+                        if (digCount < NumberMaxDigits)
                         {
-                            if (bigNumber)
-                                sb.Append(ch);
-                            else
-                                number.digits[digCount++] = ch;
+                            number.digits[digCount++] = ch;
                             if (ch != '0' || parseDecimal)
                             {
                                 digEnd = digCount;
@@ -502,10 +496,7 @@ namespace System
 
             bool negExp = false;
             number.precision = digEnd;
-            if (bigNumber)
-                sb.Append('\0');
-            else
-                number.digits[digEnd] = '\0';
+            number.digits[digEnd] = '\0';
             if ((state & StateDigits) != 0)
             {
                 if ((ch == 'E' || ch == 'e') && ((options & NumberStyles.AllowExponent) != 0))
@@ -853,8 +844,7 @@ namespace System
             fixed (char* stringPointer = &str.DangerousGetPinnableReference())
             {
                 char* p = stringPointer;
-                ValueStringBuilder defaultBuilder = default;
-                if (!ParseNumber(ref p, options, ref number, ref defaultBuilder, info, parseDecimal)
+                if (!ParseNumber(ref p, options, ref number, info, parseDecimal)
                     || (p - stringPointer < str.Length && !TrailingZeros(str, (int)(p - stringPointer))))
                 {
                     throw new FormatException(SR.Format_InvalidString);
@@ -868,8 +858,7 @@ namespace System
             fixed (char* stringPointer = &str.DangerousGetPinnableReference())
             {
                 char* p = stringPointer;
-                ValueStringBuilder defaultBuilder = default;
-                if (!ParseNumber(ref p, options, ref number, ref defaultBuilder, numfmt, parseDecimal)
+                if (!ParseNumber(ref p, options, ref number, numfmt, parseDecimal)
                     || (p - stringPointer < str.Length && !TrailingZeros(str, (int)(p - stringPointer))))
                 {
                     return false;
