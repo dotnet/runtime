@@ -384,7 +384,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        internal static CallInfo CreateCallInfo(IEnumerable<CSharpArgumentInfo> argInfos, int discard)
+        internal static CallInfo CreateCallInfo(ref IEnumerable<CSharpArgumentInfo> argInfos, int discard)
         {
             // This function converts the C# Binder's notion of argument information to the
             // DLR's notion. The DLR counts arguments differently than C#. Here are some
@@ -402,8 +402,9 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             int argCount = 0;
             List<string> argNames = new List<string>();
-
-            foreach (CSharpArgumentInfo info in argInfos)
+            CSharpArgumentInfo[] infoArray = ToArray(argInfos);
+            argInfos = infoArray; // Write back the array to allow single enumeration.
+            foreach (CSharpArgumentInfo info in infoArray)
             {
                 if (info.NamedArgument)
                 {
