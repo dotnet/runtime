@@ -1061,6 +1061,7 @@ static void main_thread_handler (gpointer user_data)
 
 	if (mono_compile_aot) {
 		int i, res;
+		gpointer *aot_state = NULL;
 
 		/* Treat the other arguments as assemblies to compile too */
 		for (i = 0; i < main_args->argc; ++i) {
@@ -1080,9 +1081,16 @@ static void main_thread_handler (gpointer user_data)
 					exit (1);
 				}
 			}
-			res = mono_compile_assembly (assembly, main_args->opts, main_args->aot_options);
+			res = mono_compile_assembly (assembly, main_args->opts, main_args->aot_options, &aot_state);
 			if (res != 0) {
 				fprintf (stderr, "AOT of image %s failed.\n", main_args->argv [i]);
+				exit (1);
+			}
+		}
+		if (aot_state) {
+			res = mono_compile_deferred_assemblies (main_args->opts, main_args->aot_options, &aot_state);
+			if (res != 0) {
+				fprintf (stderr, "AOT of mode-specific deferred assemblies failed.\n");
 				exit (1);
 			}
 		}
