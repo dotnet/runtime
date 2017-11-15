@@ -264,11 +264,48 @@ public:
         }
         else
         {
-            Node* pNewNode = new (m_alloc) Node(k, v, m_table[index]);
+            Node* pNewNode = new (m_alloc) Node(m_table[index], k, v);
             m_table[index] = pNewNode;
             m_tableCount++;
             return false;
         }
+    }
+
+    //------------------------------------------------------------------------
+    // Emplace: Associates the specified key with a value constructed in-place
+    // using the supplied args if the key is not already present.
+    //
+    // Arguments:
+    //    k - the key
+    //    args - the args used to construct the value
+    //
+    // Return Value:
+    //    A pointer to the existing or newly constructed value.
+    //
+    template <class... Args>
+    Value* Emplace(Key k, Args&&... args)
+    {
+        CheckGrowth();
+
+        assert(m_tableSizeInfo.prime != 0);
+
+        unsigned index = GetIndexForKey(k);
+
+        Node* n = m_table[index];
+        while ((n != nullptr) && !KeyFuncs::Equals(k, n->m_key))
+        {
+            n = n->m_next;
+        }
+
+        if (n == nullptr)
+        {
+            n = new (m_alloc) Node(m_table[index], k, jitstd::forward<Args>(args)...);
+
+            m_table[index] = n;
+            m_tableCount++;
+        }
+
+        return &n->m_val;
     }
 
     //------------------------------------------------------------------------
@@ -592,7 +629,7 @@ public:
         // Assumptions:
         //    This must not be the "end" iterator.
         //
-        const Value& GetValue() const
+        Value& GetValue() const
         {
             assert(m_node != nullptr);
 
@@ -721,7 +758,8 @@ private:
         Key   m_key;
         Value m_val;
 
-        Node(Key k, Value v, Node* next) : m_next(next), m_key(k), m_val(v)
+        template <class... Args>
+        Node(Node* next, Key k, Args&&... args) : m_next(next), m_key(k), m_val(jitstd::forward<Args>(args)...)
         {
         }
 
