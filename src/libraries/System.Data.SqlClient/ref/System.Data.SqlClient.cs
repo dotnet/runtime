@@ -32,6 +32,10 @@
 
 namespace Microsoft.SqlServer.Server
 {
+    public sealed partial class InvalidUdtException : System.SystemException
+    {
+        internal InvalidUdtException() { }
+    }
     public partial class SqlDataRecord : System.Data.IDataRecord
     {
         public SqlDataRecord(params Microsoft.SqlServer.Server.SqlMetaData[] metaData) { }
@@ -118,6 +122,28 @@ namespace Microsoft.SqlServer.Server
         public virtual void SetValue(int ordinal, object value) { }
         public virtual int SetValues(params object[] values) { throw null; }
     }
+    public enum DataAccessKind
+    {
+        None = 0,
+        Read = 1
+    }
+    public enum SystemDataAccessKind
+    {
+        None = 0,
+        Read = 1
+    }
+    [System.AttributeUsage(System.AttributeTargets.Method, AllowMultiple = false, Inherited = false), System.SerializableAttribute]
+    public partial class SqlFunctionAttribute : System.Attribute
+    {
+        public SqlFunctionAttribute() { }
+        public bool IsDeterministic { get { throw null; } set { } }
+        public DataAccessKind DataAccess { get { throw null; } set { } }
+        public SystemDataAccessKind SystemDataAccess { get { throw null; } set { } }
+        public bool IsPrecise { get { throw null; } set { } }
+        public string Name { get { throw null; } set { } }
+        public string TableDefinition { get { throw null; } set { } }
+        public string FillRowMethodName { get { throw null; } set { } }
+    }
     public sealed partial class SqlMetaData
     {
         public SqlMetaData(string name, System.Data.SqlDbType dbType) { }
@@ -182,6 +208,49 @@ namespace Microsoft.SqlServer.Server
         public string Adjust(string value) { throw null; }
         public System.TimeSpan Adjust(System.TimeSpan value) { throw null; }
         public static Microsoft.SqlServer.Server.SqlMetaData InferFromValue(object value, string name) { throw null; }
+    }
+    [System.AttributeUsage(System.AttributeTargets.Method, AllowMultiple = false, Inherited = false), System.SerializableAttribute]
+    public sealed partial class SqlMethodAttribute : SqlFunctionAttribute
+    {
+        public SqlMethodAttribute() { }
+        public bool OnNullCall { get { throw null; } set { } }
+        public bool IsMutator { get { throw null; } set { } }
+        public bool InvokeIfReceiverIsNull { get { throw null; } set { } }
+    }
+    public enum Format
+    {
+        Unknown = 0,
+        Native = 1,
+        UserDefined = 2
+    }
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
+    public sealed partial class SqlUserDefinedAggregateAttribute : System.Attribute
+    {
+        public const int MaxByteSizeValue = 8000;
+        public SqlUserDefinedAggregateAttribute(Format format) { }
+        public int MaxByteSize { get { throw null; } set { } }
+        public bool IsInvariantToDuplicates { get { throw null; } set { } }
+        public bool IsInvariantToNulls { get { throw null; } set { } }
+        public bool IsInvariantToOrder { get { throw null; } set { } }
+        public bool IsNullIfEmpty { get { throw null; } set { } }
+        public Format Format { get { throw null; } }
+        public string Name { get { throw null; } set { } }
+    }
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple = false, Inherited = true)]
+    public sealed partial class SqlUserDefinedTypeAttribute : System.Attribute
+    {
+        public SqlUserDefinedTypeAttribute(Format format) { }
+        public int MaxByteSize { get { throw null; } set { } }
+        public bool IsFixedLength { get { throw null; } set { } }
+        public bool IsByteOrdered { get { throw null; } set { } }
+        public Format Format { get { throw null; } }
+        public string ValidationMethodName { get { throw null; } set { } }
+        public string Name { get { throw null; } set { } }
+    }
+    public interface IBinarySerialize
+    {
+        void Read(System.IO.BinaryReader r);
+        void Write(System.IO.BinaryWriter w);
     }
 }
 namespace System.Data.Sql
@@ -693,6 +762,7 @@ namespace System.Data.SqlClient
         public override DataRowVersion SourceVersion { get { throw null; } set { } }
         public System.Data.SqlDbType SqlDbType { get { throw null; } set { } }
         public object SqlValue { get { throw null; } set { } }
+        public string UdtTypeName { get { throw null; } set { } }
         public string TypeName { get { throw null; } set { } }
         public override object Value { get { throw null; } set { } }
         public string XmlSchemaCollectionDatabase { get { throw null; } set { } }

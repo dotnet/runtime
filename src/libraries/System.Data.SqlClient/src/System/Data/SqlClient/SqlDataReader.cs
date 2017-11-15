@@ -284,7 +284,11 @@ namespace System.Data.SqlClient
                         }
                         else if (SqlDbType.Udt == colMetaData.type)
                         {
-                            throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
+                            Connection.CheckGetExtendedUDTInfo(colMetaData, true); // Ensure that colMetaData.udtType is set
+
+                            typeSpecificNamePart1 = colMetaData.udtDatabaseName;
+                            typeSpecificNamePart2 = colMetaData.udtSchemaName;
+                            typeSpecificNamePart3 = colMetaData.udtTypeName;
                         }
 
                         int length = colMetaData.length;
@@ -306,6 +310,7 @@ namespace System.Data.SqlClient
                                 colMetaData.scale,
                                 (null != collation) ? collation.LCID : _defaultLCID,
                                 (null != collation) ? collation.SqlCompareOptions : SqlCompareOptions.None,
+                                colMetaData.udtType,
                                 false, // isMultiValued
                                 null, // fieldmetadata
                                 null, // extended properties
@@ -1213,10 +1218,10 @@ namespace System.Data.SqlClient
             else if (_typeSystem != SqlConnectionString.TypeSystem.SQLServer2000)
             {
                 // TypeSystem.SQLServer2005 and above
-
                 if (metaData.type == SqlDbType.Udt)
                 {
-                    fieldType = MetaType.MetaMaxVarBinary.ClassType;
+                    Connection.CheckGetExtendedUDTInfo(metaData, false);
+                    fieldType = metaData.udtType;
                 }
                 else
                 { // For all other types, including Xml - use data in MetaType.
@@ -1226,7 +1231,6 @@ namespace System.Data.SqlClient
             else
             {
                 // TypeSystem.SQLServer2000
-
                 fieldType = GetVersionedMetaType(metaData.metaType).ClassType; // Com+ type.
             }
 
@@ -1294,20 +1298,19 @@ namespace System.Data.SqlClient
             else if (_typeSystem != SqlConnectionString.TypeSystem.SQLServer2000)
             {
                 // TypeSystem.SQLServer2005 and above
-
                 if (metaData.type == SqlDbType.Udt)
                 {
-                    providerSpecificFieldType = MetaType.MetaMaxVarBinary.SqlType;
+                    Connection.CheckGetExtendedUDTInfo(metaData, false);
+                    providerSpecificFieldType = metaData.udtType;
                 }
                 else
-                { // For all other types, including Xml - use data in MetaType.
+                {
                     providerSpecificFieldType = metaData.metaType.SqlType; // SqlType type.
                 }
             }
             else
             {
                 // TypeSystem.SQLServer2000
-
                 providerSpecificFieldType = GetVersionedMetaType(metaData.metaType).SqlType; // SqlType type.
             }
 
@@ -2353,14 +2356,15 @@ namespace System.Data.SqlClient
 
                 if (metaData.type == SqlDbType.Udt)
                 {
-                    var connection = _connection;
+                    SqlConnection connection = _connection;
                     if (connection != null)
                     {
-                        throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
+                        connection.CheckGetExtendedUDTInfo(metaData, true);
+                        return connection.GetUdtValue(data.Value, metaData, false);
                     }
                     else
                     {
-                        throw ADP.DataReaderClosed();
+                        throw ADP.DataReaderClosed(nameof(GetSqlValueFromSqlBufferInternal));
                     }
                 }
                 else
@@ -2543,14 +2547,15 @@ namespace System.Data.SqlClient
                 }
                 else
                 {
-                    var connection = _connection;
+                    SqlConnection connection = _connection;
                     if (connection != null)
                     {
-                        throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
+                        connection.CheckGetExtendedUDTInfo(metaData, true);
+                        return connection.GetUdtValue(data.Value, metaData, true);
                     }
                     else
                     {
-                        throw ADP.DataReaderClosed();
+                        throw ADP.DataReaderClosed(nameof(GetValueFromSqlBufferInternal));
                     }
                 }
             }
@@ -4873,11 +4878,6 @@ namespace System.Data.SqlClient
             _snapshot = null;
             _stateObj.ResetSnapshot();
             _stateObj._asyncReadWithoutSnapshot = true;
-        }
-        private Exception UdtNotSupportedException()
-        {
-            Debug.Assert(false, "TdsParser should have thrown on UDT");
-            return SQL.UnsupportedFeatureAndToken(_parser.Connection, SqlDbType.Udt.ToString());
         }
 
         public ReadOnlyCollection<DbColumn> GetColumnSchema()
