@@ -162,15 +162,6 @@ namespace System
             }
         }
 
-        internal static unsafe void Int32ToDecChars(char[] buffer, ref int index, uint value, int digits)
-        {
-            while (--digits >= 0 || value != 0)
-            {
-                buffer[--index] = (char)(value % 10 + '0');
-                value /= 10;
-            }
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // called from only one location
         private static unsafe void Int32ToNumber(int value, ref NumberBuffer number)
         {
@@ -264,11 +255,9 @@ namespace System
             while (--digits >= 0 || value != 0)
             {
                 // TODO https://github.com/dotnet/coreclr/issues/3439
-                uint div = value / 10;
-                uint rem = value - (div * 10);
-
-                value = div;
-                *(--bufferEnd) = (char)('0' + rem);
+                uint newValue = value / 10;
+                *(--bufferEnd) = (char)(value - (newValue * 10) + '0');
+                value = newValue;
             }
             return bufferEnd;
         }
@@ -285,10 +274,8 @@ namespace System
                 {
                     // TODO https://github.com/dotnet/coreclr/issues/3439
                     uint div = value / 10;
-                    uint rem = value - (div * 10);
-
+                    *(--p) = (char)('0' + value - (div * 10));
                     value = div;
-                    *(--p) = (char)('0' + rem);
                 }
                 while (value != 0);
 
@@ -315,7 +302,6 @@ namespace System
 
             char* buffer = number.digits;
             char* p = buffer + Int64Precision;
-            int index = Int64Precision;
             while (High32(value) != 0)
                 p = UInt32ToDecChars(p, Int64DivMod1E9(ref value), 9);
             p = UInt32ToDecChars(p, Low32(value), 0);
@@ -419,32 +405,6 @@ namespace System
             p = UInt32ToDecChars(p, Low32(value), digits);
 
             return new string(p, 0, (int)(buffer + bufferSize - p));
-        }
-
-        internal static unsafe bool TryStringToNumber(ReadOnlySpan<char> str, NumberStyles options, ref NumberBuffer number, ref ValueStringBuilder sb, NumberFormatInfo numfmt, bool parseDecimal)
-        {
-            Debug.Assert(numfmt != null);
-
-            fixed (char* stringPointer = &str.DangerousGetPinnableReference())
-            {
-                char* p = stringPointer;
-                if (!ParseNumber(ref p, options, ref number, ref sb, numfmt, parseDecimal)
-                    || (p - stringPointer < str.Length && !TrailingZeros(str, (int)(p - stringPointer))))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        internal static unsafe void Int32ToDecChars(char* buffer, ref int index, uint value, int digits)
-        {
-            while (--digits >= 0 || value != 0)
-            {
-                buffer[--index] = (char)(value % 10 + '0');
-                value /= 10;
-            }
         }
 
         internal static unsafe char ParseFormatSpecifier(string format, out int digits)
@@ -1010,14 +970,6 @@ namespace System
             }
         }
 
-        private static unsafe int wcslen(char* s)
-        {
-            int result = 0;
-            while (*s++ != '\0')
-                result++;
-            return result;
-        }
-
         private static unsafe void FormatFixed(ref ValueStringBuilder sb, ref NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info, int[] groupDigits, string sDecimal, string sGroup)
         {
             int digPos = number.scale;
@@ -1025,7 +977,7 @@ namespace System
 
             if (digPos > 0)
             {
-                int digLength = wcslen(dig);
+                int digLength = string.wcslen(dig);
 
                 if (groupDigits != null)
                 {
@@ -1330,7 +1282,7 @@ namespace System
 
         private static uint Low32(ulong value) => (uint)value;
 
-        private static uint High32(ulong value) => (uint)(((ulong)value & 0xFFFFFFFF00000000) >> 32);
+        private static uint High32(ulong value) => (uint)((value & 0xFFFFFFFF00000000) >> 32);
 
         private static uint Int64DivMod1E9(ref ulong value)
         {
