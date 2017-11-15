@@ -695,7 +695,7 @@ mono_find_final_block (MonoCompile *cfg, unsigned char *ip, unsigned char *targe
 		if (MONO_OFFSET_IN_CLAUSE (clause, (ip - header->code)) && 
 		    (!MONO_OFFSET_IN_CLAUSE (clause, (target - header->code)))) {
 			if (clause->flags == type)
-				res = g_list_append (res, clause);
+				res = g_list_append_mempool (cfg->mempool, res, clause);
 		}
 	}
 	return res;
@@ -11478,10 +11478,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, abort_exc->dreg, 0);
 					MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, dont_throw);
 					mono_emit_jit_icall (cfg, mono_thread_self_abort, NULL);
-					cfg->cbb->clause_hole = clause;
+					cfg->cbb->clause_holes = tmp;
 
 					MONO_START_BB (cfg, dont_throw);
-					cfg->cbb->clause_hole = clause;
+					cfg->cbb->clause_holes = tmp;
 
 					if (COMPILE_LLVM (cfg)) {
 						MonoBasicBlock *target_bb;
@@ -11495,7 +11495,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						link_bblock (cfg, tblock, target_bb);
 					}
 				}
-				g_list_free (handlers);
 			} 
 
 			MONO_INST_NEW (cfg, ins, OP_BR);

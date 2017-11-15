@@ -2253,8 +2253,11 @@ mono_codegen (MonoCompile *cfg)
 			cfg->epilog_end = cfg->code_len;
 		}
 
-		if (bb->clause_hole)
-			mono_cfg_add_try_hole (cfg, bb->clause_hole, cfg->native_code + bb->native_offset, bb);
+		if (bb->clause_holes) {
+			GList *tmp;
+			for (tmp = bb->clause_holes; tmp; tmp = tmp->prev)
+				mono_cfg_add_try_hole (cfg, (MonoExceptionClause *)tmp->data, cfg->native_code + bb->native_offset, bb);
+		}
 	}
 
 	mono_arch_emit_exceptions (cfg);

@@ -758,8 +758,11 @@ struct MonoBasicBlock {
 	/* List of call sites in this bblock sorted by pc_offset */
 	GSList *gc_callsites;
 
-	/* If this is not null, the basic block is a try hole for this clause */
-	MonoExceptionClause *clause_hole;
+	/*
+	 * If this is not null, the basic block is a try hole for all the clauses
+	 * in the list previous to this element (including the element).
+	 */
+	GList *clause_holes;
 
 	/*
 	 * The region encodes whether the basic block is inside
