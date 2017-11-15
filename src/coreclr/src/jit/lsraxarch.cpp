@@ -1013,7 +1013,21 @@ void LinearScan::TreeNodeInfoInitShiftRotate(GenTree* tree)
     if (!shiftBy->isContained())
     {
         shiftBy->gtLsraInfo.setSrcCandidates(this, RBM_RCX);
-        if (!source->isContained())
+        if (source->isContained())
+        {
+            if (source->OperIs(GT_IND))
+            {
+                if (source->AsIndir()->Base() != nullptr)
+                {
+                    source->AsIndir()->Base()->gtLsraInfo.setSrcCandidates(this, allRegs(TYP_INT) & ~RBM_RCX);
+                }
+                if (source->AsIndir()->Index() != nullptr)
+                {
+                    source->AsIndir()->Index()->gtLsraInfo.setSrcCandidates(this, allRegs(TYP_INT) & ~RBM_RCX);
+                }
+            }
+        }
+        else
         {
             source->gtLsraInfo.setSrcCandidates(this, allRegs(TYP_INT) & ~RBM_RCX);
         }
@@ -1932,7 +1946,21 @@ void LinearScan::TreeNodeInfoInitModDiv(GenTree* tree)
         op1->gtLsraInfo.setSrcCandidates(this, RBM_RAX);
     }
 
-    if (!op2->isContained())
+    if (op2->isContained())
+    {
+        if (op2->gtOper == GT_IND)
+        {
+            if (op2->AsIndir()->Base() != nullptr)
+            {
+                op2->AsIndir()->Base()->gtLsraInfo.setSrcCandidates(this, allRegs(TYP_INT) & ~(RBM_RAX | RBM_RDX));
+            }
+            if (op2->AsIndir()->Index() != nullptr)
+            {
+                op2->AsIndir()->Index()->gtLsraInfo.setSrcCandidates(this, allRegs(TYP_INT) & ~(RBM_RAX | RBM_RDX));
+            }
+        }
+    }
+    else
     {
         op2->gtLsraInfo.setSrcCandidates(this, allRegs(TYP_INT) & ~(RBM_RAX | RBM_RDX));
     }
