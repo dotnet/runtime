@@ -89,8 +89,16 @@
     <Compile Include="System\Data\ProviderBase\DbMetaDataFactory.cs" />
     <Compile Include="System\Data\ProviderBase\DbReferenceCollection.cs" />
     <Compile Include="System\Data\ProviderBase\TimeoutTimer.cs" />
+    <Compile Include="System\Data\Sql\IBinarySerialize.cs" />
+    <Compile Include="System\Data\Sql\InvalidUdtException.cs" />
+    <Compile Include="System\Data\Sql\SqlFunctionAttribute.cs" />
     <Compile Include="System\Data\Sql\SqlMetaData.cs" />
+    <Compile Include="System\Data\Sql\SqlMethodAttribute.cs" />
+    <Compile Include="System\Data\Sql\SqlNorm.cs" />
     <Compile Include="System\Data\Sql\SqlNotificationRequest.cs" />
+    <Compile Include="System\Data\Sql\SqlSer.cs" />
+    <Compile Include="System\Data\Sql\SqlUserDefinedAggregateAttribute.cs" />
+    <Compile Include="System\Data\Sql\SqlUserDefinedTypeAttribute.cs" />
     <Compile Include="System\Data\SqlClient\ApplicationIntent.cs" />
     <Compile Include="System\Data\SqlClient\LocalDBAPI.cs" />
     <Compile Include="System\Data\SqlClient\ParameterPeekAheadValue.cs" />
@@ -154,6 +162,7 @@
     <Compile Include="System\Data\SqlClient\SqlStatistics.cs" />
     <Compile Include="System\Data\SqlClient\SqlStream.cs" />
     <Compile Include="System\Data\SqlClient\SqlTransaction.cs" />
+    <Compile Include="System\Data\SqlClient\SqlUdtInfo.cs" />
     <Compile Include="System\Data\SqlClient\SqlUtil.cs" />
     <Compile Include="System\Data\SqlClient\TdsEnums.cs" />
     <Compile Include="System\Data\SqlClient\TdsParameterSetter.cs" />

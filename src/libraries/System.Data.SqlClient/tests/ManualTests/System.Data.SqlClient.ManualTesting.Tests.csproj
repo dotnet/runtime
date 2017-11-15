@@ -111,7 +111,11 @@
     <Compile Include="SQL\SqlNotificationTest\SqlNotificationTest.cs" />
     <Compile Include="SQL\TransactionTest\TransactionTest.cs" />
     <Compile Include="SQL\TransactionTest\TransactionEnlistmentTest.cs" />
+    <Compile Include="SQL\UdtTest\SqlServerTypesTest.cs" />
+    <Compile Include="SQL\UdtTest\UdtBulkCopyTest.cs" />
     <Compile Include="SQL\UdtTest\UdtTest.cs" />
+    <Compile Include="SQL\UdtTest\UdtTest2.cs" />
+    <Compile Include="SQL\UdtTest\UdtTestHelpers.cs" />
     <Compile Include="SQL\WeakRefTest\WeakRefTest.cs" />
     <Compile Include="SQL\WeakRefTestYukonSpecific\WeakRefTestYukonSpecific.cs" />
     <Compile Include="XUnitAssemblyAttributes.cs" />
@@ -134,10 +138,22 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="ProviderAgnostic\MultipleResultsTest\MultipleResultsTest.bsl" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="SQL\ParameterTest\SqlParameterTest_DebugMode.bsl" />
     <None Include="SQL\ParameterTest\SqlParameterTest_ReleaseMode.bsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="SQL\UdtTest\UDTs\Address\Address.csproj">
+      <Name>Address</Name>
+    </ProjectReference>
+    <ProjectReference Include="SQL\UdtTest\UDTs\Circle\Circle.csproj">
+      <Name>Circle</Name>
+    </ProjectReference>
+    <ProjectReference Include="SQL\UdtTest\UDTs\Shapes\Shapes.csproj">
+      <Name>Shapes</Name>
+    </ProjectReference>
+    <ProjectReference Include="SQL\UdtTest\UDTs\Utf8String\Utf8String.csproj">
+      <Name>Utf8String</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

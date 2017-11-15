@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Data.SqlTypes;
@@ -13,6 +14,8 @@ using System.Xml;
 using MSS = Microsoft.SqlServer.Server;
 
 using Microsoft.SqlServer.Server;
+
+using System.ComponentModel.Design.Serialization;
 
 namespace System.Data.SqlClient
 {
@@ -50,6 +53,7 @@ namespace System.Data.SqlClient
         }
     }
 
+    [TypeConverter(typeof(SqlParameterConverter))]
     public sealed partial class SqlParameter : DbParameter, IDbDataParameter, ICloneable
     {
         private MetaType _metaType;
@@ -59,7 +63,9 @@ namespace System.Data.SqlClient
         private string _xmlSchemaCollectionOwningSchema;
         private string _xmlSchemaCollectionName;
 
+        private string _udtTypeName;
         private string _typeName;
+        private Exception _udtLoadError;
 
         private string _parameterName;
         private byte _precision;
@@ -175,9 +181,6 @@ namespace System.Data.SqlClient
             }
         }
 
-        //
-        // currently the user can't set this value.  it gets set by the return value from tds
-        //
         internal SqlCollation Collation
         {
             get
@@ -209,7 +212,14 @@ namespace System.Data.SqlClient
                 {
                     _collation = collation = new SqlCollation();
                 }
-                if ((value & SqlTypeWorkarounds.SqlStringValidSqlCompareOptionMask) != value)
+
+                // Copied from SQLString.x_iValidSqlCompareOptionMask
+                SqlCompareOptions validSqlCompareOptionMask =
+                    SqlCompareOptions.IgnoreCase | SqlCompareOptions.IgnoreWidth |
+                    SqlCompareOptions.IgnoreNonSpace | SqlCompareOptions.IgnoreKanaType |
+                    SqlCompareOptions.BinarySort | SqlCompareOptions.BinarySort2;
+
+                if ((value & validSqlCompareOptionMask) != value)
                 {
                     throw ADP.ArgumentOutOfRange(nameof(CompareInfo));
                 }
@@ -217,13 +227,12 @@ namespace System.Data.SqlClient
             }
         }
 
-
         public string XmlSchemaCollectionDatabase
         {
             get
             {
                 string xmlSchemaCollectionDatabase = _xmlSchemaCollectionDatabase;
-                return ((xmlSchemaCollectionDatabase != null) ? xmlSchemaCollectionDatabase : ADP.StrEmpty);
+                return (xmlSchemaCollectionDatabase ?? ADP.StrEmpty);
             }
             set
             {
@@ -236,7 +245,7 @@ namespace System.Data.SqlClient
             get
             {
                 string xmlSchemaCollectionOwningSchema = _xmlSchemaCollectionOwningSchema;
-                return ((xmlSchemaCollectionOwningSchema != null) ? xmlSchemaCollectionOwningSchema : ADP.StrEmpty);
+                return (xmlSchemaCollectionOwningSchema ?? ADP.StrEmpty);
             }
             set
             {
@@ -249,7 +258,7 @@ namespace System.Data.SqlClient
             get
             {
                 string xmlSchemaCollectionName = _xmlSchemaCollectionName;
-                return ((xmlSchemaCollectionName != null) ? xmlSchemaCollectionName : ADP.StrEmpty);
+                return (xmlSchemaCollectionName ?? ADP.StrEmpty);
             }
             set
             {
@@ -257,7 +266,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public DbType DbType
+        public override DbType DbType
         {
             get
             {
@@ -317,15 +326,6 @@ namespace System.Data.SqlClient
                     throw ADP.ArgumentOutOfRange(nameof(LocaleId));
                 }
                 collation.LCID = value;
-            }
-        }
-
-
-        internal bool SizeInferred
-        {
-            get
-            {
-                return 0 == _size;
             }
         }
 
@@ -420,11 +420,11 @@ namespace System.Data.SqlClient
                 String[] names;
                 if (SqlDbType.Udt == mt.SqlDbType)
                 {
-                    throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
+                    names = ParseTypeName(UdtTypeName, true /* is UdtTypeName */);
                 }
                 else
                 {
-                    names = ParseTypeName(this.TypeName);
+                    names = ParseTypeName(this.TypeName, false /* not UdtTypeName */);
                 }
 
                 if (1 == names.Length)
@@ -481,6 +481,7 @@ namespace System.Data.SqlClient
                                             scale,
                                             localeId,
                                             compareOpts,
+                                            null,           // Udt type not used for parameters
                                             SqlDbType.Structured == mt.SqlDbType,
                                             fields,
                                             extendedProperties,
@@ -503,12 +504,12 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public string ParameterName
+        public override string ParameterName
         {
             get
             {
                 string parameterName = _parameterName;
-                return ((null != parameterName) ? parameterName : ADP.StrEmpty);
+                return (parameterName ?? ADP.StrEmpty);
             }
             set
             {
@@ -542,7 +543,8 @@ namespace System.Data.SqlClient
             }
         }
 
-        public override Byte Precision
+        [DefaultValue((byte)0)]
+        public new byte Precision
         {
             get
             {
@@ -586,7 +588,8 @@ namespace System.Data.SqlClient
             return (0 != _precision);
         }
 
-        public override Byte Scale
+        [DefaultValue((byte)0)]
+        public new byte Scale
         {
             get
             {
@@ -627,6 +630,7 @@ namespace System.Data.SqlClient
             return (0 != _scale); // V1.0 compat, ignore _hasScale
         }
 
+        [DbProviderSpecificTypeProperty(true)]
         public SqlDbType SqlDbType
         {
             get
@@ -636,14 +640,8 @@ namespace System.Data.SqlClient
             set
             {
                 MetaType metatype = _metaType;
-                // HACK!!!
-                // We didn't want to expose SmallVarBinary on SqlDbType so we 
-                // stuck it at the end of SqlDbType in v1.0, except that now 
-                // we have new data types after that and it's smack dab in the
-                // middle of the valid range.  To prevent folks from setting 
-                // this invalid value we have to have this code here until we
-                // can take the time to fix it later.
-                if ((SqlDbType)TdsEnums.SmallVarBinary == value)
+
+                if (TdsEnums.SmallVarBinary == value)
                 {
                     throw SQL.InvalidSqlDbType(value);
                 }
@@ -673,6 +671,11 @@ namespace System.Data.SqlClient
         {
             get
             {
+                if (_udtLoadError != null)
+                {
+                    throw _udtLoadError;
+                }
+
                 if (_value != null)
                 {
                     if (_value == DBNull.Value)
@@ -686,7 +689,7 @@ namespace System.Data.SqlClient
 
                     // For Date and DateTime2, return the CLR object directly without converting it to a SqlValue
                     // GetMetaTypeOnly() will convert _value to a string in the case of char or char[], so only check
-                    // the SqlDbType for DateTime. 
+                    // the SqlDbType for DateTime. This is the only case when we might return the CLR value directly.
                     if (_value is DateTime)
                     {
                         SqlDbType sqlDbType = GetMetaTypeOnly().SqlDbType;
@@ -710,12 +713,25 @@ namespace System.Data.SqlClient
             }
         }
 
+        public string UdtTypeName
+        {
+            get
+            {
+                string typeName = _udtTypeName;
+                return (typeName ?? ADP.StrEmpty);
+            }
+            set
+            {
+                _udtTypeName = value;
+            }
+        }
+
         public String TypeName
         {
             get
             {
                 string typeName = _typeName;
-                return ((null != typeName) ? typeName : ADP.StrEmpty);
+                return (typeName ?? ADP.StrEmpty);
             }
             set
             {
@@ -723,10 +739,16 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public object Value
-        { // V1.2.3300, XXXParameter V1.0.3300
+        [TypeConverter(typeof(StringConverter))]
+        public override object Value
+        {
             get
             {
+                if (_udtLoadError != null)
+                {
+                    throw _udtLoadError;
+                }
+
                 if (_value != null)
                 {
                     return _value;
@@ -749,6 +771,7 @@ namespace System.Data.SqlClient
                 _valueAsINullable = _value as INullable;
                 _isSqlParameterSqlType = (_valueAsINullable != null);
                 _isNull = ((_value == null) || (_value == DBNull.Value) || ((_isSqlParameterSqlType) && (_valueAsINullable.IsNull)));
+                _udtLoadError = null;
                 _actualSize = -1;
             }
         }
@@ -852,7 +875,11 @@ namespace System.Data.SqlClient
                                 _actualSize = coercedSize;
                             break;
                         case SqlDbType.Udt:
-                            throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
+                            if (!IsNull)
+                            {
+                                coercedSize = SerializationHelperSql9.SizeInBytes(val);
+                            }
+                            break;
                         case SqlDbType.Structured:
                             coercedSize = -1;
                             break;
@@ -870,7 +897,7 @@ namespace System.Data.SqlClient
                         default:
                             Debug.Assert(false, "Unknown variable length type!");
                             break;
-                    } // switch
+                    }
 
                     // don't even send big values over to the variant
                     if (isSqlVariant && (coercedSize > TdsEnums.TYPE_SIZE_LIMIT))
@@ -881,6 +908,10 @@ namespace System.Data.SqlClient
             return _actualSize;
         }
 
+        object ICloneable.Clone()
+        {
+            return new SqlParameter(this);
+        }
 
         // Coerced Value is also used in SqlBulkCopy.ConvertValue(object value, _SqlMetaData metadata)
         internal static object CoerceValue(object value, MetaType destinationType, out bool coercedToDataFeed, out bool typeChanged, bool allowStreaming = true)
@@ -944,7 +975,7 @@ namespace System.Data.SqlClient
                     }
                     else if ((DbType.Currency == destinationType.DbType) && (typeof(string) == currentType))
                     {
-                        value = Decimal.Parse((string)value, NumberStyles.Currency, (IFormatProvider)null); // WebData 99376
+                        value = Decimal.Parse((string)value, NumberStyles.Currency, (IFormatProvider)null);
                     }
                     else if ((typeof(SqlBytes) == currentType) && (typeof(byte[]) == destinationType.ClassType))
                     {
@@ -987,7 +1018,7 @@ namespace System.Data.SqlClient
                         throw;
                     }
 
-                    throw ADP.ParameterConversionFailed(value, destinationType.ClassType, e); // WebData 75433
+                    throw ADP.ParameterConversionFailed(value, destinationType.ClassType, e);
                 }
             }
 
@@ -1060,9 +1091,66 @@ namespace System.Data.SqlClient
             }
 
             // We should have returned before reaching here
-            Debug.Assert(false, "_coercedValueIsDataFeed was true, but the value was not a known DataFeed type");
+            Debug.Fail("_coercedValueIsDataFeed was true, but the value was not a known DataFeed type");
         }
 
+        private void CloneHelper(SqlParameter destination)
+        {
+            // NOTE: _parent is not cloned
+            destination._value = _value;
+            destination._direction = _direction;
+            destination._size = _size;
+            destination._offset = _offset;
+            destination._sourceColumn = _sourceColumn;
+            destination._sourceVersion = _sourceVersion;
+            destination._sourceColumnNullMapping = _sourceColumnNullMapping;
+            destination._isNullable = _isNullable;
+
+            destination._metaType = _metaType;
+            destination._collation = _collation;
+            destination._xmlSchemaCollectionDatabase = _xmlSchemaCollectionDatabase;
+            destination._xmlSchemaCollectionOwningSchema = _xmlSchemaCollectionOwningSchema;
+            destination._xmlSchemaCollectionName = _xmlSchemaCollectionName;
+            destination._udtTypeName = _udtTypeName;
+            destination._typeName = _typeName;
+            destination._udtLoadError = _udtLoadError;
+
+            destination._parameterName = _parameterName;
+            destination._precision = _precision;
+            destination._scale = _scale;
+            destination._sqlBufferReturnValue = _sqlBufferReturnValue;
+            destination._isSqlParameterSqlType = _isSqlParameterSqlType;
+            destination._internalMetaType = _internalMetaType;
+            destination.CoercedValue = CoercedValue; // copy cached value reference because of XmlReader problem
+            destination._valueAsINullable = _valueAsINullable;
+            destination._isNull = _isNull;
+            destination._coercedValueIsDataFeed = _coercedValueIsDataFeed;
+            destination._coercedValueIsSqlType = _coercedValueIsSqlType;
+            destination._actualSize = _actualSize;
+        }
+
+        public override DataRowVersion SourceVersion
+        {
+            get
+            {
+                DataRowVersion sourceVersion = _sourceVersion;
+                return ((0 != sourceVersion) ? sourceVersion : DataRowVersion.Current);
+            }
+            set
+            {
+                switch (value)
+                {
+                    case DataRowVersion.Original:
+                    case DataRowVersion.Current:
+                    case DataRowVersion.Proposed:
+                    case DataRowVersion.Default:
+                        _sourceVersion = value;
+                        break;
+                    default:
+                        throw ADP.InvalidDataRowVersion(value);
+                }
+            }
+        }
 
         internal byte GetActualPrecision()
         {
@@ -1279,9 +1367,11 @@ namespace System.Data.SqlClient
                             }
 
                             // pack it up so we don't have to rewind to send the first value
-                            peekAhead = new ParameterPeekAheadValue();
-                            peekAhead.Enumerator = enumerator;
-                            peekAhead.FirstRecord = firstRecord;
+                            peekAhead = new ParameterPeekAheadValue()
+                            {
+                                Enumerator = enumerator,
+                                FirstRecord = firstRecord
+                            };
 
                             // now that it's all packaged, make sure we don't dispose it.
                             enumerator = null;
@@ -1314,12 +1404,10 @@ namespace System.Data.SqlClient
 
                 int fieldCount = schema.Rows.Count;
                 fields = new List<MSS.SmiExtendedMetaData>(fieldCount);
-
                 bool[] keyCols = new bool[fieldCount];
                 bool hasKey = false;
                 int ordinalForIsKey = schema.Columns[SchemaTableColumn.IsKey].Ordinal;
                 int ordinalForColumnOrdinal = schema.Columns[SchemaTableColumn.ColumnOrdinal].Ordinal;
-
                 // Extract column metadata
                 for (int rowOrdinal = 0; rowOrdinal < fieldCount; rowOrdinal++)
                 {
@@ -1381,7 +1469,8 @@ namespace System.Data.SqlClient
                 //      2) no ordinals outside continuous range from 0 to fieldcount - 1 are allowed
                 //      3) no duplicate ordinals are allowed
                 // But assert no holes to be sure.
-                foreach (MSS.SmiExtendedMetaData md in fields) {
+                foreach (MSS.SmiExtendedMetaData md in fields)
+                {
                     Debug.Assert(null != md, "Shouldn't be able to have holes, since original loop algorithm prevents such.");
                 }
 #endif
@@ -1483,15 +1572,18 @@ namespace System.Data.SqlClient
             {
                 // We have a value set by the user then just use that value
                 // char and char[] are not directly supported so we convert those values to string
-                if (_value is char)
+                Type valueType = _value.GetType();
+                if (typeof(char) == valueType)
                 {
                     _value = _value.ToString();
+                    valueType = typeof(string);
                 }
-                else if (Value is char[])
+                else if (typeof(char[]) == valueType)
                 {
                     _value = new string((char[])_value);
+                    valueType = typeof(string);
                 }
-                return MetaType.GetMetaTypeFromValue(_value, inferLen: false);
+                return MetaType.GetMetaTypeFromType(valueType);
             }
             else if (null != _sqlBufferReturnValue)
             {  // value came back from the server
@@ -1539,28 +1631,33 @@ namespace System.Data.SqlClient
             _isNull = _sqlBufferReturnValue.IsNull;
             _coercedValueIsDataFeed = false;
             _coercedValueIsSqlType = false;
+            _udtLoadError = null;
             _actualSize = -1;
         }
 
+        internal void SetUdtLoadError(Exception e)
+        {
+            _udtLoadError = e;
+        }
 
         internal void Validate(int index, bool isCommandProc)
         {
             MetaType metaType = GetMetaTypeOnly();
             _internalMetaType = metaType;
 
-            // NOTE: (General Criteria): SqlParameter does a Size Validation check and would fail if the size is 0. 
-            //                           This condition filters all scenarios where we view a valid size 0.
+            // SqlParameter does a Size Validation check and would fail if the size is 0.
+            // This condition filters all scenarios where we view a valid size 0.
             if (ADP.IsDirection(this, ParameterDirection.Output) &&
                 !ADP.IsDirection(this, ParameterDirection.ReturnValue) &&
                 (!metaType.IsFixed) &&
                 !ShouldSerializeSize() &&
-                ((null == _value) || (_value == DBNull.Value)) &&
+                ((null == _value) || Convert.IsDBNull(_value)) &&
                 (SqlDbType != SqlDbType.Timestamp) &&
                 (SqlDbType != SqlDbType.Udt) &&
-                // Output parameter with size 0 throws for XML, TEXT, NTEXT, IMAGE.
                 (SqlDbType != SqlDbType.Xml) &&
                 !metaType.IsVarTime)
             {
+
                 throw ADP.UninitializedParameterSize(index, metaType.ClassType);
             }
 
@@ -1569,6 +1666,16 @@ namespace System.Data.SqlClient
                 GetCoercedValue();
             }
 
+            //check if the UdtTypeName is specified for Udt params
+            if (metaType.SqlDbType == SqlDbType.Udt)
+            {
+                if (string.IsNullOrEmpty(UdtTypeName))
+                    throw SQL.MustSetUdtTypeNameForUdtParams();
+            }
+            else if (!string.IsNullOrEmpty(UdtTypeName))
+            {
+                throw SQL.UnexpectedUdtTypeNameForNonUdtParams();
+            }
 
             // Validate structured-type-specific details.
             if (metaType.SqlDbType == SqlDbType.Structured)
@@ -1607,21 +1714,11 @@ namespace System.Data.SqlClient
                 long actualSizeInBytes = this.GetActualSize();
                 long sizeInCharacters = this.Size;
 
-                // 'actualSizeInBytes' is the size of value passed; 
-                // 'sizeInCharacters' is the parameter size;
-                // 'actualSizeInBytes' is in bytes; 
-                // 'this.Size' is in characters; 
-                // 'sizeInCharacters' is in characters; 
-                // 'TdsEnums.TYPE_SIZE_LIMIT' is in bytes;
-                // For Non-NCharType and for non-Yukon or greater variables, size should be maintained;
-                // Modified variable names from 'size' to 'sizeInCharacters', 'actualSize' to 'actualSizeInBytes', and 
-                // 'maxSize' to 'maxSizeInBytes'
-                // The idea is to
-                // Keeping these goals in mind - the following are the changes we are making
-
                 long maxSizeInBytes = 0;
                 if (mt.IsNCharType)
+                {
                     maxSizeInBytes = ((sizeInCharacters * sizeof(char)) > actualSizeInBytes) ? sizeInCharacters * sizeof(char) : actualSizeInBytes;
+                }
                 else
                 {
                     // Notes:
@@ -1793,86 +1890,152 @@ namespace System.Data.SqlClient
         //   [2] name
         // NOTE: if perf/space implications of Regex is not a problem, we can get rid
         // of this and use a simple regex to do the parsing
-        internal static string[] ParseTypeName(string typeName)
+        internal static string[] ParseTypeName(string typeName, bool isUdtTypeName)
         {
             Debug.Assert(null != typeName, "null typename passed to ParseTypeName");
 
             try
             {
-                string errorMsg;
-                {
-                    errorMsg = SR.SQL_TypeName;
-                }
+                string errorMsg = isUdtTypeName ? SR.SQL_UDTTypeName : SR.SQL_TypeName;
                 return MultipartIdentifier.ParseMultipartIdentifier(typeName, "[\"", "]\"", '.', 3, true, errorMsg, true);
             }
             catch (ArgumentException)
             {
+                if (isUdtTypeName)
+                {
+                    throw SQL.InvalidUdt3PartNameFormat();
+                }
+                else
                 {
                     throw SQL.InvalidParameterTypeNameFormat();
                 }
             }
         }
 
-        object ICloneable.Clone() => new SqlParameter(this);
-
-        private void CloneHelper(SqlParameter destination)
+        internal sealed class SqlParameterConverter : ExpandableObjectConverter
         {
-            CloneHelperCore(destination);
-            destination._metaType = _metaType;
-            destination._collation = _collation;
-            destination._xmlSchemaCollectionDatabase = _xmlSchemaCollectionDatabase;
-            destination._xmlSchemaCollectionOwningSchema = _xmlSchemaCollectionOwningSchema;
-            destination._xmlSchemaCollectionName = _xmlSchemaCollectionName;
-            destination._typeName = _typeName;
 
-            destination._parameterName = _parameterName;
-            destination._precision = _precision;
-            destination._scale = _scale;
-            destination._sqlBufferReturnValue = _sqlBufferReturnValue;
-            destination._isSqlParameterSqlType = _isSqlParameterSqlType;
-            destination._internalMetaType = _internalMetaType;
-            destination.CoercedValue = CoercedValue; // copy cached value reference because of XmlReader problem
-            destination._valueAsINullable = _valueAsINullable;
-            destination._isNull = _isNull;
-            destination._coercedValueIsDataFeed = _coercedValueIsDataFeed;
-            destination._coercedValueIsSqlType = _coercedValueIsSqlType;
-            destination._actualSize = _actualSize;
-        }
-
-        private void CloneHelperCore(SqlParameter destination)
-        {
-            destination._value = _value;
-
-            destination._direction = _direction;
-            destination._size = _size;
-
-            destination._offset = _offset;
-            destination._sourceColumn = _sourceColumn;
-            destination._sourceVersion = _sourceVersion;
-            destination._sourceColumnNullMapping = _sourceColumnNullMapping;
-            destination._isNullable = _isNullable;
-        }
-
-        public override DataRowVersion SourceVersion
-        {
-            get
+            // converter classes should have public ctor
+            public SqlParameterConverter()
             {
-                DataRowVersion sourceVersion = _sourceVersion;
-                return ((0 != sourceVersion) ? sourceVersion : DataRowVersion.Current);
             }
-            set
+
+            public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
             {
-                switch (value)
+                if (typeof(InstanceDescriptor) == destinationType)
                 {
-                    case DataRowVersion.Original:
-                    case DataRowVersion.Current:
-                    case DataRowVersion.Proposed:
-                    case DataRowVersion.Default:
-                        _sourceVersion = value;
+                    return true;
+                }
+                return base.CanConvertTo(context, destinationType);
+            }
+
+            public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+            {
+                if (destinationType == null)
+                {
+                    throw ADP.ArgumentNull(nameof(destinationType));
+                }
+                if ((typeof(InstanceDescriptor) == destinationType) && (value is SqlParameter))
+                {
+                    return ConvertToInstanceDescriptor(value as SqlParameter);
+                }
+                return base.ConvertTo(context, culture, value, destinationType);
+            }
+
+            private InstanceDescriptor ConvertToInstanceDescriptor(SqlParameter p)
+            {
+                int flags = 0; // if part of the collection - the parametername can't be empty
+
+                if (p.ShouldSerializeSqlDbType())
+                {
+                    flags |= 1;
+                }
+                if (p.ShouldSerializeSize())
+                {
+                    flags |= 2;
+                }
+                if (!string.IsNullOrEmpty(p.SourceColumn))
+                {
+                    flags |= 4;
+                }
+                if (null != p.Value)
+                {
+                    flags |= 8;
+                }
+                if ((ParameterDirection.Input != p.Direction) || p.IsNullable
+                    || p.ShouldSerializePrecision() || p.ShouldSerializeScale()
+                    || (DataRowVersion.Current != p.SourceVersion)
+                    )
+                {
+                    flags |= 16; // v1.0 everything
+                }
+
+                if (p.SourceColumnNullMapping || !string.IsNullOrEmpty(p.XmlSchemaCollectionDatabase) ||
+                    !string.IsNullOrEmpty(p.XmlSchemaCollectionOwningSchema) || !string.IsNullOrEmpty(p.XmlSchemaCollectionName))
+                {
+                    flags |= 32; // v2.0 everything
+                }
+
+                Type[] ctorParams;
+                object[] ctorValues;
+                switch (flags)
+                {
+                    case 0: // ParameterName
+                    case 1: // SqlDbType
+                        ctorParams = new Type[] { typeof(string), typeof(SqlDbType) };
+                        ctorValues = new object[] { p.ParameterName, p.SqlDbType };
+                        break;
+                    case 2: // Size
+                    case 3: // Size, SqlDbType
+                        ctorParams = new Type[] { typeof(string), typeof(SqlDbType), typeof(int) };
+                        ctorValues = new object[] { p.ParameterName, p.SqlDbType, p.Size };
+                        break;
+                    case 4: // SourceColumn
+                    case 5: // SourceColumn, SqlDbType
+                    case 6: // SourceColumn, Size
+                    case 7: // SourceColumn, Size, SqlDbType
+                        ctorParams = new Type[] { typeof(string), typeof(SqlDbType), typeof(int), typeof(string) };
+                        ctorValues = new object[] { p.ParameterName, p.SqlDbType, p.Size, p.SourceColumn };
+                        break;
+                    case 8: // Value
+                        ctorParams = new Type[] { typeof(string), typeof(object) };
+                        ctorValues = new object[] { p.ParameterName, p.Value };
                         break;
                     default:
-                        throw ADP.InvalidDataRowVersion(value);
+                        if (0 == (32 & flags))
+                        { // v1.0 everything
+                            ctorParams = new Type[] {
+                                                    typeof(string), typeof(SqlDbType), typeof(int), typeof(ParameterDirection),
+                                                    typeof(bool), typeof(byte), typeof(byte),
+                                                    typeof(string), typeof(DataRowVersion),
+                                                    typeof(object) };
+                            ctorValues = new object[] {
+                                                      p.ParameterName, p.SqlDbType,  p.Size, p.Direction,
+                                                      p.IsNullable, p.PrecisionInternal, p.ScaleInternal,
+                                                      p.SourceColumn, p.SourceVersion,
+                                                      p.Value };
+                        }
+                        else
+                        { // v2.0 everything - round trip all browsable properties + precision/scale
+                            ctorParams = new Type[] {
+                                                    typeof(string), typeof(SqlDbType), typeof(int), typeof(ParameterDirection),
+                                                    typeof(byte), typeof(byte),
+                                                    typeof(string), typeof(DataRowVersion), typeof(bool),
+                                                    typeof(object),
+                                                    typeof(string), typeof(string),
+                                                    typeof(string) };
+                            ctorValues = new object[] {
+                                                      p.ParameterName, p.SqlDbType,  p.Size, p.Direction,
+                                                      p.PrecisionInternal, p.ScaleInternal,
+                                                      p.SourceColumn, p.SourceVersion, p.SourceColumnNullMapping,
+                                                      p.Value,
+                                                      p.XmlSchemaCollectionDatabase, p.XmlSchemaCollectionOwningSchema,
+                                                      p.XmlSchemaCollectionName};
+                        }
+                        break;
                 }
+                ConstructorInfo ctor = typeof(SqlParameter).GetConstructor(ctorParams);
+                return new InstanceDescriptor(ctor, ctorValues);
             }
         }
     }
