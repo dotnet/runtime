@@ -888,6 +888,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [OuterLoop] // Test uses azure endpoint.
         public async Task GetAsync_CredentialIsNetworkCredentialUriRedirect_StatusCodeUnauthorized()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -902,6 +903,33 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpResponseMessage unAuthResponse = await client.GetAsync(redirectUri))
                 {
                     Assert.Equal(HttpStatusCode.Unauthorized, unAuthResponse.StatusCode);
+                }
+            }
+        }
+
+        [Fact]
+        [OuterLoop] // Test uses azure endpoint.
+        public async Task HttpClientHandler_CredentialIsNotCredentialCacheAfterRedirect_StatusCodeOK()
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.Credentials = _credential;
+            using (var client = new HttpClient(handler))
+            {
+                Uri redirectUri = Configuration.Http.RedirectUriForCreds(
+                    secure: false,
+                    statusCode: 302,
+                    userName: Username,
+                    password: Password);
+                using (HttpResponseMessage unAuthResponse = await client.GetAsync(redirectUri))
+                {
+                    Assert.Equal(HttpStatusCode.Unauthorized, unAuthResponse.StatusCode);
+                }
+
+                // Use the same handler to perform get request, authentication should succeed after redirect.
+                Uri uri = Configuration.Http.BasicAuthUriForCreds(secure: true, userName: Username, password: Password);
+                using (HttpResponseMessage authResponse = await client.GetAsync(uri))
+                {
+                    Assert.Equal(HttpStatusCode.OK, authResponse.StatusCode);
                 }
             }
         }
