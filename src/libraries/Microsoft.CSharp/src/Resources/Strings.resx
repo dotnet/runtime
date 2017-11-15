@@ -130,9 +130,6 @@
   <data name="BadAccess" xml:space="preserve">
     <value>'{0}' is inaccessible due to its protection level</value>
   </data>
-  <data name="MethDelegateMismatch" xml:space="preserve">
-    <value>No overload for '{0}' matches delegate '{1}'</value>
-  </data>
   <data name="AssgLvalueExpected" xml:space="preserve">
     <value>The left-hand side of an assignment must be a variable, property or indexer</value>
   </data>
