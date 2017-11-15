@@ -15,9 +15,9 @@ class runtime_config_t
 {
 public:
     runtime_config_t(const pal::string_t& path, const pal::string_t& dev_path);
-    bool is_valid() { return m_valid; }
-    const pal::string_t& get_path() { return m_path; }
-    const pal::string_t& get_dev_path() { return m_dev_path; }
+    bool is_valid() const { return m_valid; }
+    const pal::string_t& get_path() const { return m_path; }
+    const pal::string_t& get_dev_path() const { return m_dev_path; }
     const pal::string_t& get_gc_server() const;
     const pal::string_t& get_fx_version() const;
     const pal::string_t& get_fx_name() const;
