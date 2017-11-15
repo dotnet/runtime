@@ -4,7 +4,7 @@
 
 internal static partial class Interop
 {
-    internal static class Libraries
+    internal static partial class Libraries
     {
         internal const string Advapi32 = "advapi32.dll";
         internal const string BCrypt = "BCrypt.dll";
@@ -18,6 +18,7 @@ internal static partial class Interop
         internal const string Mswsock = "mswsock.dll";
         internal const string NCrypt = "ncrypt.dll";
         internal const string NtDll = "ntdll.dll";
+        internal const string Odbc32 = "odbc32.dll";
         internal const string OleAut32 = "oleaut32.dll";
         internal const string PerfCounter = "perfcounter.dll";
         internal const string RoBuffer = "api-ms-win-core-winrt-robuffer-l1-1-0.dll";
