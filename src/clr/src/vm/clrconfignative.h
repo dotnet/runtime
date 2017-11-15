@@ -8,7 +8,7 @@
 class ClrConfigNative
 {
 public:
-    static BOOL QCALLTYPE GetConfigBoolValue(LPCWSTR name);
+    static BOOL QCALLTYPE GetConfigBoolValue(LPCWSTR name, BOOL *exist);
 };
 
 #endif // _CLRCONFIGNATIVE_H_
