@@ -364,13 +364,13 @@ if (!isPR()) {
         ['min_opt', 'full_opt'].each { opt_level ->
             ['pgo', 'nopgo'].each { pgo_enabled ->
                 outerLoopTests["linux ${arch} ryujit ${opt_level} ${pgo_enabled} perf"] = {
-                    simpleNode('linux_clr_perf', 180) {
+                    simpleNode('ubuntu_1604_clr_perf', 180) {
                         linuxPerf(arch, 'Ubuntu14.04', config, uploadString, runType, opt_level, pgo_enabled, false)
                     }
                 }
 
                 outerLoopTests["linux ${arch} ryujit ${opt_level} ${pgo_enabled} throughput"] = {
-                    simpleNode('linux_clr_perf', 180) {
+                    simpleNode('ubuntu_1604_clr_perf', 180) {
                         linuxThroughput(arch, 'Ubuntu14.04', config, uploadString, runType, opt_level, pgo_enabled, false)
                     }
                 }
