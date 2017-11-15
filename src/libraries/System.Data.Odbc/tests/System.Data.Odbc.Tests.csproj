@@ -8,8 +8,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="DependencyCheckTest.cs" />
     <Compile Include="Helpers.cs" />
@@ -27,7 +27,20 @@
     <Compile Include="TestCommon\CheckConnStrSetupFactAttribute.cs" />
     <Compile Include="OdbcParameterTests.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
+    <Compile Include="$(CommonPath)\Interop\Linux\Interop.Libraries.cs">
+      <Link>Common\Interop\Linux\Interop.Libraries.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
+      <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
     <Compile Include="ConnectionStrings.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
