@@ -402,7 +402,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        internal Expr DispatchPayload(ICSharpInvokeOrInvokeMemberBinder payload, ArgumentObject[] arguments, LocalVariableSymbol[] locals) =>
+        internal ExprWithArgs DispatchPayload(ICSharpInvokeOrInvokeMemberBinder payload, ArgumentObject[] arguments, LocalVariableSymbol[] locals) =>
             BindCall(payload, CreateCallingObjectForCall(payload, arguments, locals), arguments, locals);
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -740,19 +740,18 @@ namespace Microsoft.CSharp.RuntimeBinder
             ExprMemberGroup pMemGroup = CreateMemberGroupEXPR(property.name.Text, null, callingObject, SYMKIND.SK_PropertySymbol);
 
             return _binder.BindToProperty(// For a static property instance, don't set the object.
-                    callingObject is ExprClass ? null : callingObject, pwt, flags, null, null, pMemGroup);
+                    callingObject is ExprClass ? null : callingObject, pwt, flags, null, pMemGroup);
         }
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private Expr CreateIndexer(SymWithType swt, Expr callingObject, Expr arguments, BindingFlag bindFlags)
+        private ExprWithArgs CreateIndexer(SymWithType swt, Expr callingObject, Expr arguments, BindingFlag bindFlags)
         {
             IndexerSymbol index = swt.Sym as IndexerSymbol;
-            AggregateType ctype = swt.GetType();
             ExprMemberGroup memgroup = CreateMemberGroupEXPR(index.name.Text, null, callingObject, SYMKIND.SK_PropertySymbol);
-
-            Expr result = _binder.BindMethodGroupToArguments(bindFlags, memgroup, arguments);
-            return ReorderArgumentsForNamedAndOptional(callingObject, result);
+            ExprWithArgs result = _binder.BindMethodGroupToArguments(bindFlags, memgroup, arguments);
+            ReorderArgumentsForNamedAndOptional(callingObject, result);
+            return result;
         }
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -826,7 +825,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private Expr BindCall(
+        private ExprWithArgs BindCall(
             ICSharpInvokeOrInvokeMemberBinder payload,
             Expr callingObject,
             ArgumentObject[] arguments,
@@ -934,7 +933,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 memGroup.Flags &= ~EXPRFLAG.EXF_USERCALLABLE;
             }
 
-            Expr pResult = _binder.BindMethodGroupToArguments(// Tree
+            ExprWithArgs pResult = _binder.BindMethodGroupToArguments(// Tree
                 BindingFlag.BIND_RVALUEREQUIRED | BindingFlag.BIND_STMTEXPRONLY, memGroup, CreateArgumentListEXPR(arguments, locals, 1, arguments.Length));
 
             // If overload resolution failed, throw an error.
@@ -942,12 +941,13 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 throw Error.BindCallFailedOverloadResolution();
             }
-            CheckForConditionalMethodError(pResult);
 
-            return ReorderArgumentsForNamedAndOptional(callingObject, pResult);
+            CheckForConditionalMethodError(pResult);
+            ReorderArgumentsForNamedAndOptional(callingObject, pResult);
+            return pResult;
         }
 
-        private Expr BindWinRTEventAccessor(EventWithType ewt, Expr callingObject, ArgumentObject[] arguments, LocalVariableSymbol[] locals, bool isAddAccessor)
+        private ExprWithArgs BindWinRTEventAccessor(EventWithType ewt, Expr callingObject, ArgumentObject[] arguments, LocalVariableSymbol[] locals, bool isAddAccessor)
         {
             // We want to generate either:
             // WindowsRuntimeMarshal.AddEventHandler<delegType>(new Func<delegType, EventRegistrationToken>(x.add_foo), new Action<EventRegistrationToken>(x.remove_foo), value)
@@ -992,12 +992,10 @@ namespace Microsoft.CSharp.RuntimeBinder
             _symbolTable.PopulateSymbolTableWithName(methodName, new List<Type> { evtType }, windowsRuntimeMarshalType);
             ExprClass marshalClass = _exprFactory.CreateClass(_symbolTable.GetCTypeFromType(windowsRuntimeMarshalType));
             ExprMemberGroup addEventGrp = CreateMemberGroupEXPR(methodName, new [] { evtType }, marshalClass, SYMKIND.SK_MethodSymbol);
-            Expr expr = _binder.BindMethodGroupToArguments(
+            return _binder.BindMethodGroupToArguments(
                 BindingFlag.BIND_RVALUEREQUIRED | BindingFlag.BIND_STMTEXPRONLY,
                 addEventGrp,
                 args);
-
-            return expr;
         }
 
         private static void CheckForConditionalMethodError(Expr pExpr)
@@ -1025,18 +1023,15 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
         }
 
-        private Expr ReorderArgumentsForNamedAndOptional(Expr callingObject, Expr pResult)
+        private void ReorderArgumentsForNamedAndOptional(Expr callingObject, ExprWithArgs result)
         {
-            IExprWithArgs result = pResult as IExprWithArgs;
-            Debug.Assert(result != null);
-
             Expr arguments = result.OptionalArguments;
             AggregateType type;
             MethodOrPropertySymbol methprop;
             ExprMemberGroup memgroup;
             TypeArray typeArgs;
 
-            if (pResult is ExprCall call)
+            if (result is ExprCall call)
             {
                 type = call.MethWithInst.Ats;
                 methprop = call.MethWithInst.Meth();
@@ -1045,7 +1040,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
             else
             {
-                ExprProperty prop = pResult as ExprProperty;
+                ExprProperty prop = result as ExprProperty;
                 Debug.Assert(prop != null);
                 type = prop.PropWithTypeSlot.Ats;
                 methprop = prop.PropWithTypeSlot.Prop();
@@ -1053,9 +1048,10 @@ namespace Microsoft.CSharp.RuntimeBinder
                 typeArgs = null;
             }
 
-            ArgInfos argInfo = new ArgInfos();
-            bool b;
-            argInfo.carg = ExpressionBinder.CountArguments(arguments, out b);
+            ArgInfos argInfo = new ArgInfos
+            {
+                carg = ExpressionBinder.CountArguments(arguments, out _)
+            };
             _binder.FillInArgInfoFromArgList(argInfo, arguments);
 
             // We need to substitute type parameters BEFORE getting the most derived one because
@@ -1099,7 +1095,6 @@ namespace Microsoft.CSharp.RuntimeBinder
 
                 result.OptionalArguments = pList;
             }
-            return pResult;
         }
 
         private Expr StripNamedArgument(Expr pArg)

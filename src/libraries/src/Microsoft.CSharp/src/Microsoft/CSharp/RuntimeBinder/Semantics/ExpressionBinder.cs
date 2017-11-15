@@ -633,7 +633,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 ExprMemberGroup memGroup = GetExprFactory().CreateMemGroup(getOrCreateCall, mpwi);
 
                 PropWithType pwt = new PropWithType(invocationList, fieldType);
-                Expr propertyExpr = BindToProperty(getOrCreateCall, pwt, bindFlags, null, null, memGroup);
+                Expr propertyExpr = BindToProperty(getOrCreateCall, pwt, bindFlags, null, memGroup);
                 return propertyExpr;
             }
 
@@ -642,27 +642,21 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
 
-        internal Expr BindToProperty(Expr pObject, PropWithType pwt, BindingFlag bindFlags, Expr args, AggregateType pOtherType, ExprMemberGroup pMemGroup)
+        internal ExprProperty BindToProperty(Expr pObject, PropWithType pwt, BindingFlag bindFlags, Expr args, ExprMemberGroup pMemGroup)
         {
-            Debug.Assert(pwt.Sym != null &&
-                    pwt.Sym is PropertySymbol &&
+            Debug.Assert(pwt.Sym is PropertySymbol &&
                     pwt.GetType() != null &&
                     pwt.Prop().getClass() == pwt.GetType().getAggregate());
             Debug.Assert(pwt.Prop().Params.Count == 0 || pwt.Prop() is IndexerSymbol);
-            Debug.Assert(pOtherType == null ||
-                    !(pwt.Prop() is IndexerSymbol) &&
-                    pOtherType.getAggregate() == pwt.Prop().RetType.getAggregate());
 
             bool fConstrained;
-            MethWithType mwtGet;
-            MethWithType mwtSet;
 
             // We keep track of the type of the pObject which we're doing the call through so that we can report 
             // protection access errors later, either below when binding the get, or later when checking that
             // the setter is actually an lvalue.
             Expr pObjectThrough = pObject;
 
-            PostBindProperty(pwt, pObject, out mwtGet, out mwtSet);
+            PostBindProperty(pwt, pObject, out MethWithType mwtGet, out MethWithType mwtSet);
 
             if (mwtGet &&
                     (!mwtSet ||
@@ -681,11 +675,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 pObject = AdjustMemberObject(pwt, pObject, out fConstrained);
             }
+
             pMemGroup.OptionalObject = pObject;
-
             CType pReturnType = GetTypes().SubstType(pwt.Prop().RetType, pwt.GetType());
-            Debug.Assert(pOtherType == pReturnType || pOtherType == null);
-
             if (pObject != null && !pObject.IsOK)
             {
                 ExprProperty pResult = GetExprFactory().CreateProperty(pReturnType, pObjectThrough, args, pMemGroup, pwt, null);
@@ -700,39 +692,25 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 if (!mwtGet)
                 {
-                    if (pOtherType != null)
-                    {
-                        return GetExprFactory().CreateClass(pOtherType);
-                    }
-
                     throw ErrorContext.Error(ErrorCode.ERR_PropertyLacksGet, pwt);
                 }
-                else
+
+                CType type = null;
+                if (pObjectThrough != null)
                 {
-                    CType type = null;
-                    if (pObjectThrough != null)
+                    type = pObjectThrough.Type;
+                }
+
+                ACCESSERROR error = SemanticChecker.CheckAccess2(mwtGet.Meth(), mwtGet.GetType(), ContextForMemberLookup(), type);
+                if (error != ACCESSERROR.ACCESSERROR_NOERROR)
+                {
+                    // if the get exists, but is not accessible, give an error.
+                    if (error == ACCESSERROR.ACCESSERROR_NOACCESSTHRU)
                     {
-                        type = pObjectThrough.Type;
+                        throw ErrorContext.Error(ErrorCode.ERR_BadProtectedAccess, pwt, type, ContextForMemberLookup());
                     }
 
-                    ACCESSERROR error = SemanticChecker.CheckAccess2(mwtGet.Meth(), mwtGet.GetType(), ContextForMemberLookup(), type);
-                    if (error != ACCESSERROR.ACCESSERROR_NOERROR)
-                    {
-                        // if the get exists, but is not accessible, give an error.
-                        if (pOtherType != null)
-                        {
-                            return GetExprFactory().CreateClass(pOtherType);
-                        }
-
-                        if (error == ACCESSERROR.ACCESSERROR_NOACCESSTHRU)
-                        {
-                            throw ErrorContext.Error(ErrorCode.ERR_BadProtectedAccess, pwt, type, ContextForMemberLookup());
-                        }
-                        else
-                        {
-                            throw ErrorContext.Error(ErrorCode.ERR_InaccessibleGetter, pwt);
-                        }
-                    }
+                    throw ErrorContext.Error(ErrorCode.ERR_InaccessibleGetter, pwt);
                 }
             }
 
@@ -751,10 +729,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (mwtSet && objectIsLvalue(result.MemberGroup.OptionalObject))
             {
                 result.Flags |= EXPRFLAG.EXF_LVALUE;
-            }
-            if (pOtherType != null)
-            {
-                result.Flags |= EXPRFLAG.EXF_SAMENAMETYPE;
             }
 
             return result;
@@ -926,17 +900,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         ////////////////////////////////////////////////////////////////////////////////
         // Given a method group or indexer group, bind it to the arguments for an 
         // invocation.
-        internal Expr BindMethodGroupToArguments(BindingFlag bindFlags, ExprMemberGroup grp, Expr args)
+        internal ExprWithArgs BindMethodGroupToArguments(BindingFlag bindFlags, ExprMemberGroup grp, Expr args)
         {
             Debug.Assert(grp.SymKind == SYMKIND.SK_MethodSymbol || grp.SymKind == SYMKIND.SK_PropertySymbol && ((grp.Flags & EXPRFLAG.EXF_INDEXER) != 0));
 
             // Count the args.
-            bool argTypeErrors;
-            int carg = CountArguments(args, out argTypeErrors);
-            // We need to store the object because BindMethodGroupToArgumentsCore will 
-            // null it out in the case of an extension method, which is then consumed
-            // by BindToMethod. After that, we want to set the object back.
-            Expr pObject = grp.OptionalObject;
+            int carg = CountArguments(args, out bool _);
 
             // If we weren't given a pName, then we couldn't bind the method pName, so we should
             // just bail out of here.
@@ -959,21 +928,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return null;
             }
 
-            Expr exprRes;
             MethPropWithInst mpwiBest = result.GetBestResult();
-
             if (grp.SymKind == SYMKIND.SK_PropertySymbol)
             {
                 Debug.Assert((grp.Flags & EXPRFLAG.EXF_INDEXER) != 0);
                 //PropWithType pwt = new PropWithType(mpwiBest.Prop(), mpwiBest.GetType());
 
-                exprRes = BindToProperty(grp.OptionalObject, new PropWithType(mpwiBest), bindFlags, args, null/*typeOther*/, grp);
+                return BindToProperty(grp.OptionalObject, new PropWithType(mpwiBest), bindFlags, args, grp);
             }
-            else
-            {
-                exprRes = BindToMethod(new MethWithInst(mpwiBest), args, grp, (MemLookFlags)grp.Flags);
-            }
-            return exprRes;
+
+            return BindToMethod(new MethWithInst(mpwiBest), args, grp, (MemLookFlags)grp.Flags);
         }
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -1366,7 +1330,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                    );
         }
 
-        private void verifyMethodArgs(IExprWithArgs call, CType callingObjectType)
+        private void verifyMethodArgs(ExprWithArgs call, CType callingObjectType)
         {
             Debug.Assert(call != null);
             Expr argsPtr = call.OptionalArguments;
