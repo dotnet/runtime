@@ -250,6 +250,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public TypeArray AllocParams(int ctype, TypeArray array, int offset)
         {
+            if (ctype == 0)
+            {
+                return s_taEmpty;
+            }
+
+            if (ctype == array.Count)
+            {
+                return array;
+            }
+
             CType[] types = array.Items;
             CType[] newTypes = new CType[ctype];
             Array.ConstrainedCopy(types, offset, newTypes, 0, ctype);
