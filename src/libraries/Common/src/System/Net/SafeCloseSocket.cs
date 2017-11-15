@@ -182,7 +182,6 @@ namespace System.Net.Sockets
                     // Now free it with blocking.
                     innerSocket.BlockingRelease();
                 }
-
 #if DEBUG
             }
             catch (Exception exception) when (!ExceptionCheck.IsFatal(exception))
