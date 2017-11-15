@@ -62,7 +62,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         ERR_ReturnNotLValue = 1612,
         ERR_AssgReadonly2 = 1648,
         ERR_AssgReadonlyStatic2 = 1650,
-        ERR_AssgReadonlyLocalCause = 1656,
         ERR_BadCtorArgCount = 1729,
         ERR_NonInvocableMemberCalled = 1955,
         ERR_NamedArgumentSpecificationBeforeFixedArgument = 5002,

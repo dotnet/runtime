@@ -1126,6 +1126,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             Debug.Assert(!(expr is ExprLocal));
+            Debug.Assert(!(expr is ExprMemberGroup));
 
             switch (expr.Kind)
             {
@@ -1163,10 +1164,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case ExpressionKind.BoundLambda:
                 case ExpressionKind.Constant:
                     throw ErrorContext.Error(GetStandardLvalueError(kind));
-
-                case ExpressionKind.MemberGroup:
-                    ErrorCode err = ErrorCode.ERR_AssgReadonlyLocalCause;
-                    throw ErrorContext.Error(err, ((ExprMemberGroup)expr).Name, new ErrArgIds(MessageID.MethodGroup));
             }
 
             TryReportLvalueFailure(expr, kind);
