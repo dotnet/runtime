@@ -272,27 +272,12 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]  // ExclusiveAddressUse=false only supported on Windows
         public void Roundtrip_ExclusiveAddressUse_GetEqualsSet_False()
         {
             using (TcpClient client = new TcpClient())
             {
                 client.ExclusiveAddressUse = false;
                 Assert.False(client.ExclusiveAddressUse);
-            }
-        }
-
-        [OuterLoop] // TODO: Issue #11345
-        [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // ExclusiveAddressUse=false only supported on Windows
-        public void ExclusiveAddressUse_Set_False_NotSupported()
-        {
-            using (TcpClient client = new TcpClient())
-            {
-                Assert.Throws<SocketException>(() =>
-                {
-                    client.ExclusiveAddressUse = false;
-                });
             }
         }
 

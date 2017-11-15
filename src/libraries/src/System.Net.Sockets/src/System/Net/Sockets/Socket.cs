@@ -737,6 +737,7 @@ namespace System.Net.Sockets
             // This may throw ObjectDisposedException.
             SocketError errorCode = SocketPal.Bind(
                 _handle,
+                _protocolType,
                 socketAddress.Buffer,
                 socketAddress.Size);
 
