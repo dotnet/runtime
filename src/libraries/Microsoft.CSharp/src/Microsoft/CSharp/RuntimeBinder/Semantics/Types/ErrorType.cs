@@ -16,7 +16,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ErrorType : CType
     {
         public Name nameText;
-        public TypeArray typeArgs;
 
         // ErrorTypes are always either the per-TypeManager singleton ErrorType
         // that has a null nameText and no namespace parent, or else have a

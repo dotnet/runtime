@@ -37,7 +37,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             _typeTable = new TypeTable();
 
             // special types with their own symbol kind.
-            _errorType = _typeFactory.CreateError(null, null, null);
+            _errorType = _typeFactory.CreateError(null);
             _voidType = _typeFactory.CreateVoid();
             _nullType = _typeFactory.CreateNull();
             _typeMethGrp = _typeFactory.CreateMethodGroup();
@@ -158,15 +158,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             Debug.Assert(agg.GetTypeVars().Count == typeArgs.Count);
-
-            Name name = _BSymmgr.GetNameFromPtrs(typeArgs, atsOuter);
-            Debug.Assert(name != null);
-
-            AggregateType pAggregate = _typeTable.LookupAggregate(name, agg);
+            AggregateType pAggregate = _typeTable.LookupAggregate(agg, atsOuter, typeArgs);
             if (pAggregate == null)
             {
                 pAggregate = _typeFactory.CreateAggregateType(
-                          name,
                           agg,
                           typeArgs,
                           atsOuter
@@ -175,7 +170,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert(!pAggregate.fConstraintsChecked && !pAggregate.fConstraintError);
 
                 pAggregate.SetErrors(false);
-                _typeTable.InsertAggregate(name, agg, pAggregate);
+                _typeTable.InsertAggregate(agg, atsOuter, typeArgs, pAggregate);
 
                 // If we have a generic type definition, then we need to set the
                 // base class to be our current base type, and use that to calculate 
@@ -313,33 +308,21 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return pParamModifier;
         }
 
-        public ErrorType GetErrorType(
-                Name nameText,
-                TypeArray typeArgs)
+        public ErrorType GetErrorType(Name nameText)
         {
             Debug.Assert(nameText != null);
-            if (typeArgs == null)
-            {
-                typeArgs = BSYMMGR.EmptyTypeArray();
-            }
-
-            Name name = _BSymmgr.GetNameFromPtrs(nameText, typeArgs);
-            Debug.Assert(name != null);
-
-            ErrorType pError = _typeTable.LookupError(name);
-
+            ErrorType pError = _typeTable.LookupError(nameText);
             if (pError == null)
             {
                 // No existing error symbol. Create a new one.
-                pError = _typeFactory.CreateError(name, nameText, typeArgs);
+                pError = _typeFactory.CreateError(nameText);
                 pError.SetErrors(true);
-                _typeTable.InsertError(name, pError);
+                _typeTable.InsertError(nameText, pError);
             }
             else
             {
                 Debug.Assert(pError.HasErrors());
                 Debug.Assert(pError.nameText == nameText);
-                Debug.Assert(pError.typeArgs == typeArgs);
             }
 
             return pError;
@@ -440,6 +423,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case TypeKind.TK_VoidType:
                 case TypeKind.TK_MethodGroupType:
                 case TypeKind.TK_ArgumentListType:
+                case TypeKind.TK_ErrorType:
                     return type;
 
                 case TypeKind.TK_ParameterModifierType:
@@ -468,20 +452,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         if (ats.GetTypeArgsAll() != typeArgs)
                             return GetAggregate(ats.getAggregate(), typeArgs);
                     }
-                    return type;
-
-                case TypeKind.TK_ErrorType:
-                    ErrorType err = (ErrorType)type;
-                    if (err.HasParent)
-                    {
-                        Debug.Assert(err.nameText != null && err.typeArgs != null);
-                        TypeArray typeArgs = SubstTypeArray(err.typeArgs, pctx);
-                        if (typeArgs != err.typeArgs)
-                        {
-                            return GetErrorType(err.nameText, typeArgs);
-                        }
-                    }
-
                     return type;
 
                 case TypeKind.TK_TypeParameterType:
@@ -621,28 +591,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 case TypeKind.TK_ErrorType:
                     ErrorType errSrc = (ErrorType)typeSrc;
-                    if (!(typeDst is ErrorType errDst) || !errSrc.HasParent || !errDst.HasParent)
-                        return false;
-
-                {
-                    Debug.Assert(errSrc.nameText != null && errSrc.typeArgs != null);
-                    Debug.Assert(errDst.nameText != null && errDst.typeArgs != null);
-
-                    if (errSrc.nameText != errDst.nameText || errSrc.typeArgs.Count != errDst.typeArgs.Count
-                        || errSrc.HasParent != errDst.HasParent)
+                    if (!(typeDst is ErrorType errDst))
                     {
                         return false;
                     }
 
-                    // All the args must unify.
-                    for (int i = 0; i < errSrc.typeArgs.Count; i++)
-                    {
-                        if (!SubstEqualTypesCore(errDst.typeArgs[i], errSrc.typeArgs[i], pctx))
-                            return false;
-                    }
-                }
-
-                    return true;
+                    Name srcName = errSrc.nameText;
+                    return srcName != null && errSrc.nameText == errDst.nameText;
 
                 case TypeKind.TK_TypeParameterType:
                     { // BLOCK
@@ -726,20 +681,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return false;
 
                 case TypeKind.TK_ErrorType:
-                    ErrorType err = (ErrorType)type;
-                    if (err.HasParent)
-                    {
-                        Debug.Assert(err.nameText != null && err.typeArgs != null);
-
-                        for (int i = 0; i < err.typeArgs.Count; i++)
-                        {
-                            if (TypeContainsType(err.typeArgs[i], typeFind))
-                                return true;
-                        }
-                    }
-
-                    return false;
-
                 case TypeKind.TK_TypeParameterType:
                     return false;
             }
@@ -757,6 +698,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case TypeKind.TK_NullType:
                 case TypeKind.TK_VoidType:
                 case TypeKind.TK_MethodGroupType:
+                case TypeKind.TK_ErrorType:
                     return false;
 
                 case TypeKind.TK_ArrayType:
@@ -778,23 +720,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             }
                         }
                     }
-                    return false;
-
-                case TypeKind.TK_ErrorType:
-                    ErrorType err = (ErrorType)type;
-                    if (err.HasParent)
-                    {
-                        Debug.Assert(err.nameText != null && err.typeArgs != null);
-
-                        for (int i = 0; i < err.typeArgs.Count; i++)
-                        {
-                            if (TypeContainsTyVars(err.typeArgs[i], typeVars))
-                            {
-                                return true;
-                            }
-                        }
-                    }
-
                     return false;
 
                 case TypeKind.TK_TypeParameterType:

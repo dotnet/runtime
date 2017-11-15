@@ -194,9 +194,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                 }
 
-                _pFixedResults[iParam] = GetTypeManager().GetErrorType(
-                                        ((TypeParameterType)_pMethodTypeParameters[iParam]).GetName(),
-                                        BSYMMGR.EmptyTypeArray());
+                _pFixedResults[iParam] = GetTypeManager()
+                    .GetErrorType(((TypeParameterType)_pMethodTypeParameters[iParam]).GetName());
             }
             return GetGlobalSymbols().AllocParams(_pMethodTypeParameters.Count, _pFixedResults);
         }
