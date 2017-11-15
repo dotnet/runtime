@@ -2584,134 +2584,27 @@ HRESULT
 ClrDataAccess::GetApplicationBase(CLRDATA_ADDRESS appDomain, int count,
                                   __out_z __inout_ecount(count) wchar_t *base, unsigned int *pNeeded)
 {
-    if (appDomain == NULL || (base == NULL && pNeeded == NULL) || (base != NULL && count == 0))
-    {
-        return E_INVALIDARG;
-    }
+    // Method is not supported on CoreCLR
 
-    SOSDacEnter();
-    AppDomain* pAppDomain = PTR_AppDomain(TO_TADDR(appDomain));
-
-    // Turn from bytes to wide characters
-    if ((PTR_BaseDomain(pAppDomain) == PTR_BaseDomain(SharedDomain::GetDomain())) ||
-        (PTR_BaseDomain(pAppDomain) == PTR_BaseDomain(SystemDomain::System())))
-    {
-        // Shared domain and SystemDomain don't have this field.
-        if (base)
-            base[0] = 0;
-
-        if (pNeeded)
-            *pNeeded = 1;
-    }
-
-    if (!pAppDomain->m_applicationBase.IsEmpty())
-    {
-        if (!pAppDomain->m_applicationBase.
-            DacGetUnicode(count, base, pNeeded))
-        {
-            hr = E_FAIL;
-        }
-    }
-    else
-    {
-        if (base)
-            base[0] = 0;
-        
-        if (pNeeded)
-            *pNeeded = 1;
-    }
-
-    SOSDacLeave();
-    return hr;
+    return E_FAIL;
 }
 
 HRESULT
 ClrDataAccess::GetPrivateBinPaths(CLRDATA_ADDRESS appDomain, int count,
                                   __out_z __inout_ecount(count) wchar_t *paths, unsigned int *pNeeded)
 {
-    if (appDomain == NULL || (paths == NULL && pNeeded == NULL) || (paths != NULL && count == 0))
-        return E_INVALIDARG;
+    // Method is not supported on CoreCLR
 
-    SOSDacEnter();
-    AppDomain* pAppDomain = PTR_AppDomain(TO_TADDR(appDomain));
-
-    // Turn from bytes to wide characters
-    if ((PTR_BaseDomain(pAppDomain) == PTR_BaseDomain(SharedDomain::GetDomain())) ||
-        (PTR_BaseDomain(pAppDomain) == PTR_BaseDomain(SystemDomain::System())))
-    {
-        // Shared domain and SystemDomain don't have this field.
-        if (pNeeded)
-            *pNeeded = 1;
-
-        if (paths)
-            paths[0] = 0;
-
-        hr = S_OK;
-    }
-
-    if (!pAppDomain->m_privateBinPaths.IsEmpty())
-    {
-        if (!pAppDomain->m_privateBinPaths.DacGetUnicode(count, paths, pNeeded))
-        {
-            hr = E_FAIL;
-        }
-    }
-    else
-    {
-        if (paths)
-            paths[0] = 0;
-
-        if (pNeeded)
-            *pNeeded = 1;
-    }
-
-    SOSDacLeave();
-    return hr;
+    return E_FAIL;
 }
 
 HRESULT
 ClrDataAccess::GetAppDomainConfigFile(CLRDATA_ADDRESS appDomain, int count,
                                       __out_z __inout_ecount(count) wchar_t *configFile, unsigned int *pNeeded)
 {
-    if (appDomain == NULL || (configFile == NULL && pNeeded == NULL) || (configFile != NULL && count == 0))
-    {
-        return E_INVALIDARG;
-    }
+    // Method is not supported on CoreCLR
 
-    SOSDacEnter();
-    AppDomain* pAppDomain = PTR_AppDomain(TO_TADDR(appDomain));
-
-    // Turn from bytes to wide characters
-
-    if ((PTR_BaseDomain(pAppDomain) == PTR_BaseDomain(SharedDomain::GetDomain())) ||
-        (PTR_BaseDomain(pAppDomain) == PTR_BaseDomain(SystemDomain::System())))
-    {
-        // Shared domain and SystemDomain don't have this field.
-        if (configFile)
-            configFile[0] = 0;
-
-        if (pNeeded)
-            *pNeeded = 1;
-    }
-
-    if (!pAppDomain->m_configFile.IsEmpty())
-    {
-        if (!pAppDomain->m_configFile.DacGetUnicode(count, configFile, pNeeded))
-        {
-            hr = E_FAIL;
-        }
-    }
-    else
-    {
-        if (configFile)
-            configFile[0] = 0;
-
-        if (pNeeded)
-            *pNeeded = 1;
-    }
-    
-    SOSDacLeave();
-    return hr;
+    return E_FAIL;
 }
 
 HRESULT

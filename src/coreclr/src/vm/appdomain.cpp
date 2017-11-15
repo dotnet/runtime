@@ -6422,22 +6422,6 @@ PVOID AppDomain::GetFriendlyNameNoSet(bool* isUtf8)
 
 #endif // DACCESS_COMPILE
 
-void AppDomain::CacheStringsForDAC()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    //
-    // If the application base, private bin paths, and configuration file are
-    // available, cache them so DAC can read them out of memory
-    //
-}
-
 #ifndef DACCESS_COMPILE
 
 BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly *pFile, BOOL fAllowFailure)
@@ -7694,8 +7678,6 @@ void AppDomain::InitializeDomainContext(BOOL allowRedirects,
         setupDomain.Call(args);
     }
     GCPROTECT_END();
-
-    CacheStringsForDAC();
 #endif // CROSSGEN_COMPILE
 }
 
