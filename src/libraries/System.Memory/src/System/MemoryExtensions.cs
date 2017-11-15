@@ -8,12 +8,12 @@ using System.Runtime.CompilerServices;
 namespace System
 {
     /// <summary>
-    /// Extension methods for Span&lt;T&gt;.
+    /// Extension methods for Span{T}, Memory{T}, and friends.
     /// </summary>
-    public static partial class SpanExtensions
+    public static partial class MemoryExtensions
     {
         /// <summary>
-        /// Searches for the specified value and returns the index of its first occurrence. If not found, returns -1. Values are compared using IEquatable&lt;T&gt;.Equals(T). 
+        /// Searches for the specified value and returns the index of its first occurrence. If not found, returns -1. Values are compared using IEquatable{T}.Equals(T). 
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to search for.</param>
@@ -30,7 +30,7 @@ namespace System
         }
 
         /// <summary>
-        /// Searches for the specified sequence and returns the index of its first occurrence. If not found, returns -1. Values are compared using IEquatable&lt;T&gt;.Equals(T). 
+        /// Searches for the specified sequence and returns the index of its first occurrence. If not found, returns -1. Values are compared using IEquatable{T}.Equals(T). 
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="value">The sequence to search for.</param>
@@ -48,7 +48,7 @@ namespace System
         }
 
         /// <summary>
-        /// Determines whether two sequences are equal by comparing the elements using IEquatable&lt;T&gt;.Equals(T). 
+        /// Determines whether two sequences are equal by comparing the elements using IEquatable{T}.Equals(T). 
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool SequenceEqual<T>(this Span<T> first, ReadOnlySpan<T> second)
@@ -65,7 +65,7 @@ namespace System
         }
 
         /// <summary>
-        /// Searches for the specified value and returns the index of its first occurrence. If not found, returns -1. Values are compared using IEquatable&lt;T&gt;.Equals(T). 
+        /// Searches for the specified value and returns the index of its first occurrence. If not found, returns -1. Values are compared using IEquatable{T}.Equals(T). 
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to search for.</param>
@@ -82,7 +82,7 @@ namespace System
         }
 
         /// <summary>
-        /// Searches for the specified sequence and returns the index of its first occurrence. If not found, returns -1. Values are compared using IEquatable&lt;T&gt;.Equals(T). 
+        /// Searches for the specified sequence and returns the index of its first occurrence. If not found, returns -1. Values are compared using IEquatable{T}.Equals(T). 
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="value">The sequence to search for.</param>
@@ -172,7 +172,7 @@ namespace System
         }
 
         /// <summary>
-        /// Determines whether two sequences are equal by comparing the elements using IEquatable&lt;T&gt;.Equals(T). 
+        /// Determines whether two sequences are equal by comparing the elements using IEquatable{T}.Equals(T). 
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool SequenceEqual<T>(this ReadOnlySpan<T> first, ReadOnlySpan<T> second)
@@ -273,6 +273,23 @@ namespace System
         public static void CopyTo<T>(this T[] array, Span<T> destination)
         {
             new ReadOnlySpan<T>(array).CopyTo(destination);
+        }
+
+        /// <summary>
+        /// Copies the contents of the array into the memory. If the source
+        /// and destinations overlap, this method behaves as if the original values are in
+        /// a temporary location before the destination is overwritten.
+        /// 
+        ///<param name="array">The array to copy items from.</param>
+        /// <param name="destination">The memory to copy items into.</param>
+        /// <exception cref="System.ArgumentException">
+        /// Thrown when the destination is shorter than the source array.
+        /// </exception>
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void CopyTo<T>(this T[] array, Memory<T> destination)
+        {
+           array.CopyTo(destination.Span);
         }
     }
 }
