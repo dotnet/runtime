@@ -9,20 +9,20 @@ using System.Security;
 
 namespace System
 {
-    // CLRConfig is mainly reading the config switch values. this is used when we cannot use the AppContext class 
-    // one example, is using the context switch in the globalization code which require to read the switch very 
+    // CLRConfig is mainly reading the config switch values. this is used when we cannot use the AppContext class
+    // one example, is using the context switch in the globalization code which require to read the switch very
     // early even before the appdomain get initialized.
     // In general AppContext should be used instead of CLRConfig if there is no reason prevent that.
     internal class CLRConfig
     {
-        internal static bool GetBoolValue(string switchName)
+        internal static bool GetBoolValue(string switchName, out bool exist)
         {
-            return GetConfigBoolValue(switchName);
+            return GetConfigBoolValue(switchName, out exist);
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
-        private extern static bool GetConfigBoolValue(string configSwitchName);
+        private extern static bool GetConfigBoolValue(string configSwitchName, out bool exist);
     }
 }  // namespace System
 
