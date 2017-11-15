@@ -3065,11 +3065,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         call->fgArgInfo = new (this, CMK_Unknown) fgArgInfo(this, call, numArgs);
     }
 
-    if (varTypeIsStruct(call))
-    {
-        fgFixupStructReturn(call);
-    }
-
     /* First we morph the argument subtrees ('this' pointer, arguments, etc.).
      * During the first call to fgMorphArgs we also record the
      * information about late arguments we have in 'fgArgInfo'.
@@ -8253,6 +8248,10 @@ GenTreePtr Compiler::fgAssignRecursiveCallArgToCallerParam(GenTreePtr       arg,
 
 GenTreePtr Compiler::fgMorphCall(GenTreeCall* call)
 {
+    if (varTypeIsStruct(call))
+    {
+        fgFixupStructReturn(call);
+    }
     if (call->CanTailCall())
     {
         // It should either be an explicit (i.e. tail prefixed) or an implicit tail call
@@ -8396,11 +8395,6 @@ GenTreePtr Compiler::fgMorphCall(GenTreeCall* call)
             }
         }
 #endif // FEATURE_TAILCALL_OPT
-
-        if (varTypeIsStruct(call))
-        {
-            fgFixupStructReturn(call);
-        }
 
         var_types callType = call->TypeGet();
 
