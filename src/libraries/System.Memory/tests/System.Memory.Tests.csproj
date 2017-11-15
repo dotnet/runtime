@@ -76,6 +76,7 @@
     <Compile Include="ReadOnlySpan\ToArray.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Memory\CopyTo.cs" />
     <Compile Include="Memory\CtorArray.cs" />
     <Compile Include="Memory\CtorArrayIntInt.cs" />
     <Compile Include="Memory\CustomMemoryForTest.cs" />
@@ -94,6 +95,7 @@
     <Compile Include="MemoryMarshal\AsMemory.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ReadOnlyMemory\CopyTo.cs" />
     <Compile Include="ReadOnlyMemory\CtorArray.cs" />
     <Compile Include="ReadOnlyMemory\CtorArrayIntInt.cs" />
     <Compile Include="ReadOnlyMemory\DangerousTryGetArray.cs" />

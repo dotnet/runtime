@@ -1662,10 +1662,12 @@ namespace System
     public readonly struct Memory<T>
     {
         public static Memory<T> Empty { get { throw null; } }
-        public Memory(T[] array) { throw null;}
-        public Memory(T[] array, int start, int length) { throw null;}
+        public Memory(T[] array) { throw null; }
+        public Memory(T[] array, int start, int length) { throw null; }
         public bool IsEmpty { get { throw null; } }
         public int Length { get { throw null; } }
+        public void CopyTo(Memory<T> destination) { }
+        public bool TryCopyTo(Memory<T> destination) { throw null; }
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public override bool Equals(object obj) { throw null; }
         public bool Equals(Memory<T> other) { throw null; }
@@ -1885,10 +1887,12 @@ namespace System
     public readonly struct ReadOnlyMemory<T>
     {
         public static ReadOnlyMemory<T> Empty { get { throw null; } }
-        public ReadOnlyMemory(T[] array) { throw null;}
-        public ReadOnlyMemory(T[] array, int start, int length) { throw null;}
+        public ReadOnlyMemory(T[] array) { throw null; }
+        public ReadOnlyMemory(T[] array, int start, int length) { throw null; }
         public bool IsEmpty { get { throw null; } }
         public int Length { get { throw null; } }
+        public void CopyTo(Memory<T> destination) { }
+        public bool TryCopyTo(Memory<T> destination) { throw null; }
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public override bool Equals(object obj) { throw null; }
         public bool Equals(ReadOnlyMemory<T> other) { throw null; }

@@ -10,9 +10,9 @@ namespace System
     public readonly ref struct ReadOnlySpan<T>
     {
         public static ReadOnlySpan<T> Empty { get { throw null; } }
-        public ReadOnlySpan(T[] array) { throw null;}
-        public ReadOnlySpan(T[] array, int start, int length) { throw null;}
-        public unsafe ReadOnlySpan(void* pointer, int length) { throw null;}
+        public ReadOnlySpan(T[] array) { throw null; }
+        public ReadOnlySpan(T[] array, int start, int length) { throw null; }
+        public unsafe ReadOnlySpan(void* pointer, int length) { throw null; }
         public bool IsEmpty { get { throw null; } }
         public T this[int index] { get { throw null; }}
         public int Length { get { throw null; } }
@@ -48,9 +48,9 @@ namespace System
     public readonly ref struct Span<T>
     {
         public static Span<T> Empty { get { throw null; } }
-        public Span(T[] array) { throw null;}
-        public Span(T[] array, int start, int length) { throw null;}
-        public unsafe Span(void* pointer, int length) { throw null;}
+        public Span(T[] array) { throw null; }
+        public Span(T[] array, int start, int length) { throw null; }
+        public unsafe Span(void* pointer, int length) { throw null; }
         public bool IsEmpty { get { throw null; } }
         public ref T this[int index] { get { throw null; } }
         public int Length { get { throw null; } }
@@ -86,7 +86,7 @@ namespace System
         }
     }
     
-    public static class SpanExtensions
+    public static class MemoryExtensions
     {
         public static int IndexOf<T>(this Span<T> span, T value) where T : IEquatable<T> { throw null; }
         public static int IndexOf<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T> { throw null; }
@@ -112,6 +112,7 @@ namespace System
         public static ReadOnlySpan<T> AsReadOnlySpan<T>(this ArraySegment<T> arraySegment) { throw null; }
 
         public static void CopyTo<T>(this T[] array, Span<T> destination) { throw null; }
+        public static void CopyTo<T>(this T[] array, Memory<T> destination) { throw null; }
 
         public static int IndexOf<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T> { throw null; }
         public static int IndexOf<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : IEquatable<T> { throw null; }
@@ -134,10 +135,12 @@ namespace System
     public readonly struct ReadOnlyMemory<T>
     {
         public static ReadOnlyMemory<T> Empty { get { throw null; } }
-        public ReadOnlyMemory(T[] array) { throw null;}
-        public ReadOnlyMemory(T[] array, int start, int length) { throw null;}
+        public ReadOnlyMemory(T[] array) { throw null; }
+        public ReadOnlyMemory(T[] array, int start, int length) { throw null; }
         public bool IsEmpty { get { throw null; } }
         public int Length { get { throw null; } }
+        public void CopyTo(Memory<T> destination) { }
+        public bool TryCopyTo(Memory<T> destination) { throw null; }
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public override bool Equals(object obj) { throw null; }
         public bool Equals(ReadOnlyMemory<T> other) { throw null; }
@@ -157,10 +160,12 @@ namespace System
     public readonly struct Memory<T>
     {
         public static Memory<T> Empty { get { throw null; } }
-        public Memory(T[] array) { throw null;}
-        public Memory(T[] array, int start, int length) { throw null;}
+        public Memory(T[] array) { throw null; }
+        public Memory(T[] array, int start, int length) { throw null; }
         public bool IsEmpty { get { throw null; } }
         public int Length { get { throw null; } }
+        public void CopyTo(Memory<T> destination) { }
+        public bool TryCopyTo(Memory<T> destination) { throw null; }
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public override bool Equals(object obj) { throw null; }
         public bool Equals(Memory<T> other) { throw null; }

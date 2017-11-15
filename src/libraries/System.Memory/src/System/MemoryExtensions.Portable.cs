@@ -8,9 +8,9 @@ using System.Runtime.CompilerServices;
 namespace System
 {
     /// <summary>
-    /// Extension methods for Span&lt;T&gt;.
+    /// Extension methods for Span{T}, Memory{T}, and friends.
     /// </summary>
-    public static partial class SpanExtensions
+    public static partial class MemoryExtensions
     {
         /// <summary>
         /// Casts a Span of one primitive type <typeparamref name="T"/> to Span of bytes.
@@ -24,7 +24,15 @@ namespace System
         /// Thrown if the Length property of the new Span would exceed Int32.MaxValue.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Span<byte> AsBytes<T>(this Span<T> source) where T : struct => Span.AsBytes(source);
+        public static Span<byte> AsBytes<T>(this Span<T> source)
+            where T : struct
+        {
+            if (SpanHelpers.IsReferenceOrContainsReferences<T>())
+                ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
+
+            int newLength = checked(source.Length * Unsafe.SizeOf<T>());
+            return new Span<byte>(Unsafe.As<Pinnable<byte>>(source.Pinnable), source.ByteOffset, newLength);
+        }
 
         /// <summary>
         /// Casts a ReadOnlySpan of one primitive type <typeparamref name="T"/> to ReadOnlySpan of bytes.
@@ -38,19 +46,42 @@ namespace System
         /// Thrown if the Length property of the new Span would exceed Int32.MaxValue.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> AsBytes<T>(this ReadOnlySpan<T> source) where T : struct => Span.AsBytes(source);
+        public static ReadOnlySpan<byte> AsBytes<T>(this ReadOnlySpan<T> source)
+            where T : struct
+        {
+            if (SpanHelpers.IsReferenceOrContainsReferences<T>())
+                ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
+
+            int newLength = checked(source.Length * Unsafe.SizeOf<T>());
+            return new ReadOnlySpan<byte>(Unsafe.As<Pinnable<byte>>(source.Pinnable), source.ByteOffset, newLength);
+        }
 
         /// <summary>
         /// Creates a new readonly span over the portion of the target string.
         /// </summary>
         /// <param name="text">The target string.</param>
         /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is null.</exception>
-        public static ReadOnlySpan<char> AsReadOnlySpan(this string text) => Span.AsReadOnlySpan(text);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpan<char> AsReadOnlySpan(this string text)
+        {
+            if (text == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
+
+            return new ReadOnlySpan<char>(Unsafe.As<Pinnable<char>>(text), StringAdjustment, text.Length);
+        }
 
         /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target string.</summary>
         /// <param name="text">The target string.</param>
         /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is a null reference (Nothing in Visual Basic).</exception>
-        public static ReadOnlyMemory<char> AsReadOnlyMemory(this string text) => Span.AsReadOnlyMemory(text);
+        public static ReadOnlyMemory<char> AsReadOnlyMemory(this string text)
+        {
+            if (text == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
+            }
+
+            return new ReadOnlyMemory<char>(text, 0, text.Length);
+        }
 
         /// <summary>Attempts to get the underlying <see cref="string"/> from a <see cref="ReadOnlyMemory{T}"/>.</summary>
         /// <param name="readOnlyMemory">The memory that may be wrapping a <see cref="string"/> object.</param>
@@ -58,8 +89,23 @@ namespace System
         /// <param name="start">The starting location in <paramref name="text"/>.</param>
         /// <param name="length">The number of items in <paramref name="text"/>.</param>
         /// <returns></returns>
-        public static bool TryGetString(this ReadOnlyMemory<char> readOnlyMemory, out string text, out int start, out int length) =>
-            Span.TryGetString(readOnlyMemory, out text, out start, out length);
+        public static bool TryGetString(this ReadOnlyMemory<char> readOnlyMemory, out string text, out int start, out int length)
+        {
+            if (readOnlyMemory.GetObjectStartLength(out int offset, out int count) is string s)
+            {
+                text = s;
+                start = offset;
+                length = count;
+                return true;
+            }
+            else
+            {
+                text = null;
+                start = 0;
+                length = 0;
+                return false;
+            }
+        }
 
         /// <summary>
         /// Casts a Span of one primitive type <typeparamref name="TFrom"/> to another primitive type <typeparamref name="TTo"/>.
@@ -76,10 +122,19 @@ namespace System
         /// Thrown if the Length property of the new Span would exceed Int32.MaxValue.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Span<TTo> NonPortableCast<TFrom, TTo>(this Span<TFrom> source) 
+        public static Span<TTo> NonPortableCast<TFrom, TTo>(this Span<TFrom> source)
             where TFrom : struct
             where TTo : struct
-            => Span.NonPortableCast<TFrom, TTo>(source);
+        {
+            if (SpanHelpers.IsReferenceOrContainsReferences<TFrom>())
+                ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(TFrom));
+
+            if (SpanHelpers.IsReferenceOrContainsReferences<TTo>())
+                ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(TTo));
+
+            int newLength = checked((int)((long)source.Length * Unsafe.SizeOf<TFrom>() / Unsafe.SizeOf<TTo>()));
+            return new Span<TTo>(Unsafe.As<Pinnable<TTo>>(source.Pinnable), source.ByteOffset, newLength);
+        }
 
         /// <summary>
         /// Casts a ReadOnlySpan of one primitive type <typeparamref name="TFrom"/> to another primitive type <typeparamref name="TTo"/>.
@@ -98,7 +153,31 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlySpan<TTo> NonPortableCast<TFrom, TTo>(this ReadOnlySpan<TFrom> source)
             where TFrom : struct
-            where TTo : struct 
-            => Span.NonPortableCast<TFrom, TTo>(source);
+            where TTo : struct
+        {
+            if (SpanHelpers.IsReferenceOrContainsReferences<TFrom>())
+                ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(TFrom));
+
+            if (SpanHelpers.IsReferenceOrContainsReferences<TTo>())
+                ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(TTo));
+
+            int newLength = checked((int)((long)source.Length * Unsafe.SizeOf<TFrom>() / Unsafe.SizeOf<TTo>()));
+            return new ReadOnlySpan<TTo>(Unsafe.As<Pinnable<TTo>>(source.Pinnable), source.ByteOffset, newLength);
+        }
+
+
+        internal static readonly IntPtr StringAdjustment = MeasureStringAdjustment();
+
+        private static IntPtr MeasureStringAdjustment()
+        {
+            string sampleString = "a";
+            unsafe
+            {
+                fixed (char* pSampleString = sampleString)
+                {
+                    return Unsafe.ByteOffset<char>(ref Unsafe.As<Pinnable<char>>(sampleString).Data, ref Unsafe.AsRef<char>(pSampleString));
+                }
+            }
+        }
     }
 }

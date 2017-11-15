@@ -188,7 +188,7 @@ namespace System
                     // and then cast to a Memory<T>.  Such a cast can only be done with unsafe or marshaling code,
                     // in which case that's the dangerous operation performed by the dev, and we're just following
                     // suit here to make it work as best as possible.
-                    return new Span<T>(Unsafe.As<Pinnable<T>>(s), SpanExtensions.StringAdjustment, s.Length).Slice(_index, _length);
+                    return new Span<T>(Unsafe.As<Pinnable<T>>(s), MemoryExtensions.StringAdjustment, s.Length).Slice(_index, _length);
                 }
                 else
                 {
@@ -196,6 +196,29 @@ namespace System
                 }
             }
         }
+
+        /// <summary>
+        /// Copies the contents of the memory into the destination. If the source
+        /// and destination overlap, this method behaves as if the original values are in
+        /// a temporary location before the destination is overwritten.
+        ///
+        /// <param name="destination">The Memory to copy items into.</param>
+        /// <exception cref="System.ArgumentException">
+        /// Thrown when the destination is shorter than the source.
+        /// </exception>
+        /// </summary>
+        public void CopyTo(Memory<T> destination) => Span.CopyTo(destination.Span);
+
+        /// <summary>
+        /// Copies the contents of the memory into the destination. If the source
+        /// and destination overlap, this method behaves as if the original values are in
+        /// a temporary location before the destination is overwritten.
+        ///
+        /// <returns>If the destination is shorter than the source, this method
+        /// return false and no data is written to the destination.</returns>
+        /// </summary>
+        /// <param name="destination">The span to copy items into.</param>
+        public bool TryCopyTo(Memory<T> destination) => Span.TryCopyTo(destination.Span);
 
         /// <summary>
         /// Returns a handle for the array.
