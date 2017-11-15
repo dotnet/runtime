@@ -339,7 +339,7 @@ is_address_protected (MonoJitInfo *ji, MonoJitExceptionInfo *ei, gpointer ip)
 
 	for (i = 0; i < table->num_holes; ++i) {
 		MonoTryBlockHoleJitInfo *hole = &table->holes [i];
-		if (ji->clauses [hole->clause].try_offset == ji->clauses [clause].try_offset && hole->offset <= offset && hole->offset + hole->length > offset)
+		if (hole->clause == clause && hole->offset <= offset && hole->offset + hole->length > offset)
 			return FALSE;
 	}
 	return TRUE;
