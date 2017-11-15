@@ -15768,7 +15768,7 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
 
             // Below, we are going to set impInlineInfo->retExpr to the tree with the return
             // expression. At this point, retExpr could already be set if there are multiple
-            // return blocks (meaning lvaInlineeReturnSpillTemp != BAD_VAR_NUM) and one of
+            // return blocks (meaning fgNeedReturnSpillTemp() == true) and one of
             // the other blocks already set it. If there is only a single return block,
             // retExpr shouldn't be set. However, this is not true if we reimport a block
             // with a return. In that case, retExpr will be set, then the block will be
@@ -15800,7 +15800,7 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
                     }
                 }
 
-                if (lvaInlineeReturnSpillTemp != BAD_VAR_NUM)
+                if (fgNeedReturnSpillTemp())
                 {
                     assert(info.compRetNativeType != TYP_VOID &&
                            (fgMoreThanOneReturnBlock() || impInlineInfo->HasGcRefLocals()));
@@ -15809,7 +15809,7 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
                     // If we are inlining a call that returns a struct, where the actual "native" return type is
                     // not a struct (for example, the struct is composed of exactly one int, and the native
                     // return type is thus an int), and the inlinee has multiple return blocks (thus,
-                    // lvaInlineeReturnSpillTemp is != BAD_VAR_NUM, and is the index of a local var that is set
+                    // fgNeedReturnSpillTemp() == true, and is the index of a local var that is set
                     // to the *native* return type), and at least one of the return blocks is the result of
                     // a call, then we have a problem. The situation is like this (from a failed test case):
                     //
@@ -15922,7 +15922,7 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
                     CLANG_FORMAT_COMMENT_ANCHOR;
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
-                    if (lvaInlineeReturnSpillTemp != BAD_VAR_NUM)
+                    if (fgNeedReturnSpillTemp())
                     {
                         if (!impInlineInfo->retExpr)
                         {
@@ -15950,7 +15950,7 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
                 {
                     assert(!iciCall->HasRetBufArg());
                     assert(retRegCount >= 2);
-                    if (lvaInlineeReturnSpillTemp != BAD_VAR_NUM)
+                    if (fgNeedReturnSpillTemp())
                     {
                         if (!impInlineInfo->retExpr)
                         {
@@ -15970,7 +15970,7 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
                     assert(iciCall->HasRetBufArg());
                     GenTreePtr dest = gtCloneExpr(iciCall->gtCallArgs->gtOp.gtOp1);
                     // spill temp only exists if there are multiple return points
-                    if (lvaInlineeReturnSpillTemp != BAD_VAR_NUM)
+                    if (fgNeedReturnSpillTemp())
                     {
                         // if this is the first return we have seen set the retExpr
                         if (!impInlineInfo->retExpr)
@@ -18519,7 +18519,7 @@ unsigned Compiler::impInlineFetchLocal(unsigned lclNum DEBUGARG(const char* reas
             // Since there are gc locals we should have seen them earlier
             // and if there was a return value, set up the spill temp.
             assert(impInlineInfo->HasGcRefLocals());
-            assert((info.compRetNativeType == TYP_VOID) || (lvaInlineeReturnSpillTemp != BAD_VAR_NUM));
+            assert((info.compRetNativeType == TYP_VOID) || fgNeedReturnSpillTemp());
         }
         else
         {
