@@ -8,7 +8,7 @@ namespace System.Globalization
     {
         private static bool GetGlobalizationInvariantMode()
         {
-            return CLRConfig.GetBoolValue(c_InvariantModeConfigSwitch);
+            return GetInvariantSwitchValue();
         }
     }
 }
