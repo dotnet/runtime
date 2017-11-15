@@ -91,7 +91,7 @@ namespace System.Net.Sockets
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
         }
 
-        public static SocketError Bind(SafeCloseSocket handle, byte[] buffer, int nameLen)
+        public static SocketError Bind(SafeCloseSocket handle, ProtocolType socketProtocolType, byte[] buffer, int nameLen)
         {
             SocketError errorCode = Interop.Winsock.bind(handle, buffer, nameLen);
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
