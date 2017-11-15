@@ -482,6 +482,17 @@ bool fx_muxer_t::resolve_hostpolicy_dir(host_mode_t mode,
 
     // If it still couldn't be found, somebody upstack messed up. Flag an error for the "expected" location.
     trace::error(_X("A fatal error was encountered. The library '%s' required to execute the application was not found in '%s'."), LIBHOSTPOLICY_NAME, expected.c_str());
+    if (mode == host_mode_t::muxer && !config.get_portable())
+    {
+        if (!pal::file_exists(config.get_path()))
+        {
+            trace::error(_X("Failed to run as a standalone app because there is no '%s' file. If this should be a portable app instead, add that file specifying the appropriate framework."), config.get_path().c_str());
+        }
+        else if (config.get_fx_name().empty())
+        {
+            trace::error(_X("Failed to run as a standalone app because there is no framework specified in '%s'. If this should be a portable app instead, specify the appropriate framework in that file."), config.get_path().c_str());
+        }
+    }
     return false;
 }
 
