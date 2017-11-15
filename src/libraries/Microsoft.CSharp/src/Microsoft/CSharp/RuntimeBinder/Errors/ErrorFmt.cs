@@ -17,20 +17,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
     internal enum ErrArgKind
     {
         Int,
-        Hresult,
-        Ids,
         SymKind,
         Sym,
         Type,
         Name,
         Str,
-        PredefName,
-        LocNode,
-        Ptr,
         SymWithType,
         MethWithInst,
-        Expr,
-        Lim
     }
 
     [Flags]
@@ -59,7 +52,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
     {
         public ErrArgKind eak;
         public ErrArgFlags eaf;
-        internal MessageID ids;
         internal int n;
         internal SYMKIND sk;
         internal Name name;
@@ -181,16 +173,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             this.eak = ErrArgKind.Type;
             this.eaf = ErrArgFlags.None;
             this.pType = pType;
-        }
-    }
-
-    internal sealed class ErrArgIds : ErrArg
-    {
-        public ErrArgIds(MessageID ids)
-        {
-            this.eak = ErrArgKind.Ids;
-            this.eaf = ErrArgFlags.None;
-            this.ids = ids;
         }
     }
 

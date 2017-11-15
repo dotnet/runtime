@@ -611,9 +611,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
 
             switch (parg.eak)
             {
-                case ErrArgKind.Ids:
-                    ErrId(out psz, parg.ids);
-                    break;
                 case ErrArgKind.SymKind:
                     ErrSK(out psz, parg.sk);
                     break;
