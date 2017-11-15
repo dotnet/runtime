@@ -381,7 +381,7 @@ namespace System
             return i;
         }
 
-        private unsafe static bool ParseNumber(ref char* str, NumberStyles options, ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt, bool parseDecimal)
+        private unsafe static bool ParseNumber(ref char* str, NumberStyles options, ref NumberBuffer number, ref ValueStringBuilder sb, NumberFormatInfo numfmt, bool parseDecimal)
         {
             const int StateSign = 0x0001;
             const int StateParens = 0x0002;
@@ -414,7 +414,7 @@ namespace System
             }
 
             int state = 0;
-            bool bigNumber = (sb != null); // When a StringBuilder is provided then we use it in place of the number.digits char[50]
+            bool bigNumber = !sb.IsDefault; // When a ValueStringBuilder is provided then we use it in place of the number.digits char[50]
             int maxParseDigits = bigNumber ? int.MaxValue : NumberMaxDigits;
 
             char* p = str;
@@ -853,7 +853,8 @@ namespace System
             fixed (char* stringPointer = &str.DangerousGetPinnableReference())
             {
                 char* p = stringPointer;
-                if (!ParseNumber(ref p, options, ref number, null, info, parseDecimal)
+                ValueStringBuilder defaultBuilder = default;
+                if (!ParseNumber(ref p, options, ref number, ref defaultBuilder, info, parseDecimal)
                     || (p - stringPointer < str.Length && !TrailingZeros(str, (int)(p - stringPointer))))
                 {
                     throw new FormatException(SR.Format_InvalidString);
@@ -867,7 +868,8 @@ namespace System
             fixed (char* stringPointer = &str.DangerousGetPinnableReference())
             {
                 char* p = stringPointer;
-                if (!ParseNumber(ref p, options, ref number, null, numfmt, parseDecimal)
+                ValueStringBuilder defaultBuilder = default;
+                if (!ParseNumber(ref p, options, ref number, ref defaultBuilder, numfmt, parseDecimal)
                     || (p - stringPointer < str.Length && !TrailingZeros(str, (int)(p - stringPointer))))
                 {
                     return false;
