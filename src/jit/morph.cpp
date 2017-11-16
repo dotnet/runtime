@@ -8104,7 +8104,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
 
     // If compInitMem is set, we may need to zero-initialize some locals. Normally it's done in the prolog
     // but this loop can't include the prolog. Since we don't have liveness information, we insert zero-initialization
-    // for all non-parameter non-temp locals as well as temp structs with GC fields.
+    // for all non-parameter IL locals as well as temp structs with GC fields.
     // Liveness phase will remove unnecessary initializations.
     if (info.compInitMem)
     {
@@ -8112,14 +8112,15 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         LclVarDsc* varDsc;
         for (varNum = 0, varDsc = lvaTable; varNum < lvaCount; varNum++, varDsc++)
         {
-            var_types lclType = varDsc->TypeGet();
             if (!varDsc->lvIsParam)
             {
-                if (!varDsc->lvIsTemp || ((lclType == TYP_STRUCT) && (varDsc->lvStructGcCount > 0)))
+                var_types lclType            = varDsc->TypeGet();
+                bool      isUserLocal        = (varNum < info.compLocalsCount);
+                bool      structWithGCFields = ((lclType == TYP_STRUCT) && (varDsc->lvStructGcCount > 0));
+                if (isUserLocal || structWithGCFields)
                 {
-                    var_types  lclType = varDsc->TypeGet();
-                    GenTreePtr lcl     = gtNewLclvNode(varNum, lclType);
-                    GenTreePtr init    = nullptr;
+                    GenTreePtr lcl  = gtNewLclvNode(varNum, lclType);
+                    GenTreePtr init = nullptr;
                     if (lclType == TYP_STRUCT)
                     {
                         const bool isVolatile  = false;
