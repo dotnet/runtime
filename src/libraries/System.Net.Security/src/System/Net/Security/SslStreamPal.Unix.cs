@@ -160,13 +160,12 @@ namespace System.Net.Security
                     done = Interop.OpenSsl.DoSslHandshake(((SafeDeleteSslContext)context).SslContext, inputBuffer.token, inputBuffer.offset, inputBuffer.size, out output, out outputSize);
                 }
 
-                // When the handshake is done, and the context is server, check if the alpnHandle was freed during ALPN.
-                // If it was freed, then that indiciates ALPN failed, send failure.
+                // When the handshake is done, and the context is server, check if the alpnHandle target was set to null during ALPN.
+                // If it was, then that indiciates ALPN failed, send failure.
                 // We have this workaround, as openssl supports terminating handshake only from version 1.1.0,
                 // whereas ALPN is supported from version 1.0.2.
-                if (done && sslAuthenticationOptions.IsServer &&
-                    sslAuthenticationOptions.ApplicationProtocols != null && ((SafeDeleteSslContext)context).SslContext.AlpnHandle.IsAllocated &&
-                    ((SafeDeleteSslContext)context).SslContext.AlpnHandle.Target == null)
+                SafeSslHandle sslContext = ((SafeDeleteSslContext)context).SslContext;
+                if (done && sslAuthenticationOptions.IsServer && sslAuthenticationOptions.ApplicationProtocols != null && sslContext.AlpnHandle.IsAllocated && sslContext.AlpnHandle.Target == null)
                 {
                     throw Interop.OpenSsl.CreateSslException(SR.net_alpn_failed);
                 }

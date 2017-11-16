@@ -388,10 +388,14 @@ internal static partial class Interop
             }
             catch
             {
+                // No common application protocol was negotiated, set the target on the alpnHandle to null.
+                // It is ok to clear the handle value here, this results in handshake failure, so the SslStream object is disposed.
+                protocolHandle.Target = null;
+
                 return Ssl.SSL_TLSEXT_ERR_NOACK;
             }
 
-            // No common application protocol was negotiated, free the alpnHandle.
+            // No common application protocol was negotiated, set the target on the alpnHandle to null.
             // It is ok to clear the handle value here, this results in handshake failure, so the SslStream object is disposed.
             protocolHandle.Target = null;
 
