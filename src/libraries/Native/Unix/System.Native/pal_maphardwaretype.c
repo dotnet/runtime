@@ -18,68 +18,68 @@
 #error System must have AF_PACKET or AF_LINK.
 #endif
 
-NetworkInterfaceType MapHardwareType(uint16_t nativeType)
+enum NetworkInterfaceType MapHardwareType(uint16_t nativeType)
 {
 #if defined(AF_PACKET)
     switch (nativeType)
     {
         case ARPHRD_ETHER:
         case ARPHRD_EETHER:
-            return Ethernet;
+            return NetworkInterfaceType_Ethernet;
         case ARPHRD_PRONET:
-            return TokenRing;
+            return NetworkInterfaceType_TokenRing;
         case ARPHRD_ATM:
-            return Atm;
+            return NetworkInterfaceType_Atm;
         case ARPHRD_SLIP:
         case ARPHRD_CSLIP:
         case ARPHRD_SLIP6:
         case ARPHRD_CSLIP6:
-            return Slip;
+            return NetworkInterfaceType_Slip;
         case ARPHRD_PPP:
-            return Ppp;
+            return NetworkInterfaceType_Ppp;
         case ARPHRD_TUNNEL:
         case ARPHRD_TUNNEL6:
-            return Tunnel;
+            return NetworkInterfaceType_Tunnel;
         case ARPHRD_LOOPBACK:
-            return Loopback;
+            return NetworkInterfaceType_Loopback;
         case ARPHRD_FDDI:
-            return Fddi;
+            return NetworkInterfaceType_Fddi;
         case ARPHRD_IEEE80211:
         case ARPHRD_IEEE80211_PRISM:
         case ARPHRD_IEEE80211_RADIOTAP:
-            return Wireless80211;
+            return NetworkInterfaceType_Wireless80211;
         default:
-            return Unknown;
+            return NetworkInterfaceType_Unknown;
     }
 #elif defined(AF_LINK)
     switch (nativeType)
     {
         case IFT_ETHER:
-            return Ethernet;
+            return NetworkInterfaceType_Ethernet;
         case IFT_ISO88025:
-            return TokenRing;
+            return NetworkInterfaceType_TokenRing;
         case IFT_FDDI:
-            return Fddi;
+            return NetworkInterfaceType_Fddi;
         case IFT_ISDNBASIC:
-            return Isdn;
+            return NetworkInterfaceType_Isdn;
         case IFT_ISDNPRIMARY:
-            return PrimaryIsdn;
+            return NetworkInterfaceType_PrimaryIsdn;
         case IFT_PPP:
-            return Ppp;
+            return NetworkInterfaceType_Ppp;
         case IFT_LOOP:
-            return Loopback;
+            return NetworkInterfaceType_Loopback;
         case IFT_XETHER:
-            return Ethernet3Megabit;
+            return NetworkInterfaceType_Ethernet3Megabit;
         case IFT_SLIP:
-            return Slip;
+            return NetworkInterfaceType_Slip;
         case IFT_ATM:
-            return Atm;
+            return NetworkInterfaceType_Atm;
         case IFT_MODEM:
-            return GenericModem;
+            return NetworkInterfaceType_GenericModem;
         case IFT_IEEE1394:
-            return HighPerformanceSerialBus;
+            return NetworkInterfaceType_HighPerformanceSerialBus;
         default:
-            return Unknown;
+            return NetworkInterfaceType_Unknown;
     }
 #endif
 }

@@ -4,40 +4,45 @@
 
 #pragma once
 
+#include "pal_compiler.h"
+
+BEGIN_EXTERN_C
+
 #include "pal_types.h"
-#include "pal_networking.h"
 
 // Managed interface types
-enum NetworkInterfaceType : uint16_t
+enum NetworkInterfaceType
 {
-    Unknown = 1,
-    Ethernet = 6,
-    TokenRing = 9,
-    Fddi = 15,
-    BasicIsdn = 20,
-    PrimaryIsdn = 21,
-    Ppp = 23,
-    Loopback = 24,
-    Ethernet3Megabit = 26,
-    Slip = 28, // GenericSlip
-    Atm = 37,
-    GenericModem = 48,     // GenericModem
-    FastEthernetT = 62,    // FastEthernet(100BaseT)
-    Isdn = 63,             // ISDNandX.25
-    FastEthernetFx = 69,   // FastEthernet(100BaseFX)
-    Wireless80211 = 71,    // IEEE80211
-    AsymmetricDsl = 94,    // AsymmetricDigitalSubscrbrLoop
-    RateAdaptDsl = 95,     // Rate-AdaptDigitalSubscrbrLoop
-    SymmetricDsl = 96,     // SymmetricDigitalSubscriberLoop
-    VeryHighSpeedDsl = 97, // VeryH-SpeedDigitalSubscrbLoop
-    IPOverAtm = 114,
-    GigabitEthernet = 117,
-    Tunnel = 131,
-    MultiRateSymmetricDsl = 143,    // Multi-rate Symmetric DSL
-    HighPerformanceSerialBus = 144, // IEEE1394
-    Wman = 237,                     // IF_TYPE_IEEE80216_WMAN WIMAX
-    Wwanpp = 243,                   // IF_TYPE_WWANPP Mobile Broadband devices based on GSM technology
-    Wwanpp2 = 244,                  // IF_TYPE_WWANPP2 Mobile Broadband devices based on CDMA technology
+    NetworkInterfaceType_Unknown = 1,
+    NetworkInterfaceType_Ethernet = 6,
+    NetworkInterfaceType_TokenRing = 9,
+    NetworkInterfaceType_Fddi = 15,
+    NetworkInterfaceType_BasicIsdn = 20,
+    NetworkInterfaceType_PrimaryIsdn = 21,
+    NetworkInterfaceType_Ppp = 23,
+    NetworkInterfaceType_Loopback = 24,
+    NetworkInterfaceType_Ethernet3Megabit = 26,
+    NetworkInterfaceType_Slip = 28, // GenericSlip
+    NetworkInterfaceType_Atm = 37,
+    NetworkInterfaceType_GenericModem = 48,     // GenericModem
+    NetworkInterfaceType_FastEthernetT = 62,    // FastEthernet(100BaseT)
+    NetworkInterfaceType_Isdn = 63,             // ISDNandX.25
+    NetworkInterfaceType_FastEthernetFx = 69,   // FastEthernet(100BaseFX)
+    NetworkInterfaceType_Wireless80211 = 71,    // IEEE80211
+    NetworkInterfaceType_AsymmetricDsl = 94,    // AsymmetricDigitalSubscrbrLoop
+    NetworkInterfaceType_RateAdaptDsl = 95,     // Rate-AdaptDigitalSubscrbrLoop
+    NetworkInterfaceType_SymmetricDsl = 96,     // SymmetricDigitalSubscriberLoop
+    NetworkInterfaceType_VeryHighSpeedDsl = 97, // VeryH-SpeedDigitalSubscrbLoop
+    NetworkInterfaceType_IPOverAtm = 114,
+    NetworkInterfaceType_GigabitEthernet = 117,
+    NetworkInterfaceType_Tunnel = 131,
+    NetworkInterfaceType_MultiRateSymmetricDsl = 143,    // Multi-rate Symmetric DSL
+    NetworkInterfaceType_HighPerformanceSerialBus = 144, // IEEE1394
+    NetworkInterfaceType_Wman = 237,                     // IF_TYPE_IEEE80216_WMAN WIMAX
+    NetworkInterfaceType_Wwanpp = 243,                   // IF_TYPE_WWANPP Mobile Broadband devices based on GSM technology
+    NetworkInterfaceType_Wwanpp2 = 244,                  // IF_TYPE_WWANPP2 Mobile Broadband devices based on CDMA technology
 };
 
-NetworkInterfaceType MapHardwareType(uint16_t nativeType);
+enum NetworkInterfaceType MapHardwareType(uint16_t nativeType);
+
+END_EXTERN_C
