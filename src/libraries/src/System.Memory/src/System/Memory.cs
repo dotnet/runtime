@@ -124,7 +124,7 @@ namespace System
         /// <summary>
         /// Returns an empty <see cref="Memory{T}"/>
         /// </summary>
-        public static Memory<T> Empty { get; } = SpanHelpers.PerTypeValues<T>.EmptyArray;
+        public static Memory<T> Empty => default;
 
         /// <summary>
         /// The number of items in the memory.
@@ -185,14 +185,18 @@ namespace System
                 {
                     // This is dangerous, returning a writable span for a string that should be immutable.
                     // However, we need to handle the case where a ReadOnlyMemory<char> was created from a string
-                    // and then cast to a Memory<T>.  Such a cast can only be done with unsafe or marshaling code,
+                    // and then cast to a Memory<T>. Such a cast can only be done with unsafe or marshaling code,
                     // in which case that's the dangerous operation performed by the dev, and we're just following
                     // suit here to make it work as best as possible.
                     return new Span<T>(Unsafe.As<Pinnable<T>>(s), MemoryExtensions.StringAdjustment, s.Length).Slice(_index, _length);
                 }
-                else
+                else if (_object != null)
                 {
                     return new Span<T>((T[])_object, _index, _length);
+                }
+                else
+                {
+                    return default;
                 }
             }
         }
@@ -226,7 +230,7 @@ namespace System
         /// </summary>
         public unsafe MemoryHandle Retain(bool pin = false)
         {
-            MemoryHandle memoryHandle;
+            MemoryHandle memoryHandle = default;
             if (pin)
             {
                 if (_index < 0)
@@ -234,9 +238,20 @@ namespace System
                     memoryHandle = ((OwnedMemory<T>)_object).Pin();
                     memoryHandle.AddOffset((_index & RemoveOwnedFlagBitMask) * Unsafe.SizeOf<T>());
                 }
-                else
+                else if (typeof(T) == typeof(char) && _object is string s)
                 {
-                    var handle = GCHandle.Alloc(_object, GCHandleType.Pinned);
+                    // This case can only happen if a ReadOnlyMemory<char> was created around a string
+                    // and then that was cast to a Memory<char> using unsafe / marshaling code.  This needs
+                    // to work, however, so that code that uses a single Memory<char> field to store either
+                    // a readable ReadOnlyMemory<char> or a writable Memory<char> can still be pinned and
+                    // used for interop purposes.
+                    GCHandle handle = GCHandle.Alloc(s, GCHandleType.Pinned);
+                    void* pointer = Unsafe.Add<T>((void*)handle.AddrOfPinnedObject(), _index);
+                    memoryHandle = new MemoryHandle(null, pointer, handle);
+                }
+                else if (_object is T[] array)
+                {
+                    var handle = GCHandle.Alloc(array, GCHandleType.Pinned);
                     void* pointer = Unsafe.Add<T>((void*)handle.AddrOfPinnedObject(), _index);
                     memoryHandle = new MemoryHandle(null, pointer, handle);
                 }
@@ -247,10 +262,6 @@ namespace System
                 {
                     ((OwnedMemory<T>)_object).Retain();
                     memoryHandle = new MemoryHandle((OwnedMemory<T>)_object);
-                }
-                else
-                {
-                    memoryHandle = new MemoryHandle(null);
                 }
             }
             return memoryHandle;
@@ -270,14 +281,10 @@ namespace System
                     return true;
                 }
             }
-            else
+            else if (_object is T[] arr)
             {
-                T[] arr = _object as T[];
-                if (typeof(T) != typeof(char) || arr != null)
-                {
-                    arraySegment = new ArraySegment<T>(arr, _index, _length);
-                    return true;
-                }
+                arraySegment = new ArraySegment<T>(arr, _index, _length);
+                return true;
             }
 
             arraySegment = default(ArraySegment<T>);
@@ -330,7 +337,7 @@ namespace System
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override int GetHashCode()
         {
-            return CombineHashCodes(_object.GetHashCode(), _index.GetHashCode(), _length.GetHashCode());
+            return _object != null ? CombineHashCodes(_object.GetHashCode(), _index.GetHashCode(), _length.GetHashCode()) : 0;
         }
 
         private static int CombineHashCodes(int left, int right)
