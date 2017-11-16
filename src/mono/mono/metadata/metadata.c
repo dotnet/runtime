@@ -2580,6 +2580,9 @@ get_image_set (MonoImage **images, int nimages)
 		set->gmethod_cache = g_hash_table_new_full (inflated_method_hash, inflated_method_equal, NULL, (GDestroyNotify)free_inflated_method);
 		set->gsignature_cache = g_hash_table_new_full (inflated_signature_hash, inflated_signature_equal, NULL, (GDestroyNotify)free_inflated_signature);
 
+		set->szarray_cache = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, NULL);
+		set->array_cache = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, NULL);
+
 		for (i = 0; i < nimages; ++i)
 			set->images [i]->image_sets = g_slist_prepend (set->images [i]->image_sets, set);
 
@@ -2609,6 +2612,11 @@ delete_image_set (MonoImageSet *set)
 	g_hash_table_destroy (set->ginst_cache);
 	g_hash_table_destroy (set->gmethod_cache);
 	g_hash_table_destroy (set->gsignature_cache);
+
+	g_hash_table_destroy (set->szarray_cache);
+	g_hash_table_destroy (set->array_cache);
+	if (set->ptr_cache)
+		g_hash_table_destroy (set->ptr_cache);
 
 	mono_wrapper_caches_free (&set->wrapper_caches);
 
@@ -2906,7 +2914,18 @@ inflated_signature_in_image (gpointer key, gpointer value, gpointer data)
 	return signature_in_image (sig->sig, image) ||
 		(sig->context.class_inst && ginst_in_image (sig->context.class_inst, image)) ||
 		(sig->context.method_inst && ginst_in_image (sig->context.method_inst, image));
-}	
+}
+
+static gboolean
+class_in_image (gpointer key, gpointer value, gpointer data)
+{
+	MonoImage *image = (MonoImage *)data;
+	MonoClass *klass = (MonoClass *)key;
+
+	g_assert (type_in_image (&klass->byval_arg, image));
+
+	return TRUE;
+}
 
 static void
 check_gmethod (gpointer key, gpointer value, gpointer data)
@@ -2970,6 +2989,11 @@ mono_metadata_clean_for_image (MonoImage *image)
 		g_hash_table_foreach_steal (set->ginst_cache, steal_ginst_in_image, &ginst_data);
 		g_hash_table_foreach_remove (set->gmethod_cache, inflated_method_in_image, image);
 		g_hash_table_foreach_remove (set->gsignature_cache, inflated_signature_in_image, image);
+
+		g_hash_table_foreach_steal (set->szarray_cache, class_in_image, image);
+		g_hash_table_foreach_steal (set->array_cache, class_in_image, image);
+		if (set->ptr_cache)
+			g_hash_table_foreach_steal (set->ptr_cache, class_in_image, image);
 		mono_image_set_unlock (set);
 	}
 
@@ -3069,6 +3093,20 @@ mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericConte
 	mono_image_set_unlock (set);
 
 	return res->sig;
+}
+
+MonoImageSet *
+mono_metadata_get_image_set_for_class (MonoClass *klass)
+{
+	MonoImageSet *set;
+	CollectData image_set_data;
+
+	collect_data_init (&image_set_data);
+	collect_type_images (&klass->byval_arg, &image_set_data);
+	set = get_image_set (image_set_data.images, image_set_data.nimages);
+	collect_data_free (&image_set_data);
+
+	return set;
 }
 
 MonoImageSet *
