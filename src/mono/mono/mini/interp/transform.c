@@ -1611,7 +1611,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 	td->new_code = (unsigned short *)g_malloc(td->max_code_size * sizeof(gushort));
 	td->new_code_end = td->new_code + td->max_code_size;
 	td->mempool = mono_mempool_new ();
-	td->in_offsets = g_malloc0(header->code_size * sizeof(int));
+	td->in_offsets = g_malloc0((header->code_size + 1) * sizeof(int));
 	td->stack_state = g_malloc0(header->code_size * sizeof(StackInfo *));
 	td->stack_height = g_malloc(header->code_size * sizeof(int));
 	td->vt_stack_size = g_malloc(header->code_size * sizeof(int));
@@ -1757,9 +1757,8 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 		emit_seq_point (td, METHOD_ENTRY_IL_OFFSET, cbb, FALSE);
 	}
 
+	int in_offset;
 	while (td->ip < end) {
-		int in_offset;
-
 		g_assert (td->sp >= td->stack);
 		g_assert (td->vt_sp < 0x10000000);
 		in_offset = td->ip - header->code;
@@ -4149,6 +4148,9 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			
 		td->last_ip = td->in_start;
 	}
+	in_offset = td->ip - header->code;
+	g_assert (td->ip == end);
+	td->in_offsets [in_offset] = td->new_ip - td->new_code;
 
 	/* Handle relocations */
 	for (int i = 0; i < td->relocs->len; ++i) {
