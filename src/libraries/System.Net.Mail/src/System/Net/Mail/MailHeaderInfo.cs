@@ -9,7 +9,7 @@ namespace System.Net.Mail
     internal static class MailHeaderInfo
     {
         // Structure that wraps information about a single mail header
-        private struct HeaderInfo
+        private readonly struct HeaderInfo
         {
             public readonly string NormalizedName;
             public readonly bool IsSingleton;

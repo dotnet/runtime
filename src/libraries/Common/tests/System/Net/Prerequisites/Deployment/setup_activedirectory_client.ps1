@@ -30,6 +30,11 @@ Function ConfigureDNS
     }
 
     $ipv4DnsInterfaces = Get-DnsClientServerAddress | where {($_.AddressFamily -eq 2) -and ($_.InterfaceAlias -eq "Ethernet")}
+    if ($ipv4DnsInterfaces.Count -eq 0)
+    {
+        throw "The setup script cannot find a network adapter named 'Ethernet' that has IPv4 configured."
+    }
+
     $ifIndex = $ipv4DnsInterfaces[0].InterfaceIndex
     
     Set-DnsClientServerAddress -InterfaceIndex $ifIndex -ServerAddresses ($dcRole.MachineIP)

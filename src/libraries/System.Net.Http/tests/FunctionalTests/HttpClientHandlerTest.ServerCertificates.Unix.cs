@@ -14,17 +14,12 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public partial class HttpClientHandler_ServerCertificates_Test : RemoteExecutorTestBase
+    public partial class HttpClientHandler_ServerCertificates_Test
     {
         private static bool ShouldSuppressRevocationException
         {
             get
             {
-                if (ManagedHandlerTestHelpers.IsEnabled)
-                {
-                    return false;
-                }
-
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {
                     return false;
@@ -53,11 +48,11 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        internal static bool BackendSupportsCustomCertificateHandling
+        internal bool BackendSupportsCustomCertificateHandling
         {
             get
             {
-                if (ManagedHandlerTestHelpers.IsEnabled)
+                if (UseManagedHandler)
                 {
                     return true;
                 }
@@ -72,8 +67,6 @@ namespace System.Net.Http.Functional.Tests
                 return (CurlSslVersionDescription()?.StartsWith("OpenSSL") ?? false);
             }
         }
-
-        private static bool BackendDoesNotSupportCustomCertificateHandling => !BackendSupportsCustomCertificateHandling;
 
         [DllImport("System.Net.Http.Native", EntryPoint = "HttpNative_GetSslVersionDescription")]
         private static extern string CurlSslVersionDescription();

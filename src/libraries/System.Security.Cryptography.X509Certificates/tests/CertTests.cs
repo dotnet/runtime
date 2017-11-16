@@ -114,15 +114,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.True(success, "MicrosoftDotComIssuerBytes");
             }
 
-            using (var microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
+            // High Sierra fails to build a chain for a self-signed certificate with revocation enabled.
+            // https://github.com/dotnet/corefx/issues/21875
+            if (!PlatformDetection.IsMacOsHighSierraOrHigher)
             {
-                // NotAfter=7/17/2036
-                success = microsoftDotComRoot.Verify();
-                if (!success)
+                using (var microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
                 {
-                    LogVerifyErrors(microsoftDotComRoot, "MicrosoftDotComRootBytes");
+                    // NotAfter=7/17/2036
+                    success = microsoftDotComRoot.Verify();
+                    if (!success)
+                    {
+                        LogVerifyErrors(microsoftDotComRoot, "MicrosoftDotComRootBytes");
+                    }
+                    Assert.True(success, "MicrosoftDotComRootBytes");
                 }
-                Assert.True(success, "MicrosoftDotComRootBytes");
             }
         }
 

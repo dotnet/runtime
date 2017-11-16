@@ -4,12 +4,13 @@
     <PackageConfigurations>
       netfx;
       netstandard;
+      netcoreapp2.0;
+      uapaot-Windows_NT;
+      uap-Windows_NT;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
-      uapaot-Windows_NT;
       netcoreapp;
-      uap-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

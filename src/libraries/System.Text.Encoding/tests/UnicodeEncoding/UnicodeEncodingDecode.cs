@@ -99,7 +99,9 @@ namespace System.Text.Tests
             yield return new object[] { new byte[] { 84, 0, 101, 0, 115, 0, 116, 0, 84, 0, 101, 0, 115, 0, 116, 0, 3, 216 }, 0, 17, "TestTest\uFFFD" };
 
             yield return new object[] { new byte[] { 84, 0, 0, 0, 84, 0, 101, 0, 10, 0, 115, 0, 116, 0, 0, 0, 9, 0, 0, 0, 84, 0, 15, 0, 101, 0, 115, 0, 116, 0, 0, 0, 0 }, 0, 33, "T\0Te\nst\0\t\0T\u000Fest\0\uFFFD" };
-            
+
+            yield return new object[] { new byte[] { 0, 0, 84, 0, 101, 0, 10, 0, 115, 0, 116, 0, 0, 0, 9, 0, 0, 0, 84, 0, 15, 0, 101, 0, 115, 0, 116, 0, 0, 0, 0 }, 0, 31, "\0Te\nst\0\t\0T\u000Fest\0\uFFFD" };
+
             yield return new object[] { new byte[] { 3, 216, 84 }, 0, 3, "\uFFFD\uFFFD" };
 
             // Invalid surrogate bytes

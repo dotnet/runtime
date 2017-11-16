@@ -27,7 +27,7 @@ namespace System.IO
 
             // Create handle to directory being monitored
             var defaultSecAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
-            _directoryHandle = Interop.Kernel32.CreateFile(
+            _directoryHandle = Interop.Kernel32.UnsafeCreateFile(
                 lpFileName: _directory,
                 dwDesiredAccess: Interop.Kernel32.FileOperations.FILE_LIST_DIRECTORY,
                 dwShareMode: FileShare.Read | FileShare.Delete | FileShare.Write,

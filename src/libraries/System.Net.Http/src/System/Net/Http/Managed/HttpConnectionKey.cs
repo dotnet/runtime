@@ -1,10 +1,10 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 namespace System.Net.Http
 {
-    internal struct HttpConnectionKey : IEquatable<HttpConnectionKey>
+    internal readonly struct HttpConnectionKey : IEquatable<HttpConnectionKey>
     {
         public readonly bool UsingSSL;
         public readonly string Host;
@@ -12,10 +12,10 @@ namespace System.Net.Http
 
         public HttpConnectionKey(Uri uri)
         {
-            UsingSSL = 
-                uri.Scheme == UriScheme.Http ? false :
-                uri.Scheme == UriScheme.Https ? true :
-                throw new ArgumentException("Invalid Uri scheme", nameof(uri));
+            UsingSSL =
+                HttpUtilities.IsSupportedNonSecureScheme(uri.Scheme) ? false :
+                HttpUtilities.IsSupportedSecureScheme(uri.Scheme) ? true :
+                throw new ArgumentException(SR.net_http_client_http_baseaddress_required, nameof(uri));
 
             Host = uri.Host;
             Port = uri.Port;

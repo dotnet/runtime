@@ -115,7 +115,6 @@
     <Compile Include="System\Net\Windows\HttpListenerRequest.Windows.cs" />
     <Compile Include="System\Net\Windows\HttpListenerResponse.Windows.cs" />
     <Compile Include="System\Net\Windows\HttpListenerTimeoutManager.Windows.cs" />
-    <Compile Include="System\Net\Windows\ContextFlags.cs" />
     <Compile Include="System\Net\Windows\HttpRequestQueueV2Handle.cs" />
     <Compile Include="System\Net\Windows\HttpServerSessionHandle.cs" />
     <Compile Include="System\Net\Windows\HttpListenerRequestContext.cs" />
@@ -142,6 +141,9 @@
     <Compile Include="System\Net\Windows\WebSockets\WebSocketProtocolComponent.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs">
+      <Link>Common\Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.BOOL.cs">
       <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
@@ -357,9 +359,6 @@
     <Compile Include="System\Net\Managed\ChunkStream.cs" />
     <Compile Include="System\Net\Managed\HttpResponseStream.Managed.cs" />
     <Compile Include="System\Net\Managed\WebSockets\HttpWebSocket.Managed.cs" />
-    <Compile Include="$(CommonPath)\System\Net\WebSockets\ManagedWebSocket.cs">
-      <Link>Common\System\Net\WebSockets\ManagedWebSocket.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
       <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>

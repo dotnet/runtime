@@ -11,7 +11,6 @@ namespace System.Tests
 {
     public class SetEnvironmentVariable
     {
-        private const int MAX_VAR_LENGTH_ALLOWED = 32767;
         private const string NullString = "\u0000";
 
         internal static bool IsSupportedTarget(EnvironmentVariableTarget target)
@@ -31,9 +30,6 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>("variable", () => Environment.SetEnvironmentVariable(string.Empty, "test"));
             AssertExtensions.Throws<ArgumentException>("variable", () => Environment.SetEnvironmentVariable(NullString, "test"));
             AssertExtensions.Throws<ArgumentException>("variable", null, () => Environment.SetEnvironmentVariable("Variable=Something", "test"));
-
-            string varWithLenLongerThanAllowed = new string('c', MAX_VAR_LENGTH_ALLOWED + 1);
-            AssertExtensions.Throws<ArgumentException>("variable", null, () => Environment.SetEnvironmentVariable(varWithLenLongerThanAllowed, "test"));
         }
 
         private static void ExecuteAgainstTarget(

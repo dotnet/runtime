@@ -3,25 +3,44 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{4B93E684-0630-45F4-8F63-6C7788C9892F}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="BitmapTests.cs" />
     <Compile Include="BrushTests.cs" />
     <Compile Include="BrushesTests.cs" />
+    <Compile Include="BufferedGraphicsTests.cs" />
+    <Compile Include="BufferedGraphicsContextTests.cs" />
+    <Compile Include="BufferedGraphicsManagerTests.cs" />
     <Compile Include="CharacterRangeTests.cs" />
     <Compile Include="ColorTranslatorTests.cs" />
     <Compile Include="Drawing2D\AdjustableArrowCapTests.cs" />
+    <Compile Include="Drawing2D\CustomLineCapTests.cs" />
+    <Compile Include="Drawing2D\GraphicsPathIteratorTests.cs" />
     <Compile Include="Drawing2D\GraphicsPathTests.cs" />
+    <Compile Include="Drawing2D\PathGradientBrushTests.cs" />
     <Compile Include="FontTests.cs" />
     <Compile Include="FontFamilyTests.cs" />
     <Compile Include="GraphicsTests.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="IconTests.cs" />
     <Compile Include="ImageTests.cs" />
+    <Compile Include="Imaging\ImageAttributesTests.cs" />
+    <Compile Include="Imaging\MetafileTests.cs" />
+    <Compile Include="Imaging\PropertyItemTests.cs" />
+    <Compile Include="mono\System.Drawing.Imaging\BmpCodecTests.cs" />
+    <Compile Include="mono\System.Drawing.Imaging\GifCodecTests.cs" />
+    <Compile Include="mono\System.Drawing.Imaging\IconCodecTests.cs" />
+    <Compile Include="mono\System.Drawing.Imaging\JpegCodecTests.cs" />
+    <Compile Include="mono\System.Drawing.Imaging\PngCodecTesst.cs" />
+    <Compile Include="mono\System.Drawing.Imaging\TiffCodecTests.cs" />
+    <Compile Include="mono\System.Drawing\GraphicsTests.cs" />
+    <Compile Include="mono\System.Imaging\MetafileTest.cs" />
+    <Compile Include="mono\System.Drawing\BitmapTests.cs" />
     <Compile Include="PenTests.cs" />
     <Compile Include="PensTests.cs" />
     <Compile Include="Imaging\BitmapDataTests.cs" />
@@ -35,6 +54,8 @@
     <Compile Include="Imaging\ImageFormatTests.cs" />
     <Compile Include="Imaging\MetaHeaderTests.cs" />
     <Compile Include="Imaging\WmfPlaceableFileHeaderTests.cs" />
+    <Compile Include="Printing\PrintDocumentTests.cs" />
+    <Compile Include="Printing\PrinterSettingsTests.cs" />
     <Compile Include="RegionTests.cs" />
     <Compile Include="SolidBrushTests.cs" />
     <Compile Include="StringFormatTests.cs" />
@@ -55,9 +76,6 @@
     <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\ThreadCultureChange.cs">
       <Link>Common\System\ThreadCultureChange.cs</Link>
     </Compile>
@@ -66,19 +84,19 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <SupplementalTestData Include="$(PackagesDir)system.drawing.common.testdata\1.0.2\content\**\*.*">
+    <SupplementalTestData Include="$(PackagesDir)system.drawing.common.testdata\1.0.6\content\**\*.*">
       <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
     </SupplementalTestData>
-    <EmbeddedResource Include="$(PackagesDir)system.drawing.common.testdata\1.0.2\content\bitmaps\48x48_multiple_entries_4bit.ico">
+    <EmbeddedResource Include="$(PackagesDir)system.drawing.common.testdata\1.0.6\content\bitmaps\48x48_multiple_entries_4bit.ico">
       <LogicalName>System.Drawing.Tests.48x48_multiple_entries_4bit.ico</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PackagesDir)system.drawing.common.testdata\1.0.2\content\bitmaps\bitmap_173x183_indexed_8bit.bmp">
+    <EmbeddedResource Include="$(PackagesDir)system.drawing.common.testdata\1.0.6\content\bitmaps\bitmap_173x183_indexed_8bit.bmp">
       <LogicalName>System.Drawing.Tests.bitmap_173x183_indexed_8bit.bmp</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PackagesDir)system.drawing.common.testdata\1.0.2\content\bitmaps\empty.file">
+    <EmbeddedResource Include="$(PackagesDir)system.drawing.common.testdata\1.0.6\content\bitmaps\empty.file">
       <LogicalName>System.Drawing.Tests.empty.file</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PackagesDir)system.drawing.common.testdata\1.0.2\content\bitmaps\invalid.ico">
+    <EmbeddedResource Include="$(PackagesDir)system.drawing.common.testdata\1.0.6\content\bitmaps\invalid.ico">
       <LogicalName>System.Drawing.Tests.invalid.ico</LogicalName>
     </EmbeddedResource>
     <Compile Include="Printing\MarginsTests.cs" />

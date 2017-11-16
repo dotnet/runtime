@@ -20,10 +20,20 @@ namespace System.Net.NameResolution.Tests
             TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(localIPAddress));
         }
 
-        [Fact]
-        public void Dns_GetHostEntryAsync_HostString_Ok()
+        [Theory]
+        [InlineData("")]
+        [InlineData(TestSettings.LocalHost)]
+        public void Dns_GetHostEntry_HostString_Ok(string hostName)
         {
-            TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(TestSettings.LocalHost));
+            TestGetHostEntryAsync(() => Task.FromResult(Dns.GetHostEntry(hostName)));
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData(TestSettings.LocalHost)]
+        public void Dns_GetHostEntryAsync_HostString_Ok(string hostName)
+        {
+            TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(hostName));
         }
 
         [Fact]
@@ -79,34 +89,6 @@ namespace System.Net.NameResolution.Tests
 
             await Assert.ThrowsAsync<ArgumentException>(() => Dns.GetHostEntryAsync(address));
             await Assert.ThrowsAsync<ArgumentException>(() => Dns.GetHostEntryAsync(addressString));
-        }
-
-        public static IEnumerable<object[]> GetNoneAddresses()
-        {
-            yield return new object[] { IPAddress.None };
-        }
-
-        [PlatformSpecific(~TestPlatforms.OSX)] // macOS will resolve IPAddress.None to broadcasthost and produce a valid listing
-        [Theory]
-        [MemberData(nameof(GetNoneAddresses))]
-        public async Task Dns_GetHostEntryAsync_NoneIPAddress_Fail(IPAddress address)
-        {
-            string addressString = address.ToString();
-
-            await Assert.ThrowsAnyAsync<SocketException>(() => Dns.GetHostEntryAsync(address));
-            await Assert.ThrowsAnyAsync<SocketException>(() => Dns.GetHostEntryAsync(addressString));
-        }
-
-        [PlatformSpecific(TestPlatforms.OSX)] // macOS will resolve IPAddress.None to broadcasthost and produce a valid listing
-        [Theory]
-        [MemberData(nameof(GetNoneAddresses))]
-        public async Task Dns_GetHostEntryAsync_NoneIPAddress_Success(IPAddress address)
-        {
-            IPHostEntry result = await Dns.GetHostEntryAsync(address);
-            Assert.NotNull(result);
-            Assert.NotNull(result.AddressList);
-            Assert.Equal(1, result.AddressList.Length);
-            Assert.Equal(address, result.AddressList[0]);
         }
 
         [Fact]

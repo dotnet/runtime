@@ -2,20 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+using System.Runtime.InteropServices;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Collections;
-    using System.Globalization;
-    using System.Runtime.InteropServices;
-
     public class ActiveDirectorySchemaClassCollection : CollectionBase
     {
         private DirectoryEntry _classEntry = null;
-        private string _propertyName = null;
-        private ActiveDirectorySchemaClass _schemaClass = null;
-        private bool _isBound = false;
-        private DirectoryContext _context = null;
+        private readonly string _propertyName = null;
+        private readonly ActiveDirectorySchemaClass _schemaClass = null;
+        private readonly bool _isBound = false;
+        private readonly DirectoryContext _context = null;
 
         internal ActiveDirectorySchemaClassCollection(DirectoryContext context,
                                                         ActiveDirectorySchemaClass schemaClass,
@@ -33,7 +31,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 // all properties in writeable class collection are non-defunct
                 // so calling constructor for non-defunct class
-                this.InnerList.Add(new ActiveDirectorySchemaClass(context, ldapDisplayName, (DirectoryEntry)null, null));
+                InnerList.Add(new ActiveDirectorySchemaClass(context, ldapDisplayName, (DirectoryEntry)null, null));
             }
         }
 
@@ -50,24 +48,23 @@ namespace System.DirectoryServices.ActiveDirectory
 
             foreach (ActiveDirectorySchemaClass schClass in classes)
             {
-                this.InnerList.Add(schClass);
+                InnerList.Add(schClass);
             }
         }
 
         public ActiveDirectorySchemaClass this[int index]
         {
-            get
-            {
-                return (ActiveDirectorySchemaClass)List[index];
-            }
+            get => (ActiveDirectorySchemaClass)List[index];
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
 
                 if (!value.isBound)
                 {
-                    throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SchemaObjectNotCommitted , value.Name));
+                    throw new InvalidOperationException(SR.Format(SR.SchemaObjectNotCommitted , value.Name));
                 }
 
                 if (!Contains(value))
@@ -76,7 +73,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 else
                 {
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.AlreadyExistingInCollection , value), "value");
+                    throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , value), nameof(value));
                 }
             }
         }
@@ -85,12 +82,12 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (schemaClass == null)
             {
-                throw new ArgumentNullException("schemaClass");
+                throw new ArgumentNullException(nameof(schemaClass));
             }
 
             if (!schemaClass.isBound)
             {
-                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SchemaObjectNotCommitted , schemaClass.Name));
+                throw new InvalidOperationException(SR.Format(SR.SchemaObjectNotCommitted , schemaClass.Name));
             }
 
             if (!Contains(schemaClass))
@@ -99,7 +96,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             else
             {
-                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.AlreadyExistingInCollection , schemaClass), "schemaClass");
+                throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , schemaClass), nameof(schemaClass));
             }
         }
 
@@ -107,20 +104,20 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (schemaClasses == null)
             {
-                throw new ArgumentNullException("schemaClasses");
+                throw new ArgumentNullException(nameof(schemaClasses));
             }
 
             foreach (ActiveDirectorySchemaClass schemaClass in schemaClasses)
             {
                 if (schemaClass == null)
                 {
-                    throw new ArgumentException("schemaClasses");
+                    throw new ArgumentException(nameof(schemaClasses));
                 }
             }
 
             for (int i = 0; ((i) < (schemaClasses.Length)); i = ((i) + (1)))
             {
-                this.Add((ActiveDirectorySchemaClass)schemaClasses[i]);
+                Add(schemaClasses[i]);
             }
         }
 
@@ -128,21 +125,21 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (schemaClasses == null)
             {
-                throw new ArgumentNullException("schemaClasses");
+                throw new ArgumentNullException(nameof(schemaClasses));
             }
 
             foreach (ActiveDirectorySchemaClass schemaClass in schemaClasses)
             {
                 if (schemaClass == null)
                 {
-                    throw new ArgumentException("schemaClasses");
+                    throw new ArgumentException(nameof(schemaClasses));
                 }
             }
 
             int currentCount = schemaClasses.Count;
             for (int i = 0; i < currentCount; i++)
             {
-                this.Add(schemaClasses[i]);
+                Add(schemaClasses[i]);
             }
         }
 
@@ -150,21 +147,21 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (schemaClasses == null)
             {
-                throw new ArgumentNullException("schemaClasses");
+                throw new ArgumentNullException(nameof(schemaClasses));
             }
 
             foreach (ActiveDirectorySchemaClass schemaClass in schemaClasses)
             {
                 if (schemaClass == null)
                 {
-                    throw new ArgumentException("schemaClasses");
+                    throw new ArgumentException(nameof(schemaClasses));
                 }
             }
 
             int currentCount = schemaClasses.Count;
             for (int i = 0; i < currentCount; i++)
             {
-                this.Add(schemaClasses[i]);
+                Add(schemaClasses[i]);
             }
         }
 
@@ -172,12 +169,12 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (schemaClass == null)
             {
-                throw new ArgumentNullException("schemaClass");
+                throw new ArgumentNullException(nameof(schemaClass));
             }
 
             if (!schemaClass.isBound)
             {
-                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SchemaObjectNotCommitted , schemaClass.Name));
+                throw new InvalidOperationException(SR.Format(SR.SchemaObjectNotCommitted , schemaClass.Name));
             }
 
             for (int i = 0; i < InnerList.Count; i++)
@@ -189,19 +186,19 @@ namespace System.DirectoryServices.ActiveDirectory
                     return;
                 }
             }
-            throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NotFoundInCollection , schemaClass), "schemaClass");
+            throw new ArgumentException(SR.Format(SR.NotFoundInCollection , schemaClass), nameof(schemaClass));
         }
 
         public void Insert(int index, ActiveDirectorySchemaClass schemaClass)
         {
             if (schemaClass == null)
             {
-                throw new ArgumentNullException("schemaClass");
+                throw new ArgumentNullException(nameof(schemaClass));
             }
 
             if (!schemaClass.isBound)
             {
-                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SchemaObjectNotCommitted , schemaClass.Name));
+                throw new InvalidOperationException(SR.Format(SR.SchemaObjectNotCommitted , schemaClass.Name));
             }
 
             if (!Contains(schemaClass))
@@ -210,7 +207,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             else
             {
-                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.AlreadyExistingInCollection , schemaClass), "schemaClass");
+                throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , schemaClass), nameof(schemaClass));
             }
         }
 
@@ -218,12 +215,12 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (schemaClass == null)
             {
-                throw new ArgumentNullException("schemaClass");
+                throw new ArgumentNullException(nameof(schemaClass));
             }
 
             if (!schemaClass.isBound)
             {
-                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SchemaObjectNotCommitted , schemaClass.Name));
+                throw new InvalidOperationException(SR.Format(SR.SchemaObjectNotCommitted , schemaClass.Name));
             }
 
             for (int i = 0; i < InnerList.Count; i++)
@@ -234,6 +231,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     return true;
                 }
             }
+
             return false;
         }
 
@@ -245,11 +243,13 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(ActiveDirectorySchemaClass schemaClass)
         {
             if (schemaClass == null)
-                throw new ArgumentNullException("schemaClass");
+            {
+                throw new ArgumentNullException(nameof(schemaClass));
+            }
 
             if (!schemaClass.isBound)
             {
-                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SchemaObjectNotCommitted , schemaClass.Name));
+                throw new InvalidOperationException(SR.Format(SR.SchemaObjectNotCommitted , schemaClass.Name));
             }
 
             for (int i = 0; i < InnerList.Count; i++)
@@ -260,6 +260,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     return i;
                 }
             }
+
             return -1;
         }
 
@@ -350,15 +351,20 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        protected override void OnValidate(Object value)
+        protected override void OnValidate(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
 
             if (!(value is ActiveDirectorySchemaClass))
-                throw new ArgumentException("value");
+            {
+                throw new ArgumentException(nameof(value));
+            }
 
             if (!((ActiveDirectorySchemaClass)value).isBound)
-                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SchemaObjectNotCommitted , ((ActiveDirectorySchemaClass)value).Name));
+                throw new InvalidOperationException(SR.Format(SR.SchemaObjectNotCommitted , ((ActiveDirectorySchemaClass)value).Name));
         }
 
         internal string[] GetMultiValuedProperty()

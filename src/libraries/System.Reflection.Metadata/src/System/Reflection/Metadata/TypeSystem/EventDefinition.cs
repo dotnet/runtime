@@ -8,7 +8,7 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Metadata
 {
-    public struct EventDefinition
+    public readonly struct EventDefinition
     {
         private readonly MetadataReader _reader;
 

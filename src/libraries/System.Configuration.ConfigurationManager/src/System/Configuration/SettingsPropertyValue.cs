@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -83,27 +84,22 @@ namespace System.Configuration
 
         private object Deserialize()
         {
-            object val = null;
+            object value = null;
 
-            // Step 1: Try creating from Serailized value
+            // Attempt 1: Try creating from SerializedValue
             if (SerializedValue != null)
             {
                 try
                 {
                     if (SerializedValue is string)
                     {
-                        val = GetObjectFromString(Property.PropertyType, Property.SerializeAs, (string)SerializedValue);
+                        value = GetObjectFromString(Property.PropertyType, Property.SerializeAs, (string)SerializedValue);
                     }
                     else
                     {
-                        MemoryStream ms = new System.IO.MemoryStream((byte[])SerializedValue);
-                        try
+                        using (MemoryStream ms = new MemoryStream((byte[])SerializedValue))
                         {
-                            val = (new BinaryFormatter()).Deserialize(ms);
-                        }
-                        finally
-                        {
-                            ms.Close();
+                            value = (new BinaryFormatter()).Deserialize(ms);
                         }
                     }
                 }
@@ -128,12 +124,12 @@ namespace System.Configuration
                     }
                 }
 
-                if (val != null && !Property.PropertyType.IsAssignableFrom(val.GetType())) // is it the correct type
-                    val = null;
+                if (value != null && !Property.PropertyType.IsAssignableFrom(value.GetType())) // is it the correct type
+                    value = null;
             }
 
-            // Step 2: Try creating from default value
-            if (val == null)
+            // Attempt 2: Try creating from default value
+            if (value == null)
             {
                 UsingDefaultValue = true;
                 if (Property.DefaultValue == null || Property.DefaultValue.ToString() == "[null]")
@@ -145,77 +141,71 @@ namespace System.Configuration
                 }
                 if (!(Property.DefaultValue is string))
                 {
-                    val = Property.DefaultValue;
+                    value = Property.DefaultValue;
                 }
                 else
                 {
                     try
                     {
-                        val = GetObjectFromString(Property.PropertyType, Property.SerializeAs, (string)Property.DefaultValue);
+                        value = GetObjectFromString(Property.PropertyType, Property.SerializeAs, (string)Property.DefaultValue);
                     }
                     catch (Exception e)
                     {
                         throw new ArgumentException(string.Format(SR.Could_not_create_from_default_value, Property.Name, e.Message));
                     }
                 }
-                if (val != null && !Property.PropertyType.IsAssignableFrom(val.GetType())) // is it the correct type
+
+                if (value != null && !Property.PropertyType.IsAssignableFrom(value.GetType())) // is it the correct type
                     throw new ArgumentException(string.Format(SR.Could_not_create_from_default_value_2, Property.Name));
             }
 
-            // Step 3: Create a new one by calling the parameterless constructor
-            if (val == null)
+            // Attempt 3: Create via the parameterless constructor
+            if (value == null)
             {
                 if (Property.PropertyType == typeof(string))
                 {
-                    val = "";
+                    value = string.Empty;
                 }
                 else
                 {
                     try
                     {
-                        val = TypeUtil.CreateInstance(Property.PropertyType);
+                        value = TypeUtil.CreateInstance(Property.PropertyType);
                     }
                     catch { }
                 }
             }
 
-            return val;
+            return value;
         }
 
-        private static object GetObjectFromString(Type type, SettingsSerializeAs serializeAs, string attValue)
+        private static object GetObjectFromString(Type type, SettingsSerializeAs serializeAs, string serializedValue)
         {
             // Deal with string types
-            if (type == typeof(string) && (attValue == null || attValue.Length < 1 || serializeAs == SettingsSerializeAs.String))
-                return attValue;
+            if (type == typeof(string) && (serializedValue == null || serializedValue.Length < 1 || serializeAs == SettingsSerializeAs.String))
+                return serializedValue;
 
             // Return null if there is nothing to convert
-            if (attValue == null || attValue.Length < 1)
+            if (serializedValue == null || serializedValue.Length < 1)
                 return null;
 
             // Convert based on the serialized type
             switch (serializeAs)
             {
                 case SettingsSerializeAs.Binary:
-                    byte[] buf = Convert.FromBase64String(attValue);
-                    MemoryStream ms = null;
-                    try
+                    byte[] buffer = Convert.FromBase64String(serializedValue);
+                    using (MemoryStream ms = new MemoryStream(buffer))
                     {
-                        ms = new MemoryStream(buf);
                         return (new BinaryFormatter()).Deserialize(ms);
                     }
-                    finally
-                    {
-                        if (ms != null)
-                            ms.Close();
-                    }
                 case SettingsSerializeAs.Xml:
-                    StringReader sr = new StringReader(attValue);
+                    StringReader sr = new StringReader(serializedValue);
                     XmlSerializer xs = new XmlSerializer(type);
                     return xs.Deserialize(sr);
                 case SettingsSerializeAs.String:
                     TypeConverter converter = TypeDescriptor.GetConverter(type);
                     if (converter != null && converter.CanConvertTo(typeof(string)) && converter.CanConvertFrom(typeof(string)))
-                        return converter.ConvertFromInvariantString(attValue);
+                        return converter.ConvertFromInvariantString(serializedValue);
                     throw new ArgumentException(string.Format(SR.Unable_to_convert_type_from_string, type.ToString()), nameof(type));
                 default:
                     return null;
@@ -230,21 +220,15 @@ namespace System.Configuration
             if (Property.SerializeAs != SettingsSerializeAs.Binary)
                 return ConvertObjectToString(_value, Property.PropertyType, Property.SerializeAs, Property.ThrowOnErrorSerializing);
 
-            MemoryStream ms = new System.IO.MemoryStream();
-            try
+            using (MemoryStream ms = new MemoryStream())
             {
                 BinaryFormatter bf = new BinaryFormatter();
                 bf.Serialize(ms, _value);
                 return ms.ToArray();
             }
-            finally
-            {
-                ms.Close();
-            }
         }
 
-
-        private static string ConvertObjectToString(object propValue, Type type, SettingsSerializeAs serializeAs, bool throwOnError)
+        private static string ConvertObjectToString(object propertyValue, Type type, SettingsSerializeAs serializeAs, bool throwOnError)
         {
             if (serializeAs == SettingsSerializeAs.ProviderSpecific)
             {
@@ -261,27 +245,17 @@ namespace System.Configuration
                     case SettingsSerializeAs.String:
                         TypeConverter converter = TypeDescriptor.GetConverter(type);
                         if (converter != null && converter.CanConvertTo(typeof(string)) && converter.CanConvertFrom(typeof(string)))
-                            return converter.ConvertToInvariantString(propValue);
+                            return converter.ConvertToInvariantString(propertyValue);
                         throw new ArgumentException(string.Format(SR.Unable_to_convert_type_to_string, type.ToString()), nameof(type));
-                    case SettingsSerializeAs.Binary:
-                        MemoryStream ms = new System.IO.MemoryStream();
-                        try
-                        {
-                            BinaryFormatter bf = new BinaryFormatter();
-                            bf.Serialize(ms, propValue);
-                            byte[] buffer = ms.ToArray();
-                            return Convert.ToBase64String(buffer);
-                        }
-                        finally
-                        {
-                            ms.Close();
-                        }
                     case SettingsSerializeAs.Xml:
                         XmlSerializer xs = new XmlSerializer(type);
                         StringWriter sw = new StringWriter(CultureInfo.InvariantCulture);
 
-                        xs.Serialize(sw, propValue);
+                        xs.Serialize(sw, propertyValue);
                         return sw.ToString();
+                    case SettingsSerializeAs.Binary:
+                        Debug.Fail("Should not have gotten here with Binary formatting");
+                        break;
                 }
             }
             catch (Exception)

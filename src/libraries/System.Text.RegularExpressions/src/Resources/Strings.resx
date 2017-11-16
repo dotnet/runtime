@@ -67,6 +67,9 @@
   <data name="Arg_ArrayPlusOffTooSmall" xml:space="preserve">
     <value>Destination array is not long enough to copy all the items in the collection. Check array index and length.</value>
   </data>
+  <data name="ArgumentNull_ArrayWithNullElements" xml:space="preserve">
+    <value>The array cannot contain null elements.</value>
+  </data>
   <data name="BadClassInCharRange" xml:space="preserve">
     <value>Cannot include class \\{0} in character range.</value>
   </data>
@@ -88,6 +91,9 @@
   <data name="IllegalCondition" xml:space="preserve">
     <value>Illegal conditional (?(...)) expression.</value>
   </data>
+  <data name="IllegalDefaultRegexMatchTimeoutInAppDomain" xml:space="preserve">
+    <value>AppDomain data '{0}' contains the invalid value or object '{1}' for specifying a default matching timeout for System.Text.RegularExpressions.Regex.</value>
+  </data>
   <data name="IllegalEndEscape" xml:space="preserve">
     <value>Illegal \\ at end of pattern.</value>
   </data>
@@ -102,6 +108,9 @@
   </data>
   <data name="InvalidGroupName" xml:space="preserve">
     <value>Invalid group name: Group names must begin with a word character.</value>
+  </data>
+  <data name="InvalidEmptyArgument" xml:space="preserve">
+    <value>Argument {0} cannot be zero-length.</value>
   </data>
   <data name="LengthNotNegative" xml:space="preserve">
     <value>Length cannot be less than 0 or exceed input length.</value>
@@ -135,6 +144,9 @@
   </data>
   <data name="OnlyAllowedOnce" xml:space="preserve">
     <value>This operation is only allowed once per object.</value>
+  </data>
+  <data name="PlatformNotSupported_CompileToAssembly" xml:space="preserve">
+    <value>This platform does not support writing compiled regular expressions to an assembly.</value>
   </data>
   <data name="QuantifyAfterNothing" xml:space="preserve">
     <value>Quantifier {x,y} following nothing.</value>

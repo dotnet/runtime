@@ -33,7 +33,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Web;
 using Xunit;
 
 namespace System.Web.Tests
@@ -51,6 +50,8 @@ namespace System.Web.Tests
                 new object[] {"&lt;script>", "<script>"},
                 new object[] {"&quot;a&amp;b&quot;", "\"a&b\""},
                 new object[] {"&#39;string&#39;", "'string'"},
+                new object[] {"abc + def!", "abc + def!"},
+                new object[] {"This is an &lt;element>!", "This is an <element>!"},
             };
 
         [Theory]
@@ -240,10 +241,8 @@ namespace System.Web.Tests
                 {
                     "\u00A0¡¢£¤¥¦§¨©ª«¬­®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ",
                     @"&#160;&#161;&#162;&#163;&#164;&#165;&#166;&#167;&#168;&#169;&#170;&#171;&#172;&#173;&#174;&#175;&#176;&#177;&#178;&#179;&#180;&#181;&#182;&#183;&#184;&#185;&#186;&#187;&#188;&#189;&#190;&#191;&#192;&#193;&#194;&#195;&#196;&#197;&#198;&#199;&#200;&#201;&#202;&#203;&#204;&#205;&#206;&#207;&#208;&#209;&#210;&#211;&#212;&#213;&#214;&#215;&#216;&#217;&#218;&#219;&#220;&#221;&#222;&#223;&#224;&#225;&#226;&#227;&#228;&#229;&#230;&#231;&#232;&#233;&#234;&#235;&#236;&#237;&#238;&#239;&#240;&#241;&#242;&#243;&#244;&#245;&#246;&#247;&#248;&#249;&#250;&#251;&#252;&#253;&#254;&#255;",
-                },
+                }
             };
-
-
 
         [Theory]
         [MemberData(nameof(HtmlEncodeDecodeData))]
@@ -252,6 +251,16 @@ namespace System.Web.Tests
         public void HtmlEncode(string decoded, string encoded)
         {
             Assert.Equal(encoded, HttpUtility.HtmlEncode(decoded));
+        }
+
+        [Theory]
+        [MemberData(nameof(HtmlEncodeDecodeData))]
+        [MemberData(nameof(HtmlEncodeData))]
+        [InlineData(null, null)]
+        [InlineData(2, "2")]
+        public void HtmlEncodeObject(string decoded, string encoded)
+        {
+            Assert.Equal(encoded, HttpUtility.HtmlEncode((object)decoded));
         }
 
         [Theory]
@@ -284,6 +293,8 @@ namespace System.Web.Tests
             {
                 yield return new object[] { null, "" };
                 yield return new object[] { "", "" };
+                yield return new object[] {"No escaping needed.", "No escaping needed."};
+                yield return new object[] {"The \t and \n will need to be escaped.", "The \\t and \\n will need to be escaped."};
                 for (char c = char.MinValue; c < TestMaxChar; c++)
                 {
                     if (c >= 0 && c <= 7 || c == 11 || c >= 14 && c <= 31 || c == 38 || c == 39 || c == 60 || c == 62 || c == 133 || c == 8232 || c == 8233)
@@ -338,6 +349,14 @@ namespace System.Web.Tests
             Assert.Equal("\"" + encoded + "\"", HttpUtility.JavaScriptStringEncode(decoded, true));
         }
 
+
+        [Theory]
+        [MemberData(nameof(JavaScriptStringEncodeData))]
+        public void JavaScriptStringEncode_ExplicitDontAddQuotes(string decoded, string encoded)
+        {
+            Assert.Equal(encoded, HttpUtility.JavaScriptStringEncode(decoded, false));
+        }
+
         #endregion JavaScriptStringEncode
 
         #region ParseQueryString
@@ -365,10 +384,18 @@ namespace System.Web.Tests
                     new[] {new[] {UnicodeStr}}
                 },
                 new object[] {"name=value=test", new[] {"name"}, new[] {new[] {"value=test"}}},
+                new object[] { "name=value&#xe9;", new[] {"name", null}, new[] {new[] {"value"}, new[] { "#xe9;" } }},
+                new object[] { "name=value&amp;name2=value2", new[] {"name", "amp;name2"}, new[] {new[] {"value"}, new[] { "value2" } }},
+                new object[] {"name=value=test+phrase", new[] {"name"}, new[] {new[] {"value=test phrase"}}},
             };
 
         public static IEnumerable<object[]> ParseQueryStringDataQ =>
-            ParseQueryStringData.Select(a => new object[] { "?" + (string)a[0] }.Concat(a.Skip(1)).ToArray());
+            ParseQueryStringData.Select(a => new object[] { "?" + (string)a[0] }.Concat(a.Skip(1)).ToArray())
+                .Concat(new[]
+                    {
+                        new object[] { "??name=value=test", new[] { "?name" }, new[] { new[] { "value=test" }}},
+                        new object[] { "?", Array.Empty<string>(), Array.Empty<IList<string>>()}
+                    });
 
         [Theory]
         [MemberData(nameof(ParseQueryStringData))]
@@ -407,10 +434,12 @@ namespace System.Web.Tests
         public void ParseQueryString_ToString()
         {
             var parsed = HttpUtility.ParseQueryString("");
+            Assert.Empty(parsed.ToString());
             parsed.Add("ReturnUrl", @"http://localhost/login/authenticate?ReturnUrl=http://localhost/secured_area&__provider__=google");
 
             var expected = "ReturnUrl=http%3a%2f%2flocalhost%2flogin%2fauthenticate%3fReturnUrl%3dhttp%3a%2f%2flocalhost%2fsecured_area%26__provider__%3dgoogle";
             Assert.Equal(expected, parsed.ToString());
+            Assert.Equal(expected, HttpUtility.ParseQueryString(expected).ToString());
         }
 
         #endregion ParseQueryString
@@ -428,6 +457,12 @@ namespace System.Web.Tests
                 new object[] {"http://127.0.0.1:8080/appDir/page.aspx?foo=bar", "http://127.0.0.1:8080/appDir/page.aspx?foo=b%u0061r"},
                 new object[] {"http://127.0.0.1:8080/appDir/page.aspx?foo=b%ar", "http://127.0.0.1:8080/appDir/page.aspx?foo=b%%u0061r"},
                 new object[] {"http://127.0.0.1:8080/appDir/page.aspx?foo=b%uu0061r", "http://127.0.0.1:8080/appDir/page.aspx?foo=b%uu0061r"},
+                new object[] {"http://127.0.0.1:8080/appDir/page.aspx?foo=bar baz", "http://127.0.0.1:8080/appDir/page.aspx?foo=bar+baz"},
+                new object[] { "http://example.net/\U00010000", "http://example.net/\U00010000" },
+                new object[] { "http://example.net/\uFFFD", "http://example.net/\uD800" },
+                new object[] { "http://example.net/\uFFFDa", "http://example.net/\uD800a" },
+                new object[] { "http://example.net/\uFFFD", "http://example.net/\uDC00" },
+                new object[] { "http://example.net/\uFFFDa", "http://example.net/\uDC00a" }
             };
 
         public static IEnumerable<object[]> UrlDecodeDataToBytes =>
@@ -441,6 +476,12 @@ namespace System.Web.Tests
                 new object[] {"http://127.0.0.1:8080/appDir/page.aspx?foo=b%uu0061r", "http://127.0.0.1:8080/appDir/page.aspx?foo=b%uu0061r"},
                 new object[] {"http://127.0.0.1:8080/appDir/page.aspx?foo=b%u0061r", "http://127.0.0.1:8080/appDir/page.aspx?foo=b%u0061r"},
                 new object[] {"http://127.0.0.1:8080/appDir/page.aspx?foo=b%%u0061r", "http://127.0.0.1:8080/appDir/page.aspx?foo=b%%u0061r"},
+                new object[] {"http://127.0.0.1:8080/appDir/page.aspx?foo=bar baz", "http://127.0.0.1:8080/appDir/page.aspx?foo=bar+baz"},
+                new object[] { "http://example.net/\U00010000", "http://example.net/\U00010000" },
+                new object[] { "http://example.net/\uFFFD", "http://example.net/\uD800" },
+                new object[] { "http://example.net/\uFFFDa", "http://example.net/\uD800a" },
+                new object[] { "http://example.net/\uFFFD", "http://example.net/\uDC00" },
+                new object[] { "http://example.net/\uFFFDa", "http://example.net/\uDC00a" }
             };
 
         [Theory]
@@ -450,11 +491,58 @@ namespace System.Web.Tests
             Assert.Equal(decoded, HttpUtility.UrlDecode(encoded));
         }
 
+        [Fact]
+        public void UrlDecode_null()
+        {
+            Assert.Null(HttpUtility.UrlDecode(default(string), Encoding.UTF8));
+            Assert.Null(HttpUtility.UrlDecode(default(byte[]), Encoding.UTF8));
+            Assert.Null(HttpUtility.UrlDecode(null));
+            Assert.Null(HttpUtility.UrlDecode(null, 2, 0, Encoding.UTF8));
+            Assert.Throws<ArgumentNullException>("bytes", () => HttpUtility.UrlDecode(null, 2, 3, Encoding.UTF8));
+        }
+
+        [Fact]
+        public void UrlDecode_OutOfRange()
+        {
+            byte[] bytes = { 0, 1, 2 };
+            Assert.Throws<ArgumentOutOfRangeException>("offset", () => HttpUtility.UrlDecode(bytes, -1, 2, Encoding.UTF8));
+            Assert.Throws<ArgumentOutOfRangeException>("offset", () => HttpUtility.UrlDecode(bytes, 14, 2, Encoding.UTF8));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => HttpUtility.UrlDecode(bytes, 1, 12, Encoding.UTF8));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => HttpUtility.UrlDecode(bytes, 1, -12, Encoding.UTF8));
+        }
+
         [Theory]
         [MemberData(nameof(UrlDecodeDataToBytes))]
         public void UrlDecodeToBytes(string decoded, string encoded)
         {
             Assert.Equal(decoded, Encoding.UTF8.GetString(HttpUtility.UrlDecodeToBytes(encoded, Encoding.UTF8)));
+        }
+
+        [Theory]
+        [MemberData(nameof(UrlDecodeDataToBytes))]
+        public void UrlDecodeToBytes_DefaultEncoding(string decoded, string encoded)
+        {
+            Assert.Equal(decoded, Encoding.UTF8.GetString(HttpUtility.UrlDecodeToBytes(encoded)));
+        }
+
+        [Fact]
+        public void UrlDecodeToBytes_null()
+        {
+            Assert.Null(HttpUtility.UrlDecodeToBytes(default(byte[])));
+            Assert.Null(HttpUtility.UrlDecodeToBytes(default(string)));
+            Assert.Null(HttpUtility.UrlDecodeToBytes(default(string), Encoding.UTF8));
+            Assert.Null(HttpUtility.UrlDecodeToBytes(default(byte[]), 2, 0));
+            Assert.Throws<ArgumentNullException>("bytes", () => HttpUtility.UrlDecodeToBytes(default(byte[]), 2, 3));
+        }
+
+        [Fact]
+        public void UrlDecodeToBytes_OutOfRange()
+        {
+            byte[] bytes = { 0, 1, 2 };
+            Assert.Throws<ArgumentOutOfRangeException>("offset", () => HttpUtility.UrlDecodeToBytes(bytes, -1, 2));
+            Assert.Throws<ArgumentOutOfRangeException>("offset", () => HttpUtility.UrlDecodeToBytes(bytes, 14, 2));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => HttpUtility.UrlDecodeToBytes(bytes, 1, 12));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => HttpUtility.UrlDecodeToBytes(bytes, 1, -12));
         }
 
         [Theory]
@@ -529,10 +617,57 @@ namespace System.Web.Tests
             Assert.Equal(encoded, Encoding.UTF8.GetString(HttpUtility.UrlEncodeToBytes(decoded, Encoding.UTF8)));
         }
 
+        [Theory]
+        [MemberData(nameof(UrlEncodeData))]
+        public void UrlEncodeToBytes_DefaultEncoding(string decoded, string encoded)
+        {
+            Assert.Equal(encoded, Encoding.UTF8.GetString(HttpUtility.UrlEncodeToBytes(decoded)));
+        }
+
+        [Theory, MemberData(nameof(UrlEncodeData))]
+        public void UrlEncodeToBytesExplicitSize(string decoded, string encoded)
+        {
+            byte[] bytes = Encoding.UTF8.GetBytes(decoded);
+            Assert.Equal(encoded, Encoding.UTF8.GetString(HttpUtility.UrlEncodeToBytes(bytes, 0, bytes.Length)));
+        }
+
+
+        [Theory]
+        [InlineData(" abc defgh", "abc+def", 1, 7)]
+        [InlineData(" abc defgh", "", 1, 0)]
+        public void UrlEncodeToBytesExplicitSize(string decoded, string encoded, int offset, int count)
+        {
+            byte[] bytes = Encoding.UTF8.GetBytes(decoded);
+            Assert.Equal(encoded, Encoding.UTF8.GetString(HttpUtility.UrlEncodeToBytes(bytes, offset, count)));
+        }
+
+        [Theory]
+        [InlineData("abc def", " abc+defgh", 1, 7)]
+        [InlineData("", " abc defgh", 1, 0)]
+        public void UrlDecodeToBytesExplicitSize(string decoded, string encoded, int offset, int count)
+        {
+            byte[] bytes = Encoding.UTF8.GetBytes(encoded);
+            Assert.Equal(decoded, Encoding.UTF8.GetString(HttpUtility.UrlDecodeToBytes(bytes, offset, count)));
+        }
+
         [Fact]
         public void UrlEncodeToBytes_null()
         {
             Assert.Null(HttpUtility.UrlEncodeToBytes(null, Encoding.UTF8));
+            Assert.Null(HttpUtility.UrlEncodeToBytes(default(byte[])));
+            Assert.Null(HttpUtility.UrlEncodeToBytes(default(string)));
+            Assert.Null(HttpUtility.UrlEncodeToBytes(null, 2, 0));
+            Assert.Throws<ArgumentNullException>("bytes", () => HttpUtility.UrlEncodeToBytes(null, 2, 3));
+        }
+
+        [Fact]
+        public void UrlEncodeToBytes_OutOfRange()
+        {
+            byte[] bytes = { 0, 1, 2 };
+            Assert.Throws<ArgumentOutOfRangeException>("offset", () => HttpUtility.UrlEncodeToBytes(bytes, -1, 2));
+            Assert.Throws<ArgumentOutOfRangeException>("offset", () => HttpUtility.UrlEncodeToBytes(bytes, 14, 2));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => HttpUtility.UrlEncodeToBytes(bytes, 1, 12));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => HttpUtility.UrlEncodeToBytes(bytes, 1, -12));
         }
 
         [Theory]
@@ -543,9 +678,22 @@ namespace System.Web.Tests
         }
 
         [Fact]
-        public void UrlEncode_ByteArray_null()
+        public void UrlEncode_null()
         {
-            Assert.Null(HttpUtility.UrlEncode((byte[]) null));
+            Assert.Null(HttpUtility.UrlEncode((byte[])null));
+            Assert.Null(HttpUtility.UrlEncode((string)null));
+            Assert.Null(HttpUtility.UrlEncode(null, Encoding.UTF8));
+            Assert.Null(HttpUtility.UrlEncode(null, 2, 3));
+        }
+
+        [Fact]
+        public void UrlEncode_OutOfRange()
+        {
+            byte[] bytes = {0, 1, 2};
+            Assert.Throws<ArgumentOutOfRangeException>("offset", () => HttpUtility.UrlEncode(bytes, -1, 2));
+            Assert.Throws<ArgumentOutOfRangeException>("offset", () => HttpUtility.UrlEncode(bytes, 14, 2));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => HttpUtility.UrlEncode(bytes, 1, 12));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => HttpUtility.UrlEncode(bytes, 1, -12));
         }
 
         #endregion UrlEncode(ToBytes)
@@ -591,6 +739,16 @@ namespace System.Web.Tests
         [InlineData(" ", "%20")]
         [InlineData("\n", "%0a")]
         [InlineData("default.xxx?sdsd=sds", "default.xxx?sdsd=sds")]
+        [InlineData("?sdsd=sds", "?sdsd=sds")]
+        [InlineData("", "")]
+        [InlineData("http://example.net/default.xxx?sdsd=sds", "http://example.net/default.xxx?sdsd=sds")]
+        [InlineData("http://example.net:8080/default.xxx?sdsd=sds", "http://example.net:8080/default.xxx?sdsd=sds")]
+        [InlineData("http://eXample.net:80/default.xxx?sdsd=sds", "http://eXample.net:80/default.xxx?sdsd=sds")]
+        [InlineData("http://EXAMPLE.NET/default.xxx?sdsd=sds", "http://EXAMPLE.NET/default.xxx?sdsd=sds")]
+        [InlineData("http://EXAMPLE.NET/défault.xxx?sdsd=sds", "http://EXAMPLE.NET/d%c3%a9fault.xxx?sdsd=sds")]
+        [InlineData("file:///C/Users", "file:///C/Users")]
+        [InlineData("mailto:user@example.net", "mailto:user@example.net")]
+        [InlineData("http://example\u200E.net/", "http://example%e2%80%8e.net/")]
         public void UrlPathEncode(string decoded, string encoded)
         {
             Assert.Equal(encoded, HttpUtility.UrlPathEncode(decoded));

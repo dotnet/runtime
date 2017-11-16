@@ -5,11 +5,11 @@
 namespace System.Transactions
 {
     /// <summary>
-    /// This identifier is used in tracing to distiguish transaction
+    /// This identifier is used in tracing to distinguish transaction
     /// enlistments.  This identifier is only unique within
     /// a given AppDomain.
     /// </summary>
-    internal struct EnlistmentTraceIdentifier : IEquatable<EnlistmentTraceIdentifier>
+    internal readonly struct EnlistmentTraceIdentifier : IEquatable<EnlistmentTraceIdentifier>
     {
         public static readonly EnlistmentTraceIdentifier Empty = new EnlistmentTraceIdentifier();
 
@@ -40,7 +40,7 @@ namespace System.Transactions
 
         private readonly int _enlistmentIdentifier;
         /// <summary>
-        /// A value that distiguishes between multiple enlistments on the same
+        /// A value that distinguishes between multiple enlistments on the same
         /// transaction instance by the same resource manager.
         /// </summary>
         public int EnlistmentIdentifier => _enlistmentIdentifier;

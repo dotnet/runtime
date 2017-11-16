@@ -7,19 +7,10 @@
     </ProjectReference>
     <ProjectReference Include="..\src\System.Security.Cryptography.ProtectedData.csproj" />
     <HarvestIncludePaths Include="ref/net46;lib/net46;runtimes/win/lib/net46" />
-    <HarvestIncludePaths Include="ref/netstandard1.3;runtimes/win/lib/netstandard1.3" />
-    <HarvestIncludePaths Include="runtimes/unix/lib/netstandard1.3">
-      <!-- package unix impl (platform not supported) as RID agnostic -->
-      <TargetPath>lib/netstandard1.3</TargetPath>
-    </HarvestIncludePaths>
+    <HarvestIncludePaths Include="ref/netstandard1.3;runtimes/win/lib/netstandard1.3;;lib/netstandard1.3" />
   </ItemGroup>
   <ItemGroup>
-    <InboxOnTargetFramework Include="MonoAndroid10" />
-    <InboxOnTargetFramework Include="MonoTouch10" />
-    <InboxOnTargetFramework Include="xamarinios10" />
-    <InboxOnTargetFramework Include="xamarinmac20" />
-    <InboxOnTargetFramework Include="xamarintvos10" />
-    <InboxOnTargetFramework Include="xamarinwatchos10" />
+    <InboxOnTargetFramework Include="$(AllXamarinFrameworks)" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

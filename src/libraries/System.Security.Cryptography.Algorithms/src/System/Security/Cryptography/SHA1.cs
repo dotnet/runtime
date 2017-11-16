@@ -17,15 +17,9 @@ namespace System.Security.Cryptography
         protected SHA1() { }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "This is the implementaton of SHA1")]
-        public static new SHA1 Create()
-        {
-            return new Implementation();
-        }
+        public static new SHA1 Create() => new Implementation();
 
-        public static new SHA1 Create(string hashName)
-        {
-            return (SHA1)CryptoConfig.CreateFromName(hashName);
-        }
+        public static new SHA1 Create(string hashName) => (SHA1)CryptoConfig.CreateFromName(hashName);
 
         private sealed class Implementation : SHA1
         {
@@ -37,21 +31,22 @@ namespace System.Security.Cryptography
                 HashSizeValue = _hashProvider.HashSizeInBytes * 8;
             }
 
-            protected sealed override void HashCore(byte[] array, int ibStart, int cbSize)
-            {
+            protected sealed override void HashCore(byte[] array, int ibStart, int cbSize) =>
                 _hashProvider.AppendHashData(array, ibStart, cbSize);
-            }
 
-            protected sealed override byte[] HashFinal()
-            {
-                return _hashProvider.FinalizeHashAndReset();
-            }
+            protected sealed override void HashCore(ReadOnlySpan<byte> source) =>
+                _hashProvider.AppendHashData(source);
+
+            protected sealed override byte[] HashFinal() =>
+                _hashProvider.FinalizeHashAndReset();
+
+            protected sealed override bool TryHashFinal(Span<byte> destination, out int bytesWritten) =>
+                _hashProvider.TryFinalizeHashAndReset(destination, out bytesWritten);
 
             public sealed override void Initialize()
             {
                 // Nothing to do here. We expect HashAlgorithm to invoke HashFinal() and Initialize() as a pair. This reflects the 
                 // reality that our native crypto providers (e.g. CNG) expose hash finalization and object reinitialization as an atomic operation.
-                return;
             }
 
             protected sealed override void Dispose(bool disposing)

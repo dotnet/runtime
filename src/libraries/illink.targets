@@ -10,7 +10,8 @@
 
   <!-- Inputs and outputs of ILLinkTrimAssembly -->
   <PropertyGroup>
-    <ILLinkToolPath Condition="'$(ILLinkToolPath)' == ''">$(ToolsDir)ILLink/illink.dll</ILLinkToolPath>
+    <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' And '$(RunningOnCore)' == 'true'">$(ToolsDir)ILLink/netcoreapp2.0/ILLink.Tasks.dll</ILLinkTasksPath>
+    <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' And '$(RunningOnCore)' != 'true'">$(ToolsDir)ILLink/net46/ILLink.Tasks.dll</ILLinkTasksPath>
     <ILLinkTrimAssemblyPath>$(IntermediateOutputPath)$(TargetName)$(TargetExt)</ILLinkTrimAssemblyPath>
     <ILLinkTrimAssemblySymbols>$(IntermediateOutputPath)$(TargetName).pdb</ILLinkTrimAssemblySymbols>
     <ILLinkTrimInputPath>$(IntermediateOutputPath)PreTrim/</ILLinkTrimInputPath>
@@ -55,26 +56,15 @@
        Examines the "input assembly" for IL that is unreachable from public API and trims that,
        rewriting the assembly to an "output assembly"
   -->
+  <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksPath)" />
   <Target Name="ILLinkTrimAssembly" Condition="'$(ILLinkTrimAssembly)' == 'true'" DependsOnTargets="EnsureBuildToolsRuntime">
-    <ItemGroup>
-      <!-- currently only directories are supported by ILLink. -->
-      <_ILLinkReferenceDirectory Include="%(ReferencePath.RootDir)%(ReferencePath.Directory)" />
-    </ItemGroup>
-
     <PropertyGroup>
-      <!-- Root public entry points in this assembly.
-           Currently this must be passed as name and directory.
-           Directory of this assembly *must* occur before directory of references. -->
-      <ILLinkArgs>$(ILLinkArgs) -r $(TargetName)</ILLinkArgs>
-      <ILLinkArgs>$(ILLinkArgs) -d $(ILLinkTrimInputPath)</ILLinkArgs>
-      <!-- directories to examine for assembly dependencies -->
-      <ILLinkArgs>$(ILLinkArgs) @(_ILLinkReferenceDirectory->'-d %(Identity)', ' ')</ILLinkArgs>
+      <ILLinkArgs>$(ILLinkArgs)-r $(TargetName)</ILLinkArgs>
       <!-- don't trim anything that's defined in core assemblies -->
       <ILLinkArgs>$(ILLinkArgs) -c skip</ILLinkArgs>
       <ILLinkArgs>$(ILLinkArgs) -p skip netstandard</ILLinkArgs>
       <!-- keep type-forward assemblies (facades) -->
       <ILLinkArgs>$(ILLinkArgs) -t</ILLinkArgs>
-      <ILLinkArgs>$(ILLinkArgs) -out $(ILLinkTrimOutputPath)</ILLinkArgs>
       <ILLinkArgs Condition="'$(ILLinkTrimXml)' != ''">$(ILLinkArgs) -x $(ILLinkTrimXml)</ILLinkArgs>
       <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' AND Exists('$(ILLinkTrimAssemblySymbols)')">$(ILLinkArgs) -b true</ILLinkArgs>
       <!-- keep types and members required by Debugger-related attributes -->
@@ -96,11 +86,11 @@
           Condition="'$(ILLinkRewritePDBs)' == 'true' AND Exists('$(ILLinkTrimAssemblySymbols)')"
     />
 
-    <PropertyGroup>
-      <ILLinkCmd>$(OverrideToolHost) "$(ILLinkToolPath)"</ILLinkCmd>
-    </PropertyGroup>
+    <ILLink AssemblyPaths="$(ILLinkTrimInputAssembly);@(ReferencePath)"
+            RootAssemblyNames=""
+            OutputDirectory="$(ILLinkTrimOutputPath)"
+            ExtraArgs="$(ILLinkArgs)" />
 
-    <Exec Command="$(ILLinkCmd) $(ILLinkArgs)" />
   </Target>
 
   <!-- ILLink reporting.

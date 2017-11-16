@@ -244,7 +244,7 @@ namespace System.Xml.Xsl.Xslt
         }
     }
 
-    internal struct Pattern
+    internal readonly struct Pattern
     {
         public readonly TemplateMatch Match;
 

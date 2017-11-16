@@ -147,7 +147,7 @@ namespace System.IO.Packaging
         /// ReadOnly
         /// Consider following Content type - 
         /// type/subtype ; param1=value1 ; param2=value2 ; param3="value3"
-        /// This will return a enumerator over a dictionary of the parameter/value pairs. 
+        /// This will return an enumerator over a dictionary of the parameter/value pairs. 
         /// </summary>
         internal Dictionary<string, string>.Enumerator ParameterValuePairs
         {

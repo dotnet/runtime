@@ -129,6 +129,9 @@ namespace System.IO.Tests
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         public void Unix_NonExistentPath_ReadOnlyVolume()
         {
+            if (PlatformDetection.IsRedHatFamily6)
+                return; // [ActiveIssue(https://github.com/dotnet/corefx/issues/21920)]
+
             ReadOnly_FileSystemHelper(readOnlyDirectory =>
             {
                 Delete(Path.Combine(readOnlyDirectory, "DoesNotExist"));
@@ -141,6 +144,9 @@ namespace System.IO.Tests
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         public void Unix_ExistingDirectory_ReadOnlyVolume()
         {
+            if (PlatformDetection.IsRedHatFamily6)
+                return; // [ActiveIssue(https://github.com/dotnet/corefx/issues/21920)]
+
             ReadOnly_FileSystemHelper(readOnlyDirectory =>
             {
                 Assert.Throws<IOException>(() => Delete(Path.Combine(readOnlyDirectory, "subdir")));

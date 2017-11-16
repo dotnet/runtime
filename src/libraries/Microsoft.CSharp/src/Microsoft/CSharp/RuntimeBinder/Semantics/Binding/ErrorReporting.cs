@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Diagnostics;
 using Microsoft.CSharp.RuntimeBinder.Errors;
 
@@ -9,63 +10,32 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed partial class ExpressionBinder
     {
-        private static readonly ErrorCode[] s_ReadOnlyLocalErrors =
-        {
-            ErrorCode.ERR_RefReadonlyLocal,
-            ErrorCode.ERR_AssgReadonlyLocal,
-        };
-
-        private void ReportLocalError(LocalVariableSymbol local, CheckLvalueKind kind, bool isNested)
-        {
-            Debug.Assert(local != null);
-
-            int index = kind == CheckLvalueKind.OutParameter ? 0 : 1;
-
-            Debug.Assert(index != 2 && index != 3);
-            // There is no way that we can have no cause AND a read-only local nested in a struct with a
-            // writable field. What would make the local read-only if not one of the causes above?  (Const
-            // locals may not be structs, so we would already have errored out in that scenario.)
-
-            ErrorCode err = s_ReadOnlyLocalErrors[index];
-
-            ErrorContext.Error(err, local.name);
-        }
-
-        private static readonly ErrorCode[] s_ReadOnlyErrors =
-        {
-            ErrorCode.ERR_RefReadonly,
-            ErrorCode.ERR_AssgReadonly,
-            ErrorCode.ERR_RefReadonlyStatic,
-            ErrorCode.ERR_AssgReadonlyStatic,
-            ErrorCode.ERR_RefReadonly2,
-            ErrorCode.ERR_AssgReadonly2,
-            ErrorCode.ERR_RefReadonlyStatic2,
-            ErrorCode.ERR_AssgReadonlyStatic2
-        };
-
-        private void ReportReadOnlyError(ExprField field, CheckLvalueKind kind, bool isNested)
+        private RuntimeBinderException ReportReadOnlyError(ExprField field, bool isNested)
         {
             Debug.Assert(field != null);
 
-            bool isStatic = field.FieldWithType.Field().isStatic;
-
-            int index = (isNested ? 4 : 0) + (isStatic ? 2 : 0) + (kind == CheckLvalueKind.OutParameter ? 0 : 1);
-            ErrorCode err = s_ReadOnlyErrors[index];
-
+            FieldWithType fieldWithType = field.FieldWithType;
+            bool isStatic = fieldWithType.Field().isStatic;
+            ErrArg[] args;
+            ErrorCode err;
             if (isNested)
             {
-                ErrorContext.Error(err, field.FieldWithType);
+                args = new ErrArg[]{ fieldWithType };
+                err = isStatic ? ErrorCode.ERR_AssgReadonlyStatic2 : ErrorCode.ERR_AssgReadonly2;
             }
             else
             {
-                ErrorContext.Error(err);
+                args = Array.Empty<ErrArg>();
+                err = isStatic ? ErrorCode.ERR_AssgReadonlyStatic : ErrorCode.ERR_AssgReadonly;
             }
+
+            return ErrorContext.Error(err, args);
         }
 
-        // Return true if we actually report a failure.
-        private bool TryReportLvalueFailure(Expr expr, CheckLvalueKind kind)
+        private void TryReportLvalueFailure(Expr expr, CheckLvalueKind kind)
         {
             Debug.Assert(expr != null);
+            Debug.Assert(!(expr is ExprLocal));
 
             // We have a lvalue failure. Was the reason because this field
             // was marked readonly? Give special messages for this case.
@@ -75,12 +45,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             while (true)
             {
                 Debug.Assert(expr != null);
-
-                if (expr is ExprLocal local && local.IsOK)
-                {
-                    ReportLocalError(local.Local, kind, isNested);
-                    return true;
-                }
 
                 Expr pObject = null;
 
@@ -94,8 +58,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     if (field.FieldWithType.Field().isReadOnly)
                     {
-                        ReportReadOnlyError(field, kind, isNested);
-                        return true;
+                        throw ReportReadOnlyError(field, isNested);
                     }
                     if (!field.FieldWithType.Field().isStatic)
                     {
@@ -105,12 +68,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if (pObject != null && pObject.Type.isStructOrEnum())
                 {
-                    if (pObject is IExprWithArgs withArgs)
+                    if (pObject is ExprWithArgs withArgs)
                     {
                         // assigning to RHS of method or property getter returning a value-type on the stack or
                         // passing RHS of method or property getter returning a value-type on the stack, as ref or out
-                        ErrorContext.Error(ErrorCode.ERR_ReturnNotLValue, withArgs.GetSymWithType());
-                        return true;
+                        throw ErrorContext.Error(ErrorCode.ERR_ReturnNotLValue, withArgs.GetSymWithType());
                     }
                     if (pObject is ExprCast)
                     {
@@ -122,28 +84,24 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         // But in the runtime, we allow this - mark that we're doing an
                         // unbox here, so that we gen the correct expression tree for it.
                         pObject.Flags |= EXPRFLAG.EXF_UNBOXRUNTIME;
-                        return false;
+                        return;
                     }
                 }
 
                 // everything else
-                if (pObject != null && !pObject.isLvalue() && (expr is ExprField || (!isNested && expr is ExprProperty)))
+                if (pObject != null && !pObject.isLvalue() && (expr is ExprField || !isNested))
                 {
                     Debug.Assert(pObject.Type.isStructOrEnum());
+                    Debug.Assert(!(pObject is ExprLocal));
                     expr = pObject;
                 }
                 else
                 {
-                    ErrorContext.Error(GetStandardLvalueError(kind));
-                    return true;
+                    throw ErrorContext.Error(GetStandardLvalueError(kind));
                 }
+
                 isNested = true;
             }
-        }
-
-        public static void ReportTypeArgsNotAllowedError(SymbolLoader symbolLoader, int arity, ErrArgRef argName, ErrArgRef argKind)
-        {
-            symbolLoader.ErrorContext.ErrorRef(ErrorCode.ERR_TypeArgsNotAllowed, argName, argKind);
         }
     }
 }

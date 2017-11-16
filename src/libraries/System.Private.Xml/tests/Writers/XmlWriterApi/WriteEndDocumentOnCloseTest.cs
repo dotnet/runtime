@@ -4,18 +4,17 @@
 
 using OLEDB.Test.ModuleCore;
 using System.IO;
+using Xunit;
 
 namespace System.Xml.Tests
 {
-    //[TestCase(Name = "XmlWriterSettings: WriteEndDocumentOnClose")]
-    public partial class TCWriteEndDocumentOnCloseTest : XmlWriterTestCaseBase
+    public partial class TCWriteEndDocumentOnCloseTest
     {
-        //[Variation(Desc = "write element with text but without end element when the WriteEndDocumentOnClose = false", Pri = 1, Params = new object[] { false, "<root>text" })]
-        //[Variation(Desc = "write element with text but without end element when the WriteEndDocumentOnClose = true", Pri = 1, Params = new object[] { true, "<root>text</root>" })]
-        public int TestWriteEndDocumentOnCoseForOneElementwithText()
+        [Theory]
+        [InlineData(false, "<root>text")]
+        [InlineData(true, "<root>text</root>")]
+        public void TestWriteEndDocumentOnCoseForOneElementwithText(bool writeEndDocument, string expected)
         {
-            bool writeEndDocument = (bool)CurVariation.Params[0];
-            string expected = (string)CurVariation.Params[1];
             StringWriter output = new StringWriter();
             XmlWriterSettings ws = new XmlWriterSettings();
             ws.OmitXmlDeclaration = true;
@@ -26,17 +25,13 @@ namespace System.Xml.Tests
             writer.Dispose();
             string act = output.ToString();
             CError.Compare(act, expected, "FAILED: when one element with text and WriteEndDocumentOnClose = " + ws.WriteEndDocumentOnClose + ", expected: " + expected + ", received: " + act);
-
-            return TEST_PASS;
         }
 
-
-        //[Variation(Desc = "write start element and then close when the WriteEndDocumentOnClose = false", Pri = 1, Params = new object[] { false, "<root>" })]
-        //[Variation(Desc = "write start element and then close when the WriteEndDocumentOnClose = true", Pri = 1, Params = new object[] { true, "<root />" })]
-        public int TestWriteEndDocumentOnCoseForOneElement()
+        [Theory]
+        [InlineData(false, "<root>")]
+        [InlineData(true, "<root />")]
+        public void TestWriteEndDocumentOnCoseForOneElement(bool writeEndDocument, string expected)
         {
-            bool writeEndDocument = (bool)CurVariation.Params[0];
-            string expected = (string)CurVariation.Params[1];
             StringWriter output = new StringWriter();
             XmlWriterSettings ws = new XmlWriterSettings();
             ws.OmitXmlDeclaration = true;
@@ -47,16 +42,13 @@ namespace System.Xml.Tests
 
             string act = output.ToString();
             CError.Compare(act, expected, "FAILED: when one start element and WriteEndDocumentOnClose = " + ws.WriteEndDocumentOnClose + ", expected: " + expected + ", received: " + act);
-
-            return TEST_PASS;
         }
 
-        //[Variation(Desc = "write start element and with attribute then close when the WriteEndDocumentOnClose = false", Pri = 1, Params = new object[] { false, "<root att=\"\">" })]
-        //[Variation(Desc = "write start element and with attribute then close when the WriteEndDocumentOnClose = true", Pri = 1, Params = new object[] { true, "<root att=\"\" />" })]
-        public int TestWriteEndDocumentOnCoseForOneElementwithAttribute()
+        [Theory]
+        [InlineData(false, "<root att=\"\">")]
+        [InlineData(true, "<root att=\"\" />")]
+        public void TestWriteEndDocumentOnCoseForOneElementwithAttribute(bool writeEndDocument, string expected)
         {
-            bool writeEndDocument = (bool)CurVariation.Params[0];
-            string expected = (string)CurVariation.Params[1];
             StringWriter output = new StringWriter();
             XmlWriterSettings ws = new XmlWriterSettings();
             ws.OmitXmlDeclaration = true;
@@ -68,16 +60,13 @@ namespace System.Xml.Tests
 
             string act = output.ToString();
             CError.Compare(act, expected, "FAILED: when one start element with attribute and WriteEndDocumentOnClose = " + ws.WriteEndDocumentOnClose + ", expected: " + expected + ", received: " + act);
-
-            return TEST_PASS;
         }
 
-        //[Variation(Desc = "write start element and with attribute value then close when the WriteEndDocumentOnClose = false", Pri = 1, Params = new object[] { false, "<root att=\"value\">" })]
-        //[Variation(Desc = "write start element and with attribute value then close when the WriteEndDocumentOnClose = true", Pri = 1, Params = new object[] { true, "<root att=\"value\" />" })]
-        public int TestWriteEndDocumentOnCoseForOneElementwithAttributeValue()
+        [InlineData(false, "<root att=\"value\">")]
+        [InlineData(true, "<root att=\"value\" />")]
+        [Theory]
+        public void TestWriteEndDocumentOnCoseForOneElementwithAttributeValue(bool writeEndDocument, string expected)
         {
-            bool writeEndDocument = (bool)CurVariation.Params[0];
-            string expected = (string)CurVariation.Params[1];
             StringWriter output = new StringWriter();
             XmlWriterSettings ws = new XmlWriterSettings();
             ws.OmitXmlDeclaration = true;
@@ -89,15 +78,13 @@ namespace System.Xml.Tests
 
             string act = output.ToString();
             CError.Compare(act, expected, "FAILED: when one start element with attribute value and WriteEndDocumentOnClose = " + ws.WriteEndDocumentOnClose + ", expected: " + expected + ", received: " + act);
-
-            return TEST_PASS;
         }
-        //[Variation(Desc = "write start element and with namespace then close when the WriteEndDocumentOnClose = false", Pri = 1, Params = new object[] { false, "<root xmlns=\"testns\">" })]
-        //[Variation(Desc = "write start element and with namespace then close when the WriteEndDocumentOnClose = true", Pri = 1, Params = new object[] { true, "<root xmlns=\"testns\" />" })]
-        public int TestWriteEndDocumentOnCoseForOneElementwithNamespace()
+
+        [Theory]
+        [InlineData(false, "<root xmlns=\"testns\">")]
+        [InlineData(true, "<root xmlns=\"testns\" />")]
+        public void TestWriteEndDocumentOnCoseForOneElementwithNamespace(bool writeEndDocument, string expected)
         {
-            bool writeEndDocument = (bool)CurVariation.Params[0];
-            string expected = (string)CurVariation.Params[1];
             StringWriter output = new StringWriter();
             XmlWriterSettings ws = new XmlWriterSettings();
             ws.OmitXmlDeclaration = true;
@@ -108,17 +95,13 @@ namespace System.Xml.Tests
 
             string act = output.ToString();
             CError.Compare(act, expected, "FAILED: when one element with namespace and WriteEndDocumentOnClose = " + ws.WriteEndDocumentOnClose + ", expected: " + expected + ", received: " + act);
-
-            return TEST_PASS;
         }
 
-
-        //[Variation(Desc = "write multi start elements then close when the WriteEndDocumentOnClose = false", Pri = 1, Params = new object[] { false, "<root><sub1><sub2>" })]
-        //[Variation(Desc = "write multi start elements then close when the WriteEndDocumentOnClose = true", Pri = 1, Params = new object[] { true, "<root><sub1><sub2 /></sub1></root>" })]
-        public int TestWriteEndDocumentOnCoseForMultiElements()
+        [Theory]
+        [InlineData(false, "<root><sub1><sub2>")]
+        [InlineData(true, "<root><sub1><sub2 /></sub1></root>")]
+        public void TestWriteEndDocumentOnCoseForMultiElements(bool writeEndDocument, string expected)
         {
-            bool writeEndDocument = (bool)CurVariation.Params[0];
-            string expected = (string)CurVariation.Params[1];
             StringWriter output = new StringWriter();
             XmlWriterSettings ws = new XmlWriterSettings();
             ws.OmitXmlDeclaration = true;
@@ -131,16 +114,13 @@ namespace System.Xml.Tests
 
             string act = output.ToString();
             CError.Compare(act, expected, "FAILED: when multi element and WriteEndDocumentOnClose = " + ws.WriteEndDocumentOnClose + ", expected: " + expected + ", received: " + act);
-
-            return TEST_PASS;
         }
 
-        //[Variation(Desc = "Write two elements only one with end elment when the WriteEndDocumentOnClose = false", Pri = 1, Params = new object[] { false, "<root><sub1 />" })]
-        //[Variation(Desc = "Write two elements only one with end elment when the WriteEndDocumentOnClose = true", Pri = 1, Params = new object[] { true, "<root><sub1 /></root>" })]
-        public int TestWriteEndDocumentOnCoseForElementsWithOneEndElement()
+        [Theory]
+        [InlineData(false, "<root><sub1 />")]
+        [InlineData(true, "<root><sub1 /></root>")]
+        public void TestWriteEndDocumentOnCoseForElementsWithOneEndElement(bool writeEndDocument, string expected)
         {
-            bool writeEndDocument = (bool)CurVariation.Params[0];
-            string expected = (string)CurVariation.Params[1];
             StringWriter output = new StringWriter();
             XmlWriterSettings ws = new XmlWriterSettings();
             ws.OmitXmlDeclaration = true;
@@ -153,16 +133,13 @@ namespace System.Xml.Tests
 
             string act = output.ToString();
             CError.Compare(act, expected, "FAILED: when two element with one end element and WriteEndDocumentOnClose = " + ws.WriteEndDocumentOnClose + ", expected: " + expected + ", received: " + act);
-
-            return TEST_PASS;
         }
 
-        //[Variation(Desc = "Write one element with end elment when the WriteEndDocumentOnClose = false", Pri = 1, Params = new object[] { false, "<root />" })]
-        //[Variation(Desc = "Write one element with end elment when the WriteEndDocumentOnClose = true", Pri = 1, Params = new object[] { true, "<root />" })]
-        public int TestWriteEndDocumentOnCoseForOneElementWithEndElement()
+        [Theory]
+        [InlineData(false, "<root />")]
+        [InlineData(true, "<root />")]
+        public void TestWriteEndDocumentOnCoseForOneElementWithEndElement(bool writeEndDocument, string expected)
         {
-            bool writeEndDocument = (bool)CurVariation.Params[0];
-            string expected = (string)CurVariation.Params[1];
             StringWriter output = new StringWriter();
             XmlWriterSettings ws = new XmlWriterSettings();
             ws.OmitXmlDeclaration = true;
@@ -174,8 +151,6 @@ namespace System.Xml.Tests
 
             string act = output.ToString();
             CError.Compare(act, expected, "FAILED: when one element with end element and WriteEndDocumentOnClose = " + ws.WriteEndDocumentOnClose + ", expected: " + expected + ", received: " + act);
-
-            return TEST_PASS;
         }
     }
 }

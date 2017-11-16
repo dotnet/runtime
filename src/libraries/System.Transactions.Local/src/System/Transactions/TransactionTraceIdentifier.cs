@@ -5,11 +5,11 @@
 namespace System.Transactions
 {
     /// <summary>
-    /// This identifier is used in tracing to distiguish instances
+    /// This identifier is used in tracing to distinguish instances
     /// of transaction objects.  This identifier is only unique within
     /// a given AppDomain.
     /// </summary>
-    internal struct TransactionTraceIdentifier : IEquatable<TransactionTraceIdentifier>
+    internal readonly struct TransactionTraceIdentifier : IEquatable<TransactionTraceIdentifier>
     {
         public static readonly TransactionTraceIdentifier Empty = new TransactionTraceIdentifier();
 
@@ -28,7 +28,7 @@ namespace System.Transactions
         private readonly int _cloneIdentifier;
         /// <summary>
         /// An integer value that allows different clones of the same
-        /// transaction to be distiguished in the tracing.
+        /// transaction to be distinguished in the tracing.
         /// </summary>
         public int CloneIdentifier => _cloneIdentifier;
 

@@ -1,11 +1,13 @@
 {
   "build": [
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Change permissions to agent folder for cleanup steps",
       "timeoutInMinutes": 0,
+      "refName": "Task1",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -19,11 +21,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": true,
       "alwaysRun": false,
       "displayName": "Delete files from $(PB_GitDirectory)",
       "timeoutInMinutes": 0,
+      "refName": "Task2",
       "task": {
         "id": "b7e8b412-0437-4065-9371-edc5881de25b",
         "versionSpec": "1.*",
@@ -35,11 +39,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "git clone",
       "timeoutInMinutes": 0,
+      "refName": "Task3",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -53,11 +59,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "git checkout",
       "timeoutInMinutes": 0,
+      "refName": "Task4",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -71,47 +79,73 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Initialize tools",
+      "displayName": "Create host machine tools sandbox",
       "timeoutInMinutes": 0,
       "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
+        "id": "5bfb729a-a7c8-4a78-a7c3-8d717bb7c13c",
+        "versionSpec": "2.*",
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(PB_GitDirectory)/init-tools.sh",
-        "arguments": "",
-        "workingFolder": "$(PB_GitDirectory)",
-        "failOnStandardError": "false"
+        "SourceFolder": "$(PB_GitDirectory)",
+        "Contents": "init-tools.sh\nBuildToolsVersion.txt\nDotnetCLIVersion.txt\ninit-tools.msbuild\ndependencies.props",
+        "TargetFolder": "$(DockerHost_Sandbox)",
+        "CleanTargetFolder": "false",
+        "OverWrite": "false",
+        "flattenFolders": "false"
       }
     },
     {
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Initialize Docker",
+      "displayName": "Initialize tools in sandbox for host machine",
       "timeoutInMinutes": 0,
+      "refName": "Task5",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)/corefx/Tools/scripts/docker/init-docker.sh",
+        "filename": "$(DockerHost_Sandbox)/init-tools.sh",
+        "arguments": "",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Initialize Docker",
+      "timeoutInMinutes": 0,
+      "refName": "Task6",
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(DockerHost_ToolsDirectory)/scripts/docker/init-docker.sh",
         "arguments": "$(PB_DockerImageName)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Generate version assets",
       "timeoutInMinutes": 0,
+      "refName": "Task7",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -125,11 +159,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Run sync",
       "timeoutInMinutes": 0,
+      "refName": "Task8",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -143,11 +179,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Run build.sh",
       "timeoutInMinutes": 0,
+      "refName": "Task9",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -161,11 +199,14 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Build tests",
+      "condition": "and(succeeded(), ne(variables.PB_SkipTests, 'true'), ne(variables.PB_SkipTestBuild, 'true'))",
       "timeoutInMinutes": 0,
+      "refName": "Task10",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -179,11 +220,14 @@
       }
     },
     {
-      "enabled": false,
+      "environment": {},
+      "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Create Helix Test Jobs",
+      "condition": "and(succeeded(), ne(variables.PB_SkipTests, 'true'), ne(variables.PB_EnableCloudTest, 'false'))",
       "timeoutInMinutes": 0,
+      "refName": "Task11",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -191,17 +235,19 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/Tools/msbuild.sh $(PB_DockerVolumeName)/src/upload-tests.proj $(PB_CreateHelixArguments) /p:\"CloudDropAccountName=$(PB_CloudDropAccountName)\" /p:\"CloudResultsAccountName=$(PB_CloudResultsAccountName)\" /p:\"CloudDropAccessToken=$(CloudDropAccessToken)\" /p:\"CloudResultsAccessToken=$(PB_CloudResultsAccessToken)\" /p:\"HelixApiAccessKey=$(HelixApiAccessKey)\" /p:HelixApiEndpoint=$(PB_HelixApiEndPoint) /p:\"Branch=$(SourceBranch)\" /p:TargetQueues=$(PB_TargetQueue) /p:\"OfficialBuildId=$(OfficialBuildId)\"",
+        "arguments": "run $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/Tools/msbuild.sh $(PB_DockerVolumeName)/src/upload-tests.proj $(PB_CreateHelixArguments) /p:\"CloudDropAccountName=$(PB_CloudDropAccountName)\" /p:\"CloudResultsAccountName=$(PB_CloudResultsAccountName)\" /p:\"CloudDropAccessToken=$(CloudDropAccessToken)\" /p:\"CloudResultsAccessToken=$(PB_CloudResultsAccessToken)\" /p:\"HelixApiAccessKey=$(HelixApiAccessKey)\" /p:HelixApiEndpoint=$(PB_HelixApiEndPoint) /p:\"Branch=$(SourceBranch)\" /p:TargetQueues=$(PB_TargetQueue) /p:\"OfficialBuildId=$(OfficialBuildId)\"",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Push packages to Azure",
       "timeoutInMinutes": 0,
+      "refName": "Task12",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -215,57 +261,86 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": true,
-      "alwaysRun": false,
-      "displayName": "Copy Publish Artifact: BuildLogs",
+      "alwaysRun": true,
+      "displayName": "Copy Files to: $(Build.StagingDirectory)\\BuildLogs",
       "timeoutInMinutes": 0,
+      "refName": "CopyFiles1",
       "task": {
-        "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
+        "id": "5bfb729a-a7c8-4a78-a7c3-8d717bb7c13c",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "SourceFolder": "$(PB_GitDirectory)",
+        "Contents": "*.log",
+        "TargetFolder": "$(Build.StagingDirectory)\\BuildLogs",
+        "CleanTargetFolder": "false",
+        "OverWrite": "false",
+        "flattenFolders": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": true,
+      "displayName": "Publish Artifact: BuildLogs",
+      "timeoutInMinutes": 0,
+      "refName": "PublishBuildArtifacts2",
+      "task": {
+        "id": "2ff763a7-ce83-4e1f-bc89-0ae63477cebe",
         "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
-        "CopyRoot": "$(PB_GitDirectory)",
-        "Contents": "*.log",
+        "PathtoPublish": "$(Build.StagingDirectory)\\BuildLogs",
         "ArtifactName": "BuildLogs",
         "ArtifactType": "Container",
-        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
+        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)",
+        "Parallel": "false",
+        "ParallelCount": "8"
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": true,
-      "alwaysRun": false,
+      "alwaysRun": true,
       "displayName": "Cleanup Docker",
       "timeoutInMinutes": 0,
+      "refName": "Task14",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(PB_GitDirectory)/Tools/scripts/docker/cleanup-docker.sh",
+        "filename": "$(DockerHost_ToolsDirectory)/scripts/docker/cleanup-docker.sh",
         "arguments": "",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": true,
-      "alwaysRun": false,
+      "alwaysRun": true,
       "displayName": "Cleanup VSTS Agent",
       "timeoutInMinutes": 0,
+      "refName": "Task15",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(PB_GitDirectory)/Tools/msbuild.sh",
+        "filename": "$(DockerHost_ToolsDirectory)/msbuild.sh",
         "arguments": "cleanupagent.proj /p:AgentDirectory=$(Agent.HomeDirectory) /p:DoClean=$(PB_CleanAgent)",
-        "workingFolder": "$(PB_GitDirectory)/Tools/scripts/vstsagent/",
+        "workingFolder": "$(DockerHost_ToolsDirectory)/scripts/vstsagent/",
         "failOnStandardError": "false"
       }
     }
@@ -278,27 +353,6 @@
       },
       "inputs": {
         "branchFilters": "[\"+refs/heads/*\"]",
-        "additionalFields": "{}"
-      }
-    },
-    {
-      "enabled": false,
-      "definition": {
-        "id": "5bc3cfb7-6b54-4a4b-b5d2-a3905949f8a6"
-      },
-      "inputs": {
-        "additionalFields": "{}"
-      }
-    },
-    {
-      "enabled": false,
-      "definition": {
-        "id": "7c555368-ca64-4199-add6-9ebaf0b0137d"
-      },
-      "inputs": {
-        "multipliers": "[]",
-        "parallel": "false",
-        "continueOnError": "true",
         "additionalFields": "{}"
       }
     },
@@ -327,6 +381,12 @@
     "CloudDropAccessToken": {
       "value": null,
       "isSecret": true
+    },
+    "DockerHost_Sandbox": {
+      "value": "$(Build.StagingDirectory)/HostSandbox"
+    },
+    "DockerHost_ToolsDirectory": {
+      "value": "$(DockerHost_Sandbox)/Tools"
     },
     "OfficialBuildId": {
       "value": "$(Build.BuildNumber)",
@@ -373,7 +433,7 @@
       "value": "microsoft/dotnet-buildtools-prereqs"
     },
     "PB_DockerTag": {
-      "value": "rhel7_prereqs_2",
+      "value": "centos-7-d485f41-20173404063424",
       "allowOverride": true
     },
     "PB_DockerVolumeName": {
@@ -391,7 +451,7 @@
       "allowOverride": true
     },
     "PB_TargetQueue": {
-      "value": "Centos.73.Amd64+RedHat.72.Amd64+RedHat.73.Amd64+Debian.87.Amd64+Debian.90.Amd64+Ubuntu.1404.Amd64+Ubuntu.1604.Amd64+Ubuntu.1610.Amd64+Ubuntu.1704.Amd64+suse.422.amd64+SLES.12.Amd64+fedora.25.amd64+Fedora.26.Amd64"
+      "value": "Centos.73.Amd64+RedHat.72.Amd64+RedHat.73.Amd64+Debian.87.Amd64+Debian.90.Amd64+Ubuntu.1404.Amd64+Ubuntu.1604.Amd64+Ubuntu.1704.Amd64+suse.422.amd64+SLES.12.Amd64+fedora.25.amd64+Fedora.26.Amd64"
     },
     "PB_VsoAccountName": {
       "value": "dn-bot"
@@ -413,6 +473,10 @@
     "VsoPassword": {
       "value": null,
       "isSecret": true
+    },
+    "PB_SkipTests": {
+      "value": "false",
+      "allowOverride": true
     }
   },
   "demands": [
@@ -433,7 +497,7 @@
       "deleteTestResults": true
     }
   ],
-  "buildNumberFormat": "$(date:yyyyMMdd)$(rev:-9r)",
+  "buildNumberFormat": "$(date:yyyyMMdd)$(rev:-rr)",
   "jobAuthorizationScope": "projectCollection",
   "jobTimeoutInMinutes": 60,
   "jobCancelTimeoutInMinutes": 5,
@@ -470,13 +534,14 @@
   "name": "DotNet-CoreFx-Trusted-Linux",
   "path": "\\",
   "type": "build",
+  "queueStatus": "enabled",
   "project": {
     "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "name": "DevDiv",
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418097767,
-    "visibility": "private"
+    "revision": 418098167,
+    "visibility": "organization"
   }
 }

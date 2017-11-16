@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Diagnostics;
 using System.IO.PortsTests;
 using System.Reflection;
@@ -28,6 +29,9 @@ namespace System.IO.Ports.Tests
         /// 3. Verify that the fAbortOnError flag is clear
         /// 
         /// </summary>
+        // This test requires access, via reflection, to internal type SerialStream and respective methods GetDcbFlag and
+        // SetDcbFlag, however, that requires either changes to the public type (increasing its size) or to the test itself.
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/23234", TargetFrameworkMonikers.Uap)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void AbortOnErrorShouldBeClearedOnOpen()
         {

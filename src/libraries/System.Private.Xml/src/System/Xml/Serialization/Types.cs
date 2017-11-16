@@ -1399,8 +1399,8 @@ namespace System.Xml.Serialization
             {
                 if (parent.Namespaces != null)
                 {
-                    string wsdlNs = (string)parent.Namespaces.Namespaces[ns];
-                    if (wsdlNs != null)
+                    string wsdlNs;
+                    if (parent.Namespaces.Namespaces.TryGetValue(ns, out wsdlNs) && wsdlNs != null)
                     {
                         ns = wsdlNs;
                         break;

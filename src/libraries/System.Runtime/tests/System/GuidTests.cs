@@ -348,14 +348,14 @@ namespace System.Tests
 
         public static IEnumerable<object[]> ToString_TestData()
         {
-            yield return new object[] { s_testGuid, "N", "a8a110d5fc4943c5bf46802db8f843ff" };
-            yield return new object[] { s_testGuid, "D", "a8a110d5-fc49-43c5-bf46-802db8f843ff" };
-            yield return new object[] { s_testGuid, "B", "{a8a110d5-fc49-43c5-bf46-802db8f843ff}" };
-            yield return new object[] { s_testGuid, "P", "(a8a110d5-fc49-43c5-bf46-802db8f843ff)" };
-            yield return new object[] { s_testGuid, "X", "{0xa8a110d5,0xfc49,0x43c5,{0xbf,0x46,0x80,0x2d,0xb8,0xf8,0x43,0xff}}" };
+            yield return new object[] { s_testGuid, "N", "a8a110d5fc4943c5bf46802db8f843ff"};
+            yield return new object[] { s_testGuid, "D", "a8a110d5-fc49-43c5-bf46-802db8f843ff"};
+            yield return new object[] { s_testGuid, "B", "{a8a110d5-fc49-43c5-bf46-802db8f843ff}"};
+            yield return new object[] { s_testGuid, "P", "(a8a110d5-fc49-43c5-bf46-802db8f843ff)"};
+            yield return new object[] { s_testGuid, "X", "{0xa8a110d5,0xfc49,0x43c5,{0xbf,0x46,0x80,0x2d,0xb8,0xf8,0x43,0xff}}"};
 
-            yield return new object[] { s_testGuid, null, "a8a110d5-fc49-43c5-bf46-802db8f843ff" };
-            yield return new object[] { s_testGuid, "", "a8a110d5-fc49-43c5-bf46-802db8f843ff" };
+            yield return new object[] { s_testGuid, null, "a8a110d5-fc49-43c5-bf46-802db8f843ff"};
+            yield return new object[] { s_testGuid, "", "a8a110d5-fc49-43c5-bf46-802db8f843ff"};
         }
 
         [Theory]
@@ -372,11 +372,12 @@ namespace System.Tests
             Assert.Equal(expected, formattable.ToString(format, null));
         }
 
-        [Fact]
-        public static void ToString_InvalidFormat_ThrowsFormatException()
+        [Theory]
+        [InlineData("Y")]
+        [InlineData("XX")]
+        public static void ToString_InvalidFormat_ThrowsFormatException(string format)
         {
-            Assert.Throws<FormatException>(() => s_testGuid.ToString("Y")); // Invalid format
-            Assert.Throws<FormatException>(() => s_testGuid.ToString("XX")); // Invalid format
+            Assert.Throws<FormatException>(() => s_testGuid.ToString(format));
         }
 
         public static IEnumerable<object[]> GuidStrings_Valid_TestData()

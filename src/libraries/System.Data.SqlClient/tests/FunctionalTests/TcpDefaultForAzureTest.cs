@@ -33,6 +33,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)] // Cannot retrieve UseManagedSNI flag via reflection on UAP
         public static void NonAzureNoProtocolConnectionTest()
         {
             builder.DataSource = InvalidHostname;

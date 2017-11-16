@@ -11,13 +11,13 @@ namespace System.Xml.Xsl.Xslt
     using T = XmlQueryTypeFactory;
 
     /**
-    InvokeGenerator is one of the trikest peaces here.
+    InvokeGenerator is one of the trickiest peaces here.
     ARGS:
          QilFunction func      -- Functions which should be invoked. Arguments of this function (formalArgs) are Let nodes
-                                  anotated with names and default valies.
-                                  Problem 1 is that default values can contain references to previouse args of this function.
-                                  Problem 2 is that default values shouldn't contain fixup nodes.
-         ArrayList actualArgs  -- Array of QilNodes anotated with names. When name of formalArg match name actualArg last one
+                                  annotated with names and default values.
+                                  Problem 1 is that default values can contain references to previous args of this function.
+                                  Problem 2 is that default values shouldn't contain fix-up nodes.
+         ArrayList actualArgs  -- Array of QilNodes annotated with names. When name of formalArg match name actualArg last one
                                   is used as invokeArg, otherwise formalArg's default value is cloned and used.
     **/
 

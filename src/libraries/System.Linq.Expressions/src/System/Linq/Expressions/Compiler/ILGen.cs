@@ -737,15 +737,15 @@ namespace System.Linq.Expressions.Compiler
 
                     switch (tf)
                     {
-                        case TypeCode.Byte:   method = Decimal_op_Implicit_Byte;   break;
-                        case TypeCode.SByte:  method = Decimal_op_Implicit_SByte;  break;
-                        case TypeCode.Int16:  method = Decimal_op_Implicit_Int16;  break;
+                        case TypeCode.Byte: method = Decimal_op_Implicit_Byte; break;
+                        case TypeCode.SByte: method = Decimal_op_Implicit_SByte; break;
+                        case TypeCode.Int16: method = Decimal_op_Implicit_Int16; break;
                         case TypeCode.UInt16: method = Decimal_op_Implicit_UInt16; break;
-                        case TypeCode.Int32:  method = Decimal_op_Implicit_Int32;  break;
+                        case TypeCode.Int32: method = Decimal_op_Implicit_Int32; break;
                         case TypeCode.UInt32: method = Decimal_op_Implicit_UInt32; break;
-                        case TypeCode.Int64:  method = Decimal_op_Implicit_Int64;  break;
+                        case TypeCode.Int64: method = Decimal_op_Implicit_Int64; break;
                         case TypeCode.UInt64: method = Decimal_op_Implicit_UInt64; break;
-                        case TypeCode.Char:   method = Decimal_op_Implicit_Char;   break;
+                        case TypeCode.Char: method = Decimal_op_Implicit_Char; break;
                         default:
                             throw ContractUtils.Unreachable;
                     }
@@ -904,7 +904,6 @@ namespace System.Linq.Expressions.Compiler
             Label labEnd;
             LocalBuilder locFrom = locals.GetLocal(typeFrom);
             il.Emit(OpCodes.Stloc, locFrom);
-            LocalBuilder locTo = locals.GetLocal(typeTo);
             // test for null
             il.Emit(OpCodes.Ldloca, locFrom);
             il.EmitHasValue(typeFrom);
@@ -919,16 +918,16 @@ namespace System.Linq.Expressions.Compiler
             // construct result type
             ConstructorInfo ci = typeTo.GetConstructor(new Type[] { nnTypeTo });
             il.Emit(OpCodes.Newobj, ci);
-            il.Emit(OpCodes.Stloc, locTo);
             labEnd = il.DefineLabel();
             il.Emit(OpCodes.Br_S, labEnd);
             // if null then create a default one
             il.MarkLabel(labIfNull);
+            LocalBuilder locTo = locals.GetLocal(typeTo);
             il.Emit(OpCodes.Ldloca, locTo);
             il.Emit(OpCodes.Initobj, typeTo);
-            il.MarkLabel(labEnd);
             il.Emit(OpCodes.Ldloc, locTo);
             locals.FreeLocal(locTo);
+            il.MarkLabel(labEnd);
         }
 
 
@@ -936,14 +935,10 @@ namespace System.Linq.Expressions.Compiler
         {
             Debug.Assert(!typeFrom.IsNullableType());
             Debug.Assert(typeTo.IsNullableType());
-            LocalBuilder locTo = locals.GetLocal(typeTo);
             Type nnTypeTo = typeTo.GetNonNullableType();
             il.EmitConvertToType(typeFrom, nnTypeTo, isChecked, locals);
             ConstructorInfo ci = typeTo.GetConstructor(new Type[] { nnTypeTo });
             il.Emit(OpCodes.Newobj, ci);
-            il.Emit(OpCodes.Stloc, locTo);
-            il.Emit(OpCodes.Ldloc, locTo);
-            locals.FreeLocal(locTo);
         }
 
 

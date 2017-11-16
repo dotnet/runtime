@@ -23,8 +23,7 @@
                relies on AttributeCollection returning ReadOnlyAttribute.Default if none was placed in the collection.
                That lookup is done by Reflection.
             -->
-          <Field Name="Default" Dynamic="Required Public">
-          </Field>
+          <Field Name="Default" Dynamic="Required" />
         </Type>
       </Namespace>
     </Assembly>

@@ -48,6 +48,10 @@ namespace System.Xml.Tests
     ////////////////////////////////////////////////////////////////
     public class XsltApiTestCaseBase : FileCleanupTestBase
     {
+        private const string XmlResolverDocumentName = "xmlResolver_document_function.xml";
+        private static readonly string s_temporaryResolverDocumentFullName = Path.Combine(Path.GetTempPath(), "XslTransformApi", XmlResolverDocumentName);
+        private static readonly object s_temporaryResolverDocumentLock = new object();
+
         // Generic data for all derived test cases
         public String szXslNS = "http://www.w3.org/1999/XSL/Transform";
 
@@ -63,7 +67,6 @@ namespace System.Xml.Tests
         private string _strPath;           // Path of the data files
 
         private string _httpPath;          // HTTP Path of the data files
-        private bool _fTrace;            // Should we write out the results of the transform?
 
         // Other global variables
         protected string _strOutFile;        // File to create when using write transforms
@@ -78,6 +81,24 @@ namespace System.Xml.Tests
         protected bool _isInProc;          // Is the current test run in proc or /Host None?
 
         private ITestOutputHelper _output;
+
+        static XsltApiTestCaseBase()
+        {
+            // On uap access is denied to full path and the code below and related tests cannot run
+            if (!PlatformDetection.IsUap)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(s_temporaryResolverDocumentFullName));
+
+                // Replace absolute URI in xmlResolver_document_function.xml based on the environment
+                string xslFile = Path.Combine("TestFiles", FilePathUtil.GetTestDataPath(), "XsltApi", "xmlResolver_document_function_absolute_uri.xsl");
+                XmlDocument doc = new XmlDocument();
+                doc.Load(xslFile);
+                string xslString = doc.OuterXml.Replace("ABSOLUTE_URI", s_temporaryResolverDocumentFullName);
+                doc.LoadXml(xslString);
+                doc.Save(xslFile);
+            }
+        }
+
         public XsltApiTestCaseBase(ITestOutputHelper output)
         {
             // Make sure that we don't cache the value of the switch to enable testing
@@ -85,6 +106,23 @@ namespace System.Xml.Tests
             _output = output;
             _strOutFile = GetTestFilePath();
             this.Init(null);
+        }
+
+        public void TestUsingTemporaryCopyOfResolverDocument(Action testAction)
+        {
+            lock (s_temporaryResolverDocumentLock)
+            {
+                try
+                {
+                    File.Copy(FullFilePath(XmlResolverDocumentName), s_temporaryResolverDocumentFullName, overwrite: true);
+                    testAction();
+                }
+                finally
+                {
+                    if (File.Exists(s_temporaryResolverDocumentFullName))
+                        File.Delete(s_temporaryResolverDocumentFullName);
+                }
+            }
         }
 
         public TransformType GetTransformType(String s)
@@ -165,9 +203,6 @@ namespace System.Xml.Tests
 
         public void Init(object objParam)
         {
-            // Get parameter info from runtime variables passed to LTM
-            _fTrace = false;
-
             // FullFilePath and FullHttpPath attempt to normalize file paths, however
             // as an extra step we can normalize them here, when they are first read
             // from the LTM file.
@@ -816,33 +851,6 @@ namespace System.Xml.Tests
                         }
                         break;
                 }
-                return 1;
-            }
-        }
-
-        // --------------------------------------------------------------------------------------------------------------
-        //  CheckResult
-        //  -------------------------------------------------------------------------------------------------------------
-        public int CheckResult(double szExpResult, TransformType transformType)
-        {
-            lock (s_outFileMemoryLock)
-            {
-                double checksumActual;
-                CXsltChecksum check = new CXsltChecksum(_fTrace, _output);
-
-                if (transformType == TransformType.Reader)
-                    checksumActual = check.Calc(xrXSLT);
-                else
-                    checksumActual = check.Calc(_strOutFile);
-
-                if (szExpResult != checksumActual || _fTrace)
-                {
-                    _output.WriteLine("XML: {0}", check.Xml);
-                    _output.WriteLine("Actual checksum: {0}, Expected: {1}", checksumActual, szExpResult);
-                }
-                if (szExpResult != checksumActual)
-                    return 0;
-
                 return 1;
             }
         }

@@ -237,4 +237,74 @@ namespace System.Diagnostics
             }
         }
     }
+
+    internal static partial class NtProcessInfoHelper
+    {
+        // Cache a single buffer for use in GetProcessInfos().
+        private static long[] CachedBuffer;
+
+        internal static ProcessInfo[] GetProcessInfos(Predicate<int> processIdFilter = null)
+        {
+            int requiredSize = 0;
+            int status;
+
+            ProcessInfo[] processInfos;
+            GCHandle bufferHandle = new GCHandle();
+
+            // Start with the default buffer size.
+            int bufferSize = DefaultCachedBufferSize;
+
+            // Get the cached buffer.
+            long[] buffer = Interlocked.Exchange(ref CachedBuffer, null);
+
+            try
+            {
+                do
+                {
+                    if (buffer == null)
+                    {
+                        // Allocate buffer of longs since some platforms require the buffer to be 64-bit aligned.
+                        buffer = new long[(bufferSize + 7) / 8];
+                    }
+                    else
+                    {
+                        // If we have cached buffer, set the size properly.
+                        bufferSize = buffer.Length * sizeof(long);
+                    }
+
+                    bufferHandle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+
+                    status = Interop.NtDll.NtQuerySystemInformation(
+                        Interop.NtDll.NtQuerySystemProcessInformation,
+                        bufferHandle.AddrOfPinnedObject(),
+                        bufferSize,
+                        out requiredSize);
+
+                    if (unchecked((uint)status) == Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH)
+                    {
+                        if (bufferHandle.IsAllocated) bufferHandle.Free();
+                        buffer = null;
+                        bufferSize = GetNewBufferSize(bufferSize, requiredSize);
+                    }
+                } while (unchecked((uint)status) == Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH);
+
+                if (status < 0)
+                { // see definition of NT_SUCCESS(Status) in SDK
+                    throw new InvalidOperationException(SR.CouldntGetProcessInfos, new Win32Exception(status));
+                }
+
+                // Parse the data block to get process information
+                processInfos = GetProcessInfos(bufferHandle.AddrOfPinnedObject(), processIdFilter);
+            }
+            finally
+            {
+                // Cache the final buffer for use on the next call.
+                Interlocked.Exchange(ref CachedBuffer, buffer);
+
+                if (bufferHandle.IsAllocated) bufferHandle.Free();
+            }
+
+            return processInfos;
+        }
+    }
 }

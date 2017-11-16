@@ -22,10 +22,7 @@
     <Compile Include="Windows\UI\Xaml\Media3D\Matrix3DTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Runtime.WindowsRuntime.UI.Xaml.csproj">
-      <Project>{263DA4F1-C3BC-4B43-98E7-9F38B419A131}</Project>
-      <Name>System.Runtime.WindowsRuntime.UI.Xaml</Name>
-    </ProjectReference>
+    <ReferenceFromRuntime Include="System.Runtime.WindowsRuntime.UI.Xaml" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -327,29 +327,6 @@ namespace System.IO.Compression
                 return errC;
             }
 
-            /// <summary>
-            /// This function is equivalent to inflateEnd followed by inflateInit.
-            /// The stream will keep attributes that may have been set by inflateInit2.
-            /// </summary>
-            [SecurityCritical]
-            public ErrorCode InflateReset(int windowBits)
-            {
-                EnsureNotDisposed();
-                EnsureState(State.InitializedForInflate);
-
-                ErrorCode errC = Interop.zlib.InflateEnd(ref _zStream);
-                if (errC != ErrorCode.Ok)
-                {
-                    _initializationState = State.Disposed;
-                    return errC;
-                }
-
-                errC = Interop.zlib.InflateInit2_(ref _zStream, windowBits);
-                _initializationState = State.InitializedForInflate;
-
-                return errC;
-            }
-
             // This can work even after XxflateEnd().
             [SecurityCritical]
             public string GetErrorMessage() => _zStream.msg != ZNullPtr ? Marshal.PtrToStringAnsi(_zStream.msg) : string.Empty;

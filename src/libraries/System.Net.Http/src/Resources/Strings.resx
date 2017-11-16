@@ -1,5 +1,64 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -63,6 +122,9 @@
   </data>
   <data name="net_http_httpmethod_format_error" xml:space="preserve">
     <value>The format of the HTTP method is invalid.</value>
+  </data>
+  <data name="net_http_httpmethod_notsupported_error" xml:space="preserve">
+    <value>The HTTP method '{0}' is not supported on this platform.</value>
   </data>
   <data name="net_http_reasonphrase_format_error" xml:space="preserve">
     <value>The reason phrase must not contain new-line characters.</value>
@@ -196,9 +258,6 @@
   <data name="net_http_invalid_proxy" xml:space="preserve">
     <value>When using WindowsProxyUsePolicy.UseCustomProxy, the Proxy property must not be null.</value>
   </data>
-  <data name="net_http_handler_nocontentlength" xml:space="preserve">
-    <value>The content length of the request content can't be determined. Either set TransferEncodingChunked to true, load content into buffer, or set MaxRequestContentBufferSize.</value>
-  </data>
   <data name="net_http_value_must_be_greater_than" xml:space="preserve">
     <value>The specified value must be greater than {0}.</value>
   </data>
@@ -265,7 +324,7 @@
   <data name="net_http_no_concurrent_io_allowed" xml:space="preserve">
     <value>The stream does not support concurrent I/O read or write operations.</value>
   </data>
-  <data name="net_http_unix_invalid_response" xml:space="preserve">
+  <data name="net_http_invalid_response" xml:space="preserve">
     <value>The server returned an invalid or unrecognized response.</value>
   </data>
   <data name="net_http_unix_handler_disposed" xml:space="preserve">
@@ -303,5 +362,29 @@
   </data>
   <data name="net_http_feature_UWPClientCertSupportRequiresCertInPersonalCertificateStore" xml:space="preserve">
     <value>Client certificate was not found in the personal (\"MY\") certificate store. In UWP, client certificates are only supported if they have been added to that certificate store.</value>
+  </data>
+  <data name="net_http_max_redirects" xml:space="preserve">
+    <value>The maximum number of redirects was exceeded.</value>
+  </data>
+  <data name="net_http_invalid_proxy_scheme" xml:space="preserve">
+    <value>Only the 'http' scheme is allowed for proxies.</value>
+  </data>
+  <data name="net_http_request_invalid_char_encoding" xml:space="preserve">
+    <value>Request headers must contain only ASCII characters.</value>
+  </data>
+  <data name="net_http_ssl_connection_failed" xml:space="preserve">
+    <value>The SSL connection could not be established, see inner exception.</value>
+  </data>
+  <data name="net_http_unsupported_chunking" xml:space="preserve">
+    <value>HTTP 1.0 does not support chunking.</value>
+  </data>
+  <data name="IO_SeekBeforeBegin" xml:space="preserve">
+    <value>An attempt was made to move the position before the beginning of the stream.</value>
+  </data>
+  <data name="net_ssl_app_protocols_invalid" xml:space="preserve">
+    <value>The application protocol list is invalid.</value>
+  </data>
+  <data name="IO_PathTooLong_Path" xml:space="preserve">
+    <value>The path '{0}' is too long, or a component of the specified path is too long.</value>
   </data>
 </root>

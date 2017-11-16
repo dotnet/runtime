@@ -11,16 +11,12 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);HTTP_DLL</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-OSX-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-OSX-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(TargetGroup)' == 'uap'">
@@ -30,16 +26,16 @@
   <PropertyGroup Condition=" '$(TargetsOSX)' == 'true' ">
     <DefineConstants>$(DefineConstants);SYSNETHTTP_NO_OPENSSL</DefineConstants>
   </PropertyGroup>
-  <!-- Shims -->
-  <ItemGroup>
-    <Compile Include="Shims\Uri.cs" />
-  </ItemGroup>
   <!-- Common -->
   <ItemGroup>
     <Compile Include="System\Net\Http\ByteArrayContent.cs" />
+    <Compile Include="System\Net\Http\ByteArrayHelpers.cs" />
     <Compile Include="System\Net\Http\ClientCertificateOption.cs" />
     <Compile Include="System\Net\Http\DelegatingHandler.cs" />
     <Compile Include="System\Net\Http\FormUrlEncodedContent.cs" />
+    <Compile Include="System\Net\Http\Headers\KnownHeader.cs" />
+    <Compile Include="System\Net\Http\Headers\HttpHeaderType.cs" />
+    <Compile Include="System\Net\Http\Headers\KnownHeaders.cs" />
     <Compile Include="System\Net\Http\HttpClient.cs" />
     <Compile Include="System\Net\Http\HttpClientHandler.cs" />
     <Compile Include="System\Net\Http\HttpCompletionOption.cs" />
@@ -57,6 +53,7 @@
     <Compile Include="System\Net\Http\MultipartContent.cs" />
     <Compile Include="System\Net\Http\MultipartFormDataContent.cs" />
     <Compile Include="System\Net\Http\NetEventSource.Http.cs" />
+    <Compile Include="System\Net\Http\ReadOnlyMemoryContent.cs" />
     <Compile Include="System\Net\Http\StreamContent.cs" />
     <Compile Include="System\Net\Http\StreamToStreamCopy.cs" />
     <Compile Include="System\Net\Http\StringContent.cs" />
@@ -70,6 +67,7 @@
     <Compile Include="System\Net\Http\Headers\DateHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\EntityTagHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\GenericHeaderParser.cs" />
+    <Compile Include="System\Net\Http\Headers\HeaderDescriptor.cs" />
     <Compile Include="System\Net\Http\Headers\HeaderUtilities.cs" />
     <Compile Include="System\Net\Http\Headers\HttpContentHeaders.cs" />
     <Compile Include="System\Net\Http\Headers\HttpGeneralHeaders.cs" />
@@ -110,6 +108,9 @@
     <Compile Include="$(CommonPath)\System\IO\DelegatingStream.cs">
       <Link>Common\System\IO\DelegatingStream.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\IO\ReadOnlyMemoryStream.cs">
+      <Link>Common\System\IO\ReadOnlyMemoryStream.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
@@ -119,23 +120,35 @@
   </ItemGroup>
   <!-- Managed HttpClientHandler implementation -->
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
-    <Compile Include="System\Net\Http\Managed\ManagedHandler.cs" />
+    <Compile Include="System\Net\Http\Managed\AuthenticateAndRedirectHandler.cs" />
+    <Compile Include="System\Net\Http\Managed\AuthenticationHelper.Basic.cs" />
+    <Compile Include="System\Net\Http\Managed\AuthenticationHelper.Digest.cs" />
+    <Compile Include="System\Net\Http\Managed\ChunkedEncodingReadStream.cs" />
+    <Compile Include="System\Net\Http\Managed\ChunkedEncodingWriteStream.cs" />
     <Compile Include="System\Net\Http\Managed\ConnectHelper.cs" />
+    <Compile Include="System\Net\Http\Managed\ConnectionCloseReadStream.cs" />
+    <Compile Include="System\Net\Http\Managed\ContentLengthReadStream.cs" />
+    <Compile Include="System\Net\Http\Managed\ContentLengthWriteStream.cs" />
+    <Compile Include="System\Net\Http\Managed\CookieHandler.cs" />
+    <Compile Include="System\Net\Http\Managed\DecompressionHandler.cs" />
+    <Compile Include="System\Net\Http\Managed\EmptyReadStream.cs" />
     <Compile Include="System\Net\Http\Managed\HttpConnection.cs" />
+    <Compile Include="System\Net\Http\Managed\HttpConnectionContent.cs" />
     <Compile Include="System\Net\Http\Managed\HttpConnectionHandler.cs" />
     <Compile Include="System\Net\Http\Managed\HttpConnectionKey.cs" />
     <Compile Include="System\Net\Http\Managed\HttpConnectionPool.cs" />
-    <Compile Include="System\Net\Http\Managed\AuthenticationHandler.cs" />
-    <Compile Include="System\Net\Http\Managed\AutoRedirectHandler.cs" />
-    <Compile Include="System\Net\Http\Managed\BasicAuthenticationHelper.cs" />
-    <Compile Include="System\Net\Http\Managed\CookieHandler.cs" />
-    <Compile Include="System\Net\Http\Managed\DecompressionHandler.cs" />
-    <Compile Include="System\Net\Http\Managed\HttpContentWriteStream.cs" />
+    <Compile Include="System\Net\Http\Managed\HttpConnectionPools.cs" />
+    <Compile Include="System\Net\Http\Managed\HttpConnectionSettings.cs" />
+    <Compile Include="System\Net\Http\Managed\HttpContentDuplexStream.cs" />
     <Compile Include="System\Net\Http\Managed\HttpContentReadStream.cs" />
+    <Compile Include="System\Net\Http\Managed\HttpContentStream.cs" />
+    <Compile Include="System\Net\Http\Managed\HttpContentWriteStream.cs" />
     <Compile Include="System\Net\Http\Managed\HttpProxyConnectionHandler.cs" />
+    <Compile Include="System\Net\Http\Managed\ManagedHandler.cs" />
+    <Compile Include="System\Net\Http\Managed\RawConnectionStream.cs" />
   </ItemGroup>
-  <!-- Common, except for Windows net46 build -->
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46'  And '$(TargetGroup)' != 'netfx'">
+  <!-- Common -->
+  <ItemGroup>
     <Compile Include="System\Net\Http\DiagnosticsHandler.cs" />
     <Compile Include="System\Net\Http\DiagnosticsHandlerLoggingStrings.cs" />
     <Compile Include="$(CommonPath)\System\Net\Mail\DomainLiteralReader.cs">
@@ -164,7 +177,7 @@
     </Compile>
   </ItemGroup>
   <!-- WinHTTP implementation -->
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap' And '$(TargetGroup)' != 'net46' And '$(TargetGroup)' != 'netfx'">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap'">
     <Compile Include="System\Net\Http\HttpClientHandler.Core.cs" />
     <Compile Include="System\Net\Http\HttpClientHandler.Windows.cs" />
   </ItemGroup>
@@ -175,28 +188,12 @@
          HttpMessageHandler.cs. We also use the HTTP_DLL define to change public classes into
          internal ones to remove confusion if someone looks at the implementation dlls. They are
          public in the separate WinHttpHandler.dll binary.  -->
-  <Import Project="..\..\System.Net.Http.WinHttpHandler\src\System.Net.Http.WinHttpHandler.msbuild" Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap' And '$(TargetGroup)' != 'net46'" />
+  <Import Project="..\..\System.Net.Http.WinHttpHandler\src\System.Net.Http.WinHttpHandler.msbuild" Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap'" />
   <!--  For source files to be shown within the visual tree in Solution Explorer, the items must be
          included directly in the project file. We have the *.msbuild define the Compile items in a made
          up item called CompileItem and then just include it here. -->
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap' And '$(TargetGroup)' != 'net46'  And '$(TargetGroup)' != 'netfx' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap'">
     <Compile Include="@(CompileItem)" />
-  </ItemGroup>
-  <!-- .Net Framework on Windows -->
-  <PropertyGroup Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
-    <DefineConstants>$(DefineConstants);NET46</DefineConstants>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
-    <Compile Include="AssemblyInfo.Net46.cs" />
-    <Compile Include="System\Net\Http\HttpClientHandler.Net46.cs" />
-    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
-      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
-    </Compile>
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Runtime" />
   </ItemGroup>
   <!-- Unix -->
   <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' ">
@@ -391,6 +388,9 @@
     <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.Uap.cs">
       <Link>Common\System\Net\Security\CertificateHelper.Uap.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.Windows.cs">
+      <Link>Common\System\Net\Security\CertificateHelper.Windows.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\StringExtensions.cs">
       <Link>Common\System\StringExtensions.cs</Link>
     </Compile>
@@ -401,6 +401,7 @@
     <Compile Include="uap\System\Net\cookieexception.cs" />
     <Compile Include="uap\System\Net\CookieHelper.cs" />
     <Compile Include="uap\System\Net\HttpHandlerToFilter.cs" />
+    <Compile Include="System\Net\Http\HttpClientHandler.Core.cs" />
     <Compile Include="uap\System\Net\HttpClientHandler.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'">
@@ -416,6 +417,7 @@
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Security" />
     <Reference Include="System.Net.Sockets" />
@@ -423,14 +425,19 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Security.Cryptography.Algorithms" />
+    <Reference Include="System.Security.Cryptography.Csp" />
     <Reference Include="System.Security.Cryptography.Encoding" />
     <Reference Include="System.Security.Cryptography.OpenSsl" />
+    <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Text.Encoding" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.Tasks.Extensions" />
+    <Reference Include="System.Threading.Timer" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="System.Security.Cryptography.Algorithms" />

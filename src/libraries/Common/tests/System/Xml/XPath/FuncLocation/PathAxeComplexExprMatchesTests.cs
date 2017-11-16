@@ -16,7 +16,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes.ComplexExpressions
     public static partial class MatchesTests
     {
         /// <summary>
-        /// Context node has a ancestor 'publication' so matches should return true
+        /// Context node has an ancestor 'publication' so matches should return true
         /// node()[starts-with(string(name()),'p')]//node()[local-name()=""]
         /// </summary>
         [Fact]

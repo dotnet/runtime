@@ -4,11 +4,11 @@
     <PackageConfigurations>
       net46;
       netstandard1.3;
+      netstandard;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
       netfx-Windows_NT;
-      netstandard;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

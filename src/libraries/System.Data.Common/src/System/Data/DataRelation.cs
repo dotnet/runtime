@@ -53,12 +53,12 @@ namespace System.Data
         internal string _childTableNamespace = null;
 
         /// <summary>
-        /// this stores whether the  child element appears beneath the parent in the XML persised files.
+        /// This stores whether the  child element appears beneath the parent in the XML persisted files.
         /// </summary>
         internal bool _nested = false;
 
         /// <summary>
-        /// this stores whether the relationship should make sure that KeyConstraints and ForeignKeyConstraints
+        /// This stores whether the relationship should make sure that KeyConstraints and ForeignKeyConstraints
         /// exist when added to the ConstraintsCollections of the table.
         /// </summary>
         internal bool _createConstraints;

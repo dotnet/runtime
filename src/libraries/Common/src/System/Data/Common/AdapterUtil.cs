@@ -11,6 +11,7 @@ using System.Security;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Transactions;
 
 namespace System.Data.Common
 {
@@ -127,6 +128,61 @@ namespace System.Data.Common
             NotSupportedException e = new NotSupportedException(error);
             TraceExceptionAsReturnValue(e);
             return e;
+        }
+
+        // the return value is true if the string was quoted and false if it was not
+        // this allows the caller to determine if it is an error or not for the quotedString to not be quoted
+        internal static bool RemoveStringQuotes(string quotePrefix, string quoteSuffix, string quotedString, out string unquotedString)
+        {
+            int prefixLength = quotePrefix != null ? quotePrefix.Length : 0;
+            int suffixLength = quoteSuffix != null ? quoteSuffix.Length : 0;
+
+            if ((suffixLength + prefixLength) == 0)
+            {
+                unquotedString = quotedString;
+                return true;
+            }
+
+            if (quotedString == null)
+            {
+                unquotedString = quotedString;
+                return false;
+            }
+
+            int quotedStringLength = quotedString.Length;
+
+            // is the source string too short to be quoted
+            if (quotedStringLength < prefixLength + suffixLength)
+            {
+                unquotedString = quotedString;
+                return false;
+            }
+
+            // is the prefix present?
+            if (prefixLength > 0)
+            {
+                if (!quotedString.StartsWith(quotePrefix, StringComparison.Ordinal))
+                {
+                    unquotedString = quotedString;
+                    return false;
+                }
+            }
+
+            // is the suffix present?
+            if (suffixLength > 0)
+            {
+                if (!quotedString.EndsWith(quoteSuffix, StringComparison.Ordinal))
+                {
+                    unquotedString = quotedString;
+                    return false;
+                }
+                unquotedString = quotedString.Substring(prefixLength, quotedStringLength - (prefixLength + suffixLength)).Replace(quoteSuffix + quoteSuffix, quoteSuffix);
+            }
+            else
+            {
+                unquotedString = quotedString.Substring(prefixLength, quotedStringLength - prefixLength);
+            }
+            return true;
         }
 
         internal static ArgumentOutOfRangeException NotSupportedEnumerationValue(Type type, string value, string method)
@@ -427,6 +483,14 @@ namespace System.Data.Common
         internal static Exception InvalidSeekOrigin(string parameterName)
         {
             return ArgumentOutOfRange(SR.ADP_InvalidSeekOrigin, parameterName);
+        }
+
+        internal static readonly bool IsWindowsNT = (PlatformID.Win32NT == Environment.OSVersion.Platform);
+        internal static readonly bool IsPlatformNT5 = (ADP.IsWindowsNT && (Environment.OSVersion.Version.Major >= 5));
+
+        internal static void SetCurrentTransaction(Transaction transaction)
+        {
+            Transaction.Current = transaction;
         }
     }
 }

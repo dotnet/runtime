@@ -600,7 +600,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Adds a property defintion.
+        /// Adds a property definition.
         /// </summary>
         /// <param name="attributes">Attributes</param>
         /// <param name="name">Name</param>
@@ -627,7 +627,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Adds an event defintion.
+        /// Adds an event definition.
         /// </summary>
         /// <param name="attributes">Attributes</param>
         /// <param name="name">Name</param>

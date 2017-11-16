@@ -9,7 +9,7 @@ using System.Text;
 
 namespace System.IO.Ports
 {
-    public class SerialPort : Component
+    public partial class SerialPort : Component
     {
         public const int InfiniteTimeout = -1;
 
@@ -553,32 +553,6 @@ namespace System.IO.Ports
             if (!IsOpen)
                 throw new InvalidOperationException(SR.Port_not_open);
             _internalSerialStream.DiscardOutBuffer();
-        }
-
-        public static string[] GetPortNames()
-        {
-            // Hitting the registry for this isn't the only way to get the ports.
-            //
-            // WMI: https://msdn.microsoft.com/en-us/library/aa394413.aspx
-            // QueryDosDevice: https://msdn.microsoft.com/en-us/library/windows/desktop/aa365461.aspx
-            //
-            // QueryDosDevice involves finding any ports that map to \Device\Serialx (call with null to get all, then iterate to get the actual device name)
-
-            using (RegistryKey serialKey = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DEVICEMAP\SERIALCOMM"))
-            {
-                if (serialKey != null)
-                {
-                    string[] result = serialKey.GetValueNames();
-                    for (int i = 0; i < result.Length; i++)
-                    {
-                        // Replace the name in the array with its value.
-                        result[i] = (string)serialKey.GetValue(result[i]);
-                    }
-                    return result;
-                }
-            }
-
-            return Array.Empty<string>();
         }
 
         // SerialPort is open <=> SerialPort has an associated SerialStream.

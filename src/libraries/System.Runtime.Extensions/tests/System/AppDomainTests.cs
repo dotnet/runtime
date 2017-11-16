@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Resources;
@@ -150,7 +151,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue(21680, TargetFrameworkMonikers.UapAot)]
         public void FirstChanceException_Called()
         {
             RemoteInvoke(() => {
@@ -610,6 +610,40 @@ namespace System.Tests
         }
 
         [Fact]
+        public void AssemblyResolve_IsNotCalledForCoreLibResources()
+        {
+            RemoteInvoke(() =>
+            {
+                bool assemblyResolveHandlerCalled = false;
+                AppDomain.CurrentDomain.AssemblyResolve +=
+                    (sender, e) =>
+                    {
+                        // This implementation violates the contract. AssemblyResolve event handler is supposed to return an assembly
+                        // that matches the requested identity and that is not the case here.
+                        assemblyResolveHandlerCalled = true;
+                        return typeof(AppDomainTests).Assembly;
+                    };
+
+                CultureInfo previousUICulture = CultureInfo.CurrentUICulture;
+                CultureInfo.CurrentUICulture = new CultureInfo("de-CH");
+                try
+                {
+                    // The resource lookup for NullReferenceException (generally for CoreLib resources) should not raise the
+                    // AssemblyResolve event because a misbehaving handler could cause an infinite recursion check and fail-fast to
+                    // be triggered when the resource is not found, as the issue would repeat when reporting that error.
+                    Assert.Throws<NullReferenceException>(() => ((string)null).Contains("a"));
+                    Assert.False(assemblyResolveHandlerCalled);
+                }
+                finally
+                {
+                    CultureInfo.CurrentUICulture = previousUICulture;
+                }
+
+                return SuccessExitCode;
+            }).Dispose();
+        }
+
+        [Fact]
         [ActiveIssue(21680, TargetFrameworkMonikers.UapAot)]
         public void TypeResolve()
         {
@@ -639,6 +673,7 @@ namespace System.Tests
 
         [Fact]
         [ActiveIssue(21680, TargetFrameworkMonikers.UapAot)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "In UWP the resources always exist in the resources.pri file even if the assembly is not loaded")]
         public void ResourceResolve()
         {
             RemoteInvoke(() => {

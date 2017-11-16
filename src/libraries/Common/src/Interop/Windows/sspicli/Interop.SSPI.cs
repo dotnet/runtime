@@ -54,6 +54,7 @@ internal static partial class Interop
             SECPKG_ATTR_UNIQUE_BINDINGS = 25,
             SECPKG_ATTR_ENDPOINT_BINDINGS = 26,
             SECPKG_ATTR_CLIENT_SPECIFIED_TARGET = 27,
+            SECPKG_ATTR_APPLICATION_PROTOCOL = 35,
 
             // minschannel.h
             SECPKG_ATTR_REMOTE_CERT_CONTEXT = 0x53,    // returns PCCERT_CONTEXT

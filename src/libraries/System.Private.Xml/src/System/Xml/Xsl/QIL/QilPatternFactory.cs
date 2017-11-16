@@ -226,7 +226,7 @@ namespace System.Xml.Xsl.Qil
         //-----------------------------------------------
         private static void CheckLogicArg(QilNode arg)
         {
-            Debug.Assert(arg != null, "Argulent shouldn't be null");
+            Debug.Assert(arg != null, "Argument shouldn't be null");
             Debug.Assert(arg.XmlType.TypeCode == XmlTypeCode.Boolean && arg.XmlType.IsSingleton,
                 "The operand must be boolean-typed"
             );

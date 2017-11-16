@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.Runtime.Serialization;
 using System.Security.Claims;
 
 namespace System.Security.Principal
@@ -32,50 +31,7 @@ namespace System.Security.Principal
 
             AddIdentityWithRoles(m_identity, m_roles);
         }
-
-        [OnDeserialized]
-        private void OnDeserializedMethod(StreamingContext context)
-        {
-            // Here it the matrix of possible serializations
-            //
-            // Version From  |  Version To | ClaimsIdentities | Roles
-            // ============     ==========   ================   ========================================================
-            // 4.0               4.5         None               We always need to add a ClaimsIdentity, if Roles add them
-            //
-            // 4.5               4.5         Yes                There should be a ClaimsIdentity, DebugAssert if this is not the case
-            //                                                  If there are roles, attach them to the first ClaimsIdentity.
-            //                                                  If there is no non-null ClaimsIdentity, add one.  However, this is unusual and may be a 
-
-            ClaimsIdentity firstNonNullIdentity = null;
-            foreach (var identity in base.Identities)
-            {
-                if (identity != null)
-                {
-                    firstNonNullIdentity = identity;
-                    break;
-                }
-            }
-
-            if (m_roles != null && m_roles.Length > 0 && firstNonNullIdentity != null)
-            {
-                List<Claim> roleClaims = new List<Claim>(m_roles.Length);
-
-                foreach (string role in m_roles)
-                {
-                    if (!string.IsNullOrWhiteSpace(role))
-                    {
-                        roleClaims.Add(new Claim(firstNonNullIdentity.RoleClaimType, role, ClaimValueTypes.String, ClaimsIdentity.DefaultIssuer, ClaimsIdentity.DefaultIssuer, firstNonNullIdentity));
-                    }
-                }
-
-                firstNonNullIdentity.ExternalClaims.Add(roleClaims);
-            }
-            else if (firstNonNullIdentity == null)
-            {
-                AddIdentityWithRoles(m_identity, m_roles);
-            }
-        }
-
+        
         /// <summary>
         /// helper method to add roles 
         /// </summary>

@@ -18,9 +18,6 @@ namespace System.Net.WebSockets
 {
     internal abstract class WebSocketBase : WebSocket, IDisposable
     {
-#if DEBUG
-        private volatile string _closeStack;
-#endif
         private readonly OutstandingOperationHelper _closeOutstandingOperationHelper;
         private readonly OutstandingOperationHelper _closeOutputOutstandingOperationHelper;
         private readonly OutstandingOperationHelper _receiveOutstandingOperationHelper;
@@ -35,7 +32,6 @@ namespace System.Net.WebSockets
         private readonly SemaphoreSlim _sendFrameThrottle;
         // locking _ThisLock protects access to
         // - State
-        // - _closeStack
         // - _closeAsyncStartedReceive
         // - _closeReceivedTaskCompletionSource
         // - _closeNetworkConnectionTask

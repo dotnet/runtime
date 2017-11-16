@@ -56,7 +56,7 @@ using System.Text;
 
 namespace System.Net
 {
-    internal struct HeaderVariantInfo
+    internal readonly struct HeaderVariantInfo
     {
         private readonly string _name;
         private readonly CookieVariant _variant;
@@ -223,7 +223,9 @@ namespace System.Net
 
             if (cookie.Domain.Length == 0)
             {
-                throw new ArgumentException(SR.net_emptystringcall, "cookie.Domain");
+                throw new ArgumentException(
+                    SR.Format(SR.net_emptystringcall, nameof(cookie) + "." + nameof(cookie.Domain)),
+                    nameof(cookie) + "." + nameof(cookie.Domain));
             }
 
             Uri uri;
@@ -734,7 +736,7 @@ namespace System.Net
                 return null;
             }
 
-            bool isSecure = (uri.Scheme == UriScheme.Https);
+            bool isSecure = (uri.Scheme == UriScheme.Https || uri.Scheme == UriScheme.Wss);
             int port = uri.Port;
             CookieCollection cookies = null;
 
@@ -806,8 +808,6 @@ namespace System.Net
         {
             for (int i = 0; i < domainAttribute.Count; i++)
             {
-                bool found = false;
-                bool defaultAdded = false;
                 PathList pathList;
                 lock (m_domainTable.SyncRoot)
                 {
@@ -827,32 +827,10 @@ namespace System.Net
                         string path = (string)e.Key;
                         if (uri.AbsolutePath.StartsWith(CookieParser.CheckQuoted(path)))
                         {
-                            found = true;
-
                             CookieCollection cc = (CookieCollection)e.Value;
                             cc.TimeStamp(CookieCollection.Stamp.Set);
                             MergeUpdateCollections(ref cookies, cc, port, isSecure, matchOnlyPlainCookie);
-
-                            if (path == "/")
-                            {
-                                defaultAdded = true;
-                            }
                         }
-                        else if (found)
-                        {
-                            break;
-                        }
-                    }
-                }
-
-                if (!defaultAdded)
-                {
-                    CookieCollection cc = (CookieCollection)pathList["/"];
-
-                    if (cc != null)
-                    {
-                        cc.TimeStamp(CookieCollection.Stamp.Set);
-                        MergeUpdateCollections(ref cookies, cc, port, isSecure, matchOnlyPlainCookie);
                     }
                 }
 

@@ -103,7 +103,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_ienumeratorGetCurrentMethod == null)
                 {
-                    s_ienumeratorGetCurrentMethod = typeof(IEnumerator).GetProperty("Current").GetMethod;
+                    s_ienumeratorGetCurrentMethod = typeof(IEnumerator).GetProperty("Current").GetGetMethod();
                     Debug.Assert(s_ienumeratorGetCurrentMethod != null);
                 }
                 return s_ienumeratorGetCurrentMethod;
@@ -249,6 +249,20 @@ namespace System.Runtime.Serialization
             }
         }
 
+        private static MethodInfo s_resetCollectionMemberInfoMethod;
+        internal static MethodInfo ResetCollectionMemberInfoMethod
+        {
+            get
+            {
+                if (s_resetCollectionMemberInfoMethod == null)
+                {
+                    s_resetCollectionMemberInfoMethod = typeof(XmlObjectSerializerReadContext).GetMethod("ResetCollectionMemberInfo", Globals.ScanAllMembers, new Type[] { });
+                    Debug.Assert(s_resetCollectionMemberInfoMethod != null);
+                }
+                return s_resetCollectionMemberInfoMethod;
+            }
+        }
+
         private static MethodInfo s_storeIsGetOnlyCollectionMethod;
         internal static MethodInfo StoreIsGetOnlyCollectionMethod
         {
@@ -262,6 +276,20 @@ namespace System.Runtime.Serialization
                 return s_storeIsGetOnlyCollectionMethod;
             }
         }
+
+        private static MethodInfo s_resetIsGetOnlyCollection;
+        internal static MethodInfo ResetIsGetOnlyCollectionMethod
+        {
+            get
+            {
+                if (s_resetIsGetOnlyCollection == null)
+                {
+                    s_resetIsGetOnlyCollection = typeof(XmlObjectSerializerWriteContext).GetMethod("ResetIsGetOnlyCollection", Globals.ScanAllMembers);
+                    Debug.Assert(s_resetIsGetOnlyCollection != null);
+                }
+                return s_resetIsGetOnlyCollection;
+            }
+        }        
 
         private static MethodInfo s_throwNullValueReturnedForGetOnlyCollectionExceptionMethod;
         internal static MethodInfo ThrowNullValueReturnedForGetOnlyCollectionExceptionMethod

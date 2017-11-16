@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 namespace System.Drawing
 {
     /// <summary>
-    /// Retrives the printer graphics during preview.
+    /// Retrieves the printer graphics during preview.
     /// </summary>
     internal class PrintPreviewGraphics
     {

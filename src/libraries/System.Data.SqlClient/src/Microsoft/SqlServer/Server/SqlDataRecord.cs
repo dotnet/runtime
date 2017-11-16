@@ -31,8 +31,8 @@ namespace Microsoft.SqlServer.Server
                                         SmiMetaData.DefaultNVarChar_NoCollation.Precision,
                                         SmiMetaData.DefaultNVarChar_NoCollation.Scale,
                                         SmiMetaData.DefaultNVarChar.LocaleId,
-                                        SmiMetaData.DefaultNVarChar.CompareOptions
-                                        );
+                                        SmiMetaData.DefaultNVarChar.CompareOptions,
+                                        null);
 
         public virtual int FieldCount
         {
@@ -55,8 +55,7 @@ namespace Microsoft.SqlServer.Server
             SqlMetaData metaData = GetSqlMetaData(ordinal);
             if (SqlDbType.Udt == metaData.SqlDbType)
             {
-                Debug.Assert(false, "Udt is not supported");
-                return null;
+                return metaData.UdtTypeName;
             }
             else
             {
@@ -408,8 +407,7 @@ namespace Microsoft.SqlServer.Server
             {
                 SqlMetaData metaData = GetSqlMetaData(i);
                 typeCodes[i] = MetaDataUtilsSmi.DetermineExtendedTypeCodeForUseWithSqlDbType(
-                    metaData.SqlDbType, false /* isMultiValued */, values[i]
-                    );
+                    metaData.SqlDbType, false /* isMultiValued */, values[i], metaData.Type);
                 if (ExtendedClrTypeCode.Invalid == typeCodes[i])
                 {
                     throw ADP.InvalidCast();
@@ -431,8 +429,7 @@ namespace Microsoft.SqlServer.Server
             EnsureSubclassOverride();
             SqlMetaData metaData = GetSqlMetaData(ordinal);
             ExtendedClrTypeCode typeCode = MetaDataUtilsSmi.DetermineExtendedTypeCodeForUseWithSqlDbType(
-                        metaData.SqlDbType, false /* isMultiValued */, value
-                        );
+                        metaData.SqlDbType, false /* isMultiValued */, value, metaData.Type);
             if (ExtendedClrTypeCode.Invalid == typeCode)
             {
                 throw ADP.InvalidCast();

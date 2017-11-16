@@ -5,17 +5,12 @@
     <ProjectGuid>{3ED7BCF1-34B9-49B7-9C25-0BC3304C0858}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\tests\System\PlatformDetection.cs</Link>
-    </Compile>
     <Compile Include="CancelKeyPress.cs" />
-    <Compile Include="CancelKeyPress.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
     <Compile Include="Helpers.cs" />
     <Compile Include="ReadAndWrite.cs" />
     <Compile Include="ConsoleKeyInfoTests.cs" />
@@ -25,7 +20,6 @@
     <Compile Include="SetOut.cs" />
     <Compile Include="NegativeTesting.cs" />
     <Compile Include="ConsoleEncoding.cs" />
-    <Compile Include="ConsoleEncoding.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="SyncTextReader.cs" />
     <Compile Include="SyncTextWriter.cs" />
     <Compile Include="Timeout.cs" />
@@ -41,6 +35,19 @@
       <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
     </Compile>
     <Compile Include="WindowAndCursorProps.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="ConsoleEncoding.Windows.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
+    <Compile Include="CancelKeyPress.Unix.cs" />
+    <Compile Include="NonStandardConfiguration.Unix.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Fcntl.cs">
+      <Link>Interop\Unix\System.Native\Interop.Fcntl.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">

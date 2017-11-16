@@ -38,7 +38,6 @@ namespace System.Threading.Tests
                     for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                     {
                         Monitor.TryEnter(sync, 0);
-                        Monitor.TryEnter(sync, 0);
                         Monitor.Exit(sync);
                     }
                 }

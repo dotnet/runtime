@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Data
 {
-    internal struct DataKey
+    internal readonly struct DataKey
     {
         private const int maxColumns = 32;
 

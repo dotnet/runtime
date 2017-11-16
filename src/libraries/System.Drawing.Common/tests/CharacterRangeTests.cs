@@ -64,6 +64,7 @@ namespace System.Drawing.Tests
             }
         }
 
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [Fact]
         public void Equals_NullOther_ThrowsNullReferenceException()
         {

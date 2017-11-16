@@ -10,7 +10,9 @@ namespace System.Data.Common
 {
     public abstract class DbConnection : Component, IDbConnection
     {
+#pragma warning disable 649 // ignore unassigned field warning
         internal bool _suppressStateChangeForReconnection;
+#pragma warning restore 649
 
         protected DbConnection() : base()
         {

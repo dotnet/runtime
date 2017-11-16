@@ -2238,8 +2238,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.regclas
 
                 memberClassStatus = MemberClass.t_status;
             }
-
-            Assert.Equal(0, Verify());
         }
 
         private static int Verify()
@@ -2276,8 +2274,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.regclas
             RequireLifetimesEnded();
             GC.Collect();
             GC.WaitForPendingFinalizers();
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
+            Assert.Equal(0, Verify());
         }
     }
     //</Code>

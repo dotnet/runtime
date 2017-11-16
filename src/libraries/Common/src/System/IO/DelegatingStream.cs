@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -16,11 +15,6 @@ namespace System.Net.Http
         private readonly Stream _innerStream;
 
         #region Properties
-
-        protected Stream BaseStream
-        {
-            get { return _innerStream; }
-        }
 
         public override bool CanRead
         {
@@ -94,6 +88,11 @@ namespace System.Net.Http
             return _innerStream.Read(buffer, offset, count);
         }
 
+        public override int Read(Span<byte> destination)
+        {
+            return _innerStream.Read(destination);
+        }
+
         public override int ReadByte()
         {
             return _innerStream.ReadByte();
@@ -102,6 +101,11 @@ namespace System.Net.Http
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             return _innerStream.ReadAsync(buffer, offset, count, cancellationToken);
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
+        {
+            return _innerStream.ReadAsync(destination, cancellationToken);
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
@@ -113,7 +117,7 @@ namespace System.Net.Http
         {
             return _innerStream.EndRead(asyncResult);
         }
-        
+
         #endregion Read
 
         #region Write
@@ -138,6 +142,11 @@ namespace System.Net.Http
             _innerStream.Write(buffer, offset, count);
         }
 
+        public override void Write(ReadOnlySpan<byte> source)
+        {
+            _innerStream.Write(source);
+        }
+
         public override void WriteByte(byte value)
         {
             _innerStream.WriteByte(value);
@@ -146,6 +155,11 @@ namespace System.Net.Http
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             return _innerStream.WriteAsync(buffer, offset, count, cancellationToken);
+        }
+
+        public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+        {
+            return _innerStream.WriteAsync(source, cancellationToken);
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)

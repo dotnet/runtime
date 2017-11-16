@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 namespace System.Drawing.Imaging
 {
     /// <summary>
-    /// Defines a 5 x 5 matrix that that contains the homogenous coordinates for the RGBA space.
+    /// Defines a 5 x 5 matrix that contains the homogeneous coordinates for the RGBA space.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public sealed class ColorMatrix

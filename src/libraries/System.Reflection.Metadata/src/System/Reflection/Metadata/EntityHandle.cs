@@ -14,7 +14,7 @@ namespace System.Reflection.Metadata
     /// Use <see cref="EntityHandle"/> to store multiple kinds of entity handles.
     /// It has smaller memory footprint than <see cref="Handle"/>.
     /// </remarks>
-    public struct EntityHandle : IEquatable<EntityHandle>
+    public readonly struct EntityHandle : IEquatable<EntityHandle>
     {
         // bits:
         //     31: IsVirtual

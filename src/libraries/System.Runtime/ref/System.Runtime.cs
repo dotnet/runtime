@@ -471,6 +471,7 @@ namespace System
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool Parse(string value) { throw null; }
+        public static bool Parse(System.ReadOnlySpan<char> value) { throw null; }
         public int CompareTo(object obj) { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
@@ -491,6 +492,7 @@ namespace System
         ulong System.IConvertible.ToUInt64(System.IFormatProvider provider) { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse(string value, out bool result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> value, out bool result) { throw null; }
     }
     public static partial class Buffer
     {
@@ -518,6 +520,7 @@ namespace System
         public static byte Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static byte Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
         public static byte Parse(string s, System.IFormatProvider provider) { throw null; }
+        public static byte Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
         public int CompareTo(object value) { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
@@ -541,6 +544,8 @@ namespace System
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
         public static bool TryParse(string s, out byte result) { throw null; }
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out byte result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out byte result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out byte result) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Char : System.IComparable, System.IComparable<char>, System.IConvertible, System.IEquatable<char>
@@ -635,7 +640,7 @@ namespace System
     }
     public delegate int Comparison<in T>(T x, T y);
     public delegate TOutput Converter<in TInput, out TOutput>(TInput input);
-    public partial struct DateTime : System.IComparable, System.IComparable<System.DateTime>, System.IConvertible, System.IEquatable<System.DateTime>, System.IFormattable, System.Runtime.Serialization.ISerializable
+    public readonly partial struct DateTime : System.IComparable, System.IComparable<System.DateTime>, System.IConvertible, System.IEquatable<System.DateTime>, System.IFormattable, System.Runtime.Serialization.ISerializable
     {
         public static readonly System.DateTime MaxValue;
         public static readonly System.DateTime MinValue;
@@ -706,9 +711,12 @@ namespace System
         public static System.DateTime Parse(string s) { throw null; }
         public static System.DateTime Parse(string s, System.IFormatProvider provider) { throw null; }
         public static System.DateTime Parse(string s, System.IFormatProvider provider, System.Globalization.DateTimeStyles styles) { throw null; }
+        public static System.DateTime Parse(System.ReadOnlySpan<char> s, System.IFormatProvider provider = null, System.Globalization.DateTimeStyles styles = System.Globalization.DateTimeStyles.None) { throw null; }
         public static System.DateTime ParseExact(string s, string format, System.IFormatProvider provider) { throw null; }
         public static System.DateTime ParseExact(string s, string format, System.IFormatProvider provider, System.Globalization.DateTimeStyles style) { throw null; }
         public static System.DateTime ParseExact(string s, string[] formats, System.IFormatProvider provider, System.Globalization.DateTimeStyles style) { throw null; }
+        public static System.DateTime ParseExact(System.ReadOnlySpan<char> s, string format, System.IFormatProvider provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.DateTime ParseExact(System.ReadOnlySpan<char> s, string[] formats, System.IFormatProvider provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
         public static System.DateTime SpecifyKind(System.DateTime value, System.DateTimeKind kind) { throw null; }
         public System.TimeSpan Subtract(System.DateTime value) { throw null; }
         public System.DateTime Subtract(System.TimeSpan value) { throw null; }
@@ -744,10 +752,15 @@ namespace System
         public string ToString(string format) { throw null; }
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
         public System.DateTime ToUniversalTime() { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, string format = null, System.IFormatProvider provider = null) { throw null; }
         public static bool TryParse(string s, out System.DateTime result) { throw null; }
         public static bool TryParse(string s, System.IFormatProvider provider, System.Globalization.DateTimeStyles styles, out System.DateTime result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out System.DateTime result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider provider, System.Globalization.DateTimeStyles styles, out System.DateTime result) { throw null; }
         public static bool TryParseExact(string s, string format, System.IFormatProvider provider, System.Globalization.DateTimeStyles style, out System.DateTime result) { throw null; }
         public static bool TryParseExact(string s, string[] formats, System.IFormatProvider provider, System.Globalization.DateTimeStyles style, out System.DateTime result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, string format, System.IFormatProvider provider, System.Globalization.DateTimeStyles style, out System.DateTime result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, string[] formats, System.IFormatProvider provider, System.Globalization.DateTimeStyles style, out System.DateTime result) { throw null; }
     }
     public enum DateTimeKind
     {
@@ -816,9 +829,12 @@ namespace System
         public static System.DateTimeOffset Parse(string input) { throw null; }
         public static System.DateTimeOffset Parse(string input, System.IFormatProvider formatProvider) { throw null; }
         public static System.DateTimeOffset Parse(string input, System.IFormatProvider formatProvider, System.Globalization.DateTimeStyles styles) { throw null; }
+        public static System.DateTimeOffset Parse(System.ReadOnlySpan<char> input, System.IFormatProvider formatProvider = null, System.Globalization.DateTimeStyles styles = System.Globalization.DateTimeStyles.None) { throw null; }
         public static System.DateTimeOffset ParseExact(string input, string format, System.IFormatProvider formatProvider) { throw null; }
         public static System.DateTimeOffset ParseExact(string input, string format, System.IFormatProvider formatProvider, System.Globalization.DateTimeStyles styles) { throw null; }
         public static System.DateTimeOffset ParseExact(string input, string[] formats, System.IFormatProvider formatProvider, System.Globalization.DateTimeStyles styles) { throw null; }
+        public static System.DateTimeOffset ParseExact(System.ReadOnlySpan<char> input, string format, System.IFormatProvider formatProvider, System.Globalization.DateTimeStyles styles = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.DateTimeOffset ParseExact(System.ReadOnlySpan<char> input, string[] formats, System.IFormatProvider formatProvider, System.Globalization.DateTimeStyles styles = System.Globalization.DateTimeStyles.None) { throw null; }
         public System.TimeSpan Subtract(System.DateTimeOffset value) { throw null; }
         public System.DateTimeOffset Subtract(System.TimeSpan value) { throw null; }
         int System.IComparable.CompareTo(object obj) { throw null; }
@@ -835,10 +851,15 @@ namespace System
         public System.DateTimeOffset ToUniversalTime() { throw null; }
         public long ToUnixTimeMilliseconds() { throw null; }
         public long ToUnixTimeSeconds() { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, string format = null, System.IFormatProvider formatProvider = null) { throw null; }
         public static bool TryParse(string input, out System.DateTimeOffset result) { throw null; }
         public static bool TryParse(string input, System.IFormatProvider formatProvider, System.Globalization.DateTimeStyles styles, out System.DateTimeOffset result) { throw null; }
         public static bool TryParseExact(string input, string format, System.IFormatProvider formatProvider, System.Globalization.DateTimeStyles styles, out System.DateTimeOffset result) { throw null; }
         public static bool TryParseExact(string input, string[] formats, System.IFormatProvider formatProvider, System.Globalization.DateTimeStyles styles, out System.DateTimeOffset result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> input, out System.DateTimeOffset result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> input, System.IFormatProvider formatProvider, System.Globalization.DateTimeStyles styles, out System.DateTimeOffset result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> input, string format, System.IFormatProvider formatProvider, System.Globalization.DateTimeStyles styles, out System.DateTimeOffset result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> input, string[] formats, System.IFormatProvider formatProvider, System.Globalization.DateTimeStyles styles, out System.DateTimeOffset result) { throw null; }
     }
     public enum DayOfWeek
     {
@@ -961,6 +982,7 @@ namespace System
         public static decimal Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static decimal Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
         public static decimal Parse(string s, System.IFormatProvider provider) { throw null; }
+        public static decimal Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
         public static decimal Remainder(decimal d1, decimal d2) { throw null; }
         public static decimal Round(decimal d) { throw null; }
         public static decimal Round(decimal d, int decimals) { throw null; }
@@ -1006,6 +1028,8 @@ namespace System
         public static decimal Truncate(decimal d) { throw null; }
         public static bool TryParse(string s, out decimal result) { throw null; }
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out decimal result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out decimal result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out decimal result) { throw null; }
     }
     public abstract partial class Delegate: System.ICloneable, System.Runtime.Serialization.ISerializable
     {
@@ -1055,10 +1079,14 @@ namespace System
         public bool Equals(double obj) { throw null; }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static bool IsFinite(double d) { throw null; }
         public static bool IsInfinity(double d) { throw null; }
         public static bool IsNaN(double d) { throw null; }
+        public static bool IsNegative(double d) { throw null; }
         public static bool IsNegativeInfinity(double d) { throw null; }
+        public static bool IsNormal(double d) { throw null; }
         public static bool IsPositiveInfinity(double d) { throw null; }
+        public static bool IsSubnormal(double d) { throw null; }
         public static bool operator ==(double left, double right) { throw null; }
         public static bool operator >(double left, double right) { throw null; }
         public static bool operator >=(double left, double right) { throw null; }
@@ -1069,6 +1097,7 @@ namespace System
         public static double Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static double Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
         public static double Parse(string s, System.IFormatProvider provider) { throw null; }
+        public static double Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
         public int CompareTo(object value) { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
@@ -1091,7 +1120,9 @@ namespace System
         public string ToString(string format) { throw null; }
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
         public static bool TryParse(string s, out double result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out double result) { throw null; }
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out double result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out double result) { throw null; }
     }
     public partial class DuplicateWaitObjectException : System.ArgumentException, System.Runtime.Serialization.ISerializable
     {
@@ -1286,6 +1317,7 @@ namespace System
     {
         public static readonly System.Guid Empty;
         public Guid(byte[] b) { throw null; }
+        public Guid(ReadOnlySpan<byte> b) { throw null; }
         public Guid(int a, short b, short c, byte d, byte e, byte f, byte g, byte h, byte i, byte j, byte k) { throw null; }
         public Guid(int a, short b, short c, byte[] d) { throw null; }
         public Guid(string g) { throw null; }
@@ -1300,13 +1332,19 @@ namespace System
         public static bool operator ==(System.Guid a, System.Guid b) { throw null; }
         public static bool operator !=(System.Guid a, System.Guid b) { throw null; }
         public static System.Guid Parse(string input) { throw null; }
+        public static System.Guid Parse(System.ReadOnlySpan<char> input) { throw null; }
         public static System.Guid ParseExact(string input, string format) { throw null; }
+        public static System.Guid ParseExact(System.ReadOnlySpan<char> input, string format) { throw null; }
         public byte[] ToByteArray() { throw null; }
+        public bool TryWriteBytes(Span<byte> destination) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(string format) { throw null; }
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
+        public bool TryFormat(Span<char> destination, out int charsWritten, string format) { throw null; }
         public static bool TryParse(string input, out System.Guid result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> input, out System.Guid result) { throw null; }
         public static bool TryParseExact(string input, string format, out System.Guid result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> input, string format, out System.Guid result) { throw null; }
     }
     public partial interface IAsyncResult
     {
@@ -1399,6 +1437,7 @@ namespace System
         public static short Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static short Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
         public static short Parse(string s, System.IFormatProvider provider) { throw null; }
+        public static short Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
         public int CompareTo(object value) { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
@@ -1422,6 +1461,8 @@ namespace System
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out short result) { throw null; }
         public static bool TryParse(string s, out short result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out short result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out short result) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Int32 : System.IComparable, System.IComparable<int>, System.IConvertible, System.IEquatable<int>, System.IFormattable
@@ -1436,6 +1477,7 @@ namespace System
         public static int Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static int Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
         public static int Parse(string s, System.IFormatProvider provider) { throw null; }
+        public static int Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
         public int CompareTo(object value) { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
@@ -1459,6 +1501,8 @@ namespace System
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out int result) { throw null; }
         public static bool TryParse(string s, out int result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out int result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out int result) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Int64 : System.IComparable, System.IComparable<long>, System.IConvertible, System.IEquatable<long>, System.IFormattable
@@ -1473,6 +1517,7 @@ namespace System
         public static long Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static long Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
         public static long Parse(string s, System.IFormatProvider provider) { throw null; }
+        public static long Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
         public int CompareTo(object value) { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
@@ -1496,6 +1541,8 @@ namespace System
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out long result) { throw null; }
         public static bool TryParse(string s, out long result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out long result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out long result) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct IntPtr : System.Runtime.Serialization.ISerializable, IEquatable<IntPtr>
@@ -1611,6 +1658,30 @@ namespace System
         public MemberAccessException(string message) { }
         public MemberAccessException(string message, System.Exception inner) { }
         protected MemberAccessException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+    }
+    public readonly struct Memory<T>
+    {
+        public static Memory<T> Empty { get { throw null; } }
+        public Memory(T[] array) { throw null; }
+        public Memory(T[] array, int start, int length) { throw null; }
+        public bool IsEmpty { get { throw null; } }
+        public int Length { get { throw null; } }
+        public void CopyTo(Memory<T> destination) { }
+        public bool TryCopyTo(Memory<T> destination) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public override bool Equals(object obj) { throw null; }
+        public bool Equals(Memory<T> other) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public override int GetHashCode() { throw null; }
+        public static implicit operator Memory<T>(T[] array) { throw null; }
+        public static implicit operator Memory<T>(ArraySegment<T> arraySegment) { throw null; }
+        public static implicit operator ReadOnlyMemory<T>(Memory<T> memory) { throw null; }
+        public Memory<T> Slice(int start) { throw null; }
+        public Memory<T> Slice(int start, int length) { throw null; }
+        public Span<T> Span { get { throw null; } }
+        public unsafe Buffers.MemoryHandle Retain(bool pin = false) { throw null; }
+        public T[] ToArray() { throw null; }
+        public bool TryGetArray(out ArraySegment<T> arraySegment) { throw null; }
     }
     public partial class MethodAccessException : System.MemberAccessException
     {
@@ -1813,6 +1884,69 @@ namespace System
         public RankException(string message, System.Exception innerException) { }
         protected RankException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
+    public readonly struct ReadOnlyMemory<T>
+    {
+        public static ReadOnlyMemory<T> Empty { get { throw null; } }
+        public ReadOnlyMemory(T[] array) { throw null; }
+        public ReadOnlyMemory(T[] array, int start, int length) { throw null; }
+        public bool IsEmpty { get { throw null; } }
+        public int Length { get { throw null; } }
+        public void CopyTo(Memory<T> destination) { }
+        public bool TryCopyTo(Memory<T> destination) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public override bool Equals(object obj) { throw null; }
+        public bool Equals(ReadOnlyMemory<T> other) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public override int GetHashCode() { throw null; }
+        public static implicit operator ReadOnlyMemory<T>(T[] array) { throw null; }
+        public static implicit operator ReadOnlyMemory<T>(ArraySegment<T> arraySegment) { throw null; }
+        public ReadOnlyMemory<T> Slice(int start) { throw null; }
+        public ReadOnlyMemory<T> Slice(int start, int length) { throw null; }
+        public ReadOnlySpan<T> Span { get { throw null; } }
+        public unsafe Buffers.MemoryHandle Retain(bool pin = false) { throw null; }
+        public T[] ToArray() { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool DangerousTryGetArray(out ArraySegment<T> arraySegment) { throw null; }
+    }
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public readonly ref struct ReadOnlySpan<T>
+    {
+        public static ReadOnlySpan<T> Empty { get { throw null; } }
+        public ReadOnlySpan(T[] array) { throw null; }
+        public ReadOnlySpan(T[] array, int start, int length) { throw null; }
+        [CLSCompliant(false)]
+        public unsafe ReadOnlySpan(void* pointer, int length) { throw null; }
+        public bool IsEmpty { get { throw null; } }
+        public T this[int index] { get { throw null; } }
+        public int Length { get { throw null; } }
+        public void CopyTo(Span<T> destination) { }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public static ReadOnlySpan<T> DangerousCreate(object obj, ref T objectData, int length) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public ref T DangerousGetPinnableReference() { throw null; }
+#pragma warning disable 0809
+        [System.ObsoleteAttribute("Equals() on ReadOnlySpan will always throw an exception. Use == instead.")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public override bool Equals(object obj) { throw null; }
+        public Enumerator GetEnumerator() { throw null; }
+        [System.ObsoleteAttribute("GetHashCode() on ReadOnlySpan will always throw an exception.")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public override int GetHashCode() { throw null; }
+#pragma warning restore 0809
+        public static bool operator ==(ReadOnlySpan<T> left, ReadOnlySpan<T> right) { throw null; }
+        public static implicit operator ReadOnlySpan<T>(T[] array) { throw null; }
+        public static implicit operator ReadOnlySpan<T>(ArraySegment<T> arraySegment) { throw null; }
+        public static bool operator !=(ReadOnlySpan<T> left, ReadOnlySpan<T> right) { throw null; }
+        public ReadOnlySpan<T> Slice(int start) { throw null; }
+        public ReadOnlySpan<T> Slice(int start, int length) { throw null; }
+        public T[] ToArray() { throw null; }
+        public bool TryCopyTo(Span<T> destination) { throw null; }
+        public ref struct Enumerator
+        {
+            public bool MoveNext() { throw null; }
+            public ref readonly T Current { get { throw null; } }
+        }
+    }
     public partial class ResolveEventArgs : System.EventArgs
     {
         public ResolveEventArgs(string name) { }
@@ -1879,6 +2013,8 @@ namespace System
         public static sbyte Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static sbyte Parse(string s, System.IFormatProvider provider) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static sbyte Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
         public int CompareTo(object obj) { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
@@ -1904,6 +2040,10 @@ namespace System
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out sbyte result) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string s, out sbyte result) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool TryParse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out sbyte result) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool TryParse(ReadOnlySpan<char> s, out sbyte result) { throw null; }
     }
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Delegate, Inherited = false)]
     public sealed class SerializableAttribute : Attribute
@@ -1919,10 +2059,14 @@ namespace System
         public override bool Equals(object obj) { throw null; }
         public bool Equals(float obj) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static bool IsFinite(float f) { throw null; }
         public static bool IsInfinity(float f) { throw null; }
         public static bool IsNaN(float f) { throw null; }
+        public static bool IsNegative(float f) { throw null; }
         public static bool IsNegativeInfinity(float f) { throw null; }
+        public static bool IsNormal(float f) { throw null; }
         public static bool IsPositiveInfinity(float f) { throw null; }
+        public static bool IsSubnormal(float f) { throw null; }
         public static bool operator ==(float left, float right) { throw null; }
         public static bool operator >(float left, float right) { throw null; }
         public static bool operator >=(float left, float right) { throw null; }
@@ -1933,6 +2077,7 @@ namespace System
         public static float Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static float Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
         public static float Parse(string s, System.IFormatProvider provider) { throw null; }
+        public static float Parse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
         public int CompareTo(object value) { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
@@ -1956,6 +2101,50 @@ namespace System
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out float result) { throw null; }
         public static bool TryParse(string s, out float result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out float result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> s, out float result) { throw null; }
+    }
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public readonly ref struct Span<T>
+    {
+        public static Span<T> Empty { get { throw null; } }
+        public Span(T[] array) { throw null; }
+        public Span(T[] array, int start, int length) { throw null; }
+        [CLSCompliant(false)]
+        public unsafe Span(void* pointer, int length) { throw null; }
+        public bool IsEmpty { get { throw null; } }
+        public ref T this[int index] { get { throw null; } }
+        public int Length { get { throw null; } }
+        public void Clear() { }
+        public void Fill(T value) { }
+        public void CopyTo(Span<T> destination) { }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public static Span<T> DangerousCreate(object obj, ref T objectData, int length) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public ref T DangerousGetPinnableReference() { throw null; }
+#pragma warning disable 0809
+        [System.ObsoleteAttribute("Equals() on Span will always throw an exception. Use == instead.")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public override bool Equals(object obj) { throw null; }
+        public Enumerator GetEnumerator() { throw null; }
+        [System.ObsoleteAttribute("GetHashCode() on Span will always throw an exception.")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public override int GetHashCode() { throw null; }
+#pragma warning restore 0809
+        public static bool operator ==(Span<T> left, Span<T> right) { throw null; }
+        public static implicit operator Span<T>(T[] array) { throw null; }
+        public static implicit operator Span<T>(ArraySegment<T> arraySegment) { throw null; }
+        public static implicit operator ReadOnlySpan<T>(Span<T> span) { throw null; }
+        public static bool operator !=(Span<T> left, Span<T> right) { throw null; }
+        public Span<T> Slice(int start) { throw null; }
+        public Span<T> Slice(int start, int length) { throw null; }
+        public T[] ToArray() { throw null; }
+        public bool TryCopyTo(Span<T> destination) { throw null; }
+        public ref struct Enumerator
+        {
+            public bool MoveNext() { throw null; }
+            public ref T Current { get { throw null; } }
+        }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(64))]
     public sealed partial class STAThreadAttribute : System.Attribute
@@ -1980,6 +2169,7 @@ namespace System
         public unsafe String(sbyte* value, int startIndex, int length) { }
         [System.CLSCompliantAttribute(false)]
         public unsafe String(sbyte* value, int startIndex, int length, System.Text.Encoding enc) { }
+        public String(System.ReadOnlySpan<char> value) { }
         [System.Runtime.CompilerServices.IndexerName("Chars")]
         public char this[int index] { get { throw null; } }
         public int Length { get { throw null; } }
@@ -2012,6 +2202,7 @@ namespace System
         public bool Contains(string value, StringComparison comparisonType) { throw null; }
         public static System.String Copy(System.String str) { throw null; }
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) { }
+        public static string Create<TState>(int length, TState state, System.Buffers.SpanAction<char, TState> action) { throw null; }
         public bool EndsWith(char value) { throw null; }
         public bool EndsWith(string value) { throw null; }
         public bool EndsWith(System.String value, bool ignoreCase, System.Globalization.CultureInfo culture) { throw null; }
@@ -2229,20 +2420,30 @@ namespace System
         public static System.TimeSpan operator +(System.TimeSpan t) { throw null; }
         public static System.TimeSpan Parse(string s) { throw null; }
         public static System.TimeSpan Parse(string input, System.IFormatProvider formatProvider) { throw null; }
+        public static System.TimeSpan Parse(System.ReadOnlySpan<char> input, System.IFormatProvider formatProvider = null) { throw null; }
         public static System.TimeSpan ParseExact(string input, string format, System.IFormatProvider formatProvider) { throw null; }
         public static System.TimeSpan ParseExact(string input, string format, System.IFormatProvider formatProvider, System.Globalization.TimeSpanStyles styles) { throw null; }
+        public static System.TimeSpan ParseExact(ReadOnlySpan<char> input, string format, System.IFormatProvider formatProvider, System.Globalization.TimeSpanStyles styles = System.Globalization.TimeSpanStyles.None) { throw null; }
         public static System.TimeSpan ParseExact(string input, string[] formats, System.IFormatProvider formatProvider) { throw null; }
         public static System.TimeSpan ParseExact(string input, string[] formats, System.IFormatProvider formatProvider, System.Globalization.TimeSpanStyles styles) { throw null; }
+        public static System.TimeSpan ParseExact(System.ReadOnlySpan<char> input, string[] formats, System.IFormatProvider formatProvider, System.Globalization.TimeSpanStyles styles = System.Globalization.TimeSpanStyles.None) { throw null; }
         public System.TimeSpan Subtract(System.TimeSpan ts) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(string format) { throw null; }
         public string ToString(string format, System.IFormatProvider formatProvider) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, string format = null, System.IFormatProvider provider = null) { throw null; }
         public static bool TryParse(string input, System.IFormatProvider formatProvider, out System.TimeSpan result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> input, System.IFormatProvider formatProvider, out System.TimeSpan result) { throw null; }
         public static bool TryParse(string s, out System.TimeSpan result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out System.TimeSpan result) { throw null; }
         public static bool TryParseExact(string input, string format, System.IFormatProvider formatProvider, System.Globalization.TimeSpanStyles styles, out System.TimeSpan result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> input, string format, System.IFormatProvider formatProvider, System.Globalization.TimeSpanStyles styles, out System.TimeSpan result) { throw null; }
         public static bool TryParseExact(string input, string format, System.IFormatProvider formatProvider, out System.TimeSpan result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> input, string format, System.IFormatProvider formatProvider, out System.TimeSpan result) { throw null; }
         public static bool TryParseExact(string input, string[] formats, System.IFormatProvider formatProvider, System.Globalization.TimeSpanStyles styles, out System.TimeSpan result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> input, string[] formats, System.IFormatProvider formatProvider, System.Globalization.TimeSpanStyles styles, out System.TimeSpan result) { throw null; }
         public static bool TryParseExact(string input, string[] formats, System.IFormatProvider formatProvider, out System.TimeSpan result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> input, string[] formats, System.IFormatProvider formatProvider, out System.TimeSpan result) { throw null; }
     }
     [ObsoleteAttribute("System.TimeZone has been deprecated.  Please investigate the use of System.TimeZoneInfo instead.")]
     public abstract partial class TimeZone
@@ -2605,6 +2806,7 @@ namespace System
         public bool IsAutoClass { get { throw null; } }
         public bool IsAutoLayout { get { throw null; } }
         public bool IsByRef { get { throw null; } }
+        public virtual bool IsByRefLike { get { throw null; } }
         public bool IsClass { get { throw null; } }
         public bool IsCOMObject { get { throw null; } }
         public virtual bool IsConstructedGenericType { get { throw null; } }
@@ -2612,6 +2814,8 @@ namespace System
         public virtual bool IsEnum { get { throw null; } }
         public bool IsExplicitLayout { get { throw null; } }
         public virtual bool IsGenericParameter { get { throw null; } }
+        public virtual bool IsGenericTypeParameter { get { throw null; } }
+        public virtual bool IsGenericMethodParameter { get { throw null; } }
         public virtual bool IsGenericType { get { throw null; } }
         public virtual bool IsGenericTypeDefinition { get { throw null; } }
         public bool IsImport { get { throw null; } }
@@ -2634,6 +2838,7 @@ namespace System
         public virtual bool IsSecuritySafeCritical { get { throw null; } }
         public virtual bool IsSecurityTransparent { get { throw null; } }
         public virtual bool IsSerializable { get { throw null; } }
+        public virtual bool IsSignatureType { get { throw null; } }
         public bool IsSpecialName { get { throw null; } }
         public virtual bool IsTypeDefinition { get { throw null; } }
         public virtual bool IsSZArray { get { throw null; } }
@@ -2695,6 +2900,11 @@ namespace System
         public System.Reflection.MethodInfo GetMethod(string name, System.Type[] types) { throw null; }
         public System.Reflection.MethodInfo GetMethod(string name, System.Type[] types, System.Reflection.ParameterModifier[] modifiers) { throw null; }
         protected abstract System.Reflection.MethodInfo GetMethodImpl(string name, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, System.Reflection.CallingConventions callConvention, System.Type[] types, System.Reflection.ParameterModifier[] modifiers);
+        public System.Reflection.MethodInfo GetMethod(string name, int genericParameterCount, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, System.Reflection.CallingConventions callConvention, System.Type[] types, System.Reflection.ParameterModifier[] modifiers) { throw null; }
+        public System.Reflection.MethodInfo GetMethod(string name, int genericParameterCount, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, System.Type[] types, System.Reflection.ParameterModifier[] modifiers) { throw null; }
+        public System.Reflection.MethodInfo GetMethod(string name, int genericParameterCount, System.Type[] types) { throw null; }
+        public System.Reflection.MethodInfo GetMethod(string name, int genericParameterCount, System.Type[] types, System.Reflection.ParameterModifier[] modifiers) { throw null; }
+        protected virtual System.Reflection.MethodInfo GetMethodImpl(string name, int genericParameterCount, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, System.Reflection.CallingConventions callConvention, System.Type[] types, System.Reflection.ParameterModifier[] modifiers) { throw null; }
         public System.Reflection.MethodInfo[] GetMethods() { throw null; }
         public abstract System.Reflection.MethodInfo[] GetMethods(System.Reflection.BindingFlags bindingAttr);
         public System.Type GetNestedType(string name) { throw null; }
@@ -2753,6 +2963,7 @@ namespace System
         public virtual System.Type MakeByRefType() { throw null; }
         public virtual System.Type MakeGenericType(params System.Type[] typeArguments) { throw null; }
         public virtual System.Type MakePointerType() { throw null; }
+        public static Type MakeGenericMethodParameter(int position) { throw null; }
         public static System.Type ReflectionOnlyGetType(System.String typeName, bool throwIfNotFound, bool ignoreCase) { throw null; }
         public override string ToString() { throw null; }
     }
@@ -2839,6 +3050,8 @@ namespace System
         public static ushort Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ushort Parse(string s, System.IFormatProvider provider) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ushort Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
         public int CompareTo(object value) { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
@@ -2863,7 +3076,11 @@ namespace System
         [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out ushort result) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out ushort result) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string s, out ushort result) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool TryParse(System.ReadOnlySpan<char> s, out ushort result) { throw null; }
     }
     [System.CLSCompliantAttribute(false)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -2883,6 +3100,8 @@ namespace System
         public static uint Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static uint Parse(string s, System.IFormatProvider provider) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
         public int CompareTo(object value) { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
@@ -2907,7 +3126,11 @@ namespace System
         [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out uint result) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out uint result) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string s, out uint result) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool TryParse(System.ReadOnlySpan<char> s, out uint result) { throw null; }
     }
     [System.CLSCompliantAttribute(false)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -2927,6 +3150,8 @@ namespace System
         public static ulong Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong Parse(string s, System.IFormatProvider provider) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ulong Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
         public int CompareTo(object value) { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
@@ -2951,7 +3176,11 @@ namespace System
         [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out ulong result) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out ulong result) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string s, out ulong result) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool TryParse(System.ReadOnlySpan<char> s, out ulong result) { throw null; }
     }
     [System.CLSCompliantAttribute(false)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -3448,9 +3677,13 @@ namespace System
         public static bool operator <(System.Version v1, System.Version v2) { throw null; }
         public static bool operator <=(System.Version v1, System.Version v2) { throw null; }
         public static System.Version Parse(string input) { throw null; }
+        public static System.Version Parse(ReadOnlySpan<char> input) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(int fieldCount) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten) { throw null; }
+        public bool TryFormat(System.Span<char> destination, int fieldCount, out int charsWritten) { throw null; }
         public static bool TryParse(string input, out System.Version result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> input, out System.Version result) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential, Size = 1)]
     public partial struct Void
@@ -3650,6 +3883,44 @@ namespace System.Runtime.CompilerServices
         }
     }
 }
+namespace System.Buffers
+{
+    public unsafe struct MemoryHandle : IDisposable 
+    {
+        [System.CLSCompliantAttribute(false)]
+        public MemoryHandle(IRetainable owner, void* pointer = null,  System.Runtime.InteropServices.GCHandle handle = default(System.Runtime.InteropServices.GCHandle))  { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public void* Pointer { get { throw null; } }
+        public bool HasPointer { get { throw null; } }
+        public void Dispose() { throw null; }
+    }
+
+    public interface IRetainable 
+    {
+        bool Release();
+        void Retain();
+    }
+    
+    public abstract class OwnedMemory<T> : IDisposable, IRetainable 
+    {
+        public Memory<T> Memory { get { throw null; } }
+        public abstract bool IsDisposed { get; }
+        protected abstract bool IsRetained { get; }
+        public abstract int Length { get; }
+        public abstract Span<T> Span { get; }
+        public void Dispose() { throw null; }
+        protected abstract void Dispose(bool disposing);
+        public abstract MemoryHandle Pin();
+        public abstract bool Release();
+        public abstract void Retain();
+        protected internal abstract bool TryGetArray(out ArraySegment<T> arraySegment);
+    }
+}
+namespace System.Buffers
+{
+    public delegate void SpanAction<T, in TArg>(Span<T> span, TArg arg);
+    public delegate void ReadOnlySpanAction<T, in TArg>(ReadOnlySpan<T> span, TArg arg);
+}
 namespace System.Collections
 {
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -3817,7 +4088,7 @@ namespace System.Collections.Generic
         public static KeyValuePair<TKey, TValue> Create<TKey, TValue>(TKey key, TValue value) { throw null; }        
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct KeyValuePair<TKey, TValue>
+    public readonly partial struct KeyValuePair<TKey, TValue>
     {
         public KeyValuePair(TKey key, TValue value) { throw null; }
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -4977,15 +5248,19 @@ namespace System.IO
         [System.ObsoleteAttribute("Do not call or override this method.")]
         protected virtual void ObjectInvariant() { }
         public abstract int Read(byte[] buffer, int offset, int count);
+        public virtual int Read(System.Span<byte> destination) { throw null; }
         public System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count) { throw null; }
         public virtual System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public virtual System.Threading.Tasks.ValueTask<int> ReadAsync(Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public virtual int ReadByte() { throw null; }
         public abstract long Seek(long offset, System.IO.SeekOrigin origin);
         public abstract void SetLength(long value);
         public static System.IO.Stream Synchronized(System.IO.Stream stream) { throw null; }
         public abstract void Write(byte[] buffer, int offset, int count);
+        public virtual void Write(System.ReadOnlySpan<byte> source) { }
         public System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count) { throw null; }
         public virtual System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public virtual System.Threading.Tasks.Task WriteAsync(ReadOnlyMemory<byte> source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public virtual void WriteByte(byte value) { }
     }
     public partial class FileStream : System.IO.Stream
@@ -5083,6 +5358,7 @@ namespace System.Reflection
         public virtual System.IO.FileStream GetFile(string name) { throw null; }
         public virtual System.IO.FileStream[] GetFiles() { throw null; }
         public virtual System.IO.FileStream[] GetFiles(bool getResourceModules) { throw null; }
+        public virtual System.Type[] GetForwardedTypes() { throw null; }
         public override int GetHashCode() { throw null; }
         public virtual System.Reflection.ManifestResourceInfo GetManifestResourceInfo(string resourceName) { throw null; }
         public virtual string[] GetManifestResourceNames() { throw null; }
@@ -5320,6 +5596,7 @@ namespace System.Reflection
         CreateInstance = 512,
         DeclaredOnly = 2,
         Default = 0,
+        DoNotWrapExceptions = 33554432, 
         ExactBinding = 65536,
         FlattenHierarchy = 64,
         GetField = 1024,
@@ -5922,7 +6199,7 @@ namespace System.Reflection
         public override string ToString() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public struct ParameterModifier
+    public readonly struct ParameterModifier
     {
         public ParameterModifier(int parameterCount) { }
         public bool this[int index] { get { throw null; } set { } }
@@ -6133,10 +6410,13 @@ namespace System.Reflection
         public override System.Type GetNestedType(System.String name, System.Reflection.BindingFlags bindingAttr) { throw null; }
         public override System.Reflection.MemberInfo[] GetMember(System.String name,  System.Reflection.MemberTypes type, System.Reflection.BindingFlags bindingAttr) { throw null; }
         public override System.Reflection.MemberInfo[] GetMembers(System.Reflection.BindingFlags bindingAttr) { throw null; }
+        public override bool IsByRefLike { get { throw null; } }
         protected override System.Reflection.TypeAttributes GetAttributeFlagsImpl() { throw null; }
         protected override bool IsArrayImpl() { throw null; }
         protected override bool IsPrimitiveImpl() { throw null; }
         protected override bool IsByRefImpl() { throw null; }
+        public override bool IsGenericTypeParameter { get { throw null; } }
+        public override bool IsGenericMethodParameter { get { throw null; } }
         protected override bool IsPointerImpl() { throw null; }
         protected override bool IsValueTypeImpl() { throw null; }
         protected override bool IsCOMObjectImpl() { throw null; }
@@ -6253,10 +6533,28 @@ namespace System.Runtime.CompilerServices
         public AccessedThroughPropertyAttribute(string propertyName) { }
         public string PropertyName { get { throw null; } }
     }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(5148), Inherited = false, AllowMultiple = false)]
+    public sealed partial class AsyncMethodBuilderAttribute : System.Attribute
+    {
+        public AsyncMethodBuilderAttribute(System.Type builderType) { }
+        public System.Type BuilderType { get { throw null; } }
+    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(64), Inherited = false, AllowMultiple = false)]
     public sealed partial class AsyncStateMachineAttribute : System.Runtime.CompilerServices.StateMachineAttribute
     {
         public AsyncStateMachineAttribute(System.Type stateMachineType) : base(default(System.Type)) { }
+    }
+    public partial struct AsyncValueTaskMethodBuilder<TResult>
+    {
+        public System.Threading.Tasks.ValueTask<TResult> Task { get { throw null; } }
+        public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.INotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+        [System.Security.SecuritySafeCriticalAttribute]
+        public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+        public static System.Runtime.CompilerServices.AsyncValueTaskMethodBuilder<TResult> Create() { throw null; }
+        public void SetException(System.Exception exception) { }
+        public void SetResult(TResult result) { }
+        public void SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine) { }
+        public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(2048), Inherited = false)]
     public sealed partial class CallerFilePathAttribute : System.Attribute
@@ -6300,6 +6598,17 @@ namespace System.Runtime.CompilerServices
         public bool TryGetValue(TKey key, out TValue value) { throw null; }
         public delegate TValue CreateValueCallback(TKey key);
     }
+    public readonly partial struct ConfiguredValueTaskAwaitable<TResult>
+    {
+        public System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable<TResult>.ConfiguredValueTaskAwaiter GetAwaiter() { throw null; }
+        public readonly partial struct ConfiguredValueTaskAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
+        {
+            public bool IsCompleted { get { throw null; } }
+            public TResult GetResult() { throw null; }
+            public void OnCompleted(System.Action continuation) { }
+            public void UnsafeOnCompleted(System.Action continuation) { }
+        }
+    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(2304), Inherited = false)]
     public abstract partial class CustomConstantAttribute : System.Attribute
     {
@@ -6340,6 +6649,11 @@ namespace System.Runtime.CompilerServices
     public static partial class FormattableStringFactory
     {
         public static System.FormattableString Create(string format, params object[] arguments) { throw null; }
+    }
+    public partial interface IAsyncStateMachine
+    {
+        void MoveNext();
+        void SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine);
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(128), Inherited = true)]
     public sealed partial class IndexerNameAttribute : System.Attribute
@@ -6470,6 +6784,14 @@ namespace System.Runtime.CompilerServices
     {
         public UnsafeValueTypeAttribute() { }
     }
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public readonly partial struct ValueTaskAwaiter<TResult> : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
+    {
+        public bool IsCompleted { get { throw null; } }
+        public TResult GetResult() { throw null; }
+        public void OnCompleted(System.Action continuation) { }
+        public void UnsafeOnCompleted(System.Action continuation) { }
+    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(4))]
     public partial class CompilerGlobalScopeAttribute : System.Attribute
     {
@@ -6574,11 +6896,41 @@ namespace System.Runtime.InteropServices
         public FieldOffsetAttribute(int offset) { }
         public int Value { get { throw null; } }
     }
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public partial struct GCHandle
+    {
+        public bool IsAllocated { get { throw null; } }
+        public object Target {get { throw null; } set { } }
+        public System.IntPtr AddrOfPinnedObject() { throw null; }
+        public static System.Runtime.InteropServices.GCHandle Alloc(object value) { throw null; }
+        public static System.Runtime.InteropServices.GCHandle Alloc(object value, System.Runtime.InteropServices.GCHandleType type) { throw null; }
+        public override bool Equals(object o) { throw null; }
+        public void Free() { }
+        public static System.Runtime.InteropServices.GCHandle FromIntPtr(System.IntPtr value) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(System.Runtime.InteropServices.GCHandle a, System.Runtime.InteropServices.GCHandle b) { throw null; }
+        public static explicit operator System.Runtime.InteropServices.GCHandle(System.IntPtr value) { throw null; }
+        public static explicit operator System.IntPtr(System.Runtime.InteropServices.GCHandle value) { throw null; }
+        public static bool operator !=(System.Runtime.InteropServices.GCHandle a, System.Runtime.InteropServices.GCHandle b) { throw null; }
+        public static System.IntPtr ToIntPtr(System.Runtime.InteropServices.GCHandle value) { throw null; }
+    }
+    public enum GCHandleType
+    {
+        Normal = 2,
+        Pinned = 3,
+        Weak = 0,
+        WeakTrackResurrection = 1,
+    }
     public enum LayoutKind
     {
         Auto = 3,
         Explicit = 2,
         Sequential = 0,
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(2048), Inherited = false)]
+    public sealed partial class InAttribute : System.Attribute
+    {
+        public InAttribute() { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(2048), Inherited = false)]
     public sealed partial class OutAttribute : System.Attribute
@@ -6742,7 +7094,7 @@ namespace System.Runtime.Serialization
         public void Reset() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct StreamingContext
+    public readonly partial struct StreamingContext
     {
         public StreamingContext(System.Runtime.Serialization.StreamingContextStates state) { }
         public StreamingContext(System.Runtime.Serialization.StreamingContextStates state, object additional) { }
@@ -6936,6 +7288,7 @@ namespace System.Text
         public System.Text.StringBuilder Append(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public System.Text.StringBuilder Append(ulong value) { throw null; }
+        public System.Text.StringBuilder Append(System.ReadOnlySpan<char> value) { throw null; }
         public System.Text.StringBuilder AppendFormat(System.IFormatProvider provider, string format, object arg0) { throw null; }
         public System.Text.StringBuilder AppendFormat(System.IFormatProvider provider, string format, object arg0, object arg1) { throw null; }
         public System.Text.StringBuilder AppendFormat(System.IFormatProvider provider, string format, object arg0, object arg1, object arg2) { throw null; }
@@ -6954,6 +7307,7 @@ namespace System.Text
         public StringBuilder AppendJoin(char separator, params string[] values) { throw null; }
         public System.Text.StringBuilder Clear() { throw null; }
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) { }
+        public void CopyTo(int sourceIndex, System.Span<char> destination, int count) { }
         public int EnsureCapacity(int capacity) { throw null; }
         public bool Equals(System.Text.StringBuilder sb) { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -6962,6 +7316,7 @@ namespace System.Text
         public System.Text.StringBuilder Insert(int index, char value) { throw null; }
         public System.Text.StringBuilder Insert(int index, char[] value) { throw null; }
         public System.Text.StringBuilder Insert(int index, char[] value, int startIndex, int charCount) { throw null; }
+        public System.Text.StringBuilder Insert(int index, System.ReadOnlySpan<char> value) { throw null; }
         public System.Text.StringBuilder Insert(int index, decimal value) { throw null; }
         public System.Text.StringBuilder Insert(int index, double value) { throw null; }
         public System.Text.StringBuilder Insert(int index, short value) { throw null; }
@@ -6995,14 +7350,17 @@ namespace System.Text
         [System.CLSCompliantAttribute(false)]
         public unsafe virtual void Convert(byte* bytes, int byteCount, char* chars, int charCount, bool flush, out int bytesUsed, out int charsUsed, out bool completed) { throw null; }
         public virtual void Convert(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex, int charCount, bool flush, out int bytesUsed, out int charsUsed, out bool completed) { throw null; }
+        public virtual void Convert(ReadOnlySpan<byte> bytes, Span<char> chars, bool flush, out int bytesUsed, out int charsUsed, out bool completed) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe virtual int GetCharCount(byte* bytes, int count, bool flush) { throw null; }
         public abstract int GetCharCount(byte[] bytes, int index, int count);
         public virtual int GetCharCount(byte[] bytes, int index, int count, bool flush) { throw null; }
+        public virtual int GetCharCount(System.ReadOnlySpan<byte> bytes, bool flush) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe virtual int GetChars(byte* bytes, int byteCount, char* chars, int charCount, bool flush) { throw null; }
         public abstract int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex);
         public virtual int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex, bool flush) { throw null; }
+        public virtual int GetChars(System.ReadOnlySpan<byte> bytes, System.Span<char> chars, bool flush) { throw null; }
         public virtual void Reset() { }
     }
     public sealed partial class DecoderExceptionFallback : System.Text.DecoderFallback
@@ -7075,12 +7433,15 @@ namespace System.Text
         [System.CLSCompliantAttribute(false)]
         public unsafe virtual void Convert(char* chars, int charCount, byte* bytes, int byteCount, bool flush, out int charsUsed, out int bytesUsed, out bool completed) { throw null; }
         public virtual void Convert(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex, int byteCount, bool flush, out int charsUsed, out int bytesUsed, out bool completed) { throw null; }
+        public virtual void Convert(System.ReadOnlySpan<char> chars, System.Span<byte> bytes, bool flush, out int charsUsed, out int bytesUsed, out bool completed) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe virtual int GetByteCount(char* chars, int count, bool flush) { throw null; }
         public abstract int GetByteCount(char[] chars, int index, int count, bool flush);
+        public virtual int GetByteCount(System.ReadOnlySpan<char> chars, bool flush) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe virtual int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, bool flush) { throw null; }
         public abstract int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex, bool flush);
+        public virtual int GetBytes(System.ReadOnlySpan<char> chars, System.Span<byte> bytes, bool flush) { throw null; }
         public virtual void Reset() { }
     }
     public sealed partial class EncoderExceptionFallback : System.Text.EncoderFallback
@@ -7170,6 +7531,7 @@ namespace System.Text
         public virtual bool IsMailNewsSave { get { throw null; } }
         public bool IsReadOnly { get { throw null; } }
         public virtual bool IsSingleByte { get { throw null; } }
+        public virtual ReadOnlySpan<byte> Preamble { get { throw null; } }
         public static System.Text.Encoding Unicode { get { throw null; } }
         public static System.Text.Encoding UTF32 { get { throw null; } }
         public static System.Text.Encoding UTF7 { get { throw null; } }
@@ -7183,6 +7545,7 @@ namespace System.Text
         [System.CLSCompliantAttribute(false)]
         [System.Security.SecurityCriticalAttribute]
         public unsafe virtual int GetByteCount(char* chars, int count) { throw null; }
+        public virtual int GetByteCount(ReadOnlySpan<char> chars) { throw null; }
         public virtual int GetByteCount(char[] chars) { throw null; }
         public abstract int GetByteCount(char[] chars, int index, int count);
         public virtual int GetByteCount(string s) { throw null; }
@@ -7190,6 +7553,7 @@ namespace System.Text
         [System.CLSCompliantAttribute(false)]
         [System.Security.SecurityCriticalAttribute]
         public unsafe virtual int GetBytes(char* chars, int charCount, byte* bytes, int byteCount) { throw null; }
+        public virtual int GetBytes(ReadOnlySpan<char> chars, Span<byte> bytes) { throw null; }
         public virtual byte[] GetBytes(char[] chars) { throw null; }
         public virtual byte[] GetBytes(char[] chars, int index, int count) { throw null; }
         public abstract int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex);
@@ -7199,11 +7563,13 @@ namespace System.Text
         [System.CLSCompliantAttribute(false)]
         [System.Security.SecurityCriticalAttribute]
         public unsafe virtual int GetCharCount(byte* bytes, int count) { throw null; }
+        public virtual int GetCharCount(ReadOnlySpan<byte> bytes) { throw null; }
         public virtual int GetCharCount(byte[] bytes) { throw null; }
         public abstract int GetCharCount(byte[] bytes, int index, int count);
         [System.CLSCompliantAttribute(false)]
         [System.Security.SecurityCriticalAttribute]
         public unsafe virtual int GetChars(byte* bytes, int byteCount, char* chars, int charCount) { throw null; }
+        public virtual int GetChars(ReadOnlySpan<byte> bytes, Span<char> chars) { throw null; }
         public virtual char[] GetChars(byte[] bytes) { throw null; }
         public virtual char[] GetChars(byte[] bytes, int index, int count) { throw null; }
         public abstract int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex);
@@ -7221,6 +7587,7 @@ namespace System.Text
         [System.CLSCompliantAttribute(false)]
         [System.Security.SecurityCriticalAttribute]
         public unsafe string GetString(byte* bytes, int byteCount) { throw null; }
+        public string GetString(ReadOnlySpan<byte> bytes) { throw null; }
         public virtual string GetString(byte[] bytes) { throw null; }
         public virtual string GetString(byte[] bytes, int index, int count) { throw null; }
         public bool IsAlwaysNormalized() { throw null; }
@@ -7282,6 +7649,7 @@ namespace System.Threading
         public override bool Equals(object obj) { throw null; }
         public bool Equals(System.Threading.CancellationTokenRegistration other) { throw null; }
         public override int GetHashCode() { throw null; }
+        public CancellationToken Token { get { throw null; } }
         public static bool operator ==(System.Threading.CancellationTokenRegistration left, System.Threading.CancellationTokenRegistration right) { throw null; }
         public static bool operator !=(System.Threading.CancellationTokenRegistration left, System.Threading.CancellationTokenRegistration right) { throw null; }
     }
@@ -7661,5 +8029,27 @@ namespace System.Threading.Tasks
         public System.AggregateException Exception { get { throw null; } }
         public bool Observed { get { throw null; } }
         public void SetObserved() { }
+    }
+    [System.Runtime.CompilerServices.AsyncMethodBuilderAttribute(typeof(System.Runtime.CompilerServices.AsyncValueTaskMethodBuilder<>))]
+    public readonly partial struct ValueTask<TResult> : System.IEquatable<System.Threading.Tasks.ValueTask<TResult>>
+    {
+        public ValueTask(System.Threading.Tasks.Task<TResult> task) { throw null; }
+        public ValueTask(TResult result) { throw null; }
+        public bool IsCanceled { get { throw null; } }
+        public bool IsCompleted { get { throw null; } }
+        public bool IsCompletedSuccessfully { get { throw null; } }
+        public bool IsFaulted { get { throw null; } }
+        public TResult Result { get { throw null; } }
+        public System.Threading.Tasks.Task<TResult> AsTask() { throw null; }
+        public System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable<TResult> ConfigureAwait(bool continueOnCapturedContext) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        public static System.Runtime.CompilerServices.AsyncValueTaskMethodBuilder<TResult> CreateAsyncMethodBuilder() { throw null; }
+        public override bool Equals(object obj) { throw null; }
+        public bool Equals(System.Threading.Tasks.ValueTask<TResult> other) { throw null; }
+        public System.Runtime.CompilerServices.ValueTaskAwaiter<TResult> GetAwaiter() { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(System.Threading.Tasks.ValueTask<TResult> left, System.Threading.Tasks.ValueTask<TResult> right) { throw null; }
+        public static bool operator !=(System.Threading.Tasks.ValueTask<TResult> left, System.Threading.Tasks.ValueTask<TResult> right) { throw null; }
+        public override string ToString() { throw null; }
     }
 }

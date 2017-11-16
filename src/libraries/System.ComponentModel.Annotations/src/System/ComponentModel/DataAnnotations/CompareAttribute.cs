@@ -21,17 +21,15 @@ namespace System.ComponentModel.DataAnnotations
             OtherProperty = otherProperty;
         }
 
-        public string OtherProperty { get; private set; }
+        public string OtherProperty { get; }
 
         public string OtherPropertyDisplayName { get; internal set; }
 
         public override bool RequiresValidationContext => true;
 
-        public override string FormatErrorMessage(string name)
-        {
-            return string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name,
-                OtherPropertyDisplayName ?? OtherProperty);
-        }
+        public override string FormatErrorMessage(string name) =>
+            string.Format(
+                CultureInfo.CurrentCulture, ErrorMessageString, name, OtherPropertyDisplayName ?? OtherProperty);
 
         protected override ValidationResult IsValid(object value, ValidationContext validationContext)
         {
@@ -53,14 +51,16 @@ namespace System.ComponentModel.DataAnnotations
             {
                 if (OtherPropertyDisplayName == null)
                 {
-                    OtherPropertyDisplayName = GetDisplayNameForProperty(validationContext.ObjectType, otherPropertyInfo);
+                    OtherPropertyDisplayName = GetDisplayNameForProperty(otherPropertyInfo);
                 }
+
                 return new ValidationResult(FormatErrorMessage(validationContext.DisplayName));
             }
+
             return null;
         }
 
-        private string GetDisplayNameForProperty(Type containerType, PropertyInfo property)
+        private string GetDisplayNameForProperty(PropertyInfo property)
         {
             var attributes = CustomAttributeExtensions.GetCustomAttributes(property, true);
             var display = attributes.OfType<DisplayAttribute>().FirstOrDefault();
@@ -70,11 +70,6 @@ namespace System.ComponentModel.DataAnnotations
             }
 
             return OtherProperty;
-        }
-
-        private static bool IsPublic(PropertyInfo p)
-        {
-            return (p.GetMethod != null && p.GetMethod.IsPublic) || (p.SetMethod != null && p.SetMethod.IsPublic);
         }
     }
 }

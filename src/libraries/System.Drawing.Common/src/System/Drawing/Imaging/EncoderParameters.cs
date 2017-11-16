@@ -35,7 +35,7 @@ namespace System.Drawing.Imaging
         /// <summary>
         /// Copy the EncoderParameters data into a chunk of memory to be consumed by native GDI+ code.
         ///
-        /// We need to marshal the EncoderParameters info from/to native GDI+ ourselve since the definition of the managed/unmanaged classes
+        /// We need to marshal the EncoderParameters info from/to native GDI+ ourselves since the definition of the managed/unmanaged classes
         /// are different and the native class is a bit weird. The native EncoderParameters class is defined in GDI+ as follows:
         /// 
         /// class EncoderParameters {
@@ -94,7 +94,7 @@ namespace System.Drawing.Imaging
 
             for (int i = 0; i < count; i++)
             {
-                Guid guid = (Guid)UnsafeNativeMethods.PtrToStructure((IntPtr)(i * size + arrayOffset), typeof(Guid));
+                Guid guid = (Guid)Marshal.PtrToStructure((IntPtr)(i * size + arrayOffset), typeof(Guid));
                 int numberOfValues = Marshal.ReadInt32((IntPtr)(i * size + arrayOffset + 16));
                 EncoderParameterValueType type = (EncoderParameterValueType)Marshal.ReadInt32((IntPtr)(i * size + arrayOffset + 20));
                 IntPtr value = Marshal.ReadIntPtr((IntPtr)(i * size + arrayOffset + 24));

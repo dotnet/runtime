@@ -7,6 +7,7 @@ using System.Data.Common;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Security.Permissions;
 using System.Text;
 using SysTx = System.Transactions;
@@ -561,7 +562,14 @@ namespace System.Data.Odbc
 
         public override void Open()
         {
-            InnerConnection.OpenConnection(this, ConnectionFactory);
+            try
+            {
+                InnerConnection.OpenConnection(this, ConnectionFactory);
+            }
+            catch (DllNotFoundException e) when (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                throw new DllNotFoundException(SR.Odbc_UnixOdbcNotFound + Environment.NewLine + e.Message);
+            }
 
             // SQLBUDT #276132 - need to manually enlist in some cases, because
             // native ODBC doesn't know about SysTx transactions.

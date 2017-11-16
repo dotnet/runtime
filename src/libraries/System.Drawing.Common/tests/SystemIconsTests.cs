@@ -24,7 +24,7 @@ namespace System.Drawing.Tests
 
         public static object[] Icon(Func<Icon> getIcon) => new object[] { getIcon };
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(SystemIcons_TestData))]
         public void SystemIcons_Get_ReturnsExpected(Func<Icon> getIcon)
         {

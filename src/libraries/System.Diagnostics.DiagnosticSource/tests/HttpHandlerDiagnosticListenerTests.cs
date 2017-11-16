@@ -437,7 +437,7 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
-        /// CallbackObserver is a adapter class that creates an observer (which you can pass
+        /// CallbackObserver is an adapter class that creates an observer (which you can pass
         /// to IObservable.Subscribe), and calls the given callback every time the 'next' 
         /// operation on the IObserver happens. 
         /// </summary>
@@ -453,7 +453,7 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
-        /// EventObserverAndRecorder is an observer that watches all Http diagnosticlistener events flowing
+        /// EventObserverAndRecorder is an observer that watches all Http diagnostic listener events flowing
         /// through, and record all of them
         /// </summary>
         private class EventObserverAndRecorder : IObserver<KeyValuePair<string, object>>, IDisposable

@@ -2,18 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+using System.Collections;
+using System.Diagnostics;
+using System.Text;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Runtime.InteropServices;
-    using System.Collections;
-    using System.DirectoryServices;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Text;
-    using System.ComponentModel;
-    using System.Security.Permissions;
-
     [Flags]
     public enum ActiveDirectorySiteOptions
     {
@@ -33,21 +28,21 @@ namespace System.DirectoryServices.ActiveDirectory
 
     public class ActiveDirectorySite : IDisposable
     {
-        internal DirectoryContext context = null;
-        private string _name = null;
-        internal DirectoryEntry cachedEntry = null;
+        internal readonly DirectoryContext context = null;
+        private readonly string _name = null;
+        internal readonly DirectoryEntry cachedEntry = null;
         private DirectoryEntry _ntdsEntry = null;
-        private ActiveDirectorySubnetCollection _subnets = null;
+        private readonly ActiveDirectorySubnetCollection _subnets = null;
         private DirectoryServer _topologyGenerator = null;
-        private ReadOnlySiteCollection _adjacentSites = new ReadOnlySiteCollection();
+        private readonly ReadOnlySiteCollection _adjacentSites = new ReadOnlySiteCollection();
         private bool _disposed = false;
-        private DomainCollection _domains = new DomainCollection(null);
-        private ReadOnlyDirectoryServerCollection _servers = new ReadOnlyDirectoryServerCollection();
-        private ReadOnlySiteLinkCollection _links = new ReadOnlySiteLinkCollection();
+        private readonly DomainCollection _domains = new DomainCollection(null);
+        private readonly ReadOnlyDirectoryServerCollection _servers = new ReadOnlyDirectoryServerCollection();
+        private readonly ReadOnlySiteLinkCollection _links = new ReadOnlySiteLinkCollection();
         private ActiveDirectorySiteOptions _siteOptions = ActiveDirectorySiteOptions.None;
         private ReadOnlyDirectoryServerCollection _bridgeheadServers = new ReadOnlyDirectoryServerCollection();
-        private DirectoryServerCollection _SMTPBridgeheadServers = null;
-        private DirectoryServerCollection _RPCBridgeheadServers = null;
+        private readonly DirectoryServerCollection _SMTPBridgeheadServers = null;
+        private readonly DirectoryServerCollection _RPCBridgeheadServers = null;
         private byte[] _replicationSchedule = null;
 
         internal bool existing = false;
@@ -90,7 +85,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch (ActiveDirectoryObjectNotFoundException)
             {
                 // this is the case where the context is a config set and we could not find an ADAM instance in that config set
-                throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.ADAMInstanceNotFoundInConfigSet , context.Name));
+                throw new ActiveDirectoryOperationException(SR.Format(SR.ADAMInstanceNotFoundInConfigSet , context.Name));
             }
 
             try
@@ -161,7 +156,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch (ActiveDirectoryObjectNotFoundException)
             {
                 // this is the case where the context is a config set and we could not find an ADAM instance in that config set
-                throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.ADAMInstanceNotFoundInConfigSet , context.Name));
+                throw new ActiveDirectoryOperationException(SR.Format(SR.ADAMInstanceNotFoundInConfigSet , context.Name));
             }
             finally
             {
@@ -705,7 +700,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     {
                         if (e.ErrorCode == unchecked((int)0x80072030))
                         {
-                            string message = String.Format(CultureInfo.CurrentCulture, SR.NTDSSiteSetting , _name);
+                            string message = SR.Format(SR.NTDSSiteSetting , _name);
                             throw new ActiveDirectoryOperationException(message, e, 0x2030);
                         }
                         throw ExceptionHelper.GetExceptionFromCOMException(context, e);
@@ -1220,7 +1215,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     else
                     {
                         // should not happen
-                        string message = String.Format(CultureInfo.CurrentCulture, SR.UnknownTransport , transportName);
+                        string message = SR.Format(SR.UnknownTransport , transportName);
                         throw new ActiveDirectoryOperationException(message);
                     }
 
@@ -1287,7 +1282,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     else
                     {
                         // should not happen
-                        string message = String.Format(CultureInfo.CurrentCulture, SR.UnknownTransport , transport);
+                        string message = SR.Format(SR.UnknownTransport , transport);
                         throw new ActiveDirectoryOperationException(message);
                     }
 

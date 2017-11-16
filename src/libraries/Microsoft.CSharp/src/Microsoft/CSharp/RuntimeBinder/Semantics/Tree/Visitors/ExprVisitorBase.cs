@@ -114,20 +114,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return VisitARRAYINDEX(pExpr as ExprArrayIndex);
                 case ExpressionKind.Call:
                     return VisitCALL(pExpr as ExprCall);
-                case ExpressionKind.Event:
-                    return VisitEVENT(pExpr as ExprEvent);
                 case ExpressionKind.Field:
                     return VisitFIELD(pExpr as ExprField);
                 case ExpressionKind.Local:
                     return VisitLOCAL(pExpr as ExprLocal);
                 case ExpressionKind.Constant:
                     return VisitCONSTANT(pExpr as ExprConstant);
-                case ExpressionKind.TypeArguments:
-                    return VisitTYPEARGUMENTS(pExpr as ExprTypeArguments);
                 case ExpressionKind.Class:
                     return VisitCLASS(pExpr as ExprClass);
-                case ExpressionKind.FunctionPointer:
-                    return VisitFUNCPTR(pExpr as ExprFuncPtr);
                 case ExpressionKind.Property:
                     return VisitPROP(pExpr as ExprProperty);
                 case ExpressionKind.Multi:
@@ -154,8 +148,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return VisitMEMGRP(pExpr as ExprMemberGroup);
                 case ExpressionKind.BoundLambda:
                     return VisitBOUNDLAMBDA(pExpr as ExprBoundLambda);
-                case ExpressionKind.UnboundLambda:
-                    return VisitUNBOUNDLAMBDA(pExpr as ExprUnboundLambda);
                 case ExpressionKind.HoistedLocalExpression:
                     return VisitHOISTEDLOCALEXPR(pExpr as ExprHoistedLocalExpr);
                 case ExpressionKind.FieldInfo:
@@ -356,12 +348,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     break;
 
                 case ExpressionKind.ZeroInit:
-                    exprRet = Visit((pExpr as ExprZeroInit).OptionalArgument);
-                    (pExpr as ExprZeroInit).OptionalArgument = exprRet;
-
-                    // Used for when we zeroinit 0 parameter constructors for structs/enums.
-                    exprRet = Visit((pExpr as ExprZeroInit).OptionalConstructorCall);
-                    (pExpr as ExprZeroInit).OptionalConstructorCall = exprRet;
                     break;
 
                 case ExpressionKind.Block:
@@ -397,11 +383,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     (pExpr as ExprField).OptionalObject = exprRet;
                     break;
 
-                case ExpressionKind.Event:
-                    exprRet = Visit((pExpr as ExprEvent).OptionalObject);
-                    (pExpr as ExprEvent).OptionalObject = exprRet;
-                    break;
-
                 case ExpressionKind.Return:
                     exprRet = Visit((pExpr as ExprReturn).OptionalObject);
                     (pExpr as ExprReturn).OptionalObject = exprRet;
@@ -429,7 +410,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                   TYPEORNAMESPACEERROR - This is the error class for the type or namespace exprs when we don't know
                     what to bind it to.
 
-                  The following three exprs all have a TYPEORNAMESPACE child, which is their fundamental type:
+                  The following two exprs all have a TYPEORNAMESPACE child, which is their fundamental type:
                     POINTERTYPE - This wraps the sym for the pointer type.
                     NULLABLETYPE - This wraps the sym for the nullable type.
 
@@ -441,11 +422,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                   ALIAS - This represents an alias
 
                 *************************************************************************************************/
-
-                case ExpressionKind.TypeArguments:
-                    exprRet = Visit((pExpr as ExprTypeArguments).OptionalElements);
-                    (pExpr as ExprTypeArguments).OptionalElements = exprRet;
-                    break;
 
                 case ExpressionKind.Multi:
                     exprRet = Visit((pExpr as ExprMulti).Left);
@@ -479,11 +455,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 case ExpressionKind.Local:
                 case ExpressionKind.Class:
-                case ExpressionKind.FunctionPointer:
                 case ExpressionKind.MultiGet:
                 case ExpressionKind.Wrap:
                 case ExpressionKind.NoOp:
-                case ExpressionKind.UnboundLambda:
                 case ExpressionKind.HoistedLocalExpression:
                 case ExpressionKind.FieldInfo:
                 case ExpressionKind.MethodInfo:
@@ -578,23 +552,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual Expr VisitEVENT(ExprEvent pExpr)
-        {
-            return VisitEXPR(pExpr);
-        }
         protected virtual Expr VisitLOCAL(ExprLocal pExpr)
         {
             return VisitEXPR(pExpr);
         }
         protected virtual Expr VisitCONSTANT(ExprConstant pExpr)
-        {
-            return VisitEXPR(pExpr);
-        }
-        protected virtual Expr VisitTYPEARGUMENTS(ExprTypeArguments pExpr)
-        {
-            return VisitEXPR(pExpr);
-        }
-        protected virtual Expr VisitFUNCPTR(ExprFuncPtr pExpr)
         {
             return VisitEXPR(pExpr);
         }
@@ -622,10 +584,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual Expr VisitUNBOUNDLAMBDA(ExprUnboundLambda pExpr)
-        {
-            return VisitEXPR(pExpr);
-        }
+
         protected virtual Expr VisitHOISTEDLOCALEXPR(ExprHoistedLocalExpr pExpr)
         {
             return VisitEXPR(pExpr);

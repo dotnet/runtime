@@ -83,9 +83,9 @@ namespace System.Composition.Hosting.Core
             _creating = true;
             try
             {
-                var reply = _descriptor.Value;
-                Assumes.IsTrue(reply != null, "Export descriptor fulfillment function returned null.");
-                return reply;
+                ExportDescriptor relay = _descriptor.Value;
+                Requires.NotNull(relay, "descriptor");
+                return relay;
             }
             finally
             {

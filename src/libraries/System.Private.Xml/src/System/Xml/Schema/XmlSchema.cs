@@ -181,7 +181,7 @@ namespace System.Xml.Schema
                 bool ignoreXS = false;
                 if (this.Namespaces != null)
                 { //User may have set both nsManager and Namespaces property on the XmlSchema object
-                    ignoreXS = this.Namespaces.Namespaces["xs"] != null || this.Namespaces.Namespaces.ContainsValue(XmlReservedNs.NsXs);
+                    ignoreXS = this.Namespaces.Namespaces.ContainsKey("xs") || this.Namespaces.Namespaces.ContainsValue(XmlReservedNs.NsXs);
                 }
                 if (!ignoreXS && namespaceManager.LookupPrefix(XmlReservedNs.NsXs) == null &&
                     namespaceManager.LookupNamespace("xs") == null)

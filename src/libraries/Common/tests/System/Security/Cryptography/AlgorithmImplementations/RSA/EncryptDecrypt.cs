@@ -6,12 +6,43 @@ using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
-    public class EncryptDecrypt
+    public sealed class EncryptDecrypt_Array : EncryptDecrypt
+    {
+        protected override byte[] Encrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding) =>
+            rsa.Encrypt(data, padding);
+        protected override byte[] Decrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding) =>
+            rsa.Decrypt(data, padding);
+
+        [Fact]
+        public void NullArray_Throws()
+        {
+            using (RSA rsa = RSAFactory.Create())
+            {
+                AssertExtensions.Throws<ArgumentNullException>("data", () => rsa.Encrypt(null, RSAEncryptionPadding.OaepSHA1));
+                AssertExtensions.Throws<ArgumentNullException>("data", () => rsa.Decrypt(null, RSAEncryptionPadding.OaepSHA1));
+            }
+        }
+    }
+
+    public abstract class EncryptDecrypt
     {
         private static bool EphemeralKeysAreExportable => !PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer();
 
+        protected abstract byte[] Encrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding);
+        protected abstract byte[] Decrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding);
+
         [Fact]
-        public static void DecryptSavedAnswer()
+        public void NullPadding_Throws()
+        {
+            using (RSA rsa = RSAFactory.Create())
+            {
+                AssertExtensions.Throws<ArgumentNullException>("padding", () => Encrypt(rsa, new byte[1], null));
+                AssertExtensions.Throws<ArgumentNullException>("padding", () => Decrypt(rsa, new byte[1], null));
+            }
+        }
+
+        [Fact]
+        public void DecryptSavedAnswer()
         {
             byte[] cipherBytes =
             {
@@ -38,14 +69,14 @@ namespace System.Security.Cryptography.Rsa.Tests
             using (RSA rsa = RSAFactory.Create())
             {
                 rsa.ImportParameters(TestData.RSA1024Params);
-                output = rsa.Decrypt(cipherBytes, RSAEncryptionPadding.OaepSHA1);
+                output = Decrypt(rsa, cipherBytes, RSAEncryptionPadding.OaepSHA1);
             }
 
             Assert.Equal(TestData.HelloBytes, output);
         }
 
         [Fact]
-        public static void DecryptWithPublicKey_Fails()
+        public void DecryptWithPublicKey_Fails()
         {
             byte[] cipherBytes =
             {
@@ -79,12 +110,12 @@ namespace System.Security.Cryptography.Rsa.Tests
                 rsa.ImportParameters(pubParameters);
 
                 Assert.ThrowsAny<CryptographicException>(
-                    () => rsa.Decrypt(cipherBytes, RSAEncryptionPadding.OaepSHA1));
+                    () => Decrypt(rsa, cipherBytes, RSAEncryptionPadding.OaepSHA1));
             }
         }
 
         [Fact]
-        public static void DecryptSavedAnswer_OaepSHA384()
+        public void DecryptSavedAnswer_OaepSHA384()
         {
             byte[] cipherBytes =
             {
@@ -130,12 +161,12 @@ namespace System.Security.Cryptography.Rsa.Tests
 
                 if (RSAFactory.SupportsSha2Oaep)
                 {
-                    output = rsa.Decrypt(cipherBytes, RSAEncryptionPadding.OaepSHA384);
+                    output = Decrypt(rsa, cipherBytes, RSAEncryptionPadding.OaepSHA384);
                 }
                 else
                 {
                     Assert.ThrowsAny<CryptographicException>(
-                        () => rsa.Decrypt(cipherBytes, RSAEncryptionPadding.OaepSHA384));
+                        () => Decrypt(rsa, cipherBytes, RSAEncryptionPadding.OaepSHA384));
 
                     return;
                 }
@@ -145,7 +176,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
-        public static void DecryptSavedAnswerUnusualExponent()
+        public void DecryptSavedAnswerUnusualExponent()
         {
             byte[] cipherBytes =
             {
@@ -172,22 +203,22 @@ namespace System.Security.Cryptography.Rsa.Tests
             using (RSA rsa = RSAFactory.Create())
             {
                 rsa.ImportParameters(TestData.UnusualExponentParameters);
-                output = rsa.Decrypt(cipherBytes, RSAEncryptionPadding.OaepSHA1);
+                output = Decrypt(rsa, cipherBytes, RSAEncryptionPadding.OaepSHA1);
             }
 
             Assert.Equal(TestData.HelloBytes, output);
         }
 
         [Fact]
-        public static void RsaCryptRoundtrip()
+        public void RsaCryptRoundtrip()
         {
             byte[] crypt;
             byte[] output;
 
             using (RSA rsa = RSAFactory.Create())
             {
-                crypt = rsa.Encrypt(TestData.HelloBytes, RSAEncryptionPadding.OaepSHA1);
-                output = rsa.Decrypt(crypt, RSAEncryptionPadding.OaepSHA1);
+                crypt = Encrypt(rsa, TestData.HelloBytes, RSAEncryptionPadding.OaepSHA1);
+                output = Decrypt(rsa, crypt, RSAEncryptionPadding.OaepSHA1);
             }
 
             Assert.NotEqual(crypt, output);
@@ -195,24 +226,24 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [ConditionalFact(nameof(EphemeralKeysAreExportable))]
-        public static void RsaDecryptAfterExport()
+        public void RsaDecryptAfterExport()
         {
             byte[] output;
 
             using (RSA rsa = RSAFactory.Create())
             {
-                byte[] crypt = rsa.Encrypt(TestData.HelloBytes, RSAEncryptionPadding.OaepSHA1);
+                byte[] crypt = Encrypt(rsa, TestData.HelloBytes, RSAEncryptionPadding.OaepSHA1);
 
                 // Export the key, this should not clear/destroy the key.
                 RSAParameters ignored = rsa.ExportParameters(true);
-                output = rsa.Decrypt(crypt, RSAEncryptionPadding.OaepSHA1);
+                output = Decrypt(rsa, crypt, RSAEncryptionPadding.OaepSHA1);
             }
 
             Assert.Equal(TestData.HelloBytes, output);
         }
 
         [Fact]
-        public static void LargeKeyCryptRoundtrip()
+        public void LargeKeyCryptRoundtrip()
         {
             byte[] output;
 
@@ -228,18 +259,18 @@ namespace System.Security.Cryptography.Rsa.Tests
                     return;
                 }
 
-                byte[] crypt = rsa.Encrypt(TestData.HelloBytes, RSAEncryptionPadding.OaepSHA1);
+                byte[] crypt = Encrypt(rsa, TestData.HelloBytes, RSAEncryptionPadding.OaepSHA1);
 
                 Assert.Equal(rsa.KeySize, crypt.Length * 8);
 
-                output = rsa.Decrypt(crypt, RSAEncryptionPadding.OaepSHA1);
+                output = Decrypt(rsa, crypt, RSAEncryptionPadding.OaepSHA1);
             }
 
             Assert.Equal(TestData.HelloBytes, output);
         }
 
         [Fact]
-        public static void UnusualExponentCryptRoundtrip()
+        public void UnusualExponentCryptRoundtrip()
         {
             byte[] crypt;
             byte[] output;
@@ -248,8 +279,8 @@ namespace System.Security.Cryptography.Rsa.Tests
             {
                 rsa.ImportParameters(TestData.UnusualExponentParameters);
 
-                crypt = rsa.Encrypt(TestData.HelloBytes, RSAEncryptionPadding.OaepSHA1);
-                output = rsa.Decrypt(crypt, RSAEncryptionPadding.OaepSHA1);
+                crypt = Encrypt(rsa, TestData.HelloBytes, RSAEncryptionPadding.OaepSHA1);
+                output = Decrypt(rsa, crypt, RSAEncryptionPadding.OaepSHA1);
             }
 
             Assert.NotEqual(crypt, output);
@@ -257,7 +288,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
-        public static void NotSupportedValueMethods()
+        public void NotSupportedValueMethods()
         {
             using (RSA rsa = RSAFactory.Create())
             {

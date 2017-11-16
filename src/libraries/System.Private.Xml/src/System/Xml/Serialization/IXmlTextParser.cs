@@ -15,7 +15,11 @@ namespace System.Xml.Serialization
     /// <devdoc>
     /// <para>This class is <see langword='interface'/> .</para>
     /// </devdoc>
+#if XMLSERIALIZERGENERATOR
+    internal interface IXmlTextParser
+#else
     public interface IXmlTextParser
+#endif
     {
         /// <include file='doc\IXmlTextParser.uex' path='docs/doc[@for="IXmlTextParser.Normalized"]/*' />
         /// <internalonly/>

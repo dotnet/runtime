@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Fact]
         public static void ECDsaX509SignatureGeneratorCtor_Exceptions()
         {
-            Assert.Throws<ArgumentNullException>(
+            AssertExtensions.Throws<ArgumentNullException>(
                 "key",
                 () => X509SignatureGenerator.CreateForECDsa(null));
         }

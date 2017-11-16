@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Description:  Foreign markup as a child of an atom:link element
+Expect:       !Error
+-->
+
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title>Example Feed</title>
+  <link href="http://contoso.com/"/>
+  <updated>2003-12-13T18:30:02Z</updated>
+  <author>
+    <name>Author Name</name>
+  </author>
+  <id>urn:uuid:60a76c80-d399-11d9-b93C-0003939e0af6</id>
+
+  <link rel="http://www.contoso.com/atom/extensions/proposed/license" 
+      type="text/html" 
+      href="http://contoso.com/licenses/by-nc/2.5/"
+      rdf:resource="http://contoso.com/licenses/by-nc/2.5/"
+      rdf:type="http://web.resource.org/cc/license"
+      xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+      xmlns:lic="http://web.resource.org/cc/">
+   <lic:permits rdf:resource="http://web.resource.org/cc/Reproduction" />
+   <lic:permits rdf:resource="http://web.resource.org/cc/Distribution" />
+   <lic:permits rdf:resource="http://web.resource.org/cc/DerivativeWorks" />
+   <lic:requires rdf:resource="http://web.resource.org/cc/Notice" />
+   <lic:requires rdf:resource="http://web.resource.org/cc/Attribution" />
+   <lic:requires rdf:resource="http://web.resource.org/cc/Noncommercial" />
+   <lic:requires rdf:resource="http://web.resource.org/cc/Metadata"/> <!-- existing metadata must be preserved -->
+   <lic:requires rdf:resource="http://www.resource.org/cc/NoAdvertisements"/> <!-- forbids advertisements from being added to the content -->
+  </link>
+
+  <entry>
+    <title>Atom-Powered Robots Run Amok</title>
+    <link href="http://contoso.com/2003/12/13/atom03"/>
+    <id>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a</id>
+    <updated>2003-12-13T18:30:02Z</updated>
+    <summary>Some text.</summary>
+  </entry>
+
+</feed>

@@ -21,6 +21,7 @@ namespace System.Collections.Immutable
         /// <param name="builder">The collection to display in the debugger</param>
         public ImmutableArrayBuilderDebuggerProxy(ImmutableArray<T>.Builder builder)
         {
+            Requires.NotNull(builder, nameof(builder));
             _builder = builder;
         }
 

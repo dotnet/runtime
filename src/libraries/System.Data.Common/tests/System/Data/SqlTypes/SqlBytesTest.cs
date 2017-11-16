@@ -31,11 +31,6 @@ namespace System.Data.Tests.SqlTypes
 {
     public class SqlBytesTest
     {
-        public SqlBytesTest()
-        {
-            CultureInfo.CurrentCulture = new CultureInfo("en-US");
-        }
-
         // Test constructor
         [Fact]
         public void SqlBytesItem()

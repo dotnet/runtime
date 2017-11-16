@@ -56,7 +56,7 @@ namespace System
 
                 // Compression; 1::1, ::1, 1::
                 if (range.Key == i)
-                { // Start compression, add :                
+                { // Start compression, add :
                     builder.Append(Separator);
                 }
                 if (range.Key <= i && range.Value == (NumberOfLabels - 1))
@@ -92,7 +92,7 @@ namespace System
             for (int i = 0; i < NumberOfLabels; i++)
             {
                 if (numbers[i] == 0)
-                { // In a sequence 
+                { // In a sequence
                     currentSequenceLength++;
                     if (currentSequenceLength > longestSequenceLength)
                     {
@@ -188,7 +188,7 @@ namespace System
             int i;
             for (i = start; i < end; ++i)
             {
-                if (havePrefix ? (name[i] >= '0' && name[i] <= '9') : UriHelper.IsHexDigit(name[i]))
+                if (havePrefix ? (name[i] >= '0' && name[i] <= '9') : Uri.IsHexDigit(name[i]))
                 {
                     ++sequenceLength;
                     expectingNumber = false;
@@ -352,43 +352,6 @@ namespace System
         }
 
         //
-        // IsValidStrict
-        //
-        //  Determine whether a name is a valid IPv6 address. Rules are:
-        //
-        //   *  8 groups of 16-bit hex numbers, separated by ':'
-        //   *  a *single* run of zeros can be compressed using the symbol '::'
-        //   *  an optional string of a ScopeID delimited by '%'
-        //   *  the last 32 bits in an address can be represented as an IPv4 address
-        //
-        //  Difference between IsValid() and IsValidStrict() is that IsValid() expects part of the string to 
-        //  be ipv6 address where as IsValidStrict() expects strict ipv6 address.
-        //
-        // Inputs:
-        //  <argument>  name
-        //      IPv6 address in string format
-        //
-        // Outputs:
-        //  Nothing
-        //
-        // Assumes:
-        //  the correct name is terminated by  ']' character
-        //
-        // Returns:
-        //  true if <name> is IPv6  address, else false
-        //
-        // Throws:
-        //  Nothing
-        //
-
-        //  Remarks: MUST NOT be used unless all input indexes are verified and trusted.
-        //           start must be next to '[' position, or error is reported
-        internal static unsafe bool IsValidStrict(char* name, int start, ref int end)
-        {
-            return InternalIsValid(name, start, ref end, true);
-        }
-
-        //
         // Parse
         //
         //  Convert this IPv6 address into a sequence of 8 16-bit numbers
@@ -539,7 +502,7 @@ namespace System
                         break;
 
                     default:
-                        number = number * 16 + UriHelper.FromHex(address[i++]);
+                        number = number * 16 + Uri.FromHex(address[i++]);
                         break;
                 }
             }

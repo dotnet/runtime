@@ -8,15 +8,15 @@ using Xunit;
 
 namespace System.IO.Pipes.Tests
 {
-    [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
+    [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
     public sealed class NamedPipeTest_CrossProcess : RemoteExecutorTestBase
     {
         [Fact]
         public void PingPong_Sync()
         {
             // Create names for two pipes
-            string outName = Path.GetRandomFileName();
-            string inName = Path.GetRandomFileName();
+            string outName = GetUniquePipeName();
+            string inName = GetUniquePipeName();
 
             // Create the two named pipes, one for each direction, then create
             // another process with which to communicate
@@ -41,8 +41,8 @@ namespace System.IO.Pipes.Tests
         public async Task PingPong_Async()
         {
             // Create names for two pipes
-            string outName = Path.GetRandomFileName();
-            string inName = Path.GetRandomFileName();
+            string outName = GetUniquePipeName();
+            string inName = GetUniquePipeName();
 
             // Create the two named pipes, one for each direction, then create
             // another process with which to communicate
@@ -84,6 +84,15 @@ namespace System.IO.Pipes.Tests
                 }
             }
             return SuccessExitCode;
+        }
+
+        private static string GetUniquePipeName()
+        {
+            if (PlatformDetection.IsInAppContainer)
+            {
+                return @"LOCAL\" + Path.GetRandomFileName();
+            }
+            return Path.GetRandomFileName();
         }
 
     }

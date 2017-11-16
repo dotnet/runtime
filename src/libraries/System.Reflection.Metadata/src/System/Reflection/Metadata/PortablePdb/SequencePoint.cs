@@ -8,7 +8,7 @@ using System.Reflection.Internal;
 namespace System.Reflection.Metadata
 {
     [DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
-    public struct SequencePoint : IEquatable<SequencePoint>
+    public readonly struct SequencePoint : IEquatable<SequencePoint>
     {
         public const int HiddenLine = 0xfeefee;
 

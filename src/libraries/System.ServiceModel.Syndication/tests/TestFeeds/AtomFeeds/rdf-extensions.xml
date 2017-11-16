@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Description:  RDF extensions to Atom
+Expect:       !Error
+-->
+
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+      xmlns:dc="http://contoso.com/dc/elements/1.1/"
+      xmlns:foaf="http://xmlns.com/foaf/0.1/">
+  <title>Example Feed</title>
+  <link href="http://contoso.com/" rdf:resource="http://contoso.com/"/>
+  <updated>2003-12-13T18:30:02Z</updated>
+  <dc:description>A feed whose description here tries to be 
+   legal Atom 1.0 but also use some foreign markup to have it 
+   also count as legal RDF. Are the rdf:resource attributes OK?</dc:description>
+  <author rdf:parseType="Resource">
+      <name>Author Name</name>
+    <foaf:workplaceHomepage
+rdf:resource="http://DoeCorp.contoso.com/"></foaf:workplaceHomepage>
+       <!-- we could use this to build a Planet DoeCorp -->
+    <foaf:homepage rdf:resource="http://contoso.com/"></foaf:homepage>
+    <foaf:weblog rdf:resource="http://contoso.com/blog/"></foaf:weblog>
+      <!-- overlap with atom person constructs here -->
+  </author>
+  <id>urn:uuid:60a76c80-d399-11d9-b93C-0003939e0af6</id>
+  <entry rdf:parseType="Resource">
+      <title>Atom-Powered Robots Run Amok</title>
+      <link href="http://contoso.com/2003/12/13/atom03"
+          rdf:resource="http://contoso.com/2003/12/13/atom03"/>
+      <id>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a</id>
+      <updated>2003-12-13T18:30:02Z</updated>
+      <summary>Some text.</summary>
+      <foaf:primaryTopic rdf:parseType="Resource">
+        <foaf:isPrimaryTopicOf       rdf:resource="http://contoso.com/test"></foaf:isPrimaryTopicOf>
+      </foaf:primaryTopic> 
+      <!-- ie. this entry has as a primary topic the resource that
+           is the primary topic of that document on wikipedia -->
+  </entry>
+</feed>

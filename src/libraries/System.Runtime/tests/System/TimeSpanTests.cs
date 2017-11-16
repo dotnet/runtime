@@ -508,16 +508,71 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Parse_Valid_TestData()
         {
+            // Space is trimmed before and after
             yield return new object[] { "       12:24:02", null, new TimeSpan(0, 12, 24, 2, 0) };
+            yield return new object[] { "12:24:02      ", null, new TimeSpan(0, 12, 24, 2, 0) };
+            yield return new object[] { "     12:24:02      ", null, new TimeSpan(0, 12, 24, 2, 0) };
 
+            // Positive and negative 0 are both valid
+            yield return new object[] { "0", null, new TimeSpan(0, 0, 0, 0, 0) };
+
+            // HH:MM
             yield return new object[] { "12:24", null, new TimeSpan(0, 12, 24, 0, 0) };
-            yield return new object[] { "12:24:02", null, new TimeSpan(0, 12, 24, 2, 0) };
-            yield return new object[] { "1.12:24:02", null, new TimeSpan(1, 12, 24, 2, 0) };
-            yield return new object[] { "1:12:24:02", null, new TimeSpan(1, 12, 24, 2, 0) };
-            yield return new object[] { "1.12:24:02.999", null, new TimeSpan(1, 12, 24, 2, 999) };
 
-            yield return new object[] { "-12:24:02", null, new TimeSpan(0, -12, -24, -2, 0) };
-            yield return new object[] { "-1.12:24:02.999", null, new TimeSpan(-1, -12, -24, -2, -999) };
+            // HH:MM:SS
+            yield return new object[] { "12:24:02", null, new TimeSpan(0, 12, 24, 2, 0) };
+
+            // DD.HH:MM
+            yield return new object[] { "12.03:04", null, new TimeSpan(12, 3, 4, 0, 0) };
+
+            // HH:MM:SS.FF
+            yield return new object[] { "12:24:02.01", CultureInfo.InvariantCulture, new TimeSpan(0, 12, 24, 2, 10) };
+
+            // HH:MM:SS.FF w/ varying length zero prefixes on the fraction
+            yield return new object[] { "1:1:1.0", CultureInfo.InvariantCulture, new TimeSpan(1, 1, 1) };
+            yield return new object[] { "1:1:1.0000000", CultureInfo.InvariantCulture, new TimeSpan(1, 1, 1) };
+            yield return new object[] { "1:1:1.1", CultureInfo.InvariantCulture, new TimeSpan(0, 1, 1, 1, 100) };
+            yield return new object[] { "1:1:1.01", CultureInfo.InvariantCulture, new TimeSpan(0, 1, 1, 1, 10) };
+            yield return new object[] { "1:1:1.001", CultureInfo.InvariantCulture, new TimeSpan(0, 1, 1, 1, 1) };
+            yield return new object[] { "1:1:1.0001", CultureInfo.InvariantCulture, new TimeSpan(36610001000) };
+            yield return new object[] { "1:1:1.00001", CultureInfo.InvariantCulture, new TimeSpan(36610000100) };
+            yield return new object[] { "1:1:1.000001", CultureInfo.InvariantCulture, new TimeSpan(36610000010) };
+            yield return new object[] { "1:1:1.0000001", CultureInfo.InvariantCulture, new TimeSpan(36610000001) };
+            yield return new object[] { "1:1:1.00000001", CultureInfo.InvariantCulture, new TimeSpan(36610000001) };
+
+            // DD.HH:MM:SS
+            yield return new object[] { "1.12:24:02", null, new TimeSpan(1, 12, 24, 2, 0) };
+
+            // DD:HH:MM:SS
+            yield return new object[] { "1:12:24:02", null, new TimeSpan(1, 12, 24, 2, 0) };
+
+            // DD.HH:MM:.FF
+            yield return new object[] { "01.23:45:.67", CultureInfo.InvariantCulture, new TimeSpan(1, 23, 45, 0, 670) };
+
+            // DD.HH.MM:SS.FFF
+            yield return new object[] { "1.12:24:02.999", CultureInfo.InvariantCulture, new TimeSpan(1, 12, 24, 2, 999) };
+
+            // HH:MM::.FF w/ varying length zero prefixes on the fraction
+            yield return new object[] { "1:1:.1", CultureInfo.InvariantCulture, new TimeSpan(36601000000) };
+            yield return new object[] { "1:1:.01", CultureInfo.InvariantCulture, new TimeSpan(36600100000) };
+            yield return new object[] { "1:1:.001", CultureInfo.InvariantCulture, new TimeSpan(36600010000) };
+            yield return new object[] { "1:1:.0001", CultureInfo.InvariantCulture, new TimeSpan(36600001000) };
+            yield return new object[] { "1:1:.00001", CultureInfo.InvariantCulture, new TimeSpan(36600000100) };
+            yield return new object[] { "1:1:.000001", CultureInfo.InvariantCulture, new TimeSpan(36600000010) };
+            yield return new object[] { "1:1:.0000001", CultureInfo.InvariantCulture, new TimeSpan(36600000001) };
+            yield return new object[] { "1:1:.00000001", CultureInfo.InvariantCulture, new TimeSpan(36600000001) };
+
+            // Just below overflow on various components
+            yield return new object[] { "10675199", null, new TimeSpan(9223371936000000000) };
+            yield return new object[] { "10675199:00:00", null, new TimeSpan(9223371936000000000) };
+            yield return new object[] { "10675199:02:00:00", null, new TimeSpan(9223372008000000000) };
+            yield return new object[] { "10675199:02:48:00", null, new TimeSpan(9223372036800000000) };
+            yield return new object[] { "10675199:02:48:05", null, new TimeSpan(9223372036850000000) };
+            yield return new object[] { "10675199:02:48:05.4775", CultureInfo.InvariantCulture, new TimeSpan(9223372036854775000) };
+            yield return new object[] { "00:00:59", null, new TimeSpan(0, 0, 59) };
+            yield return new object[] { "00:59:00", null, new TimeSpan(0, 59, 0) };
+            yield return new object[] { "23:00:00", null, new TimeSpan(23, 0, 0) };
+            yield return new object[] { "24:00:00", null, new TimeSpan(24, 0, 0, 0) };
 
             // Croatia uses ',' in place of '.'
             CultureInfo croatianCulture = new CultureInfo("hr-HR");
@@ -540,22 +595,50 @@ namespace System.Tests
             Assert.Equal(expected, result);
 
             Assert.Equal(expected, TimeSpan.Parse(input, provider));
+
+            // Also negate
+            if (!char.IsWhiteSpace(input[0]))
+            {
+                Assert.Equal(-expected, TimeSpan.Parse("-" + input, provider));
+                Assert.True(TimeSpan.TryParse("-" + input, provider, out result));
+                Assert.Equal(-expected, result);
+            }
         }
 
         public static IEnumerable<object[]> Parse_Invalid_TestData()
         {
-            yield return new object[] { null, null, typeof(ArgumentNullException) };
+            // FormatExceptions
+            yield return new object[] { null, null, typeof(ArgumentNullException) }; // null input
+            yield return new object[] { "", null, typeof(FormatException) }; // empty input
+            yield return new object[] { "-", null, typeof(FormatException) }; // invalid sole separator
+            yield return new object[] { "garbage", null, typeof(FormatException) }; // garbage input
+            yield return new object[] { "12/12/12", null, typeof(FormatException) }; // unexpected separators
+            yield return new object[] { "00:", null, typeof(FormatException) }; // missing number at end
+            yield return new object[] { "00:00:-01", null, typeof(FormatException) }; // misplaced negative
+            yield return new object[] { "\012:34:56", null, typeof(FormatException) }; // null char at front
+            yield return new object[] { "1\02:34:56", null, typeof(FormatException) }; // null char in HH
+            yield return new object[] { "12\0:34:56", null, typeof(FormatException) }; // null char at end of component
+            yield return new object[] { "00:00::00", null, typeof(FormatException) }; // duplicated separator
+            yield return new object[] { "00:00:00:", null, typeof(FormatException) }; // extra separator at end
+            yield return new object[] { "00:00:00:00:00:00:00:00", null, typeof(FormatException) }; // too many components
+            yield return new object[] { "6:12:14:45.3448", new CultureInfo("hr-HR"), typeof(FormatException) }; // culture that uses ',' rather than '.'
 
-            yield return new object[] { "", null, typeof(FormatException) };
-            yield return new object[] { "-", null, typeof(FormatException) };
-            yield return new object[] { "garbage", null, typeof(FormatException) };
-            yield return new object[] { "12/12/12", null, typeof(FormatException) };
-
-            yield return new object[] { "1:1:1.99999999", null, typeof(OverflowException) };
-
-            // Croatia uses ',' in place of '.'
-            CultureInfo croatianCulture = new CultureInfo("hr-HR");
-            yield return new object[] { "6:12:14:45.3448", croatianCulture, typeof(FormatException) };
+            // OverflowExceptions
+            yield return new object[] { "1:1:1.99999999", null, typeof(OverflowException) }; // overflowing fraction
+            yield return new object[] { "1:1:1.000000001", null, typeof(OverflowException) }; // too many leading zeroes in fraction
+            yield return new object[] { "2147483647", null, typeof(OverflowException) }; // overflowing value == int.MaxValue
+            yield return new object[] { "2147483648", null, typeof(OverflowException) }; // overflowing value == int.MaxValue + 1
+            yield return new object[] { "10675200", null, typeof(OverflowException) }; // overflowing number of days
+            yield return new object[] { "10675200:00:00", null, typeof(OverflowException) }; // overflowing number of hours
+            yield return new object[] { "10675199:03:00:00", null, typeof(OverflowException) }; // overflowing number of days + hours
+            yield return new object[] { "10675199:02:49:00", null, typeof(OverflowException) }; // overflowing number of days + hours + minutes
+            yield return new object[] { "10675199:02:48:06", null, typeof(OverflowException) }; // overflowing number of days + hours + minutes + seconds
+            yield return new object[] { "-10675199:02:48:06", null, typeof(OverflowException) }; // negative overflowing d + h + m + s
+            yield return new object[] { "10675199:02:48:05.4776", CultureInfo.InvariantCulture, typeof(OverflowException) }; // overflowing days + hours + minutes + seconds + fraction
+            yield return new object[] { "-10675199:02:48:05.4776", CultureInfo.InvariantCulture, typeof(OverflowException) }; // negative overflowing d + h + m + s +f
+            yield return new object[] { "00:00:60", null, typeof(OverflowException) }; // overflowing seconds
+            yield return new object[] { "00:60:00", null, typeof(OverflowException) }; // overflowing minutes
+            yield return new object[] { "24:00", null, typeof(OverflowException) }; // overflowing hours
         }
 
         [Theory]
@@ -579,20 +662,47 @@ namespace System.Tests
         public static IEnumerable<object[]> ParseExact_Valid_TestData()
         {
             // Standard timespan formats 'c', 'g', 'G'
-            yield return new object[] { "12:24:02", "c", new TimeSpan(0, 12, 24, 2) };
-            yield return new object[] { "1.12:24:02", "c", new TimeSpan(1, 12, 24, 2) };
-            yield return new object[] { "-01.07:45:16.999", "c", new TimeSpan(1, 7, 45, 16, 999).Negate() };
-            yield return new object[] { "12:24:02", "g", new TimeSpan(0, 12, 24, 2) };
-            yield return new object[] { "1:12:24:02", "g", new TimeSpan(1, 12, 24, 2) };
-            yield return new object[] { "-01:07:45:16.999", "g", new TimeSpan(1, 7, 45, 16, 999).Negate() };
-            yield return new object[] { "1:12:24:02.243", "G", new TimeSpan(1, 12, 24, 2, 243) };
-            yield return new object[] { "-01:07:45:16.999", "G", new TimeSpan(1, 7, 45, 16, 999).Negate() };
+            foreach (string constFormat in new[] { "c", "t", "T" }) // "t" and "T" are the same as "c"
+            {
+                yield return new object[] { "12:24:02", constFormat, new TimeSpan(0, 12, 24, 2) }; // HH:MM:SS
+                yield return new object[] { "1.12:24:02", constFormat, new TimeSpan(1, 12, 24, 2) }; // DD.HH:MM:SS
+                yield return new object[] { "-01.07:45:16.999", constFormat, -new TimeSpan(1, 7, 45, 16, 999) }; // -DD.HH:MM:SS.FFF
+            }
+
+            // "g"
+            yield return new object[] { "12", "g", new TimeSpan(12, 0, 0, 0) }; // days
+            yield return new object[] { "-12", "g", new TimeSpan(-12, 0, 0, 0) }; // negative days
+            yield return new object[] { "12:34", "g", new TimeSpan(12, 34, 00) }; // HH:MM
+            yield return new object[] { "-12:34", "g", -new TimeSpan(12, 34, 00) }; // -HH:MM
+            yield return new object[] { "1:2:.3", "g", new TimeSpan(0, 1, 2, 0, 300) }; // HH:MM:.FF
+            yield return new object[] { "-1:2:.3", "g", -new TimeSpan(0, 1, 2, 0, 300) }; // -HH:MM:.FF
+            yield return new object[] { "12:24:02", "g", new TimeSpan(0, 12, 24, 2) }; // HH:MM:SS
+            yield return new object[] { "12:24:02.123", "g", new TimeSpan(0, 12, 24, 2, 123) }; // HH:MM:SS.FFF
+            yield return new object[] { "-12:24:02.123", "g", -new TimeSpan(0, 12, 24, 2, 123) }; // -HH:MM:SS.FFF
+            yield return new object[] { "1:2:3:.4", "g", new TimeSpan(1, 2, 3, 0, 400) }; // DD:HH:MM:.FF
+            yield return new object[] { "-1:2:3:.4", "g", -new TimeSpan(1, 2, 3, 0, 400) }; // -DD:HH:MM:.FF
+            yield return new object[] { "1:12:24:02", "g", new TimeSpan(1, 12, 24, 2) }; // DD:HH:MM:SS
+            yield return new object[] { "-01:07:45:16.999", "g", -new TimeSpan(1, 7, 45, 16, 999) }; // -DD:HH:MM:SS.FFF
+
+            // "G"
+            yield return new object[] { "1:12:24:02.243", "G", new TimeSpan(1, 12, 24, 2, 243) }; // DD:MM:HH:SS.FFF
+            yield return new object[] { "-01:07:45:16.999", "G", -new TimeSpan(1, 7, 45, 16, 999) }; // -DD:MM:HH:SS.FFF
 
             // Custom timespan formats
             yield return new object[] { "12.23:32:43", @"dd\.h\:m\:s", new TimeSpan(12, 23, 32, 43) };
             yield return new object[] { "012.23:32:43.893", @"ddd\.h\:m\:s\.fff", new TimeSpan(12, 23, 32, 43, 893) };
             yield return new object[] { "12.05:02:03", @"d\.hh\:mm\:ss", new TimeSpan(12, 5, 2, 3) };
             yield return new object[] { "12:34 minutes", @"mm\:ss\ \m\i\n\u\t\e\s", new TimeSpan(0, 12, 34) };
+            yield return new object[] { "12:34 minutes", @"mm\:ss\ ""minutes""", new TimeSpan(0, 12, 34) };
+            yield return new object[] { "12:34 minutes", @"mm\:ss\ 'minutes'", new TimeSpan(0, 12, 34) };
+            yield return new object[] { "678", "fff", new TimeSpan(0, 0, 0, 0, 678) };
+            yield return new object[] { "678", "FFF", new TimeSpan(0, 0, 0, 0, 678) };
+            yield return new object[] { "3", "%d", new TimeSpan(3, 0, 0, 0, 0) };
+            yield return new object[] { "3", "%h", new TimeSpan(3, 0, 0) };
+            yield return new object[] { "3", "%m", new TimeSpan(0, 3, 0) };
+            yield return new object[] { "3", "%s", new TimeSpan(0, 0, 3) };
+            yield return new object[] { "3", "%f", new TimeSpan(0, 0, 0, 0, 300) };
+            yield return new object[] { "3", "%F", new TimeSpan(0, 0, 0, 0, 300) };
         }
 
         [Theory]
@@ -601,30 +711,49 @@ namespace System.Tests
         {
             TimeSpan result;
             Assert.Equal(expected, TimeSpan.ParseExact(input, format, new CultureInfo("en-US")));
+            Assert.Equal(expected, TimeSpan.ParseExact(input, new[] { format }, new CultureInfo("en-US")));
 
             Assert.True(TimeSpan.TryParseExact(input, format, new CultureInfo("en-US"), out result));
             Assert.Equal(expected, result);
 
-            // TimeSpanStyles is interpreted only for custom formats
-            if (format != "c" && format != "g" && format != "G")
+            Assert.True(TimeSpan.TryParseExact(input, new[] { format }, new CultureInfo("en-US"), out result));
+            Assert.Equal(expected, result);
+
+            if (format != "c" && format != "t" && format != "T" && format != "g" && format != "G")
             {
+                // TimeSpanStyles is interpreted only for custom formats
                 Assert.Equal(expected.Negate(), TimeSpan.ParseExact(input, format, new CultureInfo("en-US"), TimeSpanStyles.AssumeNegative));
 
                 Assert.True(TimeSpan.TryParseExact(input, format, new CultureInfo("en-US"), TimeSpanStyles.AssumeNegative, out result));
                 Assert.Equal(expected.Negate(), result);
+            }
+            else
+            {
+                // Inputs that can be parsed in standard formats with ParseExact should also be parsable with Parse
+                Assert.Equal(expected, TimeSpan.Parse(input, CultureInfo.InvariantCulture));
+
+                Assert.True(TimeSpan.TryParse(input, CultureInfo.InvariantCulture, out result));
+                Assert.Equal(expected, result);
             }
         }
 
         public static IEnumerable<object[]> ParseExact_Invalid_TestData()
         {
             yield return new object[] { null, "c", typeof(ArgumentNullException) };
-
+            yield return new object[] { "00:00:00", null, typeof(ArgumentNullException) };
             yield return new object[] { "", "c", typeof(FormatException) };
             yield return new object[] { "-", "c", typeof(FormatException) };
             yield return new object[] { "garbage", "c", typeof(FormatException) };
 
             // Standard timespan formats 'c', 'g', 'G'
             yield return new object[] { "24:24:02", "c", typeof(OverflowException) };
+            yield return new object[] { "1:60:02", "c", typeof(OverflowException) };
+            yield return new object[] { "1:59:60", "c", typeof(OverflowException) };
+            yield return new object[] { "1.24:59:02", "c", typeof(OverflowException) };
+            yield return new object[] { "1.2:60:02", "c", typeof(OverflowException) };
+            yield return new object[] { "1?59:02", "c", typeof(FormatException) };
+            yield return new object[] { "1:59?02", "c", typeof(FormatException) };
+            yield return new object[] { "1:59:02?123", "c", typeof(FormatException) };
             yield return new object[] { "1:12:24:02", "c", typeof(FormatException) };
             yield return new object[] { "12:61:02", "g", typeof(OverflowException) };
             yield return new object[] { "1.12:24:02", "g", typeof(FormatException) };
@@ -635,6 +764,31 @@ namespace System.Tests
             yield return new object[] { "12.35:32:43", @"dd\.h\:m\:s", typeof(OverflowException) };
             yield return new object[] { "12.5:2:3", @"d\.hh\:mm\:ss", typeof(FormatException) };
             yield return new object[] { "12.5:2", @"d\.hh\:mm\:ss", typeof(FormatException) };
+            yield return new object[] { "678", @"ffff", typeof(FormatException) };
+            yield return new object[] { "00000012", @"FFFFFFFF", typeof(FormatException) };
+            yield return new object[] { "12:034:56", @"hh\mm\ss", typeof(FormatException) };
+            yield return new object[] { "12:34:056", @"hh\mm\ss", typeof(FormatException) };
+            yield return new object[] { "12:34 minutes", @"mm\:ss\ ""minutes", typeof(FormatException) };
+            yield return new object[] { "12:34 minutes", @"mm\:ss\ 'minutes", typeof(FormatException) };
+            yield return new object[] { "12:34 mints", @"mm\:ss\ ""minutes""", typeof(FormatException) };
+            yield return new object[] { "12:34 mints", @"mm\:ss\ 'minutes'", typeof(FormatException) };
+            yield return new object[] { "1", @"d%", typeof(FormatException) };
+            yield return new object[] { "1", @"%%d", typeof(FormatException) };
+            yield return new object[] { "12:34:56", @"hhh\:mm\:ss", typeof(FormatException) };
+            yield return new object[] { "12:34:56", @"hh\:hh\:ss", typeof(FormatException) };
+            yield return new object[] { "123:34:56", @"hh\:mm\:ss", typeof(FormatException) };
+            yield return new object[] { "12:34:56", @"hh\:mmm\:ss", typeof(FormatException) };
+            yield return new object[] { "12:34:56", @"hh\:mm\:mm", typeof(FormatException) };
+            yield return new object[] { "12:345:56", @"hh\:mm\:ss", typeof(FormatException) };
+            yield return new object[] { "12:34:56", @"hh\:mm\:sss", typeof(FormatException) };
+            yield return new object[] { "12:34:56", @"hh\:ss\:ss", typeof(FormatException) };
+            yield return new object[] { "12:45", @"ff:ff", typeof(FormatException) };
+            yield return new object[] { "000000123", @"ddddddddd", typeof(FormatException) };
+            yield return new object[] { "12:34:56", @"dd:dd:hh", typeof(FormatException) };
+            yield return new object[] { "123:45", @"dd:hh", typeof(FormatException) };
+            yield return new object[] { "12:34", @"dd:vv", typeof(FormatException) };
+            yield return new object[] { "00:00:00", "", typeof(FormatException) };
+            yield return new object[] { "12.5:2", @"V", typeof(FormatException) };
         }
 
         [Theory]
@@ -646,6 +800,21 @@ namespace System.Tests
             TimeSpan result;
             Assert.False(TimeSpan.TryParseExact(input, format, new CultureInfo("en-US"), out result));
             Assert.Equal(TimeSpan.Zero, result);
+
+            Assert.False(TimeSpan.TryParseExact(input, new[] { format }, new CultureInfo("en-US"), out result));
+            Assert.Equal(TimeSpan.Zero, result);
+        }
+
+        [Fact]
+        public static void ParseExactMultiple_InvalidNullEmptyFormats()
+        {
+            TimeSpan result;
+
+            AssertExtensions.Throws<ArgumentNullException>("formats", () => TimeSpan.ParseExact("12:34:56", (string[])null, null));
+            Assert.False(TimeSpan.TryParseExact("12:34:56", (string[])null, null, out result));
+
+            Assert.Throws<FormatException>(() => TimeSpan.ParseExact("12:34:56", new string[0], null));
+            Assert.False(TimeSpan.TryParseExact("12:34:56", new string[0], null, out result));
         }
 
         public static IEnumerable<object[]> Subtract_TestData()
@@ -677,38 +846,42 @@ namespace System.Tests
             Assert.Throws<OverflowException>(() => TimeSpan.MinValue - new TimeSpan(1)); // Result < TimeSpan.MinValue
         }
 
-        [Fact]
-        public static void ToStringTest()
+        public static IEnumerable<object[]> ToString_MemberData()
         {
-            var timeSpan1 = new TimeSpan(1, 2, 3);
-            var timeSpan2 = new TimeSpan(1, 2, 3);
-            var timeSpan3 = new TimeSpan(1, 2, 4);
+            var input = new TimeSpan(123456789101112);
 
-            var timeSpan4 = new TimeSpan(1, 2, 3, 4);
-            var timeSpan5 = new TimeSpan(1, 2, 3, 4);
-            var timeSpan6 = new TimeSpan(1, 2, 3, 5);
+            yield return new object[] { input, null, "142.21:21:18.9101112" };
+            yield return new object[] { input, "c", "142.21:21:18.9101112" };
+            yield return new object[] { input, "t", "142.21:21:18.9101112" };
+            yield return new object[] { input, "T", "142.21:21:18.9101112" };
+            yield return new object[] { input, "g", "142:21:21:18.9101112" };
+            yield return new object[] { input, "%d", "142" };
+            yield return new object[] { input, "dd", "142" };
+            yield return new object[] { input, "%h", "21" };
+            yield return new object[] { input, "hh", "21" };
+            yield return new object[] { input, "%m", "21" };
+            yield return new object[] { input, "mm", "21" };
+            yield return new object[] { input, "%s", "18" };
+            yield return new object[] { input, "ss", "18" };
+            yield return new object[] { input, "%f", "9" };
+            yield return new object[] { input, "ff", "91" };
+            yield return new object[] { input, "fff", "910" };
+            yield return new object[] { input, "ffff", "9101" };
+            yield return new object[] { input, "fffff", "91011" };
+            yield return new object[] { input, "ffffff", "910111" };
+            yield return new object[] { input, "fffffff", "9101112" };
+            yield return new object[] { input, "dd\\.ss", "142.18" };
+        }
 
-            var timeSpan7 = new TimeSpan(1, 2, 3, 4, 5);
-            var timeSpan8 = new TimeSpan(1, 2, 3, 4, 5);
-            var timeSpan9 = new TimeSpan(1, 2, 3, 4, 6);
-
-            Assert.Equal(timeSpan1.ToString(), timeSpan2.ToString());
-            Assert.Equal(timeSpan1.ToString("c"), timeSpan2.ToString("c"));
-            Assert.Equal(timeSpan1.ToString("c", null), timeSpan2.ToString("c", null));
-            Assert.NotEqual(timeSpan1.ToString(), timeSpan3.ToString());
-            Assert.NotEqual(timeSpan1.ToString(), timeSpan4.ToString());
-            Assert.NotEqual(timeSpan1.ToString(), timeSpan7.ToString());
-
-            Assert.Equal(timeSpan4.ToString(), timeSpan5.ToString());
-            Assert.Equal(timeSpan4.ToString("c"), timeSpan5.ToString("c"));
-            Assert.Equal(timeSpan4.ToString("c", null), timeSpan5.ToString("c", null));
-            Assert.NotEqual(timeSpan4.ToString(), timeSpan6.ToString());
-            Assert.NotEqual(timeSpan4.ToString(), timeSpan7.ToString());
-
-            Assert.Equal(timeSpan7.ToString(), timeSpan8.ToString());
-            Assert.Equal(timeSpan7.ToString("c"), timeSpan8.ToString("c"));
-            Assert.Equal(timeSpan7.ToString("c", null), timeSpan8.ToString("c", null));
-            Assert.NotEqual(timeSpan7.ToString(), timeSpan9.ToString());
+        [Theory]
+        [MemberData(nameof(ToString_MemberData))]
+        public static void ToString_Valid(TimeSpan input, string format, string expected)
+        {
+            Assert.Equal(expected, input.ToString(format, CultureInfo.InvariantCulture));
+            if (format == null)
+            {
+                Assert.Equal(expected, input.ToString());
+            }
         }
 
         [Fact]

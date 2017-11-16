@@ -57,7 +57,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // Value
         public Expr BindValue(Expr exprSrc)
         {
-            Debug.Assert(exprSrc != null && exprSrc.Type.IsNullableType());
+            Debug.Assert(exprSrc != null && exprSrc.Type is NullableType);
 
             // For new T?(x), the answer is x.
             if (IsNullableConstructor(exprSrc, out ExprCall call))
@@ -67,34 +67,21 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return args;
             }
 
-            CType typeBase = exprSrc.Type.AsNullableType().GetUnderlyingType();
-            AggregateType ats = exprSrc.Type.AsNullableType().GetAts(GetErrorContext());
-            if (ats == null)
-            {
-                ExprProperty rval = GetExprFactory().CreateProperty(typeBase, exprSrc);
-                rval.SetError();
-                return rval;
-            }
-
+            NullableType nubSrc = (NullableType)exprSrc.Type;
+            CType typeBase = nubSrc.GetUnderlyingType();
+            AggregateType ats = nubSrc.GetAts();
             PropertySymbol prop = GetSymbolLoader().getBSymmgr().propNubValue;
             if (prop == null)
             {
                 prop = GetSymbolLoader().getPredefinedMembers().GetProperty(PREDEFPROP.PP_G_OPTIONAL_VALUE);
+                Debug.Assert(prop != null);
                 GetSymbolLoader().getBSymmgr().propNubValue = prop;
             }
 
             PropWithType pwt = new PropWithType(prop, ats);
-            MethWithType mwt = new MethWithType(prop?.methGet, ats);
             MethPropWithInst mpwi = new MethPropWithInst(prop, ats);
             ExprMemberGroup pMemGroup = GetExprFactory().CreateMemGroup(exprSrc, mpwi);
-            ExprProperty exprRes = GetExprFactory().CreateProperty(typeBase, null, null, pMemGroup, pwt, mwt, null);
-
-            if (prop == null)
-            {
-                exprRes.SetError();
-            }
-
-            return exprRes;
+            return GetExprFactory().CreateProperty(typeBase, null, null, pMemGroup, pwt, null);
         }
 
         public ExprCall BindNew(Expr pExprSrc)
@@ -103,33 +90,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             NullableType pNubSourceType = GetSymbolLoader().GetTypeManager().GetNullable(pExprSrc.Type);
 
-            AggregateType pSourceType = pNubSourceType.GetAts(GetErrorContext());
-            if (pSourceType == null)
-            {
-                MethWithInst mwi = new MethWithInst(null, null);
-                ExprMemberGroup pMemGroup = GetExprFactory().CreateMemGroup(pExprSrc, mwi);
-                ExprCall rval = GetExprFactory().CreateCall(0, pNubSourceType, null, pMemGroup, null);
-                rval.SetError();
-                return rval;
-            }
-
+            AggregateType pSourceType = pNubSourceType.GetAts();
             MethodSymbol meth = GetSymbolLoader().getBSymmgr().methNubCtor;
             if (meth == null)
             {
                 meth = GetSymbolLoader().getPredefinedMembers().GetMethod(PREDEFMETH.PM_G_OPTIONAL_CTOR);
+                Debug.Assert(meth != null);
                 GetSymbolLoader().getBSymmgr().methNubCtor = meth;
             }
 
             MethWithInst methwithinst = new MethWithInst(meth, pSourceType, BSYMMGR.EmptyTypeArray());
             ExprMemberGroup memgroup = GetExprFactory().CreateMemGroup(null, methwithinst);
-            ExprCall pExprRes = GetExprFactory().CreateCall(EXPRFLAG.EXF_NEWOBJCALL | EXPRFLAG.EXF_CANTBENULL, pNubSourceType, pExprSrc, memgroup, methwithinst);
-
-            if (meth == null)
-            {
-                pExprRes.SetError();
-            }
-
-            return pExprRes;
+            return GetExprFactory().CreateCall(EXPRFLAG.EXF_NEWOBJCALL | EXPRFLAG.EXF_CANTBENULL, pNubSourceType, pExprSrc, memgroup, methwithinst);
         }
         public CNullable(SymbolLoader symbolLoader, ErrorHandling errorContext, ExprFactory exprFactory)
         {

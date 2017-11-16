@@ -32,7 +32,7 @@ namespace System.ComponentModel
         public static readonly NotifyParentPropertyAttribute Default = No;
 
         /// <summary>
-        /// <para>Initiailzes a new instance of the NotifyPropertyAttribute class 
+        /// <para>Initializes a new instance of the NotifyPropertyAttribute class 
         ///    that uses the specified value
         ///    to indicate whether the parent property should be notified when a child namespace property is modified.</para>
         /// </summary>

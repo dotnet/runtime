@@ -3,13 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
-    public class RegexConstructorTests
+    public class RegexConstructorTests : RemoteExecutorTestBase
     {
         public static IEnumerable<object[]> Ctor_TestData()
         {
@@ -73,6 +74,30 @@ namespace System.Text.RegularExpressions.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("matchTimeout", () => new Regex("foo", RegexOptions.None, new TimeSpan(-1)));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("matchTimeout", () => new Regex("foo", RegexOptions.None, TimeSpan.Zero));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("matchTimeout", () => new Regex("foo", RegexOptions.None, TimeSpan.FromMilliseconds(int.MaxValue)));
+        }
+
+        [Fact]
+        public static void StaticCtor_InvalidTimeoutObject_ExceptionThrown()
+        {
+            RemoteInvoke(() =>
+            {
+                AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, true);
+                Assert.Throws<TypeInitializationException>(() => Regex.InfiniteMatchTimeout);
+
+                return SuccessExitCode;
+            });
+        }
+
+        [Fact]
+        public static void StaticCtor_InvalidTimeoutRange_ExceptionThrown()
+        {
+            RemoteInvoke(() =>
+            {
+                AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, TimeSpan.Zero);
+                Assert.Throws<TypeInitializationException>(() => Regex.InfiniteMatchTimeout);
+
+                return SuccessExitCode;
+            });
         }
 
         [Fact]

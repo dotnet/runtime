@@ -326,8 +326,11 @@ namespace System.Xml
             if (type == ValueHandleType.Double)
             {
                 double value = GetDouble();
-                if ((value >= Single.MinValue && value <= Single.MaxValue) || double.IsInfinity(value) || double.IsNaN(value))
+
+                if ((value >= Single.MinValue && value <= Single.MaxValue) || !double.IsFinite(value))
+                {
                     return (Single)value;
+                }
             }
             if (type == ValueHandleType.Zero)
                 return 0;

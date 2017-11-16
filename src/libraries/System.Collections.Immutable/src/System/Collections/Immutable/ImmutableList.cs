@@ -18,10 +18,7 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of items stored by the collection.</typeparam>
         /// <returns>The immutable collection.</returns>
         [Pure]
-        public static ImmutableList<T> Create<T>()
-        {
-            return ImmutableList<T>.Empty;
-        }
+        public static ImmutableList<T> Create<T>() => ImmutableList<T>.Empty;
 
         /// <summary>
         /// Creates a new immutable collection prefilled with the specified item.
@@ -30,10 +27,7 @@ namespace System.Collections.Immutable
         /// <param name="item">The item to prepopulate.</param>
         /// <returns>The new immutable collection.</returns>
         [Pure]
-        public static ImmutableList<T> Create<T>(T item)
-        {
-            return ImmutableList<T>.Empty.Add(item);
-        }
+        public static ImmutableList<T> Create<T>(T item) => ImmutableList<T>.Empty.Add(item);
 
         /// <summary>
         /// Creates a new immutable collection prefilled with the specified items.
@@ -42,10 +36,7 @@ namespace System.Collections.Immutable
         /// <param name="items">The items to prepopulate.</param>
         /// <returns>The new immutable collection.</returns>
         [Pure]
-        public static ImmutableList<T> CreateRange<T>(IEnumerable<T> items)
-        {
-            return ImmutableList<T>.Empty.AddRange(items);
-        }
+        public static ImmutableList<T> CreateRange<T>(IEnumerable<T> items) => ImmutableList<T>.Empty.AddRange(items);
 
         /// <summary>
         /// Creates a new immutable collection prefilled with the specified items.
@@ -54,10 +45,7 @@ namespace System.Collections.Immutable
         /// <param name="items">The items to prepopulate.</param>
         /// <returns>The new immutable collection.</returns>
         [Pure]
-        public static ImmutableList<T> Create<T>(params T[] items)
-        {
-            return ImmutableList<T>.Empty.AddRange(items);
-        }
+        public static ImmutableList<T> Create<T>(params T[] items) => ImmutableList<T>.Empty.AddRange(items);
 
         /// <summary>
         /// Creates a new immutable list builder.
@@ -65,10 +53,7 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of items stored by the collection.</typeparam>
         /// <returns>The immutable collection builder.</returns>
         [Pure]
-        public static ImmutableList<T>.Builder CreateBuilder<T>()
-        {
-            return Create<T>().ToBuilder();
-        }
+        public static ImmutableList<T>.Builder CreateBuilder<T>() => Create<T>().ToBuilder();
 
         /// <summary>
         /// Enumerates a sequence exactly once and produces an immutable list of its contents.

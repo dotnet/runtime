@@ -5,8 +5,6 @@
     <ProjectGuid>{D4550556-4745-457F-BA8F-3EBF3836D6B4}</ProjectGuid>
     <AssemblyName>System.Data.SqlClient</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Although we have a NS configuration, we know we use API that's not currently whitelisted: just validate against OneCore -->
-    <UWPCompatible>false</UWPCompatible>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(OSGroup)' == 'AnyOS'">SR.PlatformNotSupported_DataSqlClient</GeneratePlatformNotSupportedAssemblyMessage>
     <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard1.2'">4.0.0.0</AssemblyVersion>
@@ -91,8 +89,16 @@
     <Compile Include="System\Data\ProviderBase\DbMetaDataFactory.cs" />
     <Compile Include="System\Data\ProviderBase\DbReferenceCollection.cs" />
     <Compile Include="System\Data\ProviderBase\TimeoutTimer.cs" />
+    <Compile Include="System\Data\Sql\IBinarySerialize.cs" />
+    <Compile Include="System\Data\Sql\InvalidUdtException.cs" />
+    <Compile Include="System\Data\Sql\SqlFunctionAttribute.cs" />
     <Compile Include="System\Data\Sql\SqlMetaData.cs" />
+    <Compile Include="System\Data\Sql\SqlMethodAttribute.cs" />
+    <Compile Include="System\Data\Sql\SqlNorm.cs" />
     <Compile Include="System\Data\Sql\SqlNotificationRequest.cs" />
+    <Compile Include="System\Data\Sql\SqlSer.cs" />
+    <Compile Include="System\Data\Sql\SqlUserDefinedAggregateAttribute.cs" />
+    <Compile Include="System\Data\Sql\SqlUserDefinedTypeAttribute.cs" />
     <Compile Include="System\Data\SqlClient\ApplicationIntent.cs" />
     <Compile Include="System\Data\SqlClient\LocalDBAPI.cs" />
     <Compile Include="System\Data\SqlClient\ParameterPeekAheadValue.cs" />
@@ -125,6 +131,8 @@
     <Compile Include="System\Data\SqlClient\SqlDependency.cs" />
     <Compile Include="System\Data\SqlClient\SqlDependencyListener.cs" />
     <Compile Include="System\Data\SqlClient\SqlDependencyUtils.cs" />
+    <Compile Include="System\Data\SqlClient\SqlDependencyUtils.AppDomain.cs" />
+    <Compile Include="System\Data\SqlClient\SqlDelegatedTransaction.cs" />
     <Compile Include="System\Data\SqlClient\SqlEnums.cs" />
     <Compile Include="System\Data\SqlClient\SqlError.cs" />
     <Compile Include="System\Data\SqlClient\SqlErrorCollection.cs" />
@@ -154,6 +162,7 @@
     <Compile Include="System\Data\SqlClient\SqlStatistics.cs" />
     <Compile Include="System\Data\SqlClient\SqlStream.cs" />
     <Compile Include="System\Data\SqlClient\SqlTransaction.cs" />
+    <Compile Include="System\Data\SqlClient\SqlUdtInfo.cs" />
     <Compile Include="System\Data\SqlClient\SqlUtil.cs" />
     <Compile Include="System\Data\SqlClient\TdsEnums.cs" />
     <Compile Include="System\Data\SqlClient\TdsParameterSetter.cs" />
@@ -178,7 +187,6 @@
     <Compile Include="System\Data\SqlClient\SNI\SNILoadHandle.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIMarsConnection.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIMarsHandle.cs" />
-    <Compile Include="System\Data\SqlClient\SNI\SNIMarsManager.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIMarsQueuedPacket.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNINpHandle.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIPacket.cs" />
@@ -198,6 +206,7 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
     <Compile Include="System\Data\SqlClient\TdsParserStateObjectFactory.Managed.cs" />
     <Compile Include="System\Data\SqlClient\LocalDBAPI.uap.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\LocalDB.uap.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Unix.cs" />
     <Compile Include="System\Data\SqlClient\TdsParser.Unix.cs" />
   </ItemGroup>
@@ -207,15 +216,15 @@
     <Compile Include="Interop\SNINativeMethodWrapper.Windows.cs" />
     <Compile Include="System\Data\SqlClient\TdsParserSafeHandles.cs" />
     <Compile Include="System\Data\SqlClient\LocalDBAPI.Windows.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\LocalDB.Windows.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Windows.cs" />
     <Compile Include="System\Data\SqlClient\TdsParser.Windows.cs" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true'">
-    <Compile Include="System\Data\SqlClient\SNI\LocalDB.Windows.cs" />
-    <Compile Include="System\Data\SqlClient\LocalDBAPI.Common.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.LoadLibraryEx.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.LoadLibraryEx.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="System\Data\SqlClient\LocalDBAPI.Common.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FreeLibrary.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.FreeLibrary.cs</Link>
     </Compile>
@@ -228,6 +237,10 @@
   </ItemGroup>
   <!-- Windows dependencies for Integrated Authentication for MANAGED_SNI build -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' ">
+    <Reference Include="System.Memory" />
+    <Compile Include="$(CommonPath)\Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs">
+      <Link>Common\Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Security\NegotiateStreamPal.Windows.cs">
       <Link>Common\System\Net\Security\NegotiateStreamPal.Windows.cs</Link>
     </Compile>
@@ -393,7 +406,7 @@
     <Compile Include="System\Data\SqlClient\LocalDBAPI.Unix.cs" />
     <Compile Include="System\Data\SqlClient\SNI\LocalDB.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' ">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' and '$(TargetGroup)' != 'uap'">
     <Reference Include="Microsoft.Win32.Registry" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">

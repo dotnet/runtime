@@ -762,7 +762,7 @@ namespace System.Xml {
 //
         int indentLevel;
 
-        // for detecting SE SC sitution
+        // for detecting SE SC situation
         int endBlockPos;
 
         // settings

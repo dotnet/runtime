@@ -3,7 +3,7 @@
 This document describes `HttpClientHandler` instrumentation with [DiagnosticSource](https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/DiagnosticSourceUsersGuide.md).
 
 # Overview
-Applications typically log outgoing HTTP requests; typically it's done with DelegatingHandler implementation that logs every request. However in existing system it may require extensive code changes, since DelegatingHandler needs to be added to HttpClient pipeline every time when new client is created.
+Applications typically log outgoing HTTP requests; typically it's done with DelegatingHandler implementation that logs every request. However in an existing system it may require extensive code changes, since DelegatingHandler needs to be added to HttpClient pipeline every time when new client is created.
 DiagnosticListener instrumentation allows to enable outgoing request tracing with a few lines of code; it also provides context necessary to correlate logs.
 
 Context is represented as `System.Diagnostics.Activity` class. Activity may be started as a child of another Activity and the whole operation is represented with a tree of Activities. You can find more details in [Activity User Guide](https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md).
@@ -12,16 +12,15 @@ Activity carries useful properties for logging such as Id, start time, Tags, Bag
 
 Instrumentation ensures `Activity.Current` represents current outgoing request in Write event callbacks (if request is instrumented). Consumers **should not** assume `Activity.Current` is accurate in IsEnabled callbacks.
 
-In microservice environment some context should flow with outgoing requests to correlate telemtry from all services involved in operation processing.
+In a microservice environment some context should flow with outgoing requests to correlate telemetry from all services involved in processing an operation.
 Instrumentation adds context into the request headers: 
  * Request-Id header with `Activity.Id` value
  * Correlation-Context header with `Activity.Baggage` key-value pair list in `k1=v1, k2=v2` format
  
-See [Http Protocol proposal](https://github.com/lmolkova/correlation/blob/master/http_protocol_proposal_v1.md) for more details
-[comment]: TODO: Update link once it's moved
+See [HTTP Protocol proposal](https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/HttpCorrelationProtocol.md) for more details.
 
 ## Subscription
-Instrumentation is off by default; to enable it, consumer first needs to subscribe to DiagnosticListener called "HttpHandlerDiagnosticListener". 
+Instrumentation is off by default; to enable it, consumer first needs to subscribe to a DiagnosticListener called "HttpHandlerDiagnosticListener". 
 
 ```C#
 var subscription = DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
@@ -37,7 +36,7 @@ var subscription = DiagnosticListener.AllListeners.Subscribe(delegate (Diagnosti
 ```
 
 ## Events
-If there is **at least one consumer**, subscribed for "HttpHandlerDiagnosticListener" events, `HttpClientHandler` instruments outgoing request depending on subscription and request properties.
+If there is **at least one consumer** subscribed for "HttpHandlerDiagnosticListener" events, `HttpClientHandler` instruments outgoing request depending on subscription and request properties.
 
 Note that DiagnosticListener best practice is to guard every `Write` method with `IsEnabled` check. In case there is more than one consumer, **each consumer** will receive Write event if **at least one** consumer returned true for `IsEnabled`.
 

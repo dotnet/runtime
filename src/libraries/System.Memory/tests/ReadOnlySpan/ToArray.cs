@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using System.Runtime.CompilerServices;
 
 namespace System.SpanTests
 {
@@ -17,6 +16,25 @@ namespace System.SpanTests
             int[] copy = span.ToArray();
             Assert.Equal<int>(a, copy);
             Assert.NotSame(a, copy);
+        }
+
+        [Fact]
+        public static void ToArrayWithIndex()
+        {
+            int[] a = { 91, 92, 93, 94, 95 };
+            var span = new Span<int>(a);
+            int[] copy = span.Slice(2).ToArray();
+
+            Assert.Equal<int>(new int[] { 93, 94, 95 }, copy);
+        }
+
+        [Fact]
+        public static void ToArrayWithIndexAndLength()
+        {
+            int[] a = { 91, 92, 93 };
+            var span = new Span<int>(a, 1, 1);
+            int[] copy = span.ToArray();
+            Assert.Equal<int>(new int[] { 92 }, copy);
         }
 
         [Fact]

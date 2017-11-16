@@ -31,7 +31,7 @@ namespace System.Reflection.Internal
         /// Does not check bounds.
         /// 
         /// Only creates a copy of the data if they are not represented by a managed byte array, 
-        /// or if the specified range doens't span the entire block.
+        /// or if the specified range doesn't span the entire block.
         /// </remarks>
         public unsafe virtual ImmutableArray<byte> GetContentUnchecked(int start, int length)
         {

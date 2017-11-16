@@ -4,8 +4,10 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.Test.Common;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -124,7 +126,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests SendReceive sucess for UnixDomainSocketEndPoint on Unix
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests SendReceive success for UnixDomainSocketEndPoint on Unix
         public void Socket_SendReceive_Success()
         {
             string path = GetRandomNonExistingFilePath();
@@ -163,7 +165,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests SendReceiveAsync sucess for UnixDomainSocketEndPoint on Unix
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests SendReceiveAsync success for UnixDomainSocketEndPoint on Unix
         public async Task Socket_SendReceiveAsync_Success()
         {
             string path = GetRandomNonExistingFilePath();
@@ -206,7 +208,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(500, 18, 21)]
         [InlineData(500, 21, 18)]
         [InlineData(5, 128000, 64000)]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests SendReceiveAsync sucess for UnixDomainSocketEndPoint on Unix
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests SendReceiveAsync success for UnixDomainSocketEndPoint on Unix
         public async Task Socket_SendReceiveAsync_PropagateToStream_Success(int iterations, int writeBufferSize, int readBufferSize)
         {             
             var writeBuffer = new byte[writeBufferSize * iterations];
@@ -260,9 +262,56 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests ConcurrentSendReceive success for UnixDomainSocketEndPoint on Unix
+        public void ConcurrentSendReceive(bool forceNonBlocking)
+        {
+            using (Socket server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+            using (Socket client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+            {
+                const int Iters = 25;
+                byte[] sendData = new byte[Iters];
+                byte[] receiveData = new byte[sendData.Length];
+                new Random().NextBytes(sendData);
+
+                string path = GetRandomNonExistingFilePath();
+
+                server.Bind(new UnixDomainSocketEndPoint(path));
+                server.Listen(1);
+
+                Task<Socket> acceptTask = server.AcceptAsync();
+                client.Connect(new UnixDomainSocketEndPoint(path));
+                acceptTask.Wait();
+                Socket accepted = acceptTask.Result;
+
+                client.ForceNonBlocking(forceNonBlocking);
+                accepted.ForceNonBlocking(forceNonBlocking);
+
+                Task[] writes = new Task[Iters];
+                Task<int>[] reads = new Task<int>[Iters];
+                for (int i = 0; i < Iters; i++)
+                {
+                    reads[i] = Task.Factory.StartNew(s => accepted.Receive(receiveData, (int)s, 1, SocketFlags.None), i,
+                        CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                }
+                for (int i = 0; i < Iters; i++)
+                {
+                    writes[i] = Task.Factory.StartNew(s => client.Send(sendData, (int)s, 1, SocketFlags.None), i,
+                        CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                }
+                Task.WaitAll(writes);
+                Task.WaitAll(reads);
+
+                Assert.Equal(sendData.OrderBy(i => i), receiveData.OrderBy(i => i));
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests ConcurrentSendReceive sucess for UnixDomainSocketEndPoint on Unix
-        public void ConcurrentSendReceive()
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests ConcurrentSendReceive success for UnixDomainSocketEndPoint on Unix
+        public void ConcurrentSendReceiveAsync()
         {
             using (Socket server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
             using (Socket client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))

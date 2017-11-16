@@ -2176,6 +2176,18 @@ namespace System.Collections.Immutable.Tests
             DebuggerAttributes.ValidateDebuggerDisplayReferences(source.ToImmutableArray());
         }
 
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
+        public void DebuggerAttributesValid()
+        {
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableArray.Create<int>());
+            ImmutableArray<int> array = ImmutableArray.Create(1, 2, 3, 4);
+            FieldInfo itemField = typeof(ImmutableArray<int>).GetFields(BindingFlags.Instance | BindingFlags.NonPublic).Single(fi => fi.GetCustomAttribute<DebuggerBrowsableAttribute>()?.State == DebuggerBrowsableState.RootHidden);
+            int[] items = itemField.GetValue(array) as int[];
+            Assert.Equal(array, items);
+        }
+
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)
         {
             return ImmutableArray.Create(contents);

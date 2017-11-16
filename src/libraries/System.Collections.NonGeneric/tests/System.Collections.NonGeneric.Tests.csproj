@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{EE95AE39-845A-42D3-86D0-8065DBE56612}</ProjectGuid>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
@@ -36,7 +35,7 @@
     <Compile Include="Hashtable\Hashtable.Keys.Tests.cs" />
     <Compile Include="Hashtable\Hashtable.IDictionary.Tests.cs" />
     <Compile Include="Helpers.cs" />
-    <Compile Include="CaseInsentiveComparerTests.cs" />
+    <Compile Include="CaseInsensitiveComparerTests.cs" />
     <Compile Include="CollectionBaseTests.cs" />
     <Compile Include="CollectionsUtilTests.cs" />
     <Compile Include="ComparerTests.cs" />
@@ -53,9 +52,12 @@
     <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs">
       <Link>Common\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>CommonTest\System\PlatformDetection.cs</Link>
-    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>RemoteExecutorConsoleApp</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

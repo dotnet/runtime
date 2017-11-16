@@ -9,7 +9,6 @@ using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions.Compiler
 {
-
     // Suppose we have something like:
     //
     //    (string s)=>()=>s.

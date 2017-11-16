@@ -159,11 +159,5 @@ namespace System.Net
         {
             return _address.GetHashCode() ^ _port;
         }
-
-        // For security, we need to be able to take an IPEndPoint and make a copy that's immutable and not derived.
-        internal IPEndPoint Snapshot()
-        {
-            return new IPEndPoint(Address.Snapshot(), Port);
-        }
     }
 }

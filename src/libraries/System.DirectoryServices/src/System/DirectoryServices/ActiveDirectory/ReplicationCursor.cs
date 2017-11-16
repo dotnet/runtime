@@ -2,30 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Runtime.InteropServices;
-
     public class ReplicationCursor
     {
-        private string _partition;
-        private Guid _invocationID;
-        private long _USN;
         private string _serverDN = null;
-        private DateTime _syncTime;
-        private bool _advanced = false;
+        private readonly DateTime _syncTime;
+        private readonly bool _advanced = false;
         private string _sourceServer = null;
 
-        private DirectoryServer _server = null;
+        private readonly DirectoryServer _server = null;
 
         private ReplicationCursor() { }
 
         internal ReplicationCursor(DirectoryServer server, string partition, Guid guid, long filter, long time, IntPtr dn)
         {
-            _partition = partition;
-            _invocationID = guid;
-            _USN = filter;
+            PartitionName = partition;
+            SourceInvocationId = guid;
+            UpToDatenessUsn = filter;
 
             // convert filetime to DateTime
             _syncTime = DateTime.FromFileTime(time);
@@ -40,36 +36,18 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal ReplicationCursor(DirectoryServer server, string partition, Guid guid, long filter)
         {
-            _partition = partition;
-            _invocationID = guid;
-            _USN = filter;
+            PartitionName = partition;
+            SourceInvocationId = guid;
+            UpToDatenessUsn = filter;
 
             _server = server;
         }
 
-        public string PartitionName
-        {
-            get
-            {
-                return _partition;
-            }
-        }
+        public string PartitionName { get; }
 
-        public Guid SourceInvocationId
-        {
-            get
-            {
-                return _invocationID;
-            }
-        }
+        public Guid SourceInvocationId { get; }
 
-        public long UpToDatenessUsn
-        {
-            get
-            {
-                return _USN;
-            }
-        }
+        public long UpToDatenessUsn { get; }
 
         public string SourceServer
         {

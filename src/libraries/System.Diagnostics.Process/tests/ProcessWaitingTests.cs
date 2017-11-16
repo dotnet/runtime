@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -105,17 +107,17 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/18210", TargetFrameworkMonikers.UapAot)]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(127)]
         public async Task SingleProcess_EnableRaisingEvents_CorrectExitCode(int exitCode)
         {
-            using (Process p = RemoteInvoke(exitCodeStr => int.Parse(exitCodeStr), exitCode.ToString(), new RemoteInvokeOptions { Start = false }).Process)
+            using (Process p = CreateProcessPortable(RemotelyInvokable.ExitWithCode, exitCode.ToString()))
             {
                 var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                 p.EnableRaisingEvents = true;
-                p.Exited += delegate { tcs.SetResult(true); };
+                p.Exited += delegate
+                { tcs.SetResult(true); };
                 p.Start();
                 Assert.True(await tcs.Task);
                 Assert.Equal(exitCode, p.ExitCode);
@@ -141,6 +143,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "Getting handle of child process running on UAP is not possible")]
         public void WaitForPeerProcess()
         {
             Process child1 = CreateProcessLong();
@@ -167,6 +170,52 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public void WaitForSignal()
+        {
+            const string expectedSignal = "Signal";
+            const string successResponse = "Success";
+            const int timeout = 5 * 1000;
+
+            Process p = CreateProcessPortable(RemotelyInvokable.WriteLineReadLine);
+            p.StartInfo.RedirectStandardInput = true;
+            p.StartInfo.RedirectStandardOutput = true;
+            var mre = new ManualResetEventSlim(false);
+
+            int linesReceived = 0;
+            p.OutputDataReceived += (s, e) =>
+            {
+                if (e.Data != null)
+                {
+                    linesReceived++;
+
+                    if (e.Data == expectedSignal)
+                    {
+                        mre.Set();
+                    }
+                }
+            };
+
+            p.Start();
+            p.BeginOutputReadLine();
+
+            Assert.True(mre.Wait(timeout));
+            Assert.Equal(1, linesReceived);
+
+            // Wait a little bit to make sure process didn't exit on itself
+            Thread.Sleep(100);
+            Assert.False(p.HasExited, "Process has prematurely exited");
+
+            using (StreamWriter writer = p.StandardInput)
+            {
+                writer.WriteLine(successResponse);
+            }
+
+            Assert.True(p.WaitForExit(timeout), "Process has not exited");
+            Assert.Equal(RemotelyInvokable.SuccessExitCode, p.ExitCode);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "Not applicable on uap - RemoteInvoke does not give back process handle")]
         [ActiveIssue(15844, TestPlatforms.AnyUnix)]
         public void WaitChain()
         {
@@ -197,11 +246,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void WaitForSelfTerminatingChild()
         {
-            Process child = CreateProcess(() =>
-            {
-                Process.GetCurrentProcess().Kill();
-                throw new ShouldNotBeInvokedException();
-            });
+            Process child = CreateProcessPortable(RemotelyInvokable.SelfTerminate);
             child.Start();
             Assert.True(child.WaitForExit(WaitInMS));
             Assert.NotEqual(SuccessExitCode, child.ExitCode);

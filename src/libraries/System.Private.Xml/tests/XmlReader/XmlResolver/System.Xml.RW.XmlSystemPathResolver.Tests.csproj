@@ -4,16 +4,12 @@
   <PropertyGroup>
     <ProjectGuid>{E4BC1A16-AD0A-4F70-BD2E-3346A4D9BC2B}</ProjectGuid>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="XmlSystemPathResolverTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
     <SupplementalTestData Include="..\TestFiles\**\*.*">
       <Link>TestFiles\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <DestinationDir>TestFiles\%(RecursiveDir)</DestinationDir>

@@ -9,6 +9,7 @@
 using System.Data.Common;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using System.Transactions;
 
 
 namespace System.Data.ProviderBase
@@ -20,7 +21,7 @@ namespace System.Data.ProviderBase
         {
         }
 
-        override public string ServerVersion
+        public override string ServerVersion
         {
             get
             {
@@ -28,17 +29,17 @@ namespace System.Data.ProviderBase
             }
         }
 
-        override protected void Activate()
+        protected override void Activate(Transaction transaction)
         {
             throw ADP.ClosedConnectionError();
         }
 
-        override public DbTransaction BeginTransaction(IsolationLevel il)
+        public override DbTransaction BeginTransaction(IsolationLevel il)
         {
             throw ADP.ClosedConnectionError();
         }
 
-        override public void ChangeDatabase(string database)
+        public override void ChangeDatabase(string database)
         {
             throw ADP.ClosedConnectionError();
         }
@@ -48,11 +49,15 @@ namespace System.Data.ProviderBase
             // not much to do here...
         }
 
-        override protected void Deactivate()
+        protected override void Deactivate()
         {
             throw ADP.ClosedConnectionError();
         }
 
+        public override void EnlistTransaction(Transaction transaction)
+        {
+            throw ADP.ClosedConnectionError();
+        }
 
         protected override DbReferenceCollection CreateReferenceCollection()
         {

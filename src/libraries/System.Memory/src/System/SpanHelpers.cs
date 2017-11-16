@@ -124,7 +124,7 @@ namespace System
 
         /// <summary>
         /// Determine if a type is eligible for storage in unmanaged memory.
-        /// Portable equivalent of RuntimeHelpers.IsReferenceOrContainsReferences&lt;T&gt;()
+        /// Portable equivalent of RuntimeHelpers.IsReferenceOrContainsReferences{T}()
         /// </summary>
         public static bool IsReferenceOrContainsReferences<T>() => PerTypeValues<T>.IsReferenceOrContainsReferences;
 

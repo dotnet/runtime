@@ -3,13 +3,15 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{DDE3838B-0EEA-4D9A-A120-9D72CB33F250}</ProjectGuid>
+    <NoWarn>$(NoWarn);CS0618</NoWarn>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\DirectoryServices\ActiveDirectorySecurityTests.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectory\DomainControllerTests.cs" />
     <Compile Include="System\DirectoryServices\DirectoryEntryTests.cs" />
+    <Compile Include="System\DirectoryServices\DirectoryServicesTests.cs" />
     <Compile Include="System\DirectoryServices\DirectorySynchronizationTests.cs" />
     <Compile Include="System\DirectoryServices\DirectoryVirtualListViewContextTests.cs" />
     <Compile Include="System\DirectoryServices\DirectoryVirtualListViewTests.cs" />
@@ -18,9 +20,22 @@
     <Compile Include="System\DirectoryServices\ActiveDirectory\ActiveDirectoryInterSiteTransportTests.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectory\DirectoryContextTests.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectory\ForestTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
+    <Compile Include="System\DirectoryServices\ActiveDirectory\ActiveDirectoryTests.cs" />
+
+    <Compile Include="$(CommonTestPath)\System\DirectoryServices\LdapConfiguration.cs">
+      <Link>Common\DirectoryServices\LdapConfiguration.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="LDAP.Configuration.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'" >
+    <Compile Include="System\DirectoryServices\DirectoryServicesTests.Windows.cs" />
+    <Compile Include="System\DirectoryServices\ActiveDirectoryComInterop.cs" />
+  </ItemGroup>
+
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

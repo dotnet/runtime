@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <TargetFrameworkName>netcoreapp</TargetFrameworkName>
-    <TargetFrameworkVersion>2.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>2.1</TargetFrameworkVersion>
     <TargetFramework>$(TargetFrameworkName)$(TargetFrameworkVersion)</TargetFramework>
 
     <RefBinDir>$(NETCoreAppPackageRefPath)</RefBinDir>
@@ -28,6 +28,7 @@
     <ExcludeFromClosure Include="System.Drawing" />
     <ExcludeFromClosure Include="System.Net" />
     <ExcludeFromClosure Include="System.Security" />
+    <ExcludeFromClosure Include="System.ServiceModel.Web" />
     <ExcludeFromClosure Include="System.ServiceProcess" />
     <ExcludeFromClosure Include="System.Transactions" />
     <ExcludeFromClosure Include="WindowsBase" />

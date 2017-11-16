@@ -2,97 +2,70 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Threading;
+using Microsoft.Win32.SafeHandles;
+
 namespace System.DirectoryServices.Protocols
 {
-    using System;
-    using System.Threading;
-    using System.Net;
-    using System.Text;
-    using System.IO;
-    using Microsoft.Win32.SafeHandles;
-
     internal class LdapAsyncResult : IAsyncResult
     {
         private LdapAsyncWaitHandle _asyncWaitHandle = null;
-        internal AsyncCallback callback = null;
-        internal bool completed = false;
+        internal AsyncCallback _callback = null;
+        internal bool _completed = false;
         private bool _completedSynchronously = false;
-        internal ManualResetEvent manualResetEvent = null;
+        internal ManualResetEvent _manualResetEvent = null;
         private object _stateObject = null;
-        internal LdapRequestState resultObject = null;
-        internal bool partialResults = false;
+        internal LdapRequestState _resultObject = null;
+        internal bool _partialResults = false;
 
         public LdapAsyncResult(AsyncCallback callbackRoutine, object state, bool partialResults)
         {
             _stateObject = state;
-            callback = callbackRoutine;
-            manualResetEvent = new ManualResetEvent(false);
-            this.partialResults = partialResults;
+            _callback = callbackRoutine;
+            _manualResetEvent = new ManualResetEvent(false);
+            _partialResults = partialResults;
         }
 
-        object IAsyncResult.AsyncState
-        {
-            get { return _stateObject; }
-        }
+        object IAsyncResult.AsyncState => _stateObject;
 
         WaitHandle IAsyncResult.AsyncWaitHandle
         {
-            get
-            {
-                if (null == _asyncWaitHandle)
-                {
-                    _asyncWaitHandle = new LdapAsyncWaitHandle(manualResetEvent.SafeWaitHandle);
-                }
-
-                return (WaitHandle)_asyncWaitHandle;
-            }
+            get => _asyncWaitHandle ?? (_asyncWaitHandle = new LdapAsyncWaitHandle(_manualResetEvent.SafeWaitHandle));
         }
 
-        bool IAsyncResult.CompletedSynchronously
-        {
-            get { return _completedSynchronously; }
-        }
+        bool IAsyncResult.CompletedSynchronously => _completedSynchronously;
 
-        bool IAsyncResult.IsCompleted
-        {
-            get { return completed; }
-        }
+        bool IAsyncResult.IsCompleted => _completed;
 
-        public override int GetHashCode()
-        {
-            return manualResetEvent.GetHashCode();
-        }
+        public override int GetHashCode() => _manualResetEvent.GetHashCode();
 
-        public override bool Equals(object o)
+        public override bool Equals(object obj)
         {
-            if ((!(o is LdapAsyncResult)) || (o == null))
+            if (!(obj is LdapAsyncResult otherAsyncResult))
             {
                 return false;
             }
 
-            return (this == (LdapAsyncResult)o);
+            return this == otherAsyncResult;
         }
 
-        sealed internal class LdapAsyncWaitHandle : WaitHandle
+        private sealed class LdapAsyncWaitHandle : WaitHandle
         {
             public LdapAsyncWaitHandle(SafeWaitHandle handle) : base()
             {
-                this.SafeWaitHandle = handle;
+                SafeWaitHandle = handle;
             }
 
-            ~LdapAsyncWaitHandle()
-            {
-                this.SafeWaitHandle = null;
-            }
+            ~LdapAsyncWaitHandle() => SafeWaitHandle = null;
         }
     }
 
     internal class LdapRequestState
     {
-        internal DirectoryResponse response = null;
-        internal LdapAsyncResult ldapAsync = null;
-        internal Exception exception = null;
-        internal bool abortCalled = false;
+        internal DirectoryResponse _response = null;
+        internal LdapAsyncResult _ldapAsync = null;
+        internal Exception _exception = null;
+        internal bool _abortCalled = false;
 
         public LdapRequestState() { }
     }
@@ -106,25 +79,24 @@ namespace System.DirectoryServices.Protocols
 
     internal class LdapPartialAsyncResult : LdapAsyncResult
     {
-        internal LdapConnection con;
-        internal int messageID = -1;
-        internal bool partialCallback;
-        internal ResultsStatus resultStatus = ResultsStatus.PartialResult;
-        internal TimeSpan requestTimeout;
+        internal LdapConnection _con;
+        internal int _messageID = -1;
+        internal bool _partialCallback;
+        internal ResultsStatus _resultStatus = ResultsStatus.PartialResult;
+        internal TimeSpan _requestTimeout;
 
-        internal SearchResponse response = null;
-        internal Exception exception = null;
-        internal DateTime startTime;
+        internal SearchResponse _response = null;
+        internal Exception _exception = null;
+        internal DateTime _startTime;
 
         public LdapPartialAsyncResult(int messageID, AsyncCallback callbackRoutine, object state, bool partialResults, LdapConnection con, bool partialCallback, TimeSpan requestTimeout) : base(callbackRoutine, state, partialResults)
         {
-            this.messageID = messageID;
-            this.con = con;
-            this.partialResults = true;
-            this.partialCallback = partialCallback;
-            this.requestTimeout = requestTimeout;
-            this.startTime = DateTime.Now;
+            _messageID = messageID;
+            _con = con;
+            _partialResults = true;
+            _partialCallback = partialCallback;
+            _requestTimeout = requestTimeout;
+            _startTime = DateTime.Now;
         }
     }
 }
-

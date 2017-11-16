@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Description:  link with a rel with iana org
+Expect:       !MissingSelf
+-->
+
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <id>urn:linkreltest:feed</id>
+  <title>Testing Link Rels</title>
+  <link rel="http://www.contoso.com/assignments/relation/self"
+        href="http://www.contoso.com/public/linkreltest.xml" />
+  <link rel="http://www.contoso.com/assignments/relation/alternate"
+        href="http://www.contoso.com/public/linkreltest.xml" />
+  <author><name>James</name></author>
+  <updated>2006-04-25T12:12:12Z</updated>
+  <entry>
+    <id>urn:linkreltest:1</id>
+    <title>Does your reader support http://www.contoso.com/assignments/relation/alternate properly? </title>
+    <updated>2006-04-25T12:12:12Z</updated>
+    <link rel="http://www.contoso.com/assignments/relation/alternate"
+          href="http://www.contoso.com/public/alternate" />
+    <content>This entry uses link/@rel="http://www.contoso.com/assignments/relation/alternate".</content>
+  </entry>
+  <entry>
+    <id>urn:linkreltest:2</id>
+    <title>How does your reader handle uppercase variances of standard rel values?</title>
+    <updated>2006-04-25T12:12:13Z</updated>
+    <link rel="ALTERNATE"
+          href="http://www.contoso.com/public/alternate2" />
+    <link rel="alternate"
+          href="http://www.contoso.com/public/alternate" />
+    <content>This entry uses an uppercase "ALTERNATE" and a lowercase "alternate", your reader should show the lowercase link to http://www.contoso.com/public/alternate.</content>
+  </entry>
+</feed>

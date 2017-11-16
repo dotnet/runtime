@@ -25,7 +25,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System.forwards.cs" />
-    <ReferencePath Include="$(RuntimePath)System.*.dll;$(RuntimePath)Microsoft.*.dll" Exclude="$(RuntimePath)Microsoft.Diagnostics.Tracing.TraceEvent.dll" />
+    <ReferencePath
+      Include="$(RuntimePath)System.*.dll;$(RuntimePath)Microsoft.*.dll"
+      Exclude="$(RuntimePath)Microsoft.Diagnostics.Tracing.TraceEvent.dll;$(RuntimePath)Microsoft.DiaSymReader.Native.*.dll" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

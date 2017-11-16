@@ -45,7 +45,7 @@ namespace System.Data.SqlClient.SNI
             _lowerHandle.SetAsyncCallbacks(HandleReceiveComplete, HandleSendComplete);
         }
 
-        public SNIMarsHandle CreateSession(object callbackObject, bool async)
+        public SNIMarsHandle CreateMarsSession(object callbackObject, bool async)
         {
             lock (this)
             {

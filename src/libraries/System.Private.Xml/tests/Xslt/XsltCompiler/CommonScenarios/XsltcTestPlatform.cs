@@ -23,6 +23,7 @@ namespace System.Xml.Tests
         [InlineData("/PLAtforM:ItaNiuM pft8.xsl", "", "pft8.dll", "pft8.txt")]
         //[Variation("10", Desc = "Exercise keyword case sensitivity -4", Pri = 1, Params = new object[] { "/PLAtforM:AnyCpU pft10.xsl", "", "pft10.dll", "pft10.txt" })]
         [InlineData("/PLAtforM:AnyCpU pft10.xsl", "", "pft10.dll", "pft10.txt")]
+        [Trait("category", "XsltcExeRequired")]
         [ConditionalTheory(nameof(xsltcExeFound))]
         public void Var1(object param0, object param1, object param2, object param3)
         {
@@ -45,6 +46,7 @@ namespace System.Xml.Tests
         [InlineData("/platform: pft12.xsl", "pft12.txt")]
         //[Variation("16", Desc = "Exercise basic use case, an unsupported option value -6", Pri = 1, Params = new object[] { "/platform:x86;x64 pft16.xsl", "pft16.txt" })]
         [InlineData("/platform:x86;x64 pft16.xsl", "pft16.txt")]
+        [Trait("category", "XsltcExeRequired")]
         [ConditionalTheory(nameof(xsltcExeFound))]
         public void Var2(object param0, object param1)
         {
@@ -56,6 +58,7 @@ namespace System.Xml.Tests
 
         //[Variation("19", Desc = "Compile an assembly for different platform and load", Pri = 1, Params = new object[] { "pft19.xsl", "pft19.dll", "yes", "", "pft19.pdb", "no", "pft19.txt", "no" })]
         [InlineData("pft19.xsl", "pft19.dll", "yes", "", "pft19.pdb", "no", "pft19.txt", "no")]
+        [Trait("category", "XsltcExeRequired")]
         [ConditionalTheory(nameof(xsltcExeFound))]
         public void Var3(object param0, object param1, object param2, object param3, object param4, object param5, object param6, object param7)
         {

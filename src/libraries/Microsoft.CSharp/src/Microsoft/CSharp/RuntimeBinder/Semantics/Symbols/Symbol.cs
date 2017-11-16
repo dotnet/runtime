@@ -2,30 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
+using System;
 using System.Diagnostics;
 using System.Reflection;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    // Alias ID's are indices into BitSets.
-    // 0 is reserved for the global namespace alias.
-    // 1 is reserved for this assembly.
-    // Start assigning at kaidStartAssigning.
-    internal enum KAID
-    {
-        kaidNil = -1,
-
-        kaidGlobal = 0,
-        kaidThisAssembly,
-        kaidUnresolved,
-        kaidStartAssigning,
-
-        // Module id's are in their own range.
-        kaidMinModule = 0x10000000,
-    }
-
     /*
      * Define the different access levels that symbols can have.
      */
@@ -56,6 +39,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     /////////////////////////////////////////////////////////////////////////////////
 
     // Special constraints.
+    [Flags]
     internal enum SpecCons
     {
         None = 0x00,
@@ -74,8 +58,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal abstract class Symbol
     {
         private SYMKIND _kind;     // the symbol kind
-        private bool _isBogus;     // can't be used in our language -- unsupported type(s)
-        private bool _checkedBogus; // Have we checked a method args/return for bogus types
         private ACCESS _access;    // access level
 
         // If this is true, then we had an error the first time so do not give an error the second time.
@@ -112,202 +94,46 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return (symbmask_t)(1 << (int)_kind);
         }
 
-        public bool checkBogus()
-        {
-            Debug.Assert(_checkedBogus);
-            return _isBogus;
-        } // if this Debug.Assert fires then call COMPILER_BASE::CheckBogus() instead
-
-        public bool getBogus()
-        {
-            return _isBogus;
-        }
-
-        public bool hasBogus()
-        {
-            return _checkedBogus;
-        }
-
-        public void setBogus(bool isBogus)
-        {
-            _isBogus = isBogus;
-            _checkedBogus = true;
-        }
-
-        public void initBogus()
-        {
-            _isBogus = false;
-            _checkedBogus = false;
-        }
-
-        public bool computeCurrentBogusState()
-        {
-            if (hasBogus())
-            {
-                return checkBogus();
-            }
-
-            bool fBogus = false;
-
-            switch (getKind())
-            {
-                case SYMKIND.SK_PropertySymbol:
-                case SYMKIND.SK_MethodSymbol:
-                    {
-                        MethodOrPropertySymbol meth = this.AsMethodOrPropertySymbol();
-
-                        if (meth.RetType != null)
-                        {
-                            fBogus = meth.RetType.computeCurrentBogusState();
-                        }
-                        if (meth.Params != null)
-                        {
-                            for (int i = 0; !fBogus && i < meth.Params.Count; i++)
-                            {
-                                fBogus |= meth.Params[i].computeCurrentBogusState();
-                            }
-                        }
-                    }
-                    break;
-
-                /*
-                case SYMKIND.SK_ParameterModifierType:
-                case SYMKIND.SK_OptionalModifierType:
-                case SYMKIND.SK_PointerType:
-                case SYMKIND.SK_ArrayType:
-                case SYMKIND.SK_NullableType:
-                case SYMKIND.SK_PinnedType:
-                    if (this.AsType().GetBaseOrParameterOrElementType() != null)
-                    {
-                        fBogus = this.AsType().GetBaseOrParameterOrElementType().computeCurrentBogusState();
-                    }
-                    break;
-                    */
-
-                case SYMKIND.SK_EventSymbol:
-                    if (this.AsEventSymbol().type != null)
-                    {
-                        fBogus = this.AsEventSymbol().type.computeCurrentBogusState();
-                    }
-                    break;
-
-                case SYMKIND.SK_FieldSymbol:
-                    if (this.AsFieldSymbol().GetType() != null)
-                    {
-                        fBogus = this.AsFieldSymbol().GetType().computeCurrentBogusState();
-                    }
-                    break;
-
-                /*
-                case SYMKIND.SK_ErrorType:
-                    this.setBogus(false);
-                    break;
-
-                case SYMKIND.SK_AggregateType:
-                    fBogus = this.AsAggregateType().getAggregate().computeCurrentBogusState();
-                    for (int i = 0; !fBogus && i < this.AsAggregateType().GetTypeArgsAll().size; i++)
-                    {
-                        fBogus |= this.AsAggregateType().GetTypeArgsAll()[i].computeCurrentBogusState();
-                    }
-                    break;
-                 */
-
-                case SYMKIND.SK_TypeParameterSymbol:
-                /*
-            case SYMKIND.SK_TypeParameterType:
-            case SYMKIND.SK_VoidType:
-            case SYMKIND.SK_NullType:
-            case SYMKIND.SK_OpenTypePlaceholderType:
-            case SYMKIND.SK_ArgumentListType:
-            case SYMKIND.SK_NaturalIntegerType:
-                 */
-                case SYMKIND.SK_LocalVariableSymbol:
-                    setBogus(false);
-                    break;
-
-                case SYMKIND.SK_AggregateSymbol:
-                    fBogus = hasBogus() && checkBogus();
-                    break;
-
-                case SYMKIND.SK_Scope:
-                case SYMKIND.SK_LambdaScope:
-                case SYMKIND.SK_NamespaceSymbol:
-                default:
-                    Debug.Assert(false, "CheckBogus with invalid Symbol kind");
-                    setBogus(false);
-                    break;
-            }
-
-            if (fBogus)
-            {
-                // Only set this if at least 1 declared thing is bogus
-                setBogus(fBogus);
-            }
-
-            return hasBogus() && checkBogus();
-        }
-
-        public bool IsNamespaceSymbol() { return _kind == SYMKIND.SK_NamespaceSymbol; }
-
-        public bool IsAggregateSymbol() { return _kind == SYMKIND.SK_AggregateSymbol; }
-        public bool IsAggregateDeclaration() { return _kind == SYMKIND.SK_AggregateDeclaration; }
-        public bool IsFieldSymbol() { return _kind == SYMKIND.SK_FieldSymbol; }
-        public bool IsLocalVariableSymbol() { return _kind == SYMKIND.SK_LocalVariableSymbol; }
-        public bool IsMethodSymbol() { return _kind == SYMKIND.SK_MethodSymbol; }
-        public bool IsPropertySymbol() { return _kind == SYMKIND.SK_PropertySymbol; }
-        public bool IsTypeParameterSymbol() { return _kind == SYMKIND.SK_TypeParameterSymbol; }
-        public bool IsEventSymbol() { return _kind == SYMKIND.SK_EventSymbol; }
-
-        public bool IsMethodOrPropertySymbol()
-        {
-            return IsMethodSymbol() || IsPropertySymbol();
-        }
-
-        public bool IsFMETHSYM()
-        {
-            return IsMethodSymbol();
-        }
-
         public CType getType()
         {
-            CType type = null;
-            if (IsMethodOrPropertySymbol())
+            if (this is MethodOrPropertySymbol methProp)
             {
-                type = this.AsMethodOrPropertySymbol().RetType;
+                return methProp.RetType;
             }
-            else if (IsFieldSymbol())
+
+            if (this is FieldSymbol field)
             {
-                type = this.AsFieldSymbol().GetType();
+                return field.GetType();
             }
-            else if (IsEventSymbol())
+
+            if (this is EventSymbol ev)
             {
-                type = this.AsEventSymbol().type;
+                return ev.type;
             }
-            return type;
+
+            return null;
         }
 
         public bool isStatic
         {
             get
             {
-                bool fStatic = false;
-                if (IsFieldSymbol())
+                if (this is FieldSymbol field)
                 {
-                    fStatic = this.AsFieldSymbol().isStatic;
+                    return field.isStatic;
                 }
-                else if (IsEventSymbol())
+
+                if (this is EventSymbol ev)
                 {
-                    fStatic = this.AsEventSymbol().isStatic;
+                    return ev.isStatic;
                 }
-                else if (IsMethodOrPropertySymbol())
+
+                if (this is MethodOrPropertySymbol methProp)
                 {
-                    fStatic = this.AsMethodOrPropertySymbol().isStatic;
+                    return methProp.isStatic;
                 }
-                else if (IsAggregateSymbol())
-                {
-                    fStatic = true;
-                }
-                return fStatic;
+
+                return this is AggregateSymbol;
             }
         }
 
@@ -320,14 +146,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case SYMKIND.SK_FieldSymbol:
                 case SYMKIND.SK_EventSymbol:
                 case SYMKIND.SK_TypeParameterSymbol:
-                    return parent.AsAggregateSymbol().AssociatedAssembly;
+                    return ((AggregateSymbol)parent).AssociatedAssembly;
 
                 case SYMKIND.SK_AggregateDeclaration:
-                    return this.AsAggregateDeclaration().GetAssembly();
+                    return ((AggregateDeclaration)this).GetAssembly();
                 case SYMKIND.SK_AggregateSymbol:
-                    return this.AsAggregateSymbol().AssociatedAssembly;
-                case SYMKIND.SK_NamespaceSymbol:
-                case SYMKIND.SK_AssemblyQualifiedNamespaceSymbol:
+                    return ((AggregateSymbol)this).AssociatedAssembly;
                 default:
                     // Should never call this with any other kind.
                     Debug.Assert(false, "GetAssemblyID called on bad sym kind");
@@ -347,15 +171,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case SYMKIND.SK_FieldSymbol:
                 case SYMKIND.SK_EventSymbol:
                 case SYMKIND.SK_TypeParameterSymbol:
-                    return parent.AsAggregateSymbol().InternalsVisibleTo(assembly);
+                    return ((AggregateSymbol)parent).InternalsVisibleTo(assembly);
 
                 case SYMKIND.SK_AggregateDeclaration:
-                    return this.AsAggregateDeclaration().Agg().InternalsVisibleTo(assembly);
+                    return ((AggregateDeclaration)this).Agg().InternalsVisibleTo(assembly);
                 case SYMKIND.SK_AggregateSymbol:
-                    return this.AsAggregateSymbol().InternalsVisibleTo(assembly);
-                case SYMKIND.SK_ExternalAliasDefinitionSymbol:
-                case SYMKIND.SK_NamespaceSymbol:
-                case SYMKIND.SK_AssemblyQualifiedNamespaceSymbol:
+                    return ((AggregateSymbol)this).InternalsVisibleTo(assembly);
                 default:
                     // Should never call this with any other kind.
                     Debug.Assert(false, "InternalsVisibleTo called on bad sym kind");
@@ -375,12 +196,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             switch (_kind)
             {
                 case SYMKIND.SK_MethodSymbol:
-                    return this.AsMethodSymbol().isVirtual;
+                    return ((MethodSymbol)this).isVirtual;
+
                 case SYMKIND.SK_EventSymbol:
-                    return this.AsEventSymbol().methAdd != null && this.AsEventSymbol().methAdd.isVirtual;
+                    MethodSymbol methAdd = ((EventSymbol)this).methAdd;
+                    return methAdd != null && methAdd.isVirtual;
+
                 case SYMKIND.SK_PropertySymbol:
-                    return (this.AsPropertySymbol().methGet != null && this.AsPropertySymbol().methGet.isVirtual) ||
-                           (this.AsPropertySymbol().methSet != null && this.AsPropertySymbol().methSet.isVirtual);
+                    PropertySymbol prop = ((PropertySymbol)this);
+                    MethodSymbol meth = prop.GetterMethod ?? prop.SetterMethod;
+                    return meth != null && meth.isVirtual;
+
                 default:
                     return false;
             }
@@ -392,9 +218,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 case SYMKIND.SK_MethodSymbol:
                 case SYMKIND.SK_PropertySymbol:
-                    return this.AsMethodOrPropertySymbol().isOverride;
+                    return ((MethodOrPropertySymbol)this).isOverride;
                 case SYMKIND.SK_EventSymbol:
-                    return this.AsEventSymbol().isOverride;
+                    return ((EventSymbol)this).isOverride;
                 default:
                     return false;
             }
@@ -406,25 +232,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 case SYMKIND.SK_MethodSymbol:
                 case SYMKIND.SK_PropertySymbol:
-                    return this.AsMethodOrPropertySymbol().isHideByName;
+                    return ((MethodOrPropertySymbol)this).isHideByName;
                 case SYMKIND.SK_EventSymbol:
-                    return this.AsEventSymbol().methAdd != null && this.AsEventSymbol().methAdd.isHideByName;
+                    MethodSymbol methAdd = ((EventSymbol)this).methAdd;
+                    return methAdd != null && methAdd.isHideByName;
                 default:
                     return true;
-            }
-        }
-
-        // Returns the virtual that this sym overrides (if IsOverride() is true), null otherwise.
-        public Symbol SymBaseVirtual()
-        {
-            switch (_kind)
-            {
-                case SYMKIND.SK_MethodSymbol:
-                case SYMKIND.SK_PropertySymbol:
-                    return this.AsMethodOrPropertySymbol().swtSlot.Sym;
-                case SYMKIND.SK_EventSymbol:
-                default:
-                    return null;
             }
         }
 
@@ -433,54 +246,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
          */
         public bool isUserCallable()
         {
-            switch (_kind)
-            {
-                case SYMKIND.SK_MethodSymbol:
-                    return this.AsMethodSymbol().isUserCallable();
-                default:
-                    break;
-            }
-
-            return true;
+            return !(this is MethodSymbol methSym) || methSym.isUserCallable();
         }
-    }
-
-    /*
-     * We have member functions here to do casts that, in DEBUG, check the 
-     * symbol kind to make sure it is right. For example, the casting method
-     * for METHODSYM is called "asMETHODSYM". In retail builds, these 
-     * methods optimize away to nothing.
-     */
-
-    internal static class SymbolExtensions
-    {
-        public static IEnumerable<Symbol> Children(this ParentSymbol symbol)
-        {
-            if (symbol == null)
-                yield break;
-            Symbol current = symbol.firstChild;
-            while (current != null)
-            {
-                yield return current;
-                current = current.nextChild;
-            }
-        }
-
-        internal static MethodSymbol AsFMETHSYM(this Symbol symbol) { return symbol as MethodSymbol; }
-
-        internal static NamespaceOrAggregateSymbol AsNamespaceOrAggregateSymbol(this Symbol symbol) { return symbol as NamespaceOrAggregateSymbol; }
-        internal static NamespaceSymbol AsNamespaceSymbol(this Symbol symbol) { return symbol as NamespaceSymbol; }
-        internal static AssemblyQualifiedNamespaceSymbol AsAssemblyQualifiedNamespaceSymbol(this Symbol symbol) { return symbol as AssemblyQualifiedNamespaceSymbol; }
-
-        internal static AggregateSymbol AsAggregateSymbol(this Symbol symbol) { return symbol as AggregateSymbol; }
-        internal static AggregateDeclaration AsAggregateDeclaration(this Symbol symbol) { return symbol as AggregateDeclaration; }
-        internal static FieldSymbol AsFieldSymbol(this Symbol symbol) { return symbol as FieldSymbol; }
-        internal static LocalVariableSymbol AsLocalVariableSymbol(this Symbol symbol) { return symbol as LocalVariableSymbol; }
-        internal static MethodSymbol AsMethodSymbol(this Symbol symbol) { return symbol as MethodSymbol; }
-        internal static PropertySymbol AsPropertySymbol(this Symbol symbol) { return symbol as PropertySymbol; }
-        internal static MethodOrPropertySymbol AsMethodOrPropertySymbol(this Symbol symbol) { return symbol as MethodOrPropertySymbol; }
-        internal static Scope AsScope(this Symbol symbol) { return symbol as Scope; }
-        internal static TypeParameterSymbol AsTypeParameterSymbol(this Symbol symbol) { return symbol as TypeParameterSymbol; }
-        internal static EventSymbol AsEventSymbol(this Symbol symbol) { return symbol as EventSymbol; }
     }
 }

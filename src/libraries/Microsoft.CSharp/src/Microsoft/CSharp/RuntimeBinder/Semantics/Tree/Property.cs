@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class ExprProperty : ExprWithType, IExprWithArgs
+    internal sealed class ExprProperty : ExprWithArgs
     {
         // If we have this.prop = 123, but the implementation of the property is in the
         // base class, then the object is of the base class type. Note that to get
@@ -14,29 +14,30 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // of the type we are actually calling through.  (We need to know the
         // "through" type to ensure that protected semantics are correctly enforced.)
 
-        public ExprProperty(CType type)
+        public ExprProperty(CType type, Expr pOptionalObjectThrough, Expr pOptionalArguments, ExprMemberGroup pMemberGroup, PropWithType pwtSlot, MethWithType mwtSet)
             : base(ExpressionKind.Property, type)
         {
+            OptionalObjectThrough = pOptionalObjectThrough;
+            OptionalArguments = pOptionalArguments;
+            MemberGroup = pMemberGroup;
+
+            if (pwtSlot != null)
+            {
+                PropWithTypeSlot = pwtSlot;
+            }
+
+            if (mwtSet != null)
+            {
+                MethWithTypeSet = mwtSet;
+            }
         }
 
-        public Expr OptionalArguments { get; set; }
+        public Expr OptionalObjectThrough { get; }
 
-        public ExprMemberGroup MemberGroup { get; set; }
+        public PropWithType PropWithTypeSlot { get; }
 
-        public Expr OptionalObject
-        {
-            get { return MemberGroup.OptionalObject; }
-            set { MemberGroup.OptionalObject = value; }
-        }
+        public MethWithType MethWithTypeSet { get; }
 
-        public Expr OptionalObjectThrough { get; set; }
-
-        public PropWithType PropWithTypeSlot { get; set; }
-
-        public MethWithType MethWithTypeSet { get; set; }
-
-        public bool IsBaseCall => 0 != (Flags & EXPRFLAG.EXF_BASECALL);
-
-        SymWithType IExprWithArgs.GetSymWithType() => PropWithTypeSlot;
+        public override SymWithType GetSymWithType() => PropWithTypeSlot;
     }
 }

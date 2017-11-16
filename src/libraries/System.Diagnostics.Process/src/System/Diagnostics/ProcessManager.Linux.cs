@@ -80,6 +80,22 @@ namespace System.Diagnostics
                 }
             }
 
+            // Move the main executable module to be the first in the list if it's not already
+            string exePath = Process.GetExePath(processId);
+            for (int i = 0; i < modules.Count; i++)
+            {
+                ProcessModule module = modules[i];
+                if (module.FileName == exePath)
+                {
+                    if (i > 0)
+                    {
+                        modules.RemoveAt(i);
+                        modules.Insert(0, module);
+                    }
+                    break;
+                }
+            }
+
             // Return the set of modules found
             return modules;
         }

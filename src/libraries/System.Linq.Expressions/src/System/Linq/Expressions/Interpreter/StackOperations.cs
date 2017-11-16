@@ -61,7 +61,7 @@ namespace System.Linq.Expressions.Interpreter
         private PopInstruction() { }
 
         public override int ConsumedStack => 1;
-        public override string InstructionName =>"Pop";
+        public override string InstructionName => "Pop";
 
         public override int Run(InterpretedFrame frame)
         {

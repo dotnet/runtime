@@ -2,13 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+using System.Collections;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Runtime.InteropServices;
-    using System.Collections;
-    using System.Globalization;
-
     public enum ActiveDirectoryTransportType
     {
         Rpc = 0,
@@ -36,29 +34,19 @@ namespace System.DirectoryServices.ActiveDirectory
             NoChangeNotifications = 0x20000000,
             PartialAttributeSet = 0x40000000
         }
+        
+        private readonly string _sourceServerDN;
 
-        private string _namingContext;
-        private string _sourceServerDN;
-        private ActiveDirectoryTransportType _transportType;
-        private ReplicationNeighborOptions _replicaFlags;
-        private Guid _uuidSourceDsaInvocationID;
-        private long _usnLastObjChangeSynced;
-        private long _usnAttributeFilter;
-        private DateTime _timeLastSyncSuccess;
-        private DateTime _timeLastSyncAttempt;
-        private int _lastSyncResult;
-        private int _consecutiveSyncFailures;
-
-        private DirectoryServer _server = null;
+        private readonly DirectoryServer _server = null;
         private string _sourceServer = null;
-        private Hashtable _nameTable = null;
+        private readonly Hashtable _nameTable = null;
 
         internal ReplicationNeighbor(IntPtr addr, DirectoryServer server, Hashtable table)
         {
             DS_REPL_NEIGHBOR neighbor = new DS_REPL_NEIGHBOR();
             Marshal.PtrToStructure(addr, neighbor);
 
-            _namingContext = Marshal.PtrToStringUni(neighbor.pszNamingContext);
+            PartitionName = Marshal.PtrToStringUni(neighbor.pszNamingContext);
             _sourceServerDN = Marshal.PtrToStringUni(neighbor.pszSourceDsaDN);
 
             string transportDN = Marshal.PtrToStringUni(neighbor.pszAsyncIntersiteTransportDN);
@@ -68,31 +56,25 @@ namespace System.DirectoryServices.ActiveDirectory
                 string transport = (Utils.GetDNComponents(rdn))[0].Value;
 
                 if (String.Compare(transport, "SMTP", StringComparison.OrdinalIgnoreCase) == 0)
-                    _transportType = ActiveDirectoryTransportType.Smtp;
+                    TransportType = ActiveDirectoryTransportType.Smtp;
                 else
-                    _transportType = ActiveDirectoryTransportType.Rpc;
+                    TransportType = ActiveDirectoryTransportType.Rpc;
             }
 
-            _replicaFlags = (ReplicationNeighborOptions)neighbor.dwReplicaFlags;
-            _uuidSourceDsaInvocationID = neighbor.uuidSourceDsaInvocationID;
-            _usnLastObjChangeSynced = neighbor.usnLastObjChangeSynced;
-            _usnAttributeFilter = neighbor.usnAttributeFilter;
-            _timeLastSyncSuccess = DateTime.FromFileTime(neighbor.ftimeLastSyncSuccess);
-            _timeLastSyncAttempt = DateTime.FromFileTime(neighbor.ftimeLastSyncAttempt);
-            _lastSyncResult = neighbor.dwLastSyncResult;
-            _consecutiveSyncFailures = neighbor.cNumConsecutiveSyncFailures;
+            ReplicationNeighborOption = (ReplicationNeighborOptions)neighbor.dwReplicaFlags;
+            SourceInvocationId = neighbor.uuidSourceDsaInvocationID;
+            UsnLastObjectChangeSynced = neighbor.usnLastObjChangeSynced;
+            UsnAttributeFilter = neighbor.usnAttributeFilter;
+            LastSuccessfulSync = DateTime.FromFileTime(neighbor.ftimeLastSyncSuccess);
+            LastAttemptedSync = DateTime.FromFileTime(neighbor.ftimeLastSyncAttempt);
+            LastSyncResult = neighbor.dwLastSyncResult;
+            ConsecutiveFailureCount = neighbor.cNumConsecutiveSyncFailures;
 
             _server = server;
             _nameTable = table;
         }
 
-        public string PartitionName
-        {
-            get
-            {
-                return _namingContext;
-            }
-        }
+        public string PartitionName { get; }
 
         public string SourceServer
         {
@@ -117,84 +99,24 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public ActiveDirectoryTransportType TransportType
-        {
-            get
-            {
-                return _transportType;
-            }
-        }
+        public ActiveDirectoryTransportType TransportType { get; }
 
-        public ReplicationNeighborOptions ReplicationNeighborOption
-        {
-            get
-            {
-                return _replicaFlags;
-            }
-        }
+        public ReplicationNeighborOptions ReplicationNeighborOption { get; }
 
-        public Guid SourceInvocationId
-        {
-            get
-            {
-                return _uuidSourceDsaInvocationID;
-            }
-        }
+        public Guid SourceInvocationId { get; }
 
-        public long UsnLastObjectChangeSynced
-        {
-            get
-            {
-                return _usnLastObjChangeSynced;
-            }
-        }
+        public long UsnLastObjectChangeSynced { get; }
 
-        public long UsnAttributeFilter
-        {
-            get
-            {
-                return _usnAttributeFilter;
-            }
-        }
+        public long UsnAttributeFilter { get; }
 
-        public DateTime LastSuccessfulSync
-        {
-            get
-            {
-                return _timeLastSyncSuccess;
-            }
-        }
+        public DateTime LastSuccessfulSync { get; }
 
-        public DateTime LastAttemptedSync
-        {
-            get
-            {
-                return _timeLastSyncAttempt;
-            }
-        }
+        public DateTime LastAttemptedSync { get; }
 
-        public int LastSyncResult
-        {
-            get
-            {
-                return _lastSyncResult;
-            }
-        }
+        public int LastSyncResult { get; }
 
-        public string LastSyncMessage
-        {
-            get
-            {
-                return ExceptionHelper.GetErrorMessage(_lastSyncResult, false);
-            }
-        }
+        public string LastSyncMessage => ExceptionHelper.GetErrorMessage(LastSyncResult, false);
 
-        public int ConsecutiveFailureCount
-        {
-            get
-            {
-                return _consecutiveSyncFailures;
-            }
-        }
+        public int ConsecutiveFailureCount { get; }
     }
 }

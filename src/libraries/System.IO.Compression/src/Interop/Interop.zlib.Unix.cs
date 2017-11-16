@@ -33,13 +33,7 @@ internal static partial class Interop
         [DllImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_InflateEnd")]
         internal static extern ZLibNative.ErrorCode InflateEnd(ref ZLibNative.ZStream stream);
 
-        internal static unsafe uint crc32(uint crc, byte[] buffer, int offset, int len)
-        {
-            fixed (byte* buf = &buffer[offset])
-                return Crc32(crc, buf, len);
-        }
-
         [DllImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_Crc32")]
-        private static extern unsafe uint Crc32(uint crc, byte* buffer, int len);
+        internal static extern unsafe uint crc32(uint crc, byte* buffer, int len);
     }
 }

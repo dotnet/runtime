@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Reflection.Metadata
 {
-    public struct ExportedType
+    public readonly struct ExportedType
     {
         internal readonly MetadataReader reader;
 

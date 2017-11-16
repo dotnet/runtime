@@ -3,12 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using Xunit;
 
 namespace System.Collections.Tests
 {
-    public static class ComparerTests
+    public class ComparerTests : RemoteExecutorTestBase
     {
         [Theory]
         [InlineData("b", "a", 1)]
@@ -20,7 +21,7 @@ namespace System.Collections.Tests
         [InlineData(1, null, 1)]
         [InlineData(null, null, 0)]
         [InlineData(null, 1, -1)]
-        public static void Ctor_CultureInfo(object a, object b, int expected)
+        public void Ctor_CultureInfo(object a, object b, int expected)
         {
             var culture = new CultureInfo("en-US");
             var comparer = new Comparer(culture);
@@ -29,27 +30,24 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void Ctor_CultureInfo_NullCulture_ThrowsArgumentNullException()
+        public void Ctor_CultureInfo_NullCulture_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("culture", () => new Comparer(null)); // Culture is null
         }
 
         [Fact]
-        public static void DefaultInvariant_Compare()
+        public void DefaultInvariant_Compare()
         {
-            CultureInfo culture1 = CultureInfo.CurrentCulture;
-            CultureInfo culture2 = CultureInfo.CurrentUICulture;
-
-            try
+            RemoteInvoke(() =>
             {
                 var cultureNames = new string[]
-                {
+{
                     "cs-CZ","da-DK","de-DE","el-GR","en-US",
                     "es-ES","fi-FI","fr-FR","hu-HU","it-IT",
                     "ja-JP","ko-KR","nb-NO","nl-NL","pl-PL",
                     "pt-BR","pt-PT","ru-RU","sv-SE","tr-TR",
                     "zh-CN","zh-HK","zh-TW"
-                };
+};
 
                 var string1 = new string[] { "Apple", "abc", };
                 var string2 = new string[] { "Æble", "ABC" };
@@ -75,16 +73,12 @@ namespace System.Collections.Tests
                     Assert.Equal(1, comp.Compare(string1[0], string2[0]));
                     Assert.Equal(-1, comp.Compare(string1[1], string2[1]));
                 }
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = culture1;
-                CultureInfo.CurrentUICulture = culture2;
-            }
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
-        public static void DefaultInvariant_Compare_Invalid()
+        public void DefaultInvariant_Compare_Invalid()
         {
             Comparer comp = Comparer.Default;
             AssertExtensions.Throws<ArgumentException>(null, () => comp.Compare(new object(), 1)); // One object doesn't implement IComparable
@@ -115,13 +109,13 @@ namespace System.Collections.Tests
         [InlineData(null, 1, -1)]
         [InlineData(null, null, 0)]
         [MemberData(nameof(CompareTestData))]
-        public static void Default_Compare(object a, object b, int expected)
+        public void Default_Compare(object a, object b, int expected)
         {
             Assert.Equal(expected, Math.Sign(Comparer.Default.Compare(a, b)));
         }
         
         [Fact]
-        public static void Default_Compare_Invalid()
+        public void Default_Compare_Invalid()
         {
             Comparer comp = Comparer.Default;
             AssertExtensions.Throws<ArgumentException>(null, () => comp.Compare(new object(), 1)); // One object doesn't implement IComparable

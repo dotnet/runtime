@@ -15,10 +15,13 @@ namespace System.IO.Compression
     /// </summary>
     internal sealed class OutputWindow
     {
-        private const int WindowSize = 65536;
-        private const int WindowMask = 65535;
+        // With Deflate64 we can have up to a 65536 length as well as up to a 65538 distance. This means we need a Window that is at
+        // least 131074 bytes long so we have space to retrieve up to a full 64kb in lookback and place it in our buffer without 
+        // overwriting existing data. OutputWindow requires that the WindowSize be an exponent of 2, so we round up to 2^18.
+        private const int WindowSize = 262144;
+        private const int WindowMask = 262143;
 
-        private readonly byte[] _window = new byte[WindowSize]; // The window is 2^15 bytes
+        private readonly byte[] _window = new byte[WindowSize]; // The window is 2^18 bytes
         private int _end;       // this is the position to where we should write next byte
         private int _bytesUsed; // The number of bytes in the output window which is not consumed.
 
@@ -34,14 +37,14 @@ namespace System.IO.Compression
         public void WriteLengthDistance(int length, int distance)
         {
             Debug.Assert((_bytesUsed + length) <= WindowSize, "No Enough space");
-
+            
             // move backwards distance bytes in the output stream,
             // and copy length bytes from this position to the output stream.
             _bytesUsed += length;
             int copyStart = (_end - distance) & WindowMask; // start position for coping.
 
             int border = WindowSize - length;
-            if (copyStart <= border && _end < border)
+            if (copyStart <= border && _end < border) 
             {
                 if (length <= distance)
                 {

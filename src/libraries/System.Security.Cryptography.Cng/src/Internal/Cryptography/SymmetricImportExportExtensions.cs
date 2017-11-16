@@ -13,35 +13,6 @@ namespace Internal.Cryptography
 {
     internal static class SymmetricImportExportExtensions
     {
-        public static CngKey ToCngKey(this byte[] key, string algorithm)
-        {
-            int capacity = SizeOf_NCRYPT_KEY_BLOB_HEADER_SIZE + (algorithm.Length + 1) * 2 + SizeOf_BCRYPT_KEY_DATA_BLOB_HEADER + key.Length;
-            using (MemoryStream ms = new MemoryStream(capacity))
-            {
-                using (BinaryWriter bw = new BinaryWriter(ms, Encoding.Unicode))
-                {
-                    // Write out a NCRYPT_KEY_BLOB_HEADER
-                    bw.Write((int)SizeOf_NCRYPT_KEY_BLOB_HEADER_SIZE);                 // NCRYPT_KEY_BLOB_HEADER.cbSize
-                    bw.Write((int)Interop.NCrypt.NCRYPT_CIPHER_KEY_BLOB_MAGIC);        // NCRYPT_KEY_BLOB_HEADER.dwMagic
-                    bw.Write((int)((algorithm.Length + 1) * 2));                       // NCRYPT_KEY_BLOB_HEADER.cbAlgName
-                    bw.Write((int)(SizeOf_BCRYPT_KEY_DATA_BLOB_HEADER + key.Length));  // NCRYPT_KEY_BLOB_HEADER.cbKey = sizeof(BCRYPT_KEY_DATA_BLOB_HEADER) + key.Length
-
-                    bw.Write(algorithm.ToCharArray());                                 // Write out the algorithm name (unicode null-terminated string)
-                    bw.Write((char)0);
-
-                    // Write out a BCRYPT_KEY_DATA_BLOB_HEADER
-                    bw.Write((int)Interop.BCrypt.BCRYPT_KEY_DATA_BLOB_MAGIC);          // BCRYPT_KEY_DATA_BLOB_HEADER.dwMagic
-                    bw.Write((int)Interop.BCrypt.BCRYPT_KEY_DATA_BLOB_VERSION1);       // BCRYPT_KEY_DATA_BLOB_HEADER.dwVersion
-                    bw.Write((int)(key.Length));                                       // BCRYPT_KEY_DATA_BLOB_HEADER.cbKeyData
-
-                    bw.Write((byte[])key);                                             // Write out the key data.
-                }
-                byte[] keyBlob = ms.ToArray();
-
-                CngKey cngKey = CngKey.Import(keyBlob, s_cipherKeyBlobFormat);
-                return cngKey;
-            }
-        }
 
         /// <summary>
         /// Note! This can and likely will throw if the algorithm was given a hardware-based key.

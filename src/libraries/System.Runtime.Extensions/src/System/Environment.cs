@@ -204,6 +204,13 @@ namespace System
                         object result = processType.GetTypeInfo().GetDeclaredProperty("WorkingSet64")?.GetMethod?.Invoke(currentProcess, null);
                         if (result is long) return (long)result;
                     }
+                    catch (TargetInvocationException tie)
+                    {
+                        if(tie.InnerException != null)
+                            throw tie.InnerException;
+
+                        throw tie;
+                    }
                     finally { currentProcess.Dispose(); }
                 }
 

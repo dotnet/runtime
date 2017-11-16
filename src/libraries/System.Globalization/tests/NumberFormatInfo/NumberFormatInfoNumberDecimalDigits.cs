@@ -13,7 +13,7 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> NumberDecimalDigits_TestData()
         {
             yield return new object[] { NumberFormatInfo.InvariantInfo, 2, 2 };
-            yield return new object[] { new CultureInfo("en-US").NumberFormat, 2, 3 };
+            yield return new object[] { CultureInfo.GetCultureInfo("en-US").NumberFormat, 2, 3 };
         }
 
         [Theory]

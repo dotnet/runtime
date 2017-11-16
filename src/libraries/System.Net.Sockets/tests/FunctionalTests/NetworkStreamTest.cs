@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    public class NetworkStreamTest
+    public partial class NetworkStreamTest
     {
         [Fact]
         public void Ctor_NullSocket_ThrowsArgumentNullExceptions()
@@ -455,7 +455,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public async Task ReadWrite_Success()
+        public async Task ReadWrite_Array_Success()
         {
             await RunWithConnectedNetworkStreamsAsync((server, client) =>
             {

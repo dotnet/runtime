@@ -3,7 +3,10 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{C4D6F1F4-DC7E-4756-9A88-171A8B1F1E26}</ProjectGuid>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
+    <!-- Must match version supported by frameworks which support 4.2.* inbox.
+         Can be removed when API is added and this assembly is versioned to 4.3.* -->
+    <AssemblyVersion Condition="'$(TargetsNetFx)' != 'true'">4.2.0.0</AssemblyVersion>
+    <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />

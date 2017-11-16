@@ -28,7 +28,7 @@ namespace System.IO.PortsTests
 
         /// <summary>
         /// Shows that we can inhibit transmission using hardware flow control
-        /// Some kinds of virtual port or RS485 adaptor can't do this
+        /// Some kinds of virtual port or RS485 adapter can't do this
         /// </summary>
         public static bool HasHardwareFlowControl => TCSupport.HardwareWriteBlockingAvailable;
 

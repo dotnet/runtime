@@ -4,11 +4,6 @@
 
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Runtime.InteropServices;
-    using System.Collections;
-    using System.Diagnostics;
-
     public class ReplicationOperationInformation
     {
         internal DateTime startTime;
@@ -19,28 +14,10 @@ namespace System.DirectoryServices.ActiveDirectory
         {
         }
 
-        public DateTime OperationStartTime
-        {
-            get
-            {
-                return startTime;
-            }
-        }
+        public DateTime OperationStartTime => startTime;
 
-        public ReplicationOperation CurrentOperation
-        {
-            get
-            {
-                return currentOp;
-            }
-        }
+        public ReplicationOperation CurrentOperation => currentOp;
 
-        public ReplicationOperationCollection PendingOperations
-        {
-            get
-            {
-                return collection;
-            }
-        }
+        public ReplicationOperationCollection PendingOperations => collection;
     }
 }

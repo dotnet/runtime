@@ -42,8 +42,8 @@ namespace System.ConfigurationTests
             }
         }
 
-        [Theory
-            InlineData(true)
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp)),
+            InlineData(true),
             InlineData(false)
             ]
         [ActiveIssue("dotnet/corefx #18832", TargetFrameworkMonikers.NetFramework)]
@@ -56,8 +56,8 @@ namespace System.ConfigurationTests
             Assert.NotNull(settings.Context);
         }
 
-        [Theory
-            InlineData(true)
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp)),
+            InlineData(true),
             InlineData(false)
             ]
         [ActiveIssue("dotnet/corefx #18832", TargetFrameworkMonikers.NetFramework)]
@@ -71,8 +71,8 @@ namespace System.ConfigurationTests
             Assert.NotNull(settings.Providers[typeof(LocalFileSettingsProvider).Name]);
         }
 
-        [Theory
-            InlineData(true)
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp)),
+            InlineData(true),
             InlineData(false)
             ]
         [ActiveIssue("dotnet/corefx #18832", TargetFrameworkMonikers.NetFramework)]
@@ -87,8 +87,8 @@ namespace System.ConfigurationTests
             Assert.Equal("Foo", settings.StringProperty);
         }
 
-        [Theory
-            InlineData(true)
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp)),
+            InlineData(true),
             InlineData(false)
             ]
         [ActiveIssue("dotnet/corefx #18832", TargetFrameworkMonikers.NetFramework)]
@@ -103,7 +103,7 @@ namespace System.ConfigurationTests
             Assert.Equal(10, settings.IntProperty);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))]
         [ActiveIssue("dotnet/corefx #18832", TargetFrameworkMonikers.NetFramework)]
         public void Reload_SimpleSettings_Ok()
         {
@@ -140,7 +140,7 @@ namespace System.ConfigurationTests
         {
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))]
         [ActiveIssue("dotnet/corefx #18832", TargetFrameworkMonikers.NetFramework)]
         public void SettingsProperty_SettingsWithAttributes_Ok()
         {

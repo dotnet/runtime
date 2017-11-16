@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Collections;
-    using System.Globalization;
-    using System.DirectoryServices;
-
     public class ApplicationPartitionCollection : ReadOnlyCollectionBase
     {
         internal ApplicationPartitionCollection() { }
@@ -21,13 +18,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public ApplicationPartition this[int index]
-        {
-            get
-            {
-                return (ApplicationPartition)InnerList[index];
-            }
-        }
+        public ApplicationPartition this[int index] => (ApplicationPartition)InnerList[index];
 
         public bool Contains(ApplicationPartition applicationPartition)
         {

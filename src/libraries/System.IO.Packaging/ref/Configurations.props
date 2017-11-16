@@ -4,10 +4,10 @@
     <PackageConfigurations>
       netstandard1.3;
       net46;
+      netstandard;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
-      netstandard;
       netfx;
     </BuildConfigurations>
   </PropertyGroup>

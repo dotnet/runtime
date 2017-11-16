@@ -115,4 +115,7 @@
   <data name="CryptoConfigNotSupported" xml:space="preserve">
     <value>Accessing a hash algorithm by manipulating the HashName property is not supported on this platform. Instead, you must instantiate one of the supplied subtypes (such as HMACSHA1.)</value>
   </data>
+  <data name="InvalidOperation_IncorrectImplementation" xml:space="preserve">
+    <value>The algorithm's implementation is incorrect.</value>
+  </data>
 </root>

@@ -47,7 +47,7 @@ Creating a .NET Core console application
 Building a console application for .NET Core requires some customization of the MSBuild build process.  A sample project for a .NET Core console application
 is [CoreApp](https://github.com/dotnet/corefxlab/tree/master/samples/NetCoreSample/CoreApp) in the [corefxlab](https://github.com/dotnet/corefxlab) repo.
 Another good option is to start with [coretemplate](https://github.com/mellinoe/coretemplate), which uses separate MSBuild targets files to target .NET Core
-instead of putting the the changes directly in the project file.  
+instead of putting the changes directly in the project file.  
 
 It is also possible to start by creating a project in Visual Studio and modify it to target .NET Core.  The instructions below show the minimal steps to get this working.
 In contrast to CoreApp or coretemplate, a project created this way won't include configurations for targeting Linux and Mac OS.

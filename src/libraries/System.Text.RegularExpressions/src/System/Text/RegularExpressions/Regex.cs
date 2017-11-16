@@ -9,6 +9,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Reflection;
+using System.Reflection.Emit;
+#if FEATURE_COMPILED
+using System.Runtime.CompilerServices;
+#endif
 using System.Runtime.Serialization;
 using System.Threading;
 
@@ -42,9 +47,12 @@ namespace System.Text.RegularExpressions
 
         protected internal TimeSpan internalMatchTimeout;   // timeout for the execution of this regex
 
+        // During static initialisation of Regex we check
+        private const string DefaultMatchTimeout_ConfigKeyName = "REGEX_DEFAULT_MATCH_TIMEOUT";
+
         // DefaultMatchTimeout specifies the match timeout to use if no other timeout was specified
         // by one means or another. Typically, it is set to InfiniteMatchTimeout.
-        internal static readonly TimeSpan DefaultMatchTimeout = InfiniteMatchTimeout;
+        internal static readonly TimeSpan DefaultMatchTimeout = InitDefaultMatchTimeout();
 
         // *********** } match timeout fields ***********
 
@@ -146,16 +154,18 @@ namespace System.Text.RegularExpressions
             throw new PlatformNotSupportedException();
         }
 
-        private Regex(string pattern, RegexOptions options, TimeSpan matchTimeout, bool useCache)
+        private Regex(string pattern, RegexOptions options, TimeSpan matchTimeout, bool addToCache)
         {
-            RegexTree tree;
-            CachedCodeEntry cached = null;
-            string cultureKey = null;
-
             if (pattern == null)
+            {
                 throw new ArgumentNullException(nameof(pattern));
+            }
+
             if (options < RegexOptions.None || (((int)options) >> MaxOptionShift) != 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(options));
+            }
+
             if ((options & RegexOptions.ECMAScript) != 0
              && (options & ~(RegexOptions.ECMAScript |
                              RegexOptions.IgnoreCase |
@@ -166,29 +176,30 @@ namespace System.Text.RegularExpressions
                            | RegexOptions.Debug
 #endif
                                                )) != 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(options));
+            }
 
             ValidateMatchTimeout(matchTimeout);
 
-            // Try to look up this regex in the cache.  We do this regardless of whether useCache is true since there's
-            // really no reason not to.
+            string cultureKey;
             if ((options & RegexOptions.CultureInvariant) != 0)
-                cultureKey = CultureInfo.InvariantCulture.ToString(); // "English (United States)"
+                cultureKey = CultureInfo.InvariantCulture.ToString();
             else
                 cultureKey = CultureInfo.CurrentCulture.ToString();
 
+            // Try to look up this regex in the cache.
             var key = new CachedCodeEntryKey(options, cultureKey, pattern);
-            cached = LookupCachedAndUpdate(key);
+            CachedCodeEntry cached = LookupCachedAndUpdate(key);
 
             this.pattern = pattern;
             roptions = options;
-
             internalMatchTimeout = matchTimeout;
 
             if (cached == null)
             {
                 // Parse the input
-                tree = RegexParser.Parse(pattern, roptions);
+                RegexTree tree = RegexParser.Parse(pattern, roptions);
 
                 // Extract the relevant information
                 capnames = tree._capnames;
@@ -200,7 +211,7 @@ namespace System.Text.RegularExpressions
                 InitializeReferences();
 
                 tree = null;
-                if (useCache)
+                if (addToCache)
                     cached = CacheCode(key);
             }
             else
@@ -210,10 +221,28 @@ namespace System.Text.RegularExpressions
                 capslist = cached._capslist;
                 capsize = cached._capsize;
                 _code = cached._code;
+#if FEATURE_COMPILED
+                factory = cached._factory;
+#endif
                 _runnerref = cached._runnerref;
                 _replref = cached._replref;
                 _refsInitialized = true;
             }
+
+#if FEATURE_COMPILED
+            // if the compile option is set, then compile the code if it's not already
+            if (UseOptionC() && factory == null)
+            {
+                factory = Compile(_code, roptions);
+
+                if (addToCache && cached != null)
+                {
+                    cached.AddCompiled(factory);
+                }
+
+                _code = null;
+            }
+#endif
         }
 
         // Note: "&lt;" is the XML entity for smaller ("<").
@@ -235,6 +264,58 @@ namespace System.Text.RegularExpressions
 
             throw new ArgumentOutOfRangeException(nameof(matchTimeout));
         }
+
+        /// <summary>
+        /// Specifies the default RegEx matching timeout value (i.e. the timeout that will be used if no
+        /// explicit timeout is specified).
+        /// The default is queried from the current <code>AppDomain</code>.
+        /// If the AddDomain's data value for that key is not a <code>TimeSpan</code> value or if it is outside the
+        /// valid range, an exception is thrown.
+        /// If the AddDomain's data value for that key is <code>null</code>, a fallback value is returned.
+        /// </summary>
+        /// <returns>The default RegEx matching timeout for this AppDomain</returns>
+        private static TimeSpan InitDefaultMatchTimeout()
+        {
+            // Query AppDomain
+            AppDomain ad = AppDomain.CurrentDomain;
+            object defaultMatchTimeoutObj = ad.GetData(DefaultMatchTimeout_ConfigKeyName);
+
+            // If no default is specified, use fallback
+            if (defaultMatchTimeoutObj == null)
+            {
+                return InfiniteMatchTimeout;
+            }
+
+            if (defaultMatchTimeoutObj is TimeSpan defaultMatchTimeOut)
+            {
+                // If default timeout is outside the valid range, throw. It will result in a TypeInitializationException:
+                try
+                {
+                    ValidateMatchTimeout(defaultMatchTimeOut);
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    throw new ArgumentOutOfRangeException(SR.Format(SR.IllegalDefaultRegexMatchTimeoutInAppDomain, DefaultMatchTimeout_ConfigKeyName, defaultMatchTimeOut));
+                }
+
+                return defaultMatchTimeOut;
+            }
+
+            throw new InvalidCastException(SR.Format(SR.IllegalDefaultRegexMatchTimeoutInAppDomain, DefaultMatchTimeout_ConfigKeyName, defaultMatchTimeoutObj));
+        }
+
+#if FEATURE_COMPILED
+        /// <summary>
+        /// This method is here for perf reasons: if the call to RegexCompiler is NOT in the 
+        /// Regex constructor, we don't load RegexCompiler and its reflection classes when
+        /// instantiating a non-compiled regex.
+        /// </summary>
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        private RegexRunnerFactory Compile(RegexCode code, RegexOptions roptions)
+        {
+            return RegexCompiler.Compile(code, roptions);
+        }
+#endif
 
         /// <summary>
         /// Escapes a minimal set of metacharacters (\, *, +, ?, |, {, [, (, ), ^, $, ., #, and
@@ -853,8 +934,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Splits the <paramref name="input"/> string at the position defined by a
-        /// previous pattern.
+        /// Splits the <paramref name="input"/> string at the position defined by a previous pattern.
         /// </summary>
         public string[] Split(string input, int count, int startat)
         {
@@ -863,6 +943,26 @@ namespace System.Text.RegularExpressions
 
             return RegexReplacement.Split(this, input, count, startat);
         }
+
+#if FEATURE_COMPILED
+        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "assemblyname", Justification = "Microsoft: already shipped since v1 - can't fix without causing a breaking change")]
+        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
+        }
+
+        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "assemblyname", Justification = "Microsoft: already shipped since v1 - can't fix without causing a breaking change")]
+        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[] attributes)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
+        }
+
+        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "assemblyname", Justification = "Microsoft: already shipped since v1 - can't fix without causing a breaking change")]
+        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[] attributes, string resourceFile)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
+        }
+#endif
 
         protected void InitializeReferences()
         {
@@ -897,6 +997,8 @@ namespace System.Text.RegularExpressions
 
             if (runner == null)
             {
+                // Use the compiled RegexRunner factory if the code was compiled to MSIL
+
                 if (factory != null)
                     runner = factory.CreateInstance();
                 else
@@ -1017,7 +1119,7 @@ namespace System.Text.RegularExpressions
     /*
      * Used as a key for CacheCodeEntry
      */
-    internal struct CachedCodeEntryKey : IEquatable<CachedCodeEntryKey>
+    internal readonly struct CachedCodeEntryKey : IEquatable<CachedCodeEntryKey>
     {
         private readonly RegexOptions _options;
         private readonly string _cultureKey;
@@ -1066,6 +1168,9 @@ namespace System.Text.RegularExpressions
         internal Hashtable _caps;
         internal Hashtable _capnames;
         internal string[] _capslist;
+#if FEATURE_COMPILED
+        internal RegexRunnerFactory _factory;
+#endif
         internal int _capsize;
         internal ExclusiveReference _runnerref;
         internal SharedReference _replref;
@@ -1083,6 +1188,14 @@ namespace System.Text.RegularExpressions
             _runnerref = runner;
             _replref = repl;
         }
+
+#if FEATURE_COMPILED
+        internal void AddCompiled(RegexRunnerFactory factory)
+        {
+            _factory = factory;
+            _code = null;
+        }
+#endif
     }
 
     /*

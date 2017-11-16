@@ -23,7 +23,11 @@ namespace System.Xml.Serialization
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
+#if XMLSERIALIZERGENERATOR
+    internal class SoapReflectionImporter
+#else
     public class SoapReflectionImporter
+#endif
     {
         private TypeScope _typeScope;
         private SoapAttributeOverrides _attributeOverrides;

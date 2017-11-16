@@ -130,13 +130,19 @@
       <NuGetTargetMoniker>.NETCoreApp,Version=v2.0</NuGetTargetMoniker>
       <NuGetTargetMonikerShort>netcoreapp2.0</NuGetTargetMonikerShort>
       <Imports>netcoreapp1.0</Imports>
-      <CompatibleWith>netstandard2.0</CompatibleWith>
+      <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
-    <!-- netcoreapp is an alias for netcoreapp2.0 -->
-    <TargetGroups Include="netcoreapp">
-      <NuGetTargetMoniker>.NETCoreApp,Version=v2.0</NuGetTargetMoniker>
-      <NuGetTargetMonikerShort>netcoreapp2.0</NuGetTargetMonikerShort>
+    <TargetGroups Include="netcoreapp2.1">
+      <NuGetTargetMoniker>.NETCoreApp,Version=v2.1</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netcoreapp2.1</NuGetTargetMonikerShort>
       <Imports>netcoreapp2.0</Imports>
+      <CompatibleWith>netstandard</CompatibleWith>
+    </TargetGroups>
+    <!-- netcoreapp is an alias for netcoreapp2.1 -->
+    <TargetGroups Include="netcoreapp">
+      <NuGetTargetMoniker>.NETCoreApp,Version=v2.1</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netcoreapp2.1</NuGetTargetMonikerShort>
+      <Imports>netcoreapp2.1</Imports>
       <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="netcoreapp1.2">
@@ -201,6 +207,13 @@
       <NuGetTargetMoniker>.NETFramework,Version=v4.7</NuGetTargetMoniker>
       <NuGetTargetMonikerShort>net47</NuGetTargetMonikerShort>
       <Imports>net462</Imports>
+      <CompatibleWith>netstandard</CompatibleWith>
+    </TargetGroups>
+    <TargetGroups Include="net471">
+      <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.7.1</TargetingPackNugetPackageId>
+      <NuGetTargetMoniker>.NETFramework,Version=v4.7.1</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>net471</NuGetTargetMonikerShort>
+      <Imports>net47</Imports>
       <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="win8">

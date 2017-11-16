@@ -20,6 +20,7 @@ namespace System.Net.Sockets
         private int _receiveTimeout = -1;
         private int _sendTimeout = -1;
         private bool _nonBlocking;
+        private bool _underlyingHandleNonBlocking;
         private SocketAsyncContext _asyncContext;
 
         private TrackedSocketOptions _trackedOptions;
@@ -111,6 +112,18 @@ namespace System.Net.Sockets
             }
         }
 
+        // This will set the underlying OS handle to be nonblocking, for whatever reason --
+        // performing an async operation or using a timeout will cause this to happen.
+        // Once the OS handle is nonblocking, it never transitions back to blocking.
+        private void SetHandleNonBlocking()
+        {
+            // We don't care about synchronization because this is idempotent
+            if (!_underlyingHandleNonBlocking)
+            {
+                AsyncContext.SetNonBlocking();
+                _underlyingHandleNonBlocking = true;
+            }
+        }
 
         public bool IsNonBlocking
         {
@@ -130,7 +143,7 @@ namespace System.Net.Sockets
                 //
                 if (value)
                 {
-                    AsyncContext.SetNonBlocking();
+                    SetHandleNonBlocking();
                 }
             }
         }
@@ -144,7 +157,15 @@ namespace System.Net.Sockets
             set
             {
                 Debug.Assert(value == -1 || value > 0, $"Unexpected value: {value}");
-                _receiveTimeout = value;;
+
+                // We always implement timeouts using nonblocking I/O and AsyncContext,
+                // to avoid issues when switching from blocking I/O to nonblocking.
+                if (value != -1)
+                {
+                    SetHandleNonBlocking();
+                }
+
+                _receiveTimeout = value;
             }
         }
 
@@ -157,6 +178,14 @@ namespace System.Net.Sockets
             set
             {
                 Debug.Assert(value == -1 || value > 0, $"Unexpected value: {value}");
+
+                // We always implement timeouts using nonblocking I/O and AsyncContext,
+                // to avoid issues when switching from blocking I/O to nonblocking.
+                if (value != -1)
+                {
+                    SetHandleNonBlocking();
+                }
+
                 _sendTimeout = value;
             }
         }

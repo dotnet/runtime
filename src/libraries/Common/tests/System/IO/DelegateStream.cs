@@ -52,16 +52,12 @@ namespace System.IO
             _positionSetFunc = positionSetFunc ?? (_ => { throw new NotSupportedException(); });
             _positionGetFunc = positionGetFunc ?? (() => { throw new NotSupportedException(); });
 
-            if (readAsyncFunc != null && readFunc == null)
-                throw new InvalidOperationException("If reads are supported, must provide a synchronous read implementation");
             _readFunc = readFunc;
             _readAsyncFunc = readAsyncFunc ?? ((buffer, offset, count, token) => base.ReadAsync(buffer, offset, count, token));
 
             _seekFunc = seekFunc ?? ((_, __) => { throw new NotSupportedException(); });
             _setLengthFunc = setLengthFunc ?? (_ => { throw new NotSupportedException(); });
 
-            if (writeAsyncFunc != null && writeFunc == null)
-                throw new InvalidOperationException("If writes are supported, must provide a synchronous write implementation");
             _writeFunc = writeFunc;
             _writeAsyncFunc = writeAsyncFunc ?? ((buffer, offset, count, token) => base.WriteAsync(buffer, offset, count, token));
         }

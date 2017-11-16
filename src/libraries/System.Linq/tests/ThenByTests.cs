@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class ThenByTests
+    public class ThenByTests : EnumerableTests
     {
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
@@ -169,6 +169,72 @@ And Immortality.".Split(new[] { ' ', '\n', '\r', '—' }, StringSplitOptions.Rem
         {
             Func<DateTime, int> keySelector = null;
             AssertExtensions.Throws<ArgumentNullException>("keySelector", () => Enumerable.Empty<DateTime>().OrderBy(e => e).ThenBy(keySelector, null));
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        public void SortsLargeAscendingEnumerableCorrectly(int thenBys)
+        {
+            const int Items = 100_000;
+            IEnumerable<int> expected = NumberRangeGuaranteedNotCollectionType(0, Items);
+
+            IEnumerable<int> unordered = expected.Select(i => i);
+            IOrderedEnumerable<int> ordered = unordered.OrderBy(_ => 0);
+            switch (thenBys)
+            {
+                case 1: ordered = ordered.ThenBy(i => i); break;
+                case 2: ordered = ordered.ThenBy(i => 0).ThenBy(i => i); break;
+                case 3: ordered = ordered.ThenBy(i => 0).ThenBy(i => 0).ThenBy(i => i); break;
+            }
+
+            Assert.Equal(expected, ordered);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        public void SortsLargeDescendingEnumerableCorrectly(int thenBys)
+        {
+            const int Items = 100_000;
+            IEnumerable<int> expected = NumberRangeGuaranteedNotCollectionType(0, Items);
+
+            IEnumerable<int> unordered = expected.Select(i => Items - i - 1);
+            IOrderedEnumerable<int> ordered = unordered.OrderBy(_ => 0);
+            switch (thenBys)
+            {
+                case 1: ordered = ordered.ThenBy(i => i); break;
+                case 2: ordered = ordered.ThenBy(i => 0).ThenBy(i => i); break;
+                case 3: ordered = ordered.ThenBy(i => 0).ThenBy(i => 0).ThenBy(i => i); break;
+            }
+
+            Assert.Equal(expected, ordered);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        public void SortsLargeRandomizedEnumerableCorrectly(int thenBys)
+        {
+            const int Items = 100_000;
+            var r = new Random(42);
+
+            int[] randomized = Enumerable.Range(0, Items).Select(i => r.Next()).ToArray();
+
+            IOrderedEnumerable<int> orderedEnumerable = randomized.OrderBy(_ => 0);
+            switch (thenBys)
+            {
+                case 1: orderedEnumerable = orderedEnumerable.ThenBy(i => i); break;
+                case 2: orderedEnumerable = orderedEnumerable.ThenBy(i => 0).ThenBy(i => i); break;
+                case 3: orderedEnumerable = orderedEnumerable.ThenBy(i => 0).ThenBy(i => 0).ThenBy(i => i); break;
+            }
+            int[] ordered = orderedEnumerable.ToArray();
+
+            Array.Sort(randomized, (a, b) => a - b);
+            Assert.Equal(randomized, orderedEnumerable);
         }
     }
 }

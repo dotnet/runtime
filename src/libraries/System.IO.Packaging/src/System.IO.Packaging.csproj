@@ -9,8 +9,8 @@
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='netfx' OR '$(TargetGroup)'=='net46'">true</IsPartialFacadeAssembly>
     <!-- UAPvNext is not yet mapped to netstandard2.0, manually duplicate this ref -->
     <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard'">netstandard2.0;$(UAPvNextTFM)</PackageTargetFramework>
+    <DefineConstants Condition="'$(TargetGroup)' != 'netstandard1.3'">$(DefineConstants);FEATURE_SERIALIZATION</DefineConstants>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />

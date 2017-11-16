@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Algorithms.Tests
 {
-    public class IncrementalHashTests
+    public partial class IncrementalHashTests
     {
         // Some arbitrarily chosen OID segments
         private static readonly byte[] s_hmacKey = { 2, 5, 29, 54, 1, 2, 84, 113, 54, 91, 1, 1, 2, 5, 29, 10, };
@@ -38,6 +38,31 @@ namespace System.Security.Cryptography.Algorithms.Tests
             };
         }
 
+        [Fact]
+        public static void InvalidArguments_Throw()
+        {
+            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => IncrementalHash.CreateHash(new HashAlgorithmName(null)));
+            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => IncrementalHash.CreateHash(new HashAlgorithmName("")));
+
+            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => IncrementalHash.CreateHMAC(new HashAlgorithmName(null), new byte[1]));
+            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => IncrementalHash.CreateHMAC(new HashAlgorithmName(""), new byte[1]));
+
+            AssertExtensions.Throws<ArgumentNullException>("key", () => IncrementalHash.CreateHMAC(HashAlgorithmName.SHA512, null));
+
+            using (IncrementalHash incrementalHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA512))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("data", () => incrementalHash.AppendData(null));
+                AssertExtensions.Throws<ArgumentNullException>("data", () => incrementalHash.AppendData(null, 0, 0));
+
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => incrementalHash.AppendData(new byte[1], -1, 1));
+
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => incrementalHash.AppendData(new byte[1], 0, -1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => incrementalHash.AppendData(new byte[1], 0, 2));
+
+                Assert.Throws<ArgumentException>(() => incrementalHash.AppendData(new byte[2], 1, 2));
+            }
+        }
+
         [Theory]
         [MemberData(nameof(GetHashAlgorithms))]
         public static void VerifyIncrementalHash(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
@@ -45,6 +70,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             using (referenceAlgorithm)
             using (IncrementalHash incrementalHash = IncrementalHash.CreateHash(hashAlgorithm))
             {
+                Assert.Equal(hashAlgorithm, incrementalHash.AlgorithmName);
                 VerifyIncrementalResult(referenceAlgorithm, incrementalHash);
             }
         }
@@ -86,8 +112,8 @@ namespace System.Security.Cryptography.Algorithms.Tests
 
             while (position < s_inputBytes.Length - StepB)
             {
-                incrementalHash.AppendData(s_inputBytes, position, StepA);
-                position += StepA;
+                incrementalHash.AppendData(s_inputBytes, position, StepB);
+                position += StepB;
             }
 
             incrementalHash.AppendData(s_inputBytes, position, s_inputBytes.Length - position);

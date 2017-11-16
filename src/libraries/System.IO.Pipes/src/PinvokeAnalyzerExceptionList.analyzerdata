@@ -1,3 +1,0 @@
-## need to create a uap config that uses CreateFileFromApp, then remove this baseline ##
-# https://github.com/dotnet/corefx/issues/21025
-kernel32.dll!CreateFileW

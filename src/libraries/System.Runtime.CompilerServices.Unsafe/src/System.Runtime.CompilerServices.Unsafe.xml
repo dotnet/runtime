@@ -72,6 +72,14 @@
             <param name="source">The location of the value to reference.</param>
             <returns>A reference to a value of type <typeparamref name="T"/>.</returns>
         </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.AsRef``1(``0@)">
+            <summary>
+            Reinterprets the given read-only reference as a reference.
+            </summary>
+            <typeparam name="T">The type of reference.</typeparam>
+            <param name="source">The read-only reference to reinterpret.</param>
+            <returns>A reference to a value of type <typeparamref name="T"/>.</returns>
+        </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.As``2(``0@)">
             <summary>
             Reinterprets the given reference as a reference to a value of type <typeparamref name="TTo"/>.

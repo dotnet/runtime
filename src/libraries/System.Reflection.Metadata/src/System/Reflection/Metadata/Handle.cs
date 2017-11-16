@@ -13,7 +13,7 @@ namespace System.Reflection.Metadata
     /// <remarks>
     /// Use <see cref="Handle"/> to store multiple kinds of handles.
     /// </remarks>
-    public struct Handle : IEquatable<Handle>
+    public readonly struct Handle : IEquatable<Handle>
     {
         private readonly int _value;
 

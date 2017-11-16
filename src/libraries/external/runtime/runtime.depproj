@@ -2,12 +2,10 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <!-- support cross-targeting by choosing a RID to restore when running on a different machine that what we're build for -->
-    <NugetRuntimeIdentifier Condition="'$(OSGroup)' == 'Windows_NT' AND '$(RunningOnUnix)' == 'true'">win-x64</NugetRuntimeIdentifier>
-    <NugetRuntimeIdentifier Condition="'$(OSGroup)' == 'Unix' AND '$(RunningOnUnix)' != 'true'">linux-x64</NugetRuntimeIdentifier>
-    <NugetRuntimeIdentifier Condition="'$(TargetGroup)' == 'uap'">win10-$(ArchGroup)</NugetRuntimeIdentifier>
-    <NugetRuntimeIdentifier Condition="'$(TargetGroup)' == 'uapaot'">win10-$(ArchGroup)-aot</NugetRuntimeIdentifier>
+    <NugetRuntimeIdentifier>$(PackageRID)</NugetRuntimeIdentifier>
     <RidSpecificAssets>true</RidSpecificAssets>
+    <CoreClrPackageVersion Condition="'$(TargetGroup)' == 'netcoreapp2.0'">2.0.0</CoreClrPackageVersion>
+    <NoWarn>$(NoWarn);NU1603;NU1605</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'uapaot'">
     <!-- Temporarily Override restore moniker since NETNative's targeting pack still uses uap10.1 moniker -->
@@ -28,22 +26,22 @@
 
   <ItemGroup Condition="'$(TargetGroup)'!='uapaot'">
     <PackageReference Include="Microsoft.NETCore.Platforms">
-      <Version>$(PlatformPackageVersion)</Version>
+      <Version>$(MicrosoftNETCorePlatformsPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.Runtime.CoreCLR">
-      <Version>$(CoreClrPackageVersion)</Version>
+      <Version>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.TestHost">
-      <Version>$(CoreClrPackageVersion)</Version>
+      <Version>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="runtime.native.System.Data.SqlClient.sni">
-      <Version>$(PackageVersion)-$(CoreFxExpectedPrerelease)</Version>
+      <Version>$(RuntimeNativeSystemDataSqlClientSniPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.DotNetHost">
-      <Version>2.0.0-preview2-25310-02</Version>
+      <Version>$(MicrosoftNETCoreDotNetHostPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.DotNetHostPolicy">
-      <Version>2.0.0-preview2-25310-02</Version>
+      <Version>$(MicrosoftNETCoreDotNetHostPolicyPackageVersion)</Version>
     </PackageReference>
   </ItemGroup>
 
@@ -72,6 +70,42 @@
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="true" />
 
+    <Exec Command="chmod +x $(TestHostRootPath)dotnet" Condition="'$(RunningOnUnix)' == 'true'"/>
+  </Target>
+
+  <PropertyGroup>
+    <SymbolPackagesDir>$(PackagesDir)symbolpackages/</SymbolPackagesDir>
+  </PropertyGroup>
+
+  <Target Name="CalculateCoreCLRSymbolPackageProperties"
+          BeforeTargets="DownloadAndUnzipSymbolPackage">
+
+    <ItemGroup>
+      <_CoreCLRSymbolPackagesToDownload Include="@(ReferenceCopyLocalPaths->'%(NuGetPackageId)')" Condition="$([System.String]::Copy('%(Identity)').EndsWith('System.Private.CoreLib.dll'))">
+        <Url>https://dotnet.myget.org/F/dotnet-core/symbols/%(NuGetPackageId)/%(NuGetPackageVersion)/</Url>
+        <DestinationFile>%(NuGetPackageId).%(NuGetPackageVersion).symbols.nupkg.zip</DestinationFile>
+        <UnzipDestinationDir>$(SymbolPackagesDir)/%(NuGetPackageId).%(NuGetPackageVersion)</UnzipDestinationDir>
+      </_CoreCLRSymbolPackagesToDownload>
+    </ItemGroup>
+
+    <!-- Calculate the packages to download incrementally if we haven't downloaded them -->
+    <ItemGroup>
+      <SymbolPackagesToDownload Include="@(_CoreCLRSymbolPackagesToDownload)" Condition="!Exists('%(UnzipDestinationDir)')" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="BinPlaceCoreCLRSymbols"
+          AfterTargets="ResolveNuGetPackages"
+          DependsOnTargets="CalculateCoreCLRSymbolPackageProperties;DownloadAndUnzipSymbolPackage"
+          Condition="'$(CoreCLROverridePath)' == '' AND '$(DownloadCoreCLRSymbols)' != 'false'">
+
+      <Warning Text="Failed to download CoreCLR symbols" Condition="'@(SymbolPackagesDownloaded)' == '' AND '@(SymbolPackagesToDownload)' != ''" />
+
+      <ItemGroup>
+        <_CoreCLRSymbolFiles Include="%(_CoreCLRSymbolPackagesToDownload.UnzipDestinationDir)/runtimes/$(NugetRuntimeIdentifier)/native/*.pdb" />
+        <_CoreCLRSymbolFiles Include="%(_CoreCLRSymbolPackagesToDownload.UnzipDestinationDir)/runtimes/$(NugetRuntimeIdentifier)/native/*.dbg" />
+        <ReferenceCopyLocalPaths Include="@(_CoreCLRSymbolFiles)"/>
+      </ItemGroup>
   </Target>
 
   <Target Name="OverrideRuntime"

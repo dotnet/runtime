@@ -3,8 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.IO;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 
 namespace RemoteExecutorConsoleApp
@@ -19,9 +22,9 @@ namespace RemoteExecutorConsoleApp
             // The program expects to be passed the target assembly name to load, the type
             // from that assembly to find, and the method from that assembly to invoke.
             // Any additional arguments are passed as strings to the method.
-            if (args.Length < 3)
+            if (args.Length < 4)
             {
-                Console.Error.WriteLine("Usage: {0} assemblyName typeName methodName", typeof(Program).GetTypeInfo().Assembly.GetName().Name);
+                Console.Error.WriteLine("Usage: {0} assemblyName typeName methodName exceptionFile [additionalArgs]", typeof(Program).GetTypeInfo().Assembly.GetName().Name);
                 Environment.Exit(-1);
                 return -1;
             }
@@ -29,8 +32,9 @@ namespace RemoteExecutorConsoleApp
             string assemblyName = args[0];
             string typeName = args[1];
             string methodName = args[2];
-            string[] additionalArgs = args.Length > 3 ? 
-                args.Subarray(3, args.Length - 3) : 
+            string exceptionFile = args[3];
+            string[] additionalArgs = args.Length > 4 ? 
+                args.Subarray(4, args.Length - 4) : 
                 Array.Empty<string>();
 
             // Load the specified assembly, type, and method, then invoke the method.
@@ -39,7 +43,7 @@ namespace RemoteExecutorConsoleApp
             Type t = null;
             MethodInfo mi = null;
             object instance = null;
-            int exitCode;
+            int exitCode = 0;
             try
             {
                 // Create the test class if necessary
@@ -53,18 +57,39 @@ namespace RemoteExecutorConsoleApp
 
                 // Invoke the test
                 object result = mi.Invoke(instance, additionalArgs);
-                exitCode = result is Task<int> task ?
-                    task.GetAwaiter().GetResult() :
-                    (int)result;
+
+                if (result is Task<int> task)
+                {
+                    exitCode = task.GetAwaiter().GetResult();
+                }
+                else if (result is int exit)
+                {
+                    exitCode = exit;
+                }
             }
             catch (Exception exc)
             {
-                Console.Error.WriteLine("Exception from RemoteExecutorConsoleApp({0}):", string.Join(", ", args));
-                Console.Error.WriteLine("Assembly: {0}", a);
-                Console.Error.WriteLine("Type: {0}", t);
-                Console.Error.WriteLine("Method: {0}", mi);
-                Console.Error.WriteLine("Exception: {0}", exc);
-                throw exc;
+                if (exc is TargetInvocationException && exc.InnerException != null)
+                    exc = exc.InnerException;
+
+                var output = new StringBuilder();
+                output.AppendLine();
+                output.AppendLine("Child exception:");
+                output.AppendLine("  " + exc);
+                output.AppendLine();
+                output.AppendLine("Child process:");
+                output.AppendLine(String.Format("  {0} {1} {2}", a, t, mi));
+                output.AppendLine();
+
+                if (additionalArgs.Length > 0)
+                {
+                    output.AppendLine("Child arguments:");
+                    output.AppendLine("  " + string.Join(", ", additionalArgs));
+                }
+
+                File.WriteAllText(exceptionFile, output.ToString());
+
+                ExceptionDispatchInfo.Capture(exc).Throw();
             }
             finally
             {

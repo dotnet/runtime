@@ -6,7 +6,7 @@ namespace System.Web.Util
 {
     internal static class Utf16StringValidator
     {
-        private const char UNICODE_REPLACEMENT_CHAR = '\uFFFD';
+        private const char UnicodeReplacementChar = '\uFFFD';
 
         internal static string ValidateString(string input)
         {
@@ -42,7 +42,7 @@ namespace System.Web.Util
                 // a high surrogate, so we'll replace it.
                 if (char.IsLowSurrogate(thisChar))
                 {
-                    chars[i] = UNICODE_REPLACEMENT_CHAR;
+                    chars[i] = UnicodeReplacementChar;
                     continue;
                 }
 
@@ -58,7 +58,7 @@ namespace System.Web.Util
 
                     // If this character is a high surrogate and it is not followed
                     // by a low surrogate, replace it.
-                    chars[i] = UNICODE_REPLACEMENT_CHAR;
+                    chars[i] = UnicodeReplacementChar;
                     continue;
                 }
 

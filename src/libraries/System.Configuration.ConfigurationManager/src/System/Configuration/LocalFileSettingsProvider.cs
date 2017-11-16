@@ -5,12 +5,8 @@
 using System.Collections;
 using System.Collections.Specialized;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
-using System.Runtime.Versioning;
-using System.Security;
-using System.Security.Permissions;
 using System.Xml;
 
 namespace System.Configuration
@@ -274,33 +270,6 @@ namespace System.Configuration
         }
 
         /// <summary>
-        ///     Encapsulates the Version constructor so that we can return null when an exception is thrown.
-        /// </summary>
-        private Version CreateVersion(string name)
-        {
-            Version ver = null;
-
-            try
-            {
-                ver = new Version(name);
-            }
-            catch (ArgumentException)
-            {
-                ver = null;
-            }
-            catch (OverflowException)
-            {
-                ver = null;
-            }
-            catch (FormatException)
-            {
-                ver = null;
-            }
-
-            return ver;
-        }
-
-        /// <summary>
         /// Implementation of IClientSettingsProvider.GetPreviousVersion.
         /// </summary>
         public SettingsPropertyValue GetPreviousVersion(SettingsContext context, SettingsProperty property)
@@ -339,43 +308,46 @@ namespace System.Configuration
 
             if (string.IsNullOrEmpty(prevConfigFile))
             {
-                string userConfigPath = isRoaming ? ConfigurationManagerInternalFactory.Instance.ExeRoamingConfigDirectory : ConfigurationManagerInternalFactory.Instance.ExeLocalConfigDirectory;
-                Version curVer = CreateVersion(ConfigurationManagerInternalFactory.Instance.ExeProductVersion);
-                Version prevVer = null;
-                DirectoryInfo prevDir = null;
-                string file = null;
+                string userConfigPath = isRoaming
+                    ? ConfigurationManagerInternalFactory.Instance.ExeRoamingConfigDirectory
+                    : ConfigurationManagerInternalFactory.Instance.ExeLocalConfigDirectory;
 
-                if (curVer == null)
+                Version currentVersion;
+                if (!Version.TryParse(ConfigurationManagerInternalFactory.Instance.ExeProductVersion, out currentVersion))
                 {
                     return null;
                 }
 
-                DirectoryInfo parentDir = Directory.GetParent(userConfigPath);
+                Version previousVersion = null;
+                DirectoryInfo previousDirectory = null;
+                string file = null;
 
-                if (parentDir.Exists)
+                DirectoryInfo parentDirectory = Directory.GetParent(userConfigPath);
+
+                if (parentDirectory.Exists)
                 {
-                    foreach (DirectoryInfo dir in parentDir.GetDirectories())
+                    foreach (DirectoryInfo directory in parentDirectory.GetDirectories())
                     {
-                        Version tempVer = CreateVersion(dir.Name);
+                        Version tempVersion;
 
-                        if (tempVer != null && tempVer < curVer)
+                        if (Version.TryParse(directory.Name, out tempVersion) && tempVersion < currentVersion)
                         {
-                            if (prevVer == null)
+                            if (previousVersion == null)
                             {
-                                prevVer = tempVer;
-                                prevDir = dir;
+                                previousVersion = tempVersion;
+                                previousDirectory = directory;
                             }
-                            else if (tempVer > prevVer)
+                            else if (tempVersion > previousVersion)
                             {
-                                prevVer = tempVer;
-                                prevDir = dir;
+                                previousVersion = tempVersion;
+                                previousDirectory = directory;
                             }
                         }
                     }
 
-                    if (prevDir != null)
+                    if (previousDirectory != null)
                     {
-                        file = Path.Combine(prevDir.FullName, ConfigurationManagerInternalFactory.Instance.UserConfigFilename);
+                        file = Path.Combine(previousDirectory.FullName, ConfigurationManagerInternalFactory.Instance.UserConfigFilename);
                     }
 
                     if (File.Exists(file))
@@ -384,7 +356,7 @@ namespace System.Configuration
                     }
                 }
 
-                //Cache for future use.
+                // Cache for future use.
                 if (isRoaming)
                 {
                     _prevRoamingConfigFileName = prevConfigFile;
@@ -496,10 +468,11 @@ namespace System.Configuration
                 // SettingsPropertyValue returns a byte[] in the binary serialization case. We need to
                 // encode this - we use base64 since SettingsPropertyValue understands it and we won't have
                 // to special case while deserializing.
-                byte[] buf = value.SerializedValue as byte[];
-                if (buf != null)
+
+                byte[] buffer = value.SerializedValue as byte[];
+                if (buffer != null)
                 {
-                    serializedValue = Convert.ToBase64String(buf);
+                    serializedValue = Convert.ToBase64String(buffer);
                 }
             }
 
@@ -516,7 +489,7 @@ namespace System.Configuration
 
             valueXml.InnerXml = serializedValue;
 
-            // Hack to remove the XmlDeclaration that the XmlSerializer adds. 
+            // Hack to remove the XmlDeclaration that the XmlSerializer adds.
             XmlNode unwanted = null;
             foreach (XmlNode child in valueXml.ChildNodes)
             {
@@ -560,13 +533,13 @@ namespace System.Configuration
 
         private class XmlEscaper
         {
-            private XmlDocument doc;
-            private XmlElement temp;
+            private XmlDocument document;
+            private XmlElement tempElement;
 
             internal XmlEscaper()
             {
-                doc = new XmlDocument();
-                temp = doc.CreateElement("temp");
+                document = new XmlDocument();
+                tempElement = document.CreateElement("temp");
             }
 
             internal string Escape(string xmlString)
@@ -576,8 +549,8 @@ namespace System.Configuration
                     return xmlString;
                 }
 
-                temp.InnerText = xmlString;
-                return temp.InnerXml;
+                tempElement.InnerText = xmlString;
+                return tempElement.InnerXml;
             }
 
             internal string Unescape(string escapedString)
@@ -587,8 +560,8 @@ namespace System.Configuration
                     return escapedString;
                 }
 
-                temp.InnerXml = escapedString;
-                return temp.InnerText;
+                tempElement.InnerXml = escapedString;
+                return tempElement.InnerText;
             }
         }
     }

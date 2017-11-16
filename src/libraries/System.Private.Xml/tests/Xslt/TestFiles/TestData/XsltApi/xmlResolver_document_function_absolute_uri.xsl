@@ -4,7 +4,7 @@
 
 	<result>
 
-		<xsl:for-each select="document('c:\\temp\\xmlResolver_document_function.xml')//elem">
+		<xsl:for-each select="document('ABSOLUTE_URI')//elem">
 			<xsl:value-of select="."/>
 		</xsl:for-each>
 

@@ -16,15 +16,16 @@ namespace System.Net.WebSockets.Client.Tests
     {
         public KeepAliveTest(ITestOutputHelper output) : base(output) { }
 
+        [ActiveIssue(23204, TargetFrameworkMonikers.Uap)]
         [ConditionalFact(nameof(WebSocketsSupported))]
         [OuterLoop] // involves long delay
         public async Task KeepAlive_LongDelayBetweenSendReceives_Succeeds()
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(System.Net.Test.Common.Configuration.WebSockets.RemoteEchoServer, TimeOutMilliseconds, _output, TimeSpan.FromSeconds(10)))
+            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(System.Net.Test.Common.Configuration.WebSockets.RemoteEchoServer, TimeOutMilliseconds, _output, TimeSpan.FromSeconds(1)))
             {
                 await cws.SendAsync(new ArraySegment<byte>(new byte[1] { 42 }), WebSocketMessageType.Binary, true, CancellationToken.None);
 
-                await Task.Delay(TimeSpan.FromSeconds(60));
+                await Task.Delay(TimeSpan.FromSeconds(10));
 
                 byte[] receiveBuffer = new byte[1];
                 Assert.Equal(1, (await cws.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), CancellationToken.None)).Count);

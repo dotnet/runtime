@@ -651,7 +651,7 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
-        /// Used to make an observer out of a action delegate. 
+        /// Used to make an observer out of an action delegate. 
         /// </summary>
         public static IObserver<T> MakeObserver<T>(
             Action<T> onNext = null, Action onCompleted = null)

@@ -16,4 +16,3 @@ namespace System.DirectoryServices.Interop
         ADS_OPTION_PASSWORD_METHOD = 7
     }
 }
-

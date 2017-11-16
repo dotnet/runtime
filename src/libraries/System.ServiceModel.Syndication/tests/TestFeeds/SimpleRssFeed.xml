@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<rss xmlns:a10="http://www.w3.org/2005/Atom" version="2.0">
+  <channel xml:base="http://mypage.com/">
+    <title>Contoso News</title>
+    <link>http://www.Contoso.com/news</link>
+    <description>&lt;div&gt;Most recent news from Contoso&lt;/div&gt;</description>
+    <language>en-us</language>
+    <pubDate>Mon, 19 Jun 2017 11:52:39 -0700</pubDate>
+    <managingEditor>jerry@Contoso.com</managingEditor>
+    <category>Newspaperts</category>
+    <generator>SyndicationFeed Feature</generator>
+    <lastBuildDate>Mon, 19 Jun 2017 11:52:39 -0700</lastBuildDate>
+    <image>
+      <url>http://2.bp.blogspot.com/-NA5Jb-64eUg/URx8CSdcj_I/AAAAAAAAAUo/eCx0irI0rq0/s1600/bg_Contoso_logo3-20120824073001907469-620x349.jpg</url>
+      <title>The title is not the same to the original one</title>
+      <link>http://www.contoso.com/notnews</link>
+    </image>
+    <a10:id>123FeedID</a10:id>
+    <CustomElement>asd</CustomElement>
+    <item>
+      <link>http://Contoso.com/news/path</link>
+      <title>SyndicationFeed released for .net Core</title>
+      <description>A lot of text describing the release of .net core feature</description>
+      <author>Contoso Item author</author>
+      <category>Item Category</category>
+      <pubdate>Mon, 19 Jun 2017 11:52:39 -0700</pubdate>
+    </item>
+  </channel>
+</rss>

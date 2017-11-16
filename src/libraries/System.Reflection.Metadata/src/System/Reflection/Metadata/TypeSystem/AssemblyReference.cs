@@ -7,7 +7,7 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Metadata
 {
-    public struct AssemblyReference
+    public readonly partial struct AssemblyReference
     {
         private readonly MetadataReader _reader;
 

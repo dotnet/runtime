@@ -20,7 +20,7 @@ namespace System.Net.WebSockets.Client.Tests
         public static readonly object[][] EchoServers = System.Net.Test.Common.Configuration.WebSockets.EchoServers;
         public static readonly object[][] EchoHeadersServers = System.Net.Test.Common.Configuration.WebSockets.EchoHeadersServers;
 
-        public const int TimeOutMilliseconds = 10000;
+        public const int TimeOutMilliseconds = 20000;
         public const int CloseDescriptionMaxLength = 123;
         public readonly ITestOutputHelper _output;
 
@@ -80,6 +80,24 @@ namespace System.Net.WebSockets.Client.Tests
 
                     Assert.Equal(WebSocketError.InvalidState, exception.WebSocketErrorCode);
                     Assert.Equal(WebSocketState.Aborted, cws.State);
+                }
+            }
+        }
+
+        protected static async Task<WebSocketReceiveResult> ReceiveEntireMessageAsync(WebSocket ws, ArraySegment<byte> segment, CancellationToken cancellationToken)
+        {
+            int bytesReceived = 0;
+            while (true)
+            {
+                WebSocketReceiveResult r = await ws.ReceiveAsync(segment, cancellationToken);
+                if (r.EndOfMessage)
+                {
+                    return new WebSocketReceiveResult(bytesReceived + r.Count, r.MessageType, true, r.CloseStatus, r.CloseStatusDescription);
+                }
+                else
+                {
+                    bytesReceived += r.Count;
+                    segment = new ArraySegment<byte>(segment.Array, segment.Offset + r.Count, segment.Count - r.Count);
                 }
             }
         }

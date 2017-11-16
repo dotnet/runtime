@@ -3,10 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.Serialization;
 
 namespace System.IO.IsolatedStorage
 {
-    public partial class IsolatedStorageException : Exception
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public class IsolatedStorageException : Exception, ISerializable
     {
         private const int COR_E_ISOSTORE = unchecked((int)0x80131450);
 
@@ -30,6 +33,10 @@ namespace System.IO.IsolatedStorage
             : base(message, inner)
         {
             SetErrorCode(COR_E_ISOSTORE);
+        }
+
+        protected IsolatedStorageException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
         }
 
         private void SetErrorCode(int hr)

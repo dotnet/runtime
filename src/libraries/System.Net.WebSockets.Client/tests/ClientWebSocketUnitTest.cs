@@ -57,17 +57,21 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [ActiveIssue(20132, TargetFrameworkMonikers.Uap)]
         [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(WebSocketsSupported))]
-        public void CloseAsync_CreateAndCloseOutput_ThrowsInvalidOperationExceptionWithMessage()
+        public async Task CloseAsync_CreateAndCloseOutput_ThrowsInvalidOperationExceptionWithMessage()
         {
             using (var cws = new ClientWebSocket())
             {
-                AssertExtensions.Throws<InvalidOperationException>(
-                    () =>
-                    cws.CloseOutputAsync(WebSocketCloseStatus.Empty, "", new CancellationToken()).GetAwaiter().GetResult(),
-                    ResourceHelper.GetExceptionMessage("net_WebSockets_NotConnected"));
+                var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                    () => cws.CloseOutputAsync(WebSocketCloseStatus.Empty, "", new CancellationToken()));
+
+                // The .Net Native toolchain optimizes away exception messages.
+                if (!PlatformDetection.IsNetNative)
+                {
+                    string expectedMessage = ResourceHelper.GetExceptionMessage("net_WebSockets_NotConnected");
+                    Assert.Equal(expectedMessage, exception.Message);
+                }
 
                 Assert.Equal(WebSocketState.None, cws.State);
             }
@@ -90,10 +94,9 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [ActiveIssue(20132, TargetFrameworkMonikers.Uap)]
         [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(WebSocketsSupported))]
-        public void CloseAsync_CreateAndReceive_ThrowsInvalidOperationExceptionWithMessage()
+        public async Task CloseAsync_CreateAndReceive_ThrowsInvalidOperationExceptionWithMessage()
         {
             using (var cws = new ClientWebSocket())
             {
@@ -101,9 +104,15 @@ namespace System.Net.WebSockets.Client.Tests
                 var segment = new ArraySegment<byte>(buffer);
                 var ct = new CancellationToken();
 
-                AssertExtensions.Throws<InvalidOperationException>(
-                    () => cws.ReceiveAsync(segment, ct).GetAwaiter().GetResult(),
-                    ResourceHelper.GetExceptionMessage("net_WebSockets_NotConnected"));
+                var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                    () => cws.ReceiveAsync(segment, ct));
+
+                // The .Net Native toolchain optimizes away exception messages.
+                if (!PlatformDetection.IsNetNative)
+                {
+                    string expectedMessage = ResourceHelper.GetExceptionMessage("net_WebSockets_NotConnected");
+                    Assert.Equal(expectedMessage, exception.Message);
+                }
 
                 Assert.Equal(WebSocketState.None, cws.State);
             }
@@ -126,10 +135,9 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [ActiveIssue(20132, TargetFrameworkMonikers.Uap)]
         [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(WebSocketsSupported))]
-        public void CloseAsync_CreateAndSend_ThrowsInvalidOperationExceptionWithMessage()
+        public async Task CloseAsync_CreateAndSend_ThrowsInvalidOperationExceptionWithMessage()
         {
             using (var cws = new ClientWebSocket())
             {
@@ -137,9 +145,15 @@ namespace System.Net.WebSockets.Client.Tests
                 var segment = new ArraySegment<byte>(buffer);
                 var ct = new CancellationToken();
 
-                AssertExtensions.Throws<InvalidOperationException>(
-                    () => cws.SendAsync(segment, WebSocketMessageType.Text, false, ct).GetAwaiter().GetResult(),
-                    ResourceHelper.GetExceptionMessage("net_WebSockets_NotConnected"));
+                var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                    () => cws.SendAsync(segment, WebSocketMessageType.Text, false, ct));
+
+                // The .Net Native toolchain optimizes away exception messages.
+                if (!PlatformDetection.IsNetNative)
+                {
+                    string expectedMessage = ResourceHelper.GetExceptionMessage("net_WebSockets_NotConnected");
+                    Assert.Equal(expectedMessage, exception.Message);
+                }
 
                 Assert.Equal(WebSocketState.None, cws.State);
             }
@@ -184,7 +198,6 @@ namespace System.Net.WebSockets.Client.Tests
             Assert.Equal(WebSocketState.Closed, cws.State);
         }
 
-        [ActiveIssue(20132, TargetFrameworkMonikers.Uap)]
         [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(WebSocketsSupported))]
         public void CloseAsync_DisposeAndCloseOutput_ThrowsObjectDisposedExceptionWithMessage()
@@ -202,7 +215,6 @@ namespace System.Net.WebSockets.Client.Tests
             Assert.Equal(WebSocketState.Closed, cws.State);
         }
 
-        [ActiveIssue(20132, TargetFrameworkMonikers.Uap)]
         [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(WebSocketsSupported))]
         public void ReceiveAsync_CreateAndDisposeAndReceive_ThrowsObjectDisposedExceptionWithMessage()
@@ -223,7 +235,6 @@ namespace System.Net.WebSockets.Client.Tests
             Assert.Equal(WebSocketState.Closed, cws.State);
         }
 
-        [ActiveIssue(20132, TargetFrameworkMonikers.Uap)]
         [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(WebSocketsSupported))]
         public void SendAsync_CreateAndDisposeAndSend_ThrowsObjectDisposedExceptionWithMessage()

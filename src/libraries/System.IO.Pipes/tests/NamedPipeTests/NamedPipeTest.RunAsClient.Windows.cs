@@ -13,14 +13,19 @@ namespace System.IO.Pipes.Tests
 {
     public partial class NamedPipeTest_RunAsClient : RemoteExecutorTestBase
     {
-        [Fact]
+        [Theory]
+        [InlineData(TokenImpersonationLevel.None)]
+        [InlineData(TokenImpersonationLevel.Anonymous)]
+        [InlineData(TokenImpersonationLevel.Identification)]
+        [InlineData(TokenImpersonationLevel.Impersonation)]
+        [InlineData(TokenImpersonationLevel.Delegation)]
         [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes
-        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
-        public async Task RunAsClient_Windows()
+        [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
+        public async Task RunAsClient_Windows(TokenImpersonationLevel tokenImpersonationLevel)
         {
-            string pipeName = Path.GetRandomFileName();
+            string pipeName = GetUniquePipeName();
             using (var server = new NamedPipeServerStream(pipeName))
-            using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.Impersonation))
+            using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.None, tokenImpersonationLevel))
             {
                 Task serverTask = server.WaitForConnectionAsync();
 
@@ -28,9 +33,26 @@ namespace System.IO.Pipes.Tests
                 await serverTask;
 
                 bool ran = false;
-                server.RunAsClient(() => ran = true);
-                Assert.True(ran, "Expected delegate to have been invoked");
+                if (tokenImpersonationLevel == TokenImpersonationLevel.None)
+                {
+                    Assert.Throws<IOException>(() => server.RunAsClient(() => ran = true));
+                    Assert.False(ran, "Expected delegate to not have been invoked");
+                }
+                else
+                {
+                    server.RunAsClient(() => ran = true);
+                    Assert.True(ran, "Expected delegate to have been invoked");
+                }
             }
+        }
+
+        private static string GetUniquePipeName()
+        {
+            if (PlatformDetection.IsInAppContainer)
+            {
+                return @"LOCAL\" + Path.GetRandomFileName();
+            }
+            return Path.GetRandomFileName();
         }
     }
 }

@@ -2,27 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+using System.Runtime.InteropServices;
+using System.Diagnostics;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Collections;
-    using System.Runtime.InteropServices;
-    using System.Diagnostics;
-
     public class AttributeMetadata
     {
-        private string _pszAttributeName = null;
-        private int _dwVersion;
-        private DateTime _ftimeLastOriginatingChange;
-        private Guid _uuidLastOriginatingDsaInvocationID;
-        private long _usnOriginatingChange;
-        private long _usnLocalChange;
-        private string _pszLastOriginatingDsaDN = null;
+        private readonly string _pszLastOriginatingDsaDN = null;
 
         private string _originatingServerName = null;
-        private DirectoryServer _server = null;
-        private Hashtable _nameTable = null;
-        private bool _advanced = false;
+        private readonly DirectoryServer _server = null;
+        private readonly Hashtable _nameTable = null;
+        private readonly bool _advanced = false;
 
         internal AttributeMetadata(IntPtr info, bool advanced, DirectoryServer server, Hashtable table)
         {
@@ -32,13 +25,13 @@ namespace System.DirectoryServices.ActiveDirectory
                 Marshal.PtrToStructure(info, attrMetaData);
                 Debug.Assert(attrMetaData != null);
 
-                _pszAttributeName = Marshal.PtrToStringUni(attrMetaData.pszAttributeName);
-                _dwVersion = attrMetaData.dwVersion;
+                Name = Marshal.PtrToStringUni(attrMetaData.pszAttributeName);
+                Version = attrMetaData.dwVersion;
                 long ftimeChangeValue = (long)((uint)attrMetaData.ftimeLastOriginatingChange1 + (((long)attrMetaData.ftimeLastOriginatingChange2) << 32));
-                _ftimeLastOriginatingChange = DateTime.FromFileTime(ftimeChangeValue);
-                _uuidLastOriginatingDsaInvocationID = attrMetaData.uuidLastOriginatingDsaInvocationID;
-                _usnOriginatingChange = attrMetaData.usnOriginatingChange;
-                _usnLocalChange = attrMetaData.usnLocalChange;
+                LastOriginatingChangeTime = DateTime.FromFileTime(ftimeChangeValue);
+                LastOriginatingInvocationId = attrMetaData.uuidLastOriginatingDsaInvocationID;
+                OriginatingChangeUsn = attrMetaData.usnOriginatingChange;
+                LocalChangeUsn = attrMetaData.usnLocalChange;
                 _pszLastOriginatingDsaDN = Marshal.PtrToStringUni(attrMetaData.pszLastOriginatingDsaDN);
             }
             else
@@ -47,66 +40,30 @@ namespace System.DirectoryServices.ActiveDirectory
                 Marshal.PtrToStructure(info, attrMetaData);
                 Debug.Assert(attrMetaData != null);
 
-                _pszAttributeName = Marshal.PtrToStringUni(attrMetaData.pszAttributeName);
-                _dwVersion = attrMetaData.dwVersion;
+                Name = Marshal.PtrToStringUni(attrMetaData.pszAttributeName);
+                Version = attrMetaData.dwVersion;
                 long ftimeChangeValue = (long)((uint)attrMetaData.ftimeLastOriginatingChange1 + (((long)attrMetaData.ftimeLastOriginatingChange2) << 32));
-                _ftimeLastOriginatingChange = DateTime.FromFileTime(ftimeChangeValue);
-                _uuidLastOriginatingDsaInvocationID = attrMetaData.uuidLastOriginatingDsaInvocationID;
-                _usnOriginatingChange = attrMetaData.usnOriginatingChange;
-                _usnLocalChange = attrMetaData.usnLocalChange;
+                LastOriginatingChangeTime = DateTime.FromFileTime(ftimeChangeValue);
+                LastOriginatingInvocationId = attrMetaData.uuidLastOriginatingDsaInvocationID;
+                OriginatingChangeUsn = attrMetaData.usnOriginatingChange;
+                LocalChangeUsn = attrMetaData.usnLocalChange;
             }
             _server = server;
             _nameTable = table;
             _advanced = advanced;
         }
 
-        public string Name
-        {
-            get
-            {
-                return _pszAttributeName;
-            }
-        }
+        public string Name { get; }
 
-        public int Version
-        {
-            get
-            {
-                return _dwVersion;
-            }
-        }
+        public int Version { get; }
 
-        public DateTime LastOriginatingChangeTime
-        {
-            get
-            {
-                return _ftimeLastOriginatingChange;
-            }
-        }
+        public DateTime LastOriginatingChangeTime { get; }
 
-        public Guid LastOriginatingInvocationId
-        {
-            get
-            {
-                return _uuidLastOriginatingDsaInvocationID;
-            }
-        }
+        public Guid LastOriginatingInvocationId { get; }
 
-        public long OriginatingChangeUsn
-        {
-            get
-            {
-                return _usnOriginatingChange;
-            }
-        }
+        public long OriginatingChangeUsn { get; }
 
-        public long LocalChangeUsn
-        {
-            get
-            {
-                return _usnLocalChange;
-            }
-        }
+        public long LocalChangeUsn { get; }
 
         public string OriginatingServer
         {

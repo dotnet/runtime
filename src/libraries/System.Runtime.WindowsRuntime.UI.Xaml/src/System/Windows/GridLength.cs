@@ -47,7 +47,7 @@ namespace Windows.UI.Xaml
 
         public GridLength(double value, GridUnitType type)
         {
-            if (Double.IsNaN(value) || Double.IsInfinity(value) || value < 0.0)
+            if (!double.IsFinite(value) || value < 0.0)
             {
                 throw new ArgumentException(SR.DirectUI_InvalidArgument, nameof(value));
             }

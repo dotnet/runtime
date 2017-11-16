@@ -119,7 +119,7 @@ namespace System.Net.Http
 
         public override string ToString()
         {
-            return _method.ToString();
+            return _method;
         }
 
         public static bool operator ==(HttpMethod left, HttpMethod right)

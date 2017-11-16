@@ -6,9 +6,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Diagnostics;
+using System.Drawing;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
-using System.Drawing;
 using System.Threading;
 
 namespace System.ComponentModel
@@ -118,6 +119,7 @@ namespace System.ComponentModel
             [typeof(UInt64)] = typeof(UInt64Converter),
             [typeof(object)] = typeof(TypeConverter),
             [typeof(void)] = typeof(TypeConverter),
+            [typeof(CultureInfo)] = typeof(CultureInfoConverter),
             [typeof(DateTime)] = typeof(DateTimeConverter),
             [typeof(DateTimeOffset)] = typeof(DateTimeOffsetConverter),
             [typeof(Decimal)] = typeof(DecimalConverter),
@@ -135,7 +137,7 @@ namespace System.ComponentModel
             [typeof(ICollection)] = typeof(CollectionConverter),
             [typeof(Enum)] = typeof(EnumConverter),
             [s_intrinsicNullableKey] = typeof(NullableConverter),
-        });    
+        });
 
         private static Hashtable PropertyCache => LazyInitializer.EnsureInitialized(ref s_propertyCache, () => new Hashtable());
 
@@ -147,10 +149,10 @@ namespace System.ComponentModel
 
         /// <summary>
         ///     Adds an editor table for the given editor base type.
-        ///     ypically, editors are specified as metadata on an object. If no metadata for a
-        ///     equested editor base type can be found on an object, however, the
-        ///     ypeDescriptor will search an editor
-        ///     able for the editor type, if one can be found.
+        ///     Typically, editors are specified as metadata on an object. If no metadata for a
+        ///     requested editor base type can be found on an object, however, the
+        ///     TypeDescriptor will search an editor
+        ///     table for the editor type, if one can be found.
         /// </summary>
         internal static void AddEditorTable(Type editorBaseType, Hashtable table)
         {
@@ -726,7 +728,7 @@ namespace System.ComponentModel
         ///     The name of the specified component, or null if the component has no name.
         ///     In many cases this will return the same value as GetComponentName. If the
         ///     component resides in a nested container or has other nested semantics, it may
-        ///     return a different fully qualfied name.
+        ///     return a different fully qualified name.
         ///
         ///     If not overridden, the default implementation of this method will call
         ///     GetComponentName.

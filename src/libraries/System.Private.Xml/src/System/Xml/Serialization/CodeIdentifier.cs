@@ -20,7 +20,11 @@ namespace System.Xml.Serialization
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
+#if XMLSERIALIZERGENERATOR
+    internal class CodeIdentifier
+#else
     public class CodeIdentifier
+#endif
     {
         internal const int MaxIdentifierLength = 511;
 

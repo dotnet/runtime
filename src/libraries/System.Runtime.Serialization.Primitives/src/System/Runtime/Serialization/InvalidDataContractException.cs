@@ -6,7 +6,9 @@ using System;
 
 namespace System.Runtime.Serialization
 {
-    public partial class InvalidDataContractException : Exception
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Runtime.Serialization, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public class InvalidDataContractException : Exception
     {
         public InvalidDataContractException()
             : base()
@@ -20,6 +22,11 @@ namespace System.Runtime.Serialization
 
         public InvalidDataContractException(String message, Exception innerException)
             : base(message, innerException)
+        {
+        }
+
+        protected InvalidDataContractException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
         {
         }
     }

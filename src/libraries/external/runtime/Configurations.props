@@ -4,6 +4,8 @@
     <BuildConfigurations>
       netcoreapp-Windows_NT;
       netcoreapp-Unix;
+      netcoreapp2.0-Windows_NT;
+      netcoreapp2.0-Unix;
       uap;
       uapaot;
       mono;

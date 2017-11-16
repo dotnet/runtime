@@ -126,6 +126,7 @@ namespace System.Net.Http
         private static string s_curlVersionDescription;
         private static string s_curlSslVersionDescription;
 
+        private static readonly MultiAgent s_singletonSharedAgent;
         private readonly MultiAgent _agent;
         private volatile bool _anyOperationStarted;
         private volatile bool _disposed;
@@ -169,12 +170,27 @@ namespace System.Net.Http
             {
                 EventSourceTrace($"libcurl: {CurlVersionDescription} {CurlSslVersionDescription} {features}");
             }
+
+            // By default every CurlHandler gets its own MultiAgent.  But for some backends,
+            // we need to restrict the number of threads involved in processing libcurl work,
+            // so we create a single MultiAgent that's used by all handlers.
+            bool useSingleton = false;
+            UseSingletonMultiAgent(ref useSingleton);
+            if (useSingleton)
+            {
+                s_singletonSharedAgent = new MultiAgent(null);
+            }
         }
 
         public CurlHandler()
         {
-            _agent = new MultiAgent(this);
+            // If the shared MultiAgent was initialized, use it.
+            // Otherwise, create a new MultiAgent for this handler.
+            _agent = s_singletonSharedAgent ?? new MultiAgent(this);
         }
+
+        /// <summary>Overridden by another partial implementation to set <see cref="result"/> to true if a single MultiAgent should be used.</summary>
+        static partial void UseSingletonMultiAgent(ref bool result);
 
         #region Properties
 
@@ -409,7 +425,7 @@ namespace System.Net.Http
         protected override void Dispose(bool disposing)
         {
             _disposed = true;
-            if (disposing)
+            if (disposing && _agent != s_singletonSharedAgent)
             {
                 _agent.Dispose();
             }

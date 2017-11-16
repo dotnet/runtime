@@ -61,17 +61,8 @@
   <data name="InternalCompilerError" xml:space="preserve">
     <value>An unexpected exception occurred while binding a dynamic operation</value>
   </data>
-  <data name="BindRequireArguments" xml:space="preserve">
-    <value>Cannot bind call with no calling object</value>
-  </data>
   <data name="BindCallFailedOverloadResolution" xml:space="preserve">
     <value>Overload resolution failed</value>
-  </data>
-  <data name="BindBinaryOperatorRequireTwoArguments" xml:space="preserve">
-    <value>Binary operators must be invoked with two arguments</value>
-  </data>
-  <data name="BindUnaryOperatorRequireOneArgument" xml:space="preserve">
-    <value>Unary operators must be invoked with one argument</value>
   </data>
   <data name="BindPropertyFailedMethodGroup" xml:space="preserve">
     <value>The name '{0}' is bound to a method and cannot be used like a property</value>
@@ -81,15 +72,6 @@
   </data>
   <data name="BindInvokeFailedNonDelegate" xml:space="preserve">
     <value>Cannot invoke a non-delegate type</value>
-  </data>
-  <data name="BindImplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>Implicit conversion takes exactly one argument</value>
-  </data>
-  <data name="BindExplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>Explicit conversion takes exactly one argument</value>
-  </data>
-  <data name="BindBinaryAssignmentRequireTwoArguments" xml:space="preserve">
-    <value>Binary operators cannot be invoked with one argument</value>
   </data>
   <data name="BindBinaryAssignmentFailedNullReference" xml:space="preserve">
     <value>Cannot perform member assignment on a null reference</value>
@@ -105,9 +87,6 @@
   </data>
   <data name="BadBinaryOps" xml:space="preserve">
     <value>Operator '{0}' cannot be applied to operands of type '{1}' and '{2}'</value>
-  </data>
-  <data name="IntDivByZero" xml:space="preserve">
-    <value>Division by constant zero</value>
   </data>
   <data name="BadIndexLHS" xml:space="preserve">
     <value>Cannot apply indexing with [] to an expression of type '{0}'</value>
@@ -151,17 +130,11 @@
   <data name="BadAccess" xml:space="preserve">
     <value>'{0}' is inaccessible due to its protection level</value>
   </data>
-  <data name="MethDelegateMismatch" xml:space="preserve">
-    <value>No overload for '{0}' matches delegate '{1}'</value>
-  </data>
   <data name="AssgLvalueExpected" xml:space="preserve">
     <value>The left-hand side of an assignment must be a variable, property or indexer</value>
   </data>
   <data name="NoConstructors" xml:space="preserve">
     <value>The type '{0}' has no constructors defined</value>
-  </data>
-  <data name="BadDelegateConstructor" xml:space="preserve">
-    <value>The delegate '{0}' does not have a valid constructor</value>
   </data>
   <data name="PropertyLacksGet" xml:space="preserve">
     <value>The property or indexer '{0}' cannot be used in this context because it lacks the get accessor</value>
@@ -172,29 +145,11 @@
   <data name="AssgReadonly" xml:space="preserve">
     <value>A readonly field cannot be assigned to (except in a constructor or a variable initializer)</value>
   </data>
-  <data name="RefReadonly" xml:space="preserve">
-    <value>A readonly field cannot be passed ref or out (except in a constructor)</value>
-  </data>
   <data name="AssgReadonlyStatic" xml:space="preserve">
     <value>A static readonly field cannot be assigned to (except in a static constructor or a variable initializer)</value>
   </data>
-  <data name="RefReadonlyStatic" xml:space="preserve">
-    <value>A static readonly field cannot be passed ref or out (except in a static constructor)</value>
-  </data>
   <data name="AssgReadonlyProp" xml:space="preserve">
     <value>Property or indexer '{0}' cannot be assigned to -- it is read only</value>
-  </data>
-  <data name="AbstractBaseCall" xml:space="preserve">
-    <value>Cannot call an abstract base member: '{0}'</value>
-  </data>
-  <data name="RefProperty" xml:space="preserve">
-    <value>A property or indexer may not be passed as an out or ref parameter</value>
-  </data>
-  <data name="ManagedAddr" xml:space="preserve">
-    <value>Cannot take the address of, get the size of, or declare a pointer to a managed type ('{0}')</value>
-  </data>
-  <data name="FixedNotNeeded" xml:space="preserve">
-    <value>You cannot use the fixed statement to take the address of an already fixed expression</value>
   </data>
   <data name="UnsafeNeeded" xml:space="preserve">
     <value>Dynamic calls cannot be used in conjunction with pointers</value>
@@ -205,29 +160,11 @@
   <data name="MustHaveOpTF" xml:space="preserve">
     <value>The type ('{0}') must contain declarations of operator true and operator false</value>
   </data>
-  <data name="CheckedOverflow" xml:space="preserve">
-    <value>The operation overflows at compile time in checked mode</value>
-  </data>
   <data name="ConstOutOfRangeChecked" xml:space="preserve">
     <value>Constant value '{0}' cannot be converted to a '{1}' (use 'unchecked' syntax to override)</value>
   </data>
   <data name="AmbigMember" xml:space="preserve">
     <value>Ambiguity between '{0}' and '{1}'</value>
-  </data>
-  <data name="SizeofUnsafe" xml:space="preserve">
-    <value>'{0}' does not have a predefined size, therefore sizeof can only be used in an unsafe context (consider using System.Runtime.InteropServices.Marshal.SizeOf)</value>
-  </data>
-  <data name="FieldInitRefNonstatic" xml:space="preserve">
-    <value>A field initializer cannot reference the non-static field, method, or property '{0}'</value>
-  </data>
-  <data name="CallingFinalizeDepracated" xml:space="preserve">
-    <value>Destructors and object.Finalize cannot be called directly. Consider calling IDisposable.Dispose if available.</value>
-  </data>
-  <data name="CallingBaseFinalizeDeprecated" xml:space="preserve">
-    <value>Do not directly call your base class Finalize method. It is called automatically from your destructor.</value>
-  </data>
-  <data name="BadCastInFixed" xml:space="preserve">
-    <value>The right hand side of a fixed statement assignment may not be a cast expression</value>
   </data>
   <data name="NoImplicitConvCast" xml:space="preserve">
     <value>Cannot implicitly convert type '{0}' to '{1}'. An explicit conversion exists (are you missing a cast?)</value>
@@ -240,9 +177,6 @@
   </data>
   <data name="BadArity" xml:space="preserve">
     <value>Using the generic {1} '{0}' requires '{2}' type arguments</value>
-  </data>
-  <data name="BadTypeArgument" xml:space="preserve">
-    <value>The type '{0}' may not be used as a type argument</value>
   </data>
   <data name="TypeArgsNotAllowed" xml:space="preserve">
     <value>The {1} '{0}' cannot be used with type arguments</value>
@@ -262,23 +196,11 @@
   <data name="GenericConstraintNotSatisfiedNullableInterface" xml:space="preserve">
     <value>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. The nullable type '{3}' does not satisfy the constraint of '{1}'. Nullable types can not satisfy any interface constraints.</value>
   </data>
-  <data name="GenericConstraintNotSatisfiedTyVar" xml:space="preserve">
-    <value>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. There is no boxing conversion or type parameter conversion from '{3}' to '{1}'.</value>
-  </data>
   <data name="GenericConstraintNotSatisfiedValType" xml:space="preserve">
     <value>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. There is no boxing conversion from '{3}' to '{1}'.</value>
   </data>
-  <data name="TypeVarCantBeNull" xml:space="preserve">
-    <value>Cannot convert null to type parameter '{0}' because it could be a non-nullable value type. Consider using 'default({0})' instead.</value>
-  </data>
-  <data name="BadRetType" xml:space="preserve">
-    <value>'{1} {0}' has the wrong return type</value>
-  </data>
   <data name="CantInferMethTypeArgs" xml:space="preserve">
     <value>The type arguments for method '{0}' cannot be inferred from the usage. Try specifying the type arguments explicitly.</value>
-  </data>
-  <data name="MethGrpToNonDel" xml:space="preserve">
-    <value>Cannot convert method group '{0}' to non-delegate type '{1}'. Did you intend to invoke the method?</value>
   </data>
   <data name="RefConstraintNotSatisfied" xml:space="preserve">
     <value>The type '{2}' must be a reference type in order to use it as parameter '{1}' in the generic type or method '{0}'</value>
@@ -286,23 +208,8 @@
   <data name="ValConstraintNotSatisfied" xml:space="preserve">
     <value>The type '{2}' must be a non-nullable value type in order to use it as parameter '{1}' in the generic type or method '{0}'</value>
   </data>
-  <data name="CircularConstraint" xml:space="preserve">
-    <value>Circular constraint dependency involving '{0}' and '{1}'</value>
-  </data>
-  <data name="BaseConstraintConflict" xml:space="preserve">
-    <value>Type parameter '{0}' inherits conflicting constraints '{1}' and '{2}'</value>
-  </data>
-  <data name="ConWithValCon" xml:space="preserve">
-    <value>Type parameter '{1}' has the 'struct' constraint so '{1}' cannot be used as a constraint for '{0}'</value>
-  </data>
   <data name="AmbigUDConv" xml:space="preserve">
     <value>Ambiguous user defined conversions '{0}' and '{1}' when converting from '{2}' to '{3}'</value>
-  </data>
-  <data name="PredefinedTypeNotFound" xml:space="preserve">
-    <value>Predefined type '{0}' is not defined or imported</value>
-  </data>
-  <data name="PredefinedTypeBadType" xml:space="preserve">
-    <value>Predefined type '{0}' is declared incorrectly</value>
   </data>
   <data name="BindToBogus" xml:space="preserve">
     <value>'{0}' is not supported by the language</value>
@@ -310,47 +217,17 @@
   <data name="CantCallSpecialMethod" xml:space="preserve">
     <value>'{0}': cannot explicitly call operator or accessor</value>
   </data>
-  <data name="BogusType" xml:space="preserve">
-    <value>'{0}' is a type not supported by the language</value>
-  </data>
-  <data name="MissingPredefinedMember" xml:space="preserve">
-    <value>Missing compiler required member '{0}.{1}'</value>
-  </data>
-  <data name="LiteralDoubleCast" xml:space="preserve">
-    <value>Literal of type double cannot be implicitly converted to type '{1}'; use an '{0}' suffix to create a literal of this type</value>
-  </data>
-  <data name="UnifyingInterfaceInstantiations" xml:space="preserve">
-    <value>'{0}' cannot implement both '{1}' and '{2}' because they may unify for some type parameter substitutions</value>
-  </data>
   <data name="ConvertToStaticClass" xml:space="preserve">
     <value>Cannot convert to static type '{0}'</value>
   </data>
-  <data name="GenericArgIsStaticClass" xml:space="preserve">
-    <value>'{0}': static types cannot be used as type arguments</value>
-  </data>
-  <data name="PartialMethodToDelegate" xml:space="preserve">
-    <value>Cannot create delegate from method '{0}' because it is a partial method without an implementing declaration</value>
-  </data>
   <data name="IncrementLvalueExpected" xml:space="preserve">
     <value>The operand of an increment or decrement operator must be a variable, property or indexer</value>
-  </data>
-  <data name="NoSuchMemberOrExtension" xml:space="preserve">
-    <value>'{0}' does not contain a definition for '{1}' and no extension method '{1}' accepting a first argument of type '{0}' could be found (are you missing a using directive or an assembly reference?)</value>
-  </data>
-  <data name="ValueTypeExtDelegate" xml:space="preserve">
-    <value>Extension methods '{0}' defined on value type '{1}' cannot be used to create delegates</value>
   </data>
   <data name="BadArgCount" xml:space="preserve">
     <value>No overload for method '{0}' takes '{1}' arguments</value>
   </data>
   <data name="BadArgTypes" xml:space="preserve">
     <value>The best overloaded method match for '{0}' has some invalid arguments</value>
-  </data>
-  <data name="BadArgType" xml:space="preserve">
-    <value>Argument '{0}': cannot convert from '{1}' to '{2}'</value>
-  </data>
-  <data name="RefLvalueExpected" xml:space="preserve">
-    <value>A ref or out argument must be an assignable variable</value>
   </data>
   <data name="BadProtectedAccess" xml:space="preserve">
     <value>Cannot access protected member '{0}' via a qualifier of type '{1}'; the qualifier must be of type '{2}' (or derived from it)</value>
@@ -367,59 +244,17 @@
   <data name="BadDelArgTypes" xml:space="preserve">
     <value>Delegate '{0}' has some invalid arguments</value>
   </data>
-  <data name="AssgReadonlyLocal" xml:space="preserve">
-    <value>Cannot assign to '{0}' because it is read-only</value>
-  </data>
-  <data name="RefReadonlyLocal" xml:space="preserve">
-    <value>Cannot pass '{0}' as a ref or out argument because it is read-only</value>
-  </data>
   <data name="ReturnNotLValue" xml:space="preserve">
     <value>Cannot modify the return value of '{0}' because it is not a variable</value>
-  </data>
-  <data name="BadArgExtraRef" xml:space="preserve">
-    <value>Argument '{0}' should not be passed with the '{1}' keyword</value>
-  </data>
-  <data name="BadArgRef" xml:space="preserve">
-    <value>Argument '{0}' must be passed with the '{1}' keyword</value>
   </data>
   <data name="AssgReadonly2" xml:space="preserve">
     <value>Members of readonly field '{0}' cannot be modified (except in a constructor or a variable initializer)</value>
   </data>
-  <data name="RefReadonly2" xml:space="preserve">
-    <value>Members of readonly field '{0}' cannot be passed ref or out (except in a constructor)</value>
-  </data>
   <data name="AssgReadonlyStatic2" xml:space="preserve">
     <value>Fields of static readonly field '{0}' cannot be assigned to (except in a static constructor or a variable initializer)</value>
   </data>
-  <data name="RefReadonlyStatic2" xml:space="preserve">
-    <value>Fields of static readonly field '{0}' cannot be passed ref or out (except in a static constructor)</value>
-  </data>
-  <data name="AssgReadonlyLocalCause" xml:space="preserve">
-    <value>Cannot assign to '{0}' because it is a '{1}'</value>
-  </data>
-  <data name="RefReadonlyLocalCause" xml:space="preserve">
-    <value>Cannot pass '{0}' as a ref or out argument because it is a '{1}'</value>
-  </data>
-  <data name="ThisStructNotInAnonMeth" xml:space="preserve">
-    <value>Anonymous methods, lambda expressions, and query expressions inside structs cannot access instance members of 'this'. Consider copying 'this' to a local variable outside the anonymous method, lambda expression or query expression and using the local instead.</value>
-  </data>
-  <data name="DelegateOnNullable" xml:space="preserve">
-    <value>Cannot bind delegate to '{0}' because it is a member of 'System.Nullable&lt;T&gt;'</value>
-  </data>
   <data name="BadCtorArgCount" xml:space="preserve">
     <value>'{0}' does not contain a constructor that takes '{1}' arguments</value>
-  </data>
-  <data name="BadExtensionArgTypes" xml:space="preserve">
-    <value>'{0}' does not contain a definition for '{1}' and the best extension method overload '{2}' has some invalid arguments</value>
-  </data>
-  <data name="BadInstanceArgType" xml:space="preserve">
-    <value>Instance argument: cannot convert from '{0}' to '{1}'</value>
-  </data>
-  <data name="BadArgTypesForCollectionAdd" xml:space="preserve">
-    <value>The best overloaded Add method '{0}' for the collection initializer has some invalid arguments</value>
-  </data>
-  <data name="InitializerAddHasParamModifiers" xml:space="preserve">
-    <value>The best overloaded method match '{0}' for the collection initializer element cannot be used. Collection initializer 'Add' methods cannot have ref or out parameters.</value>
   </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>Non-invocable member '{0}' cannot be used like a method.</value>
@@ -438,5 +273,14 @@
   </data>
   <data name="NamedArgumentUsedInPositional" xml:space="preserve">
     <value>Named argument '{0}' specifies a parameter for which a positional argument has already been given</value>
+  </data>
+  <data name="TypeArgumentRequiredForStaticCall" xml:space="preserve">
+    <value>The first argument to dynamically-bound static or constructor call must be a Type</value>
+  </data>
+  <data name="DynamicArgumentNeedsValue" xml:space="preserve">
+    <value>The runtime binder cannot bind a metaobject without a value</value>
+  </data>
+  <data name="BindingNameCollision" xml:space="preserve">
+    <value>More than one type in the binding has the same full name.</value>
   </data>
 </root>

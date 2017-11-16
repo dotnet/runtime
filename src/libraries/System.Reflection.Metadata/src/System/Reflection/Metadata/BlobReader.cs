@@ -116,7 +116,7 @@ namespace System.Reflection.Metadata
         public int RemainingBytes => (int)(_endPointer - _currentPointer);
        
         /// <summary>
-        /// Repositions the reader to the start of the underluing memory block.
+        /// Repositions the reader to the start of the underlying memory block.
         /// </summary>
         public void Reset()
         {

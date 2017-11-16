@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Description:  Mising Namespace on feed element
+Expect:       !Error
+-->
+
+<atom:feed xmlns:atom="http://www.w3.org/2005/Atom">
+
+  <atom:title>Example Feed</atom:title>
+  <atom:link href="http://contoso.com/"/>
+  <atom:updated>2003-12-13T18:30:02Z</atom:updated>
+  <atom:author>
+    <atom:name>Author Name</atom:name>
+  </atom:author>
+  <atom:id>urn:uuid:60a76c80-d399-11d9-b93C-0003939e0af6</atom:id>
+
+  <atom:entry>
+    <atom:title>Atom-Powered Robots Run Amok</atom:title>
+    <atom:link href="http://contoso.com/2003/12/13/atom03"/>
+    <atom:id>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a</atom:id>
+    <atom:updated>2003-12-13T18:30:02Z</atom:updated>
+    <atom:summary>Some text.</atom:summary>
+  </atom:entry>
+
+</atom:feed>

@@ -16,8 +16,6 @@ namespace System.Xml
     {
         private string _name;
         private string _ns;
-
-        [NonSerialized]
         private Int32 _hash;
 
         /// <devdoc>

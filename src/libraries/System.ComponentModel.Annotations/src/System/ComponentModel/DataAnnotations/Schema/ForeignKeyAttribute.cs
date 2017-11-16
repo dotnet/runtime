@@ -14,8 +14,6 @@ namespace System.ComponentModel.DataAnnotations.Schema
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
     public class ForeignKeyAttribute : Attribute
     {
-        private readonly string _name;
-
         /// <summary>
         ///     Initializes a new instance of the <see cref="ForeignKeyAttribute" /> class.
         /// </summary>
@@ -32,16 +30,13 @@ namespace System.ComponentModel.DataAnnotations.Schema
                     SR.ArgumentIsNullOrWhitespace, nameof(name)));
             }
 
-            _name = name;
+            Name = name;
         }
 
         /// <summary>
         ///     If placed on a foreign key property, the name of the associated navigation property.
         ///     If placed on a navigation property, the name of the associated foreign key(s).
         /// </summary>
-        public string Name
-        {
-            get { return _name; }
-        }
+        public string Name { get; }
     }
 }

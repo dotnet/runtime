@@ -16,31 +16,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Name _pName;
 
         private bool _fHasErrors;  // Whether anyituents have errors. This is immutable.
-        private bool _fUnres;      // Whether anyituents are unresolved. This is immutable.
-        private bool _isBogus;     // can't be used in our language -- unsupported type(s)
-        private bool _checkedBogus; // Have we checked a method args/return for bogus types
-
-        // Is and As methods.
-        public AggregateType AsAggregateType() { return this as AggregateType; }
-        public ErrorType AsErrorType() { return this as ErrorType; }
-        public ArrayType AsArrayType() { return this as ArrayType; }
-        public PointerType AsPointerType() { return this as PointerType; }
-        public ParameterModifierType AsParameterModifierType() { return this as ParameterModifierType; }
-        public NullableType AsNullableType() { return this as NullableType; }
-        public TypeParameterType AsTypeParameterType() { return this as TypeParameterType; }
-
-        public bool IsAggregateType() { return this is AggregateType; }
-        public bool IsVoidType() { return this is VoidType; }
-        public bool IsNullType() { return this is NullType; }
-        public bool IsOpenTypePlaceholderType() { return this is OpenTypePlaceholderType; }
-        public bool IsBoundLambdaType() { return this is BoundLambdaType; }
-        public bool IsMethodGroupType() { return this is MethodGroupType; }
-        public bool IsErrorType() { return this is ErrorType; }
-        public bool IsArrayType() { return this is ArrayType; }
-        public bool IsPointerType() { return this is PointerType; }
-        public bool IsParameterModifierType() { return this is ParameterModifierType; }
-        public bool IsNullableType() { return this is NullableType; }
-        public bool IsTypeParameterType() { return this is TypeParameterType; }
 
         public bool IsWindowsRuntimeType()
         {
@@ -68,12 +43,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return false;
         }
 
-        // API similar to System.Type
-        public bool IsGenericParameter
-        {
-            get { return IsTypeParameterType(); }
-        }
-
         private Type _associatedSystemType;
         public Type AssociatedSystemType
         {
@@ -95,58 +64,45 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             switch (src.GetTypeKind())
             {
                 case TypeKind.TK_ArrayType:
-                    ArrayType a = src.AsArrayType();
+                    ArrayType a = (ArrayType)src;
                     Type elementType = a.GetElementType().AssociatedSystemType;
                     result = a.IsSZArray ? elementType.MakeArrayType() : elementType.MakeArrayType(a.rank);
                     break;
 
                 case TypeKind.TK_NullableType:
-                    NullableType n = src.AsNullableType();
+                    NullableType n = (NullableType)src;
                     Type underlyingType = n.GetUnderlyingType().AssociatedSystemType;
                     result = typeof(Nullable<>).MakeGenericType(underlyingType);
                     break;
 
                 case TypeKind.TK_PointerType:
-                    PointerType p = src.AsPointerType();
+                    PointerType p = (PointerType)src;
                     Type referentType = p.GetReferentType().AssociatedSystemType;
                     result = referentType.MakePointerType();
                     break;
 
                 case TypeKind.TK_ParameterModifierType:
-                    ParameterModifierType r = src.AsParameterModifierType();
+                    ParameterModifierType r = (ParameterModifierType)src;
                     Type parameterType = r.GetParameterType().AssociatedSystemType;
                     result = parameterType.MakeByRefType();
                     break;
 
                 case TypeKind.TK_AggregateType:
-                    result = CalculateAssociatedSystemTypeForAggregate(src.AsAggregateType());
+                    result = CalculateAssociatedSystemTypeForAggregate((AggregateType)src);
                     break;
 
                 case TypeKind.TK_TypeParameterType:
-                    TypeParameterType t = src.AsTypeParameterType();
+                    TypeParameterType t = (TypeParameterType)src;
                     if (t.IsMethodTypeParameter())
                     {
-                        MethodInfo meth = t.GetOwningSymbol().AsMethodSymbol().AssociatedMemberInfo as MethodInfo;
+                        MethodInfo meth = ((MethodSymbol)t.GetOwningSymbol()).AssociatedMemberInfo as MethodInfo;
                         result = meth.GetGenericArguments()[t.GetIndexInOwnParameters()];
                     }
                     else
                     {
-                        Type parentType = t.GetOwningSymbol().AsAggregateSymbol().AssociatedSystemType;
+                        Type parentType = ((AggregateSymbol)t.GetOwningSymbol()).AssociatedSystemType;
                         result = parentType.GetGenericArguments()[t.GetIndexInOwnParameters()];
                     }
-                    break;
-
-                case TypeKind.TK_ArgumentListType:
-                case TypeKind.TK_BoundLambdaType:
-                case TypeKind.TK_ErrorType:
-                case TypeKind.TK_MethodGroupType:
-                case TypeKind.TK_NaturalIntegerType:
-                case TypeKind.TK_NullType:
-                case TypeKind.TK_OpenTypePlaceholderType:
-                case TypeKind.TK_UnboundLambdaType:
-                case TypeKind.TK_VoidType:
-
-                default:
                     break;
             }
 
@@ -165,7 +121,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             for (int i = 0; i < typeArgs.Count; i++)
             {
                 // Unnamed type parameter types are just placeholders.
-                if (typeArgs[i].IsTypeParameterType() && typeArgs[i].AsTypeParameterType().GetTypeParameterSymbol().name == null)
+                if (typeArgs[i] is TypeParameterType typeParamArg && typeParamArg.GetTypeParameterSymbol().name == null)
                 {
                     return null;
                 }
@@ -196,71 +152,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public Name GetName() { return _pName; }
         public void SetName(Name pName) { _pName = pName; }
 
-        public bool checkBogus() { return _isBogus; }
-        public bool getBogus() { return _isBogus; }
-        public bool hasBogus() { return _checkedBogus; }
-        public void setBogus(bool isBogus)
-        {
-            _isBogus = isBogus;
-            _checkedBogus = true;
-        }
-        public bool computeCurrentBogusState()
-        {
-            if (hasBogus())
-            {
-                return checkBogus();
-            }
-
-            bool fBogus = false;
-
-            switch (GetTypeKind())
-            {
-                case TypeKind.TK_ParameterModifierType:
-                case TypeKind.TK_PointerType:
-                case TypeKind.TK_ArrayType:
-                case TypeKind.TK_NullableType:
-                    if (GetBaseOrParameterOrElementType() != null)
-                    {
-                        fBogus = GetBaseOrParameterOrElementType().computeCurrentBogusState();
-                    }
-                    break;
-
-                case TypeKind.TK_ErrorType:
-                    setBogus(false);
-                    break;
-
-                case TypeKind.TK_AggregateType:
-                    fBogus = AsAggregateType().getAggregate().computeCurrentBogusState();
-                    for (int i = 0; !fBogus && i < AsAggregateType().GetTypeArgsAll().Count; i++)
-                    {
-                        fBogus |= AsAggregateType().GetTypeArgsAll()[i].computeCurrentBogusState();
-                    }
-                    break;
-
-                case TypeKind.TK_TypeParameterType:
-                case TypeKind.TK_VoidType:
-                case TypeKind.TK_NullType:
-                case TypeKind.TK_OpenTypePlaceholderType:
-                case TypeKind.TK_ArgumentListType:
-                case TypeKind.TK_NaturalIntegerType:
-                    setBogus(false);
-                    break;
-
-                default:
-                    throw Error.InternalCompilerError();
-                    //setBogus(false);
-                    //break;
-            }
-
-            if (fBogus)
-            {
-                // Only set this if at least 1 declared thing is bogus
-                setBogus(fBogus);
-            }
-
-            return hasBogus() && checkBogus();
-        }
-
         // This call switches on the kind and dispatches accordingly. This should really only be 
         // used when dereferencing TypeArrays. We should consider refactoring our code to not 
         // need this type of thing - strongly typed handling of TypeArrays would be much better.
@@ -269,16 +160,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             switch (GetTypeKind())
             {
                 case TypeKind.TK_ArrayType:
-                    return AsArrayType().GetElementType();
+                    return ((ArrayType)this).GetElementType();
 
                 case TypeKind.TK_PointerType:
-                    return AsPointerType().GetReferentType();
+                    return ((PointerType)this).GetReferentType();
 
                 case TypeKind.TK_ParameterModifierType:
-                    return AsParameterModifierType().GetParameterType();
+                    return ((ParameterModifierType)this).GetParameterType();
 
                 case TypeKind.TK_NullableType:
-                    return AsNullableType().GetUnderlyingType();
+                    return ((NullableType)this).GetUnderlyingType();
 
                 default:
                     return null;
@@ -287,20 +178,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public void InitFromParent()
         {
-            Debug.Assert(!IsAggregateType());
-            CType typePar = null;
-
-            if (IsErrorType())
-            {
-                typePar = AsErrorType().GetTypeParent();
-            }
-            else
-            {
-                typePar = GetBaseOrParameterOrElementType();
-            }
-
-            _fHasErrors = typePar.HasErrors();
-            _fUnres = typePar.IsUnresolved();
+            Debug.Assert(!(this is AggregateType));
+            Debug.Assert(!(this is ErrorType));
+            _fHasErrors = GetBaseOrParameterOrElementType().HasErrors();
         }
 
         public bool HasErrors()
@@ -310,14 +190,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public void SetErrors(bool fHasErrors)
         {
             _fHasErrors = fHasErrors;
-        }
-        public bool IsUnresolved()
-        {
-            return _fUnres;
-        }
-        public void SetUnresolved(bool fUnres)
-        {
-            _fUnres = fUnres;
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -333,7 +205,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 case TypeKind.TK_AggregateType:
                     {
-                        AggregateSymbol sym = AsAggregateType().getAggregate();
+                        AggregateSymbol sym = ((AggregateType)this).getAggregate();
 
                         // Treat enums like their underlying types.
                         if (sym.IsEnum())
@@ -414,7 +286,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
         public CType underlyingType()
         {
-            if (IsAggregateType() && getAggregate().IsEnum())
+            if (this is AggregateType && getAggregate().IsEnum())
                 return getAggregate().GetUnderlyingType();
             return this;
         }
@@ -449,38 +321,26 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GetNakedAgg(false);
         }
 
-        private AggregateSymbol GetNakedAgg(bool fStripNub)
-        {
-            CType type = GetNakedType(fStripNub);
-            if (type != null && type.IsAggregateType())
-                return type.AsAggregateType().getAggregate();
-            return null;
-        }
+        private AggregateSymbol GetNakedAgg(bool fStripNub) =>
+            (GetNakedType(fStripNub) as AggregateType)?.getAggregate();
+
         public AggregateSymbol getAggregate()
         {
-            Debug.Assert(IsAggregateType());
-            return AsAggregateType().GetOwningAggregate();
+            Debug.Assert(this is AggregateType);
+            return ((AggregateType)this).GetOwningAggregate();
         }
 
-        public CType StripNubs()
+        public virtual CType StripNubs() => this;
+
+        public virtual CType StripNubs(out bool wasNullable)
         {
-            CType type;
-            for (type = this; type.IsNullableType(); type = type.AsNullableType().GetUnderlyingType())
-                ;
-            return type;
-        }
-        public CType StripNubs(out int pcnub)
-        {
-            pcnub = 0;
-            CType type;
-            for (type = this; type.IsNullableType(); type = type.AsNullableType().GetUnderlyingType())
-                (pcnub)++;
-            return type;
+            wasNullable = false;
+            return this;
         }
 
         public bool isDelegateType()
         {
-            return (IsAggregateType() && getAggregate().IsDelegate());
+            return this is AggregateType && getAggregate().IsDelegate();
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -503,7 +363,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private bool isPointerLike()
         {
-            return IsPointerType() || isPredefType(PredefinedType.PT_INTPTR) || isPredefType(PredefinedType.PT_UINTPTR);
+            return this is PointerType || isPredefType(PredefinedType.PT_INTPTR) || isPredefType(PredefinedType.PT_UINTPTR);
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -516,23 +376,23 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
         public bool isStructOrEnum()
         {
-            return (IsAggregateType() && (getAggregate().IsStruct() || getAggregate().IsEnum())) || IsNullableType();
+            return this is AggregateType && (getAggregate().IsStruct() || getAggregate().IsEnum()) || this is NullableType;
         }
         public bool isStructType()
         {
-            return IsAggregateType() && getAggregate().IsStruct() || IsNullableType();
+            return this is AggregateType && getAggregate().IsStruct() || this is NullableType;
         }
         public bool isEnumType()
         {
-            return (IsAggregateType() && getAggregate().IsEnum());
+            return this is AggregateType && getAggregate().IsEnum();
         }
         public bool isInterfaceType()
         {
-            return (IsAggregateType() && getAggregate().IsInterface());
+            return this is AggregateType && getAggregate().IsInterface();
         }
         public bool isClassType()
         {
-            return (IsAggregateType() && getAggregate().IsClass());
+            return this is AggregateType && getAggregate().IsClass();
         }
         public AggregateType underlyingEnumType()
         {
@@ -541,9 +401,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
         public bool isUnsigned()
         {
-            if (IsAggregateType())
+            if (this is AggregateType sym)
             {
-                AggregateType sym = AsAggregateType();
                 if (sym.isEnumType())
                 {
                     sym = sym.underlyingEnumType();
@@ -560,39 +419,29 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
             else
             {
-                return IsPointerType();
+                return this is PointerType;
             }
         }
         public bool isUnsafe()
         {
             // Pointer types are the only unsafe types.
             // Note that generics may not be instantiated with pointer types
-            return (this != null && (IsPointerType() || (IsArrayType() && AsArrayType().GetElementType().isUnsafe())));
+            return this is PointerType || this is ArrayType arr && arr.GetElementType().isUnsafe();
         }
         public bool isPredefType(PredefinedType pt)
         {
-            if (IsAggregateType())
-                return AsAggregateType().getAggregate().IsPredefined() && AsAggregateType().getAggregate().GetPredefType() == pt;
-            return (IsVoidType() && pt == PredefinedType.PT_VOID);
+            if (this is AggregateType ats)
+                return ats.getAggregate().IsPredefined() && ats.getAggregate().GetPredefType() == pt;
+            return (this is VoidType && pt == PredefinedType.PT_VOID);
         }
         public bool isPredefined()
         {
-            return IsAggregateType() && getAggregate().IsPredefined();
+            return this is AggregateType && getAggregate().IsPredefined();
         }
         public PredefinedType getPredefType()
         {
             //ASSERT(isPredefined());
             return getAggregate().GetPredefType();
-        }
-
-        ////////////////////////////////////////////////////////////////////////////////
-        // Is this type System.TypedReference or System.ArgIterator?
-        // (used for errors because these types can't go certain places)
-
-        public bool isSpecialByRefType()
-        {
-            // ArgIterator, TypedReference and RuntimeArgumentHandle are not supported.
-            return false;
         }
 
         public bool isStaticClass()
@@ -611,7 +460,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             if (isPredefType(PredefinedType.PT_G_EXPRESSION))
             {
-                return AsAggregateType().GetTypeArgsThis()[0];
+                return ((AggregateType)this).GetTypeArgsThis()[0];
             }
 
             return this;
@@ -623,9 +472,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             switch (GetTypeKind())
             {
                 case TypeKind.TK_TypeParameterType:
-                    return AsTypeParameterType().IsValueType();
+                    return ((TypeParameterType)this).IsValueType();
                 case TypeKind.TK_AggregateType:
-                    return AsAggregateType().getAggregate().IsValueType();
+                    return ((AggregateType)this).getAggregate().IsValueType();
                 case TypeKind.TK_NullableType:
                     return true;
                 default:
@@ -637,9 +486,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             switch (GetTypeKind())
             {
                 case TypeKind.TK_TypeParameterType:
-                    return AsTypeParameterType().IsNonNullableValueType();
+                    return ((TypeParameterType)this).IsNonNullableValueType();
                 case TypeKind.TK_AggregateType:
-                    return AsAggregateType().getAggregate().IsValueType();
+                    return ((AggregateType)this).getAggregate().IsValueType();
                 case TypeKind.TK_NullableType:
                     return false;
                 default:
@@ -654,9 +503,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case TypeKind.TK_NullType:
                     return true;
                 case TypeKind.TK_TypeParameterType:
-                    return AsTypeParameterType().IsReferenceType();
+                    return ((TypeParameterType)this).IsReferenceType();
                 case TypeKind.TK_AggregateType:
-                    return AsAggregateType().getAggregate().IsRefType();
+                    return ((AggregateType)this).getAggregate().IsRefType();
                 default:
                     return false;
             }
@@ -666,7 +515,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // be equivalent or convertible (like ANONMETHSYMs)
         public bool IsNeverSameType()
         {
-            return IsBoundLambdaType() || IsMethodGroupType() || (IsErrorType() && !AsErrorType().HasParent());
+            return this is MethodGroupType || this is ErrorType err && !err.HasParent;
         }
     }
 }

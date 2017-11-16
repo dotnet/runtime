@@ -2,11 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography.Xml
 {
@@ -16,9 +12,9 @@ namespace System.Security.Cryptography.Xml
 
         public DSASignatureDescription()
         {
-            KeyAlgorithm = typeof(System.Security.Cryptography.DSA).AssemblyQualifiedName;
-            FormatterAlgorithm = typeof(System.Security.Cryptography.DSASignatureFormatter).AssemblyQualifiedName;
-            DeformatterAlgorithm = typeof(System.Security.Cryptography.DSASignatureDeformatter).AssemblyQualifiedName;
+            KeyAlgorithm = typeof(DSA).AssemblyQualifiedName;
+            FormatterAlgorithm = typeof(DSASignatureFormatter).AssemblyQualifiedName;
+            DeformatterAlgorithm = typeof(DSASignatureDeformatter).AssemblyQualifiedName;
             DigestAlgorithm = "SHA1";
         }
 
@@ -38,7 +34,7 @@ namespace System.Security.Cryptography.Xml
             return item;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 needed for compat.")]
+        [SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 needed for compat.")]
         public sealed override HashAlgorithm CreateDigest()
         {
             return SHA1.Create();

@@ -3,7 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <NuGetRuntimeIdentifier>none</NuGetRuntimeIdentifier>
     <OutputPath>$(XmlDocDir)</OutputPath>
     <EnableBinPlacing>false</EnableBinPlacing>
   </PropertyGroup>

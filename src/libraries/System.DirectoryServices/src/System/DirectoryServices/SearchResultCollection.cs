@@ -2,86 +2,48 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using INTPTR_INTCAST = System.Int32;
+using System.Net;
+using System.Runtime.InteropServices;
+using System.Collections;
+using System.DirectoryServices.Interop;
+using System.Text;
+
 using INTPTR_INTPTRCAST = System.IntPtr;
 
 namespace System.DirectoryServices
 {
-    using System;
-    using System.Net;
-    using System.Runtime.InteropServices;
-    using System.Collections;
-    using System.Diagnostics;
-    using System.DirectoryServices.Interop;
-    using System.Text;
-    using System.Configuration;
-    using System.Security.Permissions;
-    using System.Globalization;
-
-    /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection"]/*' />
     /// <devdoc>
-    /// <para>Contains the instances of <see cref='System.DirectoryServices.SearchResult'/> returned during a 
-    ///    query to the Active Directory hierarchy through <see cref='System.DirectoryServices.DirectorySearcher'/>.</para>
+    /// Contains the instances of <see cref='System.DirectoryServices.SearchResult'/> returned during a 
+    /// query to the Active Directory hierarchy through <see cref='System.DirectoryServices.DirectorySearcher'/>.
     /// </devdoc>    
     public class SearchResultCollection : MarshalByRefObject, ICollection, IEnumerable, IDisposable
     {
         private IntPtr _handle;
-        private string[] _properties;
         private UnsafeNativeMethods.IDirectorySearch _searchObject;
-        private string _filter;
         private ArrayList _innerList;
         private bool _disposed;
-        private DirectoryEntry _rootEntry;       // clone of parent entry object
+        private readonly DirectoryEntry _rootEntry;       // clone of parent entry object
         private const string ADS_DIRSYNC_COOKIE = "fc8cb04d-311d-406c-8cb9-1ae8b843b418";
         private IntPtr _adsDirsynCookieName = Marshal.StringToCoTaskMemUni(ADS_DIRSYNC_COOKIE);
         private const string ADS_VLV_RESPONSE = "fc8cb04d-311d-406c-8cb9-1ae8b843b419";
         private IntPtr _adsVLVResponseName = Marshal.StringToCoTaskMemUni(ADS_VLV_RESPONSE);
         internal DirectorySearcher srch = null;
 
-        ///<internalonly/>                                                                   
         internal SearchResultCollection(DirectoryEntry root, IntPtr searchHandle, string[] propertiesLoaded, DirectorySearcher srch)
         {
             _handle = searchHandle;
-            _properties = propertiesLoaded;
-            _filter = srch.Filter;
+            PropertiesLoaded = propertiesLoaded;
+            Filter = srch.Filter;
             _rootEntry = root;
             this.srch = srch;
         }
 
-        /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.this"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
-        public SearchResult this[int index]
-        {
-            get
-            {
-                return (SearchResult)InnerList[index];
-            }
-        }
+        public SearchResult this[int index] => (SearchResult)InnerList[index];
 
-        /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.Count"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>        
-        public int Count
-        {
-            get
-            {
-                return InnerList.Count;
-            }
-        }
+        public int Count => InnerList.Count;
+                                                          
+        internal string Filter { get; }
 
-        ///<internalonly/>                                                                       
-        internal string Filter
-        {
-            get
-            {
-                return _filter;
-            }
-        }
-
-        ///<internalonly/>
         private ArrayList InnerList
         {
             get
@@ -101,7 +63,6 @@ namespace System.DirectoryServices
             }
         }
 
-        ///<internalonly/>                                                                              
         internal UnsafeNativeMethods.IDirectorySearch SearchObject
         {
             get
@@ -114,10 +75,9 @@ namespace System.DirectoryServices
             }
         }
 
-        /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.Handle"]/*' />
         /// <devdoc>
-        ///    <para>Gets the handle returned by IDirectorySearch::ExecuteSearch, which was called
-        ///    by the DirectorySearcher that created this object.</para>
+        /// Gets the handle returned by IDirectorySearch::ExecuteSearch, which was called
+        /// by the DirectorySearcher that created this object
         /// </devdoc>
         public IntPtr Handle
         {
@@ -131,37 +91,17 @@ namespace System.DirectoryServices
             }
         }
 
-        /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.PropertiesLoaded"]/*' />
         /// <devdoc>
-        ///    <para>Gets a read-only collection of the properties 
-        ///       specified on <see cref='System.DirectoryServices.DirectorySearcher'/> before the
-        ///       search was executed.</para>
+        /// Gets a read-only collection of the properties  specified on <see cref='System.DirectoryServices.DirectorySearcher'/> before the
+        /// search was executed.
         /// </devdoc>
-        public string[] PropertiesLoaded
-        {
-            get
-            {
-                return _properties;
-            }
-        }
+        public string[] PropertiesLoaded { get; }
 
-        internal byte[] DirsyncCookie
-        {
-            get
-            {
-                return RetrieveDirectorySynchronizationCookie();
-            }
-        }
+        internal byte[] DirsyncCookie => RetrieveDirectorySynchronizationCookie();
 
-        internal DirectoryVirtualListView VLVResponse
-        {
-            get
-            {
-                return RetrieveVLVResponse();
-            }
-        }
+        internal DirectoryVirtualListView VLVResponse => RetrieveVLVResponse();
 
-        internal unsafe byte[] RetrieveDirectorySynchronizationCookie()
+        private unsafe byte[] RetrieveDirectorySynchronizationCookie()
         {
             if (_disposed)
                 throw new ObjectDisposedException(GetType().Name);
@@ -189,7 +129,7 @@ namespace System.DirectoryServices
             }
         }
 
-        internal unsafe DirectoryVirtualListView RetrieveVLVResponse()
+        private unsafe DirectoryVirtualListView RetrieveVLVResponse()
         {
             if (_disposed)
                 throw new ObjectDisposedException(GetType().Name);
@@ -216,18 +156,12 @@ namespace System.DirectoryServices
             }
         }
 
-        /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.Dispose"]/*' />
-        /// <devdoc>        
-        /// </devdoc>
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
-        /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.Dispose1"]/*' />
-        /// <devdoc>        
-        /// </devdoc>
         protected virtual void Dispose(bool disposing)
         {
             if (!_disposed)
@@ -260,16 +194,8 @@ namespace System.DirectoryServices
             }
         }
 
-        /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for=".Finalize"]/*' />
-        ~SearchResultCollection()
-        {
-            Dispose(false);      // finalizer is called => Dispose has not been called yet.
-        }
+        ~SearchResultCollection() => Dispose(false);
 
-        /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.GetEnumerator"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public IEnumerator GetEnumerator()
         {
             // Two ResultsEnumerators can't exist at the same time over the
@@ -280,63 +206,26 @@ namespace System.DirectoryServices
                                                        _rootEntry.AuthenticationType);
         }
 
-        /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.Contains"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>        
-        public bool Contains(SearchResult result)
-        {
-            return InnerList.Contains(result);
-        }
+        public bool Contains(SearchResult result) => InnerList.Contains(result);
 
-        /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.CopyTo"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>        
         public void CopyTo(SearchResult[] results, int index)
         {
             InnerList.CopyTo(results, index);
         }
 
-        /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.IndexOf"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>        
-        public int IndexOf(SearchResult result)
-        {
-            return InnerList.IndexOf(result);
-        }
+        public int IndexOf(SearchResult result) => InnerList.IndexOf(result);
 
-        /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.ICollection.IsSynchronized"]/*' />
-        ///<internalonly/>
-        bool ICollection.IsSynchronized
-        {
-            get
-            {
-                return false;
-            }
-        }
+        bool ICollection.IsSynchronized => false;
 
-        /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.ICollection.SyncRoot"]/*' />
-        ///<internalonly/>             
-        object ICollection.SyncRoot
-        {
-            get
-            {
-                return this;
-            }
-        }
+        object ICollection.SyncRoot => this;
 
-        /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.ICollection.CopyTo"]/*' />
-        /// <internalonly/>
         void ICollection.CopyTo(Array array, int index)
         {
             InnerList.CopyTo(array, index);
         }
 
         /// <devdoc>
-        ///    <para> Supports a simple
-        ///       ForEach-style iteration over a collection.</para>
+        /// Supports a simple ForEach-style iteration over a collection.
         /// </devdoc>
         private class ResultsEnumerator : IEnumerator
         {
@@ -356,17 +245,10 @@ namespace System.DirectoryServices
                 _parentAuthenticationType = parentAuthenticationType;
                 _results = results;
                 _initialized = false;
-
-                // get the app configuration information
-                //object o = PrivilegedConfigurationManager.GetSection("system.directoryservices");
-                //if (o != null && o is bool)
-                //{
-                //    _waitForResult = (bool)o;
-                //}
             }
 
             /// <devdoc>
-            ///    <para>Gets the current element in the collection.</para>
+            /// Gets the current element in the collection.
             /// </devdoc>            
             public SearchResult Current
             {
@@ -428,12 +310,10 @@ namespace System.DirectoryServices
                 return entry;
             }
 
-            /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.ResultsEnumerator.MoveNext"]/*' />
             /// <devdoc>
-            ///    <para>Advances
-            ///       the enumerator to the next element of the collection
-            ///       and returns a Boolean value indicating whether a valid element is available.</para>
-            /// </devdoc>                        
+            /// Advances the enumerator to the next element of the collection
+            /// and returns a Boolean value indicating whether a valid element is available.
+            /// </devdoc>
             public bool MoveNext()
             {
                 DirectorySynchronization tempsync = null;
@@ -452,7 +332,7 @@ namespace System.DirectoryServices
                     {
                         //throw a clearer exception if the filter was invalid
                         if (hr == UnsafeNativeMethods.INVALID_FILTER)
-                            throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.DSInvalidSearchFilter , _results.Filter));
+                            throw new ArgumentException(SR.Format(SR.DSInvalidSearchFilter , _results.Filter));
                         if (hr != 0)
                             throw COMExceptionHelper.CreateFormattedComException(hr);
 
@@ -517,7 +397,7 @@ namespace System.DirectoryServices
                     }
                     //throw a clearer exception if the filter was invalid
                     if (hr == UnsafeNativeMethods.INVALID_FILTER)
-                        throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.DSInvalidSearchFilter , _results.Filter));
+                        throw new ArgumentException(SR.Format(SR.DSInvalidSearchFilter , _results.Filter));
                     if (hr != 0)
                         throw COMExceptionHelper.CreateFormattedComException(hr);
 
@@ -527,7 +407,7 @@ namespace System.DirectoryServices
             }
 
             /// <devdoc>
-            ///    <para>Resets the enumerator back to its initial position before the first element in the collection.</para>
+            /// Resets the enumerator back to its initial position before the first element in the collection.
             /// </devdoc>
             public void Reset()
             {
@@ -535,13 +415,7 @@ namespace System.DirectoryServices
                 _initialized = false;
             }
 
-            object IEnumerator.Current
-            {
-                get
-                {
-                    return Current;
-                }
-            }
+            object IEnumerator.Current => Current;
 
             private void CleanLastError()
             {

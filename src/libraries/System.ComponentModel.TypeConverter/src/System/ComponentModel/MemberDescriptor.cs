@@ -240,7 +240,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Called each time we access the attribtes on
+        ///     Called each time we access the attributes on
         ///     this member descriptor to give deriving classes
         ///     a chance to change them on the fly.
         /// </summary>

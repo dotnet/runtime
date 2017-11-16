@@ -162,9 +162,6 @@
            <Property Name="Current" Dynamic="Required"/>
         </Type>
       </Namespace>
-      <Namespace Name="System.Runtime.CompilerServices">
-        <Type Name="RuntimeWrappedException" Dynamic="Required All" Activate="Required All" />
-      </Namespace>
     </Assembly>
     <Assembly Name="System.Runtime">
       <Type Name="System.Runtime.CompilerServices.StrongBox&lt;System.Object&gt;" Dynamic="Required All" />

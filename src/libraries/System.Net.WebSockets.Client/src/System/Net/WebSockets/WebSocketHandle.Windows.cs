@@ -16,7 +16,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.WebSockets
 {
-    internal partial struct WebSocketHandle
+    internal readonly partial struct WebSocketHandle
     {
         #region Properties
         public static bool IsValid(WebSocketHandle handle)
@@ -80,6 +80,23 @@ namespace System.Net.WebSockets
             return _webSocket.SendAsync(buffer, messageType, endOfMessage, cancellationToken);
         }
 
+        public Task SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
+        {
+            if (messageType != WebSocketMessageType.Text && messageType != WebSocketMessageType.Binary)
+            {
+                string errorMessage = SR.Format(
+                        SR.net_WebSockets_Argument_InvalidMessageType,
+                        nameof(WebSocketMessageType.Close),
+                        nameof(SendAsync),
+                        nameof(WebSocketMessageType.Binary),
+                        nameof(WebSocketMessageType.Text),
+                        nameof(CloseOutputAsync));
+                throw new ArgumentException(errorMessage, nameof(messageType));
+            }
+
+            return _webSocket.SendAsync(buffer, messageType, endOfMessage, cancellationToken);
+        }
+
         public Task<WebSocketReceiveResult> ReceiveAsync(
             ArraySegment<byte> buffer,
             CancellationToken cancellationToken)
@@ -87,6 +104,9 @@ namespace System.Net.WebSockets
             WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
             return _webSocket.ReceiveAsync(buffer, cancellationToken);
         }
+
+        public ValueTask<ValueWebSocketReceiveResult> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken) =>
+            _webSocket.ReceiveAsync(buffer, cancellationToken);
 
         public Task CloseAsync(
             WebSocketCloseStatus closeStatus,

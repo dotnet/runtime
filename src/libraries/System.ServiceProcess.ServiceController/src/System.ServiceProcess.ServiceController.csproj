@@ -8,17 +8,19 @@
     <ProjectGuid>{F4821CB6-91A3-4546-BC4F-E00DBFBDAA05}</ProjectGuid>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'netfx'">None</ResourcesSourceOutputDirectory>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_ServiceController</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard'">SR.PlatformNotSupported_ServiceController</GeneratePlatformNotSupportedAssemblyMessage>
     <!-- Although we have a netstandard configuration, we know we are not currently UAP compatible-->
     <UWPCompatible>false</UWPCompatible>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp2.0-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp2.0-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="$(TargetGroup.Contains('netcoreapp'))">
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
@@ -67,25 +69,54 @@
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.SERVICE_STATUS.cs">
       <Link>Common\Interop\Windows\Interop.SERVICE_STATUS.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.SERVICE_TABLE_ENTRY.cs">
+      <Link>Common\Interop\Windows\Interop.SERVICE_TABLE_ENTRY.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.ServiceControlDelegates.cs">
+      <Link>Common\Interop\Windows\Interop.ServiceControlDelegates.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.SetServiceStatus.cs">
+      <Link>Common\Interop\Windows\Interop.SetServiceStatus.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.WTSSESSION_NOTIFICATION.cs">
+      <Link>Common\Interop\Windows\Interop.WTSSESSION_NOTIFICATION.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegisterServiceCtrlHandler.cs">
+      <Link>Common\Interop\Windows\Interop.RegisterServiceCtrlHandler.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegisterServiceCtrlHandlerEx.cs">
+      <Link>Common\Interop\Windows\Interop.RegisterServiceCtrlHandlerEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.StartServiceCtrlDispatcher.cs">
+      <Link>Common\Interop\Windows\Interop.StartServiceCtrlDispatcher.cs</Link>
+    </Compile>
     <Compile Include="Microsoft\Win32\SafeHandles\SafeServiceHandle.cs" />
+    <Compile Include="System\ServiceProcess\PowerBroadcastStatus.cs" />
+    <Compile Include="System\ServiceProcess\ServiceBase.cs" />
     <Compile Include="System\ServiceProcess\ServiceController.cs" />
     <Compile Include="System\ServiceProcess\ServiceControllerStatus.cs" />
     <Compile Include="System\ServiceProcess\ServiceStartMode.cs" />
     <Compile Include="System\ServiceProcess\ServiceType.cs" />
+    <Compile Include="System\ServiceProcess\SessionChangeDescription.cs" />
+    <Compile Include="System\ServiceProcess\SessionChangeReason.cs" />
     <Compile Include="System\ServiceProcess\TimeoutException.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
     <Reference Include="mscorlib" />
     <Reference Include="System.ServiceProcess" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
+  <ItemGroup Condition="$(TargetGroup.Contains('netcoreapp'))">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
+    <Reference Include="System.Console" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

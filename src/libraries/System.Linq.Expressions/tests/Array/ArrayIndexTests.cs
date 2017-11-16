@@ -2770,7 +2770,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("index", () => Expression.ArrayIndex(array, index));
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         [ClassData(typeof(CompilationTypes))]
         public static void NonZeroBasedOneDimensionalArrayIndex(bool useInterpreter)
         {
@@ -2791,7 +2791,7 @@ namespace System.Linq.Expressions.Tests
             Assert.True(testValues());
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         [ClassData(typeof(CompilationTypes))]
         public static void NonZeroBasedOneDimensionalArrayIndexMethod(bool useInterpreter)
         {

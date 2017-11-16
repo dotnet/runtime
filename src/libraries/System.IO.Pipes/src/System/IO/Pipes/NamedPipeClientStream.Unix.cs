@@ -33,10 +33,7 @@ namespace System.IO.Pipes
             }
             catch (SocketException e)
             {
-                if (clientHandle != null)
-                {
-                    clientHandle.Dispose();
-                }
+                clientHandle?.Dispose();
                 socket.Dispose();
 
                 switch (e.SocketErrorCode)

@@ -1893,7 +1893,7 @@ namespace System.Data
 
 
         /// <summary>Represents the node in the tree and the satellite branch it took to get there.</summary>
-        private struct NodePath
+        private readonly struct NodePath
         {
             /// <summary>Represents the node in the tree</summary>
             internal readonly int _nodeID;

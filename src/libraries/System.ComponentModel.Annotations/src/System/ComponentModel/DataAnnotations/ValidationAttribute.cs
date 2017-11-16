@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
 
 namespace System.ComponentModel.DataAnnotations
@@ -116,10 +115,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     <see cref="ValidationContext" /> to perform validation.
         ///     Base class returns false. Override in child classes as appropriate.
         /// </summary>
-        public virtual bool RequiresValidationContext
-        {
-            get { return false; }
-        }
+        public virtual bool RequiresValidationContext => false;
 
         #endregion
 
@@ -134,12 +130,9 @@ namespace System.ComponentModel.DataAnnotations
         /// </value>
         public string ErrorMessage
         {
-            get
-            {
-                // If _errorMessage is not set, return the default. This is done to preserve
-                // behavior prior to the fix where ErrorMessage showed the non-null message to use.
-                return _errorMessage ?? _defaultErrorMessage;
-            }
+            // If _errorMessage is not set, return the default. This is done to preserve
+            // behavior prior to the fix where ErrorMessage showed the non-null message to use.
+            get => _errorMessage ?? _defaultErrorMessage;
             set
             {
                 _errorMessage = value;
@@ -164,7 +157,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </value>
         public string ErrorMessageResourceName
         {
-            get { return _errorMessageResourceName; }
+            get => _errorMessageResourceName;
             set
             {
                 _errorMessageResourceName = value;
@@ -185,7 +178,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </value>
         public Type ErrorMessageResourceType
         {
-            get { return _errorMessageResourceType; }
+            get => _errorMessageResourceType;
             set
             {
                 _errorMessageResourceType = value;
@@ -316,10 +309,8 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="name">The user-visible name to include in the formatted message.</param>
         /// <returns>The localized string describing the validation error</returns>
         /// <exception cref="InvalidOperationException"> is thrown if the current attribute is malformed.</exception>
-        public virtual string FormatErrorMessage(string name)
-        {
-            return string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name);
-        }
+        public virtual string FormatErrorMessage(string name) =>
+            string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name);
 
         /// <summary>
         ///     Gets the value indicating whether or not the specified <paramref name="value" /> is valid

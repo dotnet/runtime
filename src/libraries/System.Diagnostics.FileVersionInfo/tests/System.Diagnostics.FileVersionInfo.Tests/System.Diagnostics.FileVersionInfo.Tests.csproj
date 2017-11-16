@@ -5,7 +5,6 @@
     <AssemblyName>System.Diagnostics.FileVersionInfo.Tests</AssemblyName>
     <ProjectGuid>{6DFDB760-CC88-48AE-BD81-C64844EA3CBC}</ProjectGuid>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
@@ -27,9 +26,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FileVersionInfoTest.cs" />
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="FileVersionInfoTest.Windows.cs" />
@@ -51,13 +47,11 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-
   <PropertyGroup>
     <BuildDependsOn>$(BuildDependsOn);MangleTestAssemblyExtension</BuildDependsOn>
   </PropertyGroup>
   <Target Name="MangleTestAssemblyExtension">
     <!-- Copy TestAssembly to file without .dll extension so that ILC preserves it as a data file rather than feeding it to the output executable. -->
-    <Copy SourceFiles="$(OutputPath)\System.Diagnostics.FileVersionInfo.TestAssembly.dll" DestinationFiles="$(OutputPath)\System.Diagnostics.FileVersionInfo.TestAssembly.ildll" />
+    <Copy SourceFiles="$(TestPath)\System.Diagnostics.FileVersionInfo.TestAssembly.dll" DestinationFiles="$(TestPath)\System.Diagnostics.FileVersionInfo.TestAssembly.ildll" />
   </Target>
-
 </Project>

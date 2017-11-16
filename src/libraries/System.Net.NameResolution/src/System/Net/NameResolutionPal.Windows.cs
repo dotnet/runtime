@@ -172,7 +172,9 @@ namespace System.Net
         public static IPHostEntry GetHostByAddr(IPAddress address)
         {
             // TODO #2891: Optimize this (or decide if this legacy code can be removed):
-            int addressAsInt = unchecked((int)address.GetAddress());
+#pragma warning disable CS0618 // Address is marked obsolete
+            int addressAsInt = unchecked((int)address.Address);
+#pragma warning restore CS0618
 
 #if BIGENDIAN
             // TODO #2891: above code needs testing for BIGENDIAN.

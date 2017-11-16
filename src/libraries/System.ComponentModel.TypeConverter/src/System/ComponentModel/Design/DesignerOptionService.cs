@@ -33,7 +33,7 @@ namespace System.ComponentModel.Design
         /// <summary>
         ///     Creates a new DesignerOptionCollection with the given name, and adds it to 
         ///     the given parent.  The "value" parameter specifies an object whose public 
-        ///     properties will be used in the Propeties collection of the option collection.  
+        ///     properties will be used in the Properties collection of the option collection.  
         ///     The value parameter can be null if this options collection does not offer 
         ///     any properties.  Properties will be wrapped in such a way that passing 
         ///     anything into the component parameter of the property descriptor will be 

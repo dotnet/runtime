@@ -9,26 +9,20 @@ namespace System.Xml.Tests
 {
     public partial class CFactoryModule : CXmlDriverModule
     {
-        [Fact]
-        [OuterLoop]
-        public static void RunTests()
+        [Theory]
+        [XmlTests(nameof(Create))]
+        public void RunTests(XunitTestCase testCase)
         {
-            CModInfo.CommandLine = "";
-            var module = new CFactoryModule();
-
-            module.Init(null);
-            module.Execute();
+            testCase.Run();
         }
 
-        [Fact]
-        [OuterLoop]
-        public static void RunTestsAsync()
+        public static CTestModule Create()
         {
-            CModInfo.CommandLine = "/async";
             var module = new CFactoryModule();
 
             module.Init(null);
-            module.Execute();
+
+            return module;
         }
     }
 }

@@ -2264,7 +2264,7 @@ namespace System.Xml.Xsl.IlGen
             XmlILStorageMethods methods = XmlILMethods.StorageMethods[itemStorageType];
             locCache = _helper.DeclareLocal("$$$cache", methods.SeqType);
             _helper.Emit(OpCodes.Ldloc, locCache);
-            _helper.CallToken(methods.SeqReuse);
+            _helper.Call(methods.SeqReuse);
             _helper.Emit(OpCodes.Stloc, locCache);
             _helper.Emit(OpCodes.Ldloc, locCache);
 
@@ -2375,7 +2375,7 @@ namespace System.Xml.Xsl.IlGen
         }
 
         /// <summary>
-        /// Generate code for for QilNodeType.DocOrderDistinct.
+        /// Generate code for QilNodeType.DocOrderDistinct.
         /// </summary>
         protected override QilNode VisitDocOrderDistinct(QilUnary ndDod)
         {
@@ -2537,7 +2537,7 @@ namespace System.Xml.Xsl.IlGen
         }
 
         /// <summary>
-        /// Generate code for for QilNodeType.Invoke.
+        /// Generate code for QilNodeType.Invoke.
         /// </summary>
         protected override QilNode VisitInvoke(QilInvoke ndInvoke)
         {
@@ -2578,7 +2578,7 @@ namespace System.Xml.Xsl.IlGen
         }
 
         /// <summary>
-        /// Generate code for for QilNodeType.Content.
+        /// Generate code for QilNodeType.Content.
         /// </summary>
         protected override QilNode VisitContent(QilUnary ndContent)
         {
@@ -2587,7 +2587,7 @@ namespace System.Xml.Xsl.IlGen
         }
 
         /// <summary>
-        /// Generate code for for QilNodeType.Attribute.
+        /// Generate code for QilNodeType.Attribute.
         /// </summary>
         protected override QilNode VisitAttribute(QilBinary ndAttr)
         {
@@ -2612,7 +2612,7 @@ namespace System.Xml.Xsl.IlGen
         }
 
         /// <summary>
-        /// Generate code for for QilNodeType.Parent.
+        /// Generate code for QilNodeType.Parent.
         /// </summary>
         protected override QilNode VisitParent(QilUnary ndParent)
         {
@@ -2632,7 +2632,7 @@ namespace System.Xml.Xsl.IlGen
         }
 
         /// <summary>
-        /// Generate code for for QilNodeType.Root.
+        /// Generate code for QilNodeType.Root.
         /// </summary>
         protected override QilNode VisitRoot(QilUnary ndRoot)
         {
@@ -2676,7 +2676,7 @@ namespace System.Xml.Xsl.IlGen
         }
 
         /// <summary>
-        /// Generate code for for QilNodeType.DescendantOrSelf.
+        /// Generate code for QilNodeType.DescendantOrSelf.
         /// </summary>
         protected override QilNode VisitDescendantOrSelf(QilUnary ndDesc)
         {
@@ -2746,7 +2746,7 @@ namespace System.Xml.Xsl.IlGen
         }
 
         /// <summary>
-        /// Generate code for for QilNodeType.Deref.
+        /// Generate code for QilNodeType.Deref.
         /// </summary>
         protected override QilNode VisitDeref(QilBinary ndDeref)
         {
@@ -3028,7 +3028,7 @@ namespace System.Xml.Xsl.IlGen
         }
 
         /// <summary>
-        /// Generate code for for QilNodeType.RtfCtor.
+        /// Generate code for QilNodeType.RtfCtor.
         /// </summary>
         protected override QilNode VisitRtfCtor(QilBinary ndRtf)
         {
@@ -3548,7 +3548,7 @@ namespace System.Xml.Xsl.IlGen
         }
 
         /// <summary>
-        /// Generate code for for QilNodeType.XsltInvokeLateBound.
+        /// Generate code for QilNodeType.XsltInvokeLateBound.
         /// </summary>
         protected override QilNode VisitXsltInvokeLateBound(QilInvokeLateBound ndInvoke)
         {
@@ -3594,7 +3594,7 @@ namespace System.Xml.Xsl.IlGen
         }
 
         /// <summary>
-        /// Generate code for for QilNodeType.XsltInvokeEarlyBound.
+        /// Generate code for QilNodeType.XsltInvokeEarlyBound.
         /// </summary>
         protected override QilNode VisitXsltInvokeEarlyBound(QilInvokeEarlyBound ndInvoke)
         {
@@ -4869,14 +4869,14 @@ namespace System.Xml.Xsl.IlGen
             {
                 // cache = XmlQuerySequence.CreateOrReuse(cache, item);
                 NestedVisitEnsureStack(nd, cacheType, false);
-                _helper.CallToken(methods.SeqReuseSgl);
+                _helper.Call(methods.SeqReuseSgl);
                 _helper.Emit(OpCodes.Stloc, locCache);
             }
             else
             {
                 // XmlQuerySequence<T> cache;
                 // cache = XmlQuerySequence.CreateOrReuse(cache);
-                _helper.CallToken(methods.SeqReuse);
+                _helper.Call(methods.SeqReuse);
                 _helper.Emit(OpCodes.Stloc, locCache);
                 _helper.Emit(OpCodes.Ldloc, locCache);
 

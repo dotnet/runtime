@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{0657A043-0AEE-445E-9BE4-0B3A9D80318F}</ProjectGuid>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_ETLEVENTS</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_EVENTCOUNTER_DISPOSE</DefineConstants>
+    <DefineConstants>$(DefineConstants);USE_MDT_EVENTSOURCE</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SDTTestDir>..\..\System.Diagnostics.Tracing\tests</SDTTestDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="$(SDTTestDir)\BasicEventSourceTest\Harness\EventTestHarness.cs" />
+    <Compile Include="$(SDTTestDir)\BasicEventSourceTest\FuzzyTests.cs" />
+    <Compile Include="$(SDTTestDir)\BasicEventSourceTest\Harness\Listeners.cs" />
+    <Compile Include="$(SDTTestDir)\BasicEventSourceTest\TestEventCounter.cs" />
+    <Compile Include="$(SDTTestDir)\BasicEventSourceTest\TestFilter.cs" />
+    <Compile Include="$(SDTTestDir)\BasicEventSourceTest\TestShutdown.cs" />
+    <Compile Include="$(SDTTestDir)\BasicEventSourceTest\TestsEventSourceLifetime.cs" />
+    <Compile Include="$(SDTTestDir)\BasicEventSourceTest\TestsManifestGeneration.cs" />
+    <Compile Include="$(SDTTestDir)\BasicEventSourceTest\TestsManifestNegative.cs" />
+    <Compile Include="$(SDTTestDir)\BasicEventSourceTest\TestsTraits.cs" />
+    <Compile Include="$(SDTTestDir)\BasicEventSourceTest\TestsWriteEvent.cs" />
+    <Compile Include="$(SDTTestDir)\BasicEventSourceTest\TestsWriteEventToListener.cs" />
+    <Compile Include="$(SDTTestDir)\BasicEventSourceTest\EventSourceTestParser.cs" />
+    <Compile Include="$(SDTTestDir)\BasicEventSourceTest\LoudListener.cs" />
+    <Compile Include="$(SDTTestDir)\BasicEventSourceTest\TestsWrite.cs" />
+    <Compile Include="$(SDTTestDir)\BasicEventSourceTest\TestsUserErrors.cs" />
+    <Compile Include="$(SDTTestDir)\BasicEventSourceTest\TestUtilities.cs" />
+    <Compile Include="$(SDTTestDir)\BasicEventSourceTest\XUnitAssemblyAttributes.cs" />
+    <!--EventSources for testing-->
+    <Compile Include="$(SDTTestDir)\CustomEventSources\EventSourceTest.cs" />
+    <Compile Include="$(SDTTestDir)\CustomEventSources\InvalidCallsToWriteEvent.cs" />
+    <Compile Include="$(SDTTestDir)\CustomEventSources\InvalidEventSources.cs" />
+    <Compile Include="$(SDTTestDir)\CustomEventSources\SimpleEventSource.cs" />
+    <Compile Include="$(SDTTestDir)\CustomEventSources\UseAbstractEventSource.cs" />
+    <Compile Include="$(SDTTestDir)\CustomEventSources\UseInterfaceEventSource.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

@@ -14,11 +14,6 @@ namespace System.ComponentModel.DataAnnotations
     [Obsolete("This attribute is no longer in use and will be ignored if applied.")]
     public sealed class AssociationAttribute : Attribute
     {
-        private string _name;
-        private string _thisKey;
-        private string _otherKey;
-        private bool _isForeignKey;
-
         /// <summary>
         /// Full form of constructor
         /// </summary>
@@ -30,78 +25,50 @@ namespace System.ComponentModel.DataAnnotations
         /// on the other side of the association</param>
         public AssociationAttribute(string name, string thisKey, string otherKey)
         {
-            _name = name;
-            _thisKey = thisKey;
-            _otherKey = otherKey;
+            Name = name;
+            ThisKey = thisKey;
+            OtherKey = otherKey;
         }
 
         /// <summary>
         /// Gets the name of the association. For bi-directional associations, the name must
         /// be the same on both sides of the association
         /// </summary>
-        public string Name
-        {
-            get { return _name; }
-        }
+        public string Name { get; }
 
         /// <summary>
         /// Gets a comma separated list of the property names of the key values
         /// on this side of the association
         /// </summary>
-        public string ThisKey
-        {
-            get { return _thisKey; }
-        }
+        public string ThisKey { get; }
 
         /// <summary>
         /// Gets a comma separated list of the property names of the key values
         /// on the other side of the association
         /// </summary>
-        public string OtherKey
-        {
-            get { return _otherKey; }
-        }
+        public string OtherKey { get; }
 
         /// <summary>
         /// Gets or sets a value indicating whether this association member represents
         /// the foreign key side of an association
         /// </summary>
-        public bool IsForeignKey
-        {
-            get { return _isForeignKey; }
-            set { _isForeignKey = value; }
-        }
+        public bool IsForeignKey { get; set; }
 
         /// <summary>
         /// Gets the collection of individual key members specified in the ThisKey string.
         /// </summary>
-        public IEnumerable<string> ThisKeyMembers
-        {
-            get
-            {
-                return GetKeyMembers(ThisKey);
-            }
-        }
+        public IEnumerable<string> ThisKeyMembers => GetKeyMembers(ThisKey);
 
         /// <summary>
         /// Gets the collection of individual key members specified in the OtherKey string.
         /// </summary>
-        public IEnumerable<string> OtherKeyMembers
-        {
-            get
-            {
-                return GetKeyMembers(OtherKey);
-            }
-        }
+        public IEnumerable<string> OtherKeyMembers => GetKeyMembers(OtherKey);
 
         /// <summary>
         /// Parses the comma delimited key specified
         /// </summary>
         /// <param name="key">The key to parse</param>
         /// <returns>Array of individual key members</returns>
-        private static string[] GetKeyMembers(string key)
-        {
-            return key.Replace(" ", string.Empty).Split(',');
-        }
+        private static string[] GetKeyMembers(string key) => key.Replace(" ", string.Empty).Split(',');
     }
 }

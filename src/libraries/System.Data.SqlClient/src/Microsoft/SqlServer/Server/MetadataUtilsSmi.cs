@@ -183,8 +183,8 @@ namespace Microsoft.SqlServer.Server
         internal static ExtendedClrTypeCode DetermineExtendedTypeCodeForUseWithSqlDbType(
                 SqlDbType dbType,
                 bool isMultiValued,
-                object value
-        )
+                object value,
+                Type udtType)
         {
             ExtendedClrTypeCode extendedCode = ExtendedClrTypeCode.Invalid;
 
@@ -315,7 +315,16 @@ namespace Microsoft.SqlServer.Server
                         }
                         break;
                     case SqlDbType.Udt:
-                        throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
+                        // Validate UDT type if caller gave us a type to validate against
+                        if (null == udtType || value.GetType() == udtType)
+                        {
+                            extendedCode = ExtendedClrTypeCode.Object;
+                        }
+                        else
+                        {
+                            extendedCode = ExtendedClrTypeCode.Invalid;
+                        }
+                        break;
                     case SqlDbType.Time:
                         if (value.GetType() == typeof(TimeSpan))
                             extendedCode = ExtendedClrTypeCode.TimeSpan;
@@ -430,8 +439,8 @@ namespace Microsoft.SqlServer.Server
                     source.TypeSpecificNamePart1,
                     source.TypeSpecificNamePart2,
                     source.TypeSpecificNamePart3,
-                    true
-                    );
+                    true,
+                    source.Type);
             }
 
             return new SqlMetaData(source.Name,
@@ -460,7 +469,40 @@ namespace Microsoft.SqlServer.Server
             }
             else if (SqlDbType.Udt == source.SqlDbType)
             {
-                throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
+                // Split the input name. UdtTypeName is specified as single 3 part name.
+                // NOTE: ParseUdtTypeName throws if format is incorrect
+                string typeName = source.ServerTypeName;
+                if (null != typeName)
+                {
+                    string[] names = SqlParameter.ParseTypeName(typeName, true /* isUdtTypeName */);
+
+                    if (1 == names.Length)
+                    {
+                        typeSpecificNamePart3 = names[0];
+                    }
+                    else if (2 == names.Length)
+                    {
+                        typeSpecificNamePart2 = names[0];
+                        typeSpecificNamePart3 = names[1];
+                    }
+                    else if (3 == names.Length)
+                    {
+                        typeSpecificNamePart1 = names[0];
+                        typeSpecificNamePart2 = names[1];
+                        typeSpecificNamePart3 = names[2];
+                    }
+                    else
+                    {
+                        throw ADP.ArgumentOutOfRange(nameof(typeName));
+                    }
+
+                    if ((!string.IsNullOrEmpty(typeSpecificNamePart1) && TdsEnums.MAX_SERVERNAME < typeSpecificNamePart1.Length)
+                        || (!string.IsNullOrEmpty(typeSpecificNamePart2) && TdsEnums.MAX_SERVERNAME < typeSpecificNamePart2.Length)
+                        || (!string.IsNullOrEmpty(typeSpecificNamePart3) && TdsEnums.MAX_SERVERNAME < typeSpecificNamePart3.Length))
+                    {
+                        throw ADP.ArgumentOutOfRange(nameof(typeName));
+                    }
+                }
             }
 
             return new SmiExtendedMetaData(source.SqlDbType,
@@ -469,6 +511,7 @@ namespace Microsoft.SqlServer.Server
                                             source.Scale,
                                             source.LocaleId,
                                             source.CompareOptions,
+                                            null,
                                             source.Name,
                                             typeSpecificNamePart1,
                                             typeSpecificNamePart2,
@@ -603,6 +646,7 @@ namespace Microsoft.SqlServer.Server
                                         scale,
                                         columnLocale.LCID,
                                         SmiMetaData.DefaultNVarChar.CompareOptions,
+                                        null,
                                         false,  // no support for multi-valued columns in a TVP yet
                                         null,   // no support for structured columns yet
                                         null,   // no support for structured columns yet
@@ -907,6 +951,7 @@ namespace Microsoft.SqlServer.Server
                             scale,
                             System.Globalization.CultureInfo.CurrentCulture.LCID,
                             SmiMetaData.GetDefaultForType(colDbType).CompareOptions,
+                            null,
                             false,  // no support for multi-valued columns in a TVP yet
                             null,   // no support for structured columns yet
                             null,   // no support for structured columns yet

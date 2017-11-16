@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library Name="*System.Runtime.Serialization.Xml.Tests*">
+    <Namespace Name="System.Data">
+      <Type Name="DataSet">
+        <Method Name="GetDataSetSchema" Dynamic="Required Public"/>
+      </Type>
+      <Type Name="DataTable">
+        <Method Name="GetDataTableSchema" Dynamic="Required Public"/>
+      </Type>
+    </Namespace>
+    <Namespace Name="System.Collections">
+      <Type Name="IList" Dynamic="Required All" />    
+    </Namespace>
+  </Library>
+</Directives>

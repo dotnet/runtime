@@ -92,7 +92,7 @@ namespace System.DirectoryServices.Protocols.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/21217", TargetFrameworkMonikers.UapAot)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The field _keys in full framework is called keys, so GetField returns null and ends up in a NRE")]
         public void SortKeys_GetNull_ReturnsEmptyArray()
         {
             var control = new SortRequestControl();

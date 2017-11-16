@@ -4,7 +4,7 @@
 
 namespace System.Xml
 {
-    internal struct BytesWithOffset
+    internal readonly struct BytesWithOffset
     {
         private readonly byte[] _bytes;
         private readonly int _offset;

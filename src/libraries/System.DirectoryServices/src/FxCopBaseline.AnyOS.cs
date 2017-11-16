@@ -1,1 +1,0 @@
-[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA1821", Justification = "Finalizer has implementation in Windows version.")]

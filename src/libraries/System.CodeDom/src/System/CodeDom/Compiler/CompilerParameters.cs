@@ -11,8 +11,6 @@ namespace System.CodeDom.Compiler
         private readonly StringCollection _assemblyNames = new StringCollection();
         private readonly StringCollection _embeddedResources = new StringCollection();
         private readonly StringCollection _linkedResources = new StringCollection();
-
-        [NonSerialized]
         private TempFileCollection _tempFiles;
 
         public CompilerParameters() : this(null, null)

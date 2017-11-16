@@ -6,13 +6,14 @@
     <NetFxReference Include="System">
       <ExcludeFromRuntime>true</ExcludeFromRuntime>
     </NetFxReference>
-    <NetFxReference Include="System.ComponentModel.Composition" />
     <NetFxReference Include="System.ComponentModel.DataAnnotations">
       <StrongNameSig>MSSharedLib</StrongNameSig>
     </NetFxReference>
     <NetFxReference Include="System.Configuration" />
     <NetFxReference Include="System.Core" />
-    <NetFxReference Include="System.Data" />
+    <NetFxReference Include="System.Data">
+      <ExcludeFromRuntime>true</ExcludeFromRuntime>
+    </NetFxReference>
     <NetFxReference Include="System.Drawing" />
     <NetFxReference Include="System.IO.Compression.FileSystem" />
     <NetFxReference Include="System.Net" />

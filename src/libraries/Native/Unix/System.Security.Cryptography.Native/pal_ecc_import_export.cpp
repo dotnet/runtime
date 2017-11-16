@@ -108,8 +108,17 @@ extern "C" int32_t CryptoNative_GetECKeyParameters(
 
     if (includePrivate)
     {
-        *d = const_cast<BIGNUM*>(EC_KEY_get0_private_key(key));
-        *cbD = BN_num_bytes(*d);
+        const BIGNUM* const_bignum_privateKey = EC_KEY_get0_private_key(key);
+        if (const_bignum_privateKey != nullptr)
+        {
+            *d = const_cast<BIGNUM*>(const_bignum_privateKey);
+            *cbD = BN_num_bytes(*d);
+        }
+        else
+        {
+            rc = -1;
+            goto error;
+        }
     }
     else
     {

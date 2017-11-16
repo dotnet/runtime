@@ -12,7 +12,7 @@ namespace System.Drawing.Internal
     /// Represents a Win32 device context.  Provides operations for setting some of the properties of a device context.
     /// It's the managed wrapper for an HDC.
     ///
-    /// This class is divided into two files separating the code that needs to be compiled into reatail builds and
+    /// This class is divided into two files separating the code that needs to be compiled into retail builds and
     /// debugging code.
     /// </summary>
     internal sealed partial class DeviceContext : MarshalByRefObject, IDeviceContext, IDisposable
@@ -23,9 +23,9 @@ namespace System.Drawing.Internal
         /// 
         /// The hDc is released/deleted only when owned by the object, meaning it was created internally; 
         /// in this case, the object is responsible for releasing/deleting it. 
-        /// In the case the object is created from an exisiting hdc, it is not released; this is consistent 
+        /// In the case the object is created from an existing hdc, it is not released; this is consistent 
         /// with the Win32 guideline that says if you call GetDC/CreateDC/CreatIC/CreateEnhMetafile, you are 
-        /// responsible for calling ReleaseDC/DeleteDC/DeleteEnhMetafile respectivelly.
+        /// responsible for calling ReleaseDC/DeleteDC/DeleteEnhMetafile respectively.
         /// 
         /// This class implements some of the operations commonly performed on the properties of a dc in WinForms, 
         /// specially for interacting with GDI+, like clipping and coordinate transformation.  
@@ -34,9 +34,9 @@ namespace System.Drawing.Internal
         /// DrawString (GDI+).  
         /// 
         /// Other properties are persisted from operation to operation until they are reset, like clipping, 
-        /// one can make several calls to Graphics or WindowsGraphics obect after setting the dc clip area and 
+        /// one can make several calls to Graphics or WindowsGraphics object after setting the dc clip area and 
         /// before resetting it; these kinds of properties are the ones implemented in this class.
-        /// This kind of properties place an extra chanllenge in the scenario where a DeviceContext is obtained 
+        /// This kind of properties place an extra challenge in the scenario where a DeviceContext is obtained 
         /// from a Graphics object that has been used with GDI+, because GDI+ saves the hdc internally, rendering the 
         /// DeviceContext underlying hdc out of sync.  DeviceContext needs to support these kind of properties to 
         /// be able to keep the GDI+ and GDI HDCs in sync.
@@ -49,7 +49,7 @@ namespace System.Drawing.Internal
         /// 5. View port origin.
         /// 6. Window extent
         /// 
-        /// Other non-persisted properties just for information: Background/Forground color, Palette, Color adjustment,
+        /// Other non-persisted properties just for information: Background/Foreground color, Palette, Color adjustment,
         /// Color space, ICM mode and profile, Current pen position, Binary raster op (not supported by GDI+), 
         /// Background mode, Logical Pen, DC pen color, ARc direction, Miter limit, Logical brush, DC brush color,
         /// Brush origin, Polygon filling mode, Bitmap stretching mode, Logical font, Intercharacter spacing, 
@@ -84,22 +84,6 @@ namespace System.Drawing.Internal
         private string AllocationSite = DbgUtil.StackTrace;
         private string DeAllocationSite = "";
 #endif
-
-        /// <summary>
-        /// Specifies whether a modification has been applied to the dc, like setting the clipping area or a coordinate
-        /// transform.
-        /// </summary>
-
-        /// <summary>
-        /// The device type the context refers to.
-        /// </summary>
-        public DeviceContextType DeviceContextType
-        {
-            get
-            {
-                return _dcType;
-            }
-        }
 
         /// <summary>
         /// This object's hdc.  If this property is called, then the object will be used as an HDC wrapper, so the hdc
@@ -146,45 +130,9 @@ namespace System.Drawing.Internal
             _hCurrentFont = _hInitialFont = IntUnsafeNativeMethods.GetCurrentObject(new HandleRef(this, _hDC), IntNativeMethods.OBJ_FONT);
         }
 
-        public void DeleteObject(IntPtr handle, GdiObjectType type)
-        {
-            IntPtr handleToDelete = IntPtr.Zero;
-            switch (type)
-            {
-                case GdiObjectType.Pen:
-                    if (handle == _hCurrentPen)
-                    {
-                        IntPtr currentPen = IntUnsafeNativeMethods.SelectObject(new HandleRef(this, Hdc), new HandleRef(this, _hInitialPen));
-                        Debug.Assert(currentPen == _hCurrentPen, "DeviceContext thinks a different pen is selected than the HDC");
-                        _hCurrentPen = IntPtr.Zero;
-                    }
-                    handleToDelete = handle;
-                    break;
-                case GdiObjectType.Brush:
-                    if (handle == _hCurrentBrush)
-                    {
-                        IntPtr currentBrush = IntUnsafeNativeMethods.SelectObject(new HandleRef(this, Hdc), new HandleRef(this, _hInitialBrush));
-                        Debug.Assert(currentBrush == _hCurrentBrush, "DeviceContext thinks a different brush is selected than the HDC");
-                        _hCurrentBrush = IntPtr.Zero;
-                    }
-                    handleToDelete = handle;
-                    break;
-                case GdiObjectType.Bitmap:
-                    if (handle == _hCurrentBmp)
-                    {
-                        IntPtr currentBmp = IntUnsafeNativeMethods.SelectObject(new HandleRef(this, Hdc), new HandleRef(this, _hInitialBmp));
-                        Debug.Assert(currentBmp == _hCurrentBmp, "DeviceContext thinks a different brush is selected than the HDC");
-                        _hCurrentBmp = IntPtr.Zero;
-                    }
-                    handleToDelete = handle;
-                    break;
-            }
-
-            IntUnsafeNativeMethods.DeleteObject(new HandleRef(this, handleToDelete));
-        }
 
         /// <summary>
-        /// Constructor to contruct a DeviceContext object from an window handle.
+        /// Constructor to construct a DeviceContext object from an window handle.
         /// </summary>
         private DeviceContext(IntPtr hWnd)
         {
@@ -201,7 +149,7 @@ namespace System.Drawing.Internal
         }
 
         /// <summary>
-        /// Constructor to contruct a DeviceContext object from an existing Win32 device context handle.
+        /// Constructor to construct a DeviceContext object from an existing Win32 device context handle.
         /// </summary>
         private DeviceContext(IntPtr hDC, DeviceContextType dcType)
         {
@@ -271,16 +219,9 @@ namespace System.Drawing.Internal
         /// <summary>
         /// When hwnd is null, we are getting the screen DC.
         /// </summary>
-        public static DeviceContext FromHwnd(IntPtr hwnd)
-        {
-            return new DeviceContext(hwnd);
-        }
+        public static DeviceContext FromHwnd(IntPtr hwnd) => new DeviceContext(hwnd);
 
-
-        ~DeviceContext()
-        {
-            Dispose(false);
-        }
+        ~DeviceContext() => Dispose(false);
 
         public void Dispose()
         {
@@ -295,10 +236,7 @@ namespace System.Drawing.Internal
                 return;
             }
 
-            if (Disposing != null)
-            {
-                Disposing(this, EventArgs.Empty);
-            }
+            Disposing?.Invoke(this, EventArgs.Empty);
 
             _disposed = true;
 
@@ -387,27 +325,6 @@ namespace System.Drawing.Internal
 #endif                 
                 _hDC = IntPtr.Zero;
             }
-        }
-
-
-        /// <summary>
-        /// Specifies whether the DC is in GM_ADVANCE mode (supported only in NT platforms). If false, it is in
-        /// GM_COMPATIBLE mode.
-        /// </summary>
-        public DeviceContextGraphicsMode GraphicsMode
-        {
-            get
-            {
-                return (DeviceContextGraphicsMode)IntUnsafeNativeMethods.GetGraphicsMode(new HandleRef(this, _hDC));
-            }
-        }
-
-        /// <summary>
-        /// Sets the dc graphics mode and returns the old value.
-        /// </summary>
-        public DeviceContextGraphicsMode SetGraphicsMode(DeviceContextGraphicsMode newMode)
-        {
-            return (DeviceContextGraphicsMode)IntUnsafeNativeMethods.SetGraphicsMode(new HandleRef(this, _hDC), unchecked((int)newMode));
         }
 
         /// <summary>
@@ -564,11 +481,7 @@ namespace System.Drawing.Internal
         /// <summary>
         /// This allows collections to treat DeviceContext objects wrapping the same HDC as the same objects.
         /// </summary>
-        public override int GetHashCode()
-        {
-            return _hDC.GetHashCode();
-        }
-
+        public override int GetHashCode() => _hDC.GetHashCode();
 
         internal class GraphicsState
         {

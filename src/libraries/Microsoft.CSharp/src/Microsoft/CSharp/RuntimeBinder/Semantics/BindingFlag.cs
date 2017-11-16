@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
+    [Flags]
     internal enum BindingFlag
     {
         BIND_RVALUEREQUIRED = 0x0001, // this is a get of expr, not an assignment to expr

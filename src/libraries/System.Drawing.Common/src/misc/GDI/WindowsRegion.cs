@@ -75,7 +75,7 @@ namespace System.Drawing.Internal
                 return new WindowsRegion();
             }
 
-            return WindowsRegion.FromHregion(region.GetHrgn(g), true);
+            return FromHregion(region.GetHrgn(g), true);
         }
 
         public object Clone()
@@ -104,10 +104,7 @@ namespace System.Drawing.Internal
             _ownHandle = true;
         }
 
-        public void Dispose()
-        {
-            Dispose(true);
-        }
+        public void Dispose() => Dispose(true);
 
         public void Dispose(bool disposing)
         {
@@ -129,29 +126,14 @@ namespace System.Drawing.Internal
             }
         }
 
-        ~WindowsRegion()
-        {
-            Dispose(false);
-        }
+        ~WindowsRegion() => Dispose(false);
 
         /// <summary>
         /// The native region handle. 
         /// </summary>
-        public IntPtr HRegion
-        {
-            get
-            {
-                return _nativeHandle;
-            }
-        }
+        public IntPtr HRegion => _nativeHandle;
 
-        public bool IsInfinite
-        {
-            get
-            {
-                return _nativeHandle == IntPtr.Zero;
-            }
-        }
+        public bool IsInfinite => _nativeHandle == IntPtr.Zero;
 
         /// <summary>
         /// A rectangle representing the window region set with the SetWindowRgn function. 
@@ -160,10 +142,10 @@ namespace System.Drawing.Internal
         {
             if (IsInfinite)
             {
-                return new Rectangle(-Int32.MaxValue, -Int32.MaxValue, Int32.MaxValue, Int32.MaxValue);
+                return new Rectangle(-int.MaxValue, -int.MaxValue, int.MaxValue, int.MaxValue);
             }
 
-            IntNativeMethods.RECT rect = new IntNativeMethods.RECT();
+            var rect = new IntNativeMethods.RECT();
             IntUnsafeNativeMethods.GetRgnBox(new HandleRef(this, _nativeHandle), ref rect);
             return new Rectangle(new Point(rect.left, rect.top), rect.Size);
         }

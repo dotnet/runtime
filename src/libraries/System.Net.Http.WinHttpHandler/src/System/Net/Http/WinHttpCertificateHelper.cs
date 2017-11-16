@@ -16,6 +16,7 @@ namespace System.Net.Http
         // TODO: Issue #2165. Merge with similar code used in System.Net.Security move to Common/src//System/Net.
         public static void BuildChain(
             X509Certificate2 certificate,
+            X509Certificate2Collection remoteCertificateStore,
             string hostName,
             bool checkCertificateRevocationList,
             out X509Chain chain,
@@ -31,6 +32,19 @@ namespace System.Net.Http
             chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
             // Authenticate the remote party: (e.g. when operating in client mode, authenticate the server).
             chain.ChainPolicy.ApplicationPolicy.Add(s_serverAuthOid);
+
+            if (remoteCertificateStore.Count > 0)
+            {
+                if (WinHttpTraceHelper.IsTraceEnabled())
+                {
+                    foreach (X509Certificate cert in remoteCertificateStore)
+                    {
+                        WinHttpTraceHelper.Trace("WinHttpCertificateHelper.BuildChain: adding cert to ExtraStore: {0}", cert.Subject);
+                    }
+                }
+
+                chain.ChainPolicy.ExtraStore.AddRange(remoteCertificateStore);
+            }
 
             if (!chain.Build(certificate))
             {

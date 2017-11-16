@@ -38,8 +38,8 @@ namespace Stress.Data.SqlClient
         /// This significantly increases the probability of hitting some bugs, such as:
         ///     vstfdevdiv 674236 (SqlConnection.Open() throws InvalidOperationException for absolutely valid connection request)
         ///     sqlbuvsts 328845 (InvalidOperationException: The requested operation cannot be completed because the connection has been broken.) (this is LSE QFE)
-        /// However, calling ClearAllPools all the time might also significantly decrease te probability of hitting some other bug,
-        /// so this thread will alternate between hammering on ClearAllPools for several minutes, and then doing nother for several minutes.
+        /// However, calling ClearAllPools all the time might also significantly decrease the probability of hitting some other bug,
+        /// so this thread will alternate between hammering on ClearAllPools for several minutes, and then doing nothing for several minutes.
         /// </summary>
         private static Thread s_clearAllPoolsThread;
 
@@ -196,7 +196,7 @@ namespace Stress.Data.SqlClient
         /// <param name="com"> The Sql Command to Execute</param>
         /// <param name="query">Indicates if data is being queried and where ExecuteQuery or Non-query to be used with the reader</param>
         /// <param name="xml">Indicates if the query should be executed as an Xml</param>
-        /// <param name="cancelled">Indicates if command was cancelled and is used to throw exception if a Command cancelation related exception is encountered</param>
+        /// <param name="cancelled">Indicates if command was cancelled and is used to throw exception if a Command cancellation related exception is encountered</param>
         /// <param name="cts">The Cancellation Token Source</param>
         private void SqlCommandEndExecute(Random rnd, IAsyncResult result, SqlCommand com, bool query, bool xml, bool cancelled, CancellationTokenSource cts = null)
         {

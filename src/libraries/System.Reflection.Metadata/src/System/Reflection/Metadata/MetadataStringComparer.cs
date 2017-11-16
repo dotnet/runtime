@@ -46,7 +46,7 @@ namespace System.Reflection.Metadata
     ///
     /// The choice between them is therefore one of style and not performance.
     /// </remarks>
-    public struct MetadataStringComparer
+    public readonly struct MetadataStringComparer
     {
         private readonly MetadataReader _reader;
 

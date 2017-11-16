@@ -125,7 +125,7 @@ namespace System.ComponentModel
         ///     The name of the specified component, or null if the component has no name.
         ///     In many cases this will return the same value as GetComponentName. If the
         ///     component resides in a nested container or has other nested semantics, it may
-        ///     return a different fully qualfied name.
+        ///     return a different fully qualified name.
         ///
         ///     If not overridden, the default implementation of this method will call
         ///     GetTypeDescriptor.GetComponentName.

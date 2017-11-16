@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Description:  No errors should be produced by a minimal entry
+Expect:       !Error
+-->
+
+<entry xmlns="http://www.w3.org/2005/Atom">
+  <title type="text">Atom-Powered Robots Run Amok</title>
+  <link href="http://contoso.com/2003/12/13/atom03"/>
+  <id>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a</id>
+  <updated>2003-12-13T18:30:02Z</updated>
+  <summary type="text">Some text.</summary>
+  <category term="MyCategory" />
+  <author>
+    <name>John Doe</name>
+  </author>
+</entry>

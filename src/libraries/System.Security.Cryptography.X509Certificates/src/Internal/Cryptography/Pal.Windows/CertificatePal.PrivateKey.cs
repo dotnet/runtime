@@ -29,15 +29,7 @@ namespace Internal.Cryptography.Pal
             return GetPrivateKey<RSA>(
                 delegate (CspParameters csp)
                 {
-#if uap
-                    // In .NET Native (UWP) we don't have access to CAPI, so it's CNG-or-nothing.
-                    // But we don't expect to get here, so it shouldn't be a problem.
-    
-                    Debug.Fail("A CAPI provider type code was specified");
-                    return null;
-#else
                     return new RSACryptoServiceProvider(csp);
-#endif
                 },
                 delegate (CngKey cngKey)
                 {
@@ -51,15 +43,7 @@ namespace Internal.Cryptography.Pal
             return GetPrivateKey<DSA>(
                 delegate (CspParameters csp)
                 {
-#if uap
-                    // In .NET Native (UWP) we don't have access to CAPI, so it's CNG-or-nothing.
-                    // But we don't expect to get here, so it shouldn't be a problem.
-    
-                    Debug.Fail("A CAPI provider type code was specified");
-                    return null;
-#else
                     return new DSACryptoServiceProvider(csp);
-#endif
                 },
                 delegate (CngKey cngKey)
                 {
@@ -215,17 +199,9 @@ namespace Internal.Cryptography.Pal
             else
             {
                 // ProviderType being non-zero signifies that this is a CAPI key.
-#if uap
-                // In .NET Native (UWP) we don't have access to CAPI, so it's CNG-or-nothing.
-                // But we don't expect to get here, so it shouldn't be a problem.
-    
-                Debug.Fail("A CAPI provider type code was specified");
-                return null;
-#else
                 // We never want to stomp over certificate private keys.
                 cspParameters.Flags |= CspProviderFlags.UseExistingKey;
                 return createCsp(cspParameters);
-#endif
             }
         }
 

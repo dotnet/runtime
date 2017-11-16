@@ -2,24 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+using System.Collections;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Runtime.InteropServices;
-    using System.Collections;
-    using System.Diagnostics;
-
     public class ReplicationFailure
     {
-        private string _sourceDsaDN;
-        private Guid _uuidDsaObjGuid;
-        private DateTime _timeFirstFailure;
-        private int _numFailures;
+        private readonly string _sourceDsaDN;
         internal int lastResult;
 
-        private DirectoryServer _server = null;
+        private readonly DirectoryServer _server = null;
         private string _sourceServer = null;
-        private Hashtable _nameTable = null;
+        private readonly Hashtable _nameTable = null;
 
         internal ReplicationFailure(IntPtr addr, DirectoryServer server, Hashtable table)
         {
@@ -27,9 +22,9 @@ namespace System.DirectoryServices.ActiveDirectory
             Marshal.PtrToStructure(addr, failure);
 
             _sourceDsaDN = Marshal.PtrToStringUni(failure.pszDsaDN);
-            _uuidDsaObjGuid = failure.uuidDsaObjGuid;
-            _timeFirstFailure = DateTime.FromFileTime(failure.ftimeFirstFailure);
-            _numFailures = failure.cNumFailures;
+            SourceServerGuid = failure.uuidDsaObjGuid;
+            FirstFailureTime = DateTime.FromFileTime(failure.ftimeFirstFailure);
+            ConsecutiveFailureCount = failure.cNumFailures;
             lastResult = failure.dwLastResult;
 
             _server = server;
@@ -59,44 +54,14 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        private Guid SourceServerGuid
-        {
-            get
-            {
-                return _uuidDsaObjGuid;
-            }
-        }
+        private Guid SourceServerGuid { get; }
 
-        public DateTime FirstFailureTime
-        {
-            get
-            {
-                return _timeFirstFailure;
-            }
-        }
+        public DateTime FirstFailureTime { get; }
 
-        public int ConsecutiveFailureCount
-        {
-            get
-            {
-                return _numFailures;
-            }
-        }
+        public int ConsecutiveFailureCount { get; }
 
-        public int LastErrorCode
-        {
-            get
-            {
-                return lastResult;
-            }
-        }
+        public int LastErrorCode => lastResult;
 
-        public string LastErrorMessage
-        {
-            get
-            {
-                return ExceptionHelper.GetErrorMessage(lastResult, false);
-            }
-        }
+        public string LastErrorMessage => ExceptionHelper.GetErrorMessage(LastErrorCode, false);
     }
 }

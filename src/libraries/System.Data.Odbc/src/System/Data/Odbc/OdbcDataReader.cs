@@ -1681,7 +1681,7 @@ namespace System.Data.Odbc
 
                 //Since there are many attributes (column, statement, etc), that may or may not be
                 //supported, we don't want to throw (which obtains all errorinfo, marshals strings,
-                //builds exceptions, etc), in common cases, unless we absolutly need this info...
+                //builds exceptions, etc), in common cases, unless we absolutely need this info...
                 if ((retcode != ODBC32.RetCode.SUCCESS) || (numericAttribute == 0))
                 {
                     if (retcode == ODBC32.RetCode.ERROR)
