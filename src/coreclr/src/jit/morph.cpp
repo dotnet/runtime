@@ -19535,11 +19535,11 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, GenTreePtr 
 #if !defined(FEATURE_CORECLR) && defined(_TARGET_AMD64_)
 GenTreeStmt* SkipNopStmts(GenTreeStmt* stmt)
 {
-	while ((stmt != nullptr) && !stmt->IsNothingNode())
-	{
-		stmt = stmt->gtNextStmt;
-	}
-	return stmt;
+    while ((stmt != nullptr) && !stmt->IsNothingNode())
+    {
+        stmt = stmt->gtNextStmt;
+    }
+    return stmt;
 }
 
 #endif // !FEATURE_CORECLR && _TARGET_AMD64_
@@ -19576,7 +19576,7 @@ bool Compiler::fgCheckStmtAfterTailCall()
     //
     // See impIsTailCallILPattern() for details on tail call IL patterns
     // that are supported.
-	GenTree* callExpr = callStmt->gtStmtExpr;
+    GenTree* callExpr = callStmt->gtStmtExpr;
 
     if (callExpr->gtOper != GT_RETURN)
     {
