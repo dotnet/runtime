@@ -20,7 +20,7 @@ internal static partial class Interop
         internal static extern unsafe int GetNameInfo(
             byte* address, 
             uint addressLength,
-            bool isIpv6,
+            byte isIpv6,
             byte* host, 
             uint hostLength, 
             byte* service, 
