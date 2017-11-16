@@ -207,7 +207,7 @@ namespace System.Net
                 error = Interop.Sys.GetNameInfo(
                     rawAddress,
                     unchecked((uint)addressBuffer.Length),
-                    addr.AddressFamily == AddressFamily.InterNetworkV6,
+                    addr.AddressFamily == AddressFamily.InterNetworkV6 ? (byte)1 : (byte)0,
                     buffer,
                     Interop.Sys.NI_MAXHOST,
                     null,

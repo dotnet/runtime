@@ -4,6 +4,10 @@
 
 #pragma once
 
+#include "pal_compiler.h"
+
+BEGIN_EXTERN_C
+
 #include "pal_tcpstate.h"
 
 // Exchange types used to normalize Network protocol statistics information
@@ -118,9 +122,9 @@ struct IPEndPointInfo
 
 struct NativeTcpConnectionInformation
 {
-    IPEndPointInfo LocalEndPoint;
-    IPEndPointInfo RemoteEndPoint;
-    TcpState State;
+    struct IPEndPointInfo LocalEndPoint;
+    struct IPEndPointInfo RemoteEndPoint;
+    int32_t State;
 };
 
 struct NativeIPInterfaceStatistics
@@ -139,3 +143,5 @@ struct NativeIPInterfaceStatistics
     uint64_t InDrops;
     uint64_t InNoProto;
 };
+
+END_EXTERN_C

@@ -16,363 +16,363 @@
 #include <string.h>
 #include <assert.h>
 
-extern "C" Error SystemNative_ConvertErrorPlatformToPal(int32_t platformErrno)
+int32_t SystemNative_ConvertErrorPlatformToPal(int32_t platformErrno)
 {
     switch (platformErrno)
     {
         case 0:
-            return PAL_SUCCESS;
+            return Error_SUCCESS;
         case E2BIG:
-            return PAL_E2BIG;
+            return Error_E2BIG;
         case EACCES:
-            return PAL_EACCES;
+            return Error_EACCES;
         case EADDRINUSE:
-            return PAL_EADDRINUSE;
+            return Error_EADDRINUSE;
         case EADDRNOTAVAIL:
-            return PAL_EADDRNOTAVAIL;
+            return Error_EADDRNOTAVAIL;
         case EAFNOSUPPORT:
-            return PAL_EAFNOSUPPORT;
+            return Error_EAFNOSUPPORT;
         case EAGAIN:
-            return PAL_EAGAIN;
+            return Error_EAGAIN;
         case EALREADY:
-            return PAL_EALREADY;
+            return Error_EALREADY;
         case EBADF:
-            return PAL_EBADF;
+            return Error_EBADF;
         case EBADMSG:
-            return PAL_EBADMSG;
+            return Error_EBADMSG;
         case EBUSY:
-            return PAL_EBUSY;
+            return Error_EBUSY;
         case ECANCELED:
-            return PAL_ECANCELED;
+            return Error_ECANCELED;
         case ECHILD:
-            return PAL_ECHILD;
+            return Error_ECHILD;
         case ECONNABORTED:
-            return PAL_ECONNABORTED;
+            return Error_ECONNABORTED;
         case ECONNREFUSED:
-            return PAL_ECONNREFUSED;
+            return Error_ECONNREFUSED;
         case ECONNRESET:
-            return PAL_ECONNRESET;
+            return Error_ECONNRESET;
         case EDEADLK:
-            return PAL_EDEADLK;
+            return Error_EDEADLK;
         case EDESTADDRREQ:
-            return PAL_EDESTADDRREQ;
+            return Error_EDESTADDRREQ;
         case EDOM:
-            return PAL_EDOM;
+            return Error_EDOM;
         case EDQUOT:
-            return PAL_EDQUOT;
+            return Error_EDQUOT;
         case EEXIST:
-            return PAL_EEXIST;
+            return Error_EEXIST;
         case EFAULT:
-            return PAL_EFAULT;
+            return Error_EFAULT;
         case EFBIG:
-            return PAL_EFBIG;
+            return Error_EFBIG;
         case EHOSTUNREACH:
-            return PAL_EHOSTUNREACH;
+            return Error_EHOSTUNREACH;
         case EIDRM:
-            return PAL_EIDRM;
+            return Error_EIDRM;
         case EILSEQ:
-            return PAL_EILSEQ;
+            return Error_EILSEQ;
         case EINPROGRESS:
-            return PAL_EINPROGRESS;
+            return Error_EINPROGRESS;
         case EINTR:
-            return PAL_EINTR;
+            return Error_EINTR;
         case EINVAL:
-            return PAL_EINVAL;
+            return Error_EINVAL;
         case EIO:
-            return PAL_EIO;
+            return Error_EIO;
         case EISCONN:
-            return PAL_EISCONN;
+            return Error_EISCONN;
         case EISDIR:
-            return PAL_EISDIR;
+            return Error_EISDIR;
         case ELOOP:
-            return PAL_ELOOP;
+            return Error_ELOOP;
         case EMFILE:
-            return PAL_EMFILE;
+            return Error_EMFILE;
         case EMLINK:
-            return PAL_EMLINK;
+            return Error_EMLINK;
         case EMSGSIZE:
-            return PAL_EMSGSIZE;
+            return Error_EMSGSIZE;
         case EMULTIHOP:
-            return PAL_EMULTIHOP;
+            return Error_EMULTIHOP;
         case ENAMETOOLONG:
-            return PAL_ENAMETOOLONG;
+            return Error_ENAMETOOLONG;
         case ENETDOWN:
-            return PAL_ENETDOWN;
+            return Error_ENETDOWN;
         case ENETRESET:
-            return PAL_ENETRESET;
+            return Error_ENETRESET;
         case ENETUNREACH:
-            return PAL_ENETUNREACH;
+            return Error_ENETUNREACH;
         case ENFILE:
-            return PAL_ENFILE;
+            return Error_ENFILE;
         case ENOBUFS:
-            return PAL_ENOBUFS;
+            return Error_ENOBUFS;
         case ENODEV:
-            return PAL_ENODEV;
+            return Error_ENODEV;
         case ENOENT:
-            return PAL_ENOENT;
+            return Error_ENOENT;
         case ENOEXEC:
-            return PAL_ENOEXEC;
+            return Error_ENOEXEC;
         case ENOLCK:
-            return PAL_ENOLCK;
+            return Error_ENOLCK;
         case ENOLINK:
-            return PAL_ENOLINK;
+            return Error_ENOLINK;
         case ENOMEM:
-            return PAL_ENOMEM;
+            return Error_ENOMEM;
         case ENOMSG:
-            return PAL_ENOMSG;
+            return Error_ENOMSG;
         case ENOPROTOOPT:
-            return PAL_ENOPROTOOPT;
+            return Error_ENOPROTOOPT;
         case ENOSPC:
-            return PAL_ENOSPC;
+            return Error_ENOSPC;
         case ENOSYS:
-            return PAL_ENOSYS;
+            return Error_ENOSYS;
         case ENOTCONN:
-            return PAL_ENOTCONN;
+            return Error_ENOTCONN;
         case ENOTDIR:
-            return PAL_ENOTDIR;
+            return Error_ENOTDIR;
         case ENOTEMPTY:
-            return PAL_ENOTEMPTY;
+            return Error_ENOTEMPTY;
 #ifdef ENOTRECOVERABLE // not available in NetBSD
         case ENOTRECOVERABLE:
-            return PAL_ENOTRECOVERABLE;
+            return Error_ENOTRECOVERABLE;
 #endif
         case ENOTSOCK:
-            return PAL_ENOTSOCK;
+            return Error_ENOTSOCK;
         case ENOTSUP:
-            return PAL_ENOTSUP;
+            return Error_ENOTSUP;
         case ENOTTY:
-            return PAL_ENOTTY;
+            return Error_ENOTTY;
         case ENXIO:
-            return PAL_ENXIO;
+            return Error_ENXIO;
         case EOVERFLOW:
-            return PAL_EOVERFLOW;
+            return Error_EOVERFLOW;
 #ifdef EOWNERDEAD // not available in NetBSD
         case EOWNERDEAD:
-            return PAL_EOWNERDEAD;
+            return Error_EOWNERDEAD;
 #endif
         case EPERM:
-            return PAL_EPERM;
+            return Error_EPERM;
         case EPIPE:
-            return PAL_EPIPE;
+            return Error_EPIPE;
         case EPROTO:
-            return PAL_EPROTO;
+            return Error_EPROTO;
         case EPROTONOSUPPORT:
-            return PAL_EPROTONOSUPPORT;
+            return Error_EPROTONOSUPPORT;
         case EPROTOTYPE:
-            return PAL_EPROTOTYPE;
+            return Error_EPROTOTYPE;
         case ERANGE:
-            return PAL_ERANGE;
+            return Error_ERANGE;
         case EROFS:
-            return PAL_EROFS;
+            return Error_EROFS;
         case ESPIPE:
-            return PAL_ESPIPE;
+            return Error_ESPIPE;
         case ESRCH:
-            return PAL_ESRCH;
+            return Error_ESRCH;
         case ESTALE:
-            return PAL_ESTALE;
+            return Error_ESTALE;
         case ETIMEDOUT:
-            return PAL_ETIMEDOUT;
+            return Error_ETIMEDOUT;
         case ETXTBSY:
-            return PAL_ETXTBSY;
+            return Error_ETXTBSY;
         case EXDEV:
-            return PAL_EXDEV;
+            return Error_EXDEV;
         case ESOCKTNOSUPPORT:
-            return PAL_ESOCKTNOSUPPORT;
+            return Error_ESOCKTNOSUPPORT;
         case EPFNOSUPPORT:
-            return PAL_EPFNOSUPPORT;
+            return Error_EPFNOSUPPORT;
         case ESHUTDOWN:
-            return PAL_ESHUTDOWN;
+            return Error_ESHUTDOWN;
         case EHOSTDOWN:
-            return PAL_EHOSTDOWN;
+            return Error_EHOSTDOWN;
         case ENODATA:
-            return PAL_ENODATA;
+            return Error_ENODATA;
 
 // #if because these will trigger duplicate case label warnings when
 // they have the same value, which is permitted by POSIX and common.
 #if EOPNOTSUPP != ENOTSUP
         case EOPNOTSUPP:
-            return PAL_EOPNOTSUPP;
+            return Error_EOPNOTSUPP;
 #endif
 #if EWOULDBLOCK != EAGAIN
         case EWOULDBLOCK:
-            return PAL_EWOULDBLOCK;
+            return Error_EWOULDBLOCK;
 #endif
     }
 
-    return PAL_ENONSTANDARD;
+    return Error_ENONSTANDARD;
 }
 
-extern "C" int32_t SystemNative_ConvertErrorPalToPlatform(Error error)
+int32_t SystemNative_ConvertErrorPalToPlatform(int32_t error)
 {
     switch (error)
     {
-        case PAL_SUCCESS:
+        case Error_SUCCESS:
             return 0;
-        case PAL_E2BIG:
+        case Error_E2BIG:
             return E2BIG;
-        case PAL_EACCES:
+        case Error_EACCES:
             return EACCES;
-        case PAL_EADDRINUSE:
+        case Error_EADDRINUSE:
             return EADDRINUSE;
-        case PAL_EADDRNOTAVAIL:
+        case Error_EADDRNOTAVAIL:
             return EADDRNOTAVAIL;
-        case PAL_EAFNOSUPPORT:
+        case Error_EAFNOSUPPORT:
             return EAFNOSUPPORT;
-        case PAL_EAGAIN:
+        case Error_EAGAIN:
             return EAGAIN;
-        case PAL_EALREADY:
+        case Error_EALREADY:
             return EALREADY;
-        case PAL_EBADF:
+        case Error_EBADF:
             return EBADF;
-        case PAL_EBADMSG:
+        case Error_EBADMSG:
             return EBADMSG;
-        case PAL_EBUSY:
+        case Error_EBUSY:
             return EBUSY;
-        case PAL_ECANCELED:
+        case Error_ECANCELED:
             return ECANCELED;
-        case PAL_ECHILD:
+        case Error_ECHILD:
             return ECHILD;
-        case PAL_ECONNABORTED:
+        case Error_ECONNABORTED:
             return ECONNABORTED;
-        case PAL_ECONNREFUSED:
+        case Error_ECONNREFUSED:
             return ECONNREFUSED;
-        case PAL_ECONNRESET:
+        case Error_ECONNRESET:
             return ECONNRESET;
-        case PAL_EDEADLK:
+        case Error_EDEADLK:
             return EDEADLK;
-        case PAL_EDESTADDRREQ:
+        case Error_EDESTADDRREQ:
             return EDESTADDRREQ;
-        case PAL_EDOM:
+        case Error_EDOM:
             return EDOM;
-        case PAL_EDQUOT:
+        case Error_EDQUOT:
             return EDQUOT;
-        case PAL_EEXIST:
+        case Error_EEXIST:
             return EEXIST;
-        case PAL_EFAULT:
+        case Error_EFAULT:
             return EFAULT;
-        case PAL_EFBIG:
+        case Error_EFBIG:
             return EFBIG;
-        case PAL_EHOSTUNREACH:
+        case Error_EHOSTUNREACH:
             return EHOSTUNREACH;
-        case PAL_EIDRM:
+        case Error_EIDRM:
             return EIDRM;
-        case PAL_EILSEQ:
+        case Error_EILSEQ:
             return EILSEQ;
-        case PAL_EINPROGRESS:
+        case Error_EINPROGRESS:
             return EINPROGRESS;
-        case PAL_EINTR:
+        case Error_EINTR:
             return EINTR;
-        case PAL_EINVAL:
+        case Error_EINVAL:
             return EINVAL;
-        case PAL_EIO:
+        case Error_EIO:
             return EIO;
-        case PAL_EISCONN:
+        case Error_EISCONN:
             return EISCONN;
-        case PAL_EISDIR:
+        case Error_EISDIR:
             return EISDIR;
-        case PAL_ELOOP:
+        case Error_ELOOP:
             return ELOOP;
-        case PAL_EMFILE:
+        case Error_EMFILE:
             return EMFILE;
-        case PAL_EMLINK:
+        case Error_EMLINK:
             return EMLINK;
-        case PAL_EMSGSIZE:
+        case Error_EMSGSIZE:
             return EMSGSIZE;
-        case PAL_EMULTIHOP:
+        case Error_EMULTIHOP:
             return EMULTIHOP;
-        case PAL_ENAMETOOLONG:
+        case Error_ENAMETOOLONG:
             return ENAMETOOLONG;
-        case PAL_ENETDOWN:
+        case Error_ENETDOWN:
             return ENETDOWN;
-        case PAL_ENETRESET:
+        case Error_ENETRESET:
             return ENETRESET;
-        case PAL_ENETUNREACH:
+        case Error_ENETUNREACH:
             return ENETUNREACH;
-        case PAL_ENFILE:
+        case Error_ENFILE:
             return ENFILE;
-        case PAL_ENOBUFS:
+        case Error_ENOBUFS:
             return ENOBUFS;
-        case PAL_ENODEV:
+        case Error_ENODEV:
             return ENODEV;
-        case PAL_ENOENT:
+        case Error_ENOENT:
             return ENOENT;
-        case PAL_ENOEXEC:
+        case Error_ENOEXEC:
             return ENOEXEC;
-        case PAL_ENOLCK:
+        case Error_ENOLCK:
             return ENOLCK;
-        case PAL_ENOLINK:
+        case Error_ENOLINK:
             return ENOLINK;
-        case PAL_ENOMEM:
+        case Error_ENOMEM:
             return ENOMEM;
-        case PAL_ENOMSG:
+        case Error_ENOMSG:
             return ENOMSG;
-        case PAL_ENOPROTOOPT:
+        case Error_ENOPROTOOPT:
             return ENOPROTOOPT;
-        case PAL_ENOSPC:
+        case Error_ENOSPC:
             return ENOSPC;
-        case PAL_ENOSYS:
+        case Error_ENOSYS:
             return ENOSYS;
-        case PAL_ENOTCONN:
+        case Error_ENOTCONN:
             return ENOTCONN;
-        case PAL_ENOTDIR:
+        case Error_ENOTDIR:
             return ENOTDIR;
-        case PAL_ENOTEMPTY:
+        case Error_ENOTEMPTY:
             return ENOTEMPTY;
 #ifdef ENOTRECOVERABLE // not available in NetBSD
-        case PAL_ENOTRECOVERABLE:
+        case Error_ENOTRECOVERABLE:
             return ENOTRECOVERABLE;
 #endif
-        case PAL_ENOTSOCK:
+        case Error_ENOTSOCK:
             return ENOTSOCK;
-        case PAL_ENOTSUP:
+        case Error_ENOTSUP:
             return ENOTSUP;
-        case PAL_ENOTTY:
+        case Error_ENOTTY:
             return ENOTTY;
-        case PAL_ENXIO:
+        case Error_ENXIO:
             return ENXIO;
-        case PAL_EOVERFLOW:
+        case Error_EOVERFLOW:
             return EOVERFLOW;
 #ifdef EOWNERDEAD // not available in NetBSD
-        case PAL_EOWNERDEAD:
+        case Error_EOWNERDEAD:
             return EOWNERDEAD;
 #endif
-        case PAL_EPERM:
+        case Error_EPERM:
             return EPERM;
-        case PAL_EPIPE:
+        case Error_EPIPE:
             return EPIPE;
-        case PAL_EPROTO:
+        case Error_EPROTO:
             return EPROTO;
-        case PAL_EPROTONOSUPPORT:
+        case Error_EPROTONOSUPPORT:
             return EPROTONOSUPPORT;
-        case PAL_EPROTOTYPE:
+        case Error_EPROTOTYPE:
             return EPROTOTYPE;
-        case PAL_ERANGE:
+        case Error_ERANGE:
             return ERANGE;
-        case PAL_EROFS:
+        case Error_EROFS:
             return EROFS;
-        case PAL_ESPIPE:
+        case Error_ESPIPE:
             return ESPIPE;
-        case PAL_ESRCH:
+        case Error_ESRCH:
             return ESRCH;
-        case PAL_ESTALE:
+        case Error_ESTALE:
             return ESTALE;
-        case PAL_ETIMEDOUT:
+        case Error_ETIMEDOUT:
             return ETIMEDOUT;
-        case PAL_ETXTBSY:
+        case Error_ETXTBSY:
             return ETXTBSY;
-        case PAL_EXDEV:
+        case Error_EXDEV:
             return EXDEV;
-        case PAL_EPFNOSUPPORT:
+        case Error_EPFNOSUPPORT:
             return EPFNOSUPPORT;
-        case PAL_ESOCKTNOSUPPORT:
+        case Error_ESOCKTNOSUPPORT:
             return ESOCKTNOSUPPORT;
-        case PAL_ESHUTDOWN:
+        case Error_ESHUTDOWN:
             return ESHUTDOWN;
-        case PAL_EHOSTDOWN:
+        case Error_EHOSTDOWN:
             return EHOSTDOWN;
-        case PAL_ENODATA:
+        case Error_ENODATA:
             return ENODATA;
-        case PAL_ENONSTANDARD:
+        case Error_ENONSTANDARD:
             break; // fall through to assert
     }
 
@@ -385,17 +385,17 @@ extern "C" int32_t SystemNative_ConvertErrorPalToPlatform(Error error)
     // note that there is probably a corresponding missing case in the
     // other direction above, but the compiler can't warn in that case
     // because the platform values are not part of an enum.
-    assert_err(false, "Unknown error code", static_cast<int>(error));
+    assert_err(false, "Unknown error code", (int) error);
     return -1;
 }
 
-extern "C" const char* SystemNative_StrErrorR(int32_t platformErrno, char* buffer, int32_t bufferSize)
+const char* SystemNative_StrErrorR(int32_t platformErrno, char* buffer, int32_t bufferSize)
 {
-    assert(buffer != nullptr);
+    assert(buffer != NULL);
     assert(bufferSize > 0);
 
     if (bufferSize < 0)
-        return nullptr;
+        return NULL;
 
 // Note that we must use strerror_r because plain strerror is not
 // thread-safe.
@@ -409,16 +409,16 @@ extern "C" const char* SystemNative_StrErrorR(int32_t platformErrno, char* buffe
 // string into the supplied buffer and returns an error code.
 
 #if HAVE_GNU_STRERROR_R
-    const char* message = strerror_r(platformErrno, buffer, UnsignedCast(bufferSize));
-    assert(message != nullptr);
+    const char* message = strerror_r(platformErrno, buffer, (uint32_t) bufferSize);
+    assert(message != NULL);
     return message;
 #else
-    int error = strerror_r(platformErrno, buffer, UnsignedCast(bufferSize));
+    int error = strerror_r(platformErrno, buffer, (uint32_t) bufferSize);
     if (error == ERANGE)
     {
         // Buffer is too small to hold the entire message, but has
         // still been filled to the extent possible and null-terminated.
-        return nullptr;
+        return NULL;
     }
 
     // The only other valid error codes are 0 for success or EINVAL for

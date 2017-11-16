@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_config.h"
-#include "pal_utilities.h"
-#include "pal_networkstatistics.h"
+#include "pal_types.h"
+#include "pal_tcpstate.h"
 
 #if HAVE_TCP_FSM_H
 #include <netinet/tcp_fsm.h>
@@ -14,58 +14,58 @@
 #error System must have TCP states defined in either tcp.h or tcp_fsm.h.
 #endif
 
-extern "C" TcpState SystemNative_MapTcpState(int32_t tcpState)
+int32_t SystemNative_MapTcpState(int32_t tcpState)
 {
     switch (tcpState)
     {
 #if HAVE_TCP_FSM_H
         case TCPS_CLOSED:
-            return Closed;
+            return TcpState_Closed;
         case TCPS_LISTEN:
-            return Listen;
+            return TcpState_Listen;
         case TCPS_SYN_SENT:
-            return SynSent;
+            return TcpState_SynSent;
         case TCPS_SYN_RECEIVED:
-            return SynReceived;
+            return TcpState_SynReceived;
         case TCPS_ESTABLISHED:
-            return Established;
+            return TcpState_Established;
         case TCPS_CLOSE_WAIT:
-            return CloseWait;
+            return TcpState_CloseWait;
         case TCPS_FIN_WAIT_1:
-            return FinWait1;
+            return TcpState_FinWait1;
         case TCPS_CLOSING:
-            return Closing;
+            return TcpState_Closing;
         case TCPS_FIN_WAIT_2:
-            return FinWait2;
+            return TcpState_FinWait2;
         case TCPS_TIME_WAIT:
-            return TimeWait;
+            return TcpState_TimeWait;
         default:
-            return Unknown;
+            return TcpState_Unknown;
 #elif HAVE_TCP_H_TCPSTATE_ENUM
         case TCP_ESTABLISHED:
-            return Established;
+            return TcpState_Established;
         case TCP_SYN_SENT:
-            return SynSent;
+            return TcpState_SynSent;
         case TCP_SYN_RECV:
-            return SynReceived;
+            return TcpState_SynReceived;
         case TCP_FIN_WAIT1:
-            return FinWait1;
+            return TcpState_FinWait1;
         case TCP_FIN_WAIT2:
-            return FinWait2;
+            return TcpState_FinWait2;
         case TCP_TIME_WAIT:
-            return TimeWait;
+            return TcpState_TimeWait;
         case TCP_CLOSE:
-            return Closing;
+            return TcpState_Closing;
         case TCP_CLOSE_WAIT:
-            return CloseWait;
+            return TcpState_CloseWait;
         case TCP_LAST_ACK:
-            return LastAck;
+            return TcpState_LastAck;
         case TCP_LISTEN:
-            return Listen;
+            return TcpState_Listen;
         case TCP_CLOSING:
-            return Closing;
+            return TcpState_Closing;
         default:
-            return Unknown;
+            return TcpState_Unknown;
 #endif
     }
 }
