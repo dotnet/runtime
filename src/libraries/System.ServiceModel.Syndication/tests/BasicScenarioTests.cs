@@ -387,6 +387,46 @@ namespace System.ServiceModel.Syndication.Tests
             }
         }
 
+        [Fact]
+        public static void DiffAtomNsTest()
+        {
+            string file = @"diff_atom_ns.xml";
+            using (XmlReader reader = XmlReader.Create(file))
+            {
+                Assert.Throws(typeof(XmlException), () => { SyndicationItem.Load(reader); });
+            }
+        }
+
+        [Fact]
+        public static void DiffRssNsTest()
+        {
+            string file = @"diff_rss_ns.xml";
+            using (XmlReader reader = XmlReader.Create(file))
+            {
+                Assert.Throws(typeof(XmlException), () => { SyndicationItem.Load(reader); });
+            }
+        }
+
+        [Fact]
+        public static void DiffRssVersionTest()
+        {
+            string file = @"diff_rss_version.xml";
+            using (XmlReader reader = XmlReader.Create(file))
+            {
+                Assert.Throws(typeof(XmlException), () => { SyndicationItem.Load(reader); });
+            }
+        }
+
+        [Fact]
+        public static void NoRssVersionTest()
+        {
+            string file = @"no_rss_version.xml";
+            using (XmlReader reader = XmlReader.Create(file))
+            {
+                Assert.Throws(typeof(XmlException), () => { SyndicationItem.Load(reader); });
+            }
+        }
+
         private static void ReadWriteSyndicationItem(string file, Func<SyndicationItem, SyndicationItemFormatter> itemFormatter)
         {
             string serializeFilePath = Path.GetTempFileName();
