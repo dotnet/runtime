@@ -58,7 +58,7 @@ def osShortName = ['Windows 10': 'win10',
                     label('windows_clr_perf')
                 }
                 else {
-                    label('linux_clr_perf')
+                    label('ubuntu_1604_clr_perf')
                 }
 
                 wrappers {
