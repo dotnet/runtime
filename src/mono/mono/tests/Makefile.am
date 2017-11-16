@@ -222,6 +222,7 @@ TESTS_CS_SRC=		\
 	iface3.cs		\
 	iface4.cs		\
 	iface-large.cs		\
+	iface-contravariant1.cs \
 	virtual-method.cs	\
 	intptrcast.cs		\
 	indexer.cs		\
