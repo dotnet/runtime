@@ -19533,16 +19533,13 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, GenTreePtr 
 #endif // FEATURE_SIMD
 
 #if !defined(FEATURE_CORECLR) && defined(_TARGET_AMD64_)
-GenTreeStmt* skipNopStmts(GenTreeStmt* stmt)
+GenTreeStmt* SkipNopStmts(GenTreeStmt* stmt)
 {
-    while (stmt != nullptr)
-    {
-        if (!stmt->IsNothingNode())
-        {
-            break;
-        }
-        stmt = stmt->gtNext;
-    }
+	while ((stmt != nullptr) && !stmt->IsNothingNode())
+	{
+		stmt = stmt->gtNextStmt;
+	}
+	return stmt;
 }
 
 #endif // !FEATURE_CORECLR && _TARGET_AMD64_
@@ -19579,10 +19576,12 @@ bool Compiler::fgCheckStmtAfterTailCall()
     //
     // See impIsTailCallILPattern() for details on tail call IL patterns
     // that are supported.
-    if (stmtExpr->gtOper != GT_RETURN)
+	GenTree* callExpr = callStmt->gtStmtExpr;
+
+    if (callExpr->gtOper != GT_RETURN)
     {
         // First skip all GT_NOPs after the call
-        nextMorphStmt = skipNopStmts(nextMorphStmt);
+        nextMorphStmt = SkipNopStmts(nextMorphStmt);
 
         // Check to see if there is a pop.
         // Since tail call is honored, we can get rid of the stmt corresponding to pop.
@@ -19609,7 +19608,7 @@ bool Compiler::fgCheckStmtAfterTailCall()
         }
 
         // Next skip any GT_NOP nodes after the pop
-        nextMorphStmt = skipNopStmts(nextMorphStmt);
+        nextMorphStmt = SkipNopStmts(nextMorphStmt);
     }
 #endif // !FEATURE_CORECLR && _TARGET_AMD64_
 
