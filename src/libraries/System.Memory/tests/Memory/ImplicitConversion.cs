@@ -48,6 +48,22 @@ namespace System.MemoryTests
 
             Memory<int> memoryEmptyInt = emptyArray2;
             CastReadOnly<int>(memoryEmptyInt);
+
+            object[] emptyObjectArray = new object[0];
+            CastReference<object>(emptyObjectArray);
+
+            Memory<object> memoryObject = emptyObjectArray;
+            CastReadOnlyReference<object>(memoryObject);
+        }
+
+        [Fact]
+        public static void CtorImplicitDefaultMemory()
+        {
+            Memory<int> memoryEmpty = default;
+            CastReadOnly<int>(memoryEmpty);
+
+            Memory<object> memoryObject = default;
+            CastReadOnlyReference<object>(memoryObject);
         }
 
         [Fact]

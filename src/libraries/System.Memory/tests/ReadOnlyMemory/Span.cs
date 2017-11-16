@@ -94,5 +94,17 @@ namespace System.MemoryTests
             ((ReadOnlyMemory<int>)owner.Memory).Span.Validate(42, -1);
         }
 
+        [Fact]
+        public static void SpanFromDefaultMemory()
+        {
+            ReadOnlyMemory<int> memory = default;
+            ReadOnlySpan<int> span = memory.Span;
+            Assert.True(span.SequenceEqual(default));
+
+            ReadOnlyMemory<string> memoryObject = default;
+            ReadOnlySpan<string> spanObject = memoryObject.Span;
+            Assert.True(spanObject.SequenceEqual(default));
+        }
+
     }
 }

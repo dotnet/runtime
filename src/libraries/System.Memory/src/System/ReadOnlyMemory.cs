@@ -104,8 +104,7 @@ namespace System
         /// <summary>
         /// Returns an empty <see cref="ReadOnlyMemory{T}"/>
         /// </summary>
-        public static ReadOnlyMemory<T> Empty { get; } = SpanHelpers.PerTypeValues<T>.EmptyArray;
-
+        public static ReadOnlyMemory<T> Empty => default;
         /// <summary>
         /// The number of items in the memory.
         /// </summary>
@@ -165,9 +164,13 @@ namespace System
                 {
                     return new ReadOnlySpan<T>(Unsafe.As<Pinnable<T>>(s), MemoryExtensions.StringAdjustment, s.Length).Slice(_index, _length);
                 }
-                else
+                else if (_object != null)
                 {
                     return new ReadOnlySpan<T>((T[])_object, _index, _length);
+                }
+                else
+                {
+                    return default;
                 }
             }
         }
@@ -201,7 +204,7 @@ namespace System
         /// </summary>
         public unsafe MemoryHandle Retain(bool pin = false)
         {
-            MemoryHandle memoryHandle;
+            MemoryHandle memoryHandle = default;
             if (pin)
             {
                 if (_index < 0)
@@ -209,9 +212,15 @@ namespace System
                     memoryHandle = ((OwnedMemory<T>)_object).Pin();
                     memoryHandle.AddOffset((_index & RemoveOwnedFlagBitMask) * Unsafe.SizeOf<T>());
                 }
-                else
+                else if (typeof(T) == typeof(char) && _object is string s)
                 {
-                    var handle = GCHandle.Alloc(_object, GCHandleType.Pinned);
+                    GCHandle handle = GCHandle.Alloc(s, GCHandleType.Pinned);
+                    void* pointer = Unsafe.Add<T>((void*)handle.AddrOfPinnedObject(), _index);
+                    memoryHandle = new MemoryHandle(null, pointer, handle);
+                }
+                else if (_object is T[] array)
+                {
+                    var handle = GCHandle.Alloc(array, GCHandleType.Pinned);
                     void* pointer = Unsafe.Add<T>((void*)handle.AddrOfPinnedObject(), _index);
                     memoryHandle = new MemoryHandle(null, pointer, handle);
                 }
@@ -222,10 +231,6 @@ namespace System
                 {
                     ((OwnedMemory<T>)_object).Retain();
                     memoryHandle = new MemoryHandle((OwnedMemory<T>)_object);
-                }
-                else
-                {
-                    memoryHandle = new MemoryHandle(null);
                 }
             }
             return memoryHandle;
@@ -246,14 +251,10 @@ namespace System
                     return true;
                 }
             }
-            else
+            else if (_object is T[] arr)
             {
-                T[] arr = _object as T[];
-                if (typeof(T) != typeof(char) || arr != null)
-                {
-                    arraySegment = new ArraySegment<T>(arr, _index, _length);
-                    return true;
-                }
+                arraySegment = new ArraySegment<T>(arr, _index, _length);
+                return true;
             }
 
             arraySegment = default;
@@ -305,7 +306,7 @@ namespace System
         [EditorBrowsable( EditorBrowsableState.Never)]
         public override int GetHashCode()
         {
-            return CombineHashCodes(_object.GetHashCode(), _index.GetHashCode(), _length.GetHashCode());
+            return _object != null ? CombineHashCodes(_object.GetHashCode(), _index.GetHashCode(), _length.GetHashCode()) : 0;
         }
         
         private static int CombineHashCodes(int left, int right)
