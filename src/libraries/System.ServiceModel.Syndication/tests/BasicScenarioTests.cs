@@ -246,7 +246,6 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        [ActiveIssue(25080)]
         public static void SyndicationFeed_Rss_TestDisjointItems()
         {
             using (XmlReader reader = XmlReader.Create(@"RssDisjointItems.xml"))
@@ -267,7 +266,6 @@ namespace System.ServiceModel.Syndication.Tests
 
 
         [Fact]
-        [ActiveIssue(25080)]
         public static void SyndicationFeed_Atom_TestDisjointItems()
         {
             using (XmlReader reader = XmlReader.Create(@"AtomDisjointItems.xml"))
@@ -287,7 +285,7 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        [ActiveIssue(25080)]
+        [ActiveIssue(25156)]
         public static void SyndicationFeed_Rss_WrongDateFormat()
         {
             // *** SETUP *** \\

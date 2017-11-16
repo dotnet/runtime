@@ -911,11 +911,12 @@ namespace System.ServiceModel.Syndication
                     result.BaseUri = new Uri(baseUri, UriKind.RelativeOrAbsolute);
                 }
                 bool areAllItemsRead = true;
-                bool readItemsAtLeastOnce = false;
                 reader.ReadStartElement(Rss20Constants.ChannelTag, Rss20Constants.Rss20Namespace);
 
                 XmlBuffer buffer = null;
                 XmlDictionaryWriter extWriter = null;
+                NullNotAllowedCollection<SyndicationItem> feedItems = null;
+
                 try
                 {
                     while (reader.IsStartElement())
@@ -986,12 +987,13 @@ namespace System.ServiceModel.Syndication
                         }
                         else if (reader.IsStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace))
                         {
-                            if (readItemsAtLeastOnce)
+                            feedItems = feedItems ?? new NullNotAllowedCollection<SyndicationItem>();
+                            IEnumerable<SyndicationItem> items = ReadItems(reader, result, out areAllItemsRead);
+                            foreach(SyndicationItem item in items)
                             {
-                                throw DiagnosticUtility.ExceptionUtility.ThrowHelperWarning(new InvalidOperationException(SR.Format(SR.FeedHasNonContiguousItems, this.GetType().ToString())));
+                                feedItems.Add(item);
                             }
-                            result.Items = ReadItems(reader, result, out areAllItemsRead);
-                            readItemsAtLeastOnce = true;
+                            
                             // if the derived class is reading the items lazily, then stop reading from the stream
                             if (!areAllItemsRead)
                             {
@@ -1019,6 +1021,12 @@ namespace System.ServiceModel.Syndication
                             }
                         }
                     }
+
+                    if (feedItems != null)
+                    {
+                        result.Items = feedItems;
+                    }
+
                     LoadElementExtensions(buffer, extWriter, result);
                 }
                 finally
