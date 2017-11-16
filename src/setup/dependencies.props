@@ -9,22 +9,22 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>eb31751a89c8ac6361d6fbb1b85047c0a967ea9a</CoreFxCurrentRef>
-    <CoreClrCurrentRef>03ac8b865c054429127744bf200cf673d5a37a53</CoreClrCurrentRef>
+    <CoreFxCurrentRef>1a2fba7d4bb1afb237d2b7fdd919150a2744d119</CoreFxCurrentRef>
+    <CoreClrCurrentRef>1a2fba7d4bb1afb237d2b7fdd919150a2744d119</CoreClrCurrentRef>
     <StandardCurrentRef>6298244e25cf84d91e3cda9627315f2425274624</StandardCurrentRef>
-    <WCFCurrentRef>03ac8b865c054429127744bf200cf673d5a37a53</WCFCurrentRef>
+    <WCFCurrentRef>1a2fba7d4bb1afb237d2b7fdd919150a2744d119</WCFCurrentRef>
     <BuildToolsCurrentRef>2aca61448cc42aeda46800708654b7549d2223d9</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <PropertyGroup>
-    <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview1-25915-02</MicrosoftNETCorePlatformsPackageVersion>
-    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview1-25915-02</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
-    <MicrosoftPrivateCoreFxUAPPackageVersion>4.6.0-preview1-25915-02</MicrosoftPrivateCoreFxUAPPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-25915-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview1-25916-01</MicrosoftNETCorePlatformsPackageVersion>
+    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview1-25916-01</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
+    <MicrosoftPrivateCoreFxUAPPackageVersion>4.6.0-preview1-25916-01</MicrosoftPrivateCoreFxUAPPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-25916-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <NETStandardLibraryPackageVersion>2.0.1</NETStandardLibraryPackageVersion>
     <MicrosoftNetNativeCompilerPackageVersion>2.0.0-preview-25429-00</MicrosoftNetNativeCompilerPackageVersion>
     <MicrosoftDiaSymReaderNativePackageVersion>1.4.1</MicrosoftDiaSymReaderNativePackageVersion>
-    <SystemServiceModelDuplexPackageVersion>4.5.0-preview2-25915-01</SystemServiceModelDuplexPackageVersion>
+    <SystemServiceModelDuplexPackageVersion>4.5.0-preview2-25916-01</SystemServiceModelDuplexPackageVersion>
     <SystemServiceModelHttpPackageVersion>$(SystemServiceModelDuplexPackageVersion)</SystemServiceModelHttpPackageVersion>
     <SystemServiceModelNetTcpPackageVersion>$(SystemServiceModelDuplexPackageVersion)</SystemServiceModelNetTcpPackageVersion>
     <SystemServiceModelPrimitivesPackageVersion>$(SystemServiceModelDuplexPackageVersion)</SystemServiceModelPrimitivesPackageVersion>
