@@ -83,15 +83,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="obj">An System.Object.</param>
         /// <returns>true if obj is a FilterUIHintAttribute and its value is the same
         /// as this instance; otherwise, false.</returns>
-        public override bool Equals(object obj)
-        {
-            var otherAttribute = obj as FilterUIHintAttribute;
-            if (otherAttribute == null)
-            {
-                return false;
-            }
-
-            return _implementation.Equals(otherAttribute._implementation);
-        }
+        public override bool Equals(object obj) =>
+            obj is FilterUIHintAttribute otherAttribute && _implementation.Equals(otherAttribute._implementation);
     }
 }

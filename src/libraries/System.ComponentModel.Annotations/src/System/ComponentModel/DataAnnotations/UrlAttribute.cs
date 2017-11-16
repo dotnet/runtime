@@ -23,8 +23,7 @@ namespace System.ComponentModel.DataAnnotations
                 return true;
             }
 
-            var valueAsString = value as string;
-            return valueAsString != null &&
+            return value is string valueAsString &&
                 (valueAsString.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
                 || valueAsString.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
                 || valueAsString.StartsWith("ftp://", StringComparison.OrdinalIgnoreCase));
