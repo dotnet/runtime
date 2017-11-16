@@ -977,19 +977,15 @@ namespace System
 
             if (digPos > 0)
             {
-                int digLength = string.wcslen(dig);
-
                 if (groupDigits != null)
                 {
                     int groupSizeIndex = 0;                             // Index into the groupDigits array.
                     int groupSizeCount = groupDigits[groupSizeIndex];   // The current total of group size.
-                    int groupSizeLen = groupDigits.Length;              // The length of groupDigits array.
                     int bufferSize = digPos;                            // The length of the result buffer string.
-                    int groupSeparatorLen = sGroup.Length;              // The length of the group separator string.
                     int groupSize = 0;                                  // The current group size.
 
                     // Find out the size of the string buffer for the result.
-                    if (groupSizeLen != 0) // You can pass in 0 length arrays
+                    if (groupDigits.Length != 0) // You can pass in 0 length arrays
                     {
                         while (digPos > groupSizeCount)
                         {
@@ -997,56 +993,58 @@ namespace System
                             if (groupSize == 0)
                                 break;
 
-                            bufferSize += groupSeparatorLen;
-                            if (groupSizeIndex < groupSizeLen - 1)
+                            bufferSize += sGroup.Length;
+                            if (groupSizeIndex < groupDigits.Length - 1)
                                 groupSizeIndex++;
 
                             groupSizeCount += groupDigits[groupSizeIndex];
                             if (groupSizeCount < 0 || bufferSize < 0)
                                 throw new ArgumentOutOfRangeException(); // If we overflow
                         }
-                        if (groupSizeCount == 0) // If you passed in an array with one entry as 0, groupSizeCount == 0
-                            groupSize = 0;
-                        else
-                            groupSize = groupDigits[0];
+
+                        groupSize = groupSizeCount == 0 ? 0 : groupDigits[0]; // If you passed in an array with one entry as 0, groupSizeCount == 0
                     }
 
-                    Span<char> tmpBuffer = sb.AppendSpan(bufferSize);
                     groupSizeIndex = 0;
                     int digitCount = 0;
-                    int digStart;
-                    digStart = (digPos < digLength) ? digPos : digLength;
-                    for (int i = digPos - 1; i >= 0; i--)
+                    int digLength = string.wcslen(dig);
+                    int digStart = (digPos < digLength) ? digPos : digLength;
+                    fixed (char* spanPtr = &sb.AppendSpan(bufferSize).DangerousGetPinnableReference())
                     {
-                        tmpBuffer[--bufferSize] = (i < digStart) ? dig[i] : '0';
-
-                        if (groupSize > 0)
+                        char* p = spanPtr + bufferSize - 1;
+                        for (int i = digPos - 1; i >= 0; i--)
                         {
-                            digitCount++;
-                            if ((digitCount == groupSize) && (i != 0))
-                            {
-                                for (int j = groupSeparatorLen - 1; j >= 0; j--)
-                                    tmpBuffer[--bufferSize] = sGroup[j];
+                            *(p--) = (i < digStart) ? dig[i] : '0';
 
-                                if (groupSizeIndex < groupSizeLen - 1)
+                            if (groupSize > 0)
+                            {
+                                digitCount++;
+                                if ((digitCount == groupSize) && (i != 0))
                                 {
-                                    groupSizeIndex++;
-                                    groupSize = groupDigits[groupSizeIndex];
+                                    for (int j = sGroup.Length - 1; j >= 0; j--)
+                                        *(p--) = sGroup[j];
+
+                                    if (groupSizeIndex < groupDigits.Length - 1)
+                                    {
+                                        groupSizeIndex++;
+                                        groupSize = groupDigits[groupSizeIndex];
+                                    }
+                                    digitCount = 0;
                                 }
-                                digitCount = 0;
                             }
                         }
-                    }
 
-                    dig += digStart;
+                        Debug.Assert(p >= spanPtr - 1, "Underflow");
+                        dig += digStart;
+                    }
                 }
                 else
                 {
-                    int digits = Math.Min(digLength, digPos);
-                    sb.Append(dig, digits);
-                    dig += digits;
-                    if (digPos > digLength)
-                        sb.Append('0', digPos - digLength);
+                    do
+                    {
+                        sb.Append(*dig != 0 ? *dig++ : '0');
+                    }
+                    while (--digPos > 0);
                 }
             }
             else
