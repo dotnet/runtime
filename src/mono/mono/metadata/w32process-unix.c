@@ -3438,7 +3438,7 @@ mono_w32process_get_fileversion_info (gunichar2 *filename, gpointer *data)
 	memcpy (*data, versioninfo, datasize);
 
 #if G_BYTE_ORDER == G_BIG_ENDIAN
-	big_up (*data, size);
+	big_up (*data, datasize);
 #endif
 
 	unmap_pe_file (file_map, map_handle);
