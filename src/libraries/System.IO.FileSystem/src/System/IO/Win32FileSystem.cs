@@ -105,7 +105,7 @@ namespace System.IO
 
             // If we were passed a DirectorySecurity, convert it to a security
             // descriptor and set it in he call to CreateDirectory.
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default;
 
             bool r = true;
             int firstError = 0;
@@ -183,8 +183,8 @@ namespace System.IO
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
             lastError = FillAttributeInfo(path, ref data, returnErrorOnNotFound: true);
 
-            return (lastError == 0) && (data.fileAttributes != -1)
-                    && ((data.fileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0);
+            return (lastError == 0) && (data.dwFileAttributes != -1)
+                    && ((data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0);
         }
 
         public override IEnumerable<string> EnumeratePaths(string fullPath, string searchPattern, SearchOption searchOption, SearchTarget searchTarget)
@@ -260,7 +260,7 @@ namespace System.IO
                     case Interop.Errors.ERROR_PATH_NOT_FOUND:
                     case Interop.Errors.ERROR_NOT_READY: // Removable media not ready
                         // Return default value for backward compatibility
-                        data.fileAttributes = -1;
+                        data.dwFileAttributes = -1;
                         return Interop.Errors.ERROR_SUCCESS;
                 }
             }
@@ -273,8 +273,8 @@ namespace System.IO
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
             int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true);
 
-            return (errorCode == 0) && (data.fileAttributes != -1)
-                    && ((data.fileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) == 0);
+            return (errorCode == 0) && (data.dwFileAttributes != -1)
+                    && ((data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) == 0);
         }
 
         public override FileAttributes GetAttributes(string fullPath)
@@ -284,7 +284,7 @@ namespace System.IO
             if (errorCode != 0)
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
 
-            return (FileAttributes)data.fileAttributes;
+            return (FileAttributes)data.dwFileAttributes;
         }
 
         public override string GetCurrentDirectory()
@@ -324,8 +324,7 @@ namespace System.IO
             if (errorCode != 0)
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
 
-            long dt = ((long)(data.ftCreationTimeHigh) << 32) | ((long)data.ftCreationTimeLow);
-            return DateTimeOffset.FromFileTime(dt);
+            return data.ftCreationTime.ToDateTimeOffset();
         }
 
         public override IFileSystemObject GetFileSystemInfo(string fullPath, bool asDirectory)
@@ -342,8 +341,7 @@ namespace System.IO
             if (errorCode != 0)
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
 
-            long dt = ((long)(data.ftLastAccessTimeHigh) << 32) | ((long)data.ftLastAccessTimeLow);
-            return DateTimeOffset.FromFileTime(dt);
+            return data.ftLastAccessTime.ToDateTimeOffset();
         }
 
         public override DateTimeOffset GetLastWriteTime(string fullPath)
@@ -353,8 +351,7 @@ namespace System.IO
             if (errorCode != 0)
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
 
-            long dt = ((long)data.ftLastWriteTimeHigh << 32) | ((long)data.ftLastWriteTimeLow);
-            return DateTimeOffset.FromFileTime(dt);
+            return data.ftLastWriteTime.ToDateTimeOffset();
         }
 
         public override void MoveDirectory(string sourceFullPath, string destFullPath)
@@ -447,7 +444,7 @@ namespace System.IO
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
             }
 
-            return (((FileAttributes)data.fileAttributes & FileAttributes.ReparsePoint) != 0);
+            return (((FileAttributes)data.dwFileAttributes & FileAttributes.ReparsePoint) != 0);
         }
 
         private static void RemoveDirectoryRecursive(string fullPath, ref Interop.Kernel32.WIN32_FIND_DATA findData, bool topLevel)
