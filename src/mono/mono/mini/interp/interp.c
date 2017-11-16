@@ -1969,7 +1969,7 @@ do_transform_method (InterpFrame *frame, ThreadContext *context)
 	/* Use the parent frame as the current frame is not complete yet */
 	interp_push_lmf (&ext, frame->parent);
 
-	frame->ex = mono_interp_transform_method (frame->imethod, context, (MonoDelegate *) frame->stack_args [0].data.p);
+	frame->ex = mono_interp_transform_method (frame->imethod, context, frame);
 
 	interp_pop_lmf (&ext);
 }

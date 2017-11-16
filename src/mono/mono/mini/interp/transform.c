@@ -4273,7 +4273,7 @@ mono_interp_transform_init (void)
 }
 
 MonoException *
-mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, MonoDelegate *del)
+mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, InterpFrame *frame)
 {
 	MonoError error;
 	int i, align, size, offset;
@@ -4346,6 +4346,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 					nm = mono_marshal_get_icall_wrapper (mi->sig, wrapper_name, mi->func, TRUE);
 					g_free (wrapper_name);
 				} else if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
+					MonoDelegate *del = frame->stack_args [0].data.p;
 					nm = mono_marshal_get_delegate_invoke (method, del);
 				} else if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
 					nm = mono_marshal_get_delegate_begin_invoke (method);
