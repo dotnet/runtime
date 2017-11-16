@@ -199,7 +199,7 @@ namespace Microsoft.Win32.SafeHandles
         private bool _isServer;
         private bool _handshakeCompleted = false;
 
-        public GCHandle AlpnHandle { get; set; }
+        public GCHandle AlpnHandle;
 
         public bool IsServer
         {
