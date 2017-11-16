@@ -33,7 +33,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task SimpleRequest_WriteAsynchronously_Succeeds(bool sendChunked)
@@ -72,7 +71,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task SimpleRequest_WriteSynchronouslyNonEmpty_Succeeds(bool sendChunked)
@@ -111,7 +109,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task SimpleRequest_WriteAsynchronouslyInParts_Succeeds()
         {
             const string expectedResponse = "hello from HttpListener";
@@ -141,7 +138,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task SimpleRequest_WriteSynchronouslyInParts_Succeeds()
         {
             const string expectedResponse = "hello from HttpListener";
@@ -171,7 +167,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task SimpleRequest_WriteAynchronouslyEmpty_Succeeds()
         {
             Task<HttpListenerContext> serverContextTask = _listener.GetContextAsync();
@@ -195,7 +190,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task SimpleRequest_WriteSynchronouslyEmpty_Succeeds()
         {
             Task<HttpListenerContext> serverContextTask = _listener.GetContextAsync();
@@ -219,7 +213,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task CanSeek_Get_ReturnsFalse()
         {
             using (HttpListenerResponse response = await _helper.GetResponse())
@@ -238,7 +231,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task CanRead_Get_ReturnsFalse()
         {
             using (HttpListenerResponse response = await _helper.GetResponse())
@@ -253,7 +245,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task CanWrite_Get_ReturnsTrue()
         {
             using (HttpListenerResponse response = await _helper.GetResponse())
@@ -268,18 +259,16 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task Write_NullBuffer_ThrowsArgumentNullException()
         {
             using (HttpListenerResponse response = await _helper.GetResponse())
             using (Stream outputStream = response.OutputStream)
             {
                 AssertExtensions.Throws<ArgumentNullException>("buffer", () => outputStream.Write(null, 0, 0));
-                await Assert.ThrowsAsync<ArgumentNullException>("buffer", () => outputStream.WriteAsync(null, 0, 0));
+                await AssertExtensions.ThrowsAsync<ArgumentNullException>("buffer", () => outputStream.WriteAsync(null, 0, 0));
             }
         }
 
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [Theory]
         [InlineData(-1)]
         [InlineData(3)]
@@ -289,11 +278,10 @@ namespace System.Net.Tests
             using (Stream outputStream = response.OutputStream)
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => outputStream.Write(new byte[2], offset, 0));
-                await Assert.ThrowsAsync<ArgumentOutOfRangeException>("offset", () => outputStream.WriteAsync(new byte[2], offset, 0));
+                await AssertExtensions.ThrowsAsync<ArgumentOutOfRangeException>("offset", () => outputStream.WriteAsync(new byte[2], offset, 0));
             }
         }
 
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [Theory]
         [InlineData(0, 3)]
         [InlineData(1, 2)]
@@ -304,12 +292,11 @@ namespace System.Net.Tests
             using (Stream outputStream = response.OutputStream)
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("size", () => outputStream.Write(new byte[2], offset, size));
-                await Assert.ThrowsAsync<ArgumentOutOfRangeException>("size", () => outputStream.WriteAsync(new byte[2], offset, size));
+                await AssertExtensions.ThrowsAsync<ArgumentOutOfRangeException>("size", () => outputStream.WriteAsync(new byte[2], offset, size));
             }
         }
 
         [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20201, TestPlatforms.AnyUnix)]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task Write_TooMuch_ThrowsProtocolViolationException()
         {
             using (HttpClient client = new HttpClient())
@@ -338,7 +325,6 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20201, TestPlatforms.AnyUnix)]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task Write_TooLittleAsynchronouslyAndClose_ThrowsInvalidOperationException()
         {
             using (HttpClient client = new HttpClient())
@@ -365,7 +351,6 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20201, TestPlatforms.AnyUnix)]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task Write_TooLittleSynchronouslyAndClose_ThrowsInvalidOperationException()
         {
             using (HttpClient client = new HttpClient())
@@ -394,7 +379,6 @@ namespace System.Net.Tests
         [ActiveIssue(20246)] // CI hanging frequently
         [ActiveIssue(19534, TestPlatforms.OSX)]
         [Theory]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Write_HeadersToClosedConnectionAsynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions)
@@ -434,7 +418,6 @@ namespace System.Net.Tests
         [ActiveIssue(20246)] // CI hanging frequently
         [ActiveIssue(19534, TestPlatforms.OSX)]
         [Theory]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Write_HeadersToClosedConnectionSynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions)
@@ -474,7 +457,6 @@ namespace System.Net.Tests
 
         [ActiveIssue(19534, TestPlatforms.OSX)]
         [Theory]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue(18188, platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.
@@ -515,7 +497,6 @@ namespace System.Net.Tests
 
         [ActiveIssue(19534, TestPlatforms.OSX)]
         [Theory]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue(18188, platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.
@@ -554,7 +535,6 @@ namespace System.Net.Tests
             }
         }
 
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -568,7 +548,6 @@ namespace System.Net.Tests
             }
         }
 
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [Fact]
         public async Task EndWrite_InvalidAsyncResult_ThrowsArgumentException()
         {
@@ -584,7 +563,6 @@ namespace System.Net.Tests
             }
         }
 
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [Fact]
         public async Task EndWrite_CalledTwice_ThrowsInvalidOperationException()
         {

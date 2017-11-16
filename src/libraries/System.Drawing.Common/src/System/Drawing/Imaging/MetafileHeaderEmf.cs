@@ -10,7 +10,7 @@ namespace System.Drawing.Imaging
     internal class MetafileHeaderEmf
     {
         /// The ENHMETAHEADER structure is defined natively as a union with WmfHeader.  
-        /// Extreme care should be taken if changing the layout of the corresponding managaed 
+        /// Extreme care should be taken if changing the layout of the corresponding managed 
         /// structures to minimize the risk of buffer overruns.  The affected managed classes 
         /// are the following: ENHMETAHEADER, MetaHeader, MetafileHeaderWmf, MetafileHeaderEmf.
         public MetafileType type = MetafileType.Invalid;

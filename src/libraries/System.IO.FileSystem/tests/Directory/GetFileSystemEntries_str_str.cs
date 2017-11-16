@@ -607,18 +607,28 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Long path segment in search pattern throws PathTooLongException
+        [PlatformSpecific(TestPlatforms.Windows)]  
         public void WindowsSearchPatternLongSegment()
         {
             // Create a path segment longer than the normal max of 255
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string longName = new string('k', 257);
-
-            Assert.Throws<PathTooLongException>(() => GetEntries(testDir.FullName, longName));
+            
+            // Long path segment in search pattern throws PathTooLongException on Desktop,
+            // otherwise it is an IOException.
+            if (PlatformDetection.IsFullFramework)
+            {
+                Assert.Throws<PathTooLongException>(() => GetEntries(testDir.FullName, longName));
+            }
+            else
+            {
+                var exception = Assert.Throws<IOException>(() => GetEntries(testDir.FullName, longName));
+                // Should be Interop.Errors.ERROR_INVALID_PARAMETER converted to a HResult
+                Assert.Equal(unchecked((int)0x80070057), exception.HResult);
+            }
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         public void SearchPatternLongPath()
         {
             // Create a destination path longer than the traditional Windows limit of 256 characters

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
@@ -24,12 +25,15 @@ namespace System.Security.Cryptography
             get { return _impl.BlockSize; }
             set
             {
+                Debug.Assert(BlockSizeValue == 128);
+
                 // Values which were legal in desktop RijndaelManaged but not here in this wrapper type
                 if (value == 192 || value == 256)
                     throw new PlatformNotSupportedException(SR.Cryptography_Rijndael_BlockSize);
 
                 // Any other invalid block size will get the normal "invalid block size" exception.
-                _impl.BlockSize = value;
+                if (value != 128)
+                    throw new CryptographicException(SR.Cryptography_Rijndael_BlockSize);
             }
         }
 

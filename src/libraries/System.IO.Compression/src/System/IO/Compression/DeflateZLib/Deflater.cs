@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Runtime.InteropServices;
 using System.Security;
 
 using ZErrorCode = System.IO.Compression.ZLibNative.ErrorCode;
@@ -18,7 +18,7 @@ namespace System.IO.Compression
     internal sealed class Deflater : IDisposable
     {
         private ZLibNative.ZLibStreamHandle _zlibStream;
-        private GCHandle _inputBufferHandle;
+        private MemoryHandle _inputBufferHandle;
         private bool _isDisposed;
         private const int minWindowBits = -15;  // WindowBits must be between -8..-15 to write no header, 8..15 for a
         private const int maxWindowBits = 31;   // zlib header, or 24..31 for a GZip header
@@ -83,29 +83,46 @@ namespace System.IO.Compression
                 if (disposing)
                     _zlibStream.Dispose();
 
-                if (_inputBufferHandle.IsAllocated)
-                    DeallocateInputBufferHandle();
+                DeallocateInputBufferHandle();
                 _isDisposed = true;
             }
         }
 
         public bool NeedsInput() => 0 == _zlibStream.AvailIn;
 
-        internal void SetInput(byte[] inputBuffer, int startIndex, int count)
+        internal unsafe void SetInput(ReadOnlyMemory<byte> inputBuffer)
         {
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
-            Debug.Assert(null != inputBuffer);
-            Debug.Assert(startIndex >= 0 && count >= 0 && count + startIndex <= inputBuffer.Length);
-            Debug.Assert(!_inputBufferHandle.IsAllocated);
+            Debug.Assert(!_inputBufferHandle.HasPointer);
 
-            if (0 == count)
+            if (0 == inputBuffer.Length)
+            {
                 return;
+            }
 
             lock (SyncLock)
             {
-                _inputBufferHandle = GCHandle.Alloc(inputBuffer, GCHandleType.Pinned);
+                _inputBufferHandle = inputBuffer.Retain(pin: true);
 
-                _zlibStream.NextIn = _inputBufferHandle.AddrOfPinnedObject() + startIndex;
+                _zlibStream.NextIn = (IntPtr)_inputBufferHandle.Pointer;
+                _zlibStream.AvailIn = (uint)inputBuffer.Length;
+            }
+        }
+
+        internal unsafe void SetInput(byte* inputBufferPtr, int count)
+        {
+            Debug.Assert(NeedsInput(), "We have something left in previous input!");
+            Debug.Assert(inputBufferPtr != null);
+            Debug.Assert(!_inputBufferHandle.HasPointer);
+
+            if (count == 0)
+            {
+                return;
+            }
+
+            lock (SyncLock)
+            {
+                _zlibStream.NextIn = (IntPtr)inputBufferPtr;
                 _zlibStream.AvailIn = (uint)count;
             }
         }
@@ -116,7 +133,6 @@ namespace System.IO.Compression
 
             Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
             Debug.Assert(!NeedsInput(), "GetDeflateOutput should only be called after providing input");
-            Debug.Assert(_inputBufferHandle.IsAllocated);
 
             try
             {
@@ -127,8 +143,10 @@ namespace System.IO.Compression
             finally
             {
                 // Before returning, make sure to release input buffer if necessary:
-                if (0 == _zlibStream.AvailIn && _inputBufferHandle.IsAllocated)
+                if (0 == _zlibStream.AvailIn)
+                {
                     DeallocateInputBufferHandle();
+                }
             }
         }
 
@@ -156,7 +174,7 @@ namespace System.IO.Compression
             Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
             Debug.Assert(outputBuffer.Length > 0, "Can't pass in an empty output buffer!");
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
-            Debug.Assert(!_inputBufferHandle.IsAllocated);
+            Debug.Assert(!_inputBufferHandle.HasPointer);
 
             // Note: we require that NeedsInput() == true, i.e. that 0 == _zlibStream.AvailIn.
             // If there is still input left we should never be getting here; instead we
@@ -174,7 +192,8 @@ namespace System.IO.Compression
             Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
             Debug.Assert(outputBuffer.Length > 0, "Can't pass in an empty output buffer!");
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
-            Debug.Assert(!_inputBufferHandle.IsAllocated);
+            Debug.Assert(!_inputBufferHandle.HasPointer);
+
 
             // Note: we require that NeedsInput() == true, i.e. that 0 == _zlibStream.AvailIn.
             // If there is still input left we should never be getting here; instead we
@@ -185,13 +204,11 @@ namespace System.IO.Compression
 
         private void DeallocateInputBufferHandle()
         {
-            Debug.Assert(_inputBufferHandle.IsAllocated);
-
             lock (SyncLock)
             {
                 _zlibStream.AvailIn = 0;
                 _zlibStream.NextIn = ZLibNative.ZNullPtr;
-                _inputBufferHandle.Free();
+                _inputBufferHandle.Dispose();
             }
         }
 

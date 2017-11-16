@@ -35,20 +35,9 @@ using Xunit;
 
 namespace System.Data.Tests.SqlTypes
 {
-    public class SqlDoubleTest : IDisposable
+    public class SqlDoubleTest
     {
         private CultureInfo _originalCulture;
-
-        public SqlDoubleTest()
-        {
-            _originalCulture = CultureInfo.CurrentCulture; ;
-            CultureInfo.CurrentCulture = new CultureInfo("en-US");
-        }
-
-        public void Dispose()
-        {
-            CultureInfo.CurrentCulture = _originalCulture;
-        }
 
         // Test constructor
         [Fact]

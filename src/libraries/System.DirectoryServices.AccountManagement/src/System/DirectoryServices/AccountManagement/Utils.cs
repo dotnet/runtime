@@ -237,7 +237,7 @@ namespace System.DirectoryServices.AccountManagement
                   (identAuth.b5 == 0) &&
                   (identAuth.b6 == 5))
             {
-                // No, so it can't be a account or builtin SID.
+                // No, so it can't be an account or builtin SID.
                 // Probably something like \Everyone or \LOCAL.
                 return SidType.FakeObject;
             }

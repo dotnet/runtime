@@ -3,7 +3,7 @@
     "tfm": "netcoreapp1.1",
     "framework": {
       "name": "Microsoft.NETCore.App",
-      "version": "2.0.0-preview1-001913-00"
+      "version": "2.0.0"
     }
   }
 }

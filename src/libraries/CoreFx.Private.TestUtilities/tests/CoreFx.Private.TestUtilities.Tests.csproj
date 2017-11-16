@@ -10,6 +10,7 @@
     <RootNamespace>CoreFx.Private.TestUtilities.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssertExtensionTests.cs" />
     <Compile Include="TheoryExtensionTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

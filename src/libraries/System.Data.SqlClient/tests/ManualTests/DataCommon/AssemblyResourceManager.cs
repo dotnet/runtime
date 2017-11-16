@@ -55,19 +55,27 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         private bool TryGetResourceValue(string resourceName, object[] args, out object result)
         {
-            var type = _resourceAssembly.GetType("System.SR");
-            var info = type.GetProperty(resourceName, BindingFlags.NonPublic | BindingFlags.Static);
-
-            result = null;
-            if (info != null)
+            if (PlatformDetection.IsNetNative)
             {
-                result = info.GetValue(null);
-                if (args != null)
-                {
-                    result = string.Format((string)result, args);
-                }
+                result = string.Empty;
+                return true;
             }
-            return result != null;
+            else
+            {
+                var type = _resourceAssembly.GetType("System.SR");
+                var info = type.GetProperty(resourceName, BindingFlags.NonPublic | BindingFlags.Static);
+
+                result = null;
+                if (info != null)
+                {
+                    result = info.GetValue(null);
+                    if (args != null)
+                    {
+                        result = string.Format((string)result, args);
+                    }
+                }
+                return result != null;
+            }
         }
     }
 }

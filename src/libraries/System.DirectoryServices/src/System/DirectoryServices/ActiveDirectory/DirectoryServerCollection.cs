@@ -2,25 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+using System.Collections;
+using System.Diagnostics;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Runtime.InteropServices;
-    using System.Collections;
-    using System.Globalization;
-    using System.Diagnostics;
-
     public class DirectoryServerCollection : CollectionBase
     {
-        internal string siteDN = null;
-        internal string transportDN = null;
-        internal DirectoryContext context = null;
+        internal readonly string siteDN = null;
+        internal readonly string transportDN = null;
+        internal readonly DirectoryContext context = null;
         internal bool initialized = false;
-        internal Hashtable changeList = null;
-        private ArrayList _copyList = new ArrayList();
-        private DirectoryEntry _crossRefEntry = null;
-        private bool _isADAM = false;
-        private bool _isForNC = false;
+        internal readonly Hashtable changeList = null;
+        private readonly ArrayList _copyList = new ArrayList();
+        private readonly DirectoryEntry _crossRefEntry = null;
+        private readonly bool _isADAM = false;
+        private readonly bool _isForNC = false;
 
         internal DirectoryServerCollection(DirectoryContext context, string siteDN, string transportName)
         {
@@ -47,10 +45,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public DirectoryServer this[int index]
         {
-            get
-            {
-                return (DirectoryServer)InnerList[index];
-            }
+            get => (DirectoryServer)InnerList[index];
             set
             {
                 DirectoryServer server = (DirectoryServer)value;
@@ -61,7 +56,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (!Contains(server))
                     List[index] = server;
                 else
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.AlreadyExistingInCollection , server), "value");
+                    throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , server), "value");
             }
         }
 
@@ -92,7 +87,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 else
                 {
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.AlreadyExistingInCollection , server), "server");
+                    throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , server), "server");
                 }
             }
             else
@@ -107,7 +102,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (!Contains(server))
                     return List.Add(server);
                 else
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.AlreadyExistingInCollection , server), "server");
+                    throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , server), "server");
             }
         }
 
@@ -193,7 +188,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 else
                 {
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.AlreadyExistingInCollection , server), "server");
+                    throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , server), "server");
                 }
             }
             else
@@ -209,7 +204,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (!Contains(server))
                     List.Insert(index, server);
                 else
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.AlreadyExistingInCollection , server));
+                    throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , server));
             }
         }
 
@@ -230,7 +225,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             // something that does not exist in the collection
-            throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NotFoundInCollection , server), "server");
+            throw new ArgumentException(SR.Format(SR.NotFoundInCollection , server), "server");
         }
 
         protected override void OnClear()

@@ -116,10 +116,18 @@ namespace System.Linq
             Debug.Assert(source != null);
             Debug.Assert(count > 0);
 
-            var queue = new Queue<TSource>();
+            Queue<TSource> queue;
 
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
+                if (!e.MoveNext())
+                {
+                    yield break;
+                }
+
+                queue = new Queue<TSource>();
+                queue.Enqueue(e.Current);
+
                 while (e.MoveNext())
                 {
                     if (queue.Count < count)

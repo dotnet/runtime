@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{1032D5F6-5AE7-4002-A0E4-FEBEADFEA977}</ProjectGuid>
+    <RootNamespace>System.Threading.Channels</RootNamespace>
+    <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="System\VoidResult.cs" />
+    <Compile Include="System\Collections\Generic\Dequeue.cs" />
+    <Compile Include="System\Threading\Channels\BoundedChannel.cs" />
+    <Compile Include="System\Threading\Channels\BoundedChannelFullMode.cs" />
+    <Compile Include="System\Threading\Channels\Channel.cs" />
+    <Compile Include="System\Threading\Channels\ChannelClosedException.cs" />
+    <Compile Include="System\Threading\Channels\ChannelOptions.cs" />
+    <Compile Include="System\Threading\Channels\ChannelReader.cs" />
+    <Compile Include="System\Threading\Channels\ChannelUtilities.cs" />
+    <Compile Include="System\Threading\Channels\ChannelWriter.cs" />
+    <Compile Include="System\Threading\Channels\Channel_1.cs" />
+    <Compile Include="System\Threading\Channels\Channel_2.cs" />
+    <Compile Include="System\Threading\Channels\IDebugEnumerator.cs" />
+    <Compile Include="System\Threading\Channels\Interactor.cs" />
+    <Compile Include="System\Threading\Channels\SingleConsumerUnboundedChannel.cs" />
+    <Compile Include="System\Threading\Channels\UnboundedChannel.cs" />
+    <Compile Include="System\Threading\Channels\UnbufferedChannel.cs" />
+    <Compile Include="$(CommonPath)\System\Collections\Concurrent\SingleProducerConsumerQueue.cs">
+      <Link>Common\System\Collections\Concurrent\SingleProducerConsumerQueue.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.Concurrent" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

@@ -41,9 +41,7 @@ namespace Windows.UI.Xaml.Media.Animation
 
         public RepeatBehavior(double count)
         {
-            if (Double.IsInfinity(count)
-                || Double.IsNaN(count)
-                || count < 0.0)
+            if (!double.IsFinite(count) || count < 0.0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
             }

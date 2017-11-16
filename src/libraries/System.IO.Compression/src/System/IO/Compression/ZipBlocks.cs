@@ -371,7 +371,7 @@ namespace System.IO.Compression
         }
     }
 
-    internal struct ZipLocalFileHeader
+    internal readonly struct ZipLocalFileHeader
     {
         public const uint DataDescriptorSignature = 0x08074B50;
         public const uint SignatureConstant = 0x04034B50;

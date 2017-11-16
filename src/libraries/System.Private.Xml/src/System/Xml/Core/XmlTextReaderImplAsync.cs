@@ -992,21 +992,8 @@ namespace System.Xml
             }
             SetupEncoding(encoding);
 
-            // eat preamble 
-            byte[] preamble = _ps.encoding.GetPreamble();
-            int preambleLen = preamble.Length;
-            int i;
-            for (i = 0; i < preambleLen && i < _ps.bytesUsed; i++)
-            {
-                if (_ps.bytes[i] != preamble[i])
-                {
-                    break;
-                }
-            }
-            if (i == preambleLen)
-            {
-                _ps.bytePos = preambleLen;
-            }
+            // eat preamble
+            EatPreamble();
 
             _documentStartBytePos = _ps.bytePos;
 
@@ -3280,7 +3267,7 @@ namespace System.Xml
         // Returns true when the whole value has been parsed. Return false when it needs to be called again to get a next chunk of value.
 
 
-        private struct ParseTextState
+        private readonly struct ParseTextState
         {
             public readonly int outOrChars;
             public readonly char[] chars;

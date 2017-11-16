@@ -9,7 +9,7 @@ namespace System.Reflection.Metadata
     /// <summary>
     /// Represents the shape of an array type.
     /// </summary>
-    public struct ArrayShape
+    public readonly struct ArrayShape
     {
         /// <summary>
         /// Gets the number of dimensions in the array.

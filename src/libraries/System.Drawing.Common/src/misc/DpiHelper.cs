@@ -7,8 +7,6 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 
-using CAPS = System.Drawing.SafeNativeMethods;
-
 namespace System.Windows.Forms
 {
     /// <summary>
@@ -31,7 +29,7 @@ namespace System.Windows.Forms
 
         private static double s_logicalToDeviceUnitsScalingFactorX = 0.0;
         private static double s_logicalToDeviceUnitsScalingFactorY = 0.0;
-        private static bool s_enableHighDpi = false;
+        private static bool s_enableHighDpi = true;
         private static InterpolationMode s_interpolationMode = InterpolationMode.Invalid;
 
         private static void Initialize()
@@ -40,28 +38,22 @@ namespace System.Windows.Forms
             {
                 return;
             }
-            try
-            {
-                string value = ConfigurationManager.AppSettings.Get(EnableHighDpiConfigurationValueName);
-                if (string.Equals(value, "true", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    s_enableHighDpi = true;
-                }
-            }
-            catch
-            {
-            }
+
+            // NOTE: In the .NET Framework, this value can be controlled via ConfigurationManager.
+            // In .NET Core, the value always defaults to the value "true".
+
             if (s_enableHighDpi)
             {
                 IntPtr hDC = UnsafeNativeMethods.GetDC(NativeMethods.NullHandleRef);
                 if (hDC != IntPtr.Zero)
                 {
-                    s_deviceDpiX = UnsafeNativeMethods.GetDeviceCaps(new HandleRef(null, hDC), CAPS.LOGPIXELSX);
-                    s_deviceDpiY = UnsafeNativeMethods.GetDeviceCaps(new HandleRef(null, hDC), CAPS.LOGPIXELSY);
+                    s_deviceDpiX = UnsafeNativeMethods.GetDeviceCaps(new HandleRef(null, hDC), SafeNativeMethods.LOGPIXELSX);
+                    s_deviceDpiY = UnsafeNativeMethods.GetDeviceCaps(new HandleRef(null, hDC), SafeNativeMethods.LOGPIXELSY);
 
                     UnsafeNativeMethods.ReleaseDC(NativeMethods.NullHandleRef, new HandleRef(null, hDC));
                 }
             }
+
             s_isInitialized = true;
         }
 
@@ -74,6 +66,7 @@ namespace System.Windows.Forms
                     Initialize();
                     s_logicalToDeviceUnitsScalingFactorX = s_deviceDpiX / LogicalDpi;
                 }
+
                 return s_logicalToDeviceUnitsScalingFactorX;
             }
         }
@@ -87,6 +80,7 @@ namespace System.Windows.Forms
                     Initialize();
                     s_logicalToDeviceUnitsScalingFactorY = s_deviceDpiY / LogicalDpi;
                 }
+
                 return s_logicalToDeviceUnitsScalingFactorY;
             }
         }
@@ -124,8 +118,7 @@ namespace System.Windows.Forms
 
         private static Bitmap ScaleBitmapToSize(Bitmap logicalImage, Size deviceImageSize)
         {
-            Bitmap deviceImage;
-            deviceImage = new Bitmap(deviceImageSize.Width, deviceImageSize.Height, logicalImage.PixelFormat);
+            Bitmap deviceImage = new Bitmap(deviceImageSize.Width, deviceImageSize.Height, logicalImage.PixelFormat);
 
             using (Graphics graphics = Graphics.FromImage(deviceImage))
             {
@@ -149,7 +142,7 @@ namespace System.Windows.Forms
 
         private static Bitmap CreateScaledBitmap(Bitmap logicalImage)
         {
-            Size deviceImageSize = DpiHelper.LogicalToDeviceUnits(logicalImage.Size);
+            Size deviceImageSize = LogicalToDeviceUnits(logicalImage.Size);
             return ScaleBitmapToSize(logicalImage, deviceImageSize);
         }
 
@@ -231,6 +224,7 @@ namespace System.Windows.Forms
             {
                 return;
             }
+
             Bitmap deviceBitmap = CreateScaledBitmap(logicalBitmap);
             if (deviceBitmap != null)
             {

@@ -6,13 +6,12 @@
     <IsNETStandard1x Condition="$(NETStandardVersion.StartsWith('1.'))">true</IsNETStandard1x>
     <BinPlaceRef>true</BinPlaceRef>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
-    <NugetRuntimeIdentifier>None</NugetRuntimeIdentifier>
     <_NETStandardTFMFolder Condition="'$(NuGetTargetMoniker)' == '.NETStandard,Version=v2.0'">netstandard2.0</_NETStandardTFMFolder>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="NETStandard.Library">
-      <Version>$(NETStandardPackageVersion)</Version>
+      <Version>$(NETStandardLibraryPackageVersion)</Version>
     </PackageReference>
   </ItemGroup>
 
@@ -54,13 +53,13 @@
   <Target Name="AddNETStandardRefs" AfterTargets="ResolveReferences"
           Condition="'$(_NETStandardTFMFolder)' != ''">
     <PropertyGroup>
-      <_NETStandardRefFolder>$(PackagesDir)$(NETStandardPackageId.ToLower())\$(NETStandardPackageVersion)\build\$(_NETStandardTFMFolder)\ref</_NETStandardRefFolder>
+      <_NETStandardRefFolder>$(PackagesDir)$(NETStandardLibraryPackageId.ToLower())\$(NETStandardLibraryPackageVersion)\build\$(_NETStandardTFMFolder)\ref</_NETStandardRefFolder>
     </PropertyGroup>
     <ItemGroup>
       <Reference Include="$(_NETStandardRefFolder)\*.dll">
         <Private>False</Private>
-        <NuGetPackageId>$(NETStandardPackageId)</NuGetPackageId>
-        <NuGetPackageVersion>$(NETStandardPackageVersion)</NuGetPackageVersion>
+        <NuGetPackageId>$(NETStandardLibraryPackageId)</NuGetPackageId>
+        <NuGetPackageVersion>$(NETStandardLibraryPackageVersion)</NuGetPackageVersion>
       </Reference>
     </ItemGroup>
   </Target>

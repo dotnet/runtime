@@ -8,7 +8,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
-  <!-- Default configurations to help VS understand the configurations -->
   <ItemGroup>
     <Compile Include="StackTraceTests.cs" />
     <Compile Include="SymDocumentTypeTests.cs" />
@@ -17,9 +16,6 @@
     <Compile Include="SymbolTokenTests.cs" />
     <Compile Include="StackFrameTests.cs" />
     <Compile Include="StackFrameExtensionsTests.cs" Condition="'$(TargetGroup)' != 'netfx'" />
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
     <ReferenceFromRuntime Include="System.Runtime.InteropServices.RuntimeInformation" />

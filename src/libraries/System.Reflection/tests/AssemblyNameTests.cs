@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Reflection.Tests
@@ -302,6 +303,177 @@ namespace System.Reflection.Tests
             AssemblyName assemblyName = typeof(AssemblyNameTests).GetTypeInfo().Assembly.GetName();
             assemblyName.Version = new Version(255, 1, 2, 3);
             Assert.Contains("Version=255.1.2.3", assemblyName.FullName);
+        }
+
+        private static readonly string VersionUnspecifiedStr = ushort.MaxValue.ToString(NumberFormatInfo.InvariantInfo);
+
+        private static IEnumerable<object[]> Constructor_String_InvalidVersionTest_MemberData()
+        {
+            // No components
+            yield return new object[] { "" };
+            yield return new object[] { $"{VersionUnspecifiedStr}" };
+            yield return new object[] { $"{VersionUnspecifiedStr}.{VersionUnspecifiedStr}" };
+            yield return new object[] { $"{VersionUnspecifiedStr}.{VersionUnspecifiedStr}.{VersionUnspecifiedStr}" };
+            yield return new object[] { $"{VersionUnspecifiedStr}.{VersionUnspecifiedStr}.{VersionUnspecifiedStr}.{VersionUnspecifiedStr}" };
+
+            // No major version
+            yield return new object[] { $"{VersionUnspecifiedStr}.1" };
+            yield return new object[] { $"{VersionUnspecifiedStr}.1.1" };
+            yield return new object[] { $"{VersionUnspecifiedStr}.1.1.1" };
+
+            // No minor version
+            yield return new object[] { "1" };
+            yield return new object[] { $"1.{VersionUnspecifiedStr}" };
+            yield return new object[] { $"1.{VersionUnspecifiedStr}.1" };
+            yield return new object[] { $"1.{VersionUnspecifiedStr}.1.1" };
+
+            // Too long
+            yield return new object[] { "1.1.1.1." };
+            yield return new object[] { "1.1.1.1.1" };
+
+            // Invalid component
+            foreach (var invalidComponent in new string[] { "", ".", ".1", "-1", "65536", "foo" })
+            {
+                yield return new object[] { "" + invalidComponent };
+                yield return new object[] { "1." + invalidComponent };
+                yield return new object[] { "1.1." + invalidComponent };
+                yield return new object[] { "1.1.1." + invalidComponent };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Constructor_String_InvalidVersionTest_MemberData))]
+        [SkipOnTargetFramework(
+            TargetFrameworkMonikers.NetFramework,
+            ".NET Core behavior differs from .NET Framework since it does not want to replicate some bugs")]
+        public static void Constructor_String_InvalidVersionTest(string versionStr)
+        {
+            Assert.Throws<FileLoadException>(() => new AssemblyName("a, Version=" + versionStr));
+
+            if (versionStr.Split('.').Length < 2 || // Version(string) should throw when the minor version is not specified
+                (
+                    // The Version class has components of size int32, while AssemblyName(string) only allows uint16 values
+                    versionStr.IndexOf(VersionUnspecifiedStr, StringComparison.Ordinal) == -1 &&
+                    versionStr.IndexOf("65536", StringComparison.Ordinal) == -1
+                ))
+            {
+                Assert.ThrowsAny<Exception>(() => new Version(versionStr));
+            }
+            else
+            {
+                new Version(versionStr);
+            }
+        }
+
+        private static IEnumerable<object[]> Constructor_String_VersionTest_MemberData()
+        {
+            // No build
+            var expectedVersion = new Version(1, 1);
+            yield return new object[] { expectedVersion, "1.1" };
+            yield return new object[] { expectedVersion, $"1.1.{VersionUnspecifiedStr}" };
+            yield return new object[] { expectedVersion, $"1.1.{VersionUnspecifiedStr}.1" };
+
+            // No revision
+            expectedVersion = new Version(1, 1, 1);
+            yield return new object[] { expectedVersion, "1.1.1" };
+            yield return new object[] { expectedVersion, $"1.1.1.{VersionUnspecifiedStr}" };
+
+            // All components
+            yield return new object[] { new Version(1, 1, 1, 1), "1.1.1.1" };
+            // 65535 causes the component to be considered unspecified. That's not very interesting, so using 65534 instead.
+            yield return new object[] { new Version(65534, 65534, 65534, 65534), "65534.65534.65534.65534" };
+        }
+
+        [Theory]
+        [MemberData(nameof(Constructor_String_VersionTest_MemberData))]
+        [SkipOnTargetFramework(
+            TargetFrameworkMonikers.NetFramework,
+            ".NET Core behavior differs from .NET Framework since it does not want to replicate some bugs")]
+        public static void Constructor_String_VersionTest(Version expectedVersion, string versionStr)
+        {
+            Assert.NotNull(expectedVersion);
+
+            Action<AssemblyName> verify =
+                an =>
+                {
+                    if (expectedVersion == null)
+                    {
+                        Assert.Null(an.Version);
+                    }
+                    else
+                    {
+                        Assert.Equal(expectedVersion, an.Version);
+                    }
+                };
+
+            var assemblyNameFromStr = new AssemblyName("a, Version=" + versionStr);
+            verify(assemblyNameFromStr);
+            verify(new AssemblyName(assemblyNameFromStr.FullName));
+
+            var versionFromStr = new Version(versionStr);
+
+            // The Version class has components of size int32, while AssemblyName(string) only allows uint16 values
+            if (versionStr.IndexOf(VersionUnspecifiedStr, StringComparison.Ordinal) == -1)
+            {
+                Assert.Equal(expectedVersion, versionFromStr);
+            }
+
+            assemblyNameFromStr = new AssemblyName("a, Version=" + versionFromStr);
+            verify(assemblyNameFromStr);
+            verify(new AssemblyName(assemblyNameFromStr.FullName));
+
+            assemblyNameFromStr = new AssemblyName() { Name = "a", Version = expectedVersion };
+            verify(assemblyNameFromStr);
+            verify(new AssemblyName(assemblyNameFromStr.FullName));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(
+            TargetFrameworkMonikers.NetFramework,
+            ".NET Core behavior differs from .NET Framework since it does not want to replicate some bugs")]
+        public static void Constructor_String_LoadVersionTest()
+        {
+            string assemblyNamePrefix = "System.Reflection.Tests.Assembly_";
+
+            // Requested version 1.0 does not load 0.0.0.0, but loads 1.2.0.0, 3.0.0.0
+            Assert.Throws<FileLoadException>(() => Assembly.Load(new AssemblyName(assemblyNamePrefix + "0_0_0_0, Version=1.0")));
+            Assert.NotNull(Assembly.Load(new AssemblyName(assemblyNamePrefix + "1_2_0_0, Version=1.0")));
+            Assert.NotNull(Assembly.Load(new AssemblyName(assemblyNamePrefix + "3_0_0_0, Version=1.0")));
+
+            // Requested version 1.1 does not load 1.0.0.0, but loads 1.1.2.0, 1.3.0.0
+            Assert.Throws<FileLoadException>(() => Assembly.Load(new AssemblyName(assemblyNamePrefix + "1_0_0_0, Version=1.1")));
+            Assert.NotNull(Assembly.Load(new AssemblyName(assemblyNamePrefix + "1_1_2_0, Version=1.1")));
+            Assert.NotNull(Assembly.Load(new AssemblyName(assemblyNamePrefix + "1_3_0_0, Version=1.1")));
+
+            // Requested version 1.1.1 does not load 1.1.0.0, but loads 1.1.1.2, 1.1.3.0
+            Assert.Throws<FileLoadException>(() => Assembly.Load(new AssemblyName(assemblyNamePrefix + "1_1_0_0, Version=1.1.1")));
+            Assert.NotNull(Assembly.Load(new AssemblyName(assemblyNamePrefix + "1_1_1_2, Version=1.1.1")));
+            Assert.NotNull(Assembly.Load(new AssemblyName(assemblyNamePrefix + "1_1_3_0, Version=1.1.1")));
+
+            // Requested version 1.1.1.1 does not load 1.1.1.0, but loads 1.1.1.3
+            Assert.Throws<FileLoadException>(() => Assembly.Load(new AssemblyName(assemblyNamePrefix + "1_1_1_0, Version=1.1.1.1")));
+            Assert.NotNull(Assembly.Load(new AssemblyName(assemblyNamePrefix + "1_1_1_3, Version=1.1.1.1")));
+
+            Constructor_String_LoadVersionTest_ReferenceVersionAssemblies();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // delay type loading so that the test above can run first
+        private static void Constructor_String_LoadVersionTest_ReferenceVersionAssemblies()
+        {
+            // The purpose of this function is only to have a static reference to each of the test assemblies required by
+            // Constructor_String_LoadVersionTest so that the compiler does not optimize away the project references and ILC can
+            // include them in the closure. Otherwise, the test does not work on UapAot.
+            Assert.NotNull(typeof(AssemblyVersion.Program_0_0_0_0));
+            Assert.NotNull(typeof(AssemblyVersion.Program_1_0_0_0));
+            Assert.NotNull(typeof(AssemblyVersion.Program_1_1_0_0));
+            Assert.NotNull(typeof(AssemblyVersion.Program_1_1_1_0));
+            Assert.NotNull(typeof(AssemblyVersion.Program_1_1_1_2));
+            Assert.NotNull(typeof(AssemblyVersion.Program_1_1_1_3));
+            Assert.NotNull(typeof(AssemblyVersion.Program_1_1_2_0));
+            Assert.NotNull(typeof(AssemblyVersion.Program_1_1_3_0));
+            Assert.NotNull(typeof(AssemblyVersion.Program_1_2_0_0));
+            Assert.NotNull(typeof(AssemblyVersion.Program_1_3_0_0));
+            Assert.NotNull(typeof(AssemblyVersion.Program_3_0_0_0));
         }
 
         [Theory]

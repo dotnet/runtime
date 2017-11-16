@@ -33,7 +33,6 @@ namespace System.Net
 
         private sealed class EmptyWebProxy : IWebProxy
         {
-            [NonSerialized]
             private ICredentials _credentials;
 
             public EmptyWebProxy()

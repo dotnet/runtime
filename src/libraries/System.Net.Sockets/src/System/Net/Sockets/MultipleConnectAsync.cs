@@ -33,8 +33,6 @@ namespace System.Net.Sockets
 
         private object _lockObject = new object();
 
-        protected abstract Socket UserSocket { get; }
-
         // Called by Socket to kick off the ConnectAsync process.  We'll complete the user's SAEA
         // when it's done.  Returns true if the operation will be asynchronous, false if it has failed synchronously
         public bool StartConnectAsync(SocketAsyncEventArgs args, DnsEndPoint endPoint)
@@ -163,7 +161,7 @@ namespace System.Net.Sockets
                 if (_state == State.Canceled)
                 {
                     // If Cancel was called before we got the lock, the Socket will be closed soon.  We need to report
-                    // OperationAborted (even though the connection actually completed), or the user will try to use a 
+                    // OperationAborted (even though the connection actually completed), or the user will try to use a
                     // closed Socket.
                     exception = new SocketException((int)SocketError.OperationAborted);
                 }
@@ -186,7 +184,7 @@ namespace System.Net.Sockets
                     }
                     else
                     {
-                    
+
                         // Keep track of this because it will be overwritten by AttemptConnection
                         SocketError currentFailure = args.SocketError;
                         Exception connectException = AttemptConnection();
@@ -254,7 +252,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private static Exception AttemptConnection(Socket attemptSocket, SocketAsyncEventArgs args)
+        private Exception AttemptConnection(Socket attemptSocket, SocketAsyncEventArgs args)
         {
             try
             {
@@ -263,14 +261,15 @@ namespace System.Net.Sockets
                     NetEventSource.Fail(null, "attemptSocket is null!");
                 }
 
-                if (!attemptSocket.ConnectAsync(args))
+                bool pending = attemptSocket.ConnectAsync(args);
+                if (!pending)
                 {
-                    return new SocketException((int)args.SocketError);
+                    InternalConnectCallback(null, args);
                 }
             }
             catch (ObjectDisposedException)
             {
-                // This can happen if the user closes the socket, and is equivalent to a call 
+                // This can happen if the user closes the socket, and is equivalent to a call
                 // to CancelConnectAsync
                 return new SocketException((int)SocketError.OperationAborted);
             }
@@ -413,8 +412,6 @@ namespace System.Net.Sockets
         private Socket _socket;
         private bool _userSocket;
 
-        protected override Socket UserSocket => _socket;
-
         public SingleSocketMultipleConnectAsync(Socket socket, bool userSocket)
         {
             _socket = socket;
@@ -445,7 +442,7 @@ namespace System.Net.Sockets
 
         protected override void OnFail(bool abortive)
         {
-            // Close the socket if this is an abortive failure (CancelConnectAsync) 
+            // Close the socket if this is an abortive failure (CancelConnectAsync)
             // or if we created it internally
             if (abortive || !_userSocket)
             {
@@ -463,8 +460,6 @@ namespace System.Net.Sockets
     {
         private Socket _socket4;
         private Socket _socket6;
-
-        protected override Socket UserSocket => null;
 
         public DualSocketMultipleConnectAsync(SocketType socketType, ProtocolType protocolType)
         {

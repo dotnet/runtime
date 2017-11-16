@@ -8,7 +8,7 @@
     <BuildConfigurations>
       $(PackageConfigurations);
       netcoreapp;
-      uap-Windows_NT;
+      uap;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

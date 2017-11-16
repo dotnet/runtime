@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Atom10SpecRequiresTextConstruct" xml:space="preserve">
+    <value>The Atom10 specification requires '{0}' to have one of these values: \"text\", \"html\", \"xhtml\", however this value is '{1}' in the document being deserialized.</value>
+  </data>
+  <data name="DocumentFormatterDoesNotHaveDocument" xml:space="preserve">
+    <value>The document formatter must be configured with a document.</value>
+  </data>
+  <data name="ErrorInLine" xml:space="preserve">
+    <value>Error in line {0} position {1}.</value>
+  </data>
+  <data name="ErrorParsingDateTime" xml:space="preserve">
+    <value>An error was encountered when parsing a DateTime value in the XML.</value>
+  </data>
+  <data name="ErrorParsingDocument" xml:space="preserve">
+    <value>An error was encountered when parsing the document's XML. Refer to the inner exception for more details.</value>
+  </data>
+  <data name="ErrorParsingFeed" xml:space="preserve">
+    <value>An error was encountered when parsing the feed's XML. Refer to the inner exception for more details.</value>
+  </data>
+  <data name="ErrorParsingItem" xml:space="preserve">
+    <value>An error was encountered when parsing the item's XML. Refer to the inner exception for more details.</value>
+  </data>
+  <data name="ExtensionNameNotSpecified" xml:space="preserve">
+    <value>The name of the extension element must be specified.</value>
+  </data>
+  <data name="FeedAuthorsIgnoredOnWrite" xml:space="preserve">
+    <value>The feed's authors were not serialized as part of serializing the feed in RSS 2.0 format.</value>
+  </data>
+  <data name="FeedContributorsIgnoredOnWrite" xml:space="preserve">
+    <value>The feed's contributors were not serialized as part of serializing the feed in RSS 2.0 format.</value>
+  </data>
+  <data name="FeedCreatedNullCategory" xml:space="preserve">
+    <value>The feed created a null category.</value>
+  </data>
+  <data name="FeedCreatedNullItem" xml:space="preserve">
+    <value>=The feed created a null item.</value>
+  </data>
+  <data name="FeedCreatedNullPerson" xml:space="preserve">
+    <value>The feed created a null person.</value>
+  </data>
+  <data name="FeedFormatterDoesNotHaveFeed" xml:space="preserve">
+    <value>The syndication feed formatter must be configured with a syndication feed.</value>
+  </data>
+  <data name="FeedHasNonContiguousItems" xml:space="preserve">
+    <value>The feed being deserialized has non-contiguous sets of items in it. This is not supported by '{0}'.</value>
+  </data>
+  <data name="FeedIdIgnoredOnWrite" xml:space="preserve">
+    <value>The feed's id was not serialized as part of serializing the feed in RSS 2.0 format.</value>
+  </data>
+  <data name="FeedLinksIgnoredOnWrite" xml:space="preserve">
+    <value>The feed's links were not serialized as part of serializing the feed in RSS 2.0 format.</value>
+  </data>
+  <data name="InvalidObjectTypePassed" xml:space="preserve">
+    <value>The Type of object passed as parameter '{0}' is not derived from {1}. Ensure that the type of object passed is either of type {1} or derived from {1}.</value>
+  </data>
+  <data name="ItemAuthorsIgnoredOnWrite" xml:space="preserve">
+    <value>The item's authors were not serialized as part of serializing the feed in RSS 2.0 format.</value>
+  </data>
+  <data name="ItemContentIgnoredOnWrite" xml:space="preserve">
+    <value>The item's content was not serialized as part of serializing the feed in RSS 2.0 format.</value>
+  </data>
+  <data name="ItemContributorsIgnoredOnWrite" xml:space="preserve">
+    <value>The item's contributors were not serialized as part of serializing the feed in RSS 2.0 format.</value>
+  </data>
+  <data name="ItemCopyrightIgnoredOnWrite" xml:space="preserve">
+    <value>The item's copyrights were not serialized as part of serializing the feed in RSS 2.0 format.</value>
+  </data>
+  <data name="ItemCreatedNullCategory" xml:space="preserve">
+    <value>The item created a null category.</value>
+  </data>
+  <data name="ItemCreatedNullPerson" xml:space="preserve">
+    <value>The item created a null person.</value>
+  </data>
+  <data name="ItemFormatterDoesNotHaveItem" xml:space="preserve">
+    <value>The syndication item formatter must be configured with a syndication item.</value>
+  </data>
+  <data name="ItemLastUpdatedTimeIgnoredOnWrite" xml:space="preserve">
+    <value>The item's last updated time was not serialized as part of serializing the feed in RSS 2.0 format.</value>
+  </data>
+  <data name="ItemLinksIgnoredOnWrite" xml:space="preserve">
+    <value>The item's links were not serialized as part of serializing the feed in RSS 2.0 format.</value>
+  </data>
+  <data name="OuterElementNameNotSpecified" xml:space="preserve">
+    <value>The outer element name must be specified.</value>
+  </data>
+  <data name="OuterNameOfElementExtensionEmpty" xml:space="preserve">
+    <value>The outer name of the element extension cannot be empty.</value>
+  </data>
+  <data name="UnbufferedItemsCannotBeCloned" xml:space="preserve">
+    <value>A feed containing items that are not buffered (i.e. the items are not stored in an IList) cannot clone its items. Buffer the items in the feed before calling Clone on it or pass false to the Clone method.</value>
+  </data>
+  <data name="UnknownDocumentXml" xml:space="preserve">
+    <value>The element with name '{0}' and namespace '{1}' is not an allowed document format.</value>
+  </data>
+  <data name="UnknownFeedXml" xml:space="preserve">
+    <value>The element with name '{0}' and namespace '{1}' is not an allowed feed format.</value>
+  </data>
+  <data name="UnknownItemXml" xml:space="preserve">
+    <value>The element with name '{0}' and namespace '{1}' is not an allowed item format.</value>
+  </data>
+  <data name="UnsupportedRssVersion" xml:space="preserve">
+    <value>The Rss20Serializer does not support RSS version '{0}'.</value>
+  </data>
+  <data name="UriGeneratorSchemeMustNotBeEmpty" xml:space="preserve">
+    <value>The scheme parameter must not be empty.</value>
+  </data>
+  <data name="ValueMustBeNonNegative" xml:space="preserve">
+    <value>The value of this argument must be non-negative.</value>
+  </data>
+  <data name="XmlBufferInInvalidState" xml:space="preserve">
+    <value>An internal error has occurred. The XML buffer is not in the correct state to perform the operation.</value>
+  </data>
+  <data name="XmlFoundCData" xml:space="preserve">
+    <value>cdata '{0}'</value>
+  </data>
+  <data name="XmlFoundComment" xml:space="preserve">
+    <value>comment '{0}'</value>
+  </data>
+  <data name="XmlFoundElement" xml:space="preserve">
+    <value>element '{0}' from namespace '{1}'</value>
+  </data>
+  <data name="XmlFoundEndElement" xml:space="preserve">
+    <value>end element '{0}' from namespace '{1}'</value>
+  </data>
+  <data name="XmlFoundEndOfFile" xml:space="preserve">
+    <value>end of file</value>
+  </data>
+  <data name="XmlFoundNodeType" xml:space="preserve">
+    <value>node {0}</value>
+  </data>
+  <data name="XmlFoundText" xml:space="preserve">
+    <value>text '{0}'</value>
+  </data>
+  <data name="XmlLineInfo" xml:space="preserve">
+    <value>Line {0}, position {1}.</value>
+  </data>
+  <data name="XmlStartElementExpected" xml:space="preserve">
+    <value>Start element expected. Found {0}.</value>
+  </data>
+</root>

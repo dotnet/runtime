@@ -51,7 +51,7 @@ namespace System.Tests
         {
             string[] cmdLineArgs = Environment.GetCommandLineArgs();
 
-            Assert.InRange(cmdLineArgs.Length, 4, int.MaxValue); /*AppName, AssemblyName, TypeName, MethodName*/
+            Assert.InRange(cmdLineArgs.Length, 5, int.MaxValue); /*AppName, AssemblyName, TypeName, MethodName, ExceptionFile */
             Assert.Contains(TestConsoleApp, cmdLineArgs[0]); /*The host returns the fullName*/
 
             Type t = typeof(GetCommandLineArgs);
@@ -63,10 +63,10 @@ namespace System.Tests
             Assert.Contains("GetCommandLineArgs_Invoke_ReturnsExpected", cmdLineArgs[3]);
 
             // Check the arguments sent to the method.
-            Assert.Equal(args.Length, cmdLineArgs.Length - 4);
+            Assert.Equal(args.Length, cmdLineArgs.Length - 5);
             for (int i = 0; i < args.Length; i++)
             {
-                Assert.Equal(args[i], cmdLineArgs[i + 4]);
+                Assert.Equal(args[i], cmdLineArgs[i + 5]);
             }
 
             return SuccessExitCode;

@@ -5,7 +5,11 @@
 // #define FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
 
 using System;
+#if USE_MDT_EVENTSOURCE
+using Microsoft.Diagnostics.Tracing;
+#else
 using System.Diagnostics.Tracing;
+#endif
 
 // We wish to test both Microsoft.Diagnostics.Tracing (Nuget)
 // and System.Diagnostics.Tracing (Framework), we use this Ifdef make each kind 
@@ -17,7 +21,11 @@ namespace SdtEventSources
     namespace DontPollute
     {
         public sealed class EventSource :
+#if USE_MDT_EVENTSOURCE
+            Microsoft.Diagnostics.Tracing.EventSource
+#else
             System.Diagnostics.Tracing.EventSource
+#endif
         {
             [Event(1)]
             public void EventWrite(int i) { this.WriteEvent(1, i); }

@@ -11,7 +11,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     {
         // Aggregate
         public AggregateType CreateAggregateType(
-            Name name,
             AggregateSymbol parent,
             TypeArray typeArgsThis,
             AggregateType outerType)
@@ -21,8 +20,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             type.outerType = outerType;
             type.SetOwningAggregate(parent);
             type.SetTypeArgsThis(typeArgsThis);
-            type.SetName(name);
-
             type.SetTypeKind(TypeKind.TK_AggregateType);
             return type;
         }
@@ -32,7 +29,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             TypeParameterType type = new TypeParameterType();
             type.SetTypeParameterSymbol(pSymbol);
-            type.SetUnresolved(pSymbol.parent != null && pSymbol.parent.IsAggregateSymbol() && pSymbol.parent.AsAggregateSymbol().IsUnresolved());
             type.SetName(pSymbol.name);
             Debug.Assert(pSymbol.GetTypeParameterType() == null);
             pSymbol.SetTypeParameterType(type);
@@ -56,20 +52,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return type;
         }
 
-        public OpenTypePlaceholderType CreateUnit()
-        {
-            OpenTypePlaceholderType type = new OpenTypePlaceholderType();
-            type.SetTypeKind(TypeKind.TK_OpenTypePlaceholderType);
-            return type;
-        }
-
-        public BoundLambdaType CreateAnonMethod()
-        {
-            BoundLambdaType type = new BoundLambdaType();
-            type.SetTypeKind(TypeKind.TK_BoundLambdaType);
-            return type;
-        }
-
         public MethodGroupType CreateMethodGroup()
         {
             MethodGroupType type = new MethodGroupType();
@@ -84,20 +66,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return type;
         }
 
-        public ErrorType CreateError(
-            Name name,
-            CType parent,
-            AssemblyQualifiedNamespaceSymbol pParentNS,
-            Name nameText,
-            TypeArray typeArgs)
+        public ErrorType CreateError(Name nameText)
         {
             ErrorType e = new ErrorType();
-            e.SetName(name);
             e.nameText = nameText;
-            e.typeArgs = typeArgs;
-            e.SetTypeParent(parent);
-            e.SetNSParent(pParentNS);
-
             e.SetTypeKind(TypeKind.TK_ErrorType);
             return e;
         }

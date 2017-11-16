@@ -98,11 +98,6 @@ namespace System.Net
             }
         }
 
-        internal void SetContentLength(long value)
-        {
-            _contentLength = value;
-        }
-
         public override WebHeaderCollection Headers
         {
             get
@@ -141,7 +136,7 @@ namespace System.Net
         }
 
         /// <summary>
-        /// <para>Last status code retrived</para>
+        /// <para>Last status code retrieved</para>
         /// </summary>
         public FtpStatusCode StatusCode
         {
@@ -152,7 +147,7 @@ namespace System.Net
         }
 
         /// <summary>
-        /// <para>Last status line retrived</para>
+        /// <para>Last status line retrieved</para>
         /// </summary>
         public string StatusDescription
         {
@@ -163,7 +158,7 @@ namespace System.Net
         }
 
         /// <summary>
-        /// <para>Returns last modified date time for given file (null if not relavant/avail)</para>
+        /// <para>Returns last modified date time for given file (null if not relevant/avail)</para>
         /// </summary>
         public DateTime LastModified
         {

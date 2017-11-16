@@ -9,116 +9,35 @@ using Microsoft.CSharp.RuntimeBinder.Semantics;
 
 namespace Microsoft.CSharp.RuntimeBinder.Errors
 {
-    // Collection of error reporting code. This class contains among other things ptrs to 
-    // interfaces for constructing error locations (EE doesn't need locations), submitting errors 
-    // (EE and compiler have different destinations), and error construction (again EE and 
-    // compiler differ). Further decoupling would be enabled if the construction of substitution 
-    // strings (the values that replace the placeholders in resource-defined error strings) were
-    // done at the location in which the error is detected. Right now an ErrArg is constructed
-    // and later is used to construct a string. I can't see any reason why the string creation
-    // must be deferred, thus causing the error formatting/reporting subsystem to understand a 
-    // whole host of types, many of which may not be relevant to the EE. 
-
     internal sealed class ErrorHandling
     {
-        private readonly IErrorSink _errorSink;
         private readonly UserStringBuilder _userStringBuilder;
-        private readonly CErrorFactory _errorFactory;
 
-        // By default these DO NOT add related locations. To add a related location, pass an ErrArgRef.
-        public void Error(ErrorCode id, params ErrArg[] args)
+        public ErrorHandling(GlobalSymbolContext globalSymbols)
         {
-            ErrorTreeArgs(id, args);
+            _userStringBuilder = new UserStringBuilder(globalSymbols);
         }
 
-        // By default these DO add related locations.
-        public void ErrorRef(ErrorCode id, params ErrArgRef[] args)
+        public RuntimeBinderException Error(ErrorCode id, params ErrArg[] args)
         {
-            ErrorTreeArgs(id, args);
-        }
-
-        ////////////////////////////////////////////////////////////////////////////////
-        //
-        // This function submits the given error to the controller, and if it's a fatal
-        // error, throws the fatal exception.
-
-        public void SubmitError(CParameterizedError error)
-        {
-            _errorSink?.SubmitError(error);
-        }
-
-        private void MakeErrorLocArgs(out CParameterizedError error, ErrorCode id, ErrArg[] prgarg)
-        {
-            error = new CParameterizedError();
-            error.Initialize(id, prgarg);
-        }
-
-        public void AddRelatedSymLoc(CParameterizedError err, Symbol sym)
-        {
-        }
-
-        public void AddRelatedTypeLoc(CParameterizedError err, CType pType)
-        {
-        }
-
-        private void MakeErrorTreeArgs(out CParameterizedError error, ErrorCode id, ErrArg[] prgarg)
-        {
-            MakeErrorLocArgs(out error, id, prgarg);
-        }
-
-        // By default these DO NOT add related locations. To add a related location, pass an ErrArgRef.
-
-        public void MakeError(out CParameterizedError error, ErrorCode id, params ErrArg[] args)
-        {
-            MakeErrorTreeArgs(out error, id, args);
-        }
-
-        public ErrorHandling(
-            UserStringBuilder strBldr,
-            IErrorSink sink,
-            CErrorFactory factory)
-        {
-            Debug.Assert(factory != null);
-
-            _userStringBuilder = strBldr;
-            _errorSink = sink;
-            _errorFactory = factory;
-        }
-
-        private CError CreateError(ErrorCode iErrorIndex, string[] args)
-        {
-            return _errorFactory.CreateError(iErrorIndex, args);
-        }
-        private void ErrorTreeArgs(ErrorCode id, ErrArg[] prgarg)
-        {
-            CParameterizedError error;
-            MakeErrorTreeArgs(out error, id, prgarg);
-            SubmitError(error);
-        }
-
-        public CError RealizeError(CParameterizedError parameterizedError)
-        {
-            // Create an arg array manually using the type information in the ErrArgs.
-            string[] prgpsz = new string[parameterizedError.GetParameterCount()];
-            int[] prgiarg = new int[parameterizedError.GetParameterCount()];
+            // Create an argument array manually using the type information in the ErrArgs.
+            string[] prgpsz = new string[args.Length];
+            int[] prgiarg = new int[args.Length];
 
             int ppsz = 0;
             int piarg = 0;
             int cargUnique = 0;
 
-            _userStringBuilder.ResetUndisplayableStringFlag();
-
-            for (int iarg = 0; iarg < parameterizedError.GetParameterCount(); iarg++)
+            for (int iarg = 0; iarg < args.Length; iarg++)
             {
-                ErrArg arg = parameterizedError.GetParameter(iarg);
+                ErrArg arg = args[iarg];
 
                 // If the NoStr bit is set we don't add it to prgpsz.
                 if (0 != (arg.eaf & ErrArgFlags.NoStr))
                     continue;
 
-                bool fUserStrings = false;
 
-                if (!_userStringBuilder.ErrArgToString(out prgpsz[ppsz], arg, out fUserStrings))
+                if (!_userStringBuilder.ErrArgToString(out prgpsz[ppsz], arg, out bool fUserStrings))
                 {
                     if (arg.eak == ErrArgKind.Int)
                     {
@@ -141,15 +60,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 piarg++;
             }
 
-            // don't ever display undisplayable strings to the user
-            // if this happens we should track down the caller to not display the error
-            // this should only ever occur in a cascading error situation due to
-            // error tolerance
-            if (_userStringBuilder.HadUndisplayableString())
-            {
-                return null;
-            }
-
             int cpsz = ppsz;
 
             if (cargUnique > 1)
@@ -163,7 +73,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     if (prgiarg[i] < 0 || prgpszNew[i] != prgpsz[i])
                         continue;
 
-                    ErrArg arg = parameterizedError.GetParameter(prgiarg[i]);
+                    ErrArg arg = args[prgiarg[i]];
                     Debug.Assert(0 != (arg.eaf & ErrArgFlags.Unique) && 0 == (arg.eaf & ErrArgFlags.NoStr));
 
                     Symbol sym = null;
@@ -194,7 +104,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     {
                         if (prgiarg[j] < 0)
                             continue;
-                        Debug.Assert(0 != (parameterizedError.GetParameter(prgiarg[j]).eaf & ErrArgFlags.Unique));
+                        Debug.Assert(0 != (args[prgiarg[j]].eaf & ErrArgFlags.Unique));
                         if (prgpsz[i] != prgpsz[j])
                             continue;
 
@@ -207,7 +117,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                             continue;
                         }
 
-                        ErrArg arg2 = parameterizedError.GetParameter(prgiarg[j]);
+                        ErrArg arg2 = args[prgiarg[j]];
                         Debug.Assert(0 != (arg2.eaf & ErrArgFlags.Unique) && 0 == (arg2.eaf & ErrArgFlags.NoStr));
 
                         Symbol sym2 = null;
@@ -250,8 +160,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 prgpsz = prgpszNew;
             }
 
-            CError err = CreateError(parameterizedError.GetErrorNumber(), prgpsz);
-            return err;
+            return new RuntimeBinderException(string.Format(CultureInfo.InvariantCulture, ErrorFacts.GetMessage(id), prgpsz));
         }
     }
 }

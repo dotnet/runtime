@@ -57,7 +57,7 @@ namespace System.Linq.Expressions.Compiler
         /// <summary>
         /// Result of a rewrite operation. Always contains an action and a node.
         /// </summary>
-        private struct Result
+        private readonly struct Result
         {
             internal readonly RewriteAction Action;
             internal readonly Expression Node;
@@ -314,7 +314,7 @@ namespace System.Linq.Expressions.Compiler
             node = new AssignBinaryExpression(node.Left.ReduceExtensions(), node.Right);
 
             Result result = RewriteAssignBinaryExpression(node, stack);
-            
+
             // it's at least Copy because we reduced the node
             return new Result(result.Action | RewriteAction.Copy, result.Node);
         }
@@ -674,7 +674,6 @@ namespace System.Linq.Expressions.Compiler
                     bool isRefNew = IsRefInstance(node.NewExpression);
 
                     var comma = new ArrayBuilder<Expression>(count + 2 + (isRefNew ? 1 : 0));
-                    
                     ParameterExpression tempNew = MakeTemp(rewrittenNew.Type);
                     comma.UncheckedAdd(new AssignBinaryExpression(tempNew, rewrittenNew));
 

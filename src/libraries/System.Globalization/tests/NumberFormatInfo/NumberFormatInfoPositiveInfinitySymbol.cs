@@ -12,8 +12,8 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> PositiveInfinitySymbol_TestData()
         {
             yield return new object[] { NumberFormatInfo.InvariantInfo };
-            yield return new object[] { new CultureInfo("en-US").NumberFormat };
-            yield return new object[] { new CultureInfo("fr-FR").NumberFormat };
+            yield return new object[] { CultureInfo.GetCultureInfo("en-US").NumberFormat };
+            yield return new object[] { CultureInfo.GetCultureInfo("fr-FR").NumberFormat };
         }
 
         [Theory]

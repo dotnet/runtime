@@ -201,5 +201,40 @@ namespace System.Linq.Expressions.Tests
         }
 
         #endregion
+
+#if FEATURE_COMPILE
+        [Fact]
+        public static void VerifyIL_NullableShortNegateChecked()
+        {
+            ParameterExpression param = Expression.Parameter(typeof(short?));
+            Expression<Func<short?, short?>> f =
+                Expression.Lambda<Func<short?, short?>>(Expression.NegateChecked(param), param);
+
+            f.VerifyIL(
+                @".method valuetype [System.Private.CoreLib]System.Nullable`1<int16> ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure,valuetype [System.Private.CoreLib]System.Nullable`1<int16>)
+                {
+                    .maxstack 4
+                    .locals init (
+                        [0] valuetype [System.Private.CoreLib]System.Nullable`1<int16>
+                    )
+
+                    IL_0000: ldarg.1
+                    IL_0001: stloc.0
+                    IL_0002: ldloca.s   V_0
+                    IL_0004: call       instance int16 valuetype [System.Private.CoreLib]System.Nullable`1<int16>::GetValueOrDefault()
+                    IL_0009: brfalse.s  IL_001c
+                    IL_000b: ldc.i4.0
+                    IL_000c: ldloca.s   V_0
+                    IL_000e: call       instance int16 valuetype [System.Private.CoreLib]System.Nullable`1<int16>::GetValueOrDefault()
+                    IL_0013: sub.ovf
+                    IL_0014: conv.ovf.i2
+                    IL_0015: newobj     instance void valuetype [System.Private.CoreLib]System.Nullable`1<int16>::.ctor(int16)
+                    IL_001a: br.s       IL_001d
+                    IL_001c: ldloc.0
+                    IL_001d: ret
+                }");
+        }
+#endif
+
     }
 }

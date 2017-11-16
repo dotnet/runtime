@@ -14,7 +14,7 @@ namespace System.Composition
         private readonly Action _disposeAction;
 
         /// <summary>
-        /// Construct an ExportLifetimContext.
+        /// Construct an Export.
         /// </summary>
         /// <param name="value">The value of the export.</param>
         /// <param name="disposeAction">An action that releases resources associated with the export.</param>

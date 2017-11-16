@@ -38,14 +38,6 @@
           <source>Cannot invoke a non-delegate type</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">비대리자 형식을 호출할 수 없습니다.</target>
         </trans-unit>
-        <trans-unit id="BindImplicitConversionRequireOneArgument" translate="yes" xml:space="preserve">
-          <source>Implicit conversion takes exactly one argument</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">암시적 변환에서는 정확히 하나의 인수를 사용합니다.</target>
-        </trans-unit>
-        <trans-unit id="BindExplicitConversionRequireOneArgument" translate="yes" xml:space="preserve">
-          <source>Explicit conversion takes exactly one argument</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">명시적 변환에서는 정확히 하나의 인수를 사용합니다.</target>
-        </trans-unit>
         <trans-unit id="BindBinaryAssignmentRequireTwoArguments" translate="yes" xml:space="preserve">
           <source>Binary operators cannot be invoked with one argument</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">하나의 인수를 사용하여 이항 연산자를 호출할 수 없습니다.</target>
@@ -69,10 +61,6 @@
         <trans-unit id="BadBinaryOps" translate="yes" xml:space="preserve">
           <source>Operator '{0}' cannot be applied to operands of type '{1}' and '{2}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' 연산자는 '{1}' 및 '{2}' 형식의 피연산자에 적용할 수 없습니다.</target>
-        </trans-unit>
-        <trans-unit id="IntDivByZero" translate="yes" xml:space="preserve">
-          <source>Division by constant zero</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">상수 0으로 나누기</target>
         </trans-unit>
         <trans-unit id="BadIndexLHS" translate="yes" xml:space="preserve">
           <source>Cannot apply indexing with [] to an expression of type '{0}'</source>
@@ -142,10 +130,6 @@
           <source>The type '{0}' has no constructors defined</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' 형식에 정의된 생성자가 없습니다.</target>
         </trans-unit>
-        <trans-unit id="BadDelegateConstructor" translate="yes" xml:space="preserve">
-          <source>The delegate '{0}' does not have a valid constructor</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' 대리자에 올바른 생성자가 없습니다.</target>
-        </trans-unit>
         <trans-unit id="PropertyLacksGet" translate="yes" xml:space="preserve">
           <source>The property or indexer '{0}' cannot be used in this context because it lacks the get accessor</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' 속성 또는 인덱서는 get 접근자가 없으므로 이 컨텍스트에서 사용할 수 없습니다.</target>
@@ -174,21 +158,9 @@
           <source>Property or indexer '{0}' cannot be assigned to -- it is read only</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' 속성 또는 인덱서는 읽기 전용이므로 할당할 수 없습니다.</target>
         </trans-unit>
-        <trans-unit id="AbstractBaseCall" translate="yes" xml:space="preserve">
-          <source>Cannot call an abstract base member: '{0}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">추상 기본 멤버를 호출할 수 없습니다. '{0}'</target>
-        </trans-unit>
         <trans-unit id="RefProperty" translate="yes" xml:space="preserve">
           <source>A property or indexer may not be passed as an out or ref parameter</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">속성 또는 인덱서는 out 또는 ref 매개 변수로 전달할 수 없습니다.</target>
-        </trans-unit>
-        <trans-unit id="ManagedAddr" translate="yes" xml:space="preserve">
-          <source>Cannot take the address of, get the size of, or declare a pointer to a managed type ('{0}')</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">관리되는 형식('{0}')의 주소 또는 크기를 가져오거나 해당 형식에 대한 포인터를 선언할 수 없습니다.</target>
-        </trans-unit>
-        <trans-unit id="FixedNotNeeded" translate="yes" xml:space="preserve">
-          <source>You cannot use the fixed statement to take the address of an already fixed expression</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">이미 고정된 식의 주소를 가져오는 데 fixed 문을 사용할 수 없습니다.</target>
         </trans-unit>
         <trans-unit id="UnsafeNeeded" translate="yes" xml:space="preserve">
           <source>Dynamic calls cannot be used in conjunction with pointers</source>
@@ -202,10 +174,6 @@
           <source>The type ('{0}') must contain declarations of operator true and operator false</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' 형식에는 true 및 false 연산자 선언이 있어야 합니다.</target>
         </trans-unit>
-        <trans-unit id="CheckedOverflow" translate="yes" xml:space="preserve">
-          <source>The operation overflows at compile time in checked mode</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">작업 선택된 모드에서 컴파일 타임에 오버플로</target>
-        </trans-unit>
         <trans-unit id="ConstOutOfRangeChecked" translate="yes" xml:space="preserve">
           <source>Constant value '{0}' cannot be converted to a '{1}' (use 'unchecked' syntax to override)</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">상수 값 '{0}'을(를) '{1}'(으)로 변환할 수 없습니다. 재정의하려면 'unchecked' 구문을 사용하십시오.</target>
@@ -213,26 +181,6 @@
         <trans-unit id="AmbigMember" translate="yes" xml:space="preserve">
           <source>Ambiguity between '{0}' and '{1}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}'과(와) '{1}' 사이에 모호성이 있습니다.</target>
-        </trans-unit>
-        <trans-unit id="SizeofUnsafe" translate="yes" xml:space="preserve">
-          <source>'{0}' does not have a predefined size, therefore sizeof can only be used in an unsafe context (consider using System.Runtime.InteropServices.Marshal.SizeOf)</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}'에 미리 정의된 크기가 없으므로 sizeof는 안전하지 않은 컨텍스트에서만 사용할 수 있습니다. System.Runtime.InteropServices.Marshal.SizeOf를 사용하십시오.</target>
-        </trans-unit>
-        <trans-unit id="FieldInitRefNonstatic" translate="yes" xml:space="preserve">
-          <source>A field initializer cannot reference the non-static field, method, or property '{0}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">필드 이니셜라이저는 static이 아닌 필드, 메서드 또는 속성 '{0}'을(를) 참조할 수 없습니다.</target>
-        </trans-unit>
-        <trans-unit id="CallingFinalizeDepracated" translate="yes" xml:space="preserve">
-          <source>Destructors and object.Finalize cannot be called directly. Consider calling IDisposable.Dispose if available.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">소멸자 및 object.Finalize는 직접 호출할 수 없습니다. 가능한 경우 IDisposable.Dispose를 호출하십시오.</target>
-        </trans-unit>
-        <trans-unit id="CallingBaseFinalizeDeprecated" translate="yes" xml:space="preserve">
-          <source>Do not directly call your base class Finalize method. It is called automatically from your destructor.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">기본 클래스 Finalize 메서드를 직접 호출하지 마십시오. 이 메서드는 소멸자에서 자동으로 호출됩니다.</target>
-        </trans-unit>
-        <trans-unit id="BadCastInFixed" translate="yes" xml:space="preserve">
-          <source>The right hand side of a fixed statement assignment may not be a cast expression</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">fixed 문의 오른쪽에는 캐스트 식을 할당할 수 없습니다.</target>
         </trans-unit>
         <trans-unit id="NoImplicitConvCast" translate="yes" xml:space="preserve">
           <source>Cannot implicitly convert type '{0}' to '{1}'. An explicit conversion exists (are you missing a cast?)</source>
@@ -249,10 +197,6 @@
         <trans-unit id="BadArity" translate="yes" xml:space="preserve">
           <source>Using the generic {1} '{0}' requires '{2}' type arguments</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">제네릭 {1} '{0}'을(를) 사용하려면 '{2}' 형식 인수가 필요합니다.</target>
-        </trans-unit>
-        <trans-unit id="BadTypeArgument" translate="yes" xml:space="preserve">
-          <source>The type '{0}' may not be used as a type argument</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' 형식은 형식 인수로 사용할 수 없습니다.</target>
         </trans-unit>
         <trans-unit id="TypeArgsNotAllowed" translate="yes" xml:space="preserve">
           <source>The {1} '{0}' cannot be used with type arguments</source>
@@ -278,29 +222,13 @@
           <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. The nullable type '{3}' does not satisfy the constraint of '{1}'. Nullable types can not satisfy any interface constraints.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{3}' 형식은 제네릭 형식 또는 메서드 '{0}'에서 형식 매개 변수 '{2}'(으)로 사용할 수 없습니다. nullable 형식 '{3}'이(가) '{1}' 제약 조건을 충족하지 않습니다. nullable 형식은 어떠한 인터페이스 제약 조건도 만족할 수 없습니다.</target>
         </trans-unit>
-        <trans-unit id="GenericConstraintNotSatisfiedTyVar" translate="yes" xml:space="preserve">
-          <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. There is no boxing conversion or type parameter conversion from '{3}' to '{1}'.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">'{3}' 형식은 제네릭 형식 또는 메서드 '{0}'에서 형식 매개 변수 '{2}'(으)로 사용할 수 없습니다. '{3}'에서 '{1}'(으)로의 boxing 변환 또는 형식 매개 변수 변환이 없습니다.</target>
-        </trans-unit>
         <trans-unit id="GenericConstraintNotSatisfiedValType" translate="yes" xml:space="preserve">
           <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. There is no boxing conversion from '{3}' to '{1}'.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{3}' 형식은 제네릭 형식 또는 메서드 '{0}'에서 형식 매개 변수 '{2}'(으)로 사용할 수 없습니다. '{3}'에서 '{1}'(으)로의 boxing 변환이 없습니다.</target>
         </trans-unit>
-        <trans-unit id="TypeVarCantBeNull" translate="yes" xml:space="preserve">
-          <source>Cannot convert null to type parameter '{0}' because it could be a non-nullable value type. Consider using 'default({0})' instead.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">null을 허용하지 않는 값 형식일 수 있으므로 null을 형식 매개 변수 '{0}'(으)로 변환할 수 없습니다. 대신 'default({0})'를 사용하십시오.</target>
-        </trans-unit>
-        <trans-unit id="BadRetType" translate="yes" xml:space="preserve">
-          <source>'{1} {0}' has the wrong return type</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">'{1} {0}'에 잘못된 반환 형식이 있습니다.</target>
-        </trans-unit>
         <trans-unit id="CantInferMethTypeArgs" translate="yes" xml:space="preserve">
           <source>The type arguments for method '{0}' cannot be inferred from the usage. Try specifying the type arguments explicitly.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' 메서드의 형식 인수를 유추할 수 없습니다. 형식 인수를 명시적으로 지정하십시오.</target>
-        </trans-unit>
-        <trans-unit id="MethGrpToNonDel" translate="yes" xml:space="preserve">
-          <source>Cannot convert method group '{0}' to non-delegate type '{1}'. Did you intend to invoke the method?</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' 메서드 그룹을 비대리자 형식 '{1}'(으)로 변환할 수 없습니다. 메서드를 호출하시겠습니까?</target>
         </trans-unit>
         <trans-unit id="RefConstraintNotSatisfied" translate="yes" xml:space="preserve">
           <source>The type '{2}' must be a reference type in order to use it as parameter '{1}' in the generic type or method '{0}'</source>
@@ -310,29 +238,9 @@
           <source>The type '{2}' must be a non-nullable value type in order to use it as parameter '{1}' in the generic type or method '{0}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">제네릭 형식 또는 메서드 '{0}'에서 '{2}' 형식을 '{1}' 매개 변수로 사용하려면 해당 형식이 null을 허용하지 않는 값 형식이어야 합니다.</target>
         </trans-unit>
-        <trans-unit id="CircularConstraint" translate="yes" xml:space="preserve">
-          <source>Circular constraint dependency involving '{0}' and '{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' 및 '{1}'과(와) 관련된 순환 제약 조건 종속성입니다.</target>
-        </trans-unit>
-        <trans-unit id="BaseConstraintConflict" translate="yes" xml:space="preserve">
-          <source>Type parameter '{0}' inherits conflicting constraints '{1}' and '{2}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">형식 매개 변수 '{0}'이(가) 상속하는 '{1}' 및 '{2}' 제약 조건이 충돌합니다.</target>
-        </trans-unit>
-        <trans-unit id="ConWithValCon" translate="yes" xml:space="preserve">
-          <source>Type parameter '{1}' has the 'struct' constraint so '{1}' cannot be used as a constraint for '{0}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">형식 매개 변수 '{1}'에 'struct' 제약 조건이 있으므로 '{1}'은(는) '{0}'에 대한 제약 조건으로 사용할 수 없습니다.</target>
-        </trans-unit>
         <trans-unit id="AmbigUDConv" translate="yes" xml:space="preserve">
           <source>Ambiguous user defined conversions '{0}' and '{1}' when converting from '{2}' to '{3}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{2}'에서 '{3}(으)로 변환하는 동안 모호한 사용자 정의 변환 '{0}' 및 '{1}'이(가) 발생했습니다.</target>
-        </trans-unit>
-        <trans-unit id="PredefinedTypeNotFound" translate="yes" xml:space="preserve">
-          <source>Predefined type '{0}' is not defined or imported</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">미리 정의된 형식 '{0}'을(를) 정의하지 않았거나 가져오지 않았습니다.</target>
-        </trans-unit>
-        <trans-unit id="PredefinedTypeBadType" translate="yes" xml:space="preserve">
-          <source>Predefined type '{0}' is declared incorrectly</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">미리 정의된 형식 '{0}'이(가) 잘못 선언되었습니다.</target>
         </trans-unit>
         <trans-unit id="BindToBogus" translate="yes" xml:space="preserve">
           <source>'{0}' is not supported by the language</source>
@@ -342,45 +250,13 @@
           <source>'{0}': cannot explicitly call operator or accessor</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}': 연산자나 접근자를 명시적으로 호출할 수 없습니다.</target>
         </trans-unit>
-        <trans-unit id="BogusType" translate="yes" xml:space="preserve">
-          <source>'{0}' is a type not supported by the language</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}'은(는) 언어에서 지원하는 형식이 아닙니다.</target>
-        </trans-unit>
-        <trans-unit id="MissingPredefinedMember" translate="yes" xml:space="preserve">
-          <source>Missing compiler required member '{0}.{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}.{1}' 멤버를 필요로 하는 컴파일러가 없습니다.</target>
-        </trans-unit>
-        <trans-unit id="LiteralDoubleCast" translate="yes" xml:space="preserve">
-          <source>Literal of type double cannot be implicitly converted to type '{1}'; use an '{0}' suffix to create a literal of this type</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">double 형식의 리터럴을 암시적으로 '{1}' 형식으로 변환할 수 없습니다. 이 형식의 리터럴을 만들려면 '{0}' 접미사를 사용하십시오.</target>
-        </trans-unit>
-        <trans-unit id="UnifyingInterfaceInstantiations" translate="yes" xml:space="preserve">
-          <source>'{0}' cannot implement both '{1}' and '{2}' because they may unify for some type parameter substitutions</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">'{1}'과(와) '{2}'은(는) 일부 형식 매개 변수를 대체할 때 통합될 수 있으므로 '{0}'에서 둘 다 구현할 수는 없습니다.</target>
-        </trans-unit>
         <trans-unit id="ConvertToStaticClass" translate="yes" xml:space="preserve">
           <source>Cannot convert to static type '{0}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' 정적 형식으로 변환할 수 없습니다.</target>
         </trans-unit>
-        <trans-unit id="GenericArgIsStaticClass" translate="yes" xml:space="preserve">
-          <source>'{0}': static types cannot be used as type arguments</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}': 정적 형식은 형식 인수로 사용할 수 없습니다.</target>
-        </trans-unit>
-        <trans-unit id="PartialMethodToDelegate" translate="yes" xml:space="preserve">
-          <source>Cannot create delegate from method '{0}' because it is a partial method without an implementing declaration</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}'은(는) 구현 선언이 없는 부분 메서드(Partial Method)이므로 이 메서드로부터 대리자를 만들 수 없습니다.</target>
-        </trans-unit>
         <trans-unit id="IncrementLvalueExpected" translate="yes" xml:space="preserve">
           <source>The operand of an increment or decrement operator must be a variable, property or indexer</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">증가 연산자 또는 감소 연산자의 피연산자는 변수, 속성 또는 인덱서여야 합니다.</target>
-        </trans-unit>
-        <trans-unit id="NoSuchMemberOrExtension" translate="yes" xml:space="preserve">
-          <source>'{0}' does not contain a definition for '{1}' and no extension method '{1}' accepting a first argument of type '{0}' could be found (are you missing a using directive or an assembly reference?)</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}'에 '{1}'에 대한 정의가 없고 '{0}' 형식의 첫 번째 인수를 허용하는 확장 메서드 '{1}'을(를) 찾을 수 없습니다. using 지시문 또는 어셈블리 참조가 있는지 확인하십시오.</target>
-        </trans-unit>
-        <trans-unit id="ValueTypeExtDelegate" translate="yes" xml:space="preserve">
-          <source>Extension methods '{0}' defined on value type '{1}' cannot be used to create delegates</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">값 형식 '{1}'에 정의된 확장 메서드 '{0}'은(는) 대리자를 만드는 데 사용할 수 없습니다.</target>
         </trans-unit>
         <trans-unit id="BadArgCount" translate="yes" xml:space="preserve">
           <source>No overload for method '{0}' takes '{1}' arguments</source>
@@ -389,10 +265,6 @@
         <trans-unit id="BadArgTypes" translate="yes" xml:space="preserve">
           <source>The best overloaded method match for '{0}' has some invalid arguments</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}'에 가장 일치하는 오버로드된 메서드에 잘못된 인수가 있습니다.</target>
-        </trans-unit>
-        <trans-unit id="BadArgType" translate="yes" xml:space="preserve">
-          <source>Argument '{0}': cannot convert from '{1}' to '{2}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' 인수: '{1}'에서 '{2}'(으)로 변환할 수 없습니다.</target>
         </trans-unit>
         <trans-unit id="RefLvalueExpected" translate="yes" xml:space="preserve">
           <source>A ref or out argument must be an assignable variable</source>
@@ -430,14 +302,6 @@
           <source>Cannot modify the return value of '{0}' because it is not a variable</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}'은(는) 변수가 아니므로 해당 반환 값을 수정할 수 없습니다.</target>
         </trans-unit>
-        <trans-unit id="BadArgExtraRef" translate="yes" xml:space="preserve">
-          <source>Argument '{0}' should not be passed with the '{1}' keyword</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' 인수는 '{1}' 키워드와 함께 전달할 수 없습니다.</target>
-        </trans-unit>
-        <trans-unit id="BadArgRef" translate="yes" xml:space="preserve">
-          <source>Argument '{0}' must be passed with the '{1}' keyword</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' 인수는 '{1}' 키워드와 함께 전달해야 합니다.</target>
-        </trans-unit>
         <trans-unit id="AssgReadonly2" translate="yes" xml:space="preserve">
           <source>Members of readonly field '{0}' cannot be modified (except in a constructor or a variable initializer)</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">읽기 전용 필드 '{0}'의 멤버는 수정할 수 없습니다. 단 생성자 또는 변수 이니셜라이저에서는 예외입니다.</target>
@@ -462,33 +326,9 @@
           <source>Cannot pass '{0}' as a ref or out argument because it is a '{1}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}'은(는) '{1}'이므로 ref 또는 out 인수로 전달할 수 없습니다.</target>
         </trans-unit>
-        <trans-unit id="ThisStructNotInAnonMeth" translate="yes" xml:space="preserve">
-          <source>Anonymous methods, lambda expressions, and query expressions inside structs cannot access instance members of 'this'. Consider copying 'this' to a local variable outside the anonymous method, lambda expression or query expression and using the local instead.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">구조체 안의 무명 메서드, 람다 식 및 쿼리 식은 'this'의 인스턴스 멤버에 액세스할 수 없습니다. 'this'를 무명 메서드, 람다 식 또는 쿼리 식 외부에 있는 지역 변수에 복사한 다음 이 지역 변수를 대신 사용하십시오.</target>
-        </trans-unit>
-        <trans-unit id="DelegateOnNullable" translate="yes" xml:space="preserve">
-          <source>Cannot bind delegate to '{0}' because it is a member of 'System.Nullable<it id="1" pos="open">&lt;T&gt;</it>'</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">그것 'System.Nullable<it id="1" pos="open">&lt;T&gt;</it>'의 멤버 이므로 ' (0) '에 대리자를 바인딩할 수 없습니다.</target>
-        </trans-unit>
         <trans-unit id="BadCtorArgCount" translate="yes" xml:space="preserve">
           <source>'{0}' does not contain a constructor that takes '{1}' arguments</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}'에 '{1}'개의 인수를 사용하는 생성자가 없습니다.</target>
-        </trans-unit>
-        <trans-unit id="BadExtensionArgTypes" translate="yes" xml:space="preserve">
-          <source>'{0}' does not contain a definition for '{1}' and the best extension method overload '{2}' has some invalid arguments</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}'에 '{1}'에 대한 정의가 없으며 가장 적합한 확장 메서드 오버로드 '{2}'에 잘못된 인수가 있습니다.</target>
-        </trans-unit>
-        <trans-unit id="BadInstanceArgType" translate="yes" xml:space="preserve">
-          <source>Instance argument: cannot convert from '{0}' to '{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">인스턴스 인수: '{0}'에서 '{1}'(으)로 변환할 수 없습니다.</target>
-        </trans-unit>
-        <trans-unit id="BadArgTypesForCollectionAdd" translate="yes" xml:space="preserve">
-          <source>The best overloaded Add method '{0}' for the collection initializer has some invalid arguments</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">오버로드된 Add 메서드 중 해당 컬렉션 이니셜라이저에 가장 적합한 '{0}'에 잘못된 인수가 있습니다.</target>
-        </trans-unit>
-        <trans-unit id="InitializerAddHasParamModifiers" translate="yes" xml:space="preserve">
-          <source>The best overloaded method match '{0}' for the collection initializer element cannot be used. Collection initializer 'Add' methods cannot have ref or out parameters.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">컬렉션 이니셜라이저에 대해 '{0}'에 가장 일치하는 오버로드된 메서드를 사용할 수 없습니다. 컬렉션 이니셜라이저 'Add' 메서드에는 ref 또는 out 매개 변수를 사용할 수 없습니다.</target>
         </trans-unit>
         <trans-unit id="NonInvocableMemberCalled" translate="yes" xml:space="preserve">
           <source>Non-invocable member '{0}' cannot be used like a method.</source>

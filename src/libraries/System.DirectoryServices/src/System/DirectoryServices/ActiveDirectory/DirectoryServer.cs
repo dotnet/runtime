@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Diagnostics;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Collections;
-    using System.Globalization;
-    using System.Runtime.InteropServices;
-    using System.Diagnostics;
-    using System.Security.Permissions;
-
     public abstract class DirectoryServer : IDisposable
     {
         private bool _disposed = false;
@@ -46,11 +44,7 @@ namespace System.DirectoryServices.ActiveDirectory
         #endregion constructors
 
         #region IDisposable
-        ~DirectoryServer()
-        {
-            // finalizer is called => Dispose has not been called yet.
-            Dispose(false);
-        }
+        ~DirectoryServer() => Dispose(false);
 
         public void Dispose()
         {
@@ -83,10 +77,7 @@ namespace System.DirectoryServices.ActiveDirectory
         #endregion IDisposable
 
         #region public methods
-        public override string ToString()
-        {
-            return Name;
-        }
+        public override string ToString() => Name;
 
         public void MoveToAnotherSite(string siteName)
         {
@@ -221,30 +212,16 @@ namespace System.DirectoryServices.ActiveDirectory
         #endregion public properties
 
         #region abstract public properties
-        public abstract string IPAddress
-        {
-            get;
-        }
-        public abstract String SiteName
-        {
-            get;
-        }
 
-        public abstract SyncUpdateCallback SyncFromAllServersCallback
-        {
-            get;
+        public abstract string IPAddress { get; }
 
-            set;
-        }
-        public abstract ReplicationConnectionCollection InboundConnections
-        {
-            get;
-        }
+        public abstract string SiteName { get; }
 
-        public abstract ReplicationConnectionCollection OutboundConnections
-        {
-            get;
-        }
+        public abstract SyncUpdateCallback SyncFromAllServersCallback { get; set; }
+
+        public abstract ReplicationConnectionCollection InboundConnections { get; }
+
+        public abstract ReplicationConnectionCollection OutboundConnections { get; }
 
         #endregion abstract public properties
 
@@ -319,13 +296,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        internal DirectoryContext Context
-        {
-            get
-            {
-                return context;
-            }
-        }
+        internal DirectoryContext Context => context;
 
         internal void CheckConsistencyHelper(IntPtr dsHandle, LoadLibrarySafeHandle libHandle)
         {

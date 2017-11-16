@@ -52,13 +52,13 @@
           WorkingDirectory="$(ToolRuntimePath)" />
 
     <WriteSigningRequired
-        Condition="'@(NetFxContracts)' != '' and '$(SkipSigning)' != 'true' and '$(SignType)' != 'oss'"
+        Condition="'@(NetFxContracts)' != '' and '$(SkipSigning)' != 'true' and '$(SignType)' != 'public'"
         AuthenticodeSig="Microsoft"
         StrongNameSig="%(NetFxContracts.StrongNameSig)"
         MarkerFile="$(GenFacadesOutputPath)%(NetFxContracts.Filename)%(NetFxContracts.Extension).requires_signing" />
 
     <WriteSigningRequired
-        Condition="'@(NETStandardContracts)' != '' and '$(SkipSigning)' != 'true' and '$(SignType)' != 'oss'"
+        Condition="'@(NETStandardContracts)' != '' and '$(SkipSigning)' != 'true' and '$(SignType)' != 'public'"
         AuthenticodeSig="Microsoft"
         StrongNameSig="Open"
         MarkerFile="$(GenFacadesOutputPath)%(NETStandardContracts.Filename)%(NETStandardContracts.Extension).requires_signing" />
@@ -88,8 +88,9 @@
   <Target Name="GetBinPlaceItems">
     <ItemGroup>
       <BinPlaceItem Include="$(GenFacadesOutputPath)*.dll" />
-      <ExcludeRuntimeItems Include="@(GenFacadesContracts -> '$(GenFacadesOutputPath)%(Filename)%(Extension)')" Condition="'%(GenFacadesContracts.ExcludeFromRuntime)' == 'true'" />
-      <RuntimeBinplaceItem Include="@(BinPlaceItem)" Exclude="@(ExcludeRuntimeItems)" />
+      <ExcludeItemNames Include="@(GenFacadesContracts->'%(Filename)')" Condition="'%(GenFacadesContracts.ExcludeFromRuntime)' == 'true'" />
+      <BinPlaceItemNames Include="@(BinPlaceItem->'%(Filename)')" Exclude="@(ExcludeItemNames)" />
+      <RuntimeBinplaceItem Include="@(BinPlaceItemNames->'$(GenFacadesOutputPath)%(Identity).dll')" />
       <FileWrites Include="@(BinPlaceItem)" />
     </ItemGroup>
   </Target>

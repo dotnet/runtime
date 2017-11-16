@@ -4,7 +4,7 @@
 
 namespace System.Diagnostics.SymbolStore
 {
-    public struct SymbolToken
+    public readonly struct SymbolToken
     {
         private readonly int _token;
         

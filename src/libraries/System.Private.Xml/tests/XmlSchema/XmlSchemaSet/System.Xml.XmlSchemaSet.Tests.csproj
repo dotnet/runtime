@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{9EDAADA8-B658-430F-97EE-CCA494883D86}</ProjectGuid>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -17,6 +16,7 @@
     <Compile Include="TC_SchemaSet_Add_SchemaSet.cs" />
     <Compile Include="TC_SchemaSet_Add_URL.cs" />
     <Compile Include="TC_SchemaSet_AllowXmlAttributes.cs" />
+    <Compile Include="TC_SchemaSet_AnyAttribute.cs" />
     <Compile Include="TC_SchemaSet_Compile.cs" />
     <Compile Include="TC_SchemaSet_Constructors.cs" />
     <Compile Include="TC_SchemaSet_Contains_ns.cs" />
@@ -42,9 +42,6 @@
     <Compile Include="TC_SchemaSet_XmlResolver.cs" />
     <Compile Include="$(CommonTestPath)\System\IO\TempDirectory.cs">
       <Link>Common\System\IO\TempDirectory.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
     <SupplementalTestData Include="..\TestFiles\**\*.*">
       <Link>TestFiles\%(RecursiveDir)%(Filename)%(Extension)</Link>

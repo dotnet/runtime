@@ -31,7 +31,7 @@ usage()
     echo "                                      default: Debug"
     echo "    --os <os>                         OS to run (FreeBSD, Linux, NetBSD or OSX)"
     echo "                                      default: detect current OS"
-    echo "    --arch <Architecture>             Architecture to run (x64, arm, x86, arm64)"
+    echo "    --arch <Architecture>             Architecture to run (x64, arm, armel, x86, arm64)"
     echo "                                      default: detect current architecture"
     echo
     echo "Execution options:"
@@ -119,7 +119,9 @@ case $CPUName in
     aarch64)
         __Arch=arm64
         ;;
-
+    amd64)
+        __Arch=x64
+        ;;
     *)
         echo "Unknown CPU $CPUName detected, configuring as if for x64"
         __Arch=x64
@@ -197,14 +199,10 @@ run_test()
     exit 0
   fi
 
-  dirName="$1/netcoreapp"
-
+  dirName="$1/netcoreapp-$OS-$ConfigurationGroup-$__Arch"
   if [ ! -d "$dirName" ]; then
-    dirName="$1/netstandard"
-    if [ ! -d "$dirName" ]; then
-        echo "Nothing to test in $testProject"
-        return
-    fi
+    echo "Nothing to test in $testProject"
+    return
   fi
 
   if [ ! -e "$dirName/RunTests.sh" ]; then
@@ -308,6 +306,9 @@ do
         --os)
         OS=$2
         ;;
+        --arch)
+        __Arch=$2
+        ;;
         --coreclr-coverage)
         CoreClrCoverage=ON
         ;;
@@ -386,7 +387,7 @@ if [ $RunTestSequential -eq 1 ]
 then
     maxProcesses=1;
 else
-    if [ `uname` = "NetBSD" ]; then
+    if [ `uname` = "NetBSD" ] || [ `uname` = "FreeBSD" ]; then
       maxProcesses=$(($(getconf NPROCESSORS_ONLN)+1))
     else
       maxProcesses=$(($(getconf _NPROCESSORS_ONLN)+1))
@@ -397,9 +398,7 @@ if [ -n "$TestDirFile" ] || [ -n "$TestDir" ]
 then
     run_selected_tests
 else
-    run_all_tests "$CoreFxTests/AnyOS.AnyCPU.$ConfigurationGroup/"*.Tests
-    run_all_tests "$CoreFxTests/Unix.AnyCPU.$ConfigurationGroup/"*.Tests
-    run_all_tests "$CoreFxTests/$OS.AnyCPU.$ConfigurationGroup/"*.Tests
+    run_all_tests "$CoreFxTests/tests/"*.Tests
 fi
 
 if [ "$CoreClrCoverage" == "ON" ]

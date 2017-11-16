@@ -4,59 +4,98 @@
   <Import Project="$(SourceDir)\shims\netfxreference.props" />
   <PropertyGroup>
     <BinPlaceRef>true</BinPlaceRef>
+    <BinPlaceRuntime>true</BinPlaceRuntime>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
-    <NugetRuntimeIdentifier>None</NugetRuntimeIdentifier>
-    <RefOutputPath>$(RefPath)</RefOutputPath>
+    <NETStandardSupportPackageId>NETStandard.Library.NETFramework</NETStandardSupportPackageId>
+    <NETStandardSupportPackageVersion>2.0.0-preview2-25405-01</NETStandardSupportPackageVersion>
+    <NETStandardSupportRoot>$(PackagesDir)$(NETStandardSupportPackageId.ToLower())\$(NETStandardSupportPackageVersion)\build</NETStandardSupportRoot>
+    <AddNetStandardSupportPackage Condition="'$(TargetGroup)' == 'netfx' OR '$(TargetGroup)' == 'net461' OR '$(TargetGroup)' == 'net462' OR '$(TargetGroup)' == 'net47'">true</AddNetStandardSupportPackage>
+    <!-- temporary until we can get an updated 4.7.1 targeting pack -->
+    <AddNetStandardSupportPackage Condition="'$(TargetGroup)' == '471' ">true</AddNetStandardSupportPackage>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(NuGetTargetMoniker)' == '.NETFramework,Version=v4.6.3'">
-    <!-- Missing 4.6.3 targeting pack, use 462 for now -->
-    <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.2</TargetingPackNugetPackageId>
-  </PropertyGroup>
-  <PropertyGroup Condition="!$(NuGetTargetMoniker.StartsWith('.NETFramework'))">
+  <PropertyGroup Condition="'$(TargetsNetFx)' != 'true'">
     <!-- For things not .NETFramework we need the net461 targeting pack to generate facades -->
     <NuGetTargetMoniker>.NETFramework,Version=v4.6.1</NuGetTargetMoniker>
     <NuGetTargetMonikerShort>net461</NuGetTargetMonikerShort>
     <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.1</TargetingPackNugetPackageId>
-    <RefOutputPath>$(NetFxRefPath)</RefOutputPath>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetingPackNugetPackageId)' == 'Microsoft.TargetingPack.NETFramework.v4.7.1'">
+    <!-- Missing 4.7.1 targeting pack, use 4.7 for now -->
+    <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.7</TargetingPackNugetPackageId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- For things not .NETFramework binplace to the NETFX ref path -->
+    <BinPlaceConfiguration  Condition="'$(TargetsNetFx)' != 'true'" Include="$(Configuration)">
+      <RefPath>$(NetFxRefPath)</RefPath>
+    </BinPlaceConfiguration>
+
+    <!-- For things .NETFramework binplace to refpath -->
+    <BinPlaceConfiguration  Condition="'$(TargetsNetFx)' == 'true'" Include="$(Configuration)">
+      <RefPath>$(RefPath)</RefPath>
+    </BinPlaceConfiguration>
+
+    <!-- For the netfx targetgroup, binplace NetStandardSupportLibs to runtime / test-runtime-->
+    <BinPlaceConfiguration  Condition="'$(TargetGroup)' == 'netfx'" Include="$(Configuration)">
+      <ItemName>NetStandardSupportLib</ItemName>
+      <RuntimePath>$(TestHostRootPath)</RuntimePath>
+    </BinPlaceConfiguration>
+    <BinPlaceConfiguration  Condition="'$(TargetGroup)' == 'netfx'" Include="$(Configuration)">
+      <ItemName>NetStandardSupportLib</ItemName>
+      <RuntimePath>$(RuntimePath)</RuntimePath>
+    </BinPlaceConfiguration>
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="$(TargetingPackNugetPackageId)">
       <Version>1.0.1</Version>
     </PackageReference>
-    <PackageReference Include="NETStandard.Library" Condition="'$(TargetGroup)' == 'netfx'">
-      <Version>$(NETStandardPackageVersion)</Version>
+    <PackageReference Include="$(NETStandardSupportPackageId)" Condition="'$(AddNetStandardSupportPackage)' == 'true'">
+      <Version>$(NETStandardSupportPackageVersion)</Version>
     </PackageReference>
-  </ItemGroup>
-  <ItemGroup>
-    <BinPlaceConfiguration Include="$(Configuration)">
-      <RefPath>$(RefOutputPath)</RefPath>
-    </BinPlaceConfiguration>
 
     <FileToExclude Include="System.EnterpriseServices" />
     <FileToExclude Include="System.EnterpriseServices.Thunk" />
     <FileToExclude Include="System.EnterpriseServices.Wrapper" />
   </ItemGroup>
 
-  <Target Name="FilterNETStandardShims" BeforeTargets="FilterNugetPackages"
-          Condition="'$(RefOutputPath)' == '$(NetFxRefPath)'">
-    <PropertyGroup>
-      <_NETStandardRefFolder>$(PackagesDir)$(NETStandardPackageId.ToLower())\$(NETStandardPackageVersion)\build\netstandard2.0\ref</_NETStandardRefFolder>
-    </PropertyGroup>
-    <ItemGroup>
-      <_excludeForNetFx Include="@(NetFxReference);netstandard" />
-      <_netstandardShimAssemblies Include="$(_NETStandardRefFolder)\*.dll" Exclude="@(_excludeForNetFx->'$(_NETStandardRefFolder)\%(Identity).dll')" />
-      <FileToExclude Include="@(_netstandardShimAssemblies->'%(FileName)')" />
-    </ItemGroup>
-  </Target>
-
   <Target Name="AddNETStandardShims" AfterTargets="FilterNugetPackages"
-          Condition="'$(RefOutputPath)' == '$(NetFxRefPath)'">
+          Condition="'$(AddNetStandardSupportPackage)' == 'true'">
     <ItemGroup>
-      <Reference Include="@(_netstandardShimAssemblies)">
+      <_netStandardReference Condition="'$(TargetGroup)' != 'net461' AND '$(TargetGroup)' != 'net462'"
+                             Include="$(NETStandardSupportRoot)\net47\ref\*.dll" 
+                             Exclude="@(_netStandardReference->'$(NETStandardSupportRoot)\net47\ref\%(FileName).dll')" />
+      <_netStandardReference Condition="'$(TargetGroup)' != 'net461'"
+                             Include="$(NETStandardSupportRoot)\net462\ref\*.dll" 
+                             Exclude="@(_netStandardReference->'$(NETStandardSupportRoot)\net462\ref\%(FileName).dll')" />
+      <_netStandardReference Include="$(NETStandardSupportRoot)\net461\ref\*.dll" 
+                             Exclude="@(_netStandardReference->'$(NETStandardSupportRoot)\net461\ref\%(FileName).dll')" />
+
+      <NetStandardSupportLib Condition="'$(TargetGroup)' != 'net461' AND '$(TargetGroup)' != 'net462'"
+                             Include="$(NETStandardSupportRoot)\net47\lib\*.dll" 
+                             Exclude="@(NetStandardSupportLib->'$(NETStandardSupportRoot)\net47\lib\%(FileName).dll')" />
+      <NetStandardSupportLib Condition="'$(TargetGroup)' != 'net461'"
+                             Include="$(NETStandardSupportRoot)\net462\lib\*.dll" 
+                             Exclude="@(NetStandardSupportLib->'$(NETStandardSupportRoot)\net462\lib\%(FileName).dll')" />
+      <NetStandardSupportLib Include="$(NETStandardSupportRoot)\net461\lib\*.dll" 
+                             Exclude="@(NetStandardSupportLib->'$(NETStandardSupportRoot)\net461\lib\%(FileName).dll')" />
+
+      <_netStandardReference>
         <Private>False</Private>
-        <NuGetPackageId>$(NETStandardPackageId)</NuGetPackageId>
-        <NuGetPackageVersion>$(NETStandardPackageVersion)</NuGetPackageVersion>
-      </Reference>
+        <NuGetPackageId>$(NETStandardSupportPackageId)</NuGetPackageId>
+        <NuGetPackageVersion>$(NETStandardSupportPackageVersion)</NuGetPackageVersion>
+      </_netStandardReference>
+
+      <_referenceByFileName Include="@(Reference->'%(FileName)%(Extension)')">
+        <OriginalIdentity>%(Identity)</OriginalIdentity>
+      </_referenceByFileName>
+      <_netStandardReferenceByFileName Include="@(_netStandardReference->'%(FileName)%(Extension)')" />
+
+      <_remainingReferenceByFileName Include="@(_referenceByFileName)" Exclude="@(_netStandardReferenceByFileName)" />
+      <_remainingReference Include="@(_remainingReferenceByFileName->'%(OriginalIdentity)')" />
+
+      <Reference Remove="@(Reference)" />
+      <Reference Include="@(_remainingReference);@(_netStandardReference)" />
     </ItemGroup>
   </Target>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

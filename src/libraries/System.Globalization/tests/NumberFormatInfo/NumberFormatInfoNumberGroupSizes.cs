@@ -12,12 +12,12 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> NumberGroupSizes_TestData()
         {
             yield return new object[] { NumberFormatInfo.InvariantInfo, new int[] { 3 } };
-            yield return new object[] { new CultureInfo("en-US").NumberFormat, new int[] { 3 } };
+            yield return new object[] { CultureInfo.GetCultureInfo("en-US").NumberFormat, new int[] { 3 } };
 
             // Culture does not exist on Windows 7
             if (!PlatformDetection.IsWindows7)
             {
-                yield return new object[] { new CultureInfo("ur-IN").NumberFormat, NumberFormatInfoData.UrINNumberGroupSizes() };
+                yield return new object[] { CultureInfo.GetCultureInfo("ur-IN").NumberFormat, NumberFormatInfoData.UrINNumberGroupSizes() };
             }
         }
 

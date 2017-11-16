@@ -13,7 +13,11 @@ namespace System.Xml.Serialization
 #endif
 {
     /// <internalonly/>
+#if XMLSERIALIZERGENERATOR
+    internal class XmlMemberMapping
+#else
     public class XmlMemberMapping
+#endif
     {
         private MemberMapping _mapping;
 

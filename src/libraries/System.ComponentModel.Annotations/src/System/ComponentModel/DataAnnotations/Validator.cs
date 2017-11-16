@@ -64,10 +64,7 @@ namespace System.ComponentModel.DataAnnotations
             {
                 result = false;
 
-                if (validationResults != null)
-                {
-                    validationResults.Add(err.ValidationResult);
-                }
+                validationResults?.Add(err.ValidationResult);
             }
 
             return result;
@@ -95,11 +92,9 @@ namespace System.ComponentModel.DataAnnotations
         ///     When <paramref name="instance" /> doesn't match the
         ///     <see cref="ValidationContext.ObjectInstance" />on <paramref name="validationContext" />.
         /// </exception>
-        public static bool TryValidateObject(object instance, ValidationContext validationContext,
-            ICollection<ValidationResult> validationResults)
-        {
-            return TryValidateObject(instance, validationContext, validationResults, false /*validateAllProperties*/);
-        }
+        public static bool TryValidateObject(
+            object instance, ValidationContext validationContext, ICollection<ValidationResult> validationResults) =>
+            TryValidateObject(instance, validationContext, validationResults, false /*validateAllProperties*/);
 
         /// <summary>
         ///     Tests whether the given object instance is valid.
@@ -157,10 +152,7 @@ namespace System.ComponentModel.DataAnnotations
             {
                 result = false;
 
-                if (validationResults != null)
-                {
-                    validationResults.Add(err.ValidationResult);
-                }
+                validationResults?.Add(err.ValidationResult);
             }
 
             return result;
@@ -207,10 +199,7 @@ namespace System.ComponentModel.DataAnnotations
             {
                 result = false;
 
-                if (validationResults != null)
-                {
-                    validationResults.Add(err.ValidationResult);
-                }
+                validationResults?.Add(err.ValidationResult);
             }
 
             return result;
@@ -234,11 +223,8 @@ namespace System.ComponentModel.DataAnnotations
 
             var attributes = _store.GetPropertyValidationAttributes(validationContext);
 
-            var err = GetValidationErrors(value, validationContext, attributes, false).FirstOrDefault();
-            if (err != null)
-            {
-                err.ThrowValidationException();
-            }
+            GetValidationErrors(value, validationContext, attributes, false).FirstOrDefault()
+                ?.ThrowValidationException();
         }
 
         /// <summary>
@@ -301,12 +287,7 @@ namespace System.ComponentModel.DataAnnotations
                     SR.Validator_InstanceMustMatchValidationContextInstance, nameof(instance));
             }
 
-            var err =
-                GetObjectValidationErrors(instance, validationContext, validateAllProperties, false).FirstOrDefault();
-            if (err != null)
-            {
-                err.ThrowValidationException();
-            }
+            GetObjectValidationErrors(instance, validationContext, validateAllProperties, false).FirstOrDefault()?.ThrowValidationException();
         }
 
         /// <summary>
@@ -334,12 +315,7 @@ namespace System.ComponentModel.DataAnnotations
                 throw new ArgumentNullException(nameof(validationContext));
             }
 
-            var err =
-                GetValidationErrors(value, validationContext, validationAttributes, false).FirstOrDefault();
-            if (err != null)
-            {
-                err.ThrowValidationException();
-            }
+            GetValidationErrors(value, validationContext, validationAttributes, false).FirstOrDefault()?.ThrowValidationException();
         }
 
         /// <summary>
@@ -650,11 +626,11 @@ nameof(value));
                 Value = value;
             }
 
-            internal object Value { get; set; }
+            internal object Value { get; }
 
-            internal ValidationAttribute ValidationAttribute { get; set; }
+            internal ValidationAttribute ValidationAttribute { get; }
 
-            internal ValidationResult ValidationResult { get; set; }
+            internal ValidationResult ValidationResult { get; }
 
             internal Exception ThrowValidationException() => throw new ValidationException(ValidationResult, ValidationAttribute, Value);
         }

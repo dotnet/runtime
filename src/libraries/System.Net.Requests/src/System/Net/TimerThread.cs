@@ -32,11 +32,6 @@ namespace System.Net
             internal int Duration => _durationMilliseconds;
 
             /// <summary>
-            /// <para>Creates and returns a handle to a new polled timer.</para>
-            /// </summary>
-            internal Timer CreateTimer() => CreateTimer(null, null);
-
-            /// <summary>
             /// <para>Creates and returns a handle to a new timer with attached context.</para>
             /// </summary>
             internal abstract Timer CreateTimer(Callback callback, object context);
@@ -57,11 +52,6 @@ namespace System.Net
             }
 
             /// <summary>
-            /// <para>The duration in milliseconds of timer.</para>
-            /// </summary>
-            internal int Duration => _durationMilliseconds;
-
-            /// <summary>
             /// <para>The time (relative to Environment.TickCount) when the timer started.</para>
             /// </summary>
             internal int StartTime => _startTimeMilliseconds;
@@ -70,31 +60,6 @@ namespace System.Net
             /// <para>The time (relative to Environment.TickCount) when the timer will expire.</para>
             /// </summary>
             internal int Expiration => unchecked(_startTimeMilliseconds + _durationMilliseconds);
-
-            /// <summary>
-            /// <para>The amount of time left on the timer.  0 means it has fired.  1 means it has expired but
-            /// not yet fired.  -1 means infinite.  Int32.MaxValue is the ceiling - the actual value could be longer.</para>
-            /// </summary>
-            internal int TimeRemaining
-            {
-                get
-                {
-                    if (HasExpired)
-                    {
-                        return 0;
-                    }
-
-                    if (Duration == Timeout.Infinite)
-                    {
-                        return Timeout.Infinite;
-                    }
-
-                    int now = Environment.TickCount;
-                    int remaining = IsTickBetween(StartTime, Expiration, now) ?
-                        (int)(Math.Min((uint)unchecked(Expiration - now), (uint)Int32.MaxValue)) : 0;
-                    return remaining < 2 ? remaining + 1 : remaining;
-                }
-            }
 
             /// <summary>
             /// <para>Cancels the timer.  Returns true if the timer hasn't and won't fire; false if it has or will.</para>
@@ -610,7 +575,7 @@ namespace System.Net
 
                                 if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Awoke, cause {(waitResult == WaitHandle.WaitTimeout ? "Timeout" : "Prod")}");
 
-                                // If we timed out with nothing to do, shut down. 
+                                // If we timed out with nothing to do, shut down.
                                 if (waitResult == WaitHandle.WaitTimeout && !haveNextTick)
                                 {
                                     Interlocked.CompareExchange(ref s_threadState, (int)TimerThreadState.Idle, (int)TimerThreadState.Running);

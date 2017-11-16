@@ -2,40 +2,124 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    public partial class DSASignVerify
+    public sealed class DSASignVerify_Array : DSASignVerify
     {
+        public override byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm) =>
+            dsa.SignData(data, hashAlgorithm);
+        public override bool VerifyData(DSA dsa, byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm) =>
+            dsa.VerifyData(data, signature, hashAlgorithm);
+
+        [Fact]
+        public void InvalidStreamArrayArguments_Throws()
+        {
+            using (DSA dsa = DSAFactory.Create(1024))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("rgbHash", () => dsa.CreateSignature(null));
+
+                AssertExtensions.Throws<ArgumentNullException>("data", () => dsa.SignData((byte[])null, HashAlgorithmName.SHA1));
+                AssertExtensions.Throws<ArgumentNullException>("data", () => dsa.SignData(null, 0, 0, HashAlgorithmName.SHA1));
+
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => dsa.SignData(new byte[1], -1, 0, HashAlgorithmName.SHA1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => dsa.SignData(new byte[1], 2, 0, HashAlgorithmName.SHA1));
+
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => dsa.SignData(new byte[1], 0, -1, HashAlgorithmName.SHA1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => dsa.SignData(new byte[1], 0, 2, HashAlgorithmName.SHA1));
+
+                AssertExtensions.Throws<ArgumentNullException>("data", () => dsa.VerifyData((byte[])null, null, HashAlgorithmName.SHA1));
+                AssertExtensions.Throws<ArgumentNullException>("data", () => dsa.VerifyData(null, 0, 0, null, HashAlgorithmName.SHA1));
+
+                AssertExtensions.Throws<ArgumentNullException>("signature", () => dsa.VerifyData(new byte[1], null, HashAlgorithmName.SHA1));
+
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => dsa.VerifyData(new byte[1], -1, 0, new byte[1], HashAlgorithmName.SHA1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => dsa.VerifyData(new byte[1], 2, 0, new byte[1], HashAlgorithmName.SHA1));
+
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => dsa.VerifyData(new byte[1], 0, -1, new byte[1], HashAlgorithmName.SHA1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => dsa.VerifyData(new byte[1], 0, 2, new byte[1], HashAlgorithmName.SHA1));
+            }
+        }
+    }
+
+    public sealed class DSASignVerify_Stream : DSASignVerify
+    {
+        public override byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm) =>
+            dsa.SignData(new MemoryStream(data), hashAlgorithm);
+        public override bool VerifyData(DSA dsa, byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm) =>
+            dsa.VerifyData(new MemoryStream(data), signature, hashAlgorithm);
+
+        [Fact]
+        public void InvalidArrayArguments_Throws()
+        {
+            using (DSA dsa = DSAFactory.Create(1024))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("data", () => dsa.SignData((Stream)null, HashAlgorithmName.SHA1));
+                AssertExtensions.Throws<ArgumentNullException>("data", () => dsa.VerifyData((Stream)null, null, HashAlgorithmName.SHA1));
+
+                AssertExtensions.Throws<ArgumentNullException>("signature", () => dsa.VerifyData(new MemoryStream(), null, HashAlgorithmName.SHA1));
+            }
+        }
+    }
+
+    public sealed class DSASignVerify_Span : DSASignVerify
+    {
+        public override byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm) =>
+            TryWithOutputArray(dest => dsa.TrySignData(data, dest, hashAlgorithm, out int bytesWritten) ? (true, bytesWritten) : (false, 0));
+
+        public override bool VerifyData(DSA dsa, byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm) =>
+            dsa.VerifyData((ReadOnlySpan<byte>)data, (ReadOnlySpan<byte>)signature, hashAlgorithm);
+
+        private static byte[] TryWithOutputArray(Func<byte[], (bool, int)> func)
+        {
+            for (int length = 1; ; length = checked(length * 2))
+            {
+                var result = new byte[length];
+                var (success, bytesWritten) = func(result);
+                if (success)
+                {
+                    Array.Resize(ref result, bytesWritten);
+                    return result;
+                }
+            }
+        }
+    }
+
+    public abstract partial class DSASignVerify
+    {
+        public abstract byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm);
+        public abstract bool VerifyData(DSA dsa, byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm);
+
         [ConditionalFact(nameof(SupportsKeyGeneration))]
-        public static void InvalidKeySize_DoesNotInvalidateKey()
+        public void InvalidKeySize_DoesNotInvalidateKey()
         {
             using (DSA dsa = DSAFactory.Create())
             {
-                byte[] signature = dsa.SignData(DSATestData.HelloBytes, HashAlgorithmName.SHA1);
+                byte[] signature = SignData(dsa, DSATestData.HelloBytes, HashAlgorithmName.SHA1);
 
                 // A 2049-bit key is hard to describe, none of the providers support it.
                 Assert.ThrowsAny<CryptographicException>(() => dsa.KeySize = 2049);
 
-                Assert.True(dsa.VerifyData(DSATestData.HelloBytes, signature, HashAlgorithmName.SHA1));
+                Assert.True(VerifyData(dsa, DSATestData.HelloBytes, signature, HashAlgorithmName.SHA1));
             }
         }
 
         [ConditionalFact(nameof(SupportsKeyGeneration))]
-        public static void SignAndVerifyDataNew1024()
+        public void SignAndVerifyDataNew1024()
         {
             using (DSA dsa = DSAFactory.Create(1024))
             {
-                byte[] signature = dsa.SignData(DSATestData.HelloBytes, new HashAlgorithmName("SHA1"));
-                bool signatureMatched = dsa.VerifyData(DSATestData.HelloBytes, signature, new HashAlgorithmName("SHA1"));
+                byte[] signature = SignData(dsa, DSATestData.HelloBytes, new HashAlgorithmName("SHA1"));
+                bool signatureMatched = VerifyData(dsa, DSATestData.HelloBytes, signature, new HashAlgorithmName("SHA1"));
                 Assert.True(signatureMatched);
             }
         }
 
         [Fact]
-        public static void VerifyKnown_512()
+        public void VerifyKnown_512()
         {
             byte[] signature = (
                 // r:
@@ -46,12 +130,12 @@ namespace System.Security.Cryptography.Dsa.Tests
             using (DSA dsa = DSAFactory.Create())
             {
                 dsa.ImportParameters(DSATestData.Dsa512Parameters);
-                Assert.True(dsa.VerifyData(DSATestData.HelloBytes, signature, HashAlgorithmName.SHA1));
+                Assert.True(VerifyData(dsa, DSATestData.HelloBytes, signature, HashAlgorithmName.SHA1));
             }
         }
 
         [Fact]
-        public static void VerifyKnown_576()
+        public void VerifyKnown_576()
         {
             byte[] signature = (
                 // r:
@@ -62,12 +146,12 @@ namespace System.Security.Cryptography.Dsa.Tests
             using (DSA dsa = DSAFactory.Create())
             {
                 dsa.ImportParameters(DSATestData.Dsa576Parameters);
-                Assert.True(dsa.VerifyData(DSATestData.HelloBytes, signature, HashAlgorithmName.SHA1));
+                Assert.True(VerifyData(dsa, DSATestData.HelloBytes, signature, HashAlgorithmName.SHA1));
             }
         }
 
         [Fact]
-        public static void PublicKey_CannotSign()
+        public void PublicKey_CannotSign()
         {
             DSAParameters keyParameters = DSATestData.GetDSA1024Params();
             keyParameters.X = null;
@@ -77,24 +161,24 @@ namespace System.Security.Cryptography.Dsa.Tests
                 dsa.ImportParameters(keyParameters);
 
                 Assert.ThrowsAny<CryptographicException>(
-                    () => dsa.SignData(DSATestData.HelloBytes, HashAlgorithmName.SHA1));
+                    () => SignData(dsa, DSATestData.HelloBytes, HashAlgorithmName.SHA1));
             }
         }
 
         [Fact]
-        public static void SignAndVerifyDataExplicit1024()
+        public void SignAndVerifyDataExplicit1024()
         {
             SignAndVerify(DSATestData.HelloBytes, "SHA1", DSATestData.GetDSA1024Params(), 40);
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
-        public static void SignAndVerifyDataExplicit2048()
+        public void SignAndVerifyDataExplicit2048()
         {
             SignAndVerify(DSATestData.HelloBytes, "SHA256", DSATestData.GetDSA2048Params(), 64);
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
-        public static void VerifyKnown_2048_SHA256()
+        public void VerifyKnown_2048_SHA256()
         {
             byte[] signature =
             {
@@ -111,14 +195,14 @@ namespace System.Security.Cryptography.Dsa.Tests
             using (DSA dsa = DSAFactory.Create())
             {
                 dsa.ImportParameters(DSATestData.GetDSA2048Params());
-                Assert.True(dsa.VerifyData(DSATestData.HelloBytes, signature, HashAlgorithmName.SHA256));
-                Assert.False(dsa.VerifyData(DSATestData.HelloBytes, signature, HashAlgorithmName.SHA384));
-                Assert.False(dsa.VerifyData(DSATestData.HelloBytes, signature, HashAlgorithmName.SHA512));
+                Assert.True(VerifyData(dsa, DSATestData.HelloBytes, signature, HashAlgorithmName.SHA256));
+                Assert.False(VerifyData(dsa, DSATestData.HelloBytes, signature, HashAlgorithmName.SHA384));
+                Assert.False(VerifyData(dsa, DSATestData.HelloBytes, signature, HashAlgorithmName.SHA512));
             }
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
-        public static void VerifyKnown_2048_SHA384()
+        public void VerifyKnown_2048_SHA384()
         {
             byte[] signature =
             {
@@ -135,14 +219,14 @@ namespace System.Security.Cryptography.Dsa.Tests
             using (DSA dsa = DSAFactory.Create())
             {
                 dsa.ImportParameters(DSATestData.GetDSA2048Params());
-                Assert.True(dsa.VerifyData(DSATestData.HelloBytes, signature, HashAlgorithmName.SHA384));
-                Assert.False(dsa.VerifyData(DSATestData.HelloBytes, signature, HashAlgorithmName.SHA256));
-                Assert.False(dsa.VerifyData(DSATestData.HelloBytes, signature, HashAlgorithmName.SHA512));
+                Assert.True(VerifyData(dsa, DSATestData.HelloBytes, signature, HashAlgorithmName.SHA384));
+                Assert.False(VerifyData(dsa, DSATestData.HelloBytes, signature, HashAlgorithmName.SHA256));
+                Assert.False(VerifyData(dsa, DSATestData.HelloBytes, signature, HashAlgorithmName.SHA512));
             }
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
-        public static void VerifyKnown_2048_SHA512()
+        public void VerifyKnown_2048_SHA512()
         {
             byte[] signature =
             {
@@ -159,14 +243,14 @@ namespace System.Security.Cryptography.Dsa.Tests
             using (DSA dsa = DSAFactory.Create())
             {
                 dsa.ImportParameters(DSATestData.GetDSA2048Params());
-                Assert.True(dsa.VerifyData(DSATestData.HelloBytes, signature, HashAlgorithmName.SHA512));
-                Assert.False(dsa.VerifyData(DSATestData.HelloBytes, signature, HashAlgorithmName.SHA256));
-                Assert.False(dsa.VerifyData(DSATestData.HelloBytes, signature, HashAlgorithmName.SHA384));
+                Assert.True(VerifyData(dsa, DSATestData.HelloBytes, signature, HashAlgorithmName.SHA512));
+                Assert.False(VerifyData(dsa, DSATestData.HelloBytes, signature, HashAlgorithmName.SHA256));
+                Assert.False(VerifyData(dsa, DSATestData.HelloBytes, signature, HashAlgorithmName.SHA384));
             }
         }
 
         [Fact]
-        public static void VerifyKnownSignature()
+        public void VerifyKnownSignature()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -176,16 +260,16 @@ namespace System.Security.Cryptography.Dsa.Tests
                 DSATestData.GetDSA1024_186_2(out dsaParameters, out signature, out data);
 
                 dsa.ImportParameters(dsaParameters);
-                Assert.True(dsa.VerifyData(data, signature, HashAlgorithmName.SHA1));
+                Assert.True(VerifyData(dsa, data, signature, HashAlgorithmName.SHA1));
 
                 // Negative case
                 signature[signature.Length - 1] ^= 0xff;
-                Assert.False(dsa.VerifyData(data, signature, HashAlgorithmName.SHA1));
+                Assert.False(VerifyData(dsa, data, signature, HashAlgorithmName.SHA1));
             }
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
-        public static void Sign2048WithSha1()
+        public void Sign2048WithSha1()
         {
             byte[] data = { 1, 2, 3, 4 };
 
@@ -193,14 +277,14 @@ namespace System.Security.Cryptography.Dsa.Tests
             {
                 dsa.ImportParameters(DSATestData.GetDSA2048Params());
 
-                byte[] signature = dsa.SignData(data, HashAlgorithmName.SHA1);
+                byte[] signature = SignData(dsa, data, HashAlgorithmName.SHA1);
 
-                Assert.True(dsa.VerifyData(data, signature, HashAlgorithmName.SHA1));
+                Assert.True(VerifyData(dsa, data, signature, HashAlgorithmName.SHA1));
             }
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
-        public static void Verify2048WithSha1()
+        public void Verify2048WithSha1()
         {
             byte[] data = { 1, 2, 3, 4 };
 
@@ -212,25 +296,25 @@ namespace System.Security.Cryptography.Dsa.Tests
             {
                 dsa.ImportParameters(DSATestData.GetDSA2048Params());
 
-                Assert.True(dsa.VerifyData(data, signature, HashAlgorithmName.SHA1), "Untampered data verifies");
+                Assert.True(VerifyData(dsa, data, signature, HashAlgorithmName.SHA1), "Untampered data verifies");
 
                 data[0] ^= 0xFF;
-                Assert.False(dsa.VerifyData(data, signature, HashAlgorithmName.SHA1), "Tampered data verifies");
+                Assert.False(VerifyData(dsa, data, signature, HashAlgorithmName.SHA1), "Tampered data verifies");
 
                 data[0] ^= 0xFF;
                 signature[signature.Length - 1] ^= 0xFF;
-                Assert.False(dsa.VerifyData(data, signature, HashAlgorithmName.SHA1), "Tampered signature verifies");
+                Assert.False(VerifyData(dsa, data, signature, HashAlgorithmName.SHA1), "Tampered signature verifies");
             }
         }
 
-        private static void SignAndVerify(byte[] data, string hashAlgorithmName, DSAParameters dsaParameters, int expectedSignatureLength)
+        private void SignAndVerify(byte[] data, string hashAlgorithmName, DSAParameters dsaParameters, int expectedSignatureLength)
         {
             using (DSA dsa = DSAFactory.Create())
             {
                 dsa.ImportParameters(dsaParameters);
-                byte[] signature = dsa.SignData(data, new HashAlgorithmName(hashAlgorithmName));
+                byte[] signature = SignData(dsa, data, new HashAlgorithmName(hashAlgorithmName));
                 Assert.Equal(expectedSignatureLength, signature.Length);
-                bool signatureMatched = dsa.VerifyData(data, signature, new HashAlgorithmName(hashAlgorithmName));
+                bool signatureMatched = VerifyData(dsa, data, signature, new HashAlgorithmName(hashAlgorithmName));
                 Assert.True(signatureMatched);
             }
         }

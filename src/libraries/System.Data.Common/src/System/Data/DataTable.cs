@@ -179,7 +179,7 @@ namespace System.Data
         }
 
         /// <summary>
-        /// Intitalizes a new instance of the <see cref='System.Data.DataTable'/> class with the specified table
+        /// Initializes a new instance of the <see cref='System.Data.DataTable'/> class with the specified table
         ///    name.
         /// </summary>
         public DataTable(string tableName) : this()
@@ -1823,7 +1823,7 @@ namespace System.Data
         }
         private string GetInheritedNamespace(List<DataTable> visitedTables)
         {
-            // if there is nested relation: ie: this table is nested child of a another table and
+            // if there is nested relation: ie: this table is nested child of another table and
             // if it is not self nested, return parent tables NS: Meanwhile make sure
             DataRelation[] nestedRelations = NestedParentRelations;
             if (nestedRelations.Length > 0)

@@ -3,9 +3,10 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <Import Project="$(ToolsDir)PublishContent.targets" />
   <Import Project="$(ToolsDir)versioning.targets" />
+  <Import Project="$(PackagesDir)/$(FeedTasksPackage.ToLower())/$(FeedTasksPackageVersion)/build/$(FeedTasksPackage).targets" />
 
   <PropertyGroup>
-    <PublishPattern Condition="'$(PublishPattern)' == ''">$(PackageOutputRoot)**\*.nupkg</PublishPattern>
+    <PublishPattern Condition="'$(PublishPattern)' == ''">$(PackageOutputRoot)\**\*.nupkg</PublishPattern>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,5 +24,33 @@
   <Target Name="Build" DependsOnTargets="CreateContainerName">
     <!-- skip uploadToAzure when there are no nupkgs -->
     <CallTarget Targets="UploadToAzure" Condition="'@(_PackagesToPublish)' != ''" />
-  </Target>  
+  </Target>
+  
+  <PropertyGroup>
+    <PackageDownloadDirectory Condition="'$(DownloadDirectory)' == ''">$(PackagesDir)AzureTransfer\$(ConfigurationGroup)</PackageDownloadDirectory>
+    <FinalPublishPattern>$(PackageDownloadDirectory)\**\*.nupkg</FinalPublishPattern>
+    <FinalSymbolsPackagesPattern>$(PackageDownloadDirectory)\**\*.symbols.nupkg</FinalSymbolsPackagesPattern>
+  </PropertyGroup>
+  
+  <Target Name="PublishToAzureBlobFeed">
+    <ItemGroup>
+      <ItemsToPush Include="$(FinalPublishPattern)" Exclude="$(FinalSymbolsPackagesPattern)" />
+    </ItemGroup>
+    <Error Condition="'@(ItemsToPush)'==''" Text="ItemsToPush for packages is empty." />
+    <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
+                    AccountKey="$(AccountKey)"
+                    ItemsToPush="@(ItemsToPush)"
+                    Overwrite="$(PublishOverwrite)" />
+  </Target>
+  
+  <Target Name="PublishSymbolsToAzureBlobFeed" Condition="'$(PublishSymbols)' == 'true'" >
+    <ItemGroup>
+      <ItemsToPush Include="$(FinalSymbolsPackagesPattern)" />
+    </ItemGroup>
+    <Error Condition="'@(ItemsToPush)'==''" Text="ItemsToPush for symbols is empty." />
+    <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
+                    AccountKey="$(AccountKey)"
+                    ItemsToPush="@(ItemsToPush)"
+                    Overwrite="$(PublishOverwrite)" />
+  </Target>
 </Project>

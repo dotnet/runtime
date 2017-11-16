@@ -2,25 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+using System.Diagnostics;
+using System.DirectoryServices.Interop;
+using System.ComponentModel;
+using System.Threading;
+using System.Reflection;
+using System.Security.Permissions;
+using System.DirectoryServices.Design;
+using System.Globalization;
+using System.Net;
+
 namespace System.DirectoryServices
 {
-    using System;
-    using System.Text;
-    using System.Runtime.InteropServices;
-    using System.Collections;
-    using System.Diagnostics;
-    using System.DirectoryServices.Interop;
-    using System.ComponentModel;
-    using System.Threading;
-    using System.Reflection;
-    using System.Security.Permissions;
-    using System.DirectoryServices.Design;
-    using System.Globalization;
-    using System.Net;
-
-    /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry"]/*' />
     /// <devdoc>
-    ///    <para> Encapsulates a node or an object in the Active Directory hierarchy.</para>
+    /// Encapsulates a node or an object in the Active Directory hierarchy.
     /// </devdoc>
     [
     TypeConverterAttribute(typeof(DirectoryEntryConverter)),
@@ -37,11 +33,10 @@ namespace System.DirectoryServices
 #pragma warning disable 0414
         internal bool propertiesAlreadyEnumerated = false;
 #pragma warning restore 0414
-        private bool _justCreated = false;   // 'true' if newly created entry was not yet stored by CommitChanges().
         private bool _disposed = false;
         private AuthenticationTypes _authenticationType = AuthenticationTypes.Secure;
         private NetworkCredential _credentials;
-        private DirectoryEntryConfiguration _options;
+        private readonly DirectoryEntryConfiguration _options;
 
         private PropertyCollection _propertyCollection = null;
         internal bool allowMultipleChange = false;
@@ -52,44 +47,32 @@ namespace System.DirectoryServices
         private ActiveDirectorySecurity _objectSecurity = null;
         private static string s_securityDescriptorProperty = "ntSecurityDescriptor";
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.DirectoryEntry"]/*' />
         /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.DirectoryServices.DirectoryEntry'/>class.
-        ///    </para>
+        /// Initializes a new instance of the <see cref='System.DirectoryServices.DirectoryEntry'/>class.
         /// </devdoc>
         public DirectoryEntry()
         {
             _options = new DirectoryEntryConfiguration(this);
         }
-
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.DirectoryEntry1"]/*' />
+        
         /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.DirectoryServices.DirectoryEntry'/> class that will bind
-        ///       to the directory entry at <paramref name="path"/>.
-        ///    </para>
+        /// Initializes a new instance of the <see cref='System.DirectoryServices.DirectoryEntry'/> class that will bind
+        /// to the directory entry at <paramref name="path"/>.
         /// </devdoc>
         public DirectoryEntry(string path) : this()
         {
             Path = path;
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.DirectoryEntry2"]/*' />
         /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.DirectoryServices.DirectoryEntry'/> class.
-        ///    </para>
+        /// Initializes a new instance of the <see cref='System.DirectoryServices.DirectoryEntry'/> class.
         /// </devdoc>        
         public DirectoryEntry(string path, string username, string password) : this(path, username, password, AuthenticationTypes.Secure)
         {
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.DirectoryEntry3"]/*' />
         /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.DirectoryServices.DirectoryEntry'/> class.
-        ///    </para>
+        /// Initializes a new instance of the <see cref='System.DirectoryServices.DirectoryEntry'/> class.
         /// </devdoc>
         public DirectoryEntry(string path, string username, string password, AuthenticationTypes authenticationType) : this(path)
         {
@@ -119,12 +102,9 @@ namespace System.DirectoryServices
             _options = new DirectoryEntryConfiguration(this);
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.DirectoryEntry4"]/*' />
         /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.DirectoryServices.DirectoryEntry'/> class that will bind
-        ///       to the native Active Directory object which is passed in.
-        ///    </para>
+        /// Initializes a new instance of the <see cref='System.DirectoryServices.DirectoryEntry'/> class that will bind
+        /// to the native Active Directory object which is passed in.
         /// </devdoc>
         public DirectoryEntry(object adsObject)
             : this(adsObject, true, null, null, AuthenticationTypes.Secure, true)
@@ -179,17 +159,11 @@ namespace System.DirectoryServices
                 return _adsObject;
             }
         }
-
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.AuthenticationType"]/*' />
-        [
-            DefaultValue(AuthenticationTypes.Secure),
-        ]
+        
+        [DefaultValue(AuthenticationTypes.Secure)]
         public AuthenticationTypes AuthenticationType
         {
-            get
-            {
-                return _authenticationType;
-            }
+            get => _authenticationType;
             set
             {
                 if (_authenticationType == value)
@@ -200,27 +174,14 @@ namespace System.DirectoryServices
             }
         }
 
-        private bool Bound
-        {
-            get
-            {
-                return _adsObject != null;
-            }
-        }
+        private bool Bound => _adsObject != null;
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.Children"]/*' />
         /// <devdoc>
-        /// <para>Gets a <see cref='System.DirectoryServices.DirectoryEntries'/>
+        /// Gets a <see cref='System.DirectoryServices.DirectoryEntries'/>
         /// containing the child entries of this node in the Active
-        /// Directory hierarchy.</para>
+        /// Directory hierarchy.
         /// </devdoc>
-        public DirectoryEntries Children
-        {
-            get
-            {
-                return new DirectoryEntries(this);
-            }
-        }
+        public DirectoryEntries Children => new DirectoryEntries(this);
 
         internal UnsafeNativeMethods.IAdsContainer ContainerObject
         {
@@ -231,11 +192,8 @@ namespace System.DirectoryServices
             }
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.Guid"]/*' />
         /// <devdoc>
-        ///    <para>
-        ///       Gets the globally unique identifier of the <see cref='System.DirectoryServices.DirectoryEntry'/>.
-        ///    </para>
+        /// Gets the globally unique identifier of the <see cref='System.DirectoryServices.DirectoryEntry'/>.
         /// </devdoc>
         public Guid Guid
         {
@@ -294,24 +252,10 @@ namespace System.DirectoryServices
             }
         }
 
-        internal bool JustCreated
-        {
-            get
-            {
-                return _justCreated;
-            }
-            set
-            {
-                _justCreated = value;
-            }
-        }
+        internal bool JustCreated { get; set; }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.Name"]/*' />
         /// <devdoc>
-        ///    <para>
-        ///       Gets the relative name of the object as named with the
-        ///       underlying directory service.
-        ///    </para>
+        /// Gets the relative name of the object as named with the underlying directory service.
         /// </devdoc>
         public string Name
         {
@@ -323,11 +267,7 @@ namespace System.DirectoryServices
                 return tmpName;
             }
         }
-
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.NativeGuid"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+    
         public string NativeGuid
         {
             get
@@ -339,11 +279,8 @@ namespace System.DirectoryServices
             }
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.NativeObject"]/*' />
         /// <devdoc>
-        ///    <para>
-        ///       Gets the native Active Directory Services Interface (ADSI) object.
-        ///    </para>
+        /// Gets the native Active Directory Services Interface (ADSI) object.
         /// </devdoc>
         public object NativeObject
         {
@@ -354,12 +291,8 @@ namespace System.DirectoryServices
             }
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.Parent"]/*' />
         /// <devdoc>
-        ///    <para>
-        ///       Gets this
-        ///       entry's parent entry in the Active Directory hierarchy.
-        ///    </para>
+        /// Gets this entry's parent entry in the Active Directory hierarchy.
         /// </devdoc>
         public DirectoryEntry Parent
         {
@@ -370,13 +303,10 @@ namespace System.DirectoryServices
             }
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.Password"]/*' />
         /// <devdoc>
-        ///    <para>Gets or sets the password to use when authenticating the client.</para>
+        /// Gets or sets the password to use when authenticating the client.
         /// </devdoc>
-        [
-            DefaultValue(null),
-        ]
+        [DefaultValue(null)]
         public string Password
         {
             set
@@ -402,9 +332,8 @@ namespace System.DirectoryServices
             }
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.Path"]/*' />
         /// <devdoc>
-        /// <para>Gets or sets the path for this <see cref='System.DirectoryServices.DirectoryEntry'/>.</para>
+        /// Gets or sets the path for this <see cref='System.DirectoryServices.DirectoryEntry'/>.
         /// </devdoc>
         [
             DefaultValue(""),
@@ -413,10 +342,7 @@ namespace System.DirectoryServices
         ]
         public string Path
         {
-            get
-            {
-                return _path;
-            }
+            get => _path;
             set
             {
                 if (value == null)
@@ -430,12 +356,8 @@ namespace System.DirectoryServices
             }
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.Properties"]/*' />
         /// <devdoc>
-        ///    <para>
-        ///       Gets a <see cref='System.DirectoryServices.PropertyCollection'/>
-        ///       of properties set on this object.
-        ///    </para>
+        /// Gets a <see cref='System.DirectoryServices.PropertyCollection'/> of properties set on this object.
         /// </devdoc>
         public PropertyCollection Properties
         {
@@ -450,9 +372,8 @@ namespace System.DirectoryServices
             }
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.SchemaClassName"]/*' />
         /// <devdoc>
-        /// <para>Gets the name of the schema used for this <see cref='System.DirectoryServices.DirectoryEntry'/>.</para>
+        /// Gets the name of the schema used for this <see cref='System.DirectoryServices.DirectoryEntry'/>
         /// </devdoc>
         public string SchemaClassName
         {
@@ -465,11 +386,10 @@ namespace System.DirectoryServices
             }
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.SchemaEntry"]/*' />
         /// <devdoc>
-        /// <para>Gets the <see cref='System.DirectoryServices.DirectoryEntry'/> that holds schema information for this 
-        ///    entry. An entry's <see cref='System.DirectoryServices.DirectoryEntry.SchemaClassName'/>
-        ///    determines what properties are valid for it.</para>
+        /// Gets the <see cref='System.DirectoryServices.DirectoryEntry'/> that holds schema information for this 
+        /// entry. An entry's <see cref='System.DirectoryServices.DirectoryEntry.SchemaClassName'/>
+        /// determines what properties are valid for it.</para>
         /// </devdoc>
         public DirectoryEntry SchemaEntry
         {
@@ -485,22 +405,14 @@ namespace System.DirectoryServices
         // the first read.  Setting this to false will cause the
         // cache to be committed after each operation.
         //
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.UsePropertyCache"]/*' />
         /// <devdoc>
-        ///    <para>
-        ///       Gets a value indicating whether the cache should be committed after each
-        ///       operation.
-        ///    </para>
+        /// Gets a value indicating whether the cache should be committed after each
+        /// operation.
         /// </devdoc>
-        [
-            DefaultValue(true),
-        ]
+        [DefaultValue(true)]
         public bool UsePropertyCache
         {
-            get
-            {
-                return _useCache;
-            }
+            get => _useCache;
             set
             {
                 if (value == _useCache)
@@ -515,9 +427,8 @@ namespace System.DirectoryServices
             }
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.Username"]/*' />
         /// <devdoc>
-        ///    <para>Gets or sets the username to use when authenticating the client.</para>
+        /// Gets or sets the username to use when authenticating the client.</para>
         /// </devdoc>
         [
             DefaultValue(null),
@@ -603,7 +514,6 @@ namespace System.DirectoryServices
             }
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.Bind"]/*' />
         /// <devdoc>
         /// Binds to the ADs object (if not already bound).
         /// </devdoc>
@@ -664,28 +574,21 @@ namespace System.DirectoryServices
             return newEntry;
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.Close"]/*' />
         /// <devdoc>
-        ///    <para>
-        ///       Closes the <see cref='System.DirectoryServices.DirectoryEntry'/>
-        ///       and releases any system resources associated with this component.
-        ///    </para>
+        /// Closes the <see cref='System.DirectoryServices.DirectoryEntry'/>
+        /// and releases any system resources associated with this component.
         /// </devdoc>
         public void Close()
         {
             Unbind();
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.CommitChanges"]/*' />
         /// <devdoc>
-        ///    <para>
-        ///       Saves any
-        ///       changes to the entry in the directory store.
-        ///    </para>
+        /// Saves any changes to the entry in the directory store.
         /// </devdoc>
         public void CommitChanges()
         {
-            if (_justCreated)
+            if (JustCreated)
             {
                 // Note: Permissions Demand is not necessary here, because entry has already been created with appr. permissions. 
                 // Write changes regardless of Caching mode to finish construction of a new entry.
@@ -702,7 +605,7 @@ namespace System.DirectoryServices
                 {
                     throw COMExceptionHelper.CreateFormattedComException(e);
                 }
-                _justCreated = false;
+                JustCreated = false;
                 _objectSecurityInitialized = false;
                 _objectSecurityModified = false;
 
@@ -743,7 +646,7 @@ namespace System.DirectoryServices
 
         internal void CommitIfNotCaching()
         {
-            if (_justCreated)
+            if (JustCreated)
                 return;   // Do not write changes, beacuse the entry is just under construction until CommitChanges() is called.
 
             if (_useCache)
@@ -771,26 +674,18 @@ namespace System.DirectoryServices
             _propertyCollection = null;
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.CopyTo"]/*' />
         /// <devdoc>
-        ///    <para>Creates a copy of this entry as a child of the given parent.</para>
+        /// Creates a copy of this entry as a child of the given parent.
         /// </devdoc>
-        public DirectoryEntry CopyTo(DirectoryEntry newParent)
-        {
-            return CopyTo(newParent, null);
-        }
+        public DirectoryEntry CopyTo(DirectoryEntry newParent) => CopyTo(newParent, null);
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.CopyTo1"]/*' />
         /// <devdoc>
-        ///    <para>
-        ///       Creates a copy of this entry as a child of the given parent and
-        ///       gives it a new name.
-        ///    </para>
+        /// Creates a copy of this entry as a child of the given parent and gives it a new name.
         /// </devdoc>
         public DirectoryEntry CopyTo(DirectoryEntry newParent, string newName)
         {
             if (!newParent.IsContainer)
-                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.DSNotAContainer , newParent.Path));
+                throw new InvalidOperationException(SR.Format(SR.DSNotAContainer , newParent.Path));
 
             object copy = null;
             try
@@ -804,10 +699,8 @@ namespace System.DirectoryServices
             return new DirectoryEntry(copy, newParent.UsePropertyCache, GetUsername(), GetPassword(), AuthenticationType);
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.DeleteTree"]/*' />
         /// <devdoc>
-        ///    <para>Deletes this entry and its entire subtree from the
-        ///       Active Directory hierarchy.</para>
+        /// Deletes this entry and its entire subtree from the Active Directory hierarchy.
         /// </devdoc>
         public void DeleteTree()
         {
@@ -827,9 +720,6 @@ namespace System.DirectoryServices
             GC.KeepAlive(this);
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.Dispose"]/*' />
-        /// <devdoc>        
-        /// </devdoc>
         protected override void Dispose(bool disposing)
         {
             // no managed object to free
@@ -844,12 +734,8 @@ namespace System.DirectoryServices
             base.Dispose(disposing);
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.Exists"]/*' />
         /// <devdoc>
-        ///    <para>
-        ///       Searches the directory store at the given
-        ///       path to see whether an entry exists.
-        ///    </para>
+        /// Searches the directory store at the given path to see whether an entry exists.
         /// </devdoc>        
         public static bool Exists(string path)
         {
@@ -873,7 +759,6 @@ namespace System.DirectoryServices
             }
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.FillCache"]/*' />
         /// <devdoc>
         /// If UsePropertyCache is true, calls GetInfo the first time it's necessary.
         /// If it's false, calls GetInfoEx on the given property name.
@@ -905,10 +790,8 @@ namespace System.DirectoryServices
             }
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.Invoke"]/*' />
         /// <devdoc>
-        ///    <para>Calls
-        ///       a method on the native Active Directory.</para>
+        /// Calls a method on the native Active Directory.
         /// </devdoc>
         public object Invoke(string methodName, params object[] args)
         {
@@ -945,10 +828,8 @@ namespace System.DirectoryServices
                 return result;
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.InvokeGet"]/*' />
         /// <devdoc>
-        ///    <para>Reads
-        ///       a property on the native Active Directory object.</para>
+        /// Reads a property on the native Active Directory object.
         /// </devdoc>
         public object InvokeGet(string propertyName)
         {
@@ -981,10 +862,8 @@ namespace System.DirectoryServices
             return result;
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.InvokeSet"]/*' />
         /// <devdoc>
-        ///    <para>Sets
-        ///       a property on the native Active Directory object.</para>
+        /// Sets a property on the native Active Directory object.
         /// </devdoc>
         public void InvokeSet(string propertyName, params object[] args)
         {
@@ -1014,24 +893,19 @@ namespace System.DirectoryServices
             }
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.MoveTo"]/*' />
         /// <devdoc>
-        ///    <para>Moves this entry to the given parent.</para>
+        /// Moves this entry to the given parent.
         /// </devdoc>
-        public void MoveTo(DirectoryEntry newParent)
-        {
-            MoveTo(newParent, null);
-        }
+        public void MoveTo(DirectoryEntry newParent) => MoveTo(newParent, null);
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.MoveTo1"]/*' />
         /// <devdoc>
-        ///    <para>Moves this entry to the given parent, and gives it a new name.</para>
+        /// Moves this entry to the given parent, and gives it a new name.
         /// </devdoc>
         public void MoveTo(DirectoryEntry newParent, string newName)
         {
             object newEntry = null;
             if (!(newParent.AdsObject is UnsafeNativeMethods.IAdsContainer))
-                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.DSNotAContainer , newParent.Path));
+                throw new InvalidOperationException(SR.Format(SR.DSNotAContainer , newParent.Path));
             try
             {
                 if (AdsObject.ADsPath.StartsWith("WinNT:", StringComparison.Ordinal))
@@ -1082,12 +956,8 @@ namespace System.DirectoryServices
                 RefreshCache();     // in ADSI cache is lost after moving
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.RefreshCache"]/*' />
         /// <devdoc>
-        ///    <para>
-        ///       Loads the property values for this directory entry into
-        ///       the property cache.
-        ///    </para>
+        /// Loads the property values for this directory entry into the property cache.
         /// </devdoc>
         public void RefreshCache()
         {
@@ -1110,12 +980,8 @@ namespace System.DirectoryServices
             _objectSecurityModified = false;
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.RefreshCache1"]/*' />
         /// <devdoc>
-        ///    <para>
-        ///       Loads the values of the specified properties into the
-        ///       property cache.
-        ///    </para>
+        /// Loads the values of the specified properties into the property cache.
         /// </devdoc>
         public void RefreshCache(string[] propertyNames)
         {
@@ -1178,16 +1044,10 @@ namespace System.DirectoryServices
             }
         }
 
-        /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.Rename"]/*' />
         /// <devdoc>
-        ///    <para>
-        ///       Changes the name of this entry.
-        ///    </para>
+        /// Changes the name of this entry.
         /// </devdoc>
-        public void Rename(string newName)
-        {
-            MoveTo(Parent, newName);
-        }
+        public void Rename(string newName) => MoveTo(Parent, newName);
 
         private void Unbind()
         {

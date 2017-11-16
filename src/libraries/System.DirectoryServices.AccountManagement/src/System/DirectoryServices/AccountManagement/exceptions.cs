@@ -12,6 +12,8 @@ using System.Security.Permissions;
 
 namespace System.DirectoryServices.AccountManagement
 {
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.DirectoryServices.AccountManagement, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     abstract public class PrincipalException : SystemException
     {
         internal PrincipalException() : base() { }
@@ -25,10 +27,11 @@ namespace System.DirectoryServices.AccountManagement
         protected PrincipalException(SerializationInfo info, StreamingContext context) :
                     base(info, context)
         {
-            throw new PlatformNotSupportedException();
         }
     }
 
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.DirectoryServices.AccountManagement, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]    
     public class MultipleMatchesException : PrincipalException
     {
         public MultipleMatchesException() : base() { }
@@ -42,10 +45,11 @@ namespace System.DirectoryServices.AccountManagement
         protected MultipleMatchesException(SerializationInfo info, StreamingContext context) :
                     base(info, context)
         {
-            throw new PlatformNotSupportedException();
         }
     }
 
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.DirectoryServices.AccountManagement, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class NoMatchingPrincipalException : PrincipalException
     {
         public NoMatchingPrincipalException() : base() { }
@@ -63,6 +67,8 @@ namespace System.DirectoryServices.AccountManagement
         }
     }
 
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.DirectoryServices.AccountManagement, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class PasswordException : PrincipalException
     {
         public PasswordException() : base() { }
@@ -76,10 +82,11 @@ namespace System.DirectoryServices.AccountManagement
         protected PasswordException(SerializationInfo info, StreamingContext context) :
                     base(info, context)
         {
-            throw new PlatformNotSupportedException();
         }
     }
 
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.DirectoryServices.AccountManagement, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class PrincipalExistsException : PrincipalException
     {
         public PrincipalExistsException() : base() { }
@@ -93,10 +100,11 @@ namespace System.DirectoryServices.AccountManagement
         protected PrincipalExistsException(SerializationInfo info, StreamingContext context) :
                     base(info, context)
         {
-            throw new PlatformNotSupportedException();
         }
     }
 
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.DirectoryServices.AccountManagement, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class PrincipalServerDownException : PrincipalException
     {
         private int _errorCode = 0;
@@ -127,15 +135,21 @@ namespace System.DirectoryServices.AccountManagement
         protected PrincipalServerDownException(SerializationInfo info, StreamingContext context) :
                     base(info, context)
         {
-            throw new PlatformNotSupportedException();
+            _errorCode = info.GetInt32("errorCode");
+            _serverName = (string)info.GetValue("serverName", typeof(string));
         }
 
+        [System.Security.SecurityCritical]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
+            info.AddValue("errorCode", _errorCode);
+            info.AddValue("serverName", _serverName, typeof(String));
         }
     }
 
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.DirectoryServices.AccountManagement, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class PrincipalOperationException : PrincipalException
     {
         private int _errorCode = 0;
@@ -160,12 +174,14 @@ namespace System.DirectoryServices.AccountManagement
         protected PrincipalOperationException(SerializationInfo info, StreamingContext context) :
                     base(info, context)
         {
-            throw new PlatformNotSupportedException();
+            _errorCode = info.GetInt32("errorCode");
         }
 
+        [System.Security.SecurityCritical]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
+            info.AddValue("errorCode", _errorCode);
         }
 
         public int ErrorCode

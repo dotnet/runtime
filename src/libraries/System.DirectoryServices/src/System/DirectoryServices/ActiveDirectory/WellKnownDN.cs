@@ -4,8 +4,6 @@
 
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-
     internal enum WellKnownDN : int
     {
         RootDSE = 0,

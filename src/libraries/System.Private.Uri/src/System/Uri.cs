@@ -1407,10 +1407,15 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(character));
             }
-            char[] chars = new char[3];
-            int pos = 0;
-            UriHelper.EscapeAsciiChar(character, chars, ref pos);
-            return new string(chars);
+
+            unsafe
+            {
+                char* chars = stackalloc char[3];
+                chars[0] = '%';
+                chars[1] = UriHelper.s_hexUpperChars[(character & 0xf0) >> 4];
+                chars[2] = UriHelper.s_hexUpperChars[character & 0xf];
+                return new string(chars, 0, 3);
+            }
         }
 
         //
@@ -1487,7 +1492,8 @@ namespace System
             return
                 (pattern.Length - index) >= 3 &&
                 pattern[index] == '%' &&
-                UriHelper.EscapedAscii(pattern[index + 1], pattern[index + 2]) != c_DummyChar;
+                IsHexDigit(pattern[index + 1]) &&
+                IsHexDigit(pattern[index + 2]);
         }
 
         //
@@ -1534,12 +1540,10 @@ namespace System
         // Throws:
         //  Nothing
         //
-        public static bool IsHexDigit(char character)
-        {
-            return ((character >= '0') && (character <= '9'))
-                || ((character >= 'A') && (character <= 'F'))
-                || ((character >= 'a') && (character <= 'f'));
-        }
+        public static bool IsHexDigit(char character) =>
+            (uint)(character - '0') <= '9' - '0' ||
+            (uint)(character - 'A') <= 'F' - 'A' ||
+            (uint)(character - 'a') <= 'f' - 'a';
 
         //
         // Returns:
@@ -1548,21 +1552,11 @@ namespace System
         // Throws:
         //  ArgumentException
         //
-        public static int FromHex(char digit)
-        {
-            if (((digit >= '0') && (digit <= '9'))
-                || ((digit >= 'A') && (digit <= 'F'))
-                || ((digit >= 'a') && (digit <= 'f')))
-            {
-                return (digit <= '9')
-                    ? ((int)digit - (int)'0')
-                    : (((digit <= 'F')
-                    ? ((int)digit - (int)'A')
-                    : ((int)digit - (int)'a'))
-                    + 10);
-            }
+        public static int FromHex(char digit) =>
+            (uint)(digit - '0') <= '9' - '0' ? digit - '0' :
+            (uint)(digit - 'A') <= 'F' - 'A' ? digit - 'A' + 10 :
+            (uint)(digit - 'a') <= 'f' - 'a' ? digit - 'a' + 10 :
             throw new ArgumentException(nameof(digit));
-        }
 
         //
         // GetHashCode

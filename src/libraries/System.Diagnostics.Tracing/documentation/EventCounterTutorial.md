@@ -34,7 +34,8 @@ public sealed class MinimalEventCounterSource : EventSource
         //      using an EventAttribute for this method
         //   2. Each counter supports a single float value, so conceptually it maps to a single
         //      measurement in the code.
-        //   3. You don't have to have 
+        //   3. You don't have to have log with WriteEvent if you don't think you will ever care about details
+        //       of individual requests (that counter data is sufficient).  
         WriteEvent(1, url, elapsedMSec);    // This logs it to the event stream if events are on.    
         this.requestCounter.WriteMetric(elapsedMSec);        // This adds it to the PerfCounter called 'Request' if PerfCounters are on
     }
@@ -48,10 +49,10 @@ So, with that, we logged the metric to the `EventCounter`, but unless we can act
 There is an extra keyword that you will need to specify the turn on the EventCounters.
 
 ```
-PerfView /onlyProviders=*Samples-EventCounterDemos-Minimal:**EventCounterIntervalSec=1** collect
+PerfView /onlyProviders=*Samples-EventCounterDemos-Minimal:EventCounterIntervalSec=1 collect
 ```
 
-Note the bold part about `EventCounterIntervalSec`, that indicate the frequency of the sampling.
+Note the part about `EventCounterIntervalSec`, that indicate the frequency of the sampling.
 
 As usual, turn on PerfView, and then run the sample code, we will have something like this
 
@@ -69,7 +70,7 @@ Notice that, this command also log the events, so we will get both the events an
 
 <img src="PerfViewCapture_Events.png" alt="PerfView Capture of Event Traces" title="PerfView Capture of Event Traces" />
 
-As we mentioned, to avoid overhead, sometimes we will want just the counters. This command can be used to log <em>only</em> the counters:
+As we mentioned, to avoid overhead, sometimes we will want just the counters. This command can be used to log *only* the counters:
 
 ```
 PerfView /onlyProviders=*Samples-EventCounterDemos-Minimal:*:Critical:EventCounterIntervalSec=1 collect

@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Reflection.Metadata.Ecma335
 {
-    public struct ExceptionRegionEncoder
+    public readonly struct ExceptionRegionEncoder
     {
         private const int TableHeaderSize = 4;
 

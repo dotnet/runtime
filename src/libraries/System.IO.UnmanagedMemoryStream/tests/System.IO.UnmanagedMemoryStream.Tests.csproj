@@ -7,6 +7,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="Uma.TestStructs.cs" />
     <Compile Include="Uma.ReadWriteStruct.cs" />
@@ -17,12 +19,11 @@
     <Compile Include="UmaTests.cs" />
     <Compile Include="UmsCtorTests.cs" />
     <Compile Include="HGlobalSafeBuffer.cs" />
-    <Compile Include="UmsRead.cs" />
+    <Compile Include="UmsReadWrite.cs" />
+    <Compile Include="UmsReadWrite.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="UmsSafeBuffer.cs" />
     <Compile Include="UmaCtorTests.cs" />
     <Compile Include="UmsFlush.cs" />
-    <Compile Include="UmsWrite.cs" />
-    <Compile Include="UmsReadWrite.cs" />
     <Compile Include="UmsTests.cs" />
     <Compile Include="UmsManager.cs" />
     <Compile Include="UmsSecurityTest.cs" />

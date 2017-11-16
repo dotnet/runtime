@@ -16,6 +16,8 @@ namespace System.Xml
     ///    <para>Returns detailed information about the last parse error, including the error
     ///       number, line number, character position, and a text description.</para>
     /// </devdoc>
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class XmlException : SystemException
     {
         private string _res;
@@ -31,12 +33,48 @@ namespace System.Xml
 
         protected XmlException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            throw new PlatformNotSupportedException();
+            _res = (string)info.GetValue("res", typeof(string));
+            _args = (string[])info.GetValue("args", typeof(string[]));
+            _lineNumber = (int)info.GetValue("lineNumber", typeof(int));
+            _linePosition = (int)info.GetValue("linePosition", typeof(int));
+
+            // deserialize optional members
+            _sourceUri = string.Empty;
+            string version = null;
+            foreach (SerializationEntry e in info)
+            {
+                switch (e.Name)
+                {
+                    case "sourceUri":
+                        _sourceUri = (string)e.Value;
+                        break;
+                    case "version":
+                        version = (string)e.Value;
+                        break;
+                }
+            }
+
+            if (version == null)
+            {
+                // deserializing V1 exception
+                _message = CreateMessage(_res, _args, _lineNumber, _linePosition);
+            }
+            else
+            {
+                // deserializing V2 or higher exception -> exception message is serialized by the base class (Exception._message)
+                _message = null;
+            }
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
+            info.AddValue("res", _res);
+            info.AddValue("args", _args);
+            info.AddValue("lineNumber", _lineNumber);
+            info.AddValue("linePosition", _linePosition);
+            info.AddValue("sourceUri", _sourceUri);
+            info.AddValue("version", "2.0");
         }
 
         //provided to meet the ECMA standards

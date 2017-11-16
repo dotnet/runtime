@@ -2,23 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Runtime.InteropServices;
-    using System.Collections;
-    using System.Globalization;
-
     public class ForestTrustDomainInfoCollection : ReadOnlyCollectionBase
     {
         internal ForestTrustDomainInfoCollection() { }
 
         public ForestTrustDomainInformation this[int index]
         {
-            get
-            {
-                return (ForestTrustDomainInformation)InnerList[index];
-            }
+            get => (ForestTrustDomainInformation)InnerList[index];
         }
 
         public bool Contains(ForestTrustDomainInformation information)
@@ -42,9 +36,6 @@ namespace System.DirectoryServices.ActiveDirectory
             InnerList.CopyTo(array, index);
         }
 
-        internal int Add(ForestTrustDomainInformation info)
-        {
-            return InnerList.Add(info);
-        }
+        internal int Add(ForestTrustDomainInformation info) => InnerList.Add(info);
     }
 }

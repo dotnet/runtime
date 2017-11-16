@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <!-- Tests crash when running in ret mode, [ActiveIssue(23407)] -->
+    <ILCBuildType>chk</ILCBuildType>
+    <ProjectGuid>{2B38992F-9979-485F-B104-38C476D0B706}</ProjectGuid>
+    <TestCategories>InnerLoop;OuterLoop</TestCategories>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="Mono\DataRowComparerTest.cs" />
+    <Compile Include="Mono\DataRowExtensionsTest.cs" />
+    <Compile Include="Mono\DataTableExtensionsTest.cs" />
+    <Compile Include="Mono\EnumerableRowCollectionTest.cs" />
+    <Compile Include="System\Data\DataRowComparerTests.cs" />
+    <Compile Include="System\Data\DataRowExtensionsTests.cs" />
+    <Compile Include="System\Data\DataTableExtensionsTests.cs" />
+    <Compile Include="System\Data\EnumerableRowCollectionExtensionsTests.cs" />
+    <Compile Include="System\Data\TypedTableBaseExtensionsTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Mono\testdataset1.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

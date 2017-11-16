@@ -1195,7 +1195,7 @@ namespace System.ComponentModel
         ///     The name of the specified component, or null if the component has no name.
         ///     In many cases this will return the same value as GetComponentName. If the
         ///     component resides in a nested container or has other nested semantics, it may
-        ///     return a different fully qualfied name.
+        ///     return a different fully qualified name.
         /// </summary>
         public static string GetFullComponentName(object component)
         {
@@ -1566,7 +1566,7 @@ namespace System.ComponentModel
         ///     type description provider for the instance's type the delegator
         ///     would pick up the new type.  If a query is being made that does
         ///     not involve publicly exposing the type description provider for
-        ///     the instance, the query should pass in fase (the default) for
+        ///     the instance, the query should pass in false (the default) for
         ///     createDelegator because no object will be created.
         /// </summary>
         private static TypeDescriptionNode NodeFor(object instance, bool createDelegator)
@@ -2645,7 +2645,7 @@ namespace System.ComponentModel
         /// <summary>
         ///     This class is a type description provider that works with the IComNativeDescriptorHandler
         ///     interface.
-        //// </summary>
+        /// </summary>
         private sealed class ComNativeDescriptionProvider : TypeDescriptionProvider
         {
 #pragma warning disable 618
@@ -2656,14 +2656,14 @@ namespace System.ComponentModel
 
             /// <summary>
             ///     Returns the COM handler object.
-            //// </summary>
+            /// </summary>
             internal IComNativeDescriptorHandler Handler { get; set; }
 #pragma warning restore 618
             
             /// <summary>
             ///     Implements GetTypeDescriptor.  This creates a custom type
             ///     descriptor that walks the linked list for each of its calls.
-            //// </summary>
+            /// </summary>
             
             [SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters")]
             public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object instance)
@@ -2689,7 +2689,7 @@ namespace System.ComponentModel
             /// <summary>
             ///     This type descriptor sits on top of a native
             ///     descriptor handler.
-            //// </summary>
+            /// </summary>
             private sealed class ComNativeTypeDescriptor : ICustomTypeDescriptor
             {
 #pragma warning disable 618
@@ -2698,7 +2698,7 @@ namespace System.ComponentModel
 
                 /// <summary>
                 ///     Creates a new ComNativeTypeDescriptor.
-                //// </summary>
+                /// </summary>
                 internal ComNativeTypeDescriptor(IComNativeDescriptorHandler handler, object instance)
                 {
                     _handler = handler;
@@ -3201,7 +3201,7 @@ namespace System.ComponentModel
             ///     The name of the specified component, or null if the component has no name.
             ///     In many cases this will return the same value as GetComponentName. If the
             ///     component resides in a nested container or has other nested semantics, it may
-            ///     return a different fully qualfied name.
+            ///     return a different fully qualified name.
             ///
             ///     If not overridden, the default implementation of this method will call
             ///     GetTypeDescriptor.GetComponentName.
@@ -3273,7 +3273,7 @@ namespace System.ComponentModel
             ///     A type descriptor for extended types.  This type descriptor
             ///     looks at the head node in the linked list.
             /// </summary>
-            private struct DefaultExtendedTypeDescriptor : ICustomTypeDescriptor
+            private readonly struct DefaultExtendedTypeDescriptor : ICustomTypeDescriptor
             {
                 private readonly TypeDescriptionNode _node;
                 private readonly object _instance;
@@ -3584,7 +3584,7 @@ namespace System.ComponentModel
             /// <summary>
             ///     The default type descriptor.
             /// </summary>
-            private struct DefaultTypeDescriptor : ICustomTypeDescriptor
+            private readonly struct DefaultTypeDescriptor : ICustomTypeDescriptor
             {
                 private readonly TypeDescriptionNode _node;
                 private readonly Type _objectType;

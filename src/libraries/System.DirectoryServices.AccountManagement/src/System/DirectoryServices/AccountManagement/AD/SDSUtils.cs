@@ -23,7 +23,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             Principal p;
 
-            // Construct a appropriate Principal object.
+            // Construct an appropriate Principal object.
             // Make* constructs a Principal that is marked persisted
             // and not loaded (p.unpersisted = false, p.loaded = false).
 
@@ -85,7 +85,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             Principal p;
 
-            // Construct a appropriate Principal object.
+            // Construct an appropriate Principal object.
             // Make* constructs a Principal that is marked persisted
             // and not loaded (p.unpersisted = false, p.loaded = false).
 

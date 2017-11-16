@@ -6,15 +6,22 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprAssignment : Expr
     {
-        public ExprAssignment()
+        private Expr _lhs;
+
+        public ExprAssignment(Expr lhs, Expr rhs)
             : base(ExpressionKind.Assignment)
         {
+            LHS = lhs;
+            RHS = rhs;
+            Flags = EXPRFLAG.EXF_ASSGOP;
         }
 
-        public Expr LHS { get; set; }
+        public Expr LHS
+        {
+            get => _lhs;
+            set => Type = (_lhs = value).Type;
+        }
 
         public Expr RHS { get; set; }
-
-        public override CType Type => LHS.Type;
     }
 }

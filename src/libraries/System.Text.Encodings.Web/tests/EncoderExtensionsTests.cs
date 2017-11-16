@@ -33,6 +33,49 @@ namespace System.Text.Encodings.Web
         }
 
         [Fact]
+        public void HtmlEncode_PositiveTestCase_CreateWithSettings()
+        {
+            // Arrange
+            TextEncoderSettings settings = new TextEncoderSettings(UnicodeRanges.All);
+            HtmlEncoder encoder = HtmlEncoder.Create(settings);
+            StringWriter writer = new StringWriter();
+
+            // Act
+            encoder.Encode(writer, "Hello+there!");
+
+            // Assert
+            Assert.Equal("Hello&#x2B;there!", writer.ToString());
+        }
+
+        [Fact]
+        public void HtmlEncode_CreateNullRanges()
+        {
+            Assert.Throws<ArgumentNullException>("allowedRanges", () => HtmlEncoder.Create(default(UnicodeRange[])));
+        }
+
+        [Fact]
+        public void HtmlEncode_CreateNullSettings()
+        {
+            Assert.Throws<ArgumentNullException>("settings", () => HtmlEncoder.Create(default(TextEncoderSettings)));
+        }
+
+
+        [Fact]
+        public unsafe void TryEncodeUnicodeScalar_Null_Buffer()
+        {
+            Assert.Throws<ArgumentNullException>("buffer", () => HtmlEncoder.Default.TryEncodeUnicodeScalar(2, null, 1, out int _));
+        }
+
+        [Fact]
+        public unsafe void TryEncodeUnicodeScalar_InsufficientRoom()
+        {
+            char* buffer = stackalloc char[1];
+            int numberWritten;
+            Assert.False(HtmlEncoder.Default.TryEncodeUnicodeScalar(0x10000, buffer, 1, out numberWritten));
+            Assert.Equal(0, numberWritten);
+        }
+
+        [Fact]
         public void JavaScriptStringEncode_ParameterChecks()
         {
             Assert.Throws<ArgumentNullException>(() => EncoderExtensions.JavaScriptStringEncode(null, "Hello!", new StringWriter()));

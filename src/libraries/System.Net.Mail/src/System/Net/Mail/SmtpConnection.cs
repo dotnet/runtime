@@ -152,7 +152,7 @@ namespace System.Net.Mail
                             _channelBindingToken.Close();
                         }
 
-                        _networkStream.Close();
+                        _networkStream?.Close();
                         _tcpClient.Dispose();
                     }
 
@@ -439,11 +439,11 @@ namespace System.Net.Mail
                 IAsyncResult result = _connection.BeginInitializeConnection(_host, _port, InitializeConnectionCallback, this);
                 if (result.CompletedSynchronously)
                 {
-                    _connection.EndInitializeConnection(result);
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Connect returned");
-
                     try
                     {
+                        _connection.EndInitializeConnection(result);
+                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Connect returned");
+
                         Handshake();
                     }
                     catch (Exception e)
@@ -458,11 +458,11 @@ namespace System.Net.Mail
                 if (!result.CompletedSynchronously)
                 {
                     ConnectAndHandshakeAsyncResult thisPtr = (ConnectAndHandshakeAsyncResult)result.AsyncState;
-                    thisPtr._connection.EndInitializeConnection(result);
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Connect returned {thisPtr}");
-
                     try
                     {
+                        thisPtr._connection.EndInitializeConnection(result);
+                        if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Connect returned {thisPtr}");
+
                         thisPtr.Handshake();
                     }
                     catch (Exception e)

@@ -301,7 +301,7 @@ namespace Legacy.Support
             object retVal = null;
 
             // Only Set the default value if it exists in the defaultProperties Hashtable 
-            // This will prevent the abilility to create arbitrary keys(Property names)
+            // This will prevent the ability to create arbitrary keys(Property names)
             if (null != defaultProperties[name])
             {
                 retVal = _properties[name];

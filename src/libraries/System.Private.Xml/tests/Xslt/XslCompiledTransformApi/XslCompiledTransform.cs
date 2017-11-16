@@ -1845,7 +1845,7 @@ namespace System.Xml.Tests
             }
             if (fTEST_FAIL)
             {
-                _output.WriteLine("Appear to have accidently closed the Reader");
+                _output.WriteLine("Appear to have accidentally closed the Reader");
                 Assert.True(false);
             }
             return;

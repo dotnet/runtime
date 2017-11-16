@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace Microsoft.CSharp.RuntimeBinder.Syntax
 {
-    internal class NameManager
+    internal static class NameManager
     {
         private static readonly Name[] s_predefinedNames = {
             new Name(".ctor"),
@@ -112,6 +112,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             new Name("RemoveEventHandler"),
             new Name("InvocationList"),
             new Name("GetOrCreateEventRegistrationTokenTable"),
+            new Name("void"),
+            new Name(""),
             /* Above here corresponds with PredefinedName enum */
             new Name("true"),
             new Name("false"),
@@ -128,12 +130,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             new Name("checked"),
             new Name("is"),
             new Name("typeof"),
-            new Name("unchecked"),
-            new Name("void"),
-            new Name("")
+            new Name("unchecked")
         };
 
-        private static readonly NameTable s_knownNames = GetKnownNames();
+        private static readonly NameTable s_names = GetKnownNames();
 
         private static NameTable GetKnownNames()
         {
@@ -147,33 +147,21 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             return table;
         }
 
-        private readonly NameTable _names = new NameTable();
-
-        internal Name Add(string key)
+        internal static Name Add(string key)
         {
             if (key == null)
             {
                 throw Error.InternalCompilerError();
             }
 
-            return s_knownNames.Lookup(key) ?? _names.Add(key);
+            return s_names.Add(key);
         }
 
-        internal Name Add(string key, int length)
+        internal static Name Add(string key, int length)
         {
             Debug.Assert(key != null);
             Debug.Assert(key.Length >= length);
-            return s_knownNames.Lookup(key, length) ?? _names.Add(key, length);
-        }
-
-        internal Name Lookup(string key)
-        {
-            if (key == null)
-            {
-                throw Error.InternalCompilerError();
-            }
-
-            return s_knownNames.Lookup(key) ?? _names.Lookup(key);
+            return s_names.Add(key, length);
         }
 
         internal static Name GetPredefinedName(PredefinedName id)

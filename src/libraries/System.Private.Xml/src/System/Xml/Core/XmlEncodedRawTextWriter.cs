@@ -180,10 +180,10 @@ namespace System.Xml
 
             if (!stream.CanSeek || stream.Position == 0)
             {
-                byte[] bom = encoding.GetPreamble();
+                ReadOnlySpan<byte> bom = encoding.Preamble;
                 if (bom.Length != 0)
                 {
-                    this.stream.Write(bom, 0, bom.Length);
+                    this.stream.Write(bom);
                 }
             }
 

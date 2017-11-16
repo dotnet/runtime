@@ -72,14 +72,44 @@ namespace System.Linq.Expressions.Compiler
             }
             else if (node.NodeType == ExpressionType.NegateChecked && node.Operand.Type.IsInteger())
             {
-                EmitExpression(node.Operand);
-                LocalBuilder loc = GetLocal(node.Operand.Type);
-                _ilg.Emit(OpCodes.Stloc, loc);
-                _ilg.EmitPrimitive(0);
-                _ilg.EmitConvertToType(typeof(int), node.Operand.Type, isChecked: false, locals: this);
-                _ilg.Emit(OpCodes.Ldloc, loc);
-                FreeLocal(loc);
-                EmitBinaryOperator(ExpressionType.SubtractChecked, node.Operand.Type, node.Operand.Type, node.Type, liftedToNull: false);
+                Type type = node.Type;
+                Debug.Assert(type == node.Operand.Type);
+                if (type.IsNullableType())
+                {
+                    Label nullOrZero = _ilg.DefineLabel();
+                    Label end = _ilg.DefineLabel();
+                    EmitExpression(node.Operand);
+                    LocalBuilder loc = GetLocal(type);
+
+                    // check for null or zero
+                    _ilg.Emit(OpCodes.Stloc, loc);
+                    _ilg.Emit(OpCodes.Ldloca, loc);
+                    _ilg.EmitGetValueOrDefault(type);
+                    _ilg.Emit(OpCodes.Brfalse_S, nullOrZero);
+
+                    // calculate 0 - operand
+                    Type nnType = type.GetNonNullableType();
+                    _ilg.EmitDefault(nnType, locals: null); // locals won't be used.
+                    _ilg.Emit(OpCodes.Ldloca, loc);
+                    _ilg.EmitGetValueOrDefault(type);
+                    EmitBinaryOperator(ExpressionType.SubtractChecked, nnType, nnType, nnType, liftedToNull: false);
+
+                    // construct result
+                    _ilg.Emit(OpCodes.Newobj, type.GetConstructor(new Type[] { nnType }));
+                    _ilg.Emit(OpCodes.Br_S, end);
+
+                    // if null then push back on stack
+                    _ilg.MarkLabel(nullOrZero);
+                    _ilg.Emit(OpCodes.Ldloc, loc);
+                    FreeLocal(loc);
+                    _ilg.MarkLabel(end);
+                }
+                else
+                {
+                    _ilg.EmitDefault(type, locals: null); // locals won't be used.
+                    EmitExpression(node.Operand);
+                    EmitBinaryOperator(ExpressionType.SubtractChecked, type, type, type, liftedToNull: false);
+                }
             }
             else
             {

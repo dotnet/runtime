@@ -36,12 +36,6 @@
   <data name="BindInvokeFailedNonDelegate" xml:space="preserve">
     <value>無法叫用非委派型別</value>
   </data>
-  <data name="BindImplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>隱含轉換只接受一個引數</value>
-  </data>
-  <data name="BindExplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>明確轉換只接受一個引數</value>
-  </data>
   <data name="BindBinaryAssignmentRequireTwoArguments" xml:space="preserve">
     <value>無法以一個引數叫用二元運算子</value>
   </data>
@@ -59,9 +53,6 @@
   </data>
   <data name="BadBinaryOps" xml:space="preserve">
     <value>無法將運算子 '{0}' 套用至型別 '{1}' 和 '{2}' 的運算元</value>
-  </data>
-  <data name="IntDivByZero" xml:space="preserve">
-    <value>常數零做除數</value>
   </data>
   <data name="BadIndexLHS" xml:space="preserve">
     <value>無法套用有 [] 的索引至型別 '{0}' 的運算式</value>
@@ -114,9 +105,6 @@
   <data name="NoConstructors" xml:space="preserve">
     <value>型別 '{0}' 沒有已定義的建構函式</value>
   </data>
-  <data name="BadDelegateConstructor" xml:space="preserve">
-    <value>委派 '{0}' 沒有有效的建構函式</value>
-  </data>
   <data name="PropertyLacksGet" xml:space="preserve">
     <value>無法於此內容中使用屬性或索引子 '{0}'，因為其欠缺 get 存取子</value>
   </data>
@@ -138,17 +126,8 @@
   <data name="AssgReadonlyProp" xml:space="preserve">
     <value>無法指派屬性或索引子 '{0}' -- 其為唯讀</value>
   </data>
-  <data name="AbstractBaseCall" xml:space="preserve">
-    <value>無法呼叫抽象基底成員: '{0}'</value>
-  </data>
   <data name="RefProperty" xml:space="preserve">
     <value>無法將屬性或索引子當做 out 或 ref 參數傳遞</value>
-  </data>
-  <data name="ManagedAddr" xml:space="preserve">
-    <value>不能取得 Managed 型別 ('{0}') 的位址、大小，也不能宣告指向它的指標</value>
-  </data>
-  <data name="FixedNotNeeded" xml:space="preserve">
-    <value>您不能使用 fixed 陳述式來取得原本就是 fixed 運算式的位址</value>
   </data>
   <data name="UnsafeNeeded" xml:space="preserve">
     <value>動態呼叫不能與指標一起使用</value>
@@ -159,29 +138,11 @@
   <data name="MustHaveOpTF" xml:space="preserve">
     <value>型別 ('{0}') 必須包含運算子 true 和運算子 false 的宣告</value>
   </data>
-  <data name="CheckedOverflow" xml:space="preserve">
-    <value>操作在檢查模式下編譯時溢出</value>
-  </data>
   <data name="ConstOutOfRangeChecked" xml:space="preserve">
     <value>無法將常數值 '{0}' 轉換為 '{1}' (請使用 'unchecked' 語法覆寫)</value>
   </data>
   <data name="AmbigMember" xml:space="preserve">
     <value>'{0}' 和 '{1}' 之間模稜兩可</value>
-  </data>
-  <data name="SizeofUnsafe" xml:space="preserve">
-    <value>'{0}' 沒有預先定義的大小，因此 sizeof 只能使用於 unsafe 內容 (可考慮使用 System.Runtime.InteropServices.Marshal.SizeOf)</value>
-  </data>
-  <data name="FieldInitRefNonstatic" xml:space="preserve">
-    <value>欄位初始設定式無法參考非靜態欄位、方法或屬性 '{0}'</value>
-  </data>
-  <data name="CallingFinalizeDepracated" xml:space="preserve">
-    <value>不能直接呼叫解構函式和 object.Finalize。請考慮呼叫 IDisposable.Dispose (如果有)。</value>
-  </data>
-  <data name="CallingBaseFinalizeDeprecated" xml:space="preserve">
-    <value>不要直接呼叫您的基底類別 Finalize 方法。會從您的解構函式自動呼叫它。</value>
-  </data>
-  <data name="BadCastInFixed" xml:space="preserve">
-    <value>fixed 陳述式設定運算子的右邊不能是 cast 運算式</value>
   </data>
   <data name="NoImplicitConvCast" xml:space="preserve">
     <value>無法將型別 '{0}' 隱含轉換為 '{1}'。已有明確轉換存在 (您是否漏掉了轉型?)</value>
@@ -194,9 +155,6 @@
   </data>
   <data name="BadArity" xml:space="preserve">
     <value>使用泛型 {1} '{0}' 需要 '{2}' 個型別引數</value>
-  </data>
-  <data name="BadTypeArgument" xml:space="preserve">
-    <value>類型"{0}"不可能用作類型參數</value>
   </data>
   <data name="TypeArgsNotAllowed" xml:space="preserve">
     <value>{1} '{0}' 不能配合型別引數使用</value>
@@ -216,23 +174,11 @@
   <data name="GenericConstraintNotSatisfiedNullableInterface" xml:space="preserve">
     <value>型別 '{3}' 不能做為泛型型別或方法 '{0}' 中的型別參數 '{2}'。可為 Null 的型別 '{3}' 未滿足 '{1}' 的條件約束。可為 Null 的型別無法滿足所有介面條件約束。</value>
   </data>
-  <data name="GenericConstraintNotSatisfiedTyVar" xml:space="preserve">
-    <value>型別 '{3}' 不能做為泛型型別或方法 '{0}' 中的型別參數 '{2}'。沒有從 '{3}' 到 '{1}' 的 Boxing 轉換或型別參數轉換。</value>
-  </data>
   <data name="GenericConstraintNotSatisfiedValType" xml:space="preserve">
     <value>型別 '{3}' 不能做為泛型型別或方法 '{0}' 中的型別參數 '{2}'。沒有從 '{3}' 到 '{1}' 的 Boxing 轉換。</value>
   </data>
-  <data name="TypeVarCantBeNull" xml:space="preserve">
-    <value>無法將 null 轉換成型別參數 '{0}'，因為它是不可為 null 的實值型別。請考慮使用 'default({0})' 代替。</value>
-  </data>
-  <data name="BadRetType" xml:space="preserve">
-    <value>'{1} {0}' 的傳回型別錯誤</value>
-  </data>
   <data name="CantInferMethTypeArgs" xml:space="preserve">
     <value>方法 '{0}' 的型別引數不能從使用方式推斷。請嘗試明確指定型別引數。</value>
-  </data>
-  <data name="MethGrpToNonDel" xml:space="preserve">
-    <value>無法將方法群組 '{0}' 轉換為非委派型別 '{1}'。您是否想要叫用這個方法?</value>
   </data>
   <data name="RefConstraintNotSatisfied" xml:space="preserve">
     <value>型別 '{2}' 必須是參考型別，才能在泛型型別或方法 '{0}' 中做為參數 '{1}' 使用</value>
@@ -240,23 +186,8 @@
   <data name="ValConstraintNotSatisfied" xml:space="preserve">
     <value>型別 '{2}' 必須是不可為 null 的實值型別，才能在泛型型別或方法 '{0}' 中做為參數 '{1}' 使用</value>
   </data>
-  <data name="CircularConstraint" xml:space="preserve">
-    <value>條件約束 '{0}' 和 '{1}' 循環相依; 必須移除兩者其中之一</value>
-  </data>
-  <data name="BaseConstraintConflict" xml:space="preserve">
-    <value>型別參數 '{0}' 繼承了衝突的條件約束 '{1}' 和 '{2}'</value>
-  </data>
-  <data name="ConWithValCon" xml:space="preserve">
-    <value>型別參數 '{1}' 有 'struct' 條件約束，因此 '{1}' 不能做為 '{0}' 的條件約束</value>
-  </data>
   <data name="AmbigUDConv" xml:space="preserve">
     <value>從 '{2}' 轉換為 '{3}' 時，發現模稜兩可的使用者定義轉換 '{0}' 和 '{1}'</value>
-  </data>
-  <data name="PredefinedTypeNotFound" xml:space="preserve">
-    <value>未定義或匯入預先定義的型別 '{0}'</value>
-  </data>
-  <data name="PredefinedTypeBadType" xml:space="preserve">
-    <value>預先定義的型別 '{0}' 宣告不正確</value>
   </data>
   <data name="BindToBogus" xml:space="preserve">
     <value>此語言不支援 '{0}'</value>
@@ -264,44 +195,17 @@
   <data name="CantCallSpecialMethod" xml:space="preserve">
     <value>'{0}': 無法明確呼叫運算子或存取子</value>
   </data>
-  <data name="BogusType" xml:space="preserve">
-    <value>此語言不支援型別 '{0}'</value>
-  </data>
-  <data name="MissingPredefinedMember" xml:space="preserve">
-    <value>遺漏編譯器所需的成員 '{0}.{1}'</value>
-  </data>
-  <data name="LiteralDoubleCast" xml:space="preserve">
-    <value>不能隱含將型別 double 的常值轉換為型別 '{1}'; 請使用 '{0}' 後置字元來建立此型別的常值</value>
-  </data>
-  <data name="UnifyingInterfaceInstantiations" xml:space="preserve">
-    <value>'{0}' 不能同時實作 '{1}' 和 '{2}'，因為它們可能對某些型別參數的替代做整合</value>
-  </data>
   <data name="ConvertToStaticClass" xml:space="preserve">
     <value>無法轉換為靜態型別 '{0}'</value>
   </data>
-  <data name="GenericArgIsStaticClass" xml:space="preserve">
-    <value>'{0}': 靜態型別不能當做型別引數使用</value>
-  </data>
-  <data name="PartialMethodToDelegate" xml:space="preserve">
-    <value>無法從方法 '{0}' 建立委派，因為它是沒有實作宣告的部分方法</value>
-  </data>
   <data name="IncrementLvalueExpected" xml:space="preserve">
     <value>遞增或遞減運算子的運算元必須是變數、屬性或索引子。</value>
-  </data>
-  <data name="NoSuchMemberOrExtension" xml:space="preserve">
-    <value>'{0}' 不包含 '{1}' 的定義，也找不到擴充方法 '{1}' 來接受型別 '{0}' 的第一個引數 (您是否遺漏 using 指示詞或組件參考?)</value>
-  </data>
-  <data name="ValueTypeExtDelegate" xml:space="preserve">
-    <value>在實值型別 '{1}' 中定義的擴充方法 '{0}' 無法用來建立委派</value>
   </data>
   <data name="BadArgCount" xml:space="preserve">
     <value>方法 '{0}' 沒有任何多載接受 '{1}' 個引數</value>
   </data>
   <data name="BadArgTypes" xml:space="preserve">
     <value>最符合的多載方法 '{0}' 有一些無效的引數</value>
-  </data>
-  <data name="BadArgType" xml:space="preserve">
-    <value>引數 '{0}': 無法從 '{1}' 轉換為 '{2}'</value>
   </data>
   <data name="RefLvalueExpected" xml:space="preserve">
     <value>ref 或 out 引數必須是可指派的變數</value>
@@ -330,12 +234,6 @@
   <data name="ReturnNotLValue" xml:space="preserve">
     <value>無法修改 '{0}' 的傳回值，因為它不是變數</value>
   </data>
-  <data name="BadArgExtraRef" xml:space="preserve">
-    <value>傳遞引數 '{0}' 時不能包含 '{1}' 關鍵字</value>
-  </data>
-  <data name="BadArgRef" xml:space="preserve">
-    <value>傳遞引數 '{0}' 時必須包含 '{1}' 關鍵字</value>
-  </data>
   <data name="AssgReadonly2" xml:space="preserve">
     <value>唯讀欄位 '{0}' 的成員無法修改 (除非是在建構函式或變數初始設定式)</value>
   </data>
@@ -354,26 +252,8 @@
   <data name="RefReadonlyLocalCause" xml:space="preserve">
     <value>無法將 '{0}' 當做 ref 或 out 引數傳遞，因為它是 '{1}'</value>
   </data>
-  <data name="ThisStructNotInAnonMeth" xml:space="preserve">
-    <value>結構內部的匿名方法、Lambda 運算式和查詢運算式無法存取 'this' 的執行個體成員。請考慮將 'this' 複製到匿名方法、Lambda 運算式或查詢運算式外部的區域變數，並改用這個區域變數。</value>
-  </data>
-  <data name="DelegateOnNullable" xml:space="preserve">
-    <value>不能將委託綁定到 '{0}'，因為它是 'System.Nullable&lt;T&gt;' 成員</value>
-  </data>
   <data name="BadCtorArgCount" xml:space="preserve">
     <value>'{0}' 不包含接受 '{1}' 個引數的建構函式</value>
-  </data>
-  <data name="BadExtensionArgTypes" xml:space="preserve">
-    <value>'{0}' 不包含 '{1}' 的定義，而且最佳的擴充方法多載 '{2}' 有一些無效的引數</value>
-  </data>
-  <data name="BadInstanceArgType" xml:space="preserve">
-    <value>執行個體引數: 無法從 '{0}' 轉換為 '{1}'</value>
-  </data>
-  <data name="BadArgTypesForCollectionAdd" xml:space="preserve">
-    <value>集合初始設定式的最佳多載 Add 方法 '{0}' 有一些無效的引數</value>
-  </data>
-  <data name="InitializerAddHasParamModifiers" xml:space="preserve">
-    <value>無法使用集合初始設定式項目之最符合的多載方法 '{0}'。集合初始設定式 'Add' 方法不能具有 ref 或 out 參數。</value>
   </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>非可叫用 (Non-invocable) 成員 '{0}' 不能做為方法使用。</value>

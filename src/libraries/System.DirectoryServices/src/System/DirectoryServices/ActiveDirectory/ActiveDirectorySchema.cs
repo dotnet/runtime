@@ -2,16 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Text;
+using System.Collections;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Text;
-    using System.Collections;
-    using System.ComponentModel;
-    using System.Runtime.InteropServices;
-    using System.Security.Permissions;
-    using System.Globalization;
-
     public enum SchemaClassType : int
     {
         Type88 = 0,
@@ -123,7 +120,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     else
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.ServerNotFound , context.Name), typeof(ActiveDirectorySchema), null);
+                        throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.ServerNotFound , context.Name), typeof(ActiveDirectorySchema), null);
                     }
                 }
             }
@@ -139,7 +136,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if ((context.isServer()) && (!Utils.CheckCapability(rootDSE, Capability.ActiveDirectoryOrADAM)))
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.ServerNotFound , context.Name), typeof(ActiveDirectorySchema), null);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.ServerNotFound , context.Name), typeof(ActiveDirectorySchema), null);
                 }
 
                 schemaNC = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.SchemaNamingContext);
@@ -160,7 +157,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     else
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.ServerNotFound , context.Name), typeof(ActiveDirectorySchema), null);
+                        throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.ServerNotFound , context.Name), typeof(ActiveDirectorySchema), null);
                     }
                 }
                 else

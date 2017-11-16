@@ -2,31 +2,28 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+using System.Collections;
+using System.Globalization;
+using System.ComponentModel;
+using System.Diagnostics;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Runtime.InteropServices;
-    using System.Collections;
-    using System.DirectoryServices;
-    using System.Globalization;
-    using System.ComponentModel;
-    using System.Diagnostics;
-    using System.Security.Permissions;
-
     public class ActiveDirectorySiteLink : IDisposable
     {
-        internal DirectoryContext context = null;
-        private string _name = null;
-        private ActiveDirectoryTransportType _transport = ActiveDirectoryTransportType.Rpc;
+        internal readonly DirectoryContext context = null;
+        private readonly string _name = null;
+        private readonly ActiveDirectoryTransportType _transport = ActiveDirectoryTransportType.Rpc;
         private bool _disposed = false;
 
         internal bool existing = false;
-        internal DirectoryEntry cachedEntry = null;
+        internal readonly DirectoryEntry cachedEntry = null;
         private const int systemDefaultCost = 0;
-        private TimeSpan _systemDefaultInterval = new TimeSpan(0, 15, 0);
+        private readonly TimeSpan _systemDefaultInterval = new TimeSpan(0, 15, 0);
         private const int appDefaultCost = 100;
         private const int appDefaultInterval = 180;
-        private ActiveDirectorySiteCollection _sites = new ActiveDirectorySiteCollection();
+        private readonly ActiveDirectorySiteCollection _sites = new ActiveDirectorySiteCollection();
         private bool _siteRetrieved = false;
 
         public ActiveDirectorySiteLink(DirectoryContext context, string siteLinkName) : this(context, siteLinkName, ActiveDirectoryTransportType.Rpc, null)
@@ -71,7 +68,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch (ActiveDirectoryObjectNotFoundException)
             {
                 // this is the case where the context is a config set and we could not find an ADAM instance in that config set
-                throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.ADAMInstanceNotFoundInConfigSet , context.Name));
+                throw new ActiveDirectoryOperationException(SR.Format(SR.ADAMInstanceNotFoundInConfigSet , context.Name));
             }
 
             try
@@ -146,7 +143,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch (ActiveDirectoryObjectNotFoundException)
             {
                 // this is the case where the context is a config set and we could not find an ADAM instance in that config set
-                throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.ADAMInstanceNotFoundInConfigSet , context.Name));
+                throw new ActiveDirectoryOperationException(SR.Format(SR.ADAMInstanceNotFoundInConfigSet , context.Name));
             }
 
             try

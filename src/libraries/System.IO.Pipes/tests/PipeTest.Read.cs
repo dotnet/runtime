@@ -16,6 +16,8 @@ namespace System.IO.Pipes.Tests
     /// </summary>
     public abstract partial class PipeTest_Read : PipeTestBase
     {
+        public virtual bool SupportsBidirectionalReadingWriting => false;
+
         [Fact]
         public void ReadWithNullBuffer_Throws_ArgumentNullException()
         {
@@ -117,8 +119,13 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        public virtual void WriteToReadOnlyPipe_Throws_NotSupportedException()
+        public void WriteToReadOnlyPipe_Throws_NotSupportedException()
         {
+            if (SupportsBidirectionalReadingWriting)
+            {
+                return;
+            }
+
             using (ServerClientPair pair = CreateServerClientPair())
             {
                 PipeStream pipe = pair.readablePipe;

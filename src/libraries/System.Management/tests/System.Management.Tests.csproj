@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{5456707C-489E-4562-846E-B9598569F6BE}</ProjectGuid>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="MofHelpers\MofCollection.cs" />
+    <Compile Include="MofHelpers\MofFixture.cs" />
+    <Compile Include="System\Management\ManagementClassTestsMofRequired.cs" />
+    <Compile Include="System\Management\ManagementClassTests.cs" />
+    <Compile Include="System\Management\ManagementDateTimeConverterTests.cs" />
+    <Compile Include="System\Management\ManagementEventWatcherTests.cs" />
+    <Compile Include="System\Management\ManagementObjectSearcherTests.cs" />
+    <Compile Include="System\Management\ManagementObjectSearcherTestsMofRequired.cs" />
+    <Compile Include="System\Management\ManagementObjectTests.cs" />
+    <Compile Include="System\Management\SelectQueryTests.cs" />
+    <Compile Include="WmiTestHelper.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\WmiEBvt.mof">
+      <LogicalName>WmiEBvt.mof</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\CleanUp.mof">
+      <LogicalName>CleanUp.mof</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

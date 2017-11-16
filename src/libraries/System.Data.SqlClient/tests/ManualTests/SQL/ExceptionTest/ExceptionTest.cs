@@ -148,7 +148,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             VerifyConnectionFailure<SqlException>(() => GenerateConnectionException(badBuilder.ConnectionString), errorMessage, (ex) => VerifyException(ex, 1, 18456, 1, 14));
 
             // tests incorrect database name - exception thrown from adapter
-            badBuilder = new SqlConnectionStringBuilder(builder.ConnectionString) { InitialCatalog = "NotADatabase" };
+            // (Forcing Pooling here, so that differing ClientConnectionId's in the exceptions won't make the test fail
+            // in CheckThatExceptionsAreDistinctButHaveSameData)
+            badBuilder = new SqlConnectionStringBuilder(builder.ConnectionString) { InitialCatalog = "NotADatabase", Pooling = true };
             errorMessage = string.Format(CultureInfo.InvariantCulture, "Cannot open database \"{0}\" requested by the login. The login failed.", badBuilder.InitialCatalog);
             SqlException firstAttemptException = VerifyConnectionFailure<SqlException>(() => GenerateConnectionException(badBuilder.ConnectionString), errorMessage, (ex) => VerifyException(ex, 2, 4060, 1, 11));
 

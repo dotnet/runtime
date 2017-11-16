@@ -1867,7 +1867,7 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Generates a <see cref="XElement"/> from its XML respresentation.
+        /// Generates a <see cref="XElement"/> from its XML representation.
         /// </summary>
         /// <param name="reader">
         /// The <see cref="XmlReader"/> stream from which the <see cref="XElement"/>

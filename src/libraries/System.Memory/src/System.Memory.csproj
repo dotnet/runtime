@@ -7,8 +7,9 @@
     <CLSCompliant>false</CLSCompliant>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'">true</IsPartialFacadeAssembly>
+    <DefineConstants Condition="'$(IsPartialFacadeAssembly)' != 'true'">$(DefineConstants);netstandard</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.0'">$(DefineConstants);netstandard10</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.1'">$(DefineConstants);netstandard11</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
@@ -16,36 +17,125 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.0-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.0-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="System\SpanExtensions.cs" />
+    <Compile Include="System\MemoryExtensions.cs" />
     <Compile Include="System\SpanHelpers.T.cs" />
     <Compile Include="System\SpanHelpers.byte.cs" />
+    <Compile Include="System\ThrowHelper.cs" />
+    <Compile Include="System\Buffers\OperationStatus.cs" />
+    <Compile Include="System\Buffers\Binary\Reader.cs" />
+    <Compile Include="System\Buffers\Binary\ReaderBigEndian.cs" />
+    <Compile Include="System\Buffers\Binary\ReaderLittleEndian.cs" />
+    <Compile Include="System\Buffers\Binary\Writer.cs" />
+    <Compile Include="System\Buffers\Binary\WriterBigEndian.cs" />
+    <Compile Include="System\Buffers\Binary\WriterLittleEndian.cs" />
+    <Compile Include="System\Buffers\Text\Base64Decoder.cs" />
+    <Compile Include="System\Buffers\Text\Base64Encoder.cs" />
   </ItemGroup>
+
+  <!-- Utf8 Formatter/Parser -->
+  <ItemGroup>
+    <Compile Include="System\Buffers\StandardFormat.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Constants.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Formatter\FormattingHelpers.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Boolean.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.G.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.O.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.R.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.L.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Decimal.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Decimal.E.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Decimal.F.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Decimal.G.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Float.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Guid.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Signed.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Signed.D.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Signed.N.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Unsigned.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Unsigned.D.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Unsigned.N.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Unsigned.X.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.TimeSpan.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Parser\ParserHelpers.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Boolean.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Date.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Date.Default.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Date.G.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Date.Helpers.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Date.O.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Date.R.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Decimal.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Float.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Guid.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Signed.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Signed.D.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Signed.N.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Unsigned.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Unsigned.D.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Unsigned.N.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Unsigned.X.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Number.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpan.BigG.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpan.C.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpan.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpan.LittleG.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpanSplitter.cs" />
+  </ItemGroup>
+
+  <!-- Double/Decimal format/parser logic copied (almost verbatim) over from CoreRT -->
+  <ItemGroup>
+    <Compile Include="System\Number\Decimal.DecCalc.cs" />
+    <Compile Include="System\Number\Number.cs" />
+    <Compile Include="System\Number\Number.FormatAndParse.cs" />
+    <Compile Include="System\Number\Number.NumberBuffer.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Common\src\System\MutableDecimal.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="System\ReadOnlySpan.cs" />
     <Compile Include="System\Span.cs" />
     <Compile Include="System\SpanDebugView.cs" />
-    <Compile Include="System\SpanExtensions.Portable.cs" />
+    <Compile Include="System\MemoryExtensions.Portable.cs" />
     <Compile Include="System\SpanHelpers.cs" />
     <Compile Include="System\Pinnable.cs" />
-    <Compile Include="System\ThrowHelper.cs" />
     <Compile Include="System\SpanHelpers.Clear.cs" />
+    <Compile Include="System\Memory.cs" />
+    <Compile Include="System\MemoryDebugView.cs" />
+    <Compile Include="System\ReadOnlyMemory.cs" />
+    <Compile Include="System\Buffers\IRetainable.cs" />
+    <Compile Include="System\Buffers\MemoryHandle.cs" />
+    <Compile Include="System\Buffers\OwnedMemory.cs" />
+    <Compile Include="System\Runtime\InteropServices\MemoryMarshal.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Common or Common-branched source files -->
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
+      <Link>Common\System\NotImplemented.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Globalization" />
     <Reference Include="System.Reflection" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
-    <Reference Condition="'$(TargetGroup)' != 'netstandard1.0'" Include="System.Numerics.Vectors" />
-    <Reference Condition="'$(TargetGroup)' != 'netstandard1.0'" Include="System.Runtime.CompilerServices.Unsafe" />
-    <ProjectReference Condition="'$(TargetGroup)' == 'netstandard1.0'" Include="..\..\System.Runtime.CompilerServices.Unsafe\ref\System.Runtime.CompilerServices.Unsafe.csproj" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
+    <Reference Condition="'$(TargetGroup)' != 'netstandard1.1'" Include="System.Numerics.Vectors" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
-    <Compile Include="System\SpanExtensions.Fast.cs" />
+    <Compile Include="System\MemoryExtensions.Fast.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />

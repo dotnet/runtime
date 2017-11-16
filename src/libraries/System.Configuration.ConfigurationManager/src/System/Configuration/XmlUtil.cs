@@ -20,7 +20,7 @@ namespace System.Configuration
     //      * Method to copy a configuration section to a string.
     //      * Methods to format a string of XML.
     //
-    // Errors found during read are accumlated in a ConfigurationSchemaErrors object.
+    // Errors found during read are accumulated in a ConfigurationSchemaErrors object.
     internal sealed class XmlUtil : IDisposable, IConfigErrorInfo
     {
         private const int MaxLineWidth = 60;

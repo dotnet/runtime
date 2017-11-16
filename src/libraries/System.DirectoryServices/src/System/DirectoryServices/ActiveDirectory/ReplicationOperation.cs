@@ -2,26 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+using System.Collections;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Runtime.InteropServices;
-    using System.Collections;
-    using System.Diagnostics;
-
     public class ReplicationOperation
     {
-        private DateTime _timeEnqueued;
-        private int _serialNumber;
-        private int _priority;
-        private ReplicationOperationType _operationType;
-        private string _namingContext;
-        private string _dsaDN;
-        private Guid _uuidDsaObjGuid;
+        private readonly string _dsaDN;
 
-        private DirectoryServer _server = null;
+        private readonly DirectoryServer _server = null;
         private string _sourceServer = null;
-        private Hashtable _nameTable = null;
+        private readonly Hashtable _nameTable = null;
 
         internal ReplicationOperation(IntPtr addr, DirectoryServer server, Hashtable table)
         {
@@ -29,69 +21,39 @@ namespace System.DirectoryServices.ActiveDirectory
             Marshal.PtrToStructure(addr, operation);
 
             // get the enqueued time
-            _timeEnqueued = DateTime.FromFileTime(operation.ftimeEnqueued);
+            TimeEnqueued = DateTime.FromFileTime(operation.ftimeEnqueued);
 
             // get the operation identifier
-            _serialNumber = operation.ulSerialNumber;
+            OperationNumber = operation.ulSerialNumber;
 
             // get the priority
-            _priority = operation.ulPriority;
+            Priority = operation.ulPriority;
 
             // get the operation type
-            _operationType = operation.OpType;
+            OperationType = operation.OpType;
 
             // get the partition name
-            _namingContext = Marshal.PtrToStringUni(operation.pszNamingContext);
+            PartitionName = Marshal.PtrToStringUni(operation.pszNamingContext);
 
             // get the dsaDN
             _dsaDN = Marshal.PtrToStringUni(operation.pszDsaDN);
 
             // get the dsaobject guid
-            _uuidDsaObjGuid = operation.uuidDsaObjGuid;
+            SourceServerGuid = operation.uuidDsaObjGuid;
 
             _server = server;
             _nameTable = table;
         }
 
-        public DateTime TimeEnqueued
-        {
-            get
-            {
-                return _timeEnqueued;
-            }
-        }
+        public DateTime TimeEnqueued { get; }
 
-        public int OperationNumber
-        {
-            get
-            {
-                return _serialNumber;
-            }
-        }
+        public int OperationNumber { get; }
 
-        public int Priority
-        {
-            get
-            {
-                return _priority;
-            }
-        }
+        public int Priority { get; }
 
-        public ReplicationOperationType OperationType
-        {
-            get
-            {
-                return _operationType;
-            }
-        }
+        public ReplicationOperationType OperationType { get; }
 
-        public string PartitionName
-        {
-            get
-            {
-                return _namingContext;
-            }
-        }
+        public string PartitionName { get; }
 
         public string SourceServer
         {
@@ -116,12 +78,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        private Guid SourceServerGuid
-        {
-            get
-            {
-                return _uuidDsaObjGuid;
-            }
-        }
+        private Guid SourceServerGuid { get; }
     }
 }

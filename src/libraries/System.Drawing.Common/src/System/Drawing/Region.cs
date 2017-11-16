@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing
 {
-    public sealed class Region : MarshalByRefObject, IDisposable
+    public sealed partial class Region : MarshalByRefObject, IDisposable
     {
 #if FINALIZATION_WATCH
         private string allocationSite = Graphics.GetAllocationStack();
@@ -29,7 +29,7 @@ namespace System.Drawing
         public Region(RectangleF rect)
         {
             IntPtr region = IntPtr.Zero;
-            GPRECTF gprectf = rect.ToGPRECTF();
+            var gprectf = new GPRECTF(rect);
             int status = SafeNativeMethods.Gdip.GdipCreateRegionRect(ref gprectf, out region);
             SafeNativeMethods.Gdip.CheckStatus(status);
 
@@ -156,7 +156,7 @@ namespace System.Drawing
 
         public void Intersect(RectangleF rect)
         {
-            GPRECTF gprectf = rect.ToGPRECTF();
+            var gprectf = new GPRECTF(rect);
             int status = SafeNativeMethods.Gdip.GdipCombineRegionRect(new HandleRef(this, _nativeRegion), ref gprectf, CombineMode.Intersect);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
@@ -188,17 +188,6 @@ namespace System.Drawing
 
             int status = SafeNativeMethods.Gdip.GdipCombineRegionRegion(new HandleRef(this, _nativeRegion), new HandleRef(region, region._nativeRegion), CombineMode.Intersect);
             SafeNativeMethods.Gdip.CheckStatus(status);
-        }
-
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
-        public void ReleaseHrgn(IntPtr regionHandle)
-        {
-            if (regionHandle == IntPtr.Zero)
-            {
-                throw new ArgumentNullException(nameof(regionHandle));
-            }
-
-            SafeNativeMethods.IntDeleteObject(new HandleRef(this, regionHandle));
         }
 
         public void Union(RectangleF rect)
@@ -313,7 +302,7 @@ namespace System.Drawing
 
         public void Complement(RectangleF rect)
         {
-            GPRECTF gprectf = rect.ToGPRECTF();
+            var gprectf = new GPRECTF(rect);
             int status = SafeNativeMethods.Gdip.GdipCombineRegionRect(new HandleRef(this, _nativeRegion), ref gprectf, CombineMode.Complement);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
@@ -561,7 +550,7 @@ namespace System.Drawing
                 var rectangles = new RectangleF[count];
                 for (int index = 0; index < count; index++)
                 {
-                    gprectf = (GPRECTF)UnsafeNativeMethods.PtrToStructure((IntPtr)(checked((long)memoryRects + rectsize * index)), typeof(GPRECTF));
+                    gprectf = (GPRECTF)Marshal.PtrToStructure((IntPtr)(checked((long)memoryRects + rectsize * index)), typeof(GPRECTF));
                     rectangles[index] = gprectf.ToRectangleF();
                 }
 

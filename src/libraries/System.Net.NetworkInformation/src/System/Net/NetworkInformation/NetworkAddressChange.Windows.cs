@@ -40,14 +40,6 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        internal static bool CanListenForNetworkChanges
-        {
-            get
-            {
-                return true;
-            }
-        }
-
         internal static class AvailabilityChangeListener
         {
             private static readonly object s_syncObject = new object();

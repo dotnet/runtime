@@ -148,6 +148,15 @@ namespace System.Data.SqlClient
             p.SqlDbType = (SqlDbType)valueType;
             p.Offset = 0;
 
+            if ((p.SqlDbType == SqlDbType.Udt) && !p.SourceColumnNullMapping)
+            {
+                p.UdtTypeName = datarow["DataTypeName"] as string;
+            }
+            else
+            {
+                p.UdtTypeName = string.Empty;
+            }
+
             object bvalue = datarow[SchemaTableColumn.NumericPrecision];
             if (DBNull.Value != bvalue)
             {

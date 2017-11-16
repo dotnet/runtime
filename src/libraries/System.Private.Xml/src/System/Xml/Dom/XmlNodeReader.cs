@@ -550,7 +550,7 @@ namespace System.Xml
         }
 
         //The function has to be used in pair with ResetMove when the operation fails after LogMove() is
-        //    called because it relies on the values of nOrigLevel, logNav and nOrigAttrInd to be acurate.
+        //    called because it relies on the values of nOrigLevel, logNav and nOrigAttrInd to be accurate.
         public void RollBackMove(ref int level)
         {
             _curNode = _logNode;

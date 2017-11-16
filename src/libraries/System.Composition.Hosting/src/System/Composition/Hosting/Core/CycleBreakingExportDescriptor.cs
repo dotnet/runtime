@@ -41,7 +41,10 @@ namespace System.Composition.Hosting.Core
 
         private object Activate(LifetimeContext context, CompositionOperation operation)
         {
-            Assumes.IsTrue(_exportDescriptor.IsValueCreated, "Activation in progress before all descriptors fully initialized.");
+            if (!_exportDescriptor.IsValueCreated)
+            {
+                throw ThrowHelper.NotImplemented_MetadataCycles();
+            }
 
             Debug.WriteLine("[System.Composition] Activating via cycle-breaking proxy.");
             return _exportDescriptor.Value.Activator(context, operation);

@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace System.Reflection.Metadata
 {
-    public struct MethodSpecification
+    public readonly struct MethodSpecification
     {
         private readonly MetadataReader _reader;
 

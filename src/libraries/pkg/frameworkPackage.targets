@@ -6,7 +6,7 @@
     <PreventImplementationReference Condition="'$(PackageTargetRuntime)' != ''">true</PreventImplementationReference>
 
     <NETStandardVersion Condition="'$(NETStandardVersion)' == ''">2.0</NETStandardVersion>
-    <NETStandardPackageRefPath Condition="'$(NETStandardPackageRefPath)' == ''">$(PackagesDir)$(NETStandardPackageId.ToLower())\$(NETStandardPackageVersion)\build\netstandard$(NETStandardVersion)\ref</NETStandardPackageRefPath>
+    <NETStandardPackageRefPath Condition="'$(NETStandardPackageRefPath)' == ''">$(PackagesDir)$(NETStandardLibraryPackageId.ToLower())\$(NETStandardLibraryPackageVersion)\build\netstandard$(NETStandardVersion)\ref</NETStandardPackageRefPath>
 
     <IncludeReferenceFiles Condition="'$(IncludeReferenceFiles)' == '' AND '$(PackageTargetRuntime)' == ''">true</IncludeReferenceFiles>
     <IncludeLibFiles Condition="'$(IncludeLibFiles)' == '' AND '$(PackageTargetRuntime)' != ''">true</IncludeLibFiles>
@@ -30,7 +30,7 @@
     <Dependency Include="@(_buildRIDWithMetadata->'runtime.%(Identity).$(Id)')" />
 
     <Dependency Include="Microsoft.NETCore.Platforms">
-      <Version>$(PlatformPackageVersion)</Version>
+      <Version>$(MicrosoftNETCorePlatformsPackageVersion)</Version>
       <TargetFramework>$(TargetFramework)</TargetFramework>
     </Dependency>
 
@@ -54,7 +54,7 @@
     <!-- force a missing file if native build is absent -->
     <NativeFile Include="$(NativeBinDir)/MISSING_NATIVE_BUILD" Condition="'@(NativeFile)' == ''" />
   </ItemGroup>
-  
+
   <Target Name="_CheckForFiles">
     <Error Condition="'$(IncludeReferenceFiles)' == 'true' AND '@(RefFile)' == ''"
            Text="IncludeReferenceFiles was specified but no file props were found in '$(RefBinDir)'" />
@@ -63,7 +63,7 @@
     <Error Condition="'$(IncludeNativeFiles)' == 'true' AND '@(NativeFile)' == ''"
            Text="IncludeNativeFiles was specified but no files were found in '$(NativeBinDir)'" />
   </Target>
-  
+
   <Target Name="IncludeFiles">
     <PropertyGroup>
       <_projectDirLength>$(ProjectDir.Length)</_projectDirLength>
@@ -74,7 +74,7 @@
       <File Include="@(RefFile)">
         <TargetPath Condition="'%(RefFile.TargetPath)' == ''">$(RefFileTargetPath)%(RefFile.SubFolder)</TargetPath>
       </File>
-      
+
       <!-- Include lib -->
       <File Include="@(LibFile)">
         <TargetPath Condition="'%(LibFile.TargetPath)' == '' ">$(LibFileTargetPath)%(LibFile.SubFolder)</TargetPath>
@@ -107,8 +107,8 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="VerifyClosure" 
-          DependsOnTargets="GetClosureFiles" 
+  <Target Name="VerifyClosure"
+          DependsOnTargets="GetClosureFiles"
           AfterTargets="Build"
           Inputs="%(ClosureFile.FileSet)"
           Outputs="batching-on-FileSet-metadata">
@@ -127,13 +127,19 @@
 
   </Target>
 
-  <Target Name="VerifyDuplicateTypes" 
-          DependsOnTargets="GetClosureFiles" 
+  <Target Name="VerifyDuplicateTypes"
+          DependsOnTargets="GetClosureFiles"
           AfterTargets="Build"
           Inputs="%(ClosureFile.FileSet)"
           Outputs="batching-on-FileSet-metadata">
+    <PropertyGroup>
+      <_fileSet>%(ClosureFile.FileSet)</_fileSet>
+    </PropertyGroup>
     <ItemGroup>
       <_dupTypeFileName Include="@(ClosureFile->'%(FileName)')">
+        <Original>%(Identity)</Original>
+      </_dupTypeFileName>
+      <_dupTypeFileName Include="@(FrameworkClosureFile->'%(FileName)')" Exclude="@(_dupTypeFileName)" Condition="'$(_fileSet)' == '%(FrameworkClosureFile.FileSet)'">
         <Original>%(Identity)</Original>
       </_dupTypeFileName>
       <_dupTypeFileNamesFiltered Include="@(_dupTypeFileName)" Exclude="@(ExcludeFromDuplicateTypes)"/>
@@ -146,8 +152,8 @@
 
   </Target>
 
-  <Target Name="VerifyNETStandard" 
-          DependsOnTargets="GetClosureFiles" 
+  <Target Name="VerifyNETStandard"
+          DependsOnTargets="GetClosureFiles"
           AfterTargets="Build"
           Inputs="%(ClosureFile.FileSet)"
           Outputs="batching-on-FileSet-metadata">
@@ -159,6 +165,9 @@
     <ItemGroup>
       <_NETStandardFile Include="$(NETStandardPackageRefPath)\*.dll" />
 
+      <!-- Suppress errors caused by removing S.CM.C shim from inbox -->
+      <SuppressNETStandardMissingFile Include="System.ComponentModel.Composition" />
+
       <_NETStandardMissingFile Include="@(_NETStandardFile->'%(FileName)')" Exclude="@(ClosureFile->'%(FileName)')" />
       <_NETStandardMissingFileError Include="@(_NETStandardMissingFile)" Exclude="@(SuppressNETStandardMissingFile)" />
       <_NETStandardSuppressedMissingFile Include="@(_NETStandardMissingFile)" Exclude="@(_NETStandardMissingFileError)" />
@@ -167,8 +176,8 @@
     <Error Condition="'@(_NETStandardFile)' == ''"
            Text="Could not locate NETStandard package content at '$(NETStandardPackageRefPath)'" />
 
-    <Message Condition="'@(_NETStandardSuppressedMissingFile)' != ''" Text="Files'@(_NETStandardSuppressedMissingFile)' are part of '$(NETStandardPackageId)' but missing from this package's $(_fileSet) files.  This error has been suppressed." />
-    <Error Condition="'@(_NETStandardMissingFileError)' != ''" Text="Files '@(_NETStandardMissingFileError)' are part of '$(NETStandardPackageId)' but missing from this package's $(_fileSet) files." />
+    <Message Condition="'@(_NETStandardSuppressedMissingFile)' != ''" Text="Files'@(_NETStandardSuppressedMissingFile)' are part of '$(NETStandardLibraryPackageId)' but missing from this package's $(_fileSet) files.  This error has been suppressed." />
+    <Error Condition="'@(_NETStandardMissingFileError)' != ''" Text="Files '@(_NETStandardMissingFileError)' are part of '$(NETStandardLibraryPackageId)' but missing from this package's $(_fileSet) files." />
   </Target>
 
   <Target Name="GetSymbolPackageFiles" BeforeTargets="GetPackageFiles">

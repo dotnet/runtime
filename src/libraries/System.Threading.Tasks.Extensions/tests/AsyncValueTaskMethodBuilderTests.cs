@@ -83,36 +83,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task AwaitOnCompleted_InvokesStateMachineMethods(bool awaitUnsafe)
-        {
-            AsyncValueTaskMethodBuilder<int> b = ValueTask<int>.CreateAsyncMethodBuilder();
-            var ignored = b.Task;
-
-            var callbackCompleted = new TaskCompletionSource<bool>();
-            IAsyncStateMachine foundSm = null;
-            var dsm = new DelegateStateMachine
-            {
-                MoveNextDelegate = () => callbackCompleted.SetResult(true),
-                SetStateMachineDelegate = sm => foundSm = sm
-            };
-
-            TaskAwaiter t = Task.CompletedTask.GetAwaiter();
-            if (awaitUnsafe)
-            {
-                b.AwaitUnsafeOnCompleted(ref t, ref dsm);
-            }
-            else
-            {
-                b.AwaitOnCompleted(ref t, ref dsm);
-            }
-
-            await callbackCompleted.Task;
-            Assert.Equal(dsm, foundSm);
-        }
-
-        [Theory]
         [InlineData(1, false)]
         [InlineData(2, false)]
         [InlineData(1, true)]
@@ -144,11 +114,11 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22506", TargetFrameworkMonikers.UapAot)]
         public void SetStateMachine_InvalidArgument_ThrowsException()
         {
             AsyncValueTaskMethodBuilder<int> b = ValueTask<int>.CreateAsyncMethodBuilder();
             AssertExtensions.Throws<ArgumentNullException>("stateMachine", () => b.SetStateMachine(null));
-            b.SetStateMachine(new DelegateStateMachine());
         }
 
         [Fact]
@@ -213,8 +183,7 @@ namespace System.Threading.Tasks.Tests
             internal Action MoveNextDelegate;
             public void MoveNext() => MoveNextDelegate?.Invoke();
 
-            internal Action<IAsyncStateMachine> SetStateMachineDelegate;
-            public void SetStateMachine(IAsyncStateMachine stateMachine) => SetStateMachineDelegate?.Invoke(stateMachine);
+            public void SetStateMachine(IAsyncStateMachine stateMachine) { }
         }
     }
 }

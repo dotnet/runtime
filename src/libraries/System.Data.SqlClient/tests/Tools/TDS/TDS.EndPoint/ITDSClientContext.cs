@@ -85,7 +85,7 @@ namespace Microsoft.SqlServer.TDS.EndPoint
         string Query { get; set; }
 
         /// <summary>
-        /// Respose to the query
+        /// Response to the query
         /// </summary>
         IList<object[]> QueryResponse { get; set; }
 

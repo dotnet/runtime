@@ -1,0 +1,6 @@
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library>
+    <!-- Needed because of theory data which causes xunit to reflect on its ToString() -->
+    <Type Name="System.Text.UTF32Encoding" Dynamic="Required Public" />
+  </Library>
+</Directives>

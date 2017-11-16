@@ -19,7 +19,7 @@ namespace System.Threading.Tasks.Dataflow
 {
     /// <summary>Provides a container of data attributes for passing between dataflow blocks.</summary>
     [DebuggerDisplay("Id = {Id}")]
-    public struct DataflowMessageHeader : IEquatable<DataflowMessageHeader>
+    public readonly struct DataflowMessageHeader : IEquatable<DataflowMessageHeader>
     {
         /// <summary>The message ID. Needs to be unique within the source.</summary>
         private readonly long _id;

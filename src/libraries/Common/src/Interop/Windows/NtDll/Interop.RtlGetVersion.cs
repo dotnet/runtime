@@ -10,7 +10,7 @@ internal partial class Interop
 {
     internal partial class NtDll
     {
-        [DllImport(Libraries.NtDll)]
+        [DllImport(Libraries.NtDll, ExactSpelling=true)]
         private static extern int RtlGetVersion(out RTL_OSVERSIONINFOEX lpVersionInformation);
 
         internal static string RtlGetVersion()

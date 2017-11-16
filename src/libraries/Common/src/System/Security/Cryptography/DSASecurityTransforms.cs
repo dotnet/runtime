@@ -176,10 +176,10 @@ namespace System.Security.Cryptography
                     return Interop.AppleCrypto.ImportEphemeralKey(blob, hasPrivateKey);
                 }
 
-                public override byte[] CreateSignature(byte[] hash)
+                public override byte[] CreateSignature(byte[] rgbHash)
                 {
-                    if (hash == null)
-                        throw new ArgumentNullException(nameof(hash));
+                    if (rgbHash == null)
+                        throw new ArgumentNullException(nameof(rgbHash));
 
                     SecKeyPair keys = GetKeys();
 
@@ -188,7 +188,7 @@ namespace System.Security.Cryptography
                         throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
                     }
 
-                    byte[] derFormatSignature = Interop.AppleCrypto.GenerateSignature(keys.PrivateKey, hash);
+                    byte[] derFormatSignature = Interop.AppleCrypto.GenerateSignature(keys.PrivateKey, rgbHash);
 
                     // Since the AppleCrypto implementation is limited to FIPS 186-2, signature field sizes
                     // are always 160 bits / 20 bytes (the size of SHA-1, and the only legal length for Q).
@@ -208,6 +208,11 @@ namespace System.Security.Cryptography
                     if (signature == null)
                         throw new ArgumentNullException(nameof(signature));
 
+                    return VerifySignature((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
+                }
+
+                public override bool VerifySignature(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
+                {
                     byte[] derFormatSignature = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(signature);
 
                     return Interop.AppleCrypto.VerifySignature(
@@ -227,10 +232,11 @@ namespace System.Security.Cryptography
                     return AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
                 }
 
-                protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
-                {
-                    return AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
-                }
+                protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
+                    AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
+
+                protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
+                    AsymmetricAlgorithmHelpers.TryHashData(source, destination, hashAlgorithm, out bytesWritten);
 
                 protected override void Dispose(bool disposing)
                 {

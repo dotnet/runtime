@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+      <CompileDependsOn>
+        GenerateThisAssemblyCs;
+        $(CompileDependsOn)
+      </CompileDependsOn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(IntermediateOutputPath)\ThisAssembly.cs"/>
+  </ItemGroup>
+
+  <Target Name="GenerateThisAssemblyCs">
+    <PropertyGroup>
+      <ThisAssemblyCsContents>
+using System%3B
+namespace Microsoft.XmlSerializer.Generator
+{
+    internal static class ThisAssembly
+    {
+        internal const string PackageVersion = "$(PackageVersion)"%3B
+        internal const string AssemblyVersion = "$(AssemblyVersion)"%3B
+        internal const string Version = "$(AssemblyFileVersion)"%3B
+        internal const string PreReleaseLabel = "$(PreReleaseLabel)"%3B
+        
+        internal static string InformationalVersion
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(PreReleaseLabel))
+                {
+                    return PackageVersion%3B
+                }
+                else
+                {
+                    return $"{PackageVersion}-{PreReleaseLabel}"%3B
+                }
+            }
+        }
+    }
+}
+      </ThisAssemblyCsContents>
+    </PropertyGroup>
+
+    <!-- Write ThisAssembly.cs if this is a new version number, or it is missing -->
+    <WriteLinesToFile
+      File="$(IntermediateOutputPath)\ThisAssembly.cs"
+      Lines="$(ThisAssemblyCsContents)"
+      Overwrite="true"
+      Encoding="Unicode"/>
+  </Target>
+</Project>

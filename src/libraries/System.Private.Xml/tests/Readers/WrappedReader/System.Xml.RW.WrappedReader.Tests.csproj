@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{1C8F67D6-1953-49D3-B716-F298883A79C6}</ProjectGuid>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -12,6 +11,7 @@
   <ItemGroup>
     <Compile Include="InheritedCases.cs" />
     <Compile Include="WrappedReaderTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Xml\DisableParallelization.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Xml\ModuleCore\ModuleCore.csproj" />

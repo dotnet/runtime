@@ -22,7 +22,7 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(path));
 
             if (HasIllegalCharacters(path))
-                throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidPathChars, path), nameof(path));
         }
 
 

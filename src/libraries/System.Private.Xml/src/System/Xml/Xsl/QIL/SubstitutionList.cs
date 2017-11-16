@@ -24,7 +24,7 @@ namespace System.Xml.Xsl.Qil
         }
 
         /// <summary>
-        /// Add a substituion pair
+        /// Add a substitution pair
         /// </summary>
         /// <param name="find">a node to be replaced</param>
         /// <param name="replace">its replacement</param>
@@ -35,7 +35,7 @@ namespace System.Xml.Xsl.Qil
         }
 
         /// <summary>
-        /// Remove the last a substituion pair
+        /// Remove the last a substitution pair
         /// </summary>
         public void RemoveLastSubstitutionPair()
         {

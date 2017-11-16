@@ -9,20 +9,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     [Flags]
     internal enum symbmask_t : long
     {
-        MASK_NamespaceSymbol = 1 << (int)SYMKIND.SK_NamespaceSymbol,
-        MASK_AssemblyQualifiedNamespaceSymbol = 1 << (int)SYMKIND.SK_AssemblyQualifiedNamespaceSymbol,
-        MASK_AggregateSymbol = 1 << (int)SYMKIND.SK_AggregateSymbol,
-        MASK_AggregateDeclaration = 1 << (int)SYMKIND.SK_AggregateDeclaration,
-        MASK_TypeParameterSymbol = 1 << (int)SYMKIND.SK_TypeParameterSymbol,
-        MASK_FieldSymbol = 1 << (int)SYMKIND.SK_FieldSymbol,
-        MASK_LocalVariableSymbol = 1 << (int)SYMKIND.SK_LocalVariableSymbol,
-        MASK_MethodSymbol = 1 << (int)SYMKIND.SK_MethodSymbol,
-        MASK_PropertySymbol = 1 << (int)SYMKIND.SK_PropertySymbol,
-        MASK_EventSymbol = 1 << (int)SYMKIND.SK_EventSymbol,
-        MASK_Scope = 1 << (int)SYMKIND.SK_Scope,
-        MASK_CachedNameSymbol = 1 << (int)SYMKIND.SK_CachedNameSymbol,
-        MASK_LambdaScope = 1 << (int)SYMKIND.SK_LambdaScope,
+        MASK_NamespaceSymbol = 1 << SYMKIND.SK_NamespaceSymbol,
+        MASK_AggregateSymbol = 1 << SYMKIND.SK_AggregateSymbol,
+        MASK_TypeParameterSymbol = 1 << SYMKIND.SK_TypeParameterSymbol,
+        MASK_FieldSymbol = 1 << SYMKIND.SK_FieldSymbol,
+        MASK_MethodSymbol = 1 << SYMKIND.SK_MethodSymbol,
+        MASK_PropertySymbol = 1 << SYMKIND.SK_PropertySymbol,
+        MASK_EventSymbol = 1 << SYMKIND.SK_EventSymbol,
         MASK_ALL = ~0,
-        LOOKUPMASK = (MASK_AssemblyQualifiedNamespaceSymbol | MASK_FieldSymbol | MASK_LocalVariableSymbol | MASK_MethodSymbol | MASK_PropertySymbol)
     }
 }

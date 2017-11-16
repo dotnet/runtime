@@ -33,19 +33,6 @@ namespace System.Xml
             _encoding = encoding;
         }
 
-        // Getting/Setting the Stream exists for fragmenting
-        public Stream Stream
-        {
-            get
-            {
-                return _stream;
-            }
-            set
-            {
-                _stream = value;
-            }
-        }
-
         // StreamBuffer/BufferOffset exists only for the BinaryWriter to fix up nodes
         public byte[] StreamBuffer
         {

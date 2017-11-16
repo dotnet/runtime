@@ -15,7 +15,7 @@ namespace System.SpanTests
 
             Span<byte> span = new Span<byte>(a);
             ReadOnlySpan<byte> slice = new ReadOnlySpan<byte>(a, 2, 0);
-            bool b = span.StartsWith(slice);
+            bool b = span.StartsWith<byte>(slice);
             Assert.True(b);
         }
 
@@ -24,7 +24,7 @@ namespace System.SpanTests
         {
             byte[] a = { 4, 5, 6 };
             Span<byte> span = new Span<byte>(a);
-            bool b = span.StartsWith(span);
+            bool b = span.StartsWith<byte>(span);
             Assert.True(b);
         }
 
@@ -34,7 +34,7 @@ namespace System.SpanTests
             byte[] a = { 4, 5, 6 };
             Span<byte> span = new Span<byte>(a, 0, 2);
             ReadOnlySpan<byte> slice = new ReadOnlySpan<byte>(a, 0, 3);
-            bool b = span.StartsWith(slice);
+            bool b = span.StartsWith<byte>(slice);
             Assert.False(b);
         }
 
@@ -44,7 +44,7 @@ namespace System.SpanTests
             byte[] a = { 4, 5, 6 };
             Span<byte> span = new Span<byte>(a, 0, 3);
             ReadOnlySpan<byte> slice = new ReadOnlySpan<byte>(a, 0, 2);
-            bool b = span.StartsWith(slice);
+            bool b = span.StartsWith<byte>(slice);
             Assert.True(b);
         }
 
@@ -55,7 +55,7 @@ namespace System.SpanTests
             byte[] b = { 4, 5, 6 };
             Span<byte> span = new Span<byte>(a, 0, 3);
             ReadOnlySpan<byte> slice = new ReadOnlySpan<byte>(b, 0, 3);
-            bool c = span.StartsWith(slice);
+            bool c = span.StartsWith<byte>(slice);
             Assert.True(c);
         }
 
@@ -77,7 +77,7 @@ namespace System.SpanTests
 
                     Span<byte> firstSpan = new Span<byte>(first);
                     ReadOnlySpan<byte> secondSpan = new ReadOnlySpan<byte>(second);
-                    bool b = firstSpan.StartsWith(secondSpan);
+                    bool b = firstSpan.StartsWith<byte>(secondSpan);
                     Assert.False(b);
                 }
             }
@@ -96,7 +96,7 @@ namespace System.SpanTests
                 second[length + 1] = 100;
                 Span<byte> span1 = new Span<byte>(first, 1, length);
                 ReadOnlySpan<byte> span2 = new ReadOnlySpan<byte>(second, 1, length);
-                bool b = span1.StartsWith(span2);
+                bool b = span1.StartsWith<byte>(span2);
                 Assert.True(b);
             }
         }

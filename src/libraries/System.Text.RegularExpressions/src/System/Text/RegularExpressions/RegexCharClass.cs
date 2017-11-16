@@ -1323,7 +1323,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Lower case mapping descriptor.
         /// </summary>
-        private struct LowerCaseMapping
+        private readonly struct LowerCaseMapping
         {
             internal LowerCaseMapping(char chMin, char chMax, int lcOp, int data)
             {
@@ -1359,7 +1359,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// A first/last pair representing a single range of characters.
         /// </summary>
-        private struct SingleRange
+        private readonly struct SingleRange
         {
             internal SingleRange(char first, char last)
             {

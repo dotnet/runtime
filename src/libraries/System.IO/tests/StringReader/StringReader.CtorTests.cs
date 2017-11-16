@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public class ReaderTests
+    public partial class StringReaderTests
     {
         [Fact]
         public static void StringReaderWithNullString()

@@ -34,7 +34,7 @@ using System.IO;
 
 namespace System.Data.Tests.SqlTypes
 {
-    public class SqlDecimalTest : IDisposable
+    public class SqlDecimalTest
     {
         private CultureInfo _originalCulture;
         private SqlDecimal _test1;
@@ -45,18 +45,11 @@ namespace System.Data.Tests.SqlTypes
 
         public SqlDecimalTest()
         {
-            _originalCulture = CultureInfo.CurrentCulture; ;
-            CultureInfo.CurrentCulture = new CultureInfo("en-US");
             _test1 = new SqlDecimal(6464.6464m);
             _test2 = new SqlDecimal(10000.00m);
             _test3 = new SqlDecimal(10000.00m);
             _test4 = new SqlDecimal(-6m);
             _test5 = new SqlDecimal(decimal.MaxValue);
-        }
-
-        public void Dispose()
-        {
-            CultureInfo.CurrentCulture = _originalCulture;
         }
 
         // Test constructor

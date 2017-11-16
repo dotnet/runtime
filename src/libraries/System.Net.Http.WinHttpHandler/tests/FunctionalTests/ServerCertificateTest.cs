@@ -111,14 +111,16 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        public async Task UseCallback_CallbackThrowsSpecificException_ThrowsInnerSpecificException()
+        public async Task UseCallback_CallbackThrowsSpecificException_SpecificExceptionPropagatesAsBaseException()
         {
             var handler = new WinHttpHandler();
             handler.ServerCertificateValidationCallback = CustomServerCertificateValidationCallback;
             using (var client = new HttpClient(handler))
             {
                 _validationCallbackHistory.ThrowException = true;
-                await Assert.ThrowsAsync<CustomException>(() => client.GetAsync(System.Net.Test.Common.Configuration.Http.SecureRemoteEchoServer));
+                HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() =>
+                    client.GetAsync(System.Net.Test.Common.Configuration.Http.SecureRemoteEchoServer));
+                Assert.True(ex.GetBaseException() is CustomException);
             }
         }
 

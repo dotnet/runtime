@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Reflection.PortableExecutable
 {
-    public struct CodeViewDebugDirectoryData
+    public readonly struct CodeViewDebugDirectoryData
     {
         /// <summary>
         /// GUID (Globally Unique Identifier) of the associated PDB.

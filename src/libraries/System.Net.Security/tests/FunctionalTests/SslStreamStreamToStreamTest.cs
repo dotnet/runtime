@@ -145,8 +145,8 @@ namespace System.Net.Security.Tests
         {
             VirtualNetwork network = new VirtualNetwork();
 
-            using (var clientStream = new VirtualNetworkStream(network, isServer:false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer:true))
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
             using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
             using (var serverSslStream = new SslStream(serverStream))
             {
@@ -232,8 +232,8 @@ namespace System.Net.Security.Tests
         {
             VirtualNetwork network = new VirtualNetwork();
 
-            using (var clientStream = new VirtualNetworkStream(network, isServer:false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer:true))
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
             using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
             using (var serverSslStream = new SslStream(serverStream))
             {
@@ -354,7 +354,7 @@ namespace System.Net.Security.Tests
             return expectedBuffer.SequenceEqual(actualBuffer);
         }
 
-        private bool AllowAnyServerCertificate(
+        protected bool AllowAnyServerCertificate(
             object sender,
             X509Certificate certificate,
             X509Chain chain,

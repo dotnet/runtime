@@ -80,7 +80,14 @@ namespace System.IO.Pipes.Tests
         /// <returns></returns>
         protected static string GetUniquePipeName()
         {
-            return Path.GetRandomFileName();
+            if (PlatformDetection.IsInAppContainer)
+            {
+                return @"LOCAL\" + Path.GetRandomFileName();
+            }
+            else
+            {
+                return Path.GetRandomFileName();
+            }
         }
 
         /// <summary>

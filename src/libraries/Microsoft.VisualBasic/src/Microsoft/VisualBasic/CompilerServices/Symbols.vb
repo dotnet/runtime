@@ -510,11 +510,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return method.GetGenericArguments
         End Function
 
-        Friend Shared Function GetTypeParameters(ByVal type As Type) As Type()
-            Debug.Assert(type.GetGenericTypeDefinition Is Nothing, "expected unbound generic type")
-            Return type.GetGenericArguments
-        End Function
-
         Friend Shared Function GetTypeArguments(ByVal type As Type) As Type()
             Debug.Assert(type.GetGenericTypeDefinition IsNot Nothing, "expected bound generic type")
             Return type.GetGenericArguments

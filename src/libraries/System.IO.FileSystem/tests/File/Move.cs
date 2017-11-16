@@ -43,7 +43,7 @@ namespace System.IO.Tests
             Assert.Throws<FileNotFoundException>(() => Move(Path.Combine(TestDirectory, GetTestFileName(), GetTestFileName()), testFile.FullName));
         }
 
-        [Theory MemberData(nameof(PathsWithInvalidCharacters))]
+        [Theory, MemberData(nameof(PathsWithInvalidCharacters))]
         public void PathWithIllegalCharacters(string invalidPath)
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
@@ -176,7 +176,6 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)]  // Path longer than max path limit
         public void OverMaxPathWorks_Windows()
         {
@@ -206,18 +205,17 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Path longer than max Windows path limit throws
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void LongPath()
         {
-            //Create a destination path longer than the traditional Windows limit of 256 characters
             string testFileSource = Path.Combine(TestDirectory, GetTestFileName());
             File.Create(testFileSource).Dispose();
 
             Assert.All(IOInputs.GetPathsLongerThanMaxLongPath(GetTestFilePath()), (path) =>
             {
-                Assert.Throws<PathTooLongException>(() => Move(testFileSource, path));
+                AssertExtensions.ThrowsAny<PathTooLongException, FileNotFoundException, DirectoryNotFoundException>(() => Move(testFileSource, path));
                 File.Delete(testFileSource);
-                Assert.Throws<PathTooLongException>(() => Move(path, testFileSource));
+                AssertExtensions.ThrowsAny<PathTooLongException, FileNotFoundException, DirectoryNotFoundException>(() => Move(path, testFileSource));
             });
         }
 
@@ -225,7 +223,7 @@ namespace System.IO.Tests
 
         #region PlatformSpecific
 
-        [Theory MemberData(nameof(PathsWithInvalidColons))]
+        [Theory, MemberData(nameof(PathsWithInvalidColons))]
         [PlatformSpecific(TestPlatforms.Windows)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Versions of netfx older than 4.6.2 throw an ArgumentException instead of NotSupportedException. Until all of our machines run netfx against the actual latest version, these will fail.")]
         public void WindowsPathWithIllegalColons(string invalidPath)

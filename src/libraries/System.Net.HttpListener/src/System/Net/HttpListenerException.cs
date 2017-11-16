@@ -8,6 +8,8 @@ using System.Runtime.Serialization;
 
 namespace System.Net
 {
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class HttpListenerException : Win32Exception
     {
         public HttpListenerException() : base(Marshal.GetLastWin32Error())
@@ -28,7 +30,7 @@ namespace System.Net
         protected HttpListenerException(SerializationInfo serializationInfo, StreamingContext streamingContext)
             : base(serializationInfo, streamingContext)
         {
-            throw new PlatformNotSupportedException();
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, NativeErrorCode.ToString() + ":" + Message);
         }
 
         // the base class returns the HResult with this property

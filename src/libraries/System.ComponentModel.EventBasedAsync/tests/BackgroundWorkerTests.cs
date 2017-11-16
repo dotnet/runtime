@@ -72,27 +72,21 @@ namespace System.ComponentModel.EventBasedAsync.Tests
         }
 
         [Fact]
-        public void RunWorkerAsync_NoOnWorkHandler_SetsResultToNull()
+        public async Task RunWorkerAsync_NoOnWorkHandler_SetsResultToNull()
         {
+            var tcs = new TaskCompletionSource<bool>();
             var backgroundWorker = new BackgroundWorker { WorkerReportsProgress = true };
-            bool isCompleted = false;
             backgroundWorker.RunWorkerCompleted += (sender, e) =>
             {
-                isCompleted = true;
                 Assert.Null(e.Result);
                 Assert.False(backgroundWorker.IsBusy);
+                tcs.SetResult(true);
             };
+
             backgroundWorker.RunWorkerAsync();
 
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
-            while (!isCompleted)
-            {
-                if (stopwatch.Elapsed > TimeSpan.FromSeconds(10))
-                {
-                    throw new Exception("The background worker never completed.");
-                }
-            }
+            await Task.WhenAny(tcs.Task, Task.Delay(TimeSpan.FromSeconds(10))); // Usually takes 100th of a sec
+            Assert.True(tcs.Task.IsCompleted);
         }
 
         #region TestCancelAsync

@@ -5,6 +5,8 @@
     <!-- Given that xunit packages bring with them part of the framework, we need to specify a runtime in order to get the assets
          The only asset that we copy which is RID-specific is sni.dll which is only used in windows, which is why we default to Windows as the RID -->
     <NugetRuntimeIdentifier>win10-$(ArchGroup)</NugetRuntimeIdentifier>
+    <!-- Use xunit for arm packages because of not providing armel package in win10 -->
+    <NugetRuntimeIdentifier Condition="'$(ArchGroup)' == 'armel'">win10-arm</NugetRuntimeIdentifier>
     <RidSpecificAssets>true</RidSpecificAssets>
     <OutputPath>$(RuntimePath)</OutputPath>
     <XUnitRunnerPackageId Condition="'$(TargetGroup)' != 'netfx'">xunit.console.netcore</XUnitRunnerPackageId>
@@ -13,6 +15,8 @@
     <NuGetTargetMonikerShort Condition="'$(TargetGroup)' == 'uapaot'">netstandard2.0</NuGetTargetMonikerShort>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == 'uap'">.NETStandard,Version=v2.0</NuGetTargetMoniker>
     <NuGetTargetMonikerShort Condition="'$(TargetGroup)' == 'uap'">netstandard2.0</NuGetTargetMonikerShort>
+    <!-- Don't warn if some dependencies were rolled forward -->
+    <NoWarn>$(NoWarn);NU1603</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="xunit.console.netcore">
@@ -46,6 +50,9 @@
     <PackageReference Include="Microsoft.3rdpartytools.MarkdownLog">
       <Version>0.10.0-alpha-experimental</Version>
     </PackageReference>
+    <PackageReference Condition="'$(TargetGroup)' != 'uapaot'" Include="Microsoft.DotNet.PlatformAbstractions">
+      <Version>$(MicrosoftDotNetPlatformAbstractionsPackageVersion)</Version>
+    </PackageReference>
     <PackageReference Include="CommandLineParser">
       <Version>2.1.1-beta</Version>
     </PackageReference>
@@ -59,7 +66,7 @@
       <Version>4.6.519</Version>
     </PackageReference>
     <PackageReference Include="ReportGenerator">
-      <Version>2.5.0</Version>
+      <Version>3.0.1</Version>
     </PackageReference>
     <PackageReference Include="System.IO.Compression.TestData">
       <Version>1.0.5-prerelease</Version>
@@ -74,7 +81,7 @@
       <Version>1.0.0-prerelease</Version>
     </PackageReference>
     <PackageReference Include="System.Drawing.Common.TestData">
-      <Version>1.0.2</Version>
+      <Version>1.0.6</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
@@ -83,6 +90,7 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
+    <PackageToInclude Include="Microsoft.DiaSymReader.Native"/>
     <PackageToInclude Include="xunit.abstractions"/>
     <PackageToInclude Include="xunit.assert"/>
     <PackageToInclude Include="xunit.extensibility.core"/>
@@ -90,11 +98,12 @@
     <PackageToInclude Include="xunit.runner.utility"/>
     <PackageToInclude Include="Microsoft.xunit.netcore.extensions"/>
     <PackageToInclude Include="Newtonsoft.Json"/>
+    <PackageToInclude Condition="'$(TargetGroup)' != 'uapaot'" Include="Microsoft.DotNet.PlatformAbstractions" />
     <PackageToInclude Include="$(XUnitRunnerPackageId)" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(TargetGroup)' == 'uap'">
-    <UAPToolsPackageVersion>1.0.13</UAPToolsPackageVersion>
+    <UAPToolsPackageVersion>1.0.17</UAPToolsPackageVersion>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetGroup)' == 'uap'">

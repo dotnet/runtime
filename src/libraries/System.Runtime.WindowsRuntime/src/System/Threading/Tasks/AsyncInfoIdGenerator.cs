@@ -20,7 +20,7 @@ namespace System.Threading.Tasks
 
         /// <summary>
         /// We want to avoid ending up with the same ID as a Windows-implemented async info.
-        /// At the same time we want to be reproducable. So we use a random generator with a fixed seed.
+        /// At the same time we want to be reproducible. So we use a random generator with a fixed seed.
         /// </summary>
         private static Random s_idGenerator = new Random(19830118);
 
@@ -44,7 +44,7 @@ namespace System.Threading.Tasks
         /// Initialises the specified <code>id</code> to a unique Id-value that can be used for an IAsyncInfo object under the
         /// assumption that another thread may also attempt to initialise <code>id</code>. The thread that changes <code>id</code>
         /// first from <code>AsyncInfoIdGenerator.InvalidId</code> to another value wins and all other threads will respect that
-        /// choice and leave <code>id</code> unchanged. The method returns the Id that was ageed upon by the race.
+        /// choice and leave <code>id</code> unchanged. The method returns the Id that was agreed upon by the race.
         /// </summary>
         /// <param name="id">The IAsyncInfo ID to initialise.</param>
         /// <returns>The unique value to which the specified reference target was initialised.</returns>

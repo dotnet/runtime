@@ -30,7 +30,7 @@ namespace System.Globalization.Tests
         public static string[] FrFRDayNames()
         {
 #if !uap
-            if (PlatformDetection.IsOSX && PlatformDetection.OSXKernelVersion < new Version(16, 0))
+            if (PlatformDetection.IsOSX && PlatformDetection.OSXVersion < new Version(10, 12))
             {
                 return new string[] { "Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi" };
             }
@@ -41,7 +41,7 @@ namespace System.Globalization.Tests
         public static string[] FrFRAbbreviatedDayNames()
         {
 #if !uap
-            if (PlatformDetection.IsOSX  && PlatformDetection.OSXKernelVersion < new Version(16, 0))
+            if (PlatformDetection.IsOSX  && PlatformDetection.OSXVersion < new Version(10, 12))
             {
                 return new string[] { "Dim.", "Lun.", "Mar.", "Mer.", "Jeu.", "Ven.", "Sam." };
             }

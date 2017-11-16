@@ -759,17 +759,6 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfListGeneric;
-        internal static Type TypeOfListGeneric
-        {
-            get
-            {
-                if (s_typeOfListGeneric == null)
-                    s_typeOfListGeneric = typeof(List<>);
-                return s_typeOfListGeneric;
-            }
-        }
-
         private static Type s_typeOfXmlElement;
         internal static Type TypeOfXmlElement
         {
@@ -855,8 +844,6 @@ namespace System.Runtime.Serialization
         #endregion
 
         private static Type s_typeOfScriptObject;
-        private static Func<object, string> s_serializeFunc;
-        private static Func<string, object> s_deserializeFunc;
 
         internal static ClassDataContract CreateScriptObjectClassDataContract()
         {
@@ -869,25 +856,6 @@ namespace System.Runtime.Serialization
             return s_typeOfScriptObject != null && s_typeOfScriptObject.IsAssignableFrom(type);
         }
 
-        internal static void SetScriptObjectJsonSerializer(Type typeOfScriptObject, Func<object, string> serializeFunc, Func<string, object> deserializeFunc)
-        {
-            Globals.s_typeOfScriptObject = typeOfScriptObject;
-            Globals.s_serializeFunc = serializeFunc;
-            Globals.s_deserializeFunc = deserializeFunc;
-        }
-
-        internal static string ScriptObjectJsonSerialize(object obj)
-        {
-            Debug.Assert(s_serializeFunc != null);
-            return Globals.s_serializeFunc(obj);
-        }
-
-        internal static object ScriptObjectJsonDeserialize(string json)
-        {
-            Debug.Assert(s_deserializeFunc != null);
-            return Globals.s_deserializeFunc(json);
-        }
-
         public const bool DefaultIsRequired = false;
         public const bool DefaultEmitDefaultValue = true;
         public const int DefaultOrder = 0;
@@ -896,7 +864,6 @@ namespace System.Runtime.Serialization
         //     instead of string comparison method calls in IL.)
         public static readonly string NewObjectId = string.Empty;
         public const string NullObjectId = null;
-        public const string SimpleSRSInternalsVisiblePattern = @"^[\s]*System\.Runtime\.Serialization[\s]*$";
         public const string FullSRSInternalsVisiblePattern = @"^[\s]*System\.Runtime\.Serialization[\s]*,[\s]*PublicKey[\s]*=[\s]*(?i:00240000048000009400000006020000002400005253413100040000010001008d56c76f9e8649383049f383c44be0ec204181822a6c31cf5eb7ef486944d032188ea1d3920763712ccb12d75fb77e9811149e6148e5d32fbaab37611c1878ddc19e20ef135d0cb2cff2bfec3d115810c3d9069638fe4be215dbf795861920e5ab6f7db2e2ceef136ac23d5dd2bf031700aec232f6c6b1c785b4305c123b37ab)[\s]*$";
         public const string Space = " ";
         public const string XsiPrefix = "i";

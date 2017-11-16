@@ -37,23 +37,15 @@ using System.IO;
 using System.Data.SqlTypes;
 using System.Globalization;
 using System.Text;
+using System.Diagnostics;
 
 namespace System.Data.Tests
 {
-    public class DataSetTest : DataSetAssertion, IDisposable
+    public class DataSetTest : RemoteExecutorTestBase
     {
-        private CultureInfo _currentCultureBackup;
-
         public DataSetTest()
         {
-            _currentCultureBackup = CultureInfo.CurrentCulture; ;
-            CultureInfo.CurrentCulture = new CultureInfo("fi-FI");
             MyDataSet.count = 0;
-        }
-
-        public void Dispose()
-        {
-            CultureInfo.CurrentCulture = _currentCultureBackup;
         }
 
         [Fact]
@@ -186,7 +178,7 @@ namespace System.Data.Tests
             TextWriter writer = new StringWriter();
             ds.WriteXmlSchema(writer);
 
-            string TextString = GetNormalizedSchema(writer.ToString());
+            string TextString = DataSetAssertion.GetNormalizedSchema(writer.ToString());
             //			string TextString = writer.ToString ();
 
             string substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
@@ -517,86 +509,94 @@ namespace System.Data.Tests
         [Fact]
         public void WriteXmlSchema()
         {
-            var ds = new DataSet();
-            ds.ReadXml(new StringReader(DataProvider.region));
-            TextWriter writer = new StringWriter();
-            ds.WriteXmlSchema(writer);
+            RemoteInvoke(() =>
+            {
+                CultureInfo.CurrentCulture = new CultureInfo("fi-FI");
+
+                var ds = new DataSet();
+                ds.ReadXml(new StringReader(DataProvider.region));
+                TextWriter writer = new StringWriter();
+                ds.WriteXmlSchema(writer);
 
 
-            string TextString = GetNormalizedSchema(writer.ToString());
-            //			string TextString = writer.ToString ();
+                string TextString = DataSetAssertion.GetNormalizedSchema(writer.ToString());
+                // string TextString = writer.ToString ();
 
-            string substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-            Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-16\"?>", substring);
+                string substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-16\"?>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-            // This is original DataSet.WriteXmlSchema() output
-            //			Assert.Equal ("<xs:schema id=\"Root\" xmlns=\"\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" xmlns:msdata=\"urn:schemas-microsoft-com:xml-msdata\">", substring);
-            Assert.Equal("<xs:schema id=\"Root\" xmlns:msdata=\"urn:schemas-microsoft-com:xml-msdata\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">", substring);
+                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                // This is original DataSet.WriteXmlSchema() output
+                // Assert.Equal ("<xs:schema id=\"Root\" xmlns=\"\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" xmlns:msdata=\"urn:schemas-microsoft-com:xml-msdata\">", substring);
+                Assert.Equal("<xs:schema id=\"Root\" xmlns:msdata=\"urn:schemas-microsoft-com:xml-msdata\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-            Assert.Equal("  <xs:element msdata:IsDataSet=\"true\" msdata:Locale=\"en-US\" name=\"Root\">", substring);
+                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                Assert.Equal("  <xs:element msdata:IsDataSet=\"true\" msdata:Locale=\"en-US\" name=\"Root\">", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-            Assert.Equal("    <xs:complexType>", substring);
+                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                Assert.Equal("    <xs:complexType>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-            Assert.Equal("      <xs:choice maxOccurs=\"unbounded\" minOccurs=\"0\">", substring);
+                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                Assert.Equal("      <xs:choice maxOccurs=\"unbounded\" minOccurs=\"0\">", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-            Assert.Equal("        <xs:element name=\"Region\">", substring);
+                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                Assert.Equal("        <xs:element name=\"Region\">", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-            Assert.Equal("          <xs:complexType>", substring);
+                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                Assert.Equal("          <xs:complexType>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-            Assert.Equal("            <xs:sequence>", substring);
+                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                Assert.Equal("            <xs:sequence>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-            // This is original DataSet.WriteXmlSchema() output
-            //			Assert.Equal ("              <xs:element name=\"RegionID\" type=\"xs:string\" minOccurs=\"0\" />", substring);
-            Assert.Equal("              <xs:element minOccurs=\"0\" name=\"RegionID\" type=\"xs:string\" />", substring);
+                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                // This is original DataSet.WriteXmlSchema() output
+                // Assert.Equal ("              <xs:element name=\"RegionID\" type=\"xs:string\" minOccurs=\"0\" />", substring);
+                Assert.Equal("              <xs:element minOccurs=\"0\" name=\"RegionID\" type=\"xs:string\" />", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-            // This is original DataSet.WriteXmlSchema() output
-            //			Assert.Equal ("              <xs:element name=\"RegionDescription\" type=\"xs:string\" minOccurs=\"0\" />", substring);
-            Assert.Equal("              <xs:element minOccurs=\"0\" name=\"RegionDescription\" type=\"xs:string\" />", substring);
+                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                // This is original DataSet.WriteXmlSchema() output
+                // Assert.Equal ("              <xs:element name=\"RegionDescription\" type=\"xs:string\" minOccurs=\"0\" />", substring);
+                Assert.Equal("              <xs:element minOccurs=\"0\" name=\"RegionDescription\" type=\"xs:string\" />", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-            Assert.Equal("            </xs:sequence>", substring);
+                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                Assert.Equal("            </xs:sequence>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-            Assert.Equal("          </xs:complexType>", substring);
+                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                Assert.Equal("          </xs:complexType>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-            Assert.Equal("        </xs:element>", substring);
+                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                Assert.Equal("        </xs:element>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-            Assert.Equal("      </xs:choice>", substring);
+                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                Assert.Equal("      </xs:choice>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-            Assert.Equal("    </xs:complexType>", substring);
+                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                Assert.Equal("    </xs:complexType>", substring);
 
-            substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
-            TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
-            Assert.Equal("  </xs:element>", substring);
+                substring = TextString.Substring(0, TextString.IndexOfAny(new[] { '\r', '\n' }));
+                TextString = TextString.Substring(TextString.IndexOf('\n') + 1);
+                Assert.Equal("  </xs:element>", substring);
 
-            Assert.Equal("</xs:schema>", TextString);
+                Assert.Equal("</xs:schema>", TextString);
+
+                return SuccessExitCode;
+            }).Dispose();
+
         }
 
         [Fact]
@@ -1037,11 +1037,11 @@ namespace System.Data.Tests
             string xml = "<FullTextResponse><Domains><AvailResponse info='y' name='novell-ximian-group' /><AvailResponse info='n' name='ximian' /></Domains></FullTextResponse>";
             var ds = new DataSet();
             ds.ReadXml(new StringReader(xml));
-            AssertDataSet("ds", ds, "FullTextResponse", 2, 1);
+            DataSetAssertion.AssertDataSet("ds", ds, "FullTextResponse", 2, 1);
             DataTable dt = ds.Tables[0];
-            AssertDataTable("dt1", dt, "Domains", 1, 1, 0, 1, 1, 1);
+            DataSetAssertion.AssertDataTable("dt1", dt, "Domains", 1, 1, 0, 1, 1, 1);
             dt = ds.Tables[1];
-            AssertDataTable("dt2", dt, "AvailResponse", 3, 2, 1, 0, 1, 0);
+            DataSetAssertion.AssertDataTable("dt2", dt, "AvailResponse", 3, 2, 1, 0, 1, 0);
             StringWriter sw = new StringWriter();
             XmlTextWriter xtw = new XmlTextWriter(sw);
             xtw.QuoteChar = '\'';
@@ -1565,16 +1565,19 @@ namespace System.Data.Tests
         [Fact]
         public void WriteXmlModeSchema1()
         {
-            string SerializedDataTable =
+            RemoteInvoke(() =>
+            {
+                CultureInfo.CurrentCulture = new CultureInfo("fi-FI");
+                string SerializedDataTable =
 @"<rdData>
   <MyDataTable CustomerID='VINET' CompanyName='Vins et alcools Chevalier' ContactName='Paul Henriot' />
 </rdData>";
-            string expected =
-@"<rdData>
+                string expected =
+    @"<rdData>
   <xs:schema id=""rdData"" xmlns="""" xmlns:xs=""http://www.w3.org/2001/XMLSchema"" xmlns:msdata=""urn:schemas-microsoft-com:xml-msdata"">
     <xs:element name=""rdData"" msdata:IsDataSet=""true"" " +
-              @"msdata:Locale=""en-US"">" +
-@"
+                  @"msdata:Locale=""en-US"">" +
+    @"
       <xs:complexType>
         <xs:choice minOccurs=""0"" maxOccurs=""unbounded"">
           <xs:element name=""MyDataTable"">
@@ -1590,14 +1593,17 @@ namespace System.Data.Tests
   </xs:schema>
   <MyDataTable CustomerID=""VINET"" CompanyName=""Vins et alcools Chevalier"" ContactName=""Paul Henriot"" />
 </rdData>";
-            DataSet set;
-            set = new DataSet();
-            set.ReadXml(new StringReader(SerializedDataTable));
+                DataSet set;
+                set = new DataSet();
+                set.ReadXml(new StringReader(SerializedDataTable));
 
-            StringWriter w = new StringWriter();
-            set.WriteXml(w, XmlWriteMode.WriteSchema);
-            string result = w.ToString();
-            Assert.Equal(expected.Replace("\r", ""), result.Replace("\r", ""));
+                StringWriter w = new StringWriter();
+                set.WriteXml(w, XmlWriteMode.WriteSchema);
+                string result = w.ToString();
+                Assert.Equal(expected.Replace("\r", ""), result.Replace("\r", ""));
+
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
@@ -1667,7 +1673,7 @@ namespace System.Data.Tests
         }
 
         /// <summary>
-        /// Test for testing DataSet.Clear method with foriegn key relations
+        /// Test for testing DataSet.Clear method with foreign key relations
         /// This is expected to clear all the related datatable rows also
         /// </summary>
         [Fact]

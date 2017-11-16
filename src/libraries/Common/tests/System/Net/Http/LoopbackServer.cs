@@ -29,6 +29,7 @@ namespace System.Net.Test.Common
             public bool UseSsl { get; set; } = false;
             public SslProtocols SslProtocols { get; set; } = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
             public bool WebSocketEndpoint { get; set; } = false;
+            public Func<Stream, Stream> ResponseStreamWrapper { get; set; }
         }
 
         public static Task CreateServerAsync(Func<Socket, Uri, Task> funcAsync, Options options = null)
@@ -174,7 +175,7 @@ namespace System.Net.Test.Common
                 }
 
                 using (var reader = new StreamReader(stream, Encoding.ASCII))
-                using (var writer = new StreamWriter(stream, Encoding.ASCII) { AutoFlush = true })
+                using (var writer = new StreamWriter(options?.ResponseStreamWrapper?.Invoke(stream) ?? stream, Encoding.ASCII) { AutoFlush = true })
                 {
                     return await funcAsync(s, stream, reader, writer).ConfigureAwait(false);
                 }

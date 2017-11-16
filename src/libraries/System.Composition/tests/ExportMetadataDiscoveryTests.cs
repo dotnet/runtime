@@ -52,6 +52,7 @@ namespace System.Composition.UnitTests
         public class MultipleNames { }
 
         [Fact]
+        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public void DiscoversMetadataSpecifiedUsingMetadataAttributeOnExportAttribute()
         {
             var cc = CreateContainer(typeof(SingleNamedExport));
@@ -60,6 +61,7 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
+        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public void IfMetadataIsSpecifiedOnAnExportAttributeOtherExportsDoNotHaveIt()
         {
             var cc = CreateContainer(typeof(MultipleExportsOneNamedAndBothPrioritized));
@@ -69,6 +71,7 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
+        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public void DiscoversStandaloneExportMetadata()
         {
             var cc = CreateContainer(typeof(NamedAndPrioritized));
@@ -77,6 +80,7 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
+        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public void DiscoversStandaloneExportMetadataUsingMetadataAttributes()
         {
             var cc = CreateContainer(typeof(NamedWithCustomMetadata));
@@ -85,6 +89,7 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
+        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public void StandaloneExportMetadataAppliesToAllExportsOnAMember()
         {
             var cc = CreateContainer(typeof(MultipleExportsOneNamedAndBothPrioritized));
@@ -94,6 +99,7 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
+        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public void MultiplePiecesOfMetadataAreCombinedIntoAnArray()
         {
             var cc = CreateContainer(typeof(MultipleNames));
@@ -114,6 +120,7 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
+        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public void MultipleExportsCanBeRetrievedWhenANonDefaultConstructorExists()
         {
             var c = CreateContainer(typeof(ConstructorImported), typeof(MultipleExportsNonDefaultConstructor));

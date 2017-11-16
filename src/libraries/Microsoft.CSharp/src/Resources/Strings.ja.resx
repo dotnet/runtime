@@ -36,12 +36,6 @@
   <data name="BindInvokeFailedNonDelegate" xml:space="preserve">
     <value>非デリゲート型を呼び出すことはできません</value>
   </data>
-  <data name="BindImplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>暗黙の型変換では 1 つの引数のみ受け取ります</value>
-  </data>
-  <data name="BindExplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>明示的な変換では 1 つの引数のみ受け取ります</value>
-  </data>
   <data name="BindBinaryAssignmentRequireTwoArguments" xml:space="preserve">
     <value>1 つの引数を指定して二項演算子を呼び出すことはできません</value>
   </data>
@@ -59,9 +53,6 @@
   </data>
   <data name="BadBinaryOps" xml:space="preserve">
     <value>演算子 '{0}' を '{1}' と '{2}' 型のオペランドに適用することはできません</value>
-  </data>
-  <data name="IntDivByZero" xml:space="preserve">
-    <value>定数 0 で除算</value>
   </data>
   <data name="BadIndexLHS" xml:space="preserve">
     <value>角かっこ [] 付きインデックスを '{0}' 型の式に適用することはできません</value>
@@ -114,9 +105,6 @@
   <data name="NoConstructors" xml:space="preserve">
     <value>型 '{0}' のコンストラクターが定義されていません</value>
   </data>
-  <data name="BadDelegateConstructor" xml:space="preserve">
-    <value>デリゲート '{0}' には有効なコンストラクターがありません</value>
-  </data>
   <data name="PropertyLacksGet" xml:space="preserve">
     <value>get アクセサーがないため、プロパティまたはインデクサー '{0}' をこのコンテキストで使用することはできません</value>
   </data>
@@ -138,17 +126,8 @@
   <data name="AssgReadonlyProp" xml:space="preserve">
     <value>プロパティまたはインデクサー '{0}' は読み取り専用であるため、割り当てることはできません</value>
   </data>
-  <data name="AbstractBaseCall" xml:space="preserve">
-    <value>抽象基本メンバーを呼び出すことはできません: '{0}'</value>
-  </data>
   <data name="RefProperty" xml:space="preserve">
     <value>プロパティまたはインデクサーを out か ref のパラメーターとして渡すことはできません。</value>
-  </data>
-  <data name="ManagedAddr" xml:space="preserve">
-    <value>マネージ型 ('{0}') のアドレスの取得、サイズの取得、またはそのマネージ型へのポインターの宣言が実行できません</value>
-  </data>
-  <data name="FixedNotNeeded" xml:space="preserve">
-    <value>既に fixed が使用されている式のアドレスを取得するために、fixed ステートメントを使用することはできません。</value>
   </data>
   <data name="UnsafeNeeded" xml:space="preserve">
     <value>動的な呼び出しはポインターと共に使用できません</value>
@@ -159,29 +138,11 @@
   <data name="MustHaveOpTF" xml:space="preserve">
     <value>型 ('{0}') に演算子 true および演算子 false の宣言が含まれている必要があります</value>
   </data>
-  <data name="CheckedOverflow" xml:space="preserve">
-    <value>操作はチェック モードでコンパイル時にオーバーフローします。</value>
-  </data>
   <data name="ConstOutOfRangeChecked" xml:space="preserve">
     <value>定数値 '{0}' は '{1}' に変換できません (unchecked 構文を使ってオーバーライドしてください)</value>
   </data>
   <data name="AmbigMember" xml:space="preserve">
     <value>'{0}' と '{1}' 間があいまいです</value>
-  </data>
-  <data name="SizeofUnsafe" xml:space="preserve">
-    <value>'{0}' には定義済みのサイズが指定されていないため、sizeof は unsafe コンテキストでのみ使用できます (System.Runtime.InteropServices.Marshal.SizeOf の使用をお勧めします)</value>
-  </data>
-  <data name="FieldInitRefNonstatic" xml:space="preserve">
-    <value>フィールド初期化子は、静的でないフィールド、メソッド、またはプロパティ '{0}' を参照できません</value>
-  </data>
-  <data name="CallingFinalizeDepracated" xml:space="preserve">
-    <value>デストラクター と object.Finalize を直接呼び出すことはできません。使用可能であれば IDisposable.Dispose を呼び出してください。</value>
-  </data>
-  <data name="CallingBaseFinalizeDeprecated" xml:space="preserve">
-    <value>基本クラスの Finalize メソッドを直接呼び出さないでください。デストラクターから自動的に呼び出されます。</value>
-  </data>
-  <data name="BadCastInFixed" xml:space="preserve">
-    <value>固定ステートメントの代入式の右辺はキャスト式ではない可能性があります。</value>
   </data>
   <data name="NoImplicitConvCast" xml:space="preserve">
     <value>型 '{0}' を '{1}' に暗黙的に変換できません。明示的な変換が存在します (cast が不足していないかどうかを確認してください)</value>
@@ -194,9 +155,6 @@
   </data>
   <data name="BadArity" xml:space="preserve">
     <value>ジェネリック {1} '{0}' の使用には、'{2}' 型の引数が必要です</value>
-  </data>
-  <data name="BadTypeArgument" xml:space="preserve">
-    <value>型 '{0}' は型引数としては使えません</value>
   </data>
   <data name="TypeArgsNotAllowed" xml:space="preserve">
     <value>{1} '{0}' は型引数と一緒には使用できません</value>
@@ -216,23 +174,11 @@
   <data name="GenericConstraintNotSatisfiedNullableInterface" xml:space="preserve">
     <value>型 '{3}' はジェネリック型またはメソッド '{0}' 内で型パラメーター '{2}' として使用できません。Null 許容型 '{3}' は、'{1}' の制約を満たしていません。Null 許容型はインターフェイス制約を満たすことはできません。</value>
   </data>
-  <data name="GenericConstraintNotSatisfiedTyVar" xml:space="preserve">
-    <value>型 '{3}' はジェネリック型またはメソッド '{0}' 内で型パラメーター '{2}' として使用できません。'{3}' から '{1}' へのボックス変換または型パラメーター変換がありません。</value>
-  </data>
   <data name="GenericConstraintNotSatisfiedValType" xml:space="preserve">
     <value>型 '{3}' はジェネリック型またはメソッド '{0}' 内で型パラメーター '{2}' として使用できません。'{3}' から '{1}' へのボックス変換がありません。</value>
   </data>
-  <data name="TypeVarCantBeNull" xml:space="preserve">
-    <value>Null 非許容の値型である可能性があるため、Null を型パラメーター '{0}' に変換できません。'default({0})' を使用してください。</value>
-  </data>
-  <data name="BadRetType" xml:space="preserve">
-    <value>'{1} {0}' には、不適切な戻り値の型が指定されています</value>
-  </data>
   <data name="CantInferMethTypeArgs" xml:space="preserve">
     <value>メソッド '{0}' の型引数を使い方から推論することはできません。型引数を明示的に指定してください。</value>
-  </data>
-  <data name="MethGrpToNonDel" xml:space="preserve">
-    <value>メソッド グループ '{0}' を非デリゲート型 '{1}' に変換することはできません。このメソッドを呼び出しますか?</value>
   </data>
   <data name="RefConstraintNotSatisfied" xml:space="preserve">
     <value>型 '{2}' は、ジェネリック型のパラメーター '{1}'、またはメソッド '{0}' として使用するために、参照型でなければなりません</value>
@@ -240,23 +186,8 @@
   <data name="ValConstraintNotSatisfied" xml:space="preserve">
     <value>型 '{2}' は、ジェネリック型のパラメーター '{1}'、またはメソッド '{0}' として使用するために、Null 非許容の値型でなければなりません</value>
   </data>
-  <data name="CircularConstraint" xml:space="preserve">
-    <value>'{0}' と '{1}' を含む、循環制約の依存関係です</value>
-  </data>
-  <data name="BaseConstraintConflict" xml:space="preserve">
-    <value>型パラメーター '{0}' は、競合する制約 '{1}' および '{2}' を継承します</value>
-  </data>
-  <data name="ConWithValCon" xml:space="preserve">
-    <value>型パラメーター '{1}' は 'struct' 制約を含むので、'{0}' の制約として '{1}' を使用することはできません</value>
-  </data>
   <data name="AmbigUDConv" xml:space="preserve">
     <value>'{2}' から '{3}' へ変換するときの、あいまいなユーザー定義の変換 '{0}' および '{1}' です</value>
-  </data>
-  <data name="PredefinedTypeNotFound" xml:space="preserve">
-    <value>定義済みの型 '{0}' は定義、またはインポートされていません</value>
-  </data>
-  <data name="PredefinedTypeBadType" xml:space="preserve">
-    <value>定義済みの型 '{0}' が不適切に宣言されています</value>
   </data>
   <data name="BindToBogus" xml:space="preserve">
     <value>'{0}' はこの言語でサポートされていません</value>
@@ -264,44 +195,17 @@
   <data name="CantCallSpecialMethod" xml:space="preserve">
     <value>'{0}': 演算子またはアクセサーを明示的に呼び出すことはできません</value>
   </data>
-  <data name="BogusType" xml:space="preserve">
-    <value>'{0}' はこの言語でサポートされていない型です</value>
-  </data>
-  <data name="MissingPredefinedMember" xml:space="preserve">
-    <value>コンパイラが必要とするメンバー '{0}.{1}' がありません</value>
-  </data>
-  <data name="LiteralDoubleCast" xml:space="preserve">
-    <value>型 double のリテラルを暗黙的に型 '{1}' に変換することはできません。'{0}' サフィックスを使用して、この型のリテラルを作成してください</value>
-  </data>
-  <data name="UnifyingInterfaceInstantiations" xml:space="preserve">
-    <value>型パラメーターの代用に対して統合している可能性があるため、'{0}' は '{1}' と '{2}' の両方を実装することはできません</value>
-  </data>
   <data name="ConvertToStaticClass" xml:space="preserve">
     <value>スタティック型 '{0}' へ変換できません</value>
   </data>
-  <data name="GenericArgIsStaticClass" xml:space="preserve">
-    <value>'{0}': スタティック型を型引数として使用することはできません</value>
-  </data>
-  <data name="PartialMethodToDelegate" xml:space="preserve">
-    <value>メソッド '{0}' は実装宣言がない部分メソッドであるため、このメソッドからデリゲートを作成できません</value>
-  </data>
   <data name="IncrementLvalueExpected" xml:space="preserve">
     <value>インクリメント演算子またはデクリメント演算子のオペランドには、変数、プロパティ、またはインデクサーを指定してください。</value>
-  </data>
-  <data name="NoSuchMemberOrExtension" xml:space="preserve">
-    <value>'{0}' に '{1}' の定義が含まれておらず、型 '{0}' の最初の引数を受け付ける拡張メソッド '{1}' が見つかりませんでした。using ディレクティブまたはアセンブリ参照が不足しています</value>
-  </data>
-  <data name="ValueTypeExtDelegate" xml:space="preserve">
-    <value>値の型 '{1}' で定義された拡張メソッド '{0}' は、デリゲートを作成するために使用できません</value>
   </data>
   <data name="BadArgCount" xml:space="preserve">
     <value>引数を '{1}' 個指定できる、メソッド '{0}' のオーバーロードはありません</value>
   </data>
   <data name="BadArgTypes" xml:space="preserve">
     <value>'{0}' に最も適しているオーバーロード メソッドには無効な引数がいくつか含まれています</value>
-  </data>
-  <data name="BadArgType" xml:space="preserve">
-    <value>引数 '{0}': '{1}' から '{2}' へ変換できません</value>
   </data>
   <data name="RefLvalueExpected" xml:space="preserve">
     <value>ref または out 引数は、割り当て可能な変数でなければなりません。</value>
@@ -330,12 +234,6 @@
   <data name="ReturnNotLValue" xml:space="preserve">
     <value>変数ではないため、'{0}' の戻り値を変更できません</value>
   </data>
-  <data name="BadArgExtraRef" xml:space="preserve">
-    <value>引数 '{0}' を '{1}' キーワードと共に渡すことはできません</value>
-  </data>
-  <data name="BadArgRef" xml:space="preserve">
-    <value>引数 '{0}' は '{1}' キーワードと共に渡されなければなりません</value>
-  </data>
   <data name="AssgReadonly2" xml:space="preserve">
     <value>読み取り専用フィールド '{0}' のメンバーは変更できません (コンストラクターまたは変数初期化子では可)。</value>
   </data>
@@ -354,26 +252,8 @@
   <data name="RefReadonlyLocalCause" xml:space="preserve">
     <value>'{1}' であるため、'{0}' は ref または out 引数として渡せません</value>
   </data>
-  <data name="ThisStructNotInAnonMeth" xml:space="preserve">
-    <value>構造体内部の匿名メソッド、ラムダ式、またはクエリ式は、'this' のインスタンス メンバーにアクセスできません。'this' を匿名メソッド、ラムダ式、またはクエリ式の外部のローカル変数にコピーして、そのローカルを使用してください。</value>
-  </data>
-  <data name="DelegateOnNullable" xml:space="preserve">
-    <value>'System.Nullable&lt;T&gt;' のメンバーであるために、'{0}' のデリゲートをバインドできません。</value>
-  </data>
   <data name="BadCtorArgCount" xml:space="preserve">
     <value>'{0}' に、引数を '{1}' 個指定できるコンストラクターがありません</value>
-  </data>
-  <data name="BadExtensionArgTypes" xml:space="preserve">
-    <value>'{0}' に '{1}' の定義が含まれておらず、最も適している拡張メソッド オーバーロード '{2}' には無効な引数がいくつか含まれています</value>
-  </data>
-  <data name="BadInstanceArgType" xml:space="preserve">
-    <value>インスタンス引数: '{0}' から '{1}' へ変換できません</value>
-  </data>
-  <data name="BadArgTypesForCollectionAdd" xml:space="preserve">
-    <value>コレクション初期化子に最も適しているオーバーロード Add メソッド '{0}' には無効な引数がいくつか含まれています</value>
-  </data>
-  <data name="InitializerAddHasParamModifiers" xml:space="preserve">
-    <value>コレクション初期化子要素の '{0}' に最も適しているオーバーロード メソッドは使用できません。コレクション初期化子 'Add' メソッドには、ref パラメーターまたは out パラメーターを使用できません。</value>
   </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>実行不可能なメンバー '{0}' をメソッドのように使用することはできません。</value>

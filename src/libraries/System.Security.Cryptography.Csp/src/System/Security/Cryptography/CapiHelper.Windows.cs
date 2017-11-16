@@ -931,7 +931,6 @@ namespace Internal.NativeCrypto
             Debug.Assert(outputCount >= 0);
             Debug.Assert(outputCount <= output.Length - outputOffset);
             Debug.Assert((inputCount % 8) == 0);
-            Debug.Assert((outputCount % 8) == 0);
 
             // Figure out how big the encrypted data will be
             int cbEncryptedData = inputCount;
@@ -955,6 +954,16 @@ namespace Internal.NativeCrypto
                 throw GetErrorCode().ToCryptographicException();
             }
             Debug.Assert(encryptedDataLength == cbEncryptedData);
+
+            if (isFinal)
+            {
+                Debug.Assert(outputCount == inputCount);
+            }
+            else
+            {
+                Debug.Assert(outputCount >= encryptedDataLength);
+                outputCount = encryptedDataLength;
+            }
 
             // If isFinal, padding was added so ignore it by using outputCount as size
             Buffer.BlockCopy(encryptedData, 0, output, outputOffset, outputCount);
@@ -981,7 +990,6 @@ namespace Internal.NativeCrypto
             Debug.Assert(outputCount >= 0);
             Debug.Assert(outputCount <= output.Length - outputOffset);
             Debug.Assert((inputCount % 8) == 0);
-            Debug.Assert((outputCount % 8) == 0);
 
             byte[] dataTobeDecrypted = new byte[inputCount];
             Buffer.BlockCopy(input, inputOffset, dataTobeDecrypted, 0, inputCount);
@@ -993,7 +1001,7 @@ namespace Internal.NativeCrypto
                 throw GetErrorCode().ToCryptographicException();
             }
 
-            Buffer.BlockCopy(dataTobeDecrypted, 0, output, outputOffset, outputCount);
+            Buffer.BlockCopy(dataTobeDecrypted, 0, output, outputOffset, decryptedDataLength);
 
             return decryptedDataLength;
         }

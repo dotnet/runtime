@@ -32,11 +32,11 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private SymbolTable _symbolTable;
         private CSemanticChecker _semanticChecker;
-        private SymbolLoader SymbolLoader { get { return _semanticChecker.GetSymbolLoader(); } }
+        private SymbolLoader SymbolLoader => _semanticChecker.SymbolLoader;
+
         private ExprFactory _exprFactory;
         private BindingContext _bindingContext;
         private ExpressionBinder _binder;
-        private RuntimeBinderController _controller;
 
         private readonly object _bindLock = new object();
 
@@ -51,31 +51,22 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private void Reset()
         {
-            _controller = new RuntimeBinderController();
-            _semanticChecker = new LangCompiler(_controller, new NameManager());
+            _semanticChecker = new CSemanticChecker();
 
             BSYMMGR bsymmgr = _semanticChecker.getBSymmgr();
-            NameManager nameManager = _semanticChecker.GetNameManager();
-
-            InputFile infile = bsymmgr.GetMiscSymFactory().CreateMDInfile(nameManager.Lookup(""));
-            infile.SetAssemblyID(bsymmgr.AidAlloc(infile));
-            infile.AddToAlias(KAID.kaidThisAssembly);
-            infile.AddToAlias(KAID.kaidGlobal);
 
             _symbolTable = new SymbolTable(
                 bsymmgr.GetSymbolTable(),
                 bsymmgr.GetSymFactory(),
-                nameManager,
                 _semanticChecker.GetTypeManager(),
                 bsymmgr,
-                _semanticChecker,
-                infile);
-            _semanticChecker.getPredefTypes().Init(_semanticChecker.GetErrorContext(), _symbolTable);
+                _semanticChecker);
+            _semanticChecker.getPredefTypes().Init(_symbolTable);
             _semanticChecker.GetTypeManager().InitTypeFactory(_symbolTable);
             SymbolLoader.getPredefinedMembers().RuntimeBinderSymbolTable = _symbolTable;
             SymbolLoader.SetSymbolTable(_symbolTable);
 
-            _exprFactory = new ExprFactory(_semanticChecker.GetSymbolLoader().GetGlobalSymbolContext());
+            _exprFactory = new ExprFactory(_semanticChecker.SymbolLoader.GetGlobalSymbolContext());
             _bindingContext = new BindingContext(_semanticChecker, _exprFactory);
             _binder = new ExpressionBinder(_bindingContext);
         }
@@ -108,12 +99,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             // than 1/1000 sec for the whole 4000 of them.
 
             ICSharpBinder binder = payload as ICSharpBinder;
-            if (binder == null)
-            {
-                Debug.Assert(false, "Unknown payload kind");
-                throw Error.InternalCompilerError();
-            }
-
+            Debug.Assert(binder != null);
 
             lock (_bindLock)
             {
@@ -124,7 +110,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 // In order to make this work, we have to reset the symbol table and begin
                 // the second binding over again when we detect the collision. So this is
                 // something like a longjmp to the beginning of binding. For a single binding,
-                // if we have to do this more than once, we give an ICE--this would be a
+                // if we have to do this more than once, we give an RBE--this would be a
                 // scenario that needs to know about both N.T's simultaneously to work.
 
                 // See SymbolTable.LoadSymbolsFromType for more information.
@@ -143,8 +129,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     catch (ResetBindException)
                     {
                         Reset();
-                        Debug.Assert(false, "More than one symbol table name collision in a single binding");
-                        throw Error.InternalCompilerError();
+                        throw Error.BindingNameCollision();
                     }
                 }
             }
@@ -156,10 +141,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             DynamicMetaObject[] args,
             out DynamicMetaObject deferredBinding)
         {
-            if (args.Length < 1)
-            {
-                throw Error.BindRequireArguments();
-            }
+            Debug.Assert(args.Length >= 1);
 
             InitializeCallingContext(payload);
             ArgumentObject[] arguments = CreateArgumentArray(payload, parameters, args);
@@ -191,7 +173,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             //    Linq expression tree for the whole thing and return it.
 
             // (1) - Create the locals
-            Scope pScope = _semanticChecker.GetGlobalMiscSymFactory().CreateScope(null);
+            Scope pScope = _semanticChecker.GetGlobalSymbolFactory().CreateScope(null);
             LocalVariableSymbol[] locals = PopulateLocalScope(payload, pScope, arguments, parameters);
 
             // (1.5) - Check to see if we need to defer.
@@ -206,7 +188,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             Debug.Assert(pResult != null);
 
             deferredBinding = null;
-            Expression e = CreateExpressionTreeFromResult(parameters, arguments, pScope, pResult);
+            Expression e = CreateExpressionTreeFromResult(parameters, pScope, pResult);
             return e;
         }
 
@@ -231,7 +213,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             CSharpInvokeMemberBinder callPayload = payload as CSharpInvokeMemberBinder;
             if (callPayload != null)
             {
-                int arity = callPayload.TypeArguments?.Count ?? 0;
+                int arity = callPayload.TypeArguments?.Length ?? 0;
                 MemberLookup mem = new MemberLookup();
                 Expr callingObject = CreateCallingObjectForCall(callPayload, arguments, locals);
 
@@ -276,7 +258,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             if (t != null)
             {
-                AggregateSymbol agg = _symbolTable.GetCTypeFromType(t).AsAggregateType().GetOwningAggregate();
+                AggregateSymbol agg = ((AggregateType)_symbolTable.GetCTypeFromType(t)).GetOwningAggregate();
                 bindingContext.ContextForMemberLookup = _semanticChecker.GetGlobalSymbolFactory().CreateAggregateDecl(agg, null);
             }
             else
@@ -286,19 +268,18 @@ namespace Microsoft.CSharp.RuntimeBinder
                 bindingContext.ContextForMemberLookup = null;
             }
 
-            bindingContext.CheckedConstant = bindingContext.CheckedNormal = payload.IsChecked;
+            bindingContext.Checked = payload.IsChecked;
         }
 
         /////////////////////////////////////////////////////////////////////////////////
 
         private Expression CreateExpressionTreeFromResult(
             Expression[] parameters,
-            ArgumentObject[] arguments,
             Scope pScope,
             Expr pResult)
         {
             // (3) - Place the result in a return statement and create the EXPRBOUNDLAMBDA.
-            ExprBoundLambda boundLambda = GenerateBoundLambda(arguments, pScope, pResult);
+            ExprBoundLambda boundLambda = GenerateBoundLambda(pScope, pResult);
 
             // (4) - Rewrite the EXPRBOUNDLAMBDA into an expression tree.
             Expr exprTree = ExpressionTreeRewriter.Rewrite(boundLambda, _exprFactory, SymbolLoader);
@@ -313,7 +294,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             Type t = argInfo.UseCompileTimeType ? param.Type : arg.LimitType;
             Debug.Assert(t != null);
 
-            if ((argInfo.Flags & (CSharpArgumentInfoFlags.IsRef | CSharpArgumentInfoFlags.IsOut)) != 0)
+            if (argInfo.IsByRefOrOut)
             {
                 // If we have a ref our an out parameter, make the byref type.
                 // If we have the receiver of a call or invoke that is ref, it must be because of 
@@ -384,8 +365,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 type = arguments[0].Value as Type;
                 if (type == null)
                 {
-                    Debug.Assert(false, "Cannot make static call without specifying a type");
-                    throw Error.InternalCompilerError();
+                    throw Error.BindStaticRequiresType(arguments[0].Info.Name);
                 }
             }
             else
@@ -422,7 +402,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        internal Expr DispatchPayload(ICSharpInvokeOrInvokeMemberBinder payload, ArgumentObject[] arguments, LocalVariableSymbol[] locals) =>
+        internal ExprWithArgs DispatchPayload(ICSharpInvokeOrInvokeMemberBinder payload, ArgumentObject[] arguments, LocalVariableSymbol[] locals) =>
             BindCall(payload, CreateCallingObjectForCall(payload, arguments, locals), arguments, locals);
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -459,7 +439,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     if (paramExp != null && paramExp.IsByRef)
                     {
                         CSharpArgumentInfo info = arguments[i].Info;
-                        if (info.IsByRef || info.IsOut)
+                        if (info.IsByRefOrOut)
                         {
                             type = _semanticChecker.GetTypeManager().GetParameterModifier(type, info.IsOut);
                         }
@@ -467,7 +447,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 }
                 LocalVariableSymbol local =
                     _semanticChecker.GetGlobalSymbolFactory()
-                        .CreateLocalVar(_semanticChecker.GetNameManager().Add("p" + i), pScope, type);
+                        .CreateLocalVar(NameManager.Add("p" + i), pScope, type);
                 local.fUsedInAnonMeth = true;
                 locals[i] = local;
             }
@@ -478,27 +458,17 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         private ExprBoundLambda GenerateBoundLambda(
-            ArgumentObject[] arguments,
             Scope pScope,
             Expr call)
         {
             // We don't actually need the real delegate type here - we just need SOME delegate type.
             // This is because we never attempt any conversions on the lambda itself.
-            AggregateType delegateType = _symbolTable.GetCTypeFromType(typeof(Func<>)).AsAggregateType();
-            LocalVariableSymbol thisLocal = _semanticChecker.GetGlobalSymbolFactory().CreateLocalVar(_semanticChecker.GetNameManager().Add("this"), pScope, _symbolTable.GetCTypeFromType(typeof(object)));
+            AggregateType delegateType = _symbolTable.GetCTypeFromType(typeof(Func<>)) as AggregateType;
+            LocalVariableSymbol thisLocal = _semanticChecker.GetGlobalSymbolFactory().CreateLocalVar(NameManager.Add("this"), pScope, _symbolTable.GetCTypeFromType(typeof(object)));
             thisLocal.isThis = true;
-            ExprBoundLambda boundLambda = _exprFactory.CreateAnonymousMethod(delegateType);
-            ExprUnboundLambda unboundLambda = _exprFactory.CreateLambda();
-
-            List<Type> paramTypes = new List<Type>();
-            foreach (ArgumentObject o in arguments)
-            {
-                paramTypes.Add(o.Type);
-            }
-            boundLambda.ArgumentScope = pScope;
-
-            ExprReturn returnStatement = _exprFactory.CreateReturn(0, pScope, call);
-            ExprBlock block = _exprFactory.CreateBlock(returnStatement, pScope);
+            ExprBoundLambda boundLambda = _exprFactory.CreateAnonymousMethod(delegateType, pScope);
+            ExprReturn returnStatement = _exprFactory.CreateReturn(call);
+            ExprBlock block = _exprFactory.CreateBlock(returnStatement);
             boundLambda.OptionalBody = block;
             return boundLambda;
         }
@@ -512,14 +482,13 @@ namespace Microsoft.CSharp.RuntimeBinder
             CType ctype = _symbolTable.GetCTypeFromType(type);
             if (bIsOut)
             {
-                Debug.Assert(ctype.IsParameterModifierType());
-                ctype = _semanticChecker.GetTypeManager().GetParameterModifier(
-                    ctype.AsParameterModifierType().GetParameterType(),
-                    true);
+                Debug.Assert(ctype is ParameterModifierType);
+                ctype = _semanticChecker.GetTypeManager()
+                    .GetParameterModifier(((ParameterModifierType)ctype).GetParameterType(), true);
             }
 
             // If we can convert, do that. If not, cast it.
-            ExprLocal exprLocal = _exprFactory.CreateLocal(EXPRFLAG.EXF_LVALUE, local);
+            ExprLocal exprLocal = _exprFactory.CreateLocal(local);
             Expr result = _binder.tryConvert(exprLocal, ctype);
             if (result == null)
             {
@@ -604,7 +573,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             if (argument.Info.NamedArgument)
             {
                 Debug.Assert(argument.Info.Name != null);
-                arg = _exprFactory.CreateNamedArgumentSpecification(_semanticChecker.GetNameManager().Add(argument.Info.Name), arg);
+                arg = _exprFactory.CreateNamedArgumentSpecification(NameManager.Add(argument.Info.Name), arg);
             }
 
             // If we have an object that was "dynamic" at compile time, we need
@@ -635,32 +604,26 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private ExprMemberGroup CreateMemberGroupEXPR(
             string Name,
-            IList<Type> typeArguments,
+            Type[] typeArguments,
             Expr callingObject,
             SYMKIND kind)
         {
-            Name name = _semanticChecker.GetNameManager().Add(Name);
+            Name name = NameManager.Add(Name);
             AggregateType callingType;
 
-            if (callingObject.Type.IsArrayType())
+            CType callingObjectType = callingObject.Type;
+            if (callingObjectType is ArrayType)
             {
-                callingType = _semanticChecker.GetSymbolLoader().GetReqPredefType(PredefinedType.PT_ARRAY);
+                callingType = _semanticChecker.SymbolLoader.GetPredefindType(PredefinedType.PT_ARRAY);
             }
-            else if (callingObject.Type.IsNullableType())
+            else if (callingObjectType is NullableType callingNub)
             {
-                callingType = callingObject.Type.AsNullableType().GetAts(_semanticChecker.GetSymbolLoader().GetErrorContext());
-            }
-            else if (callingObject.Type.IsAggregateType())
-            {
-                callingType = callingObject.Type.AsAggregateType();
+                callingType = callingNub.GetAts();
             }
             else
             {
-                callingType = null;
-                Debug.Assert(false, "MemberGroup on non-array, non-aggregate");
+                callingType = (AggregateType)callingObjectType;
             }
-
-            List<CType> callingTypes = new List<CType>();
 
             // The C# binder expects that only the base virtual method is inserted
             // into the list of candidates, and only the type containing the base
@@ -668,7 +631,12 @@ namespace Microsoft.CSharp.RuntimeBinder
             // don't want to do all the logic, we're just going to insert every type
             // that has a member of the given name, and allow the C# binder to filter
             // out all overrides.
-            //
+
+            // CONSIDER: using a hashset to filter out duplicate interface types.
+            // Adopt a smarter algorithm to filter types before creating the exception.
+            HashSet<CType> distinctCallingTypes = new HashSet<CType>();
+            List<CType> callingTypes = new List<CType>();
+
             // Find that set of types now.
             symbmask_t mask = symbmask_t.MASK_MethodSymbol;
             switch (kind)
@@ -687,9 +655,9 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             // If we have a constructor, only find its type.
             bool bIsConstructor = name == NameManager.GetPredefinedName(PredefinedName.PN_CTOR);
-            for (AggregateType t = callingType; t != null; t = t.GetBaseClass())
+            foreach(AggregateType t in callingType.TypeHierarchy)
             {
-                if (_symbolTable.AggregateContainsMethod(t.GetOwningAggregate(), Name, mask))
+                if (_symbolTable.AggregateContainsMethod(t.GetOwningAggregate(), Name, mask) && distinctCallingTypes.Add(t))
                 {
                     callingTypes.Add(t);
                 }
@@ -707,13 +675,9 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 TypeArray collectioniFaces = callingType.GetWinRTCollectionIfacesAll(SymbolLoader);
 
-                for (int i = 0; i < collectioniFaces.Count; i++)
+                foreach (AggregateType t in callingType.GetWinRTCollectionIfacesAll(SymbolLoader).Items)
                 {
-                    CType t = collectioniFaces[i];
-                    // Collection interfaces will be aggregates.
-                    Debug.Assert(t.IsAggregateType());
-
-                    if (_symbolTable.AggregateContainsMethod(t.AsAggregateType().GetOwningAggregate(), Name, mask))
+                    if (_symbolTable.AggregateContainsMethod(t.GetOwningAggregate(), Name, mask) && distinctCallingTypes.Add(t))
                     {
                         callingTypes.Add(t);
                     }
@@ -740,7 +704,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
 
             TypeArray typeArgumentsAsTypeArray = BSYMMGR.EmptyTypeArray();
-            if (typeArguments != null && typeArguments.Count > 0)
+            if (typeArguments != null && typeArguments.Length > 0)
             {
                 typeArgumentsAsTypeArray = _semanticChecker.getBSymmgr().AllocParams(
                     _symbolTable.GetCTypeArrayFromTypes(typeArguments));
@@ -776,26 +740,25 @@ namespace Microsoft.CSharp.RuntimeBinder
             ExprMemberGroup pMemGroup = CreateMemberGroupEXPR(property.name.Text, null, callingObject, SYMKIND.SK_PropertySymbol);
 
             return _binder.BindToProperty(// For a static property instance, don't set the object.
-                    callingObject is ExprClass ? null : callingObject, pwt, flags, null, null, pMemGroup);
+                    callingObject is ExprClass ? null : callingObject, pwt, flags, null, pMemGroup);
         }
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private Expr CreateIndexer(SymWithType swt, Expr callingObject, Expr arguments, BindingFlag bindFlags)
+        private ExprWithArgs CreateIndexer(SymWithType swt, Expr callingObject, Expr arguments, BindingFlag bindFlags)
         {
             IndexerSymbol index = swt.Sym as IndexerSymbol;
-            AggregateType ctype = swt.GetType();
             ExprMemberGroup memgroup = CreateMemberGroupEXPR(index.name.Text, null, callingObject, SYMKIND.SK_PropertySymbol);
-
-            Expr result = _binder.BindMethodGroupToArguments(bindFlags, memgroup, arguments);
-            return ReorderArgumentsForNamedAndOptional(callingObject, result);
+            ExprWithArgs result = _binder.BindMethodGroupToArguments(bindFlags, memgroup, arguments);
+            ReorderArgumentsForNamedAndOptional(callingObject, result);
+            return result;
         }
 
         /////////////////////////////////////////////////////////////////////////////////
 
         private Expr CreateArray(Expr callingObject, Expr optionalIndexerArguments)
         {
-            return _binder.BindArrayIndexCore(0, callingObject, optionalIndexerArguments);
+            return _binder.BindArrayIndexCore(callingObject, optionalIndexerArguments);
         }
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -817,14 +780,6 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private ExprEvent CreateEvent(
-            SymWithType swt,
-            Expr callingObject)
-        {
-            EventSymbol eventSymbol = swt.Event();
-            ExprEvent e = _exprFactory.CreateEvent(eventSymbol.type, callingObject, new EventWithType(eventSymbol, swt.GetType()));
-            return e;
-        }
         #endregion
 
         #endregion
@@ -843,14 +798,9 @@ namespace Microsoft.CSharp.RuntimeBinder
             if (payload.StaticCall)
             {
                 Type t = arguments[0].Value as Type;
-                if (t == null)
-                {
-                    Debug.Assert(false, "Cannot make static call without specifying a type");
-                    throw Error.InternalCompilerError();
-                }
+                Debug.Assert(t != null); // Would have thrown in PopulateSymbolTableWithPayloadInformation already
 
-                callingObject = _exprFactory.CreateClass(_symbolTable.GetCTypeFromType(t), t.ContainsGenericParameters ?
-                        _exprFactory.CreateTypeArguments(SymbolLoader.getBSymmgr().AllocParams(_symbolTable.GetCTypeArrayFromTypes(t.GetGenericArguments())), null) : null);
+                callingObject = _exprFactory.CreateClass(_symbolTable.GetCTypeFromType(t));
             }
             else
             {
@@ -875,7 +825,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private Expr BindCall(
+        private ExprWithArgs BindCall(
             ICSharpInvokeOrInvokeMemberBinder payload,
             Expr callingObject,
             ArgumentObject[] arguments,
@@ -886,7 +836,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 throw Error.BindInvokeFailedNonDelegate();
             }
 
-            int arity = payload.TypeArguments?.Count ?? 0;
+            int arity = payload.TypeArguments?.Length ?? 0;
             MemberLookup mem = new MemberLookup();
 
             Debug.Assert(_bindingContext.ContextForMemberLookup != null);
@@ -900,8 +850,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     true);
             if (swt == null)
             {
-                mem.ReportErrors();
-                Debug.Assert(false, "Why didn't member lookup report an error?");
+                throw mem.ReportErrors();
             }
 
             if (swt.Sym.getKind() != SYMKIND.SK_MethodSymbol)
@@ -943,8 +892,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                         true);
                 if (swtEvent == null)
                 {
-                    mem.ReportErrors();
-                    Debug.Assert(false, "Why didn't member lookup report an error?");
+                    throw mem.ReportErrors();
                 }
 
                 CType eventCType = null;
@@ -979,13 +927,13 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             // Check if we have a potential call to an indexed property accessor.
             // If so, we'll flag overload resolution to let us call non-callables.
-            if ((payload.Name.StartsWith("set_", StringComparison.Ordinal) && swt.Sym.AsMethodSymbol().Params.Count > 1) ||
-                (payload.Name.StartsWith("get_", StringComparison.Ordinal) && swt.Sym.AsMethodSymbol().Params.Count > 0))
+            if ((payload.Name.StartsWith("set_", StringComparison.Ordinal) && ((MethodSymbol)swt.Sym).Params.Count > 1) ||
+                (payload.Name.StartsWith("get_", StringComparison.Ordinal) && ((MethodSymbol)swt.Sym).Params.Count > 0))
             {
                 memGroup.Flags &= ~EXPRFLAG.EXF_USERCALLABLE;
             }
 
-            Expr pResult = _binder.BindMethodGroupToArguments(// Tree
+            ExprWithArgs pResult = _binder.BindMethodGroupToArguments(// Tree
                 BindingFlag.BIND_RVALUEREQUIRED | BindingFlag.BIND_STMTEXPRONLY, memGroup, CreateArgumentListEXPR(arguments, locals, 1, arguments.Length));
 
             // If overload resolution failed, throw an error.
@@ -993,12 +941,13 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 throw Error.BindCallFailedOverloadResolution();
             }
-            CheckForConditionalMethodError(pResult);
 
-            return ReorderArgumentsForNamedAndOptional(callingObject, pResult);
+            CheckForConditionalMethodError(pResult);
+            ReorderArgumentsForNamedAndOptional(callingObject, pResult);
+            return pResult;
         }
 
-        private Expr BindWinRTEventAccessor(EventWithType ewt, Expr callingObject, ArgumentObject[] arguments, LocalVariableSymbol[] locals, bool isAddAccessor)
+        private ExprWithArgs BindWinRTEventAccessor(EventWithType ewt, Expr callingObject, ArgumentObject[] arguments, LocalVariableSymbol[] locals, bool isAddAccessor)
         {
             // We want to generate either:
             // WindowsRuntimeMarshal.AddEventHandler<delegType>(new Func<delegType, EventRegistrationToken>(x.add_foo), new Action<EventRegistrationToken>(x.remove_foo), value)
@@ -1041,14 +990,12 @@ namespace Microsoft.CSharp.RuntimeBinder
             // WindowsRuntimeMarshal.Add\RemoveEventHandler(...)
             Type windowsRuntimeMarshalType = SymbolTable.WindowsRuntimeMarshalType;
             _symbolTable.PopulateSymbolTableWithName(methodName, new List<Type> { evtType }, windowsRuntimeMarshalType);
-            ExprClass marshalClass = _exprFactory.CreateClass(_symbolTable.GetCTypeFromType(windowsRuntimeMarshalType), null);
-            ExprMemberGroup addEventGrp = CreateMemberGroupEXPR(methodName, new List<Type> { evtType }, marshalClass, SYMKIND.SK_MethodSymbol);
-            Expr expr = _binder.BindMethodGroupToArguments(
+            ExprClass marshalClass = _exprFactory.CreateClass(_symbolTable.GetCTypeFromType(windowsRuntimeMarshalType));
+            ExprMemberGroup addEventGrp = CreateMemberGroupEXPR(methodName, new [] { evtType }, marshalClass, SYMKIND.SK_MethodSymbol);
+            return _binder.BindMethodGroupToArguments(
                 BindingFlag.BIND_RVALUEREQUIRED | BindingFlag.BIND_STMTEXPRONLY,
                 addEventGrp,
                 args);
-
-            return expr;
         }
 
         private static void CheckForConditionalMethodError(Expr pExpr)
@@ -1076,18 +1023,15 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
         }
 
-        private Expr ReorderArgumentsForNamedAndOptional(Expr callingObject, Expr pResult)
+        private void ReorderArgumentsForNamedAndOptional(Expr callingObject, ExprWithArgs result)
         {
-            IExprWithArgs result = pResult as IExprWithArgs;
-            Debug.Assert(result != null);
-
             Expr arguments = result.OptionalArguments;
             AggregateType type;
             MethodOrPropertySymbol methprop;
             ExprMemberGroup memgroup;
             TypeArray typeArgs;
 
-            if (pResult is ExprCall call)
+            if (result is ExprCall call)
             {
                 type = call.MethWithInst.Ats;
                 methprop = call.MethWithInst.Meth();
@@ -1096,7 +1040,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
             else
             {
-                ExprProperty prop = pResult as ExprProperty;
+                ExprProperty prop = result as ExprProperty;
                 Debug.Assert(prop != null);
                 type = prop.PropWithTypeSlot.Ats;
                 methprop = prop.PropWithTypeSlot.Prop();
@@ -1104,9 +1048,10 @@ namespace Microsoft.CSharp.RuntimeBinder
                 typeArgs = null;
             }
 
-            ArgInfos argInfo = new ArgInfos();
-            bool b;
-            argInfo.carg = ExpressionBinder.CountArguments(arguments, out b);
+            ArgInfos argInfo = new ArgInfos
+            {
+                carg = ExpressionBinder.CountArguments(arguments, out _)
+            };
             _binder.FillInArgInfoFromArgList(argInfo, arguments);
 
             // We need to substitute type parameters BEFORE getting the most derived one because
@@ -1150,7 +1095,6 @@ namespace Microsoft.CSharp.RuntimeBinder
 
                 result.OptionalArguments = pList;
             }
-            return pResult;
         }
 
         private Expr StripNamedArgument(Expr pArg)
@@ -1200,10 +1144,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             ArgumentObject[] arguments,
             LocalVariableSymbol[] locals)
         {
-            if (arguments.Length != 1)
-            {
-                throw Error.BindUnaryOperatorRequireOneArgument();
-            }
+            Debug.Assert(arguments.Length == 1);
 
             OperatorKind op = GetOperatorKind(payload.Operation);
             Expr arg1 = CreateArgumentEXPR(arguments[0], locals[0]);
@@ -1213,7 +1154,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 // For true and false, we try to convert to bool first. If that
                 // doesn't work, then we look for user defined operators.
-                Expr result = _binder.tryConvert(arg1, SymbolLoader.GetReqPredefType(PredefinedType.PT_BOOL));
+                Expr result = _binder.tryConvert(arg1, SymbolLoader.GetPredefindType(PredefinedType.PT_BOOL));
                 if (result != null && op == OperatorKind.OP_FALSE)
                 {
                     // If we can convert to bool, we need to negate the thing if we're looking for false.
@@ -1230,7 +1171,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 // the error.
                 if (result == null)
                 {
-                    result = _binder.mustConvert(arg1, SymbolLoader.GetReqPredefType(PredefinedType.PT_BOOL));
+                    result = _binder.mustConvert(arg1, SymbolLoader.GetPredefindType(PredefinedType.PT_BOOL));
                 }
                 return result;
             }
@@ -1247,10 +1188,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 ArgumentObject[] arguments,
                 LocalVariableSymbol[] locals)
         {
-            if (arguments.Length != 2)
-            {
-                throw Error.BindBinaryOperatorRequireTwoArguments();
-            }
+            Debug.Assert(arguments.Length == 2);
 
             ExpressionKind ek = Operators.GetExpressionKind(GetOperatorKind(payload.Operation, payload.IsLogicalOperation));
             Expr arg1 = CreateArgumentEXPR(arguments[0], locals[0]);
@@ -1371,12 +1309,11 @@ namespace Microsoft.CSharp.RuntimeBinder
             ICSharpBinder payload,
             ArgumentObject argument,
             LocalVariableSymbol local,
-            Expr optionalIndexerArguments,
-            bool fEventsPermitted)
+            Expr optionalIndexerArguments)
         {
             // If our argument is a static type, then we're calling a static property.
             Expr callingObject = argument.Info.IsStaticType ?
-                _exprFactory.CreateClass(_symbolTable.GetCTypeFromType(argument.Value as Type), null) :
+                _exprFactory.CreateClass(_symbolTable.GetCTypeFromType(argument.Value as Type)) :
                 CreateLocal(argument.Type, argument.Info.IsOut, local);
 
             if (!argument.Info.UseCompileTimeType && argument.Value == null)
@@ -1402,18 +1339,19 @@ namespace Microsoft.CSharp.RuntimeBinder
                     int numIndexArguments = ExpressionIterator.Count(optionalIndexerArguments);
                     // We could have an array access here. See if its just an array.
                     Type type = argument.Type;
-                    if (type.IsArray || type == typeof(string))
+                    Debug.Assert(type != typeof(string));
+                    if (type.IsArray)
                     {
                         if (type.IsArray && type.GetArrayRank() != numIndexArguments)
                         {
-                            _semanticChecker.GetErrorContext().Error(ErrorCode.ERR_BadIndexCount, type.GetArrayRank());
+                            throw _semanticChecker.ErrorContext.Error(ErrorCode.ERR_BadIndexCount, type.GetArrayRank());
                         }
-
+                        
+                        Debug.Assert(callingObject.Type is ArrayType);
                         return CreateArray(callingObject, optionalIndexerArguments);
                     }
                 }
-                mem.ReportErrors();
-                Debug.Assert(false, "Why didn't member lookup report an error?");
+                throw mem.ReportErrors();
             }
 
             switch (swt.Sym.getKind())
@@ -1437,14 +1375,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     return CreateField(swt, callingObject);
 
                 case SYMKIND.SK_EventSymbol:
-                    if (fEventsPermitted)
-                    {
-                        return CreateEvent(swt, callingObject);
-                    }
-                    else
-                    {
-                        throw Error.BindPropertyFailedEvent(name);
-                    }
+                    throw Error.BindPropertyFailedEvent(name);
 
                 default:
                     Debug.Assert(false, "Unexpected type returned from lookup");
@@ -1463,10 +1394,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             LocalVariableSymbol[] locals,
             bool bIsArrayCreationConversion)
         {
-            if (arguments.Length != 1)
-            {
-                throw Error.BindImplicitConversionRequireOneArgument();
-            }
+            Debug.Assert(arguments.Length == 1);
 
             // Load the conversions on the target.
             _symbolTable.AddConversionsForType(returnType);
@@ -1486,12 +1414,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 // user defined conversions (since the convert is guaranteed to return one of
                 // the primitive types), and we check for overflow since we don't want truncation.
 
-                CType pDestType = _binder.chooseArrayIndexType(argument);
-                if (null == pDestType)
-                {
-                    pDestType = SymbolLoader.GetReqPredefType(PredefinedType.PT_INT, true);
-                }
-
+                CType pDestType = _binder.ChooseArrayIndexType(argument);
                 return _binder.mustCast(
                     _binder.mustConvert(argument, pDestType),
                     destinationType,
@@ -1505,10 +1428,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         internal Expr BindExplicitConversion(ArgumentObject[] arguments, Type returnType, LocalVariableSymbol[] locals)
         {
-            if (arguments.Length != 1)
-            {
-                throw Error.BindExplicitConversionRequireOneArgument();
-            }
+            Debug.Assert(arguments.Length == 1);
 
             // Load the conversions on the target.
             _symbolTable.AddConversionsForType(returnType);
@@ -1530,10 +1450,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             ArgumentObject[] arguments,
             LocalVariableSymbol[] locals)
         {
-            if (arguments.Length < 2)
-            {
-                throw Error.BindBinaryAssignmentRequireTwoArguments();
-            }
+            Debug.Assert(arguments.Length >= 2);
 
             string name = payload.Name;
 
@@ -1554,7 +1471,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 bIsCompound = (payload as CSharpSetMemberBinder).IsCompoundAssignment;
             }
             _symbolTable.PopulateSymbolTableWithName(name, null, arguments[0].Type);
-            Expr lhs = BindProperty(payload, arguments[0], locals[0], indexerArguments, false);
+            Expr lhs = BindProperty(payload, arguments[0], locals[0], indexerArguments);
 
             int indexOfLast = arguments.Length - 1;
             Expr rhs = CreateArgumentEXPR(arguments[indexOfLast], locals[indexOfLast]);
@@ -1581,7 +1498,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             Expr callingObject = CreateLocal(arguments[0].Type, false, locals[0]);
             MemberLookup mem = new MemberLookup();
-            CType boolType = SymbolLoader.GetReqPredefType(PredefinedType.PT_BOOL);
+            CType boolType = SymbolLoader.GetPredefindType(PredefinedType.PT_BOOL);
             bool result = false;
 
             if (arguments[0].Value == null)
@@ -1599,19 +1516,22 @@ namespace Microsoft.CSharp.RuntimeBinder
                     false,
                     false);
 
-            // If lookup returns an actual event, then this is an event.
-            if (swt != null && swt.Sym.getKind() == SYMKIND.SK_EventSymbol)
+            if (swt != null)
             {
-                result = true;
-            }
+                // If lookup returns an actual event, then this is an event.
+                if (swt.Sym.getKind() == SYMKIND.SK_EventSymbol)
+                {
+                    result = true;
+                }
 
-            // If lookup returns the backing field of a field-like event, then
-            // this is an event. This is due to the Dev10 design change around
-            // the binding of +=, and the fact that the "IsEvent" binding question
-            // is only ever asked about the LHS of a += or -=.
-            if (swt != null && swt.Sym.getKind() == SYMKIND.SK_FieldSymbol && swt.Sym.AsFieldSymbol().isEvent)
-            {
-                result = true;
+                // If lookup returns the backing field of a field-like event, then
+                // this is an event. This is due to the Dev10 design change around
+                // the binding of +=, and the fact that the "IsEvent" binding question
+                // is only ever asked about the LHS of a += or -=.
+                if (swt.Sym is FieldSymbol field && field.isEvent)
+                {
+                    result = true;
+                }
             }
 
             return _exprFactory.CreateConstant(boolType, ConstVal.Get(result));

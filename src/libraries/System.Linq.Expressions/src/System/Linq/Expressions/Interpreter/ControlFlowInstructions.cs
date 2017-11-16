@@ -744,7 +744,6 @@ namespace System.Linq.Expressions.Interpreter
         internal static readonly ThrowInstruction VoidThrow = new ThrowInstruction(false, false);
         internal static readonly ThrowInstruction Rethrow = new ThrowInstruction(true, true);
         internal static readonly ThrowInstruction VoidRethrow = new ThrowInstruction(false, true);
-        private static ConstructorInfo _runtimeWrappedExceptionCtor;
 
         private readonly bool _hasResult, _rethrow;
 
@@ -770,18 +769,7 @@ namespace System.Linq.Expressions.Interpreter
         }
 
         private static Exception WrapThrownObject(object thrown) =>
-            thrown == null ? null : (thrown as Exception ?? RuntimeWrap(thrown));
-
-        private static RuntimeWrappedException RuntimeWrap(object thrown)
-        {
-            ConstructorInfo ctor = _runtimeWrappedExceptionCtor
-                ?? (_runtimeWrappedExceptionCtor = typeof(RuntimeWrappedException)
-                .GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.ExactBinding, 
-                                null, 
-                                new Type[] { typeof(object) }, 
-                                null));
-            return (RuntimeWrappedException)ctor.Invoke(new [] {thrown});
-        }
+            thrown == null ? null : (thrown as Exception ?? new RuntimeWrappedException(thrown));
     }
 
     internal sealed class IntSwitchInstruction<T> : Instruction

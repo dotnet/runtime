@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 
 namespace System.Net.Http.Headers
 {
@@ -23,6 +24,7 @@ namespace System.Net.Http.Headers
         public ObjectCollection(Action<T> validator)
             : base(new List<T>())
         {
+            Debug.Assert(validator != null, $"{nameof(validator)} must not be null.");
             _validator = validator;
         }
 
@@ -35,19 +37,13 @@ namespace System.Net.Http.Headers
 
         protected override void InsertItem(int index, T item)
         {
-            if (_validator != null)
-            {
-                _validator(item);
-            }
+            _validator(item);
             base.InsertItem(index, item);
         }
 
         protected override void SetItem(int index, T item)
         {
-            if (_validator != null)
-            {
-                _validator(item);
-            }
+            _validator(item);
             base.SetItem(index, item);
         }
 

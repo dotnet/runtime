@@ -13,27 +13,7 @@ namespace System.Net.Http
 {
     internal sealed class ManagedHandler : HttpMessageHandler
     {
-        // Configuration settings
-        private bool _useCookies = HttpHandlerDefaults.DefaultUseCookies;
-        private CookieContainer _cookieContainer;
-        private ClientCertificateOption _clientCertificateOptions = HttpHandlerDefaults.DefaultClientCertificateOption;
-        private DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
-        private bool _useProxy = HttpHandlerDefaults.DefaultUseProxy;
-        private IWebProxy _proxy;
-        private ICredentials _defaultProxyCredentials;
-        private bool _preAuthenticate = HttpHandlerDefaults.DefaultPreAuthenticate;
-        private bool _useDefaultCredentials = HttpHandlerDefaults.DefaultUseDefaultCredentials;
-        private ICredentials _credentials;
-        private bool _allowAutoRedirect = HttpHandlerDefaults.DefaultAutomaticRedirection;
-        private int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
-        private int _maxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
-        private int _maxConnectionsPerServer = HttpHandlerDefaults.DefaultMaxConnectionsPerServer;
-        private X509CertificateCollection _clientCertificates;
-        private Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> _serverCertificateCustomValidationCallback;
-        private bool _checkCertificateRevocationList = false;
-        private SslProtocols _sslProtocols = SslProtocols.None;
-        private IDictionary<string, object> _properties;
-
+        private readonly HttpConnectionSettings _settings = new HttpConnectionSettings();
         private HttpMessageHandler _handler;
         private bool _disposed;
 
@@ -62,27 +42,27 @@ namespace System.Net.Http
 
         public bool UseCookies
         {
-            get => _useCookies;
+            get => _settings._useCookies;
             set
             {
                 CheckDisposedOrStarted();
-                _useCookies = value;
+                _settings._useCookies = value;
             }
         }
 
         public CookieContainer CookieContainer
         {
-            get => _cookieContainer ?? (_cookieContainer = new CookieContainer());
+            get => _settings._cookieContainer ?? (_settings._cookieContainer = new CookieContainer());
             set
             {
                 CheckDisposedOrStarted();
-                _cookieContainer = value;
+                _settings._cookieContainer = value;
             }
         }
 
         public ClientCertificateOption ClientCertificateOptions
         {
-            get => _clientCertificateOptions;
+            get => _settings._clientCertificateOptions;
             set
             {
                 if (value != ClientCertificateOption.Manual &&
@@ -92,93 +72,93 @@ namespace System.Net.Http
                 }
 
                 CheckDisposedOrStarted();
-                _clientCertificateOptions = value;
+                _settings._clientCertificateOptions = value;
             }
         }
 
         public DecompressionMethods AutomaticDecompression
         {
-            get => _automaticDecompression;
+            get => _settings._automaticDecompression;
             set
             {
                 CheckDisposedOrStarted();
-                _automaticDecompression = value;
+                _settings._automaticDecompression = value;
             }
         }
 
         public bool UseProxy
         {
-            get => _useProxy;
+            get => _settings._useProxy;
             set
             {
                 CheckDisposedOrStarted();
-                _useProxy = value;
+                _settings._useProxy = value;
             }
         }
 
         public IWebProxy Proxy
         {
-            get => _proxy;
+            get => _settings._proxy;
             set
             {
                 CheckDisposedOrStarted();
-                _proxy = value;
+                _settings._proxy = value;
             }
         }
 
         public ICredentials DefaultProxyCredentials
         {
-            get => _defaultProxyCredentials;
+            get => _settings._defaultProxyCredentials;
             set
             {
                 CheckDisposedOrStarted();
-                _defaultProxyCredentials = value;
+                _settings._defaultProxyCredentials = value;
             }
         }
 
         public bool PreAuthenticate
         {
-            get => _preAuthenticate;
+            get => _settings._preAuthenticate;
             set
             {
                 CheckDisposedOrStarted();
-                _preAuthenticate = value;
+                _settings._preAuthenticate = value;
             }
         }
 
         public bool UseDefaultCredentials
         {
-            get => _useDefaultCredentials;
+            get => _settings._useDefaultCredentials;
             set
             {
                 CheckDisposedOrStarted();
-                _useDefaultCredentials = value;
+                _settings._useDefaultCredentials = value;
             }
         }
 
         public ICredentials Credentials
         {
-            get => _credentials;
+            get => _settings._credentials;
             set
             {
                 CheckDisposedOrStarted();
-                _credentials = value;
+                _settings._credentials = value;
             }
         }
 
         public bool AllowAutoRedirect
         {
-            get => _allowAutoRedirect;
+            get => _settings._allowAutoRedirect;
             set
             {
                 CheckDisposedOrStarted();
-                _allowAutoRedirect = value;
+                _settings._allowAutoRedirect = value;
             }
         }
 
         public int MaxAutomaticRedirections
         {
-            get => _maxAutomaticRedirections;
+            get => _settings._maxAutomaticRedirections;
             set
             {
                 if (value < 1)
@@ -187,13 +167,13 @@ namespace System.Net.Http
                 }
 
                 CheckDisposedOrStarted();
-                _maxAutomaticRedirections = value;
+                _settings._maxAutomaticRedirections = value;
             }
         }
 
         public int MaxConnectionsPerServer
         {
-            get => _maxConnectionsPerServer;
+            get => _settings._maxConnectionsPerServer;
             set
             {
                 if (value < 1)
@@ -202,13 +182,13 @@ namespace System.Net.Http
                 }
 
                 CheckDisposedOrStarted();
-                _maxConnectionsPerServer = value;
+                _settings._maxConnectionsPerServer = value;
             }
         }
 
         public int MaxResponseHeadersLength
         {
-            get => _maxResponseHeadersLength;
+            get => _settings._maxResponseHeadersLength;
             set
             {
                 if (value <= 0)
@@ -217,7 +197,7 @@ namespace System.Net.Http
                 }
 
                 CheckDisposedOrStarted();
-                _maxResponseHeadersLength = value;
+                _settings._maxResponseHeadersLength = value;
             }
         }
 
@@ -225,48 +205,48 @@ namespace System.Net.Http
         {
             get
             {
-                if (_clientCertificateOptions != ClientCertificateOption.Manual)
+                if (_settings._clientCertificateOptions != ClientCertificateOption.Manual)
                 {
                     throw new InvalidOperationException(SR.Format(SR.net_http_invalid_enable_first, nameof(ClientCertificateOptions), nameof(ClientCertificateOption.Manual)));
                 }
 
-                return _clientCertificates ?? (_clientCertificates = new X509Certificate2Collection());
+                return _settings._clientCertificates ?? (_settings._clientCertificates = new X509Certificate2Collection());
             }
         }
 
         public Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback
         {
-            get => _serverCertificateCustomValidationCallback;
+            get => _settings._serverCertificateCustomValidationCallback;
             set
             {
                 CheckDisposedOrStarted();
-                _serverCertificateCustomValidationCallback = value;
+                _settings._serverCertificateCustomValidationCallback = value;
             }
         }
 
         public bool CheckCertificateRevocationList
         {
-            get => _checkCertificateRevocationList;
+            get => _settings._checkCertificateRevocationList;
             set
             {
                 CheckDisposedOrStarted();
-                _checkCertificateRevocationList = value;
+                _settings._checkCertificateRevocationList = value;
             }
         }
 
         public SslProtocols SslProtocols
         {
-            get => _sslProtocols;
+            get => _settings._sslProtocols;
             set
             {
                 SecurityProtocol.ThrowOnNotAllowed(value, allowNone: true);
                 CheckDisposedOrStarted();
-                _sslProtocols = value;
+                _settings._sslProtocols = value;
             }
         }
 
         public IDictionary<string, object> Properties =>
-            _properties ?? (_properties = new Dictionary<string, object>());
+            _settings._properties ?? (_settings._properties = new Dictionary<string, object>());
 
         protected override void Dispose(bool disposing)
         {
@@ -281,36 +261,27 @@ namespace System.Net.Http
 
         private HttpMessageHandler SetupHandlerChain()
         {
-            HttpMessageHandler handler = new HttpConnectionHandler(
-                _clientCertificates,
-                _serverCertificateCustomValidationCallback,
-                _checkCertificateRevocationList,
-                _sslProtocols);
+            HttpMessageHandler handler = new HttpConnectionHandler(_settings);
 
-            if ((_useProxy && _proxy != null) ||
-                HttpProxyConnectionHandler.EnvironmentProxyConfigured)
+            if (_settings._useProxy &&
+                (_settings._proxy != null || HttpProxyConnectionHandler.EnvironmentProxyConfigured))
             {
-                handler = new HttpProxyConnectionHandler(_useProxy ? _proxy : null, _defaultProxyCredentials, handler);
+                handler = new HttpProxyConnectionHandler(_settings, handler);
             }
 
-            if (_credentials != null)
-            {
-                handler = new AuthenticationHandler(_preAuthenticate, _credentials, handler);
-            }
-
-            if (_useCookies)
+            if (_settings._useCookies)
             {
                 handler = new CookieHandler(CookieContainer, handler);
             }
 
-            if (_allowAutoRedirect)
+            if (_settings._credentials != null || _settings._allowAutoRedirect)
             {
-                handler = new AutoRedirectHandler(_maxAutomaticRedirections, handler);
+                handler = new AuthenticateAndRedirectHandler(_settings._preAuthenticate, _settings._credentials, _settings._allowAutoRedirect, _settings._maxAutomaticRedirections, handler);
             }
 
-            if (_automaticDecompression != DecompressionMethods.None)
+            if (_settings._automaticDecompression != DecompressionMethods.None)
             {
-                handler = new DecompressionHandler(_automaticDecompression, handler);
+                handler = new DecompressionHandler(_settings._automaticDecompression, handler);
             }
 
             if (Interlocked.CompareExchange(ref _handler, handler, null) == null)
@@ -324,8 +295,8 @@ namespace System.Net.Http
             }
         }
 
-        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
-            CancellationToken cancellationToken)
+        protected internal override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request, CancellationToken cancellationToken)
         {
             CheckDisposed();
             HttpMessageHandler handler = _handler ?? SetupHandlerChain();

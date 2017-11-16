@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Specialized;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Collections.Specialized;
-    using System.Security.Permissions;
-
     internal class ADSearcher
     {
-        private DirectorySearcher _searcher = null;
+        private readonly DirectorySearcher _searcher = null;
         private static TimeSpan s_defaultTimeSpan = new TimeSpan(0, 120, 0);
 
         public ADSearcher(DirectoryEntry searchRoot, string filter, string[] propertiesToLoad, SearchScope scope)
@@ -40,49 +38,21 @@ namespace System.DirectoryServices.ActiveDirectory
                 _searcher.ServerPageTimeLimit = s_defaultTimeSpan;
             }
 
-            if (cacheResults)
-            {
-                _searcher.CacheResults = true;
-            }
-            else
-            {
-                _searcher.CacheResults = false;
-            }
+             _searcher.CacheResults = cacheResults;
         }
 
-        public SearchResult FindOne()
-        {
-            return _searcher.FindOne();
-        }
+        public SearchResult FindOne() => _searcher.FindOne();
 
-        public SearchResultCollection FindAll()
-        {
-            return _searcher.FindAll();
-        }
+        public SearchResultCollection FindAll() => _searcher.FindAll();
 
-        public StringCollection PropertiesToLoad
-        {
-            get
-            {
-                return _searcher.PropertiesToLoad;
-            }
-        }
+        public StringCollection PropertiesToLoad => _searcher.PropertiesToLoad;
 
         public string Filter
         {
-            get
-            {
-                return _searcher.Filter;
-            }
-            set
-            {
-                _searcher.Filter = value;
-            }
+            get => _searcher.Filter;
+            set => _searcher.Filter = value;
         }
 
-        public void Dispose()
-        {
-            _searcher.Dispose();
-        }
+        public void Dispose() => _searcher.Dispose();
     }
 }

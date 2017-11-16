@@ -81,7 +81,7 @@ namespace System.IO.IsolatedStorage
 
                 // https://github.com/dotnet/corefx/issues/12628
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                    && !PlatformDetection.IsWinRT)
+                    && !PlatformDetection.IsInAppContainer)
                 {
                     validScopes.Add(PresetScopes.MachineStoreForApplication);
                     validScopes.Add(PresetScopes.MachineStoreForAssembly);
@@ -95,7 +95,7 @@ namespace System.IO.IsolatedStorage
 /*
  *      Template for Store test method
  * 
-        [Theory MemberData(nameof(ValidStores))]
+        [Theory, MemberData(nameof(ValidStores))]
         public void ExampleTest(PresetScopes scope)
         {
             // If a dirty state will fail the test, use this

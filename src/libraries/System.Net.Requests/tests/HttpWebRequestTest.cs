@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Cache;
@@ -279,6 +280,7 @@ namespace System.Net.Tests
             Assert.Equal(int.MaxValue, request.Timeout);
         }
 
+        [ActiveIssue(22627)]
         [Fact]
         public async Task Timeout_SetTenMillisecondsOnLoopback_ThrowsWebException()
         {
@@ -732,6 +734,44 @@ namespace System.Net.Tests
 
             request.ProtocolVersion = HttpVersion.Version11;
             Assert.Equal(HttpVersion.Version11, request.ProtocolVersion);
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP does not allow HTTP/1.0 requests.")]
+        [OuterLoop]
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ProtocolVersion_SetThenSendRequest_CorrectHttpRequestVersionSent(bool isVersion10)
+        {
+            Version requestVersion = isVersion10 ? HttpVersion.Version10 : HttpVersion.Version11;
+            Version receivedRequestVersion = null;
+
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                HttpWebRequest request = WebRequest.CreateHttp(url);
+                request.ProtocolVersion = requestVersion;
+
+                Task<WebResponse> getResponse = request.GetResponseAsync();
+                Task<List<string>> serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(server);
+
+                using (HttpWebResponse response = (HttpWebResponse) await getResponse)
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+
+                List<string> receivedRequest = await serverTask;
+                string statusLine = receivedRequest[0];
+                if (statusLine.Contains("/1.0"))
+                {
+                    receivedRequestVersion = HttpVersion.Version10;
+                }
+                else if (statusLine.Contains("/1.1"))
+                {
+                    receivedRequestVersion = HttpVersion.Version11;
+                }
+            });
+
+            Assert.Equal(requestVersion, receivedRequestVersion);
         }
 
         [Fact]

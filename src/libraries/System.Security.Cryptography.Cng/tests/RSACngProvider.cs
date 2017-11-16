@@ -10,15 +10,9 @@ namespace System.Security.Cryptography.Rsa.Tests
     {
         private bool? _supports384PrivateKey;
 
-        public RSA Create()
-        {
-            return new RSACng();
-        }
+        public RSA Create() => new RSACng();
 
-        public RSA Create(int keySize)
-        {
-            return new RSACng(keySize);
-        }
+        public RSA Create(int keySize) => new RSACng(keySize);
 
         public bool Supports384PrivateKey
         {
@@ -27,7 +21,8 @@ namespace System.Security.Cryptography.Rsa.Tests
                 if (!_supports384PrivateKey.HasValue)
                 {
                     // For Windows 7 (Microsoft Windows 6.1) and Windows 8 (Microsoft Windows 6.2) this is false for RSACng.
-                    _supports384PrivateKey = !RuntimeInformation.OSDescription.Contains("Windows 6.1") &&
+                    _supports384PrivateKey =
+                        !RuntimeInformation.OSDescription.Contains("Windows 6.1") &&
                         !RuntimeInformation.OSDescription.Contains("Windows 6.2");
                 }
 
@@ -35,10 +30,9 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        public bool SupportsSha2Oaep
-        {
-            get { return true; }
-        }
+        public bool SupportsSha2Oaep => true;
+
+        public bool SupportsDecryptingIntoExactSpaceRequired => true;
     }
 
     public partial class RSAFactory

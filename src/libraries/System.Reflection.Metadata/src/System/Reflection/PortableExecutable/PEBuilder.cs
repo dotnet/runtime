@@ -19,7 +19,7 @@ namespace System.Reflection.PortableExecutable
         private readonly Lazy<ImmutableArray<Section>> _lazySections;
         private Blob _lazyChecksum;
 
-        protected struct Section
+        protected readonly struct Section
         {
             public readonly string Name;
             public readonly SectionCharacteristics Characteristics;
@@ -36,7 +36,7 @@ namespace System.Reflection.PortableExecutable
             }
         }
 
-        private struct SerializedSection
+        private readonly struct SerializedSection
         {
             public readonly BlobBuilder Builder;
 

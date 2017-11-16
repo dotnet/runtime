@@ -101,6 +101,44 @@ namespace OLEDB.Test.ModuleCore
             return tagVARIATION_STATUS.eVariationStatusPassed;
         }
 
+        public override IEnumerable<XunitTestCase> TestCases()
+        {
+            List<object> children = Children;
+            if (children != null && children.Count > 0)
+            {
+                foreach (object child in children)
+                {
+                    CTestCase childTc = child as CTestCase;
+                    if (childTc != null) 
+                    {
+                        childTc.Init();
+
+                        foreach (XunitTestCase testCase in childTc.TestCases())
+                        {
+                            yield return testCase;
+                        }
+
+                        continue;
+                    }
+
+                    CVariation var = child as CVariation;
+                    if (var != null && CModInfo.IsVariationSelected(var.Desc))
+                    {
+                        foreach (var testCase in var.TestCases())
+                        {
+                            Func<tagVARIATION_STATUS> test = testCase.Test;
+                            testCase.Test = () => {
+                                CurVariation = var;
+                                return test();
+                            };
+
+                            yield return testCase;
+                        }
+                    }
+                }
+            }
+        }
+
         public void RunVariation(dlgtTestVariation testmethod, Variation curVar)
         {
             if (!CModInfo.IsVariationSelected(curVar.Desc))

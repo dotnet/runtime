@@ -64,11 +64,10 @@ namespace System.DirectoryServices.Protocols
         }
     }
 
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.DirectoryServices.Protocols, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public class LdapException : DirectoryException, ISerializable
     {
-        private int _errorCode;
-        private string _serverErrorMessage;
-        internal PartialResultsCollection results = new PartialResultsCollection();
         protected LdapException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 
         public LdapException() : base() { }
@@ -79,55 +78,34 @@ namespace System.DirectoryServices.Protocols
 
         public LdapException(int errorCode) : base(SR.DefaultLdapError)
         {
-            _errorCode = errorCode;
+            ErrorCode = errorCode;
         }
 
         public LdapException(int errorCode, string message) : base(message)
         {
-            _errorCode = errorCode;
+            ErrorCode = errorCode;
         }
 
         public LdapException(int errorCode, string message, string serverErrorMessage) : base(message)
         {
-            _errorCode = errorCode;
-            _serverErrorMessage = serverErrorMessage;
+            ErrorCode = errorCode;
+            ServerErrorMessage = serverErrorMessage;
         }
 
         public LdapException(int errorCode, string message, Exception inner) : base(message, inner)
         {
-            _errorCode = errorCode;
+            ErrorCode = errorCode;
         }
 
-        public int ErrorCode
-        {
-            get
-            {
-                return _errorCode;
-            }
-        }
+        public int ErrorCode { get; }
 
-        public string ServerErrorMessage
-        {
-            get
-            {
-                return _serverErrorMessage;
-            }
-        }
+        public string ServerErrorMessage { get; }
 
-        public PartialResultsCollection PartialResults
-        {
-            get
-            {
-                return this.results;
-            }
-        }
-        
-        public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
-        {
-            base.GetObjectData(serializationInfo, streamingContext);
-        }
+        public PartialResultsCollection PartialResults { get; } = new PartialResultsCollection();
     }
 
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.DirectoryServices.Protocols, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public class TlsOperationException : DirectoryOperationException
     {
         protected TlsOperationException(SerializationInfo info, StreamingContext context) : base(info, context) { }
@@ -155,21 +133,22 @@ namespace System.DirectoryServices.Protocols
     {
         public static void CheckAndSetLdapError(int error)
         {
-            string errorMessage;
             if (error != (int)ResultCode.Success)
             {
                 if (Utility.IsResultCode((ResultCode)error))
                 {
-                    errorMessage = OperationErrorMappings.MapResultCode(error);
+                    string errorMessage = OperationErrorMappings.MapResultCode(error);
                     throw new DirectoryOperationException(null, errorMessage);
                 }
                 else if (Utility.IsLdapError((LdapError)error))
                 {
-                    errorMessage = LdapErrorMappings.MapResultCode(error);
+                    string errorMessage = LdapErrorMappings.MapResultCode(error);
                     throw new LdapException(error, errorMessage);
                 }
                 else
+                {
                     throw new LdapException(error);
+                }
             }
         }
     }

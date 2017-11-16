@@ -866,38 +866,6 @@ namespace System.Xml.Xsl.IlGen
             }
         }
 
-        // BUGBUG: This method is only necessary to work around VS Bug 478350
-        public void CallToken(MethodInfo meth)
-        {
-            Debug.Assert(!(_methInfo is ConstructorBuilder));
-            MethodBuilder methBldr = _methInfo as MethodBuilder;
-
-            if (methBldr != null)
-            {
-                // Using regular reflection emit, so get a token for the specified method.
-                // The token is only valid within scope of this method's body.
-                OpCode opcode = meth.IsVirtual || meth.IsAbstract ? OpCodes.Callvirt : OpCodes.Call;
-
-                TraceCall(opcode, meth);
-
-                _ilgen.Emit(opcode, ((ModuleBuilder)methBldr.Module).MetadataToken);
-
-                if (_lastSourceInfo != null)
-                {
-                    // Emit a "no source" sequence point, otherwise the debugger would return to the wrong line
-                    // once the call has finished.  We are guaranteed not to emit adjacent sequence points because
-                    // the Call instruction precedes this sequence point, and a nop instruction precedes other
-                    // sequence points.
-                    MarkSequencePoint(SourceLineInfo.NoSource);
-                }
-            }
-            else
-            {
-                // Using LCG, so no need to workaround
-                Call(meth);
-            }
-        }
-
         public void Construct(ConstructorInfo constr)
         {
             Emit(OpCodes.Newobj, constr);

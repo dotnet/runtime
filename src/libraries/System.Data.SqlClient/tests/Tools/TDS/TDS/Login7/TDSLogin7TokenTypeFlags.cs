@@ -60,7 +60,7 @@ namespace Microsoft.SqlServer.TDS.Login7
         }
 
         /// <summary>
-        /// Initialization construcgtor
+        /// Initialization constructor
         /// </summary>
         public TDSLogin7TokenTypeFlags(byte flags)
         {

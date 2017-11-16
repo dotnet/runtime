@@ -377,5 +377,50 @@ namespace System.Linq.Tests
                 Enumerable.Range(0, 100).Select(i => i.ToString()).OrderBy(i => i.Length).ThenBy(i => i).ToArray();
             Assert.Equal(expected, ordered);
         }
+
+        [Fact]
+        public void SortsLargeAscendingEnumerableCorrectly()
+        {
+            const int Items = 1_000_000;
+            IEnumerable<int> expected = NumberRangeGuaranteedNotCollectionType(0, Items);
+
+            IEnumerable<int> unordered = expected.Select(i => i);
+            IOrderedEnumerable<int> ordered = unordered.OrderBy(i => i);
+
+            Assert.Equal(expected, ordered);
+        }
+
+        [Fact]
+        public void SortsLargeDescendingEnumerableCorrectly()
+        {
+            const int Items = 1_000_000;
+            IEnumerable<int> expected = NumberRangeGuaranteedNotCollectionType(0, Items);
+
+            IEnumerable<int> unordered = expected.Select(i => Items - i - 1);
+            IOrderedEnumerable<int> ordered = unordered.OrderBy(i => i);
+
+            Assert.Equal(expected, ordered);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(8)]
+        [InlineData(16)]
+        [InlineData(1024)]
+        [InlineData(4096)]
+        [InlineData(1_000_000)]
+        public void SortsRandomizedEnumerableCorrectly(int items)
+        {
+            var r = new Random(42);
+
+            int[] randomized = Enumerable.Range(0, items).Select(i => r.Next()).ToArray();
+            int[] ordered = ForceNotCollection(randomized).OrderBy(i => i).ToArray();
+
+            Array.Sort(randomized);
+            Assert.Equal(randomized, ordered);
+        }
     }
 }

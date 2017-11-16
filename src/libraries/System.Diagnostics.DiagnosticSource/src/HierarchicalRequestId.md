@@ -95,12 +95,12 @@ As a result log records may look like:
 | Message  |  Component name | Context |
 | ---------| --------------- | ------- |
 | user starts request to service-a | user |  |
-| incoming request | service-a | `Request-Id=|Guid.` |
-| request to service-b | service-a | `Request-Id=|Guid.1.` |
-| incoming request | service-b | `Request-Id=|Guid.1.da4e9679_` |
-| response | service-b | `Request-Id=|Guid.1.da4e9679_` |
-| response from service-b | service-a | `Request-Id=|Guid.1.` |
-| response | service-a | `Request-Id=|Guid.` |
+| incoming request | service-a | Request-Id=&#124;Guid. |
+| request to service-b | service-a | Request-Id=&#124;Guid.1. |
+| incoming request | service-b | Request-Id=&#124;Guid.1.da4e9679_ |
+| response | service-b | Request-Id=&#124;Guid.1.da4e9679_ |
+| response from service-b | service-a | Request-Id=&#124;Guid.1. |
+| response | service-a | Request-Id=&#124;Guid. |
 | response from service-a | user |  |
 
 ### Remarks

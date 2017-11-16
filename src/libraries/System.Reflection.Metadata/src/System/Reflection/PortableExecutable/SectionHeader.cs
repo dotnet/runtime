@@ -4,7 +4,7 @@
 
 namespace System.Reflection.PortableExecutable
 {
-    public struct SectionHeader
+    public readonly struct SectionHeader
     {
         /// <summary>
         /// The name of the section.

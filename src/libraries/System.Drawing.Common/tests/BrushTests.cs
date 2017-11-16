@@ -20,7 +20,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         public void Dispose_NoSuchEntryPoint_SilentyCatchesException()
         {
             var brush = new SubBrush();

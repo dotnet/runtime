@@ -498,4 +498,7 @@
   <data name="DSUnknown" xml:space="preserve">
     <value>Unknown error (0x{0})</value>
   </data>
+  <data name="DirectoryServicesAccountManagement_PlatformNotSupported" xml:space="preserve">
+      <value>System.DirectoryServices.AccountManagement is not supported on this platform.</value>
+  </data>
 </root>

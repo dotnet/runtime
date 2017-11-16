@@ -30,7 +30,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData("Accept: Test", new string[] { "Test" })]
         [InlineData("Accept: Test, Test2,Test3 ,  Test4", new string[] { "Test", "Test2", "Test3 ", " Test4" })]
         [InlineData("Accept: Test", new string[] { "Test" })]
@@ -89,7 +88,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [MemberData(nameof(ContentEncoding_TestData))]
         public async Task ContentEncoding_GetProperty_ReturnsExpected(string header, Encoding expected)
         {
@@ -98,7 +96,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task ContentEncoding_NoBody_ReturnsDefault()
         {
             HttpListenerRequest request = await GetRequest("POST", "", new string[] { "Content-Length: 0", "Content-Type:application/json;charset=unicode" }, content: null);
@@ -106,7 +103,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData("POST", "Content-Length: 9223372036854775807", 9223372036854775807, true)] // long.MaxValue
         [InlineData("POST", "Content-Length: 9223372036854775808", 0, false)] // long.MaxValue + 1
         [InlineData("POST", "Content-Length: 18446744073709551615 ", 0, false)] // ulong.MaxValue
@@ -127,7 +123,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(100)]
         [InlineData("-100")]
         [InlineData("")]
@@ -147,7 +142,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [ActiveIssue(20294, TargetFrameworkMonikers.Netcoreapp)]
         public async Task ContentLength_ManuallyRemovedFromHeaders_DoesNotAffect()
         {
@@ -161,7 +155,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task ContentLength_SetInHeadersAfterAccessingProperty_DoesNothing()
         {
             HttpListenerRequest request = await GetRequest("POST", null, new string[] { "Content-Length: 1" }, content: "\r\n");
@@ -176,7 +169,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData("Referer: http://microsoft.com", "http://microsoft.com/")]
         [InlineData("referer: /relativePath", "/relativePath")]
         [InlineData("Referer: NoSuchSite", "NoSuchSite")]
@@ -190,7 +182,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData("User-Agent: Test", "Test")]
         [InlineData("user-agent: Test", "Test")]
         [InlineData("User-Agent: ", "")]
@@ -202,7 +193,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task UserHostName_GetProperty_ReturnsExpected()
         {
             HttpListenerRequest request = await GetRequest("POST", null, null);
@@ -210,7 +200,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task EndPointProperties_GetProperty_ReturnsExpected()
         {
             HttpListenerRequest request = await GetRequest("POST", "", null);
@@ -229,7 +218,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task ServiceName_GetNoSpn_ReturnsExpected()
         {
             HttpListenerRequest request = await GetRequest("POST", null, null);
@@ -237,14 +225,12 @@ namespace System.Net.Tests
         }
         
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task RequestTraceIdentifier_GetWindows_ReturnsExpected()
         {
             HttpListenerRequest request = await GetRequest("POST", null, null);
             Assert.NotEqual(Guid.Empty, request.RequestTraceIdentifier);
         }
 
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [Theory]
         [InlineData("Connection: ", false)]
         [InlineData("Connection: Connection\r\nUpgrade: ", false)]
@@ -254,8 +240,7 @@ namespace System.Net.Tests
         [InlineData("Unknown-Header: Test", false)]
         public async Task IsWebSocketRequest_GetProperty_ReturnsExpected(string webSocketString, bool expected)
         {
-            // Skip on Windows 7 or UAP platforms. WebSocket support is not present.
-            if (PlatformDetection.IsWindows7 || !PlatformDetection.IsNotOneCoreUAP)
+            if (PlatformDetection.IsWindows7)
             {
                 return;
             }
@@ -265,7 +250,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData("Accept-Language: Lang1,Lang2,Lang3", new string[] { "Lang1", "Lang2", "Lang3" })]
         [InlineData("Accept-Language: Lang1, Lang2, Lang3", new string[] { "Lang1", "Lang2", "Lang3" })]
         [InlineData("Accept-Language: Lang1,,Lang3", new string[] { "Lang1", "", "Lang3" })]
@@ -285,7 +269,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task ClientCertificateError_GetNotInitialized_ThrowsInvalidOperationException()
         {
             HttpListenerRequest request = await GetRequest("POST", null, null);
@@ -293,7 +276,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task GetClientCertificate_NoCertificate_ReturnsNull()
         {
             HttpListenerRequest request = await GetRequest("POST", null, null);
@@ -302,7 +284,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task GetClientCertificateAsync_NoCertificate_ReturnsNull()
         {
             HttpListenerRequest request = await GetRequest("POST", null, null);
@@ -310,7 +291,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task EndGetClientCertificate_NullAsyncResult_ThrowsArgumentException()
         {
             HttpListenerRequest request = await GetRequest("POST", null, null);
@@ -318,7 +298,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task EndGetClientCertificate_InvalidAsyncResult_ThrowsArgumentException()
         {
             HttpListenerRequest request1 = await GetRequest("POST", null, null);
@@ -333,7 +312,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task EndGetClientCertificate_AlreadyCalled_ThrowsInvalidOperationException()
         {
             HttpListenerRequest request = await GetRequest("POST", null, null);
@@ -344,7 +322,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task TransportContext_GetChannelBinding_ReturnsExpected()
         {
             // This might not work on other devices:
@@ -355,7 +332,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(ChannelBindingKind.Unique)]
         public async Task TransportContext_GetChannelBindingInvalid_ThrowsNotSupportedException(ChannelBindingKind kind)
         {
@@ -450,7 +426,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [MemberData(nameof(QueryString_TestData))]
         public async Task QueryString_GetProperty_ReturnsExpected(string query, NameValueCollection expected)
         {
@@ -466,7 +441,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData("POST")]
         [InlineData("PATCH")]
         [InlineData("get")]
@@ -479,7 +453,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData("1.1", new string[] { "Proxy-Connection: random" }, true)]
         [InlineData("1.1", new string[] { "Proxy-Connection: close" }, false)]
         [InlineData("1.1", new string[] { "proxy-connection: CLOSE" }, false)]
@@ -505,7 +478,6 @@ namespace System.Net.Tests
             Assert.Equal(expected, request.KeepAlive);
         }
 
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [Theory]
         [InlineData("1.0")]
         [InlineData("1.1")]
@@ -616,7 +588,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [MemberData(nameof(Cookies_TestData))]
         public async Task Cookies_GetProperty_ReturnsExpected(string cookieString, CookieCollection expected)
         {
@@ -640,7 +611,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [MemberData(nameof(Headers_TestData))]
         public async Task Headers_Get_ReturnsExpected(string[] headers, WebHeaderCollection expected)
         {

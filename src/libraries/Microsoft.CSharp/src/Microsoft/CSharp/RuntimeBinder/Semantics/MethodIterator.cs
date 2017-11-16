@@ -34,9 +34,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // if Extension can be part of the results that are returned by the iterator
             // this may be false if an applicable instance method was found by bindgrptoArgs
             private bool _bcanIncludeExtensionsInResults;
-            // we have found a applicable extension and only continue to the end of the current
-            // Namespace's extension methodlist
-            private bool _bEndIterationAtCurrentExtensionList;
 
             public CMethodIterator(CSemanticChecker checker, SymbolLoader symLoader, Name name, TypeArray containingTypes, CType @object, CType qualifyingType, AggregateDeclaration context, bool allowBogusAndInaccessible, bool allowExtensionMethods, int arity, EXPRFLAG flags, symbmask_t mask)
             {
@@ -62,7 +59,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 _bCurrentSymIsBogus = false;
                 _bCurrentSymIsInaccessible = false;
                 _bcanIncludeExtensionsInResults = allowExtensionMethods;
-                _bEndIterationAtCurrentExtensionList = false;
             }
             public MethodOrPropertySymbol GetCurrentSymbol()
             {
@@ -80,15 +76,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 return _bCurrentSymIsBogus;
             }
-            public bool MoveNext(bool canIncludeExtensionsInResults, bool endatCurrentExtensionList)
+            public bool MoveNext(bool canIncludeExtensionsInResults)
             {
                 if (_bcanIncludeExtensionsInResults)
                 {
                     _bcanIncludeExtensionsInResults = canIncludeExtensionsInResults;
-                }
-                if (!_bEndIterationAtCurrentExtensionList)
-                {
-                    _bEndIterationAtCurrentExtensionList = endatCurrentExtensionList;
                 }
 
                 if (_bAtEnd)
@@ -143,9 +135,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // Make sure that whether we're seeing a ctor is consistent with the flag.
                 // The only properties we handle are indexers.
                 if (_mask == symbmask_t.MASK_MethodSymbol && (
-                        0 == (_flags & EXPRFLAG.EXF_CTOR) != !_pCurrentSym.AsMethodSymbol().IsConstructor() ||
-                        0 == (_flags & EXPRFLAG.EXF_OPERATOR) != !_pCurrentSym.AsMethodSymbol().isOperator) ||
-                    _mask == symbmask_t.MASK_PropertySymbol && !_pCurrentSym.AsPropertySymbol().isIndexer())
+                        0 == (_flags & EXPRFLAG.EXF_CTOR) != !((MethodSymbol)_pCurrentSym).IsConstructor() ||
+                        0 == (_flags & EXPRFLAG.EXF_OPERATOR) != !((MethodSymbol)_pCurrentSym).isOperator) ||
+                    _mask == symbmask_t.MASK_PropertySymbol && !(_pCurrentSym is IndexerSymbol))
                 {
                     // Get the next symbol.
                     return false;
@@ -154,7 +146,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // If our arity is non-0, we must match arity with this symbol.
                 if (_nArity > 0)
                 {
-                    if (_mask == symbmask_t.MASK_MethodSymbol && _pCurrentSym.AsMethodSymbol().typeVars.Count != _nArity)
+                    if (_mask == symbmask_t.MASK_MethodSymbol && ((MethodSymbol)_pCurrentSym).typeVars.Count != _nArity)
                     {
                         return false;
                     }
@@ -181,7 +173,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
 
                 // Check bogus.
-                if (GetSemanticChecker().CheckBogus(_pCurrentSym))
+                if (CSemanticChecker.CheckBogus(_pCurrentSym))
                 {
                     // Sym is bogus, but if we're allow it, then let it through and mark it.
                     if (_bAllowBogusAndInaccessible)
@@ -194,17 +186,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                 }
 
-                // if we are done checking all the instance types ensure that currentsym is an 
-                // extension method and not a simple static method
-                if (!_bIsCheckingInstanceMethods)
-                {
-                    if (!_pCurrentSym.AsMethodSymbol().IsExtension())
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
+                return _bIsCheckingInstanceMethods;
             }
 
             private bool FindNextMethod()
@@ -214,12 +196,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     if (_pCurrentSym == null)
                     {
                         _pCurrentSym = GetSymbolLoader().LookupAggMember(
-                                _pName, _pCurrentType.getAggregate(), _mask).AsMethodOrPropertySymbol();
+                                _pName, _pCurrentType.getAggregate(), _mask) as MethodOrPropertySymbol;
                     }
                     else
                     {
-                        _pCurrentSym = GetSymbolLoader().LookupNextSym(
-                                _pCurrentSym, _pCurrentType.getAggregate(), _mask).AsMethodOrPropertySymbol();
+                        _pCurrentSym = SymbolLoader.LookupNextSym(
+                                _pCurrentSym, _pCurrentType.getAggregate(), _mask) as MethodOrPropertySymbol;
                     }
 
                     // If we couldn't find a sym, we look up the type chain and get the next type.
@@ -269,7 +251,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                     else
                     {
-                        _pCurrentType = _pContainingTypes[_nCurrentTypeCount++].AsAggregateType();
+                        _pCurrentType = _pContainingTypes[_nCurrentTypeCount++] as AggregateType;
                     }
                 }
                 else

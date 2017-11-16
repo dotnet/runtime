@@ -9,7 +9,7 @@ using System.Threading;
 
 namespace System.Data
 {
-    internal struct IndexField
+    internal readonly struct IndexField
     {
         public readonly DataColumn Column;
         public readonly bool IsDescending; // false = Asc; true = Desc what is default value for this?
@@ -63,7 +63,7 @@ namespace System.Data
         private readonly DataTable _table;
         internal readonly IndexField[] _indexFields;
 
-        /// <summary>Allow a user implemented comparision of two DataRow</summary>
+        /// <summary>Allow a user implemented comparison of two DataRow</summary>
         /// <remarks>User must use correct DataRowVersion in comparison or index corruption will happen</remarks>
         private readonly System.Comparison<DataRow> _comparison;
 
@@ -439,7 +439,7 @@ namespace System.Data
         /// <summary>
         /// When searching by value for a specific record, the DataRow may require backdating to reflect the appropriate state
         /// otherwise on Delete of a DataRow in the Added state, would result in the <see cref="System.Comparison&lt;DataRow&gt;"/> where the row
-        /// reflection record would be in the Detatched instead of Added state.
+        /// reflection record would be in the Detached instead of Added state.
         /// </summary>
         private int GetIndex(int record, int changeRecord)
         {

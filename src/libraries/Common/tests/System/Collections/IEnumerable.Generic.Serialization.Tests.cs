@@ -12,7 +12,6 @@ namespace System.Collections.Tests
     {
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        [ActiveIssue(20888, TargetFrameworkMonikers.UapAot)]
         public void IGenericSharedAPI_SerializeDeserialize(int count)
         {
             IEnumerable<T> expected = GenericIEnumerableFactory(count);

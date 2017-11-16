@@ -310,22 +310,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-#if netcoreapp11
-        [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]
-        public static void EphemeralKeySet_OSX()
-        {
-            // EphemeralKeySet fails when loading a PFX, and is ignored otherwise.
-            using (ImportedCollection coll = Cert.Import(TestData.Pkcs7ChainDerBytes, null, X509KeyStorageFlags.EphemeralKeySet))
-            {
-                Assert.Equal(3, coll.Collection.Count);
-            }
-
-            Assert.Throws<PlatformNotSupportedException>(
-                () => new X509Certificate2(TestData.EmptyPfx, string.Empty, X509KeyStorageFlags.EphemeralKeySet));
-        }
-#endif
-
         [Fact]
         public static void InvalidStorageFlags()
         {
@@ -343,8 +327,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             // No test is performed here for the ephemeral flag failing downlevel, because the live
             // binary is always used by default, meaning it doesn't know EphemeralKeySet doesn't exist.
         }
-
-#if netcoreapp
+        
         [Fact]
         public static void InvalidStorageFlags_PersistedEphemeral()
         {
@@ -362,18 +345,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 "keyStorageFlags",
                 () => coll.Import(string.Empty, string.Empty, PersistedEphemeral));
         }
-#endif
 
         public static IEnumerable<object[]> StorageFlags
         {
             get
             {
                 yield return new object[] { X509KeyStorageFlags.DefaultKeySet };
-
-#if netcoreapp
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                     yield return new object[] { X509KeyStorageFlags.EphemeralKeySet };
-#endif
             }
         }
 

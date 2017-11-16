@@ -45,7 +45,7 @@ namespace System.Xml.Xsl.XsltOld
                         else
                         {
                             // In ForwardCompatibility mode we ignoreing all unknown or incorrect attributes
-                            // If it's mandatory attribute we'l notice it absents later.
+                            // If it's mandatory attribute we'll notice it absence later.
                         }
                     }
                 }

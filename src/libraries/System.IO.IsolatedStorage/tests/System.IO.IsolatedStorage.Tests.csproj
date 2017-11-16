@@ -53,9 +53,6 @@
     <Compile Include="$(CommonPath)\System\Security\IdentityHelper.cs">
       <Link>Common\System\Security\IdentityHelper.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="StoreTestsFixture.cs" />
     <Compile Include="System\IO\IsolatedStorage\ContainsUnknownFilesTests.cs" />

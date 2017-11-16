@@ -76,7 +76,7 @@ internal partial class Interop
             internal const string ComputerFolder = "{0AC0837C-BBF8-452A-850D-79D08E667CA7}";
 
             /// <summary>
-            /// (CSIDL_CONNECTIONS) Network Conections virtual folder
+            /// (CSIDL_CONNECTIONS) Network Connections virtual folder
             /// </summary>
             internal const string ConnectionsFolder = "{6F0CD92B-2E97-45D1-88FF-B0D186B8DEDD}";
 

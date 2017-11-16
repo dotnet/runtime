@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<entry xmlns="http://www.w3.org/2005/Atom">
+  <id>uuid:43481a10-d881-40d1-adf2-99b438c57e21;id=1</id>
+  <title type="text">SyndicationFeed released for .net Core</title>
+  <updated>2017-10-11T11:25:55Z</updated>
+  <link rel="alternate" href="http://contoso.com/news/path" />
+  <content type="text">A lot of text describing the release of .net core feature</content>
+</entry>

@@ -6,7 +6,7 @@ namespace System.DirectoryServices
 {
     public class DirectoryVirtualListViewContext
     {
-        internal byte[] _context;
+        internal readonly byte[] _context;
 
         public DirectoryVirtualListViewContext() : this(new byte[0])
         {

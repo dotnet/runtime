@@ -47,7 +47,7 @@ namespace System.Data
         private const int Expr = 2;   /* The previous operand was a complex expression */
 
 
-        private struct ReservedWords
+        private readonly struct ReservedWords
         {
             internal readonly string _word;      // the word
             internal readonly Tokens _token;

@@ -47,7 +47,7 @@ namespace System.ComponentModel.Design.Serialization
 
         /// <summary>
         ///     Normal serialization only serializes values that differ from the component's default state.  
-        ///     This provides the most compact serialization mechanism but assumes that during deserilalization 
+        ///     This provides the most compact serialization mechanism but assumes that during deserialization 
         ///     a new, freshly created object will be used.  If an existing object is used properties that 
         ///     contained default values during serialization would not be reset back to their defaults.  
         ///     The SerializeAbsolute method does not require this assumption on the deserializing end.  

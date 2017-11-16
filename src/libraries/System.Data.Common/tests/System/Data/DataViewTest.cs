@@ -262,7 +262,7 @@ namespace System.Data.Tests
 
             Assert.Equal(dv[2][0], "9");
 
-            //This should not throw a System.Data.VersionNotFoundException: "There is no Proposed data to accces"
+            //This should not throw a System.Data.VersionNotFoundException: "There is no proposed data to access"
             Assert.Equal(dv[1][0], "7");
         }
 

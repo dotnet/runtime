@@ -9,6 +9,8 @@ namespace System.Text.RegularExpressions
     /// <summary>
     /// This is the exception that is thrown when a RegEx matching timeout occurs.
     /// </summary>
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class RegexMatchTimeoutException : TimeoutException, ISerializable
     {
         /// <summary>
@@ -52,12 +54,17 @@ namespace System.Text.RegularExpressions
         protected RegexMatchTimeoutException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            throw new PlatformNotSupportedException();
+            Input = info.GetString("regexInput");
+            Pattern = info.GetString("regexPattern");
+            MatchTimeout = new TimeSpan(info.GetInt64("timeoutTicks"));
         }
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
+            info.AddValue("regexInput", Input);
+            info.AddValue("regexPattern", Pattern);
+            info.AddValue("timeoutTicks", MatchTimeout.Ticks);
         }
 
         public string Input { get; } = string.Empty;

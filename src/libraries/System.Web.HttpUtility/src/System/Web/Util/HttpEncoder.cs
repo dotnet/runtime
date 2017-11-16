@@ -19,9 +19,8 @@ namespace System.Web.Util
             builder.Append(((int)c).ToString("x4", CultureInfo.InvariantCulture));
         }
 
-        private static bool CharRequiresJavaScriptEncoding(char c)
-        {
-            return c < 0x20 // control chars always have to be encoded
+        private static bool CharRequiresJavaScriptEncoding(char c) =>
+            c < 0x20 // control chars always have to be encoded
                 || c == '\"' // chars which must be encoded per JSON spec
                 || c == '\\'
                 || c == '\'' // HTML-sensitive chars encoded for safety
@@ -31,7 +30,6 @@ namespace System.Web.Util
                 || c == '\u0085' // newline chars (see Unicode 6.2, Table 5-1 [http://www.unicode.org/versions/Unicode6.2.0/ch05.pdf]) have to be encoded
                 || c == '\u2028'
                 || c == '\u2029';
-        }
 
         internal static string HtmlAttributeEncode(string value)
         {
@@ -117,36 +115,27 @@ namespace System.Web.Util
             }
         }
 
-        internal static string HtmlDecode(string value)
-        {
-            if (string.IsNullOrEmpty(value))
-            {
-                return value;
-            }
-
-            return WebUtility.HtmlDecode(value);
-        }
+        internal static string HtmlDecode(string value) => string.IsNullOrEmpty(value) ? value : WebUtility.HtmlDecode(value);
 
         internal static void HtmlDecode(string value, TextWriter output)
         {
             if (output == null)
+            {
                 throw new ArgumentNullException(nameof(output));
+            }
+
             output.Write(WebUtility.HtmlDecode(value));
         }
 
-        internal static string HtmlEncode(string value)
-        {
-            if (string.IsNullOrEmpty(value))
-            {
-                return value;
-            }
-            return WebUtility.HtmlEncode(value);
-        }
+        internal static string HtmlEncode(string value) => string.IsNullOrEmpty(value) ? value : WebUtility.HtmlEncode(value);
 
         internal static void HtmlEncode(string value, TextWriter output)
         {
             if (output == null)
+            {
                 throw new ArgumentNullException(nameof(output));
+            }
+
             output.Write(WebUtility.HtmlEncode(value));
         }
 
@@ -176,10 +165,7 @@ namespace System.Web.Util
             return -1;
         }
 
-        private static bool IsNonAsciiByte(byte b)
-        {
-            return (b >= 0x7F || b < 0x20);
-        }
+        private static bool IsNonAsciiByte(byte b) => b >= 0x7F || b < 0x20;
 
         internal static string JavaScriptStringEncode(string value)
         {
@@ -211,41 +197,38 @@ namespace System.Web.Util
 
                     startIndex = i + 1;
                     count = 0;
-                }
 
-                switch (c)
-                {
-                    case '\r':
-                        b.Append("\\r");
-                        break;
-                    case '\t':
-                        b.Append("\\t");
-                        break;
-                    case '\"':
-                        b.Append("\\\"");
-                        break;
-                    case '\\':
-                        b.Append("\\\\");
-                        break;
-                    case '\n':
-                        b.Append("\\n");
-                        break;
-                    case '\b':
-                        b.Append("\\b");
-                        break;
-                    case '\f':
-                        b.Append("\\f");
-                        break;
-                    default:
-                        if (CharRequiresJavaScriptEncoding(c))
-                        {
+                    switch (c)
+                    {
+                        case '\r':
+                            b.Append("\\r");
+                            break;
+                        case '\t':
+                            b.Append("\\t");
+                            break;
+                        case '\"':
+                            b.Append("\\\"");
+                            break;
+                        case '\\':
+                            b.Append("\\\\");
+                            break;
+                        case '\n':
+                            b.Append("\\n");
+                            break;
+                        case '\b':
+                            b.Append("\\b");
+                            break;
+                        case '\f':
+                            b.Append("\\f");
+                            break;
+                        default:
                             AppendCharAsUnicodeJavaScript(b, c);
-                        }
-                        else
-                        {
-                            count++;
-                        }
-                        break;
+                            break;
+                    }
+                }
+                else
+                {
+                    count++;
                 }
             }
 
@@ -465,9 +448,13 @@ namespace System.Web.Util
                 char ch = (char)bytes[offset + i];
 
                 if (ch == ' ')
+                {
                     cSpaces++;
+                }
                 else if (!HttpEncoderUtility.IsUrlSafeChar(ch))
+                {
                     cUnsafe++;
+                }
             }
 
             // nothing to expand?
@@ -480,7 +467,7 @@ namespace System.Web.Util
                 }
                 else
                 {
-                    var subarray = new byte[count];
+                    byte[] subarray = new byte[count];
                     Buffer.BlockCopy(bytes, offset, subarray, 0, count);
                     return subarray;
                 }
@@ -517,34 +504,31 @@ namespace System.Web.Util
         //  Helper to encode the non-ASCII url characters only
         private static string UrlEncodeNonAscii(string str, Encoding e)
         {
-            if (string.IsNullOrEmpty(str))
-                return str;
-            if (e == null)
-                e = Encoding.UTF8;
+            Debug.Assert(!string.IsNullOrEmpty(str));
+            Debug.Assert(e != null);
             byte[] bytes = e.GetBytes(str);
-            byte[] encodedBytes = UrlEncodeNonAscii(bytes, 0, bytes.Length, false /* alwaysCreateNewReturnValue */);
+            byte[] encodedBytes = UrlEncodeNonAscii(bytes, 0, bytes.Length);
             return Encoding.ASCII.GetString(encodedBytes);
         }
 
-        private static byte[] UrlEncodeNonAscii(byte[] bytes, int offset, int count, bool alwaysCreateNewReturnValue)
+        private static byte[] UrlEncodeNonAscii(byte[] bytes, int offset, int count)
         {
-            if (!ValidateUrlEncodingParameters(bytes, offset, count))
-            {
-                return null;
-            }
-
             int cNonAscii = 0;
 
             // count them first
             for (int i = 0; i < count; i++)
             {
                 if (IsNonAsciiByte(bytes[offset + i]))
+                {
                     cNonAscii++;
+                }
             }
 
             // nothing to expand?
-            if (!alwaysCreateNewReturnValue && cNonAscii == 0)
+            if (cNonAscii == 0)
+            {
                 return bytes;
+            }
 
             // expand not 'safe' characters into %XX, spaces to +s
             byte[] expandedBytes = new byte[count + cNonAscii * 2];
@@ -570,7 +554,7 @@ namespace System.Web.Util
         }
 
         [Obsolete("This method produces non-standards-compliant output and has interoperability issues. The preferred alternative is UrlEncode(*).")]
-        internal static string UrlEncodeUnicode(string value, bool ignoreAscii)
+        internal static string UrlEncodeUnicode(string value)
         {
             if (value == null)
             {
@@ -586,7 +570,7 @@ namespace System.Web.Util
 
                 if ((ch & 0xff80) == 0)
                 {  // 7 bit?
-                    if (ignoreAscii || HttpEncoderUtility.IsUrlSafeChar(ch))
+                    if (HttpEncoderUtility.IsUrlSafeChar(ch))
                     {
                         sb.Append(ch);
                     }
@@ -654,7 +638,9 @@ namespace System.Web.Util
             // recurse in case there is a query string
             int i = value.IndexOf('?');
             if (i >= 0)
+            {
                 return UrlPathEncodeImpl(value.Substring(0, i)) + value.Substring(i);
+            }
 
             // encode DBCS characters and spaces only
             return HttpEncoderUtility.UrlEncodeSpaces(UrlEncodeNonAscii(value, Encoding.UTF8));
@@ -663,7 +649,10 @@ namespace System.Web.Util
         private static bool ValidateUrlEncodingParameters(byte[] bytes, int offset, int count)
         {
             if (bytes == null && count == 0)
+            {
                 return false;
+            }
+
             if (bytes == null)
             {
                 throw new ArgumentNullException(nameof(bytes));
@@ -717,7 +706,9 @@ namespace System.Web.Util
             internal void AddChar(char ch)
             {
                 if (_numBytes > 0)
+                {
                     FlushBytes();
+                }
 
                 _charBuffer[_numChars++] = ch;
             }
@@ -734,7 +725,9 @@ namespace System.Web.Util
                 */
                 {
                     if (_byteBuffer == null)
+                    {
                         _byteBuffer = new byte[_bufferSize];
+                    }
 
                     _byteBuffer[_numBytes++] = b;
                 }
@@ -743,12 +736,11 @@ namespace System.Web.Util
             internal string GetString()
             {
                 if (_numBytes > 0)
+                {
                     FlushBytes();
+                }
 
-                if (_numChars > 0)
-                    return new string(_charBuffer, 0, _numChars);
-                else
-                    return string.Empty;
+                return _numChars > 0 ? new string(_charBuffer, 0, _numChars) : "";
             }
         }
     }

@@ -147,7 +147,8 @@ Function Install
     if (($script:Roles | where {$_.Reachable -ne $true}).Count -ne 0)
     {
         Write-Warning "Not all roles are reachable from this host."
-        Write-Host "Log-on to the following machines, copy all scripts and run .\setup.ps1 as Administrator:"
+        Write-Host "- If all machines are joined to the Domain, make sure you are logged on as $($script:domainNetbios)\Administrator and not as a local Administrator."
+        Write-Host "- If not all machines are joined to the Domain: Log-on to the following machines, copy all scripts and run .\setup.ps1 as Administrator:"
         $script:Roles | where {$_.Reachable -ne $true}
         Write-Host -ForegroundColor Cyan "Rerun this command after all machines have been started and joined to the $($script:domainNetBios) domain."
         return

@@ -4,8 +4,8 @@
   <PropertyGroup>
     <ProjectGuid>{2C58640B-5BED-4E83-9554-CD2B9762643F}</ProjectGuid>
     <AssemblyName>System.Text.RegularExpressions</AssemblyName>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_COMPILED</DefineConstants>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
@@ -19,6 +19,7 @@
     <Compile Include="System\Text\RegularExpressions\RegexCharClass.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCode.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCollectionDebuggerProxy.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexCompilationInfo.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexFCD.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexGroup.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexGroupCollection.cs" />
@@ -42,6 +43,13 @@
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
   </ItemGroup>
+  <!-- Files that enable compiled feature -->
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="System\Text\RegularExpressions\CompiledRegexRunnerFactory.cs" />
+    <Compile Include="System\Text\RegularExpressions\CompiledRegexRunner.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexCompiler.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexLWCGCompiler.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
@@ -50,6 +58,12 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
+  </ItemGroup>
+  <!-- References required for compiled feature -->
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Reference Include="System.Reflection.Emit.ILGeneration" />
+    <Reference Include="System.Reflection.Emit.Lightweight" />
+    <Reference Include="System.Reflection.Primitives" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

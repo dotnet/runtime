@@ -1200,6 +1200,8 @@ namespace System.Net
                     request.Headers.ConnectionClose = true;
                 }
 
+                request.Version = ProtocolVersion;
+
                 _sendRequestTask = client.SendAsync(
                     request,
                     _allowReadStreamBuffering ? HttpCompletionOption.ResponseContentRead : HttpCompletionOption.ResponseHeadersRead,

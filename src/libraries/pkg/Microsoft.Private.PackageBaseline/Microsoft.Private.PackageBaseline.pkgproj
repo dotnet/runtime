@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   
   <PropertyGroup>
-    <PackageVersion>2.1.0</PackageVersion>
+    <PackageVersion>2.2.0</PackageVersion>
     <HarvestStablePackage>false</HarvestStablePackage>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <PackageIndexFileName>packageIndex.json</PackageIndexFileName>
@@ -36,10 +36,10 @@
       <FrameworkLayout Include="$(UAPPackageRefPath)">
         <TargetFramework>$(UAPvNextTFM)</TargetFramework>
       </FrameworkLayout>
-      <FrameworkLayout Include="$(PackagesDir)$(NETStandardPackageId)\$(NETStandardPackageVersion)\build\netstandard2.0\ref">
+      <FrameworkLayout Include="$(PackagesDir)$(NETStandardLibraryPackageId)\$(NETStandardLibraryPackageVersion)\build\netstandard2.0\ref">
         <TargetFramework>netstandard2.0</TargetFramework>
       </FrameworkLayout>
-      <FrameworkLayout Include="$(PackagesDir)$(NETStandardPackageId)\$(NETStandardPackageVersion)\build\net461\ref">
+      <FrameworkLayout Include="$(PackagesDir)$(NETStandardLibraryPackageId)\$(NETStandardLibraryPackageVersion)\build\net461\ref">
         <TargetFramework>net461</TargetFramework>
       </FrameworkLayout>
     </ItemGroup>

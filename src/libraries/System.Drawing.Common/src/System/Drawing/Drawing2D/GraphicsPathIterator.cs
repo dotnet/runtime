@@ -164,7 +164,7 @@ namespace System.Drawing.Drawing2D
                 throw SafeNativeMethods.Gdip.StatusException(status);
         }
 
-        public int Enumerate(ref PointF[] points, ref byte[] types)
+        public unsafe int Enumerate(ref PointF[] points, ref byte[] types)
         {
             if (points.Length != types.Length)
                 throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.InvalidParameter);
@@ -187,7 +187,7 @@ namespace System.Drawing.Drawing2D
 
                 if (resultCount < count)
                 {
-                    SafeNativeMethods.ZeroMemory((IntPtr)(checked((long)memoryPts + resultCount * size)), (UIntPtr)((count - resultCount) * size));
+                    SafeNativeMethods.ZeroMemory((byte*)(checked((long)memoryPts + resultCount * size)), (ulong)((count - resultCount) * size));
                 }
 
                 points = SafeNativeMethods.Gdip.ConvertGPPOINTFArrayF(memoryPts, count);
@@ -201,7 +201,7 @@ namespace System.Drawing.Drawing2D
             return resultCount;
         }
 
-        public int CopyData(ref PointF[] points, ref byte[] types, int startIndex, int endIndex)
+        public unsafe int CopyData(ref PointF[] points, ref byte[] types, int startIndex, int endIndex)
         {
             if ((points.Length != types.Length) || (endIndex - startIndex + 1 > points.Length))
                 throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.InvalidParameter);
@@ -224,7 +224,7 @@ namespace System.Drawing.Drawing2D
 
                 if (resultCount < count)
                 {
-                    SafeNativeMethods.ZeroMemory((IntPtr)(checked((long)memoryPts + resultCount * size)), (UIntPtr)((count - resultCount) * size));
+                    SafeNativeMethods.ZeroMemory((byte*)(checked((long)memoryPts + resultCount * size)), (ulong)((count - resultCount) * size));
                 }
 
                 points = SafeNativeMethods.Gdip.ConvertGPPOINTFArrayF(memoryPts, count);

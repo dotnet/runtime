@@ -6,6 +6,7 @@
     <ItemGroup>
       <!-- tests can use anything from the RuntimePath -->
       <ReferencePath Include="@(ReferenceFromRuntime->'$(RuntimePath)%(Identity).dll')" />
+      <ReferenceCopyLocalPaths Condition="'%(ReferenceFromRuntime.Private)' == 'true'" Include="@(ReferenceFromRuntime->'$(RuntimePath)%(Identity).dll')" />
     </ItemGroup>
   </Target>
 

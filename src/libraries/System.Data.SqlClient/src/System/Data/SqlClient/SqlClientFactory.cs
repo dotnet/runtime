@@ -6,7 +6,7 @@ using System.Data.Common;
 
 namespace System.Data.SqlClient
 {
-    public sealed class SqlClientFactory : DbProviderFactory
+    public sealed partial class SqlClientFactory : DbProviderFactory
     {
         public static readonly SqlClientFactory Instance = new SqlClientFactory();
 

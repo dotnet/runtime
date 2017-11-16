@@ -6,7 +6,7 @@ using System.Reflection.Internal;
 
 namespace System.Reflection.Metadata.Ecma335
 {
-    internal struct DocumentTableReader
+    internal readonly struct DocumentTableReader
     {
         internal readonly int NumberOfRows;
 
@@ -65,7 +65,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    internal struct MethodDebugInformationTableReader
+    internal readonly struct MethodDebugInformationTableReader
     {
         internal readonly int NumberOfRows;
 
@@ -108,7 +108,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    internal struct LocalScopeTableReader
+    internal readonly struct LocalScopeTableReader
     {
         internal readonly int NumberOfRows;
 
@@ -236,7 +236,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    internal struct LocalVariableTableReader
+    internal readonly struct LocalVariableTableReader
     {
         internal readonly int NumberOfRows;
         private readonly bool _isStringHeapRefSizeSmall;
@@ -283,7 +283,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    internal struct LocalConstantTableReader
+    internal readonly struct LocalConstantTableReader
     {
         internal readonly int NumberOfRows;
         private readonly bool _isStringHeapRefSizeSmall;
@@ -325,7 +325,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    internal struct StateMachineMethodTableReader
+    internal readonly struct StateMachineMethodTableReader
     {
         internal readonly int NumberOfRows;
 
@@ -383,7 +383,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    internal struct ImportScopeTableReader
+    internal readonly struct ImportScopeTableReader
     {
         internal readonly int NumberOfRows;
 
@@ -426,7 +426,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    internal struct CustomDebugInformationTableReader
+    internal readonly struct CustomDebugInformationTableReader
     {
         internal readonly int NumberOfRows;
 

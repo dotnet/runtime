@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection.PortableExecutable
 {
-    public struct PEMemoryBlock
+    public readonly struct PEMemoryBlock
     {
         private readonly AbstractMemoryBlock _block;
         private readonly int _offset;

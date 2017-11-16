@@ -60,7 +60,8 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)
         {
-            return BinderHelper.Bind(this, _binder, new DynamicMetaObject[] { target }, null, null);
+            BinderHelper.ValidateBindArgument(target, nameof(target));
+            return BinderHelper.Bind(this, _binder, new [] { target }, null, null);
         }
     }
 }

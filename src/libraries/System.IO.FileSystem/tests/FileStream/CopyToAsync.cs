@@ -242,7 +242,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(false, 10, 1024)]
         [InlineData(true, 10, 1024)]
-        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
         public async Task NamedPipeViaFileStream_AllDataCopied(bool useAsync, int writeSize, int numWrites)
         {
             long totalLength = writeSize * numWrites;
@@ -252,7 +252,7 @@ namespace System.IO.Tests
             var results = new MemoryStream();
             var pipeOptions = useAsync ? PipeOptions.Asynchronous : PipeOptions.None;
 
-            string name = Guid.NewGuid().ToString("N");
+            string name = GetNamedPipeServerStreamName();
             using (var server = new NamedPipeServerStream(name, PipeDirection.Out, 1, PipeTransmissionMode.Byte, pipeOptions))
             {
                 Task serverTask = Task.Run(async () =>

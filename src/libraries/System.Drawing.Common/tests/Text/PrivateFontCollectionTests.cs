@@ -12,7 +12,7 @@ namespace System.Drawing.Text.Tests
 {
     public class PrivateFontCollectionTests
     {
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_Default()
         {
             using (var fontCollection = new PrivateFontCollection())
@@ -21,7 +21,7 @@ namespace System.Drawing.Text.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void AddFontFile_AbsolutePath_Success()
         {
             // GDI+ on Windows 7 incorrectly throws a FileNotFoundException.
@@ -40,7 +40,7 @@ namespace System.Drawing.Text.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void AddFontFile_RelativePath_Success()
         {
             // GDI+ on Windows 7 incorrectly throws a FileNotFoundException.
@@ -58,8 +58,8 @@ namespace System.Drawing.Text.Tests
                 Assert.Equal("Code New Roman", fontFamily.Name);
             }
         }
-        
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void AddFontFile_SamePathMultipleTimes_FamiliesContainsOnlyOneFont()
         {
             // GDI+ on Windows 7 incorrectly throws a FileNotFoundException.
@@ -78,7 +78,8 @@ namespace System.Drawing.Text.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void AddFontFile_SameNameMultipleTimes_FamiliesContainsFirstFontOnly()
         {
             // GDI+ on Windows 7 incorrectly throws a FileNotFoundException.
@@ -101,7 +102,8 @@ namespace System.Drawing.Text.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void AddFontFile_NullFileName_ThrowsArgumentNullException()
         {
             using (var fontCollection = new PrivateFontCollection())
@@ -110,7 +112,7 @@ namespace System.Drawing.Text.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void AddFontFile_InvalidPath_ThrowsArgumentException()
         {
             using (var fontCollection = new PrivateFontCollection())
@@ -119,7 +121,7 @@ namespace System.Drawing.Text.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void AddFontFile_NoSuchFilePath_ThrowsFileNotFoundException()
         {
             using (var fontCollection = new PrivateFontCollection())
@@ -128,16 +130,28 @@ namespace System.Drawing.Text.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void AddFontFile_LongFilePath_ThrowsPathTooLongException()
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/8655")]
+        public void AddFontFile_LongFilePath_ThrowsException()
         {
             using (var fontCollection = new PrivateFontCollection())
             {
-                Assert.Throws<PathTooLongException>(() => fontCollection.AddFontFile(new string('a', 261)));
+                // Throws PathTooLongException on Desktop and FileNotFoundException elsewhere.
+                if (PlatformDetection.IsFullFramework)
+                {
+                    Assert.Throws<PathTooLongException>(
+                        () => fontCollection.AddFontFile(new string('a', 261)));
+                }
+                else
+                {
+                    Assert.Throws<FileNotFoundException>(
+                        () => fontCollection.AddFontFile(new string('a', 261)));
+                }
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void AddFontFile_Directory_ThrowsExternalException()
         {
             // GDI+ on Windows 7 and Windows 8.1 incorrectly does not throw.
@@ -152,7 +166,8 @@ namespace System.Drawing.Text.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void AddFontFile_Disposed_ThrowsArgumentException()
         {
             var fontCollection = new PrivateFontCollection();
@@ -161,7 +176,7 @@ namespace System.Drawing.Text.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => fontCollection.AddFontFile("fileName"));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void AddMemoryFont_ValidMemory_Success()
         {
             using (var fontCollection = new PrivateFontCollection())
@@ -184,7 +199,7 @@ namespace System.Drawing.Text.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void AddMemoryFont_ZeroMemory_ThrowsArgumentException()
         {
             using (var fontCollection = new PrivateFontCollection())
@@ -193,7 +208,8 @@ namespace System.Drawing.Text.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(0)]
         [InlineData(-1)]
         public void AddMemoryFont_InvalidLength_ThrowsArgumentException(int length)
@@ -221,7 +237,8 @@ namespace System.Drawing.Text.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void AddMemoryFont_Disposed_ThrowsArgumentException()
         {
             var fontCollection = new PrivateFontCollection();
@@ -229,8 +246,8 @@ namespace System.Drawing.Text.Tests
 
             AssertExtensions.Throws<ArgumentException>(null, () => fontCollection.AddMemoryFont((IntPtr)10, 100));
         }
-        
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Families_GetWhenDisposed_ThrowsArgumentException()
         {
             var fontCollection = new PrivateFontCollection();
@@ -239,7 +256,7 @@ namespace System.Drawing.Text.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => fontCollection.Families);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Dispose_MultipleTimes_Nop()
         {
             var fontCollection = new PrivateFontCollection();

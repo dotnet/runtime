@@ -31,9 +31,15 @@
       "defaultValue": false
     },
     "RuntimeOS": {
-      "description": "The RuntimeOS used for building and restoring native OS dependent assets (i.e. RID specific binaries)",
+      "description": "The RuntimeOS of the build system.",
       "valueType": "property",
       "values": ["win7", "osx.10.10", "ubuntu.14.04", "ubuntu.16.04", "etc-other-rid-based-os-names"],
+      "defaultValue": ""
+    },
+    "PackageRID": {
+      "description": "The RID of the target package.",
+      "valueType": "property",
+      "values": ["win7-x64", "ubuntu.14.04-x64"],
       "defaultValue": ""
     },
     "PortableBuild": {
@@ -239,6 +245,12 @@
       "valueType": "property",
       "values": [],
       "defaultValue": "Please-Specify-A-Directory"
+    },
+    "Clang": {
+        "description": "Specific version of Clang to use e.g. clang3.7, clang3.8, etc ...",
+        "valueType": "property",
+        "values": [],
+        "defaultValue": ""
     },
   },
   "commands": {

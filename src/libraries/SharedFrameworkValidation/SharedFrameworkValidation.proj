@@ -10,7 +10,6 @@
     <LKGSharedFrameworkExtractPath>$(RefRootPath)sharedFrameworkZip.LKG/shared/Microsoft.NETCore.App/$(_LKGSharedFrameworkVersion)</LKGSharedFrameworkExtractPath>
     <_RunTestsScriptName Condition="'$(RunningOnUnix)' != 'true'">CloneAndRunTests.cmd</_RunTestsScriptName>
     <_RunTestsScriptName Condition="'$(RunningOnUnix)' == 'true'">CloneAndRunTests.sh</_RunTestsScriptName>
-    <_PublishRID>$(RuntimeOS)-$(ArchGroup)</_PublishRID>
   </PropertyGroup>
 
   <Target Name="CreateScriptToDownloadSharedFrameworkZip">
@@ -57,8 +56,8 @@
 
   <Target Name="BuildPackagesProject">
     <PropertyGroup>
-      <_RestorePackagesCommand>"$(DotnetToolCommand)" restore $(MSBuildThisFileDirectory)/RestoreSDKProject/RestoreSDKProject.csproj /p:_PublishRID=$(_PublishRID) /p:_RuntimeFrameworkVersion=$(MicrosoftNETCoreAppPackageVersion) /p:CoreFxExpectedPrerelease=$(CoreFxExpectedPrerelease)</_RestorePackagesCommand>
-      <_PublishPackagesProjectCommand>"$(DotnetToolCommand)" publish $(MSBuildThisFileDirectory)/RestoreSDKProject/RestoreSDKProject.csproj /p:_PublishRID=$(_PublishRID) /p:_MetaPackageDestinationFolder=$(SharedFrameworkValidationRefPath) -f netcoreapp2.0 -r $(_PublishRID) -o $(SharedFrameworkValidationRuntimePath)</_PublishPackagesProjectCommand>
+      <_RestorePackagesCommand>"$(DotnetToolCommand)" restore $(MSBuildThisFileDirectory)/RestoreSDKProject/RestoreSDKProject.csproj /p:_PackageRID=$(PackageRID) /p:_RuntimeFrameworkVersion=$(MicrosoftNETCoreAppPackageVersion) /p:CoreFxExpectedPrerelease=$(CoreFxExpectedPrerelease)</_RestorePackagesCommand>
+      <_PublishPackagesProjectCommand>"$(DotnetToolCommand)" publish $(MSBuildThisFileDirectory)/RestoreSDKProject/RestoreSDKProject.csproj /p:_PackageRID=$(PackageRID) /p:_MetaPackageDestinationFolder=$(SharedFrameworkValidationRefPath) -f netcoreapp2.0 -o $(SharedFrameworkValidationRuntimePath) -r $(PackageRID)</_PublishPackagesProjectCommand>
     </PropertyGroup>
     <Exec Command="$(_RestorePackagesCommand)" StandardOutputImportance="Low" />
     <Exec Command="$(_PublishPackagesProjectCommand)" StandardOutputImportance="Low" />
@@ -66,7 +65,7 @@
 
   <Target Name="BuildDependenciesProject">
     <MSBuild Projects="../../external/SharedFrameworkValidation/harvestPackages.SharedFramework.depproj"
-             Properties="_PublishRID=$(_PublishRID)"
+            Properties="_PackageRID=$(PackageRID)"
              ContinueOnError="ErrorAndStop" />
   </Target>
 
@@ -153,7 +152,7 @@
 
   <Target Name="GenerateTestSharedFrameworkDepsFile" DependsOnTargets="ReplaceTestingSharedFrameworkWithRestoredPackages">
     <MSBuild Targets="GenerateTestSharedFrameworkDepsFile"
-             Projects="$(MSBuildThisFileDirectory)\..\src.builds"
+             Projects="$(MSBuildThisFileDirectory)\..\dirs.proj"
              ContinueOnError="ErrorAndStop" />
   </Target>
 

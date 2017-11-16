@@ -1,0 +1,12 @@
+<!--
+  Description:  channel title must not be blank
+  Expect:       NotBlank{parent:channel,element:title}
+-->
+
+<rss version="2.0">
+<channel>
+<title></title>
+<link>http://contoso.com/rss/2.0/</link>
+<description>channel title must not be blank</description>
+</channel>
+</rss>

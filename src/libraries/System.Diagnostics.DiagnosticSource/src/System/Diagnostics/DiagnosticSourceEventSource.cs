@@ -28,9 +28,9 @@ namespace System.Diagnostics
     ///   list that will be forwarded to the EventSource.    If it is empty, values of properties of the 
     ///   diagnostic source payload are dumped as strings (using ToString()) and forwarded to the EventSource.  
     ///   For what people think of as serializable object strings, primitives this gives you want you want. 
-    ///   (the value of the property in string form) for what people think of as non-serialiable objects 
+    ///   (the value of the property in string form) for what people think of as non-serializable objects 
     ///   (e.g. HttpContext) the ToString() method is typically not defined, so you get the Object.ToString() 
-    ///   implemenation that prints the type name.  This is useful since this is the information you need 
+    ///   implementation that prints the type name.  This is useful since this is the information you need 
     ///   (the type of the property) to discover the field names so you can create a transform specification
     ///   that will pick off the properties you desire.  
     ///   
@@ -124,9 +124,9 @@ namespace System.Diagnostics
     ///     "MyDiagnosticSource/SecurityStart@Activity2Start\r\n" + 
     ///     "MyDiagnosticSource/SecurityStop@Activity2Stop\r\n" 
     /// 
-    /// Defines that RequestStart will be logged with the EventSource Event Activity1Start (and the cooresponding stop) which
-    /// means that all events caused between these two markers will have an activity ID assocatied with this start event.  
-    /// Simmilarly SecurityStart is mapped to Activity2Start.    
+    /// Defines that RequestStart will be logged with the EventSource Event Activity1Start (and the corresponding stop) which
+    /// means that all events caused between these two markers will have an activity ID associated with this start event.  
+    /// Similarly SecurityStart is mapped to Activity2Start.    
     /// 
     /// Note you can map many DiangosticSource events to the same EventSource Event (e.g. Activity1Start).  As long as the
     /// activities don't nest, you can reuse the same event name (since the payloads have the DiagnosticSource name which can
@@ -871,7 +871,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// CallbackObserver is a adapter class that creates an observer (which you can pass
+        /// CallbackObserver is an adapter class that creates an observer (which you can pass
         /// to IObservable.Subscribe), and calls the given callback every time the 'next' 
         /// operation on the IObserver happens. 
         /// </summary>

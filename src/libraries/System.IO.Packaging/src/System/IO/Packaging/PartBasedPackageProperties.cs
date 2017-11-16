@@ -397,8 +397,8 @@ namespace System.IO.Packaging
                 // If the binding is an assignment rather than an initialization, set the dirty flag.
                 _dirty = !initializing;
             }
-            // Case of an initial value being set for a property.
-            else
+            // Case of an initial value being set for a property. If value is null, no need to do anything
+            else if (value != null)
             {
                 _propertyDictionary.Add(propertyenum, value);
                 // If the binding is an assignment rather than an initialization, set the dirty flag.

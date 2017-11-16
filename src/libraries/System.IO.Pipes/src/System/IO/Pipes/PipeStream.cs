@@ -6,7 +6,6 @@ using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
-using System.Runtime.InteropServices;
 using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
@@ -126,7 +125,23 @@ namespace System.IO.Pipes
             }
             CheckReadOperations();
 
-            return ReadCore(buffer, offset, count);
+            return ReadCore(new Span<byte>(buffer, offset, count));
+        }
+
+        public override int Read(Span<byte> destination)
+        {
+            if (_isAsync)
+            {
+                return base.Read(destination);
+            }
+
+            if (!CanRead)
+            {
+                throw Error.GetReadNotSupported();
+            }
+            CheckReadOperations();
+
+            return ReadCore(destination);
         }
 
         [SecuritySafeCritical]
@@ -156,7 +171,35 @@ namespace System.IO.Pipes
                 return s_zeroTask;
             }
 
-            return ReadAsyncCore(buffer, offset, count, cancellationToken);
+            return ReadAsyncCore(new Memory<byte>(buffer, offset, count), cancellationToken);
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (!_isAsync)
+            {
+                return base.ReadAsync(destination, cancellationToken);
+            }
+
+            if (!CanRead)
+            {
+                throw Error.GetReadNotSupported();
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+            }
+
+            CheckReadOperations();
+
+            if (destination.Length == 0)
+            {
+                UpdateMessageCompletion(false);
+                return new ValueTask<int>(0);
+            }
+
+            return new ValueTask<int>(ReadAsyncCore(destination, cancellationToken));
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
@@ -191,7 +234,24 @@ namespace System.IO.Pipes
             }
             CheckWriteOperations();
 
-            WriteCore(buffer, offset, count);
+            WriteCore(new ReadOnlySpan<byte>(buffer, offset, count));
+        }
+
+        public override void Write(ReadOnlySpan<byte> source)
+        {
+            if (_isAsync)
+            {
+                base.Write(source);
+                return;
+            }
+
+            if (!CanWrite)
+            {
+                throw Error.GetWriteNotSupported();
+            }
+            CheckWriteOperations();
+
+            WriteCore(source);
         }
 
         [SecuritySafeCritical]
@@ -220,7 +280,34 @@ namespace System.IO.Pipes
                 return Task.CompletedTask;
             }
 
-            return WriteAsyncCore(buffer, offset, count, cancellationToken);
+            return WriteAsyncCore(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
+        }
+
+        public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (!_isAsync)
+            {
+                return base.WriteAsync(source, cancellationToken);
+            }
+
+            if (!CanWrite)
+            {
+                throw Error.GetWriteNotSupported();
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<int>(cancellationToken);
+            }
+
+            CheckWriteOperations();
+
+            if (source.Length == 0)
+            {
+                return Task.CompletedTask;
+            }
+
+            return WriteAsyncCore(source, cancellationToken);
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
@@ -252,41 +339,35 @@ namespace System.IO.Pipes
         }
 
         [Conditional("DEBUG")]
+        private static void DebugAssertHandleValid(SafePipeHandle handle)
+        {
+            Debug.Assert(handle != null, "handle is null");
+            Debug.Assert(!handle.IsClosed, "handle is closed");
+        }
+
+        [Conditional("DEBUG")]
         private static void DebugAssertReadWriteArgs(byte[] buffer, int offset, int count, SafePipeHandle handle)
         {
             Debug.Assert(buffer != null, "buffer is null");
             Debug.Assert(offset >= 0, "offset is negative");
             Debug.Assert(count >= 0, "count is negative");
             Debug.Assert(offset <= buffer.Length - count, "offset + count is too big");
-            Debug.Assert(handle != null, "handle is null");
-            Debug.Assert(!handle.IsClosed, "handle is closed");
-        }
-
-        [ThreadStatic]
-        private static byte[] t_singleByteArray;
-
-        private static byte[] SingleByteArray
-        {
-            get { return t_singleByteArray ?? (t_singleByteArray = new byte[1]); }
+            DebugAssertHandleValid(handle);
         }
 
         // Reads a byte from the pipe stream.  Returns the byte cast to an int
         // or -1 if the connection has been broken.
         [SecurityCritical]
-        public override int ReadByte()
+        public override unsafe int ReadByte()
         {
-            byte[] buffer = SingleByteArray;
-            return Read(buffer, 0, 1) > 0 ?
-                buffer[0] :
-                -1;
+            byte b;
+            return Read(new Span<byte>(&b, 1)) > 0 ? b : -1;
         }
 
         [SecurityCritical]
-        public override void WriteByte(byte value)
+        public override unsafe void WriteByte(byte value)
         {
-            byte[] buffer = SingleByteArray;
-            buffer[0] = value;
-            Write(buffer, 0, 1);
+            Write(new ReadOnlySpan<byte>(&value, 1));
         }
 
         // Does nothing on PipeStreams.  We cannot call Interop.FlushFileBuffers here because we can deadlock
@@ -313,7 +394,7 @@ namespace System.IO.Pipes
                     _handle.Dispose();
                 }
 
-                UninitializeAsyncHandle();
+                DisposeCore(disposing);
             }
             finally
             {

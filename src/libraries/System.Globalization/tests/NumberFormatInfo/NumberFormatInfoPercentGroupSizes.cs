@@ -12,7 +12,7 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> PercentGroupSizes_TestData()
         {
             yield return new object[] { NumberFormatInfo.InvariantInfo, new int[] { 3 } };
-            yield return new object[] { new CultureInfo("en-US").NumberFormat, new int[] { 3 } };
+            yield return new object[] { CultureInfo.GetCultureInfo("en-US").NumberFormat, new int[] { 3 } };
         }
 
         [Theory]

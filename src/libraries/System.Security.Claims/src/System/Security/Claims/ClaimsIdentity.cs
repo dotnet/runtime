@@ -35,29 +35,15 @@ namespace System.Security.Claims
             UserData = 128,
         }
 
-        [NonSerialized]
         private byte[] _userSerializationData;
-
         private ClaimsIdentity _actor;
         private string _authenticationType;
         private object _bootstrapContext;
-
-        [NonSerialized]
         private List<List<Claim>> _externalClaims;
-
         private string _label;
-
-        [NonSerialized]
         private List<Claim> _instanceClaims = new List<Claim>();
-
-        [NonSerialized]
         private string _nameClaimType = DefaultNameClaimType;
-
-        [NonSerialized]
         private string _roleClaimType = DefaultRoleClaimType;
-
-        private string _serializedNameType;
-        private string _serializedRoleType;
 
         public const string DefaultIssuer = @"LOCAL AUTHORITY";
         public const string DefaultNameClaimType = ClaimTypes.Name;
@@ -167,7 +153,7 @@ namespace System.Security.Claims
         /// <para>All <see cref="Claim"/>s are copied into this instance in a <see cref="List{Claim}"/>. Each Claim is examined and if Claim.Subject != this, then Claim.Clone(this) is called before the claim is added.</para>
         /// <para>Any 'External' claims are ignored.</para>
         /// </remarks>
-        /// <exception cref="InvalidOperationException">if 'identity' is a <see cref="ClaimsIdentity"/> and <see cref="ClaimsIdentity.Actor"/> results in a circular refrence back to 'this'.</exception>
+        /// <exception cref="InvalidOperationException">if 'identity' is a <see cref="ClaimsIdentity"/> and <see cref="ClaimsIdentity.Actor"/> results in a circular reference back to 'this'.</exception>
         public ClaimsIdentity(IIdentity identity, IEnumerable<Claim> claims, string authenticationType, string nameType, string roleType)
         {
             ClaimsIdentity claimsIdentity = identity as ClaimsIdentity;
@@ -272,12 +258,7 @@ namespace System.Security.Claims
         [SecurityCritical]
         protected ClaimsIdentity(SerializationInfo info)
         {
-            if (null == info)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
-            Deserialize(info, new StreamingContext(), false);
+            throw new PlatformNotSupportedException();
         }
 
         /// <summary>
@@ -469,7 +450,7 @@ namespace System.Security.Claims
         /// Adds a <see cref="IEnumerable{Claim}"/> to the internal list.
         /// </summary>
         /// <param name="claims">Enumeration of claims to add.</param>
-        /// <remarks>Each claim is examined and if <see cref="Claim.Subject"/> != this, then then Claim.Clone(this) is called before the claim is added.</remarks>
+        /// <remarks>Each claim is examined and if <see cref="Claim.Subject"/> != this, then Claim.Clone(this) is called before the claim is added.</remarks>
         /// <exception cref="ArgumentNullException">if 'claims' is null.</exception>
         public virtual void AddClaims(IEnumerable<Claim> claims)
         {
@@ -1007,43 +988,6 @@ namespace System.Security.Claims
             return false;
         }
 
-        [OnSerializing]
-        private void OnSerializingMethod(StreamingContext context)
-        {
-            if (this is ISerializable)
-            {
-                return;
-            }
-
-            _serializedNameType = _nameClaimType;
-            _serializedRoleType = _roleClaimType;
-            if (_instanceClaims != null && _instanceClaims.Count > 0)
-            {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_Serialization); // BinaryFormatter would be needed
-            }
-        }
-
-        [OnDeserialized]
-        private void OnDeserializedMethod(StreamingContext context)
-        {
-            if (this is ISerializable)
-            {
-                return;
-            }
-
-            _nameClaimType = string.IsNullOrEmpty(_serializedNameType) ? DefaultNameClaimType : _serializedNameType;
-            _roleClaimType = string.IsNullOrEmpty(_serializedRoleType) ? DefaultRoleClaimType : _serializedRoleType;
-        }
-
-        [OnDeserializing]
-        private void OnDeserializingMethod(StreamingContext context)
-        {
-            if (this is ISerializable)
-                return;
-
-            _instanceClaims = new List<Claim>();
-        }
-
         /// <summary>
         /// Populates the specified <see cref="SerializationInfo"/> with the serialization data for the ClaimsIdentity
         /// </summary>
@@ -1053,45 +997,6 @@ namespace System.Security.Claims
         protected virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
-        }
-
-        private void Deserialize(SerializationInfo info, StreamingContext context, bool useContext)
-        {
-            if (null == info)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
-            SerializationInfoEnumerator enumerator = info.GetEnumerator();
-            while (enumerator.MoveNext())
-            {
-                switch (enumerator.Name)
-                {
-                    case VersionKey:
-                        string version = info.GetString(VersionKey);
-                        break;
-
-                    case AuthenticationTypeKey:
-                        _authenticationType = info.GetString(AuthenticationTypeKey);
-                        break;
-
-                    case NameClaimTypeKey:
-                        _nameClaimType = info.GetString(NameClaimTypeKey);
-                        break;
-
-                    case RoleClaimTypeKey:
-                        _roleClaimType = info.GetString(RoleClaimTypeKey);
-                        break;
-
-                    case LabelKey:
-                        _label = info.GetString(LabelKey);
-                        break;
-
-                    default:
-                        // Ignore other fields for forward compatability.
-                        break;
-                }
-            }
         }
     }
 }

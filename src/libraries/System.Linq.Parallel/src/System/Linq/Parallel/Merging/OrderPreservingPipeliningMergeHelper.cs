@@ -491,7 +491,7 @@ namespace System.Linq.Parallel
     /// <summary>
     /// A structure to represent a producer in the producer heap.
     /// </summary>
-    internal struct Producer<TKey>
+    internal readonly struct Producer<TKey>
     {
         internal readonly TKey MaxKey; // Order index of the next element from this producer
         internal readonly int ProducerIndex; // Index of the producer, [0..DOP)

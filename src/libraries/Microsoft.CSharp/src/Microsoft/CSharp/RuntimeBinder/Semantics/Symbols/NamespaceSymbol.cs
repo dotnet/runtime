@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
@@ -31,27 +32,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
     internal sealed class NamespaceSymbol : NamespaceOrAggregateSymbol
     {
-        // Which assemblies and extern aliases contain this namespace.
-        private HashSet<KAID> _bsetFilter;
+        /// <summary>The "root" (unnamed) namespace.</summary>
+        public static readonly NamespaceSymbol Root = GetRootNamespaceSymbol();
 
-        public NamespaceSymbol()
+        private static NamespaceSymbol GetRootNamespaceSymbol()
         {
-            _bsetFilter = new HashSet<KAID>();
-        }
-
-        public bool InAlias(KAID aid)
-        {
-            Debug.Assert(0 <= aid);
-            return _bsetFilter.Contains(aid);
-        }
-
-        public void AddAid(KAID aid)
-        {
-            if (aid == KAID.kaidThisAssembly)
+            NamespaceSymbol root = new NamespaceSymbol
             {
-                _bsetFilter.Add(KAID.kaidGlobal);
-            }
-            _bsetFilter.Add(aid);
+                name = NameManager.GetPredefinedName(PredefinedName.PN_VOID)
+            };
+
+            root.setKind(SYMKIND.SK_NamespaceSymbol);
+            return root;
         }
     }
 }

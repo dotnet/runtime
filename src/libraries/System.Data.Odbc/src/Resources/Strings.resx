@@ -201,6 +201,9 @@
   <data name="ADP_NonPooledOpenTimeout" xml:space="preserve">
     <value>Timeout attempting to open the connection.  The time period elapsed prior to attempting to open the connection has been exceeded.  This may have occurred because of too many simultaneous non-pooled connection attempts.</value>
   </data>
+  <data name="ADP_QuotePrefixNotSet" xml:space="preserve">
+    <value>{0} requires an open connection when the quote prefix has not been set.</value>
+  </data>
   <data name="MDF_QueryFailed" xml:space="preserve">
     <value>Unable to build the '{0}' collection because execution of the SQL query failed. See the inner exception for details.</value>
   </data>
@@ -328,7 +331,7 @@
     <value>{0} DeriveParameters only supports CommandType.StoredProcedure, not CommandType.{1}.</value>
   </data>
   <data name="ADP_InvalidCommandTimeout" xml:space="preserve">
-    <value>Invalid CommandTimeout value {0}; the value must be >= 0.</value>
+    <value>Invalid CommandTimeout value {0}; the value must be &gt;= 0.</value>
   </data>
   <data name="ADP_UninitializedParameterSize" xml:space="preserve">
     <value>{1}[{0}]: the Size property has an invalid size of 0.</value>
@@ -425,5 +428,11 @@
   </data>
   <data name="Odbc_OpenConnectionNoOwner" xml:space="preserve">
     <value>An internal connection does not have an owner.</value>
+  </data>
+  <data name="Odbc_PlatformNotSupported" xml:space="preserve">
+    <value>System.Data.ODBC is not supported on this platform.</value>
+  </data>
+  <data name="Odbc_UnixOdbcNotFound" xml:space="preserve">
+    <value>Dependency unixODBC with minimum version 2.3.1 is required.</value>
   </data>
 </root>

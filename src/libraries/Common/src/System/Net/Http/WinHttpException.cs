@@ -15,6 +15,11 @@ namespace System.Net.Http
             this.HResult = ConvertErrorCodeToHR(error);
         }
 
+        public WinHttpException(int error, string message, Exception innerException) : base(message, innerException)
+        {
+            this.HResult = ConvertErrorCodeToHR(error);
+        }
+
         public static int ConvertErrorCodeToHR(int error)
         {
             // This method allows common error detection code to be used by consumers
@@ -48,6 +53,13 @@ namespace System.Net.Http
         public static WinHttpException CreateExceptionUsingError(int error)
         {
             var e = new WinHttpException(error, GetErrorMessage(error));
+            ExceptionStackTrace.AddCurrentStack(e);
+            return e;
+        }
+
+        public static WinHttpException CreateExceptionUsingError(int error, Exception innerException)
+        {
+            var e = new WinHttpException(error, GetErrorMessage(error), innerException);
             ExceptionStackTrace.AddCurrentStack(e);
             return e;
         }

@@ -524,3 +524,58 @@ extern "C" int32_t CryptoNative_SslAddExtraChainCert(SSL* ssl, X509* x509)
 
     return 0;
 }
+
+extern "C" void CryptoNative_SslCtxSetAlpnSelectCb(SSL_CTX* ctx, SslCtxSetAlpnCallback cb, void* arg)
+{
+#if HAVE_OPENSSL_ALPN
+    if (API_EXISTS(SSL_CTX_set_alpn_select_cb))
+    {
+        SSL_CTX_set_alpn_select_cb(ctx, cb, arg);
+    }
+#else
+    (void)ctx;
+    (void)cb;
+    (void)arg;
+#endif
+}
+
+extern "C" int32_t CryptoNative_SslCtxSetAlpnProtos(SSL_CTX* ctx, const uint8_t* protos, uint32_t protos_len)
+{
+#if HAVE_OPENSSL_ALPN
+    if (API_EXISTS(SSL_CTX_set_alpn_protos))
+    {
+        return SSL_CTX_set_alpn_protos(ctx, protos, protos_len);
+    }
+    else
+#else
+    (void)ctx;
+    (void)protos;
+    (void)protos_len;
+#endif
+    {
+        return 0;
+    }
+}
+
+extern "C" void CryptoNative_SslGet0AlpnSelected(SSL* ssl, const uint8_t** protocol, uint32_t* len)
+{
+#if HAVE_OPENSSL_ALPN
+    if (API_EXISTS(SSL_get0_alpn_selected))
+    {
+        SSL_get0_alpn_selected(ssl, protocol, len);
+    }
+    else
+#else
+    (void)ssl;
+#endif
+    {
+        *protocol = nullptr;
+        *len = 0;
+    }
+}
+
+extern "C" int32_t CryptoNative_SslSetTlsExtHostName(SSL* ssl, const uint8_t* name)
+{
+    return static_cast<int32_t>(SSL_set_tlsext_host_name(ssl, name));
+}
+

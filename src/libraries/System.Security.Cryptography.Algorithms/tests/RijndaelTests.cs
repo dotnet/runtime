@@ -52,6 +52,42 @@ namespace System.Security.Cryptography.Encryption.Rijndael.Tests
         }
 
         [Fact]
+        public static void VerifyBlocksizeIVNulling()
+        {
+            using (var testIVAlg = Rijndael.Create())
+            {
+                using (var alg = Rijndael.Create())
+                {
+                    alg.IV = testIVAlg.IV;
+                    alg.BlockSize = 128;
+                    Assert.Equal(testIVAlg.IV, alg.IV);
+                }
+
+                using (var alg = new RijndaelManaged())
+                {
+                    alg.IV = testIVAlg.IV;
+                    alg.BlockSize = 128;
+                    Assert.Equal(testIVAlg.IV, alg.IV);
+                }
+
+                using (var alg = new RijndaelLegalSizesBreaker())
+                {
+                    // This one should set IV to null on setting BlockSize since there is only one valid BlockSize
+                    alg.IV = testIVAlg.IV;
+                    alg.BlockSize = 1;
+                    Assert.Throws<NotImplementedException>(() => alg.IV);
+                }
+
+                using (var alg = new RijndaelMinimal())
+                {
+                    alg.IV = testIVAlg.IV;
+                    alg.BlockSize = 128;
+                    Assert.Equal(testIVAlg.IV, alg.IV);
+                }
+            }
+        }
+
+        [Fact]
         public static void EncryptDecryptKnownECB192()
         {
             using (var alg = Rijndael.Create())
@@ -175,6 +211,84 @@ namespace System.Security.Cryptography.Encryption.Rijndael.Tests
 
                 alg.Key = new byte[16];
             }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void EncryptWithLargeOutputBuffer(bool blockAlignedOutput)
+        {
+            using (Rijndael alg = Rijndael.Create())
+            using (ICryptoTransform xform = alg.CreateEncryptor())
+            {
+                // 8 blocks, plus maybe three bytes
+                int outputPadding = blockAlignedOutput ? 0 : 3;
+                byte[] output = new byte[alg.BlockSize + outputPadding];
+                // 2 blocks of 0x00
+                byte[] input = new byte[alg.BlockSize / 4];
+                int outputOffset = 0;
+
+                outputOffset += xform.TransformBlock(input, 0, input.Length, output, outputOffset);
+                byte[] overflow = xform.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                Buffer.BlockCopy(overflow, 0, output, outputOffset, overflow.Length);
+                outputOffset += overflow.Length;
+
+                Assert.Equal(3 * (alg.BlockSize / 8), outputOffset);
+                string outputAsHex = output.ByteArrayToHex();
+                Assert.NotEqual(new string('0', outputOffset * 2), outputAsHex.Substring(0, outputOffset * 2));
+                Assert.Equal(new string('0', (output.Length - outputOffset) * 2), outputAsHex.Substring(outputOffset * 2));
+            }
+        }
+
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public static void TransformWithTooShortOutputBuffer(bool encrypt, bool blockAlignedOutput)
+        {
+            using (Rijndael alg = Rijndael.Create())
+            using (ICryptoTransform xform = encrypt ? alg.CreateEncryptor() : alg.CreateDecryptor())
+            {
+                // 1 block, plus maybe three bytes
+                int outputPadding = blockAlignedOutput ? 0 : 3;
+                byte[] output = new byte[alg.BlockSize / 8 + outputPadding];
+                // 3 blocks of 0x00
+                byte[] input = new byte[3 * (alg.BlockSize / 8)];
+
+                Assert.Throws<ArgumentOutOfRangeException>(
+                    () => xform.TransformBlock(input, 0, input.Length, output, 0));
+
+                Assert.Equal(new byte[output.Length], output);
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void MultipleBlockDecryptTransform(bool blockAlignedOutput)
+        {
+            const string ExpectedOutput = "This is a 128-bit block test";
+
+            int outputPadding = blockAlignedOutput ? 0 : 3;
+            byte[] key = "0123456789ABCDEFFEDCBA9876543210".HexToByteArray();
+            byte[] iv = "0123456789ABCDEF0123456789ABCDEF".HexToByteArray();
+            byte[] outputBytes = new byte[iv.Length * 2 + outputPadding];
+            byte[] input = "D1BF87C650FCD10B758445BE0E0A99D14652480DF53423A8B727D30C8C010EDE".HexToByteArray();
+            int outputOffset = 0;
+
+            using (Rijndael alg = Rijndael.Create())
+            using (ICryptoTransform xform = alg.CreateDecryptor(key, iv))
+            {
+                Assert.Equal(2 * alg.BlockSize, (outputBytes.Length - outputPadding) * 8);
+                outputOffset += xform.TransformBlock(input, 0, input.Length, outputBytes, outputOffset);
+                byte[] overflow = xform.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                Buffer.BlockCopy(overflow, 0, outputBytes, outputOffset, overflow.Length);
+                outputOffset += overflow.Length;
+            }
+
+            string decrypted = Encoding.ASCII.GetString(outputBytes, 0, outputOffset);
+            Assert.Equal(ExpectedOutput, decrypted);
         }
 
         private class RijndaelLegalSizesBreaker : RijndaelMinimal

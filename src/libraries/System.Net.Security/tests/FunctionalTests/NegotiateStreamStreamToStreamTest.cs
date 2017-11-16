@@ -21,7 +21,6 @@ namespace System.Net.Security.Tests
         protected abstract Task AuthenticateAsClientAsync(NegotiateStream client, NetworkCredential credential, string targetName);
         protected abstract Task AuthenticateAsServerAsync(NegotiateStream server);
 
-        [ActiveIssue(18760, TargetFrameworkMonikers.UapAot)] // In order to properly test this, we need UWP-AOT to run within an App Container.
         [Fact]
         public void NegotiateStream_StreamToStream_Authentication_Success()
         {
@@ -68,21 +67,12 @@ namespace System.Net.Security.Tests
                 IIdentity clientIdentity = server.RemoteIdentity;
                 Assert.Equal("NTLM", clientIdentity.AuthenticationType);
 
-                if (PlatformDetection.IsUap)
-                {
-                    // TODO #21282: UWP AppContainer issue - clientIdentity.IsAuthenticated == false.
-                    Assert.Equal(false, clientIdentity.IsAuthenticated);
-                }
-                else
-                {
-                    Assert.Equal(true, clientIdentity.IsAuthenticated);
-                }
+                Assert.Equal(true, clientIdentity.IsAuthenticated);
 
                 IdentityValidator.AssertIsCurrentIdentity(clientIdentity);
             }
         }
 
-        [ActiveIssue(18760, TargetFrameworkMonikers.UapAot)] // In order to properly test this, we need UWP-AOT to run within an App Container.
         [Fact]
         public void NegotiateStream_StreamToStream_Authentication_TargetName_Success()
         {
@@ -132,15 +122,7 @@ namespace System.Net.Security.Tests
                 IIdentity clientIdentity = server.RemoteIdentity;
                 Assert.Equal("NTLM", clientIdentity.AuthenticationType);
 
-                if (PlatformDetection.IsUap)
-                {
-                    // TODO #21282: UWP issue - clientIdentity.IsAuthenticated == false.
-                    Assert.Equal(false, clientIdentity.IsAuthenticated);
-                }
-                else
-                {
-                    Assert.Equal(true, clientIdentity.IsAuthenticated);
-                }
+                Assert.Equal(true, clientIdentity.IsAuthenticated);
 
                 IdentityValidator.AssertIsCurrentIdentity(clientIdentity);
             }

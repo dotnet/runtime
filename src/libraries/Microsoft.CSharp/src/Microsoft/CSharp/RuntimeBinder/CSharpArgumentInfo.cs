@@ -19,7 +19,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <summary>
         /// The flags for the argument.
         /// </summary>
-        internal CSharpArgumentInfoFlags Flags { get; }
+        private CSharpArgumentInfoFlags Flags { get; }
 
         /// <summary>
         /// The name of the argument, if named; otherwise null.
@@ -49,7 +49,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         internal bool NamedArgument => (Flags & CSharpArgumentInfoFlags.NamedArgument) != 0;
 
-        internal bool IsByRef => (Flags & CSharpArgumentInfoFlags.IsRef) != 0;
+        internal bool IsByRefOrOut => (Flags & (CSharpArgumentInfoFlags.IsRef | CSharpArgumentInfoFlags.IsOut)) != 0;
 
         internal bool IsOut => (Flags & CSharpArgumentInfoFlags.IsOut) != 0;
 

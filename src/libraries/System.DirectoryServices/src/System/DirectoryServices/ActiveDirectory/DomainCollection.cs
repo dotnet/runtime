@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Collections;
-    using System.Globalization;
-    using System.DirectoryServices;
-
     public class DomainCollection : ReadOnlyCollectionBase
     {
         internal DomainCollection() { }
@@ -24,13 +21,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public Domain this[int index]
-        {
-            get
-            {
-                return (Domain)InnerList[index];
-            }
-        }
+        public Domain this[int index] => (Domain)InnerList[index];
 
         public bool Contains(Domain domain)
         {
@@ -69,13 +60,8 @@ namespace System.DirectoryServices.ActiveDirectory
             InnerList.CopyTo(domains, index);
         }
 
-        internal int Add(Domain domain)
-        {
-            return InnerList.Add(domain);
-        }
-        internal void Clear()
-        {
-            InnerList.Clear();
-        }
+        internal int Add(Domain domain) => InnerList.Add(domain);
+
+        internal void Clear() => InnerList.Clear();
     }
 }

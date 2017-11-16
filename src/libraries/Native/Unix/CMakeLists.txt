@@ -20,6 +20,7 @@ add_compile_options(-fPIC)
 add_compile_options(-I${CMAKE_CURRENT_SOURCE_DIR}/Common)
 add_compile_options(-I${CMAKE_CURRENT_BINARY_DIR}/Common)
 add_compile_options(-Wno-c99-extensions)
+add_compile_options(-g)
 
 if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.5)
     add_compile_options(-Wno-unreachable-code)
@@ -60,7 +61,7 @@ endif ()
 
 string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
 if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
-    add_compile_options(-g -O0)
+    add_compile_options(-O0)
     add_definitions(-DDEBUG)
 
     # obtain settings from running coreclr\enablesanitizers.sh

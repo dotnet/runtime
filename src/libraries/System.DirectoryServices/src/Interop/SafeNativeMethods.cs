@@ -2,61 +2,54 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Text;
+using System.Security;
+using System.Runtime.InteropServices;
+
 namespace System.DirectoryServices.Interop
 {
-    using System;
-    using System.Text;
-    using System.Security;
-    using System.Security.Permissions;
-    using System.Runtime.InteropServices;
 #pragma warning disable BCL0015 // CoreFxPort
-    [
-    SuppressUnmanagedCodeSecurityAttribute()
-    ]
+    [SuppressUnmanagedCodeSecurity]
     internal class SafeNativeMethods
     {
         [DllImport(ExternDll.Oleaut32, PreserveSig = false)]
         public static extern void VariantClear(IntPtr pObject);
+
         [DllImport(ExternDll.Oleaut32)]
         public static extern void VariantInit(IntPtr pObject);
+
         [DllImport(ExternDll.Activeds)]
         public static extern bool FreeADsMem(IntPtr pVoid);
 
-        public const int FORMAT_MESSAGE_ALLOCATE_BUFFER = 0x00000100,
+        public const int
             FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200,
-            FORMAT_MESSAGE_FROM_STRING = 0x00000400,
-            FORMAT_MESSAGE_FROM_HMODULE = 0x00000800,
             FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000,
             FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000,
-            FORMAT_MESSAGE_MAX_WIDTH_MASK = 0x000000FF,
             ERROR_MORE_DATA = 234,
             ERROR_SUCCESS = 0;
 
-        [DllImport(ExternDll.Activeds, CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        [DllImport(ExternDll.Activeds, CharSet = CharSet.Unicode)]
         public static extern int ADsGetLastError(out int error, StringBuilder errorBuffer,
                                                  int errorBufferLength, StringBuilder nameBuffer, int nameBufferLength);
 
-        [DllImport(ExternDll.Activeds, CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        [DllImport(ExternDll.Activeds, CharSet = CharSet.Unicode)]
         public static extern int ADsSetLastError(int error, string errorString, string provider);
 
-        [DllImport(ExternDll.Kernel32, CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        [DllImport(ExternDll.Kernel32, CharSet = CharSet.Unicode)]
         public static extern int FormatMessageW(int dwFlags, int lpSource, int dwMessageId,
                                                 int dwLanguageId, StringBuilder lpBuffer, int nSize, int arguments);
 
         public class EnumVariant
         {
             private static readonly object s_noMoreValues = new object();
-            private Object _currentValue = s_noMoreValues;
+            private object _currentValue = s_noMoreValues;
             private IEnumVariant _enumerator;
 
             public EnumVariant(IEnumVariant en)
             {
-                if (en == null)
-                    throw new ArgumentNullException("en");
-                _enumerator = en;
+                _enumerator = en ?? throw new ArgumentNullException(nameof(en));
             }
 
-            /// <include file='doc\SafeNativeMethods.uex' path='docs/doc[@for="SafeNativeMethods.EnumVariant.GetNext"]/*' />
             /// <devdoc>
             /// Moves the enumerator to the next value In the list.
             /// </devdoc>
@@ -66,19 +59,20 @@ namespace System.DirectoryServices.Interop
                 return _currentValue != s_noMoreValues;
             }
 
-            /// <include file='doc\SafeNativeMethods.uex' path='docs/doc[@for="SafeNativeMethods.EnumVariant.GetValue"]/*' />
             /// <devdoc>
             /// Returns the current value of the enumerator. If GetNext() has never been called,
             /// or if it has been called but it returned false, will throw an exception.
             /// </devdoc>
-            public Object GetValue()
+            public object GetValue()
             {
                 if (_currentValue == s_noMoreValues)
+                {
                     throw new InvalidOperationException(SR.DSEnumerator);
+                }
+
                 return _currentValue;
             }
 
-            /// <include file='doc\SafeNativeMethods.uex' path='docs/doc[@for="SafeNativeMethods.EnumVariant.Reset"]/*' />
             /// <devdoc>
             /// Returns the enumerator to the start of the sequence.
             /// </devdoc>
@@ -88,7 +82,6 @@ namespace System.DirectoryServices.Interop
                 _currentValue = s_noMoreValues;
             }
 
-            /// <include file='doc\SafeNativeMethods.uex' path='docs/doc[@for="SafeNativeMethods.EnumVariant.Advance"]/*' />
             /// <devdoc>
             /// Moves the pointer to the next value In the contained IEnumVariant, and
             /// stores the current value In currentValue.
@@ -100,7 +93,7 @@ namespace System.DirectoryServices.Interop
                 try
                 {
                     int[] numRead = new int[] { 0 };
-                    SafeNativeMethods.VariantInit(addr);
+                    VariantInit(addr);
                     _enumerator.Next(1, addr, numRead);
 
                     try
@@ -114,7 +107,7 @@ namespace System.DirectoryServices.Interop
                     }
                     finally
                     {
-                        SafeNativeMethods.VariantClear(addr);
+                        VariantClear(addr);
                     }
                 }
                 finally
@@ -124,30 +117,24 @@ namespace System.DirectoryServices.Interop
             }
         }
 
-        [ComImport(), Guid("00020404-0000-0000-C000-000000000046"), System.Runtime.InteropServices.InterfaceTypeAttribute(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
+        [ComImport]
+        [Guid("00020404-0000-0000-C000-000000000046")]
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
         public interface IEnumVariant
         {
-            [SuppressUnmanagedCodeSecurityAttribute()]
-            void Next(
-                    [In, MarshalAs(UnmanagedType.U4)]
-                     int celt,
-                    [In, Out]
-                       IntPtr rgvar,
-                    [Out, MarshalAs(UnmanagedType.LPArray)]
-                      int[] pceltFetched);
+            [SuppressUnmanagedCodeSecurity]
+            void Next([In, MarshalAs(UnmanagedType.U4)] int celt,
+                      [In, Out] IntPtr rgvar,
+                      [Out, MarshalAs(UnmanagedType.LPArray)] int[] pceltFetched);
 
-            [SuppressUnmanagedCodeSecurityAttribute()]
-            void Skip(
-                    [In, MarshalAs(UnmanagedType.U4)]
-                     int celt);
+            [SuppressUnmanagedCodeSecurity]
+            void Skip([In, MarshalAs(UnmanagedType.U4)] int celt);
 
-            [SuppressUnmanagedCodeSecurityAttribute()]
+            [SuppressUnmanagedCodeSecurity]
             void Reset();
 
-            [SuppressUnmanagedCodeSecurityAttribute()]
-            void Clone(
-                    [Out, MarshalAs(UnmanagedType.LPArray)]
-                       IEnumVariant[] ppenum);
+            [SuppressUnmanagedCodeSecurity]
+            void Clone([Out, MarshalAs(UnmanagedType.LPArray)] IEnumVariant[] ppenum);
         }
     }
 }

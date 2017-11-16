@@ -4,12 +4,6 @@
 
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Collections;
-    using System.Globalization;
-    using System.Runtime.InteropServices;
-    using System.Security.Permissions;
-
     public abstract class ActiveDirectoryPartition : IDisposable
     {
         private bool _disposed = false;
@@ -57,10 +51,7 @@ namespace System.DirectoryServices.ActiveDirectory
         #endregion IDisposable
 
         #region public methods
-        public override string ToString()
-        {
-            return Name;
-        }
+        public override string ToString() => Name;
 
         public abstract DirectoryEntry GetDirectoryEntry();
 

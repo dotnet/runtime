@@ -2,18 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Text;
+using System.Collections;
+using System.Globalization;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+using System.Diagnostics;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Text;
-    using System.Collections;
-    using System.Globalization;
-    using System.ComponentModel;
-    using System.DirectoryServices;
-    using System.Runtime.InteropServices;
-    using System.Diagnostics;
-    using System.Security.Permissions;
-
     public enum DomainMode : int
     {
         Unknown = -1,
@@ -90,7 +87,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     else
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DCNotFound , context.Name), typeof(Domain), null);
+                        throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFound , context.Name), typeof(Domain), null);
                     }
                 }
             }
@@ -108,7 +105,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 rootDSE = directoryEntryMgr.GetCachedDirectoryEntry(WellKnownDN.RootDSE);
                 if ((context.isServer()) && (!Utils.CheckCapability(rootDSE, Capability.ActiveDirectory)))
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DCNotFound , context.Name), typeof(Domain), null);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFound , context.Name), typeof(Domain), null);
                 }
                 defaultDomainNC = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.DefaultNamingContext);
             }
@@ -124,7 +121,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     else
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DCNotFound , context.Name), typeof(Domain), null);
+                        throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFound , context.Name), typeof(Domain), null);
                     }
                 }
                 else
@@ -530,7 +527,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (collection.Count == 0)
             {
                 // trust relationship does not exist
-                throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DomainTrustDoesNotExist , Name, targetDomainName), typeof(TrustRelationshipInformation), null);
+                throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DomainTrustDoesNotExist , Name, targetDomainName), typeof(TrustRelationshipInformation), null);
             }
             else
             {
@@ -651,7 +648,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 catch (ActiveDirectoryObjectNotFoundException)
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.WrongTrustDirection , Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.WrongTrustDirection , Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
                 }
             }
 
@@ -664,7 +661,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 catch (ActiveDirectoryObjectNotFoundException)
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.WrongTrustDirection , Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.WrongTrustDirection , Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
                 }
             }
         }
@@ -825,7 +822,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             catch (ActiveDirectoryObjectNotFoundException)
             {
-                throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.WrongTrustDirection , Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
+                throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.WrongTrustDirection , Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
             }
         }
 
@@ -965,10 +962,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         #region private methods
 
-        internal DirectoryContext GetDirectoryContext()
-        {
-            return context;
-        }
+        internal DirectoryContext GetDirectoryContext() => context;
 
         private int GetDomainModeLevel()
         {
@@ -1510,7 +1504,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 catch (ActiveDirectoryObjectNotFoundException)
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.WrongTrustDirection , Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.WrongTrustDirection , Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
                 }
             }
 
@@ -1523,7 +1517,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 catch (ActiveDirectoryObjectNotFoundException)
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.WrongTrustDirection , Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.WrongTrustDirection , Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
                 }
             }
         }

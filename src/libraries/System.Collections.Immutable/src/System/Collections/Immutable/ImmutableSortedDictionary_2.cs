@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Globalization;
+using System.Linq;
 
 namespace System.Collections.Immutable
 {
@@ -733,7 +734,9 @@ namespace System.Collections.Immutable
         [ExcludeFromCodeCoverage]
         IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
         {
-            return this.GetEnumerator();
+            return this.IsEmpty ?
+                Enumerable.Empty<KeyValuePair<TKey, TValue>>().GetEnumerator() :
+                this.GetEnumerator();
         }
 
         #endregion

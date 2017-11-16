@@ -5,7 +5,9 @@
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)Tools/$(BuildToolsPackageVersion)</BaseIntermediateOutputPath>
   </PropertyGroup>
+  <Import Project="$(MSBuildThisFileDirectory)dependencies.props" />
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.BuildTools" Version="$(BuildToolsPackageVersion)" />
+    <PackageReference Include="$(FeedTasksPackage)" Version="$(FeedTasksPackageVersion)" />
   </ItemGroup>
 </Project>

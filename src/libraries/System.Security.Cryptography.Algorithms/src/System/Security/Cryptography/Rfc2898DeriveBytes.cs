@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Text;
 using System.Diagnostics;
 
@@ -249,7 +250,7 @@ namespace System.Security.Cryptography
         }
 
         // This function is defined as follows:
-        // Func (S, i) = HMAC(S || i) | HMAC2(S || i) | ... | HMAC(iterations) (S || i) 
+        // Func (S, i) = HMAC(S || i) ^ HMAC2(S || i) ^ ... ^ HMAC(iterations) (S || i) 
         // where i is the block number.
         private byte[] Func()
         {
@@ -257,22 +258,37 @@ namespace System.Security.Cryptography
             Buffer.BlockCopy(_salt, 0, temp, 0, _salt.Length);
             Helpers.WriteInt(_block, temp, _salt.Length);
 
-            temp = _hmac.ComputeHash(temp);
-            
-            byte[] ret = temp;
-            for (int i = 2; i <= _iterations; i++)
+            byte[] ui = ArrayPool<byte>.Shared.Rent(_blockSize);
+            try
             {
-                temp = _hmac.ComputeHash(temp);
+                Span<byte> uiSpan = new Span<byte>(ui, 0, _blockSize);
 
-                for (int j = 0; j < _blockSize; j++)
+                if (!_hmac.TryComputeHash(temp, uiSpan, out int bytesWritten) || bytesWritten != _blockSize)
+                    throw new CryptographicException();
+
+                byte[] ret = new byte[_blockSize];
+                uiSpan.CopyTo(ret);
+
+                for (int i = 2; i <= _iterations; i++)
                 {
-                    ret[j] ^= temp[j];
-                }
-            }
+                    if (!_hmac.TryComputeHash(uiSpan, uiSpan, out bytesWritten) || bytesWritten != _blockSize)
+                        throw new CryptographicException();
 
-            // increment the block count.
-            _block++;
-            return ret;
+                    for (int j = 0; j < _blockSize; j++)
+                    {
+                        ret[j] ^= ui[j];
+                    }
+                }
+
+                // increment the block count.
+                _block++;
+                return ret;
+            }
+            finally
+            {
+                Array.Clear(ui, 0, _blockSize);
+                ArrayPool<byte>.Shared.Return(ui);
+            }
         }
     }
 }

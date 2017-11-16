@@ -13,6 +13,8 @@ namespace System.ComponentModel
     /// <summary>
     ///    <para>Represents the exception thrown when a component cannot be granted a license.</para>
     /// </summary>
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1032:ImplementStandardExceptionConstructors")] // must not, a Type is required in all constructors.
     public class LicenseException : SystemException
     {
@@ -58,7 +60,6 @@ namespace System.ComponentModel
         /// </summary>
         protected LicenseException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            throw new PlatformNotSupportedException();
         }
 
         /// <summary>
@@ -72,6 +73,8 @@ namespace System.ComponentModel
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
+            info.AddValue("type", null); // Type is not serializable.
+            info.AddValue("instance", _instance);
         }
     }
 }

@@ -2,19 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Text;
+using System.Collections;
+using System.Globalization;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+using System.Diagnostics;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Text;
-    using System.Threading;
-    using System.Collections;
-    using System.Globalization;
-    using System.ComponentModel;
-    using System.DirectoryServices;
-    using System.Runtime.InteropServices;
-    using System.Diagnostics;
-    using System.Security.Permissions;
-
     public enum ForestMode : int
     {
         Unknown = -1,
@@ -30,14 +26,14 @@ namespace System.DirectoryServices.ActiveDirectory
     public class Forest : IDisposable
     {
         // Private Variables
-        private DirectoryContext _context = null;
-        private DirectoryEntryManager _directoryEntryMgr = null;
-        private IntPtr _dsHandle = IntPtr.Zero;
-        private IntPtr _authIdentity = IntPtr.Zero;
+        private readonly DirectoryContext _context = null;
+        private readonly DirectoryEntryManager _directoryEntryMgr = null;
+        private readonly IntPtr _dsHandle = IntPtr.Zero;
+        private readonly IntPtr _authIdentity = IntPtr.Zero;
         private bool _disposed = false;
 
         // Internal variables corresponding to public properties
-        private string _forestDnsName = null;
+        private readonly string _forestDnsName = null;
         private ReadOnlySiteCollection _cachedSites = null;
         private DomainCollection _cachedDomains = null;
         private GlobalCatalogCollection _cachedGlobalCatalogs = null;
@@ -64,10 +60,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         #region IDisposable
 
-        public void Dispose()
-        {
-            Dispose(true);
-        }
+        public void Dispose() => Dispose(true);
 
         // private Dispose method
         protected void Dispose(bool disposing)
@@ -124,7 +117,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     else
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DCNotFound , context.Name), typeof(Forest), null);
+                        throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFound , context.Name), typeof(Forest), null);
                     }
                 }
             }
@@ -141,7 +134,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 rootDSE = directoryEntryMgr.GetCachedDirectoryEntry(WellKnownDN.RootDSE);
                 if ((context.isServer()) && (!Utils.CheckCapability(rootDSE, Capability.ActiveDirectory)))
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DCNotFound , context.Name), typeof(Forest), null);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFound , context.Name), typeof(Forest), null);
                 }
                 rootDomainNC = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.RootDomainNamingContext);
             }
@@ -157,7 +150,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     else
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DCNotFound , context.Name), typeof(Forest), null);
+                        throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFound , context.Name), typeof(Forest), null);
                     }
                 }
                 else
@@ -236,10 +229,7 @@ namespace System.DirectoryServices.ActiveDirectory
             RaiseForestFunctionalityLevel((int)forestMode);
         }
 
-        public override string ToString()
-        {
-            return Name;
-        }
+        public override string ToString() => Name;
 
         public GlobalCatalog FindGlobalCatalog()
         {
@@ -351,7 +341,7 @@ namespace System.DirectoryServices.ActiveDirectory
             else
             {
                 // trust relationship does not exist
-                throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.ForestTrustDoesNotExist , Name, targetForestName), typeof(TrustRelationshipInformation), null);
+                throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.ForestTrustDoesNotExist , Name, targetForestName), typeof(TrustRelationshipInformation), null);
             }
         }
 
@@ -467,7 +457,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 catch (ActiveDirectoryObjectNotFoundException)
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.WrongTrustDirection , Name, targetForest.Name, direction), typeof(ForestTrustRelationshipInformation), null);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.WrongTrustDirection , Name, targetForest.Name, direction), typeof(ForestTrustRelationshipInformation), null);
                 }
             }
 
@@ -480,7 +470,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 catch (ActiveDirectoryObjectNotFoundException)
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.WrongTrustDirection , Name, targetForest.Name, direction), typeof(ForestTrustRelationshipInformation), null);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.WrongTrustDirection , Name, targetForest.Name, direction), typeof(ForestTrustRelationshipInformation), null);
                 }
             }
         }
@@ -638,14 +628,11 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             catch (ActiveDirectoryObjectNotFoundException)
             {
-                throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.WrongTrustDirection , Name, targetForest.Name, direction), typeof(ForestTrustRelationshipInformation), null);
+                throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.WrongTrustDirection , Name, targetForest.Name, direction), typeof(ForestTrustRelationshipInformation), null);
             }
         }
 
-        public static Forest GetCurrentForest()
-        {
-            return Forest.GetForest(new DirectoryContext(DirectoryContextType.Forest));
-        }
+        public static Forest GetCurrentForest() => GetForest(new DirectoryContext(DirectoryContextType.Forest));
 
         #endregion public methods
 
@@ -806,10 +793,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         #region private methods
 
-        internal DirectoryContext GetDirectoryContext()
-        {
-            return _context;
-        }
+        internal DirectoryContext GetDirectoryContext() => _context;
 
         private int GetForestModeLevel()
         {
@@ -1235,7 +1219,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 catch (ActiveDirectoryObjectNotFoundException)
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.WrongTrustDirection , Name, targetForest.Name, direction), typeof(ForestTrustRelationshipInformation), null);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.WrongTrustDirection , Name, targetForest.Name, direction), typeof(ForestTrustRelationshipInformation), null);
                 }
             }
 
@@ -1248,7 +1232,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 catch (ActiveDirectoryObjectNotFoundException)
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.WrongTrustDirection , Name, targetForest.Name, direction), typeof(ForestTrustRelationshipInformation), null);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.WrongTrustDirection , Name, targetForest.Name, direction), typeof(ForestTrustRelationshipInformation), null);
                 }
             }
         }
