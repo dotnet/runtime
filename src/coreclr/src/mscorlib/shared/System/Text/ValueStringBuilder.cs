@@ -36,6 +36,29 @@ namespace System.Text
             return s;
         }
 
+        public bool TryCopyTo(Span<char> destination, out int charsWritten)
+        {
+            if (_pos > destination.Length)
+            {
+                charsWritten = 0;
+                return false;
+            }
+
+            bool copied = _chars.Slice(0, _pos).TryCopyTo(destination);
+            Debug.Assert(copied);
+            charsWritten = _pos;
+
+            char[] toReturn = _arrayToReturnToPool;
+            this = default; // for safety, to avoid using pooled array if this instance is erroneously appended to again
+
+            if (toReturn != null)
+            {
+                ArrayPool<char>.Shared.Return(toReturn);
+            }
+
+            return true;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Append(char c)
         {
