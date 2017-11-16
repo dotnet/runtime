@@ -8,6 +8,7 @@ namespace System.Net.Sockets.Tests
 {
     public class SocketHelperSpanSync : SocketHelperArraySync
     {
+        public override bool ValidatesArrayArguments => false;
         public override Task<int> ReceiveAsync(Socket s, ArraySegment<byte> buffer) =>
             Task.Run(() => s.Receive((Span<byte>)buffer, SocketFlags.None));
         public override Task<int> SendAsync(Socket s, ArraySegment<byte> buffer) =>
@@ -16,6 +17,7 @@ namespace System.Net.Sockets.Tests
 
     public sealed class SocketHelperSpanSyncForceNonBlocking : SocketHelperSpanSync
     {
+        public override bool ValidatesArrayArguments => false;
         public override Task<Socket> AcceptAsync(Socket s) =>
             Task.Run(() => { s.ForceNonBlocking(true); Socket accepted = s.Accept(); accepted.ForceNonBlocking(true); return accepted; });
         public override Task ConnectAsync(Socket s, EndPoint endPoint) =>
@@ -24,6 +26,7 @@ namespace System.Net.Sockets.Tests
 
     public sealed class SocketHelperMemoryArrayTask : SocketHelperTask
     {
+        public override bool ValidatesArrayArguments => false;
         public override Task<int> ReceiveAsync(Socket s, ArraySegment<byte> buffer) =>
             s.ReceiveAsync((Memory<byte>)buffer, SocketFlags.None).AsTask();
         public override Task<int> SendAsync(Socket s, ArraySegment<byte> buffer) =>
