@@ -41,6 +41,7 @@ namespace System
         public static System.PlatformDetection.Range[] FrameworkRanges { get { throw null; } }
         public static bool HasWindowsShell { get { throw null; } }
         public static bool IsArmProcess { get { throw null; } }
+        public static bool IsCentos6 { get { throw null; } }
         public static bool IsDebian { get { throw null; } }
         public static bool IsDebian8 { get { throw null; } }
         public static bool IsDrawingSupported { get { throw null; } }
