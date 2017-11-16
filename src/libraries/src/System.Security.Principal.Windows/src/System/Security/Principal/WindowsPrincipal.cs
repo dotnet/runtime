@@ -6,7 +6,6 @@ using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.Contracts;
-using System.Runtime.Serialization;
 using System.Security.Claims;
 
 namespace System.Security.Principal
@@ -43,27 +42,7 @@ namespace System.Security.Principal
 
             _identity = ntIdentity;
         }
-
-        [OnDeserialized]
-        private void OnDeserializedMethod(StreamingContext context)
-        {
-            ClaimsIdentity firstNonNullIdentity = null;
-
-            foreach (ClaimsIdentity identity in base.Identities)
-            {
-                if (identity != null)
-                {
-                    firstNonNullIdentity = identity;
-                    break;
-                }
-            }
-
-            if (firstNonNullIdentity == null)
-            {
-                base.AddIdentity(_identity);
-            }
-        }
-
+        
         //
         // Properties.
         //
@@ -194,11 +173,20 @@ namespace System.Security.Principal
             }
 
             bool isMember = false;
+
             // CheckTokenMembership will check if the SID is both present and enabled in the access token.
+#if uap
+            if (!Interop.Kernel32.CheckTokenMembershipEx((_identity.ImpersonationLevel != TokenImpersonationLevel.None ? _identity.AccessToken : token),
+                                                  sid.BinaryForm,
+                                                  Interop.Kernel32.CTMF_INCLUDE_APPCONTAINER,
+                                                  ref isMember))
+                throw new SecurityException(new Win32Exception().Message);
+#else
             if (!Interop.Advapi32.CheckTokenMembership((_identity.ImpersonationLevel != TokenImpersonationLevel.None ? _identity.AccessToken : token),
                                                   sid.BinaryForm,
                                                   ref isMember))
                 throw new SecurityException(new Win32Exception().Message);
+#endif
 
             token.Dispose();
             return isMember;

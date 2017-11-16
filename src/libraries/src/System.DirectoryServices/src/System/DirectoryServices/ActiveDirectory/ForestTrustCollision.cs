@@ -2,60 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Runtime.InteropServices;
-    using System.Collections;
-    using System.Collections.Specialized;
-    using System.Diagnostics;
-
     public class ForestTrustRelationshipCollision
     {
-        private ForestTrustCollisionType _type;
-        private TopLevelNameCollisionOptions _tlnFlag;
-        private DomainCollisionOptions _domainFlag;
-        private string _record = null;
-
         internal ForestTrustRelationshipCollision(ForestTrustCollisionType collisionType, TopLevelNameCollisionOptions TLNFlag, DomainCollisionOptions domainFlag, string record)
         {
-            _type = collisionType;
-            _tlnFlag = TLNFlag;
-            _domainFlag = domainFlag;
-            _record = record;
+            CollisionType = collisionType;
+            TopLevelNameCollisionOption = TLNFlag;
+            DomainCollisionOption = domainFlag;
+            CollisionRecord = record;
         }
 
-        public ForestTrustCollisionType CollisionType
-        {
-            get
-            {
-                return _type;
-            }
-        }
+        public ForestTrustCollisionType CollisionType { get; }
 
-        public TopLevelNameCollisionOptions TopLevelNameCollisionOption
-        {
-            get
-            {
-                return _tlnFlag;
-            }
-        }
+        public TopLevelNameCollisionOptions TopLevelNameCollisionOption { get; }
 
-        public DomainCollisionOptions DomainCollisionOption
-        {
-            get
-            {
-                return _domainFlag;
-            }
-        }
+        public DomainCollisionOptions DomainCollisionOption { get; }
 
-        public string CollisionRecord
-        {
-            get
-            {
-                return _record;
-            }
-        }
+        public string CollisionRecord { get; }
     }
 
     public class ForestTrustRelationshipCollisionCollection : ReadOnlyCollectionBase
@@ -64,10 +31,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public ForestTrustRelationshipCollision this[int index]
         {
-            get
-            {
-                return (ForestTrustRelationshipCollision)InnerList[index];
-            }
+            get => (ForestTrustRelationshipCollision)InnerList[index];
         }
 
         public bool Contains(ForestTrustRelationshipCollision collision)
@@ -91,9 +55,6 @@ namespace System.DirectoryServices.ActiveDirectory
             InnerList.CopyTo(array, index);
         }
 
-        internal int Add(ForestTrustRelationshipCollision collision)
-        {
-            return InnerList.Add(collision);
-        }
+        internal int Add(ForestTrustRelationshipCollision collision) => InnerList.Add(collision);
     }
 }

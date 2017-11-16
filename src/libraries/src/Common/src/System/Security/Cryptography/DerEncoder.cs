@@ -135,30 +135,12 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="bigEndianBytes">The value to encode, in big integer representation.</param>
         /// <returns>The encoded segments { tag, length, value }</returns>
-        internal static byte[][] SegmentedEncodeUnsignedInteger(byte[] bigEndianBytes)
+        internal static byte[][] SegmentedEncodeUnsignedInteger(ReadOnlySpan<byte> bigEndianBytes)
         {
-            Debug.Assert(bigEndianBytes != null);
+            Debug.Assert(!bigEndianBytes.IsEmpty, "The span must not be empty.");
 
-            return SegmentedEncodeUnsignedInteger(bigEndianBytes, 0, bigEndianBytes.Length);
-        }
-
-        /// <summary>
-        /// Encode the segments { tag, length, value } of an unsigned integer represented within a bounded array.
-        /// </summary>
-        /// <param name="bigEndianBytes">The value to encode, in big integer representation.</param>
-        /// <param name="offset">The offset into bigEndianBytes to read</param>
-        /// <param name="count">The count of bytes to read, must be greater than 0</param>
-        /// <returns>The encoded segments { tag, length, value }</returns>
-        internal static byte[][] SegmentedEncodeUnsignedInteger(byte[] bigEndianBytes, int offset, int count)
-        {
-            Debug.Assert(bigEndianBytes != null);
-            Debug.Assert(offset >= 0);
-            Debug.Assert(count > 0);
-            Debug.Assert(bigEndianBytes.Length > 0);
-            Debug.Assert(bigEndianBytes.Length >= count - offset);
-
-            int start = offset;
-            int end = start + count;
+            int start = 0;
+            int end = start + bigEndianBytes.Length;
 
             // Remove any leading zeroes.
             while (start < end && bigEndianBytes[start] == 0)
@@ -170,26 +152,15 @@ namespace System.Security.Cryptography
             if (start == end)
             {
                 start--;
-                Debug.Assert(start >= offset);
+                Debug.Assert(start >= 0);
             }
-
-            int length = end - start;
-            byte[] dataBytes;
-            int writeStart = 0;
 
             // If the first byte is bigger than 0x7F it will look like a negative number, since
             // we're unsigned, insert a zero-padding byte.
-            if (bigEndianBytes[start] > 0x7F)
-            {
-                dataBytes = new byte[length + 1];
-                writeStart = 1;
-            }
-            else
-            {
-                dataBytes = new byte[length];
-            }
-
-            Buffer.BlockCopy(bigEndianBytes, start, dataBytes, writeStart, length);
+            int length = end - start;
+            int writeStart = bigEndianBytes[start] > 0x7F ? 1 : 0;
+            var dataBytes = new byte[length + writeStart];
+            bigEndianBytes.Slice(start, length).CopyTo(new Span<byte>(dataBytes).Slice(writeStart));
 
             return new[]
             {

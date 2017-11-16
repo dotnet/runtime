@@ -175,8 +175,8 @@ namespace System.Data.SqlClient
                                                     opt.MinPoolSize,
                                                     opt.MaxPoolSize,
                                                     connectionTimeout,
-                                                    opt.LoadBalanceTimeout
-                                                    );
+                                                    opt.LoadBalanceTimeout,
+                                                    opt.Enlist);
             }
             return poolingOptions;
         }

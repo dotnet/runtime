@@ -31,9 +31,9 @@ namespace System.Xml.Schema
 
     /// <summary>
     /// SymbolsDictionary is a map between names that ContextValidator recognizes and symbols - int symbol[XmlQualifiedName name].
-    /// There are two types of name - full names and wildcards (namespace is specified, local name is anythig).
+    /// There are two types of name - full names and wildcards (namespace is specified, local name is anything).
     /// Wildcard excludes all full names that would match by the namespace part.
-    /// SymbolsDictionry alwas recognizes all the symbols - the last one is a true wildcard - 
+    /// SymbolsDictionary always recognizes all the symbols - the last one is a true wildcard - 
     ///      both name and namespace can be anything that none of the other symbols matched.
     /// </summary>
     internal class SymbolsDictionary

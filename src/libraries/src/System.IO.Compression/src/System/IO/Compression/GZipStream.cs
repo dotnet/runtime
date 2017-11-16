@@ -84,6 +84,22 @@ namespace System.IO.Compression
             return _deflateStream.Read(array, offset, count);
         }
 
+        public override int Read(Span<byte> destination)
+        {
+            if (GetType() != typeof(GZipStream))
+            {
+                // GZipStream is not sealed, and a derived type may have overridden Read(byte[], int, int) prior
+                // to this Read(Span<byte>) overload being introduced.  In that case, this Read(Span<byte>) overload
+                // should use the behavior of Read(byte[],int,int) overload.
+                return base.Read(destination);
+            }
+            else
+            {
+                CheckDeflateStream();
+                return _deflateStream.ReadCore(destination);
+            }
+        }
+
         public override IAsyncResult BeginWrite(byte[] array, int offset, int count, AsyncCallback asyncCallback, object asyncState) =>
             TaskToApm.Begin(WriteAsync(array, offset, count, CancellationToken.None), asyncCallback, asyncState);
 
@@ -94,6 +110,28 @@ namespace System.IO.Compression
         {
             CheckDeflateStream();
             _deflateStream.Write(array, offset, count);
+        }
+
+        public override void Write(ReadOnlySpan<byte> source)
+        {
+            if (GetType() != typeof(GZipStream))
+            {
+                // GZipStream is not sealed, and a derived type may have overridden Write(byte[], int, int) prior
+                // to this Write(ReadOnlySpan<byte>) overload being introduced.  In that case, this Write(ReadOnlySpan<byte>) overload
+                // should use the behavior of Write(byte[],int,int) overload.
+                base.Write(source);
+            }
+            else
+            {
+                CheckDeflateStream();
+                _deflateStream.WriteCore(source);
+            }
+        }
+
+        public override void CopyTo(Stream destination, int bufferSize)
+        {
+            CheckDeflateStream();
+            _deflateStream.CopyTo(destination, bufferSize);
         }
 
         protected override void Dispose(bool disposing)
@@ -120,10 +158,42 @@ namespace System.IO.Compression
             return _deflateStream.ReadAsync(array, offset, count, cancellationToken);
         }
 
+        public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (GetType() != typeof(GZipStream))
+            {
+                // GZipStream is not sealed, and a derived type may have overridden ReadAsync(byte[], int, int) prior
+                // to this ReadAsync(Memory<byte>) overload being introduced.  In that case, this ReadAsync(Memory<byte>) overload
+                // should use the behavior of ReadAsync(byte[],int,int) overload.
+                return base.ReadAsync(destination, cancellationToken);
+            }
+            else
+            {
+                CheckDeflateStream();
+                return _deflateStream.ReadAsyncMemory(destination, cancellationToken);
+            }
+        }
+
         public override Task WriteAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
             CheckDeflateStream();
             return _deflateStream.WriteAsync(array, offset, count, cancellationToken);
+        }
+
+        public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (GetType() != typeof(GZipStream))
+            {
+                // GZipStream is not sealed, and a derived type may have overridden WriteAsync(byte[], int, int) prior
+                // to this WriteAsync(ReadOnlyMemory<byte>) overload being introduced.  In that case, this
+                // WriteAsync(ReadOnlyMemory<byte>) overload should use the behavior of Write(byte[],int,int) overload.
+                return base.WriteAsync(source, cancellationToken);
+            }
+            else
+            {
+                CheckDeflateStream();
+                return _deflateStream.WriteAsyncMemory(source, cancellationToken);
+            }
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)

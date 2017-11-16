@@ -17,29 +17,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
     internal enum ErrArgKind
     {
         Int,
-        Hresult,
-        Ids,
         SymKind,
         Sym,
         Type,
         Name,
         Str,
-        PredefName,
-        LocNode,
-        Ptr,
         SymWithType,
         MethWithInst,
-        Expr,
-        Lim
     }
 
     [Flags]
     internal enum ErrArgFlags
     {
         None = 0x0000,
-        Ref = 0x0001,  // The arg's location should be included in the error message
         NoStr = 0x0002,  // The arg should NOT be included in the error message, just the location
-        RefOnly = Ref | NoStr,
         Unique = 0x0004,  // The string should be distinct from other args marked with Unique
         UseGetErrorInfo = 0x0008,
     }
@@ -61,7 +52,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
     {
         public ErrArgKind eak;
         public ErrArgFlags eaf;
-        internal MessageID ids;
         internal int n;
         internal SYMKIND sk;
         internal Name name;
@@ -166,87 +156,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         }
     }
 
-    internal class ErrArgRef : ErrArg
-    {
-        protected ErrArgRef()
-        {
-        }
-
-        private ErrArgRef(int n)
-            : base(n)
-        {
-        }
-
-        private ErrArgRef(Name name)
-            : base(name)
-        {
-            this.eaf = ErrArgFlags.Ref;
-        }
-
-        public ErrArgRef(Symbol sym)
-            : base(sym)
-        {
-            this.eaf = ErrArgFlags.Ref;
-        }
-
-        private ErrArgRef(CType pType)
-            : base(pType)
-        {
-            this.eaf = ErrArgFlags.Ref;
-        }
-
-        private ErrArgRef(SymWithType swt)
-            : base(swt)
-        {
-            this.eaf = ErrArgFlags.Ref;
-        }
-        private ErrArgRef(MethPropWithInst mpwi)
-            : base(mpwi)
-        {
-            this.eaf = ErrArgFlags.Ref;
-        }
-        public ErrArgRef(CType pType, ErrArgFlags eaf)
-            : base(pType)
-        {
-            this.eaf = eaf | ErrArgFlags.Ref;
-        }
-        public static implicit operator ErrArgRef(Name name)
-        {
-            return new ErrArgRef(name);
-        }
-        public static implicit operator ErrArgRef(int n)
-        {
-            return new ErrArgRef(n);
-        }
-        public static implicit operator ErrArgRef(Symbol sym)
-        {
-            return new ErrArgRef(sym);
-        }
-        public static implicit operator ErrArgRef(CType type)
-        {
-            return new ErrArgRef(type);
-        }
-        public static implicit operator ErrArgRef(SymWithType swt)
-        {
-            return new ErrArgRef(swt);
-        }
-        public static implicit operator ErrArgRef(MethPropWithInst mpwi)
-        {
-            return new ErrArgRef(mpwi);
-        }
-    }
-
-    internal sealed class ErrArgRefOnly : ErrArgRef
+    internal sealed class ErrArgRefOnly : ErrArg
     {
         public ErrArgRefOnly(Symbol sym)
             : base(sym)
         {
-            eaf = ErrArgFlags.RefOnly;
+            eaf = ErrArgFlags.NoStr;
         }
     }
 
     // This is used with COMPILER_BASE::ErrorRef to indicate no reference.
-    internal sealed class ErrArgNoRef : ErrArgRef
+    internal sealed class ErrArgNoRef : ErrArg
     {
         public ErrArgNoRef(CType pType)
         {
@@ -256,37 +176,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         }
     }
 
-    internal sealed class ErrArgIds : ErrArgRef
-    {
-        public ErrArgIds(MessageID ids)
-        {
-            this.eak = ErrArgKind.Ids;
-            this.eaf = ErrArgFlags.None;
-            this.ids = ids;
-        }
-    }
-
-    internal sealed class ErrArgSymKind : ErrArgRef
+    internal sealed class ErrArgSymKind : ErrArg
     {
         public ErrArgSymKind(Symbol sym)
         {
             eak = ErrArgKind.SymKind;
             eaf = ErrArgFlags.None;
             sk = sym.getKind();
-            if (sk == SYMKIND.SK_AssemblyQualifiedNamespaceSymbol)
-            {
-                if (!string.IsNullOrEmpty(sym.AsAssemblyQualifiedNamespaceSymbol().GetNS().name.Text))
-                {
-                    // Non-empty namespace name means it's not the root
-                    // so treat it like a namespace instead of an alias
-                    sk = SYMKIND.SK_NamespaceSymbol;
-                }
-                else
-                {
-                    // An empty namespace name means it's just an alias for the root
-                    sk = SYMKIND.SK_ExternalAliasDefinitionSymbol;
-                }
-            }
         }
     }
 }

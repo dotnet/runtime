@@ -25,7 +25,11 @@ namespace System.Xml.Serialization
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
+#if XMLSERIALIZERGENERATOR
+    internal class XmlSerializerFactory
+#else
     public class XmlSerializerFactory
+#endif
     {
         private static TempAssemblyCache s_cache = new TempAssemblyCache();
 

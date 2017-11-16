@@ -284,7 +284,7 @@ namespace System.Net
 
             writer.Write(FormatHeaders(_webHeaders));
             writer.Flush();
-            int preamble = encoding.GetPreamble().Length;
+            int preamble = encoding.Preamble.Length;
             EnsureResponseStream();
 
             /* Assumes that the ms was at position 0 */

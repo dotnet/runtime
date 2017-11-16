@@ -2,20 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+using System.Runtime.InteropServices;
+using System.Globalization;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Collections;
-    using System.Runtime.InteropServices;
-    using System.Diagnostics;
-    using System.Globalization;
-
     public class ActiveDirectoryReplicationMetadata : DictionaryBase
     {
-        private DirectoryServer _server = null;
-        private Hashtable _nameTable = null;
-        private AttributeMetadataCollection _dataValueCollection = new AttributeMetadataCollection();
-        private ReadOnlyStringCollection _dataNameCollection = new ReadOnlyStringCollection();
+        private readonly DirectoryServer _server = null;
+        private readonly Hashtable _nameTable = null;
 
         internal ActiveDirectoryReplicationMetadata(DirectoryServer server)
         {
@@ -38,21 +34,9 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public ReadOnlyStringCollection AttributeNames
-        {
-            get
-            {
-                return _dataNameCollection;
-            }
-        }
+        public ReadOnlyStringCollection AttributeNames { get; } = new ReadOnlyStringCollection();
 
-        public AttributeMetadataCollection Values
-        {
-            get
-            {
-                return _dataValueCollection;
-            }
-        }
+        public AttributeMetadataCollection Values { get; } = new AttributeMetadataCollection();
 
         public bool Contains(string attributeName)
         {
@@ -60,10 +44,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return Dictionary.Contains(tempName);
         }
 
-        /// <include file='doc\ResultPropertyCollection.uex' path='docs/doc[@for="ResultPropertyCollection.CopyTo"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public void CopyTo(AttributeMetadata[] array, int index)
         {
             Dictionary.Values.CopyTo((Array)array, index);
@@ -73,8 +53,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             Dictionary.Add(name.ToLower(CultureInfo.InvariantCulture), value);
 
-            _dataNameCollection.Add(name);
-            _dataValueCollection.Add(value);
+            AttributeNames.Add(name);
+            Values.Add(value);
         }
 
         internal void AddHelper(int count, IntPtr info, bool advanced)

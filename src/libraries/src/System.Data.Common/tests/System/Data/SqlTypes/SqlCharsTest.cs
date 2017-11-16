@@ -26,25 +26,13 @@ using System.IO;
 using System.Xml;
 using System.Data.SqlTypes;
 using System.Globalization;
-
 using System.Xml.Serialization;
 
 namespace System.Data.Tests.SqlTypes
 {
-    public class SqlCharsTest : IDisposable
+    public class SqlCharsTest
     {
         private CultureInfo _originalCulture;
-
-        public SqlCharsTest()
-        {
-            _originalCulture = CultureInfo.CurrentCulture; ;
-            CultureInfo.CurrentCulture = new CultureInfo("en-US");
-        }
-
-        public void Dispose()
-        {
-            CultureInfo.CurrentCulture = _originalCulture;
-        }
 
         // Test constructor
         [Fact]

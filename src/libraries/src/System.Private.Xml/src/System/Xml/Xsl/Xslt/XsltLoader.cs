@@ -962,7 +962,7 @@ namespace System.Xml.Xsl.Xslt
                     {
                         // Try move to second attribute and if it is missing to first.
                         bool dummy = _input.MoveToXsltAttribute(3 + j, _decimalFormatAttributes[3 + j].name) || _input.MoveToXsltAttribute(3 + i, _decimalFormatAttributes[3 + i].name);
-                        Debug.Assert(dummy, "One of the atts should have lineInfo. if both are defualt they can't conflict.");
+                        Debug.Assert(dummy, "One of the attrs should have lineInfo. If both are default they can't conflict.");
                         ReportError(/*[XT1300]*/SR.Xslt_DecimalFormatSignsNotDistinct, _decimalFormatAttributes[3 + i].name, _decimalFormatAttributes[3 + j].name);
                         break;
                     }

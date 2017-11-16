@@ -16,11 +16,11 @@ namespace System.Net.Http.Functional.Tests
 {
     public partial class HttpClientHandler_SslProtocols_Test
     {
-        private static bool BackendSupportsSslConfiguration =>
-            ManagedHandlerTestHelpers.IsEnabled ||
+        private bool BackendSupportsSslConfiguration =>
+            UseManagedHandler ||
             (CurlSslVersionDescription()?.StartsWith("OpenSSL") ?? false);
 
-        private static bool SSLv3DisabledByDefault =>
+        private bool SSLv3DisabledByDefault =>
             BackendSupportsSslConfiguration ||
             Version.Parse(CurlVersionDescription()) >= new Version(7, 39); // libcurl disables SSLv3 by default starting in v7.39
 

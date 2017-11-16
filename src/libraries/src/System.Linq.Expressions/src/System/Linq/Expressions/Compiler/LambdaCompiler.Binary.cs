@@ -117,7 +117,7 @@ namespace System.Linq.Expressions.Compiler
 
                 Debug.Assert(TypeUtils.AreReferenceAssignable(p1.Type, b.Left.Type.GetNonNullableType()));
                 Debug.Assert(TypeUtils.AreReferenceAssignable(p2.Type, b.Right.Type.GetNonNullableType()));
-                EmitLift(b.NodeType, resultType, mc, new[] {p1, p2}, new[] {b.Left, b.Right});
+                EmitLift(b.NodeType, resultType, mc, new[] { p1, p2 }, new[] { b.Left, b.Right });
             }
             else
             {
@@ -150,43 +150,33 @@ namespace System.Linq.Expressions.Compiler
         {
             Debug.Assert(!leftType.IsNullableType());
             Debug.Assert(!rightType.IsNullableType());
-
-            if (op == ExpressionType.Equal || op == ExpressionType.NotEqual)
-            {
-                EmitUnliftedEquality(op, leftType);
-                return;
-            }
-
-            Debug.Assert(leftType.IsPrimitive);
+            Debug.Assert(leftType.IsPrimitive || (op == ExpressionType.Equal || op == ExpressionType.NotEqual) && (!leftType.IsValueType || leftType.IsEnum));
 
             switch (op)
             {
+                case ExpressionType.NotEqual:
+                    if (leftType.GetTypeCode() == TypeCode.Boolean)
+                    {
+                        goto case ExpressionType.ExclusiveOr;
+                    }
+
+                    _ilg.Emit(OpCodes.Ceq);
+                    _ilg.Emit(OpCodes.Ldc_I4_0);
+                    goto case ExpressionType.Equal;
+                case ExpressionType.Equal:
+                    _ilg.Emit(OpCodes.Ceq);
+                    return;
                 case ExpressionType.Add:
                     _ilg.Emit(OpCodes.Add);
                     break;
                 case ExpressionType.AddChecked:
-                    if (leftType.IsFloatingPoint())
-                    {
-                        _ilg.Emit(OpCodes.Add);
-                    }
-                    else if (leftType.IsUnsigned())
-                    {
-                        _ilg.Emit(OpCodes.Add_Ovf_Un);
-                    }
-                    else
-                    {
-                        _ilg.Emit(OpCodes.Add_Ovf);
-                    }
+                    _ilg.Emit(leftType.IsFloatingPoint() ? OpCodes.Add : (leftType.IsUnsigned() ? OpCodes.Add_Ovf_Un : OpCodes.Add_Ovf));
                     break;
                 case ExpressionType.Subtract:
                     _ilg.Emit(OpCodes.Sub);
                     break;
                 case ExpressionType.SubtractChecked:
-                    if (leftType.IsFloatingPoint())
-                    {
-                        _ilg.Emit(OpCodes.Sub);
-                    }
-                    else if (leftType.IsUnsigned())
+                    if (leftType.IsUnsigned())
                     {
                         _ilg.Emit(OpCodes.Sub_Ovf_Un);
                         // Guaranteed to fit within result type: no conversion
@@ -194,25 +184,14 @@ namespace System.Linq.Expressions.Compiler
                     }
                     else
                     {
-                        _ilg.Emit(OpCodes.Sub_Ovf);
+                        _ilg.Emit(leftType.IsFloatingPoint() ? OpCodes.Sub : OpCodes.Sub_Ovf);
                     }
                     break;
                 case ExpressionType.Multiply:
                     _ilg.Emit(OpCodes.Mul);
                     break;
                 case ExpressionType.MultiplyChecked:
-                    if (leftType.IsFloatingPoint())
-                    {
-                        _ilg.Emit(OpCodes.Mul);
-                    }
-                    else if (leftType.IsUnsigned())
-                    {
-                        _ilg.Emit(OpCodes.Mul_Ovf_Un);
-                    }
-                    else
-                    {
-                        _ilg.Emit(OpCodes.Mul_Ovf);
-                    }
+                    _ilg.Emit(leftType.IsFloatingPoint() ? OpCodes.Mul : (leftType.IsUnsigned() ? OpCodes.Mul_Ovf_Un : OpCodes.Mul_Ovf));
                     break;
                 case ExpressionType.Divide:
                     _ilg.Emit(leftType.IsUnsigned() ? OpCodes.Div_Un : OpCodes.Div);
@@ -305,19 +284,6 @@ namespace System.Linq.Expressions.Compiler
                     break;
             }
         }
-
-        private void EmitUnliftedEquality(ExpressionType op, Type type)
-        {
-            Debug.Assert(op == ExpressionType.Equal || op == ExpressionType.NotEqual);
-            Debug.Assert(type.IsPrimitive || !type.IsValueType || type.IsEnum);
-            _ilg.Emit(OpCodes.Ceq);
-            if (op == ExpressionType.NotEqual)
-            {
-                _ilg.Emit(OpCodes.Ldc_I4_0);
-                _ilg.Emit(OpCodes.Ceq);
-            }
-        }
-
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private void EmitLiftedBinaryOp(ExpressionType op, Type leftType, Type rightType, Type resultType, bool liftedToNull)

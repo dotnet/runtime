@@ -22,7 +22,7 @@ namespace System.Diagnostics
     /// 
     /// No methods on Activity allow exceptions to escape as a response to bad inputs.
     /// They are thrown and caught (that allows Debuggers and Monitors to see the error)
-    /// but the exception is supressed, and the operation does something reasonable (typically
+    /// but the exception is suppressed, and the operation does something reasonable (typically
     /// doing nothing).  
     /// </summary>
     public partial class Activity

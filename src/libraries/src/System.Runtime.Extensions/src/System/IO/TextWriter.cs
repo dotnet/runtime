@@ -7,6 +7,7 @@ using System.Threading;
 using System.Globalization;
 using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
+using System.Buffers;
 
 namespace System.IO
 {
@@ -90,15 +91,18 @@ namespace System.IO
             get;
         }
 
-        // Returns the line terminator string used by this TextWriter. The default line
-        // terminator string is a carriage return followed by a line feed ("\r\n").
-        //
-        // Sets the line terminator string for this TextWriter. The line terminator
-        // string is written to the text stream whenever one of the
-        // WriteLine methods are called. In order for text written by
-        // the TextWriter to be readable by a TextReader, only one of the following line
-        // terminator strings should be used: "\r", "\n", or "\r\n".
-        // 
+        /// <summary>
+        /// Returns the line terminator string used by this TextWriter. The default line
+        /// terminator string is Environment.NewLine, which is platform specific. 
+        /// On Windows this is a carriage return followed by a line feed ("\r\n").
+        /// On OSX and Linux this is a line feed ("\n").
+        /// </summary>
+        /// <remarks>
+        /// The line terminator string is written to the text stream whenever one of the
+        /// WriteLine methods are called. In order for text written by
+        /// the TextWriter to be readable by a TextReader, only one of the following line
+        /// terminator strings should be used: "\r", "\n", or "\r\n".
+        /// </remarks>
         public virtual string NewLine
         {
             get { return CoreNewLineStr; }
@@ -159,6 +163,23 @@ namespace System.IO
             }
 
             for (int i = 0; i < count; i++) Write(buffer[index + i]);
+        }
+
+        // Writes a span of characters to the text stream.
+        //
+        public virtual void Write(ReadOnlySpan<char> buffer)
+        {
+            char[] array = ArrayPool<char>.Shared.Rent(buffer.Length);
+
+            try
+            {
+                buffer.CopyTo(new Span<char>(array));
+                Write(array, 0, buffer.Length);
+            }
+            finally
+            {
+                ArrayPool<char>.Shared.Return(array);
+            }
         }
 
         // Writes the text representation of a boolean to the text stream. This
@@ -326,6 +347,21 @@ namespace System.IO
         {
             Write(buffer, index, count);
             WriteLine();
+        }
+
+        public virtual void WriteLine(ReadOnlySpan<char> buffer)
+        {
+            char[] array = ArrayPool<char>.Shared.Rent(buffer.Length);
+
+            try
+            {
+                buffer.CopyTo(new Span<char>(array));
+                WriteLine(array, 0, buffer.Length);
+            }
+            finally
+            {
+                ArrayPool<char>.Shared.Return(array);
+            }
         }
 
         // Writes the text representation of a boolean followed by a line
@@ -511,6 +547,15 @@ namespace System.IO
             tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
+        public virtual Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default(CancellationToken)) =>
+            buffer.DangerousTryGetArray(out ArraySegment<char> array) ?
+                WriteAsync(array.Array, array.Offset, array.Count) :
+                Task.Factory.StartNew(state =>
+                {
+                    var t = (Tuple<TextWriter, ReadOnlyMemory<char>>)state;
+                    t.Item1.Write(t.Item2.Span);
+                }, Tuple.Create(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+
         public virtual Task WriteLineAsync(char value)
         {
             var tuple = new Tuple<TextWriter, char>(this, value);
@@ -553,6 +598,15 @@ namespace System.IO
             },
             tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
+
+        public virtual Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default(CancellationToken)) =>
+            buffer.DangerousTryGetArray(out ArraySegment<char> array) ?
+                WriteLineAsync(array.Array, array.Offset, array.Count) :
+                Task.Factory.StartNew(state =>
+                {
+                    var t = (Tuple<TextWriter, ReadOnlyMemory<char>>)state;
+                    t.Item1.WriteLine(t.Item2.Span);
+                }, Tuple.Create(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
         public virtual Task WriteLineAsync()
         {

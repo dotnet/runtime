@@ -29,7 +29,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         string ICSharpBinder.Name => "Invoke";
 
-        IList<Type> ICSharpInvokeOrInvokeMemberBinder.TypeArguments => Array.Empty<Type>();
+        Type[] ICSharpInvokeOrInvokeMemberBinder.TypeArguments => Array.Empty<Type>();
 
         CSharpCallFlags ICSharpInvokeOrInvokeMemberBinder.Flags => _flags;
 
@@ -39,7 +39,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         public bool IsChecked => false;
 
-        private readonly List<CSharpArgumentInfo> _argumentInfo;
+        private readonly CSharpArgumentInfo[] _argumentInfo;
 
         CSharpArgumentInfo ICSharpBinder.GetArgumentInfo(int index) => _argumentInfo[index];
 
@@ -57,11 +57,11 @@ namespace Microsoft.CSharp.RuntimeBinder
                 CSharpCallFlags flags,
                 Type callingContext,
                 IEnumerable<CSharpArgumentInfo> argumentInfo) :
-            base(BinderHelper.CreateCallInfo(argumentInfo, 1)) // discard 1 argument: the target object (even if static, arg is type)
+            base(BinderHelper.CreateCallInfo(ref argumentInfo, 1)) // discard 1 argument: the target object (even if static, arg is type)
         {
             _flags = flags;
             CallingContext = callingContext;
-            _argumentInfo = BinderHelper.ToList(argumentInfo);
+            _argumentInfo = argumentInfo as CSharpArgumentInfo[];
             _binder = RuntimeBinder.GetInstance();
         }
 
@@ -82,6 +82,8 @@ namespace Microsoft.CSharp.RuntimeBinder
                 return com;
             }
 #endif
+            BinderHelper.ValidateBindArgument(target, nameof(target));
+            BinderHelper.ValidateBindArgument(args, nameof(args));
             return BinderHelper.Bind(this, _binder, BinderHelper.Cons(target, args), _argumentInfo, errorSuggestion);
         }
     }

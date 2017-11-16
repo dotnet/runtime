@@ -2,16 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.IO;
+using System.Text;
+using System.Resources;
+using System.Runtime.Serialization;
+using System.Diagnostics;
+
 namespace System.Xml.Schema
 {
-    using System;
-    using System.IO;
-    using System.Text;
-    using System.Resources;
-    using System.Runtime.Serialization;
-    using System.Diagnostics;
-
     /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException"]/*' />
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class XmlSchemaValidationException : XmlSchemaException
     {
         private Object _sourceNodeObject;
@@ -19,7 +21,6 @@ namespace System.Xml.Schema
         /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.XmlSchemaException5"]/*' />
         protected XmlSchemaValidationException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            throw new PlatformNotSupportedException();
         }
 
         /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.GetObjectData"]/*' />

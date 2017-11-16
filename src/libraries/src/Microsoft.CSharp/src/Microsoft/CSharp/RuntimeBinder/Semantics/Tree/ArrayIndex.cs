@@ -6,9 +6,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprArrayIndex : ExprWithType
     {
-        public ExprArrayIndex(CType type)
+        public ExprArrayIndex(CType type, Expr array, Expr index)
             : base(ExpressionKind.ArrayIndex, type)
         {
+            Array = array;
+            Index = index;
+            Flags = EXPRFLAG.EXF_LVALUE | EXPRFLAG.EXF_ASSGOP;
         }
 
         public Expr Array { get; set; }

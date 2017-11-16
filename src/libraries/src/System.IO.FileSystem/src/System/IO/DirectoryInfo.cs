@@ -391,12 +391,6 @@ namespace System.IO
             else
                 fullSourcePath = FullPath + PathHelpers.DirectorySeparatorCharAsString;
 
-            if (PathInternal.IsDirectoryTooLong(fullSourcePath))
-                throw new PathTooLongException(SR.IO_PathTooLong);
-
-            if (PathInternal.IsDirectoryTooLong(destinationWithSeparator))
-                throw new PathTooLongException(SR.IO_PathTooLong);
-
             StringComparison pathComparison = PathInternal.StringComparison;
             if (string.Equals(fullSourcePath, destinationWithSeparator, pathComparison))
                 throw new IOException(SR.IO_SourceDestMustBeDifferent);

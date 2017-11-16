@@ -31,11 +31,6 @@ namespace System.Runtime.Serialization
             _helper = new CriticalHelper(memberInfo);
         }
 
-        internal DataMember(DataContract memberTypeContract, string name, bool isNullable, bool isRequired, bool emitDefaultValue, int order)
-        {
-            _helper = new CriticalHelper(memberTypeContract, name, isNullable, isRequired, emitDefaultValue, order);
-        }
-
         internal MemberInfo MemberInfo
         {
             get
@@ -64,7 +59,7 @@ namespace System.Runtime.Serialization
         {
             get
             { return _helper.IsRequired; }
-            
+
             set
             { _helper.IsRequired = value; }
         }
@@ -73,7 +68,7 @@ namespace System.Runtime.Serialization
         {
             get
             { return _helper.EmitDefaultValue; }
-            
+
             set
             { _helper.EmitDefaultValue = value; }
         }
@@ -184,16 +179,6 @@ namespace System.Runtime.Serialization
             {
                 _emitDefaultValue = Globals.DefaultEmitDefaultValue;
                 _memberInfo = memberInfo;
-            }
-
-            internal CriticalHelper(DataContract memberTypeContract, string name, bool isNullable, bool isRequired, bool emitDefaultValue, int order)
-            {
-                this.MemberTypeContract = memberTypeContract;
-                this.Name = name;
-                this.IsNullable = isNullable;
-                this.IsRequired = isRequired;
-                this.EmitDefaultValue = emitDefaultValue;
-                this.Order = order;
             }
 
             internal MemberInfo MemberInfo

@@ -9,6 +9,7 @@
 #include "pal_safecrt.h"
 
 #include <stdlib.h>
+#include <limits.h>
 #include <pthread.h>
 #include <arpa/inet.h>
 #include <assert.h>
@@ -1143,13 +1144,29 @@ SystemNative_SetIPv6Address(uint8_t* socketAddress, int32_t socketAddressLen, ui
     return PAL_SUCCESS;
 }
 
-static void ConvertMessageHeaderToMsghdr(msghdr* header, const MessageHeader& messageHeader)
+static bool IsStreamSocket(int socket)
 {
+    int type;
+    socklen_t length = sizeof(int);
+    return getsockopt(socket, SOL_SOCKET, SO_TYPE, &type, &length) == 0
+           && type == SOCK_STREAM;
+}
+
+static void ConvertMessageHeaderToMsghdr(msghdr* header, const MessageHeader& messageHeader, int socket = -1)
+{
+    // sendmsg/recvmsg can return EMSGSIZE when msg_iovlen is greather than IOV_MAX.
+    // We avoid this for stream sockets by truncating msg_iovlen to IOV_MAX. This is ok since sendmsg is
+    // not required to send all data and recvmsg can be called again to receive more.
+    auto iovlen = static_cast<decltype(header->msg_iovlen)>(messageHeader.IOVectorCount);
+    if (iovlen > IOV_MAX && IsStreamSocket(socket))
+    {
+        iovlen = static_cast<decltype(iovlen)>(IOV_MAX);
+    }
     *header = {
         .msg_name = messageHeader.SocketAddress,
         .msg_namelen = static_cast<unsigned int>(messageHeader.SocketAddressLen),
         .msg_iov = reinterpret_cast<iovec*>(messageHeader.IOVectors),
-        .msg_iovlen = static_cast<decltype(header->msg_iovlen)>(messageHeader.IOVectorCount),
+        .msg_iovlen = iovlen,
         .msg_control = messageHeader.ControlBuffer,
         .msg_controllen = static_cast<decltype(header->msg_controllen)>(messageHeader.ControlBufferLen),
     };
@@ -1576,7 +1593,7 @@ extern "C" Error SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* mes
     }
 
     msghdr header;
-    ConvertMessageHeaderToMsghdr(&header, *messageHeader);
+    ConvertMessageHeaderToMsghdr(&header, *messageHeader, fd);
 
     ssize_t res;
     while (CheckInterrupted(res = recvmsg(fd, &header, socketFlags)));
@@ -1619,7 +1636,7 @@ extern "C" Error SystemNative_SendMessage(intptr_t socket, MessageHeader* messag
     }
 
     msghdr header;
-    ConvertMessageHeaderToMsghdr(&header, *messageHeader);
+    ConvertMessageHeaderToMsghdr(&header, *messageHeader, fd);
 
     ssize_t res;
     while (CheckInterrupted(res = sendmsg(fd, &header, flags)));
@@ -1661,7 +1678,7 @@ extern "C" Error SystemNative_Accept(intptr_t socket, uint8_t* socketAddress, in
     return PAL_SUCCESS;
 }
 
-extern "C" Error SystemNative_Bind(intptr_t socket, uint8_t* socketAddress, int32_t socketAddressLen)
+extern "C" Error SystemNative_Bind(intptr_t socket, int32_t protocolType, uint8_t* socketAddress, int32_t socketAddressLen)
 {
     if (socketAddress == nullptr || socketAddressLen < 0)
     {
@@ -1669,6 +1686,14 @@ extern "C" Error SystemNative_Bind(intptr_t socket, uint8_t* socketAddress, int3
     }
 
     int fd = ToFileDescriptor(socket);
+
+    // On Windows, Bind during TCP_WAIT is allowed.
+    // On Unix, we set SO_REUSEADDR to get the same behavior.
+    if (protocolType == PAL_PT_TCP)
+    {
+        int optionValue = 1;
+        setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &optionValue, sizeof(int));
+    }
 
     int err = bind(
         fd,
@@ -2033,42 +2058,34 @@ extern "C" Error SystemNative_GetSockOpt(
     //
     if (socketOptionLevel == PAL_SOL_SOCKET)
     {
-        if (socketOptionName == PAL_SO_EXCLUSIVEADDRUSE)
+        if (socketOptionName == PAL_SO_EXCLUSIVEADDRUSE || socketOptionName == PAL_SO_REUSEADDR)
         {
-            //
-            // SO_EXCLUSIVEADDRUSE makes Windows behave like Unix platforms do WRT the SO_REUSEADDR option.
-            // So, for non-Windows platforms, we act as if SO_EXCLUSIVEADDRUSE is always enabled.
-            //
             if (*optionLen != sizeof(int32_t))
             {
                 return PAL_EINVAL;
             }
 
-            *reinterpret_cast<int32_t*>(optionValue) = 1;
-            return PAL_SUCCESS;
-        }
-        else if (socketOptionName == PAL_SO_REUSEADDR)
-        {
-            //
-            // On Windows, SO_REUSEADDR allows the address *and* port to be reused.  It's equivalent to 
-            // SO_REUSEADDR + SO_REUSEPORT other systems.  Se we only return "true" if both of those options are true.
-            //
             auto optLen = static_cast<socklen_t>(*optionLen);
-
-            int err = getsockopt(fd, SOL_SOCKET, SO_REUSEADDR, optionValue, &optLen);
-
-            if (err == 0 && *reinterpret_cast<uint32_t*>(optionValue) != 0)
-            {
-                err = getsockopt(fd, SOL_SOCKET, SO_REUSEPORT, optionValue, &optLen);
-            }
+            // On Unix, SO_REUSEPORT controls the ability to bind multiple sockets to the same address.
+            int err = getsockopt(fd, SOL_SOCKET, SO_REUSEPORT, optionValue, &optLen);
 
             if (err != 0)
             {
                 return SystemNative_ConvertErrorPlatformToPal(errno);
             }
 
-            assert(optLen <= static_cast<socklen_t>(*optionLen));
-            *optionLen = static_cast<int32_t>(optLen);
+            int value = *reinterpret_cast<int32_t*>(optionValue);
+
+            // macOS returns non-zero values other than 1.
+            value = value == 0 ? 0 : 1;
+
+            // PAL_SO_EXCLUSIVEADDRUSE is inverse of PAL_SO_REUSEADDR (see comment in SystemNative_SetSockOpt).
+            if (socketOptionName == PAL_SO_EXCLUSIVEADDRUSE)
+            {
+                value = value == 0 ? 1 : 0;
+            }
+            *reinterpret_cast<int32_t*>(optionValue) = value;
+
             return PAL_SUCCESS;
         }
     }
@@ -2117,38 +2134,37 @@ SystemNative_SetSockOpt(intptr_t socket, int32_t socketOptionLevel, int32_t sock
     //
     if (socketOptionLevel == PAL_SOL_SOCKET)
     {
-        if (socketOptionName == PAL_SO_EXCLUSIVEADDRUSE)
+        // Windows supports 3 address sharing modes:
+        // - not sharing      (SO_EXCLUSIVEADDRUSE=1, SO_REUSEADDR=0)
+        // - explicit sharing (SO_EXCLUSIVEADDRUSE=0, SO_REUSEADDR=1)
+        // - implicit sharing (SO_EXCLUSIVEADDRUSE=0, SO_REUSEADDR=0)
+        // On Unix we have two address sharing modes:
+        // - not sharing      (SO_REUSEPORT=0)
+        // - explicit sharing (SO_REUSEPORT=1)
+        // We make both PAL_SO_REUSEADDR and PAL_SO_EXCLUSIVEADDRUSE control SO_REUSEPORT.
+        if (socketOptionName == PAL_SO_EXCLUSIVEADDRUSE || socketOptionName == PAL_SO_REUSEADDR)
         {
-            //
-            // SO_EXCLUSIVEADDRUSE makes Windows behave like Unix platforms do WRT the SO_REUSEADDR option.
-            // So, on Unix platforms, we consider SO_EXCLUSIVEADDRUSE to always be set.  We allow manually setting this
-            // to "true", but not "false."
-            //
             if (optionLen != sizeof(int32_t))
             {
                 return PAL_EINVAL;
             }
 
-            if (*reinterpret_cast<int32_t*>(optionValue) == 0)
+            int value = *reinterpret_cast<int32_t*>(optionValue);
+
+            // PAL_SO_EXCLUSIVEADDRUSE is inverse of PAL_SO_REUSEADDR.
+            if (socketOptionName == PAL_SO_EXCLUSIVEADDRUSE)
             {
-                return PAL_ENOTSUP;
+                if ((value != 0) && (value != 1))
+                {
+                    return PAL_EINVAL;
+                }
+                else
+                {
+                    value = value == 0 ? 1 : 0;
+                }
             }
-            else
-            {
-                return PAL_SUCCESS;
-            }
-        }
-        else if (socketOptionName == PAL_SO_REUSEADDR)
-        {
-            //
-            // On Windows, SO_REUSEADDR allows the address *and* port to be reused.  It's equivalent to 
-            // SO_REUSEADDR + SO_REUSEPORT other systems. 
-            //
-            int err = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, optionValue, static_cast<socklen_t>(optionLen));
-            if (err == 0)
-            {
-                err = setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, optionValue, static_cast<socklen_t>(optionLen));
-            }
+
+            int err = setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &value, static_cast<socklen_t>(optionLen));
             return err == 0 ? PAL_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
         }
     }

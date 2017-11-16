@@ -3,17 +3,19 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{8CBA022C-635F-4C8D-9D29-CD8AAC68C8E6}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="AcceptAsync.cs" />
+    <Compile Include="Accept.cs" />
     <Compile Include="AgnosticListenerTest.cs" />
     <Compile Include="ArgumentValidationTests.cs" />
     <Compile Include="DisconnectTest.cs" />
     <Compile Include="HandleTest.cs" />
-    <Compile Include="ConnectAsync.cs" />
-    <Compile Include="ConnectExTest.cs" />
+    <Compile Include="Connect.cs" />
     <Compile Include="Close.cs" />
     <Compile Include="CreateSocketTests.cs" />
     <Compile Include="DisposedSocketTests.cs" />
@@ -23,6 +25,7 @@
     <Compile Include="LingerStateTest.cs" />
     <Compile Include="LoggingTest.cs" />
     <Compile Include="NetworkStreamTest.cs" />
+    <Compile Include="NetworkStreamTest.netcoreapp.cs" Condition="'$(TargetGroup)' != 'netstandard'" />
     <Compile Include="ReceiveMessageFrom.cs" />
     <Compile Include="ReceiveMessageFromAsync.cs" />
     <Compile Include="SelectTest.cs" />
@@ -31,6 +34,9 @@
     <Compile Include="SendFile.cs" />
     <Compile Include="OSSupport.cs" />
     <Compile Include="SendReceive.cs" />
+    <Compile Include="SendReceive.netcoreapp.cs" Condition="'$(TargetGroup)' != 'netstandard'" />
+    <Compile Include="SocketTestHelper.cs" />
+    <Compile Include="SocketTestHelper.netcoreapp.cs" Condition="'$(TargetGroup)' != 'netstandard'" />
     <Compile Include="SelectAndPollTests.cs" />
     <Compile Include="SocketInformationTest.cs" />
     <Compile Include="TcpListenerTest.cs" />
@@ -71,9 +77,6 @@
       <Link>SocketCommon\SocketImplementationType.cs</Link>
     </Compile>
     <!-- Common test files -->
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\TestLogging.cs">
       <Link>Common\System\Net\TestLogging.cs</Link>
     </Compile>
@@ -94,6 +97,9 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
       <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
+      <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

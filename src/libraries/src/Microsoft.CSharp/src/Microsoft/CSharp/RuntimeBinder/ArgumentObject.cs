@@ -7,7 +7,7 @@ namespace Microsoft.CSharp.RuntimeBinder
     // value's type because unless the static time type was dynamic, we want to use the
     // static time type. Also, we may have null values, in which case we would not be 
     // able to get the type.
-    internal struct ArgumentObject
+    internal readonly struct ArgumentObject
     {
         internal readonly object Value;
         internal readonly CSharpArgumentInfo Info;

@@ -16,7 +16,7 @@ namespace System.Reflection.Metadata
     /// The kind of the handle is <see cref="HandleKind.Blob"/>. 
     /// The handle is a specialization of <see cref="BlobHandle"/> and doesn't have a distinct kind. 
     /// </remarks>
-    public struct DocumentNameBlobHandle : IEquatable<DocumentNameBlobHandle>
+    public readonly struct DocumentNameBlobHandle : IEquatable<DocumentNameBlobHandle>
     {
         // bits:
         // 29..31: 0

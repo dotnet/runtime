@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Description:  Valid Tag URIs, according to RFC 4151, should not produce errors
+Expect:       !InvalidTAG
+-->
+
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title>Example Feed</title>
+  <link href="http://contoso.com/"/>
+  <updated>2003-12-13T18:30:02Z</updated>
+  <author>
+    <name>Author Name</name>
+  </author>
+  <id>tag:contoso.com,2000:</id>
+  
+  <entry>
+    <title>Atom-Powered Robots Run Amok</title>
+    <link href="http://contoso.com/1"/>
+    <id>tag:contoso.com,2000:#anchor</id>
+    <updated>2005-12-18T13:32:18Z</updated>
+  </entry>
+
+  <entry>
+    <title>Atom-Powered Robots Test Empty Fragments</title>
+    <link href="http://contoso.com/2"/>
+    <id>tag:contoso.com,2000:#</id>
+    <updated>2005-12-18T13:32:33Z</updated>
+  </entry>
+
+</feed>

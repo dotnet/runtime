@@ -1,9 +1,3 @@
-### Latest News and Announcements
-
-* [Announcement: Driving towards zero 2.0 bugs by **2017/5/10** (ZBB)](https://github.com/dotnet/corefx/issues/17619)
-
-
-
 # .NET Core Libraries (CoreFX)
 
 This repo contains the library implementation (called "CoreFX") for .NET Core. It includes System.Collections, System.IO, System.Xml, and many other components.
@@ -14,7 +8,7 @@ Runtime-specific library code ([mscorlib](https://github.com/dotnet/coreclr/tree
 
 ## .NET Core
 
-Great starting page: http://dotnet.github.io
+Official Starting Page: http://dotnet.github.io
 
 * [How to use .NET Core](https://github.com/dotnet/core/#get-started) (with VS, VS Code, command-line CLI)
   * [Install official releases](https://www.microsoft.com/net/core)
@@ -48,10 +42,9 @@ This section is **in progress** here: [New contributor Docs - Contributing](http
 
 ### Useful Links
 
-* CoreFX source index: https://source.dot.net
-* API Reference docs: https://docs.microsoft.com/en-us/dotnet/core/api
-* .NET API Catalog: http://apisof.net (incl. APIs from daily builds and API usage info)
-* "Full" .NET Framework source index: https://referencesource.microsoft.com
+* [.NET Core source index](https://source.dot.net) / [.NET Framework source index](https://referencesource.microsoft.com)
+* [API Reference docs](https://docs.microsoft.com/en-us/dotnet/core/api)
+* [.NET API Catalog](http://apisof.net) (incl. APIs from daily builds and API usage info)
 
 ### Community
 
@@ -69,7 +62,7 @@ Also see info about related [Microsoft .NET Core and ASP.NET Core Bug Bounty Pro
 
 ## License
 
-.NET Core (including the corefx repo) is licensed under the [MIT license](LICENSE).
+.NET Core (including the corefx repo) is licensed under the [MIT license](LICENSE.TXT).
 
 
 
@@ -100,7 +93,6 @@ Note: See officially supported [OS versions](https://github.com/dotnet/core/blob
 |**CentOS 7.1**|[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/centos7.1_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/centos7.1_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/centos7.1_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/centos7.1_release/lastCompletedBuild/testReport)|[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_centos7.1_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_centos7.1_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_centos7.1_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_centos7.1_release/lastCompletedBuild/testReport)|
 |**Debian 8**|[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/debian8.4_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/debian8.4_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/debian8.4_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/debian8.4_release/lastCompletedBuild/testReport)|[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_debian8.4_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_debian8.4_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_debian8.4_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_debian8.4_release/lastCompletedBuild/testReport)|
 |**Fedora 24**|[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/fedora24_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/fedora24_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/fedora24_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/fedora24_release/lastCompletedBuild/testReport)|[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_fedora24_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_fedora24_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_fedora24_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_fedora24_release/lastCompletedBuild/testReport)|
-|**openSUSE 42.1**|[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/opensuse42.1_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/opensuse42.1_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/opensuse42.1_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/opensuse42.1_release/lastCompletedBuild/testReport)|[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_opensuse42.1_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_opensuse42.1_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_opensuse42.1_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_opensuse42.1_release/lastCompletedBuild/testReport)|
 |**OS X 10.12**|[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/osx10.12_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/osx10.12_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/osx10.12_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/osx10.12_release/lastCompletedBuild/testReport)|[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_osx_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_osx_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_osx_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_osx_release/lastCompletedBuild/testReport)|
 |**Red Hat 7.2**|[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/rhel7.2_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/rhel7.2_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/rhel7.2_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/rhel7.2_release/lastCompletedBuild/testReport)|[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_rhel7.2_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_rhel7.2_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_rhel7.2_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_rhel7.2_release/lastCompletedBuild/testReport)|
 |**Ubuntu 14.04**|[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/ubuntu14.04_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/ubuntu14.04_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/ubuntu14.04_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/ubuntu14.04_release/lastCompletedBuild/testReport)|[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_ubuntu14.04_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_ubuntu14.04_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_ubuntu14.04_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_ubuntu14.04_release/lastCompletedBuild/testReport)|

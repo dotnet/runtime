@@ -417,7 +417,7 @@ namespace System.Xml
                                 {
                                     colVal = row[col];
                                     if (colVal == DBNull.Value)
-                                        break; //goto its ancesstors
+                                        break; //goto its ancestor
                                     return (string)colVal;
                                 }
                             }
@@ -1324,7 +1324,7 @@ namespace System.Xml
 
 
         //The function only helps to find out if there is a namespace declaration of given name is defined on the given node
-        //It will not check the accestors of the given node.
+        //It will not check the ancestor of the given node.
         private string GetNamespace(XmlBoundElement be, string name)
         {
             if (be == null)
@@ -1619,7 +1619,7 @@ namespace System.Xml
                     node = node.ParentNode;
                 } while (node != null && node.NodeType != XmlNodeType.Element);
             }
-            // till now, node should be the next accesstor (bound) element of the element parent of current namespace node (attribute or data column)
+            // till now, node should be the next ancestor (bound) element of the element parent of current namespace node (attribute or data column)
             while (node != null)
             {
                 //try the namespace attributes from the same element

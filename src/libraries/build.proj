@@ -55,14 +55,11 @@
   <Target Name="UpdateVSConfigurations">
     <Message Importance="High" Text="Updating configurations for projects ..." />
     <ItemGroup>
-      <_projectsToExcludeFromUpdate Include="$(MSBuildThisFileDirectory)src/**/RestoreSDKProject.csproj" />
+      <_projectsToExcludeFromUpdate Include="$(MSBuildThisFileDirectory)src/SharedFrameworkValidation/**/*.csproj" />
       <_projectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*csproj" Exclude="@(_projectsToExcludeFromUpdate)" />
       <_projectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*ilproj" Exclude="@(_projectsToExcludeFromUpdate)" />
       <_solutionsToUpdateFiles Include="$(MSBuildThisFileDirectory)src/*/dir.props" />
       <_solutionsToUpdate Include="@(_solutionsToUpdateFiles->'%(RootDir)%(Directory)')" Exclude="@(_solutionsToExcludeFromUpdate)" />
-      <_solutionsToUpdate Include="$(MSBuildThisFileDirectory)src/System.ServiceProcess.ServiceController/" >
-        <ExcludePattern>TestNativeService</ExcludePattern>
-      </_solutionsToUpdate>
     </ItemGroup>
     <UpdateVSConfigurations ProjectsToUpdate="@(_projectsToUpdate)" SolutionsToUpdate="@(_solutionsToUpdate)" />
     <Message Importance="High" Text="Updating configurations for projects ... Done." />

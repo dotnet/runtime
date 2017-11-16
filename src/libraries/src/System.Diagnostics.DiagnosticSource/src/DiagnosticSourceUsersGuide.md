@@ -1,4 +1,4 @@
-﻿# DiagnosticSource Users Guide
+# DiagnosticSource User's Guide
 
 This document describes DiagnosticSource, a simple module that allows code 
 to be instrumented for production-time logging of **rich data payloads** for 
@@ -41,12 +41,12 @@ there is a bridge that pipes information from DiagnosticSource's to an EventSour
 consumers can get at all DiagnosticSource events.    While the data payloads from 
 DiagnosticSource can't in general be passed through to the EventSource (because they are 
 not serializable), there is a mechanism in the bridge that enables consumers to specify which fields
-along to the EventSource.  
+to pass along to the EventSource.  
 
 What this means is that in general it is not necessary to instrument a code site multiple
 times.   By instrumenting with Diagnostic source, both clients that need the rich data
 (and thus use DiagnosticListener) as well as any consumers using EventListeners 
-(or OS facilities like ETW)) can get at the data.  
+(or OS facilities like ETW) can get at the data.  
 
 ----------------------------------------
 ## Instrumenting with DiagnosticSource/DiagnosticListener
@@ -86,25 +86,27 @@ A typical call site will look like
 
 Already some of the architectural elements are being exposed, namely
 
-	1. Every event has a string name (e.g. Request Start), and exactly one object as a payload.
-	2. If you need to send more than one item, you can do so by creating a object with all information
-	   in it as properties.   CSharp's [anonymous type](https://msdn.microsoft.com/en-us/library/bb397696.aspx)
-	   feature is typically used to create a type to pass 'on the fly', and makes this scheme very
-	   convenient.     
-	3. At the instrumentation site, you must guard the call to 'Write' with an 'IsEnabled' check on 
-       the same event name.   Without this check, even when the instrumentation is inactive, the rules
-	   of the C# language require all the work of creating the payload object and calling 'Write' to be 
-	   done, even though nothing is actually listening for the data. By guarding the 'Write' call, we 
-	   make it efficient when the source is not enabled.   
+1. Every event has a string name (e.g. Request Start), and exactly one object as a payload.
+2. If you need to send more than one item, you can do so by creating a object with all information
+	in it as properties.   C#'s [anonymous type](https://msdn.microsoft.com/en-us/library/bb397696.aspx)
+	feature is typically used to create a type to pass 'on the fly', and makes this scheme very
+	convenient.     
+3. At the instrumentation site, you must guard the call to 'Write' with an 'IsEnabled' check on 
+	the same event name.   Without this check, even when the instrumentation is inactive, the rules
+	of the C# language require all the work of creating the payload object and calling 'Write' to be 
+	done, even though nothing is actually listening for the data. By guarding the 'Write' call, we 
+	make it efficient when the source is not enabled.   
 
 ### Creating DiagnosticSources (Actually DiagnosticListeners)
 
 Perhaps confusingly you make a DiagnosticSource by creating a DiagnosticListener
 
+```C#
 	static DiagnosticSource mySource = new DiagnosticListener("System.Net.Http");
+```
 
 Basically a DiagnosticListener is a named place where a source sends its information (events).  
-From an implementation point of view, DiagnosticSource is a abstract class that has the two
+From an implementation point of view, DiagnosticSource is an abstract class that has the two
 instrumentation methods, and DiagnosticListener is something that implements that abstract class.
 Thus every DiagnosticListener is a DiagnosticSource, and by making a DiagnosticListener you 
 implicitly make a DiagnosticSource as well. 
@@ -119,13 +121,13 @@ Thus the event names only need to be unique within a component.
 
 #### DiagnosticListener Names
 
- * CONSIDER - the likely scenarios for USING information when deciding how may 
+ * CONSIDER - the likely scenarios for USING information when deciding how many 
    DiagnosticListener to have and the events in each.   Keep in mind that it is **very easy
    and efficient** to filter all the events in a particular listener so ideally the 
    most important scenarios involve turning on whole listeners and not needing to filter
    for particular events.    You may need to split
    a source into multiple smaller ones to achieve this, and this is OK.   For example there
-   are both incomming Http request and outgoing Http requests and you may only need one 
+   are both incoming HTTP requests and outgoing HTTP requests and you may only need one 
    or the other, so having a System.Net.Http.Incomming and System.Net.Http.OutGoing for
    each sub-case is good.  
 
@@ -140,7 +142,7 @@ Thus the event names only need to be unique within a component.
    component naming**.   You want it to be the case that users can correctly guess which
    listeners to activate knowing just their scenario.   
    
- * DO - Make the name for the DiagnosticListeners **globally unique**.   This is Typically
+ * DO - Make the name for the DiagnosticListeners **globally unique**.   This is typically
    done by making the first part of the name the component (e.g. System.Net.Http) 
 
  * DO - Use dots '.' to create multi-part names.   This works well if the name is a Name
@@ -151,7 +153,7 @@ Thus the event names only need to be unique within a component.
 
 #### EventNames 
 
- * DO - keep the names reasonably short (< 16 characters).   Keep in mind that that event names 
+ * DO - keep the names reasonably short (< 16 characters).   Keep in mind that event names 
    are already qualified by the Listener so the name only needs to be unique within a listener. 
    Short names make the 'IsEnabled' faster.  
 
@@ -159,7 +161,7 @@ Thus the event names only need to be unique within a component.
    naming one event 'RequestStart' and the another 'RequestStop' is good because tools can use the
    convention to determine that the time interval betweeen them is interesting.  
 
-### payloads
+### Payloads
 
   * DO use the anonymous type syntax 'new { property1 =value1 ...}' as the default way to pass 
    a payload *even if there is only one data element*.   This makes adding more data later easy
@@ -167,7 +169,7 @@ Thus the event names only need to be unique within a component.
 
   * CONSIDER - if you have an event that is so frequent that the performance of the logging is 
    a important consideration,  **and** you have only one data item **and** it is unlikely that 
-   you will ever have more data to pass to the event, **and** and the data item is a normal class
+   you will ever have more data to pass to the event, **and** the data item is a normal class
    (not a value type) **then** you save some cost by simply by passing the data object directly
    without using an anonymous type wrapper.   
 
@@ -211,7 +213,7 @@ active in the system at runtime.   The API to accomplish this is the 'AllListene
 IObservable\<DiagnosticListener>.     
 
 The IObservable interface is the 'callback' version of the IEnumerable interface.   You can learn 
-more about it at the [Reactive Extensions Site](https://msdn.microsoft.com/en-us/data/gg577609.aspx).
+more about it at the [Reactive Extensions](https://msdn.microsoft.com/en-us/data/gg577609.aspx) site.
 In a nutshell, you have an object called an IObserver which has three callbacks, OnNext, OnComplete
 and OnError, and an IObservable has single method called 'Subscribe' which gets passed one of these
 Observers.   Once connected, the Observer gets callback (mostly OnNext callbacks) when things 
@@ -286,7 +288,7 @@ call 'Subscribe' on it as well.  Thus we can fill out the previous example a bit
 In this example after finding the 'System.Net.Http' DiagnosticListener, we create an action that 
 prints out the name of the listener, event, and payload.ToString().   Notice a few things:
 
-   1. DiagnosticListener implement IObservable\<KeyValuePair\<string, object>>.   This means 
+   1. DiagnosticListener implements IObservable\<KeyValuePair\<string, object>>.   This means 
       on each callback we get a KeyValuePair.  The key of this pair is the name of the event
 	  and the value is the payload object.  In the code above we simply log this information
 	  to the Console.  
@@ -316,8 +318,8 @@ an object.   Odds are that you want to get at more specific data.   There are tw
 	2. Use reflection API, for example if we assuming we have the method 
 
 ```C#
-	/// Define a shortcut method that fetches a field of a particular name. 
-	static class PropertyExtensions
+    /// Define a shortcut method that fetches a field of a particular name. 
+    static class PropertyExtensions
     {
         static object GetProperty(this object _this, string propertyName)
         {
@@ -392,8 +394,8 @@ And consumers may use such properties to filter events more precisely.
     {
         if (eventName == "RequestStart")
         {
-		    HttpRequestMessage request = context as HttpRequestMessage;
-		    if (request != null)
+            HttpRequestMessage request = context as HttpRequestMessage;
+            if (request != null)
             {
                 return IsUriEnabled(request.RequestUri);
             }
@@ -406,7 +408,7 @@ And consumers may use such properties to filter events more precisely.
 ```
 
 Note that producer is not aware of filter consumer has provided. DiagnosticListener 
-will invoke provided filter ommiting additional arguments if necessary, thus the filter
+will invoke provided filter omitting additional arguments if necessary, thus the filter
 should expect to receive null context.
 Producers should enclose IsEnabled call with event name and context with pure IsEnabled
 call for event name, so consumers must ensure that filter allows events without context

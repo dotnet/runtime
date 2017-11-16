@@ -31,7 +31,7 @@ namespace Microsoft.SqlServer.TDS.Login7
         public abstract bool Inflate(Stream source);
 
         /// <summary>
-        /// Delate the token
+        /// Deflate the token
         /// </summary>
         public abstract void Deflate(Stream destination);
     }

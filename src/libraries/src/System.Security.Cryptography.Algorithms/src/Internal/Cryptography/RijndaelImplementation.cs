@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Security.Cryptography;
 
 namespace Internal.Cryptography
@@ -11,7 +12,7 @@ namespace Internal.Cryptography
     /// Internal implementation of Rijndael.
     /// This class is returned from Rijndael.Create() instead of the public RijndaelManaged to 
     /// be consistent with the rest of the static Create() methods which return opaque types.
-    /// They both have have the same implementation.
+    /// They both have the same implementation.
     /// </summary>
     internal sealed class RijndaelImplementation : Rijndael
     {
@@ -30,12 +31,15 @@ namespace Internal.Cryptography
             get { return _impl.BlockSize; }
             set
             {
+                Debug.Assert(BlockSizeValue == 128);
+
                 // Values which were legal in desktop RijndaelManaged but not here in this wrapper type
                 if (value == 192 || value == 256)
                     throw new PlatformNotSupportedException(SR.Cryptography_Rijndael_BlockSize);
 
                 // Any other invalid block size will get the normal "invalid block size" exception.
-                _impl.BlockSize = value;
+                if (value != 128)
+                    throw new CryptographicException(SR.Cryptography_Rijndael_BlockSize);
             }
         }
 

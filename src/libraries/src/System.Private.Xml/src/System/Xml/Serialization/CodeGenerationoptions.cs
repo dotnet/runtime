@@ -14,10 +14,14 @@ namespace System.Xml.Serialization
 
     /// <include file='doc\CodeGenerationOptions.uex' path='docs/doc[@for="CodeGenerationOptions"]/*' />
     /// <devdoc>
-    ///    Specifies varoius flavours of XmlCodeExporter generated code.
+    ///    Specifies various flavours of XmlCodeExporter generated code.
     /// </devdoc>
     [Flags]
+#if XMLSERIALIZERGENERATOR
+    internal enum CodeGenerationOptions
+#else
     public enum CodeGenerationOptions
+#endif
     {
         /// <include file='doc\CodeGenerationOptions.uex' path='docs/doc[@for="CodeGenerationOptions.None"]/*' />
         /// <devdoc>

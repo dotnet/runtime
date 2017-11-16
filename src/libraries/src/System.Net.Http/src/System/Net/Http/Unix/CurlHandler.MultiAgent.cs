@@ -37,8 +37,8 @@ namespace System.Net.Http
             private static readonly Interop.Http.ReadWriteCallback s_receiveBodyCallback = CurlReceiveBodyCallback;
             private static readonly Interop.Http.DebugCallback s_debugCallback = CurlDebugFunction;
 
-            /// <summary>CurlHandler that owns this MultiAgent.</summary>
-            private readonly CurlHandler _associatedHandler;
+            /// <summary>CurlHandler that created this MultiAgent.  If null, this is a shared handler.</summary>
+            private readonly CurlHandler _creatingHandler;
 
             /// <summary>
             /// A collection of not-yet-processed incoming requests for work to be done
@@ -79,18 +79,21 @@ namespace System.Net.Http
             /// </summary>
             private Interop.Http.SafeCurlMultiHandle _multiHandle;
 
+            /// <summary>Set when Dispose has been called.</summary>
+            private bool _disposed;
+
             /// <summary>Initializes the MultiAgent.</summary>
-            /// <param name="handler">The handler that owns this agent.</param>
+            /// <param name="handler">The handler that created this agent, or null if it's shared.</param>
             public MultiAgent(CurlHandler handler)
             {
-                Debug.Assert(handler != null, "Expected non-null handler");
-                _associatedHandler = handler;
+                _creatingHandler = handler;
             }
 
             /// <summary>Disposes of the agent.</summary>
             public void Dispose()
             {
                 EventSourceTrace(null);
+                _disposed = true;
                 QueueIfRunning(new IncomingRequest { Type = IncomingRequestType.Shutdown });
                 _multiHandle?.Dispose();
             }
@@ -247,20 +250,25 @@ namespace System.Net.Http
                     EventSourceTrace("Set multiplexing on multi handle");
                 }
 
-                // Configure max connections per host if it was changed from the default
-                int maxConnections = _associatedHandler.MaxConnectionsPerServer;
-                if (maxConnections < int.MaxValue) // int.MaxValue considered infinite, mapping to libcurl default of 0
+                // Configure max connections per host if it was changed from the default.  In shared mode,
+                // this will be pulled from the handler that first created the agent; the setting from subsequent
+                // handlers that use this will be ignored.
+                if (_creatingHandler != null)
                 {
-                    CURLMcode code = Interop.Http.MultiSetOptionLong(multiHandle, Interop.Http.CURLMoption.CURLMOPT_MAX_HOST_CONNECTIONS, maxConnections);
-                    switch (code)
+                    int maxConnections = _creatingHandler.MaxConnectionsPerServer;
+                    if (maxConnections < int.MaxValue) // int.MaxValue considered infinite, mapping to libcurl default of 0
                     {
-                        case CURLMcode.CURLM_OK:
-                            EventSourceTrace("Set max host connections to {0}", maxConnections);
-                            break;
-                        default:
-                            // Treat failures as non-fatal in release; worst case is we employ more connections than desired.
-                            EventSourceTrace("Setting CURLMOPT_MAX_HOST_CONNECTIONS failed: {0}. Ignoring option.", code);
-                            break;
+                        CURLMcode code = Interop.Http.MultiSetOptionLong(multiHandle, Interop.Http.CURLMoption.CURLMOPT_MAX_HOST_CONNECTIONS, maxConnections);
+                        switch (code)
+                        {
+                            case CURLMcode.CURLM_OK:
+                                EventSourceTrace("Set max host connections to {0}", maxConnections);
+                                break;
+                            default:
+                                // Treat failures as non-fatal in release; worst case is we employ more connections than desired.
+                                EventSourceTrace("Setting CURLMOPT_MAX_HOST_CONNECTIONS failed: {0}. Ignoring option.", code);
+                                break;
+                        }
                     }
                 }
 
@@ -306,7 +314,7 @@ namespace System.Net.Http
                             // more requests could have been added.  If they were,
                             // kick off another processing loop.
                             _runningWorker = null;
-                            if (_incomingRequests.Count > 0 && !_associatedHandler._disposed)
+                            if (_incomingRequests.Count > 0 && !_disposed)
                             {
                                 EnsureWorkerIsRunning();
                             }
@@ -426,7 +434,7 @@ namespace System.Net.Http
             }
 
             /// <summary>
-            /// Drains the incoming requests queue, dequeueing each request and handling it according to its type.
+            /// Drains the incoming requests queue, dequeuing each request and handling it according to its type.
             /// </summary>
             private void HandleIncomingRequests()
             {
@@ -1190,26 +1198,26 @@ namespace System.Net.Http
                 // Make sure we actually have a stream to read from.  This will be null if either
                 // this is the first time we're reading it, or if the stream was reset as part
                 // of curl trying to rewind.  Then do the read.
-                Task<int> asyncRead;
+                ValueTask<int> asyncRead;
                 if (easy._requestContentStream == null)
                 {
                     multi.EventSourceTrace("Calling ReadAsStreamAsync to get new request stream", easy: easy);
                     Task<Stream> readAsStreamTask = easy._requestMessage.Content.ReadAsStreamAsync();
                     asyncRead = readAsStreamTask.IsCompleted ?
                         StoreRetrievedContentStreamAndReadAsync(readAsStreamTask, easy, sts, length) :
-                        easy._requestMessage.Content.ReadAsStreamAsync().ContinueWith((t, s) =>
+                        new ValueTask<int>(easy._requestMessage.Content.ReadAsStreamAsync().ContinueWith((t, s) =>
                         {
                             var stateAndRequest = (Tuple<int, EasyRequest.SendTransferState, EasyRequest>)s;
                             return StoreRetrievedContentStreamAndReadAsync(t,
-                                stateAndRequest.Item3, stateAndRequest.Item2, stateAndRequest.Item1);
+                                stateAndRequest.Item3, stateAndRequest.Item2, stateAndRequest.Item1).AsTask();
                         }, Tuple.Create(length, sts, easy), CancellationToken.None,
-                        TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default).Unwrap();
+                        TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default).Unwrap());
                 }
                 else
                 {
                     multi.EventSourceTrace("Starting async read", easy: easy);
                     asyncRead = easy._requestContentStream.ReadAsync(
-                       sts.Buffer, 0, Math.Min(sts.Buffer.Length, length), easy._cancellationToken);
+                       new Memory<byte>(sts.Buffer, 0, Math.Min(sts.Buffer.Length, length)), easy._cancellationToken);
                 }
                 Debug.Assert(asyncRead != null, "Badly implemented stream returned a null task from ReadAsync");
 
@@ -1217,7 +1225,7 @@ namespace System.Net.Http
                 // Check to see if it did, in which case we can also satisfy the libcurl request synchronously in this callback.
                 if (asyncRead.IsCompleted)
                 {
-                    multi.EventSourceTrace("Async read completed immediately: {0}", asyncRead.Status, easy: easy);
+                    multi.EventSourceTrace("Async read completed immediately", easy: easy);
 
                     // Get the amount of data read.
                     int bytesRead = asyncRead.GetAwaiter().GetResult(); // will throw if read failed
@@ -1237,7 +1245,7 @@ namespace System.Net.Http
                     if (bytesToCopy < bytesRead)
                     {
                         multi.EventSourceTrace("Storing {0} bytes for later", bytesRead - bytesToCopy, easy: easy);
-                        sts.SetTaskOffsetCount(asyncRead, bytesToCopy, bytesRead);
+                        sts.SetTaskOffsetCount(asyncRead.AsTask(), bytesToCopy, bytesRead);
                     }
 
                     // Return the number of bytes read.
@@ -1246,8 +1254,8 @@ namespace System.Net.Http
 
                 // Otherwise, the read completed asynchronously.  Store the task, and hook up a continuation 
                 // such that the connection will be unpaused once the task completes.
-                sts.SetTaskOffsetCount(asyncRead, 0, 0);
-                asyncRead.ContinueWith((t, s) =>
+                sts.SetTaskOffsetCount(asyncRead.AsTask(), 0, 0);
+                sts.Task.ContinueWith((t, s) =>
                 {
                     EasyRequest easyRef = (EasyRequest)s;
                     easyRef._associatedMultiAgent.RequestUnpause(easyRef);
@@ -1262,7 +1270,7 @@ namespace System.Net.Http
             /// Given a completed task used to retrieve the content stream asynchronously, extracts the stream,
             /// stores it into <see cref="EasyRequest._requestContentStream"/>, and does an initial read on it.
             /// </summary>
-            private static Task<int> StoreRetrievedContentStreamAndReadAsync(
+            private static ValueTask<int> StoreRetrievedContentStreamAndReadAsync(
                 Task<Stream> readAsStreamTask, EasyRequest easy, EasyRequest.SendTransferState sts, int length)
             {
                 Debug.Assert(readAsStreamTask.IsCompleted, $"Expected {nameof(readAsStreamTask)} to be completed, got {readAsStreamTask.Status}");
@@ -1286,17 +1294,17 @@ namespace System.Net.Http
 
                     // Now that we have a stream, do the desired read
                     multi.EventSourceTrace("Starting async read", easy: easy);
-                    return easy._requestContentStream.ReadAsync(sts.Buffer, 0, Math.Min(sts.Buffer.Length, length), easy._cancellationToken);
+                    return easy._requestContentStream.ReadAsync(new Memory<byte>(sts.Buffer, 0, Math.Min(sts.Buffer.Length, length)), easy._cancellationToken);
                 }
                 catch (OperationCanceledException oce)
                 {
-                    return oce.CancellationToken.IsCancellationRequested ?
+                    return new ValueTask<int>(oce.CancellationToken.IsCancellationRequested ?
                         Task.FromCanceled<int>(oce.CancellationToken) :
-                        Task.FromCanceled<int>(new CancellationToken(true));
+                        Task.FromCanceled<int>(new CancellationToken(true)));
                 }
                 catch (Exception exc)
                 {
-                    return Task.FromException<int>(exc);
+                    return new ValueTask<int>(Task.FromException<int>(exc));
                 }
             }
 

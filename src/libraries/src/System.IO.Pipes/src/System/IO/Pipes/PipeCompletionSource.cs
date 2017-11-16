@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime.InteropServices;
 
 namespace System.IO.Pipes
 {
@@ -18,12 +19,12 @@ namespace System.IO.Pipes
         private const int RegisteringCancellation = 4;
         private const int CompletedCallback = 8;
 
-        private readonly CancellationToken _cancellationToken;
         private readonly ThreadPoolBoundHandle _threadPoolBinding;
 
         private CancellationTokenRegistration _cancellationRegistration;
         private int _errorCode;
         private NativeOverlapped* _overlapped;
+        private MemoryHandle _pinnedMemory;
         private int _state;
 
 #if DEBUG
@@ -31,22 +32,22 @@ namespace System.IO.Pipes
 #endif
 
         // Using RunContinuationsAsynchronously for compat reasons (old API used ThreadPool.QueueUserWorkItem for continuations)
-        protected PipeCompletionSource(ThreadPoolBoundHandle handle, CancellationToken cancellationToken, object pinData)
+        protected PipeCompletionSource(ThreadPoolBoundHandle handle, ReadOnlyMemory<byte> bufferToPin)
             : base(TaskCreationOptions.RunContinuationsAsynchronously)
         {
             Debug.Assert(handle != null, "handle is null");
 
             _threadPoolBinding = handle;
-            _cancellationToken = cancellationToken;
             _state = NoResult;
 
+            _pinnedMemory = bufferToPin.Retain(pin: true);
             _overlapped = _threadPoolBinding.AllocateNativeOverlapped((errorCode, numBytes, pOverlapped) =>
             {
                 var completionSource = (PipeCompletionSource<TResult>)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
                 Debug.Assert(completionSource.Overlapped == pOverlapped);
 
                 completionSource.AsyncCallback(errorCode, numBytes);
-            }, this, pinData);
+            }, this, null);
         }
 
         internal NativeOverlapped* Overlapped
@@ -54,7 +55,7 @@ namespace System.IO.Pipes
             [SecurityCritical]get { return _overlapped; }
         }
 
-        internal void RegisterForCancellation()
+        internal void RegisterForCancellation(CancellationToken cancellationToken)
         {
 #if DEBUG
             Debug.Assert(!_cancellationHasBeenRegistered, "Cannot register for cancellation twice");
@@ -62,14 +63,14 @@ namespace System.IO.Pipes
 #endif
 
             // Quick check to make sure that the cancellation token supports cancellation, and that the IO hasn't completed
-            if (_cancellationToken.CanBeCanceled && Overlapped != null)
+            if (cancellationToken.CanBeCanceled && Overlapped != null)
             {
                 // Register the cancellation only if the IO hasn't completed
                 int state = Interlocked.CompareExchange(ref _state, RegisteringCancellation, NoResult);
                 if (state == NoResult)
                 {
                     // Register the cancellation
-                    _cancellationRegistration = _cancellationToken.Register(thisRef => ((PipeCompletionSource<TResult>)thisRef).Cancel(), this);
+                    _cancellationRegistration = cancellationToken.Register(thisRef => ((PipeCompletionSource<TResult>)thisRef).Cancel(), this);
 
                     // Grab the state for case if IO completed while we were setting the registration.
                     state = Interlocked.Exchange(ref _state, NoResult);
@@ -96,11 +97,13 @@ namespace System.IO.Pipes
 
             // NOTE: The cancellation must *NOT* be running at this point, or it may observe freed memory
             // (this is why we disposed the registration above)
-            if (Overlapped != null)
+            if (_overlapped != null)
             {
                 _threadPoolBinding.FreeNativeOverlapped(Overlapped);
                 _overlapped = null;
             }
+
+            _pinnedMemory.Dispose();
         }
 
         internal abstract void SetCompletedSynchronously();
@@ -155,6 +158,7 @@ namespace System.IO.Pipes
         private void CompleteCallback(int resultState)
         {
             Debug.Assert(resultState == ResultSuccess || resultState == ResultError, "Unexpected result state " + resultState);
+            CancellationToken cancellationToken = _cancellationRegistration.Token;
 
             ReleaseResources();
 
@@ -162,14 +166,14 @@ namespace System.IO.Pipes
             {
                 if (_errorCode == Interop.Errors.ERROR_OPERATION_ABORTED)
                 {
-                    if (_cancellationToken.CanBeCanceled && !_cancellationToken.IsCancellationRequested)
+                    if (cancellationToken.CanBeCanceled && !cancellationToken.IsCancellationRequested)
                     {
                         HandleUnexpectedCancellation();
                     }
                     else
                     {
                         // otherwise set canceled
-                        TrySetCanceled(_cancellationToken);
+                        TrySetCanceled(cancellationToken);
                     }
                 }
                 else

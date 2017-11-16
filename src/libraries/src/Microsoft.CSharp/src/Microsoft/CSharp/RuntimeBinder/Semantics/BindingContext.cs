@@ -18,20 +18,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(semanticChecker != null);
             ExprFactory = exprFactory;
             SemanticChecker = semanticChecker;
-            SymbolLoader = semanticChecker.GetSymbolLoader();
+            SymbolLoader = semanticChecker.SymbolLoader;
         }
 
         public BindingContext(BindingContext parent)
+            : this(parent.SemanticChecker, parent.ExprFactory)
         {
-            Debug.Assert(parent.SemanticChecker != null);
-            ExprFactory = parent.ExprFactory;
-            ReportUnsafeErrors = parent.ReportUnsafeErrors;
             ContextForMemberLookup = parent.ContextForMemberLookup;
-            CheckedNormal = parent.CheckedNormal;
-            CheckedConstant = parent.CheckedConstant;
-            SymbolLoader = (SemanticChecker = parent.SemanticChecker).GetSymbolLoader();
+            Checked = parent.Checked;
         }
-
 
         //The SymbolLoader can be retrieved from SemanticChecker,
         //but that is a virtual call that is showing up on the profiler. Retrieve
@@ -42,14 +37,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public AggregateDeclaration ContextForMemberLookup { get; set; }
 
-        public bool ReportUnsafeErrors { get; set; } = true;
-
         public CSemanticChecker SemanticChecker { get; }
 
         public ExprFactory ExprFactory { get; }
 
-        public bool CheckedNormal { get; set; }
-
-        public bool CheckedConstant { get; set; }
+        public bool Checked { get; set; }
     }
 }

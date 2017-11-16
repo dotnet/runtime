@@ -3,6 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
+    <PackageVersion>4.6.0</PackageVersion>
     <TargetFrameworkName>uap</TargetFrameworkName>
     <TargetFrameworkVersion>$(UAPvNextVersion)</TargetFrameworkVersion>
     <TargetFramework>$(TargetFrameworkName)$(TargetFrameworkVersion)</TargetFramework>
@@ -35,6 +36,7 @@
     <ExcludeFromClosure Include="System.Drawing" />
     <ExcludeFromClosure Include="System.Net" />
     <ExcludeFromClosure Include="System.Security" />
+    <ExcludeFromClosure Include="System.ServiceModel.Web" />
     <ExcludeFromClosure Include="System.ServiceProcess" />
     <ExcludeFromClosure Include="System.Transactions" />
     <ExcludeFromClosure Include="WindowsBase" />

@@ -11,6 +11,32 @@ namespace System.Drawing.Tests
     {
         public static IEnumerable<object[]> SystemFonts_TestData()
         {
+            yield return new object[] { (Func<Font>)(() => SystemFonts.CaptionFont) };
+            yield return new object[] { (Func<Font>)(() => SystemFonts.IconTitleFont) };
+            yield return new object[] { (Func<Font>)(() => SystemFonts.MenuFont) };
+            yield return new object[] { (Func<Font>)(() => SystemFonts.MessageBoxFont) };
+            yield return new object[] { (Func<Font>)(() => SystemFonts.SmallCaptionFont) };
+            yield return new object[] { (Func<Font>)(() => SystemFonts.StatusFont) };
+        }
+
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [MemberData(nameof(SystemFonts_TestData))]
+        public void SystemFont_Get_ReturnsExpected(Func<Font> getFont)
+        {
+            using (Font font = getFont())
+            using (Font otherFont = getFont())
+            {
+                Assert.NotNull(font);
+                Assert.NotNull(otherFont);
+                Assert.NotSame(font, otherFont);
+
+                // Assert.Equal on a font will use the native handle to assert equality, which is not always guaranteed.
+                Assert.Equal(font.Name, otherFont.Name);
+            }
+        }
+
+        public static IEnumerable<object[]> SystemFonts_WindowsNames_TestData()
+        {
             yield return Font(() => SystemFonts.CaptionFont, "CaptionFont", "Segoe UI");
             yield return Font(() => SystemFonts.IconTitleFont, "IconTitleFont", "Segoe UI");
             yield return Font(() => SystemFonts.MenuFont, "MenuFont", "Segoe UI");
@@ -27,9 +53,10 @@ namespace System.Drawing.Tests
 
         public static object[] Font(Func<Font> getFont, string systemFontName, string windowsFontName) => new object[] { getFont, systemFontName, windowsFontName };
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [MemberData(nameof(SystemFonts_TestData))]
-        public void SystemFont_Get_ReturnsExpected(Func<Font> getFont, string systemFontName, string windowsFontName)
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [MemberData(nameof(SystemFonts_WindowsNames_TestData))]
+        public void SystemFont_Get_ReturnsExpected_WindowsNames(Func<Font> getFont, string systemFontName, string windowsFontName)
         {
             using (Font font = getFont())
             using (Font otherFont = getFont())

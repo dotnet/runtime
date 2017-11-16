@@ -2,13 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Diagnostics;
-    using System.Runtime.InteropServices;
-    using System.Globalization;
-
     internal class PropertyManager
     {
         public static string DefaultNamingContext = "defaultNamingContext";
@@ -144,11 +142,11 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (directoryEntry.Properties[PropertyManager.DistinguishedName].Count != 0)
                     {
-                        throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.PropertyNotFoundOnObject , propertyName, directoryEntry.Properties[PropertyManager.DistinguishedName].Value));
+                        throw new ActiveDirectoryOperationException(SR.Format(SR.PropertyNotFoundOnObject , propertyName, directoryEntry.Properties[PropertyManager.DistinguishedName].Value));
                     }
                     else
                     {
-                        throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.PropertyNotFound , propertyName));
+                        throw new ActiveDirectoryOperationException(SR.Format(SR.PropertyNotFound , propertyName));
                     }
                 }
             }
@@ -172,7 +170,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 propertyValues = res.Properties[propertyName];
                 if ((propertyValues == null) || (propertyValues.Count < 1))
                 {
-                    throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.PropertyNotFound , propertyName));
+                    throw new ActiveDirectoryOperationException(SR.Format(SR.PropertyNotFound , propertyName));
                 }
             }
             catch (COMException e)

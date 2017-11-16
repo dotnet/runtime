@@ -195,6 +195,42 @@ namespace System.Linq.Tests
             Perf_LinqTestBase.MeasureMaterializationToDictionary<int>(Perf_LinqTestBase.Wrap(array, wrapType), iteration);
         }
 
+        [Benchmark]
+        [MemberData(nameof(IterationSizeWrapperData))]
+        public void Contains_ElementNotFound(int size, int iterationCount, Perf_LinqTestBase.WrapperType wrapType)
+        {
+            IEnumerable<int> source = Perf_LinqTestBase.Wrap(Enumerable.Range(0, size).ToArray(), wrapType);
+
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < iterationCount; i++)
+                    {
+                        source.Contains(size + 1);
+                    }
+                }
+            }
+        }
+
+        [Benchmark]
+        [MemberData(nameof(IterationSizeWrapperData))]
+        public void Contains_FirstElementMatches(int size, int iterationCount, Perf_LinqTestBase.WrapperType wrapType)
+        {
+            IEnumerable<int> source = Perf_LinqTestBase.Wrap(Enumerable.Range(0, size).ToArray(), wrapType);
+
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < iterationCount; i++)
+                    {
+                        source.Contains(0);
+                    }
+                }
+            }
+        }
+
         #endregion
     }
 }

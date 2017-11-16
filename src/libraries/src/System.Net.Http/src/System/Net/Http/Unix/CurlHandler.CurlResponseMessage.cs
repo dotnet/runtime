@@ -51,14 +51,11 @@ namespace System.Net.Http
         /// </summary>
         private sealed class CurlResponseStream : Stream
         {
-            /// <summary>A cached task storing the Int32 value 0.</summary>
-            private static readonly Task<int> s_zeroTask = Task.FromResult(0);
-
             /// <summary>
             /// A sentinel object used in the <see cref="_completed"/> field to indicate that
             /// the stream completed successfully.
             /// </summary>
-            private static readonly Exception s_completionSentinel = new Exception("s_completionSentinel");
+            private static readonly Exception s_completionSentinel = new Exception(nameof(s_completionSentinel));
 
             /// <summary>A object used to synchronize all access to state on this response stream.</summary>
             private readonly object _lockObject = new object();
@@ -199,9 +196,9 @@ namespace System.Net.Http
 
                     // There's no data in the buffer and there is a pending read request.  
                     // Transfer as much data as we can to the read request, completing it.
-                    int numBytesForTask = (int)Math.Min(length, _pendingReadRequest._count);
+                    int numBytesForTask = (int)Math.Min(length, _pendingReadRequest._buffer.Length);
                     Debug.Assert(numBytesForTask > 0, "We must be copying a positive amount.");
-                    Marshal.Copy(pointer, _pendingReadRequest._buffer, _pendingReadRequest._offset, numBytesForTask);
+                    unsafe { new Span<byte>((byte*)pointer, numBytesForTask).CopyTo(_pendingReadRequest._buffer.Span); }
                     EventSourceTrace("Completing pending read with {0} bytes", numBytesForTask);
                     _pendingReadRequest.SetResult(numBytesForTask);
                     ClearPendingReadRequest();
@@ -252,15 +249,21 @@ namespace System.Net.Http
                 if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset));
                 if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
                 if (offset > buffer.Length - count) throw new ArgumentException(SR.net_http_buffer_insufficient_length, nameof(buffer));
+
+                return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            }
+
+            public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
+            {
                 CheckDisposed();
 
-                EventSourceTrace("Buffer: {0}, Offset: {1}, Count: {2}", buffer.Length, offset, count);
+                EventSourceTrace("Buffer: {0}", destination.Length);
 
                 // Check for cancellation
                 if (cancellationToken.IsCancellationRequested)
                 {
                     EventSourceTrace("Canceled");
-                    return Task.FromCanceled<int>(cancellationToken);
+                    return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
                 }
 
                 lock (_lockObject)
@@ -271,7 +274,7 @@ namespace System.Net.Http
                     if (_pendingReadRequest != null)
                     {
                         EventSourceTrace("Failing due to existing pending read; concurrent reads not supported.");
-                        return Task.FromException<int>(new InvalidOperationException(SR.net_http_content_no_concurrent_reads));
+                        return new ValueTask<int>(Task.FromException<int>(new InvalidOperationException(SR.net_http_content_no_concurrent_reads)));
                     }
 
                     // If the stream was already completed with failure, complete the read as a failure.
@@ -280,23 +283,23 @@ namespace System.Net.Http
                         EventSourceTrace("Failing read with error: {0}", _completed);
 
                         OperationCanceledException oce = _completed as OperationCanceledException;
-                        return (oce != null && oce.CancellationToken.IsCancellationRequested) ?
+                        return new ValueTask<int>((oce != null && oce.CancellationToken.IsCancellationRequested) ?
                             Task.FromCanceled<int>(oce.CancellationToken) :
-                            Task.FromException<int>(MapToReadWriteIOException(_completed, isRead: true));
+                            Task.FromException<int>(MapToReadWriteIOException(_completed, isRead: true)));
                     }
 
                     // Quick check for if no data was actually requested.  We do this after the check
                     // for errors so that we can still fail the read and transfer the exception if we should.
-                    if (count == 0)
+                    if (destination.Length == 0)
                     {
-                        return s_zeroTask;
+                        return new ValueTask<int>(0);
                     }
 
                     // If there's any data left over from a previous call, grab as much as we can.
                     if (_remainingDataCount > 0)
                     {
-                        int bytesToCopy = Math.Min(count, _remainingDataCount);
-                        Buffer.BlockCopy(_remainingData, _remainingDataOffset, buffer, offset, bytesToCopy);
+                        int bytesToCopy = Math.Min(destination.Length, _remainingDataCount);
+                        new Span<byte>(_remainingData, _remainingDataOffset, bytesToCopy).CopyTo(destination.Span);
 
                         _remainingDataOffset += bytesToCopy;
                         _remainingDataCount -= bytesToCopy;
@@ -304,14 +307,14 @@ namespace System.Net.Http
                         Debug.Assert(_remainingDataOffset <= _remainingData.Length, "The remaining offset should never exceed the buffer size");
 
                         EventSourceTrace("Read {0} bytes", bytesToCopy);
-                        return Task.FromResult(bytesToCopy);
+                        return new ValueTask<int>(bytesToCopy);
                     }
 
                     // If the stream has already been completed, complete the read immediately.
                     if (_completed == s_completionSentinel)
                     {
                         EventSourceTrace("Stream already completed");
-                        return s_zeroTask;
+                        return new ValueTask<int>(0);
                     }
 
                     // Finally, the stream is still alive, and we want to read some data, but there's no data 
@@ -329,20 +332,20 @@ namespace System.Net.Http
                         // the cancellation token.  Dispose on the registration won't return until the action
                         // associated with the registration has completed, but if that action is currently
                         // executing and is blocked on the lock that's held while calling Dispose... deadlock.
-                        var crs = new CancelableReadState(buffer, offset, count, this, cancellationToken);
+                        var crs = new CancelableReadState(destination, this);
                         crs._registration = cancellationToken.Register(s1 =>
                         {
                             ((CancelableReadState)s1)._stream.EventSourceTrace("Cancellation invoked. Queueing work item to cancel read state");
                             Task.Factory.StartNew(s2 =>
                             {
                                 var crsRef = (CancelableReadState)s2;
-                                Debug.Assert(crsRef._token.IsCancellationRequested, "We should only be here if cancellation was requested.");
                                 lock (crsRef._stream._lockObject)
                                 {
+                                    Debug.Assert(crsRef._registration.Token.IsCancellationRequested, "We should only be here if cancellation was requested.");
                                     if (crsRef._stream._pendingReadRequest == crsRef)
                                     {
                                         crsRef._stream.EventSourceTrace("Canceling");
-                                        crsRef.TrySetCanceled(crsRef._token);
+                                        crsRef.TrySetCanceled(crsRef._registration.Token);
                                         crsRef._stream.ClearPendingReadRequest();
                                     }
                                 }
@@ -353,12 +356,12 @@ namespace System.Net.Http
                     else
                     {
                         // The token isn't cancelable.  Just create a normal read state.
-                        _pendingReadRequest = new ReadState(buffer, offset, count);
+                        _pendingReadRequest = new ReadState(destination);
                     }
 
                     _easy._associatedMultiAgent.RequestUnpause(_easy);
                     _easy._selfStrongToWeakReference.MakeStrong(); // convert from a weak to a strong ref to keep the easy alive during the read
-                    return _pendingReadRequest.Task;
+                    return new ValueTask<int>(_pendingReadRequest.Task);
                 }
             }
 
@@ -501,19 +504,11 @@ namespace System.Net.Http
             /// <summary>State associated with a pending read request.</summary>
             private class ReadState : TaskCompletionSource<int>
             {
-                internal readonly byte[] _buffer;
-                internal readonly int _offset;
-                internal readonly int _count;
+                internal readonly Memory<byte> _buffer;
 
-                internal ReadState(byte[] buffer, int offset, int count) : 
-                    base(TaskCreationOptions.RunContinuationsAsynchronously)
+                internal ReadState(Memory<byte> buffer) :  base(TaskCreationOptions.RunContinuationsAsynchronously)
                 {
-                    Debug.Assert(buffer != null, "Need non-null buffer");
-                    Debug.Assert(offset >= 0, "Need non-negative offset");
-                    Debug.Assert(count > 0, "Need positive count");
                     _buffer = buffer;
-                    _offset = offset;
-                    _count = count;
                 }
             }
 
@@ -521,18 +516,13 @@ namespace System.Net.Http
             private sealed class CancelableReadState : ReadState
             {
                 internal readonly CurlResponseStream _stream;
-                internal readonly CancellationToken _token;
                 internal CancellationTokenRegistration _registration;
 
-                internal CancelableReadState(byte[] buffer, int offset, int count, 
-                    CurlResponseStream responseStream, CancellationToken cancellationToken) :
-                    base(buffer, offset, count)
+                internal CancelableReadState(Memory<byte> buffer, CurlResponseStream responseStream) : base(buffer)
                 {
                     _stream = responseStream;
-                    _token = cancellationToken;
                 }
             }
-
         }
     }
 }

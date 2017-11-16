@@ -37,7 +37,7 @@ namespace System.Net.Security
             DataKeySize = dataKeySize;
             DataHashKeySize = dataHashKeySize;
 
-            //Openssl does not provide a way to return a exchange key size.
+            //Openssl does not provide a way to return an exchange key size.
             //It internally does calculate the key size before generating key to exchange
             //It is not a constant (Algorthim specific) either that we can hardcode and return. 
             KeyExchKeySize = 0;

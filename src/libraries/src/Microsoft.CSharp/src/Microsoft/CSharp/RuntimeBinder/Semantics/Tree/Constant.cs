@@ -8,16 +8,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprConstant : ExprWithType
     {
-        public ExprConstant(CType type)
+        public ExprConstant(CType type, ConstVal value)
             : base(ExpressionKind.Constant, type)
         {
+            Val = value;
         }
 
         public Expr OptionalConstructorCall { get; set; }
 
         public bool IsZero => Val.IsZero(Type.constValKind());
 
-        public ConstVal Val { get; set; }
+        public ConstVal Val { get; }
 
         public ulong UInt64Value => Val.UInt64Val;
 

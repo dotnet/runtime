@@ -141,6 +141,12 @@ namespace System.Net
 
         public static unsafe IPHostEntry GetHostByName(string hostName)
         {
+            if (hostName == "")
+            {
+                // To match documented behavior on Windows, if an empty string is passed in, use the local host's name.
+                hostName = Dns.GetHostName();
+            }
+
             Interop.Sys.HostEntry entry;
             int err = Interop.Sys.GetHostByName(hostName, &entry);
             if (err != 0)
@@ -167,6 +173,12 @@ namespace System.Net
 
         public static unsafe SocketError TryGetAddrInfo(string name, out IPHostEntry hostinfo, out int nativeErrorCode)
         {
+            if (name == "")
+            {
+                // To match documented behavior on Windows, if an empty string is passed in, use the local host's name.
+                name = Dns.GetHostName();
+            }
+
             Interop.Sys.HostEntry entry;
             int result = Interop.Sys.GetHostEntryForName(name, &entry);
             if (result != 0)

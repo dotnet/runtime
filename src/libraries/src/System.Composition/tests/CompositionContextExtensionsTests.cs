@@ -16,6 +16,7 @@ namespace System.Composition.UnitTests
         public interface IUnregistered { }
 
         [Fact]
+        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public void GettingAnOptionalExportThatDoesntExistReturnsNull()
         {
             var c = CreateContainer();

@@ -365,7 +365,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/1011
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/1011
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Unix implemented on sockets, where disposal information doesn't propagate
         public async Task Unix_OperationsOnNamedServerWithDisposedClient()
         {
@@ -753,8 +753,8 @@ namespace System.IO.Pipes.Tests
             }
         }
     }
-
-    [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
+    
+    [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
     public class NamedPipeTest_Simple_ServerInOutRead_ClientInOutWrite : NamedPipeTest_Simple
     {
         protected override NamedPipePair CreateNamedPipePair(PipeOptions serverOptions, PipeOptions clientOptions)
@@ -767,8 +767,8 @@ namespace System.IO.Pipes.Tests
             return ret;
         }
     }
-
-    [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
+    
+    [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
     public class NamedPipeTest_Simple_ServerInOutWrite_ClientInOutRead : NamedPipeTest_Simple
     {
         protected override NamedPipePair CreateNamedPipePair(PipeOptions serverOptions, PipeOptions clientOptions)
@@ -781,8 +781,8 @@ namespace System.IO.Pipes.Tests
             return ret;
         }
     }
-
-    [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
+    
+    [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
     public class NamedPipeTest_Simple_ServerInOut_ClientIn : NamedPipeTest_Simple
     {
         protected override NamedPipePair CreateNamedPipePair(PipeOptions serverOptions, PipeOptions clientOptions)
@@ -795,8 +795,8 @@ namespace System.IO.Pipes.Tests
             return ret;
         }
     }
-
-    [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
+    
+    [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
     public class NamedPipeTest_Simple_ServerInOut_ClientOut : NamedPipeTest_Simple
     {
         protected override NamedPipePair CreateNamedPipePair(PipeOptions serverOptions, PipeOptions clientOptions)
@@ -809,8 +809,8 @@ namespace System.IO.Pipes.Tests
             return ret;
         }
     }
-
-    [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
+    
+    [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
     public class NamedPipeTest_Simple_ServerOut_ClientIn : NamedPipeTest_Simple
     {
         protected override NamedPipePair CreateNamedPipePair(PipeOptions serverOptions, PipeOptions clientOptions)
@@ -823,8 +823,8 @@ namespace System.IO.Pipes.Tests
             return ret;
         }
     }
-
-    [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
+    
+    [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
     public class NamedPipeTest_Simple_ServerIn_ClientOut : NamedPipeTest_Simple
     {
         protected override NamedPipePair CreateNamedPipePair(PipeOptions serverOptions, PipeOptions clientOptions)

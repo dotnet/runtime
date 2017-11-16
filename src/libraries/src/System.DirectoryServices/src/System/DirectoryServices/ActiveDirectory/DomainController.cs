@@ -2,19 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Net;
+using System.ComponentModel;
+using System.Collections;
+using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Diagnostics;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Net;
-    using System.ComponentModel;
-    using System.Collections;
-    using System.Globalization;
-    using System.Security.Principal;
-    using System.Runtime.InteropServices;
-    using System.Threading;
-    using System.Diagnostics;
-    using System.Security.Permissions;
-
     [Flags]
     public enum SyncFromAllServersOptions
     {
@@ -46,7 +42,7 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         private IntPtr _dsHandle = IntPtr.Zero;
         private IntPtr _authIdentity = IntPtr.Zero;
-        private string[] _becomeRoleOwnerAttrs = null;
+        private readonly string[] _becomeRoleOwnerAttrs = null;
         private bool _disposed = false;
 
         // internal variables for the public properties
@@ -59,7 +55,7 @@ namespace System.DirectoryServices.ActiveDirectory
         private bool _dcInfoInitialized = false;
 
         internal SyncUpdateCallback userDelegate = null;
-        internal SyncReplicaFromAllServersCallback syncAllFunctionPointer = null;
+        internal readonly SyncReplicaFromAllServersCallback syncAllFunctionPointer = null;
 
         // this is twice the maximum allowed RIDPool size which is 15k
         internal const int UpdateRidPoolSeizureValue = 30000;
@@ -97,11 +93,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         #region IDisposable
 
-        ~DomainController()
-        {
-            // finalizer is called => Dispose has not been called yet.
-            Dispose(false);
-        }
+        ~DomainController() => Dispose(false);
 
         // private Dispose method
         protected override void Dispose(bool disposing)
@@ -145,7 +137,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // target should be a server
             if (!(context.isServer()))
             {
-                throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DCNotFound , context.Name), typeof(DomainController), context.Name);
+                throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFound , context.Name), typeof(DomainController), context.Name);
             }
 
             //  work with copy of the context
@@ -159,7 +151,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 DirectoryEntry rootDSE = directoryEntryMgr.GetCachedDirectoryEntry(WellKnownDN.RootDSE);
                 if (!Utils.CheckCapability(rootDSE, Capability.ActiveDirectory))
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DCNotFound , context.Name), typeof(DomainController), context.Name);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFound , context.Name), typeof(DomainController), context.Name);
                 }
                 dcDnsName = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.DnsHostName);
             }
@@ -169,7 +161,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (errorCode == unchecked((int)0x8007203a))
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DCNotFound , context.Name), typeof(DomainController), context.Name);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFound , context.Name), typeof(DomainController), context.Name);
                 }
                 else
                 {
@@ -785,7 +777,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 if (cachedSiteName == null)
                 {
-                    throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.SiteNameNotFound , Name));
+                    throw new ActiveDirectoryOperationException(SR.Format(SR.SiteNameNotFound , Name));
                 }
 
                 return cachedSiteName;
@@ -803,7 +795,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 if (cachedSiteObjectName == null)
                 {
-                    throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.SiteObjectNameNotFound , Name));
+                    throw new ActiveDirectoryOperationException(SR.Format(SR.SiteObjectNameNotFound , Name));
                 }
                 return cachedSiteObjectName;
             }
@@ -820,7 +812,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 if (_cachedComputerObjectName == null)
                 {
-                    throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.ComputerObjectNameNotFound , Name));
+                    throw new ActiveDirectoryOperationException(SR.Format(SR.ComputerObjectNameNotFound , Name));
                 }
                 return _cachedComputerObjectName;
             }
@@ -837,7 +829,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 if (cachedServerObjectName == null)
                 {
-                    throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.ServerObjectNameNotFound , Name));
+                    throw new ActiveDirectoryOperationException(SR.Format(SR.ServerObjectNameNotFound , Name));
                 }
                 return cachedServerObjectName;
             }
@@ -854,7 +846,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 if (cachedNtdsaObjectName == null)
                 {
-                    throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.NtdsaObjectNameNotFound , Name));
+                    throw new ActiveDirectoryOperationException(SR.Format(SR.NtdsaObjectNameNotFound , Name));
                 }
                 return cachedNtdsaObjectName;
             }
@@ -871,7 +863,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 if (cachedNtdsaObjectGuid.Equals(Guid.Empty))
                 {
-                    throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.NtdsaObjectGuidNotFound , Name));
+                    throw new ActiveDirectoryOperationException(SR.Format(SR.NtdsaObjectGuidNotFound , Name));
                 }
                 return cachedNtdsaObjectGuid;
             }
@@ -896,21 +888,9 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public override ReplicationConnectionCollection InboundConnections
-        {
-            get
-            {
-                return GetInboundConnectionsHelper();
-            }
-        }
+        public override ReplicationConnectionCollection InboundConnections => GetInboundConnectionsHelper();
 
-        public override ReplicationConnectionCollection OutboundConnections
-        {
-            get
-            {
-                return GetOutboundConnectionsHelper();
-            }
-        }
+        public override ReplicationConnectionCollection OutboundConnections => GetOutboundConnectionsHelper();
 
         internal IntPtr Handle
         {
@@ -961,7 +941,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     else
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DCNotFoundInDomain , context.Name), typeof(DomainController), null);
+                        throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFoundInDomain , context.Name), typeof(DomainController), null);
                     }
                 }
                 else
@@ -991,7 +971,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (e.ErrorCode == unchecked((int)0x8007203a))
                     {
                         // server is down
-                        throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DCNotFoundInDomain , context.Name), typeof(DomainController), null);
+                        throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFoundInDomain , context.Name), typeof(DomainController), null);
                     }
                     else
                     {
@@ -1036,7 +1016,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
             {
-                throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DCNotFoundInDomain , domainName), typeof(DomainController), null);
+                throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFoundInDomain , domainName), typeof(DomainController), null);
             }
             // this can only occur when flag is being explicitly passed (since the flags that we pass internally are valid)
             if (errorCode == NativeMethods.ERROR_INVALID_FLAGS)

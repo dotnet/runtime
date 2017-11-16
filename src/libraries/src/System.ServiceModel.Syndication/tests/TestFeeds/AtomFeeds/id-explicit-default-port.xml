@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Description:  id whith an explicitly specified default port produces a warning
+Expect:       NonCanonicalURI{element:id,parent:feed}
+-->
+
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title>Example Feed</title>
+  <link href="http://contoso.com/"/>
+  <updated>2003-12-13T18:30:02Z</updated>
+  <author>
+    <name>Author Name</name>
+  </author>
+  <id>http://contoso.com:80/id/1234</id>
+
+  <entry>
+    <title>Atom-Powered Robots Run Amok</title>
+    <link href="http://contoso.com/2003/12/13/atom03"/>
+    <id>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a</id>
+    <updated>2003-12-13T18:30:02Z</updated>
+    <summary>Some text.</summary>
+  </entry>
+
+</feed>

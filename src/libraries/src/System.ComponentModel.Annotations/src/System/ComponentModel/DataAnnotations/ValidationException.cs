@@ -9,6 +9,8 @@ namespace System.ComponentModel.DataAnnotations
     /// <summary>
     ///     Exception used for validation using <see cref="ValidationAttribute" />.
     /// </summary>
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.ComponentModel.DataAnnotations, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public class ValidationException : Exception
     {
         private ValidationResult _validationResult;
@@ -77,13 +79,12 @@ namespace System.ComponentModel.DataAnnotations
         protected ValidationException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            throw new PlatformNotSupportedException();
         }
 
         /// <summary>
         ///     Gets the <see>ValidationAttribute</see> instance that triggered this exception.
         /// </summary>
-        public ValidationAttribute ValidationAttribute { get; private set; }
+        public ValidationAttribute ValidationAttribute { get; }
 
         /// <summary>
         ///     Gets the <see cref="ValidationResult" /> instance that describes the validation error.
@@ -106,6 +107,6 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Gets the value that caused the validating attribute to trigger the exception
         /// </summary>
-        public object Value { get; private set; }
+        public object Value { get; }
     }
 }

@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-
-//------------------------------------------------------------------------------
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -999,7 +995,8 @@ namespace Microsoft.SqlServer.Server
                         result = GetSqlXml_Unchecked(sink, getters, ordinal).Value;
                         break;
                     case SqlDbType.Udt:
-                        throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
+                        result = GetUdt_LengthChecked(sink, getters, ordinal, metaData);
+                        break;
                 }
             }
 
@@ -1019,7 +1016,7 @@ namespace Microsoft.SqlServer.Server
             {
                 if (SqlDbType.Udt == metaData.SqlDbType)
                 {
-                    throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
+                    result = NullUdtInstance(metaData);
                 }
                 else
                 {
@@ -1068,7 +1065,7 @@ namespace Microsoft.SqlServer.Server
             {
                 if (SqlDbType.Udt == metaData.SqlDbType)
                 {
-                    throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
+                    result = NullUdtInstance(metaData);
                 }
                 else
                 {
@@ -1158,7 +1155,8 @@ namespace Microsoft.SqlServer.Server
                         result = GetSqlXml_Unchecked(sink, getters, ordinal);
                         break;
                     case SqlDbType.Udt:
-                        throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
+                        result = GetUdt_LengthChecked(sink, getters, ordinal, metaData);
+                        break;
                 }
             }
 
@@ -1204,6 +1202,12 @@ namespace Microsoft.SqlServer.Server
             DBNull.Value,       // SqlDbType.DateTimeOffset
         };
 
+        internal static object NullUdtInstance(SmiMetaData metaData)
+        {
+            Type t = metaData.Type;
+            Debug.Assert(t != null, "Unexpected null of Udt type on NullUdtInstance!");
+            return t.InvokeMember("Null", BindingFlags.Public | BindingFlags.GetProperty | BindingFlags.Static, null, null, new Object[] { }, CultureInfo.InvariantCulture);
+        }
 
         // Strongly-typed setters are a bit simpler than their corresponding getters.
         //      1) check to make sure the type is compatible (exception if not)
@@ -1523,7 +1527,7 @@ namespace Microsoft.SqlServer.Server
                 case ExtendedClrTypeCode.UInt16: throw ADP.InvalidCast();
                 case ExtendedClrTypeCode.UInt32: throw ADP.InvalidCast();
                 case ExtendedClrTypeCode.UInt64: throw ADP.InvalidCast();
-                case ExtendedClrTypeCode.Object: throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
+                case ExtendedClrTypeCode.Object: SetUdt_LengthChecked(sink, setters, ordinal, metaData, value); break;
                 case ExtendedClrTypeCode.ByteArray: SetByteArray_LengthChecked(sink, setters, ordinal, metaData, (byte[])value, offset); break;
                 case ExtendedClrTypeCode.CharArray: SetCharArray_LengthChecked(sink, setters, ordinal, metaData, (char[])value, offset); break;
                 case ExtendedClrTypeCode.Guid: SetGuid_Unchecked(sink, setters, ordinal, (Guid)value); break;
@@ -1672,7 +1676,7 @@ namespace Microsoft.SqlServer.Server
                         if (ExtendedClrTypeCode.Invalid == cellTypes[i])
                         {
                             cellTypes[i] = MetaDataUtilsSmi.DetermineExtendedTypeCodeForUseWithSqlDbType(
-                                    fieldMetaData.SqlDbType, fieldMetaData.IsMultiValued, cellValue);
+                                    fieldMetaData.SqlDbType, fieldMetaData.IsMultiValued, cellValue, fieldMetaData.Type);
                         }
                         SetCompatibleValueV200(sink, setters, i, fieldMetaData, cellValue, cellTypes[i], 0, NoLengthLimit, null);
                     }
@@ -1794,7 +1798,9 @@ namespace Microsoft.SqlServer.Server
                             break;
 
                         case SqlDbType.Udt:
-                            throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
+                            Debug.Assert(CanAccessSetterDirectly(metaData[i], ExtendedClrTypeCode.SqlBytes));
+                            SetSqlBytes_LengthChecked(sink, setters, i, metaData[i], reader.GetSqlBytes(i), 0);
+                            break;
 
                         default:
                             // In order for us to get here we would have to have an 
@@ -1950,8 +1956,7 @@ namespace Microsoft.SqlServer.Server
                                 {
                                     o = reader.GetValue(i);
                                 }
-                                ExtendedClrTypeCode typeCode = MetaDataUtilsSmi.DetermineExtendedTypeCodeForUseWithSqlDbType(metaData[i].SqlDbType, metaData[i].IsMultiValued, o
-                                    );
+                                ExtendedClrTypeCode typeCode = MetaDataUtilsSmi.DetermineExtendedTypeCodeForUseWithSqlDbType(metaData[i].SqlDbType, metaData[i].IsMultiValued, o, null);
                                 if ((storageType == SqlBuffer.StorageType.DateTime2) || (storageType == SqlBuffer.StorageType.Date))
                                     SetCompatibleValueV200(sink, setters, i, metaData[i], o, typeCode, 0, 0, null, storageType);
                                 else
@@ -1960,7 +1965,10 @@ namespace Microsoft.SqlServer.Server
                             break;
 
                         case SqlDbType.Udt:
-                            throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
+                            Debug.Assert(CanAccessSetterDirectly(metaData[i], ExtendedClrTypeCode.ByteArray));
+                            // Skip serialization for Udt types.
+                            SetBytes_FromReader(sink, setters, i, metaData[i], reader, 0);
+                            break;
 
                         // SqlDbType.Structured should have been caught before this point for TVPs.  SUDTs will still need to implement.
 
@@ -2127,7 +2135,9 @@ namespace Microsoft.SqlServer.Server
                             SetCompatibleValueV200(sink, setters, i, metaData[i], o, typeCode, 0, -1 /* no length restriction */, null /* no peekahead */);
                             break;
                         case SqlDbType.Udt:
-                            throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
+                            Debug.Assert(CanAccessSetterDirectly(metaData[i], ExtendedClrTypeCode.SqlBytes));
+                            SetBytes_FromRecord(sink, setters, i, metaData[i], record, 0);
+                            break;
                         case SqlDbType.Date:
                         case SqlDbType.DateTime2:
                             Debug.Assert(CanAccessSetterDirectly(metaData[i], ExtendedClrTypeCode.DateTime));
@@ -2202,6 +2212,30 @@ namespace Microsoft.SqlServer.Server
 
             return dest;
         }
+
+        //
+        //  Common utility code to get lengths correct for trimming
+        //
+        private static object GetUdt_LengthChecked(SmiEventSink_Default sink, ITypedGettersV3 getters, int ordinal, SmiMetaData metaData)
+        {
+            object result;
+            if (IsDBNull_Unchecked(sink, getters, ordinal))
+            {
+                Type t = metaData.Type;
+                Debug.Assert(t != null, "Unexpected null of udtType on GetUdt_LengthChecked!");
+                result = t.InvokeMember("Null", BindingFlags.Public | BindingFlags.GetProperty | BindingFlags.Static, null, null, new Object[] { }, CultureInfo.InvariantCulture);
+                Debug.Assert(result != null);
+            }
+            else
+            {
+                // Note: do not need to copy getter stream, since it will not be used beyond
+                //  deserialization (valid lifetime of getters is limited).
+                Stream s = new SmiGettersStream(sink, getters, ordinal, metaData);
+                result = SerializationHelperSql9.Deserialize(s, metaData.Type);
+            }
+            return result;
+        }
+
         private static Decimal GetDecimal_PossiblyMoney(SmiEventSink_Default sink, ITypedGettersV3 getters, int ordinal, SmiMetaData metaData)
         {
             if (SqlDbType.Decimal == metaData.SqlDbType)
@@ -2580,6 +2614,20 @@ namespace Microsoft.SqlServer.Server
             int length = CheckXetParameters(metaData.SqlDbType, metaData.MaxLength, NoLengthLimit /* actual */, 0, value.Length, offset, checked(value.Length - offset));
             Debug.Assert(length >= 0, "value.Length was invalid!");
             SetString_Unchecked(sink, setters, ordinal, value, offset, length);
+        }
+
+        private static void SetUdt_LengthChecked(SmiEventSink_Default sink, ITypedSettersV3 setters, int ordinal, SmiMetaData metaData, object value)
+        {
+            if (ADP.IsNull(value))
+            {
+                setters.SetDBNull(sink, ordinal);
+                sink.ProcessMessagesAndThrow();
+            }
+            else
+            {
+                Stream target = new SmiSettersStream(sink, setters, ordinal, metaData);
+                SerializationHelperSql9.Serialize(target, value);
+            }
         }
 
 
@@ -3651,8 +3699,8 @@ namespace Microsoft.SqlServer.Server
                             0,
                             0,
                             value.LCID,
-                            value.SqlCompareOptions
-                            );
+                            value.SqlCompareOptions,
+                            null);
                     setters.SetVariantMetaData(sink, ordinal, metaData);
                     sink.ProcessMessagesAndThrow();
                 }

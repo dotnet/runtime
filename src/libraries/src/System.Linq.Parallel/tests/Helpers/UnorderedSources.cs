@@ -166,7 +166,7 @@ namespace System.Linq.Parallel.Tests
         /// <returns>Entries for test data.
         /// The first element is the left Labeled{ParallelQuery{int}} range, the second element is the left count,
         /// the third element is the right Labeled{ParallelQuery{int}} range, the fourth element is the right count,
-        /// and the fifth is the right start..</returns>
+        /// and the fifth is the right start.</returns>
         public static IEnumerable<object[]> BinaryRanges(IEnumerable<int> leftCounts, Func<int, int, int> rightStart, IEnumerable<int> rightCounts)
         {
             foreach (object[] left in Ranges(leftCounts))

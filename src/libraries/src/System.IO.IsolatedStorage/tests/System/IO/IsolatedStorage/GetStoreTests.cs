@@ -18,7 +18,7 @@ namespace System.IO.IsolatedStorage
             s_verifyScopeMethod = typeof(IsolatedStorage).GetMethod("VerifyScope", BindingFlags.NonPublic | BindingFlags.Static);
         }
 
-        [Theory
+        [Theory,
             MemberData(nameof(ValidScopes))
             ]
         public void InitStore_ValidScopes(IsolatedStorageScope scope)
@@ -26,9 +26,9 @@ namespace System.IO.IsolatedStorage
             s_verifyScopeMethod.Invoke(null, new object[] { scope });
         }
 
-        [Theory
-            InlineData(IsolatedStorageScope.None)
-            InlineData(IsolatedStorageScope.Machine | IsolatedStorageScope.Roaming)
+        [Theory,
+            InlineData(IsolatedStorageScope.None),
+            InlineData(IsolatedStorageScope.Machine | IsolatedStorageScope.Roaming),
             InlineData(IsolatedStorageScope.Machine | IsolatedStorageScope.User)
             ]
         public void InitStore_InvalidScopes(IsolatedStorageScope scope)

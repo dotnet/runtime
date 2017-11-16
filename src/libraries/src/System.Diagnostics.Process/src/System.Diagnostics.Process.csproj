@@ -50,6 +50,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.EnumProcessModules.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.EnumProcessModules.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs">
+      <Link>Common\Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.EnumWindows.cs">
       <Link>Common\Interop\Windows\user32\Interop.EnumWindows.cs</Link>
     </Compile>
@@ -178,11 +181,11 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetPriorityClass.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.SetPriorityClass.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs">
-      <Link>Common\Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.DuplicateHandle_SafeProcessHandle.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.DuplicateHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ProcessWaitHandle.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.ProcessWaitHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.OpenProcessToken.cs">
       <Link>Common\Interop\Windows\advapi32\Interop.OpenProcessToken.cs</Link>
@@ -274,7 +277,6 @@
     <Compile Include="System\Diagnostics\ProcessStartInfo.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessThreadTimes.cs" />
-    <Compile Include="System\Diagnostics\ProcessWaitHandle.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.Unix.cs" />
@@ -363,7 +365,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true'">
+    <Compile Include="System\Diagnostics\Process.BSD.cs" />
     <Compile Include="System\Diagnostics\Process.OSX.cs" />
+    <Compile Include="System\Diagnostics\ProcessManager.BSD.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.OSX.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.OSX.cs" />
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.libproc.cs">
@@ -392,7 +396,26 @@
     <Compile Include="System\Diagnostics\ProcessManager.Uap.cs" />
     <Compile Include="System\Diagnostics\ProcessStartInfo.Uap.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" ('$(TargetsFreeBSD)' == 'true' OR '$(TargetsUnknownUnix)' == 'true')">
+  <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true'">
+    <Compile Include="System\Diagnostics\Process.BSD.cs" />
+    <Compile Include="System\Diagnostics\Process.FreeBSD.cs" />
+    <Compile Include="System\Diagnostics\ProcessManager.BSD.cs" />
+    <Compile Include="System\Diagnostics\ProcessManager.FreeBSD.cs" />
+    <Compile Include="System\Diagnostics\ProcessThread.FreeBSD.cs" />
+    <Compile Include="$(CommonPath)\Interop\BSD\System.Native\Interop.Sysctl.cs">
+      <Link>Common\Interop\BSD\System.Native\Interop.Sysctl.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\FreeBSD\Interop.Process.cs">
+      <Link>Common\Interop\FreeBSD\Interop.Process.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetTimestamp.cs">
+      <Link>Common\Unix\System.Native\Interop.GetTimestamp.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Stat.cs">
+      <Link>Common\Unix\System.Native\Interop.Stat.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" ('$(TargetsUnknownUnix)' == 'true')">
     <Compile Include="System\Diagnostics\Process.UnknownUnix.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.UnknownUnix.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.UnknownUnix.cs" />
@@ -402,6 +425,7 @@
     <Reference Condition="'$(TargetGroup)' != 'uap'" Include="Microsoft.Win32.Registry" />
     <Reference Condition="'$(TargetGroup)' == 'uap'" Include="System.Buffers" />
     <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.ComponentModel.Primitives" />

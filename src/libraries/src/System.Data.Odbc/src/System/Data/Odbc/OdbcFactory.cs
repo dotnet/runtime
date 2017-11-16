@@ -6,7 +6,7 @@ using System.Data.Common;
 
 namespace System.Data.Odbc
 {
-    public sealed class OdbcFactory : DbProviderFactory
+    public sealed partial class OdbcFactory : DbProviderFactory
     {
         public static readonly OdbcFactory Instance = new OdbcFactory();
 

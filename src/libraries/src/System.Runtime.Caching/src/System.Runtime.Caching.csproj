@@ -1,0 +1,100 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <AssemblyName>System.Runtime.Caching</AssemblyName>
+    <ProjectGuid>{A7B6FB6E-F484-42D7-8A5E-F7D0DCC03829}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Although we have a netstandard configuration, we know we are not currently UAP compatible-->
+    <UWPCompatible>false</UWPCompatible>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_Caching</GeneratePlatformNotSupportedAssemblyMessage>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="System\Runtime\Caching\_shims.cs" />
+    <Compile Include="System\Runtime\Caching\CacheEntryChangeMonitor.cs" />
+    <Compile Include="System\Runtime\Caching\CacheEntryRemovedArguments.cs" />
+    <Compile Include="System\Runtime\Caching\CacheEntryRemovedCallback.cs" />
+    <Compile Include="System\Runtime\Caching\CacheEntryRemovedReason.cs" />
+    <Compile Include="System\Runtime\Caching\CacheEntryUpdateArguments.cs" />
+    <Compile Include="System\Runtime\Caching\CacheEntryUpdateCallback.cs" />
+    <Compile Include="System\Runtime\Caching\CacheExpires.cs" />
+    <Compile Include="System\Runtime\Caching\CacheItem.cs" />
+    <Compile Include="System\Runtime\Caching\CacheItemPolicy.cs" />
+    <Compile Include="System\Runtime\Caching\CacheItemPriority.cs" />
+    <Compile Include="System\Runtime\Caching\CacheMemoryMonitor.cs" />
+    <Compile Include="System\Runtime\Caching\CacheUsage.cs" />
+    <Compile Include="System\Runtime\Caching\ChangeMonitor.cs" />
+    <Compile Include="System\Runtime\Caching\Dbg.cs" />
+    <Compile Include="System\Runtime\Caching\DefaultCacheCapabilities.cs" />
+    <Compile Include="System\Runtime\Caching\EntryState.cs" />
+    <Compile Include="System\Runtime\Caching\FileChangeMonitor.cs" />
+    <Compile Include="System\Runtime\Caching\FileChangeNotificationSystem.cs" />
+    <Compile Include="System\Runtime\Caching\HostFileChangeMonitor.cs" />
+    <Compile Include="System\Runtime\Caching\MemoryCache.cs" />
+    <Compile Include="System\Runtime\Caching\MemoryCacheEntry.cs" />
+    <Compile Include="System\Runtime\Caching\MemoryCacheEntryChangeMonitor.cs" />
+    <Compile Include="System\Runtime\Caching\MemoryCacheKey.cs" />
+    <Compile Include="System\Runtime\Caching\MemoryCacheKeyEqualityComparer.cs" />
+    <Compile Include="System\Runtime\Caching\MemoryCacheStatistics.cs" />
+    <Compile Include="System\Runtime\Caching\MemoryCacheStore.cs" />
+    <Compile Include="System\Runtime\Caching\MemoryMonitor.cs" />
+    <Compile Include="System\Runtime\Caching\ObjectCache.cs" />
+    <Compile Include="System\Runtime\Caching\OnChangedCallback.cs" />
+    <Compile Include="System\Runtime\Caching\PerfCounterName.cs" />
+    <Compile Include="System\Runtime\Caching\PhysicalMemoryMonitor.cs" />
+    <Compile Include="System\Runtime\Caching\SafeBitVector32.cs" />
+    <Compile Include="System\Runtime\Caching\SRef.cs" />
+    <Compile Include="System\Runtime\Caching\Configuration\CachingSectionGroup.cs" />
+    <Compile Include="System\Runtime\Caching\Configuration\ConfigUtil.cs" />
+    <Compile Include="System\Runtime\Caching\Configuration\MemoryCacheElement.cs" />
+    <Compile Include="System\Runtime\Caching\Configuration\MemoryCacheSection.cs" />
+    <Compile Include="System\Runtime\Caching\Configuration\MemoryCacheSettingsCollection.cs" />
+    <Compile Include="System\Runtime\Caching\Hosting\IApplicationIdentifier.cs" />
+    <Compile Include="System\Runtime\Caching\Hosting\IFileChangeNotificationSystem.cs" />
+    <Compile Include="System\Runtime\Caching\Hosting\IMemoryCacheManager.cs" />
+    <Compile Include="System\Runtime\Caching\Resources\RH.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GlobalMemoryStatusEx.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GlobalMemoryStatusEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.MEMORY_BASIC_INFO.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.MEMORY_BASIC_INFO.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.Win32.Primitives" />
+    <Reference Include="Microsoft.Win32.Registry" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.Specialized" />
+    <Reference Include="System.ComponentModel" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.ComponentModel.TypeConverter" />
+    <Reference Include="System.Configuration.ConfigurationManager" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Process" />
+    <Reference Include="System.Diagnostics.StackTrace" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Diagnostics.TraceSource" />
+    <Reference Include="System.IO" />
+    <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.IO.FileSystem.Watcher" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Security.Permissions" />
+    <Reference Include="System.Security.Principal.Windows" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.AccessControl" />
+    <Reference Include="System.Threading.Thread" />
+    <Reference Include="System.Threading.ThreadPool" />
+    <Reference Include="System.Threading.Timer" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

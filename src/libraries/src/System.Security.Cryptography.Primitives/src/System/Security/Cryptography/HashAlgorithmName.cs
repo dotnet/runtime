@@ -20,7 +20,7 @@ namespace System.Security.Cryptography
     ///    * Must recognize at least "MD5", "SHA1", "SHA256", "SHA384", and "SHA512".
     ///    * Should recognize additional CNG IDs for any other hash algorithms that they also support.
     /// </remarks>
-    public struct HashAlgorithmName : IEquatable<HashAlgorithmName>
+    public readonly struct HashAlgorithmName : IEquatable<HashAlgorithmName>
     {
         // Returning a new instance every time is free here since HashAlgorithmName is a struct with
         // a single string field. The optimized codegen should be equivalent to return "MD5".

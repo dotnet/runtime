@@ -105,6 +105,7 @@ namespace System.Reflection.Emit
         protected override bool IsArrayImpl() { throw null; }
 //TYPEINFO        public override bool IsAssignableFrom(System.Reflection.TypeInfo typeInfo) { throw null; }
         protected override bool IsByRefImpl() { throw null; }
+        public override bool IsByRefLike { get { throw null; } }
         protected override bool IsCOMObjectImpl() { throw null; }
         public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
         protected override bool IsPointerImpl() { throw null; }
@@ -204,6 +205,7 @@ namespace System.Reflection.Emit
 //TYPEINFO:        public override bool IsAssignableFrom(System.Reflection.TypeInfo typeInfo) { throw null; }
         public override bool IsAssignableFrom(System.Type c) { throw null; }
         protected override bool IsByRefImpl() { throw null; }
+        public override bool IsByRefLike { get { throw null; } }
         protected override bool IsCOMObjectImpl() { throw null; }
         public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
         protected override bool IsPointerImpl() { throw null; }
@@ -335,6 +337,7 @@ namespace System.Reflection.Emit
         public override System.Reflection.GenericParameterAttributes GenericParameterAttributes { get { throw null; } }
         public override int GenericParameterPosition { get { throw null; } }
         public override System.Guid GUID { get { throw null; } }
+        public override bool IsByRefLike { get { throw null; } }
         public override bool IsConstructedGenericType { get { throw null; } }
         public override bool IsGenericParameter { get { throw null; } }
         public override bool IsGenericType { get { throw null; } }

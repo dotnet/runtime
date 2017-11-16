@@ -2,24 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Globalization;
+using System.Threading;
+using System.Collections;
+using System.Diagnostics;
+
 namespace System.DirectoryServices.Protocols
 {
-    using System;
-    using System.Globalization;
-    using System.Threading;
-    using System.Collections;
-    using System.Diagnostics;
-
     internal class LdapPartialResultsProcessor
     {
-        private ArrayList _resultList = null;
+        private ArrayList _resultList = new ArrayList();
         private ManualResetEvent _workThreadWaitHandle = null;
         private bool _workToDo = false;
         private int _currentIndex = 0;
 
         internal LdapPartialResultsProcessor(ManualResetEvent eventHandle)
         {
-            _resultList = new ArrayList();
             _workThreadWaitHandle = eventHandle;
         }
 
@@ -31,7 +29,7 @@ namespace System.DirectoryServices.Protocols
 
                 if (!_workToDo)
                 {
-                    // need to wake up the workthread if it is not running already
+                    // Need to wake up the workthread if it is not running already.
                     _workThreadWaitHandle.Set();
                     _workToDo = true;
                 }
@@ -40,174 +38,185 @@ namespace System.DirectoryServices.Protocols
 
         public void Remove(LdapPartialAsyncResult asyncResult)
         {
-            // called by Abort operation
+            // Called by Abort operation.
             lock (this)
             {
                 if (!_resultList.Contains(asyncResult))
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.InvalidAsyncResult));
+                {
+                    throw new ArgumentException(SR.InvalidAsyncResult);
+                }
 
-                // remove this async operation from the list
+                // Remove this async operation from the list.
                 _resultList.Remove(asyncResult);
             }
         }
 
         public void RetrievingSearchResults()
         {
-            int count = 0;
-            int i = 0;
             LdapPartialAsyncResult asyncResult = null;
             AsyncCallback tmpCallback = null;
 
             lock (this)
             {
-                count = _resultList.Count;
+                int count = _resultList.Count;
 
                 if (count == 0)
                 {
-                    // no asynchronous operation pending, begin to wait                    
+                    // No asynchronous operation pending, begin to wait.
                     _workThreadWaitHandle.Reset();
                     _workToDo = false;
                     return;
                 }
 
-                // might have work to do
+                // Might have work to do.
+                int i = 0;
                 while (true)
                 {
                     if (_currentIndex >= count)
                     {
-                        // some element is moved after last iteration                        
+                        // Some element is moved after last iteration.
                         _currentIndex = 0;
                     }
 
                     asyncResult = (LdapPartialAsyncResult)_resultList[_currentIndex];
                     i++;
                     _currentIndex++;
-
-                    // have work to do
-                    if (asyncResult.resultStatus != ResultsStatus.Done)
+                    
+                    // Have work to do.
+                    if (asyncResult._resultStatus != ResultsStatus.Done)
+                    {
                         break;
+                    }
 
                     if (i >= count)
                     {
-                        // all the operations are done just waiting for the user to pick up the results                        
+                        // All the operations are done just waiting for the user to pick up the results.
                         _workToDo = false;
                         _workThreadWaitHandle.Reset();
                         return;
                     }
                 }
 
-                // try to get the results availabe for this asynchronous operation                
+                // Try to get the results availabe for this asynchronous operation  .
                 GetResultsHelper(asyncResult);
-
-                // if we are done with the asynchronous search, we need to fire callback and signal the waitable object
-                if (asyncResult.resultStatus == ResultsStatus.Done)
+                
+                // If we are done with the asynchronous search, we need to fire callback and signal the waitable object.
+                if (asyncResult._resultStatus == ResultsStatus.Done)
                 {
-                    asyncResult.manualResetEvent.Set();
-                    asyncResult.completed = true;
-                    if (asyncResult.callback != null)
+                    asyncResult._manualResetEvent.Set();
+                    asyncResult._completed = true;
+                    if (asyncResult._callback != null)
                     {
-                        tmpCallback = asyncResult.callback;
+                        tmpCallback = asyncResult._callback;
                     }
                 }
-                else if (asyncResult.callback != null && asyncResult.partialCallback)
+                else if (asyncResult._callback != null && asyncResult._partialCallback)
                 {
-                    // if user specify callback to be called even when partial results become available                    
-                    if (asyncResult.response != null && (asyncResult.response.Entries.Count > 0 || asyncResult.response.References.Count > 0))
+                    // The user specified a callback to be called even when partial results become available.
+                    if (asyncResult._response != null && (asyncResult._response.Entries.Count > 0 || asyncResult._response.References.Count > 0))
                     {
-                        tmpCallback = asyncResult.callback;
+                        tmpCallback = asyncResult._callback;
                     }
                 }
             }
 
-            if (tmpCallback != null)
-                tmpCallback((IAsyncResult)asyncResult);
+            tmpCallback?.Invoke(asyncResult);
         }
 
         private void GetResultsHelper(LdapPartialAsyncResult asyncResult)
         {
-            LdapConnection con = asyncResult.con;
-            IntPtr ldapResult = (IntPtr)0;
-            IntPtr entryMessage = (IntPtr)0;
+            LdapConnection connection = asyncResult._con;
             ResultAll resultType = ResultAll.LDAP_MSG_RECEIVED;
 
-            if (asyncResult.resultStatus == ResultsStatus.CompleteResult)
+            if (asyncResult._resultStatus == ResultsStatus.CompleteResult)
+            {
                 resultType = ResultAll.LDAP_MSG_POLLINGALL;
+            }
 
             try
             {
-                SearchResponse response = (SearchResponse)con.ConstructResponse(asyncResult.messageID, LdapOperation.LdapSearch, resultType, asyncResult.requestTimeout, false);
-                // this should only happen in the polling thread case                    
+                SearchResponse response = (SearchResponse)connection.ConstructResponse(asyncResult._messageID, LdapOperation.LdapSearch, resultType, asyncResult._requestTimeout, false);
+               
+                // This should only happen in the polling thread case.
                 if (response == null)
                 {
-                    // only when request time out has not yet expiered
-                    if ((asyncResult.startTime.Ticks + asyncResult.requestTimeout.Ticks) > DateTime.Now.Ticks)
+                    // Only when request time out has not yet expiered.
+                    if ((asyncResult._startTime.Ticks + asyncResult._requestTimeout.Ticks) > DateTime.Now.Ticks)
                     {
-                        // this is expected, just the client does not have the result yet 
+                        // This is expected, just the client does not have the result yet .
                         return;
                     }
                     else
                     {
-                        // time out, now we need to throw proper exception                   
+                        // time out, now we need to throw proper exception
                         throw new LdapException((int)LdapError.TimeOut, LdapErrorMappings.MapResultCode((int)LdapError.TimeOut));
                     }
                 }
 
-                if (asyncResult.response != null)
-                    AddResult(asyncResult.response, response);
-                else
-                    asyncResult.response = response;
-
-                // if search is done, set the flag
-                if (response.searchDone)
-                    asyncResult.resultStatus = ResultsStatus.Done;
-            }
-            catch (Exception e)
-            {
-                if (e is DirectoryOperationException)
+                if (asyncResult._response != null)
                 {
-                    SearchResponse response = (SearchResponse)(((DirectoryOperationException)e).Response);
-
-                    if (asyncResult.response != null)
-                        AddResult(asyncResult.response, response);
-                    else
-                        asyncResult.response = response;
-
-                    // set the response back to the exception so it holds all the results up to now
-                    ((DirectoryOperationException)e).Response = asyncResult.response;
+                    AddResult(asyncResult._response, response);
                 }
-                else if (e is LdapException)
+                else
                 {
-                    LdapException ldapE = (LdapException)e;
-                    LdapError errorCode = (LdapError)ldapE.ErrorCode;
+                    asyncResult._response = response;
+                }
 
-                    if (asyncResult.response != null)
+                // If search is done, set the flag.
+                if (response.searchDone)
+                {
+                    asyncResult._resultStatus = ResultsStatus.Done;
+                }
+            }
+            catch (Exception exception)
+            {
+                if (exception is DirectoryOperationException directoryOperationException)
+                {
+                    SearchResponse response = (SearchResponse)directoryOperationException.Response;
+                    if (asyncResult._response != null)
+                    {
+                        AddResult(asyncResult._response, response);
+                    }
+                    else
+                    {
+                        asyncResult._response = response;
+                    }
+
+                    // Set the response back to the exception so it holds all the results up to now.
+                    directoryOperationException.Response = asyncResult._response;
+                }
+                else if (exception is LdapException ldapException)
+                {
+                    LdapError errorCode = (LdapError)ldapException.ErrorCode;
+
+                    if (asyncResult._response != null)
                     {
                         // add previous retrieved entries if available
-                        if (asyncResult.response.Entries != null)
+                        if (asyncResult._response.Entries != null)
                         {
-                            for (int i = 0; i < asyncResult.response.Entries.Count; i++)
+                            for (int i = 0; i < asyncResult._response.Entries.Count; i++)
                             {
-                                ldapE.results.Add(asyncResult.response.Entries[i]);
+                                ldapException.PartialResults.Add(asyncResult._response.Entries[i]);
                             }
                         }
 
                         // add previous retrieved references if available
-                        if (asyncResult.response.References != null)
+                        if (asyncResult._response.References != null)
                         {
-                            for (int i = 0; i < asyncResult.response.References.Count; i++)
+                            for (int i = 0; i < asyncResult._response.References.Count; i++)
                             {
-                                ldapE.results.Add(asyncResult.response.References[i]);
+                                ldapException.PartialResults.Add(asyncResult._response.References[i]);
                             }
                         }
                     }
                 }
+                
+                // Exception occurs, this operation is done.
+                asyncResult._exception = exception;
+                asyncResult._resultStatus = ResultsStatus.Done;
 
-                // exception occurs, this operation is done.
-                asyncResult.exception = e;
-                asyncResult.resultStatus = ResultsStatus.Done;
-
-                // need to abandon this request
-                Wldap32.ldap_abandon(con.ldapHandle, asyncResult.messageID);
+                // Need to abandon this request.
+                Wldap32.ldap_abandon(connection._ldapHandle, asyncResult._messageID);
             }
         }
 
@@ -217,12 +226,14 @@ namespace System.DirectoryServices.Protocols
             {
                 if (_resultList.Contains(asyncResult))
                 {
-                    // we don't need partial results anymore, polling for complete results
-                    if (asyncResult.resultStatus == ResultsStatus.PartialResult)
-                        asyncResult.resultStatus = ResultsStatus.CompleteResult;
+                    // We don't need partial results anymore, polling for complete results.
+                    if (asyncResult._resultStatus == ResultsStatus.PartialResult)
+                        asyncResult._resultStatus = ResultsStatus.CompleteResult;
                 }
                 else
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.InvalidAsyncResult));
+                {
+                    throw new ArgumentException(SR.InvalidAsyncResult);
+                }
             }
         }
 
@@ -231,35 +242,40 @@ namespace System.DirectoryServices.Protocols
             lock (this)
             {
                 if (!_resultList.Contains(asyncResult))
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.InvalidAsyncResult));
-
-                if (asyncResult.exception != null)
                 {
-                    // remove this async operation
-
-                    // the async operation basically failed, we won't do it any more, so throw exception to the user and remove it from the list
-                    _resultList.Remove(asyncResult);
-                    throw asyncResult.exception;
+                    throw new ArgumentException(SR.InvalidAsyncResult);
                 }
 
-                PartialResultsCollection collection = new PartialResultsCollection();
-
-                if (asyncResult.response != null)
+                if (asyncResult._exception != null)
                 {
-                    if (asyncResult.response.Entries != null)
-                    {
-                        for (int i = 0; i < asyncResult.response.Entries.Count; i++)
-                            collection.Add(asyncResult.response.Entries[i]);
+                    // Remove this async operation
+                    // The async operation basically failed, we won't do it any more, so throw
+                    // exception to the user and remove it from the list.
+                    _resultList.Remove(asyncResult);
+                    throw asyncResult._exception;
+                }
 
-                        asyncResult.response.Entries.Clear();
+                var collection = new PartialResultsCollection();
+                if (asyncResult._response != null)
+                {
+                    if (asyncResult._response.Entries != null)
+                    {
+                        for (int i = 0; i < asyncResult._response.Entries.Count; i++)
+                        {
+                            collection.Add(asyncResult._response.Entries[i]);
+                        }
+
+                        asyncResult._response.Entries.Clear();
                     }
 
-                    if (asyncResult.response.References != null)
+                    if (asyncResult._response.References != null)
                     {
-                        for (int i = 0; i < asyncResult.response.References.Count; i++)
-                            collection.Add(asyncResult.response.References[i]);
+                        for (int i = 0; i < asyncResult._response.References.Count; i++)
+                        {
+                            collection.Add(asyncResult._response.References[i]);
+                        }
 
-                        asyncResult.response.References.Clear();
+                        asyncResult._response.References.Clear();
                     }
                 }
 
@@ -272,19 +288,21 @@ namespace System.DirectoryServices.Protocols
             lock (this)
             {
                 if (!_resultList.Contains(asyncResult))
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.InvalidAsyncResult));
+                {
+                    throw new ArgumentException(SR.InvalidAsyncResult);
+                }
 
-                Debug.Assert(asyncResult.resultStatus == ResultsStatus.Done);
+                Debug.Assert(asyncResult._resultStatus == ResultsStatus.Done);
 
                 _resultList.Remove(asyncResult);
 
-                if (asyncResult.exception != null)
+                if (asyncResult._exception != null)
                 {
-                    throw asyncResult.exception;
+                    throw asyncResult._exception;
                 }
                 else
                 {
-                    return asyncResult.response;
+                    return asyncResult._response;
                 }
             }
         }
@@ -292,7 +310,9 @@ namespace System.DirectoryServices.Protocols
         private void AddResult(SearchResponse partialResults, SearchResponse newResult)
         {
             if (newResult == null)
+            {
                 return;
+            }
 
             if (newResult.Entries != null)
             {
@@ -315,39 +335,41 @@ namespace System.DirectoryServices.Protocols
     internal class PartialResultsRetriever
     {
         private ManualResetEvent _workThreadWaitHandle = null;
-        private Thread _oThread = null;
         private LdapPartialResultsProcessor _processor = null;
+
         internal PartialResultsRetriever(ManualResetEvent eventHandle, LdapPartialResultsProcessor processor)
         {
             _workThreadWaitHandle = eventHandle;
             _processor = processor;
-            _oThread = new Thread(new ThreadStart(ThreadRoutine));
-            _oThread.IsBackground = true;
 
-            // start the thread
-            _oThread.Start();
+            // Start the thread.
+            var thread = new Thread(new ThreadStart(ThreadRoutine))
+            {
+                IsBackground = true
+            };
+            thread.Start();
         }
 
         private void ThreadRoutine()
         {
             while (true)
             {
-                // make sure there is work to do
+                // Make sure there is work to do.
                 _workThreadWaitHandle.WaitOne();
 
-                // do the real work
+                // Do the real work.
                 try
                 {
                     _processor.RetrievingSearchResults();
                 }
                 catch (Exception e)
                 {
-                    // we catch the exception here as we don't really want our worker thread to die because it
+                    // We catch the exception here as we don't really want our worker thread to die because it
                     // encounter certain exception when processing a single async operation.
                     Debug.WriteLine(e.Message);
                 }
 
-                // Voluntarily gives up the CPU time
+                // Voluntarily gives up the CPU time.
                 Thread.Sleep(250);
             }
         }

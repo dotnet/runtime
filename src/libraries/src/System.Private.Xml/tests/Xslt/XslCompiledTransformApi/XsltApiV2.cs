@@ -54,7 +54,6 @@ namespace System.Xml.Tests
         private string _strPath;                           // Path of the data files
 
         private string _httpPath;                          // Http Path of the data files
-        private bool _fTrace;                            // Should we write out the results of the transform?
 
         // Other global variables
         protected string _strOutFile = "out.xml";        // File to create when using write transforms
@@ -161,9 +160,6 @@ namespace System.Xml.Tests
 
         public void Init(object objParam)
         {
-            // Get parameter info from runtime variables passed to LTM
-            _fTrace = false;
-
             //This is a temporary fix to restore the baselines. Refer to Test bug #
             _strPath = Path.Combine("TestFiles", FilePathUtil.GetTestDataPath(), "XsltApiV2");
             _httpPath = Path.Combine(FilePathUtil.GetHttpTestDataPath(), "XsltApiV2");
@@ -721,30 +717,6 @@ namespace System.Xml.Tests
                     }
                     break;
             }
-            return 1;
-        }
-
-        // --------------------------------------------------------------------------------------------------------------
-        //  CheckResult
-        //  -------------------------------------------------------------------------------------------------------------
-        public int CheckResult(double szExpResult, OutputType outputType)
-        {
-            double checksumActual;
-            CXsltChecksum check = new CXsltChecksum(_fTrace, _output);
-
-            if (outputType == OutputType.URI)
-                checksumActual = check.Calc(xrXSLT);
-            else
-                checksumActual = check.Calc(_strOutFile);
-
-            if (szExpResult != checksumActual || _fTrace)
-            {
-                _output.WriteLine("XML: {0}", check.Xml);
-                _output.WriteLine("Actual checksum: {0}, Expected: {1}", checksumActual, szExpResult);
-            }
-            if (szExpResult != checksumActual)
-                return 0;
-
             return 1;
         }
     }

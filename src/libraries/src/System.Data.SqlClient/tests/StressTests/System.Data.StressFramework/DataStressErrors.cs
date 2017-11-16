@@ -140,7 +140,7 @@ namespace Stress.Data
         }
 
         /// <summary>
-        /// Reports that a fatal error has happened. This is a error that completely prevents the test from continuing, 
+        /// Reports that a fatal error has happened. This is an error that completely prevents the test from continuing, 
         /// for example a setup failure. Ordinary programming errors should not be handled by this method.
         /// </summary>
         /// <param name="description">A description of the error</param>

@@ -1,23 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <_aotSuffix Condition="'$(TargetGroup)' == 'uapaot'">-aot</_aotSuffix>
-  </PropertyGroup>
-  
-  <Choose>
-    <When Condition="'$(PackageRID)' != ''" />
-    <When Condition="'$(_runtimeOSFamily)' == 'win'">
-      <PropertyGroup>
-        <PackageRID>win10-$(ArchGroup)$(_aotSuffix)</PackageRID>
-      </PropertyGroup>
-    </When>
-    <Otherwise>
-      <PropertyGroup>
-        <PackageRID>$(RuntimeOS)-$(ArchGroup)</PackageRID>
-      </PropertyGroup>
-    </Otherwise>
-  </Choose>
-
   <ItemGroup>
     <OfficialBuildRID Include="win10-x86">
       <Platform>x86</Platform>

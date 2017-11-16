@@ -44,7 +44,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         //ArrayLength,
         //EK_ARGUMENTHANDLE,
         Call,
-        Event,
+        //Event,
         Field,
         Local,
         //EK_BASE,
@@ -53,7 +53,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         //EK_TYPEORSIMPLENAME,
         // The following exprs are used to represent the results of typebinding.
         // Look in exprnodes.h for a more detailed description.
-        TypeArguments,
+        //TypeArguments,
         //EK_TYPEORNAMESPACE,
         //EK_TYPEORNAMESPACEERROR,
         //EK_ARRAYTYPE,
@@ -64,7 +64,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         //EK_ALIAS,
         // End type exprs.
         //EK_ERROR,
-        FunctionPointer,
+        //FunctionPointer,
         Property,
         Multi,
         MultiGet,
@@ -86,7 +86,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         UserLogicalOp,
         MemberGroup,
         BoundLambda,
-        UnboundLambda,
+        //UnboundLambda,
         //EK_LAMBDAPARAMETER,
         HoistedLocalExpression,
         FieldInfo,

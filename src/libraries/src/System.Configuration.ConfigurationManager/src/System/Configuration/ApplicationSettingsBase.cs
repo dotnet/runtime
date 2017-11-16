@@ -10,7 +10,7 @@ using System.Reflection;
 namespace System.Configuration
 {
     /// <summary>
-    ///     Base settings class for client applications.
+    /// Base settings class for client applications.
     /// </summary>
     public abstract class ApplicationSettingsBase : SettingsBase, INotifyPropertyChanged
     {
@@ -67,17 +67,17 @@ namespace System.Configuration
 
             if (owner.Site != null)
             {
-                ISettingsProviderService provSvc = owner.Site.GetService(typeof(ISettingsProviderService)) as ISettingsProviderService;
-                if (provSvc != null)
+                ISettingsProviderService providerService = owner.Site.GetService(typeof(ISettingsProviderService)) as ISettingsProviderService;
+                if (providerService != null)
                 {
                     // The component's site has a settings provider service. We pass each SettingsProperty to it
                     // to see if it wants to override the current provider.
-                    foreach (SettingsProperty sp in Properties)
+                    foreach (SettingsProperty property in Properties)
                     {
-                        SettingsProvider prov = provSvc.GetSettingsProvider(sp);
-                        if (prov != null)
+                        SettingsProvider provider = providerService.GetSettingsProvider(property);
+                        if (provider != null)
                         {
-                            sp.Provider = prov;
+                            property.Provider = provider;
                         }
                     }
 
@@ -311,10 +311,7 @@ namespace System.Configuration
         /// </summary>
         protected virtual void OnPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (_onPropertyChanged != null)
-            {
-                _onPropertyChanged(this, e);
-            }
+            _onPropertyChanged?.Invoke(this, e);
         }
 
         /// <summary>
@@ -322,10 +319,7 @@ namespace System.Configuration
         /// </summary>
         protected virtual void OnSettingChanging(object sender, SettingChangingEventArgs e)
         {
-            if (_onSettingChanging != null)
-            {
-                _onSettingChanging(this, e);
-            }
+            _onSettingChanging?.Invoke(this, e);
         }
 
         /// <summary>
@@ -333,10 +327,7 @@ namespace System.Configuration
         /// </summary>
         protected virtual void OnSettingsLoaded(object sender, SettingsLoadedEventArgs e)
         {
-            if (_onSettingsLoaded != null)
-            {
-                _onSettingsLoaded(this, e);
-            }
+            _onSettingsLoaded?.Invoke(this, e);
         }
 
         /// <summary>
@@ -344,10 +335,7 @@ namespace System.Configuration
         /// </summary>
         protected virtual void OnSettingsSaving(object sender, CancelEventArgs e)
         {
-            if (_onSettingsSaving != null)
-            {
-                _onSettingsSaving(this, e);
-            }
+            _onSettingsSaving?.Invoke(this, e);
         }
 
         /// <summary>
@@ -389,7 +377,7 @@ namespace System.Configuration
         }
 
         /// <summary>
-        /// Overriden from SettingsBase to support validation event.
+        /// Overridden from SettingsBase to support validation event.
         /// </summary>
         public override void Save()
         {
@@ -403,7 +391,7 @@ namespace System.Configuration
         }
 
         /// <summary>
-        /// Overriden from SettingsBase to support validation event.
+        /// Overridden from SettingsBase to support validation event.
         /// </summary>
         public override object this[string propertyName]
         {
@@ -430,7 +418,8 @@ namespace System.Configuration
                 if (!e.Cancel)
                 {
                     base[propertyName] = value;
-                    //CONSIDER: Should we call this even if canceled? I guess not.
+
+                    // CONSIDER: Should we call this even if canceled?
                     PropertyChangedEventArgs pe = new PropertyChangedEventArgs(propertyName);
                     OnPropertyChanged(this, pe);
                 }
@@ -461,106 +450,114 @@ namespace System.Configuration
         /// <summary>
         /// Creates a SettingsProperty object using the metadata on the given property 
         /// and returns it.
-        ///
-        /// Implementation note: Initialization method - be careful not to access properties here
-        ///                      to prevent stack overflow.
         /// </summary>
-        private SettingsProperty CreateSetting(PropertyInfo propInfo)
+        private SettingsProperty CreateSetting(PropertyInfo propertyInfo)
         {
-            object[] attributes = propInfo.GetCustomAttributes(false);
-            SettingsProperty sp = new SettingsProperty(Initializer);
+            // Initialization method -
+            // be careful not to access properties here to prevent stack overflow.
+
+            object[] attributes = propertyInfo.GetCustomAttributes(false);
+            SettingsProperty settingsProperty = new SettingsProperty(Initializer);
             bool explicitSerialize = _explicitSerializeOnClass;
 
-            sp.Name = propInfo.Name;
-            sp.PropertyType = propInfo.PropertyType;
+            settingsProperty.Name = propertyInfo.Name;
+            settingsProperty.PropertyType = propertyInfo.PropertyType;
 
             for (int i = 0; i < attributes.Length; i++)
             {
-                Attribute attr = attributes[i] as Attribute;
-                if (attr != null)
+                Attribute attribute = attributes[i] as Attribute;
+                if (attribute == null)
+                    continue;
+
+                if (attribute is DefaultSettingValueAttribute)
                 {
-                    if (attr is DefaultSettingValueAttribute)
+                    settingsProperty.DefaultValue = ((DefaultSettingValueAttribute)attribute).Value;
+                }
+                else if (attribute is ReadOnlyAttribute)
+                {
+                    settingsProperty.IsReadOnly = true;
+                }
+                else if (attribute is SettingsProviderAttribute)
+                {
+                    string providerTypeName = ((SettingsProviderAttribute)attribute).ProviderTypeName;
+                    Type providerType = Type.GetType(providerTypeName);
+                    if (providerType == null)
                     {
-                        sp.DefaultValue = ((DefaultSettingValueAttribute)attr).Value;
+                        throw new ConfigurationErrorsException(string.Format(SR.ProviderTypeLoadFailed, providerTypeName));
                     }
-                    else if (attr is ReadOnlyAttribute)
-                    {
-                        sp.IsReadOnly = true;
-                    }
-                    else if (attr is SettingsProviderAttribute)
-                    {
-                        string providerTypeName = ((SettingsProviderAttribute)attr).ProviderTypeName;
-                        Type providerType = Type.GetType(providerTypeName);
-                        if (providerType != null)
-                        {
-                            SettingsProvider spdr = TypeUtil.CreateInstance(providerType) as SettingsProvider;
 
-                            if (spdr != null)
-                            {
-                                spdr.Initialize(null, null);
-                                spdr.ApplicationName = ConfigurationManagerInternalFactory.Instance.ExeProductName;
+                    SettingsProvider settingsProvider = TypeUtil.CreateInstance(providerType) as SettingsProvider;
 
-                                // See if we already have a provider of the same name in our collection. If so,
-                                // re-use the existing instance, since we cannot have multiple providers of the same name.
-                                SettingsProvider existing = _providers[spdr.Name];
-                                if (existing != null)
-                                {
-                                    spdr = existing;
-                                }
-
-                                sp.Provider = spdr;
-                            }
-                            else
-                            {
-                                throw new ConfigurationErrorsException(string.Format(SR.ProviderInstantiationFailed, providerTypeName));
-                            }
-                        }
-                        else
-                        {
-                            throw new ConfigurationErrorsException(string.Format(SR.ProviderTypeLoadFailed, providerTypeName));
-                        }
-                    }
-                    else if (attr is SettingsSerializeAsAttribute)
+                    if (settingsProvider == null)
                     {
-                        sp.SerializeAs = ((SettingsSerializeAsAttribute)attr).SerializeAs;
-                        explicitSerialize = true;
+                        throw new ConfigurationErrorsException(string.Format(SR.ProviderInstantiationFailed, providerTypeName));
                     }
-                    else
-                    {
-                        // This isn't an attribute we care about, so simply pass it on
-                        // to the SettingsProvider.
-                        // NOTE: The key is the type. So if an attribute was found at class
-                        //       level and also property level, the latter overrides the former
-                        //       for a given setting. This is exactly the behavior we want.
 
-                        sp.Attributes.Add(attr.GetType(), attr);
+                    settingsProvider.Initialize(null, null);
+                    settingsProvider.ApplicationName = ConfigurationManagerInternalFactory.Instance.ExeProductName;
+
+                    // See if we already have a provider of the same name in our collection. If so,
+                    // re-use the existing instance, since we cannot have multiple providers of the same name.
+                    SettingsProvider existing = _providers[settingsProvider.Name];
+                    if (existing != null)
+                    {
+                        settingsProvider = existing;
                     }
+
+                    settingsProperty.Provider = settingsProvider;
+                }
+                else if (attribute is SettingsSerializeAsAttribute)
+                {
+                    settingsProperty.SerializeAs = ((SettingsSerializeAsAttribute)attribute).SerializeAs;
+                    explicitSerialize = true;
+                }
+                else
+                {
+                    // This isn't an attribute we care about, so simply pass it on
+                    // to the SettingsProvider.
+                    //
+                    // NOTE: The key is the type. So if an attribute was found at class
+                    //       level and also property level, the latter overrides the former
+                    //       for a given setting. This is exactly the behavior we want.
+
+                    settingsProperty.Attributes.Add(attribute.GetType(), attribute);
                 }
             }
 
             if (!explicitSerialize)
             {
-                sp.SerializeAs = GetSerializeAs(propInfo.PropertyType);
+                // Serialization method was not explicitly attributed.
+
+                TypeConverter tc = TypeDescriptor.GetConverter(propertyInfo.PropertyType);
+                if (tc.CanConvertTo(typeof(string)) && tc.CanConvertFrom(typeof(string)))
+                {
+                    // We can use string
+                    settingsProperty.SerializeAs = SettingsSerializeAs.String;
+                }
+                else
+                {
+                    // Fallback is Xml
+                    settingsProperty.SerializeAs = SettingsSerializeAs.Xml;
+                }
             }
 
-            return sp;
-
+            return settingsProperty;
         }
 
         /// <summary>
         /// Ensures this class is initialized. Initialization involves reflecting over properties and building
         /// a list of SettingsProperty's.
-        /// 
-        /// Implementation note: Initialization method - be careful not to access properties here
-        ///                      to prevent stack overflow.
         /// </summary>
         private void EnsureInitialized()
         {
+            // Initialization method -
+            // be careful not to access properties here to prevent stack overflow.
+
             if (!_initialized)
             {
                 _initialized = true;
 
-                Type type = this.GetType();
+                Type type = GetType();
 
                 if (_context == null)
                 {
@@ -603,12 +600,12 @@ namespace System.Configuration
         /// Returns a SettingsProperty used to initialize settings. We initialize a setting with values
         /// derived from class level attributes, if present. Otherwise, we initialize to
         /// reasonable defaults.
-        ///
-        /// Implementation note: Initialization method - be careful not to access properties here
-        ///                      to prevent stack overflow.
         /// </summary>
         private SettingsProperty Initializer
         {
+            // Initialization method -
+            // be careful not to access properties here to prevent stack overflow.
+
             get
             {
                 if (_init == null)
@@ -746,26 +743,6 @@ namespace System.Configuration
             {
                 return base[propertyName];
             }
-        }
-
-        /// <summary>
-        /// When no explicit SerializeAs attribute is provided, this routine helps to decide how to
-        /// serialize. 
-        /// </summary>
-        private SettingsSerializeAs GetSerializeAs(Type type)
-        {
-            //First check whether this type has a TypeConverter that can convert to/from string
-            //If so, that's our first choice
-            TypeConverter tc = TypeDescriptor.GetConverter(type);
-            bool toString = tc.CanConvertTo(typeof(string));
-            bool fromString = tc.CanConvertFrom(typeof(string));
-            if (toString && fromString)
-            {
-                return SettingsSerializeAs.String;
-            }
-
-            //Else fallback to Xml Serialization 
-            return SettingsSerializeAs.Xml;
         }
 
         /// <summary>

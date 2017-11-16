@@ -44,13 +44,13 @@ namespace System.ComponentModel.DataAnnotations
         ///     </para>
         /// </remarks>
         /// <value>
-        ///     The null dispay text is generally used as placeholder when the value is not specified.
+        ///     The null display text is generally used as placeholder when the value is not specified.
         ///     A <c>null</c> or empty string is legal, and consumers must allow for that.
         /// </value>
         public string NullDisplayText
         {
-            get { return _nullDisplayText.Value; }
-            set { _nullDisplayText.Value = value; }
+            get => _nullDisplayText.Value;
+            set => _nullDisplayText.Value = value;
         }
 
         /// <summary>
@@ -75,8 +75,8 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
 		public Type NullDisplayTextResourceType
         {
-            get { return _nullDisplayText.ResourceType; }
-            set { _nullDisplayText.ResourceType = value; }
+            get => _nullDisplayText.ResourceType;
+            set => _nullDisplayText.ResourceType = value;
         }
 
         /// <summary>
@@ -103,9 +103,6 @@ namespace System.ComponentModel.DataAnnotations
         ///     but a public static property with a name matching the <see cref="NullDisplayText" /> value couldn't be found
         ///     on the <see cref="NullDisplayTextResourceType" />.
         /// </exception>
-        public string GetNullDisplayText()
-        {
-            return _nullDisplayText.GetLocalizableValue();
-        }
+        public string GetNullDisplayText() => _nullDisplayText.GetLocalizableValue();
     }
 }

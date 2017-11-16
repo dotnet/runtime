@@ -21,7 +21,8 @@ namespace System.Drawing.Tests
             yield return new object[] { Helpers.GetTestBitmapPath("invalid.ico"), new Size(0, 0) };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(Ctor_FileName_TestData))]
         public void Ctor_FileName(string fileName, Size size)
         {
@@ -40,7 +41,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(null, -1, -1)]
         [InlineData(typeof(ClassWithNoNamespace), -1, -1)]
         [InlineData(typeof(bitmap_173x183_indexed_8bit), 173, 183)]
@@ -61,7 +63,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(null, null, -1, -1)]
         [InlineData(null, "invalid.ico", -1, -1)]
         [InlineData(typeof(ClassWithNoNamespace), null, -1, -1)]
@@ -90,7 +93,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData("bitmap_173x183_indexed_8bit.bmp", 173, 183)]
         [InlineData("48x48_multiple_entries_4bit.ico", 16, 16)]
         public void GetImage_TypeFileNameBool_ReturnsExpected(string fileName, int width, int height)
@@ -107,7 +110,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void GetImage_NullComponent_ReturnsNull()
         {
             var attribute = new ToolboxBitmapAttribute((string)null);
@@ -115,7 +119,7 @@ namespace System.Drawing.Tests
             Assert.Null(attribute.GetImage((object)null, true));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void GetImage_Component_ReturnsExpected()
         {
             ToolboxBitmapAttribute attribute = new ToolboxBitmapAttribute((string)null);
@@ -131,7 +135,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void GetImage_Default_ReturnsExpected()
         {
             ToolboxBitmapAttribute attribute = ToolboxBitmapAttribute.Default;
@@ -156,7 +161,8 @@ namespace System.Drawing.Tests
             yield return new object[] { ToolboxBitmapAttribute.Default, null, false };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(Equals_TestData))]
         public void Equals_Other_ReturnsExpected(ToolboxBitmapAttribute attribute, object other, bool expected)
         {

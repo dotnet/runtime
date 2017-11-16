@@ -3346,19 +3346,19 @@
     <value>Uppercase-First sorting option is not supported.</value>
   </data>
   <data name="XmlPregenTypeDynamic" xml:space="preserve">
-    <value>Cannot pre-generate serialization assembly for type '{0}'. Pre-generation of serialization assemblies is not supported for dynamic types. Save the assembly and load it from disk to use it with XmlSerialization.</value>
+    <value>Cannot pre-generate serialization code for type '{0}'. Pre-generation of serialization assemblies is not supported for dynamic types. Save the assembly and load it from disk to use it with XmlSerialization.</value>
   </data>
   <data name="XmlPregenOrphanType" xml:space="preserve">
     <value>Cannot pre-generate serializer for multiple assemblies. Type '{0}' does not belong to assembly {1}.</value>
   </data>
   <data name="ErrSerializerExists" xml:space="preserve">
-    <value>Cannot generate serialization assembly {0} because it already exists. Use /{1} to force an overwrite of the existing assembly.</value>
+    <value>Cannot generate serialization code {0} because the code file already exists. Use /{1} to force an overwrite of the existing file.</value>
   </data>
   <data name="ErrDirectoryExists" xml:space="preserve">
-    <value>Cannot generate serialization assembly '{0}' because a directory with the same name already exists.</value>
+    <value>Cannot generate serialization code '{0}' because a directory with the same name already exists.</value>
   </data>
   <data name="ErrDirectoryNotExists" xml:space="preserve">
-    <value>Cannot generate serialization assembly '{0}' because directory {1} doesn't exist.</value>
+    <value>Cannot generate serialization code '{0}' because directory {1} doesn't exist.</value>
   </data>
   <data name="ErrInvalidArgument" xml:space="preserve">
     <value>Ignoring invalid command line argument: '{0}'.</value>
@@ -3372,14 +3372,14 @@
   <data name="ErrAssembly" xml:space="preserve">
     <value>The name of the source assembly.</value>
   </data>
-  <data name="InfoGeneratedAssembly" xml:space="preserve">
-    <value>Generated serialization assembly for assembly {0} --&gt; '{1}'.</value>
+  <data name="InfoGeneratedFile" xml:space="preserve">
+    <value>Generated serialization code for assembly {0} --&gt; '{1}'.</value>
   </data>
-  <data name="InfoAssemblyName" xml:space="preserve">
-    <value>Serialization Assembly Name: {0}.</value>
+  <data name="InfoFileName" xml:space="preserve">
+    <value>Serialization Code File Name: {0}.</value>
   </data>
   <data name="ErrGenerationFailed" xml:space="preserve">
-    <value>Sgen utility failed to pregenerate serialization assembly for {0}.</value>
+    <value>Sgen utility failed to pregenerate serialization code for {0}.</value>
   </data>
   <data name="ErrorDetails" xml:space="preserve">
     <value>Error: {0}.</value>
@@ -3392,5 +3392,60 @@
   </data>
   <data name="Xslt_NotSupported" xml:space="preserve">
     <value>Compilation of XSLT is not supported on this platform.</value>
+  </data>
+  <data name="ErrLoadAssembly" xml:space="preserve">
+    <value>File or assembly name '{0}', or one of its dependencies, was not found.</value>
+  </data>
+  <data name="InfoNoSerializableTypes" xml:space="preserve">
+    <value>Assembly '{0}' does not contain any types that can be serialized using XmlSerializer.</value>
+  </data>
+  <data name="InfoIgnoreType" xml:space="preserve">
+    <value>Ignoring '{0}'.</value>
+  </data>
+  <data name="FailLoadAssemblyUnderPregenMode" xml:space="preserve">
+    <value>"Fail to load assembly {0} or {0} doesn't exist under PreGen Mode.</value>
+  </data>
+  <data name="HelpDescription" xml:space="preserve">
+    <value>Generates serialization code for use with XmlSerializer.
+The utility allows developers to pre-generate code for serialization
+building and deploying the assemblies with the application.
+    </value>
+  </data>
+  <data name="HelpUsage" xml:space="preserve">
+    <value>
+Usage: dotnet {0} [[/assembly:&lt;assembly name&gt;] | [&lt;assembly file location&gt;]]
+      [/type:] [/debug].
+    </value>
+  </data>
+  <data name="HelpDevOptions" xml:space="preserve">
+    <value>  Developer options:</value>
+  </data>
+  <data name="HelpAssembly" xml:space="preserve">
+    <value>     {0}   Assembly location or display name. Short form is '{1}'.</value>
+  </data>
+  <data name="HelpType" xml:space="preserve">
+    <value>     {0}       Generate code for serialization/deserialization of the
+                  specified type from the input assembly. Short form is '{1}'.</value>
+  </data>
+  <data name="HelpForce" xml:space="preserve">
+    <value>     {0}       Forces overwrite of a previously generated assembly.
+                  Short form is '{1}'.</value>
+  </data>
+  <data name="HelpProxy" xml:space="preserve">
+    <value>     {0}  Generate serialization code only for proxy classes and web
+                  method parameters. Short form is '{1}'.</value>
+  </data>
+  <data name="HelpOut" xml:space="preserve">
+    <value>     {0}        Output directory name (default: target assembly location).
+                  Short form is '{1}'.</value>
+  </data>
+  <data name="HelpMiscOptions" xml:space="preserve">
+    <value>  Miscellaneous options:</value>
+  </data>
+  <data name="HelpHelp" xml:space="preserve">
+    <value>     {0} or {1}  Show this message</value>
+  </data>
+  <data name="MoreHelp" xml:space="preserve">
+    <value>If you would like more help, please type "sgen {0}".</value>
   </data>
 </root>

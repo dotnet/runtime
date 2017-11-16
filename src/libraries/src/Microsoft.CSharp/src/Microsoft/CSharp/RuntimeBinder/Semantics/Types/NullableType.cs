@@ -20,24 +20,29 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public BSYMMGR symmgr;
         public TypeManager typeManager;
 
-        public AggregateType GetAts(ErrorHandling errorContext)
+        public AggregateType GetAts()
         {
-            AggregateSymbol aggNullable = typeManager.GetNullable();
-            if (aggNullable == null)
-            {
-                throw Error.InternalCompilerError();
-            }
-
             if (ats == null)
             {
+                AggregateSymbol aggNullable = typeManager.GetNullable();
                 CType typePar = GetUnderlyingType();
-                CType[] typeParArray = new CType[] { typePar };
+                CType[] typeParArray = { typePar };
                 TypeArray ta = symmgr.AllocParams(1, typeParArray);
                 ats = typeManager.GetAggregate(aggNullable, ta);
             }
+
             return ats;
         }
         public CType GetUnderlyingType() { return UnderlyingType; }
+
+        public override CType StripNubs() => UnderlyingType;
+
+        public override CType StripNubs(out bool wasNullable)
+        {
+            wasNullable = true;
+            return UnderlyingType;
+        }
+
         public void SetUnderlyingType(CType pType) { UnderlyingType = pType; }
 
         public CType UnderlyingType;

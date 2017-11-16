@@ -11,9 +11,6 @@
     <Compile Include="NamedPipeTests\NamedPipeTest.AclExtensions.cs" />
     <Compile Include="PipeTest.AclExtensions.cs" />
     <Compile Include="..\..\System.IO.Pipes\tests\PipeTestBase.cs" />
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

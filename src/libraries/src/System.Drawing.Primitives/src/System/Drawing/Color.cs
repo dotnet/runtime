@@ -11,7 +11,7 @@ namespace System.Drawing
     [DebuggerDisplay("{NameAndARGBValue}")]
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
-    public struct Color : IEquatable<Color>
+    public readonly struct Color : IEquatable<Color>
     {
         public static readonly Color Empty = new Color();
 
@@ -452,16 +452,8 @@ namespace System.Drawing
 
         public static Color FromArgb(int red, int green, int blue) => FromArgb(255, red, green, blue);
 
-        public static Color FromKnownColor(KnownColor color)
-        {
-            var value = (int)color;
-            if (value < (int)KnownColor.FirstColor || value > (int)KnownColor.LastColor)
-            {
-                return FromName(color.ToString());
-            }
-
-            return new Color(color);
-        }
+        public static Color FromKnownColor(KnownColor color) =>
+            color <= 0 || color > KnownColor.MenuHighlight ? FromName(color.ToString()) : new Color(color);
 
         public static Color FromName(string name)
         {
@@ -485,11 +477,23 @@ namespace System.Drawing
 
             max = r; min = r;
 
-            if (g > max) max = g;
-            if (b > max) max = b;
+            if (g > max)
+            {
+                max = g;
+            }
+            else if (g < min)
+            {
+                min = g;
+            }
 
-            if (g < min) min = g;
-            if (b < min) min = b;
+            if (b > max)
+            {
+                max = b;
+            }
+            else if (b < min)
+            {
+                min = b;
+            }
 
             return (max + min) / 2;
         }
@@ -506,15 +510,27 @@ namespace System.Drawing
 
             float max, min;
             float delta;
-            float hue = 0.0f;
+            float hue;
 
             max = r; min = r;
 
-            if (g > max) max = g;
-            if (b > max) max = b;
+            if (g > max)
+            {
+                max = g;
+            }
+            else if (g < min)
+            {
+                min = g;
+            }
 
-            if (g < min) min = g;
-            if (b < min) min = b;
+            if (b > max)
+            {
+                max = b;
+            }
+            else if (b < min)
+            {
+                min = b;
+            }
 
             delta = max - min;
 
@@ -526,8 +542,9 @@ namespace System.Drawing
             {
                 hue = 2 + (b - r) / delta;
             }
-            else if (b == max)
+            else
             {
+                Debug.Assert(b == max);
                 hue = 4 + (r - g) / delta;
             }
             hue *= 60;
@@ -550,11 +567,23 @@ namespace System.Drawing
             float max = r;
             float min = r;
 
-            if (g > max) max = g;
-            if (b > max) max = b;
+            if (g > max)
+            {
+                max = g;
+            }
+            else if (g < min)
+            {
+                min = g;
+            }
 
-            if (g < min) min = g;
-            if (b < min) min = b;
+            if (b > max)
+            {
+                max = b;
+            }
+            else if (b < min)
+            {
+                min = b;
+            }
 
             // if max == min, then there is no color and
             // the saturation is zero.

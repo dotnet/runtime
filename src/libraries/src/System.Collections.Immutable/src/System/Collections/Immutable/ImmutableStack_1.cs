@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
+using System.Linq;
 
 namespace System.Collections.Immutable
 {
@@ -208,7 +209,9 @@ namespace System.Collections.Immutable
         [Pure]
         IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
-            return new EnumeratorObject(this);
+            return this.IsEmpty ?
+                Enumerable.Empty<T>().GetEnumerator() :
+                new EnumeratorObject(this);
         }
 
         /// <summary>

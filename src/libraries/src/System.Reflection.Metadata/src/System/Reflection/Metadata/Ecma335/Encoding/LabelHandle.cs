@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Reflection.Metadata.Ecma335
 {
-    public struct LabelHandle : IEquatable<LabelHandle>
+    public readonly struct LabelHandle : IEquatable<LabelHandle>
     {
         /// <summary>
         /// 1-based id identifying the label within the context of a <see cref="ControlFlowBuilder"/>.

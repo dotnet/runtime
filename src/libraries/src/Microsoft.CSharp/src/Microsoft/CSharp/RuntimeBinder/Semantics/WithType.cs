@@ -249,7 +249,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
         public MethWithInst(MethPropWithInst mpwi)
         {
-            Set(mpwi.Sym.AsMethodSymbol(), mpwi.Ats, mpwi.TypeArgs);
+            Set(mpwi.Sym as MethodSymbol, mpwi.Ats, mpwi.TypeArgs);
         }
     }
 }

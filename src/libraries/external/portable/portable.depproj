@@ -4,7 +4,6 @@
   <PropertyGroup>
     <BinPlaceRef>true</BinPlaceRef>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
-    <NugetRuntimeIdentifier>None</NugetRuntimeIdentifier>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="$(TargetingPackNugetPackageId)">

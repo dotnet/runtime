@@ -9,12 +9,7 @@
     <HarvestIncludePaths Include="ref/netstandard1.4">
       <SupportedFramework>netcore50</SupportedFramework>
     </HarvestIncludePaths>
-    <HarvestIncludePaths Include="runtimes/win/lib/netstandard1.5" />
-    <HarvestIncludePaths Include="runtimes/unix/lib/netstandard1.5">
-      <!-- package unix impl (platform not supported) as RID agnostic -->
-      <!-- this was previously packaged as netstandard1.5 but its dependencies are compatible with ns1.4 -->
-      <TargetPath>lib/netstandard1.4</TargetPath>
-    </HarvestIncludePaths>
+    <HarvestIncludePaths Include="runtimes/win/lib/netstandard1.5;lib/netstandard1.4" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

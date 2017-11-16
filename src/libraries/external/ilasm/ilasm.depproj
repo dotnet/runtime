@@ -2,23 +2,20 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <!-- Always restore the x64 assets. These are build-only assets, so they should match the environment of the build. -->
-    <NugetRuntimeIdentifier>$(RuntimeOS)-x64</NugetRuntimeIdentifier>
-    <!-- Tizen does not provide the x64 runtime so replaces it with the ubuntu.14.04-x64 -->
-    <NugetRuntimeIdentifier Condition="'$(RuntimeOS)' == 'tizen.4.0.0'">ubuntu.14.04-x64</NugetRuntimeIdentifier>
+    <NugetRuntimeIdentifier>$(ToolRuntimeRID)</NugetRuntimeIdentifier>
     <OutputPath>$(ToolsDir)ilasm</OutputPath>
     <EnableBinPlacing>false</EnableBinPlacing>
     <RidSpecificAssets>true</RidSpecificAssets>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.Platforms">
-      <Version>$(PlatformPackageVersion)</Version>
+      <Version>$(MicrosoftNETCorePlatformsPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.Runtime.CoreCLR">
-      <Version>$(CoreClrPackageVersion)</Version>
+      <Version>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.ILAsm">
-      <Version>$(CoreClrPackageVersion)</Version>
+      <Version>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

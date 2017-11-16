@@ -272,6 +272,24 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
+        public void Send_ServerDoesntExist_Throws()
+        {
+            using (var smtp = new SmtpClient(Guid.NewGuid().ToString("N")))
+            {
+                Assert.Throws<SmtpException>(() => smtp.Send("anyone@anyone.com", "anyone@anyone.com", "subject", "body"));
+            }
+        }
+
+        [Fact]
+        public async Task SendAsync_ServerDoesntExist_Throws()
+        {
+            using (var smtp = new SmtpClient(Guid.NewGuid().ToString("N")))
+            {
+                await Assert.ThrowsAsync<SmtpException>(() => smtp.SendMailAsync("anyone@anyone.com", "anyone@anyone.com", "subject", "body"));
+            }
+        }
+
+        [Fact]
         public void TestMailDelivery()
         {
             SmtpServer server = new SmtpServer();

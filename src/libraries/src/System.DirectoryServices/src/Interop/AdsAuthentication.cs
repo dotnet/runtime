@@ -17,4 +17,3 @@ namespace System.DirectoryServices.Interop
         ADS_USE_SEALING = 0x80
     }
 }
-

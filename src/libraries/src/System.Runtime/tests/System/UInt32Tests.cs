@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public class UInt32Tests
+    public partial class UInt32Tests
     {
         [Fact]
         public static void Ctor_Empty()

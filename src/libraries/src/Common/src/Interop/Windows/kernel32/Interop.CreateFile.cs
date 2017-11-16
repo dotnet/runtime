@@ -14,7 +14,7 @@ internal partial class Interop
         /// <summary>
         /// WARNING: The private methods do not implicitly handle long paths. Use CreateFile.
         /// </summary>
-        [DllImport(Libraries.Kernel32, EntryPoint = "CreateFileW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
+        [DllImport(Libraries.Kernel32, EntryPoint = "CreateFileW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false, ExactSpelling = true)]
         private static extern SafeFileHandle CreateFilePrivate(
             string lpFileName,
             int dwDesiredAccess,

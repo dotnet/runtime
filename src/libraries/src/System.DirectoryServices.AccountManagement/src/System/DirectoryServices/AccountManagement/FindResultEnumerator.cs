@@ -154,7 +154,7 @@ namespace System.DirectoryServices.AccountManagement
         // Internal Constructors
         //
 
-        // Constructs a enumerator to enumerate over the supplied of ResultSet
+        // Constructs an enumerator to enumerate over the supplied of ResultSet
         // Note that resultSet can be null
         internal FindResultEnumerator(ResultSet resultSet)
         {

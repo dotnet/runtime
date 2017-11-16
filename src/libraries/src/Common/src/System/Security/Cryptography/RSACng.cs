@@ -47,15 +47,14 @@ namespace System.Security.Cryptography
             }
         }
 
-        protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
-        {
-            return CngCommon.HashData(data, offset, count, hashAlgorithm);
-        }
+        protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
+            CngCommon.HashData(data, offset, count, hashAlgorithm);
 
-        protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
-        {
-            return CngCommon.HashData(data, hashAlgorithm);
-        }
+        protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
+            CngCommon.TryHashData(source, destination, hashAlgorithm, out bytesWritten);
+
+        protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
+            CngCommon.HashData(data, hashAlgorithm);
 
         private void ForceSetKeySize(int newKeySize)
         {

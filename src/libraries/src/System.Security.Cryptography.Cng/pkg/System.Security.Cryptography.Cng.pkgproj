@@ -3,20 +3,19 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Security.Cryptography.Cng.csproj">
-      <SupportedFramework>net461;netcoreapp2.0;$(UAPvNextTFM);$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>net461;netcoreapp2.1;$(UAPvNextTFM);$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Security.Cryptography.Cng.csproj" />
-
+    <File Include="$(PlaceHolderFile)">
+      <TargetPath>runtimes/win/lib/$(UAPvNextTFM)</TargetPath>
+    </File>
+    <InboxOnTargetFramework Include="$(UAPvNextTFM)" />
     <!-- All elements from previous packages that will be included in the newly built package -->
     <HarvestIncludePaths Include="ref/net46;lib/net46;runtimes/win/lib/net46" />
     <HarvestIncludePaths Include="ref/netstandard1.3" />
-    <HarvestIncludePaths Include="ref/netstandard1.4;runtimes/win/lib/netstandard1.4" />   
-    <HarvestIncludePaths Include="ref/netstandard1.6;runtimes/win/lib/netstandard1.6" />
-    <HarvestIncludePaths Include="runtimes/unix/lib/netstandard1.6">
-      <!-- package unix impl (platform not supported) as RID agnostic -->
-      <TargetPath>lib/netstandard1.6</TargetPath>
-    </HarvestIncludePaths>
-
+    <HarvestIncludePaths Include="ref/netstandard1.4;runtimes/win/lib/netstandard1.4" />
+    <HarvestIncludePaths Include="ref/netstandard1.6;runtimes/win/lib/netstandard1.6;lib/netstandard1.6" />
+    <HarvestIncludePaths Include="ref/netcoreapp2.0;runtimes/win/lib/netcoreapp2.0" />
     <!-- this package is part of the implementation closure of NETStandard.Library
          therefore it cannot reference NETStandard.Library -->
     <SuppressMetaPackage Include="NETStandard.Library" />

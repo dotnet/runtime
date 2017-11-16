@@ -54,8 +54,7 @@ namespace System.Runtime.Serialization.Json
             {
                 collectionContract.IncrementCollectionCount(jsonWriter, obj, context);
 
-                Type enumeratorReturnType;
-                IEnumerator enumerator = collectionContract.GetEnumeratorForCollection(obj, out enumeratorReturnType);
+                IEnumerator enumerator = collectionContract.GetEnumeratorForCollection(obj);
 
                 bool canWriteSimpleDictionary = collectionContract.Kind == CollectionKind.GenericDictionary
                                              || collectionContract.Kind == CollectionKind.Dictionary;
@@ -82,7 +81,7 @@ namespace System.Runtime.Serialization.Json
                 {
                     ReflectionWriteArrayAttribute(jsonWriter);
 
-                    PrimitiveDataContract primitiveContractForType = PrimitiveDataContract.GetPrimitiveDataContract(enumeratorReturnType);
+                    PrimitiveDataContract primitiveContractForType = PrimitiveDataContract.GetPrimitiveDataContract(collectionContract.UnderlyingType);
                     if (primitiveContractForType != null && primitiveContractForType.UnderlyingType != Globals.TypeOfObject)
                     {
                         while (enumerator.MoveNext())
@@ -94,7 +93,17 @@ namespace System.Runtime.Serialization.Json
                     }
                     else
                     {
+                        Type elementType = collectionContract.GetCollectionElementType();
                         bool isDictionary = collectionContract.Kind == CollectionKind.Dictionary || collectionContract.Kind == CollectionKind.GenericDictionary;
+
+                        DataContract itemContract = null;
+                        JsonDataContract jsonDataContract = null;
+                        if (isDictionary)
+                        {
+                            itemContract = XmlObjectSerializerWriteContextComplexJson.GetRevisedItemContract(collectionContract.ItemContract);
+                            jsonDataContract = JsonDataContract.GetJsonDataContract(itemContract);
+                        }
+
                         while (enumerator.MoveNext())
                         {
                             object current = enumerator.Current;
@@ -102,14 +111,11 @@ namespace System.Runtime.Serialization.Json
                             _reflectionClassWriter.ReflectionWriteStartElement(jsonWriter, itemName);
                             if (isDictionary)
                             {
-                                var itemContract = XmlObjectSerializerWriteContextComplexJson.GetRevisedItemContract(collectionContract.ItemContract);
-                                var jsonDataContract = JsonDataContract.GetJsonDataContract(itemContract);
-
                                 jsonDataContract.WriteJsonValue(jsonWriter, current, context, collectionContract.ItemType.TypeHandle);
                             }
                             else
                             {
-                                _reflectionClassWriter.ReflectionWriteValue(jsonWriter, context, enumeratorReturnType, current, false, primitiveContractForParamType: null);
+                                _reflectionClassWriter.ReflectionWriteValue(jsonWriter, context, elementType, current, false, primitiveContractForParamType: null);
                             }
 
                             _reflectionClassWriter.ReflectionWriteEndElement(jsonWriter);
@@ -200,6 +206,10 @@ namespace System.Runtime.Serialization.Json
                 if (member.IsGetOnlyCollection)
                 {
                     context.StoreIsGetOnlyCollection();
+                }
+                else
+                {
+                    context.ResetIsGetOnlyCollection();
                 }
 
 

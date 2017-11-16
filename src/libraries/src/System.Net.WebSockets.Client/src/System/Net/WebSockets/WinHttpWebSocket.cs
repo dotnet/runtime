@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.WebSockets
 {
-    internal class WinHttpWebSocket : WebSocket
+    internal sealed class WinHttpWebSocket : WebSocket
     {
         #region Constants
         // TODO (#7893): This code needs to be shared with WinHttpClientHandler
@@ -356,7 +356,7 @@ namespace System.Net.WebSockets
         {
             _operation.InterlockedCheckValidStates(s_validReceiveStates);
 
-            using (CancellationTokenRegistration ctr = ThrowOrRegisterCancellation(cancellationToken))
+            using (ThrowOrRegisterCancellation(cancellationToken))
             {
                 _operation.PinReceiveBuffer(buffer);
 
@@ -365,15 +365,9 @@ namespace System.Net.WebSockets
                 // Check for abort.
                 _operation.InterlockedCheckValidStates(s_validAfterReceiveStates);
 
-                WebSocketMessageType bufferType;
                 bool endOfMessage;
-                bufferType = WebSocketMessageTypeAdapter.GetWebSocketMessageType(_operation.BufferType, out endOfMessage);
-
-                int bytesTransferred = 0;
-                checked
-                {
-                    bytesTransferred = (int)_operation.BytesTransferred;
-                }
+                WebSocketMessageType bufferType = WebSocketMessageTypeAdapter.GetWebSocketMessageType(_operation.BufferType, out endOfMessage);
+                int bytesTransferred = checked((int)_operation.BytesTransferred);
 
                 WebSocketReceiveResult ret;
 
@@ -391,7 +385,31 @@ namespace System.Net.WebSockets
             }
         }
 
-        private Task<bool> InternalReceiveAsync(ArraySegment<byte> buffer)
+        public override async ValueTask<ValueWebSocketReceiveResult> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+        {
+            _operation.InterlockedCheckValidStates(s_validReceiveStates);
+
+            using (ThrowOrRegisterCancellation(cancellationToken))
+            using (buffer.Retain(pin: true))
+            {
+                await InternalReceiveAsync(buffer).ConfigureAwait(false);
+
+                // Check for abort.
+                _operation.InterlockedCheckValidStates(s_validAfterReceiveStates);
+
+                WebSocketMessageType bufferType = WebSocketMessageTypeAdapter.GetWebSocketMessageType(_operation.BufferType, out bool endOfMessage);
+                int bytesTransferred = checked((int)_operation.BytesTransferred);
+
+                if (bufferType == WebSocketMessageType.Close)
+                {
+                    UpdateServerCloseStatus();
+                }
+
+                return new ValueWebSocketReceiveResult(bytesTransferred, bufferType, endOfMessage);
+            }
+        }
+
+        private Task<bool> InternalReceiveAsync(Memory<byte> pinnedBuffer)
         {
             bool receiveOperationAlreadyPending = false;
             if (_operation.PendingReadOperation == false)
@@ -408,11 +426,19 @@ namespace System.Net.WebSockets
 
                         uint bytesRead = 0;
                         Interop.WinHttp.WINHTTP_WEB_SOCKET_BUFFER_TYPE winHttpBufferType = 0;
+                        IntPtr pinnedBufferPtr;
+                        unsafe
+                        {
+                            fixed (byte* p = &pinnedBuffer.Span.DangerousGetPinnableReference())
+                            {
+                                pinnedBufferPtr = (IntPtr)p;
+                            }
+                        }
 
                         uint status = Interop.WinHttp.WinHttpWebSocketReceive(
                                             _operation.WebSocketHandle,
-                                            Marshal.UnsafeAddrOfPinnedArrayElement(buffer.Array, buffer.Offset),
-                                            (uint)buffer.Count,
+                                            pinnedBufferPtr,
+                                            (uint)pinnedBuffer.Length,
                                             out bytesRead,          // Unused in async mode: ignore.
                                             out winHttpBufferType); // Unused in async mode: ignore.
 

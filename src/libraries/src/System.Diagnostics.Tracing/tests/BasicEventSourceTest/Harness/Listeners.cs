@@ -8,7 +8,11 @@ using Microsoft.Diagnostics.Tracing.Session;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+#if USE_MDT_EVENTSOURCE
+using Microsoft.Diagnostics.Tracing;
+#else
 using System.Diagnostics.Tracing;
+#endif
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -42,7 +46,7 @@ namespace BasicEventSourceTests
             }
         }
 
-        internal void EnableTimer(EventSource eventSource, int pollingTime)
+        internal void EnableTimer(EventSource eventSource, double pollingTime)
         {
             FilteringOptions options = new FilteringOptions();
             options.Args = new Dictionary<string, string>();
@@ -84,9 +88,29 @@ namespace BasicEventSourceTests
         public abstract int PayloadCount { get; }
         public virtual string PayloadString(int propertyIndex, string propertyName)
         {
-            return PayloadValue(propertyIndex, propertyName).ToString();
+            var obj = PayloadValue(propertyIndex, propertyName);
+            var asDict = obj as IDictionary<string, object>;
+            if (asDict != null)
+            {
+                StringBuilder sb = new StringBuilder();
+                sb.Append("{");
+                bool first = true;
+                foreach (var key in asDict.Keys)
+                {
+                    if (!first)
+                        sb.Append(",");
+                    first = false;
+                    var value = asDict[key];
+                    sb.Append(key).Append(":").Append(value != null ? value.ToString() : "NULL");
+                }
+                sb.Append("}");
+                return sb.ToString();
+            }
+            if (obj != null)
+                return obj.ToString();
+            return "";
         }
-        public abstract IEnumerable<string> PayloadNames { get; }
+        public abstract IList<string> PayloadNames { get; }
 
 #if DEBUG
         /// <summary>
@@ -240,7 +264,7 @@ namespace BasicEventSourceTests
                 return _data.PayloadString(propertyIndex);
             }
             public override int PayloadCount { get { return _data.PayloadNames.Length; } }
-            public override IEnumerable<string> PayloadNames { get { return _data.PayloadNames; } }
+            public override IList<string> PayloadNames { get { return _data.PayloadNames; } }
 
     #region private
             internal EtwEvent(TraceEvent data) { _data = data.Clone(); }
@@ -262,33 +286,33 @@ namespace BasicEventSourceTests
         private Action<EventSource> _onEventSourceCreated;
 
 #if FEATURE_ETLEVENTS
-		public event EventHandler<EventSourceCreatedEventArgs> EventSourceCreated
+        public event EventHandler<EventSourceCreatedEventArgs> EventSourceCreated
         {
             add
             {
                 if (this._listener != null)
-				    this._listener.EventSourceCreated += value;
-			}
+                    this._listener.EventSourceCreated += value;
+            }
             remove
             {
                 if (this._listener != null)
-				    this._listener.EventSourceCreated -= value;
-			}
-		}
-        
+                    this._listener.EventSourceCreated -= value;
+            }
+        }
+
         public event EventHandler<EventWrittenEventArgs> EventWritten
         {
             add
             {
                 if (this._listener != null)
-				    this._listener.EventWritten += value;
+                    this._listener.EventWritten += value;
             }
             remove
             {
                 if (this._listener != null)
                     this._listener.EventWritten -= value;
-			}
-		}
+            }
+        }
 #endif
 
         public EventListenerListener(bool useEventsToListen = false)
@@ -297,7 +321,7 @@ namespace BasicEventSourceTests
             if (useEventsToListen)
             {
                 _listener = new HelperEventListener(null);
-                _listener.EventSourceCreated += (sender, eventSourceCreatedEventArgs) 
+                _listener.EventSourceCreated += (sender, eventSourceCreatedEventArgs)
                     => _onEventSourceCreated?.Invoke(eventSourceCreatedEventArgs.EventSource);
                 _listener.EventWritten += mListenerEventWritten;
             }
@@ -310,6 +334,7 @@ namespace BasicEventSourceTests
 
         public override void Dispose()
         {
+            EventTestHarness.LogWriteLine("Disposing Listener");
             _listener.Dispose();
         }
 
@@ -325,6 +350,8 @@ namespace BasicEventSourceTests
 
         public override void EventSourceCommand(string eventSourceName, EventCommand command, FilteringOptions options = null)
         {
+            EventTestHarness.LogWriteLine("Sending command {0} to EventSource {1} Options {2}", eventSourceName, command, options);
+
             if (options == null)
                 options = new FilteringOptions();
 
@@ -372,7 +399,7 @@ namespace BasicEventSourceTests
             {
 #if FEATURE_ETLEVENTS
                 // OnEventWritten is abstract in netfx <= 461
-                base.OnEventWritten(eventData); 
+                base.OnEventWritten(eventData);
 #endif
                 _forwardTo?.OnEvent?.Invoke(new EventListenerEvent(eventData));
             }
@@ -391,7 +418,7 @@ namespace BasicEventSourceTests
 
             public override string EventName { get { return _data.EventName; } }
 
-            public override IEnumerable<string> PayloadNames { get { return _data.PayloadNames; } }
+            public override IList<string> PayloadNames { get { return _data.PayloadNames; } }
 
             public override int PayloadCount
             {

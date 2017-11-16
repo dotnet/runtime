@@ -154,7 +154,7 @@ namespace System.Linq.Expressions.Compiler
             AddReturnLabel(_lambda);
             _boundConstants.EmitCacheConstants(this);
         }
-        
+
         internal ILGenerator IL => _ilg;
 
         internal IParameterProvider Parameters => _lambda;

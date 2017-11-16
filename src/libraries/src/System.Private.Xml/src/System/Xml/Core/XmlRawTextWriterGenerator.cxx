@@ -210,9 +210,9 @@ namespace System.Xml {
 
             // Output UTF-8 byte order mark if Encoding object wants it
             if ( !stream.CanSeek || stream.Position == 0 ) {
-                byte[] bom = encoding.GetPreamble();
+                ReadOnlySpan<byte> bom = encoding.Preamble;
                 if ( bom.Length != 0 ) {
-                    Buffer.BlockCopy( bom, 0, bufBytes, 1, bom.Length );
+                    bom.CopyTo(new Span<byte>(bufBytes).Slice(1));
                     bufPos += bom.Length;
                     textPos += bom.Length;
                 }
@@ -237,9 +237,9 @@ namespace System.Xml {
             encoder = encoding.GetEncoder();
 
             if ( !stream.CanSeek || stream.Position == 0 ) {
-                byte[] bom = encoding.GetPreamble();
+                ReadOnlySpan<byte> bom = encoding.Preamble;
                 if ( bom.Length != 0 ) {
-                    this.stream.Write( bom, 0, bom.Length );
+                    this.stream.Write( bom );
                 }
             }
 #endif
@@ -370,7 +370,7 @@ namespace System.Xml {
 
             // StartElementContent is always called; therefore, in order to allow shortcut syntax, we save the
             // position of the '>' character.  If WriteEndElement is called and no other characters have been
-            // output, then the '>' character can be be overwritten with the shortcut syntax " />".
+            // output, then the '>' character can be overwritten with the shortcut syntax " />".
             contentPos = bufPos;
         }
 
@@ -1558,7 +1558,7 @@ namespace System.Xml {
             }
         }
 
-        // Following methods do not check whether pDst is beyond the bufSize because the buffer was allocated with a OVERFLOW to accomodate
+        // Following methods do not check whether pDst is beyond the bufSize because the buffer was allocated with a OVERFLOW to accommodate
         // for the writes of small constant-length string as below.
 
         // Entitize '<' as "&lt;".  Return an updated pointer.

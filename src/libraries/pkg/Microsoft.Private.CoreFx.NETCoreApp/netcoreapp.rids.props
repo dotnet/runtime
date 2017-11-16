@@ -1,19 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup Condition="'$(PortableBuild)' == 'true'">
-    <PackageRID>linux-$(ArchGroup)</PackageRID>
-    <PackageRID Condition="'$(_runtimeOSFamily)' == 'osx'">osx-$(ArchGroup)</PackageRID>
-    <PackageRID Condition="'$(_runtimeOSFamily)' == 'win'">win-$(ArchGroup)</PackageRID>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(PortableBuild)' != 'true'">
-    <PackageRID>$(RuntimeOS)-$(ArchGroup)</PackageRID>
-  </PropertyGroup>
-
   <ItemGroup>
     <OfficialBuildRID Include="linux-arm">
       <Platform>arm</Platform>
     </OfficialBuildRID>
+    <OfficialBuildRID Include="linux-arm64">
+      <Platform>arm64</Platform>
+    </OfficialBuildRID>
     <OfficialBuildRID Include="linux-x64" />
+    <OfficialBuildRID Include="rhel.6-x64" />
+    <OfficialBuildRID Include="alpine.3.6-x64" />
     <OfficialBuildRID Include="osx-x64" />
     <OfficialBuildRID Include="win-arm">
       <Platform>arm</Platform>

@@ -7,6 +7,7 @@ namespace System.Tests
 {
     public class UnloadingAndProcessExitTests : RemoteExecutorTestBase
     {
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/23307", TargetFrameworkMonikers.Uap)]
         [Fact]
         public void UnloadingEventMustHappenBeforeProcessExitEvent()
         {
@@ -19,10 +20,12 @@ namespace System.Tests
                 Action<int> OnUnloading = i => File.AppendAllText(f, string.Format("u{0}", i));
                 Action<int> OnProcessExit = i => File.AppendAllText(f, string.Format("e{0}", i));
 
+                File.AppendAllText(f, "s");
                 AppDomain.CurrentDomain.ProcessExit += (sender, e) => OnProcessExit(0);
                 System.Runtime.Loader.AssemblyLoadContext.Default.Unloading += acl => OnUnloading(0);
                 AppDomain.CurrentDomain.ProcessExit += (sender, e) => OnProcessExit(1);
                 System.Runtime.Loader.AssemblyLoadContext.Default.Unloading += acl => OnUnloading(1);
+                File.AppendAllText(f, "h");
 
                 return SuccessExitCode;
             };
@@ -31,7 +34,7 @@ namespace System.Tests
             {
             }
 
-            Assert.Equal(File.ReadAllText(fileName), "u0u1e0e1");
+            Assert.Equal("shu0u1e0e1", File.ReadAllText(fileName));
         }
     }
 }

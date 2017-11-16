@@ -94,16 +94,15 @@ internal class IOServices
         return null;
     }
 
-    public static PathInfo GetPath(string rootPath, int characterCount, bool extended)
+    public static string GetPath(string rootPath, int characterCount, bool extended)
     {
         if (extended)
             rootPath = IOInputs.ExtendedPrefix + rootPath;
         return GetPath(rootPath, characterCount);
     }
 
-    public static PathInfo GetPath(string rootPath, int characterCount, int maxComponent = IOInputs.MaxComponent)
+    public static string GetPath(string rootPath, int characterCount)
     {
-        List<string> paths = new List<string>();
         rootPath = rootPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
         StringBuilder path = new StringBuilder(characterCount);
@@ -114,19 +113,34 @@ internal class IOServices
             // Add directory seperator after each dir but not at the end of the path
             path.Append(Path.DirectorySeparatorChar);
 
-            // Continue adding guids until the character count is hit
-            string guid = Guid.NewGuid().ToString();
-            path.Append(guid.Substring(0, Math.Min(characterCount - path.Length, guid.Length)));
+            // Continue adding unique path segments until the character count is hit
+            int remainingChars = characterCount - path.Length;
+            string guid = Guid.NewGuid().ToString("N"); // No dashes
+            if (remainingChars < guid.Length)
+            {
+                path.Append(guid.Substring(0, remainingChars));
+            }
+            else
+            {
+                // Long paths can be over 32K characters. Given that a guid is just 36 chars, this
+                // can lead to crazy 800+ recursive call depths. We'll create large segments to
+                // make tests more manageable.
+
+                path.Append(guid);
+                remainingChars = characterCount - path.Length;
+                path.Append('g', Math.Min(remainingChars, 200));
+            }
+
             if (path.Length + 1 == characterCount)
             {
                 // If only one character is missing add a k!
                 path.Append('k');
             }
-            paths.Add(path.ToString());
         }
+
         Assert.Equal(path.Length, characterCount);
 
-        return new PathInfo(paths.ToArray());
+        return path.ToString();
     }
 
     public static IEnumerable<string> CreateDirectories(string rootPath, params string[] names)
@@ -214,7 +228,7 @@ internal class IOServices
 
     public static bool IsDriveNTFS(string drive)
     {
-        if (PlatformDetection.IsWinRT)
+        if (PlatformDetection.IsInAppContainer)
         {
             // we cannot determine filesystem so assume NTFS
             return true;

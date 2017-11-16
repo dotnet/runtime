@@ -53,8 +53,8 @@ namespace System.Security.Cryptography.X509Certificates
             int segmentLength = ieeeFormat.Length / 2;
 
             return DerEncoder.ConstructSequence(
-                DerEncoder.SegmentedEncodeUnsignedInteger(ieeeFormat, 0, segmentLength),
-                DerEncoder.SegmentedEncodeUnsignedInteger(ieeeFormat, segmentLength, segmentLength));
+                DerEncoder.SegmentedEncodeUnsignedInteger(new ReadOnlySpan<byte>(ieeeFormat, 0, segmentLength)),
+                DerEncoder.SegmentedEncodeUnsignedInteger(new ReadOnlySpan<byte>(ieeeFormat, segmentLength, segmentLength)));
         }
 
         protected override PublicKey BuildPublicKey()

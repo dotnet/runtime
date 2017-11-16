@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Net.Test.Common;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -12,12 +13,12 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public class HttpClientHandler_DefaultProxyCredentials_Test : RemoteExecutorTestBase
+    public class HttpClientHandler_DefaultProxyCredentials_Test : HttpClientTestBase
     {
         [Fact]
         public void Default_Get_Null()
         {
-            using (var handler = new HttpClientHandler())
+            using (HttpClientHandler handler = CreateHttpClientHandler())
             {
                 Assert.Null(handler.DefaultProxyCredentials);
             }
@@ -26,7 +27,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void SetGet_Roundtrips()
         {
-            using (var handler = new HttpClientHandler())
+            using (HttpClientHandler handler = CreateHttpClientHandler())
             {
                 var creds = new NetworkCredential("username", "password", "domain");
 
@@ -41,6 +42,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ActiveIssue(23702, TargetFrameworkMonikers.NetFramework)]
         [ActiveIssue(20010, TargetFrameworkMonikers.Uap)]
         [OuterLoop] // TODO: Issue #11345
         [Fact]
@@ -53,7 +55,7 @@ namespace System.Net.Http.Functional.Tests
             var rightCreds = new NetworkCredential("rightusername", "rightpassword");
             var wrongCreds = new NetworkCredential("wrongusername", "wrongpassword");
 
-            using (var handler = new HttpClientHandler())
+            using (HttpClientHandler handler = CreateHttpClientHandler())
             using (var client = new HttpClient(handler))
             {
                 handler.Proxy = new UseSpecifiedUriWebProxy(proxyUrl, rightCreds);
@@ -75,12 +77,23 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)] // proxies set via the http_proxy environment variable are specific to Unix
-        public void ProxySetViaEnvironmentVariable_DefaultProxyCredentialsUsed()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ProxySetViaEnvironmentVariable_DefaultProxyCredentialsUsed(bool useProxy)
         {
-            int port;
-            Task<LoopbackGetRequestHttpProxy.ProxyResult> proxyTask = LoopbackGetRequestHttpProxy.StartAsync(out port, requireAuth: true, expectCreds: true);
+            bool envVarsSupported = UseManagedHandler || !RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            if (!envVarsSupported)
+            {
+                return;
+            }
+
+            int port = 0;
+            Task<LoopbackGetRequestHttpProxy.ProxyResult> proxyTask = null;
+            if (useProxy)
+            {
+                proxyTask = LoopbackGetRequestHttpProxy.StartAsync(out port, requireAuth: true, expectCreds: true);
+            }
 
             const string ExpectedUsername = "rightusername";
             const string ExpectedPassword = "rightpassword";
@@ -90,13 +103,14 @@ namespace System.Net.Http.Functional.Tests
             // test in another process.
             var psi = new ProcessStartInfo();
             psi.Environment.Add("http_proxy", $"http://localhost:{port}");
-            RemoteInvoke(() =>
+            RemoteInvoke((useProxyString, useManagedHandlerString) =>
             {
-                using (var handler = new HttpClientHandler())
+                using (HttpClientHandler handler = CreateHttpClientHandler(useManagedHandlerString))
                 using (var client = new HttpClient(handler))
                 {
                     var creds = new NetworkCredential(ExpectedUsername, ExpectedPassword);
                     handler.DefaultProxyCredentials = creds;
+                    handler.UseProxy = bool.Parse(useProxyString);
 
                     Task<HttpResponseMessage> responseTask = client.GetAsync(Configuration.Http.RemoteEchoServer);
                     Task<string> responseStringTask = responseTask.ContinueWith(t =>
@@ -108,9 +122,12 @@ namespace System.Net.Http.Functional.Tests
                     TestHelper.VerifyResponseBody(responseStringTask.Result, responseTask.Result.Content.Headers.ContentMD5, false, null);
                 }
                 return SuccessExitCode;
-            }, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+            }, useProxy.ToString(), UseManagedHandler.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
 
-            Assert.Equal($"{ExpectedUsername}:{ExpectedPassword}", proxyTask.Result.AuthenticationHeaderValue);
+            if (useProxy)
+            {
+                Assert.Equal($"{ExpectedUsername}:{ExpectedPassword}", proxyTask.Result.AuthenticationHeaderValue);
+            }
         }
 
         // The purpose of this test is mainly to validate the .NET Framework OOB System.Net.Http implementation
@@ -122,7 +139,7 @@ namespace System.Net.Http.Functional.Tests
         {
             WebRequest.DefaultWebProxy = null;
 
-            using (var handler = new HttpClientHandler())
+            using (HttpClientHandler handler = CreateHttpClientHandler())
             using (var client = new HttpClient(handler))
             {
                 handler.DefaultProxyCredentials = new NetworkCredential("UsernameNotUsed", "PasswordNotUsed");

@@ -230,7 +230,7 @@ namespace System.Collections.Specialized
         ///    <para>
         ///       Represents an section of the vector that can contain a integer number.</para>
         /// </devdoc>
-        public struct Section
+        public readonly struct Section
         {
             private readonly short _mask;
             private readonly short _offset;

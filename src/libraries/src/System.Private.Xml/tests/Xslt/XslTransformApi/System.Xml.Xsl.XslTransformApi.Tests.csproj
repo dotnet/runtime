@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{ACF79A18-2655-452C-B4AC-10125F0AD7A8}</ProjectGuid>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
@@ -13,7 +12,6 @@
     <Compile Include="CXmlCache.cs" />
     <Compile Include="CXslTArgumentList.cs" />
     <Compile Include="CXsltArgumentListMultith.cs" />
-    <Compile Include="CXsltChecksum.cs" />
     <Compile Include="CXslTransform.cs" />
     <Compile Include="CXslTransformMultith.cs" />
     <Compile Include="DataHelper.cs" />
@@ -26,9 +24,6 @@
       <Link>TestFiles\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <DestinationDir>TestFiles\%(RecursiveDir)</DestinationDir>
     </SupplementalTestData>
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>CommonTest\System\PlatformDetection.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Xml\ModuleCore\ModuleCore.csproj" />

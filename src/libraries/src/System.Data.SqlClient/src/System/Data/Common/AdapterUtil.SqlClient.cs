@@ -63,7 +63,12 @@ namespace System.Data.Common
             OverflowException e = new OverflowException(error, inner);
             return e;
         }
-
+        internal static TypeLoadException TypeLoad(string error)
+        {
+            TypeLoadException e = new TypeLoadException(error);
+            TraceExceptionAsReturnValue(e);
+            return e;
+        }
         internal static PlatformNotSupportedException DbTypeNotSupported(string dbType)
         {
             PlatformNotSupportedException e = new PlatformNotSupportedException(SR.GetString(SR.SQL_DbTypeNotSupportedOnThisPlatform, dbType));
@@ -312,7 +317,7 @@ namespace System.Data.Common
             return InvalidOperation(SR.GetString(SR.ADP_NonSequentialColumnAccess, badCol.ToString(CultureInfo.InvariantCulture), currCol.ToString(CultureInfo.InvariantCulture)));
         }
 
-        static internal Exception InvalidXmlInvalidValue(string collectionName, string columnName)
+        internal static Exception InvalidXmlInvalidValue(string collectionName, string columnName)
         {
             return Argument(SR.GetString(SR.MDF_InvalidXmlInvalidValue, collectionName, columnName));
         }
@@ -395,6 +400,14 @@ namespace System.Data.Common
         {
             return InvalidOperation(SR.GetString(SR.ADP_ConnectionAlreadyOpen, ADP.ConnectionStateMsg(state)));
         }
+        internal static Exception TransactionPresent()
+        {
+            return InvalidOperation(SR.GetString(SR.ADP_TransactionPresent));
+        }
+        internal static Exception LocalTransactionPresent()
+        {
+            return InvalidOperation(SR.GetString(SR.ADP_LocalTransactionPresent));
+        }
         internal static Exception OpenConnectionPropertySet(string property, ConnectionState state)
         {
             return InvalidOperation(SR.GetString(SR.ADP_OpenConnectionPropertySet, property, ADP.ConnectionStateMsg(state)));
@@ -453,10 +466,11 @@ namespace System.Data.Common
             return IO(SR.GetString(SR.SqlMisc_StreamErrorMessage), internalException);
         }
 
-        internal static ArgumentException InvalidDataType(string typeName)
+        internal static ArgumentException InvalidDataType(TypeCode typecode)
         {
-            return Argument(SR.GetString(SR.ADP_InvalidDataType, typeName));
+            return Argument(SR.GetString(SR.ADP_InvalidDataType, typecode.ToString()));
         }
+
         internal static ArgumentException UnknownDataType(Type dataType)
         {
             return Argument(SR.GetString(SR.ADP_UnknownDataType, dataType.FullName));
@@ -465,6 +479,10 @@ namespace System.Data.Common
         internal static ArgumentException DbTypeNotSupported(DbType type, Type enumtype)
         {
             return Argument(SR.GetString(SR.ADP_DbTypeNotSupported, type.ToString(), enumtype.Name));
+        }
+        internal static ArgumentException UnknownDataTypeCode(Type dataType, TypeCode typeCode)
+        {
+            return Argument(SR.GetString(SR.ADP_UnknownDataTypeCode, ((int)typeCode).ToString(CultureInfo.InvariantCulture), dataType.FullName));
         }
         internal static ArgumentException InvalidOffsetValue(int value)
         {
@@ -713,11 +731,6 @@ namespace System.Data.Common
             }
         }
 
-        internal static Exception AmbientTransactionIsNotSupported()
-        {
-            return new NotSupportedException(SR.AmbientTransactionsNotSupported);
-        }
-
         private static Version s_systemDataVersion;
 
         internal static Version GetAssemblyVersion()
@@ -769,7 +782,7 @@ namespace System.Data.Common
             return false;
         }
 
-        static internal ArgumentOutOfRangeException InvalidDataRowVersion(DataRowVersion value)
+        internal static ArgumentOutOfRangeException InvalidDataRowVersion(DataRowVersion value)
         {
 #if DEBUG
             switch (value)
@@ -804,61 +817,6 @@ namespace System.Data.Common
             ArgumentException e = new ArgumentException(SR.GetString(SR.ADP_InvalidPrefixSuffix));
             TraceExceptionAsReturnValue(e);
             return e;
-        }
-
-        // the return value is true if the string was quoted and false if it was not
-        // this allows the caller to determine if it is an error or not for the quotedString to not be quoted
-        internal static bool RemoveStringQuotes(string quotePrefix, string quoteSuffix, string quotedString, out string unquotedString)
-        {
-            int prefixLength = quotePrefix != null ? quotePrefix.Length : 0;
-            int suffixLength = quoteSuffix != null ? quoteSuffix.Length : 0;
-
-            if ((suffixLength + prefixLength) == 0)
-            {
-                unquotedString = quotedString;
-                return true;
-            }
-
-            if (quotedString == null)
-            {
-                unquotedString = quotedString;
-                return false;
-            }
-
-            int quotedStringLength = quotedString.Length;
-
-            // is the source string too short to be quoted
-            if (quotedStringLength < prefixLength + suffixLength)
-            {
-                unquotedString = quotedString;
-                return false;
-            }
-
-            // is the prefix present?
-            if (prefixLength > 0)
-            {
-                if (!quotedString.StartsWith(quotePrefix, StringComparison.Ordinal))
-                {
-                    unquotedString = quotedString;
-                    return false;
-                }
-            }
-
-            // is the suffix present?
-            if (suffixLength > 0)
-            {
-                if (!quotedString.EndsWith(quoteSuffix, StringComparison.Ordinal))
-                {
-                    unquotedString = quotedString;
-                    return false;
-                }
-                unquotedString = quotedString.Substring(prefixLength, quotedStringLength - (prefixLength + suffixLength)).Replace(quoteSuffix + quoteSuffix, quoteSuffix);
-            }
-            else
-            {
-                unquotedString = quotedString.Substring(prefixLength, quotedStringLength - prefixLength);
-            }
-            return true;
         }
 
         internal static ArgumentOutOfRangeException InvalidCommandBehavior(CommandBehavior value)
@@ -896,6 +854,31 @@ namespace System.Data.Common
         internal static Exception NoStoredProcedureExists(string sproc)
         {
             return InvalidOperation(SR.GetString(SR.ADP_NoStoredProcedureExists, sproc));
+        }
+
+        //
+        // DbProviderException
+        //
+        internal static InvalidOperationException TransactionCompletedButNotDisposed()
+        {
+            return Provider(SR.GetString(SR.ADP_TransactionCompletedButNotDisposed));
+        }
+
+        internal static ArgumentOutOfRangeException InvalidUserDefinedTypeSerializationFormat(Microsoft.SqlServer.Server.Format value)
+        {
+            return InvalidEnumerationValue(typeof(Microsoft.SqlServer.Server.Format), (int)value);
+        }
+
+        internal static ArgumentOutOfRangeException NotSupportedUserDefinedTypeSerializationFormat(Microsoft.SqlServer.Server.Format value, string method)
+        {
+            return NotSupportedEnumerationValue(typeof(Microsoft.SqlServer.Server.Format), value.ToString(), method);
+        }
+
+        internal static ArgumentOutOfRangeException ArgumentOutOfRange(string message, string parameterName, object value)
+        {
+            ArgumentOutOfRangeException e = new ArgumentOutOfRangeException(parameterName, value, message);
+            TraceExceptionAsReturnValue(e);
+            return e;
         }
     }
 }

@@ -17,7 +17,7 @@ namespace System.Runtime.InteropServices
             yield return new object[] { new InterfaceComImportObject(), false };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(IsComImport_Windows_ReturnsExpected))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
         public void IsComObject_Windows_ReturnsExpected(object value, bool expected)

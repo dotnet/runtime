@@ -51,7 +51,7 @@ namespace System.Tests
                 int oldCollectionCount = GC.CollectionCount(gen);
                 b = null;
 
-                GC.Collect(gen, GCCollectionMode.Default);
+                GC.Collect(gen, mode);
 
                 Assert.True(GC.CollectionCount(gen) > oldCollectionCount);
             }
@@ -626,7 +626,12 @@ namespace System.Tests
             options.TimeOut = TimeoutMilliseconds;
             RemoteInvoke(() =>
             {
-                Assert.True(GC.TryStartNoGCRegion(NoGCRequestedBudget, true));
+                // The budget for this test is 4mb, because the act of throwing an exception with a message
+                // contained in a resource file has to potential to allocate a lot on CoreRT. In particular, when compiling
+                // in multi-file mode, this will trigger a resource lookup in System.Private.CoreLib.
+                //
+                // In addition to this, the Assert.Throws xunit combinator tends to also allocate a lot.
+                Assert.True(GC.TryStartNoGCRegion(4000 * 1024, true));
                 Assert.Equal(GCSettings.LatencyMode, GCLatencyMode.NoGCRegion);
                 Assert.Throws<InvalidOperationException>(() => GCSettings.LatencyMode = GCLatencyMode.LowLatency);
 
@@ -703,6 +708,39 @@ namespace System.Tests
                 return SuccessExitCode;
 
             }, options).Dispose();
+        }
+
+        [Theory]
+        [OuterLoop]
+        [InlineData(0)]
+        [InlineData(-1)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Difference in behavior, full framework doesn't throw, fixed in .NET Core")]
+        public static void TryStartNoGCRegion_TotalSizeOutOfRange(long size)
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.TimeOut = TimeoutMilliseconds;
+            RemoteInvoke(sizeString =>
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("totalSize", () => GC.TryStartNoGCRegion(long.Parse(sizeString)));
+                return SuccessExitCode;
+            }, size.ToString(), options).Dispose();
+        }
+
+        [Theory]
+        [OuterLoop]
+        [InlineData(0)]                   // invalid because lohSize ==
+        [InlineData(-1)]                  // invalid because lohSize < 0
+        [InlineData(1152921504606846976)] // invalid because lohSize > totalSize
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Difference in behavior, full framework doesn't throw, fixed in .NET Core")]
+        public static void TryStartNoGCRegion_LOHSizeInvalid(long size)
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.TimeOut = TimeoutMilliseconds;
+            RemoteInvoke(sizeString =>
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("lohSize", () => GC.TryStartNoGCRegion(1024, long.Parse(sizeString)));
+                return SuccessExitCode;
+            }, size.ToString(), options).Dispose();
         }
 
         public static void TestWait(bool approach, int timeout)

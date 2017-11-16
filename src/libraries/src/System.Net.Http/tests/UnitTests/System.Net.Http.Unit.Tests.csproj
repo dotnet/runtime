@@ -5,14 +5,11 @@
     <ProjectGuid>{5F9C3C9F-652E-461E-B2D6-85D264F5A733}</ProjectGuid>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn Condition="'$(TargetGroup)' == 'netfx' Or '$(TargetGroup)' == 'uap'">$(NoWarn);0436</NoWarn>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netfx'">$(DefineConstants);NET46</DefineConstants>
+    <NoWarn Condition="'$(TargetGroup)' == 'uap'">$(NoWarn);0436</NoWarn>
     <DefineConstants Condition="'$(TargetGroup)' == 'uap'">$(DefineConstants);uap</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
@@ -87,12 +84,6 @@
     <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
       <Link>ProductionCode\Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\Internal\UriHelper.cs">
-      <Link>ProductionCode\Internal\UriHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\Shims\Uri.cs">
-      <Link>ProductionCode\Shims\Uri.cs</Link>
-    </Compile>
     <Compile Include="..\..\src\System\Net\Http\ByteArrayContent.cs">
       <Link>ProductionCode\System\Net\Http\ByteArrayContent.cs</Link>
     </Compile>
@@ -104,6 +95,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\DelegatingStream.cs">
       <Link>ProductionCode\System\IO\DelegatingStream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Http\ByteArrayHelpers.cs">
+      <Link>ProductionCode\System\Net\Http\ByteArrayHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\FormUrlEncodedContent.cs">
       <Link>ProductionCode\System\Net\Http\FormUrlEncodedContent.cs</Link>
@@ -138,6 +132,9 @@
     <Compile Include="..\..\src\System\Net\Http\Headers\GenericHeaderParser.cs">
       <Link>ProductionCode\System\Net\Http\Headers\GenericHeaderParser.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\System\Net\Http\Headers\HeaderDescriptor.cs">
+      <Link>ProductionCode\System\Net\Http\Headers\HeaderDescriptor.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\Http\Headers\HeaderUtilities.cs">
       <Link>ProductionCode\System\Net\Http\Headers\HeaderUtilities.cs</Link>
     </Compile>
@@ -153,6 +150,9 @@
     <Compile Include="..\..\src\System\Net\Http\Headers\HttpHeaders.cs">
       <Link>ProductionCode\System\Net\Http\Headers\HttpHeaders.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\System\Net\Http\Headers\HttpHeaderType.cs">
+      <Link>ProductionCode\System\Net\Http\Headers\HttpHeaderType.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\Http\Headers\HttpHeaderValueCollection.cs">
       <Link>ProductionCode\System\Net\Http\Headers\HttpHeaderValueCollection.cs</Link>
     </Compile>
@@ -167,6 +167,12 @@
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\Headers\Int64NumberHeaderParser.cs">
       <Link>ProductionCode\System\Net\Http\Headers\Int64NumberHeaderParser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Http\Headers\KnownHeaders.cs">
+      <Link>ProductionCode\System\Net\Http\Headers\KnownHeaders.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Http\Headers\KnownHeader.cs">
+      <Link>ProductionCode\System\Net\Http\Headers\KnownHeader.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\Headers\MediaTypeHeaderParser.cs">
       <Link>ProductionCode\System\Net\Http\Headers\MediaTypeHeaderParser.cs</Link>
@@ -293,48 +299,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs">
       <Link>ProductionCode\System\Net\Http\HttpHandlerDefaults.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\AuthenticationHandler.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\AuthenticationHandler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\AutoRedirectHandler.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\AutoRedirectHandler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\BasicAuthenticationHelper.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\BasicAuthenticationHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\ConnectHelper.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\ConnectHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\CookieHandler.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\CookieHandler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\DecompressionHandler.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\DecompressionHandler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\ManagedHandler.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\ManagedHttpClientHandler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\HttpConnection.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\HttpConnection.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\HttpConnectionHandler.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\HttpConnectionHandler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\HttpConnectionKey.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\HttpConnectionKey.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\HttpConnectionPool.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\HttpConnectionPool.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\HttpContentReadStream.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\HttpContentReadStream.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\HttpContentWriteStream.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\HttpContentWriteStream.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\HttpProxyConnectionHandler.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\HttpProxyConnectionHandler.cs</Link>
     </Compile>
     <Compile Include="Fakes\HttpClientHandler.cs" />
     <Compile Include="Headers\AuthenticationHeaderValueTest.cs" />

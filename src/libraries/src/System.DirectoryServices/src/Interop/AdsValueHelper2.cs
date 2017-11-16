@@ -2,14 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Text;
+using System.Runtime.InteropServices;
+using System.Globalization;
+
 namespace System.DirectoryServices.Interop
 {
-    using System;
-    using System.Text;
-    using System.Runtime.InteropServices;
-    using System.Globalization;
-    using System.Security.Permissions;
-
     [StructLayout(LayoutKind.Sequential)]
     internal struct SystemTime
     {
@@ -38,7 +36,9 @@ namespace System.DirectoryServices.Interop
         public IntPtr pszDNString;         // Distinguished Name
     }
 
-    // helper class for dealing with struct AdsValue.
+    /// <summary>
+    /// Helper class for dealing with struct AdsValue.
+    /// </summary>
     internal class AdsValueHelper
     {
         public AdsValue adsvalue;
@@ -62,10 +62,7 @@ namespace System.DirectoryServices.Interop
 
         public long LowInt64
         {
-            get
-            {
-                return (long)((uint)adsvalue.generic.a + (((long)adsvalue.generic.b) << 32));
-            }
+            get => (uint)adsvalue.generic.a + (((long)adsvalue.generic.b) << 32);
             set
             {
                 adsvalue.generic.a = (int)(value & 0xFFFFFFFF);
@@ -76,73 +73,80 @@ namespace System.DirectoryServices.Interop
         ~AdsValueHelper()
         {
             if (_pinnedHandle.IsAllocated)
+            {
                 _pinnedHandle.Free();
+            }
         }
 
         private AdsType GetAdsTypeForManagedType(Type type)
         {
-            //Consider this code is only excercised by DirectorySearcher
-            //it just translates the types needed by such a component, if more managed
-            //types are to be used in the future, this function needs to be expanded.
+            // Consider this code is only excercised by DirectorySearcher
+            // it just translates the types needed by such a component, if more managed
+            // types are to be used in the future, this function needs to be expanded.
             if (type == typeof(int))
+            {
                 return AdsType.ADSTYPE_INTEGER;
+            }
+
             if (type == typeof(long))
+            {
                 return AdsType.ADSTYPE_LARGE_INTEGER;
+            }
+
             if (type == typeof(bool))
+            {
                 return AdsType.ADSTYPE_BOOLEAN;
+            }
 
             return AdsType.ADSTYPE_UNKNOWN;
         }
 
-        public AdsValue GetStruct()
-        {
-            return adsvalue;
-        }
+        public AdsValue GetStruct() => adsvalue;
 
-        private static ushort LowOfInt(int i)
-        {
-            return unchecked((ushort)(i & 0xFFFF));
-        }
+        private static ushort LowOfInt(int i) => unchecked((ushort)(i & 0xFFFF));
 
-        private static ushort HighOfInt(int i)
-        {
-            return unchecked((ushort)((i >> 16) & 0xFFFF));
-        }
+        private static ushort HighOfInt(int i) => unchecked((ushort)((i >> 16) & 0xFFFF));
 
         public object GetValue()
         {
             switch ((AdsType)adsvalue.dwType)
             {
-                // Common for DNS and LDAP 
+                // Common for DNS and LDAP.
                 case AdsType.ADSTYPE_UTC_TIME:
                     {
-                        SystemTime st = new SystemTime();
-
-                        st.wYear = LowOfInt(adsvalue.generic.a);
-                        st.wMonth = HighOfInt(adsvalue.generic.a);
-                        st.wDayOfWeek = LowOfInt(adsvalue.generic.b);
-                        st.wDay = HighOfInt(adsvalue.generic.b);
-                        st.wHour = LowOfInt(adsvalue.generic.c);
-                        st.wMinute = HighOfInt(adsvalue.generic.c);
-                        st.wSecond = LowOfInt(adsvalue.generic.d);
-                        st.wMilliseconds = HighOfInt(adsvalue.generic.d);
+                        var st = new SystemTime()
+                        {
+                            wYear = LowOfInt(adsvalue.generic.a),
+                            wMonth = HighOfInt(adsvalue.generic.a),
+                            wDayOfWeek = LowOfInt(adsvalue.generic.b),
+                            wDay = HighOfInt(adsvalue.generic.b),
+                            wHour = LowOfInt(adsvalue.generic.c),
+                            wMinute = HighOfInt(adsvalue.generic.c),
+                            wSecond = LowOfInt(adsvalue.generic.d),
+                            wMilliseconds = HighOfInt(adsvalue.generic.d)
+                        };
 
                         return new DateTime(st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
                     }
 
                 case AdsType.ADSTYPE_DN_WITH_BINARY:
                     {
-                        DnWithBinary dnb = new DnWithBinary();
+                        var dnb = new DnWithBinary();
                         Marshal.PtrToStructure(adsvalue.pointer.value, dnb);
+
                         byte[] bytes = new byte[dnb.dwLength];
                         Marshal.Copy(dnb.lpBinaryValue, bytes, 0, dnb.dwLength);
-                        StringBuilder strb = new StringBuilder();
-                        StringBuilder binaryPart = new StringBuilder();
+
+                        var strb = new StringBuilder();
+                        var binaryPart = new StringBuilder();
                         for (int i = 0; i < bytes.Length; i++)
                         {
                             string s = bytes[i].ToString("X", CultureInfo.InvariantCulture);
                             if (s.Length == 1)
+                            {
                                 binaryPart.Append("0");
+                            }
+
                             binaryPart.Append(s);
                         }
 
@@ -152,24 +156,24 @@ namespace System.DirectoryServices.Interop
                         strb.Append(binaryPart.ToString());
                         strb.Append(":");
                         strb.Append(Marshal.PtrToStringUni(dnb.pszDNString));
+
                         return strb.ToString();
                     }
 
                 case AdsType.ADSTYPE_DN_WITH_STRING:
                     {
-                        DnWithString dns = new DnWithString();
+                        var dns = new DnWithString();
                         Marshal.PtrToStructure(adsvalue.pointer.value, dns);
-                        string strValue = Marshal.PtrToStringUni(dns.pszStringValue);
-                        if (strValue == null)
-                            strValue = "";
+                        string strValue = Marshal.PtrToStringUni(dns.pszStringValue) ?? string.Empty;
 
-                        StringBuilder strb = new StringBuilder();
+                        var strb = new StringBuilder();
                         strb.Append("S:");
                         strb.Append(strValue.Length);
                         strb.Append(":");
                         strb.Append(strValue);
                         strb.Append(":");
                         strb.Append(Marshal.PtrToStringUni(dns.pszDNString));
+
                         return strb.ToString();
                     }
 
@@ -179,21 +183,21 @@ namespace System.DirectoryServices.Interop
                 case AdsType.ADSTYPE_PRINTABLE_STRING:
                 case AdsType.ADSTYPE_NUMERIC_STRING:
                 case AdsType.ADSTYPE_OBJECT_CLASS:
-                    // string
+                    // The value is a String.
                     return Marshal.PtrToStringUni(adsvalue.pointer.value);
 
                 case AdsType.ADSTYPE_BOOLEAN:
-                    // bool
+                    // The value is a bool.
                     return adsvalue.generic.a != 0;
 
                 case AdsType.ADSTYPE_INTEGER:
-                    // int
+                    // The value is an int.
                     return adsvalue.generic.a;
 
                 case AdsType.ADSTYPE_NT_SECURITY_DESCRIPTOR:
                 case AdsType.ADSTYPE_OCTET_STRING:
                 case AdsType.ADSTYPE_PROV_SPECIFIC:
-                    // byte[]
+                    // The value is a byte[].
                     int len = adsvalue.octetString.length;
                     byte[] value = new byte[len];
                     Marshal.Copy(adsvalue.octetString.value, value, 0, len);
@@ -205,7 +209,7 @@ namespace System.DirectoryServices.Interop
                 case AdsType.ADSTYPE_LARGE_INTEGER:
                     return LowInt64;
 
-                // not used in LDAP
+                // Not used in LDAP
                 case AdsType.ADSTYPE_CASEIGNORE_LIST:
                 case AdsType.ADSTYPE_OCTET_LIST:
                 case AdsType.ADSTYPE_PATH:
@@ -220,36 +224,40 @@ namespace System.DirectoryServices.Interop
                 case AdsType.ADSTYPE_TYPEDNAME:
                 case AdsType.ADSTYPE_REPLICAPOINTER:
                 case AdsType.ADSTYPE_UNKNOWN:
-                    return new NotImplementedException(String.Format(CultureInfo.CurrentCulture, SR.DSAdsvalueTypeNYI , "0x" + Convert.ToString(adsvalue.dwType, 16)));
+                    return new NotImplementedException(SR.Format(SR.DSAdsvalueTypeNYI , "0x" + Convert.ToString(adsvalue.dwType, 16)));
 
                 default:
-                    return new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.DSConvertFailed , "0x" + Convert.ToString(LowInt64, 16), "0x" + Convert.ToString(adsvalue.dwType, 16)));
+                    return new ArgumentException(SR.Format(SR.DSConvertFailed , "0x" + Convert.ToString(LowInt64, 16), "0x" + Convert.ToString(adsvalue.dwType, 16)));
             }
         }
 
         public object GetVlvValue()
         {
-            AdsVLV vlv = new AdsVLV();
+            var vlv = new AdsVLV();
             Marshal.PtrToStructure(adsvalue.octetString.value, vlv);
+
             byte[] bytes = null;
             if (vlv.contextID != (IntPtr)0 && vlv.contextIDlength != 0)
             {
                 bytes = new byte[vlv.contextIDlength];
                 Marshal.Copy(vlv.contextID, bytes, 0, vlv.contextIDlength);
             }
-            DirectoryVirtualListView vlvResponse = new DirectoryVirtualListView();
-            vlvResponse.Offset = vlv.offset;
-            vlvResponse.ApproximateTotal = vlv.contentCount;
-            DirectoryVirtualListViewContext context = new DirectoryVirtualListViewContext(bytes);
-            vlvResponse.DirectoryVirtualListViewContext = context;
 
-            return vlvResponse;
+            return new DirectoryVirtualListView
+            {
+                Offset = vlv.offset,
+                ApproximateTotal = vlv.contentCount,
+                DirectoryVirtualListViewContext = new DirectoryVirtualListViewContext(bytes)
+            };
         }
 
         private unsafe void SetValue(object managedValue, AdsType adsType)
         {
-            adsvalue = new AdsValue();
-            adsvalue.dwType = (int)adsType;
+            adsvalue = new AdsValue()
+            {
+                dwType = (int)adsType
+            };
+
             switch (adsType)
             {
                 case AdsType.ADSTYPE_INTEGER:
@@ -260,10 +268,7 @@ namespace System.DirectoryServices.Interop
                     LowInt64 = (long)managedValue;
                     break;
                 case AdsType.ADSTYPE_BOOLEAN:
-                    if ((bool)managedValue)
-                        LowInt64 = -1;
-                    else
-                        LowInt64 = 0;
+                    LowInt64 = (bool)managedValue ? -1 : 0;
                     break;
                 case AdsType.ADSTYPE_CASE_IGNORE_STRING:
                     _pinnedHandle = GCHandle.Alloc(managedValue, GCHandleType.Pinned);
@@ -271,7 +276,7 @@ namespace System.DirectoryServices.Interop
                     break;
                 case AdsType.ADSTYPE_PROV_SPECIFIC:
                     byte[] bytes = (byte[])managedValue;
-                    // filling in an ADS_PROV_SPECIFIC struct.
+                    // Filling in an ADS_PROV_SPECIFIC struct.
                     // 1st dword (our member a) is DWORD dwLength.
                     // 2nd dword (our member b) is byte *lpValue.
                     adsvalue.octetString.length = bytes.Length;
@@ -279,9 +284,8 @@ namespace System.DirectoryServices.Interop
                     adsvalue.octetString.value = _pinnedHandle.AddrOfPinnedObject();
                     break;
                 default:
-                    throw new NotImplementedException(String.Format(CultureInfo.CurrentCulture, SR.DSAdsvalueTypeNYI , "0x" + Convert.ToString((int)adsType, 16)));
+                    throw new NotImplementedException(SR.Format(SR.DSAdsvalueTypeNYI , "0x" + Convert.ToString((int)adsType, 16)));
             }
         }
     }
 }
-

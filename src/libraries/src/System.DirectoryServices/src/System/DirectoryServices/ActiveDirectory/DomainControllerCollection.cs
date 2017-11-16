@@ -2,12 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Collections;
-    using System.Globalization;
-
     public class DomainControllerCollection : ReadOnlyCollectionBase
     {
         internal DomainControllerCollection() { }
@@ -20,13 +18,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public DomainController this[int index]
-        {
-            get
-            {
-                return (DomainController)InnerList[index];
-            }
-        }
+        public DomainController this[int index] => (DomainController)InnerList[index];
 
         public bool Contains(DomainController domainController)
         {

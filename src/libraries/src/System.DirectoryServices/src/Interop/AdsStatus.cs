@@ -11,4 +11,3 @@ namespace System.DirectoryServices.Interop
         ADS_STATUS_INVALID_SEARCHPREFVALUE = 2
     }
 }
-

@@ -12,7 +12,6 @@ namespace System.Net.Tests
     public class HttpListenerResponseCookiesTests : HttpListenerResponseTestBase
     {
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task Cookies_GetSet_ReturnsExpected()
         {
             HttpListenerResponse response = await GetResponse();
@@ -89,7 +88,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [MemberData(nameof(Cookies_TestData))]
         public async Task Cookies_SetAndSend_ClientReceivesExpectedHeaders(CookieCollection cookies, int expectedBytes, string expectedSetCookie, string expectedSetCookie2)
         {
@@ -122,7 +120,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task Cookies_SetInHeader_ClientReceivesExpectedHeaders()
         {
             HttpListenerResponse response = await GetResponse();
@@ -137,7 +134,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task Cookies_SetCookie2InHeadersButNotInCookies_RemovesFromHeaders()
         {
             HttpListenerResponse response = await GetResponse();
@@ -157,7 +153,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task Cookies_SetCookieInHeadersButNotInCookies_RemovesFromHeaders()
         {
             HttpListenerResponse response = await GetResponse();
@@ -177,7 +172,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task AppendCookie_ValidCookie_AddsCookieToCollection()
         {
             HttpListenerResponse response = await GetResponse();
@@ -199,7 +193,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task AppendCookie_NullCookie_ThrowsArgumentNullException()
         {
             HttpListenerResponse response = await GetResponse();
@@ -207,7 +200,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task SetCookie_ValidCookie_AddsCookieToCollection()
         {
             HttpListenerResponse response = await GetResponse();
@@ -221,7 +213,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task SetCookie_ValidCookie_ClonesCookie()
         {
             HttpListenerResponse response = await GetResponse();
@@ -234,7 +225,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task SetCookie_NullCookie_ThrowsArgumentNullException()
         {
             HttpListenerResponse response = await GetResponse();
@@ -242,7 +232,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task SetCookie_CookieDoesntExist_ThrowsArgumentException()
         {
             HttpListenerResponse response = await GetResponse();

@@ -6,7 +6,7 @@ using System.Reflection.Internal;
 
 namespace System.Reflection.Metadata.Ecma335
 {
-    internal struct UserStringHeap
+    internal readonly struct UserStringHeap
     {
         internal readonly MemoryBlock Block;
 

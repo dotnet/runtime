@@ -5,9 +5,8 @@
     <IncludePerformanceTests>true</IncludePerformanceTests>
     <ProjectGuid>{0BA6851E-0E75-453D-9D2A-CEB94E4DE975}</ProjectGuid>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="Perf.CultureInfo.cs" />
     <Compile Include="Perf.DateTimeCultureInfo.cs" />

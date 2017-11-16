@@ -56,7 +56,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 this.cuosSkip = uos.cuosSkip;
                 this.pfn = uos.pfn;
                 this.fnkind = uos.fnkind;
-                _type = pt != PredefinedType.PT_UNDEFINEDINDEX ? fnc.GetOptPDT(pt) : null;
+                _type = pt != PredefinedType.PT_UNDEFINEDINDEX ? fnc.GetPredefindType(pt) : null;
                 _grflt = LiftFlags.None;
             }
             public bool FPreDef()

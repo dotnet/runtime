@@ -308,7 +308,7 @@ namespace System.Tests
             public static bool Equal(int i) { return cnt == i; }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsInvokingStaticConstructorsSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsInvokingStaticConstructorsSupported))]
         static void TestingBindingFlags()
         {
             Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(ClassWithPrivateCtor), BindingFlags.Public | BindingFlags.Instance, null, null, CultureInfo.CurrentCulture));

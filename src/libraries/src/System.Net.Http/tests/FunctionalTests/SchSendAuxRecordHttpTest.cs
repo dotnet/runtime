@@ -11,10 +11,8 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    using Configuration = System.Net.Test.Common.Configuration;
-
     [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "dotnet/corefx #20010")]
-    public class SchSendAuxRecordHttpTest
+    public class SchSendAuxRecordHttpTest : HttpClientTestBase
     {
         readonly ITestOutputHelper _output;
         
@@ -32,9 +30,10 @@ namespace System.Net.Http.Functional.Tests
             options.AllowedProtocols = SslProtocols.Tls;
 
             using (var server = new HttpsTestServer(options))
-            using (var handler = new HttpClientHandler() { ServerCertificateCustomValidationCallback = LoopbackServer.AllowAllCertificates })
+            using (HttpClientHandler handler = CreateHttpClientHandler())
             using (var client = new HttpClient(handler))
             {
+                handler.ServerCertificateCustomValidationCallback = LoopbackServer.AllowAllCertificates;
                 server.Start();
 
                 var tasks = new Task[2];

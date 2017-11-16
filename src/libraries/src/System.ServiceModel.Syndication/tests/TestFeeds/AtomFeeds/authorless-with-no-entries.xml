@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Description:  a feed with two atom:entry elements with the same atom:id and same atom:updated values produces a warning.
+Expect:       !MissingElement{parent:feed,element:author}
+-->
+
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title>Example Feed</title>
+  <link href="http://contoso.com/"/>
+  <updated>2003-12-13T18:30:02Z</updated>
+  <id>urn:uuid:60a76c80-d399-11d9-b93C-0003939e0af6</id>
+
+</feed>

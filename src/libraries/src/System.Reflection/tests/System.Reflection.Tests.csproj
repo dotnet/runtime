@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{B027C72E-F04E-42E0-A7F7-993AEF8400D2}</ProjectGuid>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
@@ -26,11 +25,6 @@
     <Compile Include="ExceptionTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="Resources\EmbeddedImage.png">
       <LogicalName>EmbeddedImage.png</LogicalName>
     </EmbeddedResource>
@@ -39,6 +33,17 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_0_0_0_0.csproj" />
+    <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_1_0_0_0.csproj" />
+    <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_1_1_0_0.csproj" />
+    <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_1_1_1_0.csproj" />
+    <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_1_1_1_2.csproj" />
+    <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_1_1_1_3.csproj" />
+    <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_1_1_2_0.csproj" />
+    <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_1_1_3_0.csproj" />
+    <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_1_2_0_0.csproj" />
+    <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_1_3_0_0.csproj" />
+    <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_3_0_0_0.csproj" />
     <ProjectReference Include="TestExe\System.Reflection.TestExe.csproj">
       <Project>{8c19b991-41e9-4b38-9602-e19375397f1d}</Project>
       <Name>System.Reflection.Tests.TestExe</Name>

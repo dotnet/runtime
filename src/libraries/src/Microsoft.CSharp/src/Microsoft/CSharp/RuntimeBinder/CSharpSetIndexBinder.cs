@@ -33,7 +33,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         public Type CallingContext { get; }
 
-        private readonly List<CSharpArgumentInfo> _argumentInfo;
+        private readonly CSharpArgumentInfo[] _argumentInfo;
 
         CSharpArgumentInfo ICSharpBinder.GetArgumentInfo(int index) => _argumentInfo[index];
 
@@ -53,12 +53,12 @@ namespace Microsoft.CSharp.RuntimeBinder
             bool isChecked,
             Type callingContext,
             IEnumerable<CSharpArgumentInfo> argumentInfo) :
-            base(BinderHelper.CreateCallInfo(argumentInfo, 2)) // discard 2 arguments: the target object and the value
+            base(BinderHelper.CreateCallInfo(ref argumentInfo, 2)) // discard 2 arguments: the target object and the value
         {
             IsCompoundAssignment = isCompoundAssignment;
             IsChecked = isChecked;
             CallingContext = callingContext;
-            _argumentInfo = BinderHelper.ToList(argumentInfo);
+            _argumentInfo = argumentInfo as CSharpArgumentInfo[];
             _binder = RuntimeBinder.GetInstance();
         }
 
@@ -79,6 +79,9 @@ namespace Microsoft.CSharp.RuntimeBinder
                 return com;
             }
 #endif
+            BinderHelper.ValidateBindArgument(target, nameof(target));
+            BinderHelper.ValidateBindArgument(indexes, nameof(indexes));
+            BinderHelper.ValidateBindArgument(value, nameof(value));
             return BinderHelper.Bind(this, _binder, BinderHelper.Cons(target, indexes, value), _argumentInfo, errorSuggestion);
         }
     }

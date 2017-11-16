@@ -173,7 +173,7 @@ namespace System.Diagnostics.SymbolStore
         NativeStackRegister = 8,
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct SymbolToken
+    public readonly partial struct SymbolToken
     {
         public SymbolToken(int val) { throw null; }
         public bool Equals(System.Diagnostics.SymbolStore.SymbolToken obj) { throw null; }

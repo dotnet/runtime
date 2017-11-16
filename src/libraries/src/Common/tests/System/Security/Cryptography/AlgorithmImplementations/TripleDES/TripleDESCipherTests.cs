@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Text;
 using Test.Cryptography;
 using Xunit;
 
@@ -287,6 +288,94 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
                 byte[] expectedDecrypted = "e867f915e275eab27d6951165d26dec6dd0acafcfc".HexToByteArray();
                 Assert.Equal<byte>(expectedDecrypted, decrypted);
             }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void EncryptWithLargeOutputBuffer(bool blockAlignedOutput)
+        {
+            using (TripleDES alg = TripleDESFactory.Create())
+            using (ICryptoTransform xform = alg.CreateEncryptor())
+            {
+                // 8 blocks, plus maybe three bytes
+                int outputPadding = blockAlignedOutput ? 0 : 3;
+                byte[] output = new byte[alg.BlockSize + outputPadding];
+                // 2 blocks of 0x00
+                byte[] input = new byte[alg.BlockSize / 4];
+                int outputOffset = 0;
+
+                outputOffset += xform.TransformBlock(input, 0, input.Length, output, outputOffset);
+                byte[] overflow = xform.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                Buffer.BlockCopy(overflow, 0, output, outputOffset, overflow.Length);
+                outputOffset += overflow.Length;
+
+                Assert.Equal(3 * (alg.BlockSize / 8), outputOffset);
+                string outputAsHex = output.ByteArrayToHex();
+                Assert.NotEqual(new string('0', outputOffset * 2), outputAsHex.Substring(0, outputOffset * 2));
+                Assert.Equal(new string('0', (output.Length - outputOffset) * 2), outputAsHex.Substring(outputOffset * 2));
+            }
+        }
+
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public static void TransformWithTooShortOutputBuffer(bool encrypt, bool blockAlignedOutput)
+        {
+            using (TripleDES alg = TripleDESFactory.Create())
+            using (ICryptoTransform xform = encrypt ? alg.CreateEncryptor() : alg.CreateDecryptor())
+            {
+                // 1 block, plus maybe three bytes
+                int outputPadding = blockAlignedOutput ? 0 : 3;
+                byte[] output = new byte[alg.BlockSize / 8 + outputPadding];
+                // 3 blocks of 0x00
+                byte[] input = new byte[3 * (alg.BlockSize / 8)];
+
+                Type exceptionType = typeof(ArgumentOutOfRangeException);
+
+                // TripleDESCryptoServiceProvider doesn't throw the ArgumentOutOfRangeException,
+                // giving a CryptographicException when CAPI reports the destination too small.
+                if (PlatformDetection.IsFullFramework)
+                {
+                    exceptionType = typeof(CryptographicException);
+                }
+
+                Assert.Throws(
+                    exceptionType,
+                    () => xform.TransformBlock(input, 0, input.Length, output, 0));
+
+                Assert.Equal(new byte[output.Length], output);
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void MultipleBlockDecryptTransform(bool blockAlignedOutput)
+        {
+            const string ExpectedOutput = "This is a test";
+
+            int outputPadding = blockAlignedOutput ? 0 : 3;
+            byte[] key = "0123456789ABCDEFFEDCBA9876543210ABCDEF0123456789".HexToByteArray();
+            byte[] iv = "0123456789ABCDEF".HexToByteArray();
+            byte[] outputBytes = new byte[iv.Length * 2 + outputPadding];
+            byte[] input = "A61C8F1D393202E1E3C71DCEAB9B08DB".HexToByteArray();
+            int outputOffset = 0;
+
+            using (TripleDES alg = TripleDESFactory.Create())
+            using (ICryptoTransform xform = alg.CreateDecryptor(key, iv))
+            {
+                Assert.Equal(2 * alg.BlockSize, (outputBytes.Length - outputPadding) * 8);
+                outputOffset += xform.TransformBlock(input, 0, input.Length, outputBytes, outputOffset);
+                byte[] overflow = xform.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                Buffer.BlockCopy(overflow, 0, outputBytes, outputOffset, overflow.Length);
+                outputOffset += overflow.Length;
+            }
+
+            string decrypted = Encoding.ASCII.GetString(outputBytes, 0, outputOffset);
+            Assert.Equal(ExpectedOutput, decrypted);
         }
     }
 }

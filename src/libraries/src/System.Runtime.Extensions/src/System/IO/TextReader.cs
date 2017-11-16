@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
+using System.Buffers;
 
 namespace System.IO
 {
@@ -100,6 +101,30 @@ namespace System.IO
             return n;
         }
 
+        // Reads a span of characters. This method will read up to
+        // count characters from this TextReader into the
+        // span of characters Returns the actual number of characters read.
+        //
+        public virtual int Read(Span<char> buffer)
+        {
+            char[] array = ArrayPool<char>.Shared.Rent(buffer.Length);
+
+            try
+            {
+                int numRead = Read(array, 0, buffer.Length);
+                if ((uint)numRead > buffer.Length)
+                {
+                    throw new IOException(SR.IO_InvalidReadLength);
+                }
+                new Span<char>(array, 0, numRead).CopyTo(buffer);
+                return numRead;
+            }
+            finally
+            {
+                ArrayPool<char>.Shared.Return(array);
+            }
+        }
+
         // Reads all characters from the current position to the end of the 
         // TextReader, and returns them as one string.
         public virtual string ReadToEnd()
@@ -125,6 +150,29 @@ namespace System.IO
                 n += (i = Read(buffer, index + n, count - n));
             } while (i > 0 && n < count);
             return n;
+        }
+
+        // Blocking version of read for span of characters.  Returns only when count
+        // characters have been read or the end of the file was reached.
+        //
+        public virtual int ReadBlock(Span<char> buffer)
+        {
+            char[] array = ArrayPool<char>.Shared.Rent(buffer.Length);
+
+            try
+            {
+                int numRead = ReadBlock(array, 0, buffer.Length);
+                if ((uint)numRead > buffer.Length)
+                {
+                    throw new IOException(SR.IO_InvalidReadLength);
+                }
+                new Span<char>(array, 0, numRead).CopyTo(buffer);
+                return numRead;
+            }
+            finally
+            {
+                ArrayPool<char>.Shared.Return(array);
+            }
         }
 
         // Reads a line. A line is defined as a sequence of characters followed by
@@ -171,12 +219,19 @@ namespace System.IO
 
         public async virtual Task<string> ReadToEndAsync()
         {
-            char[] chars = new char[4096];
-            int len;
-            StringBuilder sb = new StringBuilder(4096);
-            while ((len = await ReadAsyncInternal(chars, 0, chars.Length).ConfigureAwait(false)) != 0)
+            var sb = new StringBuilder(4096);
+            char[] chars = ArrayPool<char>.Shared.Rent(4096);
+            try
             {
-                sb.Append(chars, 0, len);
+                int len;
+                while ((len = await ReadAsyncInternal(chars, default).ConfigureAwait(false)) != 0)
+                {
+                    sb.Append(chars, 0, len);
+                }
+            }
+            finally
+            {
+                ArrayPool<char>.Shared.Return(chars);
             }
             return sb.ToString();
         }
@@ -196,23 +251,27 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
 
-            return ReadAsyncInternal(buffer, index, count);
+            return ReadAsyncInternal(new Memory<char>(buffer, index, count), default).AsTask();
         }
 
-        internal virtual Task<int> ReadAsyncInternal(char[] buffer, int index, int count)
-        {
-            Debug.Assert(buffer != null);
-            Debug.Assert(index >= 0);
-            Debug.Assert(count >= 0);
-            Debug.Assert(buffer.Length - index >= count);
+        public virtual ValueTask<int> ReadAsync(Memory<char> buffer, CancellationToken cancellationToken = default(CancellationToken)) =>
+            new ValueTask<int>(buffer.TryGetArray(out ArraySegment<char> array) ?
+                ReadAsync(array.Array, array.Offset, array.Count) :
+                Task<int>.Factory.StartNew(state =>
+                {
+                    var t = (Tuple<TextReader, Memory<char>>)state;
+                    return t.Item1.Read(t.Item2.Span);
+                }, Tuple.Create(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
 
-            var tuple = new Tuple<TextReader, char[], int, int>(this, buffer, index, count);
-            return Task<int>.Factory.StartNew(state =>
+        internal virtual ValueTask<int> ReadAsyncInternal(Memory<char> buffer, CancellationToken cancellationToken)
+        {
+            var tuple = new Tuple<TextReader, Memory<char>>(this, buffer);
+            return new ValueTask<int>(Task<int>.Factory.StartNew(state =>
             {
-                var t = (Tuple<TextReader, char[], int, int>)state;
-                return t.Item1.Read(t.Item2, t.Item3, t.Item4);
+                var t = (Tuple<TextReader, Memory<char>>)state;
+                return t.Item1.Read(t.Item2.Span);
             },
-            tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            tuple, cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
         }
 
         public virtual Task<int> ReadBlockAsync(char[] buffer, int index, int count)
@@ -230,22 +289,26 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
 
-            return ReadBlockAsyncInternal(buffer, index, count);
+            return ReadBlockAsyncInternal(new Memory<char>(buffer, index, count), default).AsTask();
         }
 
-        private async Task<int> ReadBlockAsyncInternal(char[] buffer, int index, int count)
-        {
-            Debug.Assert(buffer != null);
-            Debug.Assert(index >= 0);
-            Debug.Assert(count >= 0);
-            Debug.Assert(buffer.Length - index >= count);
+        public virtual ValueTask<int> ReadBlockAsync(Memory<char> buffer, CancellationToken cancellationToken = default(CancellationToken)) =>
+            new ValueTask<int>(buffer.TryGetArray(out ArraySegment<char> array) ?
+                ReadBlockAsync(array.Array, array.Offset, array.Count) :
+                Task<int>.Factory.StartNew(state =>
+                {
+                    var t = (Tuple<TextReader, Memory<char>>)state;
+                    return t.Item1.ReadBlock(t.Item2.Span);
+                }, Tuple.Create(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
 
-            int i, n = 0;
+        internal async ValueTask<int> ReadBlockAsyncInternal(Memory<char> buffer, CancellationToken cancellationToken)
+        {
+            int n = 0, i;
             do
             {
-                i = await ReadAsyncInternal(buffer, index + n, count - n).ConfigureAwait(false);
+                i = await ReadAsyncInternal(buffer.Slice(n), cancellationToken).ConfigureAwait(false);
                 n += i;
-            } while (i > 0 && n < count);
+            } while (i > 0 && n < buffer.Length);
 
             return n;
         }

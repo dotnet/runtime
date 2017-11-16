@@ -30,27 +30,27 @@ namespace System.Net.NetworkInformation.Tests
         [Fact]
         public static void RawIntFileParsing()
         {
-            int val = StringParsingHelpers.ParseRawIntFile(FileUtil.TestFile("rawint"));
+            int val = StringParsingHelpers.ParseRawIntFile("rawint");
             Assert.Equal(12, val);
 
-            int max = StringParsingHelpers.ParseRawIntFile(FileUtil.TestFile("rawint_maxvalue"));
+            int max = StringParsingHelpers.ParseRawIntFile("rawint_maxvalue");
             Assert.Equal(int.MaxValue, max);
         }
 
         [Fact]
         public static void RawLongFileParsing()
         {
-            long val = StringParsingHelpers.ParseRawLongFile(FileUtil.TestFile("rawlong"));
+            long val = StringParsingHelpers.ParseRawLongFile("rawlong");
             Assert.Equal(3147483647L, val);
 
-            long max = StringParsingHelpers.ParseRawLongFile(FileUtil.TestFile("rawlong_maxvalue"));
+            long max = StringParsingHelpers.ParseRawLongFile("rawlong_maxvalue");
             Assert.Equal(long.MaxValue, max);
         }
 
         [Fact]
         public static void RawHexIntParsing()
         {
-            int val = StringParsingHelpers.ParseRawHexFileAsInt(FileUtil.TestFile("rawhexint"));
+            int val = StringParsingHelpers.ParseRawHexFileAsInt("rawhexint");
             Assert.Equal(10, val);
         }
     }

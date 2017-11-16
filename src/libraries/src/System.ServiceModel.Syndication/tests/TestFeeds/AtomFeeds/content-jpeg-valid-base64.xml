@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Description:  content with a type of jpeg and a value that is valid base64 produces no error
+Expect:       !Error
+-->
+
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title>Example Feed</title>
+  <link href="http://contoso.com/"/>
+  <updated>2003-12-13T18:30:02Z</updated>
+  <author>
+    <name>Author Name</name>
+  </author>
+  <id>urn:uuid:60a76c80-d399-11d9-b93C-0003939e0af6</id>
+
+  <entry>
+    <title>Atom-Powered Robots Run Amok</title>
+    <link href="http://contoso.com/2003/12/13/atom03"/>
+    <id>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a</id>
+    <updated>2003-12-13T18:30:02Z</updated>
+    <summary>Some text.</summary>
+    <content type="image/jpeg">
+    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
+    </content>
+  </entry>
+
+</feed>

@@ -15,14 +15,15 @@ internal static partial class Interop
         internal static unsafe void ForkAndExecProcess(
             string filename, string[] argv, string[] envp, string cwd,
             bool redirectStdin, bool redirectStdout, bool redirectStderr,
-            out int lpChildPid, out int stdinFd, out int stdoutFd, out int stderrFd)
+            out int lpChildPid, out int stdinFd, out int stdoutFd, out int stderrFd, bool shouldThrow = true)
         {
             byte** argvPtr = null, envpPtr = null;
+            int result = -1;
             try
             {
                 AllocNullTerminatedArray(argv, ref argvPtr);
                 AllocNullTerminatedArray(envp, ref envpPtr);
-                int result = ForkAndExecProcess(
+                result = ForkAndExecProcess(
                     filename, argvPtr, envpPtr, cwd,
                     redirectStdin ? 1 : 0, redirectStdout ? 1 : 0, redirectStderr ? 1 :0,
                     out lpChildPid, out stdinFd, out stdoutFd, out stderrFd);

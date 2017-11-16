@@ -13,10 +13,7 @@ namespace System.Security.Cryptography
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
     public partial class RSA : AsymmetricAlgorithm
     {
-        public static new RSA Create()
-        {
-            return new RSAImplementation.RSAOpenSsl();
-        }
+        public static new RSA Create() => new RSAImplementation.RSAOpenSsl();
     }
 
     internal static partial class RSAImplementation
@@ -123,6 +120,35 @@ namespace System.Security.Cryptography
             return plainBytes;
         }
 
+        public override bool TryDecrypt(ReadOnlySpan<byte> source, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
+        {
+            if (padding == null)
+            {
+                throw new ArgumentNullException(nameof(padding));
+            }
+
+            Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding);
+            SafeRsaHandle key = _key.Value;
+            CheckInvalidKey(key);
+
+            if (destination.Length < Interop.Crypto.RsaSize(key))
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            int returnValue = Interop.Crypto.RsaPrivateDecrypt(source.Length, source, destination, key, rsaPadding);
+            CheckReturn(returnValue);
+
+            // If the padding mode is RSA_NO_PADDING then the size of the decrypted block
+            // will be RSA_size. If any padding was used, then some amount (determined by the padding algorithm)
+            // will have been reduced, and only returnValue bytes were part of the decrypted
+            // body.  Either way, we can just use returnValue, but some additional bytes may have been overwritten
+            // in the destination span.
+            bytesWritten = returnValue;
+            return true;
+        }
+
         public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding)
         {
             if (data == null)
@@ -148,21 +174,34 @@ namespace System.Security.Cryptography
             return buf;
         }
 
-        private static Interop.Crypto.RsaPadding GetInteropPadding(RSAEncryptionPadding padding)
+        public override bool TryEncrypt(ReadOnlySpan<byte> source, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
         {
-            if (padding == RSAEncryptionPadding.Pkcs1)
+            if (padding == null)
             {
-                return Interop.Crypto.RsaPadding.Pkcs1;
+                throw new ArgumentNullException(nameof(padding));
             }
-            else if (padding == RSAEncryptionPadding.OaepSHA1)
+
+            Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding);
+            SafeRsaHandle key = _key.Value;
+            CheckInvalidKey(key);
+
+            if (destination.Length < Interop.Crypto.RsaSize(key))
             {
-                return Interop.Crypto.RsaPadding.OaepSHA1;
+                bytesWritten = 0;
+                return false;
             }
-            else
-            {
-                throw PaddingModeNotSupported();
-            }
+
+            int returnValue = Interop.Crypto.RsaPublicEncrypt(source.Length, source, destination, key, rsaPadding);
+            CheckReturn(returnValue);
+
+            bytesWritten = returnValue;
+            return true;
         }
+
+        private static Interop.Crypto.RsaPadding GetInteropPadding(RSAEncryptionPadding padding) =>
+            padding == RSAEncryptionPadding.Pkcs1 ? Interop.Crypto.RsaPadding.Pkcs1 :
+            padding == RSAEncryptionPadding.OaepSHA1 ? Interop.Crypto.RsaPadding.OaepSHA1 :
+            throw PaddingModeNotSupported();
 
         public override RSAParameters ExportParameters(bool includePrivateParameters)
         {
@@ -223,7 +262,7 @@ namespace System.Security.Cryptography
             }
 
             FreeKey();
-            _key = new Lazy<SafeRsaHandle>(() => key, isThreadSafe:true);
+            _key = new Lazy<SafeRsaHandle>(key);
 
             // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
             // with the already loaded key.
@@ -245,11 +284,7 @@ namespace System.Security.Cryptography
             if (_key != null && _key.IsValueCreated)
             {
                 SafeRsaHandle handle = _key.Value;
-
-                if (handle != null)
-                {
-                    handle.Dispose();
-                }
+                handle?.Dispose();
             }
         }
 
@@ -308,12 +343,10 @@ namespace System.Security.Cryptography
 
         private static void CheckBoolReturn(int returnValue)
         {
-            if (returnValue == 1)
+            if (returnValue != 1)
             {
-                return;
+               throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
-
-            throw Interop.Crypto.CreateOpenSslCryptographicException();
         }
 
         private SafeRsaHandle GenerateKey()
@@ -350,15 +383,14 @@ namespace System.Security.Cryptography
             return key;
         }
 
-        protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
-        {
-            return AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
-        }
+        protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
+            AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
 
-        protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
-        {
-            return AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
-        }
+        protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
+            AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
+
+        protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
+            AsymmetricAlgorithmHelpers.TryHashData(source, destination, hashAlgorithm, out bytesWritten);
 
         public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
@@ -404,6 +436,42 @@ namespace System.Security.Cryptography
             return signature;
         }
 
+        public override bool TrySignHash(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten)
+        {
+            if (string.IsNullOrEmpty(hashAlgorithm.Name))
+            {
+                throw HashAlgorithmNameNullOrEmpty();
+            }
+            if (padding == null)
+            {
+                throw new ArgumentNullException(nameof(padding));
+            }
+            if (padding != RSASignaturePadding.Pkcs1)
+            {
+                throw PaddingModeNotSupported();
+            }
+
+            int algorithmNid = GetAlgorithmNid(hashAlgorithm);
+            SafeRsaHandle rsa = _key.Value;
+
+            int bytesRequired = Interop.Crypto.RsaSize(rsa);
+            if (destination.Length < bytesRequired)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            int signatureSize;
+            if (!Interop.Crypto.RsaSign(algorithmNid, source, source.Length, destination, out signatureSize, rsa))
+            {
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
+
+            Debug.Assert(signatureSize == bytesRequired, $"RSA_sign reported signatureSize was {signatureSize}, when {bytesRequired} was expected");
+            bytesWritten = signatureSize;
+            return true;
+        }
+
         public override bool VerifyHash(
             byte[] hash,
             byte[] signature,
@@ -411,29 +479,35 @@ namespace System.Security.Cryptography
             RSASignaturePadding padding)
         {
             if (hash == null)
+            {
                 throw new ArgumentNullException(nameof(hash));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
-            if (padding == null)
-                throw new ArgumentNullException(nameof(padding));
-            if (padding != RSASignaturePadding.Pkcs1)
-                throw PaddingModeNotSupported();
+            }
+            if (signature == null)
+            {
+                throw new ArgumentNullException(nameof(signature));
+            }
 
-            return VerifyHash(hash, signature, hashAlgorithm);
+            return VerifyHash(new ReadOnlySpan<byte>(hash), new ReadOnlySpan<byte>(signature), hashAlgorithm, padding);
         }
 
-        private bool VerifyHash(byte[] hash, byte[] signature, HashAlgorithmName hashAlgorithmName)
+        public override bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
-            int algorithmNid = GetAlgorithmNid(hashAlgorithmName);
-            SafeRsaHandle rsa = _key.Value;
+            if (string.IsNullOrEmpty(hashAlgorithm.Name))
+            {
+                throw HashAlgorithmNameNullOrEmpty();
+            }
+            if (padding == null)
+            {
+                throw new ArgumentNullException(nameof(padding));
+            }
+            if (padding != RSASignaturePadding.Pkcs1)
+            {
+                throw PaddingModeNotSupported();
+            }
 
-            return Interop.Crypto.RsaVerify(
-                algorithmNid,
-                hash,
-                hash.Length,
-                signature,
-                signature.Length,
-                rsa);
+            int algorithmNid = GetAlgorithmNid(hashAlgorithm);
+            SafeRsaHandle rsa = _key.Value;
+            return Interop.Crypto.RsaVerify(algorithmNid, hash, hash.Length, signature, signature.Length, rsa);
         }
 
         private static int GetAlgorithmNid(HashAlgorithmName hashAlgorithmName)
@@ -452,15 +526,11 @@ namespace System.Security.Cryptography
             return nid;
         }
 
-        private static Exception PaddingModeNotSupported()
-        {
-            return new CryptographicException(SR.Cryptography_InvalidPaddingMode);
-        }
+        private static Exception PaddingModeNotSupported() =>
+            new CryptographicException(SR.Cryptography_InvalidPaddingMode);
 
-        private static Exception HashAlgorithmNameNullOrEmpty()
-        {
-            return new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, "hashAlgorithm");
-        }
+        private static Exception HashAlgorithmNameNullOrEmpty() =>
+            new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, "hashAlgorithm");
     }
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
     }

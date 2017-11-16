@@ -8,7 +8,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.o
 {
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of Optional Params</Title>
-    // <Description>Simple Declaration of a an Extension method with optional parameters</Description>
+    // <Description>Simple Declaration of an Extension method with optional parameters</Description>
     // <Expects status=success></Expects>
     // <Code>
     public static class Extension
@@ -46,7 +46,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.o
 {
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of Optional Params</Title>
-    // <Description>Simple Declaration of a an Extension method with optional parameters</Description>
+    // <Description>Simple Declaration of an Extension method with optional parameters</Description>
     // <Expects status=success></Expects>
     // <Code>
     public static class Extension
@@ -95,7 +95,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.o
 {
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of Optional Params</Title>
-    // <Description>Simple Declaration of a an Extension method with optional parameters</Description>
+    // <Description>Simple Declaration of an Extension method with optional parameters</Description>
     // <Expects status=success></Expects>
     // <Code>
     public static class Extension

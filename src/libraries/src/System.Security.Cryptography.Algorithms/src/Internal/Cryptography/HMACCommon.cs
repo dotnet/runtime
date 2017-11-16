@@ -4,9 +4,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Security.Cryptography;
-
-using Internal.Cryptography;
 
 namespace Internal.Cryptography
 {
@@ -30,13 +27,7 @@ namespace Internal.Cryptography
             ChangeKey(key);
         }
 
-        public int HashSizeInBits
-        {
-            get
-            {
-                return _hMacProvider.HashSizeInBytes * 8;
-            }
-        }
+        public int HashSizeInBits => _hMacProvider.HashSizeInBytes * 8;
 
         public void ChangeKey(byte[] key)
         {
@@ -46,15 +37,16 @@ namespace Internal.Cryptography
             {
                 // Perform RFC 2104, section 2 key adjustment.
                 if (_lazyHashProvider == null)
+                {
                     _lazyHashProvider = HashProviderDispenser.CreateHashProvider(_hashAlgorithmId);
+                }
                 _lazyHashProvider.AppendHashData(key, 0, key.Length);
                 key = _lazyHashProvider.FinalizeHashAndReset();
             }
 
             HashProvider oldHashProvider = _hMacProvider;
             _hMacProvider = null;
-            if (oldHashProvider != null)
-                oldHashProvider.Dispose(true);
+            oldHashProvider?.Dispose(true);
             _hMacProvider = HashProviderDispenser.CreateMacProvider(_hashAlgorithmId, key);
 
             ActualKey = key;
@@ -65,31 +57,31 @@ namespace Internal.Cryptography
         public byte[] ActualKey { get; private set; }
 
         // Adds new data to be hashed. This can be called repeatedly in order to hash data from noncontiguous sources.
-        public void AppendHashData(byte[] data, int offset, int count)
-        {
+        public void AppendHashData(byte[] data, int offset, int count) =>
             _hMacProvider.AppendHashData(data, offset, count);
-        }
+
+        public void AppendHashData(ReadOnlySpan<byte> source) =>
+            _hMacProvider.AppendHashData(source);
 
         // Compute the hash based on the appended data and resets the HashProvider for more hashing.
-        public byte[] FinalizeHashAndReset()
-        {
-            return _hMacProvider.FinalizeHashAndReset();
-        }
+        public byte[] FinalizeHashAndReset() =>
+            _hMacProvider.FinalizeHashAndReset();
+
+        public bool TryFinalizeHashAndReset(Span<byte> destination, out int bytesWritten) =>
+            _hMacProvider.TryFinalizeHashAndReset(destination, out bytesWritten);
 
         public void Dispose(bool disposing)
         {
-            if (disposing)
+            if (disposing && _hMacProvider != null)
             {
-                if (_hMacProvider != null)
-                    _hMacProvider.Dispose(true);
+                _hMacProvider.Dispose(true);
                 _hMacProvider = null;
             }
         }
 
-        private readonly String _hashAlgorithmId;
+        private readonly string _hashAlgorithmId;
         private HashProvider _hMacProvider;
         private volatile HashProvider _lazyHashProvider;
-
         private readonly int _blockSize;
     }
 }

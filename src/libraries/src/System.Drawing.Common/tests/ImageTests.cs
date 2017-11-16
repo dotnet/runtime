@@ -19,7 +19,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(InvalidBytes_TestData))]
         public void FromFile_InvalidBytes_ThrowsOutOfMemoryException(byte[] bytes)
         {
@@ -30,6 +31,7 @@ namespace System.Drawing.Tests
             }
         }
 
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [Fact]
         public void FromFile_NullFileName_ThrowsArgumentNullException()
         {
@@ -37,6 +39,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentNullException>("path", () => Image.FromFile(null, useEmbeddedColorManagement: true));
         }
 
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [Fact]
         public void FromFile_EmptyFileName_ThrowsArgumentNullException()
         {
@@ -44,13 +47,27 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>("path", null, () => Image.FromFile(string.Empty, useEmbeddedColorManagement: true));
         }
 
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [Fact]
-        public void FromFile_LongFile_ThrowsPathTooLongException()
+        public void FromFile_LongSegment_ThrowsException()
         {
-            string fileName = new string('a', 261);
+            // Throws PathTooLongException on Desktop and FileNotFoundException elsewhere.
+            if (PlatformDetection.IsFullFramework)
+            {
+                string fileName = new string('a', 261);
 
-            Assert.Throws<PathTooLongException>(() => Image.FromFile(fileName));
-            Assert.Throws<PathTooLongException>(() => Image.FromFile(fileName, useEmbeddedColorManagement: true));
+                Assert.Throws<PathTooLongException>(() => Image.FromFile(fileName));
+                Assert.Throws<PathTooLongException>(() => Image.FromFile(fileName,
+                    useEmbeddedColorManagement: true));
+            }
+            else
+            {
+                string fileName = new string('a', 261);
+
+                Assert.Throws<FileNotFoundException>(() => Image.FromFile(fileName));
+                Assert.Throws<FileNotFoundException>(() => Image.FromFile(fileName,
+                    useEmbeddedColorManagement: true));
+            }
         }
 
         [Fact]
@@ -60,7 +77,8 @@ namespace System.Drawing.Tests
             Assert.Throws<FileNotFoundException>(() => Image.FromFile("NoSuchFile", useEmbeddedColorManagement: true));
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(InvalidBytes_TestData))]
         public void FromStream_InvalidBytes_ThrowsArgumentException(byte[] bytes)
         {

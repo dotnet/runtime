@@ -11,7 +11,7 @@ namespace System.ComponentModel.Design
     using System.Threading;
 
     /// <summary>
-    ///    <para>Specifies indentifiers for the standard set of commands that are available to
+    ///    <para>Specifies identifiers for the standard set of commands that are available to
     ///       most applications.</para>
     /// </summary>
     public class StandardCommands

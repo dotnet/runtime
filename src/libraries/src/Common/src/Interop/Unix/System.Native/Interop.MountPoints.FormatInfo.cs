@@ -21,53 +21,101 @@ internal static partial class Interop
         /// </remarks>
         internal enum UnixFileSystemTypes : long
         {
-            adfs = 0xadf5,
+            adfs = 0xADF5,
             affs = 0xADFF,
+            afs = 0x5346414F,
+            anoninode = 0x09041934,
+            aufs = 0x61756673,
+            autofs = 0x0187,
             befs = 0x42465331,
+            bdevfs = 0x62646576,
             bfs = 0x1BADFACE,
+            binfmt_misc = 0x42494E4D,
+            btrfs = 0x9123683E,
+            ceph = 0x00C36400,
+            cgroupfs = 0x0027E0EB,
             cifs = 0xFF534D42,
             coda = 0x73757245,
             coherent = 0x012FF7B7,
-            cramfs = 0x28cd3d45,
+            cramfs = 0x28CD3D45,
+            debugfs = 0x64626720,
             devfs = 0x1373,
+            devpts = 0x1CD1,
+            ecryptfs = 0xF15F,
             efs = 0x00414A53,
             ext = 0x137D,
             ext2_old = 0xEF51,
             ext2 = 0xEF53,
             ext3 = 0xEF53,
             ext4 = 0xEF53,
+            fat = 0x4006,
+            fhgfs = 0x19830326,
+            fuseblk = 0x65735546,
+            fusectl = 0x65735543,
+            futexfs = 0x0BAD1DEA,
+            gfsgfs2 = 0x1161970,
+            gpfs = 0x47504653,
             hfs = 0x4244,
             hpfs = 0xF995E849,
-            hugetlbfs = 0x958458f6,
+            hugetlbfs = 0x958458F6,
+            inodefs = 0x11307854,
+            inotifyfs = 0x2BAD1DEA,
             isofs = 0x9660,
-            jffs2 = 0x72b6,
-            jfs = 0x3153464a,
+            // isofs = 0x4004, // R_WIN
+            // isofs = 0x4000, // WIN
+            jffs = 0x07C0,
+            jffs2 = 0x72B6,
+            jfs = 0x3153464A,
+            kafs = 0x6B414653,
+            lustre = 0x0BD00BD0,
             minix_old = 0x137F, /* orig. minix */
             minix = 0x138F, /* 30 char minix */
             minix2 = 0x2468, /* minix V2 */
-            minix2v2 = 0x2478, /* minix V2, 30 char names */
-            msdos = 0x4d44,
-            ncpfs = 0x564c,
+            minix2v2 = 0x2478, /* MINIX V2, 30 char names */
+            minix3 = 0x4D5A,
+            mqueue = 0x19800202,
+            msdos = 0x4D44,
             nfs = 0x6969,
-            ntfs = 0x5346544e,
-            openprom = 0x9fa1,
-            overlay = 0x794c7630,
-            overlayfs = 0x794c764f,
-            proc = 0x9fa0,
-            qnx4 = 0x002f,
+            nfsd = 0x6E667364,
+            nilfs = 0x3434,
+            novell = 0x564C,
+            ntfs = 0x5346544E,
+            openprom = 0x9FA1,
+            ocfs2 = 0x7461636F,
+            overlay = 0x794C7630,
+            overlayfs = 0x794C764F,
+            panfs = 0xAAD7AAEA,
+            pipefs = 0x50495045,
+            proc = 0x9FA0,
+            pstorefs = 0x6165676C,
+            qnx4 = 0x002F,
+            qnx6 = 0x68191122,
+            ramfs = 0x858458F6,
             reiserfs = 0x52654973,
             romfs = 0x7275,
+            rpc_pipefs = 0x67596969,
+            securityfs = 0x73636673,
+            selinux = 0xF97CFF8C,
             smb = 0x517B,
+            sockfs = 0x534F434B,
+            squashfs = 0x73717368,
+            sysfs = 0x62656572,
             sysv2 = 0x012FF7B6,
             sysv4 = 0x012FF7B5,
             tmpfs = 0x01021994,
             udf = 0x15013346,
             ufs = 0x00011954,
-            usbdevice = 0x9fa2,
-            vxfs = 0xa501FCF5,
+            // ufs = 0x54190100, // byteswapped
+            usbdevice = 0x9FA2,
+            v9fs = 0x01021997,
+            vmhgfs = 0xBACBACBC,
+            vxfs = 0xA501FCF5,
+            vzfs = 0x565A4653,
+            xenfs = 0xABBA1974,
             xenix = 0x012FF7B4,
             xfs = 0x58465342,
-            xiafs = 0x012FD16D,
+            xia = 0x012FD16D,
+            zfs = 0x2FC12FC1,
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -130,7 +178,7 @@ internal static partial class Interop
         /// <returns>The recognized drive type.</returns>
         private static DriveType GetDriveType(string fileSystemName)
         {
-            // This list is based primarily on "man fs", "man mount", "mntent.h", "/proc/filesystems",
+            // This list is based primarily on "man fs", "man mount", "mntent.h", "/proc/filesystems", coreutils "stat.c",
             // and "wiki.debian.org/FileSystem". It can be extended over time as we 
             // find additional file systems that should be recognized as a particular drive type.
             switch (fileSystemName)
@@ -143,91 +191,154 @@ internal static partial class Interop
                 case "umview-mod-umfuseiso9660":
                     return DriveType.CDRom;
 
+                case "aafs":
                 case "adfs":
                 case "affs":
+                case "anoninode":
+                case "anon-inode FS":
                 case "apfs":
+                case "autofs":
+                case "balloon-kvm-fs":
+                case "bdevfs":
                 case "befs":
                 case "bfs":
+                case "bpf_fs":
                 case "btrfs":
+                case "btrfs_test":
+                case "cgroup2fs":
+                case "cgroupfs":
+                case "coh":
+                case "cramfs":
+                case "cramfs-wend":
+                case "daxfs":
                 case "drvfs":
                 case "ecryptfs":
+                case "efivarfs":
                 case "efs":
+                case "exofs":
                 case "ext":
                 case "ext2":
                 case "ext2_old":
                 case "ext3":
+                case "ext2/ext3":
                 case "ext4":
                 case "ext4dev":
+                case "f2fs":
                 case "fat":
-                case "fuseblk":
                 case "fuseext2":
                 case "fusefat":
+                case "futexfs":
                 case "hfs":
+                case "hfs+":
                 case "hfsplus":
+                case "hfsx":
+                case "hostfs":
                 case "hpfs":
+                case "inodefs":
+                case "inotifyfs":
                 case "jbd":
                 case "jbd2":
-                case "jfs":
                 case "jffs":
                 case "jffs2":
+                case "jfs":
+                case "logfs":
                 case "lxfs":
+                case "minix (30 char.)":
+                case "minix v2 (30 char.)":
+                case "minix v2":
                 case "minix":
                 case "minix_old":
                 case "minix2":
                 case "minix2v2":
+                case "minix3":
+                case "mlfs":
                 case "msdos":
+                case "nilfs":
+                case "nsfs":
+                case "ntfs":
                 case "ocfs2":
                 case "omfs":
                 case "openprom":
                 case "overlay":
                 case "overlayfs":
-                case "ntfs":
+                case "pstorefs":
                 case "qnx4":
+                case "qnx6":
                 case "reiserfs":
+                case "rpc_pipefs":
+                case "selinux":
+                case "smackfs":
                 case "squashfs":
                 case "swap":
+                case "sysfs":
                 case "sysv":
+                case "sysv2":
+                case "sysv4":
+                case "tracefs":
                 case "ubifs":
                 case "udf":
                 case "ufs":
                 case "umsdos":
                 case "umview-mod-umfuseext2":
+                case "usbdevfs":
+                case "v9fs":
+                case "vzfs":
+                case "wslfs":
+                case "xenfs":
                 case "xenix":
                 case "xfs":
+                case "xia":
                 case "xiafs":
                 case "xmount":
+                case "zfs":
                 case "zfs-fuse":
+                case "zsmallocfs":
                     return DriveType.Fixed;
 
                 case "9p":
-                case "autofs":
+                case "acfs":
+                case "afs":
+                case "aufs":
                 case "autofs4":
                 case "beaglefs":
+                case "ceph":
                 case "cifs":
                 case "coda":
                 case "coherent":
                 case "curlftpfs":
                 case "davfs2":
                 case "dlm":
+                case "fhgfs":
                 case "flickrfs":
+                case "fuseblk":
                 case "fusedav":
                 case "fusesmb":
+                case "gfsgfs2":
+                case "gfs/gfs2":
                 case "gfs2":
                 case "glusterfs-client":
                 case "gmailfs":
+                case "gpfs":
+                case "ibrix":
+                case "k-afs":
                 case "kafs":
                 case "ltspfs":
+                case "lustre":
                 case "ncpfs":
                 case "nfs":
                 case "nfs4":
+                case "nfsd":
+                case "novell":
                 case "obexfs":
+                case "panfs":
+                case "prl_fs":
                 case "s3ql":
                 case "smb":
+                case "smb2":
                 case "smbfs":
+                case "snfs":
                 case "sshfs":
-                case "sysfs":
-                case "sysv2":
-                case "sysv4":
+                case "vmhgfs":
                 case "vxfs":
                 case "wikipediafs":
                     return DriveType.Network;
@@ -239,7 +350,6 @@ internal static partial class Interop
                 case "binfmt_misc":
                 case "cgroup":
                 case "configfs":
-                case "cramfs":
                 case "cryptkeeper":
                 case "cpuset":
                 case "debugfs":

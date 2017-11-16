@@ -2,24 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Runtime.InteropServices;
-    using System.Collections;
-    using System.DirectoryServices;
-    using System.Globalization;
-
     public class ReadOnlySiteLinkCollection : ReadOnlyCollectionBase
     {
         internal ReadOnlySiteLinkCollection() { }
 
         public ActiveDirectorySiteLink this[int index]
         {
-            get
-            {
-                return (ActiveDirectorySiteLink)InnerList[index];
-            }
+            get => (ActiveDirectorySiteLink)InnerList[index];
         }
 
         public bool Contains(ActiveDirectorySiteLink link)
@@ -67,15 +60,8 @@ namespace System.DirectoryServices.ActiveDirectory
             InnerList.CopyTo(links, index);
         }
 
-        internal int Add(ActiveDirectorySiteLink link)
-        {
-            return InnerList.Add(link);
-        }
+        internal int Add(ActiveDirectorySiteLink link) => InnerList.Add(link);
 
-        internal void Clear()
-        {
-            InnerList.Clear();
-        }
+        internal void Clear() => InnerList.Clear();
     }
 }
-

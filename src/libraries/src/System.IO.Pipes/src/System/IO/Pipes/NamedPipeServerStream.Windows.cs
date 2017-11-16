@@ -171,11 +171,11 @@ namespace System.IO.Pipes
             // now handle win32 impersonate/revert specific errors by throwing corresponding exceptions
             if (execHelper._impersonateErrorCode != 0)
             {
-                WinIOError(execHelper._impersonateErrorCode);
+                throw WinIOError(execHelper._impersonateErrorCode);
             }
             else if (execHelper._revertImpersonateErrorCode != 0)
             {
-                WinIOError(execHelper._revertImpersonateErrorCode);
+                throw WinIOError(execHelper._revertImpersonateErrorCode);
             }
         }
 
@@ -248,7 +248,7 @@ namespace System.IO.Pipes
                 throw new InvalidOperationException(SR.InvalidOperation_PipeNotAsync);
             }
 
-            var completionSource = new ConnectionCompletionSource(this, cancellationToken);
+            var completionSource = new ConnectionCompletionSource(this);
 
             if (!Interop.Kernel32.ConnectNamedPipe(InternalHandle, completionSource.Overlapped))
             {
@@ -280,7 +280,7 @@ namespace System.IO.Pipes
             }
 
             // If we are here then connection is pending.
-            completionSource.RegisterForCancellation();
+            completionSource.RegisterForCancellation(cancellationToken);
 
             return completionSource.Task;
         }

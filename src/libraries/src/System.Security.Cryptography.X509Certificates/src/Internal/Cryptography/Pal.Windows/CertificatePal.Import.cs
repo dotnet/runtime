@@ -234,9 +234,6 @@ namespace Internal.Cryptography.Pal
             // For .NET Native (UWP) the API used to delete the private key (if it wasn't added to a store) is not
             // allowed to be called if the key is stored in CAPI.  So for UWP force the key to be stored in the
             // CNG Key Storage Provider, then deleting the key with CngKey.Delete will clean up the file on disk, too.
-#if uap
-            pfxCertStoreFlags |= PfxCertStoreFlags.PKCS12_ALWAYS_CNG_KSP;
-#endif
 
             return pfxCertStoreFlags;
         }

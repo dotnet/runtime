@@ -22,14 +22,12 @@ namespace System.Net.Tests
         public void Dispose() => _factory.Dispose();
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public static void Supported_True()
         {
             Assert.True(HttpListener.IsSupported);
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void BasicTest_StartStop_NoException()
         {
             HttpListener listener = new HttpListener();
@@ -46,7 +44,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void BasicTest_StartCloseAbort_NoException()
         {
             HttpListener listener = new HttpListener();
@@ -63,7 +60,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void BasicTest_StartAbortClose_NoException()
         {
             HttpListener listener = new HttpListener();
@@ -80,7 +76,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void BasicTest_StopNoStart_NoException()
         {
             HttpListener listener = new HttpListener();
@@ -89,7 +84,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void BasicTest_CloseNoStart_NoException()
         {
             HttpListener listener = new HttpListener();
@@ -97,7 +91,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void BasicTest_AbortNoStart_NoException()
         {
             HttpListener listener = new HttpListener();
@@ -105,7 +98,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void BasicTest_StartThrowsAbortCalledInFinally_AbortDoesntThrow()
         {
             HttpListener listener = new HttpListener();

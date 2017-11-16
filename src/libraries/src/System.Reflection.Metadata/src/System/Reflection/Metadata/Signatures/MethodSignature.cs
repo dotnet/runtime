@@ -11,7 +11,7 @@ namespace System.Reflection.Metadata
     /// Represents a method (definition, reference, or standalone) or property signature.
     /// In the case of properties, the signature matches that of a getter with a distinguishing <see cref="SignatureHeader"/>.
     /// </summary>
-    public struct MethodSignature<TType>
+    public readonly struct MethodSignature<TType>
     {
         /// <summary>
         /// Represents the information in the leading byte of the signature (kind, calling convention, flags).

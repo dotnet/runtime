@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 using System.Threading;
 
 namespace System.Collections.Concurrent
@@ -53,16 +52,11 @@ namespace System.Collections.Concurrent
         /// Lock used to protect cross-segment operations, including any updates to <see cref="_tail"/> or <see cref="_head"/>
         /// and any operations that need to get a consistent view of them.
         /// </summary>
-        [NonSerialized]
         private object _crossSegmentLock;
         /// <summary>The current tail segment.</summary>
-        [NonSerialized]
         private volatile Segment _tail;
         /// <summary>The current head segment.</summary>
-        [NonSerialized]
         private volatile Segment _head;
-        /// <summary>Field used to temporarily store the contents of the queue for serialization.</summary>
-        private T[] _serializationArray;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConcurrentQueue{T}"/> class.
@@ -71,29 +65,6 @@ namespace System.Collections.Concurrent
         {
             _crossSegmentLock = new object();
             _tail = _head = new Segment(InitialSegmentLength);
-        }
-
-        /// <summary>Set the data array to be serialized.</summary>
-        [OnSerializing]
-        private void OnSerializing(StreamingContext context)
-        {
-            _serializationArray = ToArray();
-        }
-
-        /// <summary>Clear the data array that was serialized.</summary>
-        [OnSerialized]
-        private void OnSerialized(StreamingContext context)
-        {
-            _serializationArray = null;
-        }
-
-        /// <summary>Construct the queue from the deserialized <see cref="_serializationArray"/>.</summary>
-        [OnDeserialized]
-        private void OnDeserialized(StreamingContext context)
-        {
-            Debug.Assert(_serializationArray != null);
-            InitializeFromCollection(_serializationArray);
-            _serializationArray = null;
         }
 
         /// <summary>
@@ -115,7 +86,7 @@ namespace System.Collections.Concurrent
                 int count = c.Count;
                 if (count > length)
                 {
-                    length = RoundUpToPowerOf2(count);
+                    length = Math.Min(RoundUpToPowerOf2(count), MaxSegmentLength);
                 }
             }
 
@@ -676,7 +647,7 @@ namespace System.Collections.Concurrent
                         // initial segment length; if these observations are happening frequently,
                         // this will help to avoid wasted memory, and if they're not, we'll
                         // relatively quickly grow again to a larger size.
-                        int nextSize = tail._preservedForObservation ? InitialSegmentLength : tail.Capacity * 2;
+                        int nextSize = tail._preservedForObservation ? InitialSegmentLength : Math.Min(tail.Capacity * 2, MaxSegmentLength);
                         var newTail = new Segment(nextSize);
 
                         // Hook up the new tail.
@@ -856,7 +827,7 @@ namespace System.Collections.Concurrent
             /// <summary>Mask for quickly accessing a position within the queue's array.</summary>
             internal readonly int _slotsMask;
             /// <summary>The head and tail positions, with padding to help avoid false sharing contention.</summary>
-            /// <remarks>Dequeueing happens from the head, enqueueing happens at the tail.</remarks>
+            /// <remarks>Dequeuing happens from the head, enqueuing happens at the tail.</remarks>
             internal PaddedHeadAndTail _headAndTail; // mutable struct: do not make this readonly
 
             /// <summary>Indicates whether the segment has been marked such that dequeues don't overwrite the removed data.</summary>
@@ -1141,10 +1112,10 @@ namespace System.Collections.Concurrent
 
     /// <summary>Padded head and tail indices, to avoid false sharing between producers and consumers.</summary>
     [DebuggerDisplay("Head = {Head}, Tail = {Tail}")]
-    [StructLayout(LayoutKind.Explicit, Size = 192)] // padding before/between/after fields based on typical cache line size of 64
+    [StructLayout(LayoutKind.Explicit, Size = 384)] // padding before/between/after fields based on worst case cache line size of 128
     internal struct PaddedHeadAndTail
     {
-        [FieldOffset(64)]  public int Head;
-        [FieldOffset(128)] public int Tail;
+        [FieldOffset(128)] public int Head;
+        [FieldOffset(256)] public int Tail;
     }
 }

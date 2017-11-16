@@ -33,7 +33,7 @@ namespace System.Drawing.Imaging
         /// </summary>
         Alpha = 0x00040000,
         /// <summary>
-        /// Specifies that pixel format contains pre-multipled alpha values.
+        /// Specifies that pixel format contains pre-multiplied alpha values.
         /// </summary>
         PAlpha = 0x00080000, // What's this?
         Extended = 0x00100000,
@@ -48,7 +48,7 @@ namespace System.Drawing.Imaging
         DontCare = 0,
         // makes it into devtools, we can change this.
         /// <summary>
-        /// Specifies thatpixel format is 1 bit per pixel indexed color. The color table therefore has two colors in it.
+        /// Specifies that pixel format is 1 bit per pixel indexed color. The color table therefore has two colors in it.
         /// </summary>
         Format1bppIndexed = 1 | (1 << 8) | (int)Indexed | (int)Gdi,
         /// <summary>

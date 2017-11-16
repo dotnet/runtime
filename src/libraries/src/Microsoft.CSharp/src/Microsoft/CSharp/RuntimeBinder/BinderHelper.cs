@@ -37,11 +37,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 // Our contract with the DLR is such that we will not enter a bind unless we have
                 // values for the meta-objects involved.
 
-                if (!o.HasValue)
-                {
-                    Debug.Assert(false, "The runtime binder is being asked to bind a metaobject without a value");
-                    throw Error.InternalCompilerError();
-                }
+                Debug.Assert(o.HasValue);
 
                 CSharpArgumentInfo info = arginfosEnum.MoveNext() ? arginfosEnum.Current : null;
 
@@ -139,10 +135,34 @@ namespace Microsoft.CSharp.RuntimeBinder
                             typeof(RuntimeBinderException).GetConstructor(new Type[] { typeof(string) }),
                             Expression.Constant(e.Message)
                         ),
-                        GetTypeForErrorMetaObject(action, args.Length == 0 ? null : args[0])
+                        GetTypeForErrorMetaObject(action, args)
                     ),
                     restrictions
                 );
+            }
+        }
+
+        public static void ValidateBindArgument(DynamicMetaObject argument, string paramName)
+        {
+            if (argument == null)
+            {
+                throw Error.ArgumentNull(paramName);
+            }
+
+            if (!argument.HasValue)
+            {
+                throw Error.DynamicArgumentNeedsValue(paramName);
+            }
+        }
+
+        public static void ValidateBindArgument(DynamicMetaObject[] arguments, string paramName)
+        {
+            if (arguments != null) // null is treated as empty, so not invalid
+            {
+                for (int i = 0; i != arguments.Length; ++i)
+                {
+                    ValidateBindArgument(arguments[i], $"{paramName}[{i}]");
+                }
             }
         }
 
@@ -304,21 +324,16 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private static Type GetTypeForErrorMetaObject(DynamicMetaObjectBinder action, DynamicMetaObject arg0)
+        private static Type GetTypeForErrorMetaObject(DynamicMetaObjectBinder action, DynamicMetaObject[] args)
         {
             // This is similar to ConvertResult but has fewer things to worry about.
 
-            var invokeConstructor = action as CSharpInvokeConstructorBinder;
-            if (invokeConstructor != null)
+            if (action is CSharpInvokeConstructorBinder)
             {
-                Type result = arg0.Value as Type;
-                if (result == null)
-                {
-                    Debug.Assert(false);
-                    return typeof(object);
-                }
-
-                return result;
+                Debug.Assert(args != null);
+                Debug.Assert(args.Length != 0);
+                Debug.Assert(args[0].Value is Type);
+                return args[0].Value as Type;
             }
 
             return action.ReturnType;
@@ -365,19 +380,11 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        internal static List<T> ToList<T>(IEnumerable<T> source)
-        {
-            if (source == null)
-            {
-                return new List<T>();
-            }
-
-            return source.ToList();
-        }
+        internal static T[] ToArray<T>(IEnumerable<T> source) => source == null ? Array.Empty<T>() : source.ToArray();
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        internal static CallInfo CreateCallInfo(IEnumerable<CSharpArgumentInfo> argInfos, int discard)
+        internal static CallInfo CreateCallInfo(ref IEnumerable<CSharpArgumentInfo> argInfos, int discard)
         {
             // This function converts the C# Binder's notion of argument information to the
             // DLR's notion. The DLR counts arguments differently than C#. Here are some
@@ -395,8 +402,9 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             int argCount = 0;
             List<string> argNames = new List<string>();
-
-            foreach (CSharpArgumentInfo info in argInfos)
+            CSharpArgumentInfo[] infoArray = ToArray(argInfos);
+            argInfos = infoArray; // Write back the array to allow single enumeration.
+            foreach (CSharpArgumentInfo info in infoArray)
             {
                 if (info.NamedArgument)
                 {

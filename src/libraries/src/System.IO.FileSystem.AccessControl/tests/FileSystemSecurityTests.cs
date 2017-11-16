@@ -176,7 +176,7 @@ namespace System.IO
             Assert.Equal(1, rules.Count);
             var remainingRule = (FileSystemAccessRule)rules[0];
             Assert.Equal(new NTAccount(@"NT AUTHORITY\SYSTEM"), accessRuleAppendData.IdentityReference);
-            Assert.Equal(accessRuleAppendData.FileSystemRights,remainingRule.FileSystemRights);
+            Assert.Equal(accessRuleAppendData.FileSystemRights, remainingRule.FileSystemRights);
             Assert.Equal(AccessControlType.Allow, remainingRule.AccessControlType);
         }
 

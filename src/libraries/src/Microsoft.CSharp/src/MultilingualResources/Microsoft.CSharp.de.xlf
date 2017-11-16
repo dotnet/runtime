@@ -38,14 +38,6 @@
           <source>Cannot invoke a non-delegate type</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Ein Nichtdelegattyp kann nicht aufgerufen werden.</target>
         </trans-unit>
-        <trans-unit id="BindImplicitConversionRequireOneArgument" translate="yes" xml:space="preserve">
-          <source>Implicit conversion takes exactly one argument</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Eine implizite Konvertierung akzeptiert genau ein Argument.</target>
-        </trans-unit>
-        <trans-unit id="BindExplicitConversionRequireOneArgument" translate="yes" xml:space="preserve">
-          <source>Explicit conversion takes exactly one argument</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Eine explizite Konvertierung akzeptiert genau ein Argument.</target>
-        </trans-unit>
         <trans-unit id="BindBinaryAssignmentRequireTwoArguments" translate="yes" xml:space="preserve">
           <source>Binary operators cannot be invoked with one argument</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Binäre Operatoren können nicht mit einem Argument aufgerufen werden.</target>
@@ -69,10 +61,6 @@
         <trans-unit id="BadBinaryOps" translate="yes" xml:space="preserve">
           <source>Operator '{0}' cannot be applied to operands of type '{1}' and '{2}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Der {0}-Operator kann nicht auf Operanden vom Typ "{1}" und "{2}" angewendet werden.</target>
-        </trans-unit>
-        <trans-unit id="IntDivByZero" translate="yes" xml:space="preserve">
-          <source>Division by constant zero</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Division durch Konstante NULL</target>
         </trans-unit>
         <trans-unit id="BadIndexLHS" translate="yes" xml:space="preserve">
           <source>Cannot apply indexing with [] to an expression of type '{0}'</source>
@@ -142,10 +130,6 @@
           <source>The type '{0}' has no constructors defined</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Für den {0}-Typ sind keine Konstruktoren definiert.</target>
         </trans-unit>
-        <trans-unit id="BadDelegateConstructor" translate="yes" xml:space="preserve">
-          <source>The delegate '{0}' does not have a valid constructor</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der Delegat "{0}" enthält keinen gültigen Konstruktor.</target>
-        </trans-unit>
         <trans-unit id="PropertyLacksGet" translate="yes" xml:space="preserve">
           <source>The property or indexer '{0}' cannot be used in this context because it lacks the get accessor</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Die Eigenschaft oder der Indexer "{0}" kann in diesem Kontext nicht verwendet werden, weil der get-Accessor fehlt.</target>
@@ -174,21 +158,9 @@
           <source>Property or indexer '{0}' cannot be assigned to -- it is read only</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Für die Eigenschaft oder den Indexer "{0}" ist eine Zuweisung nicht möglich -- sie sind schreibgeschützt.</target>
         </trans-unit>
-        <trans-unit id="AbstractBaseCall" translate="yes" xml:space="preserve">
-          <source>Cannot call an abstract base member: '{0}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Ein abstrakter Basismember kann nicht aufgerufen werden: '{0}'</target>
-        </trans-unit>
         <trans-unit id="RefProperty" translate="yes" xml:space="preserve">
           <source>A property or indexer may not be passed as an out or ref parameter</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Eine Eigenschaft oder ein Indexer kann nicht als out- oder ref-Parameter übergeben werden.</target>
-        </trans-unit>
-        <trans-unit id="ManagedAddr" translate="yes" xml:space="preserve">
-          <source>Cannot take the address of, get the size of, or declare a pointer to a managed type ('{0}')</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Es ist nicht möglich, einen Zeiger für den verwalteten Typ ({0}) zu deklarieren oder dessen Adresse oder Größe abzurufen.</target>
-        </trans-unit>
-        <trans-unit id="FixedNotNeeded" translate="yes" xml:space="preserve">
-          <source>You cannot use the fixed statement to take the address of an already fixed expression</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Sie können nicht die fixed-Anweisung verwenden, um die Adresse eines bereits festen Ausdrucks abzurufen.</target>
         </trans-unit>
         <trans-unit id="UnsafeNeeded" translate="yes" xml:space="preserve">
           <source>Dynamic calls cannot be used in conjunction with pointers</source>
@@ -202,10 +174,6 @@
           <source>The type ('{0}') must contain declarations of operator true and operator false</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Der Typ ({0}) muss Deklarationen des True- und des False-Operators enthalten.</target>
         </trans-unit>
-        <trans-unit id="CheckedOverflow" translate="yes" xml:space="preserve">
-          <source>The operation overflows at compile time in checked mode</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Vorgangsüberlauf zur Kompilierzeit im aktivierten Modus.</target>
-        </trans-unit>
         <trans-unit id="ConstOutOfRangeChecked" translate="yes" xml:space="preserve">
           <source>Constant value '{0}' cannot be converted to a '{1}' (use 'unchecked' syntax to override)</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Der Konstantenwert "{0}" kann nicht in {1} konvertiert werden (verwenden Sie zum Außerkraftsetzen die unchecked-Syntax).</target>
@@ -213,26 +181,6 @@
         <trans-unit id="AmbigMember" translate="yes" xml:space="preserve">
           <source>Ambiguity between '{0}' and '{1}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Mehrdeutigkeit zwischen {0} und {1}</target>
-        </trans-unit>
-        <trans-unit id="SizeofUnsafe" translate="yes" xml:space="preserve">
-          <source>'{0}' does not have a predefined size, therefore sizeof can only be used in an unsafe context (consider using System.Runtime.InteropServices.Marshal.SizeOf)</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">{0} enthält keine vordefinierte Größe, sizeof kann daher nur in einem ungeschützten Kontext verwendet werden (verwenden Sie ggf. System.Runtime.InteropServices.Marshal.SizeOf).</target>
-        </trans-unit>
-        <trans-unit id="FieldInitRefNonstatic" translate="yes" xml:space="preserve">
-          <source>A field initializer cannot reference the non-static field, method, or property '{0}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Ein Feldinitialisierer kann nicht auf das nicht statische Feld bzw. die nicht statische Methode oder Eigenschaft "{0}" verweisen.</target>
-        </trans-unit>
-        <trans-unit id="CallingFinalizeDepracated" translate="yes" xml:space="preserve">
-          <source>Destructors and object.Finalize cannot be called directly. Consider calling IDisposable.Dispose if available.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Destruktoren und object.Finalize können nicht direkt aufgerufen werden. Rufen Sie IDisposable.Dispose auf, sofern verfügbar.</target>
-        </trans-unit>
-        <trans-unit id="CallingBaseFinalizeDeprecated" translate="yes" xml:space="preserve">
-          <source>Do not directly call your base class Finalize method. It is called automatically from your destructor.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Rufen Sie die Finalize-Methode Ihrer Basisklasse nicht direkt auf, da sie automatisch vom Destruktor aufgerufen wird.</target>
-        </trans-unit>
-        <trans-unit id="BadCastInFixed" translate="yes" xml:space="preserve">
-          <source>The right hand side of a fixed statement assignment may not be a cast expression</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Die rechte Seite einer fixed-Anweisungszuweisung darf kein Umwandlungsausdruck sein.</target>
         </trans-unit>
         <trans-unit id="NoImplicitConvCast" translate="yes" xml:space="preserve">
           <source>Cannot implicitly convert type '{0}' to '{1}'. An explicit conversion exists (are you missing a cast?)</source>
@@ -249,10 +197,6 @@
         <trans-unit id="BadArity" translate="yes" xml:space="preserve">
           <source>Using the generic {1} '{0}' requires '{2}' type arguments</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Die Verwendung von {1} "{0}" (generisch) erfordert {2}-Typargumente.</target>
-        </trans-unit>
-        <trans-unit id="BadTypeArgument" translate="yes" xml:space="preserve">
-          <source>The type '{0}' may not be used as a type argument</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der Typ "{0}" darf nicht als Typargument verwendet werden.</target>
         </trans-unit>
         <trans-unit id="TypeArgsNotAllowed" translate="yes" xml:space="preserve">
           <source>The {1} '{0}' cannot be used with type arguments</source>
@@ -278,29 +222,13 @@
           <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. The nullable type '{3}' does not satisfy the constraint of '{1}'. Nullable types can not satisfy any interface constraints.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Der {3}-Typ kann nicht als {2}-Typparameter im generischen Typ oder in der generischen {0}-Methode verwendet werden. Der {3}-Typ, der NULL-Werte zulässt, entspricht nicht der Einschränkung von {1}. Typen, die NULL-Werte zulassen, können Schnittstelleneinschränkungen nicht entsprechen.</target>
         </trans-unit>
-        <trans-unit id="GenericConstraintNotSatisfiedTyVar" translate="yes" xml:space="preserve">
-          <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. There is no boxing conversion or type parameter conversion from '{3}' to '{1}'.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der {3}-Typ kann nicht als {2}-Typparameter im generischen Typ oder in der generischen {0}-Methode verwendet werden. Es ist keine Boxing-Konvertierung oder Typparameterkonvertierung von {3} in {1} vorhanden.</target>
-        </trans-unit>
         <trans-unit id="GenericConstraintNotSatisfiedValType" translate="yes" xml:space="preserve">
           <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. There is no boxing conversion from '{3}' to '{1}'.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Der {3}-Typ kann nicht als {2}-Typparameter im generischen Typ oder in der generischen {0}-Methode verwendet werden. Es ist keine Boxing-Konvertierung von {3} in {1} vorhanden.</target>
         </trans-unit>
-        <trans-unit id="TypeVarCantBeNull" translate="yes" xml:space="preserve">
-          <source>Cannot convert null to type parameter '{0}' because it could be a non-nullable value type. Consider using 'default({0})' instead.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">NULL kann nicht in den {0}-Typparameter konvertiert werden, da dieser Werttyp möglicherweise nicht auf NULL festgelegt werden kann. Verwenden Sie stattdessen ggf. default({0}).</target>
-        </trans-unit>
-        <trans-unit id="BadRetType" translate="yes" xml:space="preserve">
-          <source>'{1} {0}' has the wrong return type</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der Rückgabetyp von {1} {0} ist falsch.</target>
-        </trans-unit>
         <trans-unit id="CantInferMethTypeArgs" translate="yes" xml:space="preserve">
           <source>The type arguments for method '{0}' cannot be inferred from the usage. Try specifying the type arguments explicitly.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Die Typargumente der {0}-Methode können nicht per Rückschluss aus der Syntax abgeleitet werden. Geben Sie die Typargumente explizit an.</target>
-        </trans-unit>
-        <trans-unit id="MethGrpToNonDel" translate="yes" xml:space="preserve">
-          <source>Cannot convert method group '{0}' to non-delegate type '{1}'. Did you intend to invoke the method?</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Die {0}-Methodengruppe kann nicht in den Nichtdelegattyp "{1}" konvertiert werden. Wollten Sie die Methode aufrufen?</target>
         </trans-unit>
         <trans-unit id="RefConstraintNotSatisfied" translate="yes" xml:space="preserve">
           <source>The type '{2}' must be a reference type in order to use it as parameter '{1}' in the generic type or method '{0}'</source>
@@ -310,29 +238,9 @@
           <source>The type '{2}' must be a non-nullable value type in order to use it as parameter '{1}' in the generic type or method '{0}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Der {2}-Typ darf keine NULL-Werte zulassen, wenn er als {1}-Parameter im generischen Typ oder in der generischen {0}-Methode verwendet werden soll.</target>
         </trans-unit>
-        <trans-unit id="CircularConstraint" translate="yes" xml:space="preserve">
-          <source>Circular constraint dependency involving '{0}' and '{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Einschränkungsringabhängigkeit zwischen {0} und {1}</target>
-        </trans-unit>
-        <trans-unit id="BaseConstraintConflict" translate="yes" xml:space="preserve">
-          <source>Type parameter '{0}' inherits conflicting constraints '{1}' and '{2}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der {0}-Typparameter erbt die in Konflikt stehenden Einschränkungen "{1}" und "{2}"</target>
-        </trans-unit>
-        <trans-unit id="ConWithValCon" translate="yes" xml:space="preserve">
-          <source>Type parameter '{1}' has the 'struct' constraint so '{1}' cannot be used as a constraint for '{0}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der {1}-Typparameter enthält die Einschränkung "struct". {1} kann daher nicht als Einschränkung für {0} verwendet werden.</target>
-        </trans-unit>
         <trans-unit id="AmbigUDConv" translate="yes" xml:space="preserve">
           <source>Ambiguous user defined conversions '{0}' and '{1}' when converting from '{2}' to '{3}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Mehrdeutige benutzerdefinierte Konvertierungen von {0} und {1} bei der Konvertierung von {2} in {3}</target>
-        </trans-unit>
-        <trans-unit id="PredefinedTypeNotFound" translate="yes" xml:space="preserve">
-          <source>Predefined type '{0}' is not defined or imported</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der vordefinierte {0}-Typ ist nicht definiert oder importiert.</target>
-        </trans-unit>
-        <trans-unit id="PredefinedTypeBadType" translate="yes" xml:space="preserve">
-          <source>Predefined type '{0}' is declared incorrectly</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der vordefinierte {0}-Typ wurde falsch deklariert.</target>
         </trans-unit>
         <trans-unit id="BindToBogus" translate="yes" xml:space="preserve">
           <source>'{0}' is not supported by the language</source>
@@ -342,45 +250,13 @@
           <source>'{0}': cannot explicitly call operator or accessor</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">{0}: Der Operator oder Accessor kann nicht explizit aufgerufen werden.</target>
         </trans-unit>
-        <trans-unit id="BogusType" translate="yes" xml:space="preserve">
-          <source>'{0}' is a type not supported by the language</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">{0} ist ein Typ, der von der Sprache nicht unterstützt wird.</target>
-        </trans-unit>
-        <trans-unit id="MissingPredefinedMember" translate="yes" xml:space="preserve">
-          <source>Missing compiler required member '{0}.{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der vom Compiler angeforderte Member "{0}.{1}" fehlt.</target>
-        </trans-unit>
-        <trans-unit id="LiteralDoubleCast" translate="yes" xml:space="preserve">
-          <source>Literal of type double cannot be implicitly converted to type '{1}'; use an '{0}' suffix to create a literal of this type</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Literale vom Typ "double" können nicht implizit in den {1}-Typ konvertiert werden. Verwenden Sie ein {0}-Suffix, um ein Literal mit diesem Typ zu erstellen.</target>
-        </trans-unit>
-        <trans-unit id="UnifyingInterfaceInstantiations" translate="yes" xml:space="preserve">
-          <source>'{0}' cannot implement both '{1}' and '{2}' because they may unify for some type parameter substitutions</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">{0} kann nicht gleichzeitig {1} und {2} implementieren, da diese für einige Typparameterersetzungen zusammengeführt werden können.</target>
-        </trans-unit>
         <trans-unit id="ConvertToStaticClass" translate="yes" xml:space="preserve">
           <source>Cannot convert to static type '{0}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Die Konvertierung in den statischen {0}-Typ ist nicht möglich.</target>
         </trans-unit>
-        <trans-unit id="GenericArgIsStaticClass" translate="yes" xml:space="preserve">
-          <source>'{0}': static types cannot be used as type arguments</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">{0}: Statische Typen können nicht als Typargumente verwendet werden.</target>
-        </trans-unit>
-        <trans-unit id="PartialMethodToDelegate" translate="yes" xml:space="preserve">
-          <source>Cannot create delegate from method '{0}' because it is a partial method without an implementing declaration</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Aus der {0}-Methode kann kein Delegat erstellt werden, da es sich um eine partielle Methode ohne implementierende Deklaration handelt.</target>
-        </trans-unit>
         <trans-unit id="IncrementLvalueExpected" translate="yes" xml:space="preserve">
           <source>The operand of an increment or decrement operator must be a variable, property or indexer</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Der Operand eines Inkrement- oder Dekrementoperators muss eine Variable, eine Eigenschaft oder ein Indexer sein.</target>
-        </trans-unit>
-        <trans-unit id="NoSuchMemberOrExtension" translate="yes" xml:space="preserve">
-          <source>'{0}' does not contain a definition for '{1}' and no extension method '{1}' accepting a first argument of type '{0}' could be found (are you missing a using directive or an assembly reference?)</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">{0} enthält keine Definition für {1}, und es konnte keine {1}-Erweiterungsmethode gefunden werden, die ein erstes Argument vom Typ "{0}" akzeptiert (möglicherweise fehlt eine Using-Direktive oder ein Assemblyverweis).</target>
-        </trans-unit>
-        <trans-unit id="ValueTypeExtDelegate" translate="yes" xml:space="preserve">
-          <source>Extension methods '{0}' defined on value type '{1}' cannot be used to create delegates</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Die im {1}-Werttyp definierten {0}-Erweiterungsmethoden können nicht zum Erstellen von Delegaten verwendet werden.</target>
         </trans-unit>
         <trans-unit id="BadArgCount" translate="yes" xml:space="preserve">
           <source>No overload for method '{0}' takes '{1}' arguments</source>
@@ -389,10 +265,6 @@
         <trans-unit id="BadArgTypes" translate="yes" xml:space="preserve">
           <source>The best overloaded method match for '{0}' has some invalid arguments</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Die beste Übereinstimmung für die überladene {0}-Methode enthält einige ungültige Argumente.</target>
-        </trans-unit>
-        <trans-unit id="BadArgType" translate="yes" xml:space="preserve">
-          <source>Argument '{0}': cannot convert from '{1}' to '{2}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">{0}-Argument: Die Konvertierung von {1} in {2} ist nicht möglich.</target>
         </trans-unit>
         <trans-unit id="RefLvalueExpected" translate="yes" xml:space="preserve">
           <source>A ref or out argument must be an assignable variable</source>
@@ -430,14 +302,6 @@
           <source>Cannot modify the return value of '{0}' because it is not a variable</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Der Rückgabewert von {0} ist keine Variable und kann daher nicht geändert werden.</target>
         </trans-unit>
-        <trans-unit id="BadArgExtraRef" translate="yes" xml:space="preserve">
-          <source>Argument '{0}' should not be passed with the '{1}' keyword</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Das {0}-Argument darf nicht mit dem {1}-Schlüsselwort übergeben werden.</target>
-        </trans-unit>
-        <trans-unit id="BadArgRef" translate="yes" xml:space="preserve">
-          <source>Argument '{0}' must be passed with the '{1}' keyword</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Das {0}-Argument muss mit dem {1}-Schlüsselwort übergeben werden.</target>
-        </trans-unit>
         <trans-unit id="AssgReadonly2" translate="yes" xml:space="preserve">
           <source>Members of readonly field '{0}' cannot be modified (except in a constructor or a variable initializer)</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Member des schreibgeschützten Felds "{0}" können nicht geändert werden (außer in einem Konstruktor oder Variableninitialisierer).</target>
@@ -462,33 +326,9 @@
           <source>Cannot pass '{0}' as a ref or out argument because it is a '{1}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">{0} ist ein(e) {1} und kann daher nicht als ref- oder out-Argument übergeben werden.</target>
         </trans-unit>
-        <trans-unit id="ThisStructNotInAnonMeth" translate="yes" xml:space="preserve">
-          <source>Anonymous methods, lambda expressions, and query expressions inside structs cannot access instance members of 'this'. Consider copying 'this' to a local variable outside the anonymous method, lambda expression or query expression and using the local instead.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Anonyme Methoden, lambda-Ausdrücke und Abfrageausdrücke innerhalb von Strukturen können nicht auf Instanzmember von "this" zugreifen. Kopieren Sie "this" in eine lokale Variable außerhalb der anonymen Methode, des lambda-Ausdrucks oder des Abfrageausdrucks, und verwenden Sie die lokale Variable.</target>
-        </trans-unit>
-        <trans-unit id="DelegateOnNullable" translate="yes" xml:space="preserve">
-          <source>Cannot bind delegate to '{0}' because it is a member of 'System.Nullable<it id="1" pos="open">&lt;T&gt;</it>'</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Kann Delegaten "{0}" keine Bindung an weil es ein Mitglied von "System.Nullable<it id="1" pos="open">&lt;T&gt;</it>ist"</target>
-        </trans-unit>
         <trans-unit id="BadCtorArgCount" translate="yes" xml:space="preserve">
           <source>'{0}' does not contain a constructor that takes '{1}' arguments</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">"{0}" enthält keinen Konstruktor, der {1}-Argumente akzeptiert.</target>
-        </trans-unit>
-        <trans-unit id="BadExtensionArgTypes" translate="yes" xml:space="preserve">
-          <source>'{0}' does not contain a definition for '{1}' and the best extension method overload '{2}' has some invalid arguments</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">"{0}" enthält keine Definition für {1}, und die Überladung der optimalen {2}-Erweiterungsmethode enthält einige ungültige Argumente.</target>
-        </trans-unit>
-        <trans-unit id="BadInstanceArgType" translate="yes" xml:space="preserve">
-          <source>Instance argument: cannot convert from '{0}' to '{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Instanzenargument: Konvertierung von {0} in {1} ist nicht möglich.</target>
-        </trans-unit>
-        <trans-unit id="BadArgTypesForCollectionAdd" translate="yes" xml:space="preserve">
-          <source>The best overloaded Add method '{0}' for the collection initializer has some invalid arguments</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Die beste Übereinstimmung für die überladene {0}-Methode für den Auflistungsinitialisierer enthält einige ungültige Argumente.</target>
-        </trans-unit>
-        <trans-unit id="InitializerAddHasParamModifiers" translate="yes" xml:space="preserve">
-          <source>The best overloaded method match '{0}' for the collection initializer element cannot be used. Collection initializer 'Add' methods cannot have ref or out parameters.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Die beste Übereinstimmung für die überladene {0}-Methode für das Auflistungsinitialisiererelement kann nicht verwendet werden. Die Add-Methoden von Auflistungsinitialisierern dürfen keine ref- oder out-Parameter enthalten.</target>
         </trans-unit>
         <trans-unit id="NonInvocableMemberCalled" translate="yes" xml:space="preserve">
           <source>Non-invocable member '{0}' cannot be used like a method.</source>

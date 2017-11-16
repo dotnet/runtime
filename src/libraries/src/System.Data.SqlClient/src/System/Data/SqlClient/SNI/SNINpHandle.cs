@@ -6,7 +6,6 @@ using System.ComponentModel;
 using System.IO;
 using System.IO.Pipes;
 using System.Net.Security;
-using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -68,8 +67,8 @@ namespace System.Data.SqlClient.SNI
             }
             catch(TimeoutException te)
             {
-                SNICommon.ReportSNIError(SNIProviders.NP_PROV, SNICommon.ConnTimeoutError, te);
-                _status = TdsEnums.SNI_WAIT_TIMEOUT;
+                SNICommon.ReportSNIError(SNIProviders.NP_PROV, SNICommon.ConnOpenFailedError, te);
+                _status = TdsEnums.SNI_ERROR;
                 return;
             }
             catch(IOException ioe)

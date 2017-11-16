@@ -6,7 +6,7 @@ CoreFX can be debugged on unix using both lldb and visual studio code
 ## Using lldb and SOS
 
 - Run the test using msbuild at least once with `/t:BuildAndTest`.
-- Install version 3.6 of lldb and launch lldb with dotnet as the process and arguments matching the arguments used when running the test through msbuild.
+- Install version 3.9 of lldb and launch lldb with dotnet as the process and arguments matching the arguments used when running the test through msbuild.
 - Load the sos plugin using `plugin load libsosplugin.so`.
 - Type `soshelp` to get help. You can now use all sos commands like `bpmd`.
 
@@ -21,8 +21,8 @@ It is also possible to debug .NET Core crash dumps using lldb and SOS. In order 
 - Matching runtime bits from the crash. To get these, you should either:
   - Download the matching Jenkins archive onto your repro machine.
   - Check out the corefx repository at the appropriate commit and re-build the necessary portions.
-- lldb version 3.8+. Versions 3.6+ of lldb work with regular debugging, but not core debugging. Make sure the version of lldb you have installed is >= 3.8.
-- libsosplugin.so built against a matching version of lldb. Unfortunately, the one that is included in the CoreCLR nuget package is built against version 3.6. You will need to build coreclr from source to get the correct version. Luckily, this will help you get the next file:
+- lldb version 3.9.
+- libsosplugin.so built against a matching version of lldb. The official libsosplugin.so is now built against 3.9.
 - Symbols for libcoreclr.so. libcoreclr.so.dbg should be copied to your "runtime" folder. To get this file, you can:
   - Build coreclr at the matching commit. In order to determine which commit was used to build a version of libcoreclr.so, run the following command:
     `strings libcoreclr.so | grep "@(#)"`

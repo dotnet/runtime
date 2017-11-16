@@ -242,9 +242,12 @@ namespace System
 
             if (sequenceLength != 0)
             {
+                if (sequenceLength > 4)
+                {
+                    return false;
+                }
+
                 ++sequenceCount;
-                lastSequence = i - sequenceLength;
-                sequenceLength = 0;
             }
 
             // these sequence counts are -1 because it is implied in end-of-sequence
@@ -252,7 +255,6 @@ namespace System
             const int ExpectedSequenceCount = 8;
             return
                 !expectingNumber &&
-                (sequenceLength <= 4) &&
                 (haveCompressor ? (sequenceCount < ExpectedSequenceCount) : (sequenceCount == ExpectedSequenceCount)) &&
                 !needsClosingBracket;
         }
@@ -282,7 +284,7 @@ namespace System
         //  Nothing
         //
 
-        internal static unsafe void Parse(string address, ushort* numbers, int start, ref string scopeId)
+        internal static unsafe void Parse(ReadOnlySpan<char> address, ushort* numbers, int start, ref string scopeId)
         {
             int number = 0;
             int index = 0;
@@ -311,7 +313,7 @@ namespace System
                         for (++i; i < address.Length && address[i] != ']' && address[i] != '/'; ++i)
                         {
                         }
-                        scopeId = address.Substring(start, i - start);
+                        scopeId = new string(address.Slice(start, i - start));
                         // ignore prefix if any
                         for (; i < address.Length && address[i] != ']'; ++i)
                         {

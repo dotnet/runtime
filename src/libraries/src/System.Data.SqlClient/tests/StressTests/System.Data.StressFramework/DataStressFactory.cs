@@ -81,9 +81,6 @@ namespace Stress.Data
             private set;
         }
 
-
-        private Timer _currentPoolingStressModeTimer;
-
         #endregion
 
 

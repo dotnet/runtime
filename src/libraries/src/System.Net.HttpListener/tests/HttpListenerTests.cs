@@ -14,7 +14,6 @@ namespace System.Net.Tests
     public class HttpListenerTests
     {
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void IgnoreWriteExceptions_SetDisposed_ThrowsObjectDisposedException()
         {
             var listener = new HttpListener();
@@ -24,7 +23,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void Stop_Disposed_ThrowsObjectDisposedException()
         {
             var listener = new HttpListener();
@@ -34,7 +32,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void IsListening_NotStarted_ReturnsFalse()
         {
             using (var listener = new HttpListener())
@@ -44,7 +41,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void IsListening_Disposed_ReturnsFalse()
         {
             var listener = new HttpListener();
@@ -56,7 +52,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void IsListening_Aborted_ReturnsFalse()
         {
             var listener = new HttpListener();
@@ -68,7 +63,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void IsListening_Stopped_ReturnsFalse()
         {
             var listener = new HttpListener();
@@ -80,7 +74,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void Start_Disposed_ThrowsObjectDisposedException()
         {
             var listener = new HttpListener();
@@ -90,7 +83,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void GetContext_Disposed_ThrowsObjectDisposedException()
         {
             var listener = new HttpListener();
@@ -101,7 +93,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void GetContext_NotStarted_ThrowsInvalidOperationException()
         {
             using (var listener = new HttpListener())
@@ -112,7 +103,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void GetContext_NoPrefixes_ThrowsInvalidOperationException()
         {
             using (var listener = new HttpListener())
@@ -124,7 +114,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void EndGetContext_NullAsyncResult_ThrowsArgumentNullException()
         {
             using (var listener = new HttpListener())
@@ -134,7 +123,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void EndGetContext_InvalidAsyncResult_ThrowsArgumentException()
         {
             using (var listener1 = new HttpListener())
@@ -150,7 +138,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void EndGetContext_AlreadyCalled_ThrowsInvalidOperationException()
         {
             using (var listenerFactory = new HttpListenerFactory())

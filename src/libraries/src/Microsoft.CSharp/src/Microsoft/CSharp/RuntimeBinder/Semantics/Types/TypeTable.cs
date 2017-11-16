@@ -10,7 +10,7 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal struct KeyPair<Key1, Key2> : IEquatable<KeyPair<Key1, Key2>>
+    internal readonly struct KeyPair<Key1, Key2> : IEquatable<KeyPair<Key1, Key2>>
     {
         private readonly Key1 _pKey1;
         private readonly Key2 _pKey2;
@@ -23,8 +23,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool Equals(KeyPair<Key1, Key2> other)
         {
-            return Equals(_pKey1, other._pKey1)
-                && Equals(_pKey2, other._pKey2);
+            return EqualityComparer<Key1>.Default.Equals(_pKey1, other._pKey1)
+                && EqualityComparer<Key2>.Default.Equals(_pKey2, other._pKey2);
         }
 
 #if  DEBUG 
@@ -39,30 +39,28 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public override int GetHashCode()
         {
-            return (_pKey1 == null ? 0 : _pKey1.GetHashCode())
-                + (_pKey2 == null ? 0 : _pKey2.GetHashCode());
+            int hash = _pKey1 == null ? 0 : _pKey1.GetHashCode();
+            return (hash << 5) - hash + (_pKey2 == null ? 0 : _pKey2.GetHashCode());
         }
     }
 
     internal sealed class TypeTable
     {
         // Two way hashes
-        private readonly Dictionary<KeyPair<AggregateSymbol, Name>, AggregateType> _pAggregateTable;
-        private readonly Dictionary<KeyPair<CType, Name>, ErrorType> _pErrorWithTypeParentTable;
-        private readonly Dictionary<KeyPair<AssemblyQualifiedNamespaceSymbol, Name>, ErrorType> _pErrorWithNamespaceParentTable;
+        private readonly Dictionary<KeyPair<AggregateSymbol, KeyPair<AggregateType, TypeArray>>, AggregateType> _aggregateTable;
         private readonly Dictionary<KeyPair<CType, Name>, ArrayType> _pArrayTable;
         private readonly Dictionary<KeyPair<CType, Name>, ParameterModifierType> _pParameterModifierTable;
 
         // One way hashes
+        private readonly Dictionary<Name, ErrorType> _pErrorWithNamespaceParentTable;
         private readonly Dictionary<CType, PointerType> _pPointerTable;
         private readonly Dictionary<CType, NullableType> _pNullableTable;
         private readonly Dictionary<TypeParameterSymbol, TypeParameterType> _pTypeParameterTable;
 
         public TypeTable()
         {
-            _pAggregateTable = new Dictionary<KeyPair<AggregateSymbol, Name>, AggregateType>();
-            _pErrorWithNamespaceParentTable = new Dictionary<KeyPair<AssemblyQualifiedNamespaceSymbol, Name>, ErrorType>();
-            _pErrorWithTypeParentTable = new Dictionary<KeyPair<CType, Name>, ErrorType>();
+            _aggregateTable = new Dictionary<KeyPair<AggregateSymbol, KeyPair<AggregateType, TypeArray>>, AggregateType>();
+            _pErrorWithNamespaceParentTable = new Dictionary<Name, ErrorType>();
             _pArrayTable = new Dictionary<KeyPair<CType, Name>, ArrayType>();
             _pParameterModifierTable = new Dictionary<KeyPair<CType, Name>, ParameterModifierType>();
             _pPointerTable = new Dictionary<CType, PointerType>();
@@ -70,58 +68,29 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             _pTypeParameterTable = new Dictionary<TypeParameterSymbol, TypeParameterType>();
         }
 
-        public AggregateType LookupAggregate(Name pName, AggregateSymbol pAggregate)
+        private static KeyPair<TKey1, TKey2> MakeKey<TKey1, TKey2>(TKey1 key1, TKey2 key2) =>
+            new KeyPair<TKey1, TKey2>(key1, key2);
+
+        public AggregateType LookupAggregate(AggregateSymbol aggregate, AggregateType outer, TypeArray args)
         {
-            var key = new KeyPair<AggregateSymbol, Name>(pAggregate, pName);
-            AggregateType result;
-            if (_pAggregateTable.TryGetValue(key, out result))
-            {
-                return result;
-            }
-            return null;
+            _aggregateTable.TryGetValue(MakeKey(aggregate, MakeKey(outer, args)), out AggregateType result);
+            return result;
         }
 
         public void InsertAggregate(
-                Name pName,
-                AggregateSymbol pAggregateSymbol,
-                AggregateType pAggregate)
+            AggregateSymbol aggregate, AggregateType outer, TypeArray args, AggregateType pAggregate)
         {
-            Debug.Assert(LookupAggregate(pName, pAggregateSymbol) == null);
-            _pAggregateTable.Add(new KeyPair<AggregateSymbol, Name>(pAggregateSymbol, pName), pAggregate);
+            Debug.Assert(LookupAggregate(aggregate, outer, args) == null);
+            _aggregateTable.Add(MakeKey(aggregate, MakeKey(outer, args)), pAggregate);
         }
 
-        public ErrorType LookupError(Name pName, CType pParentType)
-        {
-            var key = new KeyPair<CType, Name>(pParentType, pName);
-            ErrorType result;
-            if (_pErrorWithTypeParentTable.TryGetValue(key, out result))
-            {
-                return result;
-            }
-            return null;
-        }
+        public ErrorType LookupError(Name pName) =>
+            _pErrorWithNamespaceParentTable.TryGetValue(pName, out ErrorType result) ? result : null;
 
-        public ErrorType LookupError(Name pName, AssemblyQualifiedNamespaceSymbol pParentNS)
+        public void InsertError(Name pName, ErrorType pError)
         {
-            var key = new KeyPair<AssemblyQualifiedNamespaceSymbol, Name>(pParentNS, pName);
-            ErrorType result;
-            if (_pErrorWithNamespaceParentTable.TryGetValue(key, out result))
-            {
-                return result;
-            }
-            return null;
-        }
-
-        public void InsertError(Name pName, CType pParentType, ErrorType pError)
-        {
-            Debug.Assert(LookupError(pName, pParentType) == null);
-            _pErrorWithTypeParentTable.Add(new KeyPair<CType, Name>(pParentType, pName), pError);
-        }
-
-        public void InsertError(Name pName, AssemblyQualifiedNamespaceSymbol pParentNS, ErrorType pError)
-        {
-            Debug.Assert(LookupError(pName, pParentNS) == null);
-            _pErrorWithNamespaceParentTable.Add(new KeyPair<AssemblyQualifiedNamespaceSymbol, Name>(pParentNS, pName), pError);
+            Debug.Assert(LookupError(pName) == null);
+            _pErrorWithNamespaceParentTable.Add(pName, pError);
         }
 
         public ArrayType LookupArray(Name pName, CType pElementType)

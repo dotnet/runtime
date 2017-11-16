@@ -114,12 +114,12 @@ namespace System.Net
             return ipAddress;
         }
 
-        public static unsafe void GetIPv6Address(byte[] buffer, byte[] address, out uint scope)
+        public static unsafe void GetIPv6Address(byte[] buffer, Span<byte> address, out uint scope)
         {
             uint localScope;
             Interop.Error err;
             fixed (byte* rawAddress = buffer)
-            fixed (byte* ipAddress = address)
+            fixed (byte* ipAddress = &address.DangerousGetPinnableReference())
             {
                 err = Interop.Sys.GetIPv6Address(rawAddress, buffer.Length, ipAddress, address.Length, &localScope);
             }
@@ -145,9 +145,9 @@ namespace System.Net
             SetIPv4Address(buffer, addr);
         }
 
-        public static unsafe void SetIPv6Address(byte[] buffer, byte[] address, uint scope)
+        public static unsafe void SetIPv6Address(byte[] buffer, Span<byte> address, uint scope)
         {
-            fixed (byte* rawInput = address)
+            fixed (byte* rawInput = &address.DangerousGetPinnableReference())
             {
                 SetIPv6Address(buffer, rawInput, address.Length, scope);
             }

@@ -22,7 +22,7 @@ using Windows.Web;
 using RTCertificate = Windows.Security.Cryptography.Certificates.Certificate;
 using RTCertificateQuery = Windows.Security.Cryptography.Certificates.CertificateQuery;
 using RTCertificateStores = Windows.Security.Cryptography.Certificates.CertificateStores;
-using RTWeb​Socket​Error = Windows.Networking.Sockets.Web​Socket​Error;
+using RTWebSocketError = Windows.Networking.Sockets.WebSocketError;
 
 namespace System.Net.WebSockets
 {
@@ -131,7 +131,7 @@ namespace System.Net.WebSockets
                 X509Certificate2 dotNetClientCert = CertificateHelper.GetEligibleClientCertificate(options.ClientCertificates);
                 if (dotNetClientCert != null)
                 {
-                    RTCertificate winRtClientCert = await CertificateHelper.ConvertDotNetClientCertToWinRtClientCertAsync(dotNetClientCert);
+                    RTCertificate winRtClientCert = await CertificateHelper.ConvertDotNetClientCertToWinRtClientCertAsync(dotNetClientCert).ConfigureAwait(false);
                     if (winRtClientCert == null)
                     {
                         throw new PlatformNotSupportedException(string.Format(
@@ -159,7 +159,7 @@ namespace System.Net.WebSockets
                 _closeWebSocketReceiveResultTcs = new TaskCompletionSource<WebSocketReceiveResult>();
                 _messageWebSocket.MessageReceived += OnMessageReceived;
                 _messageWebSocket.Closed += OnCloseReceived;
-                await _messageWebSocket.ConnectAsync(uri).AsTask(cancellationToken);
+                await _messageWebSocket.ConnectAsync(uri).AsTask(cancellationToken).ConfigureAwait(false);
                 _subProtocol = _messageWebSocket.Information.Protocol;
                 _messageWriter = new DataWriter(_messageWebSocket.OutputStream);
             }
@@ -177,7 +177,7 @@ namespace System.Net.WebSockets
             AbortInternal();
         }
 
-        private void AbortInternal(WebSocketException customException = null)
+        private void AbortInternal(Exception customException = null)
         {
             lock (_stateLock)
             {
@@ -196,7 +196,7 @@ namespace System.Net.WebSockets
             Dispose();
         }
 
-        private void CancelAllOperations(WebSocketException customException)
+        private void CancelAllOperations(Exception customException)
         {
             if (_receiveAsyncBufferTcs != null)
             {
@@ -265,7 +265,7 @@ namespace System.Net.WebSockets
                     _messageWebSocket.Close((ushort) closeStatus, statusDescription ?? String.Empty);
                 }
 
-                var result = await _closeWebSocketReceiveResultTcs.Task;
+                var result = await _closeWebSocketReceiveResultTcs.Task.ConfigureAwait(false);
                 _closeStatus = result.CloseStatus;
                 _closeStatusDescription = result.CloseStatusDescription;
                 InterlockedCheckAndUpdateCloseState(WebSocketState.CloseReceived, s_validCloseStates);
@@ -313,7 +313,6 @@ namespace System.Net.WebSockets
         }
 
         private static readonly WebSocketState[] s_validReceiveStates = { WebSocketState.Open, WebSocketState.CloseSent };
-        private static readonly WebSocketState[] s_validAfterReceiveStates = { WebSocketState.Open, WebSocketState.CloseSent, WebSocketState.CloseReceived, WebSocketState.Closed };
         public override async Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer,
             CancellationToken cancellationToken)
         {
@@ -326,7 +325,8 @@ namespace System.Net.WebSockets
 
                 Task<WebSocketReceiveResult> completedTask = await Task.WhenAny(
                     _webSocketReceiveResultTcs.Task,
-                    _closeWebSocketReceiveResultTcs.Task);
+                    _closeWebSocketReceiveResultTcs.Task).ConfigureAwait(false);
+
                 WebSocketReceiveResult result = await completedTask;
 
                 if (result.MessageType == WebSocketMessageType.Close)
@@ -340,7 +340,6 @@ namespace System.Net.WebSockets
                     _webSocketReceiveResultTcs = new TaskCompletionSource<WebSocketReceiveResult>();
                 }
 
-                InterlockedCheckValidStates(s_validAfterReceiveStates);
                 return result;
             }
         }
@@ -401,7 +400,7 @@ namespace System.Net.WebSockets
             {
                 // WinRT WebSockets always throw exceptions of type System.Exception. However, we can determine whether
                 // or not we're dealing with a known error by using WinRT's WebSocketError.GetStatus method.
-                WebErrorStatus status = RTWeb​Socket​Error.GetStatus(exc.HResult);
+                WebErrorStatus status = RTWebSocketError.GetStatus(exc.HResult);
                 WebSocketError actualError = WebSocketError.Faulted;
                 switch (status)
                 {
@@ -412,7 +411,7 @@ namespace System.Net.WebSockets
                         break;
                 }
 
-                // Propagate a custom exception to any pending SendAsync/ReceiveAsync operations and close the socket.
+                // Propagate a custom exception to any pending ReceiveAsync/CloseAsync operations and close the socket.
                 WebSocketException customException = new WebSocketException(actualError, exc);
                 AbortInternal(customException);
             }
@@ -446,7 +445,7 @@ namespace System.Net.WebSockets
                     _messageWebSocket.Control.MessageType = messageType == WebSocketMessageType.Binary
                         ? SocketMessageType.Binary
                         : SocketMessageType.Utf8;
-                    await _messageWriter.StoreAsync().AsTask(cancellationToken);
+                    await _messageWriter.StoreAsync().AsTask(cancellationToken).ConfigureAwait(false);
                 }
             }
             catch (Exception)
@@ -469,7 +468,14 @@ namespace System.Net.WebSockets
             }
 
             CancellationTokenRegistration cancellationRegistration =
-                cancellationToken.Register(s => ((WinRTWebSocket)s).Abort(), this);
+                cancellationToken.Register(s =>
+                {
+                    var thisRef = (WinRTWebSocket)s;
+
+                    // Propagate a custom exception to any pending ReceiveAsync/CloseAsync operations and close the socket.
+                    var customException = new OperationCanceledException(nameof(WebSocketState.Aborted));
+                    thisRef.AbortInternal(customException);
+                }, this);
 
             return cancellationRegistration;
         }
@@ -545,21 +551,6 @@ namespace System.Net.WebSockets
             if ((_state != WebSocketState.Closed) && (_state != WebSocketState.Aborted))
             {
                 _state = value;
-            }
-        }
-
-        private void UpdateStateCloseReceived()
-        {
-            lock (_stateLock)
-            {
-                if (_state == WebSocketState.CloseSent)
-                {
-                    UpdateState(WebSocketState.Closed);
-                }
-                else if (_state == WebSocketState.Open)
-                {
-                    UpdateState(WebSocketState.CloseReceived);
-                }
             }
         }
         #endregion

@@ -11,35 +11,23 @@ namespace System.Net
 {
     internal class IPAddressParser
     {
-        internal static unsafe IPAddress Parse(string ipString, bool tryParse)
-        {
-            if (ipString == null)
-            {
-                if (tryParse)
-                {
-                    return null;
-                }
-                throw new ArgumentNullException(nameof(ipString));
-            }
+        private const int MaxIPv4StringLength = 15; // 4 numbers separated by 3 periods, with up to 3 digits per number
 
-            if (ipString.IndexOf(':') != -1)
+        internal static unsafe IPAddress Parse(ReadOnlySpan<char> ipSpan, bool tryParse)
+        {
+            if (ipSpan.IndexOf(':') >= 0)
             {
-                // If the address string contains the colon character then it can only be an IPv6 address.
-                // This is valid because we don't support/parse a port specification at the end of an IPv4 address.
-                uint scope;
+                // The address is parsed as IPv6 if and only if it contains a colon. This is valid because
+                // we don't support/parse a port specification at the end of an IPv4 address.
                 ushort* numbers = stackalloc ushort[IPAddressParserStatics.IPv6AddressShorts];
-                if (Ipv6StringToAddress(ipString, numbers, IPAddressParserStatics.IPv6AddressShorts, out scope))
+                if (Ipv6StringToAddress(ipSpan, numbers, IPAddressParserStatics.IPv6AddressShorts, out uint scope))
                 {
                     return new IPAddress(numbers, IPAddressParserStatics.IPv6AddressShorts, scope);
                 }
             }
-            else
+            else if (Ipv4StringToAddress(ipSpan, out long address))
             {
-                long address;
-                if (Ipv4StringToAddress(ipString, out address))
-                {
-                    return new IPAddress(address);
-                }
+                return new IPAddress(address);
             }
 
             if (tryParse)
@@ -52,19 +40,40 @@ namespace System.Net
 
         internal static unsafe string IPv4AddressToString(uint address)
         {
-            const int MaxLength = 15;
-            char* addressString = stackalloc char[MaxLength];
-            int offset = MaxLength;
+            char* addressString = stackalloc char[MaxIPv4StringLength];
+            int charsWritten = IPv4AddressToStringHelper(address, addressString);
+            return new string(addressString, 0, charsWritten);
+        }
 
-            FormatIPv4AddressNumber((int)((address >> 24) & 0xFF), addressString, ref offset);
-            addressString[--offset] = '.';
-            FormatIPv4AddressNumber((int)((address >> 16) & 0xFF), addressString, ref offset);
-            addressString[--offset] = '.';
-            FormatIPv4AddressNumber((int)((address >> 8) & 0xFF), addressString, ref offset);
-            addressString[--offset] = '.';
+        internal static unsafe bool IPv4AddressToString(uint address, Span<char> formatted, out int charsWritten)
+        {
+            if (formatted.Length < MaxIPv4StringLength)
+            {
+                charsWritten = 0;
+                return false;
+            }
+
+            fixed (char* formattedPtr = &formatted.DangerousGetPinnableReference())
+            {
+                charsWritten = IPv4AddressToStringHelper(address, formattedPtr);
+            }
+
+            return true;
+        }
+
+        private static unsafe int IPv4AddressToStringHelper(uint address, char* addressString)
+        {
+            int offset = 0;
+
             FormatIPv4AddressNumber((int)(address & 0xFF), addressString, ref offset);
+            addressString[offset++] = '.';
+            FormatIPv4AddressNumber((int)((address >> 8) & 0xFF), addressString, ref offset);
+            addressString[offset++] = '.';
+            FormatIPv4AddressNumber((int)((address >> 16) & 0xFF), addressString, ref offset);
+            addressString[offset++] = '.';
+            FormatIPv4AddressNumber((int)((address >> 24) & 0xFF), addressString, ref offset);
 
-            return new string(addressString, offset, MaxLength - offset);
+            return offset;
         }
 
         internal static string IPv6AddressToString(ushort[] address, uint scopeId)
@@ -72,6 +81,35 @@ namespace System.Net
             Debug.Assert(address != null);
             Debug.Assert(address.Length == IPAddressParserStatics.IPv6AddressShorts);
 
+            StringBuilder buffer = IPv6AddressToStringHelper(address, scopeId);
+
+            return StringBuilderCache.GetStringAndRelease(buffer);
+        }
+
+        internal static bool IPv6AddressToString(ushort[] address, uint scopeId, Span<char> destination, out int charsWritten)
+        {
+            Debug.Assert(address != null);
+            Debug.Assert(address.Length == IPAddressParserStatics.IPv6AddressShorts);
+
+            StringBuilder buffer = IPv6AddressToStringHelper(address, scopeId);
+
+            if (destination.Length < buffer.Length)
+            {
+                StringBuilderCache.Release(buffer);
+                charsWritten = 0;
+                return false;
+            }
+
+            buffer.CopyTo(0, destination, buffer.Length);
+            charsWritten = buffer.Length;
+
+            StringBuilderCache.Release(buffer);
+
+            return true;
+        }
+
+        internal static StringBuilder IPv6AddressToStringHelper(ushort[] address, uint scopeId)
+        { 
             const int INET6_ADDRSTRLEN = 65;
             StringBuilder buffer = StringBuilderCache.Acquire(INET6_ADDRSTRLEN);
 
@@ -99,33 +137,35 @@ namespace System.Net
                 buffer.Append('%').Append(scopeId);
             }
 
-            return StringBuilderCache.GetStringAndRelease(buffer);
+            return buffer;
         }
 
         private static unsafe void FormatIPv4AddressNumber(int number, char* addressString, ref int offset)
         {
+            // Math.DivRem has no overload for byte, assert here for safety
+            Debug.Assert(number < 256);
+
+            offset += number > 99 ? 3 : number > 9 ? 2 : 1;
+
             int i = offset;
             do
             {
-                int rem;
-                number = Math.DivRem(number, 10, out rem);
+                number = Math.DivRem(number, 10, out int rem);
                 addressString[--i] = (char)('0' + rem);
             } while (number != 0);
-            offset = i;
         }
 
-        public static unsafe bool Ipv4StringToAddress(string ipString, out long address)
+        public static unsafe bool Ipv4StringToAddress(ReadOnlySpan<char> ipSpan, out long address)
         {
-            Debug.Assert(ipString != null);
-
+            int end = ipSpan.Length;
             long tmpAddr;
-            int end = ipString.Length;
-            fixed (char* ipStringPtr = ipString)
+
+            fixed (char* ipStringPtr = &ipSpan.DangerousGetPinnableReference())
             {
                 tmpAddr = IPv4AddressHelper.ParseNonCanonical(ipStringPtr, 0, ref end, notImplicitFile: true);
             }
 
-            if (tmpAddr != IPv4AddressHelper.Invalid && end == ipString.Length)
+            if (tmpAddr != IPv4AddressHelper.Invalid && end == ipSpan.Length)
             {
                 // IPv4AddressHelper.ParseNonCanonical returns the bytes in the inverse order.
                 // Reverse them and return success.
@@ -144,49 +184,51 @@ namespace System.Net
             }
         }
 
-        public static unsafe bool Ipv6StringToAddress(string ipString, ushort* numbers, int numbersLength, out uint scope)
+        public static unsafe bool Ipv6StringToAddress(ReadOnlySpan<char> ipSpan, ushort* numbers, int numbersLength, out uint scope)
         {
-            Debug.Assert(ipString != null);
             Debug.Assert(numbers != null);
             Debug.Assert(numbersLength >= IPAddressParserStatics.IPv6AddressShorts);
 
-            int end = ipString.Length;
-            fixed (char* name = ipString)
-            {
-                if (IPv6AddressHelper.IsValidStrict(name, 0, ref end) || (end != ipString.Length))
-                {
-                    string scopeId = null;
-                    IPv6AddressHelper.Parse(ipString, numbers, 0, ref scopeId);
+            int end = ipSpan.Length;
 
-                    long result = 0;
-                    if (!string.IsNullOrEmpty(scopeId))
+            bool isValid = false;
+            fixed (char* ipStringPtr = &ipSpan.DangerousGetPinnableReference())
+            {
+                isValid = IPv6AddressHelper.IsValidStrict(ipStringPtr, 0, ref end);
+            }
+            if (isValid || (end != ipSpan.Length))
+            {
+                string scopeId = null;
+                IPv6AddressHelper.Parse(ipSpan, numbers, 0, ref scopeId);
+
+                long result = 0;
+                if (!string.IsNullOrEmpty(scopeId))
+                {
+                    if (scopeId.Length < 2)
                     {
-                        if (scopeId.Length < 2)
+                        scope = 0;
+                        return false;
+                    }
+
+                    for (int i = 1; i < scopeId.Length; i++)
+                    {
+                        char c = scopeId[i];
+                        if (c < '0' || c > '9')
                         {
                             scope = 0;
                             return false;
                         }
-
-                        for (int i = 1; i < scopeId.Length; i++)
+                        result = (result * 10) + (c - '0');
+                        if (result > uint.MaxValue)
                         {
-                            char c = scopeId[i];
-                            if (c < '0' || c > '9')
-                            {
-                                scope = 0;
-                                return false;
-                            }
-                            result = (result * 10) + (c - '0');
-                            if (result > uint.MaxValue)
-                            {
-                                scope = 0;
-                                return false;
-                            }
+                            scope = 0;
+                            return false;
                         }
                     }
-
-                    scope = (uint)result;
-                    return true;
                 }
+
+                scope = (uint)result;
+                return true;
             }
 
             scope = 0;

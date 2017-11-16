@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text;
-using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.IO
 {
@@ -42,7 +43,6 @@ namespace System.IO
         // We don't guarantee thread safety on StreamWriter, but we should at 
         // least prevent users from trying to write anything while an Async
         // write from the same thread is in progress.
-        [NonSerialized]
         private volatile Task _asyncWriteTask;
 
         private void CheckAsyncTaskInProgress()
@@ -247,10 +247,10 @@ namespace System.IO
             if (!_haveWrittenPreamble)
             {
                 _haveWrittenPreamble = true;
-                byte[] preamble = _encoding.GetPreamble();
+                ReadOnlySpan<byte> preamble = _encoding.Preamble;
                 if (preamble.Length > 0)
                 {
-                    _stream.Write(preamble, 0, preamble.Length);
+                    _stream.Write(preamble);
                 }
             }
 
@@ -324,59 +324,9 @@ namespace System.IO
 
         public override void Write(char[] buffer)
         {
-            // This may be faster than the one with the index & count since it
-            // has to do less argument checking.
-            if (buffer == null)
+            if (buffer != null)
             {
-                return;
-            }
-
-            CheckAsyncTaskInProgress();
-
-            // Threshold of 4 was chosen after running perf tests
-            if (buffer.Length <= 4)
-            {
-                for (int i = 0; i < buffer.Length; i++)
-                {
-                    if (_charPos == _charLen)
-                    {
-                        Flush(false, false);
-                    }
-
-                    Debug.Assert(_charLen - _charPos > 0, "StreamWriter::Write(char[]) isn't making progress!  This is most likely a race in user code.");
-                    _charBuffer[_charPos] = buffer[i];
-                    _charPos++;
-                }
-            }
-            else
-            {
-                int count = buffer.Length;
-
-                int index = 0;
-                while (count > 0)
-                {
-                    if (_charPos == _charLen)
-                    {
-                        Flush(false, false);
-                    }
-
-                    int n = _charLen - _charPos;
-                    if (n > count)
-                    {
-                        n = count;
-                    }
-
-                    Debug.Assert(n > 0, "StreamWriter::Write(char[]) isn't making progress!  This is most likely a race in user code.");
-                    Buffer.BlockCopy(buffer, index * sizeof(char), _charBuffer, _charPos * sizeof(char), n * sizeof(char));
-                    _charPos += n;
-                    index += n;
-                    count -= n;
-                }
-            }
-
-            if (_autoFlush)
-            {
-                Flush(true, false);
+                WriteCore(buffer, _autoFlush);
             }
         }
 
@@ -399,49 +349,79 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
 
+            WriteCore(new ReadOnlySpan<char>(buffer, index, count), _autoFlush);
+        }
+
+        public override void Write(ReadOnlySpan<char> buffer)
+        {
+            if (GetType() == typeof(StreamWriter))
+            {
+                WriteCore(buffer, _autoFlush);
+            }
+            else
+            {
+                // If a derived class may have overridden existing Write behavior,
+                // we need to make sure we use it.
+                base.Write(buffer);
+            }
+        }
+
+        private unsafe void WriteCore(ReadOnlySpan<char> buffer, bool autoFlush)
+        {
             CheckAsyncTaskInProgress();
 
-            // Threshold of 4 was chosen after running perf tests
-            if (count <= 4)
+            if (buffer.Length <= 4 && // Threshold of 4 chosen based on perf experimentation
+                buffer.Length <= _charLen - _charPos)
             {
-                while (count > 0)
+                // For very short buffers and when we don't need to worry about running out of space
+                // in the char buffer, just copy the chars individually.
+                for (int i = 0; i < buffer.Length; i++)
                 {
-                    if (_charPos == _charLen)
-                    {
-                        Flush(false, false);
-                    }
-
-                    Debug.Assert(_charLen - _charPos > 0, "StreamWriter::Write(char[]) isn't making progress!  This is most likely a race in user code.");
-                    _charBuffer[_charPos] = buffer[index];
-                    _charPos++;
-                    index++;
-                    count--;
+                    _charBuffer[_charPos++] = buffer[i];
                 }
             }
             else
             {
-                while (count > 0)
+                // For larger buffers or when we may run out of room in the internal char buffer, copy in chunks.
+                // Use unsafe code until https://github.com/dotnet/coreclr/issues/13827 is addressed, as spans are
+                // resulting in significant overhead (even when the if branch above is taken rather than this
+                // else) due to temporaries that need to be cleared.  Given the use of unsafe code, we also
+                // make local copies of instance state to protect against potential concurrent misuse.
+
+                char[] charBuffer = _charBuffer;
+                if (charBuffer == null)
                 {
-                    if (_charPos == _charLen)
-                    {
-                        Flush(false, false);
-                    }
+                    throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
+                }
 
-                    int n = _charLen - _charPos;
-                    if (n > count)
+                fixed (char* bufferPtr = &buffer.DangerousGetPinnableReference())
+                fixed (char* dstPtr = &charBuffer[0])
+                {
+                    char* srcPtr = bufferPtr;
+                    int count = buffer.Length;
+                    int dstPos = _charPos; // use a local copy of _charPos for safety
+                    while (count > 0)
                     {
-                        n = count;
-                    }
+                        if (dstPos == charBuffer.Length)
+                        {
+                            Flush(false, false);
+                            dstPos = 0;
+                        }
 
-                    Debug.Assert(n > 0, "StreamWriter::Write(char[], int, int) isn't making progress!  This is most likely a race condition in user code.");
-                    Buffer.BlockCopy(buffer, index * sizeof(char), _charBuffer, _charPos * sizeof(char), n * sizeof(char));
-                    _charPos += n;
-                    index += n;
-                    count -= n;
+                        int n = Math.Min(charBuffer.Length - dstPos, count);
+                        int bytesToCopy = n * sizeof(char);
+
+                        Buffer.MemoryCopy(srcPtr, dstPtr + dstPos, bytesToCopy, bytesToCopy);
+
+                        _charPos += n;
+                        dstPos += n;
+                        srcPtr += n;
+                        count -= n;
+                    }
                 }
             }
 
-            if (_autoFlush)
+            if (autoFlush)
             {
                 Flush(true, false);
             }
@@ -449,57 +429,9 @@ namespace System.IO
 
         public override void Write(string value)
         {
-            if (value == null)
+            if (value != null)
             {
-                return;
-            }
-
-            CheckAsyncTaskInProgress();
-
-            int count = value.Length;
-
-            // Threshold of 4 was chosen after running perf tests
-            if (count <= 4)
-            {
-                for (int i = 0; i < count; i++)
-                {
-                    if (_charPos == _charLen)
-                    {
-                        Flush(false, false);
-                    }
-
-                    Debug.Assert(_charLen - _charPos > 0, "StreamWriter::Write(String) isn't making progress!  This is most likely a race condition in user code.");
-                    _charBuffer[_charPos] = value[i];
-                    _charPos++;
-                }
-            }
-            else
-            {
-                int index = 0;
-                while (count > 0)
-                {
-                    if (_charPos == _charLen)
-                    {
-                        Flush(false, false);
-                    }
-
-                    int n = _charLen - _charPos;
-                    if (n > count)
-                    {
-                        n = count;
-                    }
-
-                    Debug.Assert(n > 0, "StreamWriter::Write(String) isn't making progress!  This is most likely a race condition in user code.");
-                    value.CopyTo(index, _charBuffer, _charPos, n);
-                    _charPos += n;
-                    index += n;
-                    count -= n;
-                }
-            }
-
-            if (_autoFlush)
-            {
-                Flush(true, false);
+                WriteCore(value.AsReadOnlySpan(), _autoFlush);
             }
         }
 
@@ -509,50 +441,27 @@ namespace System.IO
         //
         public override void WriteLine(string value)
         {
-            if (value == null)
-            {
-                value = String.Empty;
-            }
-
             CheckAsyncTaskInProgress();
-
-            int count = value.Length;
-            int index = 0;
-            while (count > 0)
+            if (value != null)
             {
-                if (_charPos == _charLen)
-                {
-                    Flush(false, false);
-                }
-
-                int n = _charLen - _charPos;
-                if (n > count)
-                {
-                    n = count;
-                }
-
-                Debug.Assert(n > 0, "StreamWriter::WriteLine(String) isn't making progress!  This is most likely a race condition in user code.");
-                value.CopyTo(index, _charBuffer, _charPos, n);
-                _charPos += n;
-                index += n;
-                count -= n;
+                WriteCore(value.AsReadOnlySpan(), autoFlush: false);
             }
+            WriteCore(new ReadOnlySpan<char>(CoreNewLine), autoFlush: true);
+        }
 
-            char[] coreNewLine = CoreNewLine;
-            for (int i = 0; i < coreNewLine.Length; i++)   // Expect 2 iterations, no point calling BlockCopy
+        public override void WriteLine(ReadOnlySpan<char> value)
+        {
+            if (GetType() == typeof(StreamWriter))
             {
-                if (_charPos == _charLen)
-                {
-                    Flush(false, false);
-                }
-
-                _charBuffer[_charPos] = coreNewLine[i];
-                _charPos++;
+                CheckAsyncTaskInProgress();
+                WriteCore(value, autoFlush: false);
+                WriteCore(new ReadOnlySpan<char>(CoreNewLine), autoFlush: true);
             }
-
-            if (_autoFlush)
+            else
             {
-                Flush(true, false);
+                // If a derived class may have overridden existing WriteLine behavior,
+                // we need to make sure we use it.
+                base.WriteLine(value);
             }
         }
 
@@ -752,46 +661,60 @@ namespace System.IO
 
             CheckAsyncTaskInProgress();
 
-            Task task = WriteAsyncInternal(this, buffer, index, count, _charBuffer, _charPos, _charLen, CoreNewLine, _autoFlush, appendNewLine: false);
+            Task task = WriteAsyncInternal(this, new ReadOnlyMemory<char>(buffer, index, count), _charBuffer, _charPos, _charLen, CoreNewLine, _autoFlush, appendNewLine: false, cancellationToken: default);
             _asyncWriteTask = task;
 
+            return task;
+        }
+
+        public override Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default)
+        {
+            if (GetType() != typeof(StreamWriter))
+            {
+                // If a derived type may have overridden existing WriteASync(char[], ...) behavior, make sure we use it.
+                return base.WriteAsync(buffer, cancellationToken);
+            }
+
+            if (_stream == null)
+            {
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
+            }
+
+            CheckAsyncTaskInProgress();
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            Task task = WriteAsyncInternal(this, buffer, _charBuffer, _charPos, _charLen, CoreNewLine, _autoFlush, appendNewLine: false, cancellationToken: cancellationToken);
+            _asyncWriteTask = task;
             return task;
         }
 
         // We pass in private instance fields of this MarshalByRefObject-derived type as local params
         // to ensure performant access inside the state machine that corresponds this async method.
         // Fields that are written to must be assigned at the end of the method *and* before instance invocations.
-        private static async Task WriteAsyncInternal(StreamWriter _this, char[] buffer, int index, int count,
+        private static async Task WriteAsyncInternal(StreamWriter _this, ReadOnlyMemory<char> source,
                                                      char[] charBuffer, int charPos, int charLen, char[] coreNewLine,
-                                                     bool autoFlush, bool appendNewLine)
+                                                     bool autoFlush, bool appendNewLine, CancellationToken cancellationToken)
         {
-            Debug.Assert(count == 0 || (count > 0 && buffer != null));
-            Debug.Assert(index >= 0);
-            Debug.Assert(count >= 0);
-            Debug.Assert(buffer == null || (buffer != null && buffer.Length - index >= count));
-
-            while (count > 0)
+            int copied = 0;
+            while (copied < source.Length)
             {
                 if (charPos == charLen)
                 {
-                    await _this.FlushAsyncInternal(false, false, charBuffer, charPos).ConfigureAwait(false);
+                    await _this.FlushAsyncInternal(false, false, charBuffer, charPos, cancellationToken).ConfigureAwait(false);
                     Debug.Assert(_this._charPos == 0);
                     charPos = 0;
                 }
 
-                int n = charLen - charPos;
-                if (n > count)
-                {
-                    n = count;
-                }
-
+                int n = Math.Min(charLen - charPos, source.Length - copied);
                 Debug.Assert(n > 0, "StreamWriter::Write(char[], int, int) isn't making progress!  This is most likely a race condition in user code.");
 
-                Buffer.BlockCopy(buffer, index * sizeof(char), charBuffer, charPos * sizeof(char), n * sizeof(char));
-
+                source.Span.Slice(copied, n).CopyTo(new Span<char>(charBuffer, charPos, n));
                 charPos += n;
-                index += n;
-                count -= n;
+                copied += n;
             }
 
             if (appendNewLine)
@@ -800,7 +723,7 @@ namespace System.IO
                 {
                     if (charPos == charLen)
                     {
-                        await _this.FlushAsyncInternal(false, false, charBuffer, charPos).ConfigureAwait(false);
+                        await _this.FlushAsyncInternal(false, false, charBuffer, charPos, cancellationToken).ConfigureAwait(false);
                         Debug.Assert(_this._charPos == 0);
                         charPos = 0;
                     }
@@ -812,7 +735,7 @@ namespace System.IO
 
             if (autoFlush)
             {
-                await _this.FlushAsyncInternal(true, false, charBuffer, charPos).ConfigureAwait(false);
+                await _this.FlushAsyncInternal(true, false, charBuffer, charPos, cancellationToken).ConfigureAwait(false);
                 Debug.Assert(_this._charPos == 0);
                 charPos = 0;
             }
@@ -838,7 +761,7 @@ namespace System.IO
 
             CheckAsyncTaskInProgress();
 
-            Task task = WriteAsyncInternal(this, null, 0, 0, _charBuffer, _charPos, _charLen, CoreNewLine, _autoFlush, appendNewLine: true);
+            Task task = WriteAsyncInternal(this, ReadOnlyMemory<char>.Empty, _charBuffer, _charPos, _charLen, CoreNewLine, _autoFlush, appendNewLine: true, cancellationToken: default);
             _asyncWriteTask = task;
 
             return task;
@@ -935,7 +858,32 @@ namespace System.IO
 
             CheckAsyncTaskInProgress();
 
-            Task task = WriteAsyncInternal(this, buffer, index, count, _charBuffer, _charPos, _charLen, CoreNewLine, _autoFlush, appendNewLine: true);
+            Task task = WriteAsyncInternal(this, new ReadOnlyMemory<char>(buffer, index, count), _charBuffer, _charPos, _charLen, CoreNewLine, _autoFlush, appendNewLine: true, cancellationToken: default);
+            _asyncWriteTask = task;
+
+            return task;
+        }
+
+        public override Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default)
+        {
+            if (GetType() != typeof(StreamWriter))
+            {
+                return base.WriteLineAsync(buffer, cancellationToken);
+            }
+
+            if (_stream == null)
+            {
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
+            }
+
+            CheckAsyncTaskInProgress();
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            Task task = WriteAsyncInternal(this, buffer, _charBuffer, _charPos, _charLen, CoreNewLine, _autoFlush, appendNewLine: true, cancellationToken: cancellationToken);
             _asyncWriteTask = task;
 
             return task;
@@ -981,8 +929,13 @@ namespace System.IO
         }
 
         private Task FlushAsyncInternal(bool flushStream, bool flushEncoder,
-                                        char[] sCharBuffer, int sCharPos)
+                                        char[] sCharBuffer, int sCharPos, CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
             // Perf boost for Flush on non-dirty writers.
             if (sCharPos == 0 && !flushStream && !flushEncoder)
             {
@@ -990,7 +943,7 @@ namespace System.IO
             }
 
             Task flushTask = FlushAsyncInternal(this, flushStream, flushEncoder, sCharBuffer, sCharPos, _haveWrittenPreamble,
-                                                _encoding, _encoder, _byteBuffer, _stream);
+                                                _encoding, _encoder, _byteBuffer, _stream, cancellationToken);
 
             _charPos = 0;
             return flushTask;
@@ -1001,7 +954,7 @@ namespace System.IO
         // to ensure performant access inside the state machine that corresponds this async method.
         private static async Task FlushAsyncInternal(StreamWriter _this, bool flushStream, bool flushEncoder,
                                                      char[] charBuffer, int charPos, bool haveWrittenPreamble,
-                                                     Encoding encoding, Encoder encoder, Byte[] byteBuffer, Stream stream)
+                                                     Encoding encoding, Encoder encoder, Byte[] byteBuffer, Stream stream, CancellationToken cancellationToken)
         {
             if (!haveWrittenPreamble)
             {
@@ -1009,14 +962,14 @@ namespace System.IO
                 byte[] preamble = encoding.GetPreamble();
                 if (preamble.Length > 0)
                 {
-                    await stream.WriteAsync(preamble, 0, preamble.Length).ConfigureAwait(false);
+                    await stream.WriteAsync(preamble, 0, preamble.Length, cancellationToken).ConfigureAwait(false);
                 }
             }
 
             int count = encoder.GetBytes(charBuffer, 0, charPos, byteBuffer, 0, flushEncoder);
             if (count > 0)
             {
-                await stream.WriteAsync(byteBuffer, 0, count).ConfigureAwait(false);
+                await stream.WriteAsync(byteBuffer, 0, count, cancellationToken).ConfigureAwait(false);
             }
 
             // By definition, calling Flush should flush the stream, but this is
@@ -1024,7 +977,7 @@ namespace System.IO
             // Services guys have some perf tests where flushing needlessly hurts.
             if (flushStream)
             {
-                await stream.FlushAsync().ConfigureAwait(false);
+                await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
         }
         #endregion

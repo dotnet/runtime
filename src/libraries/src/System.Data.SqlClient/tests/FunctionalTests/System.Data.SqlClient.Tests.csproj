@@ -25,12 +25,9 @@
     <Compile Include="SqlConnectionTest.RetrieveStatistics.cs" />
     <Compile Include="SqlErrorCollectionTest.cs" />
     <Compile Include="TcpDefaultForAzureTest.cs" />
-    <Compile Include="SqlConnectionTest.cs" />
+    <Compile Include="SqlConnectionBasicTests.cs" />
     <Compile Include="TestTdsServer.cs" />
     <Compile Include="..\ManualTests\DataCommon\DataTestUtility.cs" />
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Tools\TDS\TDS.Servers\TDS.Servers.csproj">

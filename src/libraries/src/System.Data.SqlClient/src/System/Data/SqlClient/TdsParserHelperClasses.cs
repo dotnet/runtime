@@ -12,7 +12,7 @@ using System.Data.Common;
 using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Text;
-
+using Microsoft.SqlServer.Server;
 
 namespace System.Data.SqlClient
 {
@@ -481,6 +481,7 @@ namespace System.Data.SqlClient
         internal int codePage;
         internal Encoding encoding;
         internal bool isNullable;
+        internal bool isMultiValued = false;
 
         // UDT specific metadata
         // server metadata info
@@ -489,13 +490,21 @@ namespace System.Data.SqlClient
         internal string udtSchemaName;
         internal string udtTypeName;
         internal string udtAssemblyQualifiedName;
-        
+
+        // on demand
+        internal Type udtType;
+
         // Xml specific metadata
         internal string xmlSchemaCollectionDatabase;
         internal string xmlSchemaCollectionOwningSchema;
         internal string xmlSchemaCollectionName;
         internal MetaType metaType; // cached metaType
 
+        // Structured type-specific metadata
+        internal string structuredTypeDatabaseName;
+        internal string structuredTypeSchemaName;
+        internal string structuredTypeName;
+        internal IList<SmiMetaData> structuredFields;
 
         internal SqlMetaDataPriv()
         {
@@ -512,16 +521,24 @@ namespace System.Data.SqlClient
             this.codePage = original.codePage;
             this.encoding = original.encoding;
             this.isNullable = original.isNullable;
+            this.isMultiValued = original.isMultiValued;
             this.udtDatabaseName = original.udtDatabaseName;
             this.udtSchemaName = original.udtSchemaName;
             this.udtTypeName = original.udtTypeName;
             this.udtAssemblyQualifiedName = original.udtAssemblyQualifiedName;
+            this.udtType = original.udtType;
             this.xmlSchemaCollectionDatabase = original.xmlSchemaCollectionDatabase;
             this.xmlSchemaCollectionOwningSchema = original.xmlSchemaCollectionOwningSchema;
             this.xmlSchemaCollectionName = original.xmlSchemaCollectionName;
             this.metaType = original.metaType;
+
+            this.structuredTypeDatabaseName = original.structuredTypeDatabaseName;
+            this.structuredTypeSchemaName = original.structuredTypeSchemaName;
+            this.structuredTypeName = original.structuredTypeName;
+            this.structuredFields = original.structuredFields;
         }
     }
+
     sealed internal class _SqlRPC
     {
         internal string rpcName;

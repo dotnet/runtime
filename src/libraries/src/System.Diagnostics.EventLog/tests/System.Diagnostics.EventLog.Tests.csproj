@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
+  <PropertyGroup>
+    <ProjectGuid>{5B218883-369E-4C3D-8BD0-74843474DCBD}</ProjectGuid>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="EventInstanceTests.cs" />
+    <Compile Include="EventLogEntryCollectionTests.cs" />
+    <Compile Include="EventLogTests\EventLogEntryWrittenTest.cs" />
+    <Compile Include="EventLogTests\EventLogSourceCreationTests.cs" />
+    <Compile Include="EventLogTests\EventLogTests.cs" />
+    <Compile Include="EventLogTests\EventLogWriteEntryTests.cs" />
+    <Compile Include="Helpers.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

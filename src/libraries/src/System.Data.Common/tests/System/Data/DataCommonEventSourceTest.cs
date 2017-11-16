@@ -12,7 +12,6 @@ namespace System.Data.Tests
     {
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20589", TargetFrameworkMonikers.UapAot)]
         public void InvokeCodeThatShouldFirEvents_EnsureEventsFired()
         {
             using (var listener = new TestEventListener("System.Data.DataCommonEventSource", EventLevel.Verbose))

@@ -1,0 +1,13 @@
+<!--
+  Description:  valid language with country code
+  Expect:       ValidLanguage{parent:channel,element:language}
+-->
+
+<rss version="2.0">
+<channel>
+<title>Validity test</title>
+<link>http://contoso.com/rss/2.0/</link>
+<description>valid language</description>
+<language>en-us</language>
+</channel>
+</rss>

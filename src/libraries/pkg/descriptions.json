@@ -26,6 +26,19 @@
     ]
   },
   {
+    "Name": "Microsoft.Diagnostics.Tracing.EventSource.Redist",
+    "Description": "This package includes the class Microsoft.Diagnostics.Tracing.EventSource which enables firing ETW events from managed code. This is the \"runtime\" or \"redist\" EventSource package and should be referenced directly only by other NuGet packages that need the EventSource functionality. Application developers that need this functionality should instead reference the Microsoft.Diagnostics.Tracing.EventSource NuGet package which provides an enhanced developer experience.
+
+      This package enables defining a strongly typed specification of an ETW provider that can be called by managed code. The EventSource class is also included in the .NET Framework. This package provides a newer version that has more features. It is meant to be used as a stop gap until those features it contains are ported to System.Diagnostics.Tracing.EventSource.
+
+      For more details, have a look at http://msdn.microsoft.com/en-us/library/system.diagnostics.tracing.eventsource.aspx.
+
+",
+    "CommonTypes": [
+      "Microsoft.Diagnostics.Tracing.EventSource"
+    ]
+  },
+  {
     "Name": "Microsoft.NETCore",
     "Description": "Provides a set of packages that can be used when building portable libraries on .NETCore based platforms.",
     "CommonTypes": []
@@ -48,6 +61,16 @@
   {
     "Name": "Microsoft.NETCore.Portable.Compatibility",
     "Description": "Enables compatibility with portable libraries targeting previous .NET releases like .NET Framework 4.0 and Silverlight.\nThis package supports retargeting references to classic reference assemblies (mscorlib.dll, system.dll, etc) to new contract assemblies (System.Runtime.dll, System.IO, etc).  It does this in a pay-for-play way to prevent consuming assemblies from having to reference all of the contracts that happen to overlap with mscorlib.  As such, when using this package you may encounter errors like\n\terror CS0012: The type 'WebRequest' is defined in an assembly that is not referenced. You must add a reference to assembly 'System.Net.Requests, Version=0.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.\nTo resolve these errors install the package with the same name as the missing assembly.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Windows.Compatibility",
+    "Description": "This Windows Compatibility Pack provides access to APIs that were previously available only for .NET Framework. It can be used from both .NET Core as well as .NET Standard.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Windows.Compatibility.Shims",
+    "Description": "This package provides infrastructure services and shouldn't be referenced directly from your code. It provides facade assemblies in order to make the Microsoft.Windows.Compatibility package work across all .NET implementations.",
     "CommonTypes": []
   },
   {
@@ -146,6 +169,11 @@
   {
     "Name": "Microsoft.XmlSerializer.Generator",
     "Description": "Provides SGen tool to generate Xml serialization code for types in a specified assembly in order to improve the startup performance of a XmlSerializer when it serializes or deserializes objects of the specified types",
+    "CommonTypes": []
+  },
+  {
+    "Name": "System.ServiceModel.Syndication",
+    "Description": "Provides classes related to service model syndication.",
     "CommonTypes": []
   },
   {
@@ -436,6 +464,33 @@
     ]
   },
   {
+    "Name": "System.Data.DataSetExtensions",
+    "Description": "Provides extensions to form LINQ expressions and method queries against DataTable objects.",
+    "CommonTypes": [
+        "System.Data.DataRowComparer",
+        "System.Data.DataRowExtensions",
+        "System.Data.DataTableExtensions",
+        "System.Data.EnumerableRowCollection",
+        "System.Data.EnumerableRowCollectionExtensions",
+        "System.Data.OrderedEnumerableRowCollection",
+        "System.Data.TypedTableBase",
+        "System.Data.TypedTableBaseExtensions"
+    ]
+  },
+  {
+    "Name": "System.Data.Odbc",
+    "Description": "Provides a collection of classes used to access an ODBC data source in the managed space",
+    "CommonTypes": [
+        "System.Data.Odbc.OdbcCommand",
+        "System.Data.Odbc.OdbcConnection",
+        "System.Data.Odbc.OdbcDataReader",
+        "System.Data.Odbc.OdbcDataAdapter",
+        "System.Data.Odbc.OdbcParameter",
+        "System.Data.Odbc.OdbcParameterCollection",
+        "System.Data.Odbc.OdbcTransaction"
+    ]
+  },
+  {
     "Name": "System.Data.SqlClient",
     "Description": "Provides the data provider for SQL Server. These classes provide access to versions of SQL Server and encapsulate database-specific protocols, including tabular data stream (TDS)",
     "CommonTypes": [
@@ -506,6 +561,20 @@
     "Description": "Provides the System.Diagnostics.FileVersionInfo class, which allows access to Win32 version resource information for a physical file on disk.",
     "CommonTypes": [
       "System.Diagnostics.FileVersionInfo"
+    ]
+  },
+  {
+    "Name": "System.Diagnostics.EventLog",
+    "Description": "Provides the System.Diagnostics.EventLog class, which allows the applications to use the windows event log service.",
+    "CommonTypes": [
+      "System.Diagnostics.EventLog"
+    ]
+  },
+  {
+    "Name": "System.Diagnostics.PerformanceCounter",
+    "Description": "Provides the System.Diagnostics.PerformanceCounter class, which allows access to Windows performance counters.",
+    "CommonTypes": [
+      "System.Diagnostics.PerformanceCounter"
     ]
   },
   {
@@ -605,6 +674,18 @@
       "System.Drawing.SizeF",
       "System.Drawing.Rectangle",
       "System.Drawing.RectangleF"
+    ]
+  },
+  {
+    "Name": "System.Drawing.Common",
+    "Description": "Provides access to GDI+ graphics functionality.",
+    "CommonTypes": [
+      "System.Drawing.Bitmap",
+      "System.Drawing.BitmapData",
+      "System.Drawing.Brush",
+      "System.Drawing.Font",
+      "System.Drawing.Graphics",
+      "System.Drawing.Icon"
     ]
   },
   {
@@ -879,10 +960,19 @@
     ]
   },
   {
+    "Name": "System.Management",
+    "Description": "Provides access to a rich set of management information and management events about the system, devices, and applications instrumented to the Windows Management Instrumentation (WMI) infrastructure.",
+    "CommonTypes": [
+      "System.Management.ManagementClass",
+      "System.Management.ManagementObject",
+      "System.Management.SelectQuery"
+    ]
+  },
+  {
     "Name": "System.Memory",
     "Description": "Provides types for efficient low-allocation access to memory.",
     "CommonTypes": [
-      "System.Span",
+      "System.Span"
     ]
   },
   {
@@ -1288,6 +1378,22 @@
     ]
   },
   {
+    "Name": "System.Runtime.Caching",
+    "Description": "Provides classes to use caching facilities.",
+    "CommonTypes": [
+      "System.Runtime.Caching.CacheEntryChangeMonitor",
+      "System.Runtime.Caching.CacheEntryRemovedArguments",
+      "System.Runtime.Caching.CacheEntryUpdateArguments",
+      "System.Runtime.Caching.CacheItem",
+      "System.Runtime.Caching.CacheItemPolicy",
+      "System.Runtime.Caching.ChangeMonitor",
+      "System.Runtime.Caching.FileChangeMonitor",
+      "System.Runtime.Caching.HostFileChangeMonitor",
+      "System.Runtime.Caching.MemoryCache",
+      "System.Runtime.Caching.ObjectCache",
+    ]
+  },
+  {
     "Name": "System.Runtime.CompilerServices.Unsafe",
     "Description": "Provides the System.Runtime.CompilerServices.Unsafe class, which provides generic, low-level functionality for manipulating pointers.",
     "CommonTypes": [
@@ -1565,7 +1671,7 @@
   {
     "Name": "System.Security.Cryptography.Xml",
     "Description": "Provides classes to support the creation and validation of XML digital signatures. The classes in this namespace implement the World Wide Web Consortium Recommendation, \"XML-Signature Syntax and Processing\", described at http://www.w3.org/TR/xmldsig-core/.",
-    "CommonTypes": [ 
+    "CommonTypes": [
       "System.Security.Cryptography.Xml.CipherData",
       "System.Security.Cryptography.Xml.CipherReference",
       "System.Security.Cryptography.Xml.DataObject",
@@ -1808,6 +1914,14 @@
       "System.Security.AccessControl.SemaphoreAccessRule",
       "System.Security.AccessControl.SemaphoreAuditRule",
       "System.Security.AccessControl.SemaphoreSecurity"
+    ]
+  },
+  {
+    "Name": "System.Threading.Channels",
+    "Description": "Provides types for passing data between producers and consumers.",
+    "CommonTypes": [
+      "System.Threading.Channel",
+      "System.Threading.Channel<T>"
     ]
   },
   {

@@ -20,6 +20,8 @@ namespace System.Threading
     /// <summary>
     /// The exception that is thrown when the post-phase action of a <see cref="Barrier"/> fails.
     /// </summary>
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class BarrierPostPhaseException : Exception
     {
         /// <summary>
@@ -66,7 +68,6 @@ namespace System.Threading
         protected BarrierPostPhaseException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            throw new PlatformNotSupportedException();
         }
     }
 
@@ -661,12 +662,10 @@ namespace System.Threading
                 {
                     if (SetCurrentTotal(currentTotal, 0, total, !sense))
                     {
-#if !uapaot
                         if (CdsSyncEtwBCLProvider.Log.IsEnabled())
                         {
                             CdsSyncEtwBCLProvider.Log.Barrier_PhaseFinished(sense, CurrentPhaseNumber);
                         }
-#endif
                         FinishPhase(sense);
                         return true;
                     }

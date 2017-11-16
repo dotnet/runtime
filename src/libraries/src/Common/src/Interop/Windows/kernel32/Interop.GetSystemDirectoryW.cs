@@ -2,14 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Runtime.InteropServices;
-using System.Text;
 
 internal static partial class Interop
 {
     internal static partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern int GetSystemDirectoryW([Out] StringBuilder lpBuffer, int jSize);
+        private static extern unsafe int GetSystemDirectoryW(char* lpBuffer, int uSize);
+
+        internal static unsafe int GetSystemDirectoryW(Span<char> buffer)
+        {
+            fixed (char* bufferPtr = &buffer.DangerousGetPinnableReference())
+            {
+                return GetSystemDirectoryW(bufferPtr, buffer.Length);
+            }
+        }
     }
 }

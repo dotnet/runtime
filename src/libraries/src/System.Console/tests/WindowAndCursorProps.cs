@@ -139,7 +139,7 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
         Assert.NotNull(Console.Title);
     }
 
-    [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))] // Nano currently ignores set title
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Nano currently ignores set title
     [InlineData(0)]
     [InlineData(1)]
     [InlineData(255)]
@@ -154,7 +154,16 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
         {
             string newTitle = new string('a', int.Parse(lengthOfTitleString));
             Console.Title = newTitle;
-            Assert.Equal(newTitle, Console.Title);
+
+            if (newTitle.Length > 513 && PlatformDetection.IsWindows10Version1703OrGreater)
+            {
+                // RS2 has a bug when getting the window title when the title length is longer than 513 character
+                Assert.Throws<IOException>(() => Console.Title);
+            }
+            else
+            {
+                Assert.Equal(newTitle, Console.Title);
+            }
             return SuccessExitCode;
         }, lengthOfTitle.ToString()).Dispose();
     }
@@ -356,7 +365,7 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
     }
 
     [PlatformSpecific(TestPlatforms.Windows)]
-    [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
     public void SetWindowSize_GetWindowSize_ReturnsExpected()
     {
         if (!Console.IsInputRedirected && !Console.IsOutputRedirected)

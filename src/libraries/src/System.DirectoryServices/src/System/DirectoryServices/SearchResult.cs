@@ -2,25 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Net;
+using System.Security.Permissions;
+
 namespace System.DirectoryServices
 {
-    using System;
-    using System.Net;
-    using System.Runtime.InteropServices;
-    using System.Collections;
-    using System.Diagnostics;
-    using System.Security.Permissions;
-
-    /// <include file='doc\SearchResult.uex' path='docs/doc[@for="SearchResult"]/*' />
     /// <devdoc>
-    ///    <para>Encapsulates a node in the Active Directory hierarchy 
-    ///       that is returned during a search through <see cref='System.DirectoryServices.DirectorySearcher'/>.</para>
+    /// Encapsulates a node in the Active Directory hierarchy 
+    /// that is returned during a search through <see cref='System.DirectoryServices.DirectorySearcher'/>.
     /// </devdoc>
     public class SearchResult
     {
-        private NetworkCredential _parentCredentials;
-        private AuthenticationTypes _parentAuthenticationType;
-        private ResultPropertyCollection _properties = new ResultPropertyCollection();
+        private readonly NetworkCredential _parentCredentials;
+        private readonly AuthenticationTypes _parentAuthenticationType;
 
         internal SearchResult(NetworkCredential parentCredentials, AuthenticationTypes parentAuthenticationType)
         {
@@ -28,15 +22,12 @@ namespace System.DirectoryServices
             _parentAuthenticationType = parentAuthenticationType;
         }
 
-        /// <include file='doc\SearchResult.uex' path='docs/doc[@for="SearchResult.GetDirectoryEntry"]/*' />
         /// <devdoc>
-        /// <para>Retrieves the <see cref='System.DirectoryServices.DirectoryEntry'/> that corresponds to the <see cref='System.DirectoryServices.SearchResult'/>, from the Active Directory 
-        ///    hierarchy.</para>
+        /// Retrieves the <see cref='System.DirectoryServices.DirectoryEntry'/> that corresponds to the <see cref='System.DirectoryServices.SearchResult'/>, from the Active Directory 
+        ///    hierarchy.
         /// </devdoc>
-        [
-            EnvironmentPermission(SecurityAction.Assert, Unrestricted = true),
-            SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.UnmanagedCode)
-        ]
+        [EnvironmentPermission(SecurityAction.Assert, Unrestricted = true)]
+        [SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.UnmanagedCode)]
         public DirectoryEntry GetDirectoryEntry()
         {
             if (_parentCredentials != null)
@@ -48,29 +39,15 @@ namespace System.DirectoryServices
             }
         }
 
-        /// <include file='doc\SearchResult.uex' path='docs/doc[@for="SearchResult.Path"]/*' />
         /// <devdoc>
-        /// <para> Gets the path for this <see cref='System.DirectoryServices.SearchResult'/>.</para>
+        /// Gets the path for this <see cref='System.DirectoryServices.SearchResult'/>.
         /// </devdoc>
-        public string Path
-        {
-            get
-            {
-                return (string)Properties["ADsPath"][0];
-            }
-        }
+        public string Path => (string)Properties["ADsPath"][0];
 
-        /// <include file='doc\SearchResult.uex' path='docs/doc[@for="SearchResult.Properties"]/*' />
         /// <devdoc>
-        /// <para>Gets a <see cref='System.DirectoryServices.ResultPropertyCollection'/>
-        /// of properties set on this object.</para>
+        /// Gets a <see cref='System.DirectoryServices.ResultPropertyCollection'/>
+        /// of properties set on this object.
         /// </devdoc>
-        public ResultPropertyCollection Properties
-        {
-            get
-            {
-                return _properties;
-            }
-        }
+        public ResultPropertyCollection Properties { get; } = new ResultPropertyCollection();
     }
 }

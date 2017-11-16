@@ -72,22 +72,11 @@ namespace System.Data.SqlClient.Tests
             new object[] { EnlistConnectionInTransaction, s_connectionStringWithEnlistOff }
         };
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotArmProcess))] // https://github.com/dotnet/corefx/issues/21598
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArmProcess))] // https://github.com/dotnet/corefx/issues/21598
         [MemberData(nameof(ExceptionTestDataForSqlException))]
         public void TestSqlException(Action<string> connectAction, string connectionString)
         {
             Assert.Throws<SqlException>(() =>
-            {
-                connectAction(connectionString);
-            });
-        }
-
-        [Theory]
-        [MemberData(nameof(ExceptionTestDataForNotSupportedException))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework doesn't throw the Not Supported Exception")]
-        public void TestNotSupportedException(Action<string> connectAction, string connectionString)
-        {
-            Assert.Throws<NotSupportedException>(() =>
             {
                 connectAction(connectionString);
             });

@@ -91,7 +91,7 @@ namespace System.Net.Sockets
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
         }
 
-        public static SocketError Bind(SafeCloseSocket handle, byte[] buffer, int nameLen)
+        public static SocketError Bind(SafeCloseSocket handle, ProtocolType socketProtocolType, byte[] buffer, int nameLen)
         {
             SocketError errorCode = Interop.Winsock.bind(handle, buffer, nameLen);
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
@@ -174,23 +174,15 @@ namespace System.Net.Sockets
             }
         }
 
-        public static unsafe SocketError Send(SafeCloseSocket handle, byte[] buffer, int offset, int size, SocketFlags socketFlags, out int bytesTransferred)
+        public static unsafe SocketError Send(SafeCloseSocket handle, byte[] buffer, int offset, int size, SocketFlags socketFlags, out int bytesTransferred) =>
+            Send(handle, new ReadOnlySpan<byte>(buffer, offset, size), socketFlags, out bytesTransferred);
+
+        public static unsafe SocketError Send(SafeCloseSocket handle, ReadOnlySpan<byte> buffer, SocketFlags socketFlags, out int bytesTransferred)
         {
             int bytesSent;
-            if (buffer.Length == 0)
+            fixed (byte* bufferPtr = &buffer.DangerousGetPinnableReference())
             {
-                bytesSent = Interop.Winsock.send(handle.DangerousGetHandle(), null, 0, socketFlags);
-            }
-            else
-            {
-                fixed (byte* pinnedBuffer = &buffer[0])
-                {
-                    bytesSent = Interop.Winsock.send(
-                        handle.DangerousGetHandle(),
-                        pinnedBuffer + offset,
-                        size,
-                        socketFlags);
-                }
+                bytesSent = Interop.Winsock.send(handle.DangerousGetHandle(), bufferPtr, buffer.Length, socketFlags);
             }
 
             if (bytesSent == (int)SocketError.SocketError)
@@ -302,19 +294,15 @@ namespace System.Net.Sockets
             }
         }
 
-        public static unsafe SocketError Receive(SafeCloseSocket handle, byte[] buffer, int offset, int size, SocketFlags socketFlags, out int bytesTransferred)
+        public static unsafe SocketError Receive(SafeCloseSocket handle, byte[] buffer, int offset, int size, SocketFlags socketFlags, out int bytesTransferred) =>
+            Receive(handle, new Span<byte>(buffer, offset, size), socketFlags, out bytesTransferred);
+
+        public static unsafe SocketError Receive(SafeCloseSocket handle, Span<byte> buffer, SocketFlags socketFlags, out int bytesTransferred)
         {
             int bytesReceived;
-            if (buffer?.Length == 0)
+            fixed (byte* bufferPtr = &buffer.DangerousGetPinnableReference())
             {
-                bytesReceived = Interop.Winsock.recv(handle.DangerousGetHandle(), null, 0, socketFlags);
-            }
-            else
-            {
-                fixed (byte* pinnedBuffer = buffer)
-                {
-                    bytesReceived = Interop.Winsock.recv(handle.DangerousGetHandle(), pinnedBuffer + offset, size, socketFlags);
-                }
+                bytesReceived = Interop.Winsock.recv(handle.DangerousGetHandle(), bufferPtr, buffer.Length, socketFlags);
             }
 
             if (bytesReceived == (int)SocketError.SocketError)
@@ -335,13 +323,9 @@ namespace System.Net.Sockets
 
         public static unsafe IPPacketInformation GetIPPacketInformation(Interop.Winsock.ControlDataIPv6* controlBuffer)
         {
-            IPAddress address = IPAddress.IPv6None;
-            if (controlBuffer->length != UIntPtr.Zero)
-            {
-                var addressArray = new byte[Interop.Winsock.IPv6AddressLength];
-                Marshal.Copy((IntPtr)(controlBuffer->address), addressArray, 0, Interop.Winsock.IPv6AddressLength);
-                address = new IPAddress(addressArray);
-            }
+            IPAddress address = controlBuffer->length != UIntPtr.Zero ?
+                new IPAddress(new Span<byte>(controlBuffer->address, Interop.Winsock.IPv6AddressLength)) :
+                IPAddress.IPv6None;
 
             return new IPPacketInformation(address, (int)controlBuffer->index);
         }
@@ -503,11 +487,15 @@ namespace System.Net.Sockets
         {
             Interop.Winsock.IPMulticastRequest ipmr = new Interop.Winsock.IPMulticastRequest();
 
-            ipmr.MulticastAddress = unchecked((int)optionValue.Group.GetAddress());
+#pragma warning disable CS0618 // Address is marked obsolete
+            ipmr.MulticastAddress = unchecked((int)optionValue.Group.Address);
+#pragma warning restore CS0618
 
             if (optionValue.LocalAddress != null)
             {
-                ipmr.InterfaceAddress = unchecked((int)optionValue.LocalAddress.GetAddress());
+#pragma warning disable CS0618 // Address is marked obsolete
+                ipmr.InterfaceAddress = unchecked((int)optionValue.LocalAddress.Address);
+#pragma warning restore CS0618
             }
             else
             {  //this structure works w/ interfaces as well

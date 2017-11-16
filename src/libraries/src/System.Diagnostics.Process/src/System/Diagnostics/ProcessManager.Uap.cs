@@ -74,4 +74,12 @@ namespace System.Diagnostics
             return new ProcessModuleCollection(0);
         }
     }
+
+    internal static partial class NtProcessInfoHelper
+    {
+        internal static ProcessInfo[] GetProcessInfos(Predicate<int> processIdFilter = null)
+        {
+            throw new PlatformNotSupportedException(SR.GetProcessInfoNotSupported); // NtDll.NtQuerySystemInformation is not available in Uap
+        }
+    }
 }

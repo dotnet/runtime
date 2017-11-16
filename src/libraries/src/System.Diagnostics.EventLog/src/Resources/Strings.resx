@@ -1,0 +1,246 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="BadLogName" xml:space="preserve">
+    <value>Event log names must consist of printable characters and cannot contain \\, *, ?, or spaces</value>
+  </data>
+  <data name="CannotDeleteEqualSource" xml:space="preserve">
+    <value>The event log source '{0}' cannot be deleted, because it's equal to the log name.</value>
+  </data>
+  <data name="CantMonitorEventLog" xml:space="preserve">
+    <value>Cannot monitor EntryWritten events for this EventLog. This might be because the EventLog is on a remote machine which is not a supported scenario.</value>
+  </data>
+  <data name="CantOpenLog" xml:space="preserve">
+    <value>Cannot open log {0} on computer '{1}'. {2}</value>
+  </data>
+  <data name="CantOpenLogAccess" xml:space="preserve">
+    <value>Cannot open log for source '{0}'. You may not have write access.</value>
+  </data>
+  <data name="CantReadLogEntryAt" xml:space="preserve">
+    <value>Cannot read log entry number {0}.  The event log may be corrupt.</value>
+  </data>
+  <data name="CantRetrieveEntries" xml:space="preserve">
+    <value>Cannot retrieve all entries.</value>
+  </data>
+  <data name="DuplicateLogName" xml:space="preserve">
+    <value>Only the first eight characters of a custom log name are significant, and there is already another log on the system using the first eight characters of the name given. Name given: '{0}', name of existing log: '{1}'.</value>
+  </data>
+  <data name="EventID" xml:space="preserve">
+    <value>Invalid eventID value '{0}'. It must be in the range between '{1}' and '{2}'.</value>
+  </data>
+  <data name="IndexOutOfBounds" xml:space="preserve">
+    <value>Index {0} is out of bounds.</value>
+  </data>
+  <data name="InitTwice" xml:space="preserve">
+    <value>Cannot initialize the same object twice.</value>
+  </data>
+  <data name="InvalidCustomerLogName" xml:space="preserve">
+    <value>The log name: '{0}' is invalid for customer log creation.</value>
+  </data>
+  <data name="InvalidParameter" xml:space="preserve">
+    <value>Invalid value '{1}' for parameter '{0}'.</value>
+  </data>
+  <data name="InvalidParameterFormat" xml:space="preserve">
+    <value>Invalid format for argument {0}.</value>
+  </data>
+  <data name="LocalLogAlreadyExistsAsSource" xml:space="preserve">
+    <value>Log {0} has already been registered as a source on the local computer.</value>
+  </data>
+  <data name="LocalRegKeyMissing" xml:space="preserve">
+    <value>Cannot open registry key {0}\\{1}\\{2}.</value>
+  </data>
+  <data name="LocalSourceAlreadyExists" xml:space="preserve">
+    <value>Source {0} already exists on the local computer.</value>
+  </data>
+  <data name="LocalSourceNotRegistered" xml:space="preserve">
+    <value>Source {0} is not registered on the local computer.</value>
+  </data>
+  <data name="LogDoesNotExists" xml:space="preserve">
+    <value>The event log '{0}' on computer '{1}' does not exist.</value>
+  </data>
+  <data name="LogEntryTooLong" xml:space="preserve">
+    <value>Log entry string is too long. A string written to the event log cannot exceed 32766 characters.</value>
+  </data>
+  <data name="LogSourceMismatch" xml:space="preserve">
+    <value>The source '{0}' is not registered in log '{1}'. (It is registered in log '{2}'.) " The Source and Log properties must be matched, or you may set Log to the empty string, and it will automatically be matched to the Source property.NoAccountInfo=Cannot obtain account information.</value>
+  </data>
+  <data name="MaximumKilobytesOutOfRange" xml:space="preserve">
+    <value>MaximumKilobytes must be between 64 KB and 4 GB, and must be in 64K increments.</value>
+  </data>
+  <data name="MessageNotFormatted" xml:space="preserve">
+    <value>The description for Event ID '{0}' in Source '{1}' cannot be found.  The local computer may not have the necessary registry information or message DLL files to display the message, or you may not have permission to access them.  The following information is part of the event:</value>
+  </data>
+  <data name="MissingLog" xml:space="preserve">
+    <value>Cannot find Log {0} on computer '{1}'.</value>
+  </data>
+  <data name="MissingLogProperty" xml:space="preserve">
+    <value>Log property value has not been specified.</value>
+  </data>
+  <data name="MissingParameter" xml:space="preserve">
+    <value>Must specify value for {0}.</value>
+  </data>
+  <data name="NeedSourceToOpen" xml:space="preserve">
+    <value>Source property was not set before opening the event log in write mode.</value>
+  </data>
+  <data name="NeedSourceToWrite" xml:space="preserve">
+    <value>Source property was not set before writing to the event log.</value>
+  </data>
+  <data name="NoCurrentEntry" xml:space="preserve">
+    <value>No current EventLog entry available, cursor is located before the first or after the last element of the enumeration.</value>
+  </data>
+  <data name="NoLogName" xml:space="preserve">
+    <value>Log to delete was not specified.</value>
+  </data>
+  <data name="ParameterTooLong" xml:space="preserve">
+    <value>The size of {0} is too big. It cannot be longer than {1} characters.</value>
+  </data>
+  <data name="PlatformNotSupported_EventLog" xml:space="preserve">
+    <value>EventLog access is not supported on this platform.</value>
+  </data>
+  <data name="RegKeyMissing" xml:space="preserve">
+    <value>Cannot open registry key {0}\\{1}\\{2} on computer '{3}'.</value>
+  </data>
+  <data name="RegKeyMissingShort" xml:space="preserve">
+    <value>Cannot open registry key {0} on computer {1}.</value>
+  </data>
+  <data name="RegKeyNoAccess" xml:space="preserve">
+    <value>Cannot open registry key {0} on computer {1}. You might not have access.</value>
+  </data>
+  <data name="RentionDaysOutOfRange" xml:space="preserve">
+    <value>'retentionDays' must be between 1 and 365 days.</value>
+  </data>
+  <data name="SomeLogsInaccessible" xml:space="preserve">
+    <value>The source was not found, but some or all event logs could not be searched.  Inaccessible logs: {0}.</value>
+  </data>
+  <data name="SomeLogsInaccessibleToCreate" xml:space="preserve">
+    <value>The source was not found, but some or all event logs could not be searched.  To create the source, you need permission to read all event logs to make sure that the new source name is unique.  Inaccessible logs: {0}.</value>
+  </data>
+  <data name="SourceAlreadyExists" xml:space="preserve">
+    <value>Source {0} already exists on the computer '{1}'.</value>
+  </data>
+  <data name="SourceNotRegistered" xml:space="preserve">
+    <value>The source '{0}' is not registered on machine '{1}', or you do not have write access to the {2} registry key.</value>
+  </data>
+  <data name="TooManyReplacementStrings" xml:space="preserve">
+    <value>The maximum allowed number of replacement strings is 255.</value>
+  </data>
+  <data name="LogAlreadyExistsAsSource" xml:space="preserve">
+    <value>Log {0} has already been registered as a source on the local computer.</value>
+  </data>
+</root>

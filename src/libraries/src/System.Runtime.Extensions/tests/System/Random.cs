@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static class RandomTests
+    public static partial class RandomTests
     {
         [Fact]
         public static void Unseeded()
@@ -53,14 +53,12 @@ namespace System.Tests
             }
         }
 
-        [Fact]
-        public static void ExpectedValues()
+        // Random has a predictable sequence of values it generates based on its seed.
+        // So that we'll be made aware if a change to the implementation causes these
+        // sequences to change, this test verifies the first few numbers for a few seeds.
+        private static int[][] Values()
         {
-            // Random has a predictable sequence of values it generates based on its seed.
-            // So that we'll be made aware if a change to the implementation causes these
-            // sequences to change, this test verifies the first few numbers for a few seeds.
-
-            var expectedValues = new int[][] 
+            var expectedValues = new int[][]
             {
                 new int[] {1559595546, 1755192844, 1649316166, 1198642031, 442452829, 1200195957, 1945678308, 949569752, 2099272109, 587775847},
                 new int[] {534011718, 237820880, 1002897798, 1657007234, 1412011072, 929393559, 760389092, 2026928803, 217468053, 1379662799},
@@ -83,7 +81,13 @@ namespace System.Tests
                 new int[] {278955818, 212301256, 751203777, 859281097, 714632027, 620720087, 2085308890, 1014679847, 439053806, 1956839101},
                 new int[] {1400855637, 842412939, 104785409, 1317646300, 1684190270, 349917689, 900019674, 2092038898, 704733397, 601242406},
             };
+            return (expectedValues);
+        }
 
+        [Fact]
+        public static void ExpectedValues()
+        {
+            int[][] expectedValues = Values();
             for (int seed = 0; seed < expectedValues.Length; seed++)
             {
                 var r = new Random(seed);
@@ -91,6 +95,47 @@ namespace System.Tests
                 {
                     Assert.Equal(expectedValues[seed][i], r.Next());
                 }
+            }
+        }
+
+        private static byte[][] ByteValues()
+        {
+            var expectedValues = new byte[][]
+            {
+                new byte[] { 0x1A, 0xC, 0x46, 0x6F, 0x5D, 0x75, 0xE4, 0xD8, 0xAD, 0x67 },
+                new byte[] { 0x46, 0xD0, 0x86, 0x82, 0x40, 0x97, 0xE4, 0xA3, 0x95, 0xCF },
+                new byte[] { 0x71, 0x93, 0xC6, 0x95, 0x24, 0xB9, 0xE3, 0x6F, 0x7C, 0x38 },
+                new byte[] { 0x9D, 0x56, 0x5, 0xA9, 0x7, 0xDB, 0xE3, 0x3A, 0x63, 0xA0 },
+                new byte[] { 0xC8, 0x19, 0x45, 0xBC, 0xEB, 0xFD, 0xE2, 0x6, 0x4A, 0x8 },
+                new byte[] { 0xF4, 0xDD, 0x85, 0xCF, 0xCE, 0x1E, 0xE2, 0xD1, 0x31, 0x71 },
+                new byte[] { 0x1F, 0xA0, 0xC4, 0xE2, 0xB1, 0x40, 0xE1, 0x9D, 0x18, 0xD9 },
+                new byte[] { 0x4B, 0x63, 0x4, 0xF6, 0x95, 0x62, 0xE1, 0x68, 0xFF, 0x41 },
+                new byte[] { 0x76, 0x27, 0x44, 0x9, 0x78, 0x84, 0xE0, 0x34, 0xE6, 0xAA },
+                new byte[] { 0xA2, 0xEA, 0x84, 0x1C, 0x5C, 0xA6, 0xDF, 0xFF, 0xCE, 0x12 },
+                new byte[] { 0xCD, 0xAD, 0xC3, 0x2F, 0x3F, 0xC8, 0xDF, 0xCB, 0xB5, 0x7A },
+                new byte[] { 0xF9, 0x71, 0x3, 0x42, 0x23, 0xEA, 0xDE, 0x96, 0x9C, 0xE3 },
+                new byte[] { 0x24, 0x34, 0x43, 0x56, 0x6, 0xC, 0xDE, 0x62, 0x83, 0x4B },
+                new byte[] { 0x50, 0xF7, 0x82, 0x69, 0xEA, 0x2D, 0xDD, 0x2D, 0x6A, 0xB4 },
+                new byte[] { 0x7C, 0xBA, 0xC2, 0x7C, 0xCD, 0x4F, 0xDD, 0xF9, 0x51, 0x1C },
+                new byte[] { 0xA7, 0x7E, 0x2, 0x8F, 0xB0, 0x71, 0xDC, 0xC4, 0x38, 0x84 },
+                new byte[] { 0xD3, 0x41, 0x41, 0xA2, 0x94, 0x93, 0xDC, 0x90, 0x1F, 0xED },
+                new byte[] { 0xFE, 0x4, 0x81, 0xB6, 0x77, 0xB5, 0xDB, 0x5B, 0x7, 0x55 },
+                new byte[] { 0x2A, 0xC8, 0xC1, 0xC9, 0x5B, 0xD7, 0xDA, 0x27, 0xEE, 0xBD },
+                new byte[] { 0x55, 0x8B, 0x1, 0xDC, 0x3E, 0xF9, 0xDA, 0xF2, 0xD5, 0x26 }
+            };
+            return (expectedValues);
+        }
+
+        [Fact]
+        public static void ExpectedValues_NextBytesArray()
+        {
+            byte[][] expectedValues = ByteValues();
+            for (int seed = 0; seed < expectedValues.Length; seed++)
+            {
+                byte[] actualValues = new byte[expectedValues[seed].Length];
+                var r = new Random(seed);
+                r.NextBytes(actualValues);
+                Assert.Equal(expectedValues[seed], actualValues);
             }
         }
 

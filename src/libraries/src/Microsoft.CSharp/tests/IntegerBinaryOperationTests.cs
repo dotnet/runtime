@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
@@ -603,6 +604,23 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             Assert.Throws<OverflowException>(() => callsite.Target(callsite, dividend, divisor));
             callsite = GetBinaryOperationCallSite(ExpressionType.Modulo, true, true, true);
             Assert.Throws<OverflowException>(() => callsite.Target(callsite, dividend, divisor));
+        }
+
+        [Fact]
+        public void NullDMO()
+        {
+            BinaryOperationBinder binder = Binder.BinaryOperation(
+                CSharpBinderFlags.None,
+                ExpressionType.Add,
+                GetType(),
+                new[] { CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null), CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null) }
+            ) as BinaryOperationBinder;
+            DynamicMetaObject dmo2 = new DynamicMetaObject(Expression.Parameter(typeof(object)), BindingRestrictions.Empty, 2);
+            DynamicMetaObject dmoNoVal = new DynamicMetaObject(Expression.Parameter(typeof(object)), BindingRestrictions.Empty);
+            AssertExtensions.Throws<ArgumentNullException>("target", () => binder.FallbackBinaryOperation(null, null));
+            AssertExtensions.Throws<ArgumentNullException>("arg", () => binder.FallbackBinaryOperation(dmo2, null));
+            AssertExtensions.Throws<ArgumentException>("target", () => binder.FallbackBinaryOperation(dmoNoVal, null));
+            AssertExtensions.Throws<ArgumentException>("arg", () => binder.FallbackBinaryOperation(dmo2, dmoNoVal));
         }
     }
 }

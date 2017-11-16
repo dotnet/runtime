@@ -2,27 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+using System.Runtime.InteropServices;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Collections;
-    using System.Runtime.InteropServices;
-
     public class ReplicationCursorCollection : ReadOnlyCollectionBase
     {
-        private DirectoryServer _server = null;
+        private readonly DirectoryServer _server = null;
+
         internal ReplicationCursorCollection(DirectoryServer server)
         {
             _server = server;
         }
 
-        public ReplicationCursor this[int index]
-        {
-            get
-            {
-                return (ReplicationCursor)InnerList[index];
-            }
-        }
+        public ReplicationCursor this[int index] => (ReplicationCursor)InnerList[index];
 
         public bool Contains(ReplicationCursor cursor)
         {
@@ -45,10 +39,7 @@ namespace System.DirectoryServices.ActiveDirectory
             InnerList.CopyTo(values, index);
         }
 
-        private int Add(ReplicationCursor cursor)
-        {
-            return InnerList.Add(cursor);
-        }
+        private int Add(ReplicationCursor cursor) => InnerList.Add(cursor);
 
         internal void AddHelper(string partition, object cursors, bool advanced, IntPtr info)
         {

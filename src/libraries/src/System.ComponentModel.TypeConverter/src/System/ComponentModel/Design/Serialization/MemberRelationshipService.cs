@@ -20,7 +20,7 @@ namespace System.ComponentModel.Design.Serialization
     ///    between these two objects is lost.  Serialization schemes that
     ///    wish to maintain this relationship may install a MemberRelationshipService
     ///    into the serialization manager.  When an object is deserialized
-    ///    this serivce will be notified of these relationships.  It is up to the service
+    ///    this service will be notified of these relationships.  It is up to the service
     ///    to act on these notifications if it wishes.  During serialization, the
     ///    service is also consulted.  If a relationship exists the same
     ///    relationship is maintained by the serializer.
@@ -126,7 +126,7 @@ namespace System.ComponentModel.Design.Serialization
         }
 
         /// <summary>
-        ///    Returns true if the provided relatinoship is supported.
+        ///    Returns true if the provided relationship is supported.
         /// </summary>
         public abstract bool SupportsRelationship(MemberRelationship source, MemberRelationship relationship);
 
@@ -180,7 +180,7 @@ namespace System.ComponentModel.Design.Serialization
     /// <summary>
     ///    This class represents a single relationship between an object and a member.
     /// </summary>
-    public struct MemberRelationship
+    public readonly struct MemberRelationship
     {
         public static readonly MemberRelationship Empty = new MemberRelationship();
 

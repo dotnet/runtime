@@ -173,26 +173,16 @@ namespace System.Drawing.Drawing2D
             }
             set
             {
-                int status = SafeNativeMethods.Gdip.GdipGetPathGradientSurroundColorCount(new HandleRef(this, NativeBrush),
-                                                                           out int count);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
-
-                if ((value.Length > count) || (count <= 0))
-                    throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.InvalidParameter);
-
-                count = value.Length;
+                int count = value.Length;
                 int[] argbs = new int[count];
                 for (int i = 0; i < value.Length; i++)
                     argbs[i] = value[i].ToArgb();
 
-                status = SafeNativeMethods.Gdip.GdipSetPathGradientSurroundColorsWithCount(new HandleRef(this, NativeBrush),
+                int status = SafeNativeMethods.Gdip.GdipSetPathGradientSurroundColorsWithCount(new HandleRef(this, NativeBrush),
                                                                             argbs,
                                                                             ref count);
 
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -237,7 +227,8 @@ namespace System.Drawing.Drawing2D
         public Blend Blend
         {
             get
-            {    // Figure out the size of blend factor array
+            {
+                // Figure out the size of blend factor array
                 int status = SafeNativeMethods.Gdip.GdipGetPathGradientBlendCount(new HandleRef(this, NativeBrush), out int retval);
 
                 if (status != SafeNativeMethods.Gdip.Ok)
@@ -249,52 +240,66 @@ namespace System.Drawing.Drawing2D
 
                 int count = retval;
 
-                IntPtr factors = IntPtr.Zero;
-                IntPtr positions = IntPtr.Zero;
+                var factors = new float[count];
+                var positions = new float[count];
 
-                try
+                // Retrieve horizontal blend factors
+
+                status = SafeNativeMethods.Gdip.GdipGetPathGradientBlend(new HandleRef(this, NativeBrush), factors, positions, count);
+
+                if (status != SafeNativeMethods.Gdip.Ok)
                 {
-                    int size = checked(4 * count);
-                    factors = Marshal.AllocHGlobal(size);
-                    positions = Marshal.AllocHGlobal(size);
-
-                    // Retrieve horizontal blend factors
-
-                    status = SafeNativeMethods.Gdip.GdipGetPathGradientBlend(new HandleRef(this, NativeBrush), factors, positions, count);
-
-                    if (status != SafeNativeMethods.Gdip.Ok)
-                    {
-                        throw SafeNativeMethods.Gdip.StatusException(status);
-                    }
-
-                    // Return the result in a managed array
-
-                    Blend blend = new Blend(count);
-
-                    Marshal.Copy(factors, blend.Factors, 0, count);
-                    Marshal.Copy(positions, blend.Positions, 0, count);
-
-                    return blend;
+                    throw SafeNativeMethods.Gdip.StatusException(status);
                 }
-                finally
-                {
-                    if (factors != IntPtr.Zero)
-                    {
-                        Marshal.FreeHGlobal(factors);
-                    }
-                    if (positions != IntPtr.Zero)
-                    {
-                        Marshal.FreeHGlobal(positions);
-                    }
-                }
+
+                // Return the result in a managed array
+
+                Blend blend = new Blend(count);
+                blend.Factors = factors;
+                blend.Positions = positions;
+
+                return blend;
             }
             set
             {
-                // Allocate temporary native memory buffer
-                // and copy input blend factors into it.
+                if (value == null || value.Factors == null)
+                {
+                    // This is the behavior on Desktop
+                    throw new NullReferenceException();
+                }
+
+                // The Desktop implementation throws ArgumentNullException("source") because it never validates the value of value.Positions, and then passes it
+                // on to Marshal.Copy(value.Positions, 0, positions, count);. The first argument of Marshal.Copy is source, hence this exception.
+                if (value.Positions == null)
+                {
+                    throw new ArgumentNullException("source");
+                }
 
                 int count = value.Factors.Length;
 
+                // Explicit argument validation, because libgdiplus does not correctly validate all parameters.
+                if (count == 0 || value.Positions.Length == 0)
+                {
+                    throw new ArgumentException(SR.BlendObjectMustHaveTwoElements);
+                }
+
+                if (count >= 2 && count != value.Positions.Length)
+                {
+                    throw new ArgumentOutOfRangeException();
+                }
+
+                if (count >= 2 && value.Positions[0] != 0.0F)
+                {
+                    throw new ArgumentException(SR.BlendObjectFirstElementInvalid);
+                }
+
+                if (count >= 2 && value.Positions[count - 1] != 1.0F)
+                {
+                    throw new ArgumentException(SR.BlendObjectLastElementInvalid);
+                }
+
+                // Allocate temporary native memory buffer
+                // and copy input blend factors into it.
                 IntPtr factors = IntPtr.Zero;
                 IntPtr positions = IntPtr.Zero;
 
@@ -334,20 +339,36 @@ namespace System.Drawing.Drawing2D
 
         public void SetSigmaBellShape(float focus, float scale)
         {
-            int status = SafeNativeMethods.Gdip.GdipSetPathGradientSigmaBlend(new HandleRef(this, NativeBrush), focus, scale);
+            if (focus < 0 || focus > 1)
+            {
+                throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter), nameof(focus));
+            }
 
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            if (scale < 0 || scale > 1)
+            {
+                throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter), nameof(scale));
+            }
+
+            int status = SafeNativeMethods.Gdip.GdipSetPathGradientSigmaBlend(new HandleRef(this, NativeBrush), focus, scale);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public void SetBlendTriangularShape(float focus) => SetBlendTriangularShape(focus, (float)1.0);
 
         public void SetBlendTriangularShape(float focus, float scale)
         {
-            int status = SafeNativeMethods.Gdip.GdipSetPathGradientLinearBlend(new HandleRef(this, NativeBrush), focus, scale);
+            if (focus < 0 || focus > 1)
+            {
+                throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter), nameof(focus));
+            }
 
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            if (scale < 0 || scale > 1)
+            {
+                throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter), nameof(scale));
+            }
+
+            int status = SafeNativeMethods.Gdip.GdipSetPathGradientLinearBlend(new HandleRef(this, NativeBrush), focus, scale);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public ColorBlend InterpolationColors
@@ -355,118 +376,76 @@ namespace System.Drawing.Drawing2D
             get
             {
                 // Figure out the size of blend factor array
-                int status = SafeNativeMethods.Gdip.GdipGetPathGradientPresetBlendCount(new HandleRef(this, NativeBrush), out int retval);
+                int status = SafeNativeMethods.Gdip.GdipGetPathGradientPresetBlendCount(new HandleRef(this, NativeBrush), out int count);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
-                if (status != SafeNativeMethods.Gdip.Ok)
-                {
-                    throw SafeNativeMethods.Gdip.StatusException(status);
-                }
-
-                // If retVal is 0, then there is nothing to marshal.
+                // If count is 0, then there is nothing to marshal.
                 // In this case, we'll return an empty ColorBlend...
-                //
-                if (retval == 0)
+                if (count == 0)
                 {
                     return new ColorBlend();
                 }
 
-                // Allocate temporary native memory buffer
+                int[] colors = new int[count];
+                float[] positions = new float[count];
 
-                int count = retval;
+                ColorBlend blend = new ColorBlend(count);
 
-                IntPtr colors = IntPtr.Zero;
-                IntPtr positions = IntPtr.Zero;
-
-                try
+                // status would fail if we ask points or types with a < 2 count
+                if (count > 1)
                 {
-                    int size = checked(4 * count);
-                    colors = Marshal.AllocHGlobal(size);
-                    positions = Marshal.AllocHGlobal(size);
-
                     // Retrieve horizontal blend factors
-
                     status = SafeNativeMethods.Gdip.GdipGetPathGradientPresetBlend(new HandleRef(this, NativeBrush), colors, positions, count);
 
-                    if (status != SafeNativeMethods.Gdip.Ok)
-                    {
-                        throw SafeNativeMethods.Gdip.StatusException(status);
-                    }
+                    SafeNativeMethods.Gdip.CheckStatus(status);
 
                     // Return the result in a managed array
 
-                    ColorBlend blend = new ColorBlend(count);
-
-                    int[] argb = new int[count];
-                    Marshal.Copy(colors, argb, 0, count);
-                    Marshal.Copy(positions, blend.Positions, 0, count);
+                    blend.Positions = positions;
 
                     // copy ARGB values into Color array of ColorBlend
-                    blend.Colors = new Color[argb.Length];
+                    blend.Colors = new Color[count];
 
-                    for (int i = 0; i < argb.Length; i++)
+                    for (int i = 0; i < count; i++)
                     {
-                        blend.Colors[i] = Color.FromArgb(argb[i]);
-                    }
-
-                    return blend;
-                }
-                finally
-                {
-                    if (colors != IntPtr.Zero)
-                    {
-                        Marshal.FreeHGlobal(colors);
-                    }
-                    if (positions != IntPtr.Zero)
-                    {
-                        Marshal.FreeHGlobal(positions);
+                        blend.Colors[i] = Color.FromArgb(colors[i]);
                     }
                 }
+
+                return blend;
             }
             set
             {
-                // Allocate temporary native memory buffer
-                // and copy input blend factors into it.
-
+                // The Desktop implementation will throw various exceptions - ranging from NullReferenceExceptions to Argument(OutOfRange)Exceptions
+                // depending on how sane the input is. These checks exist to replicate the exact Desktop behavior.
                 int count = value.Colors.Length;
 
-                IntPtr colors = IntPtr.Zero;
-                IntPtr positions = IntPtr.Zero;
-
-                try
+                if (value.Positions == null)
                 {
-                    int size = checked(4 * count);
-                    colors = Marshal.AllocHGlobal(size);
-                    positions = Marshal.AllocHGlobal(size);
-
-                    int[] argbs = new int[count];
-                    for (int i = 0; i < count; i++)
-                    {
-                        argbs[i] = value.Colors[i].ToArgb();
-                    }
-
-                    Marshal.Copy(argbs, 0, colors, count);
-                    Marshal.Copy(value.Positions, 0, positions, count);
-
-                    // Set blend factors
-
-                    int status = SafeNativeMethods.Gdip.GdipSetPathGradientPresetBlend(new HandleRef(this, NativeBrush), new HandleRef(null, colors), new HandleRef(null, positions), count);
-
-                    if (status != SafeNativeMethods.Gdip.Ok)
-                    {
-                        throw SafeNativeMethods.Gdip.StatusException(status);
-                    }
+                    throw new ArgumentNullException("source");
                 }
-                finally
+
+                if (value.Colors.Length > value.Positions.Length)
                 {
-                    if (colors != IntPtr.Zero)
-                    {
-                        Marshal.FreeHGlobal(colors);
-                    }
-                    if (positions != IntPtr.Zero)
-                    {
-                        Marshal.FreeHGlobal(positions);
-                    }
+                    throw new ArgumentOutOfRangeException();
                 }
+
+                if (value.Colors.Length < value.Positions.Length)
+                {
+                    throw new ArgumentException();
+                }
+
+                float[] positions = value.Positions;
+                int[] argbs = new int[count];
+                for (int i = 0; i < count; i++)
+                {
+                    argbs[i] = value.Colors[i].ToArgb();
+                }
+
+                // Set blend factors
+                int status = SafeNativeMethods.Gdip.GdipSetPathGradientPresetBlend(new HandleRef(this, NativeBrush), argbs, positions, count);
+
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -477,21 +456,19 @@ namespace System.Drawing.Drawing2D
                 Matrix matrix = new Matrix();
 
                 int status = SafeNativeMethods.Gdip.GdipGetPathGradientTransform(new HandleRef(this, NativeBrush), new HandleRef(matrix, matrix.nativeMatrix));
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return matrix;
             }
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("matrix");
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
 
                 int status = SafeNativeMethods.Gdip.GdipSetPathGradientTransform(new HandleRef(this, NativeBrush), new HandleRef(value, value.nativeMatrix));
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -508,14 +485,21 @@ namespace System.Drawing.Drawing2D
         public void MultiplyTransform(Matrix matrix, MatrixOrder order)
         {
             if (matrix == null)
-                throw new ArgumentNullException("matrix");
+            {
+                throw new ArgumentNullException(nameof(matrix));
+            }
+
+            // Multiplying the transform by a disposed matrix is a nop in GDI+, but throws
+            // with the libgdiplus backend. Simulate a nop for compatability with GDI+.
+            if (matrix.nativeMatrix == IntPtr.Zero)
+            {
+                return;
+            }
 
             int status = SafeNativeMethods.Gdip.GdipMultiplyPathGradientTransform(new HandleRef(this, NativeBrush),
                                                 new HandleRef(matrix, matrix.nativeMatrix),
                                                 order);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public void TranslateTransform(float dx, float dy) => TranslateTransform(dx, dy, MatrixOrder.Prepend);

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+  	<DisableImplicitFrameworkReferences Condition="'$(TargetFramework)' == 'netcoreapp2.0'">true</DisableImplicitFrameworkReferences>
+  	<PreserveCompilationContext>true</PreserveCompilationContext>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Windows.Compatibility" Version="$(CompatibilityPackageVersion)" />
+    <PackageReference Condition="'$(TargetFramework)' == 'netcoreapp2.0'" Include="Microsoft.NETCore.App" Version="2.0.0" />
+  </ItemGroup>
+</Project>

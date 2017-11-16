@@ -112,6 +112,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { (ulong)12, "2", (double)14 };
             yield return new object[] { (ulong)13, true, (decimal)12 };
             yield return new object[] { (ulong)14, null, (ulong)14 };
+            yield return new object[] { (ulong)15, ulong.MaxValue, decimal.Parse("18446744073709551630") };
 
             // long + primitives.
             yield return new object[] { (long)8, (long)2, (long)10 };
@@ -121,6 +122,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { (long)12, "2", (double)14 };
             yield return new object[] { (long)13, true, (long)12 };
             yield return new object[] { (long)14, null, (long)14 };
+            yield return new object[] { (long)15, long.MaxValue, decimal.Parse("9223372036854775822") };
 
             // float + primitives
             yield return new object[] { (float)9, (float)2, (float)11 };
@@ -179,14 +181,6 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             {
                 Assert.Equal(expected, Operators.AddObject(right, left));
             }
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/21682 -- fails when /buildtype:ret passed to ILC", TargetFrameworkMonikers.UapAot)]
-        public void AddObject_Convertible_ReturnsExpected_64BitOverflow()
-        {
-            AddObject_Convertible_ReturnsExpected((ulong)15, ulong.MaxValue, decimal.Parse("18446744073709551630"));
-            AddObject_Convertible_ReturnsExpected((long)15, long.MaxValue, decimal.Parse("9223372036854775822"));
         }
 
         [Fact]

@@ -16,7 +16,7 @@ namespace System.Net.Sockets
         //
         // Encapsulates a particular SocketAsyncContext object's access to a SocketAsyncEngine.  
         //
-        public struct Token
+        public readonly struct Token
         {
             private readonly SocketAsyncEngine _engine;
             private readonly IntPtr _handle;
@@ -39,10 +39,10 @@ namespace System.Net.Sockets
                 }
             }
 
-            public bool TryRegister(SafeCloseSocket socket, Interop.Sys.SocketEvents current, Interop.Sys.SocketEvents events, out Interop.Error error)
+            public bool TryRegister(SafeCloseSocket socket, out Interop.Error error)
             {
                 Debug.Assert(WasAllocated, "Expected WasAllocated to be true");
-                return _engine.TryRegister(socket, current, events, _handle, out error);
+                return _engine.TryRegister(socket, _handle, out error);
             }
         }
 
@@ -375,15 +375,10 @@ namespace System.Net.Sockets
             }
         }
 
-        private bool TryRegister(SafeCloseSocket socket, Interop.Sys.SocketEvents current, Interop.Sys.SocketEvents events, IntPtr handle, out Interop.Error error)
+        private bool TryRegister(SafeCloseSocket socket, IntPtr handle, out Interop.Error error)
         {
-            if (current == events)
-            {
-                error = Interop.Error.SUCCESS;
-                return true;
-            }
-
-            error = Interop.Sys.TryChangeSocketEventRegistration(_port, socket, current, events, handle);
+            error = Interop.Sys.TryChangeSocketEventRegistration(_port, socket, Interop.Sys.SocketEvents.None, 
+                Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write, handle);
             return error == Interop.Error.SUCCESS;
         }
     }

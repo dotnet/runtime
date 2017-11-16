@@ -14,7 +14,7 @@ namespace System.Net.NetworkInformation.Tests
         /// </summary>
         public static void NormalizeLineEndings(string source, string normalizedDest)
         {
-            string contents = File.ReadAllText(TestFile(source));
+            string contents = File.ReadAllText(source);
             if (Environment.NewLine == "\r\n")
             {
                 if (!contents.Contains(Environment.NewLine))
@@ -31,15 +31,6 @@ namespace System.Net.NetworkInformation.Tests
             }
 
             File.WriteAllText(normalizedDest, contents);
-        }
-
-        /// <summary>
-        /// Gets a path to the desired test file
-        /// </summary>
-        /// <returns>The correct path to a valid test file</returns>
-        public static string TestFile(string source)
-        {
-            return Path.Combine("NetworkFiles", source);
         }
     }
 }

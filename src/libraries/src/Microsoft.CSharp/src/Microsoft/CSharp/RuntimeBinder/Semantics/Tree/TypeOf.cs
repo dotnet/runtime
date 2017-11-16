@@ -6,9 +6,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprTypeOf : ExprWithType
     {
-        public ExprTypeOf(CType type)
+        public ExprTypeOf(CType type, ExprClass pSourceType)
             : base(ExpressionKind.TypeOf, type)
         {
+            Flags = EXPRFLAG.EXF_CANTBENULL;
+            SourceType = pSourceType;
         }
 
         public ExprClass SourceType { get; set; }

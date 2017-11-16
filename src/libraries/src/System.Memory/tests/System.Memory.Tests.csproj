@@ -5,13 +5,13 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ProjectGuid>{15DB0DCC-68B4-4CFB-8BD2-F26BCCAF5A3F}</ProjectGuid>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="AllocationHelper.cs" />
     <Compile Include="TInt.cs" />
+    <Compile Include="TestException.cs" />
+    <Compile Include="TestHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Span\AsBytes.cs" />
@@ -20,7 +20,6 @@
     <Compile Include="Span\Clear.cs" />
     <Compile Include="Span\CopyTo.cs" />
     <Compile Include="Span\CtorArray.cs" />
-    <Compile Include="Span\CtorArrayInt.cs" />
     <Compile Include="Span\CtorArrayIntInt.cs" />
     <Compile Include="Span\CtorPointerInt.cs" />
     <Compile Include="Span\DangerousCreate.cs" />
@@ -28,6 +27,7 @@
     <Compile Include="Span\Empty.cs" />
     <Compile Include="Span\Equality.cs" />
     <Compile Include="Span\GcReporting.cs" />
+    <Compile Include="Span\GetEnumerator.cs" />
     <Compile Include="Span\GetHashCode.cs" />
     <Compile Include="Span\IndexOf.T.cs" />
     <Compile Include="Span\IndexOf.byte.cs" />
@@ -43,22 +43,20 @@
     <Compile Include="Span\Slice.cs" />
     <Compile Include="Span\StartsWith.T.cs" />
     <Compile Include="Span\StartsWith.byte.cs" />
-    <Compile Include="Span\TestHelpers.cs" />
     <Compile Include="Span\ToArray.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ReadOnlySpan\AsBytes.cs" />
     <Compile Include="ReadOnlySpan\AsReadOnlySpan.cs" />
-    <Compile Include="ReadOnlySpan\AsSpan.cs" />
     <Compile Include="ReadOnlySpan\CopyTo.cs" />
     <Compile Include="ReadOnlySpan\CtorArray.cs" />
-    <Compile Include="ReadOnlySpan\CtorArrayInt.cs" />
     <Compile Include="ReadOnlySpan\CtorArrayIntInt.cs" />
     <Compile Include="ReadOnlySpan\CtorPointerInt.cs" />
     <Compile Include="ReadOnlySpan\DangerousCreate.cs" />
     <Compile Include="ReadOnlySpan\DangerousGetPinnableReference.cs" />
     <Compile Include="ReadOnlySpan\Empty.cs" />
     <Compile Include="ReadOnlySpan\Equality.cs" />
+    <Compile Include="ReadOnlySpan\GetEnumerator.cs" />
     <Compile Include="ReadOnlySpan\GetHashCode.cs" />
     <Compile Include="ReadOnlySpan\IndexOf.T.cs" />
     <Compile Include="ReadOnlySpan\IndexOf.byte.cs" />
@@ -74,8 +72,80 @@
     <Compile Include="ReadOnlySpan\Slice.cs" />
     <Compile Include="ReadOnlySpan\StartsWith.T.cs" />
     <Compile Include="ReadOnlySpan\StartsWith.byte.cs" />
-    <Compile Include="ReadOnlySpan\TestHelpers.cs" />
+    <Compile Include="ReadOnlyMemory\Strings.cs" />
     <Compile Include="ReadOnlySpan\ToArray.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Memory\CopyTo.cs" />
+    <Compile Include="Memory\CtorArray.cs" />
+    <Compile Include="Memory\CtorArrayIntInt.cs" />
+    <Compile Include="Memory\CustomMemoryForTest.cs" />
+    <Compile Include="Memory\Empty.cs" />
+    <Compile Include="Memory\Equality.cs" />
+    <Compile Include="Memory\GetHashCode.cs" />
+    <Compile Include="Memory\ImplicitConversion.cs" />
+    <Compile Include="Memory\OwnedMemory.cs" />
+    <Compile Include="Memory\Retain.cs" />
+    <Compile Include="Memory\Slice.cs" />
+    <Compile Include="Memory\Span.cs" />
+    <Compile Include="Memory\ToArray.cs" />
+    <Compile Include="Memory\TryGetArray.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="MemoryMarshal\AsMemory.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ReadOnlyMemory\CopyTo.cs" />
+    <Compile Include="ReadOnlyMemory\CtorArray.cs" />
+    <Compile Include="ReadOnlyMemory\CtorArrayIntInt.cs" />
+    <Compile Include="ReadOnlyMemory\DangerousTryGetArray.cs" />
+    <Compile Include="ReadOnlyMemory\Empty.cs" />
+    <Compile Include="ReadOnlyMemory\Equality.cs" />
+    <Compile Include="ReadOnlyMemory\GetHashCode.cs" />
+    <Compile Include="ReadOnlyMemory\ImplicitConversion.cs" />
+    <Compile Include="ReadOnlyMemory\Retain.cs" />
+    <Compile Include="ReadOnlyMemory\Slice.cs" />
+    <Compile Include="ReadOnlyMemory\Span.cs" />
+    <Compile Include="ReadOnlyMemory\ToArray.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Binary\BinaryReaderUnitTests.cs" />
+    <Compile Include="Binary\BinaryWriterUnitTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Common\src\System\MutableDecimal.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ParsersAndFormatters\Formatter\FormatterTestData.cs" />
+    <Compile Include="ParsersAndFormatters\Formatter\FormatterTests.cs" />
+    <Compile Include="ParsersAndFormatters\Formatter\FormatterTests.Negative.cs" />
+    <Compile Include="ParsersAndFormatters\Formatter\TestData.Formatter.cs" />
+    <Compile Include="ParsersAndFormatters\Formatter\ValidateFormatter.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\ParserTestData.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\ParserTests.2gbOverflow.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\ParserTests.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\ParserTests.Negative.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\TestData.Parser.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\TestData.Parser.Boolean.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\TestData.Parser.Integer.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\TestData.Parser.DecimalsAndFloats.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\TestData.Parser.Guid.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\TestData.Parser.Date.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\TestData.Parser.TimeSpan.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\ValidateParser.cs" />
+    <Compile Include="ParsersAndFormatters\PseudoDateTime.cs" />
+    <Compile Include="ParsersAndFormatters\StandardFormatTests.cs" />
+    <Compile Include="ParsersAndFormatters\SupportedFormats.cs" />
+    <Compile Include="ParsersAndFormatters\TestData.cs" />
+    <Compile Include="ParsersAndFormatters\TestUtils.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Base64\Base64DecoderUnitTests.cs" />
+    <Compile Include="Base64\Base64EncoderUnitTests.cs" />
+    <Compile Include="Base64\Base64TestHelper.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

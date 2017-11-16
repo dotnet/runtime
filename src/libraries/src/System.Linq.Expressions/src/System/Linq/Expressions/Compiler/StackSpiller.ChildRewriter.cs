@@ -292,7 +292,7 @@ namespace System.Linq.Expressions.Compiler
             }
 
             /// <summary>
-            /// Gets a Boolean value indicating whether the parent expression shoud be
+            /// Gets a Boolean value indicating whether the parent expression should be
             /// rewritten by using <see cref="Finish"/>.
             /// </summary>
             internal bool Rewrite => _action != RewriteAction.None;
@@ -333,7 +333,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 var parameters = method.GetParametersCached();
 
-                for (int i = 0, n = parameters.Length; i < n;  i++)
+                for (int i = 0, n = parameters.Length; i < n; i++)
                 {
                     if (parameters[i].ParameterType.IsByRef)
                     {

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Description:  Unknown extension elements in feed and entry should not affect validity
+Expect:       !Error
+-->
+
+<feed xmlns="http://www.w3.org/2005/Atom"
+    xmlns:a="http://www.contoso.com/extension-a"
+    xmlns:dc="http://contoso.com/dc/elements/1.1/">
+
+  <title>Example Feed</title>
+  <link href="http://contoso.com/"/>
+  <updated>2003-12-13T18:30:02Z</updated>
+  <author>
+    <name>Author Name</name>
+  </author>
+  <id>urn:uuid:60a76c80-d399-11d9-b93C-0003939e0af6</id>
+  <a:simple-value>Test</a:simple-value>
+  <a:structured-xml><dc:title>A structured extension element</dc:title></a:structured-xml>
+
+  <entry>
+    <title>Atom-Powered Robots Run Amok</title>
+    <link href="http://contoso.com/2003/12/13/atom03"/>
+    <id>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a</id>
+    <updated>2003-12-13T18:30:02Z</updated>
+    <summary>Some text.</summary>
+    <a:simple-value>Test</a:simple-value>
+    <a:structured-xml><dc:title>A structured extension element</dc:title></a:structured-xml>
+  </entry>
+
+</feed>

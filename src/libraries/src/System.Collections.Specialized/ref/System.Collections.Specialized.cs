@@ -25,7 +25,7 @@ namespace System.Collections.Specialized
         public override string ToString() { throw null; }
         public static string ToString(System.Collections.Specialized.BitVector32 value) { throw null; }
         [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-        public partial struct Section
+        public readonly partial struct Section
         {
             public short Mask { get { throw null; } }
             public short Offset { get { throw null; } }

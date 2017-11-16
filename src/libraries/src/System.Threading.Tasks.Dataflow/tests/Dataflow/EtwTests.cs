@@ -11,7 +11,6 @@ namespace System.Threading.Tasks.Dataflow.Tests
     public class EtwTests : RemoteExecutorTestBase
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20592", TargetFrameworkMonikers.UapAot)]
         public void TestEtw()
         {
             RemoteInvoke(() =>

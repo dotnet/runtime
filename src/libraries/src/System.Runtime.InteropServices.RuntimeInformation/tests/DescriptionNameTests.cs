@@ -80,6 +80,12 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.Contains("netbsd", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
         }
 
+        [Fact, PlatformSpecific(TestPlatforms.FreeBSD)]  // Checks FreeBSD debug name in RuntimeInformation
+        public void VerifyFreeBSDDebugName()
+        {
+            Assert.Contains("FreeBSD", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
+        }
+
         [Fact, PlatformSpecific(TestPlatforms.OSX)]  // Checks OSX debug name in RuntimeInformation
         public void VerifyOSXDebugName()
         {

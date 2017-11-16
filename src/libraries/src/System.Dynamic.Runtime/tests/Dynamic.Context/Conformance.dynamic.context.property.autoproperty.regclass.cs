@@ -498,10 +498,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autopr
             }
         }
 
-        public void Foo()
-        {
-        }
-
         private static int Verify()
         {
             lock (Test.locker)
@@ -520,7 +516,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autopr
         {
             Test t = new Test();
             Test.s_field = "Field";
-            t.Foo();
+            GC.KeepAlive(t);
         }
 
         [Fact]

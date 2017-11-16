@@ -305,6 +305,34 @@ namespace System.Net.Sockets
 #endif
         }
 
+        public override int Read(Span<byte> destination)
+        {
+            if (GetType() != typeof(NetworkStream))
+            {
+                // NetworkStream is not sealed, and a derived type may have overridden Read(byte[], int, int) prior
+                // to this Read(Span<byte>) overload being introduced.  In that case, this Read(Span<byte>) overload
+                // should use the behavior of Read(byte[],int,int) overload.
+                return base.Read(destination);
+            }
+
+            if (_cleanedUp) throw new ObjectDisposedException(GetType().FullName);
+            if (!CanRead) throw new InvalidOperationException(SR.net_writeonlystream);
+
+            int bytesRead = _streamSocket.Receive(destination, SocketFlags.None, out SocketError errorCode);
+            if (errorCode != SocketError.Success)
+            {
+                var exception = new SocketException((int)errorCode);
+                throw new IOException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
+            }
+            return bytesRead;
+        }
+
+        public override unsafe int ReadByte()
+        {
+            int b;
+            return Read(new Span<byte>(&b, 1)) == 0 ? -1 : b;
+        }
+
         // Write - provide core Write functionality.
         // 
         // Provide core write functionality. All we do is call through to the
@@ -367,6 +395,31 @@ namespace System.Net.Sockets
             }
 #endif
         }
+
+        public override void Write(ReadOnlySpan<byte> source)
+        {
+            if (GetType() != typeof(NetworkStream))
+            {
+                // NetworkStream is not sealed, and a derived type may have overridden Write(byte[], int, int) prior
+                // to this Write(ReadOnlySpan<byte>) overload being introduced.  In that case, this Write(ReadOnlySpan<byte>)
+                // overload should use the behavior of Write(byte[],int,int) overload.
+                base.Write(source);
+                return;
+            }
+
+            if (_cleanedUp) throw new ObjectDisposedException(GetType().FullName);
+            if (!CanWrite) throw new InvalidOperationException(SR.net_readonlystream);
+
+            _streamSocket.Send(source, SocketFlags.None, out SocketError errorCode);
+            if (errorCode != SocketError.Success)
+            {
+                var exception = new SocketException((int)errorCode);
+                throw new IOException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
+            }
+        }
+
+        public override unsafe void WriteByte(byte value) =>
+            Write(new ReadOnlySpan<byte>(&value, 1));
 
         private int _closeTimeout = Socket.DefaultCloseTimeout; // -1 = respect linger options
 
@@ -696,6 +749,34 @@ namespace System.Net.Sockets
             }
         }
 
+        public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
+        {
+            bool canRead = CanRead; // Prevent race with Dispose.
+            if (_cleanedUp)
+            {
+                throw new ObjectDisposedException(this.GetType().FullName);
+            }
+            if (!canRead)
+            {
+                throw new InvalidOperationException(SR.net_writeonlystream);
+            }
+
+            try
+            {
+                return _streamSocket.ReceiveAsync(
+                    destination,
+                    SocketFlags.None,
+                    fromNetworkStream: true,
+                    cancellationToken: cancellationToken);
+            }
+            catch (Exception exception) when (!(exception is OutOfMemoryException))
+            {
+                // Some sort of error occurred on the socket call,
+                // set the SocketException as InnerException and throw.
+                throw new IOException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
+            }
+        }
+
         // WriteAsync - provide async write functionality.
         // 
         // This method provides async write functionality. All we do is
@@ -748,6 +829,38 @@ namespace System.Net.Sockets
                     new ArraySegment<byte>(buffer, offset, size),
                     SocketFlags.None,
                     fromNetworkStream: true);
+            }
+            catch (Exception exception) when (!(exception is OutOfMemoryException))
+            {
+                // Some sort of error occurred on the socket call,
+                // set the SocketException as InnerException and throw.
+                throw new IOException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
+            }
+        }
+
+        public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        {
+            bool canWrite = CanWrite; // Prevent race with Dispose.
+            if (_cleanedUp)
+            {
+                throw new ObjectDisposedException(this.GetType().FullName);
+            }
+            if (!canWrite)
+            {
+                throw new InvalidOperationException(SR.net_readonlystream);
+            }
+
+            try
+            {
+                ValueTask<int> t = _streamSocket.SendAsync(
+                    source,
+                    SocketFlags.None,
+                    fromNetworkStream: true,
+                    cancellationToken: cancellationToken);
+
+                return t.IsCompletedSuccessfully ?
+                    Task.CompletedTask :
+                    t.AsTask();
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {

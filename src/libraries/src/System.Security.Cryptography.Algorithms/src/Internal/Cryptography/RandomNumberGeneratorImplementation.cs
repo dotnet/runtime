@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
-
 namespace System.Security.Cryptography
 {
     internal sealed partial class RandomNumberGeneratorImplementation : RandomNumberGenerator
@@ -11,29 +9,39 @@ namespace System.Security.Cryptography
         public override void GetBytes(byte[] data)
         {
             if (data == null) throw new ArgumentNullException(nameof(data));
-
-            GetBytesInternal(data, 0, data.Length);
+            GetBytes(new Span<byte>(data));
         }
 
         public override void GetBytes(byte[] data, int offset, int count)
         {
             VerifyGetBytes(data, offset, count);
-            GetBytesInternal(data, offset, count);
+            GetBytes(new Span<byte>(data, offset, count));
+        }
+
+        public override void GetBytes(Span<byte> data)
+        {
+            if (data.Length > 0)
+            {
+                GetBytes(ref data.DangerousGetPinnableReference(), data.Length);
+            }
         }
 
         public override void GetNonZeroBytes(byte[] data)
         {
             if (data == null) throw new ArgumentNullException(nameof(data));
+            GetNonZeroBytes(new Span<byte>(data));
+        }
 
-            int offset = 0;
-            while (offset < data.Length)
+        public override void GetNonZeroBytes(Span<byte> data)
+        {
+            while (data.Length > 0)
             {
-                // Fill the remaining portion of the array with random bytes.
-                GetBytesInternal(data, offset, data.Length - offset);
+                // Fill the remaining portion of the span with random bytes.
+                GetBytes(data);
 
                 // Find the first zero in the remaining portion.
                 int indexOfFirst0Byte = data.Length;
-                for (int i = offset; i < data.Length; i++)
+                for (int i = 0; i < data.Length; i++)
                 {
                     if (data[i] == 0)
                     {
@@ -53,26 +61,7 @@ namespace System.Security.Cryptography
 
                 // Request new random bytes if necessary; dont re-use
                 // existing bytes since they were shifted down.
-                offset = indexOfFirst0Byte;
-            }
-        }
-
-        private void GetBytesInternal(byte[] data, int offset, int count)
-        {
-            Debug.Assert(data != null);
-            Debug.Assert(offset >= 0);
-            Debug.Assert(count >= 0);
-            Debug.Assert(count <= data.Length - offset);
-
-            if (count > 0)
-            {
-                unsafe
-                {
-                    fixed (byte* pb = &data[offset])
-                    {
-                        GetBytes(pb, count);
-                    }
-                }
+                data = data.Slice(indexOfFirst0Byte);
             }
         }
     }

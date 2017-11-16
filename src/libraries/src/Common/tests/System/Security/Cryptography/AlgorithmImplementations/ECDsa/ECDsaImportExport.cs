@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
+using Test.Cryptography;
 
 namespace System.Security.Cryptography.EcDsa.Tests
 {
@@ -262,6 +263,32 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 ECParameters parameters = ECDsaTestData.GetNistP224KeyTestData();
                 ec.ImportParameters(parameters);
                 VerifyNamedCurve(parameters, ec, 224, true);
+            }
+        }
+
+        [ConditionalFact(nameof(ECExplicitCurvesSupported))]
+        public static void ExportIncludingPrivateOnPublicOnlyKey()
+        {
+            ECParameters iutParameters = new ECParameters
+            {
+                Curve = ECCurve.NamedCurves.nistP521,
+                Q =
+                {
+                    X = "00d45615ed5d37fde699610a62cd43ba76bedd8f85ed31005fe00d6450fbbd101291abd96d4945a8b57bc73b3fe9f4671105309ec9b6879d0551d930dac8ba45d255".HexToByteArray(),
+                    Y = "01425332844e592b440c0027972ad1526431c06732df19cd46a242172d4dd67c2c8c99dfc22e49949a56cf90c6473635ce82f25b33682fb19bc33bd910ed8ce3a7fa".HexToByteArray(),
+                },
+                D = "00816f19c1fb10ef94d4a1d81c156ec3d1de08b66761f03f06ee4bb9dcebbbfe1eaa1ed49a6a990838d8ed318c14d74cc872f95d05d07ad50f621ceb620cd905cfb8".HexToByteArray(),
+            };
+
+            using (ECDsa iut = ECDsaFactory.Create())
+            using (ECDsa cavs = ECDsaFactory.Create())
+            {
+                iut.ImportParameters(iutParameters);
+                cavs.ImportParameters(iut.ExportParameters(false));
+
+                // Linux throws an Interop.Crypto.OpenSslCryptographicException : CryptographicException
+                Assert.ThrowsAny<CryptographicException>(() => cavs.ExportExplicitParameters(true));
+                Assert.ThrowsAny<CryptographicException>(() => cavs.ExportParameters(true));
             }
         }
 

@@ -21,14 +21,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool IsOptionalArgument { get; set; }
 
-        public virtual void SetMismatchedStaticBit()
-        {
-            HasError = true;
-        }
-
         public string ErrorString { get; set; }
 
-        public virtual CType Type => null;
+        public CType Type { get; protected set; }
 
         public bool IsOK => !HasError;
 

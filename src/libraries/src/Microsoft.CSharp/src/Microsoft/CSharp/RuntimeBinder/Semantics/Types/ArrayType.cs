@@ -21,8 +21,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // Returns the first non-array type in the parent chain.
         public CType GetBaseElementType()
         {
-            CType type;
-            for (type = GetElementType(); type.IsArrayType(); type = type.AsArrayType().GetElementType()) ;
+            CType type = GetElementType();
+            while (type is ArrayType arr)
+            {
+                type = arr.GetElementType();
+            }
+
             return type;
         }
 

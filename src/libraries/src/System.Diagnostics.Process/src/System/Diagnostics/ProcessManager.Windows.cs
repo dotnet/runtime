@@ -44,31 +44,45 @@ namespace System.Diagnostics
             return Array.IndexOf(GetProcessIds(machineName), processId) >= 0;
         }
 
-        /// <summary>Gets the ProcessInfo for the specified process ID on the specified machine.</summary>
-        /// <param name="processId">The process ID.</param>
-        /// <param name="machineName">The machine name.</param>
-        /// <returns>The ProcessInfo for the process if it could be found; otherwise, null.</returns>
-        public static ProcessInfo GetProcessInfo(int processId, string machineName)
-        {
-            ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(machineName);
-            foreach (ProcessInfo processInfo in processInfos)
-            {
-                if (processInfo.ProcessId == processId)
-                {
-                    return processInfo;
-                }
-            }
-            return null;
-        }
-
         /// <summary>Gets process infos for each process on the specified machine.</summary>
         /// <param name="machineName">The target machine.</param>
         /// <returns>An array of process infos, one per found process.</returns>
         public static ProcessInfo[] GetProcessInfos(string machineName)
         {
             return IsRemoteMachine(machineName) ?
-                NtProcessManager.GetProcessInfos(machineName, true) :
-                NtProcessInfoHelper.GetProcessInfos(); // Do not use performance counter for local machine
+                NtProcessManager.GetProcessInfos(machineName, isRemoteMachine: true) :
+                NtProcessInfoHelper.GetProcessInfos();
+        }
+
+        /// <summary>Gets the ProcessInfo for the specified process ID on the specified machine.</summary>
+        /// <param name="processId">The process ID.</param>
+        /// <param name="machineName">The machine name.</param>
+        /// <returns>The ProcessInfo for the process if it could be found; otherwise, null.</returns>
+        public static ProcessInfo GetProcessInfo(int processId, string machineName)
+        {
+            if (IsRemoteMachine(machineName))
+            {
+                // remote case: we take the hit of looping through all results
+                ProcessInfo[] processInfos = NtProcessManager.GetProcessInfos(machineName, isRemoteMachine: true);
+                foreach (ProcessInfo processInfo in processInfos)
+                {
+                    if (processInfo.ProcessId == processId)
+                    {
+                        return processInfo;
+                    }
+                }
+            }
+            else
+            {
+                // local case: do not use performance counter and also attempt to get the matching (by pid) process only
+                ProcessInfo[] processInfos = NtProcessInfoHelper.GetProcessInfos(pid => pid == processId);
+                if (processInfos.Length == 1)
+                {
+                    return processInfos[0];
+                }
+            }
+
+            return null;
         }
 
         /// <summary>Gets the IDs of all processes on the specified machine.</summary>
@@ -646,8 +660,7 @@ namespace System.Diagnostics
         }
     }
 
-
-    internal static class NtProcessInfoHelper
+    internal static partial class NtProcessInfoHelper
     {
         private static int GetNewBufferSize(int existingBufferSize, int requiredSize)
         {
@@ -679,70 +692,6 @@ namespace System.Diagnostics
             }
         }
 
-        public static ProcessInfo[] GetProcessInfos()
-        {
-            int requiredSize = 0;
-            int status;
-
-            ProcessInfo[] processInfos;
-            GCHandle bufferHandle = new GCHandle();
-
-            // Start with the default buffer size.
-            int bufferSize = DefaultCachedBufferSize;
-
-            // Get the cached buffer.
-            long[] buffer = Interlocked.Exchange(ref CachedBuffer, null);
-
-            try
-            {
-                do
-                {
-                    if (buffer == null)
-                    {
-                        // Allocate buffer of longs since some platforms require the buffer to be 64-bit aligned.
-                        buffer = new long[(bufferSize + 7) / 8];
-                    }
-                    else
-                    {
-                        // If we have cached buffer, set the size properly.
-                        bufferSize = buffer.Length * sizeof(long);
-                    }
-
-                    bufferHandle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-
-                    status = Interop.NtDll.NtQuerySystemInformation(
-                        Interop.NtDll.NtQuerySystemProcessInformation,
-                        bufferHandle.AddrOfPinnedObject(),
-                        bufferSize,
-                        out requiredSize);
-
-                    if (unchecked((uint)status) == Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH)
-                    {
-                        if (bufferHandle.IsAllocated) bufferHandle.Free();
-                        buffer = null;
-                        bufferSize = GetNewBufferSize(bufferSize, requiredSize);
-                    }
-                } while (unchecked((uint)status) == Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH);
-
-                if (status < 0)
-                { // see definition of NT_SUCCESS(Status) in SDK
-                    throw new InvalidOperationException(SR.CouldntGetProcessInfos, new Win32Exception(status));
-                }
-
-                // Parse the data block to get process information
-                processInfos = GetProcessInfos(bufferHandle.AddrOfPinnedObject());
-            }
-            finally
-            {
-                // Cache the final buffer for use on the next call.
-                Interlocked.Exchange(ref CachedBuffer, buffer);
-
-                if (bufferHandle.IsAllocated) bufferHandle.Free();
-            }
-
-            return processInfos;
-        }
-
         // Use a smaller buffer size on debug to ensure we hit the retry path.
 #if DEBUG
         private const int DefaultCachedBufferSize = 1024;
@@ -750,10 +699,7 @@ namespace System.Diagnostics
         private const int DefaultCachedBufferSize = 128 * 1024;
 #endif
 
-        // Cache a single buffer for use in GetProcessInfos().
-        private static long[] CachedBuffer;
-
-        private static unsafe ProcessInfo[] GetProcessInfos(IntPtr dataPtr)
+        private static unsafe ProcessInfo[] GetProcessInfos(IntPtr dataPtr, Predicate<int> processIdFilter)
         {
             // Use a dictionary to avoid duplicate entries if any
             // 60 is a reasonable number for processes on a normal machine.
@@ -766,67 +712,70 @@ namespace System.Diagnostics
                 IntPtr currentPtr = (IntPtr)((long)dataPtr + totalOffset);
                 ref SystemProcessInformation pi = ref *(SystemProcessInformation *)(currentPtr);
 
-                // get information for a process
-                ProcessInfo processInfo = new ProcessInfo();
                 // Process ID shouldn't overflow. OS API GetCurrentProcessID returns DWORD.
-                processInfo.ProcessId = pi.UniqueProcessId.ToInt32();
-                processInfo.SessionId = (int)pi.SessionId;
-                processInfo.PoolPagedBytes = (long)pi.QuotaPagedPoolUsage; ;
-                processInfo.PoolNonPagedBytes = (long)pi.QuotaNonPagedPoolUsage;
-                processInfo.VirtualBytes = (long)pi.VirtualSize;
-                processInfo.VirtualBytesPeak = (long)pi.PeakVirtualSize;
-                processInfo.WorkingSetPeak = (long)pi.PeakWorkingSetSize;
-                processInfo.WorkingSet = (long)pi.WorkingSetSize;
-                processInfo.PageFileBytesPeak = (long)pi.PeakPagefileUsage;
-                processInfo.PageFileBytes = (long)pi.PagefileUsage;
-                processInfo.PrivateBytes = (long)pi.PrivatePageCount;
-                processInfo.BasePriority = pi.BasePriority;
-                processInfo.HandleCount = (int)pi.HandleCount;
-
-
-                if (pi.ImageName.Buffer == IntPtr.Zero)
+                var processInfoProcessId = pi.UniqueProcessId.ToInt32();
+                if (processIdFilter == null || processIdFilter(processInfoProcessId))
                 {
-                    if (processInfo.ProcessId == NtProcessManager.SystemProcessID)
+                    // get information for a process
+                    ProcessInfo processInfo = new ProcessInfo();
+                    processInfo.ProcessId = processInfoProcessId;
+                    processInfo.SessionId = (int)pi.SessionId;
+                    processInfo.PoolPagedBytes = (long)pi.QuotaPagedPoolUsage;
+                    processInfo.PoolNonPagedBytes = (long)pi.QuotaNonPagedPoolUsage;
+                    processInfo.VirtualBytes = (long)pi.VirtualSize;
+                    processInfo.VirtualBytesPeak = (long)pi.PeakVirtualSize;
+                    processInfo.WorkingSetPeak = (long)pi.PeakWorkingSetSize;
+                    processInfo.WorkingSet = (long)pi.WorkingSetSize;
+                    processInfo.PageFileBytesPeak = (long)pi.PeakPagefileUsage;
+                    processInfo.PageFileBytes = (long)pi.PagefileUsage;
+                    processInfo.PrivateBytes = (long)pi.PrivatePageCount;
+                    processInfo.BasePriority = pi.BasePriority;
+                    processInfo.HandleCount = (int)pi.HandleCount;
+
+                    if (pi.ImageName.Buffer == IntPtr.Zero)
                     {
-                        processInfo.ProcessName = "System";
-                    }
-                    else if (processInfo.ProcessId == NtProcessManager.IdleProcessID)
-                    {
-                        processInfo.ProcessName = "Idle";
+                        if (processInfo.ProcessId == NtProcessManager.SystemProcessID)
+                        {
+                            processInfo.ProcessName = "System";
+                        }
+                        else if (processInfo.ProcessId == NtProcessManager.IdleProcessID)
+                        {
+                            processInfo.ProcessName = "Idle";
+                        }
+                        else
+                        {
+                            // for normal process without name, using the process ID. 
+                            processInfo.ProcessName = processInfo.ProcessId.ToString(CultureInfo.InvariantCulture);
+                        }
                     }
                     else
                     {
-                        // for normal process without name, using the process ID. 
-                        processInfo.ProcessName = processInfo.ProcessId.ToString(CultureInfo.InvariantCulture);
+                        string processName = GetProcessShortName(Marshal.PtrToStringUni(pi.ImageName.Buffer, pi.ImageName.Length / sizeof(char)));
+                        processInfo.ProcessName = processName;
                     }
-                }
-                else
-                {
-                    string processName = GetProcessShortName(Marshal.PtrToStringUni(pi.ImageName.Buffer, pi.ImageName.Length / sizeof(char)));
-                    processInfo.ProcessName = processName;
-                }
 
-                // get the threads for current process
-                processInfos[processInfo.ProcessId] = processInfo;
+                    // get the threads for current process
+                    processInfos[processInfo.ProcessId] = processInfo;
 
-                currentPtr = (IntPtr)((long)currentPtr + Marshal.SizeOf(pi));
-                int i = 0;
-                while (i < pi.NumberOfThreads)
-                {
-                    ref SystemThreadInformation ti = ref *(SystemThreadInformation *)(currentPtr);
-                    ThreadInfo threadInfo = new ThreadInfo();
+                    currentPtr = (IntPtr)((long)currentPtr + Marshal.SizeOf(pi));
+                    int i = 0;
+                    while (i < pi.NumberOfThreads)
+                    {
+                        ref SystemThreadInformation ti = ref *(SystemThreadInformation *)(currentPtr);
+                        ThreadInfo threadInfo = new ThreadInfo();
 
-                    threadInfo._processId = (int)ti.ClientId.UniqueProcess;
-                    threadInfo._threadId = (ulong)ti.ClientId.UniqueThread;
-                    threadInfo._basePriority = ti.BasePriority;
-                    threadInfo._currentPriority = ti.Priority;
-                    threadInfo._startAddress = ti.StartAddress;
-                    threadInfo._threadState = (ThreadState)ti.ThreadState;
-                    threadInfo._threadWaitReason = NtProcessManager.GetThreadWaitReason((int)ti.WaitReason);
+                        threadInfo._processId = (int)ti.ClientId.UniqueProcess;
+                        threadInfo._threadId = (ulong)ti.ClientId.UniqueThread;
+                        threadInfo._basePriority = ti.BasePriority;
+                        threadInfo._currentPriority = ti.Priority;
+                        threadInfo._startAddress = ti.StartAddress;
+                        threadInfo._threadState = (ThreadState)ti.ThreadState;
+                        threadInfo._threadWaitReason = NtProcessManager.GetThreadWaitReason((int)ti.WaitReason);
 
-                    processInfo._threadInfoList.Add(threadInfo);
-                    currentPtr = (IntPtr)((long)currentPtr + Marshal.SizeOf(ti));
-                    i++;
+                        processInfo._threadInfoList.Add(threadInfo);
+                        currentPtr = (IntPtr)((long)currentPtr + Marshal.SizeOf(ti));
+                        i++;
+                    }
                 }
 
                 if (pi.NextEntryOffset == 0)

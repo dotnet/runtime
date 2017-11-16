@@ -1,58 +1,170 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using OLEDB.Test.ModuleCore;
+using XmlCoreTest.Common;
+using Xunit;
 
 namespace System.Xml.Tests
 {
-    public partial class TCDocType : XmlWriterTestCaseBase
+    //[TestCase(Name = "WriteDocType")]
+    public class TCDocType
     {
-        // Type is System.Xml.Tests.TCDocType
-        // Test Case
-        public override void AddChildren()
+        // Sanity test
+        [Theory]
+        [XmlWriterInlineData]
+        public void docType_1(XmlWriterUtils utils)
         {
-            // for function docType_1
+            using (XmlWriter w = utils.CreateWriter())
             {
-                this.AddChild(new CVariation(docType_1) { Attribute = new Variation("Sanity test") { id = 1, Pri = 1 } });
+                w.WriteDocType("ROOT", "publicid", "sysid", "<!ENTITY e 'abc'>");
+                w.WriteStartElement("ROOT");
+                w.WriteEndElement();
             }
 
+            string exp = utils.IsIndent() ?
+                "<!DOCTYPE ROOT PUBLIC \"publicid\" \"sysid\"[<!ENTITY e 'abc'>]>" + Environment.NewLine + "<ROOT />" :
+                "<!DOCTYPE ROOT PUBLIC \"publicid\" \"sysid\"[<!ENTITY e 'abc'>]><ROOT />";
+            Assert.True(utils.CompareString(exp));
+        }
 
-            // for function docType_2
+        // WriteDocType pubid = null and sysid = null
+        [Theory]
+        [XmlWriterInlineData]
+        public void docType_2(XmlWriterUtils utils)
+        {
+            using (XmlWriter w = utils.CreateWriter())
             {
-                this.AddChild(new CVariation(docType_2) { Attribute = new Variation("WriteDocType pubid = null and sysid = null") { id = 2, Pri = 1 } });
+                w.WriteDocType("test", null, null, "<!ENTITY e 'abc'>");
+                w.WriteStartElement("Root");
+                w.WriteEndElement();
             }
+            string exp = utils.IsIndent() ?
+                "<!DOCTYPE test [<!ENTITY e 'abc'>]>" + Environment.NewLine + "<Root />" :
+                "<!DOCTYPE test [<!ENTITY e 'abc'>]><Root />";
+            Assert.True(utils.CompareString(exp));
+        }
 
-
-            // for function docType_3
+        // Call WriteDocType twice
+        [Theory]
+        [XmlWriterInlineData]
+        public void docType_3(XmlWriterUtils utils)
+        {
+            using (XmlWriter w = utils.CreateWriter())
             {
-                this.AddChild(new CVariation(docType_3) { Attribute = new Variation("Call WriteDocType twice") { id = 3, Pri = 1 } });
+                try
+                {
+                    w.WriteDocType("doc1", null, null, "<!ENTITY e 'abc'>");
+                    w.WriteDocType("doc2", null, null, "<!ENTITY f 'abc'>");
+                }
+                catch (InvalidOperationException e)
+                {
+                    CError.WriteLineIgnore(e.ToString());
+                    CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
+                    return;
+                }
             }
+            CError.WriteLine("Did not throw exception");
+            Assert.True(false);
+        }
 
-
-            // for function docType_4
+        [Theory]
+        [XmlWriterInlineData("String.Empty")]
+        [XmlWriterInlineData("null")]
+        public void docType_4(XmlWriterUtils utils, string param)
+        {
+            String docName = "";
+            if (param == "String.Empty")
+                docName = String.Empty;
+            else if (param == "null")
+                docName = null;
+            using (XmlWriter w = utils.CreateWriter())
             {
-                this.AddChild(new CVariation(docType_4) { Attribute = new Variation("WriteDocType with name value = String.Empty") { Param = "String.Empty", id = 4, Pri = 1 } });
-                this.AddChild(new CVariation(docType_4) { Attribute = new Variation("WriteDocType with name value = null") { Param = "null", id = 5, Pri = 1 } });
+                try
+                {
+                    w.WriteDocType(docName, null, null, "test1");
+                }
+                catch (ArgumentException e)
+                {
+                    CError.WriteLineIgnore(e.ToString());
+                    CError.Compare(w.WriteState, (utils.WriterType == WriterType.CharCheckingWriter) ? WriteState.Start : WriteState.Error, "WriteState should be Error");
+                    return;
+                }
+                catch (NullReferenceException e)
+                {
+                    CError.WriteLineIgnore(e.ToString());
+                    CError.Compare(w.WriteState, (utils.WriterType == WriterType.CharCheckingWriter) ? WriteState.Start : WriteState.Error, "WriteState should be Error");
+                    return;
+                }
             }
+            CError.WriteLine("Did not throw exception");
+            Assert.True(false);
+        }
 
-
-            // for function docType_5
+        // WriteDocType with DocType end tag in the value
+        [Theory]
+        [XmlWriterInlineData]
+        public void docType_5(XmlWriterUtils utils)
+        {
+            using (XmlWriter w = utils.CreateWriter())
             {
-                this.AddChild(new CVariation(docType_5) { Attribute = new Variation("Bug 53726: WriteDocType with DocType end tag in the value") { id = 6, Pri = 1 } });
+                String docName = "Root";
+                String docValue = "]>";
+                w.WriteDocType(docName, null, null, docValue);
+                w.WriteStartElement("Root");
+                w.WriteEndElement();
             }
+            string exp = utils.IsIndent() ? "<!DOCTYPE Root []>]>" + Environment.NewLine + "<Root />" : "<!DOCTYPE Root []>]><Root />";
+            Assert.True(utils.CompareString(exp));
+        }
 
-
-            // for function docType_6
+        // Call WriteDocType in the root element
+        [Theory]
+        [XmlWriterInlineData]
+        public void docType_6(XmlWriterUtils utils)
+        {
+            using (XmlWriter w = utils.CreateWriter())
             {
-                this.AddChild(new CVariation(docType_6) { Attribute = new Variation("Call WriteDocType in the root element") { id = 7, Pri = 1 } });
+                try
+                {
+                    w.WriteStartElement("Root");
+                    w.WriteDocType("doc1", null, null, "test1");
+                    w.WriteEndElement();
+                }
+                catch (InvalidOperationException e)
+                {
+                    CError.WriteLineIgnore(e.ToString());
+                    CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
+                    return;
+                }
             }
+            CError.WriteLine("Did not throw exception");
+            Assert.True(false);
+        }
 
-
-            // for function docType_7
+        // Call WriteDocType following root element
+        [Theory]
+        [XmlWriterInlineData]
+        public void docType_7(XmlWriterUtils utils)
+        {
+            using (XmlWriter w = utils.CreateWriter())
             {
-                this.AddChild(new CVariation(docType_7) { Attribute = new Variation("Call WriteDocType following root element") { id = 8, Pri = 1 } });
+                try
+                {
+                    w.WriteStartElement("Root");
+                    w.WriteEndElement();
+                    w.WriteDocType("doc1", null, null, "test1");
+                }
+                catch (InvalidOperationException e)
+                {
+                    CError.WriteLineIgnore(e.ToString());
+                    CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
+                    return;
+                }
             }
+            CError.WriteLine("Did not throw exception");
+            Assert.True(false);
         }
     }
 }

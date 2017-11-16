@@ -6,7 +6,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
@@ -19,6 +18,7 @@
     <Compile Include="ASCIIEncoding\ASCIIEncodingGetMaxByteCount.cs" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingGetMaxCharCount.cs" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingTests.cs" />
+    <Compile Include="Decoder\DecoderSpanTests.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
     <Compile Include="Decoder\DecoderConvert2.cs" />
     <Compile Include="Decoder\DecoderCtor.cs" />
     <Compile Include="Decoder\DecoderGetCharCount2.cs" />
@@ -28,6 +28,7 @@
     <Compile Include="Decoder\DecoderReset.cs" />
     <Compile Include="DecoderFallbackException\DecoderFallbackExceptionTests.cs" />
     <Compile Include="EncoderFallbackException\EncoderFallbackExceptionTests.cs" />
+    <Compile Include="Encoder\EncoderSpanTests.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
     <Compile Include="Encoder\EncoderConvert2.cs" />
     <Compile Include="Encoder\EncoderCtor.cs" />
     <Compile Include="Encoder\EncoderGetByteCount2.cs" />

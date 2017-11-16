@@ -6,12 +6,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprWrap : Expr
     {
-        public ExprWrap()
+        public ExprWrap(Expr expression)
             : base(ExpressionKind.Wrap)
-        {            
+        {
+            OptionalExpression = expression;
+            Type = expression?.Type;
+            Flags = EXPRFLAG.EXF_LVALUE;
         }
-        public Expr OptionalExpression { get; set; }
 
-        public override CType Type => OptionalExpression?.Type;
+        public Expr OptionalExpression { get; }
     }
 }

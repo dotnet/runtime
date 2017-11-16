@@ -13,44 +13,26 @@ namespace System.ComponentModel.DataAnnotations
     [Obsolete("This attribute is no longer in use and will be ignored if applied.")]
     public sealed class FilterUIHintAttribute : Attribute
     {
-        private UIHintAttribute.UIHintImplementation _implementation;
+        private readonly UIHintAttribute.UIHintImplementation _implementation;
 
         /// <summary>
         /// Gets the name of the control that is most appropriate for this associated
         /// property or field
         /// </summary>
-        public string FilterUIHint
-        {
-            get
-            {
-                return this._implementation.UIHint;
-            }
-        }
+        public string FilterUIHint => _implementation.UIHint;
 
         /// <summary>
         /// Gets the name of the presentation layer that supports the control type
         /// in <see cref="FilterUIHint"/>
         /// </summary>
-        public string PresentationLayer
-        {
-            get
-            {
-                return this._implementation.PresentationLayer;
-            }
-        }
+        public string PresentationLayer => _implementation.PresentationLayer;
 
         /// <summary>
         /// Gets the name-value pairs used as parameters to the control's constructor
         /// </summary>
         /// <exception cref="InvalidOperationException"> is thrown if the current attribute
         /// is ill-formed.</exception>
-        public IDictionary<string, object> ControlParameters
-        {
-            get
-            {
-                return this._implementation.ControlParameters;
-            }
-        }
+        public IDictionary<string, object> ControlParameters => _implementation.ControlParameters;
 
         /// <summary>
         /// Constructor that accepts the name of the control, without specifying
@@ -84,7 +66,7 @@ namespace System.ComponentModel.DataAnnotations
         public FilterUIHintAttribute(string filterUIHint, string presentationLayer,
             params object[] controlParameters)
         {
-            this._implementation = new UIHintAttribute.UIHintImplementation(
+            _implementation = new UIHintAttribute.UIHintImplementation(
                 filterUIHint, presentationLayer, controlParameters);
         }
 
@@ -92,10 +74,7 @@ namespace System.ComponentModel.DataAnnotations
         /// Returns the hash code for this FilterUIHintAttribute.
         /// </summary>
         /// <returns>A 32-bit signed integer hash code.</returns>
-        public override int GetHashCode()
-        {
-            return this._implementation.GetHashCode();
-        }
+        public override int GetHashCode() => _implementation.GetHashCode();
 
         /// <summary>
         /// Determines whether this instance of FilterUIHintAttribute and a specified object,
@@ -112,7 +91,7 @@ namespace System.ComponentModel.DataAnnotations
                 return false;
             }
 
-            return this._implementation.Equals(otherAttribute._implementation);
+            return _implementation.Equals(otherAttribute._implementation);
         }
     }
 }

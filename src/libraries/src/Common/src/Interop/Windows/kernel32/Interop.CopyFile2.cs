@@ -11,14 +11,5 @@ internal partial class Interop
     {
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, BestFitMapping = false)]
         internal static extern int CopyFile2(string pwszExistingFileName, string pwszNewFileName, ref COPYFILE2_EXTENDED_PARAMETERS pExtendedParameters);
-
-        internal struct COPYFILE2_EXTENDED_PARAMETERS
-        {
-            internal uint dwSize;
-            internal uint dwCopyFlags;
-            internal IntPtr pfCancel;
-            internal IntPtr pProgressRoutine;
-            internal IntPtr pvCallbackContext;
-        }
     }
 }

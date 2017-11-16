@@ -8,7 +8,7 @@ using System.Globalization;
 
 namespace System.Linq.Expressions.Interpreter
 {
-    internal struct RuntimeLabel
+    internal readonly struct RuntimeLabel
     {
         public readonly int Index;
         public readonly int StackDepth;

@@ -110,5 +110,89 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
                                                          );
         }
 
+        public class OuterType<T>
+        {
+            public class MyEntity
+            {
+                public int Id { get; set; }
+
+                public string Name { get; set; }
+            }
+        }
+
+        [Fact]
+        public void AccessMemberOfNonGenericNestedInGeneric()
+        {
+            Func<dynamic, int> dynamicDelegate = e => e.Id;
+            var dto = new OuterType<int>.MyEntity { Id = 1, Name = "Foo" };
+            Assert.Equal(1, dynamicDelegate(dto));
+        }
+
+        interface ITestInterface
+        {
+            int this[int index] { get; }
+
+            int Add(int arg);
+        }
+
+        interface ITestDerived : ITestInterface
+        {
+            
+        }
+
+        class TestImpl : ITestDerived
+        {
+            public int this[int index] => index * 2;
+
+            public int Add(int arg) => arg + 2;
+        }
+
+        [Fact]
+        public void InheritedInterfaceMethod()
+        {
+            ITestDerived itd = new TestImpl();
+            dynamic d = 3;
+            dynamic res = itd.Add(d);
+            Assert.Equal(5, res);
+        }
+
+
+        [Fact]
+        public void InheritedInterfaceIndexer()
+        {
+            ITestDerived itd = new TestImpl();
+            dynamic d = 3;
+            dynamic res = itd[d];
+            Assert.Equal(6, res);
+        }
+
+        [Fact]
+        public void InterfaceMethodInheritedFromObject()
+        {
+            ITestDerived itd = new TestImpl();
+            dynamic d = itd;
+            dynamic res = itd.Equals(d);
+            Assert.True(res);
+        }
+
+        [Fact, ActiveIssue(7527)]
+        public void CyclicTypeDefinition()
+        {
+            dynamic x = new Third<int>();
+            Assert.Equal(0, x.Zero());
+        }
+
+        class First<T> where T : First<T>
+        {
+            public int Zero() => 0;
+        }
+
+        class Second<T> : First<T> where T : First<T>
+        {
+        }
+
+        class Third<T> : Second<Third<T>>
+        {
+        }
     }
 }

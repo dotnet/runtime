@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -397,6 +398,17 @@ namespace System.Tests
             }
             Assert.Equal(expected, string.Concat(values));
             Assert.Equal(expected, string.Concat((IEnumerable<object>)values));
+        }
+
+        [Theory]
+        [InlineData(new char[0], "")]
+        [InlineData(new char[] { 'a' }, "a")]
+        [InlineData(new char[] { 'a', 'b' }, "ab")]
+        [InlineData(new char[] { 'a', '\0', 'b' }, "a\0b")]
+        [InlineData(new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g' }, "abcdefg")]
+        public static void Concat_CharEnumerable(char[] values, string expected)
+        {
+            Assert.Equal(expected, string.Concat(values.Select(c => c)));
         }
 
         [Fact]
@@ -1651,6 +1663,15 @@ namespace System.Tests
         [InlineData("Hello", new char[0], 2, 3, -1)]
         [InlineData("H" + SoftHyphen + "ello", new char[] { 'a', '\u00AD', 'c' }, 0, 2, 1)]
         [InlineData("", new char[] { 'd', 'e', 'f' }, 0, 0, -1)]
+        [InlineData("Hello", new char[] { 'o', 'l' }, 0, 5, 2)]
+        [InlineData("Hello", new char[] { 'e', 'H' }, 0, 0, -1)]
+        [InlineData("Hello", new char[] { 'd', 'e' }, 1, 3, 1)]
+        [InlineData("Hello", new char[] { 'a', 'b' }, 2, 3, -1)]
+        [InlineData("", new char[] { 'd', 'e' }, 0, 0, -1)]
+        [InlineData("Hello", new char[] { '\0', 'b' }, 0, 5, -1)]    // Null terminator check, odd
+        [InlineData("xHello", new char[] { '\0', 'b' }, 0, 6, -1)]   // Null terminator check, even
+        [InlineData("Hello", new char[] { '\0', 'o' }, 0, 5, 4)]     // Match last char, odd
+        [InlineData("xHello", new char[] { '\0', 'o' }, 0, 6, 5)]    // Match last char, even
         public static void IndexOfAny(string s, char[] anyOf, int startIndex, int count, int expected)
         {
             if (startIndex + count == s.Length)

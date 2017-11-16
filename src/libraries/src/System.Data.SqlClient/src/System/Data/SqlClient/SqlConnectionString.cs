@@ -4,9 +4,6 @@
 
 
 
-//------------------------------------------------------------------------------
-
-using System.Collections;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
@@ -153,6 +150,17 @@ namespace System.Data.SqlClient
             internal const string SQL_Server_2012 = "SQL Server 2012";
         }
 
+        internal enum TransactionBindingEnum
+        {
+            ImplicitUnbind,
+            ExplicitUnbind
+        }
+
+        internal static class TRANSACTIONBINDING
+        {
+            internal const string ImplicitUnbind = "Implicit Unbind";
+            internal const string ExplicitUnbind = "Explicit Unbind";
+        }
 
         private static Dictionary<string, string> s_sqlClientSynonyms;
 
@@ -189,13 +197,18 @@ namespace System.Data.SqlClient
 
         private readonly string _workstationId;
 
+        private readonly TransactionBindingEnum _transactionBinding;
+
         private readonly TypeSystem _typeSystemVersion;
+        private readonly Version _typeSystemAssemblyVersion;
+        private static readonly Version constTypeSystemAsmVersion10 = new Version("10.0.0.0");
+        private static readonly Version constTypeSystemAsmVersion11 = new Version("11.0.0.0");
+
         internal SqlConnectionString(string connectionString) : base(connectionString, GetParseSynonyms())
         {
             ThrowUnsupportedIfKeywordSet(KEY.AsynchronousProcessing);
             ThrowUnsupportedIfKeywordSet(KEY.Connection_Reset);
             ThrowUnsupportedIfKeywordSet(KEY.Context_Connection);
-            ThrowUnsupportedIfKeywordSet(KEY.TransactionBinding);
 
             // Network Library has its own special error message
             if (ContainsKey(KEY.Network_Library))
@@ -234,6 +247,7 @@ namespace System.Data.SqlClient
 
             // Temporary string - this value is stored internally as an enum.
             string typeSystemVersionString = ConvertValueToString(KEY.Type_System_Version, null);
+            string transactionBindingString = ConvertValueToString(KEY.TransactionBinding, null);
 
             _userID = ConvertValueToString(KEY.User_ID, DEFAULT.User_ID);
             _workstationId = ConvertValueToString(KEY.Workstation_Id, null);
@@ -306,6 +320,7 @@ namespace System.Data.SqlClient
                 ValidateValueLength(_attachDBFileName, TdsEnums.MAXLEN_ATTACHDBFILE, KEY.AttachDBFilename);
             }
 
+            _typeSystemAssemblyVersion = constTypeSystemAsmVersion10;
 
             if (true == _userInstance && !string.IsNullOrEmpty(_failoverPartner))
             {
@@ -336,12 +351,30 @@ namespace System.Data.SqlClient
             else if (typeSystemVersionString.Equals(TYPESYSTEMVERSION.SQL_Server_2012, StringComparison.OrdinalIgnoreCase))
             {
                 _typeSystemVersion = TypeSystem.SQLServer2012;
+                _typeSystemAssemblyVersion = constTypeSystemAsmVersion11;
             }
             else
             {
                 throw ADP.InvalidConnectionOptionValue(KEY.Type_System_Version);
             }
 
+            if (string.IsNullOrEmpty(transactionBindingString))
+            {
+                transactionBindingString = DbConnectionStringDefaults.TransactionBinding;
+            }
+
+            if (transactionBindingString.Equals(TRANSACTIONBINDING.ImplicitUnbind, StringComparison.OrdinalIgnoreCase))
+            {
+                _transactionBinding = TransactionBindingEnum.ImplicitUnbind;
+            }
+            else if (transactionBindingString.Equals(TRANSACTIONBINDING.ExplicitUnbind, StringComparison.OrdinalIgnoreCase))
+            {
+                _transactionBinding = TransactionBindingEnum.ExplicitUnbind;
+            }
+            else
+            {
+                throw ADP.InvalidConnectionOptionValue(KEY.TransactionBinding);
+            }
 
             if (_applicationIntent == ApplicationIntent.ReadOnly && !String.IsNullOrEmpty(_failoverPartner))
                 throw SQL.ROR_FailoverNotSupportedConnString();
@@ -395,6 +428,7 @@ namespace System.Data.SqlClient
             _userID = connectionOptions._userID;
             _workstationId = connectionOptions._workstationId;
             _typeSystemVersion = connectionOptions._typeSystemVersion;
+            _transactionBinding = connectionOptions._transactionBinding;
             _applicationIntent = connectionOptions._applicationIntent;
             _connectRetryCount = connectionOptions._connectRetryCount;
             _connectRetryInterval = connectionOptions._connectRetryInterval;
@@ -443,6 +477,9 @@ namespace System.Data.SqlClient
         internal string WorkstationId { get { return _workstationId; } }
 
         internal TypeSystem TypeSystemVersion { get { return _typeSystemVersion; } }
+        internal Version TypeSystemAssemblyVersion { get { return _typeSystemAssemblyVersion; } }
+
+        internal TransactionBindingEnum TransactionBinding { get { return _transactionBinding; } }
 
         // This dictionary is meant to be read-only translation of parsed string
         // keywords/synonyms to a known keyword string.

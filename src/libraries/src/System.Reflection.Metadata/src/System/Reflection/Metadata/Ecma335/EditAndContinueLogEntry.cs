@@ -4,7 +4,7 @@
 
 namespace System.Reflection.Metadata.Ecma335
 {
-    public struct EditAndContinueLogEntry : IEquatable<EditAndContinueLogEntry>
+    public readonly struct EditAndContinueLogEntry : IEquatable<EditAndContinueLogEntry>
     {
         public EntityHandle Handle { get; }
         public EditAndContinueOperation Operation { get; }

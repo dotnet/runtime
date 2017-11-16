@@ -13,7 +13,7 @@ namespace Microsoft.SqlServer.TDS.FeatureExtAck
     public class TDSFeatureExtAckToken : TDSPacketToken
     {
         /// <summary>
-        /// Collection of feature extension acknoeldged options
+        /// Collection of feature extension acknowledged options
         /// </summary>
         public IList<TDSFeatureExtAckOption> Options { get; set; }
 

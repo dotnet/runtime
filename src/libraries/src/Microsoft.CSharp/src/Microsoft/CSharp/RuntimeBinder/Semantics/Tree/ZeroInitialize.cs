@@ -10,11 +10,5 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             : base(ExpressionKind.ZeroInit, type)
         {
         }
-
-        public Expr OptionalArgument { get; set; }
-
-        public Expr OptionalConstructorCall { get; set; }
-
-        public bool IsConstructor { get; set; }
     }
 }
