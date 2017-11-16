@@ -72,7 +72,6 @@
     <Compile Include="ReadOnlySpan\Slice.cs" />
     <Compile Include="ReadOnlySpan\StartsWith.T.cs" />
     <Compile Include="ReadOnlySpan\StartsWith.byte.cs" />
-    <Compile Include="ReadOnlyMemory\Strings.cs" />
     <Compile Include="ReadOnlySpan\ToArray.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -88,6 +87,7 @@
     <Compile Include="Memory\Retain.cs" />
     <Compile Include="Memory\Slice.cs" />
     <Compile Include="Memory\Span.cs" />
+    <Compile Include="Memory\Strings.cs" />
     <Compile Include="Memory\ToArray.cs" />
     <Compile Include="Memory\TryGetArray.cs" />
   </ItemGroup>
@@ -106,6 +106,7 @@
     <Compile Include="ReadOnlyMemory\Retain.cs" />
     <Compile Include="ReadOnlyMemory\Slice.cs" />
     <Compile Include="ReadOnlyMemory\Span.cs" />
+    <Compile Include="ReadOnlyMemory\Strings.cs" />
     <Compile Include="ReadOnlyMemory\ToArray.cs" />
   </ItemGroup>
   <ItemGroup>
