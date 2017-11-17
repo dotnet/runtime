@@ -2163,12 +2163,9 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 			MonoW32HandleWaitRet waitret;
 			waitret = process_wait (process_info->process_handle, MONO_INFINITE_WAIT, NULL);
 			ves_icall_Microsoft_Win32_NativeMethods_GetExitCodeProcess (process_info->process_handle, &exitcode);
-			if (exitcode != 0) {
+			if (exitcode != 0)
 				ret = FALSE;
-				goto cleanup;
-			}
 		}
-cleanup:
 		/* Shell exec should not return a process handle when it spawned a GUI thing, like a browser. */
 		mono_w32handle_close (process_info->process_handle);
 		process_info->process_handle = NULL;
