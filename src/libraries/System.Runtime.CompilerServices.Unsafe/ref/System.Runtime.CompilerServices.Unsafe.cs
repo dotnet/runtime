@@ -16,7 +16,7 @@ namespace System.Runtime.CompilerServices
         public static bool AreSame<T>(ref T left, ref T right) { throw null; }
         public unsafe static void* AsPointer<T>(ref T value) { throw null; }
         public unsafe static ref T AsRef<T>(void* source) { throw null; }
-        public static ref T AsRef<T>(ref readonly T source) { throw null; }
+        public static ref T AsRef<T>(in T source) { throw null; }
         public static T As<T>(object o) where T : class { throw null; }
         public static ref TTo As<TFrom, TTo>(ref TFrom source) { throw null; }
         public static System.IntPtr ByteOffset<T>(ref T origin, ref T target) { throw null; }
