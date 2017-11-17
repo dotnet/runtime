@@ -411,6 +411,7 @@ class Tests
 
 	[Category ("DYNCALL")]
 	[Category ("!FULLAOT-AMD64")]
+	[Category ("!WASM")] //Interp fails	
 	public static int test_0_large_nullable_invoke () {
 		var s = new LargeStruct () { a = 1, b = 2, c = 3, d = 4 };
 
