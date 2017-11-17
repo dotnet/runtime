@@ -900,7 +900,7 @@ ICALL_TYPE(ITHREAD, "System.Threading.InternalThread", ITHREAD_1)
 ICALL(ITHREAD_1, "Thread_free_internal", ves_icall_System_Threading_InternalThread_Thread_free_internal)
 
 ICALL_TYPE(MONIT, "System.Threading.Monitor", MONIT_8)
-ICALL(MONIT_8, "Enter", mono_monitor_enter_internal)
+ICALL(MONIT_8, "Enter", ves_icall_System_Threading_Monitor_Monitor_Enter)
 ICALL(MONIT_1, "Exit", mono_monitor_exit)
 ICALL(MONIT_2, "Monitor_pulse", ves_icall_System_Threading_Monitor_Monitor_pulse)
 ICALL(MONIT_3, "Monitor_pulse_all", ves_icall_System_Threading_Monitor_Monitor_pulse_all)

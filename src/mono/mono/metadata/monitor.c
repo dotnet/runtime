@@ -1449,3 +1449,8 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 	return success;
 }
 
+void
+ves_icall_System_Threading_Monitor_Monitor_Enter (MonoObject *obj)
+{
+	mono_monitor_enter_internal (obj);
+}
