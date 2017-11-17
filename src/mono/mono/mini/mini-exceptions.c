@@ -2227,6 +2227,8 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 							ctx->pc |= 1;
 #elif defined(TARGET_ARM64)
 						ctx->pc ++;
+#elif defined (HOST_WASM)
+						//nada?
 #else
 						NOT_IMPLEMENTED;
 #endif
