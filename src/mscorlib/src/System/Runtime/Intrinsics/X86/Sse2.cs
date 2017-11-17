@@ -302,20 +302,36 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// int _mm_extract_epi16 (__m128i a,  int immediate)
         /// </summary>
-        public static short ExtractShort<T>(Vector128<T> value, byte index) where T : struct => ExtractShort<T>(value, index);
+        public static short ExtractShort<T>(Vector128<T> value, byte index) where T : struct
+        {
+            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
+            return ExtractShort<T>(value, index);
+        }
         /// <summary>
         /// int _mm_extract_epi16 (__m128i a,  int immediate)
         /// </summary>
-        public static ushort ExtractUshort<T>(Vector128<T> value, byte index) where T : struct => ExtractUshort<T>(value, index);
+        public static ushort ExtractUshort<T>(Vector128<T> value, byte index) where T : struct
+        {
+            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
+            return ExtractUshort<T>(value, index);
+        }
         
         /// <summary>
         /// __m128i _mm_insert_epi16 (__m128i a,  int i, int immediate)
         /// </summary>
-        public static Vector128<T> InsertShort<T>(Vector128<T> value, short data, byte index) where T : struct => InsertShort<T>(value, data, index);
+        public static Vector128<T> InsertShort<T>(Vector128<T> value, short data, byte index) where T : struct
+        {
+            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
+            return InsertShort<T>(value, data, index);
+        }
         /// <summary>
         /// __m128i _mm_insert_epi16 (__m128i a,  int i, int immediate)
         /// </summary>
-        public static Vector128<T> InsertUshort<T>(Vector128<T> value, ushort data, byte index) where T : struct => InsertUshort<T>(value, data, index);
+        public static Vector128<T> InsertUshort<T>(Vector128<T> value, ushort data, byte index) where T : struct
+        {
+            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
+            return InsertUshort<T>(value, data, index);
+        }
         
         /// <summary>
         /// __m128i _mm_loadu_si128 (__m128i const* mem_address)
@@ -592,7 +608,11 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128i _mm_setzero_si128 ()
         /// __m128d _mm_setzero_pd (void)
         /// </summary>
-        public static Vector128<T> SetZero<T>() where T : struct => SetZero<T>();
+        public static Vector128<T> SetZero<T>() where T : struct
+        {
+            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
+            return SetZero<T>();
+        }
 
         /// <summary>
         /// __m128i _mm_sad_epu8 (__m128i a,  __m128i b)
