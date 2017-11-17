@@ -168,7 +168,12 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128d _mm_castsi128_pd (__m128i a)
         /// __m128 _mm_castsi128_ps (__m128i a)
         /// </summary>
-        public static Vector128<U> StaticCast<T, U>(Vector128<T> value) where T : struct where U : struct => StaticCast<T, U>(value);
+        public static Vector128<U> StaticCast<T, U>(Vector128<T> value) where T : struct where U : struct
+        {
+            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
+            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<U>();
+            return StaticCast<T, U>(value);
+        }
 
         /// <summary>
         /// __m128 _mm_shuffle_ps (__m128 a,  __m128 b, unsigned int control)
