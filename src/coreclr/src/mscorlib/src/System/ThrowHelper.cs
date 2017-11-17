@@ -351,6 +351,18 @@ namespace System
 
             return SR.GetResourceString(resource.ToString());
         }
+
+        internal static void ThrowNotSupportedExceptionIfNonNumericType<T>()
+        {
+            if (typeof(T) != typeof(Byte) && typeof(T) != typeof(SByte) && 
+                typeof(T) != typeof(Int16) && typeof(T) != typeof(UInt16) && 
+                typeof(T) != typeof(Int32) && typeof(T) != typeof(UInt32) && 
+                typeof(T) != typeof(Int64) && typeof(T) != typeof(UInt64) &&
+                typeof(T) != typeof(Single) && typeof(T) != typeof(Double))
+            {
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+            }
+        }
     }
 
     //
