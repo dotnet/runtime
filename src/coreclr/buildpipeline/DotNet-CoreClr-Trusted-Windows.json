@@ -1,11 +1,13 @@
 {
   "build": [
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Install Signing Plugin",
       "timeoutInMinutes": 0,
+      "refName": "Task1",
       "condition": "and(succeeded(), in(variables.PB_SignType, 'real', 'test'))",
       "task": {
         "id": "30666190-6959-11e5-9f96-f56098202fef",
@@ -20,11 +22,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Run script $(VS140COMNTOOLS)\\VsDevCmd.bat",
       "timeoutInMinutes": 0,
+      "refName": "Task2",
       "task": {
         "id": "bfc8bf76-e7ac-4a8c-9a55-a944a9f632fd",
         "versionSpec": "1.*",
@@ -39,11 +43,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Run clean.cmd",
       "timeoutInMinutes": 0,
+      "refName": "Task3",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -57,11 +63,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Run sync.cmd",
       "timeoutInMinutes": 0,
+      "refName": "Task4",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -75,11 +83,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Run build.cmd",
       "timeoutInMinutes": 0,
+      "refName": "Task5",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -93,11 +103,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Sign binaries",
       "timeoutInMinutes": 0,
+      "refName": "Task6",
       "task": {
         "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
         "versionSpec": "1.*",
@@ -120,11 +132,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Run build-packages.cmd",
       "timeoutInMinutes": 0,
+      "refName": "Task7",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -138,11 +152,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Publish packages",
       "timeoutInMinutes": 0,
+      "refName": "Task8",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -156,11 +172,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Publish symbol packages",
       "timeoutInMinutes": 0,
+      "refName": "Task9",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -174,11 +192,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": true,
       "displayName": "Perform Cleanup Tasks",
       "timeoutInMinutes": 0,
+      "refName": "Task10",
       "task": {
         "id": "521a94ea-9e68-468a-8167-6dcf361ea776",
         "versionSpec": "1.*",
@@ -187,41 +207,70 @@
       "inputs": {}
     },
     {
+      "environment": {},
       "enabled": true,
-      "continueOnError": false,
+      "continueOnError": true,
       "alwaysRun": true,
-      "displayName": "Copy Publish Artifact: BuildLogs",
+      "displayName": "Copy Files to: $(Build.StagingDirectory)\\BuildLogs",
       "timeoutInMinutes": 0,
+      "refName": "CopyFiles1",
       "task": {
-        "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
+        "id": "5bfb729a-a7c8-4a78-a7c3-8d717bb7c13c",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "SourceFolder": "",
+        "Contents": "**/*.log",
+        "TargetFolder": "$(Build.StagingDirectory)\\BuildLogs",
+        "CleanTargetFolder": "false",
+        "OverWrite": "false",
+        "flattenFolders": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": true,
+      "displayName": "Publish Artifact: BuildLogs",
+      "timeoutInMinutes": 0,
+      "refName": "PublishBuildArtifacts1",
+      "task": {
+        "id": "2ff763a7-ce83-4e1f-bc89-0ae63477cebe",
         "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
-        "CopyRoot": "",
-        "Contents": "**\\*.log",
+        "PathtoPublish": "$(Build.StagingDirectory)\\BuildLogs",
         "ArtifactName": "BuildLogs",
         "ArtifactType": "Container",
-        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
+        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)",
+        "Parallel": "false",
+        "ParallelCount": "8"
       }
     },
     {
+      "environment": {},
       "enabled": false,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Copy Publish Artifact: symbols",
       "timeoutInMinutes": 0,
+      "refName": "PublishBuildArtifacts2",
       "task": {
-        "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
+        "id": "2ff763a7-ce83-4e1f-bc89-0ae63477cebe",
         "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
-        "CopyRoot": "",
+        "PathtoPublish": "$(Build.StagingDirectory)\\symbols",
         "Contents": "bin\\Product\\*$(Architecture).$(PB_BuildType)\\*.dll\nbin\\Product\\*$(Architecture).$(PB_BuildType)\\PDB\\*.pdb",
         "ArtifactName": "symbols",
         "ArtifactType": "FilePath",
-        "TargetPath": "\\\\cpvsbuild\\drops\\DotNetCore\\$(Build.DefinitionName)\\$(Build.BuildNumber)\\FullSymbols"
+        "TargetPath": "\\\\cpvsbuild\\drops\\DotNetCore\\$(Build.DefinitionName)\\$(Build.BuildNumber)\\FullSymbols",
+        "Parallel": "false",
+        "ParallelCount": "8"
       }
     }
   ],
@@ -351,24 +400,25 @@
   },
   "quality": "definition",
   "queue": {
+    "id": 36,
+    "name": "DotNet-Build",
     "pool": {
       "id": 39,
       "name": "DotNet-Build"
-    },
-    "id": 36,
-    "name": "DotNet-Build"
+    }
   },
-  "path": "\\",
-  "type": "build",
   "id": 1676,
   "name": "DotNet-CoreClr-Trusted-Windows",
-  "url": "https://devdiv.visualstudio.com/DefaultCollection/0bdbc590-a062-4c3f-b0f6-9383f67865ee/_apis/build/Definitions/1676",
+  "path": "\\",
+  "type": "build",
+  "queueStatus": "enabled",
   "project": {
     "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "name": "DevDiv",
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418097633
+    "revision": 418098211,
+    "visibility": "organization"
   }
 }
