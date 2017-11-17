@@ -1,11 +1,13 @@
 {
   "build": [
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Run script $(VS140COMNTOOLS)\\VsDevCmd.bat",
       "timeoutInMinutes": 0,
+      "refName": "Task1",
       "condition": "ne(variables['PB_SkipTests'], 'true')",
       "task": {
         "id": "bfc8bf76-e7ac-4a8c-9a55-a944a9f632fd",
@@ -21,11 +23,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Run clean.cmd",
       "timeoutInMinutes": 0,
+      "refName": "Task2",
       "condition": "ne(variables['PB_SkipTests'], 'true')",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -40,10 +44,12 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "timeoutInMinutes": 0,
+      "refName": "Task3",
       "condition": "ne(variables['PB_SkipTests'], 'true')",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -58,11 +64,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Generate version props file",
       "timeoutInMinutes": 0,
+      "refName": "Task4",
       "condition": "ne(variables['PB_SkipTests'], 'true')",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -77,11 +85,13 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Run build-test.cmd",
       "timeoutInMinutes": 0,
+      "refName": "Task5",
       "condition": "ne(variables['PB_SkipTests'], 'true')",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -96,12 +106,14 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Send job to Helix",
       "condition": "ne(variables['PB_SkipTests'], 'true')",
       "timeoutInMinutes": 0,
+      "refName": "Task6",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -115,23 +127,47 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
-      "continueOnError": false,
+      "continueOnError": true,
       "alwaysRun": true,
-      "displayName": "Copy Publish Artifact: BuildLogs",
+      "displayName": "Copy Files to: $(Build.StagingDirectory)\\BuildLogs",
       "timeoutInMinutes": 0,
-      "condition": "ne(variables['PB_SkipTests'], 'true')",
+      "refName": "CopyFiles1",
       "task": {
-        "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
+        "id": "5bfb729a-a7c8-4a78-a7c3-8d717bb7c13c",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "SourceFolder": "",
+        "Contents": "**/*.log",
+        "TargetFolder": "$(Build.StagingDirectory)\\BuildLogs",
+        "CleanTargetFolder": "false",
+        "OverWrite": "false",
+        "flattenFolders": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": true,
+      "displayName": "Publish Artifact: BuildLogs",
+      "timeoutInMinutes": 0,
+      "refName": "PublishBuildArtifacts1",
+      "task": {
+        "id": "2ff763a7-ce83-4e1f-bc89-0ae63477cebe",
         "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
-        "CopyRoot": "",
-        "Contents": "**\\*.log",
+        "PathtoPublish": "$(Build.StagingDirectory)\\BuildLogs",
         "ArtifactName": "BuildLogs",
         "ArtifactType": "Container",
-        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
+        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)",
+        "Parallel": "false",
+        "ParallelCount": "8"
       }
     }
   ],
@@ -305,24 +341,25 @@
   },
   "quality": "definition",
   "queue": {
+    "id": 36,
+    "name": "DotNet-Build",
     "pool": {
       "id": 39,
       "name": "DotNet-Build"
-    },
-    "id": 36,
-    "name": "DotNet-Build"
+    }
   },
-  "path": "\\",
-  "type": "build",
   "id": 5159,
   "name": "Dotnet-CoreClr-Trusted-BuildTests",
-  "url": "https://devdiv.visualstudio.com/DefaultCollection/0bdbc590-a062-4c3f-b0f6-9383f67865ee/_apis/build/Definitions/5159",
+  "path": "\\",
+  "type": "build",
+  "queueStatus": "enabled",
   "project": {
     "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "name": "DevDiv",
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418097633
+    "revision": 418098211,
+    "visibility": "organization"
   }
 }
