@@ -8478,9 +8478,12 @@ GenTreePtr Compiler::fgMorphCall(GenTreeCall* call)
         }
 #endif // FEATURE_PAL
 
-        if (!fgCheckStmtAfterTailCall())
+        if (szFailReason == nullptr)
         {
-            szFailReason = "Unexpected statements after the tail call";
+            if (!fgCheckStmtAfterTailCall())
+            {
+                szFailReason = "Unexpected statements after the tail call";
+            }
         }
 
         if (szFailReason != nullptr)
