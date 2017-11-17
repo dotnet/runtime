@@ -3697,4 +3697,7 @@
   <data name="HashCode_EqualityNotSupported" xml:space="preserve">
     <value>HashCode is a mutable struct and should not be compared with other HashCodes.</value>
   </data>
+  <data name="Arg_TypeNotSupported" xml:space="preserve">
+    <value>Specified type is not supported</value>
+  </data>
 </root>
