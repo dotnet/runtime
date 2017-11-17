@@ -964,7 +964,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                                 def displayStr = getStressModeDisplayName(scenario)
                                 assert (os == 'Windows_NT') || (os in Constants.crossList)
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build and Test (Jit - ${displayStr})",
-                                   "(?i).*test\\W+${os}\\W+${architecture}\\W${configuration}\\W+${scenario}.*")
+                                   "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
                             }
                             else if (isR2RScenario(scenario)) {
                                 if (configuration == 'Release' || configuration == 'Checked') {
@@ -1002,7 +1002,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                                 if (configuration == 'Release' || configuration == 'Checked') {
                                     def displayStr = getR2RDisplayName(scenario)
                                     Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} ${displayStr} Build & Test",
-                                        "(?i).*test\\W+${os}\\W+{architecture}\\W+${configuration}\\W+${scenario}.*")
+                                        "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
                                 }
                             }
                             break
