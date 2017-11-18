@@ -999,8 +999,6 @@ NESTED_END OnHijackTripThread, _TEXT
 //GenerateRedirectedHandledJITCaseStub DbgThreadControl
 // ------------------------------------------------------------------
 //GenerateRedirectedHandledJITCaseStub UserSuspend
-// ------------------------------------------------------------------
-//GenerateRedirectedHandledJITCaseStub YieldTask
 
 #ifdef _DEBUG
 // ------------------------------------------------------------------
