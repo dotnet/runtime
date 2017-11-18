@@ -213,9 +213,6 @@ ASMCONSTANTS_C_ASSERT(Thread_m_dwLockCount == offsetof(Thread, m_dwLockCount))
 #define Thread_m_ThreadId 0x1C
 ASMCONSTANTS_C_ASSERT(Thread_m_ThreadId == offsetof(Thread, m_ThreadId))
 
-#define TS_CatchAtSafePoint_ASM 0x5F
-ASMCONSTANTS_C_ASSERT(Thread::TS_CatchAtSafePoint == TS_CatchAtSafePoint_ASM)
-
 #ifdef FEATURE_HIJACK
 #define TS_Hijacked_ASM 0x80
 ASMCONSTANTS_C_ASSERT(Thread::TS_Hijacked == TS_Hijacked_ASM)
