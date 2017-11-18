@@ -985,8 +985,6 @@ UM2MThunk_WrapperHelper_RegArgumentsSetup
         GenerateRedirectedHandledJITCaseStub DbgThreadControl
 ;; ------------------------------------------------------------------
         GenerateRedirectedHandledJITCaseStub UserSuspend
-;; ------------------------------------------------------------------
-        GenerateRedirectedHandledJITCaseStub YieldTask
 
 #ifdef _DEBUG
 ; ------------------------------------------------------------------

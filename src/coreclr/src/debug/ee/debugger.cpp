@@ -1027,9 +1027,7 @@ MemoryRange Debugger::s_hijackFunction[kMaxHijackFunctions] =
      GetMemoryRangeForFunction(RedirectedHandledJITCaseForDbgThreadControl_Stub,
                                RedirectedHandledJITCaseForDbgThreadControl_StubEnd),
      GetMemoryRangeForFunction(RedirectedHandledJITCaseForUserSuspend_Stub,
-                               RedirectedHandledJITCaseForUserSuspend_StubEnd),
-     GetMemoryRangeForFunction(RedirectedHandledJITCaseForYieldTask_Stub,
-                               RedirectedHandledJITCaseForYieldTask_StubEnd)
+                               RedirectedHandledJITCaseForUserSuspend_StubEnd)
 #if defined(HAVE_GCCOVER) && defined(_TARGET_AMD64_)
      ,
      GetMemoryRangeForFunction(RedirectedHandledJITCaseForGCStress_Stub,
