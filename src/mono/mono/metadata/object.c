@@ -4019,7 +4019,7 @@ mono_runtime_get_main_args (void)
 	goto_if_nok (&error, leave);
 	result = MONO_HANDLE_RAW (arg_array);
 leave:
-	HANDLE_FUNCTION_RETURN_OBJ (result);
+	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 
 static gboolean
