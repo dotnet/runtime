@@ -26,22 +26,20 @@ If you do not follow the above rules, you are likely to encounter errors while r
 Using CrossGen
 --------------
 
-In most cases, the build script automatically runs CrossGen to create the native image for `System.Private.CoreLib.dll` and `mscorlib.dll`.
-When this happens, you will find `System.Private.CoreLib.ni.dll` and `mscorlib.ni.dll` in your output directory.
-`System.Private.CoreLib.dll` and `mscorlib.dll` are the MSIL assemblies created by the C# compiler, while `System.Private.CoreLib.ni.dll` and `mscorlib.ni.dll` are the native images that contain CPU-specific code.
-Once the build is done, you only need `System.Private.CoreLib.ni.dll` and `mscorlib.ni.dll` to use CoreCLR.
+In most cases, the build script automatically runs CrossGen to create the native image for `System.Private.CoreLib.dll`.
+When this happens, you will find `System.Private.CoreLib.ni.dll` in your output directory.
+`System.Private.CoreLib.dll` is the MSIL assemblies created by the C# compiler, while `System.Private.CoreLib.ni.dll` is the native images that contain CPU-specific code.
+Once the build is done, you only need `System.Private.CoreLib.ni.dll` to use CoreCLR.
 The original MSIL assemblies are no longer needed by the runtime.
 
-If you installed CoreCLR from a NuGet package, `System.Private.CoreLib.ni.dll` and `mscorlib.ni.dll` are included in the package.
+If you installed CoreCLR from a NuGet package, `System.Private.CoreLib.ni.dll` is included in the package.
 
-If for some reason you did not get `System.Private.CoreLib.dll` or `mscorlib.ni.dll` with the rest of your CoreCLR, you can easily create it yourself using CrossGen.
+If for some reason you did not get `System.Private.CoreLib.dll` with the rest of your CoreCLR, you can easily create it yourself using CrossGen.
 
-If your `System.Private.CoreLib.dll`,  `mscorlib.dll` and JIT compiler (`clrjit.dll` on Windows or `libclrjit.*` on other platforms) are all in the same directory as CrossGen itself, you can compile `System.Private.CoreLib.dll` and `mscorlib.dll` with the following commands (first two commands for Windows, next two commands for other platforms):
+If your `System.Private.CoreLib.dll` and JIT compiler (`clrjit.dll` on Windows or `libclrjit.*` on other platforms) are all in the same directory as CrossGen itself, you can compile `System.Private.CoreLib.dll` with the following commands (first two commands for Windows, next two commands for other platforms):
 
     .\crossgen.exe System.Private.CoreLib.dll
-    .\crossgen.exe mscorlib.dll
     ./crossgen System.Private.CoreLib.dll
-    ./crossgen mscorlib.dll
     
 If your files are scattered in different directories, or if you want to create native images for other assemblies, the command line is slightly more complex:
 

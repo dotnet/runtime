@@ -5,7 +5,7 @@ Author: Brian Grunkemeyer ([@briangru](https://github.com/briangru)) - 2006
 
 # Introduction
 
-Mscorlib is the assembly for defining the core parts of the type system, and a good portion of the Base Class Library. Base data types live in this assembly, and it  has a tight coupling with the CLR. Here you will learn exactly how & why mscorlib.dll is special, and the basics about calling into the CLR from managed code via QCall and FCall methods. It also discusses calling from within the CLR into managed code.
+Mscorlib is the assembly for defining the core parts of the type system, and a good portion of the Base Class Library in .NET Framework. It has been renamed to System.Private.CoreLib in .NET Core, though many places in the code and documentation still refer to it as mscorlib. Base data types live in this assembly, and it  has a tight coupling with the CLR. Here you will learn exactly how & why mscorlib.dll is special, and the basics about calling into the CLR from managed code via QCall and FCall methods. It also discusses calling from within the CLR into managed code.
 
 ## Dependencies
 
