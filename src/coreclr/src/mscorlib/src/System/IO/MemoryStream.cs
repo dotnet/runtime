@@ -541,6 +541,10 @@ namespace System.IO
             Int32 pos = _position;
             Int32 n = InternalEmulateRead(_length - _position);
 
+            // If we were already at or past the end, there's no copying to do so just quit.
+            if (n == 0)
+                return Task.CompletedTask;
+
             // If destination is not a memory stream, write there asynchronously:
             MemoryStream memStrDest = destination as MemoryStream;
             if (memStrDest == null)
