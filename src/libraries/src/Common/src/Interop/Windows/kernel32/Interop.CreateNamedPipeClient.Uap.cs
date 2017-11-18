@@ -44,7 +44,7 @@ internal partial class Interop
             parameters.hTemplateFile = hTemplateFile;
             fixed (Interop.Kernel32.SECURITY_ATTRIBUTES* lpSecurityAttributes = &secAttrs)
             {
-                parameters.lpSecurityAttributes = (IntPtr)lpSecurityAttributes;
+                parameters.lpSecurityAttributes = lpSecurityAttributes;
                 return CreateNamedPipeClientPrivate(lpFileName, dwDesiredAccess, dwShareMode, dwCreationDisposition, ref parameters);
             }
         }

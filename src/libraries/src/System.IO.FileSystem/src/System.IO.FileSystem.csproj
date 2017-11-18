@@ -160,9 +160,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.MaxLengths.cs">
       <Link>Common\Interop\Windows\Interop.MaxLengths.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SafeCreateFile.cs">
-      <Link>Common\Interop\Windows\Interop.SafeCreateFile.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WIN32_FIND_DATA.cs">
       <Link>Common\Interop\Windows\Interop.WIN32_FIND_DATA.cs</Link>
     </Compile>
@@ -228,9 +225,6 @@
   </ItemGroup>
   <!-- Windows : Win32 only -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(UWPCompatible)' != 'true'">
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.UnsafeCreateFile.cs">
-      <Link>Common\Interop\Windows\Interop.UnsafeCreateFile.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateFile.cs">
       <Link>Common\Interop\Windows\Interop.CreateFile.cs</Link>
     </Compile>
@@ -239,9 +233,6 @@
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(UWPCompatible)' == 'true'">
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateFile2.cs">
       <Link>Common\Interop\Windows\Interop.CreateFile2.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.UnsafeCreateFile.Uap.cs">
-      <Link>Common\Interop\Windows\Interop.UnsafeCreateFile.Uap.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.COPYFILE2_EXTENDED_PARAMETERS.cs">
       <Link>Common\Interop\Windows\Interop.COPYFILE2_EXTENDED_PARAMETERS.cs</Link>
