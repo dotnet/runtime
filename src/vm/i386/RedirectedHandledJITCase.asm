@@ -91,7 +91,6 @@ _HijackFunctionStart@0 endp
 GenerateRedirectedHandledJITCaseStub <GCThreadControl>
 GenerateRedirectedHandledJITCaseStub <DbgThreadControl>
 GenerateRedirectedHandledJITCaseStub <UserSuspend>
-GenerateRedirectedHandledJITCaseStub <YieldTask>
 
 ; Hijack for exceptions.
 ; This can be used to hijack at a 2nd-chance exception and execute the UEF

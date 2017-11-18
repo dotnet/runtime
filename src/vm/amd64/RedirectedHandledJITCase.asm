@@ -98,7 +98,6 @@ NESTED_END RedirectedHandledJITCaseFor&reason&_Stub, _TEXT
 GenerateRedirectedHandledJITCaseStub GCThreadControl
 GenerateRedirectedHandledJITCaseStub DbgThreadControl
 GenerateRedirectedHandledJITCaseStub UserSuspend
-GenerateRedirectedHandledJITCaseStub YieldTask
 
 ifdef _DEBUG
 ifdef HAVE_GCCOVER

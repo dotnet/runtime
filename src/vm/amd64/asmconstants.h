@@ -175,8 +175,6 @@ ASMCONSTANT_OFFSETOF_ASSERT(gc_alloc_context, alloc_limit);
 ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadExceptionState__m_pCurrentTracker
                     == offsetof(ThreadExceptionState, m_pCurrentTracker));
 
-#define               THREAD_CATCHATSAFEPOINT_BITS 0x5F
-ASMCONSTANTS_C_ASSERT(THREAD_CATCHATSAFEPOINT_BITS == Thread::TS_CatchAtSafePoint);
 #endif // CROSSGEN_COMPILE
 
 
