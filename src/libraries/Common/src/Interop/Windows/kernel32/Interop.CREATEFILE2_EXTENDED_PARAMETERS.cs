@@ -8,13 +8,13 @@ internal partial class Interop
 {
     internal partial class Kernel32
     {
-        internal struct CREATEFILE2_EXTENDED_PARAMETERS
+        internal unsafe struct CREATEFILE2_EXTENDED_PARAMETERS
         {
             internal uint dwSize;
             internal uint dwFileAttributes;
             internal uint dwFileFlags;
             internal uint dwSecurityQosFlags;
-            internal IntPtr lpSecurityAttributes;
+            internal Interop.Kernel32.SECURITY_ATTRIBUTES* lpSecurityAttributes;
             internal IntPtr hTemplateFile;
         }
     }
