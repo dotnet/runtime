@@ -1318,6 +1318,12 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REG_TMP_1                REG_R2
   #define RBM_TMP_1                RBM_R2
 
+#ifndef LEGACY_BACKEND
+  // Temporary registers used for the GS cookie check.
+  #define REG_GSCOOKIE_TMP_0       REG_R12
+  #define REG_GSCOOKIE_TMP_1       REG_LR
+#endif // !LEGACY_BACKEND
+
   //  This is the first register pair in REG_TMP_ORDER
   #define REG_PAIR_TMP             REG_PAIR_R2R3
   #define REG_PAIR_TMP_REVERSE     REG_PAIR_R3R2
@@ -1637,6 +1643,10 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   //  This is the second register in REG_TMP_ORDER
   #define REG_TMP_1                REG_R10
   #define RBM_TMP_1                RBM_R10
+
+  // Temporary registers used for the GS cookie check.
+  #define REG_GSCOOKIE_TMP_0       REG_R9
+  #define REG_GSCOOKIE_TMP_1       REG_R10
 
   // register to hold shift amount; no special register is required on ARM64.
   #define REG_SHIFT                REG_NA
