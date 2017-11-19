@@ -70,7 +70,7 @@ namespace System.IO.MemoryMappedFiles
         {
             if (!CanSeek)
             {
-                throw __Error.GetStreamIsClosed();
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamIsClosed);
             }
 
             _view.Flush((UIntPtr)Capacity);
