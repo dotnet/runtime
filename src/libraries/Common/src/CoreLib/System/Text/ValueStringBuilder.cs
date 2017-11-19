@@ -167,7 +167,7 @@ namespace System.Text
             _chars = _arrayToReturnToPool = poolArray;
             if (toReturn != null)
             {
-                ArrayPool<char>.Shared.Return(_arrayToReturnToPool);
+                ArrayPool<char>.Shared.Return(toReturn);
             }
         }
     }
