@@ -12,7 +12,6 @@ internal static partial class Interop
     internal static partial class WebSocket
     {
         [DllImport(Libraries.WebSocket, EntryPoint = "WebSocketSend", ExactSpelling = true)]
-        [SuppressUnmanagedCodeSecurity]
         internal static extern int WebSocketSend_Raw(
             [In] SafeHandle webSocketHandle,
             [In] BufferType bufferType,
@@ -20,7 +19,6 @@ internal static partial class Interop
             [In] IntPtr applicationContext);
 
         [DllImport(Libraries.WebSocket, EntryPoint = "WebSocketSend", ExactSpelling = true)]
-        [SuppressUnmanagedCodeSecurity]
         internal static extern int WebSocketSendWithoutBody_Raw(
             [In] SafeHandle webSocketHandle,
             [In] BufferType bufferType,
