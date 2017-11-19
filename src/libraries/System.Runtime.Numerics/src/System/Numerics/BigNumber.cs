@@ -273,7 +273,6 @@
 
 using System.Diagnostics;
 using System.Globalization;
-using System.Security;
 using System.Text;
 
 namespace System.Numerics
@@ -505,14 +504,16 @@ namespace System.Numerics
 
         private static string FormatBigIntegerToHex(BigInteger value, char format, int digits, NumberFormatInfo info)
         {
+            Debug.Assert(format == 'x' || format == 'X');
+
             // Get the bytes that make up the BigInteger.
-            Span<byte> bits = stackalloc byte[128]; // arbitrary limit to switch from stack to heap
+            Span<byte> bits = stackalloc byte[64]; // arbitrary limit to switch from stack to heap
             bits = value.TryWriteBytes(bits, out int bytesWritten) ?
                 bits.Slice(0, bytesWritten) :
                 value.ToByteArray();
 
-            StringBuilder sb = new StringBuilder();
-            string fmt = null;
+            Span<char> stackSpace = stackalloc char[128];
+            var sb = new ValueStringBuilder(stackSpace);
             int cur = bits.Length - 1;
 
             if (cur > -1)
@@ -522,35 +523,60 @@ namespace System.Numerics
                 // [07..00] drop the high 0 as the two's complement positive number remains clear
                 bool clearHighF = false;
                 byte head = bits[cur];
+
                 if (head > 0xF7)
                 {
                     head -= 0xF0;
                     clearHighF = true;
                 }
+
                 if (head < 0x08 || clearHighF)
                 {
                     // {0xF8-0xFF} print as {8-F}
                     // {0x00-0x07} print as {0-7}
-                    fmt = string.Format(CultureInfo.InvariantCulture, "{0}1", format);
-                    sb.Append(head.ToString(fmt, info));
+                    sb.Append(head < 10 ?
+                        (char)(head + '0') :
+                        format == 'X' ? (char)((head & 0xF) - 10 + 'A') : (char)((head & 0xF) - 10 + 'a'));
                     cur--;
                 }
             }
+
             if (cur > -1)
             {
-                fmt = string.Format(CultureInfo.InvariantCulture, "{0}2", format);
-                while (cur > -1)
+                if (format == 'x')
                 {
-                    sb.Append(bits[cur--].ToString(fmt, info));
+                    while (cur > -1)
+                    {
+                        byte b = bits[cur--];
+                        sb.Append(GetLowerCaseHexValue(b >> 4));
+                        sb.Append(GetLowerCaseHexValue(b & 0xF));
+                    }
+                }
+                else
+                {
+                    while (cur > -1)
+                    {
+                        byte b = bits[cur--];
+                        sb.Append(GetUpperCaseHexValue(b >> 4));
+                        sb.Append(GetUpperCaseHexValue(b & 0xF));
+                    }
                 }
             }
+
             if (digits > 0 && digits > sb.Length)
             {
-                // Insert leading zeros.  User specified "X5" so we create "0ABCD" instead of "ABCD"
-                sb.Insert(0, (value._sign >= 0 ? ("0") : (format == 'x' ? "f" : "F")), digits - sb.Length);
+                // Insert leading zeros, e.g. user specified "X5" so we create "0ABCD" instead of "ABCD"
+                sb.Insert(
+                    0,
+                    value._sign >= 0 ? '0' : (format == 'x') ? 'f' : 'F',
+                    digits - sb.Length);
             }
-            return sb.ToString();
+
+            return sb.GetString();
         }
+
+        private static char GetUpperCaseHexValue(int i) => i < 10 ? (char)(i + '0') : (char)(i - 10 + 'A');
+        private static char GetLowerCaseHexValue(int i) => i < 10 ? (char)(i + '0') : (char)(i - 10 + 'a');
 
         internal static string FormatBigInteger(BigInteger value, string format, NumberFormatInfo info)
         {
