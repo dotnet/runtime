@@ -96,6 +96,11 @@ namespace System
             return Number.FormatUInt32(m_value, format, NumberFormatInfo.GetInstance(provider));
         }
 
+        public bool TryFormat(Span<char> destination, out int charsWritten, string format = null, IFormatProvider provider = null)
+        {
+            return Number.TryFormatUInt32(m_value, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
+        }
+
         [CLSCompliant(false)]
         public static uint Parse(String s)
         {
