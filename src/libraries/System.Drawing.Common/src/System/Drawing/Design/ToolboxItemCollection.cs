@@ -15,7 +15,6 @@ namespace System.Drawing.Design {
     ///       A collection that stores <see cref='System.Drawing.Design.ToolboxItem'/> objects.
     ///    </para>
     /// </devdoc>
-    [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Name="FullTrust")]
     public sealed class ToolboxItemCollection : ReadOnlyCollectionBase {
         
         /// <include file='doc\ToolboxItemCollection.uex' path='docs/doc[@for="ToolboxItemCollection.ToolboxItemCollection"]/*' />

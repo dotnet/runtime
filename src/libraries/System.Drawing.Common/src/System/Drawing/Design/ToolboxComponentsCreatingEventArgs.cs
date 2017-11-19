@@ -14,8 +14,6 @@ namespace System.Drawing.Design {
     /// <para>Provides data for the 'ToolboxComponentsCreatingEventArgs' event that occurs
     ///    when components are added to the toolbox.</para>
     /// </devdoc>
-    [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.InheritanceDemand, Name="FullTrust")]
-    [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Name="FullTrust")]
     public class ToolboxComponentsCreatingEventArgs : EventArgs {
         private readonly IDesignerHost host;
         

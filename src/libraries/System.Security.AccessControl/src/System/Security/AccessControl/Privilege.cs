@@ -418,7 +418,6 @@ namespace System.Security.AccessControl
 
         #endregion
 
-        //      [SecurityPermission( SecurityAction.Demand, TogglePrivileges=true )]
         private void ToggleState(bool enable)
         {
             int error = 0;
@@ -553,7 +552,6 @@ namespace System.Security.AccessControl
             }
         }
 
-        //      [SecurityPermission( SecurityAction.Demand, TogglePrivileges=true )]
         public void Revert()
         {
             int error = 0;

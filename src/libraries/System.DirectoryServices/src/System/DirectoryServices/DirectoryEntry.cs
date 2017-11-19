@@ -19,9 +19,7 @@ namespace System.DirectoryServices
     /// Encapsulates a node or an object in the Active Directory hierarchy.
     /// </devdoc>
     [
-    TypeConverterAttribute(typeof(DirectoryEntryConverter)),
-    EnvironmentPermission(SecurityAction.Assert, Unrestricted = true),
-    SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.UnmanagedCode),
+    TypeConverterAttribute(typeof(DirectoryEntryConverter))
     ]
     public class DirectoryEntry : Component
     {

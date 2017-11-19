@@ -761,11 +761,9 @@ namespace System.DirectoryServices.AccountManagement
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         internal protected PrincipalContext ContextRaw
         {
-            //[StrongNameIdentityPermission(SecurityAction.LinkDemand,  PublicKey = Microsoft.Internal.BuildInfo.WINDOWS_PUBLIC_KEY_STRING)]                
             get
             { return _ctx; }
 
-            //[StrongNameIdentityPermission(SecurityAction.LinkDemand,  PublicKey = Microsoft.Internal.BuildInfo.WINDOWS_PUBLIC_KEY_STRING)]                    
             set
             {
                 // Verify that the passed context is not disposed.
@@ -1081,7 +1079,6 @@ namespace System.DirectoryServices.AccountManagement
         //  each byte[] is a certificate.
         // (The property can never be a PrincipalCollection, since such properties
         //  are not loaded by StoreCtx.Load()).
-        //[StrongNameIdentityPermission(SecurityAction.InheritanceDemand,  PublicKey = Microsoft.Internal.BuildInfo.WINDOWS_PUBLIC_KEY_STRING)]
         // ExtensionCache is never directly loaded by the store hence it does not exist in the switch
         internal virtual void LoadValueIntoProperty(string propertyName, object value)
         {
@@ -1148,7 +1145,6 @@ namespace System.DirectoryServices.AccountManagement
         //
 
         // Given a property name, returns true if that property has changed since it was loaded, false otherwise.
-        //[StrongNameIdentityPermission(SecurityAction.InheritanceDemand,  PublicKey = Microsoft.Internal.BuildInfo.WINDOWS_PUBLIC_KEY_STRING)]        
         internal virtual bool GetChangeStatusForProperty(string propertyName)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "Principal", "GetChangeStatusForProperty: name=" + propertyName);
@@ -1217,7 +1213,6 @@ namespace System.DirectoryServices.AccountManagement
         // If the property is a ValueCollection<T>, the return value is the ValueCollection<T> itself.
         // If the property is a X509Certificate2Collection, the return value is the X509Certificate2Collection itself.
         // If the property is a PrincipalCollection, the return value is the PrincipalCollection itself.
-        //[StrongNameIdentityPermission(SecurityAction.InheritanceDemand,  PublicKey = Microsoft.Internal.BuildInfo.WINDOWS_PUBLIC_KEY_STRING)]        
         internal virtual object GetValueForProperty(string propertyName)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "Principal", "GetValueForProperty: name=" + propertyName);
@@ -1263,7 +1258,6 @@ namespace System.DirectoryServices.AccountManagement
         // Reset all change-tracking status for all properties on the object to "unchanged".
         // This is used by StoreCtx.Insert() and StoreCtx.Update() to reset the change-tracking after they
         // have persisted all current changes to the store.
-        //[StrongNameIdentityPermission(SecurityAction.InheritanceDemand,  PublicKey = Microsoft.Internal.BuildInfo.WINDOWS_PUBLIC_KEY_STRING)]        
         internal virtual void ResetAllChangeStatus()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "Principal", "ResetAllChangeStatus");
