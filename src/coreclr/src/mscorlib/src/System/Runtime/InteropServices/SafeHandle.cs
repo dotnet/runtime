@@ -47,9 +47,6 @@ namespace System.Runtime.InteropServices
       decorated with a reliability contract of the appropriate level. In most cases
       this should be:
         ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)
-      Also, any P/Invoke methods should use the SuppressUnmanagedCodeSecurity
-      attribute to avoid a runtime security check that can also inject failures
-      (even if the check is guaranteed to pass).
 
       The GC will run ReleaseHandle methods after any normal finalizers have been
       run for objects that were collected at the same time. This ensures classes
@@ -111,7 +108,6 @@ namespace System.Runtime.InteropServices
       class's default constructor.  Also, you probably want to define CloseHandle
       somewhere, and remember to apply a reliability contract to it.
 
-      [SuppressUnmanagedCodeSecurity]
       internal static class MyNativeMethods {
           [DllImport("kernel32")]
           private static extern MySafeHandleSubclass CreateHandle(int someState);

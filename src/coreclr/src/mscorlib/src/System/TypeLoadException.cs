@@ -113,7 +113,6 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private static extern void GetTypeLoadExceptionMessage(int resourceId, StringHandleOnStack retString);
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)

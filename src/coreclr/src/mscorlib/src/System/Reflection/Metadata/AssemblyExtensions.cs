@@ -11,7 +11,6 @@ namespace System.Reflection.Metadata
     public static class AssemblyExtensions
     {
         [DllImport(JitHelpers.QCall)]
-        [SuppressUnmanagedCodeSecurity]
         [return: MarshalAs(UnmanagedType.Bool)]
         private unsafe static extern bool InternalTryGetRawMetadata(RuntimeAssembly assembly, ref byte* blob, ref int length);
 

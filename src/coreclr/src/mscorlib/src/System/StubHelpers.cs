@@ -633,7 +633,7 @@ namespace System.StubHelpers
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         static internal extern object ConvertToManaged(IntPtr pUnk, IntPtr itfMT, IntPtr classMT, int flags);
 
-        [DllImport(JitHelpers.QCall), SuppressUnmanagedCodeSecurity]
+        [DllImport(JitHelpers.QCall)]
         static internal extern void ClearNative(IntPtr pUnk);
 
         [FriendAccessAllowed]
@@ -689,10 +689,10 @@ namespace System.StubHelpers
         }
 
         [FriendAccessAllowed]
-        [DllImport(JitHelpers.QCall), SuppressUnmanagedCodeSecurity]
+        [DllImport(JitHelpers.QCall)]
         static extern internal IntPtr CreateNativePCEventArgsInstance([MarshalAs(UnmanagedType.HString)]string name);
 
-        [DllImport(JitHelpers.QCall), SuppressUnmanagedCodeSecurity]
+        [DllImport(JitHelpers.QCall)]
         static extern internal IntPtr CreateNativeNCCEventArgsInstanceHelper(int action, IntPtr newItem, IntPtr oldItem, int newIndex, int oldIndex);
     }
 #endif // FEATURE_COMINTEROP
@@ -1547,7 +1547,6 @@ namespace System.StubHelpers
         }
     }  // class CleanupWorkList
 
-    [SuppressUnmanagedCodeSecurityAttribute()]
     internal static class StubHelpers
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

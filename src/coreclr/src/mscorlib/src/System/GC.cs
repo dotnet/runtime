@@ -67,11 +67,9 @@ namespace System
         internal static extern int SetGCLatencyMode(int newLatencyMode);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         internal static extern int _StartNoGCRegion(long totalSize, bool lohSizeKnown, long lohSize, bool disallowFullBlockingGC);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         internal static extern int _EndNoGCRegion();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -84,11 +82,9 @@ namespace System
         private static extern int GetGenerationWR(IntPtr handle);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private static extern long GetTotalMemory();
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private static extern void _Collect(int generation, int mode);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -100,10 +96,10 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern bool IsServerGC();
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void _AddMemoryPressure(UInt64 bytesAllocated);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void _RemoveMemoryPressure(UInt64 bytesAllocated);
 
         public static void AddMemoryPressure(long bytesAllocated)
@@ -273,7 +269,6 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private static extern void _WaitForPendingFinalizers();
 
         public static void WaitForPendingFinalizers()

@@ -875,7 +875,7 @@ namespace System.Runtime.InteropServices
             InternalPrelink(rmi);
         }
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void InternalPrelink(IRuntimeMethodInfo m);
 
         public static void PrelinkAll(Type c)
@@ -999,8 +999,7 @@ namespace System.Runtime.InteropServices
             return GetHINSTANCE(rtModule.GetNativeHandle());
         }
 
-        [SuppressUnmanagedCodeSecurity]
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private extern static IntPtr GetHINSTANCE(RuntimeModule m);
 
 #endif // FEATURE_COMINTEROP
@@ -1735,15 +1734,12 @@ namespace System.Runtime.InteropServices
         }
 
         [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
-        [SuppressUnmanagedCodeSecurity]
         private static extern void CreateBindCtx(UInt32 reserved, out IBindCtx ppbc);
 
         [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
-        [SuppressUnmanagedCodeSecurity]
         private static extern void MkParseDisplayName(IBindCtx pbc, [MarshalAs(UnmanagedType.LPWStr)] String szUserName, out UInt32 pchEaten, out IMoniker ppmk);
 
         [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
-        [SuppressUnmanagedCodeSecurity]
         private static extern void BindMoniker(IMoniker pmk, UInt32 grfOpt, ref Guid iidResult, [MarshalAs(UnmanagedType.Interface)] out Object ppvResult);
 
         //========================================================================
