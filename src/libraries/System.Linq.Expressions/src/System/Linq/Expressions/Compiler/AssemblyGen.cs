@@ -35,12 +35,7 @@ namespace System.Linq.Expressions.Compiler
         {
             var name = new AssemblyName("Snippets");
 
-            // mark the assembly transparent so that it works in partial trust:
-            CustomAttributeBuilder[] attributes = new[] {
-                new CustomAttributeBuilder(typeof(SecurityTransparentAttribute).GetConstructor(Type.EmptyTypes), Array.Empty<object>())
-            };
-
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(name, AssemblyBuilderAccess.Run, attributes);
+            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(name, AssemblyBuilderAccess.Run);
             _myModule = myAssembly.DefineDynamicModule(name.Name);
         }
 
