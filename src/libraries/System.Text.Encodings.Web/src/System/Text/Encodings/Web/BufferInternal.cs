@@ -14,7 +14,6 @@ namespace System {
     static class BufferInternal
     {       
         // This method has different signature for x64 and other platforms and is done for performance reasons.
-        [System.Security.SecurityCritical]
         private static unsafe void Memmove(byte* dest, byte* src, uint len)
         {
             if (AreOverlapping(dest, src, len))
@@ -187,7 +186,6 @@ namespace System {
 
         // The attributes on this method are chosen for best JIT performance. 
         // Please do not edit unless intentional.
-        [System.Security.SecurityCritical]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void MemoryCopy(void* source, void* destination, int destinationSizeInBytes, int sourceBytesToCopy)
         {

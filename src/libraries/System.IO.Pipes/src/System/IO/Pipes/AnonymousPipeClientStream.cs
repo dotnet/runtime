@@ -14,14 +14,12 @@ namespace System.IO.Pipes
     /// </summary>
     public sealed partial class AnonymousPipeClientStream : PipeStream
     {
-        [SecuritySafeCritical]
         [SuppressMessage("Microsoft.Naming", "CA1720:IdentifiersShouldNotContainTypeNames", MessageId = "string", Justification = "By design")]
         public AnonymousPipeClientStream(String pipeHandleAsString)
             : this(PipeDirection.In, pipeHandleAsString)
         {
         }
 
-        [SecurityCritical]
         [SuppressMessage("Microsoft.Naming", "CA1720:IdentifiersShouldNotContainTypeNames", MessageId = "string", Justification = "By design")]
         public AnonymousPipeClientStream(PipeDirection direction, String pipeHandleAsString)
             : base(direction, 0)
@@ -53,7 +51,6 @@ namespace System.IO.Pipes
             Init(direction, safePipeHandle);
         }
 
-        [SecurityCritical]
         public AnonymousPipeClientStream(PipeDirection direction, SafePipeHandle safePipeHandle)
             : base(direction, 0)
         {
@@ -73,7 +70,6 @@ namespace System.IO.Pipes
             Init(direction, safePipeHandle);
         }
 
-        [SecuritySafeCritical]
         private void Init(PipeDirection direction, SafePipeHandle safePipeHandle)
         {
             Debug.Assert(direction != PipeDirection.InOut, "anonymous pipes are unidirectional, caller should have verified before calling Init");
@@ -93,13 +89,11 @@ namespace System.IO.Pipes
         // which P/Invokes (and sometimes fails).
         public override PipeTransmissionMode TransmissionMode
         {
-            [SecurityCritical]
             get { return PipeTransmissionMode.Byte; }
         }
 
         public override PipeTransmissionMode ReadMode
         {
-            [SecurityCritical]
             set
             {
                 CheckPipePropertyOperations();

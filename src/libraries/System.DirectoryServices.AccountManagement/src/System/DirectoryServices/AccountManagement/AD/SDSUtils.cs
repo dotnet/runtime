@@ -18,7 +18,6 @@ namespace System.DirectoryServices.AccountManagement
         // To stop the compiler from autogenerating a constructor for this class
         private SDSUtils() { }
 
-        [System.Security.SecurityCritical]
         static internal Principal SearchResultToPrincipal(SearchResult sr, PrincipalContext owningContext, Type principalType)
         {
             Principal p;
@@ -80,7 +79,6 @@ namespace System.DirectoryServices.AccountManagement
             return p;
         }
         // Used to implement StoreCtx.GetAsPrincipal for AD and SAM
-        [System.Security.SecurityCritical]
         static internal Principal DirectoryEntryToPrincipal(DirectoryEntry de, PrincipalContext owningContext, Type principalType)
         {
             Principal p;
@@ -138,14 +136,12 @@ namespace System.DirectoryServices.AccountManagement
             return p;
         }
 
-        [System.Security.SecurityCritical]
         private static bool IsOfObjectClass(SearchResult sr, string className)
         {
             Debug.Assert(sr.Path.StartsWith("LDAP:", StringComparison.Ordinal) || sr.Path.StartsWith("GC:", StringComparison.Ordinal));
             return ADUtils.IsOfObjectClass(sr, className);
         }
 
-        [System.Security.SecurityCritical]
         private static bool IsOfObjectClass(DirectoryEntry de, string className)
         {
             if (de.Path.StartsWith("WinNT:", StringComparison.Ordinal))
@@ -180,7 +176,6 @@ namespace System.DirectoryServices.AccountManagement
             return authTypes;
         }
 
-        [System.Security.SecurityCritical]
         static internal void MoveDirectoryEntry(DirectoryEntry deToMove, DirectoryEntry newParent, string newName)
         {
             if (newName != null)
@@ -189,7 +184,6 @@ namespace System.DirectoryServices.AccountManagement
                 deToMove.MoveTo(newParent);
         }
 
-        [System.Security.SecurityCritical]
         static internal void DeleteDirectoryEntry(DirectoryEntry deToDelete)
         {
             DirectoryEntry deParent = deToDelete.Parent;
@@ -204,7 +198,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        [System.Security.SecurityCritical]
         static internal void InsertPrincipal(
                                     Principal p,
                                     StoreCtx storeCtx,
@@ -275,7 +268,6 @@ namespace System.DirectoryServices.AccountManagement
 
         internal delegate void GroupMembershipUpdater(Principal p, DirectoryEntry de, NetCred credentials, AuthenticationTypes authTypes);
 
-        [System.Security.SecurityCritical]
         static internal void ApplyChangesToDirectory(
                                                 Principal p,
                                                 StoreCtx storeCtx,
@@ -317,7 +309,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        [System.Security.SecurityCritical]
         static internal void SetPassword(DirectoryEntry de, string newPassword)
         {
             Debug.Assert(newPassword != null);  // but it could be an empty string
@@ -350,7 +341,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        [System.Security.SecurityCritical]
         static internal void ChangePassword(DirectoryEntry de, string oldPassword, string newPassword)
         {
             Debug.Assert(newPassword != null);  // but it could be an empty string
@@ -385,7 +375,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        [System.Security.SecurityCritical]
         static internal DirectoryEntry BuildDirectoryEntry(string path, NetCred credentials, AuthenticationTypes authTypes)
         {
             DirectoryEntry de = new DirectoryEntry(path,
@@ -398,7 +387,6 @@ namespace System.DirectoryServices.AccountManagement
             return de;
         }
 
-        [System.Security.SecurityCritical]
         static internal DirectoryEntry BuildDirectoryEntry(NetCred credentials, AuthenticationTypes authTypes)
         {
             DirectoryEntry de = new DirectoryEntry();
@@ -412,7 +400,6 @@ namespace System.DirectoryServices.AccountManagement
             return de;
         }
 
-        [System.Security.SecurityCritical]
         static internal void WriteAttribute<T>(string dePath, string attribute, T value, NetCred credentials, AuthenticationTypes authTypes)
         {
             Debug.Assert(attribute != null && attribute.Length > 0);
@@ -448,7 +435,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        [System.Security.SecurityCritical]
         static internal void WriteAttribute(string dePath, string attribute, int value, NetCred credentials, AuthenticationTypes authTypes)
         {
             GlobalDebug.WriteLineIf(
@@ -504,7 +490,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // S.DS (LDAP or WinNT) --> PAPI conversion routines
         //
-        [System.Security.SecurityCritical]
         static internal void SingleScalarFromDirectoryEntry<T>(dSPropertyCollection properties, string suggestedProperty, Principal p, string propertyName)
         {
             if (properties[suggestedProperty].Count != 0 && properties[suggestedProperty][0] != null)
@@ -517,7 +502,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        [System.Security.SecurityCritical]
         static internal void MultiScalarFromDirectoryEntry<T>(dSPropertyCollection properties, string suggestedProperty, Principal p, string propertyName)
         {
             dSPropertyValueCollection values = properties[suggestedProperty];
@@ -588,7 +572,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return flag;
         }
-        [System.Security.SecurityCritical]
         static internal void AccountControlFromDirectoryEntry(dSPropertyCollection properties, string suggestedProperty, Principal p, string propertyName, bool testCantChangePassword)
         {
             Debug.Assert(
@@ -618,7 +601,6 @@ namespace System.DirectoryServices.AccountManagement
         // PAPI --> S.DS (LDAP or WinNT) conversion routines
         //
 
-        [System.Security.SecurityCritical]
         static internal void MultiStringToDirectoryEntryConverter(Principal p, string propertyName, DirectoryEntry de, string suggestedProperty)
         {
             PrincipalValueCollection<string> trackingList = (PrincipalValueCollection<string>)p.GetValueForProperty(propertyName);
@@ -662,7 +644,6 @@ namespace System.DirectoryServices.AccountManagement
         internal const int AD_DefaultUAC_Machine = (int)(0x1000 | 0X20 | 0x2);  // UF_WORKSTATION_TRUST_ACCOUNT | UF_PASSWD_NOTREQD | UF_ACCOUNTDISABLE
         internal const int SAM_DefaultUAC = (int)(0x200 | 0x1);        // UF_NORMAL_ACCOUNT | UF_SCRIPT
 
-        [System.Security.SecurityCritical]
         static internal void AccountControlToDirectoryEntry(
                                         Principal p,
                                         string propertyName,
@@ -798,7 +779,6 @@ namespace System.DirectoryServices.AccountManagement
             return ds;
         }
 
-        [System.Security.SecuritySafeCritical]
         static internal bool IsObjectFromGC(string path)
         {
             return path.StartsWith("GC:", StringComparison.OrdinalIgnoreCase);

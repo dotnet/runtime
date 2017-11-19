@@ -168,7 +168,6 @@ namespace System.ComponentModel.Composition.Primitives
         /// <exception cref="ArgumentNullException">
         ///     <paramref name="info"/> is <see langword="null"/>.
         /// </exception>
-        [System.Security.SecurityCritical]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);

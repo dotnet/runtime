@@ -30,7 +30,6 @@ namespace System.Runtime.Versioning
             return MakeVersionSafeName(name, from, to, null);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [ResourceExposure(ResourceScope.None)]
         [ResourceConsumption(ResourceScope.Process, ResourceScope.Process)]
         public static string MakeVersionSafeName(String name, ResourceScope from, ResourceScope to, Type type)

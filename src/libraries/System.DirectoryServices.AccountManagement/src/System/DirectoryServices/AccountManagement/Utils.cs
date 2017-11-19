@@ -118,7 +118,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // SID Utilities
         //        
-        [System.Security.SecuritySafeCritical]
 
         internal static string ConvertSidToSDDL(byte[] sid)
         {
@@ -156,7 +155,6 @@ namespace System.DirectoryServices.AccountManagement
 
         // The caller must call Marshal.FreeHGlobal on the returned
         // value to free it.
-        [System.Security.SecurityCritical]
         internal static IntPtr ConvertByteArrayToIntPtr(byte[] bytes)
         {
             IntPtr pBytes = IntPtr.Zero;
@@ -181,7 +179,6 @@ namespace System.DirectoryServices.AccountManagement
             return pBytes;
         }
 
-        [System.Security.SecuritySafeCritical]
 
         internal static byte[] ConvertNativeSidToByteArray(IntPtr pSid)
         {
@@ -192,7 +189,6 @@ namespace System.DirectoryServices.AccountManagement
             return sid;
         }
 
-        [System.Security.SecurityCritical]
         internal static SidType ClassifySID(byte[] sid)
         {
             IntPtr pSid = IntPtr.Zero;
@@ -210,7 +206,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        [System.Security.SecuritySafeCritical]
 
         internal static SidType ClassifySID(IntPtr pSid)
         {
@@ -257,7 +252,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        [System.Security.SecuritySafeCritical]
 
         internal static int GetLastRidFromSid(IntPtr pSid)
         {
@@ -269,7 +263,6 @@ namespace System.DirectoryServices.AccountManagement
             return lastRid;
         }
 
-        [System.Security.SecurityCritical]
         internal static int GetLastRidFromSid(byte[] sid)
         {
             IntPtr pSid = IntPtr.Zero;
@@ -292,7 +285,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         //
 
-        [System.Security.SecurityCritical]
         internal static bool IsSamUser()
         {
             //
@@ -356,7 +348,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        [System.Security.SecuritySafeCritical]
 
         internal static IntPtr GetCurrentUserSid()
         {
@@ -487,7 +478,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        [System.Security.SecuritySafeCritical]
 
         internal static IntPtr GetMachineDomainSid()
         {
@@ -571,7 +561,6 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.Permissions.SecurityPermission(
                                         System.Security.Permissions.SecurityAction.Assert,
                                         Flags = System.Security.Permissions.SecurityPermissionFlag.ControlPrincipal)]
-        [System.Security.SecuritySafeCritical]
 
         internal static string GetNT4UserName()
         {
@@ -586,7 +575,6 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.Permissions.EnvironmentPermission(
                                         System.Security.Permissions.SecurityAction.Assert,
                                         Unrestricted = true)]
-        [System.Security.SecuritySafeCritical]
 
         internal static string GetComputerFlatName()
         {
@@ -600,7 +588,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Interop support
         //
-        [System.Security.SecuritySafeCritical]
 
         internal static UnsafeNativeMethods.DomainControllerInfo GetDcName(string computerName, string domainName, string siteName, int flags)
         {
@@ -632,7 +619,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        [System.Security.SecurityCritical]
         internal static int LookupSid(string serverName, NetCred credentials, byte[] sid, out string name, out string domainName, out int accountUsage)
         {
             IntPtr pSid = IntPtr.Zero;
@@ -702,7 +688,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        [System.Security.SecuritySafeCritical]
 
         static internal Principal ConstructFakePrincipalFromSID(
                                                             byte[] sid,
@@ -774,7 +759,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Impersonation
         //
-        [System.Security.SecurityCritical]
         internal static bool BeginImpersonation(NetCred credential, out IntPtr hUserToken)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "Utils", "Entering BeginImpersonation");
@@ -842,7 +826,6 @@ namespace System.DirectoryServices.AccountManagement
             return true;
         }
 
-        [System.Security.SecurityCritical]
         internal static void EndImpersonation(IntPtr hUserToken)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "Utils", "Entering EndImpersonation");
@@ -851,7 +834,6 @@ namespace System.DirectoryServices.AccountManagement
             UnsafeNativeMethods.CloseHandle(hUserToken);
         }
 
-        [System.Security.SecuritySafeCritical]
         internal static bool IsMachineDC(String computerName)
         {
             IntPtr dsRoleInfoPtr = IntPtr.Zero;

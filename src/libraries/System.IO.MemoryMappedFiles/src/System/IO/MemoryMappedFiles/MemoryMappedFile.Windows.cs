@@ -19,7 +19,6 @@ namespace System.IO.MemoryMappedFiles
         /// </summary>
 
         private static readonly IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
-        [SecurityCritical]
         private static SafeMemoryMappedFileHandle CreateCore(
             FileStream fileStream, string mapName, HandleInheritability inheritability,
             MemoryMappedFileAccess access, MemoryMappedFileOptions options, long capacity)
@@ -75,7 +74,6 @@ namespace System.IO.MemoryMappedFiles
         /// <summary>
         /// Used by the CreateOrOpen factory method groups.
         /// </summary>
-        [SecurityCritical]
         private static SafeMemoryMappedFileHandle CreateOrOpenCore(
             string mapName, HandleInheritability inheritability, MemoryMappedFileAccess access, 
             MemoryMappedFileOptions options, long capacity)
@@ -217,7 +215,6 @@ namespace System.IO.MemoryMappedFiles
         /// We'll throw an ArgumentException if the file mapping object didn't exist and the
         /// caller used CreateOrOpen since Create isn't valid with Write access
         /// </summary>
-        [SecurityCritical]
         private static SafeMemoryMappedFileHandle OpenCore(
             string mapName, HandleInheritability inheritability, int desiredAccessRights, bool createOrOpen)
         {
@@ -244,7 +241,6 @@ namespace System.IO.MemoryMappedFiles
         /// Helper method used to extract the native binary security descriptor from the MemoryMappedFileSecurity
         /// type. If pinningHandle is not null, caller must free it AFTER the call to CreateFile has returned.
         /// </summary>
-        [SecurityCritical]
         private static unsafe Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(HandleInheritability inheritability)
         {
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);

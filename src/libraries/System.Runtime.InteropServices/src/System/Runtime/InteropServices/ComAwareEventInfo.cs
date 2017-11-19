@@ -8,7 +8,6 @@ using System.Security;
 
 namespace System.Runtime.InteropServices
 {
-    [SecuritySafeCritical]
     public class ComAwareEventInfo : EventInfo
     {
         private EventInfo _innerEventInfo;
@@ -18,7 +17,6 @@ namespace System.Runtime.InteropServices
             _innerEventInfo = type.GetEvent(eventName);
         }
 
-        [SecuritySafeCritical]
         public override void AddEventHandler(object target, Delegate handler)
         {
             if (Marshal.IsComObject(target))
@@ -34,7 +32,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [SecuritySafeCritical]
         public override void RemoveEventHandler(object target, Delegate handler)
         {
             if (Marshal.IsComObject(target))

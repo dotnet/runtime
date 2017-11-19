@@ -52,7 +52,6 @@ namespace System.IO
             }
         }
 
-        [System.Security.SecuritySafeCritical]
         public override void CreateDirectory(string fullPath)
         {
             // We can save a bunch of work if the directory we want to create already exists.  This also
@@ -213,7 +212,6 @@ namespace System.IO
         /// classes should use -1 as the uninitialized state for dataInitialized.
         /// </summary>
         /// <param name="returnErrorOnNotFound">Return the error code for not found errors?</param>
-        [System.Security.SecurityCritical]
         internal static int FillAttributeInfo(string path, ref Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data, bool returnErrorOnNotFound)
         {
             int errorCode = Interop.Errors.ERROR_SUCCESS;
@@ -377,7 +375,6 @@ namespace System.IO
             }
         }
 
-        [System.Security.SecurityCritical]
         private static SafeFileHandle OpenHandle(string fullPath, bool asDirectory)
         {
             string root = fullPath.Substring(0, PathInternal.GetRootLength(fullPath));

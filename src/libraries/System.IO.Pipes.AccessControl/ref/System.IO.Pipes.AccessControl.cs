@@ -41,9 +41,7 @@ namespace System.IO.Pipes
         public System.IO.Pipes.PipeAccessRights PipeAccessRights { get { throw null; } }
     }
     public static partial class PipesAclExtensions {
-        [System.Security.SecurityCriticalAttribute]
         public static System.IO.Pipes.PipeSecurity GetAccessControl(this System.IO.Pipes.PipeStream stream) { throw null; }
-        [System.Security.SecurityCriticalAttribute]
         public static void SetAccessControl(this System.IO.Pipes.PipeStream stream, System.IO.Pipes.PipeSecurity pipeSecurity) { }
     }
     public partial class PipeSecurity : System.Security.AccessControl.NativeObjectSecurity
@@ -56,9 +54,7 @@ namespace System.IO.Pipes
         public void AddAccessRule(System.IO.Pipes.PipeAccessRule rule) { }
         public void AddAuditRule(System.IO.Pipes.PipeAuditRule rule) { }
         public sealed override System.Security.AccessControl.AuditRule AuditRuleFactory(System.Security.Principal.IdentityReference identityReference, int accessMask, bool isInherited, System.Security.AccessControl.InheritanceFlags inheritanceFlags, System.Security.AccessControl.PropagationFlags propagationFlags, System.Security.AccessControl.AuditFlags flags) { throw null; }
-        [System.Security.SecurityCriticalAttribute]
         protected internal void Persist(System.Runtime.InteropServices.SafeHandle handle) { }
-        [System.Security.SecurityCriticalAttribute]
         protected internal void Persist(string name) { }
         public bool RemoveAccessRule(System.IO.Pipes.PipeAccessRule rule) { throw null; }
         public void RemoveAccessRuleSpecific(System.IO.Pipes.PipeAccessRule rule) { }

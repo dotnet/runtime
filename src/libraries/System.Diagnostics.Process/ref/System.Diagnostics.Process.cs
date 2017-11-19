@@ -11,7 +11,7 @@ namespace Microsoft.Win32.SafeHandles
     public sealed partial class SafeProcessHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
         public SafeProcessHandle(System.IntPtr existingHandle, bool ownsHandle) : base(default(bool)) { }
-        public override bool IsInvalid { [System.Security.SecurityCritical] get { throw null; } }
+        public override bool IsInvalid { get { throw null; } }
         protected override bool ReleaseHandle() { throw null; }
     }
 }

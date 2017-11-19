@@ -62,7 +62,6 @@ namespace System.IO
             return new FileSecurity(handle, fileStream.Name, AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static void SetAccessControl(this FileStream fileStream, FileSecurity fileSecurity)
         {
             SafeFileHandle handle = fileStream.SafeFileHandle;
