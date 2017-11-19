@@ -224,7 +224,6 @@ namespace System.Threading
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         [return: MarshalAs(UnmanagedType.Interface)]
         private static extern object GetWinRTDispatcherForCurrentThread();
 #endif //FEATURE_APPX

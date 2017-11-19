@@ -329,7 +329,6 @@ namespace System
         internal extern static Type[] GetInterfaces(RuntimeType type);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static void GetConstraints(RuntimeTypeHandle handle, ObjectHandleOnStack types);
 
         internal Type[] GetConstraints()
@@ -341,7 +340,6 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static IntPtr GetGCHandle(RuntimeTypeHandle handle, GCHandleType type);
 
         internal IntPtr GetGCHandle(GCHandleType type)
@@ -353,7 +351,6 @@ namespace System
         internal extern static int GetNumVirtuals(RuntimeType type);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static void VerifyInterfaceIsImplemented(RuntimeTypeHandle handle, RuntimeTypeHandle interfaceHandle);
 
         internal void VerifyInterfaceIsImplemented(RuntimeTypeHandle interfaceHandle)
@@ -362,7 +359,6 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static int GetInterfaceMethodImplementationSlot(RuntimeTypeHandle handle, RuntimeTypeHandle interfaceHandle, RuntimeMethodHandleInternal interfaceMethodHandle);
 
         internal int GetInterfaceMethodImplementationSlot(RuntimeTypeHandle interfaceHandle, RuntimeMethodHandleInternal interfaceMethodHandle)
@@ -380,7 +376,6 @@ namespace System
         internal extern static bool IsByRefLike(RuntimeType type);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         [return: MarshalAs(UnmanagedType.Bool)]
         private extern static bool _IsVisible(RuntimeTypeHandle typeHandle);
 
@@ -393,7 +388,6 @@ namespace System
         internal extern static bool IsValueType(RuntimeType type);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static void ConstructName(RuntimeTypeHandle handle, TypeNameFormatFlags formatFlags, StringHandleOnStack retString);
 
         internal string ConstructName(TypeNameFormatFlags formatFlags)
@@ -421,7 +415,6 @@ namespace System
         internal extern static IRuntimeMethodInfo GetDeclaringMethod(RuntimeType type);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static void GetDefaultConstructor(RuntimeTypeHandle handle, ObjectHandleOnStack method);
 
         internal IRuntimeMethodInfo GetDefaultConstructor()
@@ -432,7 +425,6 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static void GetTypeByName(string name, bool throwOnError, bool ignoreCase, bool reflectionOnly, StackCrawlMarkHandle stackMark,
             IntPtr pPrivHostBinder,
             bool loadTypeFromPartialName, ObjectHandleOnStack type, ObjectHandleOnStack keepalive);
@@ -468,7 +460,6 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static void GetTypeByNameUsingCARules(string name, RuntimeModule scope, ObjectHandleOnStack type);
 
         internal static RuntimeType GetTypeByNameUsingCARules(string name, RuntimeModule scope)
@@ -483,7 +474,6 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         internal extern static void GetInstantiation(RuntimeTypeHandle type, ObjectHandleOnStack types, bool fAsRuntimeTypeArray);
 
         internal RuntimeType[] GetInstantiationInternal()
@@ -501,7 +491,6 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static void Instantiate(RuntimeTypeHandle handle, IntPtr* pInst, int numGenericArgs, ObjectHandleOnStack type);
 
         internal RuntimeType Instantiate(Type[] inst)
@@ -520,7 +509,6 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static void MakeArray(RuntimeTypeHandle handle, int rank, ObjectHandleOnStack type);
 
         internal RuntimeType MakeArray(int rank)
@@ -531,7 +519,6 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static void MakeSZArray(RuntimeTypeHandle handle, ObjectHandleOnStack type);
 
         internal RuntimeType MakeSZArray()
@@ -542,7 +529,6 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static void MakeByRef(RuntimeTypeHandle handle, ObjectHandleOnStack type);
 
         internal RuntimeType MakeByRef()
@@ -553,7 +539,6 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static void MakePointer(RuntimeTypeHandle handle, ObjectHandleOnStack type);
 
         internal RuntimeType MakePointer()
@@ -564,14 +549,12 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         internal extern static bool IsCollectible(RuntimeTypeHandle handle);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern static bool HasInstantiation(RuntimeType type);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static void GetGenericTypeDefinition(RuntimeTypeHandle type, ObjectHandleOnStack retType);
 
         internal static RuntimeType GetGenericTypeDefinition(RuntimeType type)
@@ -810,7 +793,6 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         internal extern static IntPtr GetFunctionPointer(RuntimeMethodHandleInternal handle);
 
         public IntPtr GetFunctionPointer()
@@ -821,7 +803,6 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         internal extern static bool IsCAVisibleFromDecoratedType(
             RuntimeTypeHandle attrTypeHandle,
             IRuntimeMethodInfo attrCtor,
@@ -849,7 +830,6 @@ namespace System
         internal static extern MethodImplAttributes GetImplAttributes(IRuntimeMethodInfo method);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static void ConstructInstantiation(IRuntimeMethodInfo method, TypeNameFormatFlags format, StringHandleOnStack retString);
 
         internal static string ConstructInstantiation(IRuntimeMethodInfo method, TypeNameFormatFlags format)
@@ -922,7 +902,6 @@ namespace System
         #endregion
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static void GetMethodInstantiation(RuntimeMethodHandleInternal method, ObjectHandleOnStack types, bool fAsRuntimeTypeArray);
 
         internal static RuntimeType[] GetMethodInstantiationInternal(IRuntimeMethodInfo method)
@@ -978,7 +957,6 @@ namespace System
         internal extern static bool IsTypicalMethodDefinition(IRuntimeMethodInfo method);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static void GetTypicalMethodDefinition(IRuntimeMethodInfo method, ObjectHandleOnStack outMethod);
 
         internal static IRuntimeMethodInfo GetTypicalMethodDefinition(IRuntimeMethodInfo method)
@@ -995,7 +973,6 @@ namespace System
         internal static int GetGenericParameterCount(IRuntimeMethodInfo method) => GetGenericParameterCount(method.Value);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static void StripMethodInstantiation(IRuntimeMethodInfo method, ObjectHandleOnStack outMethod);
 
         internal static IRuntimeMethodInfo StripMethodInstantiation(IRuntimeMethodInfo method)
@@ -1011,7 +988,6 @@ namespace System
         internal extern static bool IsDynamicMethod(RuntimeMethodHandleInternal method);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         internal extern static void Destroy(RuntimeMethodHandleInternal method);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -1314,7 +1290,6 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static void ResolveType(RuntimeModule module,
                                                             int typeToken,
                                                             IntPtr* typeInstArgs,
@@ -1360,7 +1335,6 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static RuntimeMethodHandleInternal ResolveMethod(RuntimeModule module,
                                                         int methodToken,
                                                         IntPtr* typeInstArgs,
@@ -1397,7 +1371,6 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static void ResolveField(RuntimeModule module,
                                                       int fieldToken,
                                                       IntPtr* typeInstArgs,
@@ -1407,7 +1380,6 @@ namespace System
                                                       ObjectHandleOnStack retField);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static bool _ContainsPropertyMatchingHash(RuntimeModule module, int propertyToken, uint hash);
 
         internal static bool ContainsPropertyMatchingHash(RuntimeModule module, int propertyToken, uint hash)
@@ -1416,7 +1388,6 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         internal extern static void GetModuleType(RuntimeModule handle, ObjectHandleOnStack type);
 
         internal static RuntimeType GetModuleType(RuntimeModule module)
@@ -1427,7 +1398,6 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static void GetPEKind(RuntimeModule handle, out int peKind, out int machine);
 
         // making this internal, used by Module.GetPEKind

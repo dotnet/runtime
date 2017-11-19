@@ -17,19 +17,15 @@ namespace System.Reflection
 
         #region FCalls
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static void GetType(RuntimeModule module, String className, bool throwOnError, bool ignoreCase, ObjectHandleOnStack type, ObjectHandleOnStack keepAlive);
 
         [DllImport(JitHelpers.QCall)]
-        [SuppressUnmanagedCodeSecurity]
         private static extern bool nIsTransientInternal(RuntimeModule module);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static void GetScopeName(RuntimeModule module, StringHandleOnStack retString);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static void GetFullyQualifiedName(RuntimeModule module, StringHandleOnStack retString);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

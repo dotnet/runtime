@@ -110,7 +110,6 @@ namespace Microsoft.Win32
     // Remove the default demands for all P/Invoke methods with this
     // global declaration on the class.
 
-    [SuppressUnmanagedCodeSecurityAttribute()]
     internal static class Win32Native
     {
         internal const int KEY_QUERY_VALUE = 0x0001;

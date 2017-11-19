@@ -447,7 +447,6 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         extern private unsafe static void __Memmove(byte* dest, byte* src, nuint len);
 
         // The attributes on this method are chosen for best JIT performance. 
