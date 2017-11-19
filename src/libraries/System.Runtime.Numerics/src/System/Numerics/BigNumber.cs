@@ -330,7 +330,7 @@ namespace System.Numerics
                 return false;
             }
 
-            return TryParseBigInteger(AsReadOnlySpan(value), style, info, out result);
+            return TryParseBigInteger(value.AsReadOnlySpan(), style, info, out result);
         }
 
         internal static bool TryParseBigInteger(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
@@ -371,18 +371,7 @@ namespace System.Numerics
                 throw new ArgumentNullException(nameof(value));
             }
 
-            return ParseBigInteger(AsReadOnlySpan(value), style, info);
-        }
-
-        // TODO #22688: Remove this and replace it with the real AsReadOnlySpan extension
-        // method from System.Memory once the System.Memory package is marked stable
-        // and the package validation system allows us to take a dependency on it.
-        private static unsafe ReadOnlySpan<char> AsReadOnlySpan(string s)
-        {
-            fixed (char* c = s)
-            {
-                return new ReadOnlySpan<char>(c, s.Length);
-            }
+            return ParseBigInteger(value.AsReadOnlySpan(), style, info);
         }
 
         internal static BigInteger ParseBigInteger(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info)
@@ -517,19 +506,10 @@ namespace System.Numerics
         private static string FormatBigIntegerToHex(BigInteger value, char format, int digits, NumberFormatInfo info)
         {
             // Get the bytes that make up the BigInteger.
-            int byteCount = value.GetByteCount();
-            Span<byte> bits = stackalloc byte[0]; // TODO: Remove the initialization once C# compiler is fixed to allow it.
-            if (byteCount <= 128) // arbitrary limit to switch from stack to heap
-            {
-                bits = stackalloc byte[byteCount];
-                bool formatted = value.TryWriteBytes(bits, out int bytesWritten);
-                Debug.Assert(formatted);
-                Debug.Assert(bytesWritten == byteCount);
-            }
-            else
-            {
-                bits = value.ToByteArray();
-            }
+            Span<byte> bits = stackalloc byte[128]; // arbitrary limit to switch from stack to heap
+            bits = value.TryWriteBytes(bits, out int bytesWritten) ?
+                bits.Slice(0, bytesWritten) :
+                value.ToByteArray();
 
             StringBuilder sb = new StringBuilder();
             string fmt = null;
