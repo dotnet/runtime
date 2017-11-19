@@ -38,25 +38,24 @@ namespace System.Resources
     // allowing us to ask for a WinRT-specific ResourceManager.
     // It is important to have WindowsRuntimeResourceManagerBase as regular class with virtual methods and default implementations. 
     // Defining WindowsRuntimeResourceManagerBase as abstract class or interface will cause issues when adding more methods to it 
-    // because it�ll create dependency between mscorlib and System.Runtime.WindowsRuntime which will require always shipping both DLLs together. 
-    // Also using interface or abstract class will not play nice with FriendAccessAllowed.
+    // because it'll create dependency between mscorlib and System.Runtime.WindowsRuntime which will require always shipping both DLLs together. 
     //
-    [FriendAccessAllowed]
-    internal class WindowsRuntimeResourceManagerBase
+    // [FriendAccessAllowed]
+    internal abstract class WindowsRuntimeResourceManagerBase
     {
-        public virtual bool Initialize(string libpath, string reswFilename, out PRIExceptionInfo exceptionInfo) { exceptionInfo = null; return false; }
+        public abstract bool Initialize(string libpath, string reswFilename, out PRIExceptionInfo exceptionInfo);
 
-        public virtual String GetString(String stringName, String startingCulture, String neutralResourcesCulture) { return null; }
+        public abstract String GetString(String stringName, String startingCulture, String neutralResourcesCulture);
 
-        public virtual CultureInfo GlobalResourceContextBestFitCultureInfo
+        public abstract CultureInfo GlobalResourceContextBestFitCultureInfo
         {
-            get { return null; }
+            get;
         }
 
-        public virtual bool SetGlobalResourceContextDefaultCulture(CultureInfo ci) { return false; }
+        public abstract bool SetGlobalResourceContextDefaultCulture(CultureInfo ci);
     }
 
-    [FriendAccessAllowed]
+    // [FriendAccessAllowed]
     internal class PRIExceptionInfo
     {
         public string _PackageSimpleName;
