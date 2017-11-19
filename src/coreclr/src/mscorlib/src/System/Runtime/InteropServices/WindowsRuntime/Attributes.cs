@@ -32,7 +32,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     // implement the CLR's support for WinRT, so this type is internal as marking tdWindowsRuntime should
     // generally be done via winmdexp for user code.
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Enum | AttributeTargets.Struct | AttributeTargets.Delegate, Inherited = false)]
-    [System.Runtime.CompilerServices.FriendAccessAllowed]
+    // [System.Runtime.CompilerServices.FriendAccessAllowed]
     internal sealed class WindowsRuntimeImportAttribute : Attribute
     {
         internal WindowsRuntimeImportAttribute()

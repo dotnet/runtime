@@ -232,15 +232,6 @@ namespace System.IO
             return _buffer;
         }
 
-        // PERF: Get origin and length - used in ResourceWriter.
-        [FriendAccessAllowed]
-        internal void InternalGetOriginAndLength(out int origin, out int length)
-        {
-            if (!_isOpen) __Error.StreamIsClosed();
-            origin = _origin;
-            length = _length;
-        }
-
         // PERF: True cursor position, we don't need _origin for direct access
         internal int InternalGetPosition()
         {

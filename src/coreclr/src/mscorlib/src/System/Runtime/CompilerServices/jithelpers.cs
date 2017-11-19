@@ -66,7 +66,6 @@ namespace System.Runtime.CompilerServices
         public byte m_arrayData;
     }
 
-    [FriendAccessAllowed]
     internal static class JitHelpers
     {
         // The special dll name to be used for DllImport of QCalls
