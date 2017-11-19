@@ -216,9 +216,6 @@ namespace System.IO.Pipes
             return persistRules;
         }
 
-        // Use this in your own Persist after you have demanded any appropriate CAS permissions.
-        // Note that you will want your version to be internal and use a specialized Safe Handle. 
-        //[SecurityPermission(SecurityAction.Assert, UnmanagedCode = true)]
         protected internal void Persist(SafeHandle handle)
         {
             WriteLock();
@@ -235,9 +232,6 @@ namespace System.IO.Pipes
             }
         }
 
-        // Use this in your own Persist after you have demanded any appropriate CAS permissions.
-        // Note that you will want your version to be internal. 
-        //[SecurityPermission(SecurityAction.Assert, UnmanagedCode = true)]
         protected internal void Persist(String name)
         {
             WriteLock();

@@ -341,8 +341,6 @@ namespace System.DirectoryServices.AccountManagement
         }
     }
     // ********************************************
-    [System.Security.Permissions.SecurityPermission(System.Security.Permissions.SecurityAction.Assert,
-                                                Flags = System.Security.Permissions.SecurityPermissionFlag.UnmanagedCode)]
     public class PrincipalContext : IDisposable
     {
         //

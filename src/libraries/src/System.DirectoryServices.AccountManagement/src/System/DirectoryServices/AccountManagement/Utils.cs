@@ -558,10 +558,6 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // Returns name in the form "domain\user"
-        [System.Security.Permissions.SecurityPermission(
-                                        System.Security.Permissions.SecurityAction.Assert,
-                                        Flags = System.Security.Permissions.SecurityPermissionFlag.ControlPrincipal)]
-
         internal static string GetNT4UserName()
         {
             using (WindowsIdentity currentIdentity = System.Security.Principal.WindowsIdentity.GetCurrent())
@@ -571,10 +567,6 @@ namespace System.DirectoryServices.AccountManagement
                 return s;
             }
         }
-
-        [System.Security.Permissions.EnvironmentPermission(
-                                        System.Security.Permissions.SecurityAction.Assert,
-                                        Unrestricted = true)]
 
         internal static string GetComputerFlatName()
         {

@@ -172,7 +172,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public static UserPrincipal Current
         {
-            [SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.UnmanagedCode)]
             get
             {
                 PrincipalContext context;
