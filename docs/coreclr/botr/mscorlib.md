@@ -82,10 +82,8 @@ Do not replicate the comments into your actual QCall implementation. This is for
 
 	class Foo
 	{
-	    // All QCalls should have the following DllImport and
-	    // SuppressUnmanagedCodeSecurity attributes
+	    // All QCalls should have the following DllImport attribute
 	    [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-	    [SuppressUnmanagedCodeSecurity]
 	    // QCalls should always be static extern.
 	    private static extern bool Bar(int flags, string inString, StringHandleOnStack retString);
 
