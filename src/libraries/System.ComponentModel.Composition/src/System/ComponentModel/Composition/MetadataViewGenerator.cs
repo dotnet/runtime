@@ -81,18 +81,13 @@ namespace System.ComponentModel.Composition
         private static readonly MethodInfo ObjectGetType = typeof(object).GetMethod("GetType", Type.EmptyTypes);
         private static readonly ConstructorInfo ObjectCtor = typeof(object).GetConstructor(Type.EmptyTypes);
 
-        private static AssemblyBuilder CreateProxyAssemblyBuilder(ConstructorInfo constructorInfo)
-        {
-            return AssemblyBuilder.DefineDynamicAssembly(ProxyAssemblyName, AssemblyBuilderAccess.Run);
-        }
-
         // Must be called with _lock held
         private static ModuleBuilder GetProxyModuleBuilder(bool requiresCritical)
         {
             if (transparentProxyModuleBuilder == null)
             {
                 // make a new assemblybuilder and modulebuilder
-                var assemblyBuilder = CreateProxyAssemblyBuilder(typeof(SecurityTransparentAttribute).GetConstructor(Type.EmptyTypes));
+                var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(ProxyAssemblyName, AssemblyBuilderAccess.Run);
                 transparentProxyModuleBuilder = assemblyBuilder.DefineDynamicModule("MetadataViewProxiesModule");
             }
 
