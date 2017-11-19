@@ -514,10 +514,24 @@ namespace System.Numerics
             return (char)0; // Custom format
         }
 
-        private static string FormatBigIntegerToHexString(BigInteger value, char format, int digits, NumberFormatInfo info)
+        private static string FormatBigIntegerToHex(BigInteger value, char format, int digits, NumberFormatInfo info)
         {
+            // Get the bytes that make up the BigInteger.
+            int byteCount = value.GetByteCount();
+            Span<byte> bits = stackalloc byte[0]; // TODO: Remove the initialization once C# compiler is fixed to allow it.
+            if (byteCount <= 128) // arbitrary limit to switch from stack to heap
+            {
+                bits = stackalloc byte[byteCount];
+                bool formatted = value.TryWriteBytes(bits, out int bytesWritten);
+                Debug.Assert(formatted);
+                Debug.Assert(bytesWritten == byteCount);
+            }
+            else
+            {
+                bits = value.ToByteArray();
+            }
+
             StringBuilder sb = new StringBuilder();
-            byte[] bits = value.ToByteArray();
             string fmt = null;
             int cur = bits.Length - 1;
 
@@ -563,7 +577,7 @@ namespace System.Numerics
             int digits = 0;
             char fmt = ParseFormatSpecifier(format, out digits);
             if (fmt == 'x' || fmt == 'X')
-                return FormatBigIntegerToHexString(value, fmt, digits, info);
+                return FormatBigIntegerToHex(value, fmt, digits, info);
 
             bool decimalFmt = (fmt == 'g' || fmt == 'G' || fmt == 'd' || fmt == 'D' || fmt == 'r' || fmt == 'R');
 
