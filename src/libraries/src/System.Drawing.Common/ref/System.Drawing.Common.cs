@@ -7,7 +7,6 @@
 
 namespace System.Drawing
 {
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class Bitmap : System.Drawing.Image
     {
         public Bitmap(System.Drawing.Image original) { }
@@ -261,7 +260,6 @@ namespace System.Drawing
         TopLeft = 1,
         TopRight = 4,
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public enum CopyPixelOperation
     {
         Blackness = 66,
@@ -282,7 +280,6 @@ namespace System.Drawing
         SourcePaint = 15597702,
         Whiteness = 16711778,
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class Font : System.MarshalByRefObject, System.ICloneable, System.IDisposable, Runtime.Serialization.ISerializable
     {
         public Font(System.Drawing.Font prototype, System.Drawing.FontStyle newStyle) { }
@@ -675,7 +672,6 @@ namespace System.Drawing
         void ReleaseHdc();
     }
     [System.ComponentModel.ImmutableObjectAttribute(true)]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public abstract partial class Image : System.MarshalByRefObject, System.ICloneable, System.IDisposable, Runtime.Serialization.ISerializable
     {
         internal Image() { }
