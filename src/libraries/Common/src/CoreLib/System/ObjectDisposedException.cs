@@ -72,7 +72,7 @@ namespace System
         {
             get
             {
-                if ((_objectName == null)) // && !CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
+                if (_objectName == null)
                 {
                     return String.Empty;
                 }
