@@ -48,7 +48,6 @@ namespace System.Threading
 
     #region class WinRTSynchronizationContextFactory
 
-    [FriendAccessAllowed]
     internal sealed class WinRTSynchronizationContextFactory : WinRTSynchronizationContextFactoryBase
     {
         //
