@@ -36,6 +36,8 @@ namespace System.Text
             return s;
         }
 
+        public int Length => _pos;
+
         public bool TryCopyTo(Span<char> destination, out int charsWritten)
         {
             if (_pos > destination.Length)
@@ -57,6 +59,19 @@ namespace System.Text
             }
 
             return true;
+        }
+
+        public void Insert(int index, char value, int count)
+        {
+            if (_pos > _chars.Length - count)
+            {
+                Grow(count);
+            }
+
+            int remaining = _pos - index;
+            _chars.Slice(index, remaining).CopyTo(_chars.Slice(index + count));
+            _chars.Slice(index, count).Fill(value);
+            _pos += count;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
