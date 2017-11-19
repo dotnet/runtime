@@ -1055,8 +1055,6 @@ namespace System.DirectoryServices.Protocols
 
         public void Bind(NetworkCredential newCredential) => BindHelper(newCredential, needSetCredential: true);
 
-        [EnvironmentPermission(SecurityAction.Assert, Unrestricted = true)]
-        [SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.UnmanagedCode)]
         private void BindHelper(NetworkCredential newCredential, bool needSetCredential)
         {            
             if (_disposed)

@@ -112,7 +112,6 @@ namespace System.Drawing
             return FromHdcInternal(hdc);
         }
 
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.UnmanagedCode)]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static Graphics FromHdcInternal(IntPtr hdc)
         {
@@ -142,7 +141,6 @@ namespace System.Drawing
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static Graphics FromHwnd(IntPtr hwnd) => FromHwndInternal(hwnd);
 
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.UnmanagedCode)]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static Graphics FromHwndInternal(IntPtr hwnd)
         {
@@ -178,7 +176,6 @@ namespace System.Drawing
 
         internal IntPtr NativeGraphics => _nativeGraphics;
 
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.UnmanagedCode)]
         public IntPtr GetHdc()
         {
             IntPtr hdc = IntPtr.Zero;
@@ -192,10 +189,8 @@ namespace System.Drawing
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public void ReleaseHdc(IntPtr hdc) => ReleaseHdcInternal(hdc);
 
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.UnmanagedCode)]
         public void ReleaseHdc() => ReleaseHdcInternal(_nativeHdc);
 
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.UnmanagedCode)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public void ReleaseHdcInternal(IntPtr hdc)
         {

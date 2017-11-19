@@ -195,11 +195,9 @@ namespace System.Drawing
             return FromGDIplus(bitmap);
         }
 
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.UnmanagedCode)]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public IntPtr GetHbitmap() => GetHbitmap(Color.LightGray);
 
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.UnmanagedCode)]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public IntPtr GetHbitmap(Color background)
         {
@@ -216,7 +214,6 @@ namespace System.Drawing
             return hBitmap;
         }
 
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.UnmanagedCode)]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public IntPtr GetHicon()
         {
@@ -340,13 +337,11 @@ namespace System.Drawing
             }
         }
 
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.UnmanagedCode)]
         public BitmapData LockBits(Rectangle rect, ImageLockMode flags, PixelFormat format)
         {
             return LockBits(rect, flags, format, new BitmapData());
         }
 
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.UnmanagedCode)]
         public BitmapData LockBits(Rectangle rect, ImageLockMode flags, PixelFormat format, BitmapData bitmapData)
         {
             var gprect = new GPRECT(rect);
@@ -357,7 +352,6 @@ namespace System.Drawing
             return bitmapData;
         }
 
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.UnmanagedCode)]
         public void UnlockBits(BitmapData bitmapdata)
         {
             int status = SafeNativeMethods.Gdip.GdipBitmapUnlockBits(new HandleRef(this, nativeImage), bitmapdata);

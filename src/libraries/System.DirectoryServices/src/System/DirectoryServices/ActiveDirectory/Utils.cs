@@ -11,14 +11,6 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Globalization;
 
-#pragma warning disable 618
-[assembly: SecurityPermission(SecurityAction.RequestMinimum, UnmanagedCode = true),
-SecurityPermission(SecurityAction.RequestMinimum, SkipVerification = true),
-EnvironmentPermission(SecurityAction.RequestMinimum, Unrestricted = true),
-]
-
-#pragma warning restore 618
-
 namespace System.DirectoryServices.ActiveDirectory
 {
     internal struct Component

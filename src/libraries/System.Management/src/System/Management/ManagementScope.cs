@@ -43,7 +43,6 @@ namespace System.Management
             }
         }
  
-        [RegistryPermission(SecurityAction.Assert, Unrestricted = true)]
         private static bool GetSwitchValueFromRegistry()
         { 
            RegistryKey s_switchesRegKey = null;

@@ -913,7 +913,6 @@ namespace System.Security.Permissions
         public IsolatedStorageFilePermissionAttribute(SecurityAction action) : base(action) { }
         public override IPermission CreatePermission() { return null; }
     }
-    [SecurityPermission(SecurityAction.InheritanceDemand, ControlEvidence = true, ControlPolicy = true)]
     public abstract class IsolatedStoragePermission : CodeAccessPermission, IUnrestrictedPermission
     {
         protected IsolatedStoragePermission(PermissionState state) { }
@@ -1156,7 +1155,6 @@ namespace System.Security.Permissions
         public string Write { get; set; }
         public override System.Security.IPermission CreatePermission() { throw null; }
     }
-    [SecurityPermission(SecurityAction.InheritanceDemand, ControlEvidence = true, ControlPolicy = true)]
     public abstract class ResourcePermissionBase : CodeAccessPermission, IUnrestrictedPermission
     {
         public const string Any = "*";
