@@ -1196,13 +1196,6 @@ FCFuncStart(gStreamFuncs)
 FCFuncEnd()
 
 
-#ifdef FEATURE_COMINTEROP
-FCFuncStart(gWindowsRuntimeBufferHelperFuncs)
-    QCFuncElement("StoreOverlappedPtrInCCW", WindowsRuntimeBufferHelper::StoreOverlappedPtrInCCW) 
-    //QCFuncElement("ReleaseOverlapped", WindowsRuntimeBufferHelper::ReleaseOverlapped) 
-FCFuncEnd()
-#endif // ifdef FEATURE_COMINTEROP
-
 #if defined(FEATURE_EVENTSOURCE_XPLAT)
 FCFuncStart(gEventLogger)
     QCFuncElement("IsEventSourceLoggingEnabled", XplatEventSourceLogger::IsEventSourceLoggingEnabled)
@@ -1430,11 +1423,6 @@ FCClassElement("WeakReference`1", "System", gWeakReferenceOfTFuncs)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("WinRTTypeNameConverter", "System.StubHelpers", gWinRTTypeNameConverterFuncs)
 #endif // FEATURE_COMINTEROP
-
-#ifdef FEATURE_COMINTEROP
-FCClassElement("WindowsRuntimeBufferHelper", "System.Runtime.InteropServices.WindowsRuntime", gWindowsRuntimeBufferHelperFuncs)                    
-#endif
-
 
 
 #if defined(FEATURE_EVENTSOURCE_XPLAT)

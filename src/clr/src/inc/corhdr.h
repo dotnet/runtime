@@ -1796,10 +1796,6 @@ typedef enum CorAttributeTargets
 #define FRIEND_ASSEMBLY_TYPE                     "System.Runtime.CompilerServices.InternalsVisibleToAttribute"
 #define FRIEND_ASSEMBLY_SIG                     {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 2, ELEMENT_TYPE_VOID, ELEMENT_TYPE_STRING, ELEMENT_TYPE_BOOLEAN}
 
-#define FRIEND_ACCESS_ALLOWED_ATTRIBUTE_TYPE_W  L"System.Runtime.CompilerServices.FriendAccessAllowedAttribute"
-#define FRIEND_ACCESS_ALLOWED_ATTRIBUTE_TYPE     "System.Runtime.CompilerServices.FriendAccessAllowedAttribute"
-#define FRIEND_ACCESS_ALLOWED_SIG               {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 0, ELEMENT_TYPE_VOID}
-
 #define SUBJECT_ASSEMBLY_TYPE_W                 L"System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute"
 #define SUBJECT_ASSEMBLY_TYPE                    "System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute"
 #define SUBJECT_ASSEMBLY_SIG                    {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_STRING}

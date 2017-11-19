@@ -4903,10 +4903,7 @@ static bool IsMethodAccessibleOutsideItsAssembly(MethodDesc * pMD)
 {
     STANDARD_VM_CONTRACT;
 
-    // Note that this ignores unrestricted friend access. This friend access allowed attribute can be used to 
-    // prevent methods from getting trimmed if necessary.
-    if (pMD->GetMDImport()->GetCustomAttributeByName(pMD->GetMemberDef(), FRIEND_ACCESS_ALLOWED_ATTRIBUTE_TYPE, NULL, NULL) == S_OK)
-        return true;
+    // Note that this ignores friend access.
 
     switch (pMD->GetAttrs() & mdMemberAccessMask)
     {

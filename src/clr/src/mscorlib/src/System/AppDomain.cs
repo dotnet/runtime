@@ -242,8 +242,6 @@ namespace System
             // case where the compat flags have been setup.
             Debug.Assert(!_compatFlagsInitialized);
             _compatFlagsInitialized = true;
-
-            CompatibilitySwitches.InitializeSwitches();
         }
 
         /// <summary>
