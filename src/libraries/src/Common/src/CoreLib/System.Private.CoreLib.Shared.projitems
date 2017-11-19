@@ -100,6 +100,15 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\SuppressMessageAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\ConditionalAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Debug.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggableAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggerBrowsableAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggerDisplayAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggerHiddenAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggerNonUserCodeAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggerStepThroughAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggerStepperBoundaryAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggerTypeProxyAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggerVisualizerAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\StackTraceHiddenAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DivideByZeroException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DllNotFoundException.cs" />
