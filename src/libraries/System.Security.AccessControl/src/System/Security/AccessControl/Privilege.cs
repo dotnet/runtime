@@ -366,7 +366,6 @@ namespace System.Security.AccessControl
 
             public SafeTokenHandle ThreadHandle
             {
-                [System.Security.SecurityCritical]  // auto-generated
                 get
                 { return this.threadHandle; }
             }

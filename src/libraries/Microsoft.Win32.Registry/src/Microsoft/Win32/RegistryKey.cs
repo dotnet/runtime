@@ -414,14 +414,12 @@ namespace Microsoft.Win32
             return GetAccessControl(AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
         }
 
-        [SecuritySafeCritical]
         public RegistrySecurity GetAccessControl(AccessControlSections includeSections)
         {
             EnsureNotDisposed();
             return new RegistrySecurity(Handle, Name, includeSections);
         }
 
-        [SecuritySafeCritical]
         public void SetAccessControl(RegistrySecurity registrySecurity)
         {
             EnsureWriteable();

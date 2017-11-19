@@ -2001,7 +2001,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return s_NTAuthorityString;
         }
 
-        [System.Security.SecurityCritical]
         internal static bool IsSamUser()
         {
             //
@@ -2065,7 +2064,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        [System.Security.SecuritySafeCritical]
 
         internal static IntPtr GetCurrentUserSid()
         {
@@ -2176,7 +2174,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        [System.Security.SecuritySafeCritical]
         internal static IntPtr GetMachineDomainSid()
         {
             IntPtr pPolicyHandle = IntPtr.Zero;
@@ -2243,7 +2240,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        [System.Security.SecuritySafeCritical]
         internal static bool IsMachineDC(String computerName)
         {
             IntPtr dsRoleInfoPtr = IntPtr.Zero;
@@ -2278,7 +2274,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        [System.Security.SecuritySafeCritical]
         internal static SidType ClassifySID(IntPtr pSid)
         {
             Debug.Assert(UnsafeNativeMethods.IsValidSid(pSid));
@@ -2324,7 +2319,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        [System.Security.SecuritySafeCritical]
 
         internal static int GetLastRidFromSid(IntPtr pSid)
         {
@@ -2336,7 +2330,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return lastRid;
         }
 
-        [System.Security.SecurityCritical]
         internal static int GetLastRidFromSid(byte[] sid)
         {
             IntPtr pSid = IntPtr.Zero;
@@ -2357,7 +2350,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
         // The caller must call Marshal.FreeHGlobal on the returned
         // value to free it.
-        [System.Security.SecurityCritical]
         internal static IntPtr ConvertByteArrayToIntPtr(byte[] bytes)
         {
             IntPtr pBytes = IntPtr.Zero;

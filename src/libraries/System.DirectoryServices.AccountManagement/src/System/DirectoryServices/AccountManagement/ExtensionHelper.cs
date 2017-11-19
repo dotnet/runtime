@@ -19,7 +19,6 @@ namespace System.DirectoryServices.AccountManagement
 
         internal string RdnPrefix
         {
-            [System.Security.SecurityCritical]
             get
             {
                 DirectoryRdnPrefixAttribute[] MyAttribute =
@@ -75,7 +74,6 @@ namespace System.DirectoryServices.AccountManagement
 
         internal string StructuralObjectClass
         {
-            [System.Security.SecurityCritical]
             get
             {
                 DirectoryObjectClassAttribute[] MyAttribute =

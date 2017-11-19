@@ -44,7 +44,6 @@ namespace System.Management
         }
  
         [RegistryPermission(SecurityAction.Assert, Unrestricted = true)]
-        [SecuritySafeCritical]
         private static bool GetSwitchValueFromRegistry()
         { 
            RegistryKey s_switchesRegKey = null;

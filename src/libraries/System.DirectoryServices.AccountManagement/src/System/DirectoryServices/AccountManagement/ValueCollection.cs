@@ -17,7 +17,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         bool IList.IsFixedSize
         {
-            [System.Security.SecurityCritical]
             get
             {
                 return IsFixedSize;
@@ -26,14 +25,12 @@ namespace System.DirectoryServices.AccountManagement
 
         bool IList.IsReadOnly
         {
-            [System.Security.SecurityCritical]
             get
             {
                 return IsReadOnly;
             }
         }
 
-        [System.Security.SecurityCritical]
         int IList.Add(object value)
         {
             if (value == null)
@@ -43,7 +40,6 @@ namespace System.DirectoryServices.AccountManagement
             return Count;
         }
 
-        [System.Security.SecurityCritical]
         void IList.Clear()
         {
             Clear();
@@ -57,7 +53,6 @@ namespace System.DirectoryServices.AccountManagement
             return _inner.Contains((T)value);
         }
 
-        [System.Security.SecurityCritical]
         int IList.IndexOf(object value)
         {
             if (value == null)
@@ -66,7 +61,6 @@ namespace System.DirectoryServices.AccountManagement
             return IndexOf((T)value);
         }
 
-        [System.Security.SecurityCritical]
         void IList.Insert(int index, object value)
         {
             if (value == null)
@@ -83,7 +77,6 @@ namespace System.DirectoryServices.AccountManagement
             _inner.Remove((T)value);
         }
 
-        [System.Security.SecurityCritical]
         void IList.RemoveAt(int index)
         {
             RemoveAt(index);
@@ -91,13 +84,11 @@ namespace System.DirectoryServices.AccountManagement
 
         object IList.this[int index]
         {
-            [System.Security.SecurityCritical]
             get
             {
                 return this[index];
             }
 
-            [System.Security.SecurityCritical]
             set
             {
                 if (value == null)
@@ -125,7 +116,6 @@ namespace System.DirectoryServices.AccountManagement
 
         bool ICollection.IsSynchronized
         {
-            [System.Security.SecurityCritical]
             get
             {
                 return IsSynchronized;
@@ -134,7 +124,6 @@ namespace System.DirectoryServices.AccountManagement
 
         object ICollection.SyncRoot
         {
-            [System.Security.SecurityCritical]
             get
             {
                 return SyncRoot;
@@ -160,7 +149,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // IEnumerable
         //
-        [System.Security.SecurityCritical]
         IEnumerator IEnumerable.GetEnumerator()
         {
             return (IEnumerator)GetEnumerator();
@@ -361,7 +349,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // IEnumerable<T>
         //
-        [System.Security.SecurityCritical]
         public IEnumerator<T> GetEnumerator()
         {
             return new ValueCollectionEnumerator<T>(_inner, _inner.combinedValues);

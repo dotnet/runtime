@@ -21,7 +21,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public T Current
         {
-            [System.Security.SecurityCritical]
             get
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "FindResultEnumerator", "Entering Current, T={0}", typeof(T));
@@ -49,7 +48,6 @@ namespace System.DirectoryServices.AccountManagement
 
         object IEnumerator.Current
         {
-            [System.Security.SecurityCritical]
             get
             {
                 return Current;
@@ -62,7 +60,6 @@ namespace System.DirectoryServices.AccountManagement
 
         // Calls resultSet.MoveNext() to advance to the next principal in the ResultSet.
         // Returns false when it reaches the end of the last ResultSet in resultSets, and sets endReached to true.
-        [System.Security.SecurityCritical]
         public bool MoveNext()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "FindResultEnumerator", "Entering MoveNext, T={0}", typeof(T));
@@ -114,7 +111,6 @@ namespace System.DirectoryServices.AccountManagement
             return f;
         }
 
-        [System.Security.SecurityCritical]
         bool IEnumerator.MoveNext()
         {
             return MoveNext();
@@ -122,7 +118,6 @@ namespace System.DirectoryServices.AccountManagement
 
         // Repositions us to the beginning by setting beforeStart to true.  Also clears endReached
         // by setting it back to false;
-        [System.Security.SecurityCritical]
         public void Reset()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "FindResultEnumerator", "Entering Reset");
@@ -133,7 +128,6 @@ namespace System.DirectoryServices.AccountManagement
             _beforeStart = true;
         }
 
-        [System.Security.SecurityCritical]
         void IEnumerator.Reset()
         {
             Reset();

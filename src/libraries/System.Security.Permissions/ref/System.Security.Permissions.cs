@@ -21,7 +21,6 @@ namespace System
         public ApplicationIdentity(string applicationIdentityFullName) { }
         public string CodeBase { get { throw null; } }
         public string FullName { get { throw null; } }
-        [System.Security.SecurityCriticalAttribute]
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
     }
@@ -668,7 +667,6 @@ namespace System.Security
         public static bool CheckExecutionRights { get { throw null; } set { } }
         [System.ObsoleteAttribute]
         public static bool SecurityEnabled { get { throw null; } set { } }
-        [SecurityCritical]
         public static bool CurrentThreadRequiresSecurityContextCapture() { throw null; }
         public static System.Security.PermissionSet GetStandardSandbox(System.Security.Policy.Evidence evidence) { throw null; }
         public static void GetZoneAndOrigin(out System.Collections.ArrayList zone, out System.Collections.ArrayList origin) { zone = default(System.Collections.ArrayList); origin = default(System.Collections.ArrayList); }
@@ -1462,11 +1460,9 @@ namespace System.Security.Policy
         public void AddRange(System.Security.Policy.ApplicationTrustCollection trusts) { }
         public void Clear() { }
         public void CopyTo(System.Security.Policy.ApplicationTrust[] array, int index) { }
-        [System.Security.SecurityCritical]
         public System.Security.Policy.ApplicationTrustCollection Find(System.ApplicationIdentity applicationIdentity, System.Security.Policy.ApplicationVersionMatch versionMatch) { throw null; }
         public System.Security.Policy.ApplicationTrustEnumerator GetEnumerator() { throw null; }
         public void Remove(System.Security.Policy.ApplicationTrust trust) { }
-        [System.Security.SecurityCritical]
         public void Remove(System.ApplicationIdentity applicationIdentity, System.Security.Policy.ApplicationVersionMatch versionMatch) { }
         public void RemoveRange(System.Security.Policy.ApplicationTrust[] trusts) { }
         public void RemoveRange(System.Security.Policy.ApplicationTrustCollection trusts) { }

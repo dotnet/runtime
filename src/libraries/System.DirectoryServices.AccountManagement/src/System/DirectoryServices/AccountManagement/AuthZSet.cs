@@ -16,7 +16,6 @@ namespace System.DirectoryServices.AccountManagement
 {
     internal class AuthZSet : ResultSet
     {
-        [System.Security.SecurityCritical]
         internal AuthZSet(
                     byte[] userSid,
                     NetCred credentials,
@@ -234,7 +233,6 @@ namespace System.DirectoryServices.AccountManagement
 
         override internal object CurrentAsPrincipal
         {
-            [System.Security.SecurityCritical]
             get
             {
                 Debug.Assert(_currentGroup >= 0 && _currentGroup < _groupSidList.Length);
@@ -449,7 +447,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        [System.Security.SecurityCritical]
         override internal bool MoveNext()
         {
             bool needToRetry;
@@ -506,7 +503,6 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // IDisposable implementation        
-        [System.Security.SecurityCritical]
         public override void Dispose()
         {
             try
@@ -577,9 +573,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Guarantees finalization of the native resources
         //
-#pragma warning disable 618    // Have not migrated to v4 transparency yet
-        [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
-#pragma warning restore 618
         private sealed class SafeMemoryPtr : SafeHandle
         {
             private SafeMemoryPtr() : base(IntPtr.Zero, true)
