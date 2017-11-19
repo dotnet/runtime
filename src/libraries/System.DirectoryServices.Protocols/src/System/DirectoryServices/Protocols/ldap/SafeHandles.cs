@@ -8,7 +8,6 @@ using System.Security;
 
 namespace System.DirectoryServices.Protocols
 {
-    [SuppressUnmanagedCodeSecurity]
     internal sealed class BerSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal BerSafeHandle() : base(true)
@@ -36,7 +35,6 @@ namespace System.DirectoryServices.Protocols
         }
     }
 
-    [SuppressUnmanagedCodeSecurity]
     internal sealed class HGlobalMemHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal HGlobalMemHandle(IntPtr value) : base(true)
@@ -51,7 +49,6 @@ namespace System.DirectoryServices.Protocols
         }
     }
 
-    [SuppressUnmanagedCodeSecurity]
     internal sealed class ConnectionHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal bool _needDispose = false;

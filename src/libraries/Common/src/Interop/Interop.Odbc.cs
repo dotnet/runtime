@@ -12,7 +12,6 @@ using System.Text;
 
 internal static partial class Interop
 {
-    [SuppressUnmanagedCodeSecurity]
     internal static partial class Odbc
     {
 
