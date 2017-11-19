@@ -11,7 +11,6 @@ namespace System.IO
 {
     public sealed partial class DirectoryInfo : FileSystemInfo
     {
-        [System.Security.SecuritySafeCritical]
         public DirectoryInfo(string path)
         {
             if (path == null)
@@ -23,7 +22,6 @@ namespace System.IO
             DisplayPath = GetDisplayName(OriginalPath);
         }
 
-        [System.Security.SecuritySafeCritical]
         internal DirectoryInfo(string fullPath, string originalPath)
         {
             Debug.Assert(Path.IsPathRooted(fullPath), "fullPath must be fully qualified!");
@@ -44,7 +42,6 @@ namespace System.IO
 
         public DirectoryInfo Parent
         {
-            [System.Security.SecuritySafeCritical]
             get
             {
                 string s = FullPath;
@@ -65,7 +62,6 @@ namespace System.IO
         }
 
 
-        [System.Security.SecuritySafeCritical]
         public DirectoryInfo CreateSubdirectory(string path)
         {
             if (path == null)
@@ -75,7 +71,6 @@ namespace System.IO
             return CreateSubdirectoryHelper(path);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private DirectoryInfo CreateSubdirectoryHelper(string path)
         {
             Debug.Assert(path != null);
@@ -96,7 +91,6 @@ namespace System.IO
             return new DirectoryInfo(fullPath);
         }
 
-        [System.Security.SecurityCritical]
         public void Create()
         {
             FileSystem.Current.CreateDirectory(FullPath);
@@ -109,7 +103,6 @@ namespace System.IO
         //
         public override bool Exists
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 try
@@ -125,7 +118,6 @@ namespace System.IO
 
         // Returns an array of Files in the current DirectoryInfo matching the 
         // given search criteria (i.e. "*.txt").
-        [SecurityCritical]
         public FileInfo[] GetFiles(string searchPattern)
         {
             if (searchPattern == null)
@@ -362,7 +354,6 @@ namespace System.IO
 
         public DirectoryInfo Root
         {
-            [System.Security.SecuritySafeCritical]
             get
             {
                 string rootPath = Path.GetPathRoot(FullPath);
@@ -371,7 +362,6 @@ namespace System.IO
             }
         }
 
-        [System.Security.SecuritySafeCritical]
         public void MoveTo(string destDirName)
         {
             if (destDirName == null)
@@ -419,13 +409,11 @@ namespace System.IO
             Invalidate();
         }
 
-        [System.Security.SecuritySafeCritical]
         public override void Delete()
         {
             FileSystem.Current.RemoveDirectory(FullPath, false);
         }
 
-        [System.Security.SecuritySafeCritical]
         public void Delete(bool recursive)
         {
             FileSystem.Current.RemoveDirectory(FullPath, recursive);
