@@ -21,7 +21,6 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static bool GetConfigBoolValue(string configSwitchName, out bool exist);
     }
 }  // namespace System

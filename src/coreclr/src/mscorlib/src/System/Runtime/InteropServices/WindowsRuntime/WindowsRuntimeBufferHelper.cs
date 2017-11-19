@@ -19,7 +19,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     internal static class WindowsRuntimeBufferHelper
     {
         [DllImport(JitHelpers.QCall)]
-        [SuppressUnmanagedCodeSecurity]
         private unsafe extern static void StoreOverlappedPtrInCCW(ObjectHandleOnStack windowsRuntimeBuffer, NativeOverlapped* overlapped);
 
 

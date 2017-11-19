@@ -189,7 +189,6 @@ namespace Internal.Runtime.Augments
         public static void Sleep(int millisecondsTimeout) => Thread.Sleep(millisecondsTimeout);
 
         [DllImport(JitHelpers.QCall)]
-        [SuppressUnmanagedCodeSecurity]
         private static extern int GetOptimalMaxSpinWaitsPerSpinIterationInternal();
 
         /// <summary>

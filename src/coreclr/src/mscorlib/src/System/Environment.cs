@@ -76,7 +76,6 @@ namespace System
 
         // Terminates this process with the given exit code.
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         internal static extern void _Exit(int exitCode);
 
         public static void Exit(int exitCode)
@@ -173,7 +172,6 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private static extern Int32 GetProcessorCount();
 
         public static int ProcessorCount
@@ -328,7 +326,6 @@ namespace System
         internal static bool IsWinRTSupported => s_IsWinRTSupported.Value;
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool WinRTSupported();
 #endif // FEATURE_COMINTEROP
