@@ -96,6 +96,11 @@ namespace System
             return Number.FormatInt32(m_value, format, NumberFormatInfo.GetInstance(provider));
         }
 
+        public bool TryFormat(Span<char> destination, out int charsWritten, string format = null, IFormatProvider provider = null)
+        {
+            return Number.TryFormatInt32(m_value, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
+        }
+
         public static int Parse(String s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);

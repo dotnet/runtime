@@ -94,6 +94,11 @@ namespace System
             return Number.FormatUInt64(m_value, format, NumberFormatInfo.GetInstance(provider));
         }
 
+        public bool TryFormat(Span<char> destination, out int charsWritten, string format = null, IFormatProvider provider = null)
+        {
+            return Number.TryFormatUInt64(m_value, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
+        }
+
         [CLSCompliant(false)]
         public static ulong Parse(String s)
         {

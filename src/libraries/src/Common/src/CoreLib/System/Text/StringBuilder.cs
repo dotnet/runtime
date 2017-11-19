@@ -957,9 +957,31 @@ namespace System.Text
         public StringBuilder Append(bool value) => Append(value.ToString());
 
         [CLSCompliant(false)]
-        public StringBuilder Append(sbyte value) => Append(value.ToString());
+        public StringBuilder Append(sbyte value)
+        {
+            if (value.TryFormat(RemainingCurrentChunk, out int charsWritten))
+            {
+                m_ChunkLength += charsWritten;
+                return this;
+            }
+            else
+            {
+                return Append(value.ToString());
+            }
+        }
 
-        public StringBuilder Append(byte value) => Append(value.ToString());
+        public StringBuilder Append(byte value)
+        {
+            if (value.TryFormat(RemainingCurrentChunk, out int charsWritten))
+            {
+                m_ChunkLength += charsWritten;
+                return this;
+            }
+            else
+            {
+                return Append(value.ToString());
+            }
+        }
 
         public StringBuilder Append(char value)
         {
@@ -975,11 +997,44 @@ namespace System.Text
             return this;
         }
 
-        public StringBuilder Append(short value) => Append(value.ToString());
+        public StringBuilder Append(short value)
+        {
+            if (value.TryFormat(RemainingCurrentChunk, out int charsWritten))
+            {
+                m_ChunkLength += charsWritten;
+                return this;
+            }
+            else
+            {
+                return Append(value.ToString());
+            }
+        }
 
-        public StringBuilder Append(int value) => Append(value.ToString());
+        public StringBuilder Append(int value)
+        {
+            if (value.TryFormat(RemainingCurrentChunk, out int charsWritten))
+            {
+                m_ChunkLength += charsWritten;
+                return this;
+            }
+            else
+            {
+                return Append(value.ToString());
+            }
+        }
 
-        public StringBuilder Append(long value) => Append(value.ToString());
+        public StringBuilder Append(long value)
+        {
+            if (value.TryFormat(RemainingCurrentChunk, out int charsWritten))
+            {
+                m_ChunkLength += charsWritten;
+                return this;
+            }
+            else
+            {
+                return Append(value.ToString());
+            }
+        }
 
         public StringBuilder Append(float value) => Append(value.ToString());
 
@@ -988,13 +1043,46 @@ namespace System.Text
         public StringBuilder Append(decimal value) => Append(value.ToString());
 
         [CLSCompliant(false)]
-        public StringBuilder Append(ushort value) => Append(value.ToString());
+        public StringBuilder Append(ushort value)
+        {
+            if (value.TryFormat(RemainingCurrentChunk, out int charsWritten))
+            {
+                m_ChunkLength += charsWritten;
+                return this;
+            }
+            else
+            {
+                return Append(value.ToString());
+            }
+        }
 
         [CLSCompliant(false)]
-        public StringBuilder Append(uint value) => Append(value.ToString());
+        public StringBuilder Append(uint value)
+        {
+            if (value.TryFormat(RemainingCurrentChunk, out int charsWritten))
+            {
+                m_ChunkLength += charsWritten;
+                return this;
+            }
+            else
+            {
+                return Append(value.ToString());
+            }
+        }
 
         [CLSCompliant(false)]
-        public StringBuilder Append(ulong value) => Append(value.ToString());
+        public StringBuilder Append(ulong value)
+        {
+            if (value.TryFormat(RemainingCurrentChunk, out int charsWritten))
+            {
+                m_ChunkLength += charsWritten;
+                return this;
+            }
+            else
+            {
+                return Append(value.ToString());
+            }
+        }
 
         public StringBuilder Append(object value) => (value == null) ? this : Append(value.ToString());
 
@@ -2054,6 +2142,13 @@ namespace System.Text
 
             Debug.Assert(result != null);
             return result;
+        }
+
+        /// <summary>Gets a span representing the remaining space available in the current chunk.</summary>
+        private Span<char> RemainingCurrentChunk
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => new Span<char>(m_ChunkChars, m_ChunkLength, m_ChunkChars.Length - m_ChunkLength);
         }
 
         /// <summary>

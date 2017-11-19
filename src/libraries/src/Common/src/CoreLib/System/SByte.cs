@@ -91,6 +91,18 @@ namespace System
             return ToString(format, NumberFormatInfo.GetInstance(provider));
         }
 
+        public bool TryFormat(Span<char> destination, out int charsWritten, string format = null, IFormatProvider provider = null)
+        {
+            NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
+
+            if (m_value < 0 && format != null && format.Length > 0 && (format[0] == 'X' || format[0] == 'x'))
+            {
+                uint temp = (uint)(m_value & 0x000000FF);
+                return Number.TryFormatUInt32(temp, format, info, destination, out charsWritten);
+            }
+            return Number.TryFormatInt32(m_value, format, info, destination, out charsWritten);
+        }
+
         private String ToString(String format, NumberFormatInfo info)
         {
             if (m_value < 0 && format != null && format.Length > 0 && (format[0] == 'X' || format[0] == 'x'))
