@@ -20,7 +20,7 @@ using WFD = Windows.Foundation.Diagnostics;
 
 namespace System.Threading.Tasks
 {
-    [FriendAccessAllowed]
+    // [FriendAccessAllowed]
     internal enum CausalityTraceLevel
     {
 #if FEATURE_COMINTEROP
@@ -34,7 +34,7 @@ namespace System.Threading.Tasks
 #endif
     }
 
-    [FriendAccessAllowed]
+    // [FriendAccessAllowed]
     internal enum AsyncCausalityStatus
     {
 #if FEATURE_COMINTEROP
@@ -80,7 +80,7 @@ namespace System.Threading.Tasks
 #endif
     }
 
-    [FriendAccessAllowed]
+    // [FriendAccessAllowed]
     internal static class AsyncCausalityTracer
     {
         static internal void EnableToETW(bool enabled)
@@ -93,10 +93,9 @@ namespace System.Threading.Tasks
 #endif
         }
 
-        [FriendAccessAllowed]
         internal static bool LoggingOn
         {
-            [FriendAccessAllowed]
+            // [FriendAccessAllowed]
             get
             {
 #if FEATURE_COMINTEROP
@@ -175,7 +174,7 @@ namespace System.Threading.Tasks
         // The TraceXXX methods should be called only if LoggingOn property returned true
         //
 
-        [FriendAccessAllowed]
+        // [FriendAccessAllowed]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Tracking is slow path. Disable inlining for it.
         internal static void TraceOperationCreation(CausalityTraceLevel traceLevel, int taskId, string operationName, ulong relatedContext)
         {
@@ -195,7 +194,7 @@ namespace System.Threading.Tasks
 #endif
         }
 
-        [FriendAccessAllowed]
+        // [FriendAccessAllowed]
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         internal static void TraceOperationCompletion(CausalityTraceLevel traceLevel, int taskId, AsyncCausalityStatus status)
         {

@@ -243,7 +243,6 @@ namespace System
         // This behavioral difference is unfortunate but intentional because
         // 1. This method is given access to other internal dlls and this close to release we do not want to change it.
         // 2. It is difficult to get this right for arm and again due to release dates we would like to visit it later.
-        [FriendAccessAllowed]
 #if ARM
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal unsafe static extern void Memcpy(byte* dest, byte* src, int len);

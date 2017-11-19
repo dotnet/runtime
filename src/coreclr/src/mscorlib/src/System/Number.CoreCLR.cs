@@ -275,7 +275,6 @@ namespace System
     // by the Parse methods if the NumberStyles.Any style is
     // specified. Note, however, that the Parse methods do not accept
     // NaNs or Infinities.
-    [FriendAccessAllowed]
     internal static partial class Number
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
