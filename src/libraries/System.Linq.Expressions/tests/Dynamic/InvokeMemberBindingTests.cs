@@ -272,6 +272,96 @@ namespace System.Dynamic.Tests
             Assert.Contains("set_ItemProp", ex.Message);
         }
 
+        private class ManyOverloads
+        {
+            public int GetValue() => 0;
+
+            public int GetValue(int arg0) => 1;
+
+            public int GetValue(int arg0, int arg1) => 2;
+
+            public int GetValue(int arg0, int arg1, int arg2) => 3;
+
+            public int GetValue(int arg0, int arg1, int arg2, int arg3) => 4;
+
+            public int GetValue(int arg0, int arg1, int arg2, int arg3, int arg4) => 5;
+
+            public int GetValue(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5) => 6;
+
+            public int GetValue(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6) => 7;
+
+            public int GetValue(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7) => 8;
+
+            public int GetValue(
+                int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8) => 9;
+
+            public int GetValue(
+                int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9) =>
+                10;
+
+            public int GetValue(
+                int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9,
+                int arg10) => 11;
+            public int GetValue2() => 0;
+
+            public int GetValue2(int arg0) => 1;
+
+            public int GetValue2(int arg0, int arg1) => 2;
+
+            public int GetValue2(int arg0, int arg1, int arg2) => 3;
+
+            public int GetValue2(int arg0, int arg1, int arg2, int arg3) => 4;
+
+            public int GetValue2(int arg0, int arg1, int arg2, int arg3, int arg4) => 5;
+
+            public int GetValue2(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5) => 6;
+
+            public int GetValue2(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6) => 7;
+
+            public int GetValue2(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7) => 8;
+
+            public int GetValue2(
+                int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8) => 9;
+
+            public int GetValue2(
+                int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9) =>
+                10;
+
+            public int GetValue2(
+                int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9,
+                int arg10) => 11;
+        }
+
+        [Fact]
+        public void ManyArities()
+        {
+            dynamic d = new ManyOverloads();
+            Assert.Equal(0, d.GetValue());
+            Assert.Equal(0, d.GetValue2());
+            Assert.Equal(1, d.GetValue(0));
+            Assert.Equal(1, d.GetValue2(0));
+            Assert.Equal(2, d.GetValue(0, 1));
+            Assert.Equal(2, d.GetValue2(0, 1));
+            Assert.Equal(3, d.GetValue(0, 1, 2));
+            Assert.Equal(3, d.GetValue2(0, 1, 2));
+            Assert.Equal(4, d.GetValue(0, 1, 2, 3));
+            Assert.Equal(4, d.GetValue2(0, 1, 2, 3));
+            Assert.Equal(5, d.GetValue(0, 1, 2, 3, 4));
+            Assert.Equal(5, d.GetValue2(0, 1, 2, 3, 4));
+            Assert.Equal(6, d.GetValue(0, 1, 2, 3, 4, 5));
+            Assert.Equal(6, d.GetValue2(0, 1, 2, 3, 4, 5));
+            Assert.Equal(7, d.GetValue(0, 1, 2, 3, 4, 5, 6));
+            Assert.Equal(7, d.GetValue2(0, 1, 2, 3, 4, 5, 6));
+            Assert.Equal(8, d.GetValue(0, 1, 2, 3, 4, 5, 6, 7));
+            Assert.Equal(8, d.GetValue2(0, 1, 2, 3, 4, 5, 6, 7));
+            Assert.Equal(9, d.GetValue(0, 1, 2, 3, 4, 5, 6, 7, 8));
+            Assert.Equal(9, d.GetValue2(0, 1, 2, 3, 4, 5, 6, 7, 8));
+            Assert.Equal(10, d.GetValue(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
+            Assert.Equal(10, d.GetValue2(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
+            Assert.Equal(11, d.GetValue(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
+            Assert.Equal(11, d.GetValue2(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
+        }
+
 #endif
     }
 }
