@@ -126,9 +126,6 @@ ThreadInfo::UnwindNativeFrames(CrashInfo& crashInfo, CONTEXT* pContext)
 bool
 ThreadInfo::UnwindThread(CrashInfo& crashInfo, IXCLRDataProcess* pClrDataProcess)
 {
-    ReleaseHolder<IXCLRDataTask> pTask;
-    ReleaseHolder<IXCLRDataStackWalk> pStackwalk;
-
     TRACE("Unwind: thread %04x\n", Tid());
 
     // Get starting native context for the thread
@@ -138,33 +135,39 @@ ThreadInfo::UnwindThread(CrashInfo& crashInfo, IXCLRDataProcess* pClrDataProcess
     // Unwind the native frames at the top of the stack
     UnwindNativeFrames(crashInfo, &context);
 
-    // Get the managed stack walker for this thread
-    if (SUCCEEDED(pClrDataProcess->GetTaskByOSThreadID(Tid(), &pTask)))
+    if (pClrDataProcess != nullptr)
     {
-        pTask->CreateStackWalk(
-            CLRDATA_SIMPFRAME_UNRECOGNIZED |
-            CLRDATA_SIMPFRAME_MANAGED_METHOD |
-            CLRDATA_SIMPFRAME_RUNTIME_MANAGED_CODE |
-            CLRDATA_SIMPFRAME_RUNTIME_UNMANAGED_CODE,
-            &pStackwalk);
-    }
+        ReleaseHolder<IXCLRDataTask> pTask;
+        ReleaseHolder<IXCLRDataStackWalk> pStackwalk;
 
-    // For each managed frame (if any)
-    if (pStackwalk != nullptr) 
-    {
-        TRACE("Unwind: managed frames\n");
-        do
+        // Get the managed stack walker for this thread
+        if (SUCCEEDED(pClrDataProcess->GetTaskByOSThreadID(Tid(), &pTask)))
         {
-            // Get the managed stack frame context
-            if (pStackwalk->GetContext(CONTEXT_ALL, sizeof(context), nullptr, (BYTE *)&context) != S_OK) {
-                TRACE("Unwind: stack walker GetContext FAILED\n");
-                break;
-            }
+            pTask->CreateStackWalk(
+                CLRDATA_SIMPFRAME_UNRECOGNIZED |
+                CLRDATA_SIMPFRAME_MANAGED_METHOD |
+                CLRDATA_SIMPFRAME_RUNTIME_MANAGED_CODE |
+                CLRDATA_SIMPFRAME_RUNTIME_UNMANAGED_CODE,
+                &pStackwalk);
+        }
 
-            // Unwind all the native frames after the managed frame
-            UnwindNativeFrames(crashInfo, &context);
+        // For each managed frame (if any)
+        if (pStackwalk != nullptr)
+        {
+            TRACE("Unwind: managed frames\n");
+            do
+            {
+                // Get the managed stack frame context
+                if (pStackwalk->GetContext(CONTEXT_ALL, sizeof(context), nullptr, (BYTE *)&context) != S_OK) {
+                    TRACE("Unwind: stack walker GetContext FAILED\n");
+                    break;
+                }
 
-        } while (pStackwalk->Next() == S_OK);
+                // Unwind all the native frames after the managed frame
+                UnwindNativeFrames(crashInfo, &context);
+
+            } while (pStackwalk->Next() == S_OK);
+        }
     }
 
     return true;
