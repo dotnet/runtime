@@ -422,6 +422,12 @@
     "PB_SignType": {
       "value": "real",
       "allowOverride": true
+    },
+    "PB_PackageVersionPropsUrl": {
+      "value": ""
+    },
+    "PACKAGEVERSIONPROPSURL": {
+      "value": "$(PB_PackageVersionPropsUrl)"
     }
   },
   "demands": [
