@@ -747,7 +747,7 @@ namespace System.IO
 
         public abstract void SetLength(long value);
 
-        public abstract int Read([In, Out] byte[] buffer, int offset, int count);
+        public abstract int Read(byte[] buffer, int offset, int count);
 
         public virtual int Read(Span<byte> destination)
         {
@@ -978,7 +978,7 @@ namespace System.IO
                 BlockingEndWrite(asyncResult);
             }
 
-            public override int Read([In, Out] byte[] buffer, int offset, int count)
+            public override int Read(byte[] buffer, int offset, int count)
             {
                 return 0;
             }
@@ -1261,7 +1261,7 @@ namespace System.IO
                     _stream.Flush();
             }
 
-            public override int Read([In, Out]byte[] bytes, int offset, int count)
+            public override int Read(byte[] bytes, int offset, int count)
             {
                 lock (_stream)
                     return _stream.Read(bytes, offset, count);
