@@ -52,12 +52,6 @@ DumpDataTarget::QueryInterface(
         AddRef();
         return S_OK;
     }
-    else if (InterfaceId == IID_ICorDebugDataTarget4)
-    {
-        *Interface = (ICorDebugDataTarget4*)this;
-        AddRef();
-        return S_OK;
-    }
     else
     {
         *Interface = NULL;
