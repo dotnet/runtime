@@ -88,19 +88,35 @@ namespace System.Tests
 
         public static IEnumerable<object[]> ToString_TestData()
         {
-            NumberFormatInfo emptyFormat = NumberFormatInfo.CurrentInfo;
-            yield return new object[] { (byte)0, "G", emptyFormat, "0" };
-            yield return new object[] { (byte)123, "G", emptyFormat, "123" };
-            yield return new object[] { byte.MaxValue, "G", emptyFormat, "255" };
+            foreach (NumberFormatInfo emptyFormat in new[] { null, NumberFormatInfo.CurrentInfo })
+            {
+                yield return new object[] { (byte)0, "G", emptyFormat, "0" };
+                yield return new object[] { (byte)123, "G", emptyFormat, "123" };
+                yield return new object[] { byte.MaxValue, "G", emptyFormat, "255" };
 
-            yield return new object[] { (byte)0x24, "x", emptyFormat, "24" };
-            yield return new object[] { (byte)24, "N", emptyFormat, string.Format("{0:N}", 24.00) };
+                yield return new object[] { (byte)123, "D", emptyFormat, "123" };
+                yield return new object[] { (byte)123, "D99", emptyFormat, "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000123" };
 
-            NumberFormatInfo customFormat = new NumberFormatInfo();
-            customFormat.NegativeSign = "#";
-            customFormat.NumberDecimalSeparator = "~";
-            customFormat.NumberGroupSeparator = "*";
+                yield return new object[] { (byte)0x24, "x", emptyFormat, "24" };
+                yield return new object[] { (byte)24, "N", emptyFormat, string.Format("{0:N}", 24.00) };
+            }
+
+            var customFormat = new NumberFormatInfo()
+            {
+                NegativeSign = "#",
+                NumberDecimalSeparator = "~",
+                NumberGroupSeparator = "*",
+                PositiveSign = "&",
+                NumberDecimalDigits = 2,
+                PercentSymbol = "@",
+                PercentGroupSeparator = ",",
+                PercentDecimalSeparator = ".",
+                PercentDecimalDigits = 5
+            };
             yield return new object[] { (byte)24, "N", customFormat, "24~00" };
+            yield return new object[] { (byte)123, "E", customFormat, "1~230000E&002" };
+            yield return new object[] { (byte)123, "F", customFormat, "123~00" };
+            yield return new object[] { (byte)123, "P", customFormat, "12,300.00000 @" };
         }
 
         [Theory]
