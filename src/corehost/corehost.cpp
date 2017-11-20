@@ -164,7 +164,7 @@ int run(const int argc, const pal::char_t* argv[])
 
     if (pal::strcasecmp(own_name.c_str(), CURHOST_TYPE) != 0)
     {
-        trace::error(_X("A fatal error :Cannot execute %s when renamed to  %s."), CURHOST_TYPE,own_name.c_str());
+        trace::error(_X("A fatal error was encountered. Cannot execute %s when renamed to  %s."), CURHOST_TYPE,own_name.c_str());
         return StatusCode::CoreHostEntryPointFailure;
     }
 
