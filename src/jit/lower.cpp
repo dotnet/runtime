@@ -721,39 +721,40 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     }
     else
     {
-        // Lower the switch into an indirect branch using a jump table:
-        //
-        // 1. Create the constant for the default case
-        // 2. Generate a GT_GE condition to compare to the default case
-        // 3. Generate a GT_JTRUE to jump.
-        // 4. Load the jump table address into a local (presumably the just
-        //    created constant for GT_SWITCH).
-        // 5. Create a new node for the lowered switch, this will both generate
-        //    the branch table and also will be responsible for the indirect
-        //    branch.
-
-        JITDUMP("Lowering switch BB%02u: using jump table expansion\n", originalSwitchBB->bbNum);
-
-        GenTree* switchValue = comp->gtNewLclvNode(tempLclNum, tempLclType);
-#ifdef _TARGET_64BIT_
-        if (tempLclType != TYP_I_IMPL)
-        {
-            // Note that the switch value is unsigned so the cast should be unsigned as well.
-            switchValue = comp->gtNewCastNode(TYP_I_IMPL, switchValue, TYP_U_IMPL);
-            switchValue->gtFlags |= GTF_UNSIGNED;
-        }
-#endif
-        GenTreePtr gtTableSwitch =
-            comp->gtNewOperNode(GT_SWITCH_TABLE, TYP_VOID, switchValue, comp->gtNewJmpTableNode());
-        /* Increment the lvRefCnt and lvRefCntWtd for temp */
+        // At this point the default case has already been handled and we need to generate a jump
+        // table based switch or a bit test based switch at the end of afterDefaultCondBlock. Both
+        // switch variants need the switch value so create the necessary LclVar node here.
+        GenTree*    switchValue      = comp->gtNewLclvNode(tempLclNum, tempLclType);
+        LIR::Range& switchBlockRange = LIR::AsRange(afterDefaultCondBlock);
         tempVarDsc->incRefCnts(blockWeight, comp);
+        switchBlockRange.InsertAtEnd(switchValue);
 
-        // this block no longer branches to the default block
-        afterDefaultCondBlock->bbJumpSwt->removeDefault();
+        // Try generating a bit test based switch first,
+        // if that's not possible a jump table based switch will be generated.
+        if (!TryLowerSwitchToBitTest(jumpTab, jumpCnt, targetCnt, afterDefaultCondBlock, switchValue))
+        {
+            JITDUMP("Lowering switch BB%02u: using jump table expansion\n", originalSwitchBB->bbNum);
+
+#ifdef _TARGET_64BIT_
+            if (tempLclType != TYP_I_IMPL)
+            {
+                // SWITCH_TABLE expects the switch value (the index into the jump table) to be TYP_I_IMPL.
+                // Note that the switch value is unsigned so the cast should be unsigned as well.
+                switchValue = comp->gtNewCastNode(TYP_I_IMPL, switchValue, TYP_U_IMPL);
+                switchValue->gtFlags |= GTF_UNSIGNED;
+                switchBlockRange.InsertAtEnd(switchValue);
+            }
+#endif
+
+            GenTree* switchTable = comp->gtNewJmpTableNode();
+            GenTree* switchJump  = comp->gtNewOperNode(GT_SWITCH_TABLE, TYP_VOID, switchValue, switchTable);
+            switchBlockRange.InsertAfter(switchValue, switchTable, switchJump);
+
+            // this block no longer branches to the default block
+            afterDefaultCondBlock->bbJumpSwt->removeDefault();
+        }
+
         comp->fgInvalidateSwitchDescMapEntry(afterDefaultCondBlock);
-
-        LIR::Range& afterDefaultCondBBRange = LIR::AsRange(afterDefaultCondBlock);
-        afterDefaultCondBBRange.InsertAtEnd(LIR::SeqTree(comp, gtTableSwitch));
     }
 
     GenTree* next = node->gtNext;
@@ -763,6 +764,175 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     switchBBRange.Remove(node);
 
     return next;
+}
+
+//------------------------------------------------------------------------
+// TryLowerSwitchToBitTest: Attempts to transform a jump table switch into a bit test.
+//
+// Arguments:
+//    jumpTable - The jump table
+//    jumpCount - The number of blocks in the jump table
+//    targetCount - The number of distinct blocks in the jump table
+//    bbSwitch - The switch block
+//    switchValue - A LclVar node that provides the switch value
+//
+// Return value:
+//    true if the switch has been lowered to a bit test
+//
+// Notes:
+//    If the jump table contains less than 32 (64 on 64 bit targets) entries and there
+//    are at most 2 distinct jump targets then the jump table can be converted to a word
+//    of bits where a 0 bit corresponds to one jump target and a 1 bit corresponds to the
+//    other jump target. Instead of the indirect jump a BT-JCC sequnce is used to jump
+//    to the appropiate target:
+//        mov eax, 245 ; jump table converted to a "bit table"
+//        bt  eax, ebx ; ebx is supposed to contain the switch value
+//        jc target1
+//      target0:
+//        ...
+//      target1:
+//    Such code is both shorter and faster (in part due to the removal of a memory load)
+//    than the traditional jump table base code. And of course, it also avoids the need
+//    to emit the jump table itself that can reach up to 256 bytes (for 64 entries).
+//
+bool Lowering::TryLowerSwitchToBitTest(
+    BasicBlock* jumpTable[], unsigned jumpCount, unsigned targetCount, BasicBlock* bbSwitch, GenTree* switchValue)
+{
+#ifndef _TARGET_XARCH_
+    // Other architectures may use this if they substitute GT_BT with equivalent code.
+    return false;
+#else
+    assert(jumpCount >= 2);
+    assert(targetCount >= 2);
+    assert(bbSwitch->bbJumpKind == BBJ_SWITCH);
+    assert(switchValue->OperIs(GT_LCL_VAR));
+
+    //
+    // Quick check to see if it's worth going through the jump table. The bit test switch supports
+    // up to 2 targets but targetCount also includes the default block so we need to allow 3 targets.
+    // We'll ensure that there are only 2 targets when building the bit table.
+    //
+
+    if (targetCount > 3)
+    {
+        return false;
+    }
+
+    //
+    // The number of bits in the bit table is the same as the number of jump table entries. But the
+    // jump table also includes the default target (at the end) so we need to ignore it. The default
+    // has already been handled by a JTRUE(GT(switchValue, jumpCount - 2)) that LowerSwitch generates.
+    //
+
+    const unsigned bitCount = jumpCount - 1;
+
+    if (bitCount > (genTypeSize(TYP_I_IMPL) * 8))
+    {
+        return false;
+    }
+
+    //
+    // Build a bit table where a bit set to 0 corresponds to bbCase0 and a bit set to 1 corresponds to
+    // bbCase1. Simply use the first block in the jump table as bbCase1, later we can invert the bit
+    // table and/or swap the blocks if it's beneficial.
+    //
+
+    BasicBlock* bbCase0  = nullptr;
+    BasicBlock* bbCase1  = jumpTable[0];
+    size_t      bitTable = 1;
+
+    for (unsigned bitIndex = 1; bitIndex < bitCount; bitIndex++)
+    {
+        if (jumpTable[bitIndex] == bbCase1)
+        {
+            bitTable |= (size_t(1) << bitIndex);
+        }
+        else if (bbCase0 == nullptr)
+        {
+            bbCase0 = jumpTable[bitIndex];
+        }
+        else if (jumpTable[bitIndex] != bbCase0)
+        {
+            // If it's neither bbCase0 nor bbCase1 then it means we have 3 targets. There can't be more
+            // than 3 because of the check at the start of the function.
+            assert(targetCount == 3);
+            return false;
+        }
+    }
+
+    //
+    // One of the case blocks has to follow the switch block. This requirement could be avoided
+    // by adding a BBJ_ALWAYS block after the switch block but doing that sometimes negatively
+    // impacts register allocation.
+    //
+
+    if ((bbSwitch->bbNext != bbCase0) && (bbSwitch->bbNext != bbCase1))
+    {
+        return false;
+    }
+
+#ifdef _TARGET_64BIT_
+    //
+    // See if we can avoid a 8 byte immediate on 64 bit targets. If all upper 32 bits are 1
+    // then inverting the bit table will make them 0 so that the table now fits in 32 bits.
+    // Note that this does not change the number of bits in the bit table, it just takes
+    // advantage of the fact that loading a 32 bit immediate into a 64 bit register zero
+    // extends the immediate value to 64 bit.
+    //
+
+    if (~bitTable <= UINT32_MAX)
+    {
+        bitTable = ~bitTable;
+        std::swap(bbCase0, bbCase1);
+    }
+#endif
+
+    //
+    // Rewire the blocks as needed and figure out the condition to use for JCC.
+    //
+
+    genTreeOps bbSwitchCondition = GT_NONE;
+    bbSwitch->bbJumpKind         = BBJ_COND;
+
+    comp->fgRemoveAllRefPreds(bbCase1, bbSwitch);
+    comp->fgRemoveAllRefPreds(bbCase0, bbSwitch);
+
+    if (bbSwitch->bbNext == bbCase0)
+    {
+        // GT_LT + GTF_UNSIGNED generates JC so we jump to bbCase1 when the bit is set
+        bbSwitchCondition    = GT_LT;
+        bbSwitch->bbJumpDest = bbCase1;
+
+        comp->fgAddRefPred(bbCase0, bbSwitch);
+        comp->fgAddRefPred(bbCase1, bbSwitch);
+    }
+    else
+    {
+        assert(bbSwitch->bbNext == bbCase1);
+
+        // GT_GE + GTF_UNSIGNED generates JNC so we jump to bbCase0 when the bit is not set
+        bbSwitchCondition    = GT_GE;
+        bbSwitch->bbJumpDest = bbCase0;
+
+        comp->fgAddRefPred(bbCase0, bbSwitch);
+        comp->fgAddRefPred(bbCase1, bbSwitch);
+    }
+
+    //
+    // Append BT(bitTable, switchValue) and JCC(condition) to the switch block.
+    //
+
+    var_types bitTableType = (bitCount <= (genTypeSize(TYP_INT) * 8)) ? TYP_INT : TYP_LONG;
+    GenTree*  bitTableIcon = comp->gtNewIconNode(bitTable, bitTableType);
+    GenTree*  bitTest      = comp->gtNewOperNode(GT_BT, TYP_VOID, bitTableIcon, switchValue);
+    bitTest->gtFlags |= GTF_SET_FLAGS;
+    GenTreeCC* jcc = new (comp, GT_JCC) GenTreeCC(GT_JCC, bbSwitchCondition);
+    jcc->gtFlags |= GTF_UNSIGNED | GTF_USE_FLAGS;
+
+    LIR::AsRange(bbSwitch).InsertAfter(switchValue, bitTableIcon, bitTest, jcc);
+
+    return true;
+#endif // _TARGET_XARCH_
 }
 
 // NOTE: this method deliberately does not update the call arg table. It must only
