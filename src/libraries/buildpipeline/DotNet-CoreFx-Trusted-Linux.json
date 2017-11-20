@@ -418,7 +418,7 @@
       "allowOverride": true
     },
     "PB_DockerCommonRunArgs": {
-      "value": "--rm --name $(PB_DockerContainerName) -v \"$(PB_GitDirectory):$(PB_DockerVolumeName)\" -w=\"$(PB_DockerVolumeName)\" $(PB_DockerImageName)"
+      "value": "--rm --name $(PB_DockerContainerName) -v \"$(PB_GitDirectory):$(PB_DockerVolumeName)\" -w=\"$(PB_DockerVolumeName)\" -e \"PACKAGEVERSIONPROPSURL=$(PB_PackageVersionPropsUrl)\" $(PB_DockerImageName)"
     },
     "PB_DockerContainerName": {
       "value": "corefx-$(Build.BuildId)"
@@ -477,6 +477,9 @@
     "PB_SkipTests": {
       "value": "false",
       "allowOverride": true
+    },
+    "PB_PackageVersionPropsUrl": {
+      "value": ""
     }
   },
   "demands": [
