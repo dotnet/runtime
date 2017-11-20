@@ -544,6 +544,12 @@
     },
     "PB_BuildFullPlatformManifest": {
       "value": "false"
+    },
+    "PB_PackageVersionPropsUrl": {
+      "value": ""
+    },
+    "PACKAGEVERSIONPROPSURL": {
+      "value": "$(PB_PackageVersionPropsUrl)"
     }
   },
   "demands": [

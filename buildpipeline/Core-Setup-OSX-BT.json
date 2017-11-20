@@ -237,6 +237,12 @@
     },
     "PB_PortableBuild": {
       "value": "true"
+    },
+    "PB_PackageVersionPropsUrl": {
+      "value": ""
+    },
+    "PACKAGEVERSIONPROPSURL": {
+      "value": "$(PB_PackageVersionPropsUrl)"
     }
   },
   "demands": [

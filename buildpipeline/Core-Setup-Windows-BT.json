@@ -746,6 +746,12 @@
     },
     "TeamName": {
       "value": "DotNetCore"
+    },
+    "PB_PackageVersionPropsUrl": {
+      "value": ""
+    },
+    "PACKAGEVERSIONPROPSURL": {
+      "value": "$(PB_PackageVersionPropsUrl)"
     }
   },
   "demands": [
