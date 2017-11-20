@@ -1128,7 +1128,7 @@
       "allowOverride": true
     },
     "DockerCommonRunArgs": {
-      "value": "--name $(PB_DockerContainerName) -v \"$(PB_SourcesDirectory):$(PB_GitDirectory)\" -w=\"$(PB_GitDirectory)\" $(PB_DockerImageName)"
+      "value": "--name $(PB_DockerContainerName) -v \"$(PB_SourcesDirectory):$(PB_GitDirectory)\" -w=\"$(PB_GitDirectory)\" -e \"PACKAGEVERSIONPROPSURL=$(PB_PackageVersionPropsUrl)\" $(PB_DockerImageName)"
     },
     "PB_VsoRepoUrl": {
       "value": "--branch $(PB_Branch) https://$(PB_VsoAccountName):$(PB_VsoPassword)@devdiv.visualstudio.com/DevDiv/_git/DotNet-Core-Setup-Trusted"
@@ -1266,6 +1266,9 @@
     "PB_DebianId_ubuntu1710-x64": {
       "value": null,
       "isSecret": true
+    },
+    "PB_PackageVersionPropsUrl": {
+      "value": ""
     }
   },
   "demands": [
