@@ -15,8 +15,6 @@ namespace System.Net.Sockets
         private SocketFlags _receivedFlags;
         private Action<int, byte[], int, SocketFlags, SocketError> _transferCompletionCallback;
 
-        internal int? SendPacketsDescriptorCount => _sendPacketsElements?.Length;
-
         private void InitializeInternals()
         {
             // No-op for *nix.
@@ -53,11 +51,6 @@ namespace System.Net.Sockets
             }
         }
 
-        private void InnerStartOperationAccept()
-        {
-            _acceptedFileDescriptor = (IntPtr)(-1);
-        }
-
         private void AcceptCompletionCallback(IntPtr acceptedFileDescriptor, byte[] socketAddress, int socketAddressSize, SocketError socketError)
         {
             CompleteAcceptOperation(acceptedFileDescriptor, socketAddress, socketAddressSize, socketError);
@@ -79,6 +72,8 @@ namespace System.Net.Sockets
                 throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_notsupported);
             }
 
+            _acceptedFileDescriptor = (IntPtr)(-1);
+
             Debug.Assert(acceptHandle == null, $"Unexpected acceptHandle: {acceptHandle}");
 
             IntPtr acceptedFd;
@@ -92,11 +87,6 @@ namespace System.Net.Sockets
             }
 
             return socketError;
-        }
-
-        private void InnerStartOperationConnect()
-        {
-            // No-op for *nix.
         }
 
         private void ConnectCompletionCallback(SocketError socketError)
@@ -138,14 +128,11 @@ namespace System.Net.Sockets
             _receivedFlags = receivedFlags;
         }
 
-        private void InnerStartOperationReceive()
+        internal unsafe SocketError DoOperationReceive(SafeCloseSocket handle, out SocketFlags flags)
         {
             _receivedFlags = System.Net.Sockets.SocketFlags.None;
             _socketAddressSize = 0;
-        }
 
-        internal unsafe SocketError DoOperationReceive(SafeCloseSocket handle, out SocketFlags flags)
-        {
             int bytesReceived;
             SocketError errorCode;
             if (_bufferList == null)
@@ -166,14 +153,11 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
-        private void InnerStartOperationReceiveFrom()
+        internal unsafe SocketError DoOperationReceiveFrom(SafeCloseSocket handle, out SocketFlags flags)
         {
             _receivedFlags = System.Net.Sockets.SocketFlags.None;
             _socketAddressSize = 0;
-        }
 
-        internal unsafe SocketError DoOperationReceiveFrom(SafeCloseSocket handle, out SocketFlags flags)
-        {
             SocketError errorCode;
             int bytesReceived = 0;
             int socketAddressLen = _socketAddress.Size;
@@ -195,13 +179,6 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
-        private void InnerStartOperationReceiveMessageFrom()
-        {
-            _receiveMessageFromPacketInfo = default(IPPacketInformation);
-            _receivedFlags = System.Net.Sockets.SocketFlags.None;
-            _socketAddressSize = 0;
-        }
-
         private void ReceiveMessageFromCompletionCallback(int bytesTransferred, byte[] socketAddress, int socketAddressSize, SocketFlags receivedFlags, IPPacketInformation ipPacketInformation, SocketError errorCode)
         {
             CompleteReceiveMessageFromOperation(bytesTransferred, socketAddress, socketAddressSize, receivedFlags, ipPacketInformation, errorCode);
@@ -221,6 +198,10 @@ namespace System.Net.Sockets
 
         internal unsafe SocketError DoOperationReceiveMessageFrom(Socket socket, SafeCloseSocket handle)
         {
+            _receiveMessageFromPacketInfo = default(IPPacketInformation);
+            _receivedFlags = System.Net.Sockets.SocketFlags.None;
+            _socketAddressSize = 0;
+
             bool isIPv4, isIPv6;
             Socket.GetIPProtocolInformation(socket.AddressFamily, _socketAddress, out isIPv4, out isIPv6);
 
@@ -237,14 +218,11 @@ namespace System.Net.Sockets
             return socketError;
         }
 
-        private void InnerStartOperationSend()
+        internal unsafe SocketError DoOperationSend(SafeCloseSocket handle)
         {
             _receivedFlags = System.Net.Sockets.SocketFlags.None;
             _socketAddressSize = 0;
-        }
 
-        internal unsafe SocketError DoOperationSend(SafeCloseSocket handle)
-        {
             int bytesSent;
             SocketError errorCode;
             if (_bufferList == null)
@@ -263,11 +241,6 @@ namespace System.Net.Sockets
             }
 
             return errorCode;
-        }
-
-        private void InnerStartOperationSendPackets()
-        {
-            // nop
         }
 
         internal SocketError DoOperationSendPackets(Socket socket, SafeCloseSocket handle)
@@ -329,14 +302,11 @@ namespace System.Net.Sockets
             return SocketError.IOPending;
         }
 
-        private void InnerStartOperationSendTo()
+        internal SocketError DoOperationSendTo(SafeCloseSocket handle)
         {
             _receivedFlags = System.Net.Sockets.SocketFlags.None;
             _socketAddressSize = 0;
-        }
 
-        internal SocketError DoOperationSendTo(SafeCloseSocket handle)
-        {
             int bytesSent;
             int socketAddressLen = _socketAddress.Size;
             SocketError errorCode;
