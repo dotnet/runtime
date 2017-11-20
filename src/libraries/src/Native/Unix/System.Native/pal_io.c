@@ -385,7 +385,7 @@ int32_t SystemNative_ReadDirR(DIR* dir, void* buffer, int32_t bufferSize, struct
     // 0 returned with null result -> end-of-stream
     if (result == NULL)
     {
-        *outputEntry = {}; // managed out param must be initialized
+        memset(outputEntry, 0, sizeof(*outputEntry)); // managed out param must be initialized
 
         //  kernel set errno -> failure
         if (errno != 0)
