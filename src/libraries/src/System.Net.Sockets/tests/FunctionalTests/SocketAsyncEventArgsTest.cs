@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    public class SocketAsyncEventArgsTest
+    public partial class SocketAsyncEventArgsTest
     {
         [Fact]
         public void Usertoken_Roundtrips()
@@ -154,6 +154,12 @@ namespace System.Net.Sockets.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => saea.SetBuffer(new byte[1], 0, -1));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => saea.SetBuffer(new byte[1], 0, 2));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => saea.SetBuffer(new byte[1], 1, 2));
+
+                saea.SetBuffer(new byte[2], 0, 2);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => saea.SetBuffer(-1, 2));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => saea.SetBuffer(3, 2));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => saea.SetBuffer(0, -1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => saea.SetBuffer(0, 3));
             }
         }
 

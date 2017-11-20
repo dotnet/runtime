@@ -14,10 +14,11 @@ namespace System.Net.Sockets
         internal Socket _acceptSocket;
         private Socket _connectSocket;
 
-        // Buffer,Offset,Count property variables.
-        internal byte[] _buffer;
-        internal int _count;
-        internal int _offset;
+        // Single buffer.
+        private Memory<byte> _buffer;
+        private int _offset;
+        private int _count;
+        private bool _bufferIsExplicitArray;
 
         // BufferList property variables.
         private IList<ArraySegment<byte>> _bufferList;
@@ -101,27 +102,24 @@ namespace System.Net.Sockets
 
         public byte[] Buffer
         {
-            get { return _buffer; }
+            get
+            {
+                if (_bufferIsExplicitArray)
+                {
+                    bool success = _buffer.TryGetArray(out ArraySegment<byte> arraySegment);
+                    Debug.Assert(success);
+                    return arraySegment.Array;
+                }
+
+                return null;
+            }
         }
 
-        public Memory<byte> GetBuffer()
-        {
-            // TODO https://github.com/dotnet/corefx/issues/24429:
-            // Actually support Memory<byte> natively.
-            return _buffer != null ?
-                new Memory<byte>(_buffer, _offset, _count) :
-                Memory<byte>.Empty;
-        }
+        public Memory<byte> MemoryBuffer => _buffer;
 
-        public int Offset
-        {
-            get { return _offset; }
-        }
+        public int Offset => _offset;
 
-        public int Count
-        {
-            get { return _count; }
-        }
+        public int Count => _count;
 
         // SendPacketsFlags property.
         public TransmitFileOptions SendPacketsFlags
@@ -142,7 +140,7 @@ namespace System.Net.Sockets
                 {
                     if (value != null)
                     {
-                        if (_buffer != null)
+                        if (!_buffer.Equals(default))
                         {
                             // Can't have both set
                             throw new ArgumentException(SR.Format(SR.net_ambiguousbuffers, nameof(Buffer)));
@@ -205,11 +203,7 @@ namespace System.Net.Sockets
 
         protected virtual void OnCompleted(SocketAsyncEventArgs e)
         {
-            EventHandler<SocketAsyncEventArgs> handler = _completed;
-            if (handler != null)
-            {
-                handler(e._currentSocket, e);
-            }
+            _completed?.Invoke(e._currentSocket, e);
         }
 
         // DisconnectResuseSocket property.
@@ -282,34 +276,53 @@ namespace System.Net.Sockets
             set { _userToken = value; }
         }
 
-        public void SetBuffer(byte[] buffer, int offset, int count)
-        {
-            SetBufferInternal(buffer, offset, count);
-        }
-
         public void SetBuffer(int offset, int count)
         {
-            SetBufferInternal(_buffer, offset, count);
-        }
-
-        public void SetBuffer(Memory<byte> buffer)
-        {
-            if (!buffer.TryGetArray(out ArraySegment<byte> array))
+            StartConfiguring();
+            try
             {
-                // TODO https://github.com/dotnet/corefx/issues/24429:
-                // Actually support Memory<byte> natively.
-                throw new ArgumentException();
+                if (!_buffer.Equals(default))
+                {
+                    if ((uint)offset > _buffer.Length)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(offset));
+                    }
+                    if ((uint)count > (_buffer.Length - offset))
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(count));
+                    }
+                    if (!_bufferIsExplicitArray)
+                    {
+                        throw new InvalidOperationException(SR.InvalidOperation_BufferNotExplicitArray);
+                    }
+
+                    _offset = offset;
+                    _count = count;
+                }
             }
-
-            SetBuffer(array.Array, array.Offset, array.Count);
+            finally
+            {
+                Complete();
+            }
         }
 
-        internal bool HasMultipleBuffers
+        internal void CopyBufferFrom(SocketAsyncEventArgs source)
         {
-            get { return _bufferList != null; }
+            StartConfiguring();
+            try
+            {
+                _buffer = source._buffer;
+                _offset = source._offset;
+                _count = source._count;
+                _bufferIsExplicitArray = source._bufferIsExplicitArray;
+            }
+            finally
+            {
+                Complete();
+            }
         }
 
-        private void SetBufferInternal(byte[] buffer, int offset, int count)
+        public void SetBuffer(byte[] buffer, int offset, int count)
         {
             StartConfiguring();
             try
@@ -317,9 +330,10 @@ namespace System.Net.Sockets
                 if (buffer == null)
                 {
                     // Clear out existing buffer.
-                    _buffer = null;
+                    _buffer = default;
                     _offset = 0;
                     _count = 0;
+                    _bufferIsExplicitArray = false;
                 }
                 else
                 {
@@ -331,11 +345,11 @@ namespace System.Net.Sockets
 
                     // Offset and count can't be negative and the
                     // combination must be in bounds of the array.
-                    if (offset < 0 || offset > buffer.Length)
+                    if ((uint)offset > buffer.Length)
                     {
                         throw new ArgumentOutOfRangeException(nameof(offset));
                     }
-                    if (count < 0 || count > (buffer.Length - offset))
+                    if ((uint)count > (buffer.Length - offset))
                     {
                         throw new ArgumentOutOfRangeException(nameof(count));
                     }
@@ -343,16 +357,37 @@ namespace System.Net.Sockets
                     _buffer = buffer;
                     _offset = offset;
                     _count = count;
+                    _bufferIsExplicitArray = true;
                 }
-
-                // Pin new or unpin old buffer if necessary.
-                SetupSingleBuffer();
             }
             finally
             {
                 Complete();
             }
         }
+
+        public void SetBuffer(Memory<byte> buffer)
+        {
+            StartConfiguring();
+            try
+            {
+                if (buffer.Length != 0 && _bufferList != null)
+                {
+                    throw new ArgumentException(SR.Format(SR.net_ambiguousbuffers, nameof(BufferList)));
+                }
+
+                _buffer = buffer;
+                _offset = 0;
+                _count = buffer.Length;
+                _bufferIsExplicitArray = false;
+            }
+            finally
+            {
+                Complete();
+            }
+        }
+
+        internal bool HasMultipleBuffers => _bufferList != null;
 
         internal void SetResults(SocketError socketError, int bytesTransferred, SocketFlags flags)
         {
@@ -396,6 +431,8 @@ namespace System.Net.Sockets
         // because I/O was in progress.
         internal void Complete()
         {
+            CompleteCore();
+
             // Mark as not in-use.
             _operating = Free;
 
@@ -500,7 +537,7 @@ namespace System.Net.Sockets
             // If our caller specified a buffer (willing to get received data with the Accept) then
             // it needs to be large enough for the two special sockaddr buffers that AcceptEx requires.
             // Throw if that buffer is not large enough.
-            bool userSuppliedBuffer = _buffer != null;
+            bool userSuppliedBuffer = !_buffer.Equals(default);
             if (userSuppliedBuffer)
             {
                 // Caller specified a buffer - see if it is large enough
@@ -508,8 +545,6 @@ namespace System.Net.Sockets
                 {
                     throw new ArgumentException(SR.Format(SR.net_buffercounttoosmall, nameof(Count)));
                 }
-
-                // Buffer is already pinned if necessary.
             }
             else
             {
@@ -521,7 +556,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            InnerStartOperationAccept(userSuppliedBuffer);
+            InnerStartOperationAccept();
         }
 
         internal void StartOperationConnect()
@@ -567,7 +602,6 @@ namespace System.Net.Sockets
         {
             // Remember the operation type.
             _completedOperation = SocketAsyncOperation.Disconnect;
-            InnerStartOperationDisconnect();
         }
 
         internal void StartOperationReceive()
@@ -690,9 +724,9 @@ namespace System.Net.Sockets
         {
             SetResults(SocketError.Success, bytesTransferred, flags);
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.IsEnabled && bytesTransferred > 0)
             {
-                LogBytesTransferred(bytesTransferred, _completedOperation);
+                LogBuffer(bytesTransferred);
             }
 
             SocketError socketError = SocketError.Success;
@@ -780,17 +814,6 @@ namespace System.Net.Sockets
             }
 
             Complete();
-        }
-
-        private void LogBytesTransferred(int bytesTransferred, SocketAsyncOperation operation)
-        {
-            if (bytesTransferred > 0)
-            {
-                if (NetEventSource.IsEnabled)
-                {
-                    LogBuffer(bytesTransferred);
-                }
-            }
         }
 
         internal void FinishOperationAsyncSuccess(int bytesTransferred, SocketFlags flags)

@@ -37,10 +37,7 @@ namespace System.Net.Sockets
             // No-op for *nix.
         }
 
-        private void SetupSendPacketsElements()
-        {
-            // No-op for *nix.
-        }
+        private void CompleteCore() { }
 
         private void FinishOperationSync(SocketError socketError, int bytesTransferred, SocketFlags flags)
         {
@@ -56,7 +53,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private void InnerStartOperationAccept(bool userSuppliedBuffer)
+        private void InnerStartOperationAccept()
         {
             _acceptedFileDescriptor = (IntPtr)(-1);
         }
@@ -77,7 +74,7 @@ namespace System.Net.Sockets
 
         internal unsafe SocketError DoOperationAccept(Socket socket, SafeCloseSocket handle, SafeCloseSocket acceptHandle)
         {
-            if (_buffer != null)
+            if (!_buffer.Equals(default))
             {
                 throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_notsupported);
             }
@@ -124,10 +121,6 @@ namespace System.Net.Sockets
             return socketError;
         }
 
-        private void InnerStartOperationDisconnect()
-        {
-        }
-
         private Action<int, byte[], int, SocketFlags, SocketError> TransferCompletionCallback =>
             _transferCompletionCallback ?? (_transferCompletionCallback = TransferCompletionCallbackCore);
 
@@ -155,9 +148,9 @@ namespace System.Net.Sockets
         {
             int bytesReceived;
             SocketError errorCode;
-            if (_buffer != null)
+            if (_bufferList == null)
             {
-                errorCode = handle.AsyncContext.ReceiveAsync(_buffer, _offset, _count, _socketFlags, out bytesReceived, out flags, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.ReceiveAsync(_buffer.Slice(_offset, _count), _socketFlags, out bytesReceived, out flags, TransferCompletionCallback);
             }
             else
             {
@@ -184,9 +177,9 @@ namespace System.Net.Sockets
             SocketError errorCode;
             int bytesReceived = 0;
             int socketAddressLen = _socketAddress.Size;
-            if (_buffer != null)
+            if (_bufferList == null)
             {
-                errorCode = handle.AsyncContext.ReceiveFromAsync(_buffer, _offset, _count, _socketFlags, _socketAddress.Buffer, ref socketAddressLen, out bytesReceived, out flags, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.ReceiveFromAsync(_buffer.Slice(_offset, _count), _socketFlags, _socketAddress.Buffer, ref socketAddressLen, out bytesReceived, out flags, TransferCompletionCallback);
             }
             else
             {
@@ -254,7 +247,7 @@ namespace System.Net.Sockets
         {
             int bytesSent;
             SocketError errorCode;
-            if (_buffer != null)
+            if (_bufferList == null)
             {
                 errorCode = handle.AsyncContext.SendAsync(_buffer, _offset, _count, _socketFlags, out bytesSent, TransferCompletionCallback);
             }
@@ -347,7 +340,7 @@ namespace System.Net.Sockets
             int bytesSent;
             int socketAddressLen = _socketAddress.Size;
             SocketError errorCode;
-            if (_buffer != null)
+            if (_bufferList == null)
             {
                 errorCode = handle.AsyncContext.SendToAsync(_buffer, _offset, _count, _socketFlags, _socketAddress.Buffer, ref socketAddressLen, out bytesSent, TransferCompletionCallback);
             }
@@ -372,7 +365,7 @@ namespace System.Net.Sockets
             // may fire erroneously.
             Debug.Assert(NetEventSource.IsEnabled);
 
-            if (_buffer != null)
+            if (_bufferList == null)
             {
                 NetEventSource.DumpBuffer(this, _buffer, _offset, size);
             }

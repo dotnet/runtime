@@ -521,7 +521,7 @@ namespace System.Net.Sockets
             // so as to minimize overhead if the same buffers are used for subsequent operations (which is likely).
             // But SAEA doesn't support having both a buffer and a buffer list configured, so clear out a buffer
             // if there is one before we set the desired buffer list.
-            if (saea.Buffer != null) saea.SetBuffer(null, 0, 0);
+            if (!saea.MemoryBuffer.Equals(default)) saea.SetBuffer(default);
             saea.BufferList = buffers;
             saea.SocketFlags = socketFlags;
         }
