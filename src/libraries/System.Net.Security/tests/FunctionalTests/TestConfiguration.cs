@@ -7,6 +7,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 
 using Xunit;
 
@@ -28,6 +29,9 @@ namespace System.Net.Security.Tests
         public const string NtlmUserFilePath = "/var/tmp/ntlm_user_file";
 
         public static bool SupportsNullEncryption { get { return s_supportsNullEncryption.Value; } }
+
+        public static Task WhenAllOrAnyFailedWithTimeout(params Task[] tasks) 
+            => tasks.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
 
         private static Lazy<bool> s_supportsNullEncryption = new Lazy<bool>(() =>
         {
