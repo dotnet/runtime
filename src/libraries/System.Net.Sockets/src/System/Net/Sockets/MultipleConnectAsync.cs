@@ -127,7 +127,7 @@ namespace System.Net.Sockets
 
                     _internalArgs = new SocketAsyncEventArgs();
                     _internalArgs.Completed += InternalConnectCallback;
-                    _internalArgs.SetBuffer(_userArgs.Buffer, _userArgs.Offset, _userArgs.Count);
+                    _internalArgs.CopyBufferFrom(_userArgs);
 
                     exception = AttemptConnection();
 

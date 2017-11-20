@@ -235,4 +235,7 @@
   <data name="PlatformNotSupported_IPProtectionLevel" xml:space="preserve">
     <value>IP protection level cannot be controlled on this platform.</value>
   </data>
+  <data name="InvalidOperation_BufferNotExplicitArray" xml:space="preserve">
+    <value>This operation may only be performed when the buffer was set using the SetBuffer overload that accepts an array.</value>
+  </data>
 </root>

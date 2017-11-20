@@ -19,7 +19,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(1, 1, 2)] // count high
         public async Task InvalidArguments_Throws(int? length, int offset, int count)
         {
-            if (length == null && !ValidatesArrayArguments) return;
+            if (!ValidatesArrayArguments) return;
 
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
@@ -697,6 +697,7 @@ namespace System.Net.Sockets.Tests
                     Assert.False(receive.IsCompleted, $"Task should not have been completed, was {receive.Status}");
 
                     // Disconnect the client
+                    server.Shutdown(SocketShutdown.Both);
                     server.Close();
 
                     // The client should now wake up
