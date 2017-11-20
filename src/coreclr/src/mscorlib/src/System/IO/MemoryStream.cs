@@ -135,7 +135,7 @@ namespace System.IO
 
         private void EnsureWriteable()
         {
-            if (!CanWrite) __Error.WriteNotSupported();
+            if (!CanWrite) throw Error.GetWriteNotSupported();
         }
 
         protected override void Dispose(bool disposing)
@@ -235,7 +235,7 @@ namespace System.IO
         // PERF: True cursor position, we don't need _origin for direct access
         internal int InternalGetPosition()
         {
-            if (!_isOpen) __Error.StreamIsClosed();
+            if (!_isOpen) throw Error.GetStreamIsClosed();
             return _position;
         }
 
@@ -243,13 +243,13 @@ namespace System.IO
         internal int InternalReadInt32()
         {
             if (!_isOpen)
-                __Error.StreamIsClosed();
+                throw Error.GetStreamIsClosed();
 
             int pos = (_position += 4); // use temp to avoid a race condition
             if (pos > _length)
             {
                 _position = _length;
-                __Error.EndOfFile();
+                throw Error.GetEndOfFile();
             }
             return (int)(_buffer[pos - 4] | _buffer[pos - 3] << 8 | _buffer[pos - 2] << 16 | _buffer[pos - 1] << 24);
         }
@@ -257,7 +257,7 @@ namespace System.IO
         // PERF: Get actual length of bytes available for read; do sanity checks; shift position - i.e. everything except actual copying bytes
         internal int InternalEmulateRead(int count)
         {
-            if (!_isOpen) __Error.StreamIsClosed();
+            if (!_isOpen) throw Error.GetStreamIsClosed();
 
             int n = _length - _position;
             if (n > count) n = count;
@@ -276,17 +276,21 @@ namespace System.IO
         {
             get
             {
-                if (!_isOpen) __Error.StreamIsClosed();
+                if (!_isOpen) throw Error.GetStreamIsClosed();
                 return _capacity - _origin;
             }
             set
             {
                 // Only update the capacity if the MS is expandable and the value is different than the current capacity.
                 // Special behavior if the MS isn't expandable: we don't throw if value is the same as the current capacity
-                if (value < Length) throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_SmallCapacity);
+                if (value < Length)
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_SmallCapacity);
 
-                if (!_isOpen) __Error.StreamIsClosed();
-                if (!_expandable && (value != Capacity)) __Error.MemoryStreamNotExpandable();
+                if (!_isOpen)
+                    throw Error.GetStreamIsClosed();
+
+                if (!_expandable && (value != Capacity))
+                    throw new NotSupportedException(SR.NotSupported_MemStreamNotExpandable);
 
                 // MemoryStream has this invariant: _origin > 0 => !expandable (see ctors)
                 if (_expandable && value != _capacity)
@@ -294,7 +298,7 @@ namespace System.IO
                     if (value > 0)
                     {
                         byte[] newBuffer = new byte[value];
-                        if (_length > 0) Buffer.InternalBlockCopy(_buffer, 0, newBuffer, 0, _length);
+                        if (_length > 0) Buffer.BlockCopy(_buffer, 0, newBuffer, 0, _length);
                         _buffer = newBuffer;
                     }
                     else
@@ -310,7 +314,7 @@ namespace System.IO
         {
             get
             {
-                if (!_isOpen) __Error.StreamIsClosed();
+                if (!_isOpen) throw Error.GetStreamIsClosed();
                 return _length - _origin;
             }
         }
@@ -319,7 +323,7 @@ namespace System.IO
         {
             get
             {
-                if (!_isOpen) __Error.StreamIsClosed();
+                if (!_isOpen) throw Error.GetStreamIsClosed();
                 return _position - _origin;
             }
             set
@@ -327,7 +331,7 @@ namespace System.IO
                 if (value < 0)
                     throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
 
-                if (!_isOpen) __Error.StreamIsClosed();
+                if (!_isOpen) throw Error.GetStreamIsClosed();
 
                 if (value > MemStreamMaxLength)
                     throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_StreamLength);
@@ -346,7 +350,7 @@ namespace System.IO
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
-            if (!_isOpen) __Error.StreamIsClosed();
+            if (!_isOpen) throw Error.GetStreamIsClosed();
 
             int n = _length - _position;
             if (n > count) n = count;
@@ -362,7 +366,7 @@ namespace System.IO
                     buffer[offset + byteCount] = _buffer[_position + byteCount];
             }
             else
-                Buffer.InternalBlockCopy(_buffer, _position, buffer, offset, n);
+                Buffer.BlockCopy(_buffer, _position, buffer, offset, n);
             _position += n;
 
             return n;
@@ -380,7 +384,7 @@ namespace System.IO
 
             if (!_isOpen)
             {
-                __Error.StreamIsClosed();
+                throw Error.GetStreamIsClosed();
             }
 
             int n = Math.Min(_length - _position, destination.Length);
@@ -471,7 +475,7 @@ namespace System.IO
 
         public override int ReadByte()
         {
-            if (!_isOpen) __Error.StreamIsClosed();
+            if (!_isOpen) throw Error.GetStreamIsClosed();
 
             if (_position >= _length) return -1;
 
@@ -556,7 +560,7 @@ namespace System.IO
 
         public override long Seek(long offset, SeekOrigin loc)
         {
-            if (!_isOpen) __Error.StreamIsClosed();
+            if (!_isOpen) throw Error.GetStreamIsClosed();
 
             if (offset > MemStreamMaxLength)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_StreamLength);
@@ -630,7 +634,7 @@ namespace System.IO
         public virtual byte[] ToArray()
         {
             byte[] copy = new byte[_length - _origin];
-            Buffer.InternalBlockCopy(_buffer, _origin, copy, 0, _length - _origin);
+            Buffer.BlockCopy(_buffer, _origin, copy, 0, _length - _origin);
             return copy;
         }
 
@@ -645,7 +649,7 @@ namespace System.IO
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
-            if (!_isOpen) __Error.StreamIsClosed();
+            if (!_isOpen) throw Error.GetStreamIsClosed();
             EnsureWriteable();
 
             int i = _position + count;
@@ -673,7 +677,7 @@ namespace System.IO
                     _buffer[_position + byteCount] = buffer[offset + byteCount];
             }
             else
-                Buffer.InternalBlockCopy(buffer, offset, _buffer, _position, count);
+                Buffer.BlockCopy(buffer, offset, _buffer, _position, count);
             _position = i;
         }
 
@@ -690,7 +694,7 @@ namespace System.IO
 
             if (!_isOpen)
             {
-                __Error.StreamIsClosed();
+                throw Error.GetStreamIsClosed();
             }
             EnsureWriteable();
 
@@ -786,7 +790,7 @@ namespace System.IO
 
         public override void WriteByte(byte value)
         {
-            if (!_isOpen) __Error.StreamIsClosed();
+            if (!_isOpen) throw Error.GetStreamIsClosed();
             EnsureWriteable();
 
             if (_position >= _length)
@@ -812,7 +816,7 @@ namespace System.IO
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream), SR.ArgumentNull_Stream);
 
-            if (!_isOpen) __Error.StreamIsClosed();
+            if (!_isOpen) throw Error.GetStreamIsClosed();
             stream.Write(_buffer, _origin, _length - _origin);
         }
     }

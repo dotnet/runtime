@@ -287,7 +287,7 @@ namespace System.IO
         public bool EndOfStream {
             get {
                 if (stream == null)
-                    __Error.ReaderClosed();
+                    throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
 
                 CheckAsyncTaskInProgress();
 
@@ -302,7 +302,7 @@ namespace System.IO
 
         public override int Peek() {
             if (stream == null)
-                __Error.ReaderClosed();
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
 
             CheckAsyncTaskInProgress();
 
@@ -315,7 +315,7 @@ namespace System.IO
         
         public override int Read() {
             if (stream == null)
-                __Error.ReaderClosed();
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
 
             CheckAsyncTaskInProgress();
 
@@ -337,7 +337,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
             if (stream == null)
-                __Error.ReaderClosed();
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
 
             CheckAsyncTaskInProgress();
 
@@ -351,7 +351,7 @@ namespace System.IO
                 if (n == 0) break;  // We're at EOF
                 if (n > count) n = count;
                 if (!readToUserBuffer) {
-                    Buffer.InternalBlockCopy(charBuffer, charPos * 2, buffer, (index + charsRead) * 2, n*2);
+                    Buffer.BlockCopy(charBuffer, charPos * 2, buffer, (index + charsRead) * 2, n*2);
                     charPos += n;
                 }
                 charsRead += n;
@@ -369,7 +369,7 @@ namespace System.IO
         public override String ReadToEnd()
         {
             if (stream == null)
-                __Error.ReaderClosed();
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
 
             CheckAsyncTaskInProgress();
 
@@ -394,7 +394,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
             if (stream == null)
-                __Error.ReaderClosed();
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
 
             CheckAsyncTaskInProgress();
 
@@ -405,7 +405,7 @@ namespace System.IO
         private void CompressBuffer(int n)
         {
             Debug.Assert(byteLen >= n, "CompressBuffer was called with a number of bytes greater than the current buffer length.  Are two threads using this StreamReader at the same time?");
-            Buffer.InternalBlockCopy(byteBuffer, n, byteBuffer, 0, byteLen - n);
+            Buffer.BlockCopy(byteBuffer, n, byteBuffer, 0, byteLen - n);
             byteLen -= n;
         }
 
@@ -704,7 +704,7 @@ namespace System.IO
         public override String ReadLine()
         {
             if (stream == null)
-                __Error.ReaderClosed();
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
 
             CheckAsyncTaskInProgress();
 
@@ -755,7 +755,7 @@ namespace System.IO
                 return base.ReadLineAsync();
 
             if (stream == null)
-                __Error.ReaderClosed();
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
 
             CheckAsyncTaskInProgress();
 
@@ -834,7 +834,7 @@ namespace System.IO
                 return base.ReadToEndAsync();
 
             if (stream == null)
-                __Error.ReaderClosed();
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
 
             CheckAsyncTaskInProgress();
 
@@ -876,7 +876,7 @@ namespace System.IO
                 return base.ReadAsync(buffer, index, count);
 
             if (stream == null)
-                __Error.ReaderClosed();
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
 
             CheckAsyncTaskInProgress();
 
@@ -1027,7 +1027,7 @@ namespace System.IO
 
                 if (!readToUserBuffer)
                 {
-                    Buffer.InternalBlockCopy(charBuffer, charPos * 2, buffer, (index + charsRead) * 2, n * 2);
+                    Buffer.BlockCopy(charBuffer, charPos * 2, buffer, (index + charsRead) * 2, n * 2);
                     charPos += n;
                 }
 
@@ -1061,7 +1061,7 @@ namespace System.IO
                 return base.ReadBlockAsync(buffer, index, count);
 
             if (stream == null)
-                __Error.ReaderClosed();
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
 
             CheckAsyncTaskInProgress();
 

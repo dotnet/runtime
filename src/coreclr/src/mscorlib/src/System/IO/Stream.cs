@@ -284,7 +284,7 @@ namespace System.IO
             byte[] buffer, int offset, int count, AsyncCallback callback, Object state,
             bool serializeAsynchronously, bool apm)
         {
-            if (!CanRead) __Error.ReadNotSupported();
+            if (!CanRead) throw Error.GetReadNotSupported();
 
             // To avoid a race with a stream's position pointer & generating race conditions 
             // with internal buffer indexes in our own streams that 
@@ -449,7 +449,7 @@ namespace System.IO
             byte[] buffer, int offset, int count, AsyncCallback callback, Object state,
             bool serializeAsynchronously, bool apm)
         {
-            if (!CanWrite) __Error.WriteNotSupported();
+            if (!CanWrite) throw Error.GetWriteNotSupported();
 
             // To avoid a race condition with a stream's position pointer & generating conditions 
             // with internal buffer indexes in our own streams that 
@@ -950,7 +950,7 @@ namespace System.IO
 
             public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, Object state)
             {
-                if (!CanRead) __Error.ReadNotSupported();
+                if (!CanRead) throw Error.GetReadNotSupported();
 
                 return BlockingBeginRead(buffer, offset, count, callback, state);
             }
@@ -965,7 +965,7 @@ namespace System.IO
 
             public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, Object state)
             {
-                if (!CanWrite) __Error.WriteNotSupported();
+                if (!CanWrite) throw Error.GetWriteNotSupported();
 
                 return BlockingBeginWrite(buffer, offset, count, callback, state);
             }
@@ -1105,10 +1105,10 @@ namespace System.IO
             {
                 SynchronousAsyncResult ar = asyncResult as SynchronousAsyncResult;
                 if (ar == null || ar._isWrite)
-                    __Error.WrongAsyncResult();
+                    throw new ArgumentException(SR.Arg_WrongAsyncResult);
 
                 if (ar._endXxxCalled)
-                    __Error.EndReadCalledTwice();
+                    throw new ArgumentException(SR.InvalidOperation_EndReadCalledMultiple);
 
                 ar._endXxxCalled = true;
 
@@ -1120,10 +1120,10 @@ namespace System.IO
             {
                 SynchronousAsyncResult ar = asyncResult as SynchronousAsyncResult;
                 if (ar == null || !ar._isWrite)
-                    __Error.WrongAsyncResult();
+                    throw new ArgumentException(SR.Arg_WrongAsyncResult);
 
                 if (ar._endXxxCalled)
-                    __Error.EndWriteCalledTwice();
+                    throw new ArgumentException(SR.InvalidOperation_EndWriteCalledMultiple);
 
                 ar._endXxxCalled = true;
 

@@ -35,14 +35,6 @@ namespace System
         public static extern void BlockCopy(Array src, int srcOffset,
             Array dst, int dstOffset, int count);
 
-        // A very simple and efficient memmove that assumes all of the
-        // parameter validation has already been done.  The count and offset
-        // parameters here are in bytes.  If you want to use traditional
-        // array element indices and counts, use Array.Copy.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void InternalBlockCopy(Array src, int srcOffsetBytes,
-            Array dst, int dstOffsetBytes, int byteCount);
-
         // This is ported from the optimized CRT assembly in memchr.asm. The JIT generates 
         // pretty good code here and this ends up being within a couple % of the CRT asm.
         // It is however cross platform as the CRT hasn't ported their fast version to 64-bit
