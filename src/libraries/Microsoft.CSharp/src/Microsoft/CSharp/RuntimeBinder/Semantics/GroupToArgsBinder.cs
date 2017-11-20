@@ -88,7 +88,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // This method does the actual binding.
             // ----------------------------------------------------------------------------
 
-            public bool Bind(bool bReportErrors)
+            public void Bind()
             {
                 Debug.Assert(_pGroup.SymKind == SYMKIND.SK_MethodSymbol || _pGroup.SymKind == SYMKIND.SK_PropertySymbol && 0 != (_pGroup.Flags & EXPRFLAG.EXF_INDEXER));
 
@@ -96,17 +96,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert(_pArguments.fHasExprs);
 
                 LookForCandidates();
-                if (!GetResultOfBind(bReportErrors))
+                if (!GetResultOfBind())
                 {
-                    if (bReportErrors)
-                    {
-                        throw ReportErrorsOnFailure();
-                    }
-
-                    return false;
+                    throw ReportErrorsOnFailure();
                 }
-
-                return true;
             }
 
             public GroupToArgsBinderResult GetResultsOfBind()
@@ -328,7 +321,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
 
-            private bool GetResultOfBind(bool bReportErrors)
+            private bool GetResultOfBind()
             {
                 // We looked at all the evidence, and we come to render the verdict:
 
@@ -348,27 +341,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                         if (null == pmethBest)
                         {
-                            // Arbitrarily use the first one, but make sure to report errors or give the ambiguous one
-                            // back to the caller.
-                            pmethBest = pAmbig1;
                             _results.AmbiguousResult = pAmbig2.mpwi;
-
-                            if (bReportErrors)
+                            if (pAmbig1.@params != pAmbig2.@params ||
+                                pAmbig1.mpwi.MethProp().Params.Count != pAmbig2.mpwi.MethProp().Params.Count ||
+                                pAmbig1.mpwi.TypeArgs != pAmbig2.mpwi.TypeArgs ||
+                                pAmbig1.mpwi.GetType() != pAmbig2.mpwi.GetType() ||
+                                pAmbig1.mpwi.MethProp().Params == pAmbig2.mpwi.MethProp().Params)
                             {
-                                if (pAmbig1.@params != pAmbig2.@params ||
-                                    pAmbig1.mpwi.MethProp().Params.Count != pAmbig2.mpwi.MethProp().Params.Count ||
-                                    pAmbig1.mpwi.TypeArgs != pAmbig2.mpwi.TypeArgs ||
-                                    pAmbig1.mpwi.GetType() != pAmbig2.mpwi.GetType() ||
-                                    pAmbig1.mpwi.MethProp().Params == pAmbig2.mpwi.MethProp().Params)
-                                {
-                                    throw GetErrorContext().Error(ErrorCode.ERR_AmbigCall, pAmbig1.mpwi, pAmbig2.mpwi);
-                                }
-                                else
-                                {
-                                    // The two signatures are identical so don't use the type args in the error message.
-                                    throw GetErrorContext().Error(ErrorCode.ERR_AmbigCall, pAmbig1.mpwi.MethProp(), pAmbig2.mpwi.MethProp());
-                                }
+                                throw GetErrorContext().Error(ErrorCode.ERR_AmbigCall, pAmbig1.mpwi, pAmbig2.mpwi);
                             }
+
+                            // The two signatures are identical so don't use the type args in the error message.
+                            throw GetErrorContext().Error(ErrorCode.ERR_AmbigCall, pAmbig1.mpwi.MethProp(), pAmbig2.mpwi.MethProp());
                         }
                     }
 
@@ -378,10 +362,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                     // Record our best match in the memgroup as well. This is temporary.
 
-                    if (bReportErrors)
+                    if (true)
                     {
                         ReportErrorsOnSuccess();
                     }
+
                     return true;
                 }
 
