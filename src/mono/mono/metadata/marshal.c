@@ -9471,7 +9471,7 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 
 		/* initialize dst_ptr */
 		mono_mb_emit_byte (mb, CEE_LDARG_1);
-		mono_mb_emit_op (mb, CEE_UNBOX, klass);
+		mono_mb_emit_ldflda (mb, sizeof (MonoObject));
 		mono_mb_emit_stloc (mb, 1);
 
 		emit_struct_conv (mb, klass, TRUE);
