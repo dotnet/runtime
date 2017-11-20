@@ -413,7 +413,7 @@
     <value>Search pattern '{0}' cannot contain ".." to move up directories and can be contained only internally in file/directory names, as in "a..b".</value>
   </data>
   <data name="Arg_InvalidTypeInRetType" xml:space="preserve">
-    <value>The return Type contains some invalid type (i.e. null, ByRef)</value>
+    <value>The return Type must be a type provided by the runtime.</value>
   </data>
   <data name="Arg_InvalidTypeInSignature" xml:space="preserve">
     <value>The signature Type array contains some invalid type (i.e. null, void)</value>
@@ -3685,7 +3685,7 @@
   <data name="NotSupported_SignatureType" xml:space="preserve">
     <value>This method is not supported on signature types.</value>
   </data>
-    <data name="Memory_ThrowIfDisposed" xml:space="preserve">
+  <data name="Memory_ThrowIfDisposed" xml:space="preserve">
     <value>Memory&lt;T&gt; has been disposed.</value>
   </data>
   <data name="Memory_OutstandingReferences" xml:space="preserve">
