@@ -17,6 +17,9 @@ namespace System.Net.NameResolution.Tests
 
         public const string LocalIPString = "127.0.0.1";
 
+        // Timeout values in milliseconds.
+        public const int PassingTestTimeout = 30_000;
+
         public static Task<IPAddress> GetLocalIPAddress()
         {
             return ResolveHost(TestSettings.LocalHost, TestSettings.AddressFamily);
@@ -32,6 +35,8 @@ namespace System.Net.NameResolution.Tests
                     AddressFamily.InterNetwork;
             }
         }
+
+        public static Task WhenAllOrAnyFailedWithTimeout(params Task[] tasks) => tasks.WhenAllOrAnyFailed(PassingTestTimeout);
 
         private static async Task<IPAddress> ResolveHost(string host, AddressFamily family)
         {
