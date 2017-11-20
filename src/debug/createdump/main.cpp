@@ -12,7 +12,7 @@ const char* g_help = "createdump [options] pid\n"
 "-u, --full - create full core dump.\n" 
 "-d, --diag - enable diagnostic messages.\n";
 
-bool CreateDumpCommon(const char* programPath, const char* dumpPathTemplate, MINIDUMP_TYPE minidumpType, CrashInfo* crashInfo);
+bool CreateDumpCommon(const char* dumpPathTemplate, MINIDUMP_TYPE minidumpType, CrashInfo* crashInfo);
 
 //
 // Main entry point
@@ -34,13 +34,8 @@ int __cdecl main(const int argc, const char* argv[])
         return exitCode;
     }
 
-    // Parse off the program name leaving just the path. Used to locate/load the DAC module.
-    std::string programPath;
-    programPath.append(*argv++);
-    size_t last = programPath.find_last_of('/');
-    programPath = programPath.substr(0, last);
-
     // Parse the command line options and target pid
+    argv++;
     for (int i = 1; i < argc; i++)
     {
         if (*argv != nullptr)
@@ -83,7 +78,7 @@ int __cdecl main(const int argc, const char* argv[])
         // The initialize the data target's ReadVirtual support (opens /proc/$pid/mem)
         if (dataTarget->Initialize(crashInfo))
         {
-            if (!CreateDumpCommon(programPath.c_str(), dumpPathTemplate, minidumpType, crashInfo))
+            if (!CreateDumpCommon(dumpPathTemplate, minidumpType, crashInfo))
             {
                 exitCode = -1;
             }
