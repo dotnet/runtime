@@ -39,8 +39,8 @@ namespace System.Net.Security.Tests
                     {
                         // Invoke tests that'll cause some events to be generated
                         var test = new SslStreamStreamToStreamTest_Async();
-                        test.SslStream_StreamToStream_Authentication_Success();
-                        test.SslStream_StreamToStream_Successive_ClientWrite_Sync_Success();
+                        test.SslStream_StreamToStream_Authentication_Success().GetAwaiter().GetResult();
+                        test.SslStream_StreamToStream_Successive_ClientWrite_Sync_Success().GetAwaiter().GetResult();
                     });
                     Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
                     Assert.InRange(events.Count, 1, int.MaxValue);
