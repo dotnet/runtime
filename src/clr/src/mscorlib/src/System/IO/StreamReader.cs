@@ -327,7 +327,7 @@ namespace System.IO
             return result;
         }
     
-        public override int Read([In, Out] char[] buffer, int index, int count)
+        public override int Read(char[] buffer, int index, int count)
         {
             if (buffer==null)
                 throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
@@ -384,7 +384,7 @@ namespace System.IO
             return GetStringAndReleaseSharedStringBuilder(sb);
         }
 
-        public override int ReadBlock([In, Out] char[] buffer, int index, int count)
+        public override int ReadBlock(char[] buffer, int index, int count)
         {
             if (buffer==null)
                 throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
