@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Net.Security;
 using System.Net.Test.Common;
 using System.Runtime.InteropServices;
@@ -70,5 +71,67 @@ namespace System.Net.Http.Functional.Tests
 
         [DllImport("System.Net.Http.Native", EntryPoint = "HttpNative_GetSslVersionDescription")]
         private static extern string CurlSslVersionDescription();
+
+        [Theory]
+        [InlineData(false, false, false, false, false)] // system -> ok
+        // may fall back:
+        [InlineData(true, true, false, false, false)]   // empty dir, system bundle -> ok
+        [InlineData(false, false, true, true, true)]    // empty bundle -> fail
+        // invalid:
+        [InlineData(true, false, false, false, true)]   // non-existing dir -> fail
+        [InlineData(false, false, true, false, true)]   // non-existing bundle -> fail
+        // empty:
+        [InlineData(true, true, true, true, true)]     // empty dir, empty bundle file -> fail
+        public void HttpClientUsesSslCertEnvironmentVariables(bool setSslCertDir, bool createSslCertDir, bool setSslCertFile, bool createSslCertFile, bool expectedFailure)
+        {
+            bool badConfig = false;
+
+            var psi = new ProcessStartInfo();
+            if (setSslCertDir)
+            {
+                string sslCertDir = GetTestFilePath();
+                if (createSslCertDir)
+                {
+                    Directory.CreateDirectory(sslCertDir);
+                }
+                else
+                {
+                    badConfig = true;
+                }
+                psi.Environment.Add("SSL_CERT_DIR", sslCertDir);
+            }
+
+            if (setSslCertFile)
+            {
+                string sslCertFile = GetTestFilePath();
+                if (createSslCertFile)
+                {
+                    File.WriteAllText(sslCertFile, "");
+                }
+                else
+                {
+                    badConfig = true;
+                }
+                psi.Environment.Add("SSL_CERT_FILE", sslCertFile);
+            }
+
+            string arg = badConfig ? "badconfig" : expectedFailure ? "failure" : "success";
+            RemoteInvoke(async expected =>
+            {
+                const string Url = "https://www.microsoft.com";
+                using (HttpClient client = new HttpClient())
+                {
+                    if (expected != "success")
+                    {
+                        await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Url));
+                    }
+                    else
+                    {
+                        await client.GetAsync(Url);
+                    }
+                }
+                return SuccessExitCode;
+            }, arg, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+        }
     }
 }
