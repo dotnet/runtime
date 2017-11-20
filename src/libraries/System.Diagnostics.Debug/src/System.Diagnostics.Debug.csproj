@@ -18,8 +18,8 @@
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="System\Diagnostics\DebuggerStepperBoundaryAttribute.cs" />
-    <Compile Include="System\Diagnostics\DebuggerVisualizerAttribute.cs" />
+    <Compile Include="System\Diagnostics\DebuggerStepperBoundaryAttribute.cs" Condition="'$(TargetGroup)' == 'uapaot'" />
+    <Compile Include="System\Diagnostics\DebuggerVisualizerAttribute.cs" Condition="'$(TargetGroup)' == 'uapaot'" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
