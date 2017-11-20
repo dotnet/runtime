@@ -231,12 +231,30 @@ namespace System.IO
             base.Dispose(disposing);
         }
 
+        private void EnsureNotClosed()
+        {
+            if (!_isOpen)
+                throw Error.GetStreamIsClosed();
+        }
+
+        private void EnsureReadable()
+        {
+            if (!CanRead)
+                throw Error.GetReadNotSupported();
+        }
+
+        private void EnsureWriteable()
+        {
+            if (!CanWrite)
+                throw Error.GetWriteNotSupported();
+        }
+
         /// <summary>
         /// Since it's a memory stream, this method does nothing.
         /// </summary>
         public override void Flush()
         {
-            if (!_isOpen) throw Error.GetStreamIsClosed();
+            EnsureNotClosed();
         }
 
         /// <summary>
@@ -267,7 +285,7 @@ namespace System.IO
         {
             get
             {
-                if (!_isOpen) throw Error.GetStreamIsClosed();
+                EnsureNotClosed();
                 return Interlocked.Read(ref _length);
             }
         }
@@ -279,7 +297,7 @@ namespace System.IO
         {
             get
             {
-                if (!_isOpen) throw Error.GetStreamIsClosed();
+                EnsureNotClosed();
                 return _capacity;
             }
         }
@@ -311,8 +329,10 @@ namespace System.IO
         {
             get
             {
-                if (_buffer != null) throw new NotSupportedException(SR.NotSupported_UmsSafeBuffer);
-                if (!_isOpen) throw Error.GetStreamIsClosed();
+                if (_buffer != null)
+                    throw new NotSupportedException(SR.NotSupported_UmsSafeBuffer);
+
+                EnsureNotClosed();
 
                 // Use a temp to avoid a race
                 long pos = Interlocked.Read(ref _position);
@@ -323,8 +343,10 @@ namespace System.IO
             }
             set
             {
-                if (_buffer != null) throw new NotSupportedException(SR.NotSupported_UmsSafeBuffer);
-                if (!_isOpen) throw Error.GetStreamIsClosed();
+                if (_buffer != null)
+                    throw new NotSupportedException(SR.NotSupported_UmsSafeBuffer);
+
+                EnsureNotClosed();
 
                 if (value < _mem)
                     throw new IOException(SR.IO_SeekBeforeBegin);
@@ -374,8 +396,8 @@ namespace System.IO
 
         internal int ReadCore(Span<byte> destination)
         {
-            if (!_isOpen) throw Error.GetStreamIsClosed();
-            if (!CanRead) throw Error.GetReadNotSupported();
+            EnsureNotClosed();
+            EnsureReadable();
 
             // Use a local variable to avoid a race where another thread 
             // changes our position after we decide we can read some bytes.
@@ -504,8 +526,8 @@ namespace System.IO
         /// <returns></returns>
         public override int ReadByte()
         {
-            if (!_isOpen) throw Error.GetStreamIsClosed();
-            if (!CanRead) throw Error.GetReadNotSupported();
+            EnsureNotClosed();
+            EnsureReadable();
 
             long pos = Interlocked.Read(ref _position);  // Use a local to avoid a race condition
             long len = Interlocked.Read(ref _length);
@@ -551,7 +573,8 @@ namespace System.IO
         /// <returns></returns>
         public override long Seek(long offset, SeekOrigin loc)
         {
-            if (!_isOpen) throw Error.GetStreamIsClosed();
+            EnsureNotClosed();
+
             switch (loc)
             {
                 case SeekOrigin.Begin:
@@ -593,8 +616,9 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (_buffer != null)
                 throw new NotSupportedException(SR.NotSupported_UmsSafeBuffer);
-            if (!_isOpen) throw Error.GetStreamIsClosed();
-            if (!CanWrite) throw Error.GetWriteNotSupported();
+
+            EnsureNotClosed();
+            EnsureWriteable();
 
             if (value > _capacity)
                 throw new IOException(SR.IO_FixedCapacity);
@@ -652,8 +676,8 @@ namespace System.IO
 
         internal unsafe void WriteCore(ReadOnlySpan<byte> source)
         {
-            if (!_isOpen) throw Error.GetStreamIsClosed();
-            if (!CanWrite) throw Error.GetWriteNotSupported();
+            EnsureNotClosed();
+            EnsureWriteable();
 
             long pos = Interlocked.Read(ref _position);  // Use a local to avoid a race condition
             long len = Interlocked.Read(ref _length);
@@ -792,8 +816,8 @@ namespace System.IO
         /// <param name="value"></param>
         public override void WriteByte(byte value)
         {
-            if (!_isOpen) throw Error.GetStreamIsClosed();
-            if (!CanWrite) throw Error.GetWriteNotSupported();
+            EnsureNotClosed();
+            EnsureWriteable();
 
             long pos = Interlocked.Read(ref _position);  // Use a local to avoid a race condition
             long len = Interlocked.Read(ref _length);

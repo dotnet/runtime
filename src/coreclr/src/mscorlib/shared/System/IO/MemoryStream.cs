@@ -2,24 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-** 
-** 
-**
-**
-** Purpose: A Stream whose backing store is memory.  Great
-** for temporary storage without creating a temp file.  Also
-** lets users expose a byte[] as a stream.
-**
-**
-===========================================================*/
-
 using System;
-using System.Runtime;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -49,7 +34,7 @@ namespace System.IO
 
         private Task<int> _lastReadTask; // The last successful task returned from ReadAsync
 
-        private const int MemStreamMaxLength = Int32.MaxValue;
+        private const int MemStreamMaxLength = int.MaxValue;
 
         public MemoryStream()
             : this(0)
@@ -59,9 +44,7 @@ namespace System.IO
         public MemoryStream(int capacity)
         {
             if (capacity < 0)
-            {
                 throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NegativeCapacity);
-            }
 
             _buffer = capacity != 0 ? new byte[capacity] : Array.Empty<byte>();
             _capacity = capacity;
@@ -79,7 +62,9 @@ namespace System.IO
 
         public MemoryStream(byte[] buffer, bool writable)
         {
-            if (buffer == null) throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
+
             _buffer = buffer;
             _length = _capacity = buffer.Length;
             _writable = writable;
@@ -118,24 +103,22 @@ namespace System.IO
             _isOpen = true;
         }
 
-        public override bool CanRead
-        {
-            get { return _isOpen; }
-        }
+        public override bool CanRead => _isOpen;
 
-        public override bool CanSeek
-        {
-            get { return _isOpen; }
-        }
+        public override bool CanSeek => _isOpen;
 
-        public override bool CanWrite
+        public override bool CanWrite => _writable;
+
+        private void EnsureNotClosed()
         {
-            get { return _writable; }
+            if (!_isOpen)
+                throw Error.GetStreamIsClosed();
         }
 
         private void EnsureWriteable()
         {
-            if (!CanWrite) throw Error.GetWriteNotSupported();
+            if (!CanWrite)
+                throw Error.GetWriteNotSupported();
         }
 
         protected override void Dispose(bool disposing)
@@ -164,19 +147,28 @@ namespace System.IO
             // Check for overflow
             if (value < 0)
                 throw new IOException(SR.IO_StreamTooLong);
+
             if (value > _capacity)
             {
                 int newCapacity = value;
                 if (newCapacity < 256)
+                {
                     newCapacity = 256;
+                }
+
                 // We are ok with this overflowing since the next statement will deal
                 // with the cases where _capacity*2 overflows.
                 if (newCapacity < _capacity * 2)
+                {
                     newCapacity = _capacity * 2;
-                // We want to expand the array up to Array.MaxArrayLengthOneDimensional
+                }
+
+                // We want to expand the array up to Array.MaxByteArrayLength
                 // And we want to give the user the value that they asked for
                 if ((uint)(_capacity * 2) > Array.MaxByteArrayLength)
+                {
                     newCapacity = value > Array.MaxByteArrayLength ? value : Array.MaxByteArrayLength;
+                }
 
                 Capacity = newCapacity;
                 return true;
@@ -235,15 +227,13 @@ namespace System.IO
         // PERF: True cursor position, we don't need _origin for direct access
         internal int InternalGetPosition()
         {
-            if (!_isOpen) throw Error.GetStreamIsClosed();
             return _position;
         }
 
         // PERF: Takes out Int32 as fast as possible
         internal int InternalReadInt32()
         {
-            if (!_isOpen)
-                throw Error.GetStreamIsClosed();
+            EnsureNotClosed();
 
             int pos = (_position += 4); // use temp to avoid a race condition
             if (pos > _length)
@@ -257,11 +247,13 @@ namespace System.IO
         // PERF: Get actual length of bytes available for read; do sanity checks; shift position - i.e. everything except actual copying bytes
         internal int InternalEmulateRead(int count)
         {
-            if (!_isOpen) throw Error.GetStreamIsClosed();
+            EnsureNotClosed();
 
             int n = _length - _position;
-            if (n > count) n = count;
-            if (n < 0) n = 0;
+            if (n > count)
+                n = count;
+            if (n < 0)
+                n = 0;
 
             Debug.Assert(_position + n >= 0, "_position + n >= 0");  // len is less than 2^31 -1.
             _position += n;
@@ -276,7 +268,7 @@ namespace System.IO
         {
             get
             {
-                if (!_isOpen) throw Error.GetStreamIsClosed();
+                EnsureNotClosed();
                 return _capacity - _origin;
             }
             set
@@ -286,8 +278,7 @@ namespace System.IO
                 if (value < Length)
                     throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_SmallCapacity);
 
-                if (!_isOpen)
-                    throw Error.GetStreamIsClosed();
+                EnsureNotClosed();
 
                 if (!_expandable && (value != Capacity))
                     throw new NotSupportedException(SR.NotSupported_MemStreamNotExpandable);
@@ -298,7 +289,10 @@ namespace System.IO
                     if (value > 0)
                     {
                         byte[] newBuffer = new byte[value];
-                        if (_length > 0) Buffer.BlockCopy(_buffer, 0, newBuffer, 0, _length);
+                        if (_length > 0)
+                        {
+                            Buffer.BlockCopy(_buffer, 0, newBuffer, 0, _length);
+                        }
                         _buffer = newBuffer;
                     }
                     else
@@ -314,7 +308,7 @@ namespace System.IO
         {
             get
             {
-                if (!_isOpen) throw Error.GetStreamIsClosed();
+                EnsureNotClosed();
                 return _length - _origin;
             }
         }
@@ -323,7 +317,7 @@ namespace System.IO
         {
             get
             {
-                if (!_isOpen) throw Error.GetStreamIsClosed();
+                EnsureNotClosed();
                 return _position - _origin;
             }
             set
@@ -331,7 +325,7 @@ namespace System.IO
                 if (value < 0)
                     throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
 
-                if (!_isOpen) throw Error.GetStreamIsClosed();
+                EnsureNotClosed();
 
                 if (value > MemStreamMaxLength)
                     throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_StreamLength);
@@ -339,7 +333,7 @@ namespace System.IO
             }
         }
 
-        public override int Read([In, Out] byte[] buffer, int offset, int count)
+        public override int Read(byte[] buffer, int offset, int count)
         {
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
@@ -350,10 +344,11 @@ namespace System.IO
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
-            if (!_isOpen) throw Error.GetStreamIsClosed();
+            EnsureNotClosed();
 
             int n = _length - _position;
-            if (n > count) n = count;
+            if (n > count)
+                n = count;
             if (n <= 0)
                 return 0;
 
@@ -382,18 +377,13 @@ namespace System.IO
                 return base.Read(destination);
             }
 
-            if (!_isOpen)
-            {
-                throw Error.GetStreamIsClosed();
-            }
+            EnsureNotClosed();
 
             int n = Math.Min(_length - _position, destination.Length);
             if (n <= 0)
-            {
                 return 0;
-            }
 
-            // TODO https://github.com/dotnet/corefx/issues/22388:
+            // TODO https://github.com/dotnet/coreclr/issues/15076:
             // Read(byte[], int, int) has an n <= 8 optimization, presumably based
             // on benchmarking.  Determine if/where such a cut-off is here and add
             // an equivalent optimization if necessary.
@@ -472,12 +462,12 @@ namespace System.IO
             }
         }
 
-
         public override int ReadByte()
         {
-            if (!_isOpen) throw Error.GetStreamIsClosed();
+            EnsureNotClosed();
 
-            if (_position >= _length) return -1;
+            if (_position >= _length)
+                return -1;
 
             return _buffer[_position++];
         }
@@ -512,7 +502,7 @@ namespace System.IO
             }
         }
 
-        public override Task CopyToAsync(Stream destination, Int32 bufferSize, CancellationToken cancellationToken)
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             // This implementation offers beter performance compared to the base class version.
 
@@ -522,7 +512,7 @@ namespace System.IO
             // since it does not call through to ReadAsync() which a subclass might have overridden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into ReadAsync) when we are not sure.
-            if (this.GetType() != typeof(MemoryStream))
+            if (GetType() != typeof(MemoryStream))
                 return base.CopyToAsync(destination, bufferSize, cancellationToken);
 
             // If cancelled - return fast:
@@ -533,8 +523,8 @@ namespace System.IO
             //   (require that InternalEmulateRead does not throw,
             //    otherwise it needs to be wrapped into try-catch-Task.FromException like memStrDest.Write below)
 
-            Int32 pos = _position;
-            Int32 n = InternalEmulateRead(_length - _position);
+            int pos = _position;
+            int n = InternalEmulateRead(_length - _position);
 
             // If we were already at or past the end, there's no copying to do so just quit.
             if (n == 0)
@@ -560,10 +550,11 @@ namespace System.IO
 
         public override long Seek(long offset, SeekOrigin loc)
         {
-            if (!_isOpen) throw Error.GetStreamIsClosed();
+            EnsureNotClosed();
 
             if (offset > MemStreamMaxLength)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_StreamLength);
+
             switch (loc)
             {
                 case SeekOrigin.Begin:
@@ -600,41 +591,42 @@ namespace System.IO
 
         // Sets the length of the stream to a given value.  The new
         // value must be nonnegative and less than the space remaining in
-        // the array, Int32.MaxValue - origin
+        // the array, int.MaxValue - origin
         // Origin is 0 in all cases other than a MemoryStream created on
         // top of an existing array and a specific starting offset was passed 
         // into the MemoryStream constructor.  The upper bounds prevents any 
         // situations where a stream may be created on top of an array then 
         // the stream is made longer than the maximum possible length of the 
-        // array (Int32.MaxValue).
+        // array (int.MaxValue).
         // 
         public override void SetLength(long value)
         {
-            if (value < 0 || value > Int32.MaxValue)
-            {
+            if (value < 0 || value > int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_StreamLength);
-            }
+
             EnsureWriteable();
 
             // Origin wasn't publicly exposed above.
-            Debug.Assert(MemStreamMaxLength == Int32.MaxValue);  // Check parameter validation logic in this method if this fails.
-            if (value > (Int32.MaxValue - _origin))
-            {
+            Debug.Assert(MemStreamMaxLength == int.MaxValue);  // Check parameter validation logic in this method if this fails.
+            if (value > (int.MaxValue - _origin))
                 throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_StreamLength);
-            }
 
             int newLength = _origin + (int)value;
             bool allocatedNewArray = EnsureCapacity(newLength);
             if (!allocatedNewArray && newLength > _length)
                 Array.Clear(_buffer, _length, newLength - _length);
             _length = newLength;
-            if (_position > newLength) _position = newLength;
+            if (_position > newLength)
+                _position = newLength;
         }
 
         public virtual byte[] ToArray()
         {
-            byte[] copy = new byte[_length - _origin];
-            Buffer.BlockCopy(_buffer, _origin, copy, 0, _length - _origin);
+            int count = _length - _origin;
+            if (count == 0)
+                return Array.Empty<byte>();
+            byte[] copy = new byte[count];
+            Buffer.BlockCopy(_buffer, _origin, copy, 0, count);
             return copy;
         }
 
@@ -649,7 +641,7 @@ namespace System.IO
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
-            if (!_isOpen) throw Error.GetStreamIsClosed();
+            EnsureNotClosed();
             EnsureWriteable();
 
             int i = _position + count;
@@ -664,20 +656,28 @@ namespace System.IO
                 {
                     bool allocatedNewArray = EnsureCapacity(i);
                     if (allocatedNewArray)
+                    {
                         mustZero = false;
+                    }
                 }
                 if (mustZero)
+                {
                     Array.Clear(_buffer, _length, i - _length);
+                }
                 _length = i;
             }
             if ((count <= 8) && (buffer != _buffer))
             {
                 int byteCount = count;
                 while (--byteCount >= 0)
+                {
                     _buffer[_position + byteCount] = buffer[offset + byteCount];
+                }
             }
             else
+            {
                 Buffer.BlockCopy(buffer, offset, _buffer, _position, count);
+            }
             _position = i;
         }
 
@@ -692,18 +692,13 @@ namespace System.IO
                 return;
             }
 
-            if (!_isOpen)
-            {
-                throw Error.GetStreamIsClosed();
-            }
+            EnsureNotClosed();
             EnsureWriteable();
 
             // Check for overflow
             int i = _position + source.Length;
             if (i < 0)
-            {
                 throw new IOException(SR.IO_StreamTooLong);
-            }
 
             if (i > _length)
             {
@@ -790,7 +785,7 @@ namespace System.IO
 
         public override void WriteByte(byte value)
         {
-            if (!_isOpen) throw Error.GetStreamIsClosed();
+            EnsureNotClosed();
             EnsureWriteable();
 
             if (_position >= _length)
@@ -801,10 +796,14 @@ namespace System.IO
                 {
                     bool allocatedNewArray = EnsureCapacity(newLength);
                     if (allocatedNewArray)
+                    {
                         mustZero = false;
+                    }
                 }
                 if (mustZero)
+                {
                     Array.Clear(_buffer, _length, _position - _length);
+                }
                 _length = newLength;
             }
             _buffer[_position++] = value;
@@ -816,7 +815,8 @@ namespace System.IO
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream), SR.ArgumentNull_Stream);
 
-            if (!_isOpen) throw Error.GetStreamIsClosed();
+            EnsureNotClosed();
+
             stream.Write(_buffer, _origin, _length - _origin);
         }
     }
