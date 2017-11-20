@@ -821,18 +821,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return _stvcClass.GetTypeVarSym(iv, this, false);
         }
 
+        // These are singletons for each.
         public TypeParameterType GetTypeParameter(TypeParameterSymbol pSymbol)
         {
-            // These guys should be singletons for each.
-
-            TypeParameterType pTypeParameter = _typeTable.LookupTypeParameter(pSymbol);
-            if (pTypeParameter == null)
-            {
-                pTypeParameter = _typeFactory.CreateTypeParameter(pSymbol);
-                _typeTable.InsertTypeParameter(pSymbol, pTypeParameter);
-            }
-
-            return pTypeParameter;
+            Debug.Assert(pSymbol.GetTypeParameterType() == null); // Should have been checked first before creating
+            return _typeFactory.CreateTypeParameter(pSymbol);
         }
 
         // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
