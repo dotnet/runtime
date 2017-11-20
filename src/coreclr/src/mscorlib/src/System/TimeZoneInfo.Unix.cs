@@ -461,7 +461,7 @@ namespace System
                         {
                             int n = stream.Read(buffer, index, count);
                             if (n == 0)
-                                __Error.EndOfFile();
+                                throw Error.GetEndOfFile();
 
                             int end = index + n;
                             for (; index < end; index++)
