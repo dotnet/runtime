@@ -268,7 +268,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 return BetterType.Right;
             }
-            if ((int)pt1 <= NUM_EXT_TYPES && (int)pt2 <= NUM_EXT_TYPES)
+            if ((int)pt1 < NUM_EXT_TYPES && (int)pt2 < NUM_EXT_TYPES)
             {
                 return WhichSimpleConversionIsBetter(pt1, pt2);
             }
@@ -322,7 +322,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             PredefinedType pt1 = (type1 as NullableType).UnderlyingType.getPredefType();
             PredefinedType pt2 = (type2 as NullableType).UnderlyingType.getPredefType();
 
-            if ((int)pt1 <= NUM_EXT_TYPES && (int)pt2 <= NUM_EXT_TYPES)
+            if ((int)pt1 < NUM_EXT_TYPES && (int)pt2 < NUM_EXT_TYPES)
             {
                 return WhichSimpleConversionIsBetter(pt1, pt2);
             }
