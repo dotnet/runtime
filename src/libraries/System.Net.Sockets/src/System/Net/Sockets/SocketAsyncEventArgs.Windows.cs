@@ -15,12 +15,7 @@ namespace System.Net.Sockets
         // Single buffer
         private MemoryHandle _singleBufferHandle;
         private volatile SingleBufferHandleState _singleBufferHandleState;
-        private enum SingleBufferHandleState : byte
-        {
-            None,
-            InProcess,
-            Set
-        }
+        private enum SingleBufferHandleState : byte { None, InProcess, Set }
 
         // BufferList property variables.
         // Note that these arrays are allocated and then grown as necessary, but never shrunk.
@@ -41,51 +36,24 @@ namespace System.Net.Sockets
         private Internals.SocketAddress _pinnedSocketAddress;
 
         // SendPacketsElements property variables.
-        private SendPacketsElement[] _sendPacketsElementsInternal;
-        private Interop.Winsock.TransmitPacketsElement[] _sendPacketsDescriptor;
-        private int _sendPacketsElementsFileCount;
-        private int _sendPacketsElementsBufferCount;
-
-        // Internal variables for SendPackets
         private FileStream[] _sendPacketsFileStreams;
-        private SafeHandle[] _sendPacketsFileHandles;
 
         // Overlapped object related variables.
         private PreAllocatedOverlapped _preAllocatedOverlapped;
 
-        private enum PinState : byte
-        {
-            None = 0,
-            MultipleBuffer,
-            SendPackets
-        }
         private PinState _pinState;
+        private enum PinState : byte { None = 0, MultipleBuffer, SendPackets }
 
         private void InitializeInternals()
         {
             _preAllocatedOverlapped = new PreAllocatedOverlapped(s_completionPortCallback, this, null);
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"new PreAllocatedOverlapped {_preAllocatedOverlapped}");
-
-            // Zero tells TransmitPackets to select a default send size.
-            _sendPacketsSendSize = 0;
         }
 
         private void FreeInternals()
         {
             FreePinHandles();
-
-            // Free native overlapped data.
             FreeOverlapped();
-        }
-
-        private void SetupMultipleBuffers()
-        {
-            CheckPinMultipleBuffers();
-        }
-
-        private void SetupSendPacketsElements()
-        {
-            _sendPacketsElementsInternal = null;
         }
 
         private unsafe NativeOverlapped* AllocateNativeOverlapped()
@@ -638,7 +606,7 @@ namespace System.Net.Sockets
         {
             // Cache copy to avoid problems with concurrent manipulation during the async operation.
             Debug.Assert(_sendPacketsElements != null);
-            _sendPacketsElementsInternal = (SendPacketsElement[])_sendPacketsElements.Clone();
+            SendPacketsElement[] sendPacketsElementsCopy = (SendPacketsElement[])_sendPacketsElements.Clone();
 
             // TransmitPackets uses an array of TRANSMIT_PACKET_ELEMENT structs as
             // descriptors for buffers and files to be sent.  It also takes a send size
@@ -647,32 +615,31 @@ namespace System.Net.Sockets
             // native TRANSMIT_PACKET_ELEMENT array that will be passed to TransmitPackets.
 
             // Scan the elements to count files and buffers.
-            _sendPacketsElementsFileCount = _sendPacketsElementsBufferCount = 0;
-            foreach (SendPacketsElement spe in _sendPacketsElementsInternal)
+            int sendPacketsElementsFileCount = 0, sendPacketsElementsBufferCount = 0;
+            foreach (SendPacketsElement spe in sendPacketsElementsCopy)
             {
                 if (spe != null)
                 {
                     if (spe._filePath != null)
                     {
-                        _sendPacketsElementsFileCount++;
+                        sendPacketsElementsFileCount++;
                     }
                     else if (spe._buffer != null && spe._count > 0)
                     {
-                        _sendPacketsElementsBufferCount++;
+                        sendPacketsElementsBufferCount++;
                     }
                 }
             }
 
             // Attempt to open the files if any were given.
-            if (_sendPacketsElementsFileCount > 0)
+            if (sendPacketsElementsFileCount > 0)
             {
-                // Create arrays for streams and handles.
-                _sendPacketsFileStreams = new FileStream[_sendPacketsElementsFileCount];
-                _sendPacketsFileHandles = new SafeHandle[_sendPacketsElementsFileCount];
+                // Create arrays for streams.
+                _sendPacketsFileStreams = new FileStream[sendPacketsElementsFileCount];
 
                 // Loop through the elements attempting to open each files and get its handle.
                 int index = 0;
-                foreach (SendPacketsElement spe in _sendPacketsElementsInternal)
+                foreach (SendPacketsElement spe in sendPacketsElementsCopy)
                 {
                     if (spe != null && spe._filePath != null)
                     {
@@ -690,42 +657,33 @@ namespace System.Net.Sockets
                         }
                         if (fileStreamException != null)
                         {
-                            // Got an exception opening a file - do some cleanup then throw.
-                            for (int i = 0; i < _sendPacketsElementsFileCount; i++)
+                            // Got an exception opening a file - close any open streams, then throw.
+                            for (int i = 0; i < sendPacketsElementsFileCount; i++)
                             {
-                                // Drop handles.
-                                _sendPacketsFileHandles[i] = null;
-
-                                // Close any open streams.
-                                if (_sendPacketsFileStreams[i] != null)
-                                {
-                                    _sendPacketsFileStreams[i].Dispose();
-                                    _sendPacketsFileStreams[i] = null;
-                                }
+                                _sendPacketsFileStreams[i]?.Dispose();
                             }
+                            _sendPacketsFileStreams = null;
                             throw fileStreamException;
                         }
 
                         // Get the file handle from the stream.
-                        _sendPacketsFileHandles[index] = _sendPacketsFileStreams[index].SafeFileHandle;
                         index++;
                     }
                 }
             }
 
-            if (_sendPacketsElementsFileCount + _sendPacketsElementsBufferCount == 0)
+            if (sendPacketsElementsFileCount + sendPacketsElementsBufferCount == 0)
             {
                 FinishOperationSyncSuccess(0, SocketFlags.None);
                 return SocketError.Success;
             }
 
-            CheckPinSendPackets();
-
-            Debug.Assert(_sendPacketsDescriptor != null);
-            Debug.Assert(_sendPacketsDescriptor.Length > 0);
+            Interop.Winsock.TransmitPacketsElement[] sendPacketsDescriptor = SetupPinHandlesSendPackets(sendPacketsElementsCopy, sendPacketsElementsFileCount, sendPacketsElementsBufferCount);
+            Debug.Assert(sendPacketsDescriptor != null);
+            Debug.Assert(sendPacketsDescriptor.Length > 0);
             Debug.Assert(_multipleBufferGCHandles != null);
             Debug.Assert(_multipleBufferGCHandles[0].IsAllocated);
-            Debug.Assert(_multipleBufferGCHandles[0].Target == _sendPacketsDescriptor);
+            Debug.Assert(_multipleBufferGCHandles[0].Target == sendPacketsDescriptor);
 
             SocketError socketError = SocketError.Success;
             NativeOverlapped* overlapped = AllocateNativeOverlapped();
@@ -734,7 +692,7 @@ namespace System.Net.Sockets
                 bool result = socket.TransmitPackets(
                     handle,
                     _multipleBufferGCHandles[0].AddrOfPinnedObject(),
-                    _sendPacketsDescriptor.Length,
+                    sendPacketsDescriptor.Length,
                     _sendPacketsSendSize,
                     overlapped,
                     _sendPacketsFlags);
@@ -830,7 +788,7 @@ namespace System.Net.Sockets
         }
 
         // Ensures Overlapped object exists with appropriate multiple buffers pinned.
-        private void CheckPinMultipleBuffers()
+        private void SetupMultipleBuffers()
         {
             if (_bufferListInternal == null || _bufferListInternal.Count == 0)
             {
@@ -846,7 +804,45 @@ namespace System.Net.Sockets
                 FreePinHandles();
                 try
                 {
-                    SetupPinHandlesMultiple();
+                    int bufferCount = _bufferListInternal.Count;
+
+#if DEBUG
+                    if (_multipleBufferGCHandles != null)
+                    {
+                        foreach (GCHandle gcHandle in _multipleBufferGCHandles)
+                        {
+                            Debug.Assert(!gcHandle.IsAllocated);
+                        }
+                    }
+#endif
+
+                    // Number of things to pin is number of buffers.
+                    // Ensure we have properly sized object array.
+                    if (_multipleBufferGCHandles == null || (_multipleBufferGCHandles.Length < bufferCount))
+                    {
+                        _multipleBufferGCHandles = new GCHandle[bufferCount];
+                    }
+
+                    // Pin the buffers.
+                    for (int i = 0; i < bufferCount; i++)
+                    {
+                        Debug.Assert(!_multipleBufferGCHandles[i].IsAllocated);
+                        _multipleBufferGCHandles[i] = GCHandle.Alloc(_bufferListInternal[i].Array, GCHandleType.Pinned);
+                    }
+
+                    if (_wsaBufferArray == null || _wsaBufferArray.Length < bufferCount)
+                    {
+                        _wsaBufferArray = new WSABuffer[bufferCount];
+                    }
+
+                    for (int i = 0; i < bufferCount; i++)
+                    {
+                        ArraySegment<byte> localCopy = _bufferListInternal[i];
+                        _wsaBufferArray[i].Pointer = Marshal.UnsafeAddrOfPinnedArrayElement(localCopy.Array, localCopy.Offset);
+                        _wsaBufferArray[i].Length = localCopy.Count;
+                    }
+
+                    _pinState = PinState.MultipleBuffer;
                 }
                 catch (Exception)
                 {
@@ -854,16 +850,6 @@ namespace System.Net.Sockets
                     throw;
                 }
             }
-        }
-
-        // Ensures Overlapped object exists with appropriate buffers pinned.
-        private void CheckPinSendPackets()
-        {
-            if (_pinState != PinState.None)
-            {
-                FreePinHandles();
-            }
-            SetupPinHandlesSendPackets();
         }
 
         // Ensures appropriate SocketAddress buffer is pinned.
@@ -960,57 +946,17 @@ namespace System.Net.Sockets
             }
         }
 
-        // Sets up an Overlapped object with multiple buffers pinned.
-        private unsafe void SetupPinHandlesMultiple()
-        {
-            int bufferCount = _bufferListInternal.Count;
-
-#if DEBUG
-            if (_multipleBufferGCHandles != null)
-            {
-                foreach (GCHandle gcHandle in _multipleBufferGCHandles)
-                {
-                    Debug.Assert(!gcHandle.IsAllocated);
-                }
-            }
-#endif
-
-            // Number of things to pin is number of buffers.
-            // Ensure we have properly sized object array.
-            if (_multipleBufferGCHandles == null || (_multipleBufferGCHandles.Length < bufferCount))
-            {
-                _multipleBufferGCHandles = new GCHandle[bufferCount];
-            }
-
-            // Pin the buffers.
-            for (int i = 0; i < bufferCount; i++)
-            {
-                Debug.Assert(!_multipleBufferGCHandles[i].IsAllocated);
-                _multipleBufferGCHandles[i] = GCHandle.Alloc(_bufferListInternal[i].Array, GCHandleType.Pinned);
-            }
-
-            if (_wsaBufferArray == null || _wsaBufferArray.Length < bufferCount)
-            {
-                _wsaBufferArray = new WSABuffer[bufferCount];
-            }
-
-            for (int i = 0; i < bufferCount; i++)
-            {
-                ArraySegment<byte> localCopy = _bufferListInternal[i];
-                _wsaBufferArray[i].Pointer = Marshal.UnsafeAddrOfPinnedArrayElement(localCopy.Array, localCopy.Offset);
-                _wsaBufferArray[i].Length = localCopy.Count;
-            }
-            _pinState = PinState.MultipleBuffer;
-        }
-
         // Sets up an Overlapped object for SendPacketsAsync.
-        private unsafe void SetupPinHandlesSendPackets()
+        private unsafe Interop.Winsock.TransmitPacketsElement[] SetupPinHandlesSendPackets(
+            SendPacketsElement[] sendPacketsElementsCopy, int sendPacketsElementsFileCount, int sendPacketsElementsBufferCount)
         {
-            int index;
+            if (_pinState != PinState.None)
+            {
+                FreePinHandles();
+            }
 
             // Alloc native descriptor.
-            _sendPacketsDescriptor =
-                new Interop.Winsock.TransmitPacketsElement[_sendPacketsElementsFileCount + _sendPacketsElementsBufferCount];
+            var sendPacketsDescriptor = new Interop.Winsock.TransmitPacketsElement[sendPacketsElementsFileCount + sendPacketsElementsBufferCount];
 
             // Number of things to pin is number of buffers + 1 (native descriptor).
             // Ensure we have properly sized object array.
@@ -1024,16 +970,16 @@ namespace System.Net.Sockets
             }
 #endif
 
-            if (_multipleBufferGCHandles == null || (_multipleBufferGCHandles.Length < _sendPacketsElementsBufferCount + 1))
+            if (_multipleBufferGCHandles == null || (_multipleBufferGCHandles.Length < sendPacketsElementsBufferCount + 1))
             {
-                _multipleBufferGCHandles = new GCHandle[_sendPacketsElementsBufferCount + 1];
+                _multipleBufferGCHandles = new GCHandle[sendPacketsElementsBufferCount + 1];
             }
 
             // Pin objects.  Native descriptor buffer first and then user specified buffers.
             Debug.Assert(!_multipleBufferGCHandles[0].IsAllocated);
-            _multipleBufferGCHandles[0] = GCHandle.Alloc(_sendPacketsDescriptor, GCHandleType.Pinned);
-            index = 1;
-            foreach (SendPacketsElement spe in _sendPacketsElementsInternal)
+            _multipleBufferGCHandles[0] = GCHandle.Alloc(sendPacketsDescriptor, GCHandleType.Pinned);
+            int index = 1;
+            foreach (SendPacketsElement spe in sendPacketsElementsCopy)
             {
                 if (spe != null && spe._buffer != null && spe._count > 0)
                 {
@@ -1047,25 +993,25 @@ namespace System.Net.Sockets
             // Fill in native descriptor.
             int descriptorIndex = 0;
             int fileIndex = 0;
-            foreach (SendPacketsElement spe in _sendPacketsElementsInternal)
+            foreach (SendPacketsElement spe in sendPacketsElementsCopy)
             {
                 if (spe != null)
                 {
                     if (spe._buffer != null && spe._count > 0)
                     {
                         // This element is a buffer.
-                        _sendPacketsDescriptor[descriptorIndex].buffer = Marshal.UnsafeAddrOfPinnedArrayElement(spe._buffer, spe._offset);
-                        _sendPacketsDescriptor[descriptorIndex].length = (uint)spe._count;
-                        _sendPacketsDescriptor[descriptorIndex].flags = (Interop.Winsock.TransmitPacketsElementFlags)spe._flags;
+                        sendPacketsDescriptor[descriptorIndex].buffer = Marshal.UnsafeAddrOfPinnedArrayElement(spe._buffer, spe._offset);
+                        sendPacketsDescriptor[descriptorIndex].length = (uint)spe._count;
+                        sendPacketsDescriptor[descriptorIndex].flags = (Interop.Winsock.TransmitPacketsElementFlags)spe._flags;
                         descriptorIndex++;
                     }
                     else if (spe._filePath != null)
                     {
                         // This element is a file.
-                        _sendPacketsDescriptor[descriptorIndex].fileHandle = _sendPacketsFileHandles[fileIndex].DangerousGetHandle();
-                        _sendPacketsDescriptor[descriptorIndex].fileOffset = spe._offset;
-                        _sendPacketsDescriptor[descriptorIndex].length = (uint)spe._count;
-                        _sendPacketsDescriptor[descriptorIndex].flags = (Interop.Winsock.TransmitPacketsElementFlags)spe._flags;
+                        sendPacketsDescriptor[descriptorIndex].fileHandle = _sendPacketsFileStreams[fileIndex].SafeFileHandle.DangerousGetHandle();
+                        sendPacketsDescriptor[descriptorIndex].fileOffset = spe._offset;
+                        sendPacketsDescriptor[descriptorIndex].length = (uint)spe._count;
+                        sendPacketsDescriptor[descriptorIndex].flags = (Interop.Winsock.TransmitPacketsElementFlags)spe._flags;
                         fileIndex++;
                         descriptorIndex++;
                     }
@@ -1073,6 +1019,7 @@ namespace System.Net.Sockets
             }
 
             _pinState = PinState.SendPackets;
+            return sendPacketsDescriptor;
         }
 
         internal void LogBuffer(int size)
@@ -1097,28 +1044,6 @@ namespace System.Net.Sockets
             else if (_buffer.Length != 0)
             {
                 NetEventSource.DumpBuffer(this, _buffer, _offset, size);
-            }
-        }
-
-        internal void LogSendPacketsBuffers(int size)
-        {
-            if (!NetEventSource.IsEnabled) return;
-
-            foreach (SendPacketsElement spe in _sendPacketsElementsInternal)
-            {
-                if (spe != null)
-                {
-                    if (spe._buffer != null && spe._count > 0)
-                    {
-                        // This element is a buffer.
-                        NetEventSource.DumpBuffer(this, spe._buffer, spe._offset, Math.Min(spe._count, size));
-                    }
-                    else if (spe._filePath != null)
-                    {
-                        // This element is a file.
-                        NetEventSource.NotLoggedFile(spe._filePath, _currentSocket, _completedOperation);
-                    }
-                }
             }
         }
 
@@ -1172,34 +1097,26 @@ namespace System.Net.Sockets
 
         private SocketError FinishOperationConnect()
         {
-            SocketError socketError;
-
-            // Update the socket context.
             try
             {
-                socketError = Interop.Winsock.setsockopt(
+                // Update the socket context.
+                SocketError socketError = Interop.Winsock.setsockopt(
                     _currentSocket.SafeHandle,
                     SocketOptionLevel.Socket,
                     SocketOptionName.UpdateConnectContext,
                     null,
                     0);
-                if (socketError == SocketError.SocketError)
-                {
-                    socketError = SocketPal.GetLastSocketError();
-                }
+                return socketError == SocketError.SocketError ?
+                    SocketPal.GetLastSocketError() :
+                    socketError;
             }
             catch (ObjectDisposedException)
             {
-                socketError = SocketError.OperationAborted;
+                return SocketError.OperationAborted;
             }
-
-            return socketError;
         }
 
-        private unsafe int GetSocketAddressSize()
-        {
-            return *(int*)PtrSocketAddressBufferSize;
-        }
+        private unsafe int GetSocketAddressSize() => *(int*)PtrSocketAddressBufferSize;
 
         private void CompleteCore()
         {
@@ -1250,21 +1167,13 @@ namespace System.Net.Sockets
             // Close the files if open.
             if (_sendPacketsFileStreams != null)
             {
-                for (int i = 0; i < _sendPacketsElementsFileCount; i++)
+                for (int i = 0; i < _sendPacketsFileStreams.Length; i++)
                 {
-                    // Drop handles.
-                    _sendPacketsFileHandles[i] = null;
-
-                    // Close any open streams.
-                    if (_sendPacketsFileStreams[i] != null)
-                    {
-                        _sendPacketsFileStreams[i].Dispose();
-                        _sendPacketsFileStreams[i] = null;
-                    }
+                    _sendPacketsFileStreams[i]?.Dispose();
                 }
+
+                _sendPacketsFileStreams = null;
             }
-            _sendPacketsFileStreams = null;
-            _sendPacketsFileHandles = null;
         }
 
         private static readonly unsafe IOCompletionCallback s_completionPortCallback = delegate (uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
