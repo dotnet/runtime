@@ -839,7 +839,6 @@ FCFuncEnd()
 
 FCFuncStart(gBufferFuncs)
     FCFuncElement("BlockCopy", Buffer::BlockCopy)
-    FCFuncElement("InternalBlockCopy", Buffer::InternalBlockCopy)
     FCFuncElement("_GetByte", Buffer::GetByte)
     FCFuncElement("_SetByte", Buffer::SetByte)
     FCFuncElement("IsPrimitiveTypeArray", Buffer::IsPrimitiveTypeArray)
