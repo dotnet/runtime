@@ -880,9 +880,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
         // Given a method group or indexer group, bind it to the arguments for an 
-        // invocation. This method can change the arguments to bind with Extension 
-        // Methods
-        private bool BindMethodGroupToArgumentsCore(out GroupToArgsBinderResult pResults, BindingFlag bindFlags, ExprMemberGroup grp, ref Expr args, int carg, bool bHasNamedArgumentSpecifiers)
+        // invocation.
+        private GroupToArgsBinderResult BindMethodGroupToArgumentsCore(BindingFlag bindFlags, ExprMemberGroup grp, ref Expr args, int carg, bool bHasNamedArgumentSpecifiers)
         {
             ArgInfos pargInfo = new ArgInfos {carg = carg};
             FillInArgInfoFromArgList(pargInfo, args);
@@ -891,10 +890,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             FillInArgInfoFromArgList(pOriginalArgInfo, args);
 
             GroupToArgsBinder binder = new GroupToArgsBinder(this, bindFlags, grp, pargInfo, pOriginalArgInfo, bHasNamedArgumentSpecifiers);
-            bool retval = binder.Bind(bReportErrors: true);
+            binder.Bind();
 
-            pResults = binder.GetResultsOfBind();
-            return retval;
+            return binder.GetResultsOfBind();
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -921,14 +919,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // fixed arguments.
             bool seenNamed = VerifyNamedArgumentsAfterFixed(args);
 
-            GroupToArgsBinderResult result;
-            if (!BindMethodGroupToArgumentsCore(out result, bindFlags, grp, ref args, carg, seenNamed))
-            {
-                Debug.Assert(false, "Why didn't BindMethodGroupToArgumentsCore throw an error?");
-                return null;
-            }
-
-            MethPropWithInst mpwiBest = result.GetBestResult();
+            MethPropWithInst mpwiBest = BindMethodGroupToArgumentsCore(bindFlags, grp, ref args, carg, seenNamed)
+                .GetBestResult();
             if (grp.SymKind == SYMKIND.SK_PropertySymbol)
             {
                 Debug.Assert((grp.Flags & EXPRFLAG.EXF_INDEXER) != 0);

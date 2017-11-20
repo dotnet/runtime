@@ -970,10 +970,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     Debug.Assert(n <= 0);
                     if (n >= 0)
                     {
-                        if (!needExprDest)
-                            return true;
-                        iuciBestDst = iuci;
-                        pexprDst = HandleAmbiguity(exprSrc, typeSrc, typeDst, prguci, iuciBestSrc, iuciBestDst);
+                        if (needExprDest)
+                        {
+                            throw HandleAmbiguity(typeSrc, typeDst, prguci, iuciBestSrc, iuci);
+                        }
+
                         return true;
                     }
                 }
@@ -983,10 +984,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     Debug.Assert(n <= 0);
                     if (n >= 0)
                     {
-                        if (!needExprDest)
-                            return true;
-                        iuciBestDst = iuci;
-                        pexprDst = HandleAmbiguity(exprSrc, typeSrc, typeDst, prguci, iuciBestSrc, iuciBestDst);
+                        if (needExprDest)
+                        {
+                            throw HandleAmbiguity(typeSrc, typeDst, prguci, iuciBestSrc, iuci);
+                        }
+
                         return true;
                     }
                 }
@@ -997,15 +999,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (iuciBest < 0)
             {
-                pexprDst = HandleAmbiguity(exprSrc, typeSrc, typeDst, prguci, iuciBestSrc, iuciBestDst);
-                return true;
+                throw HandleAmbiguity(typeSrc, typeDst, prguci, iuciBestSrc, iuciBestDst);
             }
             if (iuciAmbig >= 0)
             {
-                iuciBestSrc = iuciBest;
-                iuciBestDst = iuciAmbig;
-                pexprDst = HandleAmbiguity(exprSrc, typeSrc, typeDst, prguci, iuciBestSrc, iuciBestDst);
-                return true;
+                throw HandleAmbiguity(typeSrc, typeDst, prguci, iuciBest, iuciAmbig);
             }
 
             MethWithInst mwiBest = new MethWithInst(prguci[iuciBest].mwt.Meth(), prguci[iuciBest].mwt.GetType(), null);
@@ -1083,11 +1081,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return true;
         }
 
-        private Expr HandleAmbiguity(Expr exprSrc, CType typeSrc, CType typeDst, List<UdConvInfo> prguci, int iuciBestSrc, int iuciBestDst)
+        private RuntimeBinderException HandleAmbiguity(CType typeSrc, CType typeDst, List<UdConvInfo> prguci, int iuciBestSrc, int iuciBestDst)
         {
             Debug.Assert(0 <= iuciBestSrc && iuciBestSrc < prguci.Count);
             Debug.Assert(0 <= iuciBestDst && iuciBestDst < prguci.Count);
-            throw ErrorContext.Error(ErrorCode.ERR_AmbigUDConv, prguci[iuciBestSrc].mwt, prguci[iuciBestDst].mwt, typeSrc, typeDst);
+            return ErrorContext.Error(ErrorCode.ERR_AmbigUDConv, prguci[iuciBestSrc].mwt, prguci[iuciBestDst].mwt, typeSrc, typeDst);
         }
 
         private void MarkAsIntermediateConversion(Expr pExpr)
