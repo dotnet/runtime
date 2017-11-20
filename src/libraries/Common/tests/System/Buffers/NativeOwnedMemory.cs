@@ -6,7 +6,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace System.IO.Tests
+namespace System.Buffers
 {
     internal sealed class NativeOwnedMemory : OwnedMemory<byte>
     {

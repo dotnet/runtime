@@ -4000,13 +4000,12 @@ namespace System.Net.Sockets
             e.StartOperationReceive();
 
             // Local vars for sync completion of native call.
-            SocketFlags flags;
             SocketError socketError;
 
             // Wrap native methods with try/catch so event args object can be cleaned up.
             try
             {
-                socketError = e.DoOperationReceive(_handle, out flags);
+                socketError = e.DoOperationReceive(_handle, out _);
             }
             catch
             {
@@ -4059,12 +4058,11 @@ namespace System.Net.Sockets
             e.StartOperationReceiveFrom();
 
             // Make the native call.
-            SocketFlags flags;
             SocketError socketError;
 
             try
             {
-                socketError = e.DoOperationReceiveFrom(_handle, out flags);
+                socketError = e.DoOperationReceiveFrom(_handle, out _);
             }
             catch
             {
