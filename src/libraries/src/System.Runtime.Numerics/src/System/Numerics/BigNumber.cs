@@ -512,7 +512,7 @@ namespace System.Numerics
                 bits.Slice(0, bytesWritten) :
                 value.ToByteArray();
 
-            Span<char> stackSpace = stackalloc char[128];
+            Span<char> stackSpace = stackalloc char[128]; // each byte is typically two chars
             var sb = new ValueStringBuilder(stackSpace);
             int cur = bits.Length - 1;
 
@@ -543,27 +543,18 @@ namespace System.Numerics
 
             if (cur > -1)
             {
-                if (format == 'x')
+                Span<char> chars = sb.AppendSpan((cur + 1) * 2);
+                int charsPos = 0;
+                string hexValues = format == 'x' ? "0123456789abcdef" : "0123456789ABCDEF";
+                while (cur > -1)
                 {
-                    while (cur > -1)
-                    {
-                        byte b = bits[cur--];
-                        sb.Append(GetLowerCaseHexValue(b >> 4));
-                        sb.Append(GetLowerCaseHexValue(b & 0xF));
-                    }
-                }
-                else
-                {
-                    while (cur > -1)
-                    {
-                        byte b = bits[cur--];
-                        sb.Append(GetUpperCaseHexValue(b >> 4));
-                        sb.Append(GetUpperCaseHexValue(b & 0xF));
-                    }
+                    byte b = bits[cur--];
+                    chars[charsPos++] = hexValues[b >> 4];
+                    chars[charsPos++] = hexValues[b & 0xF];
                 }
             }
 
-            if (digits > 0 && digits > sb.Length)
+            if (digits > sb.Length)
             {
                 // Insert leading zeros, e.g. user specified "X5" so we create "0ABCD" instead of "ABCD"
                 sb.Insert(
@@ -572,11 +563,8 @@ namespace System.Numerics
                     digits - sb.Length);
             }
 
-            return sb.GetString();
+            return sb.ToString();
         }
-
-        private static char GetUpperCaseHexValue(int i) => i < 10 ? (char)(i + '0') : (char)(i - 10 + 'A');
-        private static char GetLowerCaseHexValue(int i) => i < 10 ? (char)(i + '0') : (char)(i - 10 + 'a');
 
         internal static string FormatBigInteger(BigInteger value, string format, NumberFormatInfo info)
         {
