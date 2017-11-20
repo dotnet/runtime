@@ -53,13 +53,19 @@ namespace System.Net.Http
                     // Initiate the connection.
                     if (Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, saea))
                     {
-                        // If it didn't complete synchronously, enable it to be canceled and wait for it.
+                        // Connect completing asynchronously. Enable it to be canceled and wait for it.
                         using (cancellationToken.Register(s => Socket.CancelConnectAsync((SocketAsyncEventArgs)s), saea))
                         {
                             await saea.Builder.Task.ConfigureAwait(false);
                         }
                     }
+                    else if (saea.SocketError != SocketError.Success)
+                    {
+                        // Connect completed synchronously but unsuccessfully.
+                        throw new SocketException((int)saea.SocketError);
+                    }
 
+                    Debug.Assert(saea.SocketError == SocketError.Success, $"Expected Success, got {saea.SocketError}.");
                     Debug.Assert(saea.ConnectSocket != null, "Expected non-null socket");
                     Debug.Assert(saea.ConnectSocket.Connected, "Expected socket to be connected");
 

@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//------------------------------------------------------------------------------
-
-
 using System;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics;
 using System.Globalization;
 using System.Data.SqlTypes;
 using System.Data.SqlClient;
@@ -34,7 +31,9 @@ namespace Microsoft.SqlServer.Server
         private string _xmlSchemaCollectionDatabase;
         private string _xmlSchemaCollectionOwningSchema;
         private string _xmlSchemaCollectionName;
+        private string _serverTypeName;
         private bool _bPartialLength;
+        private Type _udtType;
         private bool _useServerDefault;
         private bool _isUniqueKey;
         private SortOrder _columnSortOrder;
@@ -85,6 +84,27 @@ namespace Microsoft.SqlServer.Server
                     isUniqueKey, columnSortOrder, sortOrdinal);
         }
 
+        // udt ctor without tvp extended properties
+        public SqlMetaData(String name, SqlDbType dbType, Type userDefinedType)
+        {
+            Construct(name, dbType, userDefinedType, null, x_defaultUseServerDefault,
+                    x_defaultIsUniqueKey, x_defaultColumnSortOrder, x_defaultSortOrdinal);
+        }
+
+        // udt ctor without tvp extended properties
+        public SqlMetaData(String name, SqlDbType dbType, Type userDefinedType, string serverTypeName)
+        {
+            Construct(name, dbType, userDefinedType, serverTypeName, x_defaultUseServerDefault,
+                    x_defaultIsUniqueKey, x_defaultColumnSortOrder, x_defaultSortOrdinal);
+        }
+
+        // udt ctor
+        public SqlMetaData(String name, SqlDbType dbType, Type userDefinedType, string serverTypeName,
+                    bool useServerDefault, bool isUniqueKey, SortOrder columnSortOrder, int sortOrdinal)
+        {
+            Construct(name, dbType, userDefinedType, serverTypeName, useServerDefault,
+                    isUniqueKey, columnSortOrder, sortOrdinal);
+        }
 
         // decimal ctor without tvp extended properties
         public SqlMetaData(String name, SqlDbType dbType, byte precision, byte scale)
@@ -188,7 +208,8 @@ namespace Microsoft.SqlServer.Server
                     Construct(name, dbType, useServerDefault, isUniqueKey, columnSortOrder, sortOrdinal);
                     break;
                 case SqlDbType.Udt:
-                    throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
+                    Construct(name, dbType, userDefinedType, "", useServerDefault, isUniqueKey, columnSortOrder, sortOrdinal);
+                    break;
                 default:
                     SQL.InvalidSqlDbTypeForConstructor(dbType);
                     break;
@@ -212,8 +233,8 @@ namespace Microsoft.SqlServer.Server
                               string xmlSchemaCollectionDatabase,
                               string xmlSchemaCollectionOwningSchema,
                               string xmlSchemaCollectionName,
-                              bool partialLength
-        )
+                              bool partialLength,
+                              Type udtType)
         {
             AssertNameIsValid(name);
 
@@ -229,7 +250,7 @@ namespace Microsoft.SqlServer.Server
             _xmlSchemaCollectionName = xmlSchemaCollectionName;
             _bPartialLength = partialLength;
 
-            ThrowIfUdt(sqlDBType);
+            _udtType = udtType;
         }
 
         // Private constructor used to initialize default instance array elements.
@@ -253,150 +274,141 @@ namespace Microsoft.SqlServer.Server
             _lLocale = localeId;
             _eCompareOptions = compareOptions;
             _bPartialLength = partialLength;
-            ThrowIfUdt(sqlDbType);
+            _udtType = null;
         }
 
         public SqlCompareOptions CompareOptions
         {
-            get
-            {
-                return _eCompareOptions;
-            }
+            get => _eCompareOptions;
         }
 
+        public DbType DbType
+        {
+            get => sxm_rgSqlDbTypeToDbType[(int)_sqlDbType];
+        }
 
         public bool IsUniqueKey
         {
-            get
-            {
-                return _isUniqueKey;
-            }
+            get => _isUniqueKey;
         }
 
         public long LocaleId
         {
-            get
-            {
-                return _lLocale;
-            }
+            get => _lLocale;
         }
 
         public static long Max
         {
-            get
-            {
-                return x_lMax;
-            }
+            get => x_lMax;
         }
 
         public long MaxLength
         {
-            get
-            {
-                return _lMaxLength;
-            }
+            get => _lMaxLength;
         }
 
         public string Name
         {
-            get
-            {
-                return _strName;
-            }
+            get => _strName;
         }
 
         public byte Precision
         {
-            get
-            {
-                return _bPrecision;
-            }
+            get => _bPrecision;
         }
 
         public byte Scale
         {
-            get
-            {
-                return _bScale;
-            }
+            get => _bScale;
         }
 
         public SortOrder SortOrder
         {
-            get
-            {
-                return _columnSortOrder;
-            }
+            get => _columnSortOrder;
         }
 
         public int SortOrdinal
         {
-            get
-            {
-                return _sortOrdinal;
-            }
+            get => _sortOrdinal;
         }
 
         public SqlDbType SqlDbType
         {
-            get
-            {
-                return _sqlDbType;
-            }
+            get => _sqlDbType;
         }
 
+        public Type Type
+        {
+            get => _udtType;
+        }
 
         public string TypeName
         {
             get
             {
+                if (_serverTypeName != null)
+                {
+                    return _serverTypeName;
+                }
+                else if (SqlDbType == SqlDbType.Udt)
+                {
+                    return UdtTypeName;
+                }
+                else
                 {
                     return sxm_rgDefaults[(int)SqlDbType].Name;
                 }
             }
         }
 
+        internal string ServerTypeName
+        {
+            get => _serverTypeName;
+        }
 
         public bool UseServerDefault
         {
-            get
-            {
-                return _useServerDefault;
-            }
+            get => _useServerDefault;
         }
 
         public string XmlSchemaCollectionDatabase
         {
-            get
-            {
-                return _xmlSchemaCollectionDatabase;
-            }
+            get => _xmlSchemaCollectionDatabase;
         }
 
         public string XmlSchemaCollectionName
         {
-            get
-            {
-                return _xmlSchemaCollectionName;
-            }
+            get => _xmlSchemaCollectionName;
         }
 
         public string XmlSchemaCollectionOwningSchema
         {
-            get
-            {
-                return _xmlSchemaCollectionOwningSchema;
-            }
+            get => _xmlSchemaCollectionOwningSchema;
         }
 
         internal bool IsPartialLength
         {
-            get
-            {
-                return _bPartialLength;
-            }
+            get => _bPartialLength;
         }
 
+        internal string UdtTypeName
+        {
+            get
+            {
+                if (SqlDbType != SqlDbType.Udt)
+                {
+                    return null;
+                }
+                else if (_udtType == null)
+                {
+                    return null;
+                }
+                else
+                {
+                    return _udtType.FullName;
+                }
+            }
+        }
 
         // Construction for all types that do not have variable attributes
         private void Construct(String name, SqlDbType dbType, bool useServerDefault,
@@ -431,8 +443,6 @@ namespace Microsoft.SqlServer.Server
                     SqlDbType.Variant == dbType ||
                     SqlDbType.Xml == dbType))
                 throw SQL.InvalidSqlDbTypeForConstructor(dbType);
-
-            ThrowIfUdt(dbType);
 
             SetDefaultsForType(dbType);
 
@@ -641,6 +651,31 @@ namespace Microsoft.SqlServer.Server
             _sortOrdinal = sortOrdinal;
         }
 
+        // Construction for Udt type
+        private void Construct(String name, SqlDbType dbType, Type userDefinedType, string serverTypeName, bool useServerDefault,
+                    bool isUniqueKey, SortOrder columnSortOrder, int sortOrdinal)
+        {
+            AssertNameIsValid(name);
+
+            ValidateSortOrder(columnSortOrder, sortOrdinal);
+
+            if (SqlDbType.Udt != dbType)
+                throw SQL.InvalidSqlDbTypeForConstructor(dbType);
+
+            if (null == userDefinedType)
+                throw ADP.ArgumentNull(nameof(userDefinedType));
+
+            SetDefaultsForType(SqlDbType.Udt);
+
+            _strName = name;
+            _lMaxLength = SerializationHelperSql9.GetUdtMaxLength(userDefinedType);
+            _udtType = userDefinedType;
+            _serverTypeName = serverTypeName;
+            _useServerDefault = useServerDefault;
+            _isUniqueKey = isUniqueKey;
+            _columnSortOrder = columnSortOrder;
+            _sortOrdinal = sortOrdinal;
+        }
 
         // Construction for Xml type
         private void Construct(String name, SqlDbType dbType, string database, string owningSchema,
@@ -740,7 +775,6 @@ namespace Microsoft.SqlServer.Server
         {
             if (SqlDbType.Char == SqlDbType || SqlDbType.NChar == SqlDbType)
             {
-                //DBG.Assert(Max!=MaxLength, "SqlMetaData.Adjust(string): Fixed-length type with Max length!");
                 // Don't pad null values
                 if (null != value)
                 {
@@ -991,7 +1025,7 @@ namespace Microsoft.SqlServer.Server
                         if (value.MaxLength < MaxLength)
                         {
                             char[] rgchNew = new char[(int)MaxLength];
-                            Array.Copy(value.Buffer, 0, rgchNew, 0, (int)oldLength);
+                            Buffer.BlockCopy(value.Buffer, 0, rgchNew, 0, (int)oldLength);
                             value = new SqlChars(rgchNew);
                         }
 
@@ -1095,82 +1129,83 @@ namespace Microsoft.SqlServer.Server
             if (null == value)
                 return null;
 
-            if (value is bool)
-                value = this.Adjust((Boolean)value);
-            else if (value is byte)
-                value = this.Adjust((Byte)value);
-            else if (value is char)
-                value = this.Adjust((Char)value);
-            else if (value is DateTime)
-                value = this.Adjust((DateTime)value);
-            else if (value is DBNull)
-            { /* DBNull passes through as is for all types */ }
-            else if (value is decimal)
-                value = this.Adjust((Decimal)value);
-            else if (value is double)
-                value = this.Adjust((Double)value);
-            else if (value is short)
-                value = this.Adjust((Int16)value);
-            else if (value is int)
-                value = this.Adjust((Int32)value);
-            else if (value is long)
-                value = this.Adjust((Int64)value);
-            else if (value is sbyte)
-                throw ADP.InvalidDataType(nameof(SByte));
-            else if (value is float)
-                value = this.Adjust((Single)value);
-            else if (value is string)
-                value = this.Adjust((String)value);
-            else if (value is ushort)
-                throw ADP.InvalidDataType(nameof(UInt16));
-            else if (value is uint)
-                throw ADP.InvalidDataType(nameof(UInt32));
-            else if (value is ulong)
-                throw ADP.InvalidDataType(nameof(UInt64));
-            else if (value is byte[])
-                value = this.Adjust((System.Byte[])value);
-            else if (value is char[])
-                value = this.Adjust((System.Char[])value);
-            else if (value is Guid)
-                value = this.Adjust((System.Guid)value);
-            else if (value is SqlBinary)
-                value = this.Adjust((SqlBinary)value);
-            else if (value is SqlBoolean)
-                value = this.Adjust((SqlBoolean)value);
-            else if (value is SqlByte)
-                value = this.Adjust((SqlByte)value);
-            else if (value is SqlDateTime)
-                value = this.Adjust((SqlDateTime)value);
-            else if (value is SqlDouble)
-                value = this.Adjust((SqlDouble)value);
-            else if (value is SqlGuid)
-                value = this.Adjust((SqlGuid)value);
-            else if (value is SqlInt16)
-                value = this.Adjust((SqlInt16)value);
-            else if (value is SqlInt32)
-                value = this.Adjust((SqlInt32)value);
-            else if (value is SqlInt64)
-                value = this.Adjust((SqlInt64)value);
-            else if (value is SqlMoney)
-                value = this.Adjust((SqlMoney)value);
-            else if (value is SqlDecimal)
-                value = this.Adjust((SqlDecimal)value);
-            else if (value is SqlSingle)
-                value = this.Adjust((SqlSingle)value);
-            else if (value is SqlString)
-                value = this.Adjust((SqlString)value);
-            else if (value is SqlChars)
-                value = this.Adjust((SqlChars)value);
-            else if (value is SqlBytes)
-                value = this.Adjust((SqlBytes)value);
-            else if (value is SqlXml)
-                value = this.Adjust((SqlXml)value);
-            else if (value is TimeSpan)
-                value = this.Adjust((TimeSpan)value);
-            else if (value is DateTimeOffset)
-                value = this.Adjust((DateTimeOffset)value);
-            else
-                throw ADP.UnknownDataType(value.GetType());
+            Type dataType = value.GetType();
+            switch (Type.GetTypeCode(dataType))
+            {
+                case TypeCode.Boolean: value = this.Adjust((Boolean)value); break;
+                case TypeCode.Byte: value = this.Adjust((Byte)value); break;
+                case TypeCode.Char: value = this.Adjust((Char)value); break;
+                case TypeCode.DateTime: value = this.Adjust((DateTime)value); break;
+                case TypeCode.DBNull:    /* DBNull passes through as is for all types */   break;
+                case TypeCode.Decimal: value = this.Adjust((Decimal)value); break;
+                case TypeCode.Double: value = this.Adjust((Double)value); break;
+                case TypeCode.Empty: throw ADP.InvalidDataType(TypeCode.Empty);
+                case TypeCode.Int16: value = this.Adjust((Int16)value); break;
+                case TypeCode.Int32: value = this.Adjust((Int32)value); break;
+                case TypeCode.Int64: value = this.Adjust((Int64)value); break;
+                case TypeCode.SByte: throw ADP.InvalidDataType(TypeCode.SByte);
+                case TypeCode.Single: value = this.Adjust((Single)value); break;
+                case TypeCode.String: value = this.Adjust((String)value); break;
+                case TypeCode.UInt16: throw ADP.InvalidDataType(TypeCode.UInt16);
+                case TypeCode.UInt32: throw ADP.InvalidDataType(TypeCode.UInt32);
+                case TypeCode.UInt64: throw ADP.InvalidDataType(TypeCode.UInt64);
+                case TypeCode.Object:
+                    if (dataType == typeof(System.Byte[]))
+                        value = this.Adjust((System.Byte[])value);
+                    else if (dataType == typeof(System.Char[]))
+                        value = this.Adjust((System.Char[])value);
+                    else if (dataType == typeof(System.Guid))
+                        value = this.Adjust((System.Guid)value);
+                    else if (dataType == typeof(System.Object))
+                    {
+                        throw ADP.InvalidDataType(TypeCode.UInt64);
+                    }
+                    else if (dataType == typeof(SqlBinary))
+                        value = this.Adjust((SqlBinary)value);
+                    else if (dataType == typeof(SqlBoolean))
+                        value = this.Adjust((SqlBoolean)value);
+                    else if (dataType == typeof(SqlByte))
+                        value = this.Adjust((SqlByte)value);
+                    else if (dataType == typeof(SqlDateTime))
+                        value = this.Adjust((SqlDateTime)value);
+                    else if (dataType == typeof(SqlDouble))
+                        value = this.Adjust((SqlDouble)value);
+                    else if (dataType == typeof(SqlGuid))
+                        value = this.Adjust((SqlGuid)value);
+                    else if (dataType == typeof(SqlInt16))
+                        value = this.Adjust((SqlInt16)value);
+                    else if (dataType == typeof(SqlInt32))
+                        value = this.Adjust((SqlInt32)value);
+                    else if (dataType == typeof(SqlInt64))
+                        value = this.Adjust((SqlInt64)value);
+                    else if (dataType == typeof(SqlMoney))
+                        value = this.Adjust((SqlMoney)value);
+                    else if (dataType == typeof(SqlDecimal))
+                        value = this.Adjust((SqlDecimal)value);
+                    else if (dataType == typeof(SqlSingle))
+                        value = this.Adjust((SqlSingle)value);
+                    else if (dataType == typeof(SqlString))
+                        value = this.Adjust((SqlString)value);
+                    else if (dataType == typeof(SqlChars))
+                        value = this.Adjust((SqlChars)value);
+                    else if (dataType == typeof(SqlBytes))
+                        value = this.Adjust((SqlBytes)value);
+                    else if (dataType == typeof(SqlXml))
+                        value = this.Adjust((SqlXml)value);
+                    else if (dataType == typeof(TimeSpan))
+                        value = this.Adjust((TimeSpan)value);
+                    else if (dataType == typeof(DateTimeOffset))
+                        value = this.Adjust((DateTimeOffset)value);
+                    else
+                    {
+                        // Handle UDTs?
+                        throw ADP.UnknownDataType(dataType);
+                    }
+                    break;
+
+
+                default: throw ADP.UnknownDataTypeCode(dataType, Type.GetTypeCode(dataType));
+            }
 
             return value;
         }
@@ -1179,175 +1214,185 @@ namespace Microsoft.SqlServer.Server
         {
             if (value == null)
                 throw ADP.ArgumentNull(nameof(value));
-
-            SqlMetaData smd;
-
-            if (value is Boolean) smd = new SqlMetaData(name, SqlDbType.Bit);
-            else if (value is Byte) smd = new SqlMetaData(name, SqlDbType.TinyInt);
-            else if (value is Char) smd = new SqlMetaData(name, SqlDbType.NVarChar, 1);
-            else if (value is DateTime) smd = new SqlMetaData(name, SqlDbType.DateTime);
-            else if (value is DBNull) throw ADP.InvalidDataType(nameof(DBNull));
-            else if (value is Decimal)
+            SqlMetaData smd = null;
+            Type dataType = value.GetType();
+            switch (Type.GetTypeCode(dataType))
             {
-                // use logic inside SqlDecimal to infer precision and scale.
-                SqlDecimal sd = new SqlDecimal((Decimal)value);
-                smd = new SqlMetaData(name, SqlDbType.Decimal, sd.Precision, sd.Scale);
+                case TypeCode.Boolean: smd = new SqlMetaData(name, SqlDbType.Bit); break;
+                case TypeCode.Byte: smd = new SqlMetaData(name, SqlDbType.TinyInt); break;
+                case TypeCode.Char: smd = new SqlMetaData(name, SqlDbType.NVarChar, 1); break;
+                case TypeCode.DateTime: smd = new SqlMetaData(name, SqlDbType.DateTime); break;
+                case TypeCode.DBNull: throw ADP.InvalidDataType(TypeCode.DBNull);
+                case TypeCode.Decimal:
+                    {  // Add brackets in order to contain scope declare local variable "sd"
+                       // use logic inside SqlDecimal to infer precision and scale.
+                        SqlDecimal sd = new SqlDecimal((Decimal)value);
+                        smd = new SqlMetaData(name, SqlDbType.Decimal, sd.Precision, sd.Scale);
+                    }
+                    break;
+                case TypeCode.Double: smd = new SqlMetaData(name, SqlDbType.Float); break;
+                case TypeCode.Empty: throw ADP.InvalidDataType(TypeCode.Empty);
+                case TypeCode.Int16: smd = new SqlMetaData(name, SqlDbType.SmallInt); break;
+                case TypeCode.Int32: smd = new SqlMetaData(name, SqlDbType.Int); break;
+                case TypeCode.Int64: smd = new SqlMetaData(name, SqlDbType.BigInt); break;
+                case TypeCode.SByte: throw ADP.InvalidDataType(TypeCode.SByte);
+                case TypeCode.Single: smd = new SqlMetaData(name, SqlDbType.Real); break;
+                case TypeCode.String:
+                    {
+                        long maxLen = ((String)value).Length;
+                        if (maxLen < 1) maxLen = 1;
+
+                        if (x_lServerMaxUnicode < maxLen)
+                            maxLen = Max;
+
+                        smd = new SqlMetaData(name, SqlDbType.NVarChar, maxLen);
+                    }
+                    break;
+                case TypeCode.UInt16: throw ADP.InvalidDataType(TypeCode.UInt16);
+                case TypeCode.UInt32: throw ADP.InvalidDataType(TypeCode.UInt32);
+                case TypeCode.UInt64: throw ADP.InvalidDataType(TypeCode.UInt64);
+                case TypeCode.Object:
+                    if (dataType == typeof(System.Byte[]))
+                    {
+                        long maxLen = ((System.Byte[])value).Length;
+                        if (maxLen < 1) maxLen = 1;
+
+                        if (x_lServerMaxBinary < maxLen)
+                            maxLen = Max;
+
+                        smd = new SqlMetaData(name, SqlDbType.VarBinary, maxLen);
+                    }
+                    else if (dataType == typeof(System.Char[]))
+                    {
+                        long maxLen = ((System.Char[])value).Length;
+                        if (maxLen < 1) maxLen = 1;
+
+                        if (x_lServerMaxUnicode < maxLen)
+                            maxLen = Max;
+
+                        smd = new SqlMetaData(name, SqlDbType.NVarChar, maxLen);
+                    }
+                    else if (dataType == typeof(System.Guid))
+                        smd = new SqlMetaData(name, SqlDbType.UniqueIdentifier);
+                    else if (dataType == typeof(System.Object))
+                        smd = new SqlMetaData(name, SqlDbType.Variant);
+                    else if (dataType == typeof(SqlBinary))
+                    {
+                        long maxLen;
+                        SqlBinary sb = ((SqlBinary)value);
+                        if (!sb.IsNull)
+                        {
+                            maxLen = sb.Length;
+                            if (maxLen < 1) maxLen = 1;
+
+                            if (x_lServerMaxBinary < maxLen)
+                                maxLen = Max;
+                        }
+                        else
+                            maxLen = sxm_rgDefaults[(int)SqlDbType.VarBinary].MaxLength;
+
+                        smd = new SqlMetaData(name, SqlDbType.VarBinary, maxLen);
+                    }
+                    else if (dataType == typeof(SqlBoolean))
+                        smd = new SqlMetaData(name, SqlDbType.Bit);
+                    else if (dataType == typeof(SqlByte))
+                        smd = new SqlMetaData(name, SqlDbType.TinyInt);
+                    else if (dataType == typeof(SqlDateTime))
+                        smd = new SqlMetaData(name, SqlDbType.DateTime);
+                    else if (dataType == typeof(SqlDouble))
+                        smd = new SqlMetaData(name, SqlDbType.Float);
+                    else if (dataType == typeof(SqlGuid))
+                        smd = new SqlMetaData(name, SqlDbType.UniqueIdentifier);
+                    else if (dataType == typeof(SqlInt16))
+                        smd = new SqlMetaData(name, SqlDbType.SmallInt);
+                    else if (dataType == typeof(SqlInt32))
+                        smd = new SqlMetaData(name, SqlDbType.Int);
+                    else if (dataType == typeof(SqlInt64))
+                        smd = new SqlMetaData(name, SqlDbType.BigInt);
+                    else if (dataType == typeof(SqlMoney))
+                        smd = new SqlMetaData(name, SqlDbType.Money);
+                    else if (dataType == typeof(SqlDecimal))
+                    {
+                        byte bPrec;
+                        byte scale;
+                        SqlDecimal sd = (SqlDecimal)value;
+                        if (!sd.IsNull)
+                        {
+                            bPrec = sd.Precision;
+                            scale = sd.Scale;
+                        }
+                        else
+                        {
+                            bPrec = sxm_rgDefaults[(int)SqlDbType.Decimal].Precision;
+                            scale = sxm_rgDefaults[(int)SqlDbType.Decimal].Scale;
+                        }
+                        smd = new SqlMetaData(name, SqlDbType.Decimal, bPrec, scale);
+                    }
+                    else if (dataType == typeof(SqlSingle))
+                        smd = new SqlMetaData(name, SqlDbType.Real);
+                    else if (dataType == typeof(SqlString))
+                    {
+                        SqlString ss = (SqlString)value;
+                        if (!ss.IsNull)
+                        {
+                            long maxLen = ss.Value.Length;
+                            if (maxLen < 1) maxLen = 1;
+
+                            if (maxLen > x_lServerMaxUnicode)
+                                maxLen = Max;
+
+                            smd = new SqlMetaData(name, SqlDbType.NVarChar, maxLen, ss.LCID, ss.SqlCompareOptions);
+                        }
+                        else
+                        {
+                            smd = new SqlMetaData(name, SqlDbType.NVarChar, sxm_rgDefaults[(int)SqlDbType.NVarChar].MaxLength);
+                        }
+                    }
+                    else if (dataType == typeof(SqlChars))
+                    {
+                        long maxLen;
+                        SqlChars sch = (SqlChars)value;
+                        if (!sch.IsNull)
+                        {
+                            maxLen = sch.Length;
+                            if (maxLen < 1) maxLen = 1;
+
+                            if (maxLen > x_lServerMaxUnicode)
+                                maxLen = Max;
+                        }
+                        else
+                            maxLen = sxm_rgDefaults[(int)SqlDbType.NVarChar].MaxLength;
+
+                        smd = new SqlMetaData(name, SqlDbType.NVarChar, maxLen);
+                    }
+                    else if (dataType == typeof(SqlBytes))
+                    {
+                        long maxLen;
+                        SqlBytes sb = (SqlBytes)value;
+                        if (!sb.IsNull)
+                        {
+                            maxLen = sb.Length;
+                            if (maxLen < 1) maxLen = 1;
+                            else if (x_lServerMaxBinary < maxLen) maxLen = Max;
+                        }
+                        else
+                            maxLen = sxm_rgDefaults[(int)SqlDbType.VarBinary].MaxLength;
+
+                        smd = new SqlMetaData(name, SqlDbType.VarBinary, maxLen);
+                    }
+                    else if (dataType == typeof(SqlXml))
+                        smd = new SqlMetaData(name, SqlDbType.Xml);
+                    else if (dataType == typeof(TimeSpan))
+                        smd = new SqlMetaData(name, SqlDbType.Time, 0, InferScaleFromTimeTicks(((TimeSpan)value).Ticks));
+                    else if (dataType == typeof(DateTimeOffset))
+                        smd = new SqlMetaData(name, SqlDbType.DateTimeOffset, 0, InferScaleFromTimeTicks(((DateTimeOffset)value).Ticks));
+                    else
+                        throw ADP.UnknownDataType(dataType);
+                    break;
+
+
+                default: throw ADP.UnknownDataTypeCode(dataType, Type.GetTypeCode(dataType));
             }
-            else if (value is Double) smd = new SqlMetaData(name, SqlDbType.Float);
-            else if (value is Int16) smd = new SqlMetaData(name, SqlDbType.SmallInt);
-            else if (value is Int32) smd = new SqlMetaData(name, SqlDbType.Int);
-            else if (value is Int64) smd = new SqlMetaData(name, SqlDbType.BigInt);
-            else if (value is SByte) throw ADP.InvalidDataType(nameof(SByte));
-            else if (value is Single) smd = new SqlMetaData(name, SqlDbType.Real);
-            else if (value is String)
-            {
-                long maxLen = ((String)value).Length;
-                if (maxLen < 1) maxLen = 1;
-
-                if (x_lServerMaxUnicode < maxLen)
-                    maxLen = Max;
-
-                smd = new SqlMetaData(name, SqlDbType.NVarChar, maxLen);
-            }
-            else if (value is UInt16) throw ADP.InvalidDataType(nameof(UInt16));
-            else if (value is UInt32) throw ADP.InvalidDataType(nameof(UInt32));
-            else if (value is UInt64) throw ADP.InvalidDataType(nameof(UInt64));
-            else if (value is System.Byte[])
-            {
-                long maxLen = ((System.Byte[])value).Length;
-                if (maxLen < 1) maxLen = 1;
-
-                if (x_lServerMaxBinary < maxLen)
-                    maxLen = Max;
-
-                smd = new SqlMetaData(name, SqlDbType.VarBinary, maxLen);
-            }
-            else if (value is System.Char[])
-            {
-                long maxLen = ((System.Char[])value).Length;
-                if (maxLen < 1) maxLen = 1;
-
-                if (x_lServerMaxUnicode < maxLen)
-                    maxLen = Max;
-
-                smd = new SqlMetaData(name, SqlDbType.NVarChar, maxLen);
-            }
-            else if (value is System.Guid)
-                smd = new SqlMetaData(name, SqlDbType.UniqueIdentifier);
-            else if (value is System.Object)
-                smd = new SqlMetaData(name, SqlDbType.Variant);
-            else if (value is SqlBinary)
-            {
-                long maxLen;
-                SqlBinary sb = ((SqlBinary)value);
-                if (!sb.IsNull)
-                {
-                    maxLen = sb.Length;
-                    if (maxLen < 1) maxLen = 1;
-
-                    if (x_lServerMaxBinary < maxLen)
-                        maxLen = Max;
-                }
-                else
-                    maxLen = sxm_rgDefaults[(int)SqlDbType.VarBinary].MaxLength;
-
-                smd = new SqlMetaData(name, SqlDbType.VarBinary, maxLen);
-            }
-            else if (value is SqlBoolean)
-                smd = new SqlMetaData(name, SqlDbType.Bit);
-            else if (value is SqlByte)
-                smd = new SqlMetaData(name, SqlDbType.TinyInt);
-            else if (value is SqlDateTime)
-                smd = new SqlMetaData(name, SqlDbType.DateTime);
-            else if (value is SqlDouble)
-                smd = new SqlMetaData(name, SqlDbType.Float);
-            else if (value is SqlGuid)
-                smd = new SqlMetaData(name, SqlDbType.UniqueIdentifier);
-            else if (value is SqlInt16)
-                smd = new SqlMetaData(name, SqlDbType.SmallInt);
-            else if (value is SqlInt32)
-                smd = new SqlMetaData(name, SqlDbType.Int);
-            else if (value is SqlInt64)
-                smd = new SqlMetaData(name, SqlDbType.BigInt);
-            else if (value is SqlMoney)
-                smd = new SqlMetaData(name, SqlDbType.Money);
-            else if (value is SqlDecimal)
-            {
-                byte bPrec;
-                byte scale;
-                SqlDecimal sd = (SqlDecimal)value;
-                if (!sd.IsNull)
-                {
-                    bPrec = sd.Precision;
-                    scale = sd.Scale;
-                }
-                else
-                {
-                    bPrec = sxm_rgDefaults[(int)SqlDbType.Decimal].Precision;
-                    scale = sxm_rgDefaults[(int)SqlDbType.Decimal].Scale;
-                }
-                smd = new SqlMetaData(name, SqlDbType.Decimal, bPrec, scale);
-            }
-            else if (value is SqlSingle)
-                smd = new SqlMetaData(name, SqlDbType.Real);
-            else if (value is SqlString)
-            {
-                SqlString ss = (SqlString)value;
-                if (!ss.IsNull)
-                {
-                    long maxLen = ss.Value.Length;
-                    if (maxLen < 1) maxLen = 1;
-
-                    if (maxLen > x_lServerMaxUnicode)
-                        maxLen = Max;
-
-                    smd = new SqlMetaData(name, SqlDbType.NVarChar, maxLen, ss.LCID, ss.SqlCompareOptions);
-                }
-                else
-                {
-                    smd = new SqlMetaData(name, SqlDbType.NVarChar, sxm_rgDefaults[(int)SqlDbType.NVarChar].MaxLength);
-                }
-            }
-            else if (value is SqlChars)
-            {
-                long maxLen;
-                SqlChars sch = (SqlChars)value;
-                if (!sch.IsNull)
-                {
-                    maxLen = sch.Length;
-                    if (maxLen < 1) maxLen = 1;
-
-                    if (maxLen > x_lServerMaxUnicode)
-                        maxLen = Max;
-                }
-                else
-                    maxLen = sxm_rgDefaults[(int)SqlDbType.NVarChar].MaxLength;
-
-                smd = new SqlMetaData(name, SqlDbType.NVarChar, maxLen);
-            }
-            else if (value is SqlBytes)
-            {
-                long maxLen;
-                SqlBytes sb = (SqlBytes)value;
-                if (!sb.IsNull)
-                {
-                    maxLen = sb.Length;
-                    if (maxLen < 1) maxLen = 1;
-                    else if (x_lServerMaxBinary < maxLen) maxLen = Max;
-                }
-                else
-                    maxLen = sxm_rgDefaults[(int)SqlDbType.VarBinary].MaxLength;
-
-                smd = new SqlMetaData(name, SqlDbType.VarBinary, maxLen);
-            }
-            else if (value is SqlXml)
-                smd = new SqlMetaData(name, SqlDbType.Xml);
-            else if (value is TimeSpan)
-                smd = new SqlMetaData(name, SqlDbType.Time, 0, InferScaleFromTimeTicks(((TimeSpan)value).Ticks));
-            else if (value is DateTimeOffset)
-                smd = new SqlMetaData(name, SqlDbType.DateTimeOffset, 0, InferScaleFromTimeTicks(((DateTimeOffset)value).Ticks));
-            else
-                throw ADP.UnknownDataType(value.GetType());
 
             return smd;
         }
@@ -1370,7 +1415,6 @@ namespace Microsoft.SqlServer.Server
         {
             if (SqlDbType.Binary == SqlDbType || SqlDbType.Timestamp == SqlDbType)
             {
-                //DBG.Assert(Max!=MaxLength, "SqlMetaData.Adjust(byte[]): Fixed-length type with Max length!");
                 // Don't pad null values
                 if (null != value)
                 {
@@ -1425,7 +1469,6 @@ namespace Microsoft.SqlServer.Server
         {
             if (SqlDbType.Char == SqlDbType || SqlDbType.NChar == SqlDbType)
             {
-                //DBG.Assert(Max!=MaxLength, "SqlMetaData.Adjust(byte[]): Fixed-length type with Max length!");
                 // Don't pad null values
                 if (null != value)
                 {
@@ -1434,7 +1477,7 @@ namespace Microsoft.SqlServer.Server
                     if (oldLength < MaxLength)
                     {
                         char[] rgchNew = new char[(int)MaxLength];
-                        Array.Copy(value, 0, rgchNew, 0, (int)oldLength);
+                        Buffer.BlockCopy(value, 0, rgchNew, 0, (int)oldLength);
 
                         // pad extra space
                         for (long i = oldLength; i < rgchNew.Length; i++)
@@ -1458,7 +1501,7 @@ namespace Microsoft.SqlServer.Server
             if (value.Length > MaxLength && Max != MaxLength)
             {
                 char[] rgchNewValue = new char[MaxLength];
-                Array.Copy(value, 0, rgchNewValue, 0, (int)MaxLength);
+                Buffer.BlockCopy(value, 0, rgchNewValue, 0, (int)MaxLength);
                 value = rgchNewValue;
             }
 
@@ -1480,8 +1523,7 @@ namespace Microsoft.SqlServer.Server
                     md.SqlDbType == SqlDbType.VarBinary)
             {
                 SqlMetaData mdnew = new SqlMetaData(md.Name, md.SqlDbType, SqlMetaData.Max, 0, 0, md.LocaleId,
-                    md.CompareOptions, null, null, null, true
-                        );
+                    md.CompareOptions, null, null, null, true, md.Type);
                 return mdnew;
             }
             else
@@ -1564,6 +1606,44 @@ namespace Microsoft.SqlServer.Server
             return MaxTimeScale;
         }
 
+        private static DbType[] sxm_rgSqlDbTypeToDbType = {
+            DbType.Int64,           // SqlDbType.BigInt
+            DbType.Binary,          // SqlDbType.Binary
+            DbType.Boolean,         // SqlDbType.Bit
+            DbType.AnsiString,      // SqlDbType.Char
+            DbType.DateTime,        // SqlDbType.DateTime
+            DbType.Decimal,         // SqlDbType.Decimal
+            DbType.Double,          // SqlDbType.Float
+            DbType.Binary,          // SqlDbType.Image
+            DbType.Int32,           // SqlDbType.Int
+            DbType.Currency,        // SqlDbType.Money
+            DbType.String,          // SqlDbType.NChar
+            DbType.String,          // SqlDbType.NText
+            DbType.String,          // SqlDbType.NVarChar
+            DbType.Single,          // SqlDbType.Real
+            DbType.Guid,            // SqlDbType.UniqueIdentifier
+            DbType.DateTime,        // SqlDbType.SmallDateTime
+            DbType.Int16,           // SqlDbType.SmallInt
+            DbType.Currency,        // SqlDbType.SmallMoney
+            DbType.AnsiString,      // SqlDbType.Text
+            DbType.Binary,          // SqlDbType.Timestamp
+            DbType.Byte,            // SqlDbType.TinyInt
+            DbType.Binary,          // SqlDbType.VarBinary
+            DbType.AnsiString,      // SqlDbType.VarChar
+            DbType.Object,          // SqlDbType.Variant
+            DbType.Object,          // SqlDbType.Row
+            DbType.Xml,             // SqlDbType.Xml
+            DbType.String,          // SqlDbType.NVarChar, place holder
+            DbType.String,          // SqlDbType.NVarChar, place holder
+            DbType.String,          // SqlDbType.NVarChar, place holder
+            DbType.Object,          // SqlDbType.Udt
+            DbType.Object,          // SqlDbType.Structured
+            DbType.Date,            // SqlDbType.Date
+            DbType.Time,            // SqlDbType.Time
+            DbType.DateTime2,       // SqlDbType.DateTime2
+            DbType.DateTimeOffset   // SqlDbType.DateTimeOffset
+        };
+
         private void SetDefaultsForType(SqlDbType dbType)
         {
             if (SqlDbType.BigInt <= dbType && SqlDbType.DateTimeOffset >= dbType)
@@ -1640,8 +1720,8 @@ namespace Microsoft.SqlServer.Server
                     x_lServerMaxUnicode, 0, 0, 0, x_eDefaultStringCompareOptions, false),                // Placeholder for value 27
             new SqlMetaData("nvarchar", SqlDbType.NVarChar,
                     x_lServerMaxUnicode, 0, 0, 0, x_eDefaultStringCompareOptions, false),                // Placeholder for value 28
-            new SqlMetaData("udt", SqlDbType.Structured,
-                    0, 0, 0, 0, SqlCompareOptions.None, false),   // Placeholder for udt (value 29) 
+            new SqlMetaData("udt", SqlDbType.Udt,
+                    0, 0, 0, 0, SqlCompareOptions.None, false),            // SqlDbType.Udt = 29
             new SqlMetaData("table", SqlDbType.Structured,
                     0, 0, 0, 0, SqlCompareOptions.None, false),                // SqlDbType.Structured
             new SqlMetaData("date", SqlDbType.Date,
@@ -1653,12 +1733,5 @@ namespace Microsoft.SqlServer.Server
             new SqlMetaData("datetimeoffset", SqlDbType.DateTimeOffset,
                    10, 0, 7, 0, SqlCompareOptions.None, false),                // SqlDbType.DateTimeOffset
             };
-        private void ThrowIfUdt(SqlDbType dbType)
-        {
-            if (dbType == SqlDbType.Udt)
-            {
-                throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
-            }
-        }
     }
 }

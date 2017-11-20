@@ -829,7 +829,7 @@ namespace System.ServiceModel.Syndication
                 XmlBuffer buffer = null;
                 XmlDictionaryWriter extWriter = null;
                 bool areAllItemsRead = true;
-                bool readItemsAtLeastOnce = false;
+                NullNotAllowedCollection<SyndicationItem> feedItems = null;
 
                 if (!elementIsEmpty)
                 {
@@ -843,12 +843,13 @@ namespace System.ServiceModel.Syndication
                             }
                             else if (reader.IsStartElement(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace) && !isSourceFeed)
                             {
-                                if (readItemsAtLeastOnce)
+                                feedItems = feedItems ?? new NullNotAllowedCollection<SyndicationItem>();
+                                IEnumerable<SyndicationItem> items = ReadItems(reader, result, out areAllItemsRead);
+                                foreach(SyndicationItem item in items)
                                 {
-                                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperWarning(new InvalidOperationException(SR.Format(SR.FeedHasNonContiguousItems, this.GetType().ToString())));
+                                    feedItems.Add(item);
                                 }
-                                result.Items = ReadItems(reader, result, out areAllItemsRead);
-                                readItemsAtLeastOnce = true;
+
                                 // if the derived class is reading the items lazily, then stop reading from the stream
                                 if (!areAllItemsRead)
                                 {
@@ -871,6 +872,12 @@ namespace System.ServiceModel.Syndication
                                 }
                             }
                         }
+
+                        if (feedItems != null)
+                        {
+                            result.Items = feedItems;
+                        }
+
                         LoadElementExtensions(buffer, extWriter, result);
                     }
                     finally

@@ -15,7 +15,7 @@ namespace System.Tests
         {
             Assert.Equal(expected, decimal.Parse(value.AsReadOnlySpan(), style, provider));
 
-            Assert.True(decimal.TryParse(value.AsReadOnlySpan(), out decimal result, style, provider));
+            Assert.True(decimal.TryParse(value.AsReadOnlySpan(), style, provider, out decimal result));
             Assert.Equal(expected, result);
         }
 
@@ -27,7 +27,7 @@ namespace System.Tests
             {
                 Assert.Throws(exceptionType, () => decimal.Parse(value.AsReadOnlySpan(), style, provider));
 
-                Assert.False(decimal.TryParse(value.AsReadOnlySpan(), out decimal result, style, provider));
+                Assert.False(decimal.TryParse(value.AsReadOnlySpan(), style, provider, out decimal result));
                 Assert.Equal(0, result);
             }
         }

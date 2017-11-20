@@ -29,8 +29,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         private readonly BSYMMGR _bsymmgr;
         private readonly CSemanticChecker _semanticChecker;
 
-        private NamespaceSymbol _rootNamespace;
-
         /////////////////////////////////////////////////////////////////////////////////
 
         private sealed class NameHashKey : IEquatable<NameHashKey>
@@ -75,7 +73,6 @@ namespace Microsoft.CSharp.RuntimeBinder
             _typeManager = typeManager;
             _bsymmgr = bsymmgr;
             _semanticChecker = semanticChecker;
-            _rootNamespace = _bsymmgr.GetRootNS();
 
             // Now populate object.
             LoadSymbolsFromType(typeof(object));
@@ -653,7 +650,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 type = type.GetElementType();
             }
 
-            NamespaceOrAggregateSymbol current = _rootNamespace;
+            NamespaceOrAggregateSymbol current = NamespaceSymbol.Root;
 
             // Go through the declaration chain and add namespaces and types for
             // each element in the chain.

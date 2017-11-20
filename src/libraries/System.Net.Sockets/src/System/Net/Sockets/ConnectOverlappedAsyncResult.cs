@@ -15,7 +15,7 @@ namespace System.Net.Sockets
             _endPoint = endPoint;
         }
 
-        internal EndPoint RemoteEndPoint
+        internal override EndPoint RemoteEndPoint
         {
             get { return _endPoint; }
         }

@@ -197,9 +197,12 @@ namespace System.Data.SqlClient
 
         private readonly string _workstationId;
 
-        private readonly TypeSystem _typeSystemVersion;
-
         private readonly TransactionBindingEnum _transactionBinding;
+
+        private readonly TypeSystem _typeSystemVersion;
+        private readonly Version _typeSystemAssemblyVersion;
+        private static readonly Version constTypeSystemAsmVersion10 = new Version("10.0.0.0");
+        private static readonly Version constTypeSystemAsmVersion11 = new Version("11.0.0.0");
 
         internal SqlConnectionString(string connectionString) : base(connectionString, GetParseSynonyms())
         {
@@ -317,6 +320,7 @@ namespace System.Data.SqlClient
                 ValidateValueLength(_attachDBFileName, TdsEnums.MAXLEN_ATTACHDBFILE, KEY.AttachDBFilename);
             }
 
+            _typeSystemAssemblyVersion = constTypeSystemAsmVersion10;
 
             if (true == _userInstance && !string.IsNullOrEmpty(_failoverPartner))
             {
@@ -347,6 +351,7 @@ namespace System.Data.SqlClient
             else if (typeSystemVersionString.Equals(TYPESYSTEMVERSION.SQL_Server_2012, StringComparison.OrdinalIgnoreCase))
             {
                 _typeSystemVersion = TypeSystem.SQLServer2012;
+                _typeSystemAssemblyVersion = constTypeSystemAsmVersion11;
             }
             else
             {
@@ -472,6 +477,7 @@ namespace System.Data.SqlClient
         internal string WorkstationId { get { return _workstationId; } }
 
         internal TypeSystem TypeSystemVersion { get { return _typeSystemVersion; } }
+        internal Version TypeSystemAssemblyVersion { get { return _typeSystemAssemblyVersion; } }
 
         internal TransactionBindingEnum TransactionBinding { get { return _transactionBinding; } }
 

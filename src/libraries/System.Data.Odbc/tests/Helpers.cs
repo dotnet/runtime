@@ -15,12 +15,8 @@ namespace System.Data.Odbc.Tests
         public static bool CheckOdbcNotAvailable() => !CheckOdbcIsAvailable();
 
         private static bool CheckOdbcIsAvailable() => 
-            PlatformDetection.IsWindows ? 
-                !PlatformDetection.IsWindowsNanoServer && (!PlatformDetection.IsWindowsServerCore || Environment.Is64BitProcess ) :
-                Interop.Libdl.dlopen((
-                    PlatformDetection.IsOSX ?
-                        "libodbc.2.dylib" : 
-                        "libodbc.so.2"
-                ), Interop.Libdl.RTLD_NOW) != IntPtr.Zero;
+            PlatformDetection.IsWindows ?
+                !PlatformDetection.IsWindowsNanoServer && (!PlatformDetection.IsWindowsServerCore || Environment.Is64BitProcess) :
+                Interop.Libdl.dlopen(Interop.Libraries.Odbc32, Interop.Libdl.RTLD_NOW) != IntPtr.Zero;
     }
 }

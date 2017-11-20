@@ -32,7 +32,7 @@ namespace Microsoft.Win32
     public sealed partial class RegistryKey : System.MarshalByRefObject, System.IDisposable
     {
         internal RegistryKey() { }
-        public Microsoft.Win32.SafeHandles.SafeRegistryHandle Handle {[System.Security.SecurityCriticalAttribute]get { throw null; } }
+        public Microsoft.Win32.SafeHandles.SafeRegistryHandle Handle { get { throw null; } }
         public string Name { get { throw null; } }
         public int SubKeyCount { get { throw null; } }
         public int ValueCount { get { throw null; } }
@@ -53,9 +53,7 @@ namespace Microsoft.Win32
         public void Dispose() { }
         public void Close() { throw null; }
         public void Flush() { }
-        [System.Security.SecurityCriticalAttribute]
         public static Microsoft.Win32.RegistryKey FromHandle(Microsoft.Win32.SafeHandles.SafeRegistryHandle handle) { throw null; }
-        [System.Security.SecurityCriticalAttribute]
         public static Microsoft.Win32.RegistryKey FromHandle(Microsoft.Win32.SafeHandles.SafeRegistryHandle handle, Microsoft.Win32.RegistryView view) { throw null; }
         public string[] GetSubKeyNames() { throw null; }
         public object GetValue(string name) { throw null; }
@@ -72,9 +70,7 @@ namespace Microsoft.Win32
         public Microsoft.Win32.RegistryKey OpenSubKey(string name, System.Security.AccessControl.RegistryRights rights) { throw null; }
         public Microsoft.Win32.RegistryKey OpenSubKey(string name, Microsoft.Win32.RegistryKeyPermissionCheck permissionCheck, System.Security.AccessControl.RegistryRights rights) { throw null; }
         public System.Security.AccessControl.RegistrySecurity GetAccessControl() { throw null; }
-        [System.Security.SecuritySafeCriticalAttribute]
         public System.Security.AccessControl.RegistrySecurity GetAccessControl(System.Security.AccessControl.AccessControlSections includeSections) { throw null; }
-        [System.Security.SecuritySafeCriticalAttribute]
         public void SetAccessControl(System.Security.AccessControl.RegistrySecurity registrySecurity) { throw null; }
         public void SetValue(string name, object value) { }
         public void SetValue(string name, object value, Microsoft.Win32.RegistryValueKind valueKind) { }
@@ -118,13 +114,10 @@ namespace Microsoft.Win32
 }
 namespace Microsoft.Win32.SafeHandles
 {
-    [System.Security.SecurityCriticalAttribute]
     public sealed partial class SafeRegistryHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
-        [System.Security.SecurityCriticalAttribute]
         public SafeRegistryHandle(System.IntPtr preexistingHandle, bool ownsHandle) : base(default(bool)) { }
-        public override bool IsInvalid { [System.Security.SecurityCriticalAttribute]get { throw null; } }
-        [System.Security.SecurityCriticalAttribute]
+        public override bool IsInvalid { get { throw null; } }
         protected override bool ReleaseHandle() { throw null; }
     }
 }
@@ -148,7 +141,6 @@ namespace System.Security.AccessControl
         TakeOwnership = 524288,
         WriteKey = 131078,
     }
-    [System.Security.SecurityCriticalAttribute]
     public sealed partial class RegistryAccessRule : System.Security.AccessControl.AccessRule
     {
         public RegistryAccessRule(System.Security.Principal.IdentityReference identity, System.Security.AccessControl.RegistryRights registryRights, System.Security.AccessControl.AccessControlType type) : base(default(System.Security.Principal.IdentityReference), default(int), default(bool), default(System.Security.AccessControl.InheritanceFlags), default(System.Security.AccessControl.PropagationFlags), default(System.Security.AccessControl.AccessControlType)) { }
@@ -157,14 +149,12 @@ namespace System.Security.AccessControl
         public RegistryAccessRule(string identity, System.Security.AccessControl.RegistryRights registryRights, System.Security.AccessControl.InheritanceFlags inheritanceFlags, System.Security.AccessControl.PropagationFlags propagationFlags, System.Security.AccessControl.AccessControlType type) : base(default(System.Security.Principal.IdentityReference), default(int), default(bool), default(System.Security.AccessControl.InheritanceFlags), default(System.Security.AccessControl.PropagationFlags), default(System.Security.AccessControl.AccessControlType)) { }
         public System.Security.AccessControl.RegistryRights RegistryRights { get { throw null; } }
     }
-    [System.Security.SecurityCriticalAttribute]
     public sealed partial class RegistryAuditRule : System.Security.AccessControl.AuditRule
     {
         public RegistryAuditRule(System.Security.Principal.IdentityReference identity, System.Security.AccessControl.RegistryRights registryRights, System.Security.AccessControl.InheritanceFlags inheritanceFlags, System.Security.AccessControl.PropagationFlags propagationFlags, System.Security.AccessControl.AuditFlags flags) : base(default(System.Security.Principal.IdentityReference), default(int), default(bool), default(System.Security.AccessControl.InheritanceFlags), default(System.Security.AccessControl.PropagationFlags), default(System.Security.AccessControl.AuditFlags)) { }
         public RegistryAuditRule(string identity, System.Security.AccessControl.RegistryRights registryRights, System.Security.AccessControl.InheritanceFlags inheritanceFlags, System.Security.AccessControl.PropagationFlags propagationFlags, System.Security.AccessControl.AuditFlags flags) : base(default(System.Security.Principal.IdentityReference), default(int), default(bool), default(System.Security.AccessControl.InheritanceFlags), default(System.Security.AccessControl.PropagationFlags), default(System.Security.AccessControl.AuditFlags)) { }
         public System.Security.AccessControl.RegistryRights RegistryRights { get { throw null; } }
     }
-    [System.Security.SecurityCriticalAttribute]
     public sealed partial class RegistrySecurity : System.Security.AccessControl.NativeObjectSecurity
     {
         public RegistrySecurity() : base(default(bool), default(System.Security.AccessControl.ResourceType)) { }

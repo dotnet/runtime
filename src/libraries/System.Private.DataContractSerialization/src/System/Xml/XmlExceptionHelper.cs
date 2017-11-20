@@ -132,11 +132,6 @@ namespace System.Xml
             ThrowXmlException(reader, SR.XmlMaxBytesPerReadExceeded, maxBytesPerRead.ToString(NumberFormatInfo.CurrentInfo));
         }
 
-        public static void ThrowMaxNameTableCharCountExceeded(XmlDictionaryReader reader, int maxNameTableCharCount)
-        {
-            ThrowXmlException(reader, SR.XmlMaxNameTableCharCountExceeded, maxNameTableCharCount.ToString(NumberFormatInfo.CurrentInfo));
-        }
-
         public static void ThrowMaxDepthExceeded(XmlDictionaryReader reader, int maxDepth)
         {
             ThrowXmlException(reader, SR.XmlMaxDepthExceeded, maxDepth.ToString());

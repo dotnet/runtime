@@ -273,7 +273,6 @@
 
 using System.Diagnostics;
 using System.Globalization;
-using System.Security;
 using System.Text;
 
 namespace System.Numerics
@@ -322,7 +321,6 @@ namespace System.Numerics
             return true;
         }
 
-        [SecuritySafeCritical]
         internal static bool TryParseBigInteger(string value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
         {
             if (value == null)
@@ -331,10 +329,9 @@ namespace System.Numerics
                 return false;
             }
 
-            return TryParseBigInteger(AsReadOnlySpan(value), style, info, out result);
+            return TryParseBigInteger(value.AsReadOnlySpan(), style, info, out result);
         }
 
-        [SecuritySafeCritical]
         internal static bool TryParseBigInteger(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
         {
             unsafe
@@ -373,18 +370,7 @@ namespace System.Numerics
                 throw new ArgumentNullException(nameof(value));
             }
 
-            return ParseBigInteger(AsReadOnlySpan(value), style, info);
-        }
-
-        // TODO #22688: Remove this and replace it with the real AsReadOnlySpan extension
-        // method from System.Memory once the System.Memory package is marked stable
-        // and the package validation system allows us to take a dependency on it.
-        private static unsafe ReadOnlySpan<char> AsReadOnlySpan(string s)
-        {
-            fixed (char* c = s)
-            {
-                return new ReadOnlySpan<char>(c, s.Length);
-            }
+            return ParseBigInteger(value.AsReadOnlySpan(), style, info);
         }
 
         internal static BigInteger ParseBigInteger(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info)
@@ -516,11 +502,18 @@ namespace System.Numerics
             return (char)0; // Custom format
         }
 
-        private static string FormatBigIntegerToHexString(BigInteger value, char format, int digits, NumberFormatInfo info)
+        private static string FormatBigIntegerToHex(BigInteger value, char format, int digits, NumberFormatInfo info)
         {
-            StringBuilder sb = new StringBuilder();
-            byte[] bits = value.ToByteArray();
-            string fmt = null;
+            Debug.Assert(format == 'x' || format == 'X');
+
+            // Get the bytes that make up the BigInteger.
+            Span<byte> bits = stackalloc byte[64]; // arbitrary limit to switch from stack to heap
+            bits = value.TryWriteBytes(bits, out int bytesWritten) ?
+                bits.Slice(0, bytesWritten) :
+                value.ToByteArray();
+
+            Span<char> stackSpace = stackalloc char[128]; // each byte is typically two chars
+            var sb = new ValueStringBuilder(stackSpace);
             int cur = bits.Length - 1;
 
             if (cur > -1)
@@ -530,43 +523,55 @@ namespace System.Numerics
                 // [07..00] drop the high 0 as the two's complement positive number remains clear
                 bool clearHighF = false;
                 byte head = bits[cur];
+
                 if (head > 0xF7)
                 {
                     head -= 0xF0;
                     clearHighF = true;
                 }
+
                 if (head < 0x08 || clearHighF)
                 {
                     // {0xF8-0xFF} print as {8-F}
                     // {0x00-0x07} print as {0-7}
-                    fmt = string.Format(CultureInfo.InvariantCulture, "{0}1", format);
-                    sb.Append(head.ToString(fmt, info));
+                    sb.Append(head < 10 ?
+                        (char)(head + '0') :
+                        format == 'X' ? (char)((head & 0xF) - 10 + 'A') : (char)((head & 0xF) - 10 + 'a'));
                     cur--;
                 }
             }
+
             if (cur > -1)
             {
-                fmt = string.Format(CultureInfo.InvariantCulture, "{0}2", format);
+                Span<char> chars = sb.AppendSpan((cur + 1) * 2);
+                int charsPos = 0;
+                string hexValues = format == 'x' ? "0123456789abcdef" : "0123456789ABCDEF";
                 while (cur > -1)
                 {
-                    sb.Append(bits[cur--].ToString(fmt, info));
+                    byte b = bits[cur--];
+                    chars[charsPos++] = hexValues[b >> 4];
+                    chars[charsPos++] = hexValues[b & 0xF];
                 }
             }
-            if (digits > 0 && digits > sb.Length)
+
+            if (digits > sb.Length)
             {
-                // Insert leading zeros.  User specified "X5" so we create "0ABCD" instead of "ABCD"
-                sb.Insert(0, (value._sign >= 0 ? ("0") : (format == 'x' ? "f" : "F")), digits - sb.Length);
+                // Insert leading zeros, e.g. user specified "X5" so we create "0ABCD" instead of "ABCD"
+                sb.Insert(
+                    0,
+                    value._sign >= 0 ? '0' : (format == 'x') ? 'f' : 'F',
+                    digits - sb.Length);
             }
+
             return sb.ToString();
         }
 
-        [SecuritySafeCritical]
         internal static string FormatBigInteger(BigInteger value, string format, NumberFormatInfo info)
         {
             int digits = 0;
             char fmt = ParseFormatSpecifier(format, out digits);
             if (fmt == 'x' || fmt == 'X')
-                return FormatBigIntegerToHexString(value, fmt, digits, info);
+                return FormatBigIntegerToHex(value, fmt, digits, info);
 
             bool decimalFmt = (fmt == 'g' || fmt == 'G' || fmt == 'd' || fmt == 'D' || fmt == 'r' || fmt == 'R');
 

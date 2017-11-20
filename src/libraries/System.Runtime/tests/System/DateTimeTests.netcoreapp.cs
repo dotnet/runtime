@@ -82,5 +82,11 @@ namespace System.Tests
             Assert.False(DateTime.TryParseExact(input.AsReadOnlySpan(), format, culture, style, out DateTime result));
             Assert.False(DateTime.TryParseExact(input.AsReadOnlySpan(), new[] { format }, culture, style, out result));
         }
+
+        [Fact]
+        public static void UnixEpoch()
+        {
+            VerifyDateTime(DateTime.UnixEpoch, 1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        }
     }
 }

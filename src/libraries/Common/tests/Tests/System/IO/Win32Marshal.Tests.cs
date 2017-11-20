@@ -84,13 +84,18 @@ namespace Tests.System.IO
         }
 
         [Theory]
-        [InlineData("", Interop.Errors.ERROR_FILENAME_EXCED_RANGE)]
-        [InlineData("foo", Interop.Errors.ERROR_FILENAME_EXCED_RANGE)]
-        public void PathTooLongErrors(string path, int errorCode)
+        [InlineData("", Interop.Errors.ERROR_FILENAME_EXCED_RANGE, "IO_PathTooLong")]
+        [InlineData("foo", Interop.Errors.ERROR_FILENAME_EXCED_RANGE, "IO_PathTooLong_Path")]
+        public void PathTooLongErrors(string path, int errorCode, string error)
         {
             var exception = Win32Marshal.GetExceptionForWin32Error(errorCode, path);
             Assert.IsType<PathTooLongException>(exception);
-            Assert.StartsWith("IO_PathTooLong", exception.Message);
+
+            Assert.StartsWith(error, exception.Message);
+            if (!string.IsNullOrEmpty(path))
+            {
+                Assert.EndsWith(path, exception.Message);
+            }
         }
 
         [Theory]

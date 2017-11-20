@@ -5,6 +5,7 @@
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
+using System.IO;
 using System.Runtime.InteropServices;
 
 namespace System.Drawing
@@ -25,10 +26,13 @@ namespace System.Drawing
 
             private static IntPtr LoadNativeLibrary()
             {
+                string libraryName;
+
                 IntPtr lib = IntPtr.Zero;
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {
-                    lib = Interop.Libdl.dlopen("libgdiplus.dylib", Interop.Libdl.RTLD_NOW);
+                    libraryName = "libgdiplus.dylib";
+                    lib = Interop.Libdl.dlopen(libraryName, Interop.Libdl.RTLD_NOW);
                 }
                 else
                 {
@@ -36,10 +40,30 @@ namespace System.Drawing
                     // The mono project, where libgdiplus originated, allowed both of the names below to be used, via
                     // a global configuration setting. We prefer the "unversioned" shared object name, and fallback to
                     // the name suffixed with ".0".
-                    lib = Interop.Libdl.dlopen("libgdiplus.so", Interop.Libdl.RTLD_NOW);
+                    libraryName = "libgdiplus.so";
+                    lib = Interop.Libdl.dlopen(libraryName, Interop.Libdl.RTLD_NOW);
                     if (lib == IntPtr.Zero)
                     {
                         lib = Interop.Libdl.dlopen("libgdiplus.so.0", Interop.Libdl.RTLD_NOW);
+                    }
+                }
+
+                // If we couldn't find libgdiplus in the system search path, try to look for libgdiplus in the
+                // NuGet package folders. This matches the DllImport behavior.
+                if (lib == IntPtr.Zero)
+                {
+                    string[] searchDirectories = ((string)AppContext.GetData("NATIVE_DLL_SEARCH_DIRECTORIES")).Split(':');
+
+                    foreach (var searchDirectory in searchDirectories)
+                    {
+                        var searchPath = Path.Combine(searchDirectory, libraryName);
+
+                        lib = Interop.Libdl.dlopen(searchPath, Interop.Libdl.RTLD_NOW);
+
+                        if (lib != IntPtr.Zero)
+                        {
+                            break;
+                        }
                     }
                 }
 

@@ -119,7 +119,6 @@ namespace System.IO.Compression
             }
         }
 
-        [SecuritySafeCritical]
         private void Dispose(bool disposing)
         {
             if (!_isDisposed)
@@ -148,7 +147,6 @@ namespace System.IO.Compression
         /// <summary>
         /// Creates the ZStream that will handle inflation.
         /// </summary>
-        [SecuritySafeCritical]
         private void InflateInit(int windowBits)
         {
             ZLibNative.ErrorCode error;
@@ -200,7 +198,6 @@ namespace System.IO.Compression
         /// <summary>
         /// Wrapper around the ZLib inflate function
         /// </summary>
-        [SecuritySafeCritical]
         private ZLibNative.ErrorCode Inflate(ZLibNative.FlushCode flushCode)
         {
             ZLibNative.ErrorCode errC;

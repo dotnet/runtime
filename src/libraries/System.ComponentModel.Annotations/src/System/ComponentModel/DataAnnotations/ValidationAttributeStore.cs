@@ -116,14 +116,14 @@ namespace System.ComponentModel.DataAnnotations
 
             lock (_typeStoreItems)
             {
-                TypeStoreItem item = null;
-                if (!_typeStoreItems.TryGetValue(type, out item))
+                if (!_typeStoreItems.TryGetValue(type, out TypeStoreItem item))
                 {
                     // use CustomAttributeExtensions.GetCustomAttributes() to get inherited attributes as well as direct ones
                     var attributes = CustomAttributeExtensions.GetCustomAttributes(type, true);
                     item = new TypeStoreItem(type, attributes);
                     _typeStoreItems[type] = item;
                 }
+
                 return item;
             }
         }
@@ -179,14 +179,13 @@ namespace System.ComponentModel.DataAnnotations
 
             internal PropertyStoreItem GetPropertyStoreItem(string propertyName)
             {
-                PropertyStoreItem item = null;
-                if (!TryGetPropertyStoreItem(propertyName, out item))
+                if (!TryGetPropertyStoreItem(propertyName, out PropertyStoreItem item))
                 {
                     throw new ArgumentException(
                         string.Format(CultureInfo.CurrentCulture,
-                            SR.AttributeStore_Unknown_Property, _type.Name, propertyName),
-nameof(propertyName));
+                            SR.AttributeStore_Unknown_Property, _type.Name, propertyName), nameof(propertyName));
                 }
+
                 return item;
             }
 

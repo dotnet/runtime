@@ -73,11 +73,6 @@ namespace System.Runtime.Serialization
                 return new ArgumentException(message);
             }
 
-            public static Exception ThrowHelperArgument(string paramName, string message)
-            {
-                return new ArgumentException(message, paramName);
-            }
-
             internal static Exception ThrowHelperFatal(string message, Exception innerException)
             {
                 return ThrowHelperError(new Exception(message, innerException));

@@ -38,7 +38,7 @@ namespace System.ComponentModel.DataAnnotations
                 return true;
             }
             var stringValue = value as string;
-            if (stringValue != null && string.IsNullOrEmpty(stringValue))
+            if (stringValue?.Length == 0)
             {
                 return true;
             }
@@ -76,14 +76,9 @@ namespace System.ComponentModel.DataAnnotations
             {
                 try
                 {
-                    if (stringValue != null)
-                    {
-                        convertedValue = Enum.Parse(EnumType, stringValue, false);
-                    }
-                    else
-                    {
-                        convertedValue = Enum.ToObject(EnumType, value);
-                    }
+                    convertedValue = stringValue != null
+                        ? Enum.Parse(EnumType, stringValue, false)
+                        : Enum.ToObject(EnumType, value);
                 }
                 catch (ArgumentException)
                 {

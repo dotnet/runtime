@@ -68,7 +68,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if (pObject != null && pObject.Type.isStructOrEnum())
                 {
-                    if (pObject is IExprWithArgs withArgs)
+                    if (pObject is ExprWithArgs withArgs)
                     {
                         // assigning to RHS of method or property getter returning a value-type on the stack or
                         // passing RHS of method or property getter returning a value-type on the stack, as ref or out

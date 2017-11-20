@@ -6,7 +6,6 @@ using System.ComponentModel;
 using System.Diagnostics.Contracts;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.WindowsRuntime.Internal;
 using System.Threading.Tasks;
 using System.Threading;
 using Windows.Foundation;

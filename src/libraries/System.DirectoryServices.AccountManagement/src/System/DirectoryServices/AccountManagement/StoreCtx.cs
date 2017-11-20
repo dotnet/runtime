@@ -28,13 +28,11 @@ namespace System.DirectoryServices.AccountManagement
         private PrincipalContext _owningContext = null;
         internal PrincipalContext OwningContext
         {
-            [System.Security.SecurityCritical]
             get
             {
                 return _owningContext;
             }
 
-            [System.Security.SecurityCritical]
             set
             {
                 Debug.Assert(value != null);
@@ -315,7 +313,6 @@ namespace System.DirectoryServices.AccountManagement
             PropertyNames.ComputerServicePrincipalNames
         };
 
-        [System.Security.SecurityCritical]
         protected QbeFilterDescription BuildQbeFilterDescription(Principal p)
         {
             QbeFilterDescription qbeFilterDescription = new QbeFilterDescription();
@@ -360,7 +357,6 @@ namespace System.DirectoryServices.AccountManagement
 
         // Applies to supplied propertySet to the supplied Principal, and adds any resulting filters
         // to qbeFilterDescription.
-        [System.Security.SecurityCritical]
         private void BuildFilterSet(Principal p, string[] propertySet, QbeFilterDescription qbeFilterDescription)
         {
             foreach (string propertyName in propertySet)

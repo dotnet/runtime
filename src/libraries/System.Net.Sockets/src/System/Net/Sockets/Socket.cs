@@ -737,6 +737,7 @@ namespace System.Net.Sockets
             // This may throw ObjectDisposedException.
             SocketError errorCode = SocketPal.Bind(
                 _handle,
+                _protocolType,
                 socketAddress.Buffer,
                 socketAddress.Size);
 
@@ -2357,36 +2358,10 @@ namespace System.Net.Sockets
                 throw new ArgumentNullException(nameof(asyncResult));
             }
 
-            LazyAsyncResult castedAsyncResult = null;
-            EndPoint remoteEndPoint = null;
-            ConnectOverlappedAsyncResult coar;
-            MultipleAddressConnectAsyncResult macar;
-            ConnectAsyncResult car;
-
-            coar = asyncResult as ConnectOverlappedAsyncResult;
-            if (coar == null)
-            {
-                macar = asyncResult as MultipleAddressConnectAsyncResult;
-                if (macar == null)
-                {
-                    car = asyncResult as ConnectAsyncResult;
-                    if (car != null)
-                    {
-                        remoteEndPoint = car.RemoteEndPoint;
-                        castedAsyncResult = car;
-                    }
-                }
-                else
-                {
-                    remoteEndPoint = macar.RemoteEndPoint;
-                    castedAsyncResult = macar;
-                }
-            }
-            else
-            {
-                remoteEndPoint = coar.RemoteEndPoint;
-                castedAsyncResult = coar;
-            }
+            ContextAwareResult castedAsyncResult =
+                asyncResult as ConnectOverlappedAsyncResult ??
+                asyncResult as MultipleAddressConnectAsyncResult ??
+                (ContextAwareResult)(asyncResult as ConnectAsyncResult);
 
             if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
             {
@@ -2408,7 +2383,7 @@ namespace System.Net.Sockets
                 if (ex == null)
                 {
                     // Update the internal state of this socket according to the error before throwing.
-                    SocketException se = SocketExceptionFactory.CreateSocketException(castedAsyncResult.ErrorCode, remoteEndPoint);
+                    SocketException se = SocketExceptionFactory.CreateSocketException(castedAsyncResult.ErrorCode, castedAsyncResult.RemoteEndPoint);
                     UpdateStatusAfterSocketError(se);
                     ex = se;
                 }
@@ -4951,7 +4926,7 @@ namespace System.Net.Sockets
                 _endPoint = endPoint;
             }
 
-            internal EndPoint RemoteEndPoint
+            internal override EndPoint RemoteEndPoint
             {
                 get { return _endPoint; }
             }
@@ -4973,7 +4948,7 @@ namespace System.Net.Sockets
             internal int _port;
             internal Exception _lastException;
 
-            internal EndPoint RemoteEndPoint
+            internal override EndPoint RemoteEndPoint
             {
                 get
                 {

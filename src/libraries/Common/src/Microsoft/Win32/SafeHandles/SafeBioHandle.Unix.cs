@@ -9,7 +9,6 @@ using System.Diagnostics;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    [SecurityCritical]
     internal sealed class SafeBioHandle : SafeHandle
     {
         private SafeHandle _parent;

@@ -133,7 +133,6 @@ namespace System.Threading
         private ExecutionContext _ownerThreadContext;
 
         // The EC callback that invokes the post phase action
-        [SecurityCritical]
         private static ContextCallback s_invokePostPhaseAction;
 
         // Post phase action after each phase
@@ -756,7 +755,6 @@ namespace System.Threading
         /// last arrival thread
         /// </summary>
         /// <param name="observedSense">The current phase sense</param>
-        [SecuritySafeCritical]
         private void FinishPhase(bool observedSense)
         {
             // Execute the PHA in try/finally block to reset the variables back in case of it threw an exception
@@ -806,7 +804,6 @@ namespace System.Threading
         /// Helper method to call the post phase action
         /// </summary>
         /// <param name="obj"></param>
-        [SecurityCritical]
         private static void InvokePostPhaseAction(object obj)
         {
             var thisBarrier = (Barrier)obj;

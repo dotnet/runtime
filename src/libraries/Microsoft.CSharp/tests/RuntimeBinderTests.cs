@@ -194,5 +194,26 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         class Third<T> : Second<Third<T>>
         {
         }
+
+        public class Castable
+        {
+            public static implicit operator int(Castable _) => 2;
+
+            public static implicit operator string(Castable _) => "abc";
+        }
+
+        [Fact]
+        public void ImplicitOperatorForPlus()
+        {
+            dynamic d = new Castable();
+            dynamic result = d + 1;
+            Assert.Equal(3, result);
+            result = 5 + d;
+            Assert.Equal(7, result);
+            result = d + "def";
+            Assert.Equal("abcdef", result);
+            result = "xyz" + d;
+            Assert.Equal("xyzabc", result);
+        }
     }
 }

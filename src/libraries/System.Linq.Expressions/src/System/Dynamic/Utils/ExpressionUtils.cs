@@ -314,5 +314,13 @@ namespace System.Dynamic.Utils
 
             return true;
         }
+
+        public static void ValidateArgumentCount(this LambdaExpression lambda)
+        {
+            if (((IParameterProvider)lambda).ParameterCount >= ushort.MaxValue)
+            {
+                throw Error.InvalidProgram();
+            }
+        }
     }
 }

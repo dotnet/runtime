@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32.SafeHandles;
 using System;
-using System.IO;
-using System.Runtime.InteropServices;
 
 internal partial class Interop
 {
@@ -22,10 +19,9 @@ internal partial class Interop
                 dwHighDateTime = (uint)(fileTime >> 32);
             }
 
-            internal long ToTicks()
-            {
-                return ((long)dwHighDateTime << 32) + dwLowDateTime;
-            }
+            internal long ToTicks() => ((long)dwHighDateTime << 32) + dwLowDateTime;
+            internal DateTime ToDateTimeUtc() => DateTime.FromFileTimeUtc(ToTicks());
+            internal DateTimeOffset ToDateTimeOffset() => DateTimeOffset.FromFileTime(ToTicks());
         }
     }
 }

@@ -58,7 +58,7 @@ def osShortName = ['Windows 10': 'win10',
                     label('windows_server_2016_clr_perf')
                 }
                 else {
-                    label('linux_clr_perf')
+                    label('ubuntu_1604_clr_perf')
                 }
 
                 wrappers {
@@ -103,7 +103,7 @@ def osShortName = ['Windows 10': 'win10',
                     steps {
                         //We need to specify the max cpu count to be one as we do not want to be executing performance tests in parallel
                         shell("./build.sh -release")
-                        shell("sudo find . -type f -name dotnet | xargs chmod +x")
+                        shell("find . -type f -name dotnet | xargs chmod u+x")
                         shell("curl \"http://benchviewtestfeed.azurewebsites.net/nuget/FindPackagesById()?id='Microsoft.BenchView.JSONFormat'\" | grep \"content type\" | sed \"\$ s/.*src=\\\"\\([^\\\"]*\\)\\\".*/\\1/;tx;d;:x\" | xargs curl -o benchview.zip")
                         shell("unzip -q -o benchview.zip -d \"\${WORKSPACE}/Tools/Microsoft.BenchView.JSONFormat\"")
 
@@ -113,7 +113,7 @@ def osShortName = ['Windows 10': 'win10',
                         "python3.5 \"\${WORKSPACE}/Tools/Microsoft.BenchView.JSONFormat/tools/submission-metadata.py\" --name " + "\"" + benchViewName + "\"" + " --user-email " + "\"dotnet-bot@microsoft.com\"\n" +
                         "python3.5 \"\${WORKSPACE}/Tools/Microsoft.BenchView.JSONFormat/tools/build.py\" git --branch \$GIT_BRANCH_WITHOUT_ORIGIN --type " + runType)
                         shell("python3.5 \"\${WORKSPACE}/Tools/Microsoft.BenchView.JSONFormat/tools/machinedata.py\"")
-                        shell("sudo -E bash ./build-managed.sh -release -tests -- /p:Performance=true /p:TargetOS=${osGroup} /m:1 /p:LogToBenchview=true /p:BenchviewRunType=${runType}")
+                        shell("bash ./build-managed.sh -release -tests -- /p:Performance=true /p:TargetOS=${osGroup} /m:1 /p:LogToBenchview=true /p:BenchviewRunType=${runType}")
                     }
                 }
             }

@@ -20,28 +20,23 @@ namespace System.IO.IsolatedStorage
         public IsolatedStorageException()
             : base(SR.IsolatedStorage_Exception)
         {
-            SetErrorCode(COR_E_ISOSTORE);
+            HResult = COR_E_ISOSTORE;
         }
 
         public IsolatedStorageException(string message)
             : base(message)
         {
-            SetErrorCode(COR_E_ISOSTORE);
+            HResult = COR_E_ISOSTORE;
         }
 
         public IsolatedStorageException(string message, Exception inner)
             : base(message, inner)
         {
-            SetErrorCode(COR_E_ISOSTORE);
+            HResult = COR_E_ISOSTORE;
         }
 
         protected IsolatedStorageException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-        }
-
-        private void SetErrorCode(int hr)
-        {
-            HResult = hr;
         }
     }
 }

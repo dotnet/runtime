@@ -59,7 +59,6 @@ namespace System.Threading
         // Barrier Events
         //
 
-        [SecuritySafeCritical]
         [Event(BARRIER_PHASEFINISHED_ID, Level = EventLevel.Verbose, Version = 1)]
         public void Barrier_PhaseFinished(bool currentSense, long phaseNum)
         {

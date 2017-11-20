@@ -33,8 +33,6 @@ namespace System.Drawing.Design {
     ///    <para> Provides a base implementation of a toolbox item.</para>
     /// </devdoc>
     [Serializable]
-    [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.InheritanceDemand, Name="FullTrust")]
-    [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Name="FullTrust")]
     public class ToolboxItem : ISerializable {
     
         private static TraceSwitch ToolboxItemPersist = new TraceSwitch("ToolboxPersisting", "ToolboxItem: write data");

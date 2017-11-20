@@ -3,12 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
-using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
-using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
 using System.Diagnostics;
-using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
+using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
 
 namespace System
 {
@@ -20,10 +19,13 @@ namespace System
     [DebuggerTypeProxy(typeof(MemoryDebugView<>))]
     public readonly struct Memory<T>
     {
-        // The highest order bit of _index is used to discern whether _arrayOrOwnedMemory is an array or an owned memory
-        // if (_index >> 31) == 1, object _arrayOrOwnedMemory is an OwnedMemory<T>
-        // else, object _arrayOrOwnedMemory is a T[]
-        private readonly object _arrayOrOwnedMemory;
+        // NOTE: With the current implementation, Memory<T> and ReadOnlyMemory<T> must have the same layout,
+        // as code uses Unsafe.As to cast between them.
+
+        // The highest order bit of _index is used to discern whether _object is an array or an owned memory
+        // if (_index >> 31) == 1, object _object is an OwnedMemory<T>
+        // else, object _object is a T[].
+        private readonly object _object;
         private readonly int _index;
         private readonly int _length;
 
@@ -44,7 +46,7 @@ namespace System
             if (default(T) == null && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException_ArrayTypeMustBeExactMatch(typeof(T));
 
-            _arrayOrOwnedMemory = array;
+            _object = array;
             _index = 0;
             _length = array.Length;
         }
@@ -72,7 +74,7 @@ namespace System
             if ((uint)start > (uint)array.Length || (uint)length > (uint)(array.Length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
 
-            _arrayOrOwnedMemory = array;
+            _object = array;
             _index = start;
             _length = length;
         }
@@ -86,13 +88,22 @@ namespace System
             if (index < 0 || length < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
 
-            _arrayOrOwnedMemory = owner;
+            _object = owner;
             _index = index | (1 << 31); // Before using _index, check if _index < 0, then 'and' it with RemoveOwnedFlagBitMask
             _length = length;
         }
 
         //Debugger Display = {T[length]}
         private string DebuggerDisplay => string.Format("{{{0}[{1}]}}", typeof(T).Name, _length);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private Memory(object obj, int index, int length)
+        {
+            // No validation performed; caller must provide any necessary validation.
+            _object = obj;
+            _index = index;
+            _length = length;
+        }
 
         /// <summary>
         /// Defines an implicit conversion of an array to a <see cref="Memory{T}"/>
@@ -107,18 +118,13 @@ namespace System
         /// <summary>
         /// Defines an implicit conversion of a <see cref="Memory{T}"/> to a <see cref="ReadOnlyMemory{T}"/>
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static implicit operator ReadOnlyMemory<T>(Memory<T> memory)
-        {
-            if (memory._index < 0)
-                return new ReadOnlyMemory<T>((OwnedMemory<T>)memory._arrayOrOwnedMemory, memory._index & RemoveOwnedFlagBitMask, memory._length);
-            return new ReadOnlyMemory<T>((T[])memory._arrayOrOwnedMemory, memory._index, memory._length);
-        }
+        public static implicit operator ReadOnlyMemory<T>(Memory<T> memory) =>
+            Unsafe.As<Memory<T>, ReadOnlyMemory<T>>(ref memory);
 
         /// <summary>
         /// Returns an empty <see cref="Memory{T}"/>
         /// </summary>
-        public static Memory<T> Empty { get; } = SpanHelpers.PerTypeValues<T>.EmptyArray;
+        public static Memory<T> Empty => default;
 
         /// <summary>
         /// The number of items in the memory.
@@ -143,9 +149,7 @@ namespace System
             if ((uint)start > (uint)_length)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
 
-            if (_index < 0)
-                return new Memory<T>((OwnedMemory<T>)_arrayOrOwnedMemory, (_index & RemoveOwnedFlagBitMask) + start, _length - start);
-            return new Memory<T>((T[])_arrayOrOwnedMemory, _index + start, _length - start);
+            return new Memory<T>(_object, _index + start, _length - start);
         }
 
         /// <summary>
@@ -161,10 +165,8 @@ namespace System
         {
             if ((uint)start > (uint)_length || (uint)length > (uint)(_length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-                
-            if (_index < 0)
-                return new Memory<T>((OwnedMemory<T>)_arrayOrOwnedMemory, (_index & RemoveOwnedFlagBitMask) + start, length);
-            return new Memory<T>((T[])_arrayOrOwnedMemory, _index + start, length);
+            
+            return new Memory<T>(_object, _index + start, length);
         }
 
         /// <summary>
@@ -176,10 +178,51 @@ namespace System
             get
             {
                 if (_index < 0)
-                    return ((OwnedMemory<T>)_arrayOrOwnedMemory).Span.Slice(_index & RemoveOwnedFlagBitMask, _length);
-                return new Span<T>((T[])_arrayOrOwnedMemory, _index, _length);
+                {
+                    return ((OwnedMemory<T>)_object).Span.Slice(_index & RemoveOwnedFlagBitMask, _length);
+                }
+                else if (typeof(T) == typeof(char) && _object is string s)
+                {
+                    // This is dangerous, returning a writable span for a string that should be immutable.
+                    // However, we need to handle the case where a ReadOnlyMemory<char> was created from a string
+                    // and then cast to a Memory<T>. Such a cast can only be done with unsafe or marshaling code,
+                    // in which case that's the dangerous operation performed by the dev, and we're just following
+                    // suit here to make it work as best as possible.
+                    return new Span<T>(Unsafe.As<Pinnable<T>>(s), MemoryExtensions.StringAdjustment, s.Length).Slice(_index, _length);
+                }
+                else if (_object != null)
+                {
+                    return new Span<T>((T[])_object, _index, _length);
+                }
+                else
+                {
+                    return default;
+                }
             }
         }
+
+        /// <summary>
+        /// Copies the contents of the memory into the destination. If the source
+        /// and destination overlap, this method behaves as if the original values are in
+        /// a temporary location before the destination is overwritten.
+        ///
+        /// <param name="destination">The Memory to copy items into.</param>
+        /// <exception cref="System.ArgumentException">
+        /// Thrown when the destination is shorter than the source.
+        /// </exception>
+        /// </summary>
+        public void CopyTo(Memory<T> destination) => Span.CopyTo(destination.Span);
+
+        /// <summary>
+        /// Copies the contents of the memory into the destination. If the source
+        /// and destination overlap, this method behaves as if the original values are in
+        /// a temporary location before the destination is overwritten.
+        ///
+        /// <returns>If the destination is shorter than the source, this method
+        /// return false and no data is written to the destination.</returns>
+        /// </summary>
+        /// <param name="destination">The span to copy items into.</param>
+        public bool TryCopyTo(Memory<T> destination) => Span.TryCopyTo(destination.Span);
 
         /// <summary>
         /// Returns a handle for the array.
@@ -187,17 +230,27 @@ namespace System
         /// </summary>
         public unsafe MemoryHandle Retain(bool pin = false)
         {
-            MemoryHandle memoryHandle;
+            MemoryHandle memoryHandle = default;
             if (pin)
             {
                 if (_index < 0)
                 {
-                    memoryHandle = ((OwnedMemory<T>)_arrayOrOwnedMemory).Pin();
+                    memoryHandle = ((OwnedMemory<T>)_object).Pin();
                     memoryHandle.AddOffset((_index & RemoveOwnedFlagBitMask) * Unsafe.SizeOf<T>());
                 }
-                else
+                else if (typeof(T) == typeof(char) && _object is string s)
                 {
-                    var array = (T[])_arrayOrOwnedMemory;
+                    // This case can only happen if a ReadOnlyMemory<char> was created around a string
+                    // and then that was cast to a Memory<char> using unsafe / marshaling code.  This needs
+                    // to work, however, so that code that uses a single Memory<char> field to store either
+                    // a readable ReadOnlyMemory<char> or a writable Memory<char> can still be pinned and
+                    // used for interop purposes.
+                    GCHandle handle = GCHandle.Alloc(s, GCHandleType.Pinned);
+                    void* pointer = Unsafe.Add<T>((void*)handle.AddrOfPinnedObject(), _index);
+                    memoryHandle = new MemoryHandle(null, pointer, handle);
+                }
+                else if (_object is T[] array)
+                {
                     var handle = GCHandle.Alloc(array, GCHandleType.Pinned);
                     void* pointer = Unsafe.Add<T>((void*)handle.AddrOfPinnedObject(), _index);
                     memoryHandle = new MemoryHandle(null, pointer, handle);
@@ -207,12 +260,8 @@ namespace System
             {
                 if (_index < 0)
                 {
-                    ((OwnedMemory<T>)_arrayOrOwnedMemory).Retain();
-                    memoryHandle = new MemoryHandle((OwnedMemory<T>)_arrayOrOwnedMemory);
-                }
-                else
-                {
-                    memoryHandle = new MemoryHandle(null);
+                    ((OwnedMemory<T>)_object).Retain();
+                    memoryHandle = new MemoryHandle((OwnedMemory<T>)_object);
                 }
             }
             return memoryHandle;
@@ -226,15 +275,15 @@ namespace System
         {
             if (_index < 0)
             {
-                if (((OwnedMemory<T>)_arrayOrOwnedMemory).TryGetArray(out var segment))
+                if (((OwnedMemory<T>)_object).TryGetArray(out var segment))
                 {
                     arraySegment = new ArraySegment<T>(segment.Array, segment.Offset + (_index & RemoveOwnedFlagBitMask), _length);
                     return true;
                 }
             }
-            else
+            else if (_object is T[] arr)
             {
-                arraySegment = new ArraySegment<T>((T[])_arrayOrOwnedMemory, _index, _length);
+                arraySegment = new ArraySegment<T>(arr, _index, _length);
                 return true;
             }
 
@@ -277,7 +326,7 @@ namespace System
         public bool Equals(Memory<T> other)
         {
             return
-                _arrayOrOwnedMemory == other._arrayOrOwnedMemory &&
+                _object == other._object &&
                 _index == other._index &&
                 _length == other._length;
         }
@@ -288,7 +337,7 @@ namespace System
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override int GetHashCode()
         {
-            return CombineHashCodes(_arrayOrOwnedMemory.GetHashCode(), (_index & RemoveOwnedFlagBitMask).GetHashCode(), _length.GetHashCode());
+            return _object != null ? CombineHashCodes(_object.GetHashCode(), _index.GetHashCode(), _length.GetHashCode()) : 0;
         }
 
         private static int CombineHashCodes(int left, int right)

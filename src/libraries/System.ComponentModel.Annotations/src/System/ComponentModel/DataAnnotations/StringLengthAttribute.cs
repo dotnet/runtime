@@ -50,8 +50,13 @@ namespace System.ComponentModel.DataAnnotations
 
             // Automatically pass if value is null. RequiredAttribute should be used to assert a value is not null.
             // We expect a cast exception if a non-string was passed in.
-            var length = value == null ? 0 : ((string)value).Length;
-            return value == null || (length >= MinimumLength && length <= MaximumLength);
+            if (value == null)
+            {
+                return true;
+            }
+
+            int length = ((string)value).Length;
+            return length >= MinimumLength && length <= MaximumLength;
         }
 
         /// <summary>

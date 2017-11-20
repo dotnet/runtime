@@ -14,9 +14,6 @@ using System.Collections.Specialized;
 
 namespace System.DirectoryServices.AccountManagement
 {
-#pragma warning disable 618    // Have not migrated to v4 transparency yet
-    [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
-#pragma warning restore 618
     internal partial class ADStoreCtx : StoreCtx
     {
         //

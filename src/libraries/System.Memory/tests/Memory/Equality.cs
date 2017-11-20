@@ -107,6 +107,20 @@ namespace System.MemoryTests
             Assert.True(readOnlyMemory.Equals(memoryAsObject));
         }
 
+        [Fact]
+        public static void DefaultMemoryCanBeBoxed()
+        {
+            Memory<byte> memory = default;
+            object memoryAsObject = memory;
+            Assert.True(memory.Equals(memoryAsObject));
+
+            ReadOnlyMemory<byte> readOnlyMemory = default;
+            object readOnlyMemoryAsObject = readOnlyMemory;
+            Assert.True(readOnlyMemory.Equals(readOnlyMemoryAsObject));
+
+            Assert.True(memory.Equals(readOnlyMemoryAsObject));
+            Assert.True(readOnlyMemory.Equals(memoryAsObject));
+        }
 
         [Theory]
         [MemberData(nameof(ValidArraySegments))]

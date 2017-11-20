@@ -235,7 +235,6 @@ namespace System.Diagnostics
         /// <summary>
         /// The full number identifying the message in the event message dll.
         /// </summary>
-        [ComVisible(false)]
         public Int64 InstanceId
         {
             get

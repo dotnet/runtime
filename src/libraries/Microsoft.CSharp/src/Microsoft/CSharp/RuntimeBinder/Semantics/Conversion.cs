@@ -268,7 +268,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 return BetterType.Right;
             }
-            if ((int)pt1 <= NUM_EXT_TYPES && (int)pt2 <= NUM_EXT_TYPES)
+            if ((int)pt1 < NUM_EXT_TYPES && (int)pt2 < NUM_EXT_TYPES)
             {
                 return WhichSimpleConversionIsBetter(pt1, pt2);
             }
@@ -322,7 +322,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             PredefinedType pt1 = (type1 as NullableType).UnderlyingType.getPredefType();
             PredefinedType pt2 = (type2 as NullableType).UnderlyingType.getPredefType();
 
-            if ((int)pt1 <= NUM_EXT_TYPES && (int)pt2 <= NUM_EXT_TYPES)
+            if ((int)pt1 < NUM_EXT_TYPES && (int)pt2 < NUM_EXT_TYPES)
             {
                 return WhichSimpleConversionIsBetter(pt1, pt2);
             }
@@ -490,7 +490,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         // Decimal is a SimpleType represented in a FT_STRUCT
                         throw ErrorContext.Error(ErrorCode.ERR_ConstOutOfRange, ((ExprConstant)exprConst).Val.DecimalVal.ToString(CultureInfo.InvariantCulture), dest);
                     }
-                    else if (simpleConstToSimpleDestination && Context.CheckedConstant)
+
+                    if (simpleConstToSimpleDestination && Context.Checked)
                     {
                         // check if we failed because we are in checked mode...
                         bool okNow = canExplicitConversionBeBoundInUncheckedContext(expr, expr.Type, destExpr, flags | CONVERTTYPE.NOUDC);
@@ -969,10 +970,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     Debug.Assert(n <= 0);
                     if (n >= 0)
                     {
-                        if (!needExprDest)
-                            return true;
-                        iuciBestDst = iuci;
-                        pexprDst = HandleAmbiguity(exprSrc, typeSrc, typeDst, prguci, iuciBestSrc, iuciBestDst);
+                        if (needExprDest)
+                        {
+                            throw HandleAmbiguity(typeSrc, typeDst, prguci, iuciBestSrc, iuci);
+                        }
+
                         return true;
                     }
                 }
@@ -982,10 +984,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     Debug.Assert(n <= 0);
                     if (n >= 0)
                     {
-                        if (!needExprDest)
-                            return true;
-                        iuciBestDst = iuci;
-                        pexprDst = HandleAmbiguity(exprSrc, typeSrc, typeDst, prguci, iuciBestSrc, iuciBestDst);
+                        if (needExprDest)
+                        {
+                            throw HandleAmbiguity(typeSrc, typeDst, prguci, iuciBestSrc, iuci);
+                        }
+
                         return true;
                     }
                 }
@@ -996,15 +999,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (iuciBest < 0)
             {
-                pexprDst = HandleAmbiguity(exprSrc, typeSrc, typeDst, prguci, iuciBestSrc, iuciBestDst);
-                return true;
+                throw HandleAmbiguity(typeSrc, typeDst, prguci, iuciBestSrc, iuciBestDst);
             }
             if (iuciAmbig >= 0)
             {
-                iuciBestSrc = iuciBest;
-                iuciBestDst = iuciAmbig;
-                pexprDst = HandleAmbiguity(exprSrc, typeSrc, typeDst, prguci, iuciBestSrc, iuciBestDst);
-                return true;
+                throw HandleAmbiguity(typeSrc, typeDst, prguci, iuciBest, iuciAmbig);
             }
 
             MethWithInst mwiBest = new MethWithInst(prguci[iuciBest].mwt.Meth(), prguci[iuciBest].mwt.GetType(), null);
@@ -1082,11 +1081,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return true;
         }
 
-        private Expr HandleAmbiguity(Expr exprSrc, CType typeSrc, CType typeDst, List<UdConvInfo> prguci, int iuciBestSrc, int iuciBestDst)
+        private RuntimeBinderException HandleAmbiguity(CType typeSrc, CType typeDst, List<UdConvInfo> prguci, int iuciBestSrc, int iuciBestDst)
         {
             Debug.Assert(0 <= iuciBestSrc && iuciBestSrc < prguci.Count);
             Debug.Assert(0 <= iuciBestDst && iuciBestDst < prguci.Count);
-            throw ErrorContext.Error(ErrorCode.ERR_AmbigUDConv, prguci[iuciBestSrc].mwt, prguci[iuciBestDst].mwt, typeSrc, typeDst);
+            return ErrorContext.Error(ErrorCode.ERR_AmbigUDConv, prguci[iuciBestSrc].mwt, prguci[iuciBestDst].mwt, typeSrc, typeDst);
         }
 
         private void MarkAsIntermediateConversion(Expr pExpr)
@@ -1173,7 +1172,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return ConstCastResult.Success;
             }
 
-            if (explicitConversion && Context.CheckedConstant && !isConstantInRange(constSrc, typeDest, true))
+            if (explicitConversion && Context.Checked && !isConstantInRange(constSrc, typeDest, true))
             {
                 return ConstCastResult.CheckFailure;
             }

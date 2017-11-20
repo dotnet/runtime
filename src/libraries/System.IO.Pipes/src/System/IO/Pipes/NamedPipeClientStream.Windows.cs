@@ -21,7 +21,6 @@ namespace System.IO.Pipes
         // on the server end, but WaitForConnection will not return until we have returned.  Any data written to the
         // pipe by us after we have connected but before the server has called WaitForConnection will be available
         // to the server after it calls WaitForConnection. 
-        [SecurityCritical]
         private bool TryConnect(int timeout, CancellationToken cancellationToken)
         {
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = PipeStream.GetSecAttrs(_inheritability);
@@ -119,7 +118,6 @@ namespace System.IO.Pipes
 
         public int NumberOfServerInstances
         {
-            [SecurityCritical]
             [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
             get
             {

@@ -167,7 +167,7 @@
     <value>Expecting argument of type {1}, but received type {0}.</value>
   </data>
   <data name="ADP_DeriveParametersNotSupported" xml:space="preserve">
-    <value>{0} DeriveParameters only supports CommandType.StoredProcedure, not CommandType.{1}.</value>
+    <value>{0} DeriveParameters only supports CommandType.StoredProcedure, not CommandType. {1}.</value>
   </data>
   <data name="ADP_NoStoredProcedureExists" xml:space="preserve">
     <value>The stored procedure '{0}' doesn't exist.</value>
@@ -286,6 +286,9 @@
   <data name="ADP_UnknownDataType" xml:space="preserve">
     <value>No mapping exists from object type {0} to a known managed provider native type.</value>
   </data>
+  <data name="ADP_UnknownDataTypeCode" xml:space="preserve">
+    <value>Unable to handle an unknown TypeCode {0} returned by Type {1}.</value>
+  </data>
   <data name="ADP_DbTypeNotSupported" xml:space="preserve">
     <value>No mapping exists from DbType {0} to a known {1}.</value>
   </data>
@@ -342,6 +345,9 @@
   </data>
   <data name="SQL_InvalidSQLServerVersionUnknown" xml:space="preserve">
     <value>Unsupported SQL Server version.  The .Net Framework SqlClient Data Provider can only be used with SQL Server versions 7.0 and later.</value>
+  </data>
+  <data name="SQL_CannotCreateNormalizer" xml:space="preserve">
+    <value>Cannot create normalizer for '{0}'.</value>
   </data>
   <data name="SQL_CannotModifyPropertyAsyncOperationInProgress" xml:space="preserve">
     <value>{0} cannot be changed while async operation is in progress.</value>
@@ -676,6 +682,12 @@
   <data name="SqlMisc_SubclassMustOverride" xml:space="preserve">
     <value>Subclass did not override a required method.</value>
   </data>
+  <data name="SqlUdtReason_NoUdtAttribute" xml:space="preserve">
+    <value>no UDT attribute</value>
+  </data>
+  <data name="SQLUDT_InvalidSqlType" xml:space="preserve">
+    <value>Specified type is not registered on the target server. {0}.</value>
+  </data>
   <data name="Sql_InternalError" xml:space="preserve">
     <value>Internal Error</value>
   </data>
@@ -765,6 +777,27 @@
   </data>
   <data name="SqlProvider_SortOrdinalGreaterThanFieldCount" xml:space="preserve">
     <value>The sort ordinal {0} on field {1} exceeds the total number of fields.</value>
+  </data>
+  <data name="SQLUDT_MaxByteSizeValue" xml:space="preserve">
+    <value>range: 0-8000</value>
+  </data>
+  <data name="SQLUDT_Unexpected" xml:space="preserve">
+    <value>unexpected error encountered in SqlClient data provider. {0}</value>
+  </data>
+  <data name="SQLUDT_UnexpectedUdtTypeName" xml:space="preserve">
+    <value>UdtTypeName property must be set only for UDT parameters.</value>
+  </data>
+  <data name="SQLUDT_InvalidUdtTypeName" xml:space="preserve">
+    <value>UdtTypeName property must be set for UDT parameters.</value>
+  </data>
+  <data name="SqlUdt_InvalidUdtMessage" xml:space="preserve">
+    <value>'{0}' is an invalid user defined type, reason: {1}.</value>
+  </data>
+  <data name="SQL_UDTTypeName" xml:space="preserve">
+    <value>SqlParameter.UdtTypeName is an invalid multipart name</value>
+  </data>
+  <data name="SQL_InvalidUdt3PartNameFormat" xml:space="preserve">
+    <value>Invalid 3 part name format for UdtTypeName.</value>
   </data>
   <data name="IEnumerableOfSqlDataRecordHasNoRows" xml:space="preserve">
     <value>There are no records in the SqlDataRecord enumeration. To send a table-valued parameter with no rows, use a null reference for the value instead.</value>

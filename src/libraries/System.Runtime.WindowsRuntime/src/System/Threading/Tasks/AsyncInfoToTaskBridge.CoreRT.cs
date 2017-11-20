@@ -11,7 +11,6 @@ using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Runtime.InteropServices;
-using System.Runtime.WindowsRuntime.Internal;
 using System.Threading;
 using Windows.Foundation;
 

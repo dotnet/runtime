@@ -11,7 +11,6 @@ internal static partial class Interop
     internal static partial class WebSocket
     {
         [DllImport(Libraries.WebSocket)]
-        [SuppressUnmanagedCodeSecurity]
         internal static extern void WebSocketDeleteHandle(
             [In] IntPtr webSocketHandle);
     }

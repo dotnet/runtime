@@ -108,5 +108,21 @@ namespace System.MemoryTests
             Assert.Throws<ArgumentOutOfRangeException>(() => memory.Slice(a.Length + 1, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => memory.Slice(a.Length, 1));
         }
+
+        [Fact]
+        public static void SliceWithStartDefaultMemory()
+        {
+            Memory<int> memory = default;
+            memory = memory.Slice(0);
+            Assert.True(memory.Equals(default));
+        }
+
+        [Fact]
+        public static void SliceWithStartAndLengthDefaultMemory()
+        {
+            Memory<int> memory = default;
+            memory = memory.Slice(0, 0);
+            Assert.True(memory.Equals(default));
+        }
     }
 }

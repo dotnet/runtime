@@ -17,7 +17,6 @@ namespace System.IO
         // throw an appropriate error when attempting to access the cached info.
         private int _dataInitialized = -1;
 
-        [SecurityCritical]
         internal void Init(ref Interop.Kernel32.WIN32_FIND_DATA findData)
         {
             // Copy the information to data
@@ -30,7 +29,7 @@ namespace System.IO
             get
             {
                 EnsureDataInitialized();
-                return (FileAttributes)_data.fileAttributes;
+                return (FileAttributes)_data.dwFileAttributes;
             }
             set
             {
@@ -52,7 +51,7 @@ namespace System.IO
                     // but Exists is supposed to return true or false.
                     return false;
                 }
-                return (_data.fileAttributes != -1) && ((this is DirectoryInfo) == ((_data.fileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) == Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY));
+                return (_data.dwFileAttributes != -1) && ((this is DirectoryInfo) == ((_data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) == Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY));
             }
         }
 
@@ -61,8 +60,7 @@ namespace System.IO
             get
             {
                 EnsureDataInitialized();
-                long dt = ((long)(_data.ftCreationTimeHigh) << 32) | ((long)_data.ftCreationTimeLow);
-                return DateTimeOffset.FromFileTime(dt);
+                return _data.ftCreationTime.ToDateTimeOffset();
             }
             set
             {
@@ -76,8 +74,7 @@ namespace System.IO
             get
             {
                 EnsureDataInitialized();
-                long dt = ((long)(_data.ftLastAccessTimeHigh) << 32) | ((long)_data.ftLastAccessTimeLow);
-                return DateTimeOffset.FromFileTime(dt);
+                return _data.ftLastAccessTime.ToDateTimeOffset();
             }
             set
             {
@@ -91,8 +88,7 @@ namespace System.IO
             get
             {
                 EnsureDataInitialized();
-                long dt = ((long)(_data.ftLastWriteTimeHigh) << 32) | ((long)_data.ftLastWriteTimeLow);
-                return DateTimeOffset.FromFileTime(dt);
+                return _data.ftLastWriteTime.ToDateTimeOffset();
             }
             set
             {
@@ -106,7 +102,7 @@ namespace System.IO
             get
             {
                 EnsureDataInitialized();
-                return ((long)_data.fileSizeHigh) << 32 | _data.fileSizeLow & 0xFFFFFFFFL;
+                return ((long)_data.nFileSizeHigh) << 32 | _data.nFileSizeLow & 0xFFFFFFFFL;
             }
         }
 
