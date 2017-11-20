@@ -11223,7 +11223,7 @@ bool Compiler::IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass)
     structPassingKind howToReturnStruct;
     var_types         returnType = getReturnTypeForStruct(hClass, &howToReturnStruct);
 
-    return (returnType == TYP_STRUCT);
+    return (varTypeIsStruct(returnType));
 }
 
 //----------------------------------------------
