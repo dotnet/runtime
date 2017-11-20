@@ -7303,7 +7303,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTreePtr* pTree, fgWalkData
 #ifdef _TARGET_ARM_
         // We need to support alignment requirements to access memory on ARM
         unsigned alignment = 1;
-        pComp->codeGen->InferOpSizeAlign(tree, &alignment);
+        pComp->codeGen->InferOpSizeAlign(lcl, &alignment);
         alignment = roundUp(alignment, TARGET_POINTER_SIZE);
         padding   = roundUp(padding, alignment);
 #endif // _TARGET_ARM_
