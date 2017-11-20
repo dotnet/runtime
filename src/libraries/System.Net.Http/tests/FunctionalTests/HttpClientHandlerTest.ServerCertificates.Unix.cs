@@ -84,8 +84,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true, true, true, true, true)]     // empty dir, empty bundle file -> fail
         public void HttpClientUsesSslCertEnvironmentVariables(bool setSslCertDir, bool createSslCertDir, bool setSslCertFile, bool createSslCertFile, bool expectedFailure)
         {
-            bool badConfig = false;
-
             var psi = new ProcessStartInfo();
             if (setSslCertDir)
             {
@@ -93,10 +91,6 @@ namespace System.Net.Http.Functional.Tests
                 if (createSslCertDir)
                 {
                     Directory.CreateDirectory(sslCertDir);
-                }
-                else
-                {
-                    badConfig = true;
                 }
                 psi.Environment.Add("SSL_CERT_DIR", sslCertDir);
             }
@@ -108,20 +102,15 @@ namespace System.Net.Http.Functional.Tests
                 {
                     File.WriteAllText(sslCertFile, "");
                 }
-                else
-                {
-                    badConfig = true;
-                }
                 psi.Environment.Add("SSL_CERT_FILE", sslCertFile);
             }
 
-            string arg = badConfig ? "badconfig" : expectedFailure ? "failure" : "success";
-            RemoteInvoke(async expected =>
+            RemoteInvoke(async shouldFail =>
             {
                 const string Url = "https://www.microsoft.com";
                 using (HttpClient client = new HttpClient())
                 {
-                    if (expected != "success")
+                    if (shouldFail == "true")
                     {
                         await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Url));
                     }
@@ -131,7 +120,7 @@ namespace System.Net.Http.Functional.Tests
                     }
                 }
                 return SuccessExitCode;
-            }, arg, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+            }, expectedFailure.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
     }
 }
