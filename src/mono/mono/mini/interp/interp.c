@@ -2145,7 +2145,8 @@ interp_create_method_pointer (MonoMethod *method, MonoError *error)
 	InterpMethod *rmethod = mono_interp_get_imethod (mono_domain_get (), method, error);
 
 	/* HACK: method_ptr of delegate should point to a runtime method*/
-	if (method->wrapper_type && method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
+	if (method->wrapper_type && (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD ||
+				(method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)))
 		return rmethod;
 
 	if (rmethod->jit_entry)
