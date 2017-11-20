@@ -11,7 +11,7 @@ namespace System.Net.Sockets
     public partial class SocketAsyncEventArgs : EventArgs, IDisposable
     {
         // AcceptSocket property variables.
-        internal Socket _acceptSocket;
+        private Socket _acceptSocket;
         private Socket _connectSocket;
 
         // Single buffer.
@@ -44,27 +44,27 @@ namespace System.Net.Sockets
         private EndPoint _remoteEndPoint;
 
         // SendPacketsSendSize property variable.
-        internal int _sendPacketsSendSize;
+        private int _sendPacketsSendSize;
 
         // SendPacketsElements property variables.
-        internal SendPacketsElement[] _sendPacketsElements;
+        private SendPacketsElement[] _sendPacketsElements;
 
         // SendPacketsFlags property variable.
-        internal TransmitFileOptions _sendPacketsFlags;
+        private TransmitFileOptions _sendPacketsFlags;
 
         // SocketError property variables.
         private SocketError _socketError;
         private Exception _connectByNameError;
 
         // SocketFlags property variables.
-        internal SocketFlags _socketFlags;
+        private SocketFlags _socketFlags;
 
         // UserToken property variables.
         private object _userToken;
 
         // Internal buffer for AcceptEx when Buffer not supplied.
-        internal byte[] _acceptBuffer;
-        internal int _acceptAddressBufferCount;
+        private byte[] _acceptBuffer;
+        private int _acceptAddressBufferCount;
 
         // Internal SocketAddress buffer.
         internal Internals.SocketAddress _socketAddress;
@@ -238,7 +238,6 @@ namespace System.Net.Sockets
                 try
                 {
                     _sendPacketsElements = value;
-                    SetupSendPacketsElements();
                 }
                 finally
                 {
