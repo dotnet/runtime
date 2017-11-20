@@ -4013,13 +4013,15 @@ mono_runtime_get_main_args (void)
 	HANDLE_FUNCTION_ENTER ();
 	MONO_REQ_GC_UNSAFE_MODE;
 	MonoError error;
-	MonoArray *result = NULL;
+	MonoArrayHandle result = MONO_HANDLE_NEW (MonoArray, NULL);
 	error_init (&error);
 	MonoArrayHandle arg_array = mono_runtime_get_main_args_handle (&error);
 	goto_if_nok (&error, leave);
-	result = MONO_HANDLE_RAW (arg_array);
+	MONO_HANDLE_ASSIGN (result, arg_array);
 leave:
-	HANDLE_FUNCTION_RETURN_VAL (result);
+	/* FIXME: better external API that doesn't swallow the error */
+	mono_error_cleanup (&error);
+	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
 static gboolean
