@@ -55,7 +55,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private readonly Dictionary<Name, ErrorType> _pErrorWithNamespaceParentTable;
         private readonly Dictionary<CType, PointerType> _pPointerTable;
         private readonly Dictionary<CType, NullableType> _pNullableTable;
-        private readonly Dictionary<TypeParameterSymbol, TypeParameterType> _pTypeParameterTable;
 
         public TypeTable()
         {
@@ -65,7 +64,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             _pParameterModifierTable = new Dictionary<KeyPair<CType, Name>, ParameterModifierType>();
             _pPointerTable = new Dictionary<CType, PointerType>();
             _pNullableTable = new Dictionary<CType, NullableType>();
-            _pTypeParameterTable = new Dictionary<TypeParameterSymbol, TypeParameterType>();
         }
 
         private static KeyPair<TKey1, TKey2> MakeKey<TKey1, TKey2>(TKey1 key1, TKey2 key2) =>
@@ -158,23 +156,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public void InsertNullable(CType pUnderlyingType, NullableType pNullable)
         {
             _pNullableTable.Add(pUnderlyingType, pNullable);
-        }
-
-        public TypeParameterType LookupTypeParameter(TypeParameterSymbol pTypeParameterSymbol)
-        {
-            TypeParameterType result;
-            if (_pTypeParameterTable.TryGetValue(pTypeParameterSymbol, out result))
-            {
-                return result;
-            }
-            return null;
-        }
-
-        public void InsertTypeParameter(
-                TypeParameterSymbol pTypeParameterSymbol,
-                TypeParameterType pTypeParameter)
-        {
-            _pTypeParameterTable.Add(pTypeParameterSymbol, pTypeParameter);
         }
     }
 }
