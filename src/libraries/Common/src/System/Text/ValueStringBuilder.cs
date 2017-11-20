@@ -21,44 +21,28 @@ namespace System.Text
             _pos = 0;
         }
 
-        public string GetString()
+        public int Length => _pos;
+
+        public override string ToString()
         {
             var s = new string(_chars.Slice(0, _pos));
-
-            char[] toReturn = _arrayToReturnToPool;
-            this = default; // for safety, to avoid using pooled array if this instance is erroneously appended to again
-
-            if (toReturn != null)
-            {
-                ArrayPool<char>.Shared.Return(toReturn);
-            }
-
+            Clear();
             return s;
         }
 
-        public int Length => _pos;
-
         public bool TryCopyTo(Span<char> destination, out int charsWritten)
         {
-            if (_pos > destination.Length)
+            if (_chars.Slice(0, _pos).TryCopyTo(destination))
+            {
+                charsWritten = _pos;
+                Clear();
+                return true;
+            }
+            else
             {
                 charsWritten = 0;
                 return false;
             }
-
-            bool copied = _chars.Slice(0, _pos).TryCopyTo(destination);
-            Debug.Assert(copied);
-            charsWritten = _pos;
-
-            char[] toReturn = _arrayToReturnToPool;
-            this = default; // for safety, to avoid using pooled array if this instance is erroneously appended to again
-
-            if (toReturn != null)
-            {
-                ArrayPool<char>.Shared.Return(toReturn);
-            }
-
-            return true;
         }
 
         public void Insert(int index, char value, int count)
@@ -173,13 +157,24 @@ namespace System.Text
         {
             Debug.Assert(requiredAdditionalCapacity > _chars.Length - _pos);
 
-            char[] poolArray = ArrayPool<char>.Shared.Rent(_pos + requiredAdditionalCapacity);
+            char[] poolArray = ArrayPool<char>.Shared.Rent(Math.Max(_pos + requiredAdditionalCapacity, _chars.Length * 2));
 
             bool success = _chars.TryCopyTo(poolArray);
             Debug.Assert(success);
 
             char[] toReturn = _arrayToReturnToPool;
             _chars = _arrayToReturnToPool = poolArray;
+            if (toReturn != null)
+            {
+                ArrayPool<char>.Shared.Return(toReturn);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void Clear()
+        {
+            char[] toReturn = _arrayToReturnToPool;
+            this = default; // for safety, to avoid using pooled array if this instance is erroneously appended to again
             if (toReturn != null)
             {
                 ArrayPool<char>.Shared.Return(toReturn);
