@@ -105,12 +105,14 @@ namespace System.Net.Http.Functional.Tests
                 psi.Environment.Add("SSL_CERT_FILE", sslCertFile);
             }
 
-            RemoteInvoke(async shouldFail =>
+            RemoteInvoke(async arg =>
             {
+                bool shouldFail = bool.Parse(arg);
                 const string Url = "https://www.microsoft.com";
+
                 using (HttpClient client = new HttpClient())
                 {
-                    if (shouldFail == "true")
+                    if (shouldFail)
                     {
                         await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Url));
                     }
