@@ -676,13 +676,6 @@ namespace System.Xml
             return new string(chars, 0, charCount);
         }
 
-        public string GetEscapedString(int offset, int length, XmlNameTable nameTable)
-        {
-            char[] chars = GetCharBuffer(length);
-            int charCount = GetEscapedChars(offset, length, chars);
-            return nameTable.Add(chars, 0, charCount);
-        }
-
         private int GetLessThanCharEntity(int offset, int length)
         {
             byte[] buffer = _buffer;

@@ -57,11 +57,11 @@ namespace Microsoft.CSharp.RuntimeBinder
                 CSharpCallFlags flags,
                 Type callingContext,
                 IEnumerable<CSharpArgumentInfo> argumentInfo) :
-            base(BinderHelper.CreateCallInfo(argumentInfo, 1)) // discard 1 argument: the target object (even if static, arg is type)
+            base(BinderHelper.CreateCallInfo(ref argumentInfo, 1)) // discard 1 argument: the target object (even if static, arg is type)
         {
             _flags = flags;
             CallingContext = callingContext;
-            _argumentInfo = BinderHelper.ToArray(argumentInfo);
+            _argumentInfo = argumentInfo as CSharpArgumentInfo[];
             _binder = RuntimeBinder.GetInstance();
         }
 

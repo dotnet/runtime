@@ -20,7 +20,6 @@ namespace System.Text
         private DecoderFallbackBuffer _fallbackBuffer;
         private DecoderFallbackBufferHelper _fallbackBufferHelper;
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe EncodingCharBuffer(EncodingNLS enc, DecoderNLS decoder, char* charStart, int charCount, byte* byteStart, int byteCount)
         {
             _enc = enc;
@@ -47,7 +46,6 @@ namespace System.Text
             _fallbackBufferHelper.InternalInitialize(_bytes, _charEnd);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe bool AddChar(char ch, int numBytes)
         {
             if (_chars != null)
@@ -66,14 +64,12 @@ namespace System.Text
             return true;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe bool AddChar(char ch)
         {
             return AddChar(ch, 1);
         }
 
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe bool AddChar(char ch1, char ch2, int numBytes)
         {
             // Need room for 2 chars
@@ -87,7 +83,6 @@ namespace System.Text
             return AddChar(ch1, numBytes) && AddChar(ch2, numBytes);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe void AdjustBytes(int count)
         {
             _bytes = unchecked(_bytes + count);
@@ -95,7 +90,6 @@ namespace System.Text
 
         internal unsafe bool MoreData
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 return _bytes < _byteEnd;
@@ -103,7 +97,6 @@ namespace System.Text
         }
 
         // Do we have count more bytes?
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe bool EvenMoreData(int count)
         {
             return (_bytes <= _byteEnd - count);
@@ -111,7 +104,6 @@ namespace System.Text
 
         // GetNextByte shouldn't be called unless the caller's already checked more data or even more data,
         // but we'll double check just to make sure.
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe byte GetNextByte()
         {
             Debug.Assert(_bytes < _byteEnd, "[EncodingCharBuffer.GetNextByte]Expected more date");
@@ -122,14 +114,12 @@ namespace System.Text
 
         internal unsafe int BytesUsed
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 return unchecked((int)(_bytes - _byteStart));
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe bool Fallback(byte fallbackByte)
         {
             // Build our buffer
@@ -139,7 +129,6 @@ namespace System.Text
             return Fallback(byteBuffer);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe bool Fallback(byte byte1, byte byte2)
         {
             // Build our buffer
@@ -149,7 +138,6 @@ namespace System.Text
             return Fallback(byteBuffer);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe bool Fallback(byte byte1, byte byte2, byte byte3, byte byte4)
         {
             // Build our buffer
@@ -159,7 +147,6 @@ namespace System.Text
             return Fallback(byteBuffer);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe bool Fallback(byte[] byteBuffer)
         {
             // Do the fallback and add the data.

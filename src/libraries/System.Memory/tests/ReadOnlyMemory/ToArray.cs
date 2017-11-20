@@ -44,5 +44,13 @@ namespace System.MemoryTests
             int[] copy = memory.ToArray();
             Assert.Equal(0, copy.Length);
         }
+
+        [Fact]
+        public static void ToArrayDefault()
+        {
+            ReadOnlyMemory<int> memory = default;
+            int[] copy = memory.ToArray();
+            Assert.Equal(0, copy.Length);
+        }
     }
 }

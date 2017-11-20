@@ -879,15 +879,17 @@ Assert.False(true);
 
                 Assert.Throws<ArgumentException>(() =>
                 {
+                    // Set to a different sensitivity than before: this breaks the DataRelation constraint
+                    // because it is not the sensitivity of the related table
                     table.CaseSensitive = true;
-                    table1.CaseSensitive = true;
                 });
 
                 Assert.Throws<ArgumentException>(() =>
                 {
-                    CultureInfo cultureInfo = new CultureInfo("en-gb");
+                    // Set to a different culture than before: this breaks the DataRelation constraint
+                    // because it is not the locale of the related table
+                    CultureInfo cultureInfo = table.Locale.Name == "en-US" ? new CultureInfo("en-GB") : new CultureInfo("en-US");
                     table.Locale = cultureInfo;
-                    table1.Locale = cultureInfo;
                 });
 
                 Assert.Throws<DataException>(() => table.Prefix = "Prefix#1");

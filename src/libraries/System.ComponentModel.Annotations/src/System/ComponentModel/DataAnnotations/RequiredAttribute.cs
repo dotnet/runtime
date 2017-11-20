@@ -45,13 +45,7 @@ namespace System.ComponentModel.DataAnnotations
             }
 
             // only check string length if empty strings are not allowed
-            var stringValue = value as string;
-            if (stringValue != null && !AllowEmptyStrings)
-            {
-                return stringValue.Trim().Length != 0;
-            }
-
-            return true;
+            return AllowEmptyStrings || !(value is string stringValue) || stringValue.Trim().Length != 0;
         }
     }
 }

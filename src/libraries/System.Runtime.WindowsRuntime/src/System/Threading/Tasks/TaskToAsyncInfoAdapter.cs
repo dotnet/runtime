@@ -9,7 +9,6 @@ using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Windows.Foundation;
-using System.Runtime.WindowsRuntime.Internal;
 
 namespace System.Threading.Tasks
 {

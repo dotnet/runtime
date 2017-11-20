@@ -111,7 +111,6 @@
     <Reference Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
-    <Compile Include="AssemblyInfo.cs" />
     <Reference Include="mscorlib" />
     <Reference Include="System" />
   </ItemGroup>

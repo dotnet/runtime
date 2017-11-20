@@ -2,358 +2,292 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Data.Common;
 using System.Data.SqlTypes;
-using System.IO;
-using System.Linq;
-using System.Text;
+using Microsoft.Samples.SqlServer;
 using Xunit;
 
 namespace System.Data.SqlClient.ManualTesting.Tests
 {
-    public static class UdtTest
+    public class UdtTest
     {
-        [CheckConnStrSetupFact]
-        public static void GetSchemaTableTest()
+        private string _connStr;
+
+        public UdtTest()
         {
-            using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
-            using (SqlCommand cmd = new SqlCommand("select hierarchyid::Parse('/1/') as col0", conn))
+            _connStr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { InitialCatalog = "UdtTestDb" }).ConnectionString;
+        }
+
+        [CheckConnStrSetupFact]
+        public void ReaderTest()
+        {
+            using (SqlConnection conn = new SqlConnection(_connStr))
             {
                 conn.Open();
-                using (SqlDataReader reader = cmd.ExecuteReader(CommandBehavior.KeyInfo))
+
+                SqlCommand com = new SqlCommand()
                 {
-                    DataTable schemaTable = reader.GetSchemaTable();
-                    DataTestUtility.AssertEqualsWithDescription(1, schemaTable.Rows.Count, "Unexpected schema table row count.");
+                    Connection = conn,
+                    CommandText = "select * from TestTable"
+                };
 
-                    string columnName = (string)(string)schemaTable.Rows[0][schemaTable.Columns["ColumnName"]];
-                    DataTestUtility.AssertEqualsWithDescription("col0", columnName, "Unexpected column name.");
+                SqlDataReader reader = com.ExecuteReader();
 
-                    string dataTypeName = (string)schemaTable.Rows[0][schemaTable.Columns["DataTypeName"]];
-                    DataTestUtility.AssertEqualsWithDescription("Northwind.sys.hierarchyid", dataTypeName, "Unexpected data type name.");
+                Utf8String[] expectedValues =
+                    {
+                        new Utf8String("a"),
+                        new Utf8String("is"),
+                        new Utf8String("test"),
+                        new Utf8String("this")
+                    };
+                int currentValue = 0;
+                do
+                {
+                    while (reader.Read())
+                    {
+                        DataTestUtility.AssertEqualsWithDescription(1, reader.FieldCount, "Unexpected FieldCount.");
+                        DataTestUtility.AssertEqualsWithDescription(expectedValues[currentValue], reader.GetValue(0), "Unexpected Value.");
+                        DataTestUtility.AssertEqualsWithDescription(expectedValues[currentValue], reader.GetSqlValue(0), "Unexpected SQL Value.");
 
-                    string udtAssemblyName = (string)schemaTable.Rows[0][schemaTable.Columns["UdtAssemblyQualifiedName"]];
-                    Assert.True(udtAssemblyName?.StartsWith("Microsoft.SqlServer.Types.SqlHierarchyId"), "Unexpected UDT assembly name: " + udtAssemblyName);
+                        currentValue++;
+                    }
                 }
+                while (reader.NextResult());
+
+                DataTestUtility.AssertEqualsWithDescription(expectedValues.Length, currentValue, "Received less values than expected.");
             }
         }
 
         [CheckConnStrSetupFact]
-        public static void GetValueTest()
+        public void ExecuteScalarTest()
         {
-            using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
-            using (SqlCommand cmd = new SqlCommand("select hierarchyid::Parse('/1/') as col0", conn))
+            using (SqlConnection conn = new SqlConnection(_connStr))
             {
                 conn.Open();
-                using (SqlDataReader reader = cmd.ExecuteReader())
+
+                SqlCommand com = new SqlCommand()
                 {
-                    Assert.True(reader.Read());
+                    Connection = conn,
+                    CommandText = "select * from TestTable"
+                };
 
-                    Assert.Throws<PlatformNotSupportedException>(() => reader.GetValue(0));
-
-                    Assert.Throws<PlatformNotSupportedException>(() => reader.GetSqlValue(0));
-                }
+                DataTestUtility.AssertEqualsWithDescription(new Utf8String("a"), com.ExecuteScalar(), "Unexpected value.");
             }
         }
 
         [CheckConnStrSetupFact]
-        public static void TestUdtSqlParameterThrowsPlatformNotSupportedException()
+        public void InputParameterTest()
         {
-            using (SqlConnection connection = new SqlConnection(DataTestUtility.TcpConnStr))
+            using (SqlConnection conn = new SqlConnection(_connStr))
             {
-                connection.Open();
-                SqlCommand command = connection.CreateCommand();
+                conn.Open();
 
-                // This command is not executed on the server since we should throw well before we send the query
-                command.CommandText = "select @p as col0";
-
-                command.Parameters.Add(new SqlParameter
+                SqlCommand com = new SqlCommand()
                 {
-                    ParameterName = "@p",
-                    SqlDbType = SqlDbType.Udt,
-                    Direction = ParameterDirection.Input,
-                });
+                    Connection = conn,
+                    CommandText = "insert into TestTable values (@p);" +
+                                  "SELECT * FROM TestTable"
+                };
+                SqlParameter p = com.Parameters.Add("@p", SqlDbType.Udt);
+                p.UdtTypeName = "Utf8String";
+                p.Value = new Utf8String("this is an input param test");
 
-                Assert.Throws<PlatformNotSupportedException>(() =>
+                using (SqlTransaction trans = conn.BeginTransaction())
                 {
-                    command.ExecuteReader();
-                });
+                    com.Transaction = trans;
+                    SqlDataReader reader = com.ExecuteReader();
 
-                command.Parameters.Clear();
-                command.Parameters.Add(new SqlParameter
-                {
-                    ParameterName = "@p",
-                    SqlDbType = SqlDbType.Udt,
-                    Direction = ParameterDirection.InputOutput,
-                });
-
-                Assert.Throws<PlatformNotSupportedException>(() =>
-                {
-                    command.ExecuteReader();
-                });
-
-                command.Parameters.Clear();
-                command.Parameters.Add(new SqlParameter
-                {
-                    ParameterName = "@p",
-                    SqlDbType = SqlDbType.Udt,
-                    Direction = ParameterDirection.Output,
-                });
-
-                Assert.Throws<PlatformNotSupportedException>(() =>
-                {
-                    command.ExecuteReader();
-                });
-            }
-        }
-
-        [CheckConnStrSetupFact]
-        public static void TestUdtZeroByte()
-        {
-            using (SqlConnection connection = new SqlConnection(DataTestUtility.TcpConnStr))
-            {
-                connection.Open();
-                SqlCommand command = connection.CreateCommand();
-                command.CommandText = "select hierarchyid::Parse('/') as col0";
-                using (SqlDataReader reader = command.ExecuteReader())
-                {
-                    Assert.True(reader.Read());
-                    Assert.False(reader.IsDBNull(0));
-                    SqlBytes sqlBytes = reader.GetSqlBytes(0);
-                    Assert.False(sqlBytes.IsNull, "Expected a zero length byte array");
-                    Assert.True(sqlBytes.Length == 0, "Expected a zero length byte array");
-                }
-            }
-        }
-
-        [CheckConnStrSetupFact]
-        public static void TestUdtSqlDataReaderGetSqlBytesSequentialAccess()
-        {
-            TestUdtSqlDataReaderGetSqlBytes(CommandBehavior.SequentialAccess);
-        }
-
-        [CheckConnStrSetupFact]
-        public static void TestUdtSqlDataReaderGetSqlBytes()
-        {
-            TestUdtSqlDataReaderGetSqlBytes(CommandBehavior.Default);
-        }
-
-        private static void TestUdtSqlDataReaderGetSqlBytes(CommandBehavior behavior)
-        {
-            using (SqlConnection connection = new SqlConnection(DataTestUtility.TcpConnStr))
-            {
-                connection.Open();
-                SqlCommand command = connection.CreateCommand();
-                command.CommandText = "select hierarchyid::Parse('/1/1/3/') as col0, geometry::Parse('LINESTRING (100 100, 20 180, 180 180)') as col1, geography::Parse('LINESTRING(-122.360 47.656, -122.343 47.656)') as col2";
-                using (SqlDataReader reader = command.ExecuteReader(behavior))
-                {
-                    Assert.True(reader.Read());
-
-                    SqlBytes sqlBytes = null;
-
-                    sqlBytes = reader.GetSqlBytes(0);
-                    Assert.Equal("5ade", ToHexString(sqlBytes.Value));
-
-                    sqlBytes = reader.GetSqlBytes(1);
-                    Assert.Equal("0000000001040300000000000000000059400000000000005940000000000000344000000000008066400000000000806640000000000080664001000000010000000001000000ffffffff0000000002", ToHexString(sqlBytes.Value));
-
-                    sqlBytes = reader.GetSqlBytes(2);
-                    Assert.Equal("e610000001148716d9cef7d34740d7a3703d0a975ec08716d9cef7d34740cba145b6f3955ec0", ToHexString(sqlBytes.Value));
-
-                    if (behavior == CommandBehavior.Default)
+                    Utf8String[] expectedValues =
                     {
-                        sqlBytes = reader.GetSqlBytes(0);
-                        Assert.Equal("5ade", ToHexString(sqlBytes.Value));
-                    }
-                }
-            }
-        }
+                        new Utf8String("a"),
+                        new Utf8String("is"),
+                        new Utf8String("test"),
+                        new Utf8String("this"),
+                        new Utf8String("this is an input param test")
+                    };
 
-        [CheckConnStrSetupFact]
-        public static void TestUdtSqlDataReaderGetBytesSequentialAccess()
-        {
-            TestUdtSqlDataReaderGetBytes(CommandBehavior.SequentialAccess);
-        }
-
-        [CheckConnStrSetupFact]
-        public static void TestUdtSqlDataReaderGetBytes()
-        {
-            TestUdtSqlDataReaderGetBytes(CommandBehavior.Default);
-        }
-
-        private static void TestUdtSqlDataReaderGetBytes(CommandBehavior behavior)
-        {
-            using (SqlConnection connection = new SqlConnection(DataTestUtility.TcpConnStr))
-            {
-                connection.Open();
-                SqlCommand command = connection.CreateCommand();
-                command.CommandText = "select hierarchyid::Parse('/1/1/3/') as col0, geometry::Parse('LINESTRING (100 100, 20 180, 180 180)') as col1, geography::Parse('LINESTRING(-122.360 47.656, -122.343 47.656)') as col2";
-                using (SqlDataReader reader = command.ExecuteReader(behavior))
-                {
-                    Assert.True(reader.Read());
-
-                    int byteCount = 0;
-                    byte[] bytes = null;
-
-                    byteCount = (int)reader.GetBytes(0, 0, null, 0, 0);
-                    Assert.True(byteCount > 0);
-                    bytes = new byte[byteCount];
-                    reader.GetBytes(0, 0, bytes, 0, bytes.Length);
-                    Assert.Equal("5ade", ToHexString(bytes));
-
-                    byteCount = (int)reader.GetBytes(1, 0, null, 0, 0);
-                    Assert.True(byteCount > 0);
-                    bytes = new byte[byteCount];
-                    reader.GetBytes(1, 0, bytes, 0, bytes.Length);
-                    Assert.Equal("0000000001040300000000000000000059400000000000005940000000000000344000000000008066400000000000806640000000000080664001000000010000000001000000ffffffff0000000002", ToHexString(bytes));
-
-                    byteCount = (int)reader.GetBytes(2, 0, null, 0, 0);
-                    Assert.True(byteCount > 0);
-                    bytes = new byte[byteCount];
-                    reader.GetBytes(2, 0, bytes, 0, bytes.Length);
-                    Assert.Equal("e610000001148716d9cef7d34740d7a3703d0a975ec08716d9cef7d34740cba145b6f3955ec0", ToHexString(bytes));
-
-                    if (behavior == CommandBehavior.Default)
+                    int currentValue = 0;
+                    do
                     {
-                        byteCount = (int)reader.GetBytes(0, 0, null, 0, 0);
-                        Assert.True(byteCount > 0);
-                        bytes = new byte[byteCount];
-                        reader.GetBytes(0, 0, bytes, 0, bytes.Length);
-                        Assert.Equal("5ade", ToHexString(bytes));
-                    }
-                }
-            }
-        }
-
-        [CheckConnStrSetupFact]
-        public static void TestUdtSqlDataReaderGetStreamSequentialAccess()
-        {
-            TestUdtSqlDataReaderGetStream(CommandBehavior.SequentialAccess);
-        }
-
-        [CheckConnStrSetupFact]
-        public static void TestUdtSqlDataReaderGetStream()
-        {
-            TestUdtSqlDataReaderGetStream(CommandBehavior.Default);
-        }
-
-        private static void TestUdtSqlDataReaderGetStream(CommandBehavior behavior)
-        {
-            using (SqlConnection connection = new SqlConnection(DataTestUtility.TcpConnStr))
-            {
-                connection.Open();
-                SqlCommand command = connection.CreateCommand();
-                command.CommandText = "select hierarchyid::Parse('/1/1/3/') as col0, geometry::Parse('LINESTRING (100 100, 20 180, 180 180)') as col1, geography::Parse('LINESTRING(-122.360 47.656, -122.343 47.656)') as col2";
-                using (SqlDataReader reader = command.ExecuteReader(behavior))
-                {
-                    Assert.True(reader.Read());
-
-                    MemoryStream buffer = null;
-                    byte[] bytes = null;
-
-                    buffer = new MemoryStream();
-                    using (Stream stream = reader.GetStream(0))
-                    {
-                        stream.CopyTo(buffer);
-                    }
-                    bytes = buffer.ToArray();
-                    Assert.Equal("5ade", ToHexString(bytes));
-
-                    buffer = new MemoryStream();
-                    using (Stream stream = reader.GetStream(1))
-                    {
-                        stream.CopyTo(buffer);
-                    }
-                    bytes = buffer.ToArray();
-                    Assert.Equal("0000000001040300000000000000000059400000000000005940000000000000344000000000008066400000000000806640000000000080664001000000010000000001000000ffffffff0000000002", ToHexString(bytes));
-
-                    buffer = new MemoryStream();
-                    using (Stream stream = reader.GetStream(2))
-                    {
-                        stream.CopyTo(buffer);
-                    }
-                    bytes = buffer.ToArray();
-                    Assert.Equal("e610000001148716d9cef7d34740d7a3703d0a975ec08716d9cef7d34740cba145b6f3955ec0", ToHexString(bytes));
-
-                    if (behavior == CommandBehavior.Default)
-                    {
-                        buffer = new MemoryStream();
-                        using (Stream stream = reader.GetStream(0))
+                        while (reader.Read())
                         {
-                            stream.CopyTo(buffer);
+                            DataTestUtility.AssertEqualsWithDescription(1, reader.FieldCount, "Unexpected FieldCount.");
+                            DataTestUtility.AssertEqualsWithDescription(expectedValues[currentValue], reader.GetValue(0), "Unexpected Value.");
+                            currentValue++;
                         }
-                        bytes = buffer.ToArray();
-                        Assert.Equal("5ade", ToHexString(bytes));
                     }
+                    while (reader.NextResult());
+                    DataTestUtility.AssertEqualsWithDescription(expectedValues.Length, currentValue, "Received less values than expected.");
+
+                    reader.Close();
                 }
             }
         }
 
         [CheckConnStrSetupFact]
-        public static void TestUdtSchemaMetadata()
+        public void OutputParameterTest()
         {
-            using (SqlConnection connection = new SqlConnection(DataTestUtility.TcpConnStr))
+            using (SqlConnection conn = new SqlConnection(_connStr))
             {
-                connection.Open();
-                SqlCommand command = connection.CreateCommand();
-                command.CommandText = "select hierarchyid::Parse('/1/1/3/') as col0, geometry::Parse('LINESTRING (100 100, 20 180, 180 180)') as col1, geography::Parse('LINESTRING(-122.360 47.656, -122.343 47.656)') as col2";
-                using (SqlDataReader reader = command.ExecuteReader(CommandBehavior.SchemaOnly))
+                conn.Open();
+
+                SqlCommand com = new SqlCommand()
                 {
-                    ReadOnlyCollection<DbColumn> columns = reader.GetColumnSchema();
+                    Connection = conn,
+                    CommandText = "UDTTest",
+                    CommandType = CommandType.StoredProcedure
+                };
 
-                    DbColumn column = null;
+                SqlParameter p = com.Parameters.Add("@value", SqlDbType.Udt);
+                p.UdtTypeName = "Utf8String";
+                p.Direction = ParameterDirection.Output;
 
-                    // Validate Microsoft.SqlServer.Types.SqlHierarchyId, Microsoft.SqlServer.Types, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91
-                    column = columns[0];
-                    Assert.Equal(column.ColumnName, "col0");
-                    Assert.Equal(typeof(byte[]), column.DataType);
-                    Assert.NotNull(column.UdtAssemblyQualifiedName);
-                    AssertSqlUdtAssemblyQualifiedName(column.UdtAssemblyQualifiedName, "Microsoft.SqlServer.Types.SqlHierarchyId");
+                SqlDataReader reader = com.ExecuteReader();
 
-                    // Validate Microsoft.SqlServer.Types.SqlGeometry, Microsoft.SqlServer.Types, Version = 11.0.0.0, Culture = neutral, PublicKeyToken = 89845dcd8080cc91
-                    column = columns[1];
-                    Assert.Equal(column.ColumnName, "col1");
-                    Assert.Equal(typeof(byte[]), column.DataType);
-                    Assert.NotNull(column.UdtAssemblyQualifiedName);
-                    AssertSqlUdtAssemblyQualifiedName(column.UdtAssemblyQualifiedName, "Microsoft.SqlServer.Types.SqlGeometry");
+                do
+                {
+                    while (reader.Read())
+                    {
+                        DataTestUtility.AssertEqualsWithDescription(0, reader.FieldCount, "Should not have any reader results.");
+                    }
+                }
+                while (reader.NextResult());
 
-                    // Validate Microsoft.SqlServer.Types.SqlGeography, Microsoft.SqlServer.Types, Version = 11.0.0.0, Culture = neutral, PublicKeyToken = 89845dcd8080cc91
-                    column = columns[2];
-                    Assert.Equal(column.ColumnName, "col2");
-                    Assert.Equal(typeof(byte[]), column.DataType);
-                    Assert.NotNull(column.UdtAssemblyQualifiedName);
-                    AssertSqlUdtAssemblyQualifiedName(column.UdtAssemblyQualifiedName, "Microsoft.SqlServer.Types.SqlGeography");
+                reader.Close();
+
+                DataTestUtility.AssertEqualsWithDescription(new Utf8String("this is an outparam test"), p.Value, "Unexpected parameter value.");
+            }
+        }
+
+        [CheckConnStrSetupFact]
+        public void FillTest()
+        {
+            using (SqlConnection conn = new SqlConnection(_connStr))
+            {
+                conn.Open();
+                DataSet ds = new DataSet();
+
+                SqlDataAdapter adapter = new SqlDataAdapter("select * from TestTable", conn);
+                adapter.Fill(ds);
+
+                Utf8String[] expectedValues =
+                {
+                    new Utf8String("a"),
+                    new Utf8String("is"),
+                    new Utf8String("test"),
+                    new Utf8String("this")
+                };
+                VerifyDataSet(ds, expectedValues);
+            }
+        }
+
+        [CheckConnStrSetupFact]
+        public void UpdateTest()
+        {
+            using (SqlConnection conn = new SqlConnection(_connStr))
+            {
+                conn.Open();
+                DataSet ds = new DataSet();
+
+                using (SqlTransaction trans = conn.BeginTransaction())
+                {
+                    SqlDataAdapter adapter = new SqlDataAdapter("select * from TestTable", conn);
+                    SqlCommandBuilder builder = new SqlCommandBuilder(adapter);
+                    adapter.SelectCommand.Transaction = trans;
+
+                    adapter.Fill(ds);
+
+                    ds.Tables[0].Rows[0][0] = new Utf8String("updated");
+
+                    adapter.Update(ds);
+
+                    ds.Reset();
+
+                    adapter.Fill(ds);
+                }
+
+                Utf8String[] expectedValues =
+                {
+                    new Utf8String("is"),
+                    new Utf8String("test"),
+                    new Utf8String("this"),
+                    new Utf8String("updated")
+                };
+                VerifyDataSet(ds, expectedValues);
+            }
+        }
+
+        [CheckConnStrSetupFact]
+        public void NullTest()
+        {
+            using (SqlConnection conn = new SqlConnection(_connStr))
+            {
+                conn.Open();
+
+                SqlCommand com = new SqlCommand()
+                {
+                    Connection = conn,
+                    CommandText = "insert into TestTableNull values (@p);" +
+                                  "SELECT * FROM TestTableNull"
+                };
+                SqlParameter p = com.Parameters.Add("@p", SqlDbType.Udt);
+                p.UdtTypeName = "Utf8String";
+                p.Value = DBNull.Value;
+
+                using (SqlTransaction trans = conn.BeginTransaction())
+                {
+                    com.Transaction = trans;
+                    SqlDataReader reader = com.ExecuteReader();
+
+                    Utf8String[] expectedValues =
+                        {
+                            new Utf8String("this"),
+                            new Utf8String("is"),
+                            new Utf8String("a"),
+                            new Utf8String("test")
+                        };
+
+                    int currentValue = 0;
+                    do
+                    {
+                        while (reader.Read())
+                        {
+                            DataTestUtility.AssertEqualsWithDescription(1, reader.FieldCount, "Unexpected FieldCount.");
+                            if(currentValue < expectedValues.Length)
+                            {
+                                DataTestUtility.AssertEqualsWithDescription(expectedValues[currentValue], reader.GetValue(0), "Unexpected Value.");
+                                DataTestUtility.AssertEqualsWithDescription(expectedValues[currentValue], reader.GetSqlValue(0), "Unexpected SQL Value.");
+                            }
+                            else
+                            {
+                                DataTestUtility.AssertEqualsWithDescription(DBNull.Value, reader.GetValue(0), "Unexpected Value.");
+
+                                Utf8String sqlValue = (Utf8String)reader.GetSqlValue(0);
+                                INullable iface = sqlValue as INullable;
+                                Assert.True(iface != null, "Expected interface cast to return a non-null value.");
+                                Assert.True(iface.IsNull, "Expected interface cast to have IsNull==true.");
+                            }
+
+                            currentValue++;
+                            Assert.True(currentValue <= (expectedValues.Length + 1), "Expected to only hit one extra result.");
+                        }
+                    }
+                    while (reader.NextResult());
+                    DataTestUtility.AssertEqualsWithDescription(currentValue, (expectedValues.Length + 1), "Did not hit all expected values.");
+
+                    reader.Close();
                 }
             }
         }
 
-        private static void AssertSqlUdtAssemblyQualifiedName(string assemblyQualifiedName, string expectedType)
+        private void VerifyDataSet(DataSet ds, Utf8String[] expectedValues)
         {
-            List<string> parts = assemblyQualifiedName.Split(',').Select(x => x.Trim()).ToList();
-
-            string type = parts[0];
-            string assembly = parts.Count < 2 ? string.Empty : parts[1];
-            string version = parts.Count < 3 ? string.Empty : parts[2];
-            string culture = parts.Count < 4 ? string.Empty : parts[3];
-            string token = parts.Count < 5 ? string.Empty : parts[4];
-
-            Assert.Equal(expectedType, type);
-            Assert.Equal("Microsoft.SqlServer.Types", assembly);
-            Assert.True(version.StartsWith("Version"));
-            Assert.True(culture.StartsWith("Culture"));
-            Assert.True(token.StartsWith("PublicKeyToken"));
-        }
-
-        private static string ToHexString(byte[] bytes)
-        {
-            StringBuilder hex = new StringBuilder(bytes.Length * 2);
-            foreach (byte b in bytes)
+            DataTestUtility.AssertEqualsWithDescription(1, ds.Tables.Count, "Unexpected tables count.");
+            DataTestUtility.AssertEqualsWithDescription(ds.Tables[0].Rows.Count, expectedValues.Length, "Unexpected rows count.");
+            for (int i = 0; i < ds.Tables[0].Rows.Count; i++)
             {
-                hex.AppendFormat("{0:x2}", b);
+                DataTestUtility.AssertEqualsWithDescription(1, ds.Tables[0].Columns.Count, "Unexpected columns count.");
+                DataTestUtility.AssertEqualsWithDescription(expectedValues[i], ds.Tables[0].Rows[i][0], "Unexpected value.");
             }
-
-            return hex.ToString();
         }
     }
 }

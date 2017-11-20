@@ -9,7 +9,6 @@ namespace System.Globalization
 {
     internal partial class FormatProvider
     {
-        [SecurityCritical]
         internal static string FormatBigInteger(int precision, int scale, bool sign, string format, NumberFormatInfo numberFormatInfo, char[] digits, int startIndex)
         {
             unsafe
@@ -31,7 +30,6 @@ namespace System.Globalization
             }
         }
 
-        [SecurityCritical]
         internal static bool TryStringToBigInteger(
             ReadOnlySpan<char> s,
             NumberStyles styles,

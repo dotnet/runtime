@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class ExprCall : ExprWithType, IExprWithArgs
+    internal sealed class ExprCall : ExprWithArgs
     {
         public ExprCall(CType type, EXPRFLAG flags, Expr arguments, ExprMemberGroup member, MethWithInst method)
             : base(ExpressionKind.Call, type)
@@ -21,16 +21,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             MethWithInst = method;
         }
 
-        public Expr OptionalArguments { get; set; }
-
-        public ExprMemberGroup MemberGroup { get; set; }
-
-        public Expr OptionalObject
-        {
-            get => MemberGroup.OptionalObject;
-            set => MemberGroup.OptionalObject = value;
-        }
-
         public MethWithInst MethWithInst { get; set; }
 
         public PREDEFMETH PredefinedMethod { get; set; } = PREDEFMETH.PM_COUNT;
@@ -41,6 +31,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public Expr CastOfNonLiftedResultToLiftedType { get; set; }
 
-        SymWithType IExprWithArgs.GetSymWithType() => MethWithInst;
+        public override SymWithType GetSymWithType() => MethWithInst;
     }
 }

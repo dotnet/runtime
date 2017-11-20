@@ -22,7 +22,6 @@ namespace System.IO.Pipes
         private int _outBufferSize;
         private HandleInheritability _inheritability;
 
-        [SecurityCritical]
         private void Create(string pipeName, PipeDirection direction, int maxNumberOfServerInstances,
                 PipeTransmissionMode transmissionMode, PipeOptions options, int inBufferSize, int outBufferSize,
                 HandleInheritability inheritability)
@@ -102,7 +101,6 @@ namespace System.IO.Pipes
         internal override void DisposeCore(bool disposing) =>
             Interlocked.Exchange(ref _instance, null)?.Dispose(disposing); // interlocked to avoid shared state problems from erroneous double/concurrent disposes
 
-        [SecurityCritical]
         public void Disconnect()
         {
             CheckDisconnectOperations();
@@ -114,7 +112,6 @@ namespace System.IO.Pipes
         // Gets the username of the connected client.  Not that we will not have access to the client's 
         // username until it has written at least once to the pipe (and has set its impersonationLevel 
         // argument appropriately). 
-        [SecurityCritical]
         public string GetImpersonationUserName()
         {
             CheckWriteOperations();

@@ -4,9 +4,15 @@
 
 #pragma once
 
+#include "pal_compiler.h"
+
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
+#include <stdbool.h>
+
+#ifdef __cplusplus
+
 #include <safemath/safemath.h> // remove once __builtin_*_overflow builtins are available everywhere
 
 // Multiplies a and b into result.
@@ -36,28 +42,77 @@ inline static bool add_s(T a, T b, T* result)
 #endif
 }
 
+#else // __cplusplus
+
+// Multiplies a and b into result.
+// Returns true if safe, false if overflows.
+inline static bool multiply_s(size_t a, size_t b, size_t* result)
+{
+#if __has_builtin(__builtin_mul_overflow)
+    return !__builtin_mul_overflow(a, b, result);
+#else
+    if (a == 0 || b == 0)
+    {
+        *result = 0;
+        return true;
+    }
+
+    if(((size_t)~((size_t)0)) / a < b)
+    {
+        //overflow
+        return false;
+    }
+    //ok
+    *result = a * b;
+    return true;
+#endif
+}
+
+
+// Adds a and b into result.
+// Returns true if safe, false if overflows.
+inline static bool add_s(size_t a, size_t b, size_t* result)
+{
+#if __has_builtin(__builtin_add_overflow)
+    return !__builtin_add_overflow(a, b, result);
+#else
+    if(((size_t)~((size_t)0)) - a < b)
+    {
+        //overflow
+        return false;
+    }
+    //ok
+    *result = a + b;
+    return true;
+#endif
+}
+
+#endif // __cplusplus
+
+BEGIN_EXTERN_C
+
 typedef int errno_t;
 
 inline static errno_t memcpy_s(void* dst, size_t sizeInBytes, const void* src, size_t count)
 {
     if (count > 0)
     {
-        assert(dst != nullptr);
-        assert(src != nullptr);
+        assert(dst != NULL);
+        assert(src != NULL);
         assert(sizeInBytes >= count);
         assert( // should be using memmove if this fails
-            (static_cast<const char*>(dst) + count <= static_cast<const char*>(src)) ||
-            (static_cast<const char*>(src) + count <= static_cast<const char*>(dst)));
+            ((const char*)dst + count <= (const char*)src) ||
+            ((const char*)src + count <= (const char*)dst));
 
-        if (dst == nullptr)
+        if (dst == NULL)
         {
             return EINVAL;
         }
 
-        if (src == nullptr || sizeInBytes < count)
+        if (src == NULL || sizeInBytes < count)
         {
             memset(dst, 0, sizeInBytes);
-            return src == nullptr ? EINVAL : ERANGE;
+            return src == NULL ? EINVAL : ERANGE;
         }
   
         memcpy(dst, src, count);
@@ -65,3 +120,5 @@ inline static errno_t memcpy_s(void* dst, size_t sizeInBytes, const void* src, s
 
     return 0;
 }
+
+END_EXTERN_C

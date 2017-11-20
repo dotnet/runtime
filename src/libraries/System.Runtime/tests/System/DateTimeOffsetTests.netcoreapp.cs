@@ -64,5 +64,11 @@ namespace System.Tests
             Assert.Equal<char>(expectedString.ToCharArray(), actual.Slice(0, expectedString.Length).ToArray());
             Assert.Equal(0, actual[actual.Length - 1]);
         }
+
+        [Fact]
+        public static void UnixEpoch()
+        {
+            VerifyDateTimeOffset(DateTimeOffset.UnixEpoch, 1970, 1, 1, 0, 0, 0, 0, TimeSpan.Zero);
+        }
     }
 }

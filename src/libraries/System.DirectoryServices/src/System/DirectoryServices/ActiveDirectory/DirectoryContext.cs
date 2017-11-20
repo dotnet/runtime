@@ -37,7 +37,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
         #region constructors
 
-        [EnvironmentPermission(SecurityAction.Assert, Unrestricted = true)]
         static DirectoryContext()
         {
             // load ntdsapi.dll for AD and ADAM
@@ -178,7 +177,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal string Password
         {
-            [SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.UnmanagedCode)]
             get => passwordIsNull ? null : _credential.Password;
         }
 
@@ -684,7 +682,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return domainControllerInfo.DomainName;
         }
 
-        [EnvironmentPermission(SecurityAction.Assert, Unrestricted = true)]
         private static void GetLibraryHandle()
         {
             // first get AD handle

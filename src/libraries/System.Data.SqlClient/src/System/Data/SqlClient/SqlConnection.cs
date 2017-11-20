@@ -10,6 +10,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
 using System.Transactions;
+using Microsoft.SqlServer.Server;
+using System.Reflection;
+using System.IO;
+using System.Globalization;
 
 namespace System.Data.SqlClient
 {
@@ -135,42 +139,31 @@ namespace System.Data.SqlClient
 
         internal bool AsyncCommandInProgress
         {
-            get
-            {
-                return (_AsyncCommandInProgress);
-            }
-            set
-            {
-                _AsyncCommandInProgress = value;
-            }
+            get => _AsyncCommandInProgress;
+            set => _AsyncCommandInProgress = value;
         }
 
         internal SqlConnectionString.TransactionBindingEnum TransactionBinding
         {
-            get
-            {
-                return ((SqlConnectionString)ConnectionOptions).TransactionBinding;
-            }
+            get => ((SqlConnectionString)ConnectionOptions).TransactionBinding;
         }
 
         internal SqlConnectionString.TypeSystem TypeSystem
         {
-            get
-            {
-                return ((SqlConnectionString)ConnectionOptions).TypeSystemVersion;
-            }
+            get => ((SqlConnectionString)ConnectionOptions).TypeSystemVersion;
         }
 
+        internal Version TypeSystemAssemblyVersion
+        {
+            get => ((SqlConnectionString)ConnectionOptions).TypeSystemAssemblyVersion;
+        }
 
         internal int ConnectRetryInterval
         {
-            get
-            {
-                return ((SqlConnectionString)ConnectionOptions).ConnectRetryInterval;
-            }
+            get => ((SqlConnectionString)ConnectionOptions).ConnectRetryInterval;
         }
 
-        override public string ConnectionString
+        public override string ConnectionString
         {
             get
             {
@@ -184,7 +177,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public int ConnectionTimeout
+        public override int ConnectionTimeout
         {
             get
             {
@@ -193,7 +186,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public string Database
+        public override string Database
         {
             // if the connection is open, we need to ask the inner connection what it's
             // current catalog is because it may have gotten changed, otherwise we can
@@ -216,7 +209,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public string DataSource
+        public override string DataSource
         {
             get
             {
@@ -281,15 +274,12 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public string ServerVersion
+        public override string ServerVersion
         {
-            get
-            {
-                return GetOpenTdsConnection().ServerVersion;
-            }
+            get => GetOpenTdsConnection().ServerVersion;
         }
 
-        override public ConnectionState State
+        public override ConnectionState State
         {
             get
             {
@@ -305,10 +295,7 @@ namespace System.Data.SqlClient
 
         internal SqlStatistics Statistics
         {
-            get
-            {
-                return _statistics;
-            }
+            get => _statistics;
         }
 
         public string WorkstationId
@@ -326,7 +313,7 @@ namespace System.Data.SqlClient
 
         protected override DbProviderFactory DbProviderFactory
         {
-            get { return SqlClientFactory.Instance; }
+            get => SqlClientFactory.Instance;
         }
 
         // SqlCredential: Pair User Id and password in SecureString which are to be used for SQL authentication
@@ -339,23 +326,14 @@ namespace System.Data.SqlClient
 
         public bool FireInfoMessageEventOnUserErrors
         {
-            get
-            {
-                return _fireInfoMessageEventOnUserErrors;
-            }
-            set
-            {
-                _fireInfoMessageEventOnUserErrors = value;
-            }
+            get => _fireInfoMessageEventOnUserErrors;
+            set => _fireInfoMessageEventOnUserErrors = value;
         }
 
         // Approx. number of times that the internal connection has been reconnected
         internal int ReconnectCount
         {
-            get
-            {
-                return _reconnectCount;
-            }
+            get => _reconnectCount;
         }
 
         internal bool ForceNewConnection { get; set; }
@@ -439,7 +417,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override public void ChangeDatabase(string database)
+        public override void ChangeDatabase(string database)
         {
             SqlStatistics statistics = null;
             RepairInnerConnection();
@@ -481,7 +459,7 @@ namespace System.Data.SqlClient
             InnerConnection.CloseConnection(this, ConnectionFactory);
         }
 
-        override public void Close()
+        public override void Close()
         {
             ConnectionState previousState = State;
             Guid operationId = default(Guid);
@@ -582,7 +560,7 @@ namespace System.Data.SqlClient
         }
 
 
-        override public void Open()
+        public override void Open()
         {
             Guid operationId = s_diagnosticListener.WriteConnectionOpenBefore(this);
 
@@ -1325,7 +1303,126 @@ namespace System.Data.SqlClient
                 _innerConnection = DbConnectionClosedPreviouslyOpened.SingletonInstance;
             }
         }
-    } // SqlConnection
-} // System.Data.SqlClient namespace
+
+        // UDT SUPPORT
+        private Assembly ResolveTypeAssembly(AssemblyName asmRef, bool throwOnError)
+        {
+            Debug.Assert(TypeSystemAssemblyVersion != null, "TypeSystemAssembly should be set !");
+            if (string.Compare(asmRef.Name, "Microsoft.SqlServer.Types", StringComparison.OrdinalIgnoreCase) == 0)
+            {
+                asmRef.Version = TypeSystemAssemblyVersion;
+            }
+            try
+            {
+                return Assembly.Load(asmRef);
+            }
+            catch (Exception e)
+            {
+                if (throwOnError || !ADP.IsCatchableExceptionType(e))
+                {
+                    throw;
+                }
+                else
+                {
+                    return null;
+                };
+            }
+        }
+
+        internal void CheckGetExtendedUDTInfo(SqlMetaDataPriv metaData, bool fThrow)
+        {
+            if (metaData.udtType == null)
+            { // If null, we have not obtained extended info.
+                Debug.Assert(!string.IsNullOrEmpty(metaData.udtAssemblyQualifiedName), "Unexpected state on GetUDTInfo");
+                // Parameter throwOnError determines whether exception from Assembly.Load is thrown.
+                metaData.udtType =
+                    Type.GetType(typeName: metaData.udtAssemblyQualifiedName, assemblyResolver: asmRef => ResolveTypeAssembly(asmRef, fThrow), typeResolver: null, throwOnError: fThrow);
+
+                if (fThrow && metaData.udtType == null)
+                {
+                    throw SQL.UDTUnexpectedResult(metaData.udtAssemblyQualifiedName);
+                }
+            }
+        }
+
+        internal object GetUdtValue(object value, SqlMetaDataPriv metaData, bool returnDBNull)
+        {
+            if (returnDBNull && ADP.IsNull(value))
+            {
+                return DBNull.Value;
+            }
+
+            object o = null;
+
+            // Since the serializer doesn't handle nulls...
+            if (ADP.IsNull(value))
+            {
+                Type t = metaData.udtType;
+                Debug.Assert(t != null, "Unexpected null of udtType on GetUdtValue!");
+                o = t.InvokeMember("Null", BindingFlags.Public | BindingFlags.GetProperty | BindingFlags.Static, null, null, new object[] { }, CultureInfo.InvariantCulture);
+                Debug.Assert(o != null);
+                return o;
+            }
+            else
+            {
+
+                MemoryStream stm = new MemoryStream((byte[])value);
+
+                o = SerializationHelperSql9.Deserialize(stm, metaData.udtType);
+
+                Debug.Assert(o != null, "object could NOT be created");
+                return o;
+            }
+        }
+
+        internal byte[] GetBytes(object o)
+        {
+            Format format = Format.Native;
+            return GetBytes(o, out format, out int maxSize);
+        }
+
+        internal byte[] GetBytes(object o, out Format format, out int maxSize)
+        {
+            SqlUdtInfo attr = GetInfoFromType(o.GetType());
+            maxSize = attr.MaxByteSize;
+            format = attr.SerializationFormat;
+
+            if (maxSize < -1 || maxSize >= ushort.MaxValue)
+            {
+                throw new InvalidOperationException(o.GetType() + ": invalid Size");
+            }
+
+            byte[] retval;
+
+            using (MemoryStream stm = new MemoryStream(maxSize < 0 ? 0 : maxSize))
+            {
+                SerializationHelperSql9.Serialize(stm, o);
+                retval = stm.ToArray();
+            }
+            return retval;
+        }
+
+        private SqlUdtInfo GetInfoFromType(Type t)
+        {
+            Debug.Assert(t != null, "Type object cant be NULL");
+            Type orig = t;
+            do
+            {
+                SqlUdtInfo attr = SqlUdtInfo.TryGetFromType(t);
+                if (attr != null)
+                {
+                    return attr;
+                }
+                else
+                {
+                    t = t.BaseType;
+                }
+            }
+            while (t != null);
+
+            throw SQL.UDTInvalidSqlType(orig.AssemblyQualifiedName);
+        }
+    }
+}
 
 

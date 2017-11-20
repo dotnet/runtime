@@ -48,10 +48,10 @@ namespace Microsoft.CSharp.RuntimeBinder
         public CSharpGetIndexBinder(
             Type callingContext,
             IEnumerable<CSharpArgumentInfo> argumentInfo) :
-            base(BinderHelper.CreateCallInfo(argumentInfo, 1)) // discard 1 argument: the target object
+            base(BinderHelper.CreateCallInfo(ref argumentInfo, 1)) // discard 1 argument: the target object
         {
             CallingContext = callingContext;
-            _argumentInfo = BinderHelper.ToArray(argumentInfo);
+            _argumentInfo = argumentInfo as CSharpArgumentInfo[];
             _binder = RuntimeBinder.GetInstance();
         }
 

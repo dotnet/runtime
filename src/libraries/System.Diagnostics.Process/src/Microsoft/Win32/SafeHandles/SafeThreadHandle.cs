@@ -34,7 +34,6 @@ namespace Microsoft.Win32.SafeHandles
 
         public override bool IsInvalid
         {
-            [SecurityCritical]
             get { return handle == IntPtr.Zero || handle == new IntPtr(-1); }
         }
 

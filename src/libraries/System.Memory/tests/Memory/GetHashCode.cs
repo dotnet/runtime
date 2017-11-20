@@ -85,5 +85,14 @@ namespace System.MemoryTests
             Assert.Equal(implicitMemoryArray.GetHashCode(), memory.GetHashCode());
             Assert.Equal(implicitReadOnlyMemoryArray.GetHashCode(), memory.GetHashCode());
         }
+
+        [Fact]
+        public static void DefaultMemoryHashCode()
+        {
+            Memory<int> memory = default;
+            Assert.Equal(0, memory.GetHashCode());
+            Memory<int> memory2 = default;
+            Assert.Equal(memory2.GetHashCode(), memory.GetHashCode());
+        }
     }
 }

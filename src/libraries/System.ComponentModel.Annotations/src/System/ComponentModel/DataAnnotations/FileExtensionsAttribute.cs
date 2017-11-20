@@ -43,21 +43,8 @@ namespace System.ComponentModel.DataAnnotations
         public override string FormatErrorMessage(string name) =>
             string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name, ExtensionsFormatted);
 
-        public override bool IsValid(object value)
-        {
-            if (value == null)
-            {
-                return true;
-            }
-
-            var valueAsString = value as string;
-            if (valueAsString != null)
-            {
-                return ValidateExtension(valueAsString);
-            }
-
-            return false;
-        }
+        public override bool IsValid(object value) =>
+            value == null || value is string valueAsString && ValidateExtension(valueAsString);
 
         private bool ValidateExtension(string fileName)
         {

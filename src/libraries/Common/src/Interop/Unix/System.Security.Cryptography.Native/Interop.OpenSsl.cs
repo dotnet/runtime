@@ -6,6 +6,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Net.Http;
 using System.Net.Security;
@@ -23,6 +24,7 @@ internal static partial class Interop
     {
         private static readonly Ssl.SslCtxSetVerifyCallback s_verifyClientCertificate = VerifyClientCertificate;
         private unsafe static readonly Ssl.SslCtxSetAlpnCallback s_alpnServerCallback = AlpnServerSelectCallback;
+        private static readonly IdnMapping s_idnMapping = new IdnMapping();
 
         #region internal methods
 
@@ -123,6 +125,15 @@ internal static partial class Interop
                     {
                         context.Dispose();
                         throw CreateSslException(SR.net_allocate_ssl_context_failed);
+                    }
+
+                    if (!sslAuthenticationOptions.IsServer)
+                    {
+                        // The IdnMapping converts unicode input into the IDNA punycode sequence.
+                        string punyCode = s_idnMapping.GetAscii(sslAuthenticationOptions.TargetHost);
+
+                        // Similar to windows behavior, set SNI on openssl by default for client context, ignore errors.
+                        Ssl.SslSetTlsExtHostName(context, punyCode);
                     }
 
                     if (hasCertificateAndKey)

@@ -9,7 +9,6 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    [SecurityCritical]
     internal sealed class SafeDsaHandle : SafeHandle
     {
         private SafeDsaHandle() :

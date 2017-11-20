@@ -27,7 +27,9 @@
     <Compile Include="Span\Empty.cs" />
     <Compile Include="Span\Equality.cs" />
     <Compile Include="Span\GcReporting.cs" />
+    <Compile Include="Span\GetEnumerator.cs" />
     <Compile Include="Span\GetHashCode.cs" />
+    <Compile Include="Span\ImplicitConversion.cs" />
     <Compile Include="Span\IndexOf.T.cs" />
     <Compile Include="Span\IndexOf.byte.cs" />
     <Compile Include="Span\IndexOf.char.cs" />
@@ -55,7 +57,9 @@
     <Compile Include="ReadOnlySpan\DangerousGetPinnableReference.cs" />
     <Compile Include="ReadOnlySpan\Empty.cs" />
     <Compile Include="ReadOnlySpan\Equality.cs" />
+    <Compile Include="ReadOnlySpan\GetEnumerator.cs" />
     <Compile Include="ReadOnlySpan\GetHashCode.cs" />
+    <Compile Include="ReadOnlySpan\ImplicitConversion.cs" />
     <Compile Include="ReadOnlySpan\IndexOf.T.cs" />
     <Compile Include="ReadOnlySpan\IndexOf.byte.cs" />
     <Compile Include="ReadOnlySpan\IndexOf.char.cs" />
@@ -73,6 +77,7 @@
     <Compile Include="ReadOnlySpan\ToArray.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Memory\CopyTo.cs" />
     <Compile Include="Memory\CtorArray.cs" />
     <Compile Include="Memory\CtorArrayIntInt.cs" />
     <Compile Include="Memory\CustomMemoryForTest.cs" />
@@ -84,10 +89,15 @@
     <Compile Include="Memory\Retain.cs" />
     <Compile Include="Memory\Slice.cs" />
     <Compile Include="Memory\Span.cs" />
+    <Compile Include="Memory\Strings.cs" />
     <Compile Include="Memory\ToArray.cs" />
     <Compile Include="Memory\TryGetArray.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MemoryMarshal\AsMemory.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ReadOnlyMemory\CopyTo.cs" />
     <Compile Include="ReadOnlyMemory\CtorArray.cs" />
     <Compile Include="ReadOnlyMemory\CtorArrayIntInt.cs" />
     <Compile Include="ReadOnlyMemory\DangerousTryGetArray.cs" />
@@ -98,6 +108,7 @@
     <Compile Include="ReadOnlyMemory\Retain.cs" />
     <Compile Include="ReadOnlyMemory\Slice.cs" />
     <Compile Include="ReadOnlyMemory\Span.cs" />
+    <Compile Include="ReadOnlyMemory\Strings.cs" />
     <Compile Include="ReadOnlyMemory\ToArray.cs" />
   </ItemGroup>
   <ItemGroup>

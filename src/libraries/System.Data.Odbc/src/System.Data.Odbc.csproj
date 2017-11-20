@@ -14,8 +14,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp2.0-OSX-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp2.0-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp2.0-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp2.0'">
@@ -57,7 +57,6 @@
     <Compile Include="Common\System\Data\ProviderBase\DbConnectionPoolOptions.cs" />
     <Compile Include="Common\System\Data\ProviderBase\DbConnectionPoolProviderInfo.cs" />
     <Compile Include="Common\System\Data\ProviderBase\DbReferenceCollection.cs" />
-    <Compile Include="Properties\SecurityTransparent.cs" />
     <Compile Include="System\Data\Odbc\DbDataRecord.cs" />
     <Compile Include="System\Data\Odbc\Odbc32.cs" />
     <Compile Include="System\Data\Odbc\OdbcCommand.cs">
@@ -110,16 +109,24 @@
     <Compile Include="$(CommonPath)\System\Data\Common\MultipartIdentifier.cs">
       <Link>Common\System\Data\Common\MultipartIdentifier.cs</Link>
     </Compile>
-    <Compile Include="Common\System\Data\Common\UnsafeNativeMethods.cs" />
+    <Compile Include="$(CommonPath)\Interop\Interop.Odbc.cs">
+      <Link>Common\Interop\Interop.Odbc.cs</Link>
+    </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsLinux)' == 'true'">
-    <Compile Include="Common\System\Data\Common\ExternDll.Linux.cs" />
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
+    <Compile Include="$(CommonPath)\Interop\Linux\Interop.Libraries.cs">
+      <Link>Common\Interop\Linux\Interop.Libraries.cs</Link>
+    </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOsx)' == 'true'">
-    <Compile Include="Common\System\Data\Common\ExternDll.Osx.cs" />
+  <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
+      <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
+    </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netcoreapp2.0' ">
-    <Compile Include="Common\System\Data\Common\ExternDll.Windows.cs" />
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netcoreapp2.0' ">
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <Reference Include="mscorlib" />
@@ -163,3 +170,4 @@
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
+

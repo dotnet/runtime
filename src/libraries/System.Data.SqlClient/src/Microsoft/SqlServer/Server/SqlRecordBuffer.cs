@@ -446,7 +446,7 @@ namespace Microsoft.SqlServer.Server
                     case StorageType.Int64: return _metadata ?? SmiMetaData.DefaultBigInt;
                     case StorageType.Single: return SmiMetaData.DefaultReal;
                     case StorageType.String: return _metadata ?? SmiMetaData.DefaultNVarChar;
-                    case StorageType.SqlDecimal: return new SmiMetaData(SqlDbType.Decimal, 17, ((SqlDecimal)_object).Precision, ((SqlDecimal)_object).Scale, 0, SqlCompareOptions.None);
+                    case StorageType.SqlDecimal: return new SmiMetaData(SqlDbType.Decimal, 17, ((SqlDecimal)_object).Precision, ((SqlDecimal)_object).Scale, 0, SqlCompareOptions.None, null);
                     case StorageType.TimeSpan: return SmiMetaData.DefaultTime;
                 }
                 return null;

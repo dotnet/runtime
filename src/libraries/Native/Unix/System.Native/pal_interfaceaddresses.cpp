@@ -7,6 +7,7 @@
 #include "pal_maphardwaretype.h"
 #include "pal_utilities.h"
 #include "pal_safecrt.h"
+#include "pal_networking.h"
 
 #include <sys/types.h>
 #include <assert.h>
@@ -73,7 +74,7 @@ extern "C" int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onI
                 iai.NumAddressBytes = NUM_BYTES_IN_IPV4_ADDRESS;
 
                 sockaddr_in* sain = reinterpret_cast<sockaddr_in*>(current->ifa_addr);
-                memcpy_s(iai.AddressBytes, sizeof(IpAddressInfo::AddressBytes), &sain->sin_addr.s_addr, sizeof(sain->sin_addr.s_addr));
+                memcpy_s(iai.AddressBytes, sizeof_member(IpAddressInfo, AddressBytes), &sain->sin_addr.s_addr, sizeof(sain->sin_addr.s_addr));
 
                 // Net Mask
                 IpAddressInfo maskInfo;
@@ -82,7 +83,7 @@ extern "C" int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onI
                 maskInfo.NumAddressBytes = NUM_BYTES_IN_IPV4_ADDRESS;
 
                 sockaddr_in* mask_sain = reinterpret_cast<sockaddr_in*>(current->ifa_netmask);
-                memcpy_s(maskInfo.AddressBytes, sizeof(IpAddressInfo::AddressBytes), &mask_sain->sin_addr.s_addr, sizeof(mask_sain->sin_addr.s_addr));
+                memcpy_s(maskInfo.AddressBytes, sizeof_member(IpAddressInfo, AddressBytes), &mask_sain->sin_addr.s_addr, sizeof(mask_sain->sin_addr.s_addr));
 
                 onIpv4Found(actualName, &iai, &maskInfo);
             }
@@ -97,7 +98,7 @@ extern "C" int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onI
                 iai.NumAddressBytes = NUM_BYTES_IN_IPV6_ADDRESS;
 
                 sockaddr_in6* sain6 = reinterpret_cast<sockaddr_in6*>(current->ifa_addr);
-                memcpy_s(iai.AddressBytes, sizeof(IpAddressInfo::AddressBytes), sain6->sin6_addr.s6_addr, sizeof(sain6->sin6_addr.s6_addr));
+                memcpy_s(iai.AddressBytes, sizeof_member(IpAddressInfo, AddressBytes), sain6->sin6_addr.s6_addr, sizeof(sain6->sin6_addr.s6_addr));
                 uint32_t scopeId = sain6->sin6_scope_id;
                 onIpv6Found(actualName, &iai, &scopeId);
             }
@@ -114,9 +115,9 @@ extern "C" int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onI
                 memset(&lla, 0, sizeof(LinkLayerAddressInfo));
                 lla.InterfaceIndex = interfaceIndex;
                 lla.NumAddressBytes = sall->sll_halen;
-                lla.HardwareType = MapHardwareType(sall->sll_hatype);
+                lla.HardwareType = static_cast<uint8_t>(MapHardwareType(sall->sll_hatype));
 
-                memcpy_s(&lla.AddressBytes, sizeof(LinkLayerAddressInfo::AddressBytes), &sall->sll_addr, sall->sll_halen);
+                memcpy_s(&lla.AddressBytes, sizeof_member(LinkLayerAddressInfo, AddressBytes), &sall->sll_addr, sall->sll_halen);
                 onLinkLayerFound(current->ifa_name, &lla);
             }
         }
@@ -130,10 +131,10 @@ extern "C" int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onI
                 LinkLayerAddressInfo lla = {
                     .InterfaceIndex = interfaceIndex,
                     .NumAddressBytes = sadl->sdl_alen,
-                    .HardwareType = MapHardwareType(sadl->sdl_type),
+                    .HardwareType = static_cast<uint8_t>(MapHardwareType(sadl->sdl_type)),
                 };
 
-                memcpy_s(&lla.AddressBytes, sizeof(LinkLayerAddressInfo::AddressBytes), reinterpret_cast<uint8_t*>(LLADDR(sadl)), sadl->sdl_alen);
+                memcpy_s(&lla.AddressBytes, sizeof_member(LinkLayerAddressInfo, AddressBytes), reinterpret_cast<uint8_t*>(LLADDR(sadl)), sadl->sdl_alen);
                 onLinkLayerFound(current->ifa_name, &lla);
             }
         }
@@ -189,7 +190,7 @@ extern "C" int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t i
             iai.NumAddressBytes = NUM_BYTES_IN_IPV4_ADDRESS;
             sockaddr_in* sain = reinterpret_cast<sockaddr_in*>(hdr + 1);
             sain = sain + 1; // Skip over the first sockaddr, the destination address. The second is the gateway.
-            memcpy_s(iai.AddressBytes, sizeof(IpAddressInfo::AddressBytes), &sain->sin_addr.s_addr, sizeof(sain->sin_addr.s_addr));
+            memcpy_s(iai.AddressBytes, sizeof_member(IpAddressInfo, AddressBytes), &sain->sin_addr.s_addr, sizeof(sain->sin_addr.s_addr));
             onGatewayFound(&iai);
         }
     }

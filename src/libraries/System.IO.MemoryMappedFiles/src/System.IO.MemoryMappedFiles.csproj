@@ -14,9 +14,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <!-- Compiled Source Files -->
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\IO\Error.cs">
-      <Link>Common\System\IO\Error.cs</Link>
-    </Compile>
     <Compile Include="Microsoft\Win32\SafeMemoryMappedViewHandle.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFileOptions.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFileAccess.cs" />

@@ -7,6 +7,7 @@ using System.Data.Common;
 using System.Data.Sql;
 using System.Data.SqlTypes;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -2025,6 +2026,7 @@ namespace System.Data.SqlClient
                 useManagedDataType = false;
             }
 
+
             paramsCmd = new SqlCommand(cmdText.ToString(), Connection, Transaction)
             {
                 CommandType = CommandType.StoredProcedure
@@ -2133,10 +2135,28 @@ namespace System.Data.SqlClient
                         p.PrecisionInternal = (byte)((short)r[colNames[(int)ProcParamsColIndex.NumericPrecision]] & 0xff);
                     }
 
+                    // type name for Udt
+                    if (SqlDbType.Udt == p.SqlDbType)
+                    {
+                        string udtTypeName;
+                        if (useManagedDataType)
+                        {
+                            udtTypeName = (string)r[colNames[(int)ProcParamsColIndex.TypeName]];
+                        }
+                        else
+                        {
+                            udtTypeName = (string)r[colNames[(int)ProcParamsColIndex.UdtTypeName]];
+                        }
+
+                        //read the type name
+                        p.UdtTypeName = r[colNames[(int)ProcParamsColIndex.TypeCatalogName]] + "." +
+                            r[colNames[(int)ProcParamsColIndex.TypeSchemaName]] + "." +
+                            udtTypeName;
+                    }
+
                     // type name for Structured types (same as for Udt's except assign p.TypeName instead of p.UdtTypeName
                     if (SqlDbType.Structured == p.SqlDbType)
                     {
-
                         Debug.Assert(_activeConnection.IsKatmaiOrNewer, "Invalid datatype token received from pre-katmai server");
 
                         //read the type name
@@ -2570,14 +2590,12 @@ namespace System.Data.SqlClient
                     {
                         Task executeTask = _stateObj.Parser.TdsExecuteSQLBatch(optionSettings, timeout, this.Notification, _stateObj, sync: true);
                         Debug.Assert(executeTask == null, "Shouldn't get a task when doing sync writes");
-                        bool dataReady;
                         Debug.Assert(_stateObj._syncOverAsync, "Should not attempt pends in a synchronous call");
-                        bool result = _stateObj.Parser.TryRun(RunBehavior.UntilDone, this, null, null, _stateObj, out dataReady);
+                        bool result = _stateObj.Parser.TryRun(RunBehavior.UntilDone, this, null, null, _stateObj, out bool dataReady);
                         if (!result) { throw SQL.SynchronousCallMayNotPend(); }
                         // and turn OFF when the ds exhausts the stream on Close()
                         optionSettings = GetResetOptionsString(cmdBehavior);
                     }
-
 
                     // execute sp
                     Debug.Assert(_rpcArrayOf1[0] == rpc);
@@ -2984,9 +3002,8 @@ namespace System.Data.SqlClient
         // If named, match the parameter name, otherwise fill in based on ordinal position.
         // If the parameter is not bound, then ignore the return value.
         //
-        internal void OnReturnValue(SqlReturnValue rec)
+        internal void OnReturnValue(SqlReturnValue rec, TdsParserStateObject stateObj)
         {
-
             if (_inPrepare)
             {
                 if (!rec.value.IsNull)
@@ -3000,7 +3017,6 @@ namespace System.Data.SqlClient
             SqlParameterCollection parameters = GetCurrentParameterCollection();
             int count = GetParameterCount(parameters);
 
-
             SqlParameter thisParam = GetParameterForOutputValueExtraction(parameters, rec.parameter, count);
 
             if (null != thisParam)
@@ -3011,7 +3027,46 @@ namespace System.Data.SqlClient
                 // to the com type
                 object val = thisParam.Value;
 
-                thisParam.SetSqlBuffer(rec.value);
+                //set the UDT value as typed object rather than bytes
+                if (SqlDbType.Udt == thisParam.SqlDbType)
+                {
+                    object data = null;
+                    try
+                    {
+                        Connection.CheckGetExtendedUDTInfo(rec, true);
+
+                        //extract the byte array from the param value
+                        if (rec.value.IsNull)
+                        {
+                            data = DBNull.Value;
+                        }
+                        else
+                        {
+                            data = rec.value.ByteArray; //should work for both sql and non-sql values
+                        }
+
+                        //call the connection to instantiate the UDT object
+                        thisParam.Value = Connection.GetUdtValue(data, rec, false);
+                    }
+                    catch (FileNotFoundException e)
+                    {
+                        // Assign Assembly.Load failure in case where assembly not on client.
+                        // This allows execution to complete and failure on SqlParameter.Value.
+                        thisParam.SetUdtLoadError(e);
+                    }
+                    catch (FileLoadException e)
+                    {
+                        // Assign Assembly.Load failure in case where assembly cannot be loaded on client.
+                        // This allows execution to complete and failure on SqlParameter.Value.
+                        thisParam.SetUdtLoadError(e);
+                    }
+
+                    return;
+                }
+                else
+                {
+                    thisParam.SetSqlBuffer(rec.value);
+                }
 
                 MetaType mt = MetaType.GetMetaTypeFromSqlDbType(rec.type, false);
 
@@ -3401,7 +3456,11 @@ namespace System.Data.SqlClient
                 paramList.Append(" ");
                 if (mt.SqlDbType == SqlDbType.Udt)
                 {
-                    throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
+                    string fullTypeName = sqlParam.UdtTypeName;
+                    if (string.IsNullOrEmpty(fullTypeName))
+                        throw SQL.MustSetUdtTypeNameForUdtParams();
+
+                    paramList.Append(ParseAndQuoteIdentifier(fullTypeName, true /* is UdtTypeName */));
                 }
                 else if (mt.SqlDbType == SqlDbType.Structured)
                 {
@@ -3410,7 +3469,7 @@ namespace System.Data.SqlClient
                     {
                         throw SQL.MustSetTypeNameForParam(mt.TypeName, sqlParam.ParameterNameFixed);
                     }
-                    paramList.Append(ParseAndQuoteIdentifier(typeName));
+                    paramList.Append(ParseAndQuoteIdentifier(typeName, false /* is not UdtTypeName*/));
 
                     // TVPs currently are the only Structured type and must be read only, so add that keyword
                     paramList.Append(" READONLY");
@@ -3454,7 +3513,7 @@ namespace System.Data.SqlClient
                     paramList.Append(scale);
                     paramList.Append(')');
                 }
-                else if (false == mt.IsFixed && false == mt.IsLong && mt.SqlDbType != SqlDbType.Timestamp && mt.SqlDbType != SqlDbType.Udt && SqlDbType.Structured != mt.SqlDbType)
+                else if (!mt.IsFixed && !mt.IsLong && mt.SqlDbType != SqlDbType.Timestamp && mt.SqlDbType != SqlDbType.Udt && SqlDbType.Structured != mt.SqlDbType)
                 {
                     int size = sqlParam.Size;
 
@@ -3512,9 +3571,9 @@ namespace System.Data.SqlClient
 
         // Adds quotes to each part of a SQL identifier that may be multi-part, while leaving
         //  the result as a single composite name.
-        private string ParseAndQuoteIdentifier(string identifier)
+        private string ParseAndQuoteIdentifier(string identifier, bool isUdtTypeName)
         {
-            string[] strings = SqlParameter.ParseTypeName(identifier);
+            string[] strings = SqlParameter.ParseTypeName(identifier, isUdtTypeName);
             StringBuilder bld = new StringBuilder();
 
             // Stitching back together is a little tricky. Assume we want to build a full multi-part name

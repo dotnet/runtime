@@ -5,7 +5,6 @@
 using System.Diagnostics.Contracts;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.WindowsRuntime.Internal;
 using Windows.Foundation;
 using Windows.Storage.Streams;
 

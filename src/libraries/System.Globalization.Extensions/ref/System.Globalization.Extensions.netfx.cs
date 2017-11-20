@@ -10,10 +10,8 @@ namespace System
     public static class StringNormalizationExtensions
     {
         public static bool IsNormalized(this string value) { return default(bool); }
-        [System.Security.SecurityCritical]
         public static bool IsNormalized(this string value, System.Text.NormalizationForm normalizationForm) { return default(bool); }
         public static String Normalize(this string value) { return default(string); }
-        [System.Security.SecurityCritical]
         public static String Normalize(this string value, System.Text.NormalizationForm normalizationForm) { return default(string); }
     }
 }

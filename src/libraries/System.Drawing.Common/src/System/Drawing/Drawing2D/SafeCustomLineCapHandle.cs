@@ -9,7 +9,6 @@ using System.Security;
 
 namespace System.Drawing.Drawing2D
 {
-    [SecurityCritical]
     internal class SafeCustomLineCapHandle : SafeHandle
     {
         // Create a SafeHandle, informing the base class
@@ -22,7 +21,6 @@ namespace System.Drawing.Drawing2D
             SetHandle(h);
         }
 
-        [SecurityCritical]
         protected override bool ReleaseHandle()
         {
             int status = SafeNativeMethods.Gdip.Ok;
