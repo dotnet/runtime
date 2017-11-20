@@ -5576,7 +5576,7 @@ void Compiler::fgFixupStructReturn(GenTreePtr callNode)
     {
         assert(returnType != TYP_UNKNOWN);
 
-        if (returnType != TYP_STRUCT)
+        if (!varTypeIsStruct(returnType))
         {
             // Widen the primitive type if necessary
             returnType = genActualType(returnType);
