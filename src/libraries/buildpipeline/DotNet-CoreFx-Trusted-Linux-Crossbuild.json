@@ -342,7 +342,7 @@
       "value": "Release"
     },
     "PB_DockerCommonRunArgs": {
-      "value": "--rm --name $(PB_DockerContainerName) -v \"$(PB_GitDirectory):$(PB_DockerVolumeName)\" -w=\"$(PB_DockerVolumeName)\" $(PB_DockerImageName)"
+      "value": "--rm --name $(PB_DockerContainerName) -v \"$(PB_GitDirectory):$(PB_DockerVolumeName)\" -w=\"$(PB_DockerVolumeName)\" -e \"PACKAGEVERSIONPROPSURL=$(PB_PackageVersionPropsUrl)\" $(PB_DockerImageName)"
     },
     "PB_DockerContainerName": {
       "value": "corefx-cross-$(Build.BuildId)"
@@ -400,6 +400,9 @@
     "PB_SyncArguments": {
       "value": "-p -- /p:ArchGroup=$(PB_Architecture)",
       "allowOverride": true
+    },
+    "PB_PackageVersionPropsUrl": {
+      "value": ""
     }
   },
   "demands": [
