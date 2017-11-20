@@ -10,7 +10,7 @@ bool g_diagnostics = false;
 // The common create dump code
 //
 bool 
-CreateDumpCommon(const char* programPath, const char* dumpPathTemplate, MINIDUMP_TYPE minidumpType, CrashInfo* crashInfo)
+CreateDumpCommon(const char* dumpPathTemplate, MINIDUMP_TYPE minidumpType, CrashInfo* crashInfo)
 {
     ReleaseHolder<DumpWriter> dumpWriter = new DumpWriter(*crashInfo);
     bool result = false;
@@ -44,7 +44,7 @@ CreateDumpCommon(const char* programPath, const char* dumpPathTemplate, MINIDUMP
         goto exit;
     }
     // Gather all the info about the process, threads (registers, etc.) and memory regions
-    if (!crashInfo->GatherCrashInfo(programPath, minidumpType))
+    if (!crashInfo->GatherCrashInfo(minidumpType))
     {
         goto exit;
     }
@@ -69,5 +69,5 @@ bool
 CreateDumpForSOS(const char* programPath, const char* dumpPathTemplate, pid_t pid, MINIDUMP_TYPE minidumpType, ICLRDataTarget* dataTarget)
 {
     ReleaseHolder<CrashInfo> crashInfo = new CrashInfo(pid, dataTarget, true);
-    return CreateDumpCommon(programPath, dumpPathTemplate, minidumpType, crashInfo);
+    return CreateDumpCommon(dumpPathTemplate, minidumpType, crashInfo);
 }
