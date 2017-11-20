@@ -918,6 +918,16 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
     {
         *wbPassStruct = howToPassStruct;
     }
+
+#if defined(FEATURE_MULTIREG_ARGS) && defined(_TARGET_ARM64_)
+    // Normalize struct return type for ARM64 FEATURE_MULTIREG_ARGS
+    // This is not yet enabled for ARM32 since FEATURE_SIMD is not enabled
+    if (varTypeIsStruct(useType))
+    {
+        useType = impNormStructType(clsHnd);
+    }
+#endif
+
     return useType;
 }
 
