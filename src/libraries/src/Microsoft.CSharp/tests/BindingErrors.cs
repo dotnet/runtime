@@ -6,7 +6,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -421,6 +424,28 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
                         }));
             Func<CallSite, object, object, object, object> target = site.Target;
             Assert.Throws<RuntimeBinderException>(() => target.Invoke(site, EqualityComparer<int>.Default, 2, 2));
+        }
+
+        public static IEnumerable<object[]> WrongArgumentCounts(int correct) =>
+            Enumerable.Range(0, 5).Where(i => i != correct).Select(i => new object[] {i});
+
+        [Theory, MemberData(nameof(WrongArgumentCounts), 2)]
+        public void BinaryOperatorWrongNumberArguments(int argumentCount)
+        {
+            CSharpArgumentInfo x = CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null);
+            CSharpArgumentInfo y = CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null);
+            CallSiteBinder binder =
+                Binder.BinaryOperation(
+                    CSharpBinderFlags.None, ExpressionType.Add,
+                    GetType(), new[] { x, y });
+            LabelTarget target = Expression.Label();
+            object[] args = Enumerable.Range(0, argumentCount).Select(i => (object)i).ToArray();
+            ReadOnlyCollection<ParameterExpression> parameters = Enumerable.Range(0, argumentCount)
+                .Select(_ => Expression.Parameter(typeof(int)))
+                .ToList()
+                .AsReadOnly();
+            // Throws ArgumentOutOfRangeException for zero arguments, ArgumentException for 1 or 3 or more.
+            Assert.ThrowsAny<ArgumentException>(() => binder.Bind(args, parameters, target));
         }
     }
 }

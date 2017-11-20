@@ -4,7 +4,6 @@
 
 namespace System.Security.Permissions
 {
-    [SecurityPermission(SecurityAction.InheritanceDemand, ControlEvidence = true, ControlPolicy = true)]
     public abstract class IsolatedStoragePermission : CodeAccessPermission, IUnrestrictedPermission
     {
         protected IsolatedStoragePermission(PermissionState state) { }

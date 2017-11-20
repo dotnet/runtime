@@ -16,7 +16,10 @@
     <Content Include="$(MsBuildThisFileDirectory)\TestFeeds\AtomFeeds\*.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-	<Content Include="$(MsBuildThisFileDirectory)\TestFeeds\RssFeeds\*.xml">
+    <Content Include="$(MsBuildThisFileDirectory)\TestFeeds\RssFeeds\*.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MsBuildThisFileDirectory)\TestFeeds\FailureFeeds\*.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -24,7 +27,7 @@
     <None Include="$(MsBuildThisFileDirectory)\TestFeeds\atom_feeds.dat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-	<None Include="$(MsBuildThisFileDirectory)\TestFeeds\rss_feeds.dat">
+    <None Include="$(MsBuildThisFileDirectory)\TestFeeds\rss_feeds.dat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

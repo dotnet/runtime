@@ -78,6 +78,7 @@
     <Compile Include="PortableExecutable\PEHeadersTests.cs" />
     <Compile Include="PortableExecutable\PEReaderTests.cs" />
     <Compile Include="PortableExecutable\SectionHeaderTests.cs" />
+    <Compile Include="Utilities\HashTests.cs" />
     <Compile Include="Utilities\StreamExtensionsTests.cs" />
     <Compile Include="Metadata\MetadataReaderProviderTests.cs" />
     <Compile Include="Resources\TestResources.cs" />

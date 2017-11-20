@@ -21,8 +21,6 @@ namespace System.Drawing.Design {
     ///     the drawing should be done, and the Graphics object with which the drawing
     ///     should be done.
     /// </devdoc>
-    [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.InheritanceDemand, Name="FullTrust")]
-    [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Name="FullTrust")]
     public class PaintValueEventArgs : EventArgs {
         private readonly ITypeDescriptorContext context;
 

@@ -115,14 +115,6 @@ namespace System.Xml
             _inAttribute = false;
         }
 
-        public Encoding Encoding
-        {
-            get
-            {
-                return _encoding;
-            }
-        }
-
         private byte[] GetCharEntityBuffer()
         {
             if (_entityChars == null)

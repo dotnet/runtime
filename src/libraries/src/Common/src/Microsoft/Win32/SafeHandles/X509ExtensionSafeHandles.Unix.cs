@@ -8,7 +8,6 @@ using System.Security;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    [SecurityCritical]
     internal sealed class SafeX509ExtensionHandle : SafeHandle
     {
         private SafeX509ExtensionHandle() :
@@ -29,7 +28,6 @@ namespace Microsoft.Win32.SafeHandles
         }
     }
 
-    [SecurityCritical]
     internal sealed class SafeEkuExtensionHandle : SafeHandle
     {
         private SafeEkuExtensionHandle() :

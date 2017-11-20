@@ -26,7 +26,6 @@ namespace System.Drawing
             }
         }
 
-        [SecurityPermissionAttribute(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
         void ISerializable.GetObjectData(SerializationInfo si, StreamingContext context)
         {
             if (_iconData != null)

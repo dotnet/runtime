@@ -15,7 +15,7 @@ namespace System.Tests
         {
             Assert.Equal(expected, uint.Parse(value.AsReadOnlySpan(), style, provider));
 
-            Assert.True(uint.TryParse(value.AsReadOnlySpan(), out uint result, style, provider));
+            Assert.True(uint.TryParse(value.AsReadOnlySpan(), style, provider, out uint result));
             Assert.Equal(expected, result);
         }
 
@@ -27,8 +27,51 @@ namespace System.Tests
             {
                 Assert.Throws(exceptionType, () => uint.Parse(value.AsReadOnlySpan(), style, provider));
 
-                Assert.False(uint.TryParse(value.AsReadOnlySpan(), out uint result, style, provider));
+                Assert.False(uint.TryParse(value.AsReadOnlySpan(), style, provider, out uint result));
                 Assert.Equal(0, (int)result);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ToString_TestData))]
+        public static void TryFormat(uint i, string format, IFormatProvider provider, string expected)
+        {
+            char[] actual;
+            int charsWritten;
+
+            // Just right
+            actual = new char[expected.Length];
+            Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format, provider));
+            Assert.Equal(expected.Length, charsWritten);
+            Assert.Equal(expected, new string(actual));
+
+            // Longer than needed
+            actual = new char[expected.Length + 1];
+            Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format, provider));
+            Assert.Equal(expected.Length, charsWritten);
+            Assert.Equal(expected, new string(actual, 0, charsWritten));
+
+            // Too short
+            if (expected.Length > 0)
+            {
+                actual = new char[expected.Length - 1];
+                Assert.False(i.TryFormat(actual.AsSpan(), out charsWritten, format, provider));
+                Assert.Equal(0, charsWritten);
+            }
+
+            if (format != null)
+            {
+                // Upper format
+                actual = new char[expected.Length];
+                Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format.ToUpperInvariant(), provider));
+                Assert.Equal(expected.Length, charsWritten);
+                Assert.Equal(expected.ToUpperInvariant(), new string(actual));
+
+                // Lower format
+                actual = new char[expected.Length];
+                Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format.ToLowerInvariant(), provider));
+                Assert.Equal(expected.Length, charsWritten);
+                Assert.Equal(expected.ToLowerInvariant(), new string(actual));
             }
         }
     }

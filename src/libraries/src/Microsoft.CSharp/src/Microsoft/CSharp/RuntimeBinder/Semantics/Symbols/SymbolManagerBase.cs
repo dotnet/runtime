@@ -19,8 +19,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private readonly SymFactory _symFactory;
 
-        private readonly NamespaceSymbol _rootNS;         // The "root" (unnamed) namespace.
-
         private SYMTBL tableGlobal;
 
         // The hash table for type arrays.
@@ -34,7 +32,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             _symFactory = new SymFactory(this.tableGlobal);
 
             this.tableTypeArrays = new Dictionary<TypeArrayKey, TypeArray>();
-            _rootNS = _symFactory.CreateNamespace(NameManager.Lookup(""), null);
 
             ////////////////////////////////////////////////////////////////////////////////
             // Build the data structures needed to make FPreLoad fast. Make sure the 
@@ -43,7 +40,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             for (int i = 0; i < (int)PredefinedType.PT_COUNT; ++i)
             {
-                NamespaceSymbol ns = GetRootNS();
+                NamespaceSymbol ns = NamespaceSymbol.Root;
                 string name = PredefinedTypeFacts.GetName((PredefinedType)i);
                 int start = 0;
                 while (start < name.Length)
@@ -67,11 +64,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public static TypeArray EmptyTypeArray()
         {
             return s_taEmpty;
-        }
-
-        public NamespaceSymbol GetRootNS()
-        {
-            return _rootNS;
         }
 
         public BetterType CompareTypes(TypeArray ta1, TypeArray ta2)
@@ -152,30 +144,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return _symFactory;
         }
 
-        ////////////////////////////////////////////////////////////////////////////////
-        // Build the data structures needed to make FPreLoad fast. Make sure the 
-        // namespaces are created. Compute and sort hashes of the NamespaceSymbol * value and type
-        // name (sans arity indicator).
-
-        private void InitPreLoad()
-        {
-            for (int i = 0; i < (int)PredefinedType.PT_COUNT; ++i)
-            {
-                NamespaceSymbol ns = GetRootNS();
-                string name = PredefinedTypeFacts.GetName((PredefinedType)i);
-                int start = 0;
-                while (start < name.Length)
-                {
-                    int iDot = name.IndexOf('.', start);
-                    if (iDot == -1) break;
-                    string sub = (iDot > start) ? name.Substring(start, iDot - start) : name.Substring(start);
-                    Name nm = NameManager.Add(sub);
-                    ns = LookupGlobalSymCore(nm, ns, symbmask_t.MASK_NamespaceSymbol) as NamespaceSymbol ?? _symFactory.CreateNamespace(nm, ns);
-                    start += sub.Length + 1;
-                }
-            }
-        }
-
         public Symbol LookupGlobalSymCore(Name name, ParentSymbol parent, symbmask_t kindmask)
         {
             return tableGlobal.LookupSym(name, parent, kindmask);
@@ -204,19 +172,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             return null;
-        }
-
-        public Name GetNameFromPtrs(object u1, object u2)
-        {
-            // Note: this won't produce the same names as the native logic
-            if (u2 != null)
-            {
-                return NameManager.Add(string.Format(CultureInfo.InvariantCulture, "{0:X}-{1:X}", u1.GetHashCode(), u2.GetHashCode()));
-            }
-            else
-            {
-                return NameManager.Add(string.Format(CultureInfo.InvariantCulture, "{0:X}", u1.GetHashCode()));
-            }
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -295,6 +250,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public TypeArray AllocParams(int ctype, TypeArray array, int offset)
         {
+            if (ctype == 0)
+            {
+                return s_taEmpty;
+            }
+
+            if (ctype == array.Count)
+            {
+                return array;
+            }
+
             CType[] types = array.Items;
             CType[] newTypes = new CType[ctype];
             Array.ConstrainedCopy(types, offset, newTypes, 0, ctype);

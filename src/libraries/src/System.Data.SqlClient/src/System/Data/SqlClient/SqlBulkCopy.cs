@@ -588,7 +588,7 @@ namespace System.Data.SqlClient
                         }
                         else if (metadata.type == SqlDbType.Udt)
                         {
-                            throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
+                            AppendColumnNameAndTypeName(updateBulkCommandText, metadata.column, "varbinary");
                         }
                         else
                         {
@@ -1486,7 +1486,18 @@ namespace System.Data.SqlClient
                         typeChanged = true;
                         break;
                     case TdsEnums.SQLUDT:
-                        throw ADP.DbTypeNotSupported("UDT");
+                        // UDTs are sent as varbinary so we need to get the raw bytes
+                        // unlike other types the parser does not like SQLUDT in form of SqlType
+                        // so we cast to a CLR type.
+
+                        // Hack for type system version knob - only call GetBytes if the value is not already
+                        // in byte[] form.
+                        if (!(value is byte[]))
+                        {
+                            value = _connection.GetBytes(value);
+                            typeChanged = true;
+                        }
+                        break;
                     case TdsEnums.SQLXMLTYPE:
                         // Could be either string, SqlCachedBuffer, XmlReader or XmlDataFeed
                         Debug.Assert((value is XmlReader) || (value is SqlCachedBuffer) || (value is string) || (value is SqlString) || (value is XmlDataFeed), "Invalid value type of Xml datatype");

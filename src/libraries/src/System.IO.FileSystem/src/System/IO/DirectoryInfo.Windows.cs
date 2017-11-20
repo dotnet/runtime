@@ -9,7 +9,6 @@ namespace System.IO
 {
     partial class DirectoryInfo
     {
-        [SecurityCritical]
         internal DirectoryInfo(string fullPath, ref Interop.Kernel32.WIN32_FIND_DATA findData)
             : this(fullPath, findData.cFileName.GetStringFromFixedBuffer())
         {

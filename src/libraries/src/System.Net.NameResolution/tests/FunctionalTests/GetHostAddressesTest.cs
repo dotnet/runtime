@@ -13,23 +13,17 @@ namespace System.Net.NameResolution.Tests
     public class GetHostAddressesTest
     {
         [Fact]
-        public void Dns_GetHostAddressesAsync_HostString_Ok()
-        {
-            TestGetHostAddressesAsync(() => Dns.GetHostAddressesAsync(TestSettings.LocalHost));
-        }
+        public Task Dns_GetHostAddressesAsync_HostString_Ok() => TestGetHostAddressesAsync(() => Dns.GetHostAddressesAsync(TestSettings.LocalHost));
 
         [Fact]
-        public void Dns_GetHostAddressesAsync_IPString_Ok()
-        {
-            TestGetHostAddressesAsync(() => Dns.GetHostAddressesAsync(TestSettings.LocalIPString));
-        }
-        
-        private static void TestGetHostAddressesAsync(Func<Task<IPAddress[]>> getHostAddressesFunc)
+        public Task Dns_GetHostAddressesAsync_IPString_Ok() => TestGetHostAddressesAsync(() => Dns.GetHostAddressesAsync(TestSettings.LocalIPString));
+
+        private static async Task TestGetHostAddressesAsync(Func<Task<IPAddress[]>> getHostAddressesFunc)
         {
             Task<IPAddress[]> hostEntryTask1 = getHostAddressesFunc();
             Task<IPAddress[]> hostEntryTask2 = getHostAddressesFunc();
 
-            Task.WaitAll(hostEntryTask1, hostEntryTask2);
+            await TestSettings.WhenAllOrAnyFailedWithTimeout(hostEntryTask1, hostEntryTask2);
 
             IPAddress[] list1 = hostEntryTask1.Result;
             IPAddress[] list2 = hostEntryTask2.Result;

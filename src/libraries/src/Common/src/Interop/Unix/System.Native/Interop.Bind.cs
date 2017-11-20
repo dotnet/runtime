@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -10,6 +11,6 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Bind")]
-        internal static extern unsafe Error Bind(SafeHandle socket, byte* socketAddress, int socketAddressLen);
+        internal static extern unsafe Error Bind(SafeHandle socket, ProtocolType socketProtocolType, byte* socketAddress, int socketAddressLen);
     }
 }

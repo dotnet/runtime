@@ -94,5 +94,17 @@ namespace System.MemoryTests
             owner.Memory.Span.Validate(42, -1);
         }
 
+        [Fact]
+        public static void SpanFromDefaultMemory()
+        {
+            Memory<int> memory = default;
+            Span<int> span = memory.Span;
+            Assert.True(span.SequenceEqual(default));
+
+            Memory<string> memoryObject = default;
+            Span<string> spanObject = memoryObject.Span;
+            Assert.True(spanObject.SequenceEqual(default));
+        }
+
     }
 }

@@ -13,29 +13,9 @@ namespace Microsoft.CSharp.RuntimeBinder
             return new RuntimeBinderInternalCompilerException(SR.InternalCompilerError);
         }
 
-        internal static Exception BindRequireArguments()
-        {
-            return new ArgumentException(SR.BindRequireArguments);
-        }
-
         internal static Exception BindCallFailedOverloadResolution()
         {
             return new RuntimeBinderException(SR.BindCallFailedOverloadResolution);
-        }
-
-        internal static Exception BindBinaryOperatorRequireTwoArguments()
-        {
-            return new ArgumentException(SR.BindBinaryOperatorRequireTwoArguments);
-        }
-
-        internal static Exception BindUnaryOperatorRequireOneArgument()
-        {
-            return new ArgumentException(SR.BindUnaryOperatorRequireOneArgument);
-        }
-
-        internal static Exception BindBinaryAssignmentRequireTwoArguments()
-        {
-            return new ArgumentException(SR.BindBinaryAssignmentRequireTwoArguments);
         }
 
         internal static Exception BindPropertyFailedMethodGroup(object p0)

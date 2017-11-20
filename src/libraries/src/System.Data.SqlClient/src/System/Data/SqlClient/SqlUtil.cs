@@ -309,6 +309,10 @@ namespace System.Data.SqlClient
         //
         // SQL.DataParameter
         //
+        internal static Exception InvalidUdt3PartNameFormat()
+        {
+            return ADP.Argument(SR.GetString(SR.SQL_InvalidUdt3PartNameFormat));
+        }
         internal static Exception InvalidParameterTypeNameFormat()
         {
             return ADP.Argument(SR.GetString(SR.SQL_InvalidParameterTypeNameFormat));
@@ -437,6 +441,11 @@ namespace System.Data.SqlClient
             return ADP.InvalidCast(SR.GetString(SR.SQL_XmlReaderNotSupportOnColumnType, columnName));
         }
 
+        internal static Exception UDTUnexpectedResult(string exceptionText)
+        {
+            return ADP.TypeLoad(SR.GetString(SR.SQLUDT_Unexpected, exceptionText));
+        }
+
         //
         // SQL.SqlDependency
         //
@@ -467,7 +476,6 @@ namespace System.Data.SqlClient
 
         internal static Exception SqlDependencyIdMismatch()
         {
-            // do not include the id because it may require SecurityPermission(Infrastructure) permission
             return ADP.InvalidOperation(SR.GetString(SR.SqlDependency_IdMismatch));
         }
 
@@ -495,6 +503,18 @@ namespace System.Data.SqlClient
         //
         // SQL.SqlMetaData
         //
+        internal static Exception UnexpectedUdtTypeNameForNonUdtParams()
+        {
+            return ADP.Argument(SR.GetString(SR.SQLUDT_UnexpectedUdtTypeName));
+        }
+        internal static Exception MustSetUdtTypeNameForUdtParams()
+        {
+            return ADP.Argument(SR.GetString(SR.SQLUDT_InvalidUdtTypeName));
+        }
+        internal static Exception UDTInvalidSqlType(string typeName)
+        {
+            return ADP.Argument(SR.GetString(SR.SQLUDT_InvalidSqlType, typeName));
+        }
         internal static Exception InvalidSqlDbTypeForConstructor(SqlDbType type)
         {
             return ADP.Argument(SR.GetString(SR.SqlMetaData_InvalidSqlDbTypeForConstructorFormat, type.ToString()));

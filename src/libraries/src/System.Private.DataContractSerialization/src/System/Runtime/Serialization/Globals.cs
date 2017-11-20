@@ -759,17 +759,6 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfListGeneric;
-        internal static Type TypeOfListGeneric
-        {
-            get
-            {
-                if (s_typeOfListGeneric == null)
-                    s_typeOfListGeneric = typeof(List<>);
-                return s_typeOfListGeneric;
-            }
-        }
-
         private static Type s_typeOfXmlElement;
         internal static Type TypeOfXmlElement
         {
@@ -855,8 +844,6 @@ namespace System.Runtime.Serialization
         #endregion
 
         private static Type s_typeOfScriptObject;
-        private static Func<object, string> s_serializeFunc;
-        private static Func<string, object> s_deserializeFunc;
 
         internal static ClassDataContract CreateScriptObjectClassDataContract()
         {
@@ -867,25 +854,6 @@ namespace System.Runtime.Serialization
         internal static bool TypeOfScriptObject_IsAssignableFrom(Type type)
         {
             return s_typeOfScriptObject != null && s_typeOfScriptObject.IsAssignableFrom(type);
-        }
-
-        internal static void SetScriptObjectJsonSerializer(Type typeOfScriptObject, Func<object, string> serializeFunc, Func<string, object> deserializeFunc)
-        {
-            Globals.s_typeOfScriptObject = typeOfScriptObject;
-            Globals.s_serializeFunc = serializeFunc;
-            Globals.s_deserializeFunc = deserializeFunc;
-        }
-
-        internal static string ScriptObjectJsonSerialize(object obj)
-        {
-            Debug.Assert(s_serializeFunc != null);
-            return Globals.s_serializeFunc(obj);
-        }
-
-        internal static object ScriptObjectJsonDeserialize(string json)
-        {
-            Debug.Assert(s_deserializeFunc != null);
-            return Globals.s_deserializeFunc(json);
         }
 
         public const bool DefaultIsRequired = false;

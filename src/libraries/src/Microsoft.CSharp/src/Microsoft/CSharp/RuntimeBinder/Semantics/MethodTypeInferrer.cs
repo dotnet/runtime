@@ -194,9 +194,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                 }
 
-                _pFixedResults[iParam] = GetTypeManager().GetErrorType(
-                                        ((TypeParameterType)_pMethodTypeParameters[iParam]).GetName(),
-                                        BSYMMGR.EmptyTypeArray());
+                _pFixedResults[iParam] = GetTypeManager()
+                    .GetErrorType(((TypeParameterType)_pMethodTypeParameters[iParam]).GetName());
             }
             return GetGlobalSymbols().AllocParams(_pMethodTypeParameters.Count, _pFixedResults);
         }
@@ -280,33 +279,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return !_pLowerBounds[iParam].IsEmpty() ||
                 !_pExactBounds[iParam].IsEmpty() ||
                 !_pUpperBounds[iParam].IsEmpty();
-        }
-
-        ////////////////////////////////////////////////////////////////////////////////
-
-        private TypeArray GetFixedDelegateParameters(AggregateType pDelegateType)
-        {
-            Debug.Assert(pDelegateType.isDelegateType());
-
-            // We have a delegate where the input types use no unfixed parameters.  Create
-            // a substitution context; we can substitute unfixed parameters for themselves
-            // since they don't actually occur in the inputs.  (They may occur in the outputs,
-            // or there may be input parameters fixed to _unfixed_ method CType variables.
-            // Both of those scenarios are legal.)
-
-            CType[] ppMethodParameters = new CType[_pMethodTypeParameters.Count];
-            for (int iParam = 0; iParam < _pMethodTypeParameters.Count; iParam++)
-            {
-                TypeParameterType pParam = (TypeParameterType)_pMethodTypeParameters[iParam];
-                ppMethodParameters[iParam] = IsUnfixed(iParam) ? pParam : _pFixedResults[iParam];
-            }
-            SubstContext subsctx = new SubstContext(_pClassTypeArguments.Items, _pClassTypeArguments.Count,
-                ppMethodParameters, _pMethodTypeParameters.Count);
-            AggregateType pFixedDelegateType =
-                GetTypeManager().SubstType(pDelegateType, subsctx) as AggregateType;
-            TypeArray pFixedDelegateParams =
-                pFixedDelegateType.GetDelegateParameters(GetSymbolLoader());
-            return pFixedDelegateParams;
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -565,7 +537,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     {
                         pSource = modSource.GetParameterType();
                     }
-                    OutputTypeInference(pExpr, pSource, pDest);
+
+                    Debug.Assert(!(pExpr is ExprMemberGroup));
+                    OutputTypeInference(pSource, pDest);
                 }
             }
         }
@@ -1019,8 +993,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
 
-        private void OutputTypeInference(Expr pExpr, CType pSource, CType pDest)
+        private void OutputTypeInference(CType pSource, CType pDest)
         {
+            // Skipped part of spec: We can never have a method group expression here, so this
+            // never applies.
             // SPEC: An output CType inference is made from an expression E to a CType T
             // SPEC: in the following way:
 
@@ -1033,10 +1009,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // SPEC:   CType Tb and overload resolution of E with the types T1...Tk
             // SPEC:   yields a single method with return CType U then a lower-bound
             // SPEC:   inference is made from U to Tb.
-            if (MethodGroupReturnTypeInference(pExpr, pDest))
-            {
-                return;
-            }
+            // End of skipped part.
+
             // SPEC:  Otherwise, if E is an expression with CType U then a lower-bound
             // SPEC:   inference is made from U to T.
             if (IsReallyAType(pSource))
@@ -1044,66 +1018,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 LowerBoundInference(pSource, pDest);
             }
             // SPEC:  Otherwise, no inferences are made.
-        }
-
-        ////////////////////////////////////////////////////////////////////////////////
-
-        private bool MethodGroupReturnTypeInference(Expr pSource, CType pType)
-        {
-            // SPEC:  Otherwise, if E is a method group and T is a delegate CType or
-            // SPEC:   expression tree CType with parameter types T1...Tk and return
-            // SPEC:   CType Tb and overload resolution of E with the types T1...Tk
-            // SPEC:   yields a single method with return CType U then a lower-bound
-            // SPEC:   inference is made from U to Tb.
-
-            if (!(pSource is ExprMemberGroup memGrp))
-            {
-                return false;
-            }
-            pType = pType.GetDelegateTypeOfPossibleExpression();
-            if (!pType.isDelegateType())
-            {
-                return false;
-            }
-            AggregateType pDelegateType = pType as AggregateType;
-            CType pDelegateReturnType = pDelegateType.GetDelegateReturnType(GetSymbolLoader());
-            if (pDelegateReturnType == null)
-            {
-                return false;
-            }
-            if (pDelegateReturnType is VoidType)
-            {
-                return false;
-            }
-
-            // At this point we are in the second phase; we know that all the input types are fixed.
-
-            TypeArray pDelegateParameters = GetFixedDelegateParameters(pDelegateType);
-            if (pDelegateParameters == null)
-            {
-                return false;
-            }
-
-            ArgInfos argInfo = new ArgInfos() { carg = pDelegateParameters.Count, types = pDelegateParameters, fHasExprs = false, prgexpr = null };
-
-            var argsBinder = new ExpressionBinder.GroupToArgsBinder(_binder, 0/* flags */, memGrp, argInfo, null, false, pDelegateType);
-
-            bool success = argsBinder.Bind(false);
-            if (!success)
-            {
-                return false;
-            }
-
-            MethPropWithInst mwi = argsBinder.GetResultsOfBind().GetBestResult();
-            CType pMethodReturnType = GetTypeManager().SubstType(mwi.Meth().RetType,
-                mwi.GetType(), mwi.TypeArgs);
-            if (pMethodReturnType is VoidType)
-            {
-                return false;
-            }
-
-            LowerBoundInference(pMethodReturnType, pDelegateReturnType);
-            return true;
         }
 
         ////////////////////////////////////////////////////////////////////////////////

@@ -23,8 +23,7 @@ namespace System.ComponentModel.DataAnnotations
                 return true;
             }
 
-            var ccValue = value as string;
-            if (ccValue == null)
+            if (!(value is string ccValue))
             {
                 return false;
             }

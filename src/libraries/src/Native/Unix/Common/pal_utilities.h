@@ -9,12 +9,16 @@
 
 #include <assert.h>
 #include <errno.h>
-#include <limits>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
-#include <type_traits>
 #include <unistd.h>
+
+#ifdef __cplusplus
+#include <limits>
+#include <type_traits>
+#endif
 
 #ifdef DEBUG
 #define assert_err(cond, msg, err) do \
@@ -37,6 +41,14 @@
 #define assert_err(cond, msg, err)
 #define assert_msg(cond, msg, val)
 #endif // DEBUG
+
+#ifdef __cplusplus
+#define sizeof_member(type,member) sizeof(type::member)
+#else
+#define sizeof_member(type,member) sizeof(((type*)NULL)->member)
+#endif
+
+#ifdef __cplusplus
 
 /**
  * ResultOf<T> is shorthand for typename std::result_of<T>::type.
@@ -136,6 +148,21 @@ inline void SafeStringCopy(char* destination, int32_t destinationSize, const cha
     }
 }
 
+#endif // __cplusplus
+
+/**
+* Converts an intptr_t to a file descriptor.
+* intptr_t is the type used to marshal file descriptors so we can use SafeHandles effectively.
+*/
+inline static int ToFileDescriptorUnchecked(intptr_t fd)
+{
+#ifdef __cplusplus
+    return static_cast<int>(fd);
+#else
+    return (int)fd;
+#endif // __cplusplus
+}
+
 /**
 * Converts an intptr_t to a file descriptor.
 * intptr_t is the type used to marshal file descriptors so we can use SafeHandles effectively.
@@ -144,17 +171,10 @@ inline static int ToFileDescriptor(intptr_t fd)
 {
     assert(0 <= fd && fd < sysconf(_SC_OPEN_MAX));
 
-    return static_cast<int>(fd);
+    return ToFileDescriptorUnchecked(fd);
 }
 
-/**
-* Converts an intptr_t to a file descriptor.
-* intptr_t is the type used to marshal file descriptors so we can use SafeHandles effectively.
-*/
-inline static int ToFileDescriptorUnchecked(intptr_t fd)
-{
-    return static_cast<int>(fd);
-}
+#ifdef __cplusplus
 
 /**
 * Checks if the IO operation was interupted and needs to be retried.
@@ -165,3 +185,5 @@ static inline bool CheckInterrupted(TInt result)
 {
     return result < 0 && errno == EINTR;
 }
+
+#endif // __cplusplus

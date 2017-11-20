@@ -95,7 +95,6 @@ namespace System.IO
         private List<PathPair> _searchList;
         private PathPair _searchData;
         private readonly string _searchCriteria;
-        [SecurityCritical]
         private SafeFindHandle _hnd = null;
 
         // empty means we know in advance that we won?t find any search results, which can happen if:
@@ -111,7 +110,6 @@ namespace System.IO
         private readonly string _fullPath;
         private readonly string _normalizedSearchPath;
 
-        [SecuritySafeCritical]
         internal Win32FileSystemEnumerableIterator(string path, string originalUserPath, string searchPattern, SearchOption searchOption, SearchResultHandler<TSource> resultHandler)
         {
             Debug.Assert(path != null);
@@ -150,7 +148,6 @@ namespace System.IO
             }
         }
 
-        [SecurityCritical]
         private void CommonInit()
         {
             Debug.Assert(_searchCriteria != null, "searchCriteria should be initialized");
@@ -209,7 +206,6 @@ namespace System.IO
             }
         }
 
-        [SecuritySafeCritical]
         private Win32FileSystemEnumerableIterator(string fullPath, string normalizedSearchPath, string searchCriteria, string userPath, SearchOption searchOption, SearchResultHandler<TSource> resultHandler)
         {
             _fullPath = fullPath;
@@ -223,7 +219,7 @@ namespace System.IO
             {
                 PathInternal.CheckInvalidPathChars(fullPath);
                 if (PathInternal.HasWildCardCharacters(fullPath))
-                    throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(fullPath));
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidPathChars, fullPath), nameof(fullPath));
 
                 _searchData = new PathPair(userPath, normalizedSearchPath);
                 CommonInit();
@@ -239,7 +235,6 @@ namespace System.IO
             return new Win32FileSystemEnumerableIterator<TSource>(_fullPath, _normalizedSearchPath, _searchCriteria, _userPath, _searchOption, _resultHandler);
         }
 
-        [SecuritySafeCritical]
         protected override void Dispose(bool disposing)
         {
             try
@@ -252,7 +247,6 @@ namespace System.IO
             }
         }
 
-        [SecuritySafeCritical]
         public override bool MoveNext()
         {
             Interop.Kernel32.WIN32_FIND_DATA data = new Interop.Kernel32.WIN32_FIND_DATA();
@@ -396,7 +390,6 @@ namespace System.IO
             return false;
         }
 
-        [SecurityCritical]
         private bool IsResultIncluded(ref Interop.Kernel32.WIN32_FIND_DATA findData, out TSource result)
         {
             Debug.Assert(findData.cFileName.Length != 0 && !Path.IsPathRooted(findData.cFileName.GetStringFromFixedBuffer()),
@@ -405,14 +398,12 @@ namespace System.IO
             return _resultHandler.IsResultIncluded(_searchData.FullPath, _searchData.UserPath, ref findData, out result);
         }
 
-        [SecurityCritical]
         private Exception HandleError(int errorCode, string path)
         {
             Dispose();
             return Win32Marshal.GetExceptionForWin32Error(errorCode, path);
         }
 
-        [SecurityCritical]  // auto-generated
         private void AddSearchableDirsToList(PathPair localSearchData)
         {
             string searchPath = Path.Combine(localSearchData.FullPath, "*");
@@ -508,7 +499,6 @@ namespace System.IO
         /// Returns true if the result should be included. If true, the <paramref name="result"/> parameter
         /// is set to the created result object, otherwise it is set to null.
         /// </summary>
-        [SecurityCritical]
         internal abstract bool IsResultIncluded(string fullPath, string userPath, ref Interop.Kernel32.WIN32_FIND_DATA findData, out TSource result);
     }
 
@@ -562,7 +552,6 @@ namespace System.IO
                 _includeDirs = includeDirs;
             }
 
-            [SecurityCritical]
             internal override bool IsResultIncluded(string fullPath, string userPath, ref Interop.Kernel32.WIN32_FIND_DATA findData, out string result)
             {
                 if ((_includeFiles && Win32FileSystemEnumerableHelpers.IsFile(ref findData)) ||
@@ -579,7 +568,6 @@ namespace System.IO
 
         private sealed class FileInfoResultHandler : SearchResultHandler<FileInfo>
         {
-            [SecurityCritical]
             internal override bool IsResultIncluded(string fullPath, string userPath, ref Interop.Kernel32.WIN32_FIND_DATA findData, out FileInfo result)
             {
                 if (Win32FileSystemEnumerableHelpers.IsFile(ref findData))
@@ -596,7 +584,6 @@ namespace System.IO
 
         private sealed class DirectoryInfoResultHandler : SearchResultHandler<DirectoryInfo>
         {
-            [SecurityCritical]
             internal override bool IsResultIncluded(string fullPath, string userPath, ref Interop.Kernel32.WIN32_FIND_DATA findData, out DirectoryInfo result)
             {
                 if (Win32FileSystemEnumerableHelpers.IsDir(ref findData))
@@ -613,7 +600,6 @@ namespace System.IO
 
         private sealed class FileSystemInfoResultHandler : SearchResultHandler<FileSystemInfo>
         {
-            [SecurityCritical]
             internal override bool IsResultIncluded(string fullPath, string userPath, ref Interop.Kernel32.WIN32_FIND_DATA findData, out FileSystemInfo result)
             {
                 if (Win32FileSystemEnumerableHelpers.IsFile(ref findData))
@@ -637,7 +623,6 @@ namespace System.IO
 
     internal static class Win32FileSystemEnumerableHelpers
     {
-        [SecurityCritical]  // auto-generated
         internal static bool IsDir(ref Interop.Kernel32.WIN32_FIND_DATA data)
         {
             // Don't add "." nor ".."
@@ -645,7 +630,6 @@ namespace System.IO
                                                 && !data.cFileName.FixedBufferEqualsString(".") && !data.cFileName.FixedBufferEqualsString("..");
         }
 
-        [SecurityCritical]  // auto-generated
         internal static bool IsFile(ref Interop.Kernel32.WIN32_FIND_DATA data)
         {
             return 0 == (data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY);

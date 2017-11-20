@@ -2,20 +2,20 @@ project(System.Native)
 
 set(NATIVE_SOURCES
     pal_console.cpp
-    pal_errno.cpp
+    pal_errno.c
     pal_interfaceaddresses.cpp
-    pal_io.cpp
-    pal_maphardwaretype.cpp
-    pal_memory.cpp
+    pal_io.c
+    pal_maphardwaretype.c
+    pal_memory.c
     pal_mount.cpp
-    pal_networking.cpp
-    pal_networkstatistics.cpp
+    pal_networking.c
+    pal_networkstatistics.c
     pal_process.cpp
     pal_random.cpp
     pal_runtimeinformation.cpp
     pal_runtimeextensions.cpp
     pal_string.cpp
-    pal_tcpstate.cpp
+    pal_tcpstate.c
     pal_time.cpp
     pal_uid.cpp
     pal_datetime.cpp

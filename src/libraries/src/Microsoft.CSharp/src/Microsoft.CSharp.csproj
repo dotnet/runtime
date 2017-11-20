@@ -117,11 +117,11 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\EXPR.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\ExpressionIterator.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\ExprOperator.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\ExprWithArgs.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\ExprWithType.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Field.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\FieldInfo.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\HoistedLocal.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\IExprWithArgs.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\IExprWithObject.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\List.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\LocalVariable.cs" />

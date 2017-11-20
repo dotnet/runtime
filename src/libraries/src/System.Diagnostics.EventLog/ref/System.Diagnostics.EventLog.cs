@@ -44,13 +44,10 @@ namespace System.Diagnostics
         public string MachineName { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public long MaximumKilobytes { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public int MinimumRetentionDays { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public System.Diagnostics.OverflowAction OverflowAction { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.ComponentModel.ReadOnlyAttribute(true)]
@@ -78,9 +75,7 @@ namespace System.Diagnostics
         public static System.Diagnostics.EventLog[] GetEventLogs() { throw null; }
         public static System.Diagnostics.EventLog[] GetEventLogs(string machineName) { throw null; }
         public static string LogNameFromSourceName(string source, string machineName) { throw null; }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public void ModifyOverflowPolicy(System.Diagnostics.OverflowAction action, int retentionDays) { }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public void RegisterDisplayName(string resourceFile, long resourceId) { }
         public static bool SourceExists(string source) { throw null; }
         public static bool SourceExists(string source, string machineName) { throw null; }
@@ -94,9 +89,7 @@ namespace System.Diagnostics
         public static void WriteEntry(string source, string message, System.Diagnostics.EventLogEntryType type, int eventID) { }
         public static void WriteEntry(string source, string message, System.Diagnostics.EventLogEntryType type, int eventID, short category) { }
         public static void WriteEntry(string source, string message, System.Diagnostics.EventLogEntryType type, int eventID, short category, byte[] rawData) { }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public void WriteEvent(System.Diagnostics.EventInstance instance, byte[] data, params object[] values) { }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public void WriteEvent(System.Diagnostics.EventInstance instance, params object[] values) { }
         public static void WriteEvent(string source, System.Diagnostics.EventInstance instance, byte[] data, params object[] values) { }
         public static void WriteEvent(string source, System.Diagnostics.EventInstance instance, params object[] values) { }
@@ -113,7 +106,6 @@ namespace System.Diagnostics
         [System.ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.EventLogEntry.InstanceId instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
         public int EventID { get { throw null; } }
         public int Index { get { throw null; } }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public long InstanceId { get { throw null; } }
         public string MachineName { get { throw null; } }
         public string Message { get { throw null; } }

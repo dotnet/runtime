@@ -19,7 +19,6 @@ namespace System.IO
         protected string OriginalPath;      // path passed in by the user
         private string _displayPath = "";   // path that can be displayed to the user
 
-        [System.Security.SecurityCritical]
         protected FileSystemInfo()
         {
         }
@@ -37,7 +36,6 @@ namespace System.IO
         // Full path of the directory/file
         public virtual string FullName
         {
-            [System.Security.SecuritySafeCritical]
             get
             {
                 return FullPath;
@@ -93,7 +91,6 @@ namespace System.IO
 
         public DateTime CreationTimeUtc
         {
-            [System.Security.SecuritySafeCritical]
             get
             {
                 return FileSystemObject.CreationTime.UtcDateTime;
@@ -121,7 +118,6 @@ namespace System.IO
 
         public DateTime LastAccessTimeUtc
         {
-            [System.Security.SecuritySafeCritical]
             get
             {
                 return FileSystemObject.LastAccessTime.UtcDateTime;
@@ -149,7 +145,6 @@ namespace System.IO
 
         public DateTime LastWriteTimeUtc
         {
-            [System.Security.SecuritySafeCritical]
             get
             {
                 return FileSystemObject.LastWriteTime.UtcDateTime;
@@ -168,12 +163,10 @@ namespace System.IO
 
         public FileAttributes Attributes
         {
-            [System.Security.SecuritySafeCritical]
             get
             {
                 return FileSystemObject.Attributes;
             }
-            [System.Security.SecurityCritical] // auto-generated
             set
             {
                 FileSystemObject.Attributes = value;

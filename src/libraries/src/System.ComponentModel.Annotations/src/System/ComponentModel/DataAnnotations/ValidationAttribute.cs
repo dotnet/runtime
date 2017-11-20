@@ -231,11 +231,8 @@ namespace System.ComponentModel.DataAnnotations
                 {
                     // Here if not using resource type/name -- the accessor is just the error message string,
                     // which we know is not empty to have gotten this far.
-                    _errorMessageResourceAccessor = delegate
-                    {
-                        // We captured error message to local in case it changes before accessor runs
-                        return localErrorMessage;
-                    };
+                    // We captured error message to local in case it changes before accessor runs
+                    _errorMessageResourceAccessor = () => localErrorMessage;
                 }
             }
         }
@@ -283,7 +280,7 @@ namespace System.ComponentModel.DataAnnotations
                         _errorMessageResourceType.FullName));
             }
 
-            _errorMessageResourceAccessor = delegate { return (string)property.GetValue(null, null); };
+            _errorMessageResourceAccessor = () => (string)property.GetValue(null, null);
         }
 
         #endregion

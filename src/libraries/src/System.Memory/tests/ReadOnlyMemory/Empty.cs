@@ -23,5 +23,15 @@ namespace System.MemoryTests
             Assert.True(empty.IsEmpty);
             Assert.Equal(0, empty.Length);
         }
+
+        [Fact]
+        public static void EmptyEqualsDefault()
+        {
+            ReadOnlyMemory<int> empty = ReadOnlyMemory<int>.Empty;
+            ReadOnlyMemory<int> defaultMemory = default;
+            Assert.True(defaultMemory.Equals(empty));
+            Assert.True(defaultMemory.IsEmpty);
+            Assert.Equal(0, defaultMemory.Length);
+        }
     }
 }

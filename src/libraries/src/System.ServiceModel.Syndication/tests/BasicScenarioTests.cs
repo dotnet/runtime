@@ -246,7 +246,6 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        [ActiveIssue(25080)]
         public static void SyndicationFeed_Rss_TestDisjointItems()
         {
             using (XmlReader reader = XmlReader.Create(@"RssDisjointItems.xml"))
@@ -267,7 +266,6 @@ namespace System.ServiceModel.Syndication.Tests
 
 
         [Fact]
-        [ActiveIssue(25080)]
         public static void SyndicationFeed_Atom_TestDisjointItems()
         {
             using (XmlReader reader = XmlReader.Create(@"AtomDisjointItems.xml"))
@@ -287,7 +285,7 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        [ActiveIssue(25080)]
+        [ActiveIssue(25156)]
         public static void SyndicationFeed_Rss_WrongDateFormat()
         {
             // *** SETUP *** \\
@@ -386,6 +384,46 @@ namespace System.ServiceModel.Syndication.Tests
             foreach (string file in fileList)
             {
                 ReadWriteSyndicationFeed(file, (feedObject) => new Rss20FeedFormatter(feedObject), allowableDifferences);
+            }
+        }
+
+        [Fact]
+        public static void DiffAtomNsTest()
+        {
+            string file = @"diff_atom_ns.xml";
+            using (XmlReader reader = XmlReader.Create(file))
+            {
+                Assert.Throws(typeof(XmlException), () => { SyndicationItem.Load(reader); });
+            }
+        }
+
+        [Fact]
+        public static void DiffRssNsTest()
+        {
+            string file = @"diff_rss_ns.xml";
+            using (XmlReader reader = XmlReader.Create(file))
+            {
+                Assert.Throws(typeof(XmlException), () => { SyndicationItem.Load(reader); });
+            }
+        }
+
+        [Fact]
+        public static void DiffRssVersionTest()
+        {
+            string file = @"diff_rss_version.xml";
+            using (XmlReader reader = XmlReader.Create(file))
+            {
+                Assert.Throws(typeof(XmlException), () => { SyndicationItem.Load(reader); });
+            }
+        }
+
+        [Fact]
+        public static void NoRssVersionTest()
+        {
+            string file = @"no_rss_version.xml";
+            using (XmlReader reader = XmlReader.Create(file))
+            {
+                Assert.Throws(typeof(XmlException), () => { SyndicationItem.Load(reader); });
             }
         }
 

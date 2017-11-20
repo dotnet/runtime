@@ -23,8 +23,7 @@ namespace System.ComponentModel.DataAnnotations
                 return true;
             }
 
-            var valueAsString = value as string;
-            if (valueAsString == null)
+            if (!(value is string valueAsString))
             {
                 return false;
             }

@@ -91,15 +91,7 @@ namespace System.ComponentModel.DataAnnotations
                 InitializeServiceProvider(serviceType => serviceProvider.GetService(serviceType));
             }
 
-            if (items != null)
-            {
-                _items = new Dictionary<object, object>(items);
-            }
-            else
-            {
-                _items = new Dictionary<object, object>();
-            }
-
+            _items = items != null ? new Dictionary<object, object>(items) : new Dictionary<object, object>();
             ObjectInstance = instance;
         }
 

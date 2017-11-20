@@ -366,7 +366,6 @@ namespace System.Security.AccessControl
 
             public SafeTokenHandle ThreadHandle
             {
-                [System.Security.SecurityCritical]  // auto-generated
                 get
                 { return this.threadHandle; }
             }
@@ -419,7 +418,6 @@ namespace System.Security.AccessControl
 
         #endregion
 
-        //      [SecurityPermission( SecurityAction.Demand, TogglePrivileges=true )]
         private void ToggleState(bool enable)
         {
             int error = 0;
@@ -554,7 +552,6 @@ namespace System.Security.AccessControl
             }
         }
 
-        //      [SecurityPermission( SecurityAction.Demand, TogglePrivileges=true )]
         public void Revert()
         {
             int error = 0;
