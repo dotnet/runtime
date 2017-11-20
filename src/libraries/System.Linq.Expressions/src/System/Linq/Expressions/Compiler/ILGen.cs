@@ -32,6 +32,7 @@ namespace System.Linq.Expressions.Compiler
         internal static void EmitLoadArg(this ILGenerator il, int index)
         {
             Debug.Assert(index >= 0);
+            Debug.Assert(index < ushort.MaxValue);
 
             switch (index)
             {
@@ -54,7 +55,8 @@ namespace System.Linq.Expressions.Compiler
                     }
                     else
                     {
-                        il.Emit(OpCodes.Ldarg, index);
+                        // cast to short, result is correct ushort.
+                        il.Emit(OpCodes.Ldarg, (short)index);
                     }
                     break;
             }
@@ -63,6 +65,7 @@ namespace System.Linq.Expressions.Compiler
         internal static void EmitLoadArgAddress(this ILGenerator il, int index)
         {
             Debug.Assert(index >= 0);
+            Debug.Assert(index < ushort.MaxValue);
 
             if (index <= byte.MaxValue)
             {
@@ -70,13 +73,15 @@ namespace System.Linq.Expressions.Compiler
             }
             else
             {
-                il.Emit(OpCodes.Ldarga, index);
+                // cast to short, result is correct ushort.
+                il.Emit(OpCodes.Ldarga, (short)index);
             }
         }
 
         internal static void EmitStoreArg(this ILGenerator il, int index)
         {
             Debug.Assert(index >= 0);
+            Debug.Assert(index < ushort.MaxValue);
 
             if (index <= byte.MaxValue)
             {
@@ -84,7 +89,8 @@ namespace System.Linq.Expressions.Compiler
             }
             else
             {
-                il.Emit(OpCodes.Starg, index);
+                // cast to short, result is correct ushort.
+                il.Emit(OpCodes.Starg, (short)index);
             }
         }
 
