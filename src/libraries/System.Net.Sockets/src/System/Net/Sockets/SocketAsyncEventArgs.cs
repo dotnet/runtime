@@ -498,7 +498,7 @@ namespace System.Net.Sockets
 
         // Prepares for a native async socket call.
         // This method performs the tasks common to all socket operations.
-        internal void StartOperationCommon(Socket socket)
+        internal void StartOperationCommon(Socket socket, SocketAsyncOperation operation)
         {
             // Change status to "in-use".
             int status = Interlocked.CompareExchange(ref _operating, InProgress, Free);
@@ -506,6 +506,9 @@ namespace System.Net.Sockets
             {
                 ThrowForNonFreeStatus(status);
             }
+
+            // Set the operation type.
+            _completedOperation = operation;
 
             // Prepare execution context for callback.
             // If event delegates have changed or socket has changed
@@ -526,9 +529,6 @@ namespace System.Net.Sockets
 
         internal void StartOperationAccept()
         {
-            // Remember the operation type.
-            _completedOperation = SocketAsyncOperation.Accept;
-
             // AcceptEx needs a single buffer that's the size of two native sockaddr buffers with 16
             // extra bytes each. It can also take additional buffer space in front of those special
             // sockaddr structures that can be filled in with initial data coming in on a connection.
@@ -555,24 +555,11 @@ namespace System.Net.Sockets
                     _acceptBuffer = new byte[_acceptAddressBufferCount];
                 }
             }
-
-            InnerStartOperationAccept();
         }
 
-        internal void StartOperationConnect()
+        internal void StartOperationConnect(MultipleConnectAsync multipleConnect = null)
         {
-            // Remember the operation type.
-            _completedOperation = SocketAsyncOperation.Connect;
-            _multipleConnect = null;
-            _connectSocket = null;
-
-            InnerStartOperationConnect();
-        }
-
-        internal void StartOperationWrapperConnect(MultipleConnectAsync args)
-        {
-            _completedOperation = SocketAsyncOperation.Connect;
-            _multipleConnect = args;
+            _multipleConnect = multipleConnect;
             _connectSocket = null;
         }
 
@@ -596,54 +583,6 @@ namespace System.Net.Sockets
                     _currentSocket.Dispose();
                 }
             }
-        }
-
-        internal void StartOperationDisconnect()
-        {
-            // Remember the operation type.
-            _completedOperation = SocketAsyncOperation.Disconnect;
-        }
-
-        internal void StartOperationReceive()
-        {
-            // Remember the operation type.
-            _completedOperation = SocketAsyncOperation.Receive;
-            InnerStartOperationReceive();
-        }
-
-        internal void StartOperationReceiveFrom()
-        {
-            // Remember the operation type.
-            _completedOperation = SocketAsyncOperation.ReceiveFrom;
-            InnerStartOperationReceiveFrom();
-        }
-
-        internal void StartOperationReceiveMessageFrom()
-        {
-            // Remember the operation type.
-            _completedOperation = SocketAsyncOperation.ReceiveMessageFrom;
-            InnerStartOperationReceiveMessageFrom();
-        }
-
-        internal void StartOperationSend()
-        {
-            // Remember the operation type.
-            _completedOperation = SocketAsyncOperation.Send;
-            InnerStartOperationSend();
-        }
-
-        internal void StartOperationSendPackets()
-        {
-            // Remember the operation type.
-            _completedOperation = SocketAsyncOperation.SendPackets;
-            InnerStartOperationSendPackets();
-        }
-
-        internal void StartOperationSendTo()
-        {
-            // Remember the operation type.
-            _completedOperation = SocketAsyncOperation.SendTo;
-            InnerStartOperationSendTo();
         }
 
         internal void FinishOperationSyncFailure(SocketError socketError, int bytesTransferred, SocketFlags flags)
