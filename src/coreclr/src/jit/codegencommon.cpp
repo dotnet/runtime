@@ -433,15 +433,15 @@ void CodeGen::genPrepForEHCodegen()
             // has BBF_HAS_LABEL set.
         }
 
-#ifdef _TARGET_AMD64_
+#if FEATURE_EH_CALLFINALLY_THUNKS
         if (HBtab->HasFinallyHandler())
         {
             anyFinallys = true;
         }
-#endif // _TARGET_AMD64_
+#endif // FEATURE_EH_CALLFINALLY_THUNKS
     }
 
-#ifdef _TARGET_AMD64_
+#if FEATURE_EH_CALLFINALLY_THUNKS
     if (anyFinallys)
     {
         for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
@@ -460,7 +460,7 @@ void CodeGen::genPrepForEHCodegen()
             } // block is BBJ_CALLFINALLY
         }     // for each block
     }         // if (anyFinallys)
-#endif        // _TARGET_AMD64_
+#endif        // FEATURE_EH_CALLFINALLY_THUNKS
 }
 
 void CodeGenInterface::genUpdateLife(GenTreePtr tree)
