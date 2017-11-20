@@ -30,11 +30,24 @@
 #error  Define GTSTRUCT_N before including this file.
 #endif
 
+#ifndef GTSTRUCT_2_SPECIAL
+#error  Define GTSTRUCT_2_SPECIAL before including this file.
+#endif
+
+#ifndef GTSTRUCT_3_SPECIAL
+#error  Define GTSTRUCT_3_SPECIAL before including this file.
+#endif
+
 /*****************************************************************************/
 
 //
 //       Field name    , Allowed node enum(s)
 //                                  
+// The "SPECIAL" variants indicate that some or all of the allowed opers exist elsewhere. This is
+// used in the DEBUGGABLE_GENTREE implementation when determining which vtable pointer to use for
+// a given oper. For example, IntConCommon (for the GenTreeIntConCommon type) allows opers
+// for all its subtypes. The "SPECIAL" version is attached to the supertypes. "N" is always
+// considered "special".
 
 GTSTRUCT_0(UnOp        , GT_OP)
 GTSTRUCT_0(Op          , GT_OP)
@@ -44,15 +57,15 @@ GTSTRUCT_2(Val         , GT_END_LFIN, GT_JMP)
 GTSTRUCT_1(Val         , GT_JMP)
 #endif
 #ifndef LEGACY_BACKEND
-GTSTRUCT_3(IntConCommon, GT_CNS_INT, GT_CNS_LNG, GT_JMPTABLE)
+GTSTRUCT_3_SPECIAL(IntConCommon, GT_CNS_INT, GT_CNS_LNG, GT_JMPTABLE)
 GTSTRUCT_1(JumpTable   , GT_JMPTABLE)
 #else // LEGACY_BACKEND
-GTSTRUCT_2(IntConCommon, GT_CNS_INT, GT_CNS_LNG)
+GTSTRUCT_2_SPECIAL(IntConCommon, GT_CNS_INT, GT_CNS_LNG)
 #endif// LEGACY_BACKEND
 GTSTRUCT_1(IntCon      , GT_CNS_INT)
 GTSTRUCT_1(LngCon      , GT_CNS_LNG)
-GTSTRUCT_1(DblCon      , GT_CNS_DBL) 
-GTSTRUCT_1(StrCon      , GT_CNS_STR) 
+GTSTRUCT_1(DblCon      , GT_CNS_DBL)
+GTSTRUCT_1(StrCon      , GT_CNS_STR)
 GTSTRUCT_N(LclVarCommon, GT_LCL_VAR, GT_LCL_FLD, GT_REG_VAR, GT_PHI_ARG, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD, GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR) 
 GTSTRUCT_3(LclVar      , GT_LCL_VAR, GT_LCL_VAR_ADDR, GT_STORE_LCL_VAR) 
 #ifndef LEGACY_BACKEND
@@ -65,7 +78,7 @@ GTSTRUCT_1(Cast        , GT_CAST)
 GTSTRUCT_1(Box         , GT_BOX)
 GTSTRUCT_1(Field       , GT_FIELD) 
 GTSTRUCT_1(Call        , GT_CALL) 
-GTSTRUCT_2(ArgList     , GT_LIST, GT_FIELD_LIST)
+GTSTRUCT_2_SPECIAL(ArgList , GT_LIST, GT_FIELD_LIST)
 GTSTRUCT_1(FieldList   , GT_FIELD_LIST)
 GTSTRUCT_1(Colon       , GT_COLON)
 GTSTRUCT_1(FptrVal     , GT_FTN_ADDR)
@@ -120,6 +133,8 @@ GTSTRUCT_3(MultiRegOp  , GT_MUL_LONG, GT_PUTARG_REG, GT_BITCAST)
 #undef  GTSTRUCT_3
 #undef  GTSTRUCT_4
 #undef  GTSTRUCT_N
+#undef  GTSTRUCT_2_SPECIAL
+#undef  GTSTRUCT_3_SPECIAL
 /*****************************************************************************/
 
 // clang-format on
