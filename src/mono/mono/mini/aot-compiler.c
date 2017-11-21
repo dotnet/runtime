@@ -428,16 +428,6 @@ ignore_cfg (MonoCompile *cfg)
 	return !cfg || cfg->skip;
 }
 
-gboolean 
-mono_aot_can_dedup (MonoMethod *method) 
-{
-	gboolean not_normal_gshared = method->is_inflated && !mono_method_is_generic_sharable_full (method, TRUE, FALSE, FALSE);
-	gboolean extra_method = (method->wrapper_type != MONO_WRAPPER_NONE) || not_normal_gshared;
-
-	return extra_method;
-}
-
-
 static void
 aot_printf (MonoAotCompile *acfg, const gchar *format, ...)
 {

@@ -4163,6 +4163,16 @@ add_module_cb (gpointer key, gpointer value, gpointer user_data)
 	g_ptr_array_add ((GPtrArray*)user_data, value);
 }
 
+gboolean
+mono_aot_can_dedup (MonoMethod *method)
+{
+	gboolean not_normal_gshared = method->is_inflated && !mono_method_is_generic_sharable_full (method, TRUE, FALSE, FALSE);
+	gboolean extra_method = (method->wrapper_type != MONO_WRAPPER_NONE) || not_normal_gshared;
+
+	return extra_method;
+}
+
+
 /*
  * find_aot_method:
  *
