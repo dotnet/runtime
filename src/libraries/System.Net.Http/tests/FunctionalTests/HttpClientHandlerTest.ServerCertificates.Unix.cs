@@ -73,17 +73,20 @@ namespace System.Net.Http.Functional.Tests
         private static extern string CurlSslVersionDescription();
 
         [Theory]
+        [PlatformSpecific(~TestPlatforms.OSX)] // Not implemented
         [InlineData(false, false, false, false, false)] // system -> ok
-        // may fall back:
-        [InlineData(true, true, false, false, false)]   // empty dir, system bundle -> ok
+        [InlineData(true, true, true, true, true)]      // empty dir, empty bundle file -> fail
+        // It is enough to override the bundle, since all tested platforms don't have a default dir:
         [InlineData(false, false, true, true, true)]    // empty bundle -> fail
-        // invalid:
-        [InlineData(true, false, false, false, true)]   // non-existing dir -> fail
         [InlineData(false, false, true, false, true)]   // non-existing bundle -> fail
-        // empty:
-        [InlineData(true, true, true, true, true)]     // empty dir, empty bundle file -> fail
-        public void HttpClientUsesSslCertEnvironmentVariables(bool setSslCertDir, bool createSslCertDir, bool setSslCertFile, bool createSslCertFile, bool expectedFailure)
+        public void HttpClientUsesSslCertEnvironmentVariables(bool setSslCertDir, bool createSslCertDir,
+            bool setSslCertFile, bool createSslCertFile, bool expectedFailure)
         {
+            // This test sets SSL_CERT_DIR and SSL_CERT_FILE to empty/non-existing locations and then
+            // checks the http request fails.
+            // Some platforms will use the system default when not specifying a value, while others
+            // will not use those certificates. Due to these platform differences, we only check specific
+            // combinations that are expected to work the same cross-platform.
             var psi = new ProcessStartInfo();
             if (setSslCertDir)
             {
