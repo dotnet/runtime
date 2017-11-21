@@ -13,7 +13,7 @@ namespace System
     [Serializable]
     [Runtime.Versioning.NonVersionable] // This only applies to field layout
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public partial struct Guid : IFormattable, IComparable, IComparable<Guid>, IEquatable<Guid>
+    public partial struct Guid : IFormattable, IComparable, IComparable<Guid>, IEquatable<Guid>, ISpanFormattable
     {
         public static readonly Guid Empty = new Guid();
 
@@ -1425,6 +1425,12 @@ namespace System
 
             charsWritten = guidSize;
             return true;
+        }
+
+        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, string format, IFormatProvider provider)
+        {
+            // Like with the IFormattable implementation, provider is ignored.
+            return TryFormat(destination, out charsWritten, format);
         }
     }
 }
