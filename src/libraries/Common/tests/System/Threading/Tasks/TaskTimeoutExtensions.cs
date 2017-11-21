@@ -46,7 +46,7 @@ namespace System.Threading.Tasks
             if (task == await Task.WhenAny(task, Task.Delay(millisecondsTimeout, cts.Token)).ConfigureAwait(false))
             {
                 cts.Cancel();
-                await task.ConfigureAwait(false);
+                await task;
             }
             else
             {
