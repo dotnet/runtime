@@ -30,19 +30,11 @@ def static getOSGroup(def os) {
     ['Windows_NT'].each { os ->
         ['x64', 'x86'].each { arch ->
             ['ryujit'].each { jit ->
-                if (arch == 'x64' && jit == 'legacy_backend') {
-                    return
-                }
-
                 ['full_opt', 'min_opt'].each { opt_level ->
 
                     def architecture = arch
                     def jobName = "perf_perflab_${os}_${arch}_${opt_level}_${jit}"
                     def testEnv = ""
-
-                    if (jit == 'legacy_backend') {
-                        testEnv = '-testEnv %WORKSPACE%\\tests\\legacyjit_x86_testenv.cmd'
-                    }
 
                     def newJob = job(Utilities.getFullJobName(project, jobName, isPR)) {
                         // Set the label.
@@ -155,17 +147,8 @@ def static getOSGroup(def os) {
 [true, false].each { isPR ->
     ['Windows_NT'].each { os ->
         ['x64', 'x86'].each { arch ->
-            ['ryujit', 'legacy_backend'].each { jit ->
+            ['ryujit'].each { jit ->
                 [true, false].each { pgo_optimized ->
-                    if (arch == 'x64' && jit == 'legacy_backend') {
-                        return
-                    }
-
-                    // pgo not supported for legacy_backend
-                    if (pgo_optimized && jit == 'legacy_backend') {
-                        return
-                    }
-
                     ['full_opt', 'min_opt'].each { opt_level ->
                         def architecture = arch
 
