@@ -46,7 +46,7 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue(20010, TargetFrameworkMonikers.Uap)]
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        public void ProxyExplicitlyProvided_DefaultCredentials_Ignored()
+        public async Task ProxyExplicitlyProvided_DefaultCredentials_Ignored()
         {
             int port;
             Task<LoopbackGetRequestHttpProxy.ProxyResult> proxyTask = LoopbackGetRequestHttpProxy.StartAsync(out port, requireAuth: true, expectCreds: true);
@@ -66,7 +66,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     using (t.Result) return t.Result.Content.ReadAsStringAsync();
                 }, TaskScheduler.Default).Unwrap();
-                Task.WaitAll(proxyTask, responseTask, responseStringTask);
+                await (new Task[] { proxyTask, responseTask, responseStringTask }).WhenAllOrAnyFailed();
 
                 TestHelper.VerifyResponseBody(responseStringTask.Result, responseTask.Result.Content.Headers.ContentMD5, false, null);
                 Assert.Equal(Encoding.ASCII.GetString(proxyTask.Result.ResponseContent), responseStringTask.Result);
