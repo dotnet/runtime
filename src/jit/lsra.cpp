@@ -3387,8 +3387,9 @@ public:
     {
         if (preallocate > 0)
         {
-            size_t preallocateSize   = sizeof(LocationInfoListNode) * preallocate;
-            auto*  preallocatedNodes = reinterpret_cast<LocationInfoListNode*>(compiler->compGetMem(preallocateSize));
+            size_t                preallocateSize = sizeof(LocationInfoListNode) * preallocate;
+            LocationInfoListNode* preallocatedNodes =
+                reinterpret_cast<LocationInfoListNode*>(compiler->compGetMem(preallocateSize, CMK_LSRA));
 
             LocationInfoListNode* head = preallocatedNodes;
             head->m_next               = nullptr;
