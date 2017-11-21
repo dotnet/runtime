@@ -4,16 +4,16 @@
 
 /*============================================================
 **
-** Purpose: Unsafe code that uses pointers should use 
-** SafePointer to fix subtle lifetime problems with the 
+** Purpose: Unsafe code that uses pointers should use
+** SafePointer to fix subtle lifetime problems with the
 ** underlying resource.
 **
 ===========================================================*/
 
 // Design points:
-// *) Avoid handle-recycling problems (including ones triggered via 
+// *) Avoid handle-recycling problems (including ones triggered via
 // resurrection attacks) for all accesses via pointers.  This requires tying
-// together the lifetime of the unmanaged resource with the code that reads 
+// together the lifetime of the unmanaged resource with the code that reads
 // from that resource, in a package that uses synchronization to enforce
 // the correct semantics during finalization.  We're using SafeHandle's
 // ref count as a gate on whether the pointer can be dereferenced because that
@@ -24,23 +24,23 @@
 // will already require 2 additional interlocked operations.  If we add in
 // a "current position" concept, that requires additional space in memory and
 // synchronization.  Since the position in memory is often (but not always)
-// something that can be stored on the stack, we can save some memory by 
-// excluding it from this object.  However, avoiding the need for 
-// synchronization is a more significant win.  This design allows multiple 
-// threads to read and write memory simultaneously without locks (as long as 
-// you don't write to a region of memory that overlaps with what another 
+// something that can be stored on the stack, we can save some memory by
+// excluding it from this object.  However, avoiding the need for
+// synchronization is a more significant win.  This design allows multiple
+// threads to read and write memory simultaneously without locks (as long as
+// you don't write to a region of memory that overlaps with what another
 // thread is accessing).
-// 
+//
 // *) Space-wise, we use the following memory, including SafeHandle's fields:
 // Object Header  MT*  handle  int bool bool <2 pad bytes> length
 // On 32 bit platforms: 24 bytes.  On 64 bit platforms: 40 bytes.
 // (We can safe 4 bytes on x86 only by shrinking SafeHandle)
 //
 // *) Wrapping a SafeHandle would have been a nice solution, but without an
-// ordering between critical finalizable objects, it would have required 
-// changes to each SafeHandle subclass to opt in to being usable from a 
+// ordering between critical finalizable objects, it would have required
+// changes to each SafeHandle subclass to opt in to being usable from a
 // SafeBuffer (or some clever exposure of SafeHandle's state fields and a
-// way of forcing ReleaseHandle to run even after the SafeHandle has been 
+// way of forcing ReleaseHandle to run even after the SafeHandle has been
 // finalized with a ref count > 1).  We can use less memory and create fewer
 // objects by simply inserting a SafeBuffer into the class hierarchy.
 //
@@ -65,14 +65,10 @@
 // static variable (perhaps using Interlocked.CompareExchange).  Of course,
 // assignments in a static class constructor are under a lock implicitly.
 
-
 using System;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Runtime.ConstrainedExecution;
-using System.Runtime.Versioning;
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Runtime.InteropServices
 {
@@ -90,7 +86,7 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Specifies the size of the region of memory, in bytes.  Must be 
+        /// Specifies the size of the region of memory, in bytes.  Must be
         /// called before using the SafeBuffer.
         /// </summary>
         /// <param name="numBytes">Number of valid bytes in memory.</param>
@@ -107,7 +103,7 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Specifies the size of the region in memory, as the number of 
+        /// Specifies the size of the region in memory, as the number of
         /// elements in an array.  Must be called before using the SafeBuffer.
         /// </summary>
         [CLSCompliant(false)]
@@ -123,7 +119,7 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Specifies the size of the region in memory, as the number of 
+        /// Specifies the size of the region in memory, as the number of
         /// elements in an array.  Must be called before using the SafeBuffer.
         /// </summary>
         [CLSCompliant(false)]
@@ -133,13 +129,12 @@ namespace System.Runtime.InteropServices
         }
 
         // Callers should ensure that they check whether the pointer ref param
-        // is null when AcquirePointer returns.  If it is not null, they must 
-        // call ReleasePointer in a CER.  This method calls DangerousAddRef 
-        // & exposes the pointer. Unlike Read, it does not alter the "current 
+        // is null when AcquirePointer returns.  If it is not null, they must
+        // call ReleasePointer.  This method calls DangerousAddRef
+        // & exposes the pointer. Unlike Read, it does not alter the "current
         // position" of the pointer.  Here's how to use it:
         //
         // byte* pointer = null;
-        // RuntimeHelpers.PrepareConstrainedRegions();
         // try {
         //     safeBuffer.AcquirePointer(ref pointer);
         //     // Use pointer here, with your own bounds checking
@@ -149,15 +144,15 @@ namespace System.Runtime.InteropServices
         //         safeBuffer.ReleasePointer();
         // }
         //
-        // Note: If you cast this byte* to a T*, you have to worry about 
+        // Note: If you cast this byte* to a T*, you have to worry about
         // whether your pointer is aligned.  Additionally, you must take
         // responsibility for all bounds checking with this pointer.
         /// <summary>
         /// Obtain the pointer from a SafeBuffer for a block of code,
-        /// with the express responsibility for bounds checking and calling 
-        /// ReleasePointer later within a CER to ensure the pointer can be 
-        /// freed later.  This method either completes successfully or 
-        /// throws an exception and returns with pointer set to null.
+        /// with the express responsibility for bounds checking and calling
+        /// ReleasePointer later to ensure the pointer can be freed later.
+        /// This method either completes successfully or throws an exception 
+        /// and returns with pointer set to null.
         /// </summary>
         /// <param name="pointer">A byte*, passed by reference, to receive
         /// the pointer from within the SafeBuffer.  You must set
@@ -169,7 +164,6 @@ namespace System.Runtime.InteropServices
                 throw NotInitialized();
 
             pointer = null;
-            RuntimeHelpers.PrepareConstrainedRegions();
 
             bool junk = false;
             DangerousAddRef(ref junk);
@@ -189,7 +183,7 @@ namespace System.Runtime.InteropServices
         /// equivalent to:  return *(T*)(bytePtr + byteOffset);
         /// </summary>
         /// <typeparam name="T">The value type to read</typeparam>
-        /// <param name="byteOffset">Where to start reading from memory.  You 
+        /// <param name="byteOffset">Where to start reading from memory.  You
         /// may have to consider alignment.</param>
         /// <returns>An instance of T read from memory.</returns>
         [CLSCompliant(false)]
@@ -203,14 +197,14 @@ namespace System.Runtime.InteropServices
             SpaceCheck(ptr, sizeofT);
 
             // return *(T*) (_ptr + byteOffset);
-            T value;
+            T value = default(T);
             bool mustCallRelease = false;
-            RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 DangerousAddRef(ref mustCallRelease);
 
-                GenericPtrToStructure<T>(ptr, out value, sizeofT);
+                fixed (byte* pStructure = &Unsafe.As<T, byte>(ref value))
+                    Buffer.Memmove(pStructure, ptr, sizeofT);
             }
             finally
             {
@@ -242,13 +236,21 @@ namespace System.Runtime.InteropServices
             SpaceCheck(ptr, checked((ulong)(alignedSizeofT * count)));
 
             bool mustCallRelease = false;
-            RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 DangerousAddRef(ref mustCallRelease);
 
-                for (int i = 0; i < count; i++)
-                    unsafe { GenericPtrToStructure<T>(ptr + alignedSizeofT * i, out array[i + index], sizeofT); }
+                if (count > 0)
+                {
+                    unsafe
+                    {
+                        fixed (byte* pStructure = &Unsafe.As<T, byte>(ref array[index]))
+                        {
+                            for (int i = 0; i < count; i++)
+                                Buffer.Memmove(pStructure + sizeofT * i, ptr + alignedSizeofT * i, sizeofT);
+                        }
+                    }
+                }
             }
             finally
             {
@@ -262,7 +264,7 @@ namespace System.Runtime.InteropServices
         /// equivalent to:  *(T*)(bytePtr + byteOffset) = value;
         /// </summary>
         /// <typeparam name="T">The type of the value type to write to memory.</typeparam>
-        /// <param name="byteOffset">The location in memory to write to.  You 
+        /// <param name="byteOffset">The location in memory to write to.  You
         /// may have to consider alignment.</param>
         /// <param name="value">The value type to write to memory.</param>
         [CLSCompliant(false)]
@@ -277,11 +279,12 @@ namespace System.Runtime.InteropServices
 
             // *((T*) (_ptr + byteOffset)) = value;
             bool mustCallRelease = false;
-            RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 DangerousAddRef(ref mustCallRelease);
-                GenericStructureToPtr(ref value, ptr, sizeofT);
+
+                fixed (byte* pStructure = &Unsafe.As<T, byte>(ref value))
+                    Buffer.Memmove(ptr, pStructure, sizeofT);
             }
             finally
             {
@@ -312,12 +315,21 @@ namespace System.Runtime.InteropServices
             SpaceCheck(ptr, checked((ulong)(alignedSizeofT * count)));
 
             bool mustCallRelease = false;
-            RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 DangerousAddRef(ref mustCallRelease);
-                for (int i = 0; i < count; i++)
-                    unsafe { GenericStructureToPtr(ref array[i + index], ptr + alignedSizeofT * i, sizeofT); }
+
+                if (count > 0)
+                {
+                    unsafe
+                    {
+                        fixed (byte* pStructure = &Unsafe.As<T, byte>(ref array[index]))
+                        {
+                            for (int i = 0; i < count; i++)
+                                Buffer.Memmove(ptr + alignedSizeofT * i, pStructure + sizeofT * i, sizeofT);
+                        }
+                    }
+                }
             }
             finally
             {
@@ -325,7 +337,6 @@ namespace System.Runtime.InteropServices
                     DangerousRelease();
             }
         }
-
 
         /// <summary>
         /// Returns the number of bytes in the memory region.
@@ -342,7 +353,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        /* No indexer.  The perf would be misleadingly bad.  People should use 
+        /* No indexer.  The perf would be misleadingly bad.  People should use
          * AcquirePointer and ReleasePointer instead.  */
 
         private void SpaceCheck(byte* ptr, ulong sizeInBytes)
@@ -363,62 +374,31 @@ namespace System.Runtime.InteropServices
             return new InvalidOperationException(SR.InvalidOperation_MustCallInitialize);
         }
 
-        // FCALL limitations mean we can't have generic FCALL methods.  However, we can pass 
-        // TypedReferences to FCALL methods.
-        internal static void GenericPtrToStructure<T>(byte* ptr, out T structure, uint sizeofT) where T : struct
-        {
-            structure = default(T);  // Dummy assignment to silence the compiler
-            PtrToStructureNative(ptr, __makeref(structure), sizeofT);
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void PtrToStructureNative(byte* ptr, /*out T*/ TypedReference structure, uint sizeofT);
-
-        internal static void GenericStructureToPtr<T>(ref T structure, byte* ptr, uint sizeofT) where T : struct
-        {
-            StructureToPtrNative(__makeref(structure), ptr, sizeofT);
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void StructureToPtrNative(/*ref T*/ TypedReference structure, byte* ptr, uint sizeofT);
-
         /// <summary>
-        /// Returns the aligned size of an instance of a value type.
+        /// Returns the size that SafeBuffer (and hence, UnmanagedMemoryAccessor) reserves in the unmanaged buffer for each element of an array of T. This is not the same
+        /// value that sizeof(T) returns! Since the primary use case is to parse memory mapped files, we cannot change this algorithm as this defines a de-facto serialization format.
+        /// Throws if T contains GC references.
         /// </summary>
-        /// <typeparam name="T">Provide a value type to figure out its size</typeparam>
-        /// <returns>The aligned size of T in bytes.</returns>
-        internal static uint SizeOf<T>() where T : struct
-        {
-            return SizeOfType(typeof(T));
-        }
-
-        /// <summary>
-        /// Returns the aligned size of an instance of a value type.
-        /// </summary>
-        /// <typeparam name="T">Provide a value type to figure out its size</typeparam>
-        /// <returns>The aligned size of T in bytes.</returns>
         internal static uint AlignedSizeOf<T>() where T : struct
         {
-            uint size = SizeOfType(typeof(T));
+            uint size = SizeOf<T>();
             if (size == 1 || size == 2)
             {
                 return size;
             }
-            if (IntPtr.Size == 8 && size == 4)
-            {
-                return size;
-            }
-            return AlignedSizeOfType(typeof(T));
+
+            return (uint)(((size + 3) & (~3)));
         }
 
-        // Type must be a value type with no object reference fields.  We only
-        // assert this, due to the lack of a suitable generic constraint.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern uint SizeOfType(Type type);
+        /// <summary>
+        /// Returns same value as sizeof(T) but throws if T contains GC references.
+        /// </summary>
+        internal static uint SizeOf<T>() where T : struct
+        {
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                throw new ArgumentException(SR.Argument_NeedStructWithNoRefs);
 
-        // Type must be a value type with no object reference fields.  We only
-        // assert this, due to the lack of a suitable generic constraint.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern uint AlignedSizeOfType(Type type);
+            return (uint)Unsafe.SizeOf<T>();
+        }
     }
 }
