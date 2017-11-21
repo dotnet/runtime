@@ -63,6 +63,13 @@ if HOST_ANDROID
 platform_sources += ../../support/libm/complex.c
 endif
 
+if HOST_WASM
+platform_sources += threadpool-worker-wasm.c
+else
+platform_sources += threadpool-worker-default.c
+endif
+
+
 #
 # libtool is not capable of creating static/shared versions of the same
 # convenience lib, so we have to do it ourselves
@@ -246,7 +253,6 @@ common_sources = \
 	threads-types.h		\
 	threadpool.c	\
 	threadpool.h	\
-	threadpool-worker-default.c	\
 	threadpool-worker.h	\
 	threadpool-io.c	\
 	threadpool-io.h	\
