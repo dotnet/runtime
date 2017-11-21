@@ -1617,9 +1617,24 @@ namespace System.Text
 
                 if (s == null)
                 {
-                    IFormattable formattableArg = arg as IFormattable;
+                    // If arg is ISpanFormattable and the beginning doesn't need padding,
+                    // try formatting it into the remaining current chunk.
+                    if (arg is ISpanFormattable spanFormattableArg &&
+                        (leftJustify || width == 0) &&
+                        spanFormattableArg.TryFormat(RemainingCurrentChunk, out int charsWritten, itemFormat, provider))
+                    {
+                        m_ChunkLength += charsWritten;
 
-                    if (formattableArg != null)
+                        // Pad the end, if needed.
+                        int padding = width - charsWritten;
+                        if (leftJustify && padding > 0) Append(' ', padding);
+
+                        // Continue to parse other characters.
+                        continue;
+                    }
+
+                    // Otherwise, fallback to trying IFormattable or calling ToString.
+                    if (arg is IFormattable formattableArg)
                     {
                         s = formattableArg.ToString(itemFormat, provider);
                     }

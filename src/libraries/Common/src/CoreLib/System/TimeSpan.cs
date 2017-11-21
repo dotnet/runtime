@@ -28,7 +28,7 @@ namespace System
     // an appropriate custom ILMarshaler to keep WInRT interop scenarios enabled.
     //
     [Serializable]
-    public struct TimeSpan : IComparable, IComparable<TimeSpan>, IEquatable<TimeSpan>, IFormattable
+    public struct TimeSpan : IComparable, IComparable<TimeSpan>, IEquatable<TimeSpan>, IFormattable, ISpanFormattable
     {
         public const long TicksPerMillisecond = 10000;
         private const double MillisecondsPerTick = 1.0 / TicksPerMillisecond;
