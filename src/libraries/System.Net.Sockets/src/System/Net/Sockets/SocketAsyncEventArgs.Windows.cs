@@ -98,6 +98,9 @@ namespace System.Net.Sockets
                     FinishOperationSyncSuccess(bytesTransferred, SocketFlags.None);
                     return SocketError.Success;
                 }
+                
+                // Completed synchronously, but the handle wasn't marked as skip completion port on success,
+                // so we still need to fall through and behave as if the IO was pending.
             }
             else
             {
@@ -105,9 +108,12 @@ namespace System.Net.Sockets
                 SocketError socketError = SocketPal.GetLastSocketError();
                 if (socketError != SocketError.IOPending)
                 {
+                    // Completed synchronously with a failure.
                     FinishOperationSyncFailure(socketError, bytesTransferred, SocketFlags.None);
                     return socketError;
                 }
+
+                // Fall through to IOPending handling for asynchronous completion.
             }
 
             // Socket handle is going to post a completion to the completion port (may have done so already).
@@ -128,6 +134,9 @@ namespace System.Net.Sockets
                     FinishOperationSyncSuccess(bytesTransferred, SocketFlags.None);
                     return SocketError.Success;
                 }
+
+                // Completed synchronously, but the handle wasn't marked as skip completion port on success,
+                // so we still need to fall through and behave as if the IO was pending.
             }
             else
             {
@@ -135,10 +144,13 @@ namespace System.Net.Sockets
                 socketError = SocketPal.GetLastSocketError();
                 if (socketError != SocketError.IOPending)
                 {
+                    // Completed synchronously with a failure.
                     _singleBufferHandleState = SingleBufferHandleState.None;
                     FinishOperationSyncFailure(socketError, bytesTransferred, SocketFlags.None);
                     return socketError;
                 }
+
+                // Fall through to IOPending handling for asynchronous completion.
             }
 
             // Socket handle is going to post a completion to the completion port (may have done so already).
