@@ -12,7 +12,7 @@ namespace System
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct Int32 : IComparable, IConvertible, IFormattable, IComparable<Int32>, IEquatable<Int32>
+    public struct Int32 : IComparable, IConvertible, IFormattable, IComparable<Int32>, IEquatable<Int32>, ISpanFormattable
     {
         private int m_value; // Do not rename (binary serialization)
 
