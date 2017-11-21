@@ -3478,10 +3478,17 @@ end:
  * - klass->interface_bitmap
  *
  * This function can fail @class.
+ *
  */
 void
 mono_class_setup_interface_offsets (MonoClass *klass)
 {
+	/* NOTE: This function is only correct for interfaces.
+	 *
+	 * It assumes that klass's interfaces can be assigned offsets starting
+	 * from 0. That assumption is incorrect for classes and valuetypes.
+	 */
+	g_assert (MONO_CLASS_IS_INTERFACE (klass) && !mono_class_is_ginst (klass));
 	setup_interface_offsets (klass, 0, FALSE);
 }
 
@@ -4930,7 +4937,8 @@ mono_class_init (MonoClass *klass)
 		if (mono_class_set_type_load_failure_causedby_class (klass, gklass, "Generic Type Definition failed to init"))
 			goto leave;
 
-		mono_class_setup_interface_id (klass);
+		if (MONO_CLASS_IS_INTERFACE (klass))
+			mono_class_setup_interface_id (klass);
 	}
 
 	if (klass->parent && !klass->parent->inited)
@@ -10526,8 +10534,9 @@ mono_generic_class_is_generic_type_definition (MonoGenericClass *gklass)
 void
 mono_class_setup_interface_id (MonoClass *klass)
 {
+	g_assert (MONO_CLASS_IS_INTERFACE (klass));
 	mono_loader_lock ();
-	if (MONO_CLASS_IS_INTERFACE (klass) && !klass->interface_id)
+	if (!klass->interface_id)
 		klass->interface_id = mono_get_unique_iid (klass);
 	mono_loader_unlock ();
 }
