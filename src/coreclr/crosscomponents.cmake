@@ -3,7 +3,7 @@ add_definitions(-DCROSS_COMPILE)
 set (CLR_CROSS_COMPONENTS_LIST
     crossgen   
     clrjit
-    protojit
+    legacyjit
 )
 
 if(NOT CLR_CMAKE_PLATFORM_LINUX)
