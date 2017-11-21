@@ -249,13 +249,12 @@ namespace System.Net.Sockets
             }
         }
 
-        internal SocketError DoOperationReceive(SafeCloseSocket handle, out SocketFlags flags) => _bufferList == null ? 
-            DoOperationReceiveSingleBuffer(handle, out flags) :
-            DoOperationReceiveMultiBuffer(handle, out flags);
+        internal SocketError DoOperationReceive(SafeCloseSocket handle) => _bufferList == null ? 
+            DoOperationReceiveSingleBuffer(handle) :
+            DoOperationReceiveMultiBuffer(handle);
 
-        internal unsafe SocketError DoOperationReceiveSingleBuffer(SafeCloseSocket handle, out SocketFlags flags)
+        internal unsafe SocketError DoOperationReceiveSingleBuffer(SafeCloseSocket handle)
         {
-            flags = _socketFlags;
             SocketError socketError = SocketError.Success;
             NativeOverlapped* overlapped = AllocateNativeOverlapped();
             try
@@ -265,6 +264,7 @@ namespace System.Net.Sockets
                     Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.None, $"Expected None, got {_singleBufferHandleState}");
                     _singleBufferHandleState = SingleBufferHandleState.InProcess;
                     var wsaBuffer = new WSABuffer { Length = _count, Pointer = (IntPtr)(bufferPtr + _offset) };
+                    SocketFlags flags = _socketFlags;
 
                     socketError = Interop.Winsock.WSARecv(
                         handle.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
@@ -291,13 +291,13 @@ namespace System.Net.Sockets
             }
         }
 
-        internal unsafe SocketError DoOperationReceiveMultiBuffer(SafeCloseSocket handle, out SocketFlags flags)
+        internal unsafe SocketError DoOperationReceiveMultiBuffer(SafeCloseSocket handle)
         {
-            flags = _socketFlags;
             SocketError socketError = SocketError.Success;
             NativeOverlapped* overlapped = AllocateNativeOverlapped();
             try
             {
+                SocketFlags flags = _socketFlags;
                 socketError = Interop.Winsock.WSARecv(
                     handle.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
                     _wsaBufferArray,
@@ -317,7 +317,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal unsafe SocketError DoOperationReceiveFrom(SafeCloseSocket handle, out SocketFlags flags)
+        internal unsafe SocketError DoOperationReceiveFrom(SafeCloseSocket handle)
         {
             // WSARecvFrom uses a WSABuffer array describing buffers in which to 
             // receive data and from which to send data respectively. Single and multiple buffers
@@ -327,13 +327,12 @@ namespace System.Net.Sockets
             PinSocketAddressBuffer();
 
             return _bufferList == null ?
-                DoOperationReceiveFromSingleBuffer(handle, out flags) :
-                DoOperationReceiveFromMultiBuffer(handle, out flags);
+                DoOperationReceiveFromSingleBuffer(handle) :
+                DoOperationReceiveFromMultiBuffer(handle);
         }
 
-        internal unsafe SocketError DoOperationReceiveFromSingleBuffer(SafeCloseSocket handle, out SocketFlags flags)
+        internal unsafe SocketError DoOperationReceiveFromSingleBuffer(SafeCloseSocket handle)
         {
-            flags = _socketFlags;
 
             SocketError socketError = SocketError.Success;
             NativeOverlapped* overlapped = AllocateNativeOverlapped();
@@ -344,6 +343,7 @@ namespace System.Net.Sockets
                     Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.None);
                     _singleBufferHandleState = SingleBufferHandleState.InProcess;
                     var wsaBuffer = new WSABuffer { Length = _count, Pointer = (IntPtr)(bufferPtr + _offset) };
+                    SocketFlags flags = _socketFlags;
 
                     socketError = Interop.Winsock.WSARecvFrom(
                         handle.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
@@ -372,14 +372,14 @@ namespace System.Net.Sockets
             }
         }
 
-        internal unsafe SocketError DoOperationReceiveFromMultiBuffer(SafeCloseSocket handle, out SocketFlags flags)
+        internal unsafe SocketError DoOperationReceiveFromMultiBuffer(SafeCloseSocket handle)
         {
-            flags = _socketFlags;
 
             SocketError socketError = SocketError.Success;
             NativeOverlapped* overlapped = AllocateNativeOverlapped();
             try
             {
+                SocketFlags flags = _socketFlags;
                 socketError = Interop.Winsock.WSARecvFrom(
                     handle.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
                     _wsaBufferArray,
