@@ -9,22 +9,22 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>59a9e55d2063cfcd6e25fe480cf876cbfa034db2</CoreFxCurrentRef>
-    <CoreClrCurrentRef>59a9e55d2063cfcd6e25fe480cf876cbfa034db2</CoreClrCurrentRef>
+    <CoreFxCurrentRef>8bed3300738384c37e73d229e2fcd1a8fabea1e7</CoreFxCurrentRef>
+    <CoreClrCurrentRef>8bed3300738384c37e73d229e2fcd1a8fabea1e7</CoreClrCurrentRef>
     <StandardCurrentRef>6298244e25cf84d91e3cda9627315f2425274624</StandardCurrentRef>
-    <WCFCurrentRef>59a9e55d2063cfcd6e25fe480cf876cbfa034db2</WCFCurrentRef>
-    <BuildToolsCurrentRef>041f03abfd53f6e726f5633526f023ae1f0c7ac4</BuildToolsCurrentRef>
+    <WCFCurrentRef>8bed3300738384c37e73d229e2fcd1a8fabea1e7</WCFCurrentRef>
+    <BuildToolsCurrentRef>8bed3300738384c37e73d229e2fcd1a8fabea1e7</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <PropertyGroup>
-    <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview1-25920-01</MicrosoftNETCorePlatformsPackageVersion>
-    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview1-25920-01</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
-    <MicrosoftPrivateCoreFxUAPPackageVersion>4.6.0-preview1-25920-01</MicrosoftPrivateCoreFxUAPPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-25920-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview1-25921-04</MicrosoftNETCorePlatformsPackageVersion>
+    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview1-25921-04</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
+    <MicrosoftPrivateCoreFxUAPPackageVersion>4.6.0-preview1-25921-04</MicrosoftPrivateCoreFxUAPPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-25921-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <NETStandardLibraryPackageVersion>2.0.1</NETStandardLibraryPackageVersion>
     <MicrosoftNetNativeCompilerPackageVersion>2.0.0-preview-25429-00</MicrosoftNetNativeCompilerPackageVersion>
     <MicrosoftDiaSymReaderNativePackageVersion>1.4.1</MicrosoftDiaSymReaderNativePackageVersion>
-    <SystemServiceModelDuplexPackageVersion>4.5.0-preview2-25919-01</SystemServiceModelDuplexPackageVersion>
+    <SystemServiceModelDuplexPackageVersion>4.5.0-preview2-25921-02</SystemServiceModelDuplexPackageVersion>
     <SystemServiceModelHttpPackageVersion>$(SystemServiceModelDuplexPackageVersion)</SystemServiceModelHttpPackageVersion>
     <SystemServiceModelNetTcpPackageVersion>$(SystemServiceModelDuplexPackageVersion)</SystemServiceModelNetTcpPackageVersion>
     <SystemServiceModelPrimitivesPackageVersion>$(SystemServiceModelDuplexPackageVersion)</SystemServiceModelPrimitivesPackageVersion>
@@ -50,7 +50,7 @@
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>2.1.0-prerelease-02220-02</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>2.1.0-prerelease-02221-02</FeedTasksPackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
