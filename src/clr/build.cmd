@@ -139,7 +139,7 @@ set __BuildTests=1
 set __BuildPackages=1
 set __BuildNativeCoreLib=1
 set __RestoreOptData=1
-set __AltJitCrossgen=0
+set __CrossgenAltJit=
 
 @REM CMD has a nasty habit of eating "=" on the argument list, so passing:
 @REM    -priority=1
@@ -207,7 +207,10 @@ if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&set processedArgs=!proc
 if /i "%1" == "-nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-ibcinstrument"       (set __IbcTuning=/Tuning&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
-if /i "%1" == "-altjitcrossgen"      (set __AltJitCrossgen=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-crossgenaltjit"      (set __CrossgenAltJit=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+
+REM Temporarily eat old -altjitcrossgen flag until CI system is updated.
+if /i "%1" == "-altjitcrossgen"      (set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 REM TODO these are deprecated remove them eventually
 REM don't add more, use the - syntax instead
@@ -629,14 +632,14 @@ if %__BuildNativeCoreLib% EQU 1 (
         REM End HACK
     )
 
-    if %__AltJitCrossgen% EQU 1 (
+    if defined __CrossgenAltJit (
         REM Set altjit flags for the crossgen run. Note that this entire crossgen section is within a setlocal/endlocal scope,
         REM so we don't need to save or unset these afterwards.
-        echo %__MsgPrefix%Setting altjit environment variables.
-        echo %__MsgPrefix%Setting altjit environment variables. >> "%__CrossGenCoreLibLog%"
+        echo %__MsgPrefix%Setting altjit environment variables for %__CrossgenAltJit%.
+        echo %__MsgPrefix%Setting altjit environment variables for %__CrossgenAltJit%. >> "%__CrossGenCoreLibLog%"
         set COMPlus_AltJit=*
         set COMPlus_AltJitNgen=*
-        set COMPlus_AltJitName=protojit.dll
+        set COMPlus_AltJitName=%__CrossgenAltJit%
         set COMPlus_AltJitAssertOnNYI=1
         set COMPlus_NoGuiOnAssert=1
         set COMPlus_ContinueOnAssert=0
@@ -856,7 +859,7 @@ echo -disableoss: Disable Open Source Signing for System.Private.CoreLib.
 echo -priority=^<N^> : specify a set of test that will be built and run, with priority N.
 echo -officialbuildid=^<ID^>: specify the official build ID to be used by this build.
 echo -Rebuild: passes /t:rebuild to the build projects.
-echo -altjitcrossgen: run crossgen using altjit ^(used for JIT testing^).
+echo -crossgenaltjit ^<JIT dll^>: run crossgen using specified altjit ^(used for JIT testing^).
 echo portable : build for portable RID.
 echo.
 echo If "all" is specified, then all build architectures and types are built. If, in addition,

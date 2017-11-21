@@ -596,9 +596,6 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
             }
             break
         case 'arm':
-            baseName = architecture.toLowerCase() + '_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
-            break
-        case 'armlb':
             // These are cross builds
             if (os == 'Tizen') {
                 // ABI: softfp
@@ -607,6 +604,9 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
             else {
                 baseName = architecture.toLowerCase() + '_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
             }
+            break
+        case 'armlb':
+            baseName = architecture.toLowerCase() + '_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
             break
         case 'x86':
         case 'x86_arm_altjit':
@@ -1138,42 +1138,43 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             switch (os) {
                 case 'Ubuntu':
                 case 'Ubuntu16.04':
-                    if (architecture == 'armlb') { // Ubuntu arm is only for armlb currently
-                        assert scenario == 'default'
-                        job.with {
-                            publishers {
-                                azureVMAgentPostBuildAction {
-                                    agentPostBuildAction('Delete agent if the build was not successful (when idle).')
-                                }
+                    if (architecture == 'armlb') { // No arm legacy backend testing for Ubuntu
+                        break
+                    }
+                    assert scenario == 'default'
+                    job.with {
+                        publishers {
+                            azureVMAgentPostBuildAction {
+                                agentPostBuildAction('Delete agent if the build was not successful (when idle).')
                             }
                         }
-                        if ((os == 'Ubuntu' && configuration == 'Debug') || (os == 'Ubuntu16.04' && configuration == 'Debug')) {
-                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Innerloop Build")
-                        }
-                        else {
-                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build",
+                    }
+                    if (configuration == 'Debug') {
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Innerloop Build")
+                    }
+                    else {
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build",
                             "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}\\W+Build.*")
-                        }
                     }
                     break
                 case 'Tizen':
-                    if (architecture == 'armlb') { // Tizen armel is only for armlb currently
-                        architecture='armel'
-                        job.with {
-                            publishers {
-                                azureVMAgentPostBuildAction {
-                                    agentPostBuildAction('Delete agent if the build was not successful (when idle).')
-                                }
+                    if (architecture == 'armlb') {  // No arm legacy backend testing for Tizen armel
+                        break
+                    }
+                    architecture='armel'
+                    job.with {
+                        publishers {
+                            azureVMAgentPostBuildAction {
+                                agentPostBuildAction('Delete agent if the build was not successful (when idle).')
                             }
                         }
-                        // Removing the regex will cause this to run on each PR.
-                        if (configuration == 'Checked') {
-                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Innerloop Build and Test")
-                        }
-                        else {
-                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build",
+                    }
+                    if (configuration == 'Checked') {
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Innerloop Build and Test")
+                    }
+                    else {
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build",
                             "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}\\W+Build.*")
-                        }
                     }
                     break
                 case 'Windows_NT':
@@ -1637,11 +1638,11 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 
                     def buildArchitecture = 'arm'
 
-                    // For 'arm' (the RyuJIT/arm32 architecture), tell build.cmd to use RyuJIT/arm32 for crossgen compilation.
-                    // RyuJIT/arm32 is currently not the default JIT; it is an aljit. So, this is a special case.
+                    // For 'armlb' (the JIT LEGACY_BACKEND architecture for arm), tell build.cmd to use legacy backend for crossgen compilation.
+                    // Legacy backend is not the default JIT; it is an aljit. So, this is a special case.
                     def armCrossgenOpt = ''
-                    if (architecture == 'arm') {
-                        armCrossgenOpt = '-altjitcrossgen'
+                    if (architecture == 'armlb') {
+                        armCrossgenOpt = '-crossgenaltjit legacyjit.dll'
                     }
 
                     // Hack: build pri1 tests for arm/armlb/arm64 build job, until we have separate pri0 and pri1 builds for the flow job to use.
@@ -1775,7 +1776,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         Utilities.addArchival(newJob, "bin/Product/**,bin/obj/*/tests/**/*.dylib,bin/obj/*/tests/**/*.so", "bin/Product/**/.nuget/**")
                     }
                     break
-                case 'armlb':
+                case 'arm':
                     // Cross builds for ARM runs on Ubuntu, Ubuntu16.04 and Tizen currently
                     assert (os == 'Ubuntu') || (os == 'Ubuntu16.04') || (os == 'Tizen')
 
@@ -1847,8 +1848,8 @@ Constants.allScenarios.each { scenario ->
                         os = 'Windows_NT'
                     }
 
-                    // Tizen is only supported for arm legacy_backend architecture
-                    if (os == 'Tizen' && architecture != 'armlb') {
+                    // Tizen is only supported for arm architecture
+                    if (os == 'Tizen' && architecture != 'arm') {
                         return
                     }
 
@@ -1864,12 +1865,12 @@ Constants.allScenarios.each { scenario ->
                                 return
                             }
                             break
-                        case 'armlb':
+                        case 'arm':
                             if ((os != 'Ubuntu') && (os != 'Ubuntu16.04') && (os != 'Tizen') && (os != 'Windows_NT')) {
                                 return
                             }
                             break
-                        case 'arm':
+                        case 'armlb':
                             if (os != 'Windows_NT') {
                                 return
                             }
@@ -2077,7 +2078,7 @@ Constants.allScenarios.each { scenario ->
                             }
                             else {
                                 // Setup corefx and Windows test binaries for Linux cross build for ubuntu-arm, ubuntu16.04-arm and tizen-armel
-                                if ( architecture == 'armlb' && ( os == 'Ubuntu' || os == 'Ubuntu16.04' || os == 'Tizen')) {
+                                if ( architecture == 'arm' && ( os == 'Ubuntu' || os == 'Ubuntu16.04' || os == 'Tizen')) {
                                     // Cross build for ubuntu-arm, ubuntu16.04-arm and tizen-armel
                                     // Define the Windows Tests and Corefx build job names
                                     def WindowTestsName = projectFolder + '/' +
@@ -2549,13 +2550,11 @@ Constants.allScenarios.each { scenario ->
                                 addEnvVariable("COMPlus_NoGuiOnAssert", "1")
                                 addEnvVariable("COMPlus_ContinueOnAssert", "0")
 
-                                // Arm(32) ryujit 
-                                if (architecture == "arm") {
-                                    // **This is an AltJit**
-
+                                // ARM legacy backend; this is an altjit.
+                                if (architecture == "armlb") {
                                     addEnvVariable("COMPlus_AltJit", "*")
                                     addEnvVariable("COMPlus_AltJitNgen", "*")
-                                    addEnvVariable("COMPlus_AltJitName", "protojit.dll")
+                                    addEnvVariable("COMPlus_AltJitName", "legacyjit.dll")
                                     addEnvVariable("COMPlus_AltJitAssertOnNYI", "1")
                                 }
 
@@ -2582,10 +2581,10 @@ Constants.allScenarios.each { scenario ->
                                 def addSmartyFlag = { flag -> smartyCommand += flag + " "}
                                 def addExclude = { exclude -> addSmartyFlag("/exc " + exclude)}
 
-                                def addArchSpecificExclude = { architectureToExclude, exclude -> if (architectureToExclude == "arm") { addExclude("PROTOJIT_" + exclude) } else { addExclude(exclude) } }
+                                def addArchSpecificExclude = { architectureToExclude, exclude -> if (architectureToExclude == "armlb") { addExclude("LEGACYJIT_" + exclude) } else { addExclude(exclude) } }
 
-                                if (architecture == "arm") {
-                                    addExclude("PROTOJIT_FAIL")
+                                if (architecture == "armlb") {
+                                    addExclude("LEGACYJIT_FAIL")
                                 }
 
                                 if (isJitStressScenario(scenario) || isR2RStressScenario(scenario)) {
