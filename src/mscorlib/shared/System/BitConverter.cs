@@ -36,7 +36,7 @@ namespace System
             if (destination.Length < sizeof(byte))
                 return false;
 
-            Unsafe.WriteUnaligned(ref destination.DangerousGetPinnableReference(), value ? (byte)1: (byte)0);
+            Unsafe.WriteUnaligned(ref destination.DangerousGetPinnableReference(), value ? (byte)1 : (byte)0);
             return true;
         }
 
@@ -217,7 +217,7 @@ namespace System
         }
 
         // Converts an array of bytes into a char.  
-        public static char ToChar(byte[] value, int startIndex) => unchecked((char)ReadInt16(value, startIndex));
+        public static char ToChar(byte[] value, int startIndex) => unchecked((char)ToInt16(value, startIndex));
 
         // Converts a Span into a char
         public static char ToChar(ReadOnlySpan<byte> value)
@@ -227,7 +227,8 @@ namespace System
             return Unsafe.ReadUnaligned<char>(ref value.DangerousGetPinnableReference());
         }
 
-        private static short ReadInt16(byte[] value, int startIndex)
+        // Converts an array of bytes into a short.  
+        public static short ToInt16(byte[] value, int startIndex)
         {
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
@@ -239,7 +240,16 @@ namespace System
             return Unsafe.ReadUnaligned<short>(ref value[startIndex]);
         }
 
-        private static int ReadInt32(byte[] value, int startIndex)
+        // Converts a Span into a short
+        public static short ToInt16(ReadOnlySpan<byte> value)
+        {
+            if (value.Length < sizeof(short))
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value);
+            return Unsafe.ReadUnaligned<short>(ref value.DangerousGetPinnableReference());
+        }
+
+        // Converts an array of bytes into an int.  
+        public static int ToInt32(byte[] value, int startIndex)
         {
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
@@ -251,7 +261,16 @@ namespace System
             return Unsafe.ReadUnaligned<int>(ref value[startIndex]);
         }
 
-        private static long ReadInt64(byte[] value, int startIndex)
+        // Converts a Span into an int
+        public static int ToInt32(ReadOnlySpan<byte> value)
+        {
+            if (value.Length < sizeof(int))
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value);
+            return Unsafe.ReadUnaligned<int>(ref value.DangerousGetPinnableReference());
+        }
+
+        // Converts an array of bytes into a long.  
+        public static long ToInt64(byte[] value, int startIndex)
         {
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
@@ -262,31 +281,6 @@ namespace System
 
             return Unsafe.ReadUnaligned<long>(ref value[startIndex]);
         }
-
-        // Converts an array of bytes into a short.  
-        public static short ToInt16(byte[] value, int startIndex) => ReadInt16(value, startIndex);
-
-        // Converts a Span into a short
-        public static short ToInt16(ReadOnlySpan<byte> value)
-        {
-            if (value.Length < sizeof(short))
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value);
-            return Unsafe.ReadUnaligned<short>(ref value.DangerousGetPinnableReference());
-        }
-
-        // Converts an array of bytes into an int.  
-        public static int ToInt32(byte[] value, int startIndex) => ReadInt32(value, startIndex);
-
-        // Converts a Span into an int
-        public static int ToInt32(ReadOnlySpan<byte> value)
-        {
-            if (value.Length < sizeof(int))
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value);
-            return Unsafe.ReadUnaligned<int>(ref value.DangerousGetPinnableReference());
-        }
-
-        // Converts an array of bytes into a long.  
-        public static long ToInt64(byte[] value, int startIndex) => ReadInt64(value, startIndex);
 
         // Converts a Span into a long
         public static long ToInt64(ReadOnlySpan<byte> value)
@@ -299,7 +293,7 @@ namespace System
         // Converts an array of bytes into an ushort.
         // 
         [CLSCompliant(false)]
-        public static ushort ToUInt16(byte[] value, int startIndex) => unchecked((ushort)ReadInt16(value, startIndex));
+        public static ushort ToUInt16(byte[] value, int startIndex) => unchecked((ushort)ToInt16(value, startIndex));
 
         // Converts a Span into a ushort
         [CLSCompliant(false)]
@@ -313,7 +307,7 @@ namespace System
         // Converts an array of bytes into an uint.
         // 
         [CLSCompliant(false)]
-        public static uint ToUInt32(byte[] value, int startIndex) => unchecked((uint)ReadInt32(value, startIndex));
+        public static uint ToUInt32(byte[] value, int startIndex) => unchecked((uint)ToInt32(value, startIndex));
 
         // Convert a Span into a uint
         [CLSCompliant(false)]
@@ -327,7 +321,7 @@ namespace System
         // Converts an array of bytes into an unsigned long.
         // 
         [CLSCompliant(false)]
-        public static ulong ToUInt64(byte[] value, int startIndex) => unchecked((ulong)ReadInt64(value, startIndex));
+        public static ulong ToUInt64(byte[] value, int startIndex) => unchecked((ulong)ToInt64(value, startIndex));
 
         // Converts a Span into an unsigned long
         [CLSCompliant(false)]
@@ -339,11 +333,7 @@ namespace System
         }
 
         // Converts an array of bytes into a float.  
-        public static unsafe float ToSingle(byte[] value, int startIndex)
-        {
-            int val = ReadInt32(value, startIndex);
-            return *(float*)&val;
-        }
+        public static float ToSingle(byte[] value, int startIndex) => Int32BitsToSingle(ToInt32(value, startIndex));
 
         // Converts a Span into a float
         public static float ToSingle(ReadOnlySpan<byte> value)
@@ -354,11 +344,7 @@ namespace System
         }
 
         // Converts an array of bytes into a double.  
-        public static unsafe double ToDouble(byte[] value, int startIndex)
-        {
-            long val = ReadInt64(value, startIndex);
-            return *(double*)&val;
-        }
+        public static double ToDouble(byte[] value, int startIndex) => Int64BitsToDouble(ToInt64(value, startIndex));
 
         // Converts a Span into a double
         public static double ToDouble(ReadOnlySpan<byte> value)

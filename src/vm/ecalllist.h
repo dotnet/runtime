@@ -201,6 +201,8 @@ FCFuncEnd()
 FCFuncStart(gSafeBufferFuncs)
     FCFuncElement("PtrToStructureNative", SafeBuffer::PtrToStructure)
     FCFuncElement("StructureToPtrNative", SafeBuffer::StructureToPtr)
+    FCFuncElement("SizeOfType", SafeBuffer::SizeOfType)
+    FCFuncElement("AlignedSizeOfType", SafeBuffer::AlignedSizeOfType)
 FCFuncEnd()
 
 FCFuncStart(gTypedReferenceFuncs)
@@ -894,8 +896,6 @@ FCFuncStart(gInteropMarshalFuncs)
     QCFuncElement("GetHINSTANCE", COMModule::GetHINSTANCE)
 
     FCFuncElement("OffsetOfHelper", MarshalNative::OffsetOfHelper)
-    FCFuncElement("SizeOfType", SafeBuffer::SizeOfType)
-    FCFuncElement("AlignedSizeOfType", SafeBuffer::AlignedSizeOfType)
 
     QCFuncElement("InternalPrelink", MarshalNative::Prelink)
     FCFuncElement("CopyToNative", MarshalNative::CopyToNative)
