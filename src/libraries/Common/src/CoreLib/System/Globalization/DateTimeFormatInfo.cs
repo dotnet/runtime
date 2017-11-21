@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
 
 namespace System.Globalization
 {
@@ -56,24 +55,18 @@ namespace System.Globalization
         private static volatile DateTimeFormatInfo s_invariantInfo;
 
         // an index which points to a record in Culture Data Table.
-        [NonSerialized]
         private CultureData _cultureData;
 
         // The culture name used to create this DTFI.
-
-        [OptionalField(VersionAdded = 2)]
         private String _name = null;
 
         // The language name of the culture used to create this DTFI.
-        [NonSerialized]
         private String _langName = null;
 
         // CompareInfo usually used by the parser.
-        [NonSerialized]
         private CompareInfo _compareInfo = null;
 
         // Culture matches current DTFI. mainly used for string comparisons during parsing.
-        [NonSerialized]
         private CultureInfo _cultureInfo = null;
 
         //
@@ -147,7 +140,6 @@ namespace System.Globalization
         private String longTimePattern = null;
         private String shortTimePattern = null;
 
-        [OptionalField(VersionAdded = 3)]
         private String[] allYearMonthPatterns = null;
 
         private String[] allShortDatePatterns = null;
@@ -347,72 +339,12 @@ namespace System.Globalization
             Debug.Assert(this.allYearMonthPatterns.Length > 0, "[DateTimeFormatInfo.Populate] Expected some year month patterns");
         }
 
-        [OptionalField(VersionAdded = 1)]
         private bool _useUserOverride;
 
         // This was synthesized by Whidbey so we knew what words might appear in the middle of a date string
         // Now we always synthesize so its not helpful
 
         internal String[] m_dateWords = null;
-
-        [OnSerializing]
-        private void OnSerializing(StreamingContext ctx)
-        {
-            _name = this.CultureName; // make sure the _name is initialized.
-            _useUserOverride = _cultureData.UseUserOverride;
-
-            // Important to initialize these fields otherwise we may run into exception when deserializing on Whidbey
-            // because Whidbey try to initialize some of these fields using calendar data which could be null values 
-            // and then we get exceptions.  So we call the accessors to force the caches to get loaded.
-            Object o;
-            o = this.LongTimePattern;
-            o = this.LongDatePattern;
-            o = this.ShortTimePattern;
-            o = this.ShortDatePattern;
-            o = this.YearMonthPattern;
-            o = this.AllLongTimePatterns;
-            o = this.AllLongDatePatterns;
-            o = this.AllShortTimePatterns;
-            o = this.AllShortDatePatterns;
-            o = this.AllYearMonthPatterns;
-        }
-
-        [OnDeserialized]
-        private void OnDeserialized(StreamingContext ctx)
-        {
-            if (_name != null)
-            {
-                _cultureData = CultureData.GetCultureData(_name, _useUserOverride);
-                if (_cultureData == null)
-                {
-                    throw new CultureNotFoundException("_name", _name, SR.Argument_CultureNotSupported);
-                }
-            }
-
-            if (calendar == null)
-            {
-                calendar = (Calendar)GregorianCalendar.GetDefaultInstance().Clone();
-                calendar.SetReadOnlyState(_isReadOnly);
-            }
-
-            InitializeOverridableProperties(_cultureData, calendar.ID);
-
-            //
-            //  turn off read only state till we finish initializing all fields and then store read only state after we are done.
-            //
-            bool isReadOnly = _isReadOnly;
-            _isReadOnly = false;
-
-            // If we deserialized defaults ala Whidbey, make sure they're still defaults
-            // Whidbey's arrays could get a bit mixed up.
-            if (longDatePattern != null) this.LongDatePattern = longDatePattern;
-            if (shortDatePattern != null) this.ShortDatePattern = shortDatePattern;
-            if (yearMonthPattern != null) this.YearMonthPattern = yearMonthPattern;
-            if (longTimePattern != null) this.LongTimePattern = longTimePattern;
-            if (shortTimePattern != null) this.ShortTimePattern = shortTimePattern;
-
-            _isReadOnly = isReadOnly;
-        }
 
         // Returns a default DateTimeFormatInfo that will be universally
         // supported and constant irrespective of the current culture.
@@ -2094,7 +2026,6 @@ namespace System.Globalization
         //
         // Positive TimeSpan Pattern
         //
-        [NonSerialized]
         private string _fullTimeSpanPositivePattern;
         internal String FullTimeSpanPositivePattern
         {
@@ -2118,7 +2049,6 @@ namespace System.Globalization
         //
         // Negative TimeSpan Pattern
         //
-        [NonSerialized]
         private string _fullTimeSpanNegativePattern;
         internal String FullTimeSpanNegativePattern
         {
@@ -2269,7 +2199,6 @@ namespace System.Globalization
         //
         // DateTimeFormatInfo tokenizer.  This is used by DateTime.Parse() to break input string into tokens.
         //
-        [NonSerialized]
         private TokenHashValue[] _dtfiTokenHash;
 
         private const int TOKEN_HASH_SIZE = 199;
