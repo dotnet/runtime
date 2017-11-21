@@ -96,7 +96,7 @@ bool pal::load_library(const string_t* in_path, dll_t* dll)
     {
         if (!pal::realpath(&path))
         {
-            trace::error(_X("Failed to load the dll from [%s], HRESULT: 0x%X"), path, HRESULT_FROM_WIN32(GetLastError()));
+            trace::error(_X("Failed to load the dll from [%s], HRESULT: 0x%X"), path.c_str(), HRESULT_FROM_WIN32(GetLastError()));
             return false;
         }
     }
@@ -107,7 +107,7 @@ bool pal::load_library(const string_t* in_path, dll_t* dll)
     *dll = ::LoadLibraryExW(path.c_str(), NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
     if (*dll == nullptr)
     {
-        trace::error(_X("Failed to load the dll from [%s], HRESULT: 0x%X"), path, HRESULT_FROM_WIN32(GetLastError()));
+        trace::error(_X("Failed to load the dll from [%s], HRESULT: 0x%X"), path.c_str(), HRESULT_FROM_WIN32(GetLastError()));
         return false;
     }
 
@@ -115,7 +115,7 @@ bool pal::load_library(const string_t* in_path, dll_t* dll)
     HMODULE dummy_module;
     if (!::GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_PIN, path.c_str(), &dummy_module))
     {
-        trace::error(_X("Failed to pin library [%s] in [%s]"), path, _STRINGIFY(__FUNCTION__));
+        trace::error(_X("Failed to pin library [%s] in [%s]"), path.c_str(), _STRINGIFY(__FUNCTION__));
         return false;
     }
 
@@ -123,7 +123,7 @@ bool pal::load_library(const string_t* in_path, dll_t* dll)
     {
         string_t buf;
         GetModuleFileNameWrapper(*dll, &buf);
-        trace::info(_X("Loaded library from %s"), buf);
+        trace::info(_X("Loaded library from %s"), buf.c_str());
     }
 
     return true;
