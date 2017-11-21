@@ -256,35 +256,6 @@ namespace System.Runtime.InteropServices
             return SizeOf(typeof(T));
         }
 
-        /// <summary>
-        /// Returns the aligned size of an instance of a value type.
-        /// </summary>
-        /// <typeparam name="T">Provide a value type to figure out its size</typeparam>
-        /// <returns>The aligned size of T in bytes.</returns>
-        internal static uint AlignedSizeOf<T>() where T : struct
-        {
-            uint size = SizeOfType(typeof(T));
-            if (size == 1 || size == 2)
-            {
-                return size;
-            }
-            if (IntPtr.Size == 8 && size == 4)
-            {
-                return size;
-            }
-            return AlignedSizeOfType(typeof(T));
-        }
-
-        // Type must be a value type with no object reference fields.  We only
-        // assert this, due to the lack of a suitable generic constraint.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern uint SizeOfType(Type type);
-
-        // Type must be a value type with no object reference fields.  We only
-        // assert this, due to the lack of a suitable generic constraint.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern uint AlignedSizeOfType(Type type);
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int SizeOfHelper(Type t, bool throwIfNotMarshalable);
 
