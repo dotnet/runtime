@@ -23,11 +23,8 @@ namespace System.Collections.ObjectModel
     internal class ReadOnlyDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>
     {
         private readonly IDictionary<TKey, TValue> m_dictionary;
-        [NonSerialized]
         private Object m_syncRoot;
-        [NonSerialized]
         private KeyCollection m_keys;
-        [NonSerialized]
         private ValueCollection m_values;
 
         public ReadOnlyDictionary(IDictionary<TKey, TValue> dictionary)
@@ -429,7 +426,6 @@ namespace System.Collections.ObjectModel
         public sealed class KeyCollection : ICollection<TKey>, ICollection, IReadOnlyCollection<TKey>
         {
             private readonly ICollection<TKey> m_collection;
-            [NonSerialized]
             private Object m_syncRoot;
 
             internal KeyCollection(ICollection<TKey> collection)
@@ -539,7 +535,6 @@ namespace System.Collections.ObjectModel
         public sealed class ValueCollection : ICollection<TValue>, ICollection, IReadOnlyCollection<TValue>
         {
             private readonly ICollection<TValue> m_collection;
-            [NonSerialized]
             private Object m_syncRoot;
 
             internal ValueCollection(ICollection<TValue> collection)

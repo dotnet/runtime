@@ -15,7 +15,6 @@
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 using System.Threading;
 
 namespace System
@@ -191,17 +190,15 @@ namespace System
             return (T)LazyHelper.CreateViaDefaultConstructor(typeof(T));
         }
 
-        // _state, a volatile reference, is set to null after m_value has been set
-        [NonSerialized]
+        // _state, a volatile reference, is set to null after _value has been set
         private volatile LazyHelper _state;
 
         // we ensure that _factory when finished is set to null to allow garbage collector to clean up
         // any referenced items
-        [NonSerialized]
         private Func<T> _factory;
 
         // _value eventually stores the lazily created value. It is valid when _state = null.
-        private T m_value; // Do not rename (binary serialization)
+        private T _value;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:System.Threading.Lazy{T}"/> class that 
@@ -225,7 +222,7 @@ namespace System
         /// </remarks>
         public Lazy(T value)
         {
-            m_value = value;
+            _value = value;
         }
 
         /// <summary>
@@ -311,7 +308,7 @@ namespace System
 
         private void ViaConstructor()
         {
-            m_value = CreateViaDefaultConstructor();
+            _value = CreateViaDefaultConstructor();
             _state = null; // volatile write, must occur after setting _value
         }
 
@@ -324,7 +321,7 @@ namespace System
                     throw new InvalidOperationException(SR.Lazy_Value_RecursiveCallsToValue);
                 _factory = null;
 
-                m_value = factory();
+                _value = factory();
                 _state = null; // volatile write, must occur after setting _value
             }
             catch (Exception exception)
@@ -360,7 +357,7 @@ namespace System
             if (previous == publicationOnly)
             {
                 _factory = null;
-                m_value = possibleValue;
+                _value = possibleValue;
                 _state = null; // volatile write, must occur after setting _value
             }
         }
@@ -439,15 +436,6 @@ namespace System
             return Value;
         }
 
-        /// <summary>Forces initialization during serialization.</summary>
-        /// <param name="context">The StreamingContext for the serialization operation.</param>
-        [OnSerializing]
-        private void OnSerializing(StreamingContext context)
-        {
-            // Force initialization
-            T dummy = Value;
-        }
-
         /// <summary>Creates and returns a string representation of this instance.</summary>
         /// <returns>The result of calling <see cref="System.Object.ToString"/> on the <see
         /// cref="Value"/>.</returns>
@@ -468,7 +456,7 @@ namespace System
                 {
                     return default(T);
                 }
-                return m_value;
+                return _value;
             }
         }
 
@@ -515,7 +503,7 @@ namespace System
         /// from initialization delegate.
         /// </remarks>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        public T Value => _state == null ? m_value : CreateValue();
+        public T Value => _state == null ? _value : CreateValue();
     }
 
     /// <summary>A debugger view of the Lazy&lt;T&gt; to surface additional debugging properties and 

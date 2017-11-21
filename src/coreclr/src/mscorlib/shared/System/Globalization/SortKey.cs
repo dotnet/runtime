@@ -13,7 +13,6 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
 using System.Diagnostics;
 
 namespace System.Globalization
@@ -24,11 +23,7 @@ namespace System.Globalization
         //                        Internal Information                        //
         //--------------------------------------------------------------------//
 
-        [OptionalField(VersionAdded = 3)]
         internal string _localeName;       // locale identifier
-
-        [OptionalField(VersionAdded = 1)] // LCID field so serialization is Whidbey compatible though we don't officially support it
-        internal int _win32LCID;
 
         internal CompareOptions _options;  // options
         internal string _string;         // original string
@@ -44,26 +39,6 @@ namespace System.Globalization
             _localeName = localeName;
             _options = options;
             _string = str;
-        }
-
-        [OnSerializing]
-        private void OnSerializing(StreamingContext context)
-        {
-            //set LCID to proper value for Whidbey serialization (no other use)
-            if (_win32LCID == 0)
-            {
-                _win32LCID = CultureInfo.GetCultureInfo(_localeName).LCID;
-            }
-        }
-
-        [OnDeserialized]
-        private void OnDeserialized(StreamingContext context)
-        {
-            //set locale name to proper value after Whidbey deserialization
-            if (String.IsNullOrEmpty(_localeName) && _win32LCID != 0)
-            {
-                _localeName = CultureInfo.GetCultureInfo(_win32LCID).Name;
-            }
         }
 
         ////////////////////////////////////////////////////////////////////////
