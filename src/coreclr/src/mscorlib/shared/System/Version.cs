@@ -16,8 +16,7 @@ namespace System
 
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public sealed class Version : ICloneable, IComparable
-        , IComparable<Version>, IEquatable<Version>
+    public sealed class Version : ICloneable, IComparable, IComparable<Version>, IEquatable<Version>, ISpanFormattable
     {
         // AssemblyName depends on the order staying the same
         private readonly int _Major; // Do not rename (binary serialization)
@@ -226,6 +225,12 @@ namespace System
             StringBuilderCache.Release(sb);
             charsWritten = 0;
             return false;
+        }
+
+        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, string format, IFormatProvider provider)
+        {
+            // format and provider are ignored.
+            return TryFormat(destination, out charsWritten);
         }
 
         private int DefaultFormatFieldCount =>
