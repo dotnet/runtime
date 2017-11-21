@@ -1408,9 +1408,6 @@
   <data name="Argument_OffsetAndCapacityOutOfBounds" xml:space="preserve">
     <value>Offset and capacity were greater than the size of the view.</value>
   </data>
-  <data name="Argument_OffsetAndLengthOutOfBounds" xml:space="preserve">
-    <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
-  </data>
   <data name="Argument_OffsetLocalMismatch" xml:space="preserve">
     <value>The UTC Offset of the local dateTime parameter does not match the offset argument.</value>
   </data>
