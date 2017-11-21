@@ -366,7 +366,11 @@ namespace System
             }
         }
 
+#if PROJECTN
+        [MethodImpl(MethodImplOptions.NoOptimization)]
+#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // called from only one location
+#endif
         private static unsafe void Int32ToNumber(int value, ref NumberBuffer number)
         {
             number.precision = Int32Precision;
@@ -470,7 +474,11 @@ namespace System
             return buffer;
         }
 
+#if PROJECTN
+        [MethodImpl(MethodImplOptions.NoOptimization)]
+#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // called from only one location
+#endif
         private static unsafe void UInt32ToNumber(uint value, ref NumberBuffer number)
         {
             number.precision = UInt32Precision;
@@ -570,6 +578,9 @@ namespace System
             }
         }
 
+#if PROJECTN
+        [MethodImpl(MethodImplOptions.NoOptimization)]
+#endif
         private static unsafe void Int64ToNumber(long input, ref NumberBuffer number)
         {
             ulong value = (ulong)input;
@@ -697,6 +708,9 @@ namespace System
             return TryCopyTo(p, (int)(buffer + bufferLength - p), destination, out charsWritten);
         }
 
+#if PROJECTN
+        [MethodImpl(MethodImplOptions.NoOptimization)]
+#endif
         private static unsafe void UInt64ToNumber(ulong value, ref NumberBuffer number)
         {
             number.precision = UInt64Precision;
