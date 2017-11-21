@@ -2955,20 +2955,6 @@ class CriticalHandle : public Object
 };
 
 
-class ReflectClassBaseObject;
-
-class SafeBuffer : SafeHandle
-{
-  private:
-    size_t m_numBytes;
-
-  public:
-    static FCDECL1(UINT, SizeOfType, ReflectClassBaseObject* typeUNSAFE);
-    static FCDECL1(UINT, AlignedSizeOfType, ReflectClassBaseObject* typeUNSAFE);
-    static FCDECL3_IVI(void, PtrToStructure, BYTE* ptr, FC_TypedByRef structure, UINT32 sizeofT);
-    static FCDECL3_VII(void, StructureToPtr, FC_TypedByRef structure, BYTE* ptr, UINT32 sizeofT);
-};
-
 #ifdef USE_CHECKED_OBJECTREFS
 typedef REF<CriticalHandle> CRITICALHANDLE;
 typedef REF<CriticalHandle> CRITICALHANDLEREF;
@@ -2998,44 +2984,6 @@ private:
 typedef REF<WaitHandleBase> WAITHANDLEREF;
 #else // USE_CHECKED_OBJECTREFS
 typedef WaitHandleBase* WAITHANDLEREF;
-#endif // USE_CHECKED_OBJECTREFS
-
-// This class corresponds to FileStreamAsyncResult on the managed side.
-class AsyncResultBase :public Object
-{
-    friend class MscorlibBinder;
-
-public: 
-    WAITHANDLEREF GetWaitHandle() { LIMITED_METHOD_CONTRACT; return _waitHandle;}
-    void SetErrorCode(int errcode) { LIMITED_METHOD_CONTRACT; _errorCode = errcode;}
-    void SetNumBytes(int numBytes) { LIMITED_METHOD_CONTRACT; _numBytes = numBytes;}
-    void SetIsComplete() { LIMITED_METHOD_CONTRACT; _isComplete = TRUE; }
-    void SetCompletedAsynchronously() { LIMITED_METHOD_CONTRACT; _completedSynchronously = FALSE; }
-
-    // README:
-    // If you modify the order of these fields, make sure to update the definition in 
-    // BCL for this object.
-private:
-    OBJECTREF _userCallback;
-    OBJECTREF _userStateObject;
-
-    WAITHANDLEREF _waitHandle;
-    SAFEHANDLEREF _fileHandle;     // For cancellation.
-    LPOVERLAPPED  _overlapped;
-    int _EndXxxCalled;             // Whether we've called EndXxx already.
-    int _numBytes;                 // number of bytes read OR written
-    int _errorCode;
-    int _numBufferedBytes;
-
-    CLR_BOOL _isWrite;                 // Whether this is a read or a write
-    CLR_BOOL _isComplete;
-    CLR_BOOL _completedSynchronously;  // Which thread called callback
-};
-
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<AsyncResultBase> ASYNCRESULTREF;
-#else // USE_CHECKED_OBJECTREFS
-typedef AsyncResultBase* ASYNCRESULTREF;
 #endif // USE_CHECKED_OBJECTREFS
 
 // This class corresponds to System.MulticastDelegate on the managed side.
