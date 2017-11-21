@@ -210,8 +210,10 @@ namespace System
                 charsWritten = 0;
                 return true;
             }
-
-            // TODO https://github.com/dotnet/corefx/issues/22403: fieldCount==1 can just use int.TryFormat
+            else if (fieldCount == 1)
+            {
+                return _Major.TryFormat(destination, out charsWritten);
+            }
 
             StringBuilder sb = ToCachedStringBuilder(fieldCount);
             if (sb.Length <= destination.Length)
@@ -240,18 +242,15 @@ namespace System
 
         private StringBuilder ToCachedStringBuilder(int fieldCount)
         {
-            if (fieldCount == 1)
+            // Note: As we always have positive numbers then it is safe to convert the number to string
+            // regardless of the current culture as we'll not have any punctuation marks in the number.
+
+            if (fieldCount == 2)
             {
                 StringBuilder sb = StringBuilderCache.Acquire();
-                AppendNonNegativeNumber(_Major, sb);
-                return sb;
-            }
-            else if (fieldCount == 2)
-            {
-                StringBuilder sb = StringBuilderCache.Acquire();
-                AppendNonNegativeNumber(_Major, sb);
+                sb.Append(_Major);
                 sb.Append('.');
-                AppendNonNegativeNumber(_Minor, sb);
+                sb.Append(_Minor);
                 return sb;
             }
             else
@@ -264,11 +263,11 @@ namespace System
                 if (fieldCount == 3)
                 {
                     StringBuilder sb = StringBuilderCache.Acquire();
-                    AppendNonNegativeNumber(_Major, sb);
+                    sb.Append(_Major);
                     sb.Append('.');
-                    AppendNonNegativeNumber(_Minor, sb);
+                    sb.Append(_Minor);
                     sb.Append('.');
-                    AppendNonNegativeNumber(_Build, sb);
+                    sb.Append(_Build);
                     return sb;
                 }
 
@@ -280,37 +279,18 @@ namespace System
                 if (fieldCount == 4)
                 {
                     StringBuilder sb = StringBuilderCache.Acquire();
-                    AppendNonNegativeNumber(_Major, sb);
+                    sb.Append(_Major);
                     sb.Append('.');
-                    AppendNonNegativeNumber(_Minor, sb);
+                    sb.Append(_Minor);
                     sb.Append('.');
-                    AppendNonNegativeNumber(_Build, sb);
+                    sb.Append(_Build);
                     sb.Append('.');
-                    AppendNonNegativeNumber(_Revision, sb);
+                    sb.Append(_Revision);
                     return sb;
                 }
 
                 throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", "4"), nameof(fieldCount));
             }
-        }
-
-        // TODO https://github.com/dotnet/corefx/issues/22616:
-        // Use StringBuilder.Append(int) once it's been updated to use spans internally.
-        //
-        // AppendNonNegativeNumber is an optimization to append a number to a StringBuilder object without
-        // doing any boxing and not even creating intermediate string.
-        // Note: as we always have positive numbers then it is safe to convert the number to string 
-        // regardless of the current culture as we'll not have any punctuation marks in the number
-        private static void AppendNonNegativeNumber(int num, StringBuilder sb)
-        {
-            Debug.Assert(num >= 0, "AppendPositiveNumber expect positive numbers");
-
-            int index = sb.Length;
-            do
-            {
-                num = Math.DivRem(num, 10, out int remainder);
-                sb.Insert(index, (char)('0' + remainder));
-            } while (num > 0);
         }
 
         public static Version Parse(string input)
