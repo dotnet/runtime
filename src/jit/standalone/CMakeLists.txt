@@ -8,10 +8,6 @@ if(FEATURE_READYTORUN)
   add_definitions(-DFEATURE_READYTORUN_COMPILER)
 endif(FEATURE_READYTORUN)
 
-if(CLR_CMAKE_TARGET_ARCH_ARM)
-  add_definitions(-DLEGACY_BACKEND)
-endif()
-
 if(WIN32)
   add_definitions(-DFX_VER_INTERNALNAME_STR=clrjit.dll)
 endif(WIN32)
