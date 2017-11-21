@@ -149,7 +149,7 @@ It is also possible to debug .NET Core crash dumps using lldb and SOS. In order 
 Once you have everything listed above, you are ready to start debugging. You need to specify an extra parameter to lldb in order for it to correctly resolve the symbols for libcoreclr.so. Use a command like this:
 
 ```
-lldb-3.9 -O "settings set target.exec-search-paths <runtime-path>" -o “plugin load <path-to-libsosplugin.so>” --core <core-file-path> <host-path>
+lldb-3.9 -O "settings set target.exec-search-paths <runtime-path>" -o "plugin load <path-to-libsosplugin.so>" --core <core-file-path> <host-path>
 ```
 
 - `<runtime-path>`: The path containing libcoreclr.so.dbg, as well as the rest of the runtime and framework assemblies.
