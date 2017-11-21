@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -175,7 +176,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             Assert.True(res);
         }
 
-        [Fact, ActiveIssue(7527)]
+        [Fact]
         public void CyclicTypeDefinition()
         {
             dynamic x = new Third<int>();
@@ -214,6 +215,54 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             Assert.Equal("abcdef", result);
             result = "xyz" + d;
             Assert.Equal("xyzabc", result);
+        }
+
+        [Fact]
+        public void DynamicArgumentToCyclicTypeDefinition()
+        {
+            dynamic arg = 5;
+            new Builder<object>().SomeMethod(arg);
+        }
+
+        public class Builder<TItem> : BuilderBaseEx<Builder<TItem>>
+        {
+            public Builder<TItem> SomeMethod(object arg)
+            {
+                return this;
+            }
+        }
+        public class BuilderBaseEx<T> : BuilderBase<T> where T : BuilderBaseEx<T> { }
+        public class BuilderBase<T> where T : BuilderBase<T> { }
+
+        [Fact]
+        public void CircularOnOwnNested()
+        {
+            dynamic d = new Generic<string>.Inner
+            {
+                Foo = "expected"
+            };
+
+            Assert.Equal("expected", d.Foo);
+        }
+
+
+        [Fact]
+        public void CircularOnOwnNestedAbsentMember()
+        {
+            dynamic d = new Generic<string>.Inner
+            {
+                Foo = "expected"
+            };
+
+            Assert.Throws<RuntimeBinderException>(() => d.Bar);
+        }
+
+        class Generic<T> : BindingList<Generic<T>.Inner>
+        {
+            public class Inner
+            {
+                public object Foo { get; set; }
+            }
         }
     }
 }
