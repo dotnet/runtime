@@ -1581,6 +1581,9 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         armCrossgenOpt = '-altjitcrossgen'
                     }
 
+                    // Hack: build pri1 tests for arm/armlb/arm64 build job, until we have separate pri0 and pri1 builds for the flow job to use.
+                    priority = '1'
+
                     // This is now a build only job. Do not run tests. Use the flow job.
                     buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${buildArchitecture} -priority=${priority} ${armCrossgenOpt}"
                     
@@ -1605,6 +1608,9 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         // Keep the longer timeout for gcstress.
                         Utilities.setJobTimeout(newJob, 240)
                     }
+
+                    // Hack: build pri1 tests for arm/armlb/arm64 build job, until we have separate pri0 and pri1 builds for the flow job to use.
+                    priority = '1'
 
                     // This is now a build only job. Do not run tests. Use the flow job.
                     buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} toolset_dir C:\\ats2 -priority=${priority}"
