@@ -266,7 +266,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(false)]
         [InlineData(true)]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests ConcurrentSendReceive success for UnixDomainSocketEndPoint on Unix
-        public void ConcurrentSendReceive(bool forceNonBlocking)
+        public async Task ConcurrentSendReceive(bool forceNonBlocking)
         {
             using (Socket server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
             using (Socket client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
@@ -283,7 +283,7 @@ namespace System.Net.Sockets.Tests
 
                 Task<Socket> acceptTask = server.AcceptAsync();
                 client.Connect(new UnixDomainSocketEndPoint(path));
-                acceptTask.Wait();
+                await acceptTask;
                 Socket accepted = acceptTask.Result;
 
                 client.ForceNonBlocking(forceNonBlocking);
@@ -301,8 +301,7 @@ namespace System.Net.Sockets.Tests
                     writes[i] = Task.Factory.StartNew(s => client.Send(sendData, (int)s, 1, SocketFlags.None), i,
                         CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
                 }
-                Task.WaitAll(writes);
-                Task.WaitAll(reads);
+                await TestSettings.WhenAllOrAnyFailedWithTimeout(writes.Concat(reads).ToArray());
 
                 Assert.Equal(sendData.OrderBy(i => i), receiveData.OrderBy(i => i));
             }
@@ -311,7 +310,7 @@ namespace System.Net.Sockets.Tests
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests ConcurrentSendReceive success for UnixDomainSocketEndPoint on Unix
-        public void ConcurrentSendReceiveAsync()
+        public async Task ConcurrentSendReceiveAsync()
         {
             using (Socket server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
             using (Socket client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
@@ -328,7 +327,7 @@ namespace System.Net.Sockets.Tests
 
                 Task<Socket> acceptTask = server.AcceptAsync();
                 client.Connect(new UnixDomainSocketEndPoint(path));
-                acceptTask.Wait();
+                await acceptTask;
                 Socket accepted = acceptTask.Result;
 
                 Task[] writes = new Task[Iters];
@@ -341,8 +340,8 @@ namespace System.Net.Sockets.Tests
                 {
                     reads[i] = accepted.ReceiveAsync(new ArraySegment<byte>(receiveData, i, 1), SocketFlags.None);
                 }
-                Task.WaitAll(writes);
-                Task.WaitAll(reads);
+
+                await TestSettings.WhenAllOrAnyFailedWithTimeout(writes.Concat(reads).ToArray());
 
                 Assert.Equal(sendData, receiveData);
             }
