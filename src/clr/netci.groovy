@@ -247,7 +247,7 @@ class Constants {
     def static configurationList = ['Debug', 'Checked', 'Release']
 
     // This is the set of architectures
-    def static architectureList = ['arm', 'armlb', 'x86_arm_altjit', 'x64_arm64_altjit', 'arm64', 'x64', 'x86', 'x86lb']
+    def static architectureList = ['arm', 'armlb', 'x86_arm_altjit', 'x64_arm64_altjit', 'arm64', 'x64', 'x86']
 }
 
 def static setMachineAffinity(def job, def os, def architecture, def options = null) {
@@ -555,7 +555,6 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
             }
             break
         case 'x86':
-        case 'x86lb':
         case 'x86_arm_altjit':
         case 'x64_arm64_altjit':
             baseName = architecture.toLowerCase() + '_' + configuration.toLowerCase() + '_' + os.toLowerCase()
@@ -577,7 +576,6 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
             switch (architecture) {
                 case 'x64':
                 case 'x86':
-                case 'x86lb':
                     if (architecture == 'x86' && os == 'Ubuntu') {
                         Utilities.addPeriodicTrigger(job, '@daily')
                     }
@@ -618,7 +616,7 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
                     }
                 }
                 // For x86, only add per-commit jobs for Windows
-                else if (architecture == 'x86' || architecture == 'x86lb') {
+                else if (architecture == 'x86') {
                     if (os == 'Windows_NT') {
                         Utilities.addGithubPushTrigger(job)
                     }
@@ -1310,25 +1308,6 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             }
             break
          // editor brace matching: }
-        case 'x86lb': // editor brace matching: {
-            assert (os == 'Windows_NT')
-
-            def arch = 'x86'
-            def jit = 'legacy_backend'
-            switch (scenario) {
-                case 'default':
-                    if (configuration == 'Checked') {
-                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${arch} ${jit} ${configuration} Build and Test",
-                            "(?i).*test\\W+${os}\\W+${arch}\\W+${jit}\\W+${configuration}\\W+Build and Test.*")
-                    }
-                    break
-                default:
-                    println("Unknown scenario: ${os} ${arch} ${jit} ${scenario}");
-                    assert false
-                    break
-            }
-            break
-        // editor brace matching: }
         case 'x64_arm64_altjit':
         case 'x86_arm_altjit': // editor brace matching: {
             assert (os == 'Windows_NT')
@@ -1369,12 +1348,11 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
             switch (architecture) {
                 case 'x64':
                 case 'x86':
-                case 'x86lb':
                 case 'x86_arm_altjit':
                 case 'x64_arm64_altjit':
                     def arch = architecture
                     def buildOpts = ''
-                    if ((architecture == 'x86lb') || (architecture == 'x86_arm_altjit')) {
+                    if (architecture == 'x86_arm_altjit') {
                         arch = 'x86'
                     }
                     else if (architecture == 'x64_arm64_altjit') {
@@ -1394,7 +1372,6 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     // If it is a release build for windows, ensure PGO is used, else fail the build
                     if ((lowerConfiguration == 'release') &&
                         (scenario in Constants.basicScenarios) &&
-                        (architecture != 'x86lb') &&
                         (architecture != 'x86_arm_altjit') &&
                         (architecture != 'x64_arm64_altjit')) {
 
@@ -1495,10 +1472,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                             def buildCommandsStr = ''
                             envScriptPath = "%WORKSPACE%\\SetStressModes.bat"
                             buildCommandsStr += genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], envScriptPath)
-                            if (architecture == 'x86lb') {
-                                buildCommandsStr += appendStressModeScriptStep(os, "%WORKSPACE%\\tests\\legacyjit_x86_testenv.cmd", envScriptPath)
-                            }
-                            else if (architecture == 'x86_arm_altjit') {
+                            if (architecture == 'x86_arm_altjit') {
                                 buildCommandsStr += appendStressModeScriptStep(os, "%WORKSPACE%\\tests\\x86_arm_altjit.cmd", envScriptPath)
                             }
                             else if (architecture == 'x64_arm64_altjit') {
@@ -1509,9 +1483,6 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                             // create the SetStressModes.bat script to be executed together, hence we accumulate them as strings
                             // into a single script.
                             buildCommands += buildCommandsStr
-                        }
-                        else if (architecture == 'x86lb') {
-                            envScriptPath = "%WORKSPACE%\\tests\\legacyjit_x86_testenv.cmd"
                         }
                         else if (architecture == 'x86_arm_altjit') {
                             envScriptPath = "%WORKSPACE%\\tests\\x86_arm_altjit.cmd"
@@ -1844,7 +1815,6 @@ Constants.allScenarios.each { scenario ->
                                 return
                             }
                             break
-                        case 'x86lb':
                         case 'x86_arm_altjit':
                         case 'x64_arm64_altjit':
                             if (os != 'Windows_NT') {
@@ -1888,7 +1858,6 @@ Constants.allScenarios.each { scenario ->
 
                             default:
                                 // arm, arm64, armlb: stress is handled through flow jobs.
-                                // x86lb: No stress modes for legacy jit. (There's no technical reason we couldn't allow these.)
                                 return
                         }
                     }
@@ -2007,11 +1976,6 @@ Constants.allScenarios.each { scenario ->
                             break
                         default:
                             break
-                    }
-
-                    // Only implement 'default' for x86lb.
-                    if ((architecture == 'x86lb') && (scenario != 'default')) {
-                        return
                     }
 
                     // Calculate names
