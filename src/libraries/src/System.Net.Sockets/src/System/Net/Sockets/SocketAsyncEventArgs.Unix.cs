@@ -128,11 +128,12 @@ namespace System.Net.Sockets
             _receivedFlags = receivedFlags;
         }
 
-        internal unsafe SocketError DoOperationReceive(SafeCloseSocket handle, out SocketFlags flags)
+        internal unsafe SocketError DoOperationReceive(SafeCloseSocket handle)
         {
             _receivedFlags = System.Net.Sockets.SocketFlags.None;
             _socketAddressSize = 0;
 
+            SocketFlags flags;
             int bytesReceived;
             SocketError errorCode;
             if (_bufferList == null)
@@ -153,11 +154,12 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
-        internal unsafe SocketError DoOperationReceiveFrom(SafeCloseSocket handle, out SocketFlags flags)
+        internal unsafe SocketError DoOperationReceiveFrom(SafeCloseSocket handle)
         {
             _receivedFlags = System.Net.Sockets.SocketFlags.None;
             _socketAddressSize = 0;
 
+            SocketFlags flags;
             SocketError errorCode;
             int bytesReceived = 0;
             int socketAddressLen = _socketAddress.Size;
