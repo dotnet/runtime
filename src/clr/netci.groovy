@@ -2512,6 +2512,10 @@ Constants.allScenarios.each { scenario ->
                                 addCommand("pushd bin\\tests\\${osGroup}.${architecture}.${configuration}")
                                 addCommand("${smartyCommand}")
 
+                                // ZIP up the smarty output. Note that the current directory was changed above by "pushd", so we are
+                                // in the correct directory where the "Smarty.run.0" directory is.
+                                buildCommands += "powershell -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\Smarty.run.0', '.\\Smarty.run.0.zip')\"";
+
                                 batchFile(buildCommands)
                             }
                         }
@@ -2558,6 +2562,11 @@ Constants.allScenarios.each { scenario ->
                     }
                     else {
                         Utilities.addArchival(newJob, "bin/tests/${osGroup}.${architecture}.${configuration}/Smarty.run.0/*.smrt", '', true, false)
+
+                        // Archive a ZIP file of the entire Smarty.run.0 directory. This is possibly a little too much,
+                        // but there is no easy way to only archive the HTML/TXT files of the failing tests, so we get
+                        // all the passing test info as well. Not necessarily a bad thing, but possibly somewhat large.
+                        Utilities.addArchival(newJob, "bin/tests/${osGroup}.${architecture}.${configuration}/Smarty.run.0.zip", '', true, false)
                     }
 
                     // Create a build flow to join together the build and tests required to run this test.
