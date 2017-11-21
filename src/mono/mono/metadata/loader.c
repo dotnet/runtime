@@ -1844,6 +1844,22 @@ get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constra
 		return NULL;
 	}
 
+	MonoGenericContext inflated_method_ctx = { .class_inst = NULL, .method_inst = NULL };
+	gboolean inflated_generic_method = FALSE;
+	if (method->is_inflated) {
+		MonoGenericContext *method_ctx = mono_method_get_context (method);
+		/* If method is an instantiation of a generic method definition, ie
+		 *   class H<T>  { void M<U> (...) { ... } }
+		 * and method is H<C>.M<D>
+		 * we will get at the end a refined HSubclass<...>.M<U> and we will need to re-instantiate it with D.
+		 * to get HSubclass<...>.M<D>
+		 *
+		 */
+		if (method_ctx->method_inst != NULL) {
+			inflated_generic_method = TRUE;
+			inflated_method_ctx.method_inst = method_ctx->method_inst;
+		}
+	}
 	int vtable_slot = 0;
 	if (!MONO_CLASS_IS_INTERFACE (base_class)) {
 		/*if the base class isn't an interface and the method isn't
@@ -1880,6 +1896,11 @@ get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constra
 
 	MonoMethod *res = mono_class_get_vtable_entry (constrained_class, vtable_slot);
 	g_assert (res != NULL);
+	if (inflated_generic_method) {
+		g_assert (res->is_generic);
+		res = mono_class_inflate_generic_method_checked (res, &inflated_method_ctx, error);
+		return_val_if_nok (error, NULL);
+	}
 	return res;
 }
 
