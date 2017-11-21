@@ -89,43 +89,56 @@ pal::string_t resolve_fxr_path(const pal::string_t& own_dir)
         trace::info(_X("Resolved fxr [%s]..."), fxr_path.c_str());
         return fxr_path;
     }
+
+    trace::error(_X("A fatal error occurred, the required library %s could not be found at [%s]"), LIBFXR_NAME, own_dir.c_str());
     return pal::string_t();
 #else
     pal::string_t fxr_dir = own_dir;
     append_path(&fxr_dir, _X("host"));
     append_path(&fxr_dir, _X("fxr"));
-    if (pal::directory_exists(fxr_dir))
+    if (!pal::directory_exists(fxr_dir))
     {
-        trace::info(_X("Reading fx resolver directory=[%s]"), fxr_dir.c_str());
+        trace::error(_X("A fatal error occurred, the folder [%s] does not exist"), fxr_dir.c_str());
+        return pal::string_t();
+    }
 
-        std::vector<pal::string_t> list;
-        pal::readdir_onlydirectories(fxr_dir, &list);
+    trace::info(_X("Reading fx resolver directory=[%s]"), fxr_dir.c_str());
 
-        fx_ver_t max_ver(-1, -1, -1);
-        for (const auto& dir : list)
+    std::vector<pal::string_t> list;
+    pal::readdir_onlydirectories(fxr_dir, &list);
+
+    fx_ver_t max_ver(-1, -1, -1);
+    for (const auto& dir : list)
+    {
+        trace::info(_X("Considering fxr version=[%s]..."), dir.c_str());
+
+        pal::string_t ver = get_filename(dir);
+
+        fx_ver_t fx_ver(-1, -1, -1);
+        if (fx_ver_t::parse(ver, &fx_ver, false))
         {
-            trace::info(_X("Considering fxr version=[%s]..."), dir.c_str());
-
-            pal::string_t ver = get_filename(dir);
-
-            fx_ver_t fx_ver(-1, -1, -1);
-            if (fx_ver_t::parse(ver, &fx_ver, false))
-            {
-                max_ver = std::max(max_ver, fx_ver);
-            }
-        }
-
-        pal::string_t max_ver_str = max_ver.as_str();
-        append_path(&fxr_dir, max_ver_str.c_str());
-        trace::info(_X("Detected latest fxr version=[%s]..."), fxr_dir.c_str());
-
-        pal::string_t ret_path;
-        if (library_exists_in_dir(fxr_dir, LIBFXR_NAME, &ret_path))
-        {
-            trace::info(_X("Resolved fxr [%s]..."), ret_path.c_str());
-            return ret_path;
+            max_ver = std::max(max_ver, fx_ver);
         }
     }
+
+    if (max_ver == fx_ver_t(-1, -1, -1))
+    {
+        trace::error(_X("A fatal error occurred, the folder [%s] does not contain any version-numbered child folders"), fxr_dir.c_str());
+        return pal::string_t();
+    }
+
+    pal::string_t max_ver_str = max_ver.as_str();
+    append_path(&fxr_dir, max_ver_str.c_str());
+    trace::info(_X("Detected latest fxr version=[%s]..."), fxr_dir.c_str());
+
+    pal::string_t ret_path;
+    if (library_exists_in_dir(fxr_dir, LIBFXR_NAME, &ret_path))
+    {
+        trace::info(_X("Resolved fxr [%s]..."), ret_path.c_str());
+        return ret_path;
+    }
+
+    trace::error(_X("A fatal error occurred, the required library %s could not be found in [%s]"), LIBFXR_NAME, fxr_dir.c_str());
 
     return pal::string_t();
 #endif
@@ -151,7 +164,7 @@ int run(const int argc, const pal::char_t* argv[])
 
     if (pal::strcasecmp(own_name.c_str(), CURHOST_TYPE) != 0)
     {
-        trace::error(_X("A fatal error :Cannot execute %s when renamed to  %s."), CURHOST_TYPE,own_name.c_str());
+        trace::error(_X("A fatal error was encountered. Cannot execute %s when renamed to  %s."), CURHOST_TYPE,own_name.c_str());
         return StatusCode::CoreHostEntryPointFailure;
     }
 
@@ -181,7 +194,6 @@ int run(const int argc, const pal::char_t* argv[])
     pal::string_t fxr_path = resolve_fxr_path(own_dir);
     if (fxr_path.empty())
     {
-        trace::error(_X("A fatal error occurred, the required library %s could not be found at %s"), LIBFXR_NAME, own_dir.c_str());
         return StatusCode::CoreHostLibMissingFailure;
     }
 
