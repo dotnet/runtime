@@ -240,6 +240,13 @@ void sgen_client_describe_invalid_pointer (GCObject *ptr);
 gsize *sgen_client_get_weak_bitmap (GCVTable vt, int *nbits);
 
 /*
+ * Scheduled @cv to be invoked later in the background.
+ *
+ * This function is idepotent WRT background execution. Meaning that calling it multiple times with the same funciton pointer before any bg execution happens will only call @cb once.
+ */
+void sgen_client_schedule_background_job (void (*cb)(void));
+
+/*
  * These client binary protocol functions are called from the respective binary protocol
  * functions.  No action is necessary.  We suggest implementing them as inline functions in
  * the client header file so that no overhead is incurred if they don't actually do
@@ -310,4 +317,5 @@ SgenThreadInfo* mono_thread_info_current (void);
  * Get the current thread's small ID.  This will be called on managed and worker threads.
  */
 int mono_thread_info_get_small_id (void);
+
 #endif

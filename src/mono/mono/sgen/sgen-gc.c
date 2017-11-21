@@ -2592,19 +2592,14 @@ typedef struct {
 } SgenGcRequest;
 
 static SgenGcRequest gc_request;
-static gboolean pending_request;
-
-extern void request_gc_cycle (void);
 
 #include <emscripten.h>
 
-EMSCRIPTEN_KEEPALIVE void
-mono_gc_pump_callback (void)
+static void
+gc_pump_callback (void)
 {
-	if (!pending_request)
-		return;
-	pending_request = FALSE;
-	sgen_perform_collection_inner (gc_request.requested_size, gc_request.generation_to_collect, gc_request.reason, TRUE, TRUE);	
+	sgen_perform_collection_inner (gc_request.requested_size, gc_request.generation_to_collect, gc_request.reason, TRUE, TRUE);
+	gc_request.generation_to_collect = 0;
 }
 #endif
 
@@ -2614,14 +2609,14 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 #ifdef HOST_WASM
 	g_assert (stw); //can't handle non-stw mode (IE, domain unload)
 	//we ignore wait_to_finish
-	if (!pending_request || gc_request.generation_to_collect <= generation_to_collect) { //no active request or request was for a smaller part of the heap
+
+	//There's a window for racing where we're executing other bg jobs before the GC, they trigger a GC request and it overrides this one.
+	//I belive this case to be benign as it will, in the worst case, upgrade a minor to a major collection.
+	if (gc_request.generation_to_collect <= generation_to_collect) {
 		gc_request.requested_size = requested_size;
 		gc_request.generation_to_collect = generation_to_collect;
 		gc_request.reason = reason;
-		if (!pending_request) {
-			request_gc_cycle ();
-			pending_request = TRUE;
-		}
+		sgen_client_schedule_background_job (gc_pump_callback);
 	}
 
 	degraded_mode = 1; //enable degraded mode so allocation can continue

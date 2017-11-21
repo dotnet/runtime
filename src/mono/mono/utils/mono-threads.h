@@ -649,4 +649,10 @@ mono_thread_info_wait_multiple_handle (MonoThreadHandle **thread_handles, gsize 
 void mono_threads_join_lock (void);
 void mono_threads_join_unlock (void);
 
+
+#ifdef HOST_WASM
+typedef void (*background_job_cb)(void);
+void mono_threads_schedule_background_job (background_job_cb cb);
+#endif
+
 #endif /* __MONO_THREADS_H__ */

@@ -3334,4 +3334,14 @@ sgen_client_binary_protocol_collection_end (int minor_gc_count, int generation, 
 
 	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_END, generation));
 }
+
+#ifdef HOST_WASM
+void
+sgen_client_schedule_background_job (void (*cb)(void))
+{
+	mono_threads_schedule_background_job (cb);
+}
+
+#endif
+
 #endif
