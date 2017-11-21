@@ -15,7 +15,6 @@
 ////////////////////////////////////////////////////////////////////////////
 
 using System.Diagnostics;
-using System.Runtime.Serialization;
 
 namespace System.Globalization
 {
@@ -122,24 +121,6 @@ namespace System.Globalization
         private void SetName(string name)
         {
             // Use the name of the region we found
-            _name = _cultureData.SREGIONNAME;
-        }
-
-        [OnSerializing]
-        private void OnSerializing(StreamingContext ctx) { }
-
-        [OnDeserialized]
-        private void OnDeserialized(StreamingContext ctx)
-        {
-            _cultureData = CultureData.GetCultureData(_name, true);
-
-            if (_cultureData == null)
-            {
-                throw new ArgumentException(
-                    String.Format(CultureInfo.CurrentCulture, SR.Argument_InvalidCultureName, _name),
-                    "_name");
-            }
-
             _name = _cultureData.SREGIONNAME;
         }
 
