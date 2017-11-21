@@ -3994,7 +3994,7 @@ namespace System.Net.Sockets
             SocketError socketError;
             try
             {
-                socketError = e.DoOperationReceive(_handle, out _);
+                socketError = e.DoOperationReceive(_handle);
             }
             catch
             {
@@ -4047,7 +4047,7 @@ namespace System.Net.Sockets
             SocketError socketError;
             try
             {
-                socketError = e.DoOperationReceiveFrom(_handle, out _);
+                socketError = e.DoOperationReceiveFrom(_handle);
             }
             catch
             {
