@@ -26,7 +26,7 @@ namespace System.Net.Sockets
 
     public partial class SocketAsyncEventArgs : System.EventArgs, System.IDisposable
     {
-        public System.Memory<byte> GetBuffer() { throw null; }
+        public System.Memory<byte> MemoryBuffer { get { throw null; } }
         public void SetBuffer(System.Memory<byte> buffer) { throw null; }
     }
 
