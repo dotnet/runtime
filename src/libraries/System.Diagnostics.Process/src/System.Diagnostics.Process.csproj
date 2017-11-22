@@ -435,6 +435,7 @@
     <Reference Include="System.Diagnostics.FileVersionInfo" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />

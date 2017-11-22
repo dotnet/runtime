@@ -68,7 +68,7 @@ namespace System.Net.Security.Tests
 
                     await TestConfiguration.WhenAllOrAnyFailedWithTimeout(writeTask, readTask);
 
-                    Assert.True(readTask.Result > 0);
+                    Assert.InRange(readTask.Result, 1, 256);
                 }
             }
 

@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -54,6 +56,42 @@ namespace System.Diagnostics
             get
             {
                 return BootTimeToDateTime(TicksToTimeSpan(GetStat().starttime));
+            }
+        }
+
+        /// <summary>Computes a time based on a number of ticks since boot.</summary>
+        /// <param name="timespanAfterBoot">The timespan since boot.</param>
+        /// <returns>The converted time.</returns>
+        internal static DateTime BootTimeToDateTime(TimeSpan timespanAfterBoot)
+        {
+            // Use the uptime and the current time to determine the absolute boot time.
+            DateTime bootTime = DateTime.UtcNow - Uptime;
+
+            // And use that to determine the absolute time for timespan.
+            DateTime dt = bootTime + timespanAfterBoot;
+
+            // The return value is expected to be in the local time zone.
+            // It is converted here (rather than starting with DateTime.Now) to avoid DST issues.
+            return dt.ToLocalTime();
+        }
+
+        /// <summary>Gets the elapsed time since the system was booted.</summary>
+        private static TimeSpan Uptime
+        {
+            get
+            {
+                // '/proc/uptime' accounts time a device spends in sleep mode.
+                const string UptimeFile = Interop.procfs.ProcUptimeFilePath;
+                string text = File.ReadAllText(UptimeFile);
+
+                double uptimeSeconds = 0;
+                int length = text.IndexOf(' ');
+                if (length != -1)
+                {
+                    Double.TryParse(text.AsReadOnlySpan().Slice(0, length), NumberStyles.AllowDecimalPoint, NumberFormatInfo.InvariantInfo, out uptimeSeconds);
+                }
+
+                return TimeSpan.FromSeconds(uptimeSeconds);
             }
         }
 
