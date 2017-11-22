@@ -164,7 +164,7 @@ namespace JitBench
             {
                 WorkingDirectory = s_jitBenchDevDirectory,
                 FileName = @"powershell.exe",
-                Arguments = $".\\Dotnet-Install.ps1 -SharedRuntime -InstallDir .dotnet -Channel master -Architecture {s_targetArchitecture}"
+                Arguments = $"-NoProfile .\\Dotnet-Install.ps1 -SharedRuntime -InstallDir .dotnet -Channel master -Architecture {s_targetArchitecture}"
             };
             LaunchProcess(psi, 180000);
         }
@@ -175,7 +175,7 @@ namespace JitBench
             {
                 WorkingDirectory = s_jitBenchDevDirectory,
                 FileName = @"powershell.exe",
-                Arguments = $".\\Dotnet-Install.ps1 -InstallDir .dotnet -Channel master -Architecture {s_targetArchitecture}"
+                Arguments = $"-NoProfile .\\Dotnet-Install.ps1 -InstallDir .dotnet -Channel master -Architecture {s_targetArchitecture}"
             };
             LaunchProcess(psi, 180000);
 
@@ -234,7 +234,7 @@ namespace JitBench
             {
                 WorkingDirectory = s_jitBenchDevDirectory,
                 FileName = "powershell.exe",
-                Arguments = $"-Command \".\\AspNet-GenerateStore.ps1 -InstallDir .store -Architecture {s_targetArchitecture} -Runtime win7-{s_targetArchitecture}; gi env:JITBENCH_*, env:DOTNET_SHARED_STORE | %{{ \\\"$($_.Name)=$($_.Value)\\\" }} 1>>{EnvironmentFileName}\""
+                Arguments = $"-NoProfile -Command \".\\AspNet-GenerateStore.ps1 -InstallDir .store -Architecture {s_targetArchitecture} -Runtime win7-{s_targetArchitecture}; gi env:JITBENCH_*, env:DOTNET_SHARED_STORE | %{{ \\\"$($_.Name)=$($_.Value)\\\" }} 1>>{EnvironmentFileName}\""
             };
 
             LaunchProcess(psi, 1800000, environment);
