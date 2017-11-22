@@ -1219,7 +1219,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     assert isArmWindowsScenario(scenario)
                     switch (scenario) {
                         case 'default':
-                            if (configuration == 'Debug' || configuration == 'Checked') {
+                            if (configuration == 'Checked') {
                                 Utilities.addDefaultPrivateGithubPRTriggerForBranch(job, branch, contextString, null, arm64Users)
                             }
                             else {
