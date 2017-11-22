@@ -4712,7 +4712,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             else
             {
 #ifdef _TARGET_ARM_
-                if ((tree->gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_STUB)
+                if (tree->gtCall.IsVirtualStub())
                 {
                     // We generate movw/movt/ldr
                     costEx += (1 + IND_COST_EX);
@@ -4737,20 +4737,17 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             level += 1;
 
-            unsigned callKind;
-            callKind = (tree->gtFlags & GTF_CALL_VIRT_KIND_MASK);
-
             /* Virtual calls are a bit more expensive */
-            if (callKind != GTF_CALL_NONVIRT)
+            if (tree->gtCall.IsVirtual())
             {
                 costEx += 2 * IND_COST_EX;
                 costSz += 2;
-            }
 
-            /* Virtual stub calls also must reserve the VIRTUAL_STUB_PARAM reg */
-            if (callKind == GTF_CALL_VIRT_STUB)
-            {
-                ftreg |= virtualStubParamInfo->GetRegMask();
+                /* Virtual stub calls also must reserve the VIRTUAL_STUB_PARAM reg */
+                if (tree->gtCall.IsVirtualStub())
+                {
+                    ftreg |= virtualStubParamInfo->GetRegMask();
+                }
             }
 
 #ifdef FEATURE_READYTORUN_COMPILER
@@ -8023,7 +8020,7 @@ GenTreePtr Compiler::gtCloneExpr(
                                               ? gtCloneExpr(tree->gtCall.gtCallAddr, addFlags, deepVarNum, deepVarVal)
                                               : nullptr;
             }
-            else if (tree->gtFlags & GTF_CALL_VIRT_STUB)
+            else if (tree->gtCall.IsVirtualStub())
             {
                 copy->gtCall.gtCallMethHnd      = tree->gtCall.gtCallMethHnd;
                 copy->gtCall.gtStubCallStubAddr = tree->gtCall.gtStubCallStubAddr;
@@ -9700,7 +9697,7 @@ void Compiler::gtDispNodeName(GenTree* tree)
 
         if (tree->gtCall.gtCallType == CT_USER_FUNC)
         {
-            if ((tree->gtFlags & GTF_CALL_VIRT_KIND_MASK) != GTF_CALL_NONVIRT)
+            if (tree->gtCall.IsVirtual())
             {
                 callType = "CALLV";
             }
@@ -9722,11 +9719,11 @@ void Compiler::gtDispNodeName(GenTree* tree)
         {
             gtfType = " nullcheck";
         }
-        if (tree->gtFlags & GTF_CALL_VIRT_VTABLE)
+        if (tree->gtCall.IsVirtualVtable())
         {
             gtfType = " ind";
         }
-        else if (tree->gtFlags & GTF_CALL_VIRT_STUB)
+        else if (tree->gtCall.IsVirtualStub())
         {
             gtfType = " stub";
         }
