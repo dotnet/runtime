@@ -108,7 +108,7 @@ namespace System.Net.Http.Functional.Tests
         {
             var data = new byte[10];
             var content = new MockContent(data);
-            content.LoadIntoBufferAsync().Wait();
+            await content.LoadIntoBufferAsync();
 
             Assert.Equal(1, content.SerializeToStreamAsyncCount);
             var destination = new MemoryStream();
