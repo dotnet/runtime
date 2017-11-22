@@ -127,6 +127,10 @@ internal static partial class Interop
             CURLOPT_COPYPOSTFIELDS = CurlOptionObjectPointBase + 165,
             CURLOPT_USERNAME = CurlOptionObjectPointBase + 173,
             CURLOPT_PASSWORD = CurlOptionObjectPointBase + 174,
+            CURLOPT_CAPATH = CurlOptionObjectPointBase + 97,
+            CURLOPT_PROXY_CAPATH = CurlOptionObjectPointBase + 247,
+            CURLOPT_CAINFO = CurlOptionObjectPointBase + 65,
+            CURLOPT_PROXY_CAINFO = CurlOptionObjectPointBase + 246,
 
             CURLOPT_INFILESIZE_LARGE = CurlOptionOffTBase + 115,
             CURLOPT_POSTFIELDSIZE_LARGE = CurlOptionOffTBase + 120,
