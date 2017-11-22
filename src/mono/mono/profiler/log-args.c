@@ -332,11 +332,6 @@ usage (void)
 	mono_profiler_printf ("\theapshot-on-shutdown do a heapshot on runtime shutdown");
 	mono_profiler_printf ("\t                     this option is independent of the above option");
 	mono_profiler_printf ("\tcalls                enable recording enter/leave method events (very heavy)");
-	mono_profiler_printf ("\tcoverage             enable collection of code coverage data");
-	mono_profiler_printf ("\tcovfilter=ASSEMBLY   add ASSEMBLY to the code coverage filters");
-	mono_profiler_printf ("\t                     prefix a + to include the assembly or a - to exclude it");
-	mono_profiler_printf ("\t                     e.g. covfilter=-mscorlib");
-	mono_profiler_printf ("\tcovfilter-file=FILE  use FILE to generate the list of assemblies to be filtered");
 	mono_profiler_printf ("\tmaxframes=NUM        collect up to NUM stack frames");
 	mono_profiler_printf ("\tcalldepth=NUM        ignore method events for call chain depth bigger than NUM");
 	mono_profiler_printf ("\toutput=FILENAME      write the data to file FILENAME (the file is always overwritten)");
