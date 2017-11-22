@@ -112,6 +112,28 @@ load_profiler_from_installation (const char *libname, const char *name, const ch
 	return FALSE;
 }
 
+/**
+ * mono_profiler_load:
+ *
+ * Loads a profiler module based on the specified description. \p desc can be
+ * of the form \c name:args or just \c name. For example, \c log:sample and
+ * \c log will both load \c libmono-profiler-log.so. The description is passed
+ * to the module after it has been loaded. If the specified module has already
+ * been loaded, this function has no effect.
+ *
+ * A module called \c foo should declare an entry point like so:
+ *
+ * \code
+ * void mono_profiler_init_foo (const char *desc)
+ * {
+ * }
+ * \endcode
+ *
+ * This function is \b not async safe.
+ *
+ * This function may \b only be called by embedders prior to running managed
+ * code.
+ */
 void
 mono_profiler_load (const char *desc)
 {
@@ -146,6 +168,33 @@ mono_profiler_load (const char *desc)
 	g_free (mname);
 }
 
+/**
+ * mono_profiler_create:
+ *
+ * Installs a profiler and returns a handle for it. The handle is used with the
+ * other functions in the profiler API (e.g. for setting up callbacks). The
+ * given structure pointer, \p prof, will be passed to all callbacks from the
+ * profiler API. It can be \c NULL.
+ *
+ * Example usage:
+ *
+ * \code
+ * struct _MonoProfiler {
+ * 	int my_stuff;
+ * 	// ...
+ * };
+ *
+ * MonoProfiler *prof = malloc (sizeof (MonoProfiler));
+ * prof->my_stuff = 42;
+ * MonoProfilerHandle handle = mono_profiler_create (prof);
+ * mono_profiler_set_shutdown_callback (handle, my_shutdown_cb);
+ * \endcode
+ *
+ * This function is \b not async safe.
+ *
+ * This function may \b only be called from a profiler's init function or prior
+ * to running managed code.
+ */
 MonoProfilerHandle
 mono_profiler_create (MonoProfiler *prof)
 {
@@ -159,18 +208,36 @@ mono_profiler_create (MonoProfiler *prof)
 	return handle;
 }
 
+/**
+ * mono_profiler_set_cleanup_callback:
+ *
+ * Sets a profiler cleanup function. This function will be invoked at shutdown
+ * when the profiler API is cleaning up its internal structures. It's mainly
+ * intended for a profiler to free the structure pointer that was passed to
+ * \c mono_profiler_create, if necessary.
+ *
+ * This function is async safe.
+ */
 void
 mono_profiler_set_cleanup_callback (MonoProfilerHandle handle, MonoProfilerCleanupCallback cb)
 {
 	mono_atomic_store_ptr (&handle->cleanup_callback, (gpointer) cb);
 }
 
-void
-mono_profiler_set_coverage_filter_callback (MonoProfilerHandle handle, MonoProfilerCoverageFilterCallback cb)
-{
-	mono_atomic_store_ptr (&handle->coverage_filter, (gpointer) cb);
-}
-
+/**
+ * mono_profiler_enable_coverage:
+ *
+ * Enables support for code coverage instrumentation. At the moment, this means
+ * enabling the debug info subsystem. If this function is not called, it will
+ * not be possible to use \c mono_profiler_get_coverage_data. Returns \c TRUE
+ * if code coverage support was enabled, or \c FALSE if the function was called
+ * too late for this to be possible.
+ *
+ * This function is \b not async safe.
+ *
+ * This function may \b only be called from a profiler's init function or prior
+ * to running managed code.
+ */
 mono_bool
 mono_profiler_enable_coverage (void)
 {
@@ -186,6 +253,27 @@ mono_profiler_enable_coverage (void)
 	return mono_profiler_state.code_coverage = TRUE;
 }
 
+/**
+ * mono_profiler_set_coverage_filter_callback:
+ *
+ * Sets a code coverage filter function. The profiler API will invoke filter
+ * functions from all installed profilers. If any of them return \c TRUE, then
+ * the given method will be instrumented for coverage analysis. All filters are
+ * guaranteed to be called at least once per method, even if an earlier filter
+ * has already returned \c TRUE.
+ *
+ * Note that filter functions must be installed before a method is compiled in
+ * order to have any effect, i.e. a filter should be registered in a profiler's
+ * init function or prior to running managed code (if embedding).
+ *
+ * This function is async safe.
+ */
+void
+mono_profiler_set_coverage_filter_callback (MonoProfilerHandle handle, MonoProfilerCoverageFilterCallback cb)
+{
+	mono_atomic_store_ptr (&handle->coverage_filter, (gpointer) cb);
+}
+
 static void
 coverage_lock (void)
 {
@@ -198,6 +286,19 @@ coverage_unlock (void)
 	mono_os_mutex_unlock (&mono_profiler_state.coverage_mutex);
 }
 
+/**
+ * mono_profiler_get_coverage_data:
+ *
+ * Retrieves all coverage data for \p method and invokes \p cb for each entry.
+ * Source location information will only be filled out if \p method has debug
+ * info available. Returns \c TRUE if \p method was instrumented for code
+ * coverage; otherwise, \c FALSE.
+ *
+ * Please note that the structure passed to \p cb is only valid for the
+ * duration of the callback.
+ *
+ * This function is \b not async safe.
+ */
 mono_bool
 mono_profiler_get_coverage_data (MonoProfilerHandle handle, MonoMethod *method, MonoProfilerCoverageCallback cb)
 {
@@ -336,6 +437,25 @@ mono_profiler_coverage_alloc (MonoMethod *method, guint32 entries)
 	return info;
 }
 
+/**
+ * mono_profiler_enable_sampling:
+ *
+ * Enables the sampling thread. Users must call this function if they intend
+ * to use statistical sampling; \c mono_profiler_set_sample_mode will have no
+ * effect if this function has not been called. The first profiler to call this
+ * function will get ownership over sampling settings (mode and frequency) so
+ * that no other profiler can change those settings. Returns \c TRUE if the
+ * sampling thread was enabled, or \c FALSE if the function was called too late
+ * for this to be possible.
+ *
+ * Note that \c mono_profiler_set_sample_mode must still be called with a mode
+ * other than \c MONO_PROFILER_SAMPLE_MODE_NONE to actually start sampling.
+ *
+ * This function is \b not async safe.
+ *
+ * This function may \b only be called from a profiler's init function or prior
+ * to running managed code.
+ */
 mono_bool
 mono_profiler_enable_sampling (MonoProfilerHandle handle)
 {
@@ -353,6 +473,16 @@ mono_profiler_enable_sampling (MonoProfilerHandle handle)
 	return TRUE;
 }
 
+/**
+ * mono_profiler_set_sample_mode:
+ *
+ * Sets the sampling mode and frequency (in Hz). \p freq must be a positive
+ * number. If the calling profiler has ownership over sampling settings, the
+ * settings will be changed and this function will return \c TRUE; otherwise,
+ * it returns \c FALSE without changing any settings.
+ *
+ * This function is async safe.
+ */
 mono_bool
 mono_profiler_set_sample_mode (MonoProfilerHandle handle, MonoProfilerSampleMode mode, uint32_t freq)
 {
@@ -367,6 +497,15 @@ mono_profiler_set_sample_mode (MonoProfilerHandle handle, MonoProfilerSampleMode
 	return TRUE;
 }
 
+/**
+ * mono_profiler_get_sample_mode:
+ *
+ * Retrieves the current sampling mode and/or frequency (in Hz). Returns
+ * \c TRUE if the calling profiler is allowed to change the sampling settings;
+ * otherwise, \c FALSE.
+ *
+ * This function is async safe.
+ */
 mono_bool
 mono_profiler_get_sample_mode (MonoProfilerHandle handle, MonoProfilerSampleMode *mode, uint32_t *freq)
 {
@@ -397,6 +536,20 @@ mono_profiler_sampling_thread_wait (void)
 	mono_os_sem_wait (&mono_profiler_state.sampling_semaphore, MONO_SEM_FLAGS_NONE);
 }
 
+/**
+ * mono_profiler_enable_allocations:
+ *
+ * Enables instrumentation of GC allocations. This is necessary so that managed
+ * allocators can be instrumented with a call into the profiler API.
+ * Allocations will not be reported unless this function is called. Returns
+ * \c TRUE if allocation instrumentation was enabled, or \c FALSE if the
+ * function was called too late for this to be possible.
+ *
+ * This function is \b not async safe.
+ *
+ * This function may \b only be called from a profiler's init function or prior
+ * to running managed code.
+ */
 mono_bool
 mono_profiler_enable_allocations (void)
 {
@@ -406,12 +559,59 @@ mono_profiler_enable_allocations (void)
 	return mono_profiler_state.allocations = TRUE;
 }
 
+/**
+ * mono_profiler_set_call_instrumentation_filter_callback:
+ *
+ * Sets a call instrumentation filter function. The profiler API will invoke
+ * filter functions from all installed profilers. If any of them return flags
+ * other than \c MONO_PROFILER_CALL_INSTRUMENTATION_NONE, then the given method
+ * will be instrumented as requested. All filters are guaranteed to be called
+ * exactly once per method, even if earlier filters have already specified all
+ * flags.
+ *
+ * Note that filter functions must be installed before a method is compiled in
+ * order to have any effect, i.e. a filter should be registered in a profiler's
+ * init function or prior to running managed code (if embedding). Also, to
+ * instrument a method that's going to be AOT-compiled, a filter must be
+ * installed at AOT time. This can be done in exactly the same way as one would
+ * normally, i.e. by passing the \c --profile option on the command line, by
+ * calling \c mono_profiler_load, or simply by using the profiler API as an
+ * embedder.
+ *
+ * Indiscriminate method instrumentation is extremely heavy and will slow down
+ * most applications to a crawl. Users should consider sampling as a possible
+ * alternative to such heavy-handed instrumentation.
+ *
+ * This function is async safe.
+ */
 void
 mono_profiler_set_call_instrumentation_filter_callback (MonoProfilerHandle handle, MonoProfilerCallInstrumentationFilterCallback cb)
 {
 	mono_atomic_store_ptr (&handle->call_instrumentation_filter, (gpointer) cb);
 }
 
+/**
+ * mono_profiler_enable_call_context_introspection:
+ *
+ * Enables support for retrieving stack frame data from a call context. At the
+ * moment, this means enabling the debug info subsystem. If this function is not
+ * called, it will not be possible to use the call context introspection
+ * functions (they will simply return \c NULL). Returns \c TRUE if call context
+ * introspection was enabled, or \c FALSE if the function was called too late for
+ * this to be possible.
+ *
+ * Please note: Mono's LLVM backend does not support this feature. This means
+ * that methods with call context instrumentation will be handled by Mono's
+ * JIT even in LLVM mode. There is also a special case when Mono is compiling
+ * in LLVM-only mode: Since LLVM does not provide a way to implement call
+ * contexts, a \c NULL context will always be passed to enter/leave events even
+ * though this method returns \c TRUE.
+ *
+ * This function is \b not async safe.
+ *
+ * This function may \b only be called from a profiler's init function or prior
+ * to running managed code.
+ */
 mono_bool
 mono_profiler_enable_call_context_introspection (void)
 {
@@ -423,6 +623,21 @@ mono_profiler_enable_call_context_introspection (void)
 	return mono_profiler_state.call_contexts = TRUE;
 }
 
+/**
+ * mono_profiler_call_context_get_this:
+ *
+ * Given a valid call context from an enter/leave event, retrieves a pointer to
+ * the \c this reference for the method. Returns \c NULL if none exists (i.e.
+ * it's a static method) or if call context introspection was not enabled.
+ *
+ * The buffer returned by this function must be freed with
+ * \c mono_profiler_call_context_free_buffer.
+ *
+ * Please note that a call context is only valid for the duration of the
+ * enter/leave callback it was passed to.
+ *
+ * This function is \b not async safe.
+ */
 void *
 mono_profiler_call_context_get_this (MonoProfilerCallContext *context)
 {
@@ -432,6 +647,21 @@ mono_profiler_call_context_get_this (MonoProfilerCallContext *context)
 	return mono_profiler_state.context_get_this (context);
 }
 
+/**
+ * mono_profiler_call_context_get_argument:
+ *
+ * Given a valid call context from an enter/leave event, retrieves a pointer to
+ * the method argument at the given position. Returns \c NULL if \p position is
+ * out of bounds or if call context introspection was not enabled.
+ *
+ * The buffer returned by this function must be freed with
+ * \c mono_profiler_call_context_free_buffer.
+ *
+ * Please note that a call context is only valid for the duration of the
+ * enter/leave callback it was passed to.
+ *
+ * This function is \b not async safe.
+ */
 void *
 mono_profiler_call_context_get_argument (MonoProfilerCallContext *context, uint32_t position)
 {
@@ -441,6 +671,21 @@ mono_profiler_call_context_get_argument (MonoProfilerCallContext *context, uint3
 	return mono_profiler_state.context_get_argument (context, position);
 }
 
+/**
+ * mono_profiler_call_context_get_local:
+ *
+ * Given a valid call context from an enter/leave event, retrieves a pointer to
+ * the local variable at the given position. Returns \c NULL if \p position is
+ * out of bounds or if call context introspection was not enabled.
+ *
+ * The buffer returned by this function must be freed with
+ * \c mono_profiler_call_context_free_buffer.
+ *
+ * Please note that a call context is only valid for the duration of the
+ * enter/leave callback it was passed to.
+ *
+ * This function is \b not async safe.
+ */
 void *
 mono_profiler_call_context_get_local (MonoProfilerCallContext *context, uint32_t position)
 {
@@ -450,6 +695,23 @@ mono_profiler_call_context_get_local (MonoProfilerCallContext *context, uint32_t
 	return mono_profiler_state.context_get_local (context, position);
 }
 
+/**
+ * mono_profiler_call_context_get_result:
+ *
+ * Given a valid call context from an enter/leave event, retrieves a pointer to
+ * return value of a method. Returns \c NULL if the method has no return value
+ * (i.e. it returns \c void), if the leave event was the result of a tail call,
+ * if the function is called on a context from an enter event, or if call
+ * context introspection was not enabled.
+ *
+ * The buffer returned by this function must be freed with
+ * \c mono_profiler_call_context_free_buffer.
+ *
+ * Please note that a call context is only valid for the duration of the
+ * enter/leave callback it was passed to.
+ *
+ * This function is \b not async safe.
+ */
 void *
 mono_profiler_call_context_get_result (MonoProfilerCallContext *context)
 {
@@ -459,6 +721,15 @@ mono_profiler_call_context_get_result (MonoProfilerCallContext *context)
 	return mono_profiler_state.context_get_result (context);
 }
 
+/**
+ * mono_profiler_call_context_free_buffer:
+ *
+ * Frees a buffer returned by one of the call context introspection functions.
+ * Passing a \c NULL value for \p buffer is allowed, which makes this function
+ * a no-op.
+ *
+ * This function is \b not async safe.
+ */
 void
 mono_profiler_call_context_free_buffer (void *buffer)
 {
