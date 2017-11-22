@@ -8,7 +8,7 @@ using System.Text;
 namespace System.Net.Sockets
 {
     /// <summary>Represents a Unix Domain Socket endpoint as a path.</summary>
-    internal sealed class UnixDomainSocketEndPoint : EndPoint
+    public sealed class UnixDomainSocketEndPoint : EndPoint
     {
         private const AddressFamily EndPointAddressFamily = AddressFamily.Unix;
 

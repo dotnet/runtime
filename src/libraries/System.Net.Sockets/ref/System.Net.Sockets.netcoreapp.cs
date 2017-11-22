@@ -29,4 +29,9 @@ namespace System.Net.Sockets
         public System.Memory<byte> GetBuffer() { throw null; }
         public void SetBuffer(System.Memory<byte> buffer) { throw null; }
     }
+
+    public sealed partial class UnixDomainSocketEndPoint : System.Net.EndPoint
+    {
+        public UnixDomainSocketEndPoint(string path) { }
+    }
 }
