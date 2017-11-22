@@ -1973,7 +1973,6 @@ void LinearScan::identifyCandidatesExceptionDataflow()
 //
 bool LinearScan::isContainableMemoryOp(GenTree* node)
 {
-#ifdef _TARGET_XARCH_
     if (node->isMemoryOp())
     {
         return true;
@@ -1987,7 +1986,6 @@ bool LinearScan::isContainableMemoryOp(GenTree* node)
         LclVarDsc* varDsc = &compiler->lvaTable[node->AsLclVar()->gtLclNum];
         return varDsc->lvDoNotEnregister;
     }
-#endif // _TARGET_XARCH_
     return false;
 }
 
