@@ -10,14 +10,6 @@ using System.Collections.Generic;
 
 namespace System.Globalization
 {
-#if CORECLR
-    using IntList = List<int>;
-    using StringList = List<string>;
-#else
-    using IntList = LowLevelList<int>;
-    using StringList = LowLevelList<string>;
-#endif 
-    
     internal partial class CalendarData
     {
         private bool LoadCalendarDataFromSystem(String localeName, CalendarId calendarId)
@@ -140,7 +132,7 @@ namespace System.Globalization
 
             EnumCalendarsData data = new EnumCalendarsData();
             data.userOverride = 0;
-            data.calendars = new IntList();
+            data.calendars = new List<int>();
 
             // First call GetLocaleInfo if necessary
             if (useUserOverride)
@@ -284,7 +276,7 @@ namespace System.Globalization
         private class EnumData
         {
             public string userOverride;
-            public StringList strings;
+            public List<string> strings;
         }
 
         // EnumCalendarInfoExEx callback itself.
@@ -312,7 +304,7 @@ namespace System.Globalization
         {
             EnumData context = new EnumData();
             context.userOverride = null;
-            context.strings = new StringList();
+            context.strings = new List<string>();
             // First call GetLocaleInfo if necessary
             if (((lcType != 0) && ((lcType & CAL_NOUSEROVERRIDE) == 0)) &&
                 // Get user locale, see if it matches localeName.
@@ -437,7 +429,7 @@ namespace System.Globalization
         private class EnumCalendarsData
         {
             public int userOverride;   // user override value (if found)
-            public IntList calendars;      // list of calendars found so far
+            public List<int> calendars;      // list of calendars found so far
         }
 
         // [NativeCallable(CallingConvention = CallingConvention.StdCall)]

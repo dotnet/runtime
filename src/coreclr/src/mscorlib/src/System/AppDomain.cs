@@ -174,7 +174,7 @@ namespace System
         {
             // This should never happen under normal circumstances. However, there ar ways to create an
             // uninitialized object through remoting, etc.
-            if (_pDomain.IsNull())
+            if (_pDomain == IntPtr.Zero)
             {
                 throw new InvalidOperationException(SR.Argument_InvalidHandle);
             }
