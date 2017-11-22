@@ -2512,11 +2512,10 @@ Constants.allScenarios.each { scenario ->
                                 addCommand("pushd bin\\tests\\${osGroup}.${architecture}.${configuration}")
                                 addCommand("${smartyCommand}")
 
-                                // ZIP up the smarty output. Note that the current directory was changed above by "pushd", so we are
-                                // in the correct directory where the "Smarty.run.0" directory is.
-                                buildCommands += "powershell -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\Smarty.run.0', '.\\Smarty.run.0.zip')\"";
-
                                 batchFile(buildCommands)
+
+                                // ZIP up the smarty output.
+                                batchFile("powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${architecture}.${configuration}\\Smarty.run.0', '.\\bin\\tests\\${osGroup}.${architecture}.${configuration}\\Smarty.run.0.zip')\"")
                             }
                         }
                     }
