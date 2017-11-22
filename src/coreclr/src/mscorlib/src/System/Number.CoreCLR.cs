@@ -278,9 +278,6 @@ namespace System
     internal static partial class Number
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern string FormatDecimal(decimal value, string format, NumberFormatInfo info);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern string FormatDouble(double value, string format, NumberFormatInfo info);
 
         [MethodImpl(MethodImplOptions.InternalCall)]

@@ -288,33 +288,6 @@ FCIMPL1(void, COMDecimal::DoTruncate, DECIMAL * d)
 }
 FCIMPLEND
 
-
-void COMDecimal::DecimalToNumber(DECIMAL* value, NUMBER* number)
-{
-    WRAPPER_NO_CONTRACT
-    _ASSERTE(number != NULL);
-    _ASSERTE(value != NULL);
-
-    wchar_t buffer[DECIMAL_PRECISION+1];
-    DECIMAL d = *value;
-    number->precision = DECIMAL_PRECISION;
-    number->sign = DECIMAL_SIGN(d)? 1: 0;
-    wchar_t* p = buffer + DECIMAL_PRECISION;
-    while (DECIMAL_MID32(d) | DECIMAL_HI32(d)) {
-        p = COMNumber::Int32ToDecChars(p, DecDivMod1E9(&d), 9);
-        _ASSERTE(p != NULL);
-    }
-    p = COMNumber::Int32ToDecChars(p, DECIMAL_LO32(d), 0);
-    _ASSERTE(p != NULL);
-    int i = (int) (buffer + DECIMAL_PRECISION - p);
-    number->scale = i - DECIMAL_SCALE(d);
-    wchar_t* dst = number->digits;
-    _ASSERTE(dst != NULL);
-    while (--i >= 0) *dst++ = *p++;
-    *dst = 0;
-    
-}
-
 int COMDecimal::NumberToDecimal(NUMBER* number, DECIMAL* value)
 {
     WRAPPER_NO_CONTRACT
