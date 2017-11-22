@@ -65,7 +65,7 @@ namespace System
             if (info == null)
                 throw new ArgumentNullException(nameof(info));
 
-            info.AddValue("value", (ulong)_value);
+            info.AddValue("value", ToUInt64());
         }
 
         public unsafe override bool Equals(Object obj)
@@ -213,7 +213,7 @@ namespace System
             return _value;
         }
 
-        public unsafe override String ToString()
+        public unsafe override string ToString()
         {
             return ((nuint)_value).ToString(CultureInfo.InvariantCulture);
         }

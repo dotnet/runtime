@@ -71,7 +71,7 @@ namespace System
             {
                 if ((uint)index >= (uint)_count)
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+                    ThrowHelper.ThrowArgumentOutOfRange_IndexException();
                 }
 
                 return _array[_offset + index];
@@ -80,7 +80,7 @@ namespace System
             {
                 if ((uint)index >= (uint)_count)
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+                    ThrowHelper.ThrowArgumentOutOfRange_IndexException();
                 }
 
                 _array[_offset + index] = value;
@@ -150,7 +150,7 @@ namespace System
             
             if ((uint)index > (uint)_count)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
             }
 
             return new ArraySegment<T>(_array, _offset + index, _count - index);
@@ -162,7 +162,7 @@ namespace System
 
             if ((uint)index > (uint)_count || (uint)count > (uint)(_count - index))
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
             }
 
             return new ArraySegment<T>(_array, _offset + index, count);

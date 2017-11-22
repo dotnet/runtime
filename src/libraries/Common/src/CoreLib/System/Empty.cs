@@ -17,9 +17,9 @@ namespace System
 
         public static readonly Empty Value = new Empty();
 
-        public override String ToString()
+        public override string ToString()
         {
-            return String.Empty;
+            return string.Empty;
         }
     }
 }
