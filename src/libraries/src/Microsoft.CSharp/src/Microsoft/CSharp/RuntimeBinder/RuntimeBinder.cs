@@ -217,7 +217,6 @@ namespace Microsoft.CSharp.RuntimeBinder
                 MemberLookup mem = new MemberLookup();
                 Expr callingObject = CreateCallingObjectForCall(callPayload, arguments, locals);
 
-                Debug.Assert(_bindingContext.ContextForMemberLookup != null);
                 SymWithType swt = _symbolTable.LookupMember(
                         callPayload.Name,
                         callingObject,
@@ -839,7 +838,6 @@ namespace Microsoft.CSharp.RuntimeBinder
             int arity = payload.TypeArguments?.Length ?? 0;
             MemberLookup mem = new MemberLookup();
 
-            Debug.Assert(_bindingContext.ContextForMemberLookup != null);
             SymWithType swt = _symbolTable.LookupMember(
                     payload.Name,
                     callingObject,

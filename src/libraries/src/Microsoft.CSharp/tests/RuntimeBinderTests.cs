@@ -264,5 +264,60 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
                 public object Foo { get; set; }
             }
         }
+
+        public class SomeType
+        {
+            public string SomeMethod(int i) => "ABC " + i;
+        }
+
+        private class SomePrivateType
+        {
+            public string SomeMethod(int i) => "ABC " + i;
+        }
+
+        internal class SomeInternalType
+        {
+            public string SomeMethod(int i) => "ABC " + i;
+        }
+
+        protected class SomeProtectedType
+        {
+            public string SomeMethod(int i) => "ABC " + i;
+        }
+
+        [Fact]
+        public void MethodCallWithNullContext()
+        {
+            CallSiteBinder binder = Binder.InvokeMember(
+                CSharpBinderFlags.None, nameof(SomeType.SomeMethod), Type.EmptyTypes, null,
+                new[]
+                {
+                    CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
+                    CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
+                });
+            CallSite<Func<CallSite, object, object, object>> site =
+                CallSite<Func<CallSite, object, object, object>>.Create(binder);
+            Func<CallSite, object, object, object> targ = site.Target;
+            object res = targ(site, new SomeType(), 9);
+            Assert.Equal("ABC 9", res);
+        }
+
+        [Fact]
+        public void MethodCallWithNullContextCannotSeeNonPublic()
+        {
+            CallSiteBinder binder = Binder.InvokeMember(
+                CSharpBinderFlags.None, nameof(SomePrivateType.SomeMethod), Type.EmptyTypes, null,
+                new[]
+                {
+                    CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
+                    CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
+                });
+            CallSite<Func<CallSite, object, object, object>> site =
+                CallSite<Func<CallSite, object, object, object>>.Create(binder);
+            Func<CallSite, object, object, object> targ = site.Target;
+            Assert.Throws<RuntimeBinderException>(() => targ(site, new SomePrivateType(), 9));
+            Assert.Throws<RuntimeBinderException>(() => targ(site, new SomeInternalType(), 9));
+            Assert.Throws<RuntimeBinderException>(() => targ(site, new SomeProtectedType(), 9));
+        }
     }
 }
