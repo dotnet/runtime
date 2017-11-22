@@ -1625,6 +1625,17 @@ void fgArgInfo::ArgsComplete()
                     // Spill multireg struct arguments that are expensive to evaluate twice
                     curArgTabEntry->needTmp = true;
                 }
+#if defined(FEATURE_SIMD) && defined(_TARGET_ARM64_)
+                else if (isMultiRegArg && varTypeIsSIMD(argx->TypeGet()))
+                {
+                    // SIMD types do not need the optimization below due to their sizes
+                    if (argx->OperIs(GT_SIMD) || (argx->OperIs(GT_OBJ) && argx->AsObj()->gtOp1->OperIs(GT_ADDR) &&
+                                                  argx->AsObj()->gtOp1->gtOp.gtOp1->OperIs(GT_SIMD)))
+                    {
+                        curArgTabEntry->needTmp = true;
+                    }
+                }
+#endif
 #ifndef _TARGET_ARM_
                 // TODO-Arm: This optimization is not implemented for ARM32
                 // so we skip this for ARM32 until it is ported to use RyuJIT backend
