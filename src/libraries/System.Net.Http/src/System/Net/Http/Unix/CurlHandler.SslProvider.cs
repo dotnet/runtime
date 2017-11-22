@@ -85,6 +85,8 @@ namespace System.Net.Http
                             // cause SSL and libcurl to ignore the result of the server callback.
                         }
 
+                        SetSslOptionsForCertificateStore(easy);
+
                         // The allowed SSL protocols will be set in the configuration callback.
                         break;
 
@@ -96,6 +98,28 @@ namespace System.Net.Http
                     default:
                         ThrowIfCURLEError(answer);
                         break;
+                }
+            }
+
+            private static void SetSslOptionsForCertificateStore(EasyRequest easy)
+            {
+                // Support specifying certificate directory/bundle via environment variables: SSL_CERT_DIR, SSL_CERT_FILE.
+                string sslCertDir = Environment.GetEnvironmentVariable("SSL_CERT_DIR");
+                if (sslCertDir != null)
+                {
+                    easy.SetCurlOption(Interop.Http.CURLoption.CURLOPT_CAPATH, sslCertDir);
+
+                    // https proxy support requires libcurl 7.52.0+
+                    easy.TrySetCurlOption(Interop.Http.CURLoption.CURLOPT_PROXY_CAPATH, sslCertDir);
+                }
+
+                string sslCertFile = Environment.GetEnvironmentVariable("SSL_CERT_FILE");
+                if (sslCertFile != null)
+                {
+                    easy.SetCurlOption(Interop.Http.CURLoption.CURLOPT_CAINFO, sslCertFile);
+
+                    // https proxy support requires libcurl 7.52.0+
+                    easy.TrySetCurlOption(Interop.Http.CURLoption.CURLOPT_PROXY_CAINFO, sslCertFile);
                 }
             }
 
@@ -123,6 +147,10 @@ namespace System.Net.Http
                     {
                         throw new PlatformNotSupportedException(SR.Format(SR.net_http_libcurl_callback_notsupported, CurlVersionDescription, CurlSslVersionDescription));
                     }
+                }
+                else
+                {
+                    SetSslOptionsForCertificateStore(easy);
                 }
 
                 // In case of defaults configure the allowed SSL protocols.
