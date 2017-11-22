@@ -18,8 +18,6 @@ endif
 lib_LTLIBRARIES = \
 	libmono-profiler-aot.la \
 	libmono-profiler-aot-static.la \
-	libmono-profiler-iomap.la \
-	libmono-profiler-iomap-static.la \
 	libmono-profiler-log.la \
 	libmono-profiler-log-static.la \
 	libmono-profiler-coverage.la \
@@ -103,12 +101,6 @@ libmono_profiler_aot_la_LIBADD =  $(libmono_dep) $(GLIB_LIBS) $(LIBICONV)
 libmono_profiler_aot_la_LDFLAGS = $(prof_ldflags)
 libmono_profiler_aot_static_la_SOURCES = aot.c
 libmono_profiler_aot_static_la_LDFLAGS = -static
-
-libmono_profiler_iomap_la_SOURCES = iomap.c
-libmono_profiler_iomap_la_LIBADD = $(libmono_dep) $(GLIB_LIBS) $(LIBICONV)
-libmono_profiler_iomap_la_LDFLAGS = $(prof_ldflags)
-libmono_profiler_iomap_static_la_SOURCES = iomap.c
-libmono_profiler_iomap_static_la_LDFLAGS = -static
 
 libmono_profiler_log_la_SOURCES = log.c log-args.c
 libmono_profiler_log_la_LIBADD = $(libmono_dep) $(GLIB_LIBS) $(zlib_dep)
