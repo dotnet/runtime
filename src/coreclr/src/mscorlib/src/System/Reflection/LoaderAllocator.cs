@@ -38,7 +38,7 @@ namespace System.Reflection
 
         ~LoaderAllocatorScout()
         {
-            if (m_nativeLoaderAllocator.IsNull())
+            if (m_nativeLoaderAllocator == IntPtr.Zero)
                 return;
 
             // Assemblies and LoaderAllocators will be cleaned up during AppDomain shutdown in

@@ -145,7 +145,7 @@ namespace System.Runtime.InteropServices
         }
 
         // Determine whether this handle has been allocated or not.
-        public bool IsAllocated => !m_handle.IsNull();
+        public bool IsAllocated => m_handle != IntPtr.Zero;
 
         // Used to create a GCHandle from an int.  This is intended to
         // be used with the reverse conversion.
@@ -267,14 +267,14 @@ namespace System.Runtime.InteropServices
         private void ValidateHandle()
         {
             // Check if the handle was never initialized or was freed.
-            if (m_handle.IsNull())
+            if (m_handle == IntPtr.Zero)
                 ThrowInvalidOperationException_HandleIsNotInitialized();
         }
 
         private static void ValidateHandle(IntPtr handle)
         {
             // Check if the handle was never initialized or was freed.
-            if (handle.IsNull())
+            if (handle == IntPtr.Zero)
                 ThrowInvalidOperationException_HandleIsNotInitialized();
         }
 

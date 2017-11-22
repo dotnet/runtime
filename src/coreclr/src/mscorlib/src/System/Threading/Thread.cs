@@ -217,7 +217,7 @@ namespace System.Threading
             // This should never happen under normal circumstances. m_assembly is always assigned before it is handed out to the user.
             // There are ways how to create an unitialized objects through remoting, etc. Avoid AVing in the EE by throwing a nice
             // exception here.
-            if (thread.IsNull())
+            if (thread == IntPtr.Zero)
                 throw new ArgumentException(null, SR.Argument_InvalidHandle);
 
             return new ThreadHandle(thread);

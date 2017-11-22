@@ -171,7 +171,7 @@ namespace System.Diagnostics
             // and then we fetch the proper MethodBase!!
             IntPtr mh = rgMethodHandle[i];
 
-            if (mh.IsNull())
+            if (mh == IntPtr.Zero)
                 return null;
 
             IRuntimeMethodInfo mhReal = RuntimeMethodHandle.GetTypicalMethodDefinition(new RuntimeMethodInfoStub(mh, this));

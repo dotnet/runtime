@@ -681,9 +681,9 @@ namespace System.StubHelpers
             }
             finally
             {
-                if (!oldItemsIP.IsNull())
+                if (oldItemsIP != IntPtr.Zero)
                     Marshal.Release(oldItemsIP);
-                if (!newItemsIP.IsNull())
+                if (newItemsIP != IntPtr.Zero)
                     Marshal.Release(newItemsIP);
             }
         }
