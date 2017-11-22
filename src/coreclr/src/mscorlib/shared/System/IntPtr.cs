@@ -222,12 +222,12 @@ namespace System
             return _value;
         }
 
-        public unsafe override String ToString()
+        public unsafe override string ToString()
         {
             return ((nint)_value).ToString(CultureInfo.InvariantCulture);
         }
 
-        public unsafe String ToString(String format)
+        public unsafe string ToString(string format)
         {
             return ((nint)_value).ToString(format, CultureInfo.InvariantCulture);
         }
