@@ -1040,7 +1040,18 @@ namespace System.Text
 
         public StringBuilder Append(double value) => Append(value.ToString());
 
-        public StringBuilder Append(decimal value) => Append(value.ToString());
+        public StringBuilder Append(decimal value)
+        {
+            if (value.TryFormat(RemainingCurrentChunk, out int charsWritten))
+            {
+                m_ChunkLength += charsWritten;
+                return this;
+            }
+            else
+            {
+                return Append(value.ToString());
+            }
+        }
 
         [CLSCompliant(false)]
         public StringBuilder Append(ushort value)
