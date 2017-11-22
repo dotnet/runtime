@@ -4138,12 +4138,27 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         // fgMorphArgs will have created trees to pass the address in VirtualStubParam.reg.
         // All we have to do here is add an indirection to generate the actual call target.
 
-        GenTree* ind = Ind(call->gtCallAddr);
+        GenTree* ind;
+
+#ifdef _TARGET_ARM_
+        // For ARM, fgMorphTailCall has already made gtCallAddr a GT_IND for virtual stub tail calls.
+        // (When we eliminate LEGACY_BACKEND maybe we can eliminate this asymmetry?)
+        if (call->IsTailCallViaHelper())
+        {
+            ind = call->gtCallAddr;
+            assert(ind->gtOper == GT_IND);
+        }
+        else
+#endif // _TARGET_ARM_
+        {
+            ind = Ind(call->gtCallAddr);
+            BlockRange().InsertAfter(call->gtCallAddr, ind);
+            call->gtCallAddr = ind;
+        }
+
         ind->gtFlags |= GTF_IND_REQ_ADDR_IN_REG;
 
-        BlockRange().InsertAfter(call->gtCallAddr, ind);
         ContainCheckIndir(ind->AsIndir());
-        call->gtCallAddr = ind;
     }
     else
     {
