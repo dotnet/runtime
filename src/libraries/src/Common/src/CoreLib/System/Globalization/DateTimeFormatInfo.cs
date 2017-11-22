@@ -339,13 +339,6 @@ namespace System.Globalization
             Debug.Assert(this.allYearMonthPatterns.Length > 0, "[DateTimeFormatInfo.Populate] Expected some year month patterns");
         }
 
-        private bool _useUserOverride;
-
-        // This was synthesized by Whidbey so we knew what words might appear in the middle of a date string
-        // Now we always synthesize so its not helpful
-
-        internal String[] m_dateWords = null;
-
         // Returns a default DateTimeFormatInfo that will be universally
         // supported and constant irrespective of the current culture.
         // Used by FromString methods.
@@ -1078,13 +1071,6 @@ namespace System.Globalization
                 return (generalLongTimePattern);
             }
         }
-
-        /*=================================DateTimeOffsetPattern==========================
-        **Property: Return the default pattern DateTimeOffset : shortDate + long time + time zone offset
-        **Note: This is used by DateTimeFormat.cs to get the pattern for short Date + long time +  time zone offset
-        **      We put this internal property here so that we can avoid doing the
-        **      concatation every time somebody uses this form
-        ==============================================================================*/
 
         /*=================================DateTimeOffsetPattern==========================
         **Property: Return the default pattern DateTimeOffset : shortDate + long time + time zone offset
@@ -2360,7 +2346,7 @@ namespace System.Globalization
 
                 // We need to rescan the date words since we're always synthetic
                 scanner = new DateTimeFormatInfoScanner();
-                m_dateWords = dateWords = scanner.GetDateWordsOfDTFI(this);
+                dateWords = scanner.GetDateWordsOfDTFI(this);
                 // Ensure the formatflags is initialized.
                 DateTimeFormatFlags flag = FormatFlags;
 
