@@ -7917,7 +7917,8 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 			switch (patch_info->type) {
 			case MONO_PATCH_INFO_RGCTX_FETCH:
 			case MONO_PATCH_INFO_RGCTX_SLOT_INDEX:
-			case MONO_PATCH_INFO_METHOD: {
+			case MONO_PATCH_INFO_METHOD:
+			case MONO_PATCH_INFO_METHOD_RGCTX: {
 				MonoMethod *m = NULL;
 
 				if (patch_info->type == MONO_PATCH_INFO_RGCTX_FETCH || patch_info->type == MONO_PATCH_INFO_RGCTX_SLOT_INDEX) {
