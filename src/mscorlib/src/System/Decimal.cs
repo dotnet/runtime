@@ -60,7 +60,7 @@ namespace System
     [Serializable]
     [System.Runtime.Versioning.NonVersionable] // This only applies to field layout
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct Decimal : IFormattable, IComparable, IConvertible, IComparable<Decimal>, IEquatable<Decimal>, IDeserializationCallback
+    public partial struct Decimal : IFormattable, IComparable, IConvertible, IComparable<Decimal>, IEquatable<Decimal>, IDeserializationCallback
     {
         // Sign mask for the flags field. A value of zero in this bit indicates a
         // positive Decimal value, and a value of one in this bit indicates a
@@ -140,6 +140,9 @@ namespace System
         private int lo;
         private int mid;
 
+        internal uint High => (uint)hi;
+        internal uint Low => (uint)lo;
+        internal uint Mid => (uint)mid;
 
         // Constructs a zero Decimal.
         //public Decimal() {
@@ -363,6 +366,10 @@ namespace System
             return d1;
         }
 
+        internal bool IsNegative => (flags & SignMask) != 0;
+
+        internal int Scale => (byte)((uint)flags >> ScaleShift);
+
         // FCallAddSub adds or subtracts two decimal values.  On return, d1 contains the result
         // of the operation.  Passing in DECIMAL_ADD or DECIMAL_NEG for bSign indicates
         // addition or subtraction, respectively.
@@ -494,6 +501,10 @@ namespace System
             return Number.FormatDecimal(this, format, NumberFormatInfo.GetInstance(provider));
         }
 
+        public bool TryFormat(Span<char> destination, out int charsWritten, string format = null, IFormatProvider provider = null)
+        {
+            return Number.TryFormatDecimal(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
+        }
 
         // Converts a string to a Decimal. The string must consist of an optional
         // minus sign ("-") followed by a sequence of digits ("0" - "9"). The

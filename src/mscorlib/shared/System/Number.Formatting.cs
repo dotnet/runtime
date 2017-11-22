@@ -50,6 +50,87 @@ namespace System
             "(#)", "-#", "- #", "#-", "# -",
         };
 
+        public static string FormatDecimal(decimal value, string format, NumberFormatInfo info)
+        {
+            char fmt = ParseFormatSpecifier(format, out int digits);
+
+            NumberBuffer number = default;
+            DecimalToNumber(value, ref number);
+
+            ValueStringBuilder sb;
+            unsafe
+            {
+                char* stackPtr = stackalloc char[CharStackBufferSize];
+                sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+            }
+
+            if (fmt != 0)
+            {
+                NumberToString(ref sb, ref number, fmt, digits, info, isDecimal:true);
+            }
+            else
+            {
+                NumberToStringFormat(ref sb, ref number, format, info);
+            }
+
+            return sb.GetString();
+        }
+
+        public static bool TryFormatDecimal(decimal value, string format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
+        {
+            char fmt = ParseFormatSpecifier(format, out int digits);
+
+            NumberBuffer number = default;
+            DecimalToNumber(value, ref number);
+
+            ValueStringBuilder sb;
+            unsafe
+            {
+                char* stackPtr = stackalloc char[CharStackBufferSize];
+                sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+            }
+
+            if (fmt != 0)
+            {
+                NumberToString(ref sb, ref number, fmt, digits, info, isDecimal: true);
+            }
+            else
+            {
+                NumberToStringFormat(ref sb, ref number, format, info);
+            }
+
+            return sb.TryCopyTo(destination, out charsWritten);
+        }
+
+#if PROJECTN
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
+#endif
+        private static unsafe void DecimalToNumber(decimal value, ref NumberBuffer number)
+        {
+            decimal d = value;
+
+            char* buffer = number.digits;
+            number.precision = DecimalPrecision;
+            number.sign = d.IsNegative;
+
+            char* p = buffer + DecimalPrecision;
+            while ((d.Mid | d.High) != 0)
+            {
+                p = UInt32ToDecChars(p, decimal.DecDivMod1E9(ref d), 9);
+            }
+            p = UInt32ToDecChars(p, d.Low, 0);
+
+            int i = (int)(buffer + DecimalPrecision - p);
+            number.scale = i - d.Scale;
+
+            char* dst = number.digits;
+            while (--i >= 0)
+            {
+                *dst++ = *p++;
+            }
+            *dst = '\0';
+        }
+
         public static string FormatInt32(int value, string format, NumberFormatInfo info)
         {
             int digits;
