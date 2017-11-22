@@ -303,7 +303,7 @@
             "PB_BuildTestsArguments": "-framework=netfx -buildArch=x64 -$(PB_ConfigurationGroup) -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10 /p:TargetGroup=netfx /p:DotNetRestoreSources=$(PB_RestoreSource)",
             "PB_TargetQueue": "Windows.10.Amd64",
-            "PB_CreateHelixArguments": "/p:EnableCloudTest=false /p:ArchGroup=x64 /p:TargetGroup=netfx /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/desktop/cli/\""
+            "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:TargetGroup=netfx /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/desktop/cli/\""
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -320,7 +320,7 @@
             "PB_BuildTestsArguments": "-framework=netfx -buildArch=x86 -$(PB_ConfigurationGroup) -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10 /p:TargetGroup=netfx /p:DotNetRestoreSources=$(PB_RestoreSource)",
             "PB_TargetQueue": "Windows.10.Amd64",
-            "PB_CreateHelixArguments": "/p:EnableCloudTest=false /p:ArchGroup=x86 /p:TargetGroup=netfx /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/desktop/cli/\""
+            "PB_CreateHelixArguments": "/p:ArchGroup=x86 /p:TargetGroup=netfx /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/desktop/cli/\""
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
