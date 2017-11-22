@@ -1362,6 +1362,7 @@ ncells ) {
 		return 1.4e-45f;
 	}
 
+	[Category ("!BITCODE")] // bug #59953
 	public static int test_0_float_return_spill () {
 		// The return value of return_float () is spilled because of the
 		// boxing call
