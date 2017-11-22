@@ -2093,7 +2093,7 @@ void Compiler::optAssertionGen(GenTreePtr tree)
         case GT_CALL:
             // A virtual call can create a non-null assertion. We transform some virtual calls into non-virtual calls
             // with a GTF_CALL_NULLCHECK flag set.
-            if ((tree->gtFlags & GTF_CALL_NULLCHECK) || ((tree->gtFlags & GTF_CALL_VIRT_KIND_MASK) != GTF_CALL_NONVIRT))
+            if ((tree->gtFlags & GTF_CALL_NULLCHECK) || tree->AsCall()->IsVirtual())
             {
                 //  Retrieve the 'this' arg
                 GenTreePtr thisArg = gtGetThisArg(tree->AsCall());
