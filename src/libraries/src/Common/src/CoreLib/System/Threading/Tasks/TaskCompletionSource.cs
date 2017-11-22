@@ -48,14 +48,14 @@ namespace System.Threading.Tasks
     /// cref="TaskCompletionSource{TResult}"/>.</typeparam>
     public class TaskCompletionSource<TResult>
     {
-        private readonly Task<TResult> m_task;
+        private readonly Task<TResult> _task;
 
         /// <summary>
         /// Creates a <see cref="TaskCompletionSource{TResult}"/>.
         /// </summary>
         public TaskCompletionSource()
         {
-            m_task = new Task<TResult>();
+            _task = new Task<TResult>();
         }
 
         /// <summary>
@@ -103,7 +103,7 @@ namespace System.Threading.Tasks
         /// </exception>
         public TaskCompletionSource(object state, TaskCreationOptions creationOptions)
         {
-            m_task = new Task<TResult>(state, creationOptions);
+            _task = new Task<TResult>(state, creationOptions);
         }
 
 
@@ -119,10 +119,7 @@ namespace System.Threading.Tasks
         /// methods (and their "Try" variants) on this instance all result in the relevant state
         /// transitions on this underlying Task.
         /// </remarks>
-        public Task<TResult> Task
-        {
-            get { return m_task; }
-        }
+        public Task<TResult> Task => _task;
 
         /// <summary>Spins until the underlying task is completed.</summary>
         /// <remarks>This should only be called if the task is in the process of being completed by another thread.</remarks>
@@ -130,7 +127,7 @@ namespace System.Threading.Tasks
         {
             // Spin wait until the completion is finalized by another thread.
             var sw = new SpinWait();
-            while (!m_task.IsCompleted)
+            while (!_task.IsCompleted)
                 sw.SpinOnce();
         }
 
@@ -156,8 +153,8 @@ namespace System.Threading.Tasks
         {
             if (exception == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.exception);
 
-            bool rval = m_task.TrySetException(exception);
-            if (!rval && !m_task.IsCompleted) SpinUntilCompleted();
+            bool rval = _task.TrySetException(exception);
+            if (!rval && !_task.IsCompleted) SpinUntilCompleted();
             return rval;
         }
 
@@ -196,8 +193,8 @@ namespace System.Threading.Tasks
             if (defensiveCopy.Count == 0)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.TaskCompletionSourceT_TrySetException_NoExceptions, ExceptionArgument.exceptions);
 
-            bool rval = m_task.TrySetException(defensiveCopy);
-            if (!rval && !m_task.IsCompleted) SpinUntilCompleted();
+            bool rval = _task.TrySetException(defensiveCopy);
+            if (!rval && !_task.IsCompleted) SpinUntilCompleted();
             return rval;
         }
 
@@ -274,7 +271,7 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
         public bool TrySetResult(TResult result)
         {
-            bool rval = m_task.TrySetResult(result);
+            bool rval = _task.TrySetResult(result);
             if (!rval) SpinUntilCompleted();
             return rval;
         }
@@ -324,8 +321,8 @@ namespace System.Threading.Tasks
         // Enables a token to be stored into the canceled task
         public bool TrySetCanceled(CancellationToken cancellationToken)
         {
-            bool rval = m_task.TrySetCanceled(cancellationToken);
-            if (!rval && !m_task.IsCompleted) SpinUntilCompleted();
+            bool rval = _task.TrySetCanceled(cancellationToken);
+            if (!rval && !_task.IsCompleted) SpinUntilCompleted();
             return rval;
         }
 
