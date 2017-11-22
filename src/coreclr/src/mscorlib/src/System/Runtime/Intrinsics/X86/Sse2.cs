@@ -42,11 +42,11 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128i _mm_add_epi64 (__m128i a,  __m128i b)
         /// </summary>
-        public static Vector128<long> Add(Vector128<byte> left, Vector128<long> right) => Add(left, right);
+        public static Vector128<long> Add(Vector128<long> left, Vector128<long> right) => Add(left, right);
         /// <summary>
         /// __m128i _mm_add_epi64 (__m128i a,  __m128i b)
         /// </summary>
-        public static Vector128<ulong> Add(Vector128<sbyte> left, Vector128<ulong> right) => Add(left, right);
+        public static Vector128<ulong> Add(Vector128<ulong> left, Vector128<ulong> right) => Add(left, right);
         /// <summary>
         /// __m128d _mm_add_pd (__m128d a,  __m128d b)
         /// </summary>

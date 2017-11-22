@@ -120,6 +120,15 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<long> ConvertToLong(Vector128<uint> value) => ConvertToLong(value);
 
         /// <summary>
+        /// __m128 _mm_dp_ps (__m128 a, __m128 b, const int imm8)
+        /// </summary>
+        public static Vector128<float> DotProduct(Vector128<float> left, Vector128<float> right, byte control) => DotProduct(left, right, control);
+        /// <summary>
+        /// __m128d _mm_dp_pd (__m128d a, __m128d b, const int imm8)
+        /// </summary>
+        public static Vector128<double> DotProduct(Vector128<double> left, Vector128<double> right, byte control) => DotProduct(left, right, control);
+
+        /// <summary>
         /// int _mm_extract_epi8 (__m128i a, const int imm8)
         /// </summary>
         public static sbyte ExtractSbyte<T>(Vector128<T> value, byte index) where T : struct
