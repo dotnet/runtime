@@ -3757,14 +3757,10 @@ namespace System.Net.Sockets
             SafeCloseSocket acceptHandle;
             e.AcceptSocket = GetOrCreateAcceptSocket(e.AcceptSocket, true, "AcceptSocket", out acceptHandle);
 
-            // Prepare for the native call.
-            e.StartOperationCommon(this);
+            // Prepare for and make the native call.
+            e.StartOperationCommon(this, SocketAsyncOperation.Accept);
             e.StartOperationAccept();
-
-            // Local variables for sync completion.
             SocketError socketError = SocketError.Success;
-
-            // Make the native call.
             try
             {
                 socketError = e.DoOperationAccept(this, _handle, acceptHandle);
@@ -3825,8 +3821,8 @@ namespace System.Net.Sockets
 
                 MultipleConnectAsync multipleConnectAsync = new SingleSocketMultipleConnectAsync(this, true);
 
-                e.StartOperationCommon(this);
-                e.StartOperationWrapperConnect(multipleConnectAsync);
+                e.StartOperationCommon(this, SocketAsyncOperation.Connect);
+                e.StartOperationConnect(multipleConnectAsync);
 
                 pending = multipleConnectAsync.StartConnectAsync(e, dnsEP);
             }
@@ -3863,7 +3859,7 @@ namespace System.Net.Sockets
                 }
 
                 // Prepare for the native call.
-                e.StartOperationCommon(this);
+                e.StartOperationCommon(this, SocketAsyncOperation.Connect);
                 e.StartOperationConnect();
 
                 // Make the native call.
@@ -3926,8 +3922,8 @@ namespace System.Net.Sockets
                     multipleConnectAsync = new SingleSocketMultipleConnectAsync(attemptSocket, false);
                 }
 
-                e.StartOperationCommon(attemptSocket);
-                e.StartOperationWrapperConnect(multipleConnectAsync);
+                e.StartOperationCommon(attemptSocket, SocketAsyncOperation.Connect);
+                e.StartOperationConnect(multipleConnectAsync);
 
                 pending = multipleConnectAsync.StartConnectAsync(e, dnsEP);
             }
@@ -3960,10 +3956,8 @@ namespace System.Net.Sockets
                 throw new ObjectDisposedException(GetType().FullName);
             }
 
-            // Prepare for the native call.
-            e.StartOperationCommon(this);
-            e.StartOperationDisconnect();
-
+            // Prepare for and make the native call.
+            e.StartOperationCommon(this, SocketAsyncOperation.Disconnect);
             SocketError socketError = SocketError.Success;
             try
             {
@@ -3995,18 +3989,12 @@ namespace System.Net.Sockets
                 throw new ArgumentNullException(nameof(e));
             }
 
-            // Prepare for the native call.
-            e.StartOperationCommon(this);
-            e.StartOperationReceive();
-
-            // Local vars for sync completion of native call.
-            SocketFlags flags;
+            // Prepare for and make the native call.
+            e.StartOperationCommon(this, SocketAsyncOperation.Receive);
             SocketError socketError;
-
-            // Wrap native methods with try/catch so event args object can be cleaned up.
             try
             {
-                socketError = e.DoOperationReceive(_handle, out flags);
+                socketError = e.DoOperationReceive(_handle);
             }
             catch
             {
@@ -4054,17 +4042,12 @@ namespace System.Net.Sockets
             // e.m_SocketAddres for Create to work later.
             e.RemoteEndPoint = endPointSnapshot;
 
-            // Prepare for the native call.
-            e.StartOperationCommon(this);
-            e.StartOperationReceiveFrom();
-
-            // Make the native call.
-            SocketFlags flags;
+            // Prepare for and make the native call.
+            e.StartOperationCommon(this, SocketAsyncOperation.ReceiveFrom);
             SocketError socketError;
-
             try
             {
-                socketError = e.DoOperationReceiveFrom(_handle, out flags);
+                socketError = e.DoOperationReceiveFrom(_handle);
             }
             catch
             {
@@ -4114,13 +4097,9 @@ namespace System.Net.Sockets
 
             SetReceivingPacketInformation();
 
-            // Prepare for the native call.
-            e.StartOperationCommon(this);
-            e.StartOperationReceiveMessageFrom();
-
-            // Make the native call.
+            // Prepare for and make the native call.
+            e.StartOperationCommon(this, SocketAsyncOperation.ReceiveMessageFrom);
             SocketError socketError;
-
             try
             {
                 socketError = e.DoOperationReceiveMessageFrom(this, _handle);
@@ -4151,14 +4130,9 @@ namespace System.Net.Sockets
                 throw new ArgumentNullException(nameof(e));
             }
 
-            // Prepare for the native call.
-            e.StartOperationCommon(this);
-            e.StartOperationSend();
-
-            // Local vars for sync completion of native call.
+            // Prepare for and make the native call.
+            e.StartOperationCommon(this, SocketAsyncOperation.Send);
             SocketError socketError;
-
-            // Wrap native methods with try/catch so event args object can be cleaned up.
             try
             {
                 socketError = e.DoOperationSend(_handle);
@@ -4198,33 +4172,18 @@ namespace System.Net.Sockets
                 throw new NotSupportedException(SR.net_notconnected);
             }
 
-            // Prepare for the native call.
-            e.StartOperationCommon(this);
-            e.StartOperationSendPackets();
-
-            // Make the native call.
+            // Prepare for and make the native call.
+            e.StartOperationCommon(this, SocketAsyncOperation.SendPackets);
             SocketError socketError;
-
-            Debug.Assert(e.SendPacketsDescriptorCount != null);
-
-            if (e.SendPacketsDescriptorCount > 0)
+            try
             {
-                try
-                {
-                    socketError = e.DoOperationSendPackets(this, _handle);
-                }
-                catch (Exception)
-                {
-                    // Clear in-use flag on event args object.
-                    e.Complete();
-                    throw;
-                }
+                socketError = e.DoOperationSendPackets(this, _handle);
             }
-            else
+            catch (Exception)
             {
-                // No buffers or files to send.
-                e.FinishOperationSyncSuccess(0, SocketFlags.None);
-                socketError = SocketError.Success;
+                // Clear in-use flag on event args object.
+                e.Complete();
+                throw;
             }
 
             bool pending = (socketError == SocketError.IOPending);
@@ -4254,14 +4213,9 @@ namespace System.Net.Sockets
             EndPoint endPointSnapshot = e.RemoteEndPoint;
             e._socketAddress = SnapshotAndSerialize(ref endPointSnapshot);
 
-            // Prepare for the native call.
-            e.StartOperationCommon(this);
-            e.StartOperationSendTo();
-
-            // Make the native call.
+            // Prepare for and make the native call.
+            e.StartOperationCommon(this, SocketAsyncOperation.SendTo);
             SocketError socketError;
-
-            // Wrap native methods with try/catch so event args object can be cleaned up.
             try
             {
                 socketError = e.DoOperationSendTo(_handle);
