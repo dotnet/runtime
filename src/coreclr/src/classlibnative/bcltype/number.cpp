@@ -2009,45 +2009,6 @@ ParseSection:
 #pragma warning(pop)
 #endif
 
-FCIMPL3_VII(Object*, COMNumber::FormatDecimal, FC_DECIMAL value, StringObject* formatUNSAFE, NumberFormatInfo* numfmtUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    NUMBER number;
-
-    wchar fmt;
-    int digits;
-
-    STRINGREF  refRetVal = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refRetVal);
-
-    struct _gc
-    {
-        STRINGREF   format;
-        NUMFMTREF   numfmt;
-    } gc;
-
-    gc.format = (STRINGREF) formatUNSAFE;
-    gc.numfmt = (NUMFMTREF) numfmtUNSAFE;
-
-    if (gc.numfmt == 0)
-        COMPlusThrowArgumentNull(W("NumberFormatInfo"));
-
-    COMDecimal::DecimalToNumber(&value, &number);
-
-    fmt = ParseFormatSpecifier(gc.format, &digits);
-    if (fmt != 0) {
-        refRetVal = NumberToString(&number, fmt, digits, gc.numfmt, TRUE);
-    } else {
-        refRetVal = NumberToStringFormat(&number, gc.format, gc.numfmt);
-    }
-
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(refRetVal);
-}
-FCIMPLEND
-
 FCIMPL3_VII(Object*, COMNumber::FormatDouble, double value, StringObject* formatUNSAFE, NumberFormatInfo* numfmtUNSAFE)
 {
     FCALL_CONTRACT;

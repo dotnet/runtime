@@ -744,7 +744,6 @@ FCFuncStart(gWaitHandleFuncs)
 FCFuncEnd()
 
 FCFuncStart(gNumberFuncs)
-    FCFuncElement("FormatDecimal", COMNumber::FormatDecimal)
     FCFuncElement("FormatDouble", COMNumber::FormatDouble)
     FCFuncElement("FormatSingle", COMNumber::FormatSingle)
     FCFuncElement("NumberBufferToDecimal", COMNumber::NumberBufferToDecimal)
