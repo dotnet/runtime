@@ -650,7 +650,7 @@ namespace System
 
         internal bool IsNullHandle()
         {
-            return m_handle.IsNull();
+            return m_handle == IntPtr.Zero;
         }
 
         internal IntPtr Value
@@ -1016,7 +1016,7 @@ namespace System
     {
         internal bool IsNullHandle()
         {
-            return m_handle.IsNull();
+            return m_handle == IntPtr.Zero;
         }
 
         internal IntPtr Value

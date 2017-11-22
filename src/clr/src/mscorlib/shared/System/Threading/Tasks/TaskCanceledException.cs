@@ -24,7 +24,7 @@ namespace System.Threading.Tasks
     public class TaskCanceledException : OperationCanceledException
     {
         [NonSerialized]
-        private Task m_canceledTask; // The task which has been canceled.
+        private readonly Task _canceledTask; // The task which has been canceled.
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:System.Threading.Tasks.TaskCanceledException"/> class.
@@ -61,7 +61,7 @@ namespace System.Threading.Tasks
         public TaskCanceledException(Task task) :
             base(SR.TaskCanceledException_ctor_DefaultMessage, task != null ? task.CancellationToken : new CancellationToken())
         {
-            m_canceledTask = task;
+            _canceledTask = task;
         }
 
         /// <summary>
@@ -82,9 +82,6 @@ namespace System.Threading.Tasks
         /// <see cref="T:System.Threading.Tasks.TaskCanceledException"/>, in which case
         /// this property will return null.
         /// </remarks>
-        public Task Task
-        {
-            get { return m_canceledTask; }
-        }
+        public Task Task => _canceledTask;
     }
 }

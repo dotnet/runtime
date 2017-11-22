@@ -130,9 +130,9 @@ namespace System
             // It may also happen that the method pointer was not jitted when creating one delegate and jitted in the other 
             // if that's the case the delegates may still be equals but we need to make a more complicated check
 
-            if (_methodPtrAux.IsNull())
+            if (_methodPtrAux == IntPtr.Zero)
             {
-                if (!d._methodPtrAux.IsNull())
+                if (d._methodPtrAux != IntPtr.Zero)
                     return false; // different delegate kind
                 // they are both closed over the first arg
                 if (_target != d._target)
@@ -141,7 +141,7 @@ namespace System
             }
             else
             {
-                if (d._methodPtrAux.IsNull())
+                if (d._methodPtrAux == IntPtr.Zero)
                     return false; // different delegate kind
 
                 // Ignore the target as it will be the delegate instance, though it may be a different one
@@ -170,12 +170,12 @@ namespace System
             // in that case the delegate is the same and Equals will return true but GetHashCode returns a
             // different hashcode which is not true.
             /*
-            if (_methodPtrAux.IsNull())
+            if (_methodPtrAux == IntPtr.Zero)
                 return unchecked((int)((long)this._methodPtr));
             else
                 return unchecked((int)((long)this._methodPtrAux));
             */
-            if (_methodPtrAux.IsNull())
+            if (_methodPtrAux == IntPtr.Zero)
                 return ( _target != null ? RuntimeHelpers.GetHashCode(_target) * 33 : 0) + GetType().GetHashCode();
             else
                 return GetType().GetHashCode();
@@ -229,7 +229,7 @@ namespace System
                     bool isStatic = (RuntimeMethodHandle.GetAttributes(method) & MethodAttributes.Static) != (MethodAttributes)0;
                     if (!isStatic)
                     {
-                        if (_methodPtrAux == (IntPtr)0)
+                        if (_methodPtrAux == IntPtr.Zero)
                         {
                             // The target may be of a derived type that doesn't have visibility onto the
                             // target method. We don't want to call RuntimeType.GetMethodBase below with that
@@ -679,7 +679,7 @@ namespace System
 
         internal virtual Object GetTarget()
         {
-            return (_methodPtrAux.IsNull()) ? _target : null;
+            return (_methodPtrAux == IntPtr.Zero) ? _target : null;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

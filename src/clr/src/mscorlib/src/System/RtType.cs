@@ -2453,13 +2453,13 @@ namespace System
         {
             get
             {
-                if (m_cache.IsNull())
+                if (m_cache == IntPtr.Zero)
                 {
                     IntPtr newgcHandle = new RuntimeTypeHandle(this).GetGCHandle(GCHandleType.WeakTrackResurrection);
-                    IntPtr gcHandle = Interlocked.CompareExchange(ref m_cache, newgcHandle, (IntPtr)0);
+                    IntPtr gcHandle = Interlocked.CompareExchange(ref m_cache, newgcHandle, IntPtr.Zero);
                     // Leak the handle if the type is collectible. It will be reclaimed when
                     // the type goes away.
-                    if (!gcHandle.IsNull() && !IsCollectible())
+                    if (gcHandle != IntPtr.Zero && !IsCollectible())
                         GCHandle.InternalFree(newgcHandle);
                 }
 
