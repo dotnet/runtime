@@ -755,8 +755,8 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<ushort> Add(Vector128<ushort> left,  Vector128<ushort> right) { throw new NotImplementedException(); }
         public static Vector128<int> Add(Vector128<int> left,  Vector128<int> right) { throw new NotImplementedException(); }
         public static Vector128<uint> Add(Vector128<uint> left,  Vector128<uint> right) { throw new NotImplementedException(); }
-        public static Vector128<long> Add(Vector128<byte> left,  Vector128<long> right) { throw new NotImplementedException(); }
-        public static Vector128<ulong> Add(Vector128<sbyte> left,  Vector128<ulong> right) { throw new NotImplementedException(); }
+        public static Vector128<long> Add(Vector128<long> left,  Vector128<long> right) { throw new NotImplementedException(); }
+        public static Vector128<ulong> Add(Vector128<ulong> left,  Vector128<ulong> right) { throw new NotImplementedException(); }
         public static Vector128<double> Add(Vector128<double> left,  Vector128<double> right) { throw new NotImplementedException(); }
         public static Vector128<sbyte> AddSaturate(Vector128<sbyte> left,  Vector128<sbyte> right) { throw new NotImplementedException(); }
         public static Vector128<byte> AddSaturate(Vector128<byte> left,  Vector128<byte> right) { throw new NotImplementedException(); }
@@ -1044,6 +1044,8 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<long> ConvertToLong(Vector128<ushort> value) { throw null; }
         public static Vector128<long> ConvertToLong(Vector128<int> value) { throw null; }
         public static Vector128<long> ConvertToLong(Vector128<uint> value) { throw null; }
+        public static Vector128<float> DotProduct(Vector128<float> left, Vector128<float> right, byte control) { throw null; }
+        public static Vector128<double> DotProduct(Vector128<double> left, Vector128<double> right, byte control) { throw null; }
         public static sbyte ExtractSbyte<T>(Vector128<T> value, byte index) where T : struct { throw null; }
         public static byte ExtractByte<T>(Vector128<T> value, byte index) where T : struct { throw null; }
         public static int ExtractInt<T>(Vector128<T> value, byte index) where T : struct { throw null; }
