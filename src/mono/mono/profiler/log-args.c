@@ -260,7 +260,7 @@ set_hsmode (ProfilerConfig *config, const char* val)
 	unsigned int count = strtoul (val, &end, 10);
 
 	if (val == end) {
-		usage ();
+		mono_profiler_printf_err ("Could not parse heapshot mode");
 		return;
 	}
 
@@ -271,7 +271,7 @@ set_hsmode (ProfilerConfig *config, const char* val)
 		config->hs_mode = MONO_PROFILER_HEAPSHOT_X_GC;
 		config->hs_freq_gc = count;
 	} else
-		usage ();
+		mono_profiler_printf_err ("Could not parse heapshot mode");
 }
 
 static void
@@ -302,7 +302,7 @@ parse:
 		freq = strtoul (p, &end, 10);
 
 		if (p == end)
-			usage ();
+			mono_profiler_printf_err ("Could not parse sample frequency");
 		else
 			config->sample_freq = freq;
 	}
@@ -347,4 +347,6 @@ usage (void)
 	mono_profiler_printf ("\treport               create a report instead of writing the raw data to a file");
 	mono_profiler_printf ("\tzip                  compress the output data");
 	mono_profiler_printf ("\tport=PORTNUM         use PORTNUM for the listening command server");
+
+	exit (0);
 }

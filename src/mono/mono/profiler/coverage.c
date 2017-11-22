@@ -880,6 +880,8 @@ usage (void)
 	mono_profiler_printf ("\toutput=|PROGRAM      write the data to the stdin of PROGRAM");
 	mono_profiler_printf ("\toutput=|PROGRAM      write the data to the stdin of PROGRAM");
 	// mono_profiler_printf ("\tzip                  compress the output data");
+
+	exit (0);
 }
 
 MONO_API void
