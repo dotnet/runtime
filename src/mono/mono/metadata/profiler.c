@@ -657,6 +657,10 @@ typedef void (*MonoLegacyProfileThreadFunc) (MonoLegacyProfiler *prof, uintptr_t
 typedef void (*MonoLegacyProfileGCFunc) (MonoLegacyProfiler *prof, MonoProfilerGCEvent event, int generation);
 typedef void (*MonoLegacyProfileGCResizeFunc) (MonoLegacyProfiler *prof, int64_t new_size);
 typedef void (*MonoLegacyProfileJitResult) (MonoLegacyProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo, int result);
+typedef void (*MonoLegacyProfileAllocFunc) (MonoLegacyProfiler *prof, MonoObject *obj, MonoClass *klass);
+typedef void (*MonoLegacyProfileMethodFunc) (MonoLegacyProfiler *prof, MonoMethod *method);
+typedef void (*MonoLegacyProfileExceptionFunc) (MonoLegacyProfiler *prof, MonoObject *object);
+typedef void (*MonoLegacyProfileExceptionClauseFunc) (MonoLegacyProfiler *prof, MonoMethod *method, int clause_type, int clause_num);
 
 struct _MonoProfiler {
 	MonoProfilerHandle handle;
@@ -666,6 +670,12 @@ struct _MonoProfiler {
 	MonoLegacyProfileGCFunc gc_event;
 	MonoLegacyProfileGCResizeFunc gc_heap_resize;
 	MonoLegacyProfileJitResult jit_end2;
+	MonoLegacyProfileAllocFunc allocation;
+	MonoLegacyProfileMethodFunc enter;
+	MonoLegacyProfileMethodFunc leave;
+	MonoLegacyProfileExceptionFunc throw_callback;
+	MonoLegacyProfileMethodFunc exc_method_leave;
+	MonoLegacyProfileExceptionClauseFunc clause_callback;
 };
 
 static MonoProfiler *current;
@@ -675,6 +685,9 @@ MONO_API void mono_profiler_install_thread (MonoLegacyProfileThreadFunc start, M
 MONO_API void mono_profiler_install_gc (MonoLegacyProfileGCFunc callback, MonoLegacyProfileGCResizeFunc heap_resize_callback);
 MONO_API void mono_profiler_install_jit_end (MonoLegacyProfileJitResult end);
 MONO_API void mono_profiler_set_events (int flags);
+MONO_API void mono_profiler_install_allocation (MonoLegacyProfileAllocFunc callback);
+MONO_API void mono_profiler_install_enter_leave (MonoLegacyProfileMethodFunc enter, MonoLegacyProfileMethodFunc fleave);
+MONO_API void mono_profiler_install_exception (MonoLegacyProfileExceptionFunc throw_callback, MonoLegacyProfileMethodFunc exc_method_leave, MonoLegacyProfileExceptionClauseFunc clause_callback);
 
 static void
 shutdown_cb (MonoProfiler *prof)
@@ -771,4 +784,87 @@ void
 mono_profiler_set_events (int flags)
 {
 	/* Do nothing. */
+}
+
+static void
+allocation_cb (MonoProfiler *prof, MonoObject* object)
+{
+	prof->allocation (prof->profiler, object, object->vtable->klass);
+}
+
+void
+mono_profiler_install_allocation (MonoLegacyProfileAllocFunc callback)
+{
+	current->allocation = callback;
+
+	if (callback)
+		mono_profiler_set_gc_allocation_callback (current->handle, allocation_cb);
+}
+
+static void
+enter_cb (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *context)
+{
+	prof->enter (prof->profiler, method);
+}
+
+static void
+leave_cb (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *context)
+{
+	prof->leave (prof->profiler, method);
+}
+
+static void
+tail_call_cb (MonoProfiler *prof, MonoMethod *method, MonoMethod *target)
+{
+	prof->leave (prof->profiler, method);
+}
+
+void
+mono_profiler_install_enter_leave (MonoLegacyProfileMethodFunc enter, MonoLegacyProfileMethodFunc fleave)
+{
+	current->enter = enter;
+	current->leave = fleave;
+
+	if (enter)
+		mono_profiler_set_method_enter_callback (current->handle, enter_cb);
+
+	if (fleave) {
+		mono_profiler_set_method_leave_callback (current->handle, leave_cb);
+		mono_profiler_set_method_tail_call_callback (current->handle, tail_call_cb);
+	}
+}
+
+static void
+throw_callback_cb (MonoProfiler *prof, MonoObject *exception)
+{
+	prof->throw_callback (prof->profiler, exception);
+}
+
+static void
+exc_method_leave_cb (MonoProfiler *prof, MonoMethod *method, MonoObject *exception)
+{
+	prof->exc_method_leave (prof->profiler, method);
+}
+
+static void
+clause_callback_cb (MonoProfiler *prof, MonoMethod *method, uint32_t index, MonoExceptionEnum type, MonoObject *exception)
+{
+	prof->clause_callback (prof->profiler, method, type, index);
+}
+
+void
+mono_profiler_install_exception (MonoLegacyProfileExceptionFunc throw_callback, MonoLegacyProfileMethodFunc exc_method_leave, MonoLegacyProfileExceptionClauseFunc clause_callback)
+{
+	current->throw_callback = throw_callback;
+	current->exc_method_leave = exc_method_leave;
+	current->clause_callback = clause_callback;
+
+	if (throw_callback)
+		mono_profiler_set_exception_throw_callback (current->handle, throw_callback_cb);
+
+	if (exc_method_leave)
+		mono_profiler_set_method_exception_leave_callback (current->handle, exc_method_leave_cb);
+
+	if (clause_callback)
+		mono_profiler_set_exception_clause_callback (current->handle, clause_callback_cb);
 }
