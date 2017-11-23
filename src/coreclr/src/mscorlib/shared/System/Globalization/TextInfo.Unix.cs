@@ -12,7 +12,7 @@ namespace System.Globalization
     {
         private Tristate _needsTurkishCasing = Tristate.NotInitialized;
 
-        private void FinishInitialization(string textInfoName)
+        private void FinishInitialization()
         {
         }
 
@@ -33,6 +33,7 @@ namespace System.Globalization
             {
                 fixed (char* pResult = result)
                 {
+#if CORECLR
                     if (IsAsciiCasingSameAsInvariant && s.IsAscii())
                     {
                         int length = s.Length;
@@ -53,6 +54,7 @@ namespace System.Globalization
                         }
                     }
                     else
+#endif
                     {
                         ChangeCase(pSource, s.Length, pResult, result.Length, toUpper);
                     }
