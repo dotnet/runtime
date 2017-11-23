@@ -3698,7 +3698,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			td->ip += 2;
 			generating_code = 0;
 			break;
-		case CEE_UNUSED41:
+		case MONO_CUSTOM_PREFIX:
 			++td->ip;
 		        switch (*td->ip) {
 				case CEE_MONO_CALLI_EXTRA_ARG:
