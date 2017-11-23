@@ -80,7 +80,7 @@ namespace System.Collections.ObjectModel
                     return item;
                 }
 
-                throw new KeyNotFoundException();
+                throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
             }
         }
 

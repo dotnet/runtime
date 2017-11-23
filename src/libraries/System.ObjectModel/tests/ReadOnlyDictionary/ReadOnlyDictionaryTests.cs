@@ -837,7 +837,7 @@ namespace System.Collections.ObjectModel.Tests
                     if (item.Key.Equals(key))
                         return item.Value;
                 }
-                throw new KeyNotFoundException("key does not exist");
+                throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
             }
             set
             {
