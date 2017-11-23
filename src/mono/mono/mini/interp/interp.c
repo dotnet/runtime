@@ -1734,6 +1734,18 @@ do_icall (ThreadContext *context, int op, stackval *sp, gpointer ptr)
 		func (sp [0].data.p, sp [1].data.p, sp [2].data.i);
 		break;
 	}
+	case MINT_ICALL_PII_P: {
+		gpointer (*func)(gpointer,int,int) = ptr;
+		sp -= 2;
+		sp [-1].data.p = func (sp [-1].data.p, sp [0].data.i, sp [1].data.i);
+		break;
+	}
+	case MINT_ICALL_PPII_V: {
+		gpointer (*func)(gpointer,gpointer,int,int) = ptr;
+		sp -= 4;
+		func (sp [0].data.p, sp [1].data.p, sp [2].data.i, sp [3].data.i);
+		break;
+	}
 	default:
 		g_assert_not_reached ();
 	}
@@ -4487,6 +4499,8 @@ array_constructed:
 		MINT_IN_CASE(MINT_ICALL_PI_P)
 		MINT_IN_CASE(MINT_ICALL_PPP_V)
 		MINT_IN_CASE(MINT_ICALL_PPI_V)
+		MINT_IN_CASE(MINT_ICALL_PII_P)
+		MINT_IN_CASE(MINT_ICALL_PPII_V)
 			sp = do_icall (context, *ip, sp, rtm->data_items [*(guint16 *)(ip + 1)]);
 			if (*mono_thread_interruption_request_flag ()) {
 				MonoException *exc = mono_thread_interruption_checkpoint ();
