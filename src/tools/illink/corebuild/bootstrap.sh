@@ -150,6 +150,7 @@ fi
 
 
 rootCliVersion="$repoRoot/.cliversion"
+globalJson="$repoRoot/global.json"
 bootstrapComplete="$toolsLocalPath/bootstrap.complete"
 
 # if the force switch is specified delete the semaphore file if it exists
@@ -195,6 +196,8 @@ if [ $forcedCliLocalPath = "<none>" ]; then
         say_err "The .NET CLI installation failed with exit code $?"
         exit $?
     fi
+
+    echo "{ \"sdk\": { \"version\": \"$dotNetCliVersion\" } }" > $globalJson
 fi
 
 cp $rootCliVersion $bootstrapComplete

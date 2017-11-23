@@ -72,6 +72,7 @@ namespace ILLink.Tests
 			psi.Environment.Remove("MSBuildSDKsPath");
 			psi.Environment.Remove("VbcToolExe");
 			psi.Environment.Remove("CscToolExe");
+			psi.Environment.Remove("MSBUILD_EXE_PATH");
 
 			StringBuilder processOutput = new StringBuilder();
 			DataReceivedEventHandler handler = (sender, e) => {
@@ -85,6 +86,10 @@ namespace ILLink.Tests
 			};
 			process.OutputDataReceived += handler;
 			process.ErrorDataReceived += ehandler;
+			output.WriteLine("environment:");
+			foreach (var item in psi.Environment) {
+				output.WriteLine($"\t{item.Key}={item.Value}");
+			}
 			process.Start();
 			process.BeginOutputReadLine();
 			process.BeginErrorReadLine();
@@ -124,10 +129,10 @@ namespace ILLink.Tests
 				publishArgs += $" /p:LinkerRootDescriptors={rootFilesStr}";
 			}
 			if (extraPublishArgs != null) {
-                            foreach (var item in extraPublishArgs) {
-				publishArgs += $" /p:{item.Key}={item.Value}";
-                            }
-                        }
+				foreach (var item in extraPublishArgs) {
+					publishArgs += $" /p:{item.Key}={item.Value}";
+				}
+			}
 			int ret = Dotnet(publishArgs, demoRoot);
 
 			if (ret != 0) {

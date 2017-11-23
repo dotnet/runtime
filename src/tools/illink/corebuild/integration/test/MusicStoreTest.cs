@@ -14,7 +14,25 @@ namespace ILLink.Tests
 
 		private static List<string> rootFiles = new List<string> { "MusicStoreReflection.xml" };
 
-		private string netcoreappVersion;
+		private static string gitRepo = "http://github.com/aspnet/JitBench";
+		private static string repoName = "JitBench";
+
+		// Revision can also be a branch name. We generally
+		// want to ensure that we are able to link the latest
+		// MusicStore from the dev branch.
+		private static string gitRevision = "86ac48203060598e60722a5f6a96112af22d069b";
+
+		// The version of Microsoft.NETCore.App that
+		// musicstore will run on (and deploy with, for
+		// self-contained deployments).
+		private static string runtimeVersion = "2.1.0-preview1-25915-01";
+
+		// The version of the SDK used to build and link
+		// musicstore.
+		private static string sdkVersion = "2.2.0-preview1-007525";
+
+		// The version of Microsoft.AspNetCore.All to publish with.
+		private static string aspNetVersion = "2.1.0-preview1-27654";
 
 		[Fact]
 		public void RunMusicStore()
@@ -35,15 +53,22 @@ namespace ILLink.Tests
 			AddLinkerReference(csproj);
 
 			Dictionary<string, string> extraPublishArgs = new Dictionary<string, string>();
-			extraPublishArgs.Add("JITBENCH_FRAMEWORK_VERSION", netcoreappVersion);
+			extraPublishArgs.Add("JITBENCH_FRAMEWORK_VERSION", runtimeVersion);
+			extraPublishArgs.Add("JITBENCH_ASPNET_VERSION", aspNetVersion);
 			BuildAndLink(csproj, rootFiles, extraPublishArgs);
+
+			int ret = RunApp(csproj, out string commandOutput);
+			Assert.True(commandOutput.Contains("Starting request to http://localhost:5000"));
+			Assert.True(commandOutput.Contains("Response: OK"));
+			Assert.True(commandOutput.Contains("Running 100 requests"));
+			Assert.True(ret == 0);
 		}
 
-		string ObtainSDK(string repoDir)
+		string ObtainSDK(string rootDir, string repoDir)
 		{
 			int ret;
 			string dotnetDirName = ".dotnet";
-			string dotnetInstall = Path.Combine(repoDir, "dotnet-install");
+			string dotnetInstall = Path.Combine(Path.GetFullPath(repoDir), "dotnet-install");
 			if (context.RuntimeIdentifier.Contains("win")) {
 				dotnetInstall += ".ps1";
 			} else {
@@ -55,30 +80,30 @@ namespace ILLink.Tests
 			}
 
 			if (context.RuntimeIdentifier.Contains("win")) {
-				ret = RunCommand(dotnetInstall, $"-SharedRuntime -InstallDir {dotnetDirName} -Channel master -Architecture x64", repoDir);
+				ret = RunCommand("powershell", $"{dotnetInstall} -SharedRuntime -InstallDir {dotnetDirName} -Channel master -Architecture x64 -Version {runtimeVersion}", rootDir);
 				if (ret != 0) {
 					output.WriteLine("failed to retrieve shared runtime");
 					Assert.True(false);
 				}
-				ret = RunCommand(dotnetInstall, $"-InstallDir {dotnetDirName} -Channel master -Architecture x64", repoDir);
+				ret = RunCommand("powershell", $"{dotnetInstall} -InstallDir {dotnetDirName} -Channel master -Architecture x64 -Version {sdkVersion}", rootDir);
 				if (ret != 0) {
 					output.WriteLine("failed to retrieve sdk");
 					Assert.True(false);
 				}
 			} else {
-				ret = RunCommand(dotnetInstall, $"-sharedruntime -runtimeid {context.RuntimeIdentifier} -installdir {dotnetDirName} -channel master -architecture x64", repoDir);
+				ret = RunCommand(dotnetInstall, $"-sharedruntime -runtimeid {context.RuntimeIdentifier} -installdir {dotnetDirName} -channel master -architecture x64 -version {runtimeVersion}", rootDir);
 				if (ret != 0) {
 					output.WriteLine("failed to retrieve shared runtime");
 					Assert.True(false);
 				}
-				ret = RunCommand(dotnetInstall, $"-installdir {dotnetDirName} -channel master -architecture x64", repoDir);
+				ret = RunCommand(dotnetInstall, $"-installdir {dotnetDirName} -channel master -architecture x64 -version {sdkVersion}", rootDir);
 				if (ret != 0) {
 					output.WriteLine("failed to retrieve sdk");
 					Assert.True(false);
 				}
 			}
 
-			string dotnetDir = Path.Combine(repoDir, dotnetDirName);
+			string dotnetDir = Path.Combine(rootDir, dotnetDirName);
 			string dotnetToolName = Directory.GetFiles(dotnetDir)
 				.Select(p => Path.GetFileName(p))
 				.Where(p => p.Contains("dotnet"))
@@ -89,13 +114,9 @@ namespace ILLink.Tests
 				Assert.True(false);
 			}
 
-			string ncaDir = Path.Combine(dotnetDir, "shared", "Microsoft.NETCore.App");
-			netcoreappVersion = Directory.GetDirectories(ncaDir)
-				.Select(p => Path.GetFileName(p)).Max();
-			if (String.IsNullOrEmpty(netcoreappVersion)) {
-				output.WriteLine($"no netcoreapp version found in {ncaDir}");
-				Assert.True(false);
-			}
+			string globalJson = Path.Combine(repoDir, "global.json");
+			string globalJsonContents = "{ \"sdk\": { \"version\": \"" + sdkVersion + "\" } }\n";
+			File.WriteAllText(globalJson, globalJsonContents);
 
 			return dotnetToolPath;
 		}
@@ -103,10 +124,6 @@ namespace ILLink.Tests
 		// returns path to .csproj project file
 		string SetupProject()
 		{
-			string gitRepo = "http://github.com/aspnet/JitBench";
-			string repoName = "JitBench";
-			string gitBranch = "dev";
-
 			int ret;
 			if (Directory.Exists(repoName)) {
 				Directory.Delete(repoName, true);
@@ -124,16 +141,16 @@ namespace ILLink.Tests
 				Assert.True(false);
 			}
 
-			ret = RunCommand("git", $"checkout {gitBranch}", demoRoot);
+			ret = RunCommand("git", $"checkout {gitRevision}", demoRoot);
 			if (ret != 0) {
-				output.WriteLine($"problem checking out branch {gitBranch}");
+				output.WriteLine($"problem checking out revision {gitRevision}");
 				Assert.True(false);
 			}
 
 			// MusicStore targets .NET Core 2.1, so it must be built
 			// using an SDK that can target 2.1. We obtain that SDK
 			// here.
-			context.DotnetToolPath = ObtainSDK(repoName);
+			context.DotnetToolPath = ObtainSDK(context.TestBin, repoName);
 
 			string csproj = Path.Combine(demoRoot, "MusicStore.csproj");
 			return csproj;
