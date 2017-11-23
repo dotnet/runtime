@@ -3,11 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace System.Text
+namespace System.Globalization
 {
     internal static partial class Normalization
     {
