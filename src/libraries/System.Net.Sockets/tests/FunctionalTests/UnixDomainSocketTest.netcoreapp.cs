@@ -5,6 +5,7 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -348,6 +349,87 @@ namespace System.Net.Sockets.Tests
 
             string invalidLengthString = new string('a', maxNativeSize + 1);
             Assert.Throws<ArgumentOutOfRangeException>(() => new UnixDomainSocketEndPoint(invalidLengthString));
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void UnixDomainSocketEndPoint_RemoteEndPointEqualsBindAddress(bool abstractAddress)
+        {
+            string serverAddress;
+            string clientAddress;
+            string expectedClientAddress;
+            if (abstractAddress)
+            {
+                // abstract socket addresses are a Linux feature.
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    return;
+                }
+                // An abstract socket address starts with a zero byte.
+                serverAddress = '\0' + Guid.NewGuid().ToString();
+                clientAddress = '\0' + Guid.NewGuid().ToString();
+                expectedClientAddress = '@' + clientAddress.Substring(1);
+            }
+            else
+            {
+                serverAddress = GetRandomNonExistingFilePath();
+                clientAddress = GetRandomNonExistingFilePath();
+                expectedClientAddress = clientAddress;
+            }
+
+            try
+            {
+                using (Socket server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+                {
+                    server.Bind(new UnixDomainSocketEndPoint(serverAddress));
+                    server.Listen(1);
+
+                    using (Socket client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+                    {
+                        // Bind the client.
+                        client.Bind(new UnixDomainSocketEndPoint(clientAddress));
+                        client.Connect(new UnixDomainSocketEndPoint(serverAddress));
+                        using (Socket acceptedClient = server.Accept())
+                        {
+                            // Verify the client address on the server.
+                            EndPoint clientAddressOnServer = acceptedClient.RemoteEndPoint;
+                            Assert.True(string.CompareOrdinal(expectedClientAddress, clientAddressOnServer.ToString()) == 0);
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                if (!abstractAddress)
+                {
+                    try { File.Delete(serverAddress); }
+                    catch { }
+                    try { File.Delete(clientAddress); }
+                    catch { }
+                }
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Linux)] // Don't support abstract socket addresses.
+        public void UnixDomainSocketEndPoint_UsingAbstractSocketAddressOnUnsupported_Throws()
+        {
+            // An abstract socket address starts with a zero byte.
+            string address = '\0' + Guid.NewGuid().ToString();
+
+            // Bind
+            using (Socket socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+            {
+                Assert.ThrowsAny<SocketException>(() => socket.Bind(new UnixDomainSocketEndPoint(address)));
+            }
+
+            // Connect
+            using (Socket socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+            {
+                Assert.ThrowsAny<SocketException>(() => socket.Connect(new UnixDomainSocketEndPoint(address)));
+            }
         }
 
         private static string GetRandomNonExistingFilePath()
