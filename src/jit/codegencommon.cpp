@@ -11207,7 +11207,7 @@ bool Compiler::IsMultiRegPassedType(CORINFO_CLASS_HANDLE hClass)
     structPassingKind howToPassStruct;
     var_types         returnType = getArgTypeForStruct(hClass, &howToPassStruct);
 
-    return (returnType == TYP_STRUCT);
+    return (varTypeIsStruct(returnType));
 }
 
 //-----------------------------------------------------------------------------------
