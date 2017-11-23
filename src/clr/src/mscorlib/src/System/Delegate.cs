@@ -65,7 +65,7 @@ namespace System
             if (target == null)
                 throw new ArgumentNullException(nameof(target));
 
-            if (target.IsGenericType && target.ContainsGenericParameters)
+            if (target.ContainsGenericParameters)
                 throw new ArgumentException(SR.Arg_UnboundGenParam, nameof(target));
 
             if (method == null)
@@ -394,7 +394,7 @@ namespace System
                 throw new ArgumentNullException(nameof(type));
             if (target == null)
                 throw new ArgumentNullException(nameof(target));
-            if (target.IsGenericType && target.ContainsGenericParameters)
+            if (target.ContainsGenericParameters)
                 throw new ArgumentException(SR.Arg_UnboundGenParam, nameof(target));
             if (method == null)
                 throw new ArgumentNullException(nameof(method));
