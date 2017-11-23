@@ -17,28 +17,65 @@
 
     <assembly fullname="System.ComponentModel.TypeConverter">
         <!-- Called by System.RuntimeTypeHandle.CreateInstance -->
-        <type fullname="System.ComponentModel.StringConverter" required="true" >
+        <type fullname="System.ComponentModel.StringConverter">
             <method name=".ctor" required="true" />
         </type>
-        <type fullname="System.ComponentModel.BooleanConverter" required="true" >
+        <type fullname="System.ComponentModel.BooleanConverter">
             <method name=".ctor" required="true" />
         </type>
-        <type fullname="System.ComponentModel.CollectionConverter" >
+        <type fullname="System.ComponentModel.CollectionConverter">
             <method name=".ctor" required="true" />
         </type>
     </assembly>
 
     <assembly fullname="Microsoft.CSharp">
-        <type fullname="Microsoft.CSharp.RuntimeBinder.Binder" >
+        <type fullname="Microsoft.CSharp.RuntimeBinder.Binder">
             <!-- Called by AspNetCore._Views_Home_Index_cshtml.<ExecuteAsync>d__11.MoveNext() -->
             <method name="Convert" required="true" />
         </type>
     </assembly>
 
     <assembly fullname="System.Dynamic.Runtime">
-        <type fullname="System.Runtime.CompilerServices.CallSite`1" required="true">
+        <type fullname="System.Runtime.CompilerServices.CallSite`1">
             <!--- Called by [System.Dynamic.Runtime]System.Runtime.CompilerServices.CallSiteBinder.Stitch -->
             <method name="get_Update" required="true" />
         </type>
-    </assembly> 
+    </assembly>
+
+    <assembly fullname="System.Text.RegularExpressions">
+        <!--- System.Text.RegularExpressions.RegexCompiler -->
+        <type fullname="System.Text.RegularExpressions.RegexRunner">
+            <field name="runtextbeg" required="true" />
+            <field name="runtextend" required="true" />
+            <field name="runtextstart" required="true" />
+            <field name="runtextpos" required="true" />
+            <field name="runtext" required="true" />
+            <field name="runtrackpos" required="true" />
+            <field name="runtrack" required="true" />
+            <field name="runstackpos" required="true" />
+            <field name="runstack" required="true" />
+            <field name="runtrackcount" required="true" />
+            <method name="EnsureStorage" required="true" />
+            <method name="Capture" required="true" />
+            <method name="TransferCapture" required="true" />
+            <method name="Uncapture" required="true" />
+            <method name="IsMatched" required="true" />
+            <method name="MatchLength" required="true" />
+            <method name="MatchIndex" required="true" />
+            <method name="IsBoundary" required="true" />
+            <method name="CharInClass" required="true" />
+            <method name="IsECMABoundary" required="true" />
+            <method name="Crawlpos" required="true" />
+            <method name="CheckTimeout" required="true" />
+        </type>
+    </assembly>
+
+    <assembly fullname="System.Net.Sockets">
+        <type fullname="System.Net.Sockets.Socket/CachedTaskEventArgs">
+            <!--- Called by System.Net.Sockets.Socket.AcceptAsync -->
+            <method name=".ctor" required="true" />
+        </type>
+   </assembly>
+   -->
+
 </linker>
