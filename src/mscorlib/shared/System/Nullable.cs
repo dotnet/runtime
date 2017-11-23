@@ -2,20 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
-using System.Reflection;
 using System.Collections.Generic;
-using System.Runtime;
 using System.Runtime.Versioning;
-using System.Runtime.CompilerServices;
 
 namespace System
 {
-    // Also, because we have special type system support that says a a boxed Nullable<T>
+    // Because we have special type system support that says a a boxed Nullable<T>
     // can be used where a boxed<T> is use, Nullable<T> can not implement any intefaces
     // at all (since T may not).   Do NOT add any interfaces to Nullable!
-    // 
+    //
     [Serializable]
     [NonVersionable] // This only applies to field layout
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
@@ -46,7 +41,7 @@ namespace System
             {
                 if (!hasValue)
                 {
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NoValue);
+                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_NoValue();
                 }
                 return value;
             }
