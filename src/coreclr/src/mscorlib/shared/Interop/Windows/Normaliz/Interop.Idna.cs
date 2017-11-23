@@ -14,25 +14,22 @@ internal partial class Interop
         //
 
         [DllImport("Normaliz.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern int IdnToAscii(
+        internal static extern unsafe int IdnToAscii(
                                         uint dwFlags,
-                                        IntPtr lpUnicodeCharStr,
+                                        char* lpUnicodeCharStr,
                                         int cchUnicodeChar,
-                                        [System.Runtime.InteropServices.OutAttribute()]
-                                        IntPtr lpASCIICharStr,
+                                        char* lpASCIICharStr,
                                         int cchASCIIChar);
 
         [DllImport("Normaliz.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern int IdnToUnicode(
+        internal static extern unsafe int IdnToUnicode(
                                         uint dwFlags,
-                                        IntPtr lpASCIICharStr,
+                                        char* lpASCIICharStr,
                                         int cchASCIIChar,
-                                        [System.Runtime.InteropServices.OutAttribute()]
-                                        IntPtr lpUnicodeCharStr,
+                                        char* lpUnicodeCharStr,
                                         int cchUnicodeChar);
 
         internal const int IDN_ALLOW_UNASSIGNED = 0x1;
         internal const int IDN_USE_STD3_ASCII_RULES = 0x2;
-        internal const int ERROR_INVALID_NAME = 123;
     }
 }
