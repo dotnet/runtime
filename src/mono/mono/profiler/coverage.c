@@ -689,8 +689,6 @@ init_suppressed_assemblies (void)
 	/* Don't need to free content as it is referred to by the lines stored in @filters */
 	content = get_file_content (SUPPRESSION_DIR "/mono-profiler-coverage.suppression");
 	if (content == NULL)
-		content = get_file_content (SUPPRESSION_DIR "/mono-profiler-log.suppression");
-	if (content == NULL)
 		return;
 
 	while ((line = get_next_line (content, &content))) {
