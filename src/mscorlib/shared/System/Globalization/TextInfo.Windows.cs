@@ -8,7 +8,7 @@ namespace System.Globalization
 {
     public partial class TextInfo
     {
-        private unsafe void FinishInitialization(string textInfoName)
+        private unsafe void FinishInitialization()
         {
             if (_invariantMode)
             {
