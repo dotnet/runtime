@@ -4087,7 +4087,7 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
 // Lower stub dispatched virtual calls.
 GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
 {
-    assert((call->gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_STUB);
+    assert(call->IsVirtualStub());
 
     // An x86 JIT which uses full stub dispatch must generate only
     // the following stub dispatch calls:
