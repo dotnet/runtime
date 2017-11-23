@@ -2,22 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Security;
-using System.Globalization;
-using System.Text;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using System.Diagnostics;
+using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Text
 {
-    // This internal class wraps up our normalization behavior
-
-    internal class Normalization
+    internal static partial class Normalization
     {
-        internal static bool IsNormalized(String strInput, NormalizationForm normalizationForm)
+        internal static bool IsNormalized(string strInput, NormalizationForm normalizationForm)
         {
             if (GlobalizationMode.Invariant)
             {
@@ -41,7 +35,10 @@ namespace System.Text
 
                 case Interop.Errors.ERROR_INVALID_PARAMETER:
                 case Interop.Errors.ERROR_NO_UNICODE_TRANSLATION:
-                    if (!Enum.IsDefined(typeof(NormalizationForm), normalizationForm))
+                    if (normalizationForm != NormalizationForm.FormC && 
+                        normalizationForm != NormalizationForm.FormD && 
+                        normalizationForm != NormalizationForm.FormKC && 
+                        normalizationForm != NormalizationForm.FormKD)
                     {
                         throw new ArgumentException(SR.Argument_InvalidNormalizationForm, nameof(normalizationForm));
                     }
@@ -58,7 +55,7 @@ namespace System.Text
             return result;
         }
 
-        internal static String Normalize(String strInput, NormalizationForm normalizationForm)
+        internal static string Normalize(string strInput, NormalizationForm normalizationForm)
         {
             if (GlobalizationMode.Invariant)
             {
@@ -82,7 +79,10 @@ namespace System.Text
             {
                 if (lastError == Interop.Errors.ERROR_INVALID_PARAMETER)
                 {
-                    if (!Enum.IsDefined(typeof(NormalizationForm), normalizationForm))
+                    if (normalizationForm != NormalizationForm.FormC && 
+                        normalizationForm != NormalizationForm.FormD && 
+                        normalizationForm != NormalizationForm.FormKC && 
+                        normalizationForm != NormalizationForm.FormKD)
                     {
                         throw new ArgumentException(SR.Argument_InvalidNormalizationForm, nameof(normalizationForm));
                     }
