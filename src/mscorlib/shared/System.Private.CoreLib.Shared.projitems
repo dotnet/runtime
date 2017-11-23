@@ -238,6 +238,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\NotImplementedException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\NonSerializedAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\NotSupportedException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Nullable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.Formatting.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.NumberBuffer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.Parsing.cs" />
@@ -495,7 +496,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncodingNLS.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncodingProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Latin1Encoding.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Normalization.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\NormalizationForm.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\StringBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\UnicodeEncoding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\UTF32Encoding.cs" />
@@ -639,6 +640,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Normaliz\Interop.Idna.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Normaliz\Interop.Normalization.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\OleAut32\Interop.SysFreeString.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\OleAut32\Interop.SysStringLen.cs" />
@@ -646,8 +649,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.Windows.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HijriCalendar.Win32.cs" Condition="'$(EnableWinRT)' != 'true' and '$(EnableDummyGlobalizationImplementation)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HijriCalendar.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\IdnMapping.Windows.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JapaneseCalendar.Win32.cs" Condition="'$(EnableWinRT)' != 'true' and '$(EnableDummyGlobalizationImplementation)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JapaneseCalendar.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\Normalization.Windows.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStreamCompletionSource.Win32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.Windows.cs" />
@@ -719,12 +724,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\IdnMapping.Unix.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JapaneseCalendar.Unix.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\LocaleData.Unix.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\Normalization.Unix.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.OSX.cs" Condition="'$(TargetsOSX)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Linux.cs" Condition="'$(TargetsOSX)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Normalization.Unix.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
   </ItemGroup>
 </Project>

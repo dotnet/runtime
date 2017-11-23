@@ -16,10 +16,10 @@ namespace System.Globalization
             uint flags = Flags;
 
             // Determine the required length
-            int length = Interop.Normaliz.IdnToAscii(flags, new IntPtr(unicode), count, IntPtr.Zero, 0);
+            int length = Interop.Normaliz.IdnToAscii(flags, unicode, count, null, 0);
             if (length == 0)
             {
-                ThrowForZeroLength(nameof(unicode), SR.Argument_IdnIllegalName, SR.Argument_InvalidCharSequenceNoIndex);
+                ThrowForZeroLength(unicode: true);
             }
 
             // Do the conversion
@@ -32,7 +32,7 @@ namespace System.Globalization
             else
             {
                 char[] output = new char[length];
-                fixed (char* pOutput = output)
+                fixed (char* pOutput = &output[0])
                 {
                     return GetAsciiCore(unicode, count, flags, pOutput, length);
                 }
@@ -43,10 +43,10 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            int length = Interop.Normaliz.IdnToAscii(flags, new IntPtr(unicode), count, new IntPtr(output), outputLength);
+            int length = Interop.Normaliz.IdnToAscii(flags, unicode, count, output, outputLength);
             if (length == 0)
             {
-                ThrowForZeroLength(nameof(unicode), SR.Argument_IdnIllegalName, SR.Argument_InvalidCharSequenceNoIndex);
+                ThrowForZeroLength(unicode: true);
             }
             Debug.Assert(length == outputLength);
             return new string(output, 0, length);
@@ -59,10 +59,10 @@ namespace System.Globalization
             uint flags = Flags;
 
             // Determine the required length
-            int length = Interop.Normaliz.IdnToUnicode(flags, new IntPtr(ascii), count, IntPtr.Zero, 0);
+            int length = Interop.Normaliz.IdnToUnicode(flags, ascii, count, null, 0);
             if (length == 0)
             {
-                ThrowForZeroLength(nameof(ascii), SR.Argument_IdnIllegalName, SR.Argument_IdnBadPunycode);
+                ThrowForZeroLength(unicode: false);
             }
 
             // Do the conversion
@@ -75,7 +75,7 @@ namespace System.Globalization
             else
             {
                 char[] output = new char[length];
-                fixed (char* pOutput = output)
+                fixed (char* pOutput = &output[0])
                 {
                     return GetUnicodeCore(ascii, count, flags, pOutput, length);
                 }
@@ -86,10 +86,10 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            int length = Interop.Normaliz.IdnToUnicode(flags, new IntPtr(ascii), count, new IntPtr(output), outputLength);
+            int length = Interop.Normaliz.IdnToUnicode(flags, ascii, count, output, outputLength);
             if (length == 0)
             {
-                ThrowForZeroLength(nameof(ascii), SR.Argument_IdnIllegalName, SR.Argument_IdnBadPunycode);
+                ThrowForZeroLength(unicode: false);
             }
             Debug.Assert(length == outputLength);
             return new string(output, 0, length);
@@ -110,11 +110,14 @@ namespace System.Globalization
             }
         }
 
-        private static void ThrowForZeroLength(string paramName, string invalidNameString, string otherString)
+        private static void ThrowForZeroLength(bool unicode)
         {
+            int lastError = Marshal.GetLastWin32Error();
+
             throw new ArgumentException(
-                Marshal.GetLastWin32Error() == Interop.Normaliz.ERROR_INVALID_NAME ? invalidNameString : otherString,
-                paramName);
+                lastError == Interop.Errors.ERROR_INVALID_NAME ? SR.Argument_IdnIllegalName : 
+                    (unicode ? SR.Argument_InvalidCharSequenceNoIndex : SR.Argument_IdnBadPunycode),
+                unicode ? "unicode" : "ascii");
         }
     }
 }
