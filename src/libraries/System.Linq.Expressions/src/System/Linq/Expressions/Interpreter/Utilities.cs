@@ -286,7 +286,7 @@ namespace System.Linq.Expressions.Interpreter
                     return res;
                 }
 
-                throw new KeyNotFoundException();
+                throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
             }
             set
             {

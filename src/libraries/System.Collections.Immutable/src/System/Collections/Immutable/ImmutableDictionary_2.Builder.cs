@@ -419,7 +419,7 @@ namespace System.Collections.Immutable
                         return value;
                     }
 
-                    throw new KeyNotFoundException();
+                    throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
                 }
 
                 set
