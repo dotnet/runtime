@@ -501,5 +501,28 @@ namespace System.Tests
         {
             AssertExtensions.Throws<ArgumentException>("comparisonType", () => "abc".GetHashCode(comparisonType));
         }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("a")]
+        [InlineData("\0")]
+        [InlineData("abc")]
+        public static unsafe void ImplicitCast_ResultingSpanMatches(string s)
+        {
+            ReadOnlySpan<char> span = s;
+            Assert.Equal(s.Length, span.Length);
+            fixed (char* stringPtr = s)
+            fixed (char* spanPtr = &span.DangerousGetPinnableReference())
+            {
+                Assert.Equal((IntPtr)stringPtr, (IntPtr)spanPtr);
+            }
+        }
+
+        [Fact]
+        public static void ImplicitCast_NullString_ReturnsDefaultSpan()
+        {
+            ReadOnlySpan<char> span = (string)null;
+            Assert.True(span == default);
+        }
     }
 }
