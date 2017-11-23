@@ -539,7 +539,7 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 		for (guint i = 0; i < coverage_profiler.filters->len; ++i) {
 			// FIXME: Is substring search sufficient?
 			char *filter = (char *)g_ptr_array_index (coverage_profiler.filters, i);
-			if (filter [0] == '+')
+			if (filter [0] == '+' || filter [0] != '-')
 				continue;
 
 			// Skip '-'
