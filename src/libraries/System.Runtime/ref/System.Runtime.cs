@@ -2322,6 +2322,7 @@ namespace System
         public string TrimStart() { throw null; }
         public string TrimStart(char trimChar) { throw null; }
         public string TrimStart(params char[] trimChars) { throw null; }
+        public static implicit operator System.ReadOnlySpan<char>(string value) { throw null; }
     }
     public enum StringComparison
     {
