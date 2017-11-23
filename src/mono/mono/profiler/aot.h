@@ -6,7 +6,7 @@
 /*
  * File format:
  * - magic (AOT_PROFILER_MAGIC)
- * - int: major/minor version, e.g. 0x00010001 (AOT_PROFILER_MAJOR_VERSION, AOT_PROFILER_MINOR_VERSION)
+ * - int: major/minor version, e.g. 0x00010000 (AOT_PROFILER_MAJOR_VERSION, AOT_PROFILER_MINOR_VERSION)
  * - sequence of records terminated by an AOTPROF_RECORD_NONE record
  *
  * Record format:

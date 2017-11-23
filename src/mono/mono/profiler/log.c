@@ -4602,7 +4602,7 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 		log_profiler.file = fopen (nf, "wb");
 
 	if (!log_profiler.file) {
-		mono_profiler_printf_err ("Could not create log profiler output file '%s'.", nf);
+		mono_profiler_printf_err ("Could not create log profiler output file '%s': %s", nf, g_strerror (errno));
 		exit (1);
 	}
 

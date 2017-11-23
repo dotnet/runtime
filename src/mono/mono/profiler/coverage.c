@@ -917,7 +917,7 @@ mono_profiler_init_coverage (const char *desc)
 		coverage_profiler.file = fopen (coverage_config.output_filename, "w");
 
 	if (!coverage_profiler.file) {
-		mono_profiler_printf_err ("Could not create coverage profiler output file '%s'.", coverage_config.output_filename);
+		mono_profiler_printf_err ("Could not create coverage profiler output file '%s': %s", coverage_config.output_filename, g_strerror (errno));
 		exit (1);
 	}
 
