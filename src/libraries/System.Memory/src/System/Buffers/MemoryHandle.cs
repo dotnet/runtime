@@ -22,6 +22,7 @@ namespace System.Buffers
         /// <param name="retainable">reference to manually managed object</param>
         /// <param name="pointer">pointer to memory, or null if a pointer was not provided when the handle was created</param>
         /// <param name="handle">handle used to pin array buffers</param>
+        [CLSCompliant(false)]
         public MemoryHandle(IRetainable retainable, void* pointer = null, GCHandle handle = default(GCHandle))
         {
             _retainable = retainable;
@@ -32,6 +33,7 @@ namespace System.Buffers
         /// <summary>
         /// Returns the pointer to memory, or null if a pointer was not provided when the handle was created.
         /// </summary>
+        [CLSCompliant(false)]
         public void* Pointer => _pointer;
 
         /// <summary>

@@ -21,6 +21,7 @@ namespace System.Buffers.Binary
         /// This allows the caller to read a struct of numeric primitives and reverse each field
         /// rather than having to skip sbyte fields.
         /// </summary> 
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static sbyte ReverseEndianness(sbyte value)
         {
@@ -62,6 +63,7 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reverses a primitive value - performs an endianness swap
         /// </summary> 
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ushort ReverseEndianness(ushort value)
         {
@@ -71,6 +73,7 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reverses a primitive value - performs an endianness swap
         /// </summary> 
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint ReverseEndianness(uint value)
         {
@@ -82,6 +85,7 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reverses a primitive value - performs an endianness swap
         /// </summary> 
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong ReverseEndianness(ulong value)
         {

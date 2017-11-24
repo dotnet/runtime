@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{4BBC8F69-D03E-4432-AA8A-D458FA5B235A}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLSCompliant>false</CLSCompliant>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'">true</IsPartialFacadeAssembly>
     <DefineConstants Condition="'$(IsPartialFacadeAssembly)' != 'true'">$(DefineConstants);netstandard</DefineConstants>

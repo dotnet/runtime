@@ -77,6 +77,7 @@ namespace System
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="length"/> is negative.
         /// </exception>
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe ReadOnlySpan(void* pointer, int length)
         {
