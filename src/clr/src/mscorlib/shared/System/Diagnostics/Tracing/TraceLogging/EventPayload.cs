@@ -53,7 +53,7 @@ namespace System.Diagnostics.Tracing
                     position++;
                 }
 
-                throw new System.Collections.Generic.KeyNotFoundException();
+                throw new System.Collections.Generic.KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
             }
             set
             {
