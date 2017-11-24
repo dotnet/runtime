@@ -3,7 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLSCompliant>false</CLSCompliant>
     <ProjectGuid>{E883935B-D8FD-4FC9-A189-9D9E7F7EF550}</ProjectGuid>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netcoreapp' Or '$(TargetGroup)' == 'uap'">true</IsPartialFacadeAssembly>
   </PropertyGroup>

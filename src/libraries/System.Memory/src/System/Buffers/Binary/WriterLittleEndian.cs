@@ -50,6 +50,7 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Write a UInt16 into a span of bytes as little endian.
         /// </summary>
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteUInt16LittleEndian(Span<byte> buffer, ushort value)
         {
@@ -63,6 +64,7 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Write a UInt32 into a span of bytes as little endian.
         /// </summary>
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteUInt32LittleEndian(Span<byte> buffer, uint value)
         {
@@ -76,6 +78,7 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Write a UInt64 into a span of bytes as little endian.
         /// </summary>
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteUInt64LittleEndian(Span<byte> buffer, ulong value)
         {
@@ -132,6 +135,7 @@ namespace System.Buffers.Binary
         /// Write a UInt16 into a span of bytes as little endian.
         /// <returns>If the span is too small to contain the value, return false.</returns>
         /// </summary>
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWriteUInt16LittleEndian(Span<byte> buffer, ushort value)
         {
@@ -146,6 +150,7 @@ namespace System.Buffers.Binary
         /// Write a UInt32 into a span of bytes as little endian.
         /// <returns>If the span is too small to contain the value, return false.</returns>
         /// </summary>
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWriteUInt32LittleEndian(Span<byte> buffer, uint value)
         {
@@ -160,6 +165,7 @@ namespace System.Buffers.Binary
         /// Write a UInt64 into a span of bytes as little endian.
         /// <returns>If the span is too small to contain the value, return false.</returns>
         /// </summary>
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWriteUInt64LittleEndian(Span<byte> buffer, ulong value)
         {

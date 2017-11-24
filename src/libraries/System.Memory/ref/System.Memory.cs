@@ -12,6 +12,7 @@ namespace System
         public static ReadOnlySpan<T> Empty { get { throw null; } }
         public ReadOnlySpan(T[] array) { throw null; }
         public ReadOnlySpan(T[] array, int start, int length) { throw null; }
+        [CLSCompliant(false)]
         public unsafe ReadOnlySpan(void* pointer, int length) { throw null; }
         public bool IsEmpty { get { throw null; } }
         public T this[int index] { get { throw null; }}
@@ -50,6 +51,7 @@ namespace System
         public static Span<T> Empty { get { throw null; } }
         public Span(T[] array) { throw null; }
         public Span(T[] array, int start, int length) { throw null; }
+        [CLSCompliant(false)]
         public unsafe Span(void* pointer, int length) { throw null; }
         public bool IsEmpty { get { throw null; } }
         public ref T this[int index] { get { throw null; } }
@@ -187,7 +189,9 @@ namespace System.Buffers
 {
     public unsafe struct MemoryHandle : IDisposable 
     {
+        [CLSCompliant(false)]
         public MemoryHandle(IRetainable owner, void* pointer = null,  System.Runtime.InteropServices.GCHandle handle = default(System.Runtime.InteropServices.GCHandle))  { throw null; }
+        [CLSCompliant(false)]
         public void* Pointer { get { throw null; } }
         public bool HasPointer { get { throw null; } }
         public void Dispose() { throw null; }
@@ -227,13 +231,17 @@ namespace System.Buffers.Binary
 {
     public static class BinaryPrimitives
     {
+        [CLSCompliant(false)]
         public static sbyte ReverseEndianness(sbyte value) { throw null; }
         public static byte ReverseEndianness(byte value) { throw null; }
         public static short ReverseEndianness(short value) { throw null; }
+        [CLSCompliant(false)]
         public static ushort ReverseEndianness(ushort value) { throw null; }
         public static int ReverseEndianness(int value) { throw null; }
+        [CLSCompliant(false)]
         public static uint ReverseEndianness(uint value) { throw null; }
         public static long ReverseEndianness(long value) { throw null; }
+        [CLSCompliant(false)]
         public static ulong ReverseEndianness(ulong value) { throw null; }
 
         public static T ReadMachineEndian<T>(ReadOnlySpan<byte> buffer) where T : struct { throw null; }
@@ -242,29 +250,41 @@ namespace System.Buffers.Binary
         public static short ReadInt16LittleEndian(ReadOnlySpan<byte> buffer) { throw null; }
         public static int ReadInt32LittleEndian(ReadOnlySpan<byte> buffer) { throw null; }
         public static long ReadInt64LittleEndian(ReadOnlySpan<byte> buffer) { throw null; }
+        [CLSCompliant(false)]
         public static ushort ReadUInt16LittleEndian(ReadOnlySpan<byte> buffer) { throw null; }
+        [CLSCompliant(false)]
         public static uint ReadUInt32LittleEndian(ReadOnlySpan<byte> buffer) { throw null; }
+        [CLSCompliant(false)]
         public static ulong ReadUInt64LittleEndian(ReadOnlySpan<byte> buffer) { throw null; }
 
         public static bool TryReadInt16LittleEndian(ReadOnlySpan<byte> buffer, out short value) { throw null; }
         public static bool TryReadInt32LittleEndian(ReadOnlySpan<byte> buffer, out int value) { throw null; }
         public static bool TryReadInt64LittleEndian(ReadOnlySpan<byte> buffer, out long value) { throw null; }
+        [CLSCompliant(false)]
         public static bool TryReadUInt16LittleEndian(ReadOnlySpan<byte> buffer, out ushort value) { throw null; }
+        [CLSCompliant(false)]
         public static bool TryReadUInt32LittleEndian(ReadOnlySpan<byte> buffer, out uint value) { throw null; }
+        [CLSCompliant(false)]
         public static bool TryReadUInt64LittleEndian(ReadOnlySpan<byte> buffer, out ulong value) { throw null; }
 
         public static short ReadInt16BigEndian(ReadOnlySpan<byte> buffer) { throw null; }
         public static int ReadInt32BigEndian(ReadOnlySpan<byte> buffer) { throw null; }
         public static long ReadInt64BigEndian(ReadOnlySpan<byte> buffer) { throw null; }
+        [CLSCompliant(false)]
         public static ushort ReadUInt16BigEndian(ReadOnlySpan<byte> buffer) { throw null; }
+        [CLSCompliant(false)]
         public static uint ReadUInt32BigEndian(ReadOnlySpan<byte> buffer) { throw null; }
+        [CLSCompliant(false)]
         public static ulong ReadUInt64BigEndian(ReadOnlySpan<byte> buffer) { throw null; }
 
         public static bool TryReadInt16BigEndian(ReadOnlySpan<byte> buffer, out short value) { throw null; }
         public static bool TryReadInt32BigEndian(ReadOnlySpan<byte> buffer, out int value) { throw null; }
         public static bool TryReadInt64BigEndian(ReadOnlySpan<byte> buffer, out long value) { throw null; }
+        [CLSCompliant(false)]
         public static bool TryReadUInt16BigEndian(ReadOnlySpan<byte> buffer, out ushort value) { throw null; }
+        [CLSCompliant(false)]
         public static bool TryReadUInt32BigEndian(ReadOnlySpan<byte> buffer, out uint value) { throw null; }
+        [CLSCompliant(false)]
         public static bool TryReadUInt64BigEndian(ReadOnlySpan<byte> buffer, out ulong value) { throw null; }
 
         public static void WriteMachineEndian<T>(Span<byte> buffer, ref T value) where T : struct { throw null; }
@@ -273,29 +293,41 @@ namespace System.Buffers.Binary
         public static void WriteInt16LittleEndian(Span<byte> buffer, short value) { throw null; }
         public static void WriteInt32LittleEndian(Span<byte> buffer, int value) { throw null; }
         public static void WriteInt64LittleEndian(Span<byte> buffer, long value) { throw null; }
+        [CLSCompliant(false)]
         public static void WriteUInt16LittleEndian(Span<byte> buffer, ushort value) { throw null; }
+        [CLSCompliant(false)]
         public static void WriteUInt32LittleEndian(Span<byte> buffer, uint value) { throw null; }
+        [CLSCompliant(false)]
         public static void WriteUInt64LittleEndian(Span<byte> buffer, ulong value) { throw null; }
 
         public static bool TryWriteInt16LittleEndian(Span<byte> buffer, short value) { throw null; }
         public static bool TryWriteInt32LittleEndian(Span<byte> buffer, int value) { throw null; }
         public static bool TryWriteInt64LittleEndian(Span<byte> buffer, long value) { throw null; }
+        [CLSCompliant(false)]
         public static bool TryWriteUInt16LittleEndian(Span<byte> buffer, ushort value) { throw null; }
+        [CLSCompliant(false)]
         public static bool TryWriteUInt32LittleEndian(Span<byte> buffer, uint value) { throw null; }
+        [CLSCompliant(false)]
         public static bool TryWriteUInt64LittleEndian(Span<byte> buffer, ulong value) { throw null; }
 
         public static void WriteInt16BigEndian(Span<byte> buffer, short value) { throw null; }
         public static void WriteInt32BigEndian(Span<byte> buffer, int value) { throw null; }
         public static void WriteInt64BigEndian(Span<byte> buffer, long value) { throw null; }
+        [CLSCompliant(false)]
         public static void WriteUInt16BigEndian(Span<byte> buffer, ushort value) { throw null; }
+        [CLSCompliant(false)]
         public static void WriteUInt32BigEndian(Span<byte> buffer, uint value) { throw null; }
+        [CLSCompliant(false)]
         public static void WriteUInt64BigEndian(Span<byte> buffer, ulong value) { throw null; }
 
         public static bool TryWriteInt16BigEndian(Span<byte> buffer, short value) { throw null; }
         public static bool TryWriteInt32BigEndian(Span<byte> buffer, int value) { throw null; }
         public static bool TryWriteInt64BigEndian(Span<byte> buffer, long value) { throw null; }
+        [CLSCompliant(false)]
         public static bool TryWriteUInt16BigEndian(Span<byte> buffer, ushort value) { throw null; }
+        [CLSCompliant(false)]
         public static bool TryWriteUInt32BigEndian(Span<byte> buffer, uint value) { throw null; }
+        [CLSCompliant(false)]
         public static bool TryWriteUInt64BigEndian(Span<byte> buffer, ulong value) { throw null; }
     }
 }
@@ -346,11 +378,15 @@ namespace System.Buffers.Text
         public static bool TryFormat(short value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default) => throw null;
         public static bool TryFormat(int value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default) => throw null;
         public static bool TryFormat(long value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default) => throw null;
+        [CLSCompliant(false)]
         public static bool TryFormat(sbyte value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default) => throw null;
         public static bool TryFormat(float value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default) => throw null;
         public static bool TryFormat(TimeSpan value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default) => throw null;
+        [CLSCompliant(false)]
         public static bool TryFormat(ushort value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default) => throw null;
+        [CLSCompliant(false)]
         public static bool TryFormat(uint value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default) => throw null;
+        [CLSCompliant(false)]
         public static bool TryFormat(ulong value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default) => throw null;
     }
     public static class Utf8Parser
@@ -365,11 +401,15 @@ namespace System.Buffers.Text
         public static bool TryParse(ReadOnlySpan<byte> text, out short value, out int bytesConsumed, char standardFormat = default) => throw null;
         public static bool TryParse(ReadOnlySpan<byte> text, out int value, out int bytesConsumed, char standardFormat = default) => throw null;
         public static bool TryParse(ReadOnlySpan<byte> text, out long value, out int bytesConsumed, char standardFormat = default) => throw null;
+        [CLSCompliant(false)]
         public static bool TryParse(ReadOnlySpan<byte> text, out sbyte value, out int bytesConsumed, char standardFormat = default) => throw null;
         public static bool TryParse(ReadOnlySpan<byte> text, out float value, out int bytesConsumed, char standardFormat = default) => throw null;
         public static bool TryParse(ReadOnlySpan<byte> text, out TimeSpan value, out int bytesConsumed, char standardFormat = default) => throw null;
+        [CLSCompliant(false)]
         public static bool TryParse(ReadOnlySpan<byte> text, out ushort value, out int bytesConsumed, char standardFormat = default) => throw null;
+        [CLSCompliant(false)]
         public static bool TryParse(ReadOnlySpan<byte> text, out uint value, out int bytesConsumed, char standardFormat = default) => throw null;
+        [CLSCompliant(false)]
         public static bool TryParse(ReadOnlySpan<byte> text, out ulong value, out int bytesConsumed, char standardFormat = default) => throw null;
     }
 }
