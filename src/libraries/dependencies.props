@@ -10,8 +10,8 @@
   -->
   <PropertyGroup>
     <CoreFxCurrentRef>c0d65a7ac5a5b87b742ac1036cc7b4ed9ad1e1f3</CoreFxCurrentRef>
-    <CoreClrCurrentRef>c0d65a7ac5a5b87b742ac1036cc7b4ed9ad1e1f3</CoreClrCurrentRef>
-    <CoreSetupCurrentRef>4dcfde7a941f7bb72b82793b0e8caec996d27310</CoreSetupCurrentRef>
+    <CoreClrCurrentRef>3dc0fba3f77a1a8ff8d315a95b86513a0c735669</CoreClrCurrentRef>
+    <CoreSetupCurrentRef>3dc0fba3f77a1a8ff8d315a95b86513a0c735669</CoreSetupCurrentRef>
     <ExternalCurrentRef>96dc7805f5df4a70a55783964ce69dcd91bfca80</ExternalCurrentRef>
     <ProjectNTfsCurrentRef>3fb0a243369241f4ea93683964dc7dff11f74aee</ProjectNTfsCurrentRef>
     <ProjectNTfsTestILCCurrentRef>3fb0a243369241f4ea93683964dc7dff11f74aee</ProjectNTfsTestILCCurrentRef>
@@ -33,14 +33,14 @@
   <PropertyGroup>
     <CoreFxExpectedPrerelease>preview1-25923-02</CoreFxExpectedPrerelease>
     <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview1-25923-02</MicrosoftNETCorePlatformsPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-25923-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-25924-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <ProjectNTfsExpectedPrerelease>beta-25923-00</ProjectNTfsExpectedPrerelease>
     <ProjectNTfsTestILCExpectedPrerelease>beta-25923-00</ProjectNTfsTestILCExpectedPrerelease>
     <ProjectNTfsTestILCPackageVersion>1.0.0-beta-25923-00</ProjectNTfsTestILCPackageVersion>
     <MicrosoftNETCoreDotNetHostPackageVersion>2.0.1-servicing-25615-03</MicrosoftNETCoreDotNetHostPackageVersion>
     <MicrosoftNETCoreDotNetHostPolicyPackageVersion>2.0.1-servicing-25615-03</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
-    <MicrosoftNETCoreAppPackageVersion>2.1.0-preview1-25922-04</MicrosoftNETCoreAppPackageVersion>
-    <MicrosoftDotNetPlatformAbstractionsPackageVersion>2.1.0-preview1-25922-04</MicrosoftDotNetPlatformAbstractionsPackageVersion>
+    <MicrosoftNETCoreAppPackageVersion>2.1.0-preview1-25923-01</MicrosoftNETCoreAppPackageVersion>
+    <MicrosoftDotNetPlatformAbstractionsPackageVersion>2.1.0-preview1-25923-01</MicrosoftDotNetPlatformAbstractionsPackageVersion>
 
     <!-- CoreFX-built SNI identity package -->
     <RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeNativeSystemDataSqlClientSniPackageVersion>
