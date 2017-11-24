@@ -38,8 +38,7 @@ namespace System.SpanTests
         public static void NullArrayAsReadOnlySpan()
         {
             int[] a = null;
-            ReadOnlySpan<int> span;
-            TestHelpers.AssertThrows<ArgumentNullException, int>(span, _span => _span = a.AsReadOnlySpan());
+            Assert.Throws<ArgumentNullException>(() => a.AsReadOnlySpan().DontBox());
         }
 
         [Fact]
