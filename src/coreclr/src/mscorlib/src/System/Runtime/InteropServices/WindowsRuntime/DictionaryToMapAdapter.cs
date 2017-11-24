@@ -40,7 +40,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (!keyFound)
             {
-                Exception e = new KeyNotFoundException(SR.Arg_KeyNotFound);
+                Exception e = new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
                 e.SetErrorCode(HResults.E_BOUNDS);
                 throw e;
             }
@@ -95,7 +95,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (!removed)
             {
-                Exception e = new KeyNotFoundException(SR.Arg_KeyNotFound);
+                Exception e = new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
                 e.SetErrorCode(HResults.E_BOUNDS);
                 throw e;
             }

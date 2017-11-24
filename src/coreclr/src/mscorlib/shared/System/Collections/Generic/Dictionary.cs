@@ -212,7 +212,7 @@ namespace System.Collections.Generic
             {
                 int i = FindEntry(key);
                 if (i >= 0) return entries[i].value;
-                ThrowHelper.ThrowKeyNotFoundException();
+                ThrowHelper.ThrowKeyNotFoundException(key);
                 return default(TValue);
             }
             set
