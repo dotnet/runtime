@@ -25,15 +25,6 @@ public enum Target {
 	Library, Exe, Module, WinExe
 }
 
-public enum LanguageVersion {
-	ISO_1 = 1,
-	Default_MCS = 2,
-	ISO_2 = 3,
-	LINQ = 4,
-	Future = 5,
-	Default = LINQ
-}
-
 class SlnGenerator {
 	public static readonly string NewLine = "\r\n"; //Environment.NewLine; // "\n"; 
 	public SlnGenerator (string formatVersion = "2012")
@@ -233,7 +224,7 @@ class MsbuildGenerator {
 	string OutputFile;
 	string StrongNameKeyContainer;
 	bool StrongNameDelaySign = false;
-	LanguageVersion Version = LanguageVersion.Default;
+	string LangVersion = "default";
 	string CodePage;
 
 	// Class directory, relative to 
@@ -538,23 +529,7 @@ class MsbuildGenerator {
 			return true;
 
 		case "/langversion":
-			switch (value.ToLower (CultureInfo.InvariantCulture)) {
-			case "iso-1":
-				Version = LanguageVersion.ISO_1;
-				return true;
-
-			case "default":
-				Version = LanguageVersion.Default;
-				return true;
-			case "iso-2":
-				Version = LanguageVersion.ISO_2;
-				return true;
-			case "future":
-				Version = LanguageVersion.Future;
-				return true;
-			}
-			Console.WriteLine ("Invalid option `{0}' for /langversion. It must be either `ISO-1', `ISO-2' or `Default'", value);
-			Environment.Exit (1);
+			LangVersion = value;
 			return true;
 
 		case "/codepage":
@@ -925,6 +900,7 @@ class MsbuildGenerator {
 			Replace ("@PROJECTGUID@", Csproj.projectGuid).
 			Replace ("@DEFINES@", defines.ToString ()).
 			Replace ("@DISABLEDWARNINGS@", string.Join (",", (from i in ignore_warning select i.ToString ()).ToArray ())).
+			Replace ("@LANGVERSION@", LangVersion).
 			//Replace("@NOSTDLIB@", (basic_or_build || (!StdLib)) ? "<NoStdLib>true</NoStdLib>" : string.Empty).
 			Replace ("@NOSTDLIB@", "<NoStdLib>" + (!StdLib).ToString () + "</NoStdLib>").
 			Replace ("@NOCONFIG@", "<NoConfig>" + (!load_default_config).ToString () + "</NoConfig>").
