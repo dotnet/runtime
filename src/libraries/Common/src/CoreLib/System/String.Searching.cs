@@ -19,6 +19,16 @@ namespace System
             return (IndexOf(value, comparisonType) >= 0);
         }
 
+        public bool Contains(char value)
+        {
+            return IndexOf(value) != -1;
+        }
+
+        public bool Contains(char value, StringComparison comparisonType)
+        {
+            return IndexOf(value, comparisonType) != -1;
+        }
+
         // Returns the index of the first occurrence of a specified character in the current instance.
         // The search starts at startIndex and runs thorough the next count characters.
         //
@@ -32,6 +42,33 @@ namespace System
             return IndexOf(value, startIndex, this.Length - startIndex);
         }
 
+        public int IndexOf(char value, StringComparison comparisonType)
+        {
+            switch (comparisonType)
+            {
+                case StringComparison.CurrentCulture:
+                    return CultureInfo.CurrentCulture.CompareInfo.IndexOf(this, value, CompareOptions.None);
+
+                case StringComparison.CurrentCultureIgnoreCase:
+                    return CultureInfo.CurrentCulture.CompareInfo.IndexOf(this, value, CompareOptions.IgnoreCase);
+
+                case StringComparison.InvariantCulture:
+                    return CultureInfo.InvariantCulture.CompareInfo.IndexOf(this, value, CompareOptions.None);
+
+                case StringComparison.InvariantCultureIgnoreCase:
+                    return CultureInfo.InvariantCulture.CompareInfo.IndexOf(this, value, CompareOptions.IgnoreCase);
+
+                case StringComparison.Ordinal:
+                    return CultureInfo.InvariantCulture.CompareInfo.IndexOf(this, value, CompareOptions.Ordinal);
+
+                case StringComparison.OrdinalIgnoreCase:
+                    return CultureInfo.InvariantCulture.CompareInfo.IndexOf(this, value, CompareOptions.OrdinalIgnoreCase);
+                    
+                default:
+                    throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
+            }
+        }
+        
         public unsafe int IndexOf(char value, int startIndex, int count)
         {
             if (startIndex < 0 || startIndex > Length)
