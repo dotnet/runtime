@@ -120,9 +120,9 @@ namespace System
             throw GetAddingDuplicateWithKeyArgumentException(key);
         }
 
-        internal static void ThrowKeyNotFoundException()
+        internal static void ThrowKeyNotFoundException(object key)
         {
-            throw new KeyNotFoundException();
+            throw new KeyNotFoundException(key.ToString());
         }
 
         internal static void ThrowArgumentException(ExceptionResource resource)
