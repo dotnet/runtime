@@ -4041,7 +4041,7 @@ Assert.False(true);
 
             DataView dv = dt.DefaultView;
             dv.RowFilter = string.Format(CultureInfo.InvariantCulture,
-                                "StartDate >= '{0}' and StartDate <= '{1}'",
+                                "StartDate >= #{0}# and StartDate <= #{1}#",
                                 DateTime.Now.AddDays(2),
                                 DateTime.Now.AddDays(4));
             Assert.Equal(10, dt.Rows.Count);
