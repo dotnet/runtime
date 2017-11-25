@@ -1167,19 +1167,24 @@ namespace System.Tests
 
         public static IEnumerable<object[]> ToString_TestData()
         {
-            yield return new object[] { decimal.MinValue, "G", null, "-79228162514264337593543950335" };
-            yield return new object[] { (decimal)-4567, "G", null, "-4567" };
-            yield return new object[] { (decimal)-4567.89101, "G", null, "-4567.89101" };
-            yield return new object[] { (decimal)0, "G", null, "0" };
-            yield return new object[] { (decimal)4567, "G", null, "4567" };
-            yield return new object[] { (decimal)4567.89101, "G", null, "4567.89101" };
-            yield return new object[] { decimal.MaxValue, "G", null, "79228162514264337593543950335" };
+            foreach (NumberFormatInfo defaultFormat in new[] { null, NumberFormatInfo.CurrentInfo })
+            {
+                yield return new object[] { decimal.MinValue, "G", defaultFormat, "-79228162514264337593543950335" };
+                yield return new object[] { (decimal)-4567, "G", defaultFormat, "-4567" };
+                yield return new object[] { (decimal)-4567.89101, "G", defaultFormat, "-4567.89101" };
+                yield return new object[] { (decimal)0, "G", defaultFormat, "0" };
+                yield return new object[] { (decimal)4567, "G", defaultFormat, "4567" };
+                yield return new object[] { (decimal)4567.89101, "G", defaultFormat, "4567.89101" };
+                yield return new object[] { decimal.MaxValue, "G", defaultFormat, "79228162514264337593543950335" };
 
-            yield return new object[] { decimal.MinusOne, "G", null, "-1" };
-            yield return new object[] { decimal.Zero, "G", null, "0" };
-            yield return new object[] { decimal.One, "G", null, "1" };
+                yield return new object[] { decimal.MinusOne, "G", defaultFormat, "-1" };
+                yield return new object[] { decimal.Zero, "G", defaultFormat, "0" };
+                yield return new object[] { decimal.One, "G", defaultFormat, "1" };
 
-            yield return new object[] { (decimal)2468, "N", null, "2,468.00" };
+                yield return new object[] { (decimal)2468, "N", defaultFormat, "2,468.00" };
+
+                yield return new object[] { (decimal)2467, "[#-##-#]", defaultFormat, "[2-46-7]" };
+            }
 
             // Changing the negative pattern doesn't do anything without also passing in a format string
             var customFormat1 = new NumberFormatInfo();
@@ -1198,6 +1203,22 @@ namespace System.Tests
             customFormat3.NumberGroupSeparator = "*";
             customFormat3.NumberNegativePattern = 0;
             yield return new object[] { (decimal)-2468, "N", customFormat3, "(2*468.00)" };
+
+            var customFormat4 = new NumberFormatInfo()
+            {
+                NegativeSign = "#",
+                NumberDecimalSeparator = "~",
+                NumberGroupSeparator = "*",
+                PositiveSign = "&",
+                NumberDecimalDigits = 2,
+                PercentSymbol = "@",
+                PercentGroupSeparator = ",",
+                PercentDecimalSeparator = ".",
+                PercentDecimalDigits = 5
+            };
+            yield return new object[] { (decimal)123, "E", customFormat4, "1~230000E&002" };
+            yield return new object[] { (decimal)123, "F", customFormat4, "123~00" };
+            yield return new object[] { (decimal)123, "P", customFormat4, "12,300.00000 @" };
         }
 
         [Fact]

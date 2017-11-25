@@ -1019,6 +1019,7 @@ namespace System
         [System.CLSCompliantAttribute(false)]
         public static ulong ToUInt64(decimal d) { throw null; }
         public static decimal Truncate(decimal d) { throw null; }
+        public bool TryFormat(Span<char> destination, out int charsWritten, string format = null, System.IFormatProvider provider = null) { throw null; }
         public static bool TryParse(string s, out decimal result) { throw null; }
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out decimal result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out decimal result) { throw null; }
