@@ -3,13 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security;
 using Xunit;
 
 namespace System.Tests
 {
-    public class SetEnvironmentVariable
+    public class SetEnvironmentVariable : RemoteExecutorTestBase
     {
         private const string NullString = "\u0000";
 
@@ -30,6 +31,116 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>("variable", () => Environment.SetEnvironmentVariable(string.Empty, "test"));
             AssertExtensions.Throws<ArgumentException>("variable", () => Environment.SetEnvironmentVariable(NullString, "test"));
             AssertExtensions.Throws<ArgumentException>("variable", null, () => Environment.SetEnvironmentVariable("Variable=Something", "test"));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have the fix to allow arbitrary length environment variables.")]
+        public void AllowAnyVariableLengths()
+        {
+            // longer than 32767
+            string longVar = new string('c', 40000);
+            string val = "test";
+
+            try
+            {
+                Environment.SetEnvironmentVariable(longVar, val);
+                Assert.Equal(val, Environment.GetEnvironmentVariable(longVar));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(longVar, null);
+            }
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have the fix to allow arbitrary length environment variables.")]
+        public void AllowAnyVariableValueLengths()
+        {
+            string var = "Test_SetEnvironmentVariable_AllowAnyVariableValueLengths";
+            // longer than 32767
+            string longVal = new string('c', 40000);
+
+            try
+            {
+                Environment.SetEnvironmentVariable(var, longVal);
+                Assert.Equal(longVal, Environment.GetEnvironmentVariable(var));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(var, null);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have the fix to allow arbitrary length environment variables.")]
+        public void EnvironmentVariableTooLarge_Throws()
+        {
+            RemoteInvoke(() =>
+            {
+                string longVar;
+                string val = "Test_SetEnvironmentVariable_EnvironmentVariableTooLarge_Throws";
+
+                try
+                {
+                    // string slightly less than 2 GiB (1 GiB for x86) so the constructor doesn't fail
+                    var count = (Environment.Is64BitProcess ? 1024 * 1024 * 1024 : 512 * 1024 * 1024) - 64;
+                    longVar = new string('c', count);
+                }
+                catch (OutOfMemoryException)
+                {
+                    // not enough memory to allocate a string at test time
+                    return SuccessExitCode;
+                }
+
+                try
+                {
+                    Environment.SetEnvironmentVariable(longVar, val);
+                    // no exception is ok since we cannot construct an argument long enough to break the function
+                    // in that particular environment
+                }
+                catch (OutOfMemoryException)
+                {
+                    // expected
+                }
+                return SuccessExitCode;
+            }).Dispose();
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have the fix to allow arbitrary length environment variables.")]
+        public void EnvironmentVariableValueTooLarge_Throws()
+        {
+            RemoteInvoke(() =>
+            {
+                string var = "Test_SetEnvironmentVariable_EnvironmentVariableValueTooLarge_Throws";
+                string longVal;
+
+                try
+                {
+                    // string slightly less than 2 GiB (1 GiB for x86) so the constructor doesn't fail
+                    var count = (Environment.Is64BitProcess ? 1024 * 1024 * 1024 : 512 * 1024 * 1024) - 64;
+                    longVal = new string('c', count);
+                }
+                catch (OutOfMemoryException)
+                {
+                    // not enough memory to allocate a string at test time
+                    return SuccessExitCode;
+                }
+
+                try
+                {
+                    Environment.SetEnvironmentVariable(var, longVal);
+                    // no exception is ok since we cannot construct an argument long enough to break the function
+                    // in that particular environment
+                }
+                catch (OutOfMemoryException)
+                {
+                    // expected
+                }
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         private static void ExecuteAgainstTarget(
