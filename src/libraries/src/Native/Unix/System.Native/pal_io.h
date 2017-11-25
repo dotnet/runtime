@@ -356,7 +356,7 @@ int32_t SystemNative_ShmUnlink(const char* name);
 /**
  * Returns the size of the dirent struct on the current architecture
  */
-int32_t SystemNative_GetDirentSize(void);
+int32_t SystemNative_GetReadDirRBufferSize(void);
 
 /**
  * Re-entrant readdir that will retrieve the next dirent from the directory stream pointed to by dir.
