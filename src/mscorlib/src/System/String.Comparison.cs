@@ -798,12 +798,7 @@ namespace System
                 return true;
             }
 
-            CultureInfo referenceCulture;
-            if (culture == null)
-                referenceCulture = CultureInfo.CurrentCulture;
-            else
-                referenceCulture = culture;
-
+            CultureInfo referenceCulture = culture ?? CultureInfo.CurrentCulture;
             return referenceCulture.CompareInfo.IsSuffix(this, value, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
         }
 
@@ -1134,12 +1129,7 @@ namespace System
                 return true;
             }
 
-            CultureInfo referenceCulture;
-            if (culture == null)
-                referenceCulture = CultureInfo.CurrentCulture;
-            else
-                referenceCulture = culture;
-
+            CultureInfo referenceCulture = culture ?? CultureInfo.CurrentCulture;
             return referenceCulture.CompareInfo.IsPrefix(this, value, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
         }
 
