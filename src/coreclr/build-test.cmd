@@ -316,9 +316,9 @@ if errorlevel 1 (
 
 REM Prepare the Test Drop
 REM Cleans any NI from the last run
-powershell "-NoProfile Get-ChildItem -path %__TestWorkingDir% -Include '*.ni.*' -Recurse -Force | Remove-Item -force"
+powershell -NoProfile "Get-ChildItem -path %__TestWorkingDir% -Include '*.ni.*' -Recurse -Force | Remove-Item -force"
 REM Cleans up any lock folder used for synchronization from last run
-powershell "-NoProfile Get-ChildItem -path %__TestWorkingDir% -Include 'lock' -Recurse -Force |  where {$_.Attributes -eq 'Directory'}| Remove-Item -force -Recurse"
+powershell -NoProfile "Get-ChildItem -path %__TestWorkingDir% -Include 'lock' -Recurse -Force |  where {$_.Attributes -eq 'Directory'}| Remove-Item -force -Recurse"
 
 set CORE_ROOT=%__TestBinDir%\Tests\Core_Root
 set CORE_ROOT_STAGE=%__TestBinDir%\Tests\Core_Root_Stage
