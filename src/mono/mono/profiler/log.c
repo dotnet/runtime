@@ -1285,7 +1285,8 @@ gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation)
 		if (mono_atomic_load_i32 (&log_profiler.heapshot_requested))
 			log_profiler.do_heap_walk = TRUE;
 
-		if (ENABLED (PROFLOG_GC_ROOT_EVENTS) && log_profiler.do_heap_walk)
+		if (ENABLED (PROFLOG_GC_ROOT_EVENTS) &&
+		    (log_config.always_do_root_report || log_profiler.do_heap_walk))
 			mono_profiler_set_gc_roots_callback (log_profiler.handle, gc_roots);
 
 		/*

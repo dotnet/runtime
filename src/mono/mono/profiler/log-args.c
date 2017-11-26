@@ -69,6 +69,7 @@ parse_arg (const char *arg, ProfilerConfig *config)
 			//enables new style of default events, IE, nothing.
 		} else {
 			config->enable_mask = PROFLOG_EXCEPTION_EVENTS | PROFLOG_COUNTER_EVENTS;
+			config->always_do_root_report = TRUE;
 			compat_args_parsing = TRUE;
 		}
 	}

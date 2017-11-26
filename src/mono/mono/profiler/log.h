@@ -512,6 +512,9 @@ typedef struct {
 	// Heapshot frequency in number of collections (for MONO_HEAPSHOT_X_GC). Can be changed at runtime.
 	unsigned int hs_freq_gc;
 
+	// Should root reports be done even outside of heapshots?
+	gboolean always_do_root_report;
+
 	// Whether to do a heapshot on shutdown.
 	gboolean hs_on_shutdown;
 
