@@ -115,6 +115,8 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void FailFast(String message, Exception exception);
 
+#if FEATURE_WIN32_REGISTRY
+        // This is only used by RegistryKey on Windows.
         public static String ExpandEnvironmentVariables(String name)
         {
             if (name == null)
@@ -127,27 +129,6 @@ namespace System
 
             int currentSize = 100;
             StringBuilder blob = new StringBuilder(currentSize); // A somewhat reasonable default size
-
-#if PLATFORM_UNIX // Win32Native.ExpandEnvironmentStrings isn't available
-            int lastPos = 0, pos;
-            while (lastPos < name.Length && (pos = name.IndexOf('%', lastPos + 1)) >= 0)
-            {
-                if (name[lastPos] == '%')
-                {
-                    string key = name.Substring(lastPos + 1, pos - lastPos - 1);
-                    string value = Environment.GetEnvironmentVariable(key);
-                    if (value != null)
-                    {
-                        blob.Append(value);
-                        lastPos = pos + 1;
-                        continue;
-                    }
-                }
-                blob.Append(name.Substring(lastPos, pos - lastPos));
-                lastPos = pos;
-            }
-            blob.Append(name.Substring(lastPos));
-#else
 
             int size;
 
@@ -166,10 +147,10 @@ namespace System
                 if (size == 0)
                     Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
             }
-#endif // PLATFORM_UNIX
 
             return blob.ToString();
         }
+#endif // FEATURE_WIN32_REGISTRY
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern Int32 GetProcessorCount();
