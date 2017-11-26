@@ -33,7 +33,7 @@ if exist %__ConfigFileName% (
 )
 
 :: powershell "Get-Content %__TemplateFileName% -replace (""##Insert_Runtime_Root##"", ""%__RuntimeRoot%"") | Output-File %__ConfigFileName% "
-powershell "-NoProfile (Get-Content \"%__TemplateFileName%\")`"^
+powershell -NoProfile "(Get-Content \"%__TemplateFileName%\")`"^
     "-replace \"##Insert_Runtime_Root##\", \"%__RuntimeRoot%\" `"^
     "|ForEach-Object{$_ -replace \"##Insert_Nuget_Cache_Root##\", \"%__NugetCacheDir%\"} `"^
     "|ForEach-Object{$_ -replace \"##Cli_Path##\", \"%__CliPath%\"} `"^
