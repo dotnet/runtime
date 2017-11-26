@@ -6,7 +6,7 @@
 
 set CORE_ROOT=%CD%\bin\tests\Windows_NT.%1.%2\Tests\Core_Root
 set FRAMEWORK_DIR=%CD%\bin\tests\Windows_NT.%1.%2\GC\Stress\Framework\ReliabilityFramework
-powershell "-NoProfile %CORE_ROOT%\CoreRun.exe %FRAMEWORK_DIR%\ReliabilityFramework.exe %FRAMEWORK_DIR%\testmix_gc.config"
+powershell -NoProfile "%CORE_ROOT%\CoreRun.exe %FRAMEWORK_DIR%\ReliabilityFramework.exe %FRAMEWORK_DIR%\testmix_gc.config"
 if %ERRORLEVEL% == 100 (
     @rem The ReliabilityFramework returns 100 on success and 99 on failure
     echo ReliabilityFramework successful
