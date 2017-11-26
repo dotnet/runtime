@@ -226,7 +226,7 @@
     <value>Attempt to define more than the maximum limit of 8 channels for a provider.</value>
   </data>
   <data name="EventSource_MismatchIdToWriteEvent" xml:space="preserve">
-    <value>Event {0} is given event ID {1} but {2} was passed to WriteEvent.</value>
+    <value>Event {0} was assigned event ID {1} but {2} was passed to WriteEvent.</value>
   </data>
   <data name="EventSource_NeedGuid" xml:space="preserve">
     <value>The Guid of an EventSource must be non zero.</value>
