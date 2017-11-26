@@ -354,17 +354,6 @@ namespace System
             return Unsafe.ReadUnaligned<double>(ref value.DangerousGetPinnableReference());
         }
 
-        private static char GetHexValue(int i)
-        {
-            Debug.Assert(i >= 0 && i < 16, "i is out of range.");
-            if (i < 10)
-            {
-                return (char)(i + '0');
-            }
-
-            return (char)(i - 10 + 'A');
-        }
-
         // Converts an array of bytes into a String.  
         public static string ToString(byte[] value, int startIndex, int length)
         {
@@ -388,41 +377,27 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(length), SR.Format(SR.ArgumentOutOfRange_LengthTooLarge, (int.MaxValue / 3)));
             }
 
-            int chArrayLength = length * 3;
-            const int StackLimit = 512; // arbitrary limit to switch from stack to heap allocation
-            unsafe
+            return string.Create(length * 3 - 1, (value, startIndex, length), (dst, state) =>
             {
-                if (chArrayLength < StackLimit)
+                const string HexValues = "0123456789ABCDEF";
+
+                var src = new ReadOnlySpan<byte>(state.value, state.startIndex, state.length);
+
+                int i = 0;
+                int j = 0;
+
+                byte b = src[i++];
+                dst[j++] = HexValues[b >> 4];
+                dst[j++] = HexValues[b & 0xF];
+
+                while (i < src.Length)
                 {
-                    char* chArrayPtr = stackalloc char[chArrayLength];
-                    return ToString(value, startIndex, length, chArrayPtr, chArrayLength);
+                    b = src[i++];
+                    dst[j++] = '-';
+                    dst[j++] = HexValues[b >> 4];
+                    dst[j++] = HexValues[b & 0xF];
                 }
-                else
-                {
-                    char[] chArray = new char[chArrayLength];
-                    fixed (char* chArrayPtr = &chArray[0])
-                        return ToString(value, startIndex, length, chArrayPtr, chArrayLength);
-                }
-            }
-        }
-
-        private static unsafe string ToString(byte[] value, int startIndex, int length, char* chArray, int chArrayLength)
-        {
-            Debug.Assert(length > 0);
-            Debug.Assert(chArrayLength == length * 3);
-
-            char* p = chArray;
-            int endIndex = startIndex + length;
-            for (int i = startIndex; i < endIndex; i++)
-            {
-                byte b = value[i];
-                *p++ = GetHexValue(b >> 4);
-                *p++ = GetHexValue(b & 0xF);
-                *p++ = '-';
-            }
-
-            // We don't need the last '-' character
-            return new string(chArray, 0, chArrayLength - 1);
+            });
         }
 
         // Converts an array of bytes into a String.  
