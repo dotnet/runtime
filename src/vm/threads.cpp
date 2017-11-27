@@ -1241,11 +1241,11 @@ void Dbg_TrackSyncStack::EnterSync(UINT_PTR caller, void *pAwareLock)
 {
     LIMITED_METHOD_CONTRACT;
 
-    STRESS_LOG4(LF_SYNC, LL_INFO100, "Dbg_TrackSyncStack::EnterSync, IP=%p, Recursion=%d, MonitorHeld=%d, HoldingThread=%p.\n",
+    STRESS_LOG4(LF_SYNC, LL_INFO100, "Dbg_TrackSyncStack::EnterSync, IP=%p, Recursion=%u, LockState=%x, HoldingThread=%p.\n",
                     caller,
-                    ((AwareLock*)pAwareLock)->m_Recursion,
-                    ((AwareLock*)pAwareLock)->m_MonitorHeld.LoadWithoutBarrier(),
-                    ((AwareLock*)pAwareLock)->m_HoldingThread );
+                    ((AwareLock*)pAwareLock)->GetRecursionLevel(),
+                    ((AwareLock*)pAwareLock)->GetLockState(),
+                    ((AwareLock*)pAwareLock)->GetHoldingThread());
 
     if (m_Active)
     {
@@ -1267,11 +1267,11 @@ void Dbg_TrackSyncStack::LeaveSync(UINT_PTR caller, void *pAwareLock)
 {
     WRAPPER_NO_CONTRACT;
 
-    STRESS_LOG4(LF_SYNC, LL_INFO100, "Dbg_TrackSyncStack::LeaveSync, IP=%p, Recursion=%d, MonitorHeld=%d, HoldingThread=%p.\n",
+    STRESS_LOG4(LF_SYNC, LL_INFO100, "Dbg_TrackSyncStack::LeaveSync, IP=%p, Recursion=%u, LockState=%x, HoldingThread=%p.\n",
                     caller,
-                    ((AwareLock*)pAwareLock)->m_Recursion,
-                    ((AwareLock*)pAwareLock)->m_MonitorHeld.LoadWithoutBarrier(),
-                    ((AwareLock*)pAwareLock)->m_HoldingThread );
+                    ((AwareLock*)pAwareLock)->GetRecursionLevel(),
+                    ((AwareLock*)pAwareLock)->GetLockState(),
+                    ((AwareLock*)pAwareLock)->GetHoldingThread());
 
     if (m_Active)
     {

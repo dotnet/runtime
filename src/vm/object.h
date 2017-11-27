@@ -497,6 +497,8 @@ class Object
         return GetHeader()->TryEnterObjMonitor(timeOut);
     }
 
+    bool TryEnterObjMonitorSpinHelper();
+
     FORCEINLINE AwareLock::EnterHelperResult EnterObjMonitorHelper(Thread* pCurThread)
     {
         WRAPPER_NO_CONTRACT;
