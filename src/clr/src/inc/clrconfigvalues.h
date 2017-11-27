@@ -657,6 +657,7 @@ RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_SpinLimitProcCap, W("SpinLimitProcCap"), 0x
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_SpinLimitProcFactor, W("SpinLimitProcFactor"), 0x4E20, "Hex value specifying the multiplier on NumProcs to use when calculating the maximum spin duration", EEConfig_default)
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_SpinLimitConstant, W("SpinLimitConstant"), 0x0, "Hex value specifying the constant to add when calculating the maximum spin duration", EEConfig_default)
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_SpinRetryCount, W("SpinRetryCount"), 0xA, "Hex value specifying the number of times the entire spin process is repeated (when applicable)", EEConfig_default)
+RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_Monitor_SpinCount, W("Monitor_SpinCount"), 0x1e, "Hex value specifying the maximum number of spin iterations Monitor may perform upon contention on acquiring the lock before waiting.", EEConfig_default)
 
 // 
 // Native Binder

@@ -65,20 +65,6 @@ ASMCONSTANTS_C_ASSERT(CONTEXT_Eip == offsetof(CONTEXT,Eip))
 #define CONTEXT_Esp 0xc4
 ASMCONSTANTS_C_ASSERT(CONTEXT_Esp == offsetof(CONTEXT,Esp))
 
-// SYSTEM_INFO from rotor_pal.h
-#define SYSTEM_INFO_dwNumberOfProcessors 20 
-ASMCONSTANTS_C_ASSERT(SYSTEM_INFO_dwNumberOfProcessors == offsetof(SYSTEM_INFO,dwNumberOfProcessors))
-
-// SpinConstants from clr/src/vars.h
-#define SpinConstants_dwInitialDuration 0 
-ASMCONSTANTS_C_ASSERT(SpinConstants_dwInitialDuration == offsetof(SpinConstants,dwInitialDuration))
-
-#define SpinConstants_dwMaximumDuration 4 
-ASMCONSTANTS_C_ASSERT(SpinConstants_dwMaximumDuration == offsetof(SpinConstants,dwMaximumDuration))
-
-#define SpinConstants_dwBackoffFactor 8
-ASMCONSTANTS_C_ASSERT(SpinConstants_dwBackoffFactor == offsetof(SpinConstants,dwBackoffFactor))
-
 #ifndef WIN64EXCEPTIONS
 // EHContext from clr/src/vm/i386/cgencpu.h
 #define EHContext_Eax 0x00
