@@ -8526,6 +8526,8 @@ type_from_typename (char *type_name)
 
 	if (!strcmp (type_name, "int"))
 		klass = mono_defaults.int_class;
+	else if (!strcmp (type_name, "ptr&"))
+		return mono_class_get_byref_type (mono_defaults.int_class);
 	else if (!strcmp (type_name, "ptr"))
 		klass = mono_defaults.int_class;
 	else if (!strcmp (type_name, "void"))

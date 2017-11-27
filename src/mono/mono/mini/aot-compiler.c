@@ -12322,6 +12322,35 @@ mono_compile_deferred_assemblies (guint32 opts, const char *aot_options, gpointe
 	return res;
 }
 
+static const char* interp_in_static_sigs[] = {
+	"bool ptr int32 ptr&",
+	"bool ptr ptr&",
+	"int32 int32 ptr&",
+	"int32 int32 ptr ptr&",
+	"int32 ptr int32 ptr",
+	"int32 ptr int32 ptr&",
+	"int32 ptr ptr&",
+	"object object ptr ptr ptr",
+	"ptr int32 ptr&",
+	"ptr ptr int32 ptr ptr ptr&",
+	"ptr ptr int32 ptr ptr&",
+	"ptr ptr int32 ptr&",
+	"ptr ptr ptr int32 ptr&",
+	"ptr ptr ptr ptr& ptr&",
+	"ptr ptr ptr ptr&",
+	"ptr ptr ptr&",
+	"ptr ptr uint32 ptr&",
+	"ptr uint32 ptr&",
+	"void object ptr ptr ptr",
+	"void ptr ptr int32 ptr ptr& ptr ptr&",
+	"void ptr ptr int32 ptr ptr&",
+	"void ptr ptr ptr&",
+	"void ptr ptr&",
+	"void ptr",
+	"void int32 ptr&",
+	"void uint32 ptr&",
+};
+
 int
 mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options, gpointer **global_aot_state)
 {
@@ -12585,23 +12614,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 #endif
 
 	if (mono_aot_mode_is_interp (&acfg->aot_opts)) {
-		MonoMethod *wrapper;
-		MonoMethodSignature *sig;
-
-		/* object object:interp_in_static (object,intptr,intptr,intptr) */
-		sig = mono_create_icall_signature ("object object ptr ptr ptr");
-		wrapper = mini_get_interp_in_wrapper (sig);
-		add_method (acfg, wrapper);
-
-		/* int object:interp_in_static (intptr,int,intptr) */
-		sig = mono_create_icall_signature ("int32 ptr int32 ptr");
-		wrapper = mini_get_interp_in_wrapper (sig);
-		add_method (acfg, wrapper);
-
-		/* void object:interp_in_static (object,intptr,intptr,intptr) */
-		sig = mono_create_icall_signature ("void object ptr ptr ptr");
-		wrapper = mini_get_interp_in_wrapper (sig);
-		add_method (acfg, wrapper);
+		for (int i = 0; i < sizeof (interp_in_static_sigs) / sizeof (const char *); i++) {
+			MonoMethodSignature *sig = mono_create_icall_signature (interp_in_static_sigs [i]);
+			MonoMethod *wrapper = mini_get_interp_in_wrapper (sig);
+			add_method (acfg, wrapper);
+		}
 	}
 
 	TV_GETTIME (atv);
