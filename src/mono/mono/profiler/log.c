@@ -1226,9 +1226,16 @@ gc_roots (MonoProfiler *prof, MonoObject *const *objects, const MonoProfilerGCRo
 	EXIT_LOG;
 }
 
+static void
+trigger_heapshot (void)
+{
+	// Rely on the finalization callback triggering a GC.
+	mono_atomic_store_i32 (&log_profiler.heapshot_requested, 1);
+	mono_gc_finalize_notify ();
+}
 
 static void
-trigger_on_demand_heapshot (void)
+process_heapshot (void)
 {
 	if (mono_atomic_load_i32 (&log_profiler.heapshot_requested))
 		mono_gc_collect (mono_gc_max_generation ());
@@ -1263,7 +1270,7 @@ gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation)
 			log_profiler.do_heap_walk = generation == mono_gc_max_generation ();
 			break;
 		case MONO_PROFILER_HEAPSHOT_ON_DEMAND:
-			log_profiler.do_heap_walk = mono_atomic_load_i32 (&log_profiler.heapshot_requested);
+			// Handled below.
 			break;
 		case MONO_PROFILER_HEAPSHOT_X_GC:
 			log_profiler.do_heap_walk = !(log_profiler.gc_count % log_config.hs_freq_gc);
@@ -1276,11 +1283,10 @@ gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation)
 		}
 
 		/*
-		 * heapshot_requested is set either because on-demand heapshot is
-		 * enabled and a heapshot was triggered, or because we're doing a
-		 * shutdown heapshot. In the latter case, we won't check it in the
-		 * switch above, so check it here and override any decision we made
-		 * above.
+		 * heapshot_requested is set either because a heapshot was triggered
+		 * manually (through the API or command server) or because we're doing
+		 * a shutdown heapshot. Either way, a manually triggered heapshot
+		 * overrides any decision we made in the switch above.
 		 */
 		if (mono_atomic_load_i32 (&log_profiler.heapshot_requested))
 			log_profiler.do_heap_walk = TRUE;
@@ -1550,7 +1556,8 @@ finalize_begin (MonoProfiler *prof)
 static void
 finalize_end (MonoProfiler *prof)
 {
-	trigger_on_demand_heapshot ();
+	process_heapshot ();
+
 	if (ENABLED (PROFLOG_GC_FINALIZATION_EVENTS)) {
 		ENTER_LOG (&finalize_ends_ctr, buf,
 			EVENT_SIZE /* event */
@@ -3800,11 +3807,8 @@ helper_thread (void *arg)
 
 			buf [len] = 0;
 
-			if (log_config.hs_mode == MONO_PROFILER_HEAPSHOT_ON_DEMAND && !strcmp (buf, "heapshot\n")) {
-				// Rely on the finalization callback triggering a GC.
-				mono_atomic_store_i32 (&log_profiler.heapshot_requested, 1);
-				mono_gc_finalize_notify ();
-			}
+			if (!strcmp (buf, "heapshot\n"))
+				trigger_heapshot ();
 		}
 
 		if (FD_ISSET (log_profiler.server_socket, &rfds)) {
@@ -4190,6 +4194,12 @@ proflog_icall_SetHeapshotCollectionsFrequency (gint32 value)
 	log_config.hs_freq_gc = value;
 }
 
+ICALL_EXPORT void
+proflog_icall_TriggerHeapshot (void)
+{
+	trigger_heapshot ();
+}
+
 ICALL_EXPORT gint32
 proflog_icall_GetCallDepth (void)
 {
@@ -4537,6 +4547,7 @@ runtime_initialized (MonoProfiler *profiler)
 	ADD_ICALL (SetHeapshotMillisecondsFrequency);
 	ADD_ICALL (GetHeapshotCollectionsFrequency);
 	ADD_ICALL (SetHeapshotCollectionsFrequency);
+	ADD_ICALL (TriggerHeapshot);
 	ADD_ICALL (GetCallDepth);
 	ADD_ICALL (SetCallDepth);
 	ADD_ICALL (GetSampleMode);
