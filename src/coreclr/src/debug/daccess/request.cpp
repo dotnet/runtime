@@ -3619,9 +3619,9 @@ ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData 
             }
 #endif // FEATURE_COMINTEROP
 
-            pSyncBlockData->MonitorHeld = pBlock->m_Monitor.m_MonitorHeld;
-            pSyncBlockData->Recursion = pBlock->m_Monitor.m_Recursion;
-            pSyncBlockData->HoldingThread = HOST_CDADDR(pBlock->m_Monitor.m_HoldingThread);
+            pSyncBlockData->MonitorHeld = pBlock->m_Monitor.GetMonitorHeldStateVolatile();
+            pSyncBlockData->Recursion = pBlock->m_Monitor.GetRecursionLevel();
+            pSyncBlockData->HoldingThread = HOST_CDADDR(pBlock->m_Monitor.GetHoldingThread());
 
             if (pBlock->GetAppDomainIndex().m_dwIndex)
             {
