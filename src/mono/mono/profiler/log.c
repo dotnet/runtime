@@ -4728,9 +4728,6 @@ mono_profiler_init_log (const char *desc)
 	if (ENABLED (PROFLOG_GC_MOVE_EVENTS))
 		mono_profiler_set_gc_moves_callback (handle, gc_moves);
 
-	if (ENABLED (PROFLOG_GC_ROOT_EVENTS))
-		mono_profiler_set_gc_roots_callback (handle, gc_roots);
-
 	if (ENABLED (PROFLOG_GC_HANDLE_EVENTS)) {
 		mono_profiler_set_gc_handle_created_callback (handle, gc_handle_created);
 		mono_profiler_set_gc_handle_deleted_callback (handle, gc_handle_deleted);
