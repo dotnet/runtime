@@ -20,10 +20,6 @@
 #include "objecthandle.h"
 #include "handletablepriv.h"
 
-#ifndef FEATURE_REDHAWK
-#include "nativeoverlapped.h"
-#endif
-
 /****************************************************************************
  *
  * FORWARD DECLARATIONS
@@ -626,34 +622,31 @@ void HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
         FireEtwSetGCHandle((void*) handle, value, hndType, generation, (int64_t) pAppDomain, GetClrInstanceId());
         FireEtwPrvSetGCHandle((void*) handle, value, hndType, generation, (int64_t) pAppDomain, GetClrInstanceId());
 
-#ifndef FEATURE_REDHAWK
         // Also fire the things pinned by Async pinned handles
         if (hndType == HNDTYPE_ASYNCPINNED)
         {
-            if (value->GetMethodTable() == g_pOverlappedDataClass)
+            // the closure passed to "WalkOverlappedObject" is not permitted to implicitly
+            // capture any variables in this scope, since WalkForOverlappedObject takes a bare
+            // function pointer and context pointer as arguments. We can still /explicitly/
+            // close over values in this scope by doing what the compiler would do and introduce
+            // a structure that contains all of the things we closed over, while passing a pointer
+            // to this structure as our closure's context pointer.
+            struct ClosureCapture
             {
-                OverlappedDataObject* overlapped = (OverlappedDataObject*) value;
-                if (overlapped->m_isArray)
-                {
-                    ArrayBase* pUserObject = (ArrayBase*)OBJECTREFToObject(overlapped->m_userObject);
-                    Object **ppObj = (Object**)pUserObject->GetDataPtr(TRUE);
-                    size_t num = pUserObject->GetNumComponents();
-                    for (size_t i = 0; i < num; i ++)
-                    {
-                        value = ppObj[i];
-                        uint32_t generation = value != 0 ? g_theGCHeap->WhichGeneration(value) : 0;
-                        FireEtwSetGCHandle(overlapped, value, HNDTYPE_PINNED, generation, (int64_t) pAppDomain, GetClrInstanceId());
-                    }
-                }
-                else
-                {
-                    value = OBJECTREF_TO_UNCHECKED_OBJECTREF(overlapped->m_userObject);
-                    uint32_t generation = value != 0 ? g_theGCHeap->WhichGeneration(value) : 0;
-                    FireEtwSetGCHandle(overlapped, value, HNDTYPE_PINNED, generation, (int64_t) pAppDomain, GetClrInstanceId());
-                }
-            }
+                AppDomain* pAppDomain;
+                Object* overlapped;
+            };
+
+            ClosureCapture captured;
+            captured.pAppDomain = pAppDomain;
+            captured.overlapped = value;
+            GCToEEInterface::WalkAsyncPinned(value, &captured, [](Object*, Object* to, void* ctx)
+            {
+                ClosureCapture* captured = reinterpret_cast<ClosureCapture*>(ctx);
+                uint32_t generation = to != nullptr ? g_theGCHeap->WhichGeneration(to) : 0;
+                FireEtwSetGCHandle(captured->overlapped, to, HNDTYPE_PINNED, generation, (int64_t) captured->pAppDomain, GetClrInstanceId());
+            });
         }
-#endif // FEATURE_REDHAWK
     }
 #else
     UNREFERENCED_PARAMETER(handle);
@@ -709,14 +702,12 @@ void HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF objref)
         int generation = g_theGCHeap->WhichGeneration(value);
         uint32_t uType = HandleFetchType(handle);
 
-#ifndef FEATURE_REDHAWK
         //OverlappedData need special treatment: because all user data pointed by it needs to be reported by this handle,
         //its age is consider to be min age of the user data, to be simple, we just make it 0
-        if (uType == HNDTYPE_ASYNCPINNED && objref->GetGCSafeMethodTable () == g_pOverlappedDataClass)
+        if (uType == HNDTYPE_ASYNCPINNED)
         {
             generation = 0;
         }
-#endif // !FEATURE_REDHAWK
         
         if (uType == HNDTYPE_DEPENDENT)
         {
@@ -1165,7 +1156,6 @@ uint32_t HndCountAllHandles(BOOL fUseLocks)
 
 BOOL  Ref_HandleAsyncPinHandles(async_pin_enum_fn asyncPinCallback, void* context)
 {
-#ifndef FEATURE_REDHAWK
     CONTRACTL
     {
         NOTHROW;
@@ -1186,14 +1176,13 @@ BOOL  Ref_HandleAsyncPinHandles(async_pin_enum_fn asyncPinCallback, void* contex
     }
 
     return result;
-#else
-    return true;
-#endif // !FEATURE_REDHAWK
 }
 
-void  Ref_RelocateAsyncPinHandles(HandleTableBucket *pSource, HandleTableBucket *pTarget)
+void  Ref_RelocateAsyncPinHandles(HandleTableBucket *pSource,
+    HandleTableBucket *pTarget,
+    void (*clearIfComplete)(Object* object),
+    void (*setHandle)(Object* object, OBJECTHANDLE handle))
 {
-#ifndef FEATURE_REDHAWK
     CONTRACTL
     {
         NOTHROW;
@@ -1204,9 +1193,8 @@ void  Ref_RelocateAsyncPinHandles(HandleTableBucket *pSource, HandleTableBucket 
     int limit = getNumberOfSlots();
     for (int n = 0; n < limit; n ++ )
     {
-        TableRelocateAsyncPinHandles(Table(pSource->pTable[n]), Table(pTarget->pTable[n]));
+        TableRelocateAsyncPinHandles(Table(pSource->pTable[n]), Table(pTarget->pTable[n]), clearIfComplete, setHandle);
     }
-#endif // !FEATURE_REDHAWK
 }
 
 /*--------------------------------------------------------------------------*/

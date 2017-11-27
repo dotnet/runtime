@@ -80,6 +80,8 @@ public:
     static bool IsGCThread();
     static bool WasCurrentThreadCreatedByGC();
     static bool CreateThread(void (*threadStart)(void*), void* arg, bool is_suspendable, const char* name);
+    static void WalkAsyncPinnedForPromotion(Object* object, ScanContext* sc, promote_func* callback);
+    static void WalkAsyncPinned(Object* object, void* context, void(*callback)(Object*, Object*, void*));
 };
 
 #endif // __GCENV_EE_H__
