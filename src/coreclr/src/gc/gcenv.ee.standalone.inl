@@ -258,5 +258,16 @@ inline bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg,
     return g_theGCToCLR->CreateThread(threadStart, arg, is_suspendable, name);
 }
 
+inline void GCToEEInterface::WalkAsyncPinnedForPromotion(Object* object, ScanContext* sc, promote_func* callback)
+{
+    assert(g_theGCToCLR != nullptr);
+    return g_theGCToCLR->WalkAsyncPinnedForPromotion(object, sc, callback);
+}
+
+inline void GCToEEInterface::WalkAsyncPinned(Object* object, void* context, void(*callback)(Object*, Object*, void*))
+{
+    assert(g_theGCToCLR != nullptr);
+    return g_theGCToCLR->WalkAsyncPinned(object, context, callback);
+}
 
 #endif // __GCTOENV_EE_STANDALONE_INL__

@@ -16,11 +16,6 @@
 #include "gcenv.h"
 #include "gcenv.inl"
 #include "gc.h"
-
-#ifndef FEATURE_REDHAWK
-#include "nativeoverlapped.h"
-#endif // FEATURE_REDHAWK
-
 #include "handletablepriv.h"
 
 /****************************************************************************
@@ -666,10 +661,9 @@ __inline void SegmentUnMarkFreeMask(TableSegment *pSegment, _UNCHECKED_OBJECTREF
     pSegment->rgFreeMask[uMask] &= ~(1<<uBit);
 }
 
-#ifndef FEATURE_REDHAWK
 // Prepare a segment to be moved to default domain.
 // Remove all non-async pin handles.
-void SegmentPreCompactAsyncPinHandles(TableSegment *pSegment)
+void SegmentPreCompactAsyncPinHandles(TableSegment *pSegment, void (*clearIfComplete)(Object*))
 {
     CONTRACTL
     {
@@ -761,14 +755,7 @@ void SegmentPreCompactAsyncPinHandles(TableSegment *pSegment)
             _UNCHECKED_OBJECTREF value = *pValue;
             if (!HndIsNullOrDestroyedHandle(value))
             {
-                _ASSERTE (value->GetMethodTable() == g_pOverlappedDataClass);
-                OVERLAPPEDDATAREF overlapped = (OVERLAPPEDDATAREF)(ObjectToOBJECTREF((Object*)(value)));
-                if (overlapped->HasCompleted())
-                {
-                    // IO has finished.  We don't need to pin the user buffer any longer.
-                    overlapped->m_userObject = NULL;
-                }
-                BashMTForPinnedObject(ObjectToOBJECTREF(value));
+                clearIfComplete((Object*)value);
             }
             else
             {
@@ -842,7 +829,7 @@ BOOL SegmentCopyAsyncPinHandle(TableSegment *pSegment, _UNCHECKED_OBJECTREF *h)
     return TRUE;
 }
 
-void SegmentCompactAsyncPinHandles(TableSegment *pSegment, TableSegment **ppWorkerSegment)
+void SegmentCompactAsyncPinHandles(TableSegment *pSegment, TableSegment **ppWorkerSegment, void (*clearIfComplete)(Object*))
 {
     CONTRACTL
     {
@@ -876,14 +863,7 @@ void SegmentCompactAsyncPinHandles(TableSegment *pSegment, TableSegment **ppWork
             _UNCHECKED_OBJECTREF value = *pValue;
             if (!HndIsNullOrDestroyedHandle(value))
             {
-                _ASSERTE (value->GetMethodTable() == g_pOverlappedDataClass);
-                OVERLAPPEDDATAREF overlapped = (OVERLAPPEDDATAREF)(ObjectToOBJECTREF((Object*)value));
-                if (overlapped->HasCompleted())
-                {
-                    // IO has finished.  We don't need to pin the user buffer any longer.
-                    overlapped->m_userObject = NULL;
-                }
-                BashMTForPinnedObject(ObjectToOBJECTREF(value));
+                clearIfComplete((Object*)value);
                 fNeedNewSegment = !SegmentCopyAsyncPinHandle(*ppWorkerSegment,pValue);
             }
             if (fNeedNewSegment)
@@ -891,7 +871,7 @@ void SegmentCompactAsyncPinHandles(TableSegment *pSegment, TableSegment **ppWork
                 _ASSERTE ((*ppWorkerSegment)->rgFreeCount[HNDTYPE_ASYNCPINNED] == 0 &&
                           (*ppWorkerSegment)->bFreeList == BLOCK_INVALID);
                 TableSegment *pNextSegment = (*ppWorkerSegment)->pNextSegment;
-                SegmentPreCompactAsyncPinHandles(pNextSegment);
+                SegmentPreCompactAsyncPinHandles(pNextSegment, clearIfComplete);
                 *ppWorkerSegment = pNextSegment;
                 if (pNextSegment == pSegment)
                 {
@@ -961,7 +941,10 @@ BOOL SegmentHandleAsyncPinHandles (TableSegment *pSegment, const AsyncPinCallbac
 }
 
 // Replace an async pin handle with one from default domain
-bool SegmentRelocateAsyncPinHandles (TableSegment *pSegment, HandleTable *pTargetTable)
+bool SegmentRelocateAsyncPinHandles (TableSegment *pSegment,
+    HandleTable *pTargetTable,
+    void (*clearIfComplete)(Object*),
+    void (*setHandle)(Object*, OBJECTHANDLE))
 {
     CONTRACTL
     {
@@ -995,22 +978,15 @@ bool SegmentRelocateAsyncPinHandles (TableSegment *pSegment, HandleTable *pTarge
             _UNCHECKED_OBJECTREF value = *pValue;
             if (!HndIsNullOrDestroyedHandle(value))
             {
-                _ASSERTE (value->GetMethodTable() == g_pOverlappedDataClass);
-                OVERLAPPEDDATAREF overlapped = (OVERLAPPEDDATAREF)(ObjectToOBJECTREF((Object*)value));
-                if (overlapped->HasCompleted())
-                {
-                    // IO has finished.  We don't need to pin the user buffer any longer.
-                    overlapped->m_userObject = NULL;
-                }
-                BashMTForPinnedObject(ObjectToOBJECTREF(value));
-
-                overlapped->m_pinSelf = HndCreateHandle((HHANDLETABLE)pTargetTable, HNDTYPE_ASYNCPINNED, ObjectToOBJECTREF(value));
-                if (!overlapped->m_pinSelf)
+                clearIfComplete((Object*)value);
+                OBJECTHANDLE selfHandle = HndCreateHandle((HHANDLETABLE)pTargetTable, HNDTYPE_ASYNCPINNED, ObjectToOBJECTREF(value));
+                if (!selfHandle)
                 {
                     // failed to allocate a new handle - callers have to handle this.
                     return false;
                 }
 
+                setHandle((Object*)value, selfHandle);
                 *pValue = NULL;
             }
             pValue ++;
@@ -1033,8 +1009,6 @@ BOOL TableHandleAsyncPinHandles(HandleTable *pTable, const AsyncPinCallbackConte
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
-
-    _ASSERTE (pTable->uADIndex.m_dwIndex == DefaultADID);
 
     BOOL result = FALSE;
     TableSegment *pSegment = pTable->pSegmentList;
@@ -1062,7 +1036,10 @@ BOOL TableHandleAsyncPinHandles(HandleTable *pTable, const AsyncPinCallbackConte
 //       from a again.
 //    c. After copying all handles to worker segments, move the segments to default domain.
 // It is very important that in step 2, we should not fail for OOM, which means no memory allocation.
-void TableRelocateAsyncPinHandles(HandleTable *pTable, HandleTable *pTargetTable)
+void TableRelocateAsyncPinHandles(HandleTable *pTable,
+    HandleTable *pTargetTable,
+    void (*clearIfComplete)(Object*),
+    void (*setHandle)(Object*, OBJECTHANDLE))
 {
     CONTRACTL
     {
@@ -1087,7 +1064,7 @@ void TableRelocateAsyncPinHandles(HandleTable *pTable, HandleTable *pTargetTable
     // Step 1: replace pinning handles with ones from default domain
     while (pSegment)
     {
-        wasSuccessful = wasSuccessful && SegmentRelocateAsyncPinHandles (pSegment, pTargetTable);
+        wasSuccessful = wasSuccessful && SegmentRelocateAsyncPinHandles (pSegment, pTargetTable, clearIfComplete, setHandle);
         if (!wasSuccessful)
         {
             break;
@@ -1139,12 +1116,12 @@ SLOW_PATH:
         // Compact async pinning handles into the smallest number of leading segments we can (the worker
         // segments).
         TableSegment *pWorkerSegment = pTable->pSegmentList;
-        SegmentPreCompactAsyncPinHandles (pWorkerSegment);
+        SegmentPreCompactAsyncPinHandles (pWorkerSegment, clearIfComplete);
 
         pSegment = pWorkerSegment->pNextSegment;
         while (pSegment)
         {
-            SegmentCompactAsyncPinHandles (pSegment, &pWorkerSegment);
+            SegmentCompactAsyncPinHandles (pSegment, &pWorkerSegment, clearIfComplete);
             pSegment= pSegment->pNextSegment;
         }
 
@@ -1193,7 +1170,6 @@ SLOW_PATH:
         break;
     }
 }
-#endif // !FEATURE_REDHAWK
 
 /*
  * Check if a handle is part of a HandleTable

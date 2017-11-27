@@ -795,7 +795,7 @@ BOOL TableHandleAsyncPinHandles(HandleTable *pTable, const AsyncPinCallbackConte
  * Replaces async pin handles with ones in default domain.
  *
  */
-void TableRelocateAsyncPinHandles(HandleTable *pTable, HandleTable *pTargetTable);
+void TableRelocateAsyncPinHandles(HandleTable *pTable, HandleTable *pTargetTable, void (*clearIfComplete)(Object*), void (*setHandle)(Object*, OBJECTHANDLE));
 
 /*
  * Check if a handle is part of a HandleTable
