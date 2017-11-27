@@ -259,7 +259,7 @@ namespace System.IO
 
         /// <devdoc>
         ///    Gets or sets the path of the directory to watch.
-        /// </devdoc>
+        /// </devdoc>        
         public string Path
         {
             get
@@ -271,11 +271,12 @@ namespace System.IO
                 value = (value == null) ? string.Empty : value;
                 if (!string.Equals(_directory, value, PathInternal.StringComparison))
                 {
-                    if (!Directory.Exists(value))
-                    {
-                        throw new ArgumentException(SR.Format(SR.InvalidDirName, value));
-                    }
+                    if (value.Length == 0)
+                        throw new ArgumentException(SR.Format(SR.InvalidDirName, value), nameof(Path));
 
+                    if (!Directory.Exists(value))
+                        throw new ArgumentException(SR.Format(SR.InvalidDirName_NotExists, value), nameof(Path));
+      
                     _directory = value;
                     Restart();
                 }

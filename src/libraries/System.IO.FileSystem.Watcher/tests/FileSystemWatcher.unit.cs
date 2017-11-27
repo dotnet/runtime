@@ -485,9 +485,9 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [Fact]                        
         public void FileSystemWatcher_Path()
-        {
+        {            
             FileSystemWatcher watcher = new FileSystemWatcher();
             Assert.Equal(String.Empty, watcher.Path);
 
@@ -527,14 +527,14 @@ namespace System.IO.Tests
             Assert.Equal(currentDirRelative, watcher.Path);
 
             // FSW starts with String.Empty and will ignore setting this if it is already set,
-            // but if you set it after some other valid string has been set it will throw.
-            AssertExtensions.Throws<ArgumentException>(null, () => watcher.Path = String.Empty);
+            // but if you set it after some other valid string has been set it will throw.            
+            Assert.Throws<ArgumentException>(() => watcher.Path = String.Empty);
             // Non-existent path
-            AssertExtensions.Throws<ArgumentException>(null, () => watcher.Path = GetTestFilePath());
+            Assert.Throws<ArgumentException>(() => watcher.Path = GetTestFilePath());
             // Web path
-            AssertExtensions.Throws<ArgumentException>(null, () => watcher.Path = "http://localhost");
+            Assert.Throws<ArgumentException>(() => watcher.Path = "http://localhost");
             // File protocol
-            AssertExtensions.Throws<ArgumentException>(null, () => watcher.Path = "file:///" + currentDir.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+            Assert.Throws<ArgumentException>(() => watcher.Path = "file:///" + currentDir.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
         }
 
         [Fact]
