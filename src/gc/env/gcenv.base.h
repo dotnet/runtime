@@ -320,6 +320,11 @@ inline void* ALIGN_DOWN(void* ptr, size_t alignment)
     return reinterpret_cast<void*>(ALIGN_DOWN(as_size_t, alignment));
 }
 
+inline int GetRandomInt(int max)
+{
+    return rand() % max;
+}
+
 typedef struct _PROCESSOR_NUMBER {
     uint16_t Group;
     uint8_t Number;

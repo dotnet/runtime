@@ -60,6 +60,8 @@ public:
     bool IsGCThread();
     bool WasCurrentThreadCreatedByGC();
     bool CreateThread(void (*threadStart)(void*), void* arg, bool is_suspendable, const char* name);
+    void WalkAsyncPinnedForPromotion(Object* object, ScanContext* sc, promote_func* callback);
+    void WalkAsyncPinned(Object* object, void* context, void(*callback)(Object*, Object*, void*));
 };
 
 } // namespace standalone
