@@ -12,34 +12,24 @@
 G_BEGIN_DECLS
 
 typedef enum {
-	MONO_TRACE_ASSEMBLY		= (1<<0),
-	MONO_TRACE_TYPE			= (1<<1),
-	MONO_TRACE_DLLIMPORT		= (1<<2),
-	MONO_TRACE_GC			= (1<<3),
-        MONO_TRACE_CONFIG		= (1<<4),
-	MONO_TRACE_AOT			= (1<<5),
-	MONO_TRACE_SECURITY		= (1<<6),
-	MONO_TRACE_THREADPOOL		= (1<<7),
-	MONO_TRACE_IO_THREADPOOL	= (1<<8),
-	MONO_TRACE_IO_LAYER		= (1<<9),
-	MONO_TRACE_W32HANDLE	= (1<<10),
-	MONO_TRACE_ALL			= MONO_TRACE_ASSEMBLY |
-					  MONO_TRACE_TYPE |
-					  MONO_TRACE_DLLIMPORT |
-					  MONO_TRACE_GC |
-					  MONO_TRACE_CONFIG |
-					  MONO_TRACE_AOT |
-					  MONO_TRACE_SECURITY |
-					  MONO_TRACE_THREADPOOL |
-					  MONO_TRACE_IO_THREADPOOL |
-					  MONO_TRACE_IO_LAYER |
-					  MONO_TRACE_W32HANDLE
+	MONO_TRACE_ASSEMBLY      =  (gint32)(1 << 0),
+	MONO_TRACE_TYPE          =  (gint32)(1 << 1),
+	MONO_TRACE_DLLIMPORT     =  (gint32)(1 << 2),
+	MONO_TRACE_GC            =  (gint32)(1 << 3),
+	MONO_TRACE_CONFIG        =  (gint32)(1 << 4),
+	MONO_TRACE_AOT           =  (gint32)(1 << 5),
+	MONO_TRACE_SECURITY      =  (gint32)(1 << 6),
+	MONO_TRACE_THREADPOOL    =  (gint32)(1 << 7),
+	MONO_TRACE_IO_THREADPOOL =  (gint32)(1 << 8),
+	MONO_TRACE_IO_LAYER      =  (gint32)(1 << 9),
+	MONO_TRACE_W32HANDLE     =  (gint32)(1 << 10),
+	MONO_TRACE_ALL           = ~(gint32)(0)
 } MonoTraceMask;
 
 MONO_API extern GLogLevelFlags mono_internal_current_level;
 MONO_API extern MonoTraceMask mono_internal_current_mask;
 
-void 
+MONO_API void
 mono_trace_init (void);
 
 void 
@@ -163,7 +153,7 @@ typedef void (*MonoLoggerOpen) (const char *, void *);
 typedef void (*MonoLoggerWrite) (const char *, GLogLevelFlags, mono_bool, const char *);
 typedef void (*MonoLoggerClose) (void);
 
-typedef struct _MonoLogCallParm_ {
+typedef struct {
 	MonoLoggerOpen 	opener;		/* Routine to open logging */
 	MonoLoggerWrite	writer;		/* Routine to write log data */
 	MonoLoggerClose closer; 	/* Routine to close logging */
