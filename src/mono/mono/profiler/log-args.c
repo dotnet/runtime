@@ -67,6 +67,7 @@ parse_arg (const char *arg, ProfilerConfig *config)
 		first_processed = TRUE;
 		if (match_option (arg, "nodefaults", NULL)) {
 			//enables new style of default events, IE, nothing.
+			return;
 		} else {
 			config->enable_mask = PROFLOG_EXCEPTION_EVENTS | PROFLOG_COUNTER_EVENTS;
 			config->always_do_root_report = TRUE;
@@ -76,6 +77,8 @@ parse_arg (const char *arg, ProfilerConfig *config)
 
 	if (match_option (arg, "help", NULL)) {
 		usage ();
+	} else if (match_option (arg, "nodefaults", NULL)) {
+		mono_profiler_printf_err ("nodefaults can only be used as the first argument");
 	} else if (match_option (arg, "report", NULL)) {
 		config->do_report = TRUE;
 	} else if (match_option (arg, "debug", NULL)) {
