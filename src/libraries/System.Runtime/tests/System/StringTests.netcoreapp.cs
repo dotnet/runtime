@@ -91,6 +91,59 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData("Hello", 'H', true)]
+        [InlineData("Hello", 'Z', false)]
+        [InlineData("Hello", 'e', true)]
+        [InlineData("Hello", 'E', false)]
+        [InlineData("", 'H', false)]
+        public static void Contains(string s, char value, bool expected)
+        {
+            Assert.Equal(expected, s.Contains(value));
+        }
+
+        [Theory]
+        // CurrentCulture
+        [InlineData("Hello", 'H', StringComparison.CurrentCulture, true)]
+        [InlineData("Hello", 'Z', StringComparison.CurrentCulture, false)]
+        [InlineData("Hello", 'e', StringComparison.CurrentCulture, true)]
+        [InlineData("Hello", 'E', StringComparison.CurrentCulture, false)]
+        [InlineData("", 'H', StringComparison.CurrentCulture, false)]
+        // CurrentCultureIgnoreCase
+        [InlineData("Hello", 'H', StringComparison.CurrentCultureIgnoreCase, true)]
+        [InlineData("Hello", 'Z', StringComparison.CurrentCultureIgnoreCase, false)]
+        [InlineData("Hello", 'e', StringComparison.CurrentCultureIgnoreCase, true)]
+        [InlineData("Hello", 'E', StringComparison.CurrentCultureIgnoreCase, true)]
+        [InlineData("", 'H', StringComparison.CurrentCultureIgnoreCase, false)]
+        // InvariantCulture
+        [InlineData("Hello", 'H', StringComparison.InvariantCulture, true)]
+        [InlineData("Hello", 'Z', StringComparison.InvariantCulture, false)]
+        [InlineData("Hello", 'e', StringComparison.InvariantCulture, true)]
+        [InlineData("Hello", 'E', StringComparison.InvariantCulture, false)]
+        [InlineData("", 'H', StringComparison.InvariantCulture, false)]
+        // InvariantCultureIgnoreCase
+        [InlineData("Hello", 'H', StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", 'Z', StringComparison.InvariantCultureIgnoreCase, false)]
+        [InlineData("Hello", 'e', StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", 'E', StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("", 'H', StringComparison.InvariantCultureIgnoreCase, false)]
+        // Ordinal
+        [InlineData("Hello", 'H', StringComparison.Ordinal, true)]
+        [InlineData("Hello", 'Z', StringComparison.Ordinal, false)]
+        [InlineData("Hello", 'e', StringComparison.Ordinal, true)]
+        [InlineData("Hello", 'E', StringComparison.Ordinal, false)]
+        [InlineData("", 'H', StringComparison.Ordinal, false)]
+        // OrdinalIgnoreCase
+        [InlineData("Hello", 'H', StringComparison.OrdinalIgnoreCase, true)]
+        [InlineData("Hello", 'Z', StringComparison.OrdinalIgnoreCase, false)]
+        [InlineData("Hello", 'e', StringComparison.OrdinalIgnoreCase, true)]
+        [InlineData("Hello", 'E', StringComparison.OrdinalIgnoreCase, true)]
+        [InlineData("", 'H', StringComparison.OrdinalIgnoreCase, false)]
+        public static void Contains(string s, char value, StringComparison comparisionType, bool expected)
+        {
+            Assert.Equal(expected, s.Contains(value, comparisionType));
+        }
+
+        [Theory]
         // CurrentCulture
         [InlineData("Hello", "ello", StringComparison.CurrentCulture, true)]
         [InlineData("Hello", "ELL", StringComparison.CurrentCulture, false)]
