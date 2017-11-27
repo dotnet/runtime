@@ -2152,9 +2152,9 @@ mono_interp_create_method_pointer (MonoMethod *method, MonoError *error)
 	wrapper = mini_get_interp_in_wrapper (sig);
 
 	gpointer jit_wrapper = mono_jit_compile_method_jit_only (wrapper, error);
-	mono_error_assert_ok (error);
+	if (!mono_error_ok (error))
+		g_error ("couldn't compile wrapper \"%s\" for \"%s\" (error: %s)\n", mono_method_get_full_name (wrapper), mono_method_get_full_name (method), mono_error_get_message (error));
 
-	//printf ("%s %s\n", mono_method_full_name (method, 1), mono_method_full_name (wrapper, 1));
 	gpointer entry_func;
 	if (sig->param_count > MAX_INTERP_ENTRY_ARGS) {
 		entry_func = interp_entry_general;
