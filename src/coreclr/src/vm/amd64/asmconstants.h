@@ -188,22 +188,6 @@ ASMCONSTANT_OFFSETOF_ASSERT(DelegateObject, _methodPtr);
 #define           OFFSETOF__DelegateObject___target         0x08
 ASMCONSTANT_OFFSETOF_ASSERT(DelegateObject, _target);
 
-#define               OFFSETOF__g_SystemInfo__dwNumberOfProcessors  0x20
-ASMCONSTANTS_C_ASSERT(OFFSETOF__g_SystemInfo__dwNumberOfProcessors
-                    == offsetof(SYSTEM_INFO, dwNumberOfProcessors));
-
-#define               OFFSETOF__g_SpinConstants__dwInitialDuration  0x0
-ASMCONSTANTS_C_ASSERT(OFFSETOF__g_SpinConstants__dwInitialDuration
-                    == offsetof(SpinConstants, dwInitialDuration));
-
-#define               OFFSETOF__g_SpinConstants__dwMaximumDuration  0x4
-ASMCONSTANTS_C_ASSERT(OFFSETOF__g_SpinConstants__dwMaximumDuration
-                    == offsetof(SpinConstants, dwMaximumDuration));
-
-#define               OFFSETOF__g_SpinConstants__dwBackoffFactor  0x8
-ASMCONSTANTS_C_ASSERT(OFFSETOF__g_SpinConstants__dwBackoffFactor
-                    == offsetof(SpinConstants, dwBackoffFactor));
-
 #define               OFFSETOF__MethodTable__m_dwFlags              0x00
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_dwFlags
                     == offsetof(MethodTable, m_dwFlags));
