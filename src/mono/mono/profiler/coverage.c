@@ -539,7 +539,7 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 		for (guint i = 0; i < coverage_profiler.filters->len; ++i) {
 			// FIXME: Is substring search sufficient?
 			char *filter = (char *)g_ptr_array_index (coverage_profiler.filters, i);
-			if (filter [0] == '+')
+			if (filter [0] == '+' || filter [0] != '-')
 				continue;
 
 			// Skip '-'
@@ -688,8 +688,6 @@ init_suppressed_assemblies (void)
 
 	/* Don't need to free content as it is referred to by the lines stored in @filters */
 	content = get_file_content (SUPPRESSION_DIR "/mono-profiler-coverage.suppression");
-	if (content == NULL)
-		content = get_file_content (SUPPRESSION_DIR "/mono-profiler-log.suppression");
 	if (content == NULL)
 		return;
 
@@ -880,6 +878,8 @@ usage (void)
 	mono_profiler_printf ("\toutput=|PROGRAM      write the data to the stdin of PROGRAM");
 	mono_profiler_printf ("\toutput=|PROGRAM      write the data to the stdin of PROGRAM");
 	// mono_profiler_printf ("\tzip                  compress the output data");
+
+	exit (0);
 }
 
 MONO_API void
@@ -917,7 +917,7 @@ mono_profiler_init_coverage (const char *desc)
 		coverage_profiler.file = fopen (coverage_config.output_filename, "w");
 
 	if (!coverage_profiler.file) {
-		mono_profiler_printf_err ("Could not create coverage profiler output file '%s'.", coverage_config.output_filename);
+		mono_profiler_printf_err ("Could not create coverage profiler output file '%s': %s", coverage_config.output_filename, g_strerror (errno));
 		exit (1);
 	}
 

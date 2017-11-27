@@ -14,9 +14,17 @@
  * MONO_PROFILER_EVENT_4(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name)
  *
  * To add new callbacks to the API, simply add a line in this file and use
- * MONO_PROFILER_RAISE to raise the event wherever. If you need more arguments
- * then the current macros provide, add another macro and update all areas
- * where the macros are used.
+ * MONO_PROFILER_RAISE to raise the event wherever.
+ *
+ * If you need more arguments then the current macros provide, add another
+ * macro and update all areas where the macros are used. Remember that this is
+ * a public header and not all users will be defining the newly added macro. So
+ * to prevent errors in existing code, you must add something like this at the
+ * beginning of this file:
+ *
+ * #ifndef MONO_PROFILER_EVENT_5
+ * #define MONO_PROFILER_EVENT_5(...) # Do nothing.
+ * #endif
  */
 
 MONO_PROFILER_EVENT_0(runtime_initialized, RuntimeInitialized)

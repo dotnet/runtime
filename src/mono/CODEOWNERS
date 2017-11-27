@@ -35,7 +35,7 @@
 /llvm @vargaz
 
 /man @marek-safar @miguel
-/man/mprof-report.1 @alexrp
+/man/*prof* @alexrp
 
 /mcs @marek-safar
 

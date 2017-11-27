@@ -158,7 +158,7 @@ mono_profiler_allocations_enabled (void)
 #undef MONO_PROFILER_EVENT_4
 #undef _MONO_PROFILER_EVENT
 
-// These are the macros the rest of the runtime should use.
+/* These are the macros the rest of the runtime should use. */
 
 #define MONO_PROFILER_ENABLED(name) \
 	G_UNLIKELY (mono_profiler_state.name ## _count)

@@ -4048,7 +4048,7 @@ flush_context (ProfContext *ctx)
 	}
 }
 
-static const char *reports = "header,jit,gc,sample,alloc,call,metadata,exception,monitor,thread,heapshot,counters,coverage";
+static const char *reports = "header,jit,gc,sample,alloc,call,metadata,exception,monitor,thread,domain,context,heapshot,counters,coverage";
 
 static const char*
 match_option (const char *p, const char *opt)

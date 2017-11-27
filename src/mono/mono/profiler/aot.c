@@ -3,12 +3,6 @@
  *
  *
  * Copyright 2008-2009 Novell, Inc (http://www.novell.com)
- *
- * This profiler collects profiling information usable by the Mono AOT compiler
- * to generate better code. It saves the information into files under ~/.mono. 
- * The AOT compiler can load these files during compilation.
- * Currently, only the order in which methods were compiled is saved, 
- * allowing more efficient function ordering in the AOT files.
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
@@ -22,16 +16,12 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/class-internals.h>
+#include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <glib.h>
-#include <sys/stat.h>
-
-#ifdef HOST_WIN32
-#include <direct.h>
-#endif
 
 struct _MonoProfiler {
 	GHashTable *classes;
@@ -40,75 +30,130 @@ struct _MonoProfiler {
 	FILE *outfile;
 	int id;
 	char *outfile_name;
+	mono_mutex_t mutex;
+	gboolean verbose;
 };
 
-static mono_mutex_t mutex;
-static gboolean verbose;
+static MonoProfiler aot_profiler;
 
 static void
-prof_jit_leave (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
+prof_jit_done (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
 {
 	MonoImage *image = mono_class_get_image (mono_method_get_class (method));
 
 	if (!image->assembly || method->wrapper_type)
 		return;
 
-	mono_os_mutex_lock (&mutex);
+	mono_os_mutex_lock (&prof->mutex);
 	g_ptr_array_add (prof->methods, method);
-	mono_os_mutex_unlock (&mutex);
+	mono_os_mutex_unlock (&prof->mutex);
 }
 
 static void
 prof_shutdown (MonoProfiler *prof);
 
 static void
-usage (int do_exit)
+usage (void)
 {
-	printf ("AOT profiler.\n");
-	printf ("Usage: mono --profile=aot[:OPTION1[,OPTION2...]] program.exe\n");
-	printf ("Options:\n");
-	printf ("\thelp                 show this usage info\n");
-	printf ("\toutput=FILENAME      write the data to file FILENAME (required)\n");
-	printf ("\tverbose              print diagnostic info\n");
-	if (do_exit)
-		exit (1);
+	mono_profiler_printf ("AOT profiler.\n");
+	mono_profiler_printf ("Usage: mono --profile=aot[:OPTION1[,OPTION2...]] program.exe\n");
+	mono_profiler_printf ("Options:\n");
+	mono_profiler_printf ("\thelp                 show this usage info\n");
+	mono_profiler_printf ("\toutput=FILENAME      write the data to file FILENAME\n");
+	mono_profiler_printf ("\tverbose              print diagnostic info\n");
+
+	exit (0);
 }
 
-static const char*
-match_option (const char* p, const char *opt, char **rval)
+static gboolean
+match_option (const char *arg, const char *opt_name, const char **rval)
 {
-	int len = strlen (opt);
-	if (strncmp (p, opt, len) == 0) {
-		if (rval) {
-			if (p [len] == '=' && p [len + 1]) {
-				const char *opt = p + len + 1;
-				const char *end = strchr (opt, ',');
-				char *val;
-				int l;
-				if (end == NULL) {
-					l = strlen (opt);
-				} else {
-					l = end - opt;
+	if (rval) {
+		const char *end = strchr (arg, '=');
+
+		*rval = NULL;
+		if (!end)
+			return !strcmp (arg, opt_name);
+
+		if (strncmp (arg, opt_name, strlen (opt_name)) || (end - arg) > strlen (opt_name) + 1)
+			return FALSE;
+		*rval = end + 1;
+		return TRUE;
+	} else {
+		//FIXME how should we handle passing a value to an arg that doesn't expect it?
+		return !strcmp (arg, opt_name);
+	}
+}
+
+static void
+parse_arg (const char *arg)
+{
+	const char *val;
+
+	if (match_option (arg, "help", NULL)) {
+		usage ();
+	} else if (match_option (arg, "output", &val)) {
+		aot_profiler.outfile_name = g_strdup (val);
+	} else if (match_option (arg, "verbose", NULL)) {
+		aot_profiler.verbose = TRUE;
+	} else {
+		mono_profiler_printf_err ("Could not parse argument: %s", arg);
+	}
+}
+
+static void
+parse_args (const char *desc)
+{
+	const char *p;
+	gboolean in_quotes = FALSE;
+	char quote_char = '\0';
+	char *buffer = malloc (strlen (desc));
+	int buffer_pos = 0;
+
+	for (p = desc; *p; p++){
+		switch (*p){
+		case ',':
+			if (!in_quotes) {
+				if (buffer_pos != 0){
+					buffer [buffer_pos] = 0;
+					parse_arg (buffer);
+					buffer_pos = 0;
 				}
-				val = (char *) g_malloc (l + 1);
-				memcpy (val, opt, l);
-				val [l] = 0;
-				*rval = val;
-				return opt + l;
+			} else {
+				buffer [buffer_pos++] = *p;
 			}
-			if (p [len] == 0 || p [len] == ',') {
-				*rval = NULL;
-				return p + len + (p [len] == ',');
+			break;
+
+		case '\\':
+			if (p [1]) {
+				buffer [buffer_pos++] = p[1];
+				p++;
 			}
-			usage (1);
-		} else {
-			if (p [len] == 0)
-				return p + len;
-			if (p [len] == ',')
-				return p + len + 1;
+			break;
+		case '\'':
+		case '"':
+			if (in_quotes) {
+				if (quote_char == *p)
+					in_quotes = FALSE;
+				else
+					buffer [buffer_pos++] = *p;
+			} else {
+				in_quotes = TRUE;
+				quote_char = *p;
+			}
+			break;
+		default:
+			buffer [buffer_pos++] = *p;
+			break;
 		}
 	}
-	return p;
+
+	if (buffer_pos != 0) {
+		buffer [buffer_pos] = 0;
+		parse_arg (buffer);
+	}
+
+	g_free (buffer);
 }
 
 void
@@ -121,68 +166,50 @@ mono_profiler_init_aot (const char *desc);
 void
 mono_profiler_init_aot (const char *desc)
 {
-	MonoProfiler *prof;
-	const char *p;
-	const char *opt;
-	char *outfile_name = NULL;
+	parse_args (desc [strlen ("aot")] == ':' ? desc + strlen ("aot") + 1 : "");
 
-	p = desc;
-	if (strncmp (p, "aot", 3))
-		usage (1);
-	p += 3;
-	if (*p == ':')
-		p++;
-	for (; *p; p = opt) {
-		char *val;
-		if (*p == ',') {
-			opt = p + 1;
-			continue;
-		}
-		if ((opt = match_option (p, "help", NULL)) != p) {
-			usage (0);
-			continue;
-		}
-		if ((opt = match_option (p, "verbose", NULL)) != p) {
-			verbose = TRUE;
-			continue;
-		}
-		if ((opt = match_option (p, "output", &val)) != p) {
-			outfile_name = val;
-			continue;
-		}
-		fprintf (stderr, "mono-profiler-aot: Unknown option: '%s'.\n", p);
+	if (!aot_profiler.outfile_name)
+		aot_profiler.outfile_name = g_strdup ("output.aotprofile");
+	else if (*aot_profiler.outfile_name == '+')
+		aot_profiler.outfile_name = g_strdup_printf ("%s.%d", aot_profiler.outfile_name + 1, getpid ());
+
+	if (*aot_profiler.outfile_name == '|')
+		aot_profiler.outfile = popen (aot_profiler.outfile_name + 1, "w");
+	else if (*aot_profiler.outfile_name == '#')
+		aot_profiler.outfile = fdopen (strtol (aot_profiler.outfile_name + 1, NULL, 10), "a");
+	else
+		aot_profiler.outfile = fopen (aot_profiler.outfile_name, "w");
+
+	if (!aot_profiler.outfile) {
+		mono_profiler_printf_err ("Could not create AOT profiler output file '%s': %s", aot_profiler.outfile_name, g_strerror (errno));
 		exit (1);
 	}
 
-	if (!outfile_name) {
-		fprintf (stderr, "mono-profiler-aot: The 'output' argument is required.\n");
-		exit (1);
-	}
+	aot_profiler.images = g_hash_table_new (NULL, NULL);
+	aot_profiler.classes = g_hash_table_new (NULL, NULL);
+	aot_profiler.methods = g_ptr_array_new ();
 
-	prof = g_new0 (MonoProfiler, 1);
-	prof->images = g_hash_table_new (NULL, NULL);
-	prof->classes = g_hash_table_new (NULL, NULL);
-	prof->methods = g_ptr_array_new ();
-	prof->outfile_name = outfile_name;
+	mono_os_mutex_init (&aot_profiler.mutex);
 
-	mono_os_mutex_init (&mutex);
-
-	MonoProfilerHandle handle = mono_profiler_create (prof);
+	MonoProfilerHandle handle = mono_profiler_create (&aot_profiler);
 	mono_profiler_set_runtime_shutdown_end_callback (handle, prof_shutdown);
-	mono_profiler_set_jit_done_callback (handle, prof_jit_leave);
+	mono_profiler_set_jit_done_callback (handle, prof_jit_done);
 }
 
 static void
 emit_byte (MonoProfiler *prof, guint8 value)
 {
-	fwrite (&value, 1, 1, prof->outfile);
+	fwrite (&value, sizeof (guint8), 1, prof->outfile);
 }
 
 static void
-emit_int32 (MonoProfiler *prof, int value)
+emit_int32 (MonoProfiler *prof, gint32 value)
 {
-	// FIXME: Endianness
-	fwrite (&value, 4, 1, prof->outfile);
+	for (int i = 0; i < sizeof (gint32); ++i) {
+		guint8 b = value;
+		fwrite (&b, sizeof (guint8), 1, prof->outfile);
+		value >>= 8;
+	}
 }
 
 static void
@@ -350,35 +377,21 @@ add_method (MonoProfiler *prof, MonoMethod *m)
 	s = mono_signature_full_name (sig);
 	emit_string (prof, s);
 	g_free (s);
-	if (verbose)
-		printf ("%s %d\n", mono_method_full_name (m, 1), id);
+
+	if (prof->verbose)
+		mono_profiler_printf ("%s %d\n", mono_method_full_name (m, 1), id);
 }
 
 /* called at the end of the program */
 static void
 prof_shutdown (MonoProfiler *prof)
 {
-	FILE *outfile;
 	int mindex;
 	char magic [32];
 
-	printf ("Creating output file: %s\n", prof->outfile_name);
-
-	if (prof->outfile_name [0] == '#') {
-		int fd = strtol (prof->outfile_name + 1, NULL, 10);
-		outfile = fdopen (fd, "a");
-	} else {
-		outfile = fopen (prof->outfile_name, "w+");
-	}
-	if (!outfile) {
-		fprintf (stderr, "Unable to create output file '%s': %s.\n", prof->outfile_name, strerror (errno));
-		return;
-	}
-	prof->outfile = outfile;
-
 	gint32 version = (AOT_PROFILER_MAJOR_VERSION << 16) | AOT_PROFILER_MINOR_VERSION;
 	sprintf (magic, AOT_PROFILER_MAGIC);
-	fwrite (magic, strlen (magic), 1, outfile);
+	fwrite (magic, strlen (magic), 1, prof->outfile);
 	emit_int32 (prof, version);
 
 	GHashTable *all_methods = g_hash_table_new (NULL, NULL);
@@ -396,7 +409,7 @@ prof_shutdown (MonoProfiler *prof)
 	}
 	emit_record (prof, AOTPROF_RECORD_NONE, 0);
 
-	fclose (outfile);
+	fclose (prof->outfile);
 
 	g_hash_table_destroy (all_methods);
 	g_hash_table_destroy (prof->classes);
