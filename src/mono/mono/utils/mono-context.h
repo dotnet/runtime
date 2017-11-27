@@ -36,6 +36,9 @@ typedef struct _libc_xmmreg MonoContextSimdReg;
 typedef __m128d MonoContextSimdReg;
 #elif defined(HOST_ANDROID)
 typedef struct _libc_xmmreg MonoContextSimdReg;
+#elif defined(__linux__)
+#include <emmintrin.h>
+typedef __m128d MonoContextSimdReg;
 #endif
 #elif defined(TARGET_ARM64)
 typedef __uint128_t MonoContextSimdReg;
