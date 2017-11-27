@@ -107,6 +107,11 @@
       <ElementName>PgoDataPackageVersion</ElementName>
       <PackageId>optimization.PGO.CoreCLR</PackageId>
     </XmlUpdateStep>
+    <UpdateStep Include="ILAsm">
+      <UpdaterType>File</UpdaterType>
+      <Path>$(MSBuildThisFileDirectory)ILAsmVersion.txt</Path>
+      <PackageId>Microsoft.NETCore.ILAsm</PackageId>
+    </UpdateStep>
   </ItemGroup>
 
   <!-- Set up dependencies on packages that aren't found in a BuildInfo. -->
