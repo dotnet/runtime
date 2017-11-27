@@ -9,8 +9,26 @@
 
   <Import Project="$(PackagesDir)/$(FeedTasksPackage.ToLower())/$(FeedTasksPackageVersion)/build/$(FeedTasksPackage).targets" />
 
-  <Target Name="Build"
-          DependsOnTargets="PublishToAzure;PublishDebFilesToDebianRepo;PublishDebToolPackageToFeed;PublishFinalOutput" />
+  <PropertyGroup>
+    <!-- Always push the build assets to azure for final publish -->
+    <BuildDependsOn>
+      PublishToAzure;
+    </BuildDependsOn>
+
+    <!--
+      If we are not setting a publish type (i.e. nopublishtype) then do
+      the old style publishing otherwise ignore these steps because we are
+      running an orchestrated publish.
+    -->
+    <BuildDependsOn Condition="$(PublishType.Contains('nopublishtype'))">
+      $(BuildDependsOn);
+      PublishDebFilesToDebianRepo;
+      PublishDebToolPackageToFeed;
+      PublishFinalOutput;
+    </BuildDependsOn>
+  </PropertyGroup>
+
+  <Target Name="Build" DependsOnTargets="@(BuildDependsOn)" />
 
   <Target Name="PublishFinalOutput"
           Condition="'$(Finalize)' == 'true'"
