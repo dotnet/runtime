@@ -363,7 +363,7 @@ int32_t SystemNative_GetReadDirRBufferSize(void);
  *
  * Returns 0 when data is retrieved; returns -1 when end-of-stream is reached; returns an error code on failure
  */
-int32_t SystemNative_ReadDirR(DIR* dir, void* buffer, int32_t bufferSize, struct DirectoryEntry* outputEntry);
+int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, struct DirectoryEntry* outputEntry);
 
 /**
  * Returns a DIR struct containing info about the current path or NULL on failure; sets errno on fail.

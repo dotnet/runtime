@@ -324,12 +324,18 @@ static void ConvertDirent(const struct dirent* entry, struct DirectoryEntry* out
 #endif
 }
 
+#if HAVE_READDIR_R
+// struct dirent typically contains 64-bit numbers (e.g. d_ino), so we align it at 8-byte.
+static const size_t dirent_alignment = 8;
+#endif
+
 int32_t SystemNative_GetReadDirRBufferSize(void)
 {
 #if HAVE_READDIR_R
     // dirent should be under 2k in size
     assert(sizeof(struct dirent) < 2048);
-    return sizeof(struct dirent);
+    // add some extra space so we can align the buffer to dirent.
+    return sizeof(struct dirent) + dirent_alignment - 1;
 #else
     return 0;
 #endif
@@ -340,7 +346,7 @@ int32_t SystemNative_GetReadDirRBufferSize(void)
 // If the platform supports readdir_r, the caller provides a buffer into which the data is read.
 // If the platform uses readdir, the caller must ensure no calls are made to readdir/closedir since those will invalidate
 // the current dirent. We assume the platform supports concurrent readdir calls to different DIRs.
-int32_t SystemNative_ReadDirR(DIR* dir, void* buffer, int32_t bufferSize, struct DirectoryEntry* outputEntry)
+int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, struct DirectoryEntry* outputEntry)
 {
     assert(dir != NULL);
     assert(outputEntry != NULL);
@@ -348,14 +354,17 @@ int32_t SystemNative_ReadDirR(DIR* dir, void* buffer, int32_t bufferSize, struct
 #if HAVE_READDIR_R
     assert(buffer != NULL);
 
-    if (bufferSize < (int32_t)sizeof(struct dirent))
+    // align to dirent
+    struct dirent* entry = (struct dirent*)((size_t)(buffer + dirent_alignment - 1) & ~(dirent_alignment - 1));
+
+    // check there is dirent size available at entry
+    if ((buffer + bufferSize) < ((uint8_t*)entry + sizeof(struct dirent)))
     {
         assert(false && "Buffer size too small; use GetReadDirRBufferSize to get required buffer size");
         return ERANGE;
     }
 
     struct dirent* result = NULL;
-    struct dirent* entry = (struct dirent*)buffer;
     int error = readdir_r(dir, entry, &result);
 
     // positive error number returned -> failure
