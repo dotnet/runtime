@@ -49,7 +49,6 @@
 ////////////////////////////////////////////////////////////////////////////
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System.Globalization
@@ -589,7 +588,7 @@ namespace System.Globalization
             return false;
         }
 
-        internal static TimeSpan ParseExact(ReadOnlySpan<char> input, string format, IFormatProvider formatProvider, TimeSpanStyles styles)
+        internal static TimeSpan ParseExact(ReadOnlySpan<char> input, ReadOnlySpan<char> format, IFormatProvider formatProvider, TimeSpanStyles styles)
         {
             var parseResult = new TimeSpanResult(throwOnFailure: true);
             bool success = TryParseExactTimeSpan(input, format, formatProvider, styles, ref parseResult);
@@ -597,7 +596,7 @@ namespace System.Globalization
             return parseResult.parsedTimeSpan;
         }
 
-        internal static bool TryParseExact(ReadOnlySpan<char> input, string format, IFormatProvider formatProvider, TimeSpanStyles styles, out TimeSpan result)
+        internal static bool TryParseExact(ReadOnlySpan<char> input, ReadOnlySpan<char> format, IFormatProvider formatProvider, TimeSpanStyles styles, out TimeSpan result)
         {
             var parseResult = new TimeSpanResult(throwOnFailure: false);
 
@@ -1171,13 +1170,8 @@ namespace System.Globalization
         }
 
         /// <summary>Common private ParseExact method called by both ParseExact and TryParseExact.</summary>
-        private static bool TryParseExactTimeSpan(ReadOnlySpan<char> input, string format, IFormatProvider formatProvider, TimeSpanStyles styles, ref TimeSpanResult result)
+        private static bool TryParseExactTimeSpan(ReadOnlySpan<char> input, ReadOnlySpan<char> format, IFormatProvider formatProvider, TimeSpanStyles styles, ref TimeSpanResult result)
         {
-            if (format == null)
-            {
-                return result.SetFailure(ParseFailureKind.ArgumentNull, nameof(SR.ArgumentNull_String), argumentName: nameof(format));
-            }
-
             if (format.Length == 0)
             {
                 return result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadFormatSpecifier));
@@ -1207,10 +1201,8 @@ namespace System.Globalization
         }
 
         /// <summary>Parse the TimeSpan instance using the specified format.  Used by TryParseExactTimeSpan.</summary>
-        private static bool TryParseByFormat(ReadOnlySpan<char> input, string format, TimeSpanStyles styles, ref TimeSpanResult result)
+        private static bool TryParseByFormat(ReadOnlySpan<char> input, ReadOnlySpan<char> format, TimeSpanStyles styles, ref TimeSpanResult result)
         {
-            Debug.Assert(format != null, "format != null");
-
             bool seenDD = false;      // already processed days?
             bool seenHH = false;      // already processed hours?
             bool seenMM = false;      // already processed minutes?
@@ -1293,7 +1285,7 @@ namespace System.Globalization
                     case '\'':
                     case '\"':
                         StringBuilder enquotedString = StringBuilderCache.Acquire();
-                        if (!DateTimeParse.TryParseQuoteString(format.AsReadOnlySpan(), i, enquotedString, out tokenLen))
+                        if (!DateTimeParse.TryParseQuoteString(format, i, enquotedString, out tokenLen))
                         {
                             StringBuilderCache.Release(enquotedString);
                             return result.SetFailure(ParseFailureKind.FormatWithParameter, nameof(SR.Format_BadQuote), ch);

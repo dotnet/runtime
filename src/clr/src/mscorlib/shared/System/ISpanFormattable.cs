@@ -6,6 +6,6 @@ namespace System
 {
     internal interface ISpanFormattable
     {
-        bool TryFormat(Span<char> destination, out int charsWritten, string format = null, IFormatProvider provider = null);
+        bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider provider);
     }
 }
