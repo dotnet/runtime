@@ -97,14 +97,18 @@ namespace System.Tests
         {
             foreach (NumberFormatInfo defaultFormat in new[] { null, NumberFormatInfo.CurrentInfo })
             {
-                yield return new object[] { int.MinValue, "G", defaultFormat, "-2147483648" };
-                yield return new object[] { -4567, "G", defaultFormat, "-4567" };
-                yield return new object[] { 0, "G", defaultFormat, "0" };
-                yield return new object[] { 4567, "G", defaultFormat, "4567" };
-                yield return new object[] { int.MaxValue, "G", defaultFormat, "2147483647" };
+                foreach (string defaultSpecifier in new[] { "G", "G\0", "\0N222", "\0", "" })
+                {
+                    yield return new object[] { int.MinValue, defaultSpecifier, defaultFormat, "-2147483648" };
+                    yield return new object[] { -4567, defaultSpecifier, defaultFormat, "-4567" };
+                    yield return new object[] { 0, defaultSpecifier, defaultFormat, "0" };
+                    yield return new object[] { 4567, defaultSpecifier, defaultFormat, "4567" };
+                    yield return new object[] { int.MaxValue, defaultSpecifier, defaultFormat, "2147483647" };
+                }
 
                 yield return new object[] { 4567, "D", defaultFormat, "4567" };
                 yield return new object[] { 4567, "D99", defaultFormat, "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004567" };
+                yield return new object[] { 4567, "D99\09", defaultFormat, "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004567" };
 
                 yield return new object[] { 0x2468, "x", defaultFormat, "2468" };
                 yield return new object[] { 2468, "N", defaultFormat, string.Format("{0:N}", 2468.00) };
