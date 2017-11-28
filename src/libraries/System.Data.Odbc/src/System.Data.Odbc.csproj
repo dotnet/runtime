@@ -113,7 +113,7 @@
       <Link>Common\Interop\Interop.Odbc.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true' OR '$(TargetsFreeBSD)' == 'true'">
     <Compile Include="$(CommonPath)\Interop\Linux\Interop.Libraries.cs">
       <Link>Common\Interop\Linux\Interop.Libraries.cs</Link>
     </Compile>
