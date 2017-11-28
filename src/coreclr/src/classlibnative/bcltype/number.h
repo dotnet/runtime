@@ -31,10 +31,9 @@ struct NUMBER {
 class COMNumber
 {
 public:
-    static FCDECL3_VII(Object*, FormatDouble,  double  value, StringObject* formatUNSAFE, NumberFormatInfo* numfmtUNSAFE);
-    static FCDECL3_VII(Object*, FormatSingle,  float   value, StringObject* formatUNSAFE, NumberFormatInfo* numfmtUNSAFE);
+    static FCDECL3(void, DoubleToNumberFC, double value, int precision, BYTE* number);
+    static FCDECL2(void, NumberToDoubleFC, BYTE* number, double* value);
     static FCDECL2(FC_BOOL_RET, NumberBufferToDecimal, BYTE* number, DECIMAL* value);
-    static FCDECL2(FC_BOOL_RET, NumberBufferToDouble, BYTE* number, double* value);
     
     static wchar_t* Int32ToDecChars(__in wchar_t* p, unsigned int value, int digits);
 };
