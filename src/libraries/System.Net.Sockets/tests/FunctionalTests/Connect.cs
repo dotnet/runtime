@@ -20,7 +20,7 @@ namespace System.Net.Sockets.Tests
                 using (Socket client = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
                 {
                     Task connectTask = ConnectAsync(client, new IPEndPoint(listenAt, port));
-                    await TestSettings.WhenAllOrAnyFailedWithTimeout(connectTask);
+                    await connectTask;
                     Assert.True(client.Connected);
                 }
             }
@@ -39,7 +39,7 @@ namespace System.Net.Sockets.Tests
             using (Socket client = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
             {
                 Task connectTask = MultiConnectAsync(client, new IPAddress[] { IPAddress.Loopback, IPAddress.IPv6Loopback }, port);
-                await TestSettings.WhenAllOrAnyFailedWithTimeout(connectTask);
+                await connectTask;
                 Assert.True(client.Connected);
             }
         }
