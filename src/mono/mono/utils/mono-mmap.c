@@ -390,6 +390,8 @@ mono_valloc_aligned (size_t size, size_t alignment, int flags, MonoMemAccountTyp
 	void *res = NULL;
 	if (posix_memalign (&res, alignment, size))
 		return NULL;
+
+	memset (res, 0, size);
 	return res;
 }
 

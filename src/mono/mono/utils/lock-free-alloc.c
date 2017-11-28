@@ -415,6 +415,8 @@ alloc_from_new_sb (MonoLockFreeAllocator *heap)
 	for (i = 1; i < count - 1; ++i)
 		*(unsigned int*)((char*)desc->sb + i * slot_size) = i + 1;
 
+	*(unsigned int*)((char*)desc->sb + (count - 1) * slot_size) = 0;
+
 	mono_memory_write_barrier ();
 
 	/* Make it active or free it again. */

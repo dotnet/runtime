@@ -125,7 +125,7 @@ extern void ves_icall_System_Threading_Monitor_Monitor_pulse(MonoObject *obj);
 extern void ves_icall_System_Threading_Monitor_Monitor_pulse_all(MonoObject *obj);
 extern MonoBoolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj, guint32 ms);
 extern void ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject *obj, guint32 ms, MonoBoolean *lockTaken);
-
+extern void ves_icall_System_Threading_Monitor_Monitor_Enter (MonoObject *obj);
 G_END_DECLS
 
 #endif /* _MONO_METADATA_MONITOR_H_ */

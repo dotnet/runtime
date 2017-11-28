@@ -275,7 +275,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoStringHand
 	gpointer token = (gpointer)-2;
 
 	error_init (error);
-#ifdef HAVE_PWD_H
+#if defined (HAVE_PWD_H) && !defined (HOST_WASM)
 
 #ifdef HAVE_GETPWNAM_R
 	struct passwd pwd;
