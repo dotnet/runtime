@@ -1895,6 +1895,10 @@ get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constra
 	g_assert (vtable_slot >= 0);
 
 	MonoMethod *res = mono_class_get_vtable_entry (constrained_class, vtable_slot);
+	if (res == NULL && mono_class_is_abstract (constrained_class) ) {
+		/* Constraining class is abstract, there may not be a refined method. */
+		return method;
+	}
 	g_assert (res != NULL);
 	if (inflated_generic_method) {
 		g_assert (res->is_generic);
