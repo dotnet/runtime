@@ -87,11 +87,6 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public async Task MulticastInterface_Set_AnyInterface_Succeeds()
         {
-            if (PlatformDetection.IsFedora)
-            {
-                return; // [ActiveIssue(24008)]
-            }
-
             // On all platforms, index 0 means "any interface"
             await MulticastInterface_Set_Helper(0);
         }
