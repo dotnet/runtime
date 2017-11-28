@@ -2009,223 +2009,19 @@ ParseSection:
 #pragma warning(pop)
 #endif
 
-FCIMPL3_VII(Object*, COMNumber::FormatDouble, double value, StringObject* formatUNSAFE, NumberFormatInfo* numfmtUNSAFE)
+FCIMPL3(void, COMNumber::DoubleToNumberFC, double value, int precision, BYTE* number)
 {
     FCALL_CONTRACT;
 
-    NUMBER number;
-    int digits;
-    double dTest;
-
-    struct _gc
-    {
-        STRINGREF   format;
-        NUMFMTREF   numfmt;
-        STRINGREF   refRetVal;
-    } gc;
-
-    gc.format = (STRINGREF) formatUNSAFE;
-    gc.numfmt = (NUMFMTREF) numfmtUNSAFE;
-    gc.refRetVal = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-
-    if (gc.numfmt == 0) COMPlusThrowArgumentNull(W("NumberFormatInfo"));
-    wchar fmt = ParseFormatSpecifier(gc.format, &digits);
-    wchar val = (fmt & 0xFFDF);
-    int precision = DOUBLE_PRECISION;
-    switch (val) {
-    case 'R':
-        //In order to give numbers that are both friendly to display and round-trippable,
-        //we parse the number using 15 digits and then determine if it round trips to the same
-        //value.  If it does, we convert that NUMBER to a string, otherwise we reparse using 17 digits
-        //and display that.
-
-        DoubleToNumber(value, DOUBLE_PRECISION, &number);
-
-        if (number.scale == (int) SCALE_NAN) {
-            gc.refRetVal = gc.numfmt->sNaN;
-            goto lExit;
-        }
-
-        if (number.scale == SCALE_INF) {
-            gc.refRetVal = (number.sign? gc.numfmt->sNegativeInfinity: gc.numfmt->sPositiveInfinity);
-            goto lExit;
-        }
-
-        NumberToDouble(&number, &dTest);
-
-        if (dTest == value) {
-            gc.refRetVal = NumberToString(&number, 'G', DOUBLE_PRECISION, gc.numfmt);
-            goto lExit;
-        }
-
-        DoubleToNumber(value, 17, &number);
-        gc.refRetVal = NumberToString(&number, 'G', 17, gc.numfmt);
-        goto lExit;
-        break;
-
-    case 'E':
-        // Here we round values less than E14 to 15 digits
-        if (digits > 14) {
-            precision = 17;
-        }
-        break;
-
-    case 'G':
-        // Here we round values less than G15 to 15 digits, G16 and G17 will not be touched
-        if (digits > 15) {
-            precision = 17;
-        }
-        break;
-
-    }
-
-    DoubleToNumber(value, precision, &number);
-
-    if (number.scale == (int) SCALE_NAN) {
-        gc.refRetVal = gc.numfmt->sNaN;
-        goto lExit;
-    }
-
-    if (number.scale == SCALE_INF) {
-        gc.refRetVal = (number.sign? gc.numfmt->sNegativeInfinity: gc.numfmt->sPositiveInfinity);
-        goto lExit;
-    }
-
-    if (fmt != 0) {
-        gc.refRetVal = NumberToString( &number, fmt, digits, gc.numfmt);
-    }
-    else {
-        gc.refRetVal = NumberToStringFormat( &number, gc.format, gc.numfmt);
-    }
-
-lExit: ;
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(gc.refRetVal);
+    DoubleToNumber(value, precision, (NUMBER*)number);
 }
 FCIMPLEND
 
-//
-//This function and the function pointer which we use to access are 
-//to prevent VC7 from optimizing away our cast from double to float.
-//We need this narrowing operation to verify whether or not we successfully round-tripped
-//the single value.  
-
-//
-// We need this method to have volatile arguments.
-//
-static void CvtToFloat(double val, RAW_KEYWORD(volatile) float* fltPtr)
-{
-    LIMITED_METHOD_CONTRACT;
-    STATIC_CONTRACT_SO_TOLERANT;	
-
-    *fltPtr = (float)val;
-}
-
-void (*CvtToFloatPtr)(double val, RAW_KEYWORD(volatile) float* fltPtr) = CvtToFloat;
-
-
-FCIMPL3_VII(Object*, COMNumber::FormatSingle, float value, StringObject* formatUNSAFE, NumberFormatInfo* numfmtUNSAFE)
+FCIMPL2(void, COMNumber::NumberToDoubleFC, BYTE* number, double* result)
 {
     FCALL_CONTRACT;
 
-    NUMBER number;
-    int digits;
-    double dTest;
-    double argsValue = value;
-
-    struct _gc
-    {
-        STRINGREF   format;
-        NUMFMTREF   numfmt;
-        STRINGREF   refRetVal;
-    } gc;
-
-    gc.format = (STRINGREF) formatUNSAFE;
-    gc.numfmt = (NUMFMTREF) numfmtUNSAFE;
-    gc.refRetVal = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-
-    if (gc.numfmt == 0) COMPlusThrowArgumentNull(W("NumberFormatInfo"));
-    wchar fmt = ParseFormatSpecifier(gc.format, &digits);
-    wchar val = fmt & 0xFFDF;
-    int precision = FLOAT_PRECISION;
-    switch (val) {
-    case 'R':
-        {
-            //In order to give numbers that are both friendly to display and round-trippable,
-            //we parse the number using 7 digits and then determine if it round trips to the same
-            //value.  If it does, we convert that NUMBER to a string, otherwise we reparse using 9 digits
-            //and display that.
-
-            DoubleToNumber(argsValue, FLOAT_PRECISION, &number);
-            if (number.scale == (int) SCALE_NAN) {
-                gc.refRetVal = gc.numfmt->sNaN;
-                goto lExit;
-            }
-            if (number.scale == SCALE_INF) {
-                gc.refRetVal = (number.sign? gc.numfmt->sNegativeInfinity: gc.numfmt->sPositiveInfinity);
-                goto lExit;
-            }
-
-            NumberToDouble(&number, &dTest);
-
-            Volatile<float> fTest;
-
-            (*CvtToFloatPtr)(dTest, &fTest);
-
-            if (fTest == value) {
-                gc.refRetVal = NumberToString(&number, 'G', FLOAT_PRECISION, gc.numfmt);
-                goto lExit;
-            }
-
-            DoubleToNumber(argsValue, 9, &number);
-            gc.refRetVal = NumberToString(&number, 'G', 9, gc.numfmt);
-            goto lExit;
-        }
-        break;
-    case 'E':
-        // Here we round values less than E14 to 15 digits
-        if (digits > 6) {
-            precision = 9;
-        }
-        break;
-
-
-    case 'G':
-        // Here we round values less than G15 to 15 digits, G16 and G17 will not be touched
-        if (digits > 7) {
-            precision = 9;
-        }
-        break;
-    }
-
-    DoubleToNumber(value, precision, &number);
-
-    if (number.scale == (int) SCALE_NAN) {
-        gc.refRetVal = gc.numfmt->sNaN;
-        goto lExit;
-    }
-
-    if (number.scale == SCALE_INF) {
-        gc.refRetVal = (number.sign? gc.numfmt->sNegativeInfinity: gc.numfmt->sPositiveInfinity);
-        goto lExit;
-    }
-
-    if (fmt != 0) {
-        gc.refRetVal = NumberToString( &number, fmt, digits, gc.numfmt);
-    }
-    else {
-        gc.refRetVal = NumberToStringFormat( &number, gc.format, gc.numfmt);
-    }
-
-lExit: ;
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(gc.refRetVal);
+    NumberToDouble((NUMBER*)number, result);
 }
 FCIMPLEND
 
@@ -2234,25 +2030,5 @@ FCIMPL2(FC_BOOL_RET, COMNumber::NumberBufferToDecimal, BYTE* number, DECIMAL* va
     FCALL_CONTRACT;
 
     FC_RETURN_BOOL(COMDecimal::NumberToDecimal((NUMBER *) number, value) != 0);
-}
-FCIMPLEND
-
-FCIMPL2(FC_BOOL_RET, COMNumber::NumberBufferToDouble, BYTE* number, double* value)
-{
-    FCALL_CONTRACT;
-
-    double d = 0;
-    NumberToDouble((NUMBER*) number, &d);
-    unsigned int e = ((FPDOUBLE*)&d)->exp;
-    unsigned int fmntLow = ((FPDOUBLE*)&d)->mantLo;
-    unsigned int fmntHigh = ((FPDOUBLE*)&d)->mantHi;
-    if (e == 0x7FF) {
-        FC_RETURN_BOOL(false);
-    }
-    if (e == 0 && fmntLow ==0 && fmntHigh == 0)  {
-        d = 0;
-    }
-    *value = d;
-    FC_RETURN_BOOL(true);
 }
 FCIMPLEND
