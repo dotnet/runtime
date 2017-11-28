@@ -599,10 +599,10 @@ namespace System
         // 
         public static DateTimeOffset Parse(String input)
         {
-            if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.index); // TODO: index => input
+            if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
 
             TimeSpan offset;
-            DateTime dateResult = DateTimeParse.Parse(input.AsReadOnlySpan(),
+            DateTime dateResult = DateTimeParse.Parse(input,
                                                       DateTimeFormatInfo.CurrentInfo,
                                                       DateTimeStyles.None,
                                                       out offset);
@@ -615,17 +615,17 @@ namespace System
         // 
         public static DateTimeOffset Parse(String input, IFormatProvider formatProvider)
         {
-            if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.index); // TODO: index => input
+            if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             return Parse(input, formatProvider, DateTimeStyles.None);
         }
 
         public static DateTimeOffset Parse(String input, IFormatProvider formatProvider, DateTimeStyles styles)
         {
             styles = ValidateStyles(styles, nameof(styles));
-            if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.index); // TODO: index => input
+            if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
 
             TimeSpan offset;
-            DateTime dateResult = DateTimeParse.Parse(input.AsReadOnlySpan(),
+            DateTime dateResult = DateTimeParse.Parse(input,
                                                       DateTimeFormatInfo.GetInstance(formatProvider),
                                                       styles,
                                                       out offset);
@@ -645,7 +645,8 @@ namespace System
         // 
         public static DateTimeOffset ParseExact(String input, String format, IFormatProvider formatProvider)
         {
-            if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.index); // TODO: index => input
+            if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
+            if (format == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.format);
             return ParseExact(input, format, formatProvider, DateTimeStyles.None);
         }
 
@@ -656,10 +657,11 @@ namespace System
         public static DateTimeOffset ParseExact(String input, String format, IFormatProvider formatProvider, DateTimeStyles styles)
         {
             styles = ValidateStyles(styles, nameof(styles));
-            if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.index); // TODO: index => input
+            if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
+            if (format == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.format);
 
             TimeSpan offset;
-            DateTime dateResult = DateTimeParse.ParseExact(input.AsReadOnlySpan(),
+            DateTime dateResult = DateTimeParse.ParseExact(input,
                                                            format,
                                                            DateTimeFormatInfo.GetInstance(formatProvider),
                                                            styles,
@@ -667,7 +669,14 @@ namespace System
             return new DateTimeOffset(dateResult.Ticks, offset);
         }
 
-        public static DateTimeOffset ParseExact(ReadOnlySpan<char> input, string format, IFormatProvider formatProvider, DateTimeStyles styles = DateTimeStyles.None)
+        // TODO https://github.com/dotnet/corefx/issues/25337: Remove this overload once corefx is updated to target the new signatures
+        public static DateTimeOffset ParseExact(ReadOnlySpan<char> input, string format, IFormatProvider formatProvider, DateTimeStyles styles)
+        {
+            if (format == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.format);
+            return ParseExact(input, (ReadOnlySpan<char>)format, formatProvider, styles);
+        }
+
+        public static DateTimeOffset ParseExact(ReadOnlySpan<char> input, ReadOnlySpan<char> format, IFormatProvider formatProvider, DateTimeStyles styles = DateTimeStyles.None)
         {
             styles = ValidateStyles(styles, nameof(styles));
             DateTime dateResult = DateTimeParse.ParseExact(input, format, DateTimeFormatInfo.GetInstance(formatProvider), styles, out TimeSpan offset);
@@ -677,10 +686,10 @@ namespace System
         public static DateTimeOffset ParseExact(String input, String[] formats, IFormatProvider formatProvider, DateTimeStyles styles)
         {
             styles = ValidateStyles(styles, nameof(styles));
-            if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.index); // TODO: index => input
+            if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
 
             TimeSpan offset;
-            DateTime dateResult = DateTimeParse.ParseExactMultiple(input.AsReadOnlySpan(),
+            DateTime dateResult = DateTimeParse.ParseExactMultiple(input,
                                                                    formats,
                                                                    DateTimeFormatInfo.GetInstance(formatProvider),
                                                                    styles,
@@ -771,7 +780,11 @@ namespace System
             return DateTimeFormat.Format(ClockDateTime, format, DateTimeFormatInfo.GetInstance(formatProvider), Offset);
         }
 
-        public bool TryFormat(Span<char> destination, out int charsWritten, string format = null, IFormatProvider formatProvider = null) =>
+        // TODO https://github.com/dotnet/corefx/issues/25337: Remove this overload once corefx is updated to target the new signatures
+        public bool TryFormat(Span<char> destination, out int charsWritten, string format, IFormatProvider provider) =>
+            TryFormat(destination, out charsWritten, (ReadOnlySpan<char>)format, provider);
+
+        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider formatProvider = null) =>
             DateTimeFormat.TryFormat(ClockDateTime, destination, out charsWritten, format, DateTimeFormatInfo.GetInstance(formatProvider), Offset);
 
         public DateTimeOffset ToUniversalTime()
@@ -783,7 +796,7 @@ namespace System
         {
             TimeSpan offset;
             DateTime dateResult;
-            Boolean parsed = DateTimeParse.TryParse(input.AsReadOnlySpan(),
+            Boolean parsed = DateTimeParse.TryParse(input,
                                                     DateTimeFormatInfo.CurrentInfo,
                                                     DateTimeStyles.None,
                                                     out dateResult,
@@ -810,7 +823,7 @@ namespace System
 
             TimeSpan offset;
             DateTime dateResult;
-            Boolean parsed = DateTimeParse.TryParse(input.AsReadOnlySpan(),
+            Boolean parsed = DateTimeParse.TryParse(input,
                                                     DateTimeFormatInfo.GetInstance(formatProvider),
                                                     styles,
                                                     out dateResult,
@@ -831,7 +844,7 @@ namespace System
                                             out DateTimeOffset result)
         {
             styles = ValidateStyles(styles, nameof(styles));
-            if (input == null)
+            if (input == null || format == null)
             {
                 result = default(DateTimeOffset);
                 return false;
@@ -839,7 +852,7 @@ namespace System
 
             TimeSpan offset;
             DateTime dateResult;
-            Boolean parsed = DateTimeParse.TryParseExact(input.AsReadOnlySpan(),
+            Boolean parsed = DateTimeParse.TryParseExact(input,
                                                          format,
                                                          DateTimeFormatInfo.GetInstance(formatProvider),
                                                          styles,
@@ -849,8 +862,20 @@ namespace System
             return parsed;
         }
 
+        // TODO https://github.com/dotnet/corefx/issues/25337: Remove this overload once corefx is updated to target the new signatures
+        public static bool TryParseExact(ReadOnlySpan<char> input, string format, IFormatProvider formatProvider, DateTimeStyles styles, out DateTimeOffset result)
+        {
+            if (format == null)
+            {
+                result = default;
+                return false;
+            }
+
+            return TryParseExact(input, (ReadOnlySpan<char>)format, formatProvider, styles, out result);
+        }
+
         public static bool TryParseExact(
-            ReadOnlySpan<char> input, string format, IFormatProvider formatProvider, DateTimeStyles styles, out DateTimeOffset result)
+            ReadOnlySpan<char> input, ReadOnlySpan<char> format, IFormatProvider formatProvider, DateTimeStyles styles, out DateTimeOffset result)
         {
             styles = ValidateStyles(styles, nameof(styles));
             bool parsed = DateTimeParse.TryParseExact(input, format, DateTimeFormatInfo.GetInstance(formatProvider), styles, out DateTime dateResult, out TimeSpan offset);
@@ -870,7 +895,7 @@ namespace System
 
             TimeSpan offset;
             DateTime dateResult;
-            Boolean parsed = DateTimeParse.TryParseExactMultiple(input.AsReadOnlySpan(),
+            Boolean parsed = DateTimeParse.TryParseExactMultiple(input,
                                                                  formats,
                                                                  DateTimeFormatInfo.GetInstance(formatProvider),
                                                                  styles,
