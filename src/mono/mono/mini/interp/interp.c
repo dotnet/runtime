@@ -56,6 +56,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/mono-debug.h>
+#include <mono/metadata/gc-internals.h>
 #include <mono/utils/atomic.h>
 
 #include "interp.h"
@@ -481,8 +482,11 @@ stackval_from_data (MonoType *type_, stackval *result, char *data, gboolean pinv
 		if (type->data.klass->enumtype) {
 			stackval_from_data (mono_class_enum_basetype (type->data.klass), result, data, pinvoke);
 			return;
-		} else
+		} else if (pinvoke) {
+			memcpy (result->data.vt, data, mono_class_native_size (type->data.klass, NULL));
+		} else {
 			mono_value_copy (result->data.vt, data, type->data.klass);
+		}
 		return;
 	case MONO_TYPE_GENERICINST: {
 		if (mono_type_generic_inst_is_valuetype (type)) {
@@ -582,8 +586,11 @@ stackval_to_data (MonoType *type_, stackval *val, char *data, gboolean pinvoke)
 		if (type->data.klass->enumtype) {
 			stackval_to_data (mono_class_enum_basetype (type->data.klass), val, data, pinvoke);
 			return;
-		} else
+		} else if (pinvoke) {
+			memcpy (data, val->data.vt, mono_class_native_size (type->data.klass, NULL));
+		} else {
 			mono_value_copy (data, val->data.vt, type->data.klass);
+		}
 		return;
 	case MONO_TYPE_GENERICINST: {
 		MonoClass *container_class = type->data.generic_class->container_class;
