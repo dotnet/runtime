@@ -20,6 +20,7 @@
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/mono-perfcounters.h>
 #include <mono/metadata/tabledefs.h>
+#include <mono/mini/jit.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/lock-free-alloc.h>
@@ -4631,19 +4632,11 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 		log_profiler.gzfile = gzdopen (fileno (log_profiler.file), "wb");
 #endif
 
-	/*
-	 * If you hit this assert while increasing MAX_FRAMES, you need to increase
-	 * SAMPLE_BLOCK_SIZE as well.
-	 */
-	g_assert (SAMPLE_SLOT_SIZE (MAX_FRAMES) * 2 < LOCK_FREE_ALLOC_SB_USABLE_SIZE (SAMPLE_BLOCK_SIZE));
-
 	// FIXME: We should free this stuff too.
 	mono_lock_free_allocator_init_size_class (&log_profiler.sample_size_class, SAMPLE_SLOT_SIZE (log_config.num_frames), SAMPLE_BLOCK_SIZE);
 	mono_lock_free_allocator_init_allocator (&log_profiler.sample_allocator, &log_profiler.sample_size_class, MONO_MEM_ACCOUNT_PROFILER);
 
 	mono_lock_free_queue_init (&log_profiler.sample_reuse_queue);
-
-	g_assert (sizeof (WriterQueueEntry) * 2 < LOCK_FREE_ALLOC_SB_USABLE_SIZE (WRITER_ENTRY_BLOCK_SIZE));
 
 	// FIXME: We should free this stuff too.
 	mono_lock_free_allocator_init_size_class (&log_profiler.writer_entry_size_class, sizeof (WriterQueueEntry), WRITER_ENTRY_BLOCK_SIZE);
@@ -4672,6 +4665,13 @@ mono_profiler_init_log (const char *desc);
 void
 mono_profiler_init_log (const char *desc)
 {
+	/*
+	 * If you hit this assert while increasing MAX_FRAMES, you need to increase
+	 * SAMPLE_BLOCK_SIZE as well.
+	 */
+	g_assert (SAMPLE_SLOT_SIZE (MAX_FRAMES) * 2 < LOCK_FREE_ALLOC_SB_USABLE_SIZE (SAMPLE_BLOCK_SIZE));
+	g_assert (sizeof (WriterQueueEntry) * 2 < LOCK_FREE_ALLOC_SB_USABLE_SIZE (WRITER_ENTRY_BLOCK_SIZE));
+
 	GPtrArray *filters = NULL;
 
 	proflog_parse_args (&log_config, desc [3] == ':' ? desc + 4 : "");
@@ -4685,6 +4685,18 @@ mono_profiler_init_log (const char *desc)
 		}
 	}
 
+	MonoProfilerHandle handle = log_profiler.handle = mono_profiler_create (&log_profiler);
+
+	if (log_config.enter_leave)
+		mono_profiler_set_call_instrumentation_filter_callback (handle, method_filter);
+
+	/*
+	 * If the runtime was invoked for the purpose of AOT compilation only, the
+	 * only thing we want to do is install the call instrumentation filter.
+	 */
+	if (mono_jit_aot_compiling ())
+		goto done;
+
 	init_time ();
 
 	PROF_TLS_INIT ();
@@ -4692,8 +4704,6 @@ mono_profiler_init_log (const char *desc)
 	create_profiler (desc, log_config.output_filename, filters);
 
 	mono_lls_init (&log_profiler.profiler_thread_list, NULL);
-
-	MonoProfilerHandle handle = log_profiler.handle = mono_profiler_create (&log_profiler);
 
 	/*
 	 * Required callbacks. These are either necessary for the profiler itself
@@ -4769,7 +4779,6 @@ mono_profiler_init_log (const char *desc)
 		mono_profiler_set_jit_code_buffer_callback (handle, code_buffer_new);
 
 	if (log_config.enter_leave) {
-		mono_profiler_set_call_instrumentation_filter_callback (handle, method_filter);
 		mono_profiler_set_method_enter_callback (handle, method_enter);
 		mono_profiler_set_method_leave_callback (handle, method_leave);
 		mono_profiler_set_method_tail_call_callback (handle, tail_call);
@@ -4791,4 +4800,7 @@ mono_profiler_init_log (const char *desc)
 	 */
 	if (!mono_profiler_set_sample_mode (handle, log_config.sampling_mode, log_config.sample_freq))
 		mono_profiler_printf_err ("Another profiler controls sampling parameters; the log profiler will not be able to modify them.");
+
+done:
+	;
 }

@@ -16,6 +16,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/class-internals.h>
+#include <mono/mini/jit.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <string.h>
@@ -166,6 +167,11 @@ mono_profiler_init_aot (const char *desc);
 void
 mono_profiler_init_aot (const char *desc)
 {
+	if (mono_jit_aot_compiling ()) {
+		mono_profiler_printf_err ("The AOT profiler is not meant to be run during AOT compilation.");
+		exit (1);
+	}
+
 	parse_args (desc [strlen ("aot")] == ':' ? desc + strlen ("aot") + 1 : "");
 
 	if (!aot_profiler.outfile_name)

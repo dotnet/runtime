@@ -75,6 +75,8 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/metadata-internals.h>
 
+#include <mono/mini/jit.h>
+
 #include <mono/utils/atomic.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/lock-free-queue.h>
@@ -723,7 +725,7 @@ unref_coverage_assemblies (gpointer key, gpointer value, gpointer userdata)
 }
 
 static void
-log_shutdown (MonoProfiler *prof)
+cov_shutdown (MonoProfiler *prof)
 {
 	g_assert (prof == &coverage_profiler);
 
@@ -888,6 +890,11 @@ mono_profiler_init_coverage (const char *desc);
 void
 mono_profiler_init_coverage (const char *desc)
 {
+	if (mono_jit_aot_compiling ()) {
+		mono_profiler_printf_err ("The coverage profiler does not currently support instrumenting AOT code.");
+		exit (1);
+	}
+
 	GPtrArray *filters = NULL;
 
 	parse_args (desc [strlen("coverage")] == ':' ? desc + strlen ("coverage") + 1 : "");
@@ -934,13 +941,7 @@ mono_profiler_init_coverage (const char *desc)
 
 	MonoProfilerHandle handle = coverage_profiler.handle = mono_profiler_create (&coverage_profiler);
 
-	/*
-	 * Required callbacks. These are either necessary for the profiler itself
-	 * to function, or provide metadata that's needed if other events (e.g.
-	 * allocations, exceptions) are dynamically enabled/disabled.
-	 */
-
-	mono_profiler_set_runtime_shutdown_end_callback (handle, log_shutdown);
+	mono_profiler_set_runtime_shutdown_end_callback (handle, cov_shutdown);
 	mono_profiler_set_runtime_initialized_callback (handle, runtime_initialized);
 
 	mono_profiler_enable_coverage ();
