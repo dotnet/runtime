@@ -17,6 +17,20 @@
     <CLRTestPriority>0</CLRTestPriority>
     <!-- Use ILAsm that we just built for the new fixes required in default interface methods -->
     <UseCustomILAsm>True</UseCustomILAsm>
+
+    <CLRTestBatchPreCommands>
+<![CDATA[
+      $(CLRTestBatchPreCommands)
+set COMPlus_UNSUPPORTED_TypeLoader_DefaultInterfaces=1
+    ]]>
+    </CLRTestBatchPreCommands>
+    <BashCLRTestPreCommands>
+<![CDATA[
+      $(BashCLRTestPreCommands)
+export COMPlus_UNSUPPORTED_TypeLoader_DefaultInterfaces=1
+    ]]>
+    </BashCLRTestPreCommands>
+
   </PropertyGroup>
 
   <ItemGroup>

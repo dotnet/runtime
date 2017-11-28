@@ -2900,6 +2900,26 @@ MethodTableBuilder::EnumerateClassMethods()
             }
         }
 
+        // Some interface checks.
+        if (fIsClassInterface)
+        {
+            if (IsMdVirtual(dwMemberAttrs))
+            {
+                if (!IsMdAbstract(dwMemberAttrs) && (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TypeLoader_DefaultInterfaces) == 0))
+                {
+                    BuildMethodTableThrowException(BFA_VIRTUAL_NONAB_INT_METHOD);
+                }
+            }
+            else
+            {
+                // Instance field/method
+                if (!IsMdStatic(dwMemberAttrs) && (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TypeLoader_DefaultInterfaces) == 0))
+                {
+                    BuildMethodTableThrowException(BFA_NONVIRT_INST_INT_METHOD);
+                }
+            }
+        }
+
         // No synchronized methods in ValueTypes
         if(fIsClassValueType && IsMiSynchronized(dwImplFlags))
         {
