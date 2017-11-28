@@ -17,7 +17,7 @@ namespace System
 
         internal static MatchNumberDelegate m_hebrewNumberParser = new MatchNumberDelegate(DateTimeParse.MatchHebrewDigits);
 
-        internal static DateTime ParseExact(ReadOnlySpan<char> s, String format, DateTimeFormatInfo dtfi, DateTimeStyles style)
+        internal static DateTime ParseExact(ReadOnlySpan<char> s, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, DateTimeStyles style)
         {
             DateTimeResult result = new DateTimeResult();       // The buffer to store the parsing result.
             result.Init();
@@ -31,7 +31,7 @@ namespace System
             }
         }
 
-        internal static DateTime ParseExact(ReadOnlySpan<char> s, String format, DateTimeFormatInfo dtfi, DateTimeStyles style, out TimeSpan offset)
+        internal static DateTime ParseExact(ReadOnlySpan<char> s, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, DateTimeStyles style, out TimeSpan offset)
         {
             DateTimeResult result = new DateTimeResult();       // The buffer to store the parsing result.
             offset = TimeSpan.Zero;
@@ -48,7 +48,7 @@ namespace System
             }
         }
 
-        internal static bool TryParseExact(ReadOnlySpan<char> s, String format, DateTimeFormatInfo dtfi, DateTimeStyles style, out DateTime result)
+        internal static bool TryParseExact(ReadOnlySpan<char> s, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, DateTimeStyles style, out DateTime result)
         {
             result = DateTime.MinValue;
             DateTimeResult resultData = new DateTimeResult();       // The buffer to store the parsing result.
@@ -61,7 +61,7 @@ namespace System
             return false;
         }
 
-        internal static bool TryParseExact(ReadOnlySpan<char> s, String format, DateTimeFormatInfo dtfi, DateTimeStyles style, out DateTime result, out TimeSpan offset)
+        internal static bool TryParseExact(ReadOnlySpan<char> s, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, DateTimeStyles style, out DateTime result, out TimeSpan offset)
         {
             result = DateTime.MinValue;
             offset = TimeSpan.Zero;
@@ -77,13 +77,8 @@ namespace System
             return false;
         }
 
-        internal static bool TryParseExact(ReadOnlySpan<char> s, String format, DateTimeFormatInfo dtfi, DateTimeStyles style, ref DateTimeResult result)
+        internal static bool TryParseExact(ReadOnlySpan<char> s, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, DateTimeStyles style, ref DateTimeResult result)
         {
-            if (format == null)
-            {
-                result.SetFailure(ParseFailureKind.ArgumentNull, nameof(SR.ArgumentNull_String), null, nameof(format));
-                return false;
-            }
             if (s.Length == 0)
             {
                 result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
@@ -3776,7 +3771,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         // This method also set the dtfi according/parseInfo to some special pre-defined
         // formats.
         //
-        private static String ExpandPredefinedFormat(String format, ref DateTimeFormatInfo dtfi, ref ParsingInfo parseInfo, ref DateTimeResult result)
+        private static String ExpandPredefinedFormat(ReadOnlySpan<char> format, ref DateTimeFormatInfo dtfi, ref ParsingInfo parseInfo, ref DateTimeResult result)
         {
             //
             // Check the format to see if we need to override the dtfi to be InvariantInfo,
@@ -4431,7 +4426,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
 
         private static bool DoStrictParse(
             ReadOnlySpan<char> s,
-            String formatParam,
+            ReadOnlySpan<char> formatParam,
             DateTimeStyles styles,
             DateTimeFormatInfo dtfi,
             ref DateTimeResult result)
@@ -4442,9 +4437,6 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             parseInfo.calendar = dtfi.Calendar;
             parseInfo.fAllowInnerWhite = ((styles & DateTimeStyles.AllowInnerWhite) != 0);
             parseInfo.fAllowTrailingWhite = ((styles & DateTimeStyles.AllowTrailingWhite) != 0);
-
-            // We need the original values of the following two below.
-            String originalFormat = formatParam;
 
             if (formatParam.Length == 1)
             {
@@ -4470,7 +4462,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             // if we have parsed every item twice.
             result.Hour = result.Minute = result.Second = -1;
 
-            __DTString format = new __DTString(formatParam.AsReadOnlySpan(), dtfi, false);
+            __DTString format = new __DTString(formatParam, dtfi, false);
             __DTString str = new __DTString(s, dtfi, false);
 
             if (parseInfo.fAllowTrailingWhite)
@@ -4749,7 +4741,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             return buffer.ToString();
         }
         // return a string in the form: "Sun"
-        private static string Hex(string str) => Hex(str.AsReadOnlySpan());
+        private static string Hex(string str) => Hex((ReadOnlySpan<char>)str);
         private static string Hex(ReadOnlySpan<char> str)
         {
             StringBuilder buffer = new StringBuilder();

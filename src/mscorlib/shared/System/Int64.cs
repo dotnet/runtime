@@ -93,7 +93,11 @@ namespace System
             return Number.FormatInt64(m_value, format, NumberFormatInfo.GetInstance(provider));
         }
 
-        public bool TryFormat(Span<char> destination, out int charsWritten, string format = null, IFormatProvider provider = null)
+        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
+        public bool TryFormat(Span<char> destination, out int charsWritten, string format, IFormatProvider provider) =>
+            TryFormat(destination, out charsWritten, (ReadOnlySpan<char>)format, provider);
+
+        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider provider = null)
         {
             return Number.TryFormatInt64(m_value, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }
@@ -101,20 +105,20 @@ namespace System
         public static long Parse(String s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt64(s.AsReadOnlySpan(), NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
+            return Number.ParseInt64(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
         }
 
         public static long Parse(String s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt64(s.AsReadOnlySpan(), style, NumberFormatInfo.CurrentInfo);
+            return Number.ParseInt64(s, style, NumberFormatInfo.CurrentInfo);
         }
 
         public static long Parse(String s, IFormatProvider provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt64(s.AsReadOnlySpan(), NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseInt64(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
         }
 
 
@@ -126,7 +130,7 @@ namespace System
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt64(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseInt64(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static long Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
@@ -143,7 +147,7 @@ namespace System
                 return false;
             }
 
-            return Number.TryParseInt64(s.AsReadOnlySpan(), NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+            return Number.TryParseInt64(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, out long result)
@@ -161,12 +165,8 @@ namespace System
                 return false;
             }
 
-            return Number.TryParseInt64(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseInt64(s, style, NumberFormatInfo.GetInstance(provider), out result);
         }
-
-        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
-        public static bool TryParse(ReadOnlySpan<char> s, out long result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null) =>
-            TryParse(s, style, provider, out result);
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out long result)
         {

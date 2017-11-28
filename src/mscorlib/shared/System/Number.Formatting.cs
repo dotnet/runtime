@@ -50,7 +50,7 @@ namespace System
             "(#)", "-#", "- #", "#-", "# -",
         };
 
-        public static string FormatDecimal(decimal value, string format, NumberFormatInfo info)
+        public static string FormatDecimal(decimal value, ReadOnlySpan<char> format, NumberFormatInfo info)
         {
             char fmt = ParseFormatSpecifier(format, out int digits);
 
@@ -76,7 +76,7 @@ namespace System
             return sb.GetString();
         }
 
-        public static bool TryFormatDecimal(decimal value, string format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
+        public static bool TryFormatDecimal(decimal value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
         {
             char fmt = ParseFormatSpecifier(format, out int digits);
 
@@ -131,7 +131,7 @@ namespace System
             *dst = '\0';
         }
 
-        public static string FormatInt32(int value, string format, NumberFormatInfo info)
+        public static string FormatInt32(int value, ReadOnlySpan<char> format, NumberFormatInfo info)
         {
             int digits;
             char fmt = ParseFormatSpecifier(format, out digits);
@@ -171,7 +171,7 @@ namespace System
             }
         }
 
-        public static bool TryFormatInt32(int value, string format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
+        public static bool TryFormatInt32(int value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
         {
             int digits;
             char fmt = ParseFormatSpecifier(format, out digits);
@@ -211,7 +211,7 @@ namespace System
             }
         }
 
-        public static string FormatUInt32(uint value, string format, NumberFormatInfo info)
+        public static string FormatUInt32(uint value, ReadOnlySpan<char> format, NumberFormatInfo info)
         {
             int digits;
             char fmt = ParseFormatSpecifier(format, out digits);
@@ -249,7 +249,7 @@ namespace System
             }
         }
 
-        public static bool TryFormatUInt32(uint value, string format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
+        public static bool TryFormatUInt32(uint value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
         {
             int digits;
             char fmt = ParseFormatSpecifier(format, out digits);
@@ -287,7 +287,7 @@ namespace System
             }
         }
 
-        public static string FormatInt64(long value, string format, NumberFormatInfo info)
+        public static string FormatInt64(long value, ReadOnlySpan<char> format, NumberFormatInfo info)
         {
             int digits;
             char fmt = ParseFormatSpecifier(format, out digits);
@@ -328,7 +328,7 @@ namespace System
             }
         }
 
-        public static bool TryFormatInt64(long value, string format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
+        public static bool TryFormatInt64(long value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
         {
             int digits;
             char fmt = ParseFormatSpecifier(format, out digits);
@@ -369,7 +369,7 @@ namespace System
             }
         }
 
-        public static string FormatUInt64(ulong value, string format, NumberFormatInfo info)
+        public static string FormatUInt64(ulong value, ReadOnlySpan<char> format, NumberFormatInfo info)
         {
             int digits;
             char fmt = ParseFormatSpecifier(format, out digits);
@@ -408,7 +408,7 @@ namespace System
             }
         }
 
-        public static bool TryFormatUInt64(ulong value, string format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
+        public static bool TryFormatUInt64(ulong value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
         {
             int digits;
             char fmt = ParseFormatSpecifier(format, out digits);
@@ -849,45 +849,70 @@ namespace System
             return TryCopyTo(p, (int)(buffer + bufferSize - p), destination, out charsWritten);
         }
 
-        internal static unsafe char ParseFormatSpecifier(string format, out int digits)
+        internal static unsafe char ParseFormatSpecifier(ReadOnlySpan<char> format, out int digits)
         {
-            if (format != null)
+            char c = default;
+            if (format.Length > 0)
             {
-                fixed (char* pFormat = format)
+                // If the format begins with a symbol, see if it's a standard format
+                // with or without a specified number of digits.
+                c = format[0];
+                if ((uint)(c - 'A') <= 'Z' - 'A' ||
+                    (uint)(c - 'a') <= 'z' - 'a')
                 {
-                    char ch = *pFormat;
-                    if (ch != 0)
+                    // Fast path for sole symbol, e.g. "D"
+                    if (format.Length == 1)
                     {
-                        if ((uint)(ch - 'A') <= 'Z' - 'A' ||
-                            (uint)(ch - 'a') <= 'z' - 'a')
-                        {
-                            int i = 1;
-                            int n = -1;
-                            if ((uint)(pFormat[i] - '0') <= '9' - '0')
-                            {
-                                n = pFormat[i++] - '0';
-                                while ((uint)(pFormat[i] - '0') <= '9' - '0')
-                                {
-                                    n = (n * 10) + pFormat[i++] - '0';
-                                    if (n >= 10)
-                                        break;
-                                }
-                            }
-                            if (pFormat[i] == 0)
-                            {
-                                digits = n;
-                                return ch;
-                            }
-                        }
-
                         digits = -1;
-                        return '\0';
+                        return c;
+                    }
+
+                    if (format.Length == 2)
+                    {
+                        // Fast path for symbol and single digit, e.g. "X4"
+                        int d = format[1] - '0';
+                        if ((uint)d < 10)
+                        {
+                            digits = d;
+                            return c;
+                        }
+                    }
+                    else if (format.Length == 3)
+                    {
+                        // Fast path for symbol and double digit, e.g. "F12"
+                        int d1 = format[1] - '0', d2 = format[2] - '0';
+                        if ((uint)d1 < 10 && (uint)d2 < 10)
+                        {
+                            digits = d1 * 10 + d2;
+                            return c;
+                        }
+                    }
+
+                    // Fallback for symbol and any length digits.  The digits value must be >= 0 && <= 99,
+                    // but it can begin with any number of 0s, and thus we may need to check more than two
+                    // digits.  Further, for compat, we need to stop when we hit a null char.
+                    int n = 0;
+                    int i = 1;
+                    while (i < format.Length && (((uint)format[i] - '0') < 10) && n < 10)
+                    {
+                        n = (n * 10) + format[i++] - '0';
+                    }
+
+                    // If we're at the end of the digits rather than having stopped because we hit something
+                    // other than a digit or overflowed, return the standard format info.
+                    if (i == format.Length || format[i] == '\0')
+                    {
+                        digits = n;
+                        return c;
                     }
                 }
             }
 
+            // Default empty format to be "G"; custom format is signified with '\0'.
             digits = -1;
-            return 'G';
+            return format.Length == 0 || c == '\0' ? // For compat, treat '\0' as the end of the specifier, even if the specifer extends beyond it.
+                'G' : 
+                '\0';
         }
 
         internal static unsafe void NumberToString(ref ValueStringBuilder sb, ref NumberBuffer number, char format, int nMaxDigits, NumberFormatInfo info, bool isDecimal)
@@ -1024,7 +1049,7 @@ namespace System
             }
         }
 
-        internal static unsafe void NumberToStringFormat(ref ValueStringBuilder sb, ref NumberBuffer number, string format, NumberFormatInfo info)
+        internal static unsafe void NumberToStringFormat(ref ValueStringBuilder sb, ref NumberBuffer number, ReadOnlySpan<char> format, NumberFormatInfo info)
         {
             int digitCount;
             int decimalPos;
@@ -1057,9 +1082,9 @@ namespace System
                 scaleAdjust = 0;
                 src = section;
 
-                fixed (char* pFormat = format)
+                fixed (char* pFormat = &format.DangerousGetPinnableReference())
                 {
-                    while ((ch = pFormat[src++]) != 0 && ch != ';')
+                    while (src < format.Length && (ch = pFormat[src++]) != 0 && ch != ';')
                     {
                         switch (ch)
                         {
@@ -1100,19 +1125,19 @@ namespace System
                                 break;
                             case '\'':
                             case '"':
-                                while (pFormat[src] != 0 && pFormat[src++] != ch)
+                                while (src < format.Length && pFormat[src] != 0 && pFormat[src++] != ch)
                                     ;
                                 break;
                             case '\\':
-                                if (pFormat[src] != 0)
+                                if (src < format.Length && pFormat[src] != 0)
                                     src++;
                                 break;
                             case 'E':
                             case 'e':
-                                if (pFormat[src] == '0' || ((pFormat[src] == '+' || pFormat[src] == '-') && pFormat[src + 1] == '0'))
+                                if ((src < format.Length && pFormat[src] == '0') ||
+                                    (src + 1 < format.Length && (pFormat[src] == '+' || pFormat[src] == '-') && pFormat[src + 1] == '0'))
                                 {
-                                    while (pFormat[++src] == '0')
-                                        ;
+                                    while (++src < format.Length && pFormat[src] == '0');
                                     scientific = true;
                                 }
                                 break;
@@ -1227,11 +1252,11 @@ namespace System
 
             bool decimalWritten = false;
 
-            fixed (char* pFormat = format)
+            fixed (char* pFormat = &format.DangerousGetPinnableReference())
             {
                 char* cur = dig;
 
-                while ((ch = pFormat[src++]) != 0 && ch != ';')
+                while (src < format.Length && (ch = pFormat[src++]) != 0 && ch != ';')
                 {
                     if (adjust > 0)
                     {
@@ -1315,13 +1340,13 @@ namespace System
                             break;
                         case '\'':
                         case '"':
-                            while (pFormat[src] != 0 && pFormat[src] != ch)
+                            while (src < format.Length && pFormat[src] != 0 && pFormat[src] != ch)
                                 sb.Append(pFormat[src++]);
-                            if (pFormat[src] != 0)
+                            if (src < format.Length && pFormat[src] != 0)
                                 src++;
                             break;
                         case '\\':
-                            if (pFormat[src] != 0)
+                            if (src < format.Length && pFormat[src] != 0)
                                 sb.Append(pFormat[src++]);
                             break;
                         case 'E':
@@ -1331,17 +1356,17 @@ namespace System
                                 int i = 0;
                                 if (scientific)
                                 {
-                                    if (pFormat[src] == '0')
+                                    if (src < format.Length && pFormat[src] == '0')
                                     {
                                         // Handles E0, which should format the same as E-0
                                         i++;
                                     }
-                                    else if (pFormat[src] == '+' && pFormat[src + 1] == '0')
+                                    else if (src+1 < format.Length && pFormat[src] == '+' && pFormat[src + 1] == '0')
                                     {
                                         // Handles E+0
                                         positiveSign = true;
                                     }
-                                    else if (pFormat[src] == '-' && pFormat[src + 1] == '0')
+                                    else if (src+1 < format.Length && pFormat[src] == '-' && pFormat[src + 1] == '0')
                                     {
                                         // Handles E-0
                                         // Do nothing, this is just a place holder s.t. we don't break out of the loop.
@@ -1352,7 +1377,7 @@ namespace System
                                         break;
                                     }
 
-                                    while (pFormat[++src] == '0')
+                                    while (++src < format.Length && pFormat[src] == '0')
                                         i++;
                                     if (i > 10)
                                         i = 10;
@@ -1364,10 +1389,13 @@ namespace System
                                 else
                                 {
                                     sb.Append(ch); // Copy E or e to output
-                                    if (pFormat[src] == '+' || pFormat[src] == '-')
-                                        sb.Append(pFormat[src++]);
-                                    while (pFormat[src] == '0')
-                                        sb.Append(pFormat[src++]);
+                                    if (src < format.Length)
+                                    {
+                                        if (pFormat[src] == '+' || pFormat[src] == '-')
+                                            sb.Append(pFormat[src++]);
+                                        while (src < format.Length && pFormat[src] == '0')
+                                            sb.Append(pFormat[src++]);
+                                    }
                                 }
                                 break;
                             }
@@ -1676,7 +1704,7 @@ namespace System
             dig[i] = '\0';
         }
 
-        private static unsafe int FindSection(string format, int section)
+        private static unsafe int FindSection(ReadOnlySpan<char> format, int section)
         {
             int src;
             char ch;
@@ -1684,26 +1712,31 @@ namespace System
             if (section == 0)
                 return 0;
 
-            fixed (char* pFormat = format)
+            fixed (char* pFormat = &format.DangerousGetPinnableReference())
             {
                 src = 0;
                 for (;;)
                 {
+                    if (src >= format.Length)
+                    {
+                        return 0;
+                    }
+
                     switch (ch = pFormat[src++])
                     {
                         case '\'':
                         case '"':
-                            while (pFormat[src] != 0 && pFormat[src++] != ch)
+                            while (src < format.Length && pFormat[src] != 0 && pFormat[src++] != ch)
                                 ;
                             break;
                         case '\\':
-                            if (pFormat[src] != 0)
+                            if (src < format.Length && pFormat[src] != 0)
                                 src++;
                             break;
                         case ';':
                             if (--section != 0)
                                 break;
-                            if (pFormat[src] != 0 && pFormat[src] != ';')
+                            if (src < format.Length && pFormat[src] != 0 && pFormat[src] != ';')
                                 return src;
                             goto case '\0';
                         case '\0':
