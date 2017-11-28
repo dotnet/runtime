@@ -18,7 +18,7 @@ internal static partial class Interop
         /// <param name="buffer">The buffer to hold the output path</param>
         /// <param name="bufferSize">The size of the buffer</param>
         /// <returns>
-        /// Returns the number of bytes placed into the buffer on success; 0 if the buffer is too small; and -1 on error.
+        /// Returns the number of bytes placed into the buffer on success; bufferSize if the buffer is too small; and -1 on error.
         /// </returns>
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadLink", SetLastError = true)]
         private static extern unsafe int ReadLink(string path, byte[] buffer, int bufferSize);
@@ -39,15 +39,15 @@ internal static partial class Interop
                 try
                 {
                     int resultLength = Interop.Sys.ReadLink(path, buffer, buffer.Length);
-                    if (resultLength > 0)
-                    {
-                        // success
-                        return Encoding.UTF8.GetString(buffer, 0, resultLength);
-                    }
-                    else if (resultLength < 0)
+                    if (resultLength < 0)
                     {
                         // error
                         return null;
+                    }
+                    else if (resultLength < buffer.Length)
+                    {
+                        // success
+                        return Encoding.UTF8.GetString(buffer, 0, resultLength);
                     }
                 }
                 finally
