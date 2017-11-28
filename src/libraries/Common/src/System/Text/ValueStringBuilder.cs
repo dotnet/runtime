@@ -41,6 +41,7 @@ namespace System.Text
             else
             {
                 charsWritten = 0;
+                Clear();
                 return false;
             }
         }
