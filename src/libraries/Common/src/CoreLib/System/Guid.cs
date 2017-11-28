@@ -246,7 +246,7 @@ namespace System
 
             GuidResult result = new GuidResult();
             result.Init(GuidParseThrowStyle.All);
-            if (TryParseGuid(g.AsReadOnlySpan(), GuidStyles.Any, ref result))
+            if (TryParseGuid(g, GuidStyles.Any, ref result))
             {
                 this = result._parsedGuid;
             }
@@ -257,7 +257,7 @@ namespace System
         }
 
         public static Guid Parse(string input) =>
-            Parse(input != null ? input.AsReadOnlySpan() : throw new ArgumentNullException(nameof(input)));
+            Parse(input != null ? (ReadOnlySpan<char>)input : throw new ArgumentNullException(nameof(input)));
 
         public static Guid Parse(ReadOnlySpan<char> input)
         {
@@ -281,7 +281,7 @@ namespace System
                 return false;
             }
 
-            return TryParse(input.AsReadOnlySpan(), out result);
+            return TryParse((ReadOnlySpan<char>)input, out result);
         }
 
         public static bool TryParse(ReadOnlySpan<char> input, out Guid result)
@@ -301,14 +301,18 @@ namespace System
         }
 
         public static Guid ParseExact(string input, string format) =>
-            ParseExact(input != null ? input.AsReadOnlySpan() : throw new ArgumentNullException(nameof(input)), format);
+            ParseExact(
+                input != null ? (ReadOnlySpan<char>)input : throw new ArgumentNullException(nameof(input)),
+                format != null ? (ReadOnlySpan<char>)format : throw new ArgumentNullException(nameof(format)));
 
-        public static Guid ParseExact(ReadOnlySpan<char> input, string format)
+        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
+        public static Guid ParseExact(ReadOnlySpan<char> input, string format) =>
+            ParseExact(
+                input,
+                format != null ? (ReadOnlySpan<char>)format : throw new ArgumentNullException(nameof(format)));
+
+        public static Guid ParseExact(ReadOnlySpan<char> input, ReadOnlySpan<char> format)
         {
-            if (format == null)
-            {
-                throw new ArgumentNullException(nameof(format));
-            }
             if (format.Length != 1)
             {
                 // all acceptable format strings are of length 1
@@ -362,12 +366,16 @@ namespace System
                 return false;
             }
 
-            return TryParseExact(input.AsReadOnlySpan(), format, out result);
+            return TryParseExact((ReadOnlySpan<char>)input, format, out result);
         }
 
-        public static bool TryParseExact(ReadOnlySpan<char> input, string format, out Guid result)
+        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
+        public static bool TryParseExact(ReadOnlySpan<char> input, string format, out Guid result) =>
+            TryParseExact(input, (ReadOnlySpan<char>)format, out result);
+
+        public static bool TryParseExact(ReadOnlySpan<char> input, ReadOnlySpan<char> format, out Guid result)
         {
-            if (format == null || format.Length != 1)
+            if (format.Length != 1)
             {
                 result = default(Guid);
                 return false;
@@ -1306,10 +1314,14 @@ namespace System
             return guidString;
         }
 
+        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
+        public bool TryFormat(Span<char> destination, out int charsWritten, string format) =>
+            TryFormat(destination, out charsWritten, (ReadOnlySpan<char>)format);
+
         // Returns whether the guid is successfully formatted as a span. 
-        public bool TryFormat(Span<char> destination, out int charsWritten, string format = null)
+        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default)
         {
-            if (format == null || format.Length == 0)
+            if (format.Length == 0)
                 format = "D";
 
             // all acceptable format strings are of length 1
@@ -1427,7 +1439,7 @@ namespace System
             return true;
         }
 
-        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, string format, IFormatProvider provider)
+        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider provider)
         {
             // Like with the IFormattable implementation, provider is ignored.
             return TryFormat(destination, out charsWritten, format);

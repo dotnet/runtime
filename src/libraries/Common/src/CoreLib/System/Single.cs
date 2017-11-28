@@ -256,27 +256,27 @@ namespace System
         public static float Parse(String s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseSingle(s.AsReadOnlySpan(), NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo);
+            return Number.ParseSingle(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo);
         }
 
         public static float Parse(String s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseSingle(s.AsReadOnlySpan(), style, NumberFormatInfo.CurrentInfo);
+            return Number.ParseSingle(s, style, NumberFormatInfo.CurrentInfo);
         }
 
         public static float Parse(String s, IFormatProvider provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseSingle(s.AsReadOnlySpan(), NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseSingle(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.GetInstance(provider));
         }
 
         public static float Parse(String s, NumberStyles style, IFormatProvider provider)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseSingle(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseSingle(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static float Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
@@ -293,7 +293,7 @@ namespace System
                 return false;
             }
 
-            return TryParse(s.AsReadOnlySpan(), NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo, out result);
+            return TryParse((ReadOnlySpan<char>)s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo, out result);
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, out float result)
@@ -311,12 +311,8 @@ namespace System
                 return false;
             }
 
-            return TryParse(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider), out result);
+            return TryParse((ReadOnlySpan<char>)s, style, NumberFormatInfo.GetInstance(provider), out result);
         }
-
-        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
-        public static Boolean TryParse(ReadOnlySpan<char> s, out Single result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null) =>
-            TryParse(s, style, provider, out result);
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out float result)
         {

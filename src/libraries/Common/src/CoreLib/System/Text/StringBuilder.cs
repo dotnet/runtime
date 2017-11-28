@@ -1552,6 +1552,7 @@ namespace System.Text
                 //
                 Object arg = args[index];
                 String itemFormat = null;
+                ReadOnlySpan<char> itemFormatSpan = default; // used if itemFormat is null
                 // Is current character a colon? which indicates start of formatting parameter.
                 if (ch == ':')
                 {
@@ -1606,13 +1607,13 @@ namespace System.Text
                         if (startPos != pos)
                         {
                             // There was no brace escaping, extract the item format as a single string
-                            itemFormat = format.Substring(startPos, pos - startPos);
+                            itemFormatSpan = format.AsReadOnlySpan().Slice(startPos, pos - startPos);
                         }
                     }
                     else
                     {
                         unescapedItemFormat.Append(format, startPos, pos - startPos);
-                        itemFormat = unescapedItemFormat.ToString();
+                        itemFormatSpan = itemFormat = unescapedItemFormat.ToString();
                         unescapedItemFormat.Clear();
                     }
                 }
@@ -1623,6 +1624,10 @@ namespace System.Text
                 String s = null;
                 if (cf != null)
                 {
+                    if (itemFormatSpan.Length != 0 && itemFormat == null)
+                    {
+                        itemFormat = new string(itemFormatSpan);
+                    }
                     s = cf.Format(itemFormat, arg, provider);
                 }
 
@@ -1632,7 +1637,7 @@ namespace System.Text
                     // try formatting it into the remaining current chunk.
                     if (arg is ISpanFormattable spanFormattableArg &&
                         (leftJustify || width == 0) &&
-                        spanFormattableArg.TryFormat(RemainingCurrentChunk, out int charsWritten, itemFormat, provider))
+                        spanFormattableArg.TryFormat(RemainingCurrentChunk, out int charsWritten, itemFormatSpan, provider))
                     {
                         m_ChunkLength += charsWritten;
 
@@ -1647,6 +1652,10 @@ namespace System.Text
                     // Otherwise, fallback to trying IFormattable or calling ToString.
                     if (arg is IFormattable formattableArg)
                     {
+                        if (itemFormatSpan.Length != 0 && itemFormat == null)
+                        {
+                            itemFormat = new string(itemFormatSpan);
+                        }
                         s = formattableArg.ToString(itemFormat, provider);
                     }
                     else if (arg != null)
