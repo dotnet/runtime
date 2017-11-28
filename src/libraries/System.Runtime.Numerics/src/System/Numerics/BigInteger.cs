@@ -622,7 +622,12 @@ namespace System.Numerics
             return BigNumber.ParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static bool TryParse(ReadOnlySpan<char> value, out BigInteger result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
+        public static bool TryParse(ReadOnlySpan<char> value, out BigInteger result)
+        {
+            return BigNumber.TryParseBigInteger(value, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+        }
+
+        public static bool TryParse(ReadOnlySpan<char> value, NumberStyles style, IFormatProvider provider, out BigInteger result)
         {
             return BigNumber.TryParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider), out result);
         }

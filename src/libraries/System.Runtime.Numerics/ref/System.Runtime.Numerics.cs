@@ -159,7 +159,8 @@ namespace System.Numerics
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
         public static bool TryParse(string value, System.Globalization.NumberStyles style, System.IFormatProvider provider, out System.Numerics.BigInteger result) { throw null; }
         public static bool TryParse(string value, out System.Numerics.BigInteger result) { throw null; }
-        public static bool TryParse(ReadOnlySpan<char> value, out System.Numerics.BigInteger result, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> value, out System.Numerics.BigInteger result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> value, System.Globalization.NumberStyles style, System.IFormatProvider provider, out System.Numerics.BigInteger result) { throw null; }
         public bool TryWriteBytes(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
