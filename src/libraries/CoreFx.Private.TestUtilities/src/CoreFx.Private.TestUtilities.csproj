@@ -30,6 +30,8 @@
     <Compile Condition="'$(TargetGroup)' != 'uap'" Include="System\Diagnostics\RemoteExecutorTestBase.Process.cs" />
     <Compile Condition="'$(TargetGroup)' == 'uap'" Include="System\Diagnostics\RemoteExecutorTestBase.uap.cs" />
     <Compile Condition="'$(TargetGroup)' == 'uapaot'" Include="System\Diagnostics\RemoteExecutorTestBase.uapaot.cs" />
+    <Compile Condition="'$(TargetGroup)' == 'netfx'" Include="System\PlatformDetection.NetFx.cs" />
+    <Compile Condition="'$(TargetGroup)' != 'netfx'" Include="System\PlatformDetection.NonNetFx.cs" />
     <Compile Include="System\PlatformDetection.cs" />
     <Compile Include="System\PlatformDetection.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
     <Compile Include="System\PlatformDetection.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
