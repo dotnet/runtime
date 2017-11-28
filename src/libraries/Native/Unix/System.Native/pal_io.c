@@ -995,7 +995,7 @@ int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t bufferSize
     assert(buffer != NULL || bufferSize == 0);
     assert(bufferSize >= 0);
 
-    if (bufferSize < 0)
+    if (bufferSize <= 0)
     {
         errno = EINVAL;
         return -1;
@@ -1003,6 +1003,13 @@ int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t bufferSize
 
     ssize_t count = readlink(path, buffer, (size_t)bufferSize);
     assert(count >= -1 && count <= bufferSize);
+
+    // Check if buffer may be truncated.
+    if (count == bufferSize)
+    {
+        return 0;
+    }
+
     return (int32_t)count;
 }
 
