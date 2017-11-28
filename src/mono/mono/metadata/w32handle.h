@@ -12,6 +12,8 @@
 #include <windows.h>
 #endif
 
+#include "mono/utils/mono-coop-mutex.h"
+
 #ifndef INVALID_HANDLE_VALUE
 #define INVALID_HANDLE_VALUE (gpointer)-1
 #endif
@@ -23,17 +25,26 @@
 #endif
 
 typedef enum {
-	MONO_W32HANDLE_UNUSED = 0,
-	MONO_W32HANDLE_SEM,
-	MONO_W32HANDLE_MUTEX,
-	MONO_W32HANDLE_EVENT,
-	MONO_W32HANDLE_FIND,
-	MONO_W32HANDLE_PROCESS,
-	MONO_W32HANDLE_NAMEDMUTEX,
-	MONO_W32HANDLE_NAMEDSEM,
-	MONO_W32HANDLE_NAMEDEVENT,
-	MONO_W32HANDLE_COUNT
-} MonoW32HandleType;
+	MONO_W32TYPE_UNUSED = 0,
+	MONO_W32TYPE_SEM,
+	MONO_W32TYPE_MUTEX,
+	MONO_W32TYPE_EVENT,
+	MONO_W32TYPE_PROCESS,
+	MONO_W32TYPE_NAMEDMUTEX,
+	MONO_W32TYPE_NAMEDSEM,
+	MONO_W32TYPE_NAMEDEVENT,
+	MONO_W32TYPE_COUNT
+} MonoW32Type;
+
+typedef struct {
+	MonoW32Type type;
+	guint ref;
+	gboolean signalled;
+	gboolean in_use;
+	MonoCoopMutex signal_mutex;
+	MonoCoopCond signal_cond;
+	gpointer specific;
+} MonoW32Handle;
 
 typedef enum {
 	MONO_W32HANDLE_WAIT_RET_SUCCESS_0   =  0,
@@ -48,7 +59,7 @@ typedef struct
 	void (*close)(gpointer handle, gpointer data);
 
 	/* mono_w32handle_signal_and_wait */
-	void (*signal)(gpointer signal, gpointer data);
+	void (*signal)(MonoW32Handle *handle_data);
 
 	/* Called by mono_w32handle_wait_one and mono_w32handle_wait_multiple,
 	 * with the handle locked (shared handles aren't locked.)
@@ -56,29 +67,29 @@ typedef struct
 	 * If TRUE, *abandoned contains a status code such as
 	 * WAIT_OBJECT_0 or WAIT_ABANDONED_0.
 	 */
-	gboolean (*own_handle)(gpointer handle, gboolean *abandoned);
+	gboolean (*own_handle)(MonoW32Handle *handle_data, gboolean *abandoned);
 
 	/* Called by mono_w32handle_wait_one and mono_w32handle_wait_multiple, if the
 	 * handle in question is "ownable" (ie mutexes), to see if the current
 	 * thread already owns this handle
 	 */
-	gboolean (*is_owned)(gpointer handle);
+	gboolean (*is_owned)(MonoW32Handle *handle_data);
 
 	/* Called by mono_w32handle_wait_one and mono_w32handle_wait_multiple,
 	 * if the handle in question needs a special wait function
 	 * instead of using the normal handle signal mechanism.
 	 * Returns the mono_w32handle_wait_one return code.
 	 */
-	MonoW32HandleWaitRet (*special_wait)(gpointer handle, guint32 timeout, gboolean *alerted);
+	MonoW32HandleWaitRet (*special_wait)(MonoW32Handle *handle_data, guint32 timeout, gboolean *alerted);
 
 	/* Called by mono_w32handle_wait_one and mono_w32handle_wait_multiple,
 	 * if the handle in question needs some preprocessing before the
 	 * signal wait.
 	 */
-	void (*prewait)(gpointer handle);
+	void (*prewait)(MonoW32Handle *handle_data);
 
 	/* Called when dumping the handles */
-	void (*details)(gpointer data);
+	void (*details)(MonoW32Handle *handle_data);
 
 	/* Called to get the name of the handle type */
 	const gchar* (*typename) (void);
@@ -101,52 +112,49 @@ void
 mono_w32handle_cleanup (void);
 
 void
-mono_w32handle_register_ops (MonoW32HandleType type, MonoW32HandleOps *ops);
+mono_w32handle_register_ops (MonoW32Type type, MonoW32HandleOps *ops);
 
 gpointer
-mono_w32handle_new (MonoW32HandleType type, gpointer handle_specific);
+mono_w32handle_new (MonoW32Type type, gpointer handle_specific);
 
 gpointer
-mono_w32handle_duplicate (gpointer handle);
+mono_w32handle_duplicate (MonoW32Handle *handle_data);
 
 gboolean
 mono_w32handle_close (gpointer handle);
 
-MonoW32HandleType
-mono_w32handle_get_type (gpointer handle);
-
 const gchar*
-mono_w32handle_get_typename (MonoW32HandleType type);
+mono_w32handle_get_typename (MonoW32Type type);
 
 gboolean
-mono_w32handle_lookup (gpointer handle, MonoW32HandleType type, gpointer *handle_specific);
+mono_w32handle_lookup_and_ref (gpointer handle, MonoW32Handle **handle_data);
 
 void
-mono_w32handle_foreach (gboolean (*on_each)(gpointer handle, gpointer data, gpointer user_data), gpointer user_data);
+mono_w32handle_unref (MonoW32Handle *handle_data);
+
+void
+mono_w32handle_foreach (gboolean (*on_each)(MonoW32Handle *handle_data, gpointer user_data), gpointer user_data);
 
 void
 mono_w32handle_dump (void);
 
 void
-mono_w32handle_register_capabilities (MonoW32HandleType type, MonoW32HandleCapability caps);
-
-gboolean
-mono_w32handle_test_capabilities (gpointer handle, MonoW32HandleCapability caps);
+mono_w32handle_register_capabilities (MonoW32Type type, MonoW32HandleCapability caps);
 
 void
-mono_w32handle_set_signal_state (gpointer handle, gboolean state, gboolean broadcast);
+mono_w32handle_set_signal_state (MonoW32Handle *handle_data, gboolean state, gboolean broadcast);
 
 gboolean
-mono_w32handle_issignalled (gpointer handle);
+mono_w32handle_issignalled (MonoW32Handle *handle_data);
 
 void
-mono_w32handle_lock_handle (gpointer handle);
+mono_w32handle_lock (MonoW32Handle *handle_data);
 
 gboolean
-mono_w32handle_trylock_handle (gpointer handle);
+mono_w32handle_trylock (MonoW32Handle *handle_data);
 
 void
-mono_w32handle_unlock_handle (gpointer handle);
+mono_w32handle_unlock (MonoW32Handle *handle_data);
 
 MonoW32HandleWaitRet
 mono_w32handle_wait_one (gpointer handle, guint32 timeout, gboolean alertable);

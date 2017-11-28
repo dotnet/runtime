@@ -38,7 +38,6 @@
 #include "w32file-internals.h"
 
 #include "w32file-unix-glob.h"
-#include "w32handle.h"
 #include "w32error.h"
 #include "fdhandle.h"
 #include "utils/mono-io-portability.h"
@@ -47,6 +46,9 @@
 #include "utils/mono-threads.h"
 #include "utils/mono-threads-api.h"
 #include "utils/strenc.h"
+#include "utils/refcount.h"
+
+#define INVALID_HANDLE_VALUE (GINT_TO_POINTER (-1))
 
 typedef struct {
 	guint64 device;
@@ -70,11 +72,13 @@ typedef struct {
 } FileHandle;
 
 typedef struct {
+	MonoRefCount ref;
+	MonoCoopMutex mutex;
 	gchar **namelist;
 	gchar *dir_part;
 	gint num;
 	gsize count;
-} MonoW32HandleFind;
+} FindHandle;
 
 /*
  * If SHM is disabled, this will point to a hash of FileShare structures, otherwise
@@ -83,6 +87,9 @@ typedef struct {
  */
 static GHashTable *file_share_table;
 static MonoCoopMutex file_share_mutex;
+
+static GHashTable *finds;
+static MonoCoopMutex finds_mutex;
 
 static void
 time_t_to_filetime (time_t timeval, FILETIME *filetime)
@@ -862,28 +869,6 @@ _wapi_unlock_file_region (gint fd, off_t offset, off_t length)
 
 	return TRUE;
 }
-
-static const gchar* find_typename (void)
-{
-	return "Find";
-}
-
-static gsize find_typesize (void)
-{
-	return sizeof (MonoW32HandleFind);
-}
-
-static MonoW32HandleOps _wapi_find_ops = {
-	NULL,			/* close */
-	NULL,			/* signal */
-	NULL,			/* own */
-	NULL,			/* is_owned */
-	NULL,			/* special_wait */
-	NULL,			/* prewait */
-	NULL,			/* details */
-	find_typename,	/* typename */
-	find_typesize,	/* typesize */
-};
 
 static gboolean lock_while_writing = FALSE;
 
@@ -3011,12 +2996,100 @@ mono_w32file_filetime_to_systemtime(const FILETIME *file_time, SYSTEMTIME *syste
 	return(TRUE);
 }
 
+static void
+findhandle_destroy (gpointer data)
+{
+	FindHandle *findhandle;
+
+	findhandle = (FindHandle*) data;
+	g_assert (findhandle);
+
+	mono_coop_mutex_destroy (&findhandle->mutex);
+
+	if (findhandle->namelist)
+		g_strfreev (findhandle->namelist);
+	if (findhandle->dir_part)
+		g_free (findhandle->dir_part);
+
+	g_free (findhandle);
+}
+
+static FindHandle*
+findhandle_create (void)
+{
+	FindHandle* findhandle;
+
+	findhandle = g_new0 (FindHandle, 1);
+	mono_refcount_init (findhandle, findhandle_destroy);
+
+	mono_coop_mutex_init (&findhandle->mutex);
+
+	return findhandle;
+}
+
+static void
+findhandle_insert (FindHandle *findhandle)
+{
+	mono_coop_mutex_lock (&finds_mutex);
+
+	if (g_hash_table_lookup_extended (finds, (gpointer) findhandle, NULL, NULL))
+		g_error("%s: duplicate Find handle %p", __func__, (gpointer) findhandle);
+
+	g_hash_table_insert (finds, (gpointer) findhandle, findhandle);
+
+	mono_coop_mutex_unlock (&finds_mutex);
+}
+
+static gboolean
+findhandle_lookup_and_ref (gpointer handle, FindHandle **findhandle)
+{
+	mono_coop_mutex_lock (&finds_mutex);
+
+	if (!g_hash_table_lookup_extended (finds, handle, NULL, (gpointer*) findhandle)) {
+		mono_coop_mutex_unlock (&finds_mutex);
+		return FALSE;
+	}
+
+	mono_refcount_inc (*findhandle);
+
+	mono_coop_mutex_unlock (&finds_mutex);
+
+	return TRUE;
+}
+
+static void
+findhandle_unref (FindHandle *findhandle)
+{
+	mono_refcount_dec (findhandle);
+}
+
+static gboolean
+findhandle_close (gpointer handle)
+{
+	FindHandle *findhandle;
+	gboolean removed;
+
+	mono_coop_mutex_lock (&finds_mutex);
+
+	if (!g_hash_table_lookup_extended (finds, handle, NULL, (gpointer*) &findhandle)) {
+		mono_coop_mutex_unlock (&finds_mutex);
+
+		return FALSE;
+	}
+
+	removed = g_hash_table_remove (finds, (gpointer) findhandle);
+	g_assert (removed);
+
+	mono_coop_mutex_unlock (&finds_mutex);
+
+	return TRUE;
+}
+
 gpointer
 mono_w32file_find_first (const gunichar2 *pattern, WIN32_FIND_DATA *find_data)
 {
-	MonoW32HandleFind find_handle = {0};
-	gpointer handle;
-	gchar *utf8_pattern = NULL, *dir_part, *entry_part;
+	FindHandle *findhandle;
+	gchar *utf8_pattern = NULL, *dir_part, *entry_part, **namelist;
 	gint result;
 	
 	if (pattern == NULL) {
@@ -3074,9 +3147,9 @@ mono_w32file_find_first (const gunichar2 *pattern, WIN32_FIND_DATA *find_data)
 	 * than mess around with regexes.
 	 */
 
-	find_handle.namelist = NULL;
+	namelist = NULL;
 	result = _wapi_io_scandir (dir_part, entry_part,
-				   &find_handle.namelist);
+				   &namelist);
 	
 	if (result == 0) {
 		/* No files, which windows seems to call
@@ -3086,6 +3159,7 @@ mono_w32file_find_first (const gunichar2 *pattern, WIN32_FIND_DATA *find_data)
 		g_free (utf8_pattern);
 		g_free (entry_part);
 		g_free (dir_part);
+		g_strfreev (namelist);
 		return (INVALID_HANDLE_VALUE);
 	}
 	
@@ -3095,6 +3169,7 @@ mono_w32file_find_first (const gunichar2 *pattern, WIN32_FIND_DATA *find_data)
 		g_free (utf8_pattern);
 		g_free (entry_part);
 		g_free (dir_part);
+		g_strfreev (namelist);
 		return (INVALID_HANDLE_VALUE);
 	}
 
@@ -3103,36 +3178,27 @@ mono_w32file_find_first (const gunichar2 *pattern, WIN32_FIND_DATA *find_data)
 	
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Got %d matches", __func__, result);
 
-	find_handle.dir_part = dir_part;
-	find_handle.num = result;
-	find_handle.count = 0;
-	
-	handle = mono_w32handle_new (MONO_W32HANDLE_FIND, &find_handle);
-	if (handle == INVALID_HANDLE_VALUE) {
-		g_warning ("%s: error creating find handle", __func__);
-		g_free (dir_part);
-		g_free (entry_part);
-		g_free (utf8_pattern);
-		mono_w32error_set_last (ERROR_GEN_FAILURE);
-		
-		return(INVALID_HANDLE_VALUE);
-	}
+	findhandle = findhandle_create ();
+	findhandle->namelist = namelist;
+	findhandle->dir_part = dir_part;
+	findhandle->num = result;
+	findhandle->count = 0;
 
-	if (handle != INVALID_HANDLE_VALUE &&
-	    !mono_w32file_find_next (handle, find_data)) {
-		mono_w32file_find_close (handle);
+	findhandle_insert (findhandle);
+
+	if (!mono_w32file_find_next ((gpointer) findhandle, find_data)) {
+		mono_w32file_find_close ((gpointer) findhandle);
 		mono_w32error_set_last (ERROR_NO_MORE_FILES);
-		handle = INVALID_HANDLE_VALUE;
+		return INVALID_HANDLE_VALUE;
 	}
 
-	return (handle);
+	return (gpointer) findhandle;
 }
 
 gboolean
 mono_w32file_find_next (gpointer handle, WIN32_FIND_DATA *find_data)
 {
-	MonoW32HandleFind *find_handle;
-	gboolean ok;
+	FindHandle *findhandle;
 	struct stat buf, linkbuf;
 	gint result;
 	gchar *filename;
@@ -3141,27 +3207,23 @@ mono_w32file_find_next (gpointer handle, WIN32_FIND_DATA *find_data)
 	time_t create_time;
 	glong bytes;
 	gboolean ret = FALSE;
-	
-	ok=mono_w32handle_lookup (handle, MONO_W32HANDLE_FIND,
-				(gpointer *)&find_handle);
-	if(ok==FALSE) {
-		g_warning ("%s: error looking up find handle %p", __func__,
-			   handle);
+
+	if (!findhandle_lookup_and_ref (handle, &findhandle)) {
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
-		return(FALSE);
+		return FALSE;
 	}
 
-	mono_w32handle_lock_handle (handle);
-	
+	mono_coop_mutex_lock (&findhandle->mutex);
+
 retry:
-	if (find_handle->count >= find_handle->num) {
+	if (findhandle->count >= findhandle->num) {
 		mono_w32error_set_last (ERROR_NO_MORE_FILES);
 		goto cleanup;
 	}
 
 	/* stat next match */
 
-	filename = g_build_filename (find_handle->dir_part, find_handle->namelist[find_handle->count ++], NULL);
+	filename = g_build_filename (findhandle->dir_part, findhandle->namelist[findhandle->count ++], NULL);
 
 	result = _wapi_stat (filename, &buf);
 	if (result == -1 && errno == ENOENT) {
@@ -3251,7 +3313,9 @@ retry:
 	g_free (utf16_basename);
 
 cleanup:
-	mono_w32handle_unlock_handle (handle);
+	mono_coop_mutex_unlock (&findhandle->mutex);
+
+	findhandle_unref (findhandle);
 	
 	return(ret);
 }
@@ -3259,35 +3323,12 @@ cleanup:
 gboolean
 mono_w32file_find_close (gpointer handle)
 {
-	MonoW32HandleFind *find_handle;
-	gboolean ok;
-
-	if (handle == NULL) {
+	if (!findhandle_close (handle)) {
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
-		return(FALSE);
-	}
-	
-	ok=mono_w32handle_lookup (handle, MONO_W32HANDLE_FIND,
-				(gpointer *)&find_handle);
-	if(ok==FALSE) {
-		g_warning ("%s: error looking up find handle %p", __func__,
-			   handle);
-		mono_w32error_set_last (ERROR_INVALID_HANDLE);
-		return(FALSE);
+		return FALSE;
 	}
 
-	mono_w32handle_lock_handle (handle);
-	
-	g_strfreev (find_handle->namelist);
-	g_free (find_handle->dir_part);
-
-	mono_w32handle_unlock_handle (handle);
-	
-	MONO_ENTER_GC_SAFE;
-	mono_w32handle_close (handle);
-	MONO_EXIT_GC_SAFE;
-	
-	return(TRUE);
+	return TRUE;
 }
 
 gboolean
@@ -4675,7 +4716,8 @@ mono_w32file_init (void)
 
 	mono_coop_mutex_init (&file_share_mutex);
 
-	mono_w32handle_register_ops (MONO_W32HANDLE_FIND, &_wapi_find_ops);
+	finds = g_hash_table_new (g_direct_hash, g_direct_equal);
+	mono_coop_mutex_init (&finds_mutex);
 
 	if (g_hasenv ("MONO_STRICT_IO_EMULATION"))
 		lock_while_writing = TRUE;
@@ -4688,6 +4730,9 @@ mono_w32file_cleanup (void)
 
 	if (file_share_table)
 		g_hash_table_destroy (file_share_table);
+
+	g_hash_table_destroy (finds);
+	mono_coop_mutex_destroy (&finds_mutex);
 }
 
 gboolean

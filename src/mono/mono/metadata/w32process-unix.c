@@ -566,9 +566,9 @@ process_is_alive (pid_t pid)
 }
 
 static void
-process_details (gpointer data)
+process_details (MonoW32Handle *handle_data)
 {
-	MonoW32HandleProcess *process_handle = (MonoW32HandleProcess *) data;
+	MonoW32HandleProcess *process_handle = (MonoW32HandleProcess *) handle_data->specific;
 	g_print ("pid: %d, exited: %s, exitstatus: %d",
 		process_handle->pid, process_handle->exited ? "true" : "false", process_handle->exitstatus);
 }
@@ -586,55 +586,50 @@ process_typesize (void)
 }
 
 static MonoW32HandleWaitRet
-process_wait (gpointer handle, guint32 timeout, gboolean *alerted)
+process_wait (MonoW32Handle *handle_data, guint32 timeout, gboolean *alerted)
 {
 	MonoW32HandleProcess *process_handle;
 	pid_t pid G_GNUC_UNUSED, ret;
 	int status;
 	gint64 start, now;
 	Process *process;
-	gboolean res;
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT ")", __func__, handle, timeout);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT ")", __func__, handle_data, timeout);
 
 	if (alerted)
 		*alerted = FALSE;
 
-	res = mono_w32handle_lookup (handle, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
-	if (!res) {
-		g_warning ("%s: error looking up process handle %p", __func__, handle);
-		return MONO_W32HANDLE_WAIT_RET_FAILED;
-	}
+	process_handle = (MonoW32HandleProcess*) handle_data->specific;
 
 	if (process_handle->exited) {
 		/* We've already done this one */
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): Process already exited", __func__, handle, timeout);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): Process already exited", __func__, handle_data, timeout);
 		return MONO_W32HANDLE_WAIT_RET_SUCCESS_0;
 	}
 
 	pid = process_handle->pid;
 
 	if (pid == mono_process_current_pid ()) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): waiting on current process", __func__, handle, timeout);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): waiting on current process", __func__, handle_data, timeout);
 		return MONO_W32HANDLE_WAIT_RET_TIMEOUT;
 	}
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): PID: %d", __func__, handle, timeout, pid);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): PID: %d", __func__, handle_data, timeout, pid);
 
 	if (!process_handle->child) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): waiting on non-child process", __func__, handle, timeout);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): waiting on non-child process", __func__, handle_data, timeout);
 
 		if (!process_is_alive (pid)) {
 			/* assume the process has exited */
 			process_handle->exited = TRUE;
 			process_handle->exitstatus = -1;
-			mono_w32handle_set_signal_state (handle, TRUE, TRUE);
+			mono_w32handle_set_signal_state (handle_data, TRUE, TRUE);
 
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): non-child process is not alive anymore (2)", __func__, handle, timeout);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): non-child process is not alive anymore (2)", __func__, handle_data, timeout);
 			return MONO_W32HANDLE_WAIT_RET_SUCCESS_0;
 		}
 
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): non-child process wait failed, error : %s (%d))", __func__, handle, timeout, g_strerror (errno), errno);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): non-child process wait failed, error : %s (%d))", __func__, handle_data, timeout, g_strerror (errno), errno);
 		return MONO_W32HANDLE_WAIT_RET_FAILED;
 	}
 
@@ -649,11 +644,11 @@ process_wait (gpointer handle, guint32 timeout, gboolean *alerted)
 	while (1) {
 		if (timeout != MONO_INFINITE_WAIT) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): waiting on semaphore for %" G_GINT64_FORMAT " ms...",
-				__func__, handle, timeout, timeout - (now - start));
+				__func__, handle_data, timeout, timeout - (now - start));
 			ret = mono_os_sem_timedwait (&process->exit_sem, (timeout - (now - start)), alerted ? MONO_SEM_FLAGS_ALERTABLE : MONO_SEM_FLAGS_NONE);
 		} else {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): waiting on semaphore forever...",
-				__func__, handle, timeout);
+				__func__, handle_data, timeout);
 			ret = mono_os_sem_wait (&process->exit_sem, alerted ? MONO_SEM_FLAGS_ALERTABLE : MONO_SEM_FLAGS_NONE);
 		}
 
@@ -664,25 +659,25 @@ process_wait (gpointer handle, guint32 timeout, gboolean *alerted)
 		}
 
 		if (ret == MONO_SEM_TIMEDWAIT_RET_TIMEDOUT) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): wait timeout (timeout = 0)", __func__, handle, timeout);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): wait timeout (timeout = 0)", __func__, handle_data, timeout);
 			return MONO_W32HANDLE_WAIT_RET_TIMEOUT;
 		}
 
 		now = mono_msec_ticks ();
 		if (now - start >= timeout) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): wait timeout", __func__, handle, timeout);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): wait timeout", __func__, handle_data, timeout);
 			return MONO_W32HANDLE_WAIT_RET_TIMEOUT;
 		}
 
 		if (alerted && ret == MONO_SEM_TIMEDWAIT_RET_ALERTED) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): wait alerted", __func__, handle, timeout);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): wait alerted", __func__, handle_data, timeout);
 			*alerted = TRUE;
 			return MONO_W32HANDLE_WAIT_RET_ALERTED;
 		}
 	}
 
 	/* Process must have exited */
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): Waited successfully", __func__, handle, timeout);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): Waited successfully", __func__, handle_data, timeout);
 
 	status = process->status;
 	if (WIFSIGNALED (status))
@@ -695,9 +690,9 @@ process_wait (gpointer handle, guint32 timeout, gboolean *alerted)
 	process_handle->exited = TRUE;
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): Setting pid %d signalled, exit status %d",
-		   __func__, handle, timeout, process_handle->pid, process_handle->exitstatus);
+		   __func__, handle_data, timeout, process_handle->pid, process_handle->exitstatus);
 
-	mono_w32handle_set_signal_state (handle, TRUE, TRUE);
+	mono_w32handle_set_signal_state (handle_data, TRUE, TRUE);
 
 	return MONO_W32HANDLE_WAIT_RET_SUCCESS_0;
 }
@@ -817,9 +812,9 @@ mono_w32process_init (void)
 {
 	MonoW32HandleProcess process_handle;
 
-	mono_w32handle_register_ops (MONO_W32HANDLE_PROCESS, &process_ops);
+	mono_w32handle_register_ops (MONO_W32TYPE_PROCESS, &process_ops);
 
-	mono_w32handle_register_capabilities (MONO_W32HANDLE_PROCESS,
+	mono_w32handle_register_capabilities (MONO_W32TYPE_PROCESS,
 		(MonoW32HandleCapability)(MONO_W32HANDLE_CAP_WAIT | MONO_W32HANDLE_CAP_SPECIAL_WAIT));
 
 	current_pid = getpid ();
@@ -829,7 +824,7 @@ mono_w32process_init (void)
 	process_set_defaults (&process_handle);
 	process_set_name (&process_handle);
 
-	current_process = mono_w32handle_new (MONO_W32HANDLE_PROCESS, &process_handle);
+	current_process = mono_w32handle_new (MONO_W32TYPE_PROCESS, &process_handle);
 	g_assert (current_process != INVALID_HANDLE_VALUE);
 
 	mono_os_mutex_init (&processes_mutex);
@@ -888,16 +883,27 @@ utf16_concat (const gunichar2 *first, ...)
 guint32
 mono_w32process_get_pid (gpointer handle)
 {
-	MonoW32HandleProcess *process_handle;
-	gboolean res;
+	MonoW32Handle *handle_data;
+	guint32 ret;
 
-	res = mono_w32handle_lookup (handle, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
-	if (!res) {
+	if (!mono_w32handle_lookup_and_ref (handle, &handle_data)) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return 0;
 	}
 
-	return process_handle->pid;
+	if (handle_data->type != MONO_W32TYPE_PROCESS) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown process handle %p", __func__, handle);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
+		mono_w32handle_unref (handle_data);
+		return 0;
+	}
+
+	ret = ((MonoW32HandleProcess*) handle_data->specific)->pid;
+
+	mono_w32handle_unref (handle_data);
+
+	return ret;
 }
 
 typedef struct {
@@ -906,18 +912,16 @@ typedef struct {
 } GetProcessForeachData;
 
 static gboolean
-get_process_foreach_callback (gpointer handle, gpointer handle_specific, gpointer user_data)
+get_process_foreach_callback (MonoW32Handle *handle_data, gpointer user_data)
 {
 	GetProcessForeachData *foreach_data;
 	MonoW32HandleProcess *process_handle;
 	pid_t pid;
 
-	foreach_data = (GetProcessForeachData*) user_data;
-
-	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_PROCESS)
+	if (handle_data->type != MONO_W32TYPE_PROCESS)
 		return FALSE;
 
-	process_handle = (MonoW32HandleProcess*) handle_specific;
+	process_handle = (MonoW32HandleProcess*) handle_data->specific;
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: looking at process %d", __func__, process_handle->pid);
 
@@ -925,15 +929,17 @@ get_process_foreach_callback (gpointer handle, gpointer handle_specific, gpointe
 	if (pid == 0)
 		return FALSE;
 
+	foreach_data = (GetProcessForeachData*) user_data;
+
 	/* It's possible to have more than one process handle with the
 	 * same pid, but only the one running process can be
 	 * unsignalled. */
 	if (foreach_data->pid != pid)
 		return FALSE;
-	if (mono_w32handle_issignalled (handle))
+	if (mono_w32handle_issignalled (handle_data))
 		return FALSE;
 
-	foreach_data->handle = mono_w32handle_duplicate (handle);
+	foreach_data->handle = mono_w32handle_duplicate (handle_data);
 	return TRUE;
 }
 
@@ -962,7 +968,7 @@ ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid)
 		process_handle.pid = pid;
 		process_handle.pname = mono_w32process_get_name (pid);
 
-		handle = mono_w32handle_new (MONO_W32HANDLE_PROCESS, &process_handle);
+		handle = mono_w32handle_new (MONO_W32TYPE_PROCESS, &process_handle);
 		if (handle == INVALID_HANDLE_VALUE) {
 			g_warning ("%s: error creating process handle", __func__);
 
@@ -1025,8 +1031,9 @@ match_procname_to_modulename (char *procname, char *modulename)
 }
 
 gboolean
-mono_w32process_try_get_modules (gpointer process, gpointer *modules, guint32 size, guint32 *needed)
+mono_w32process_try_get_modules (gpointer handle, gpointer *modules, guint32 size, guint32 *needed)
 {
+	MonoW32Handle *handle_data;
 	MonoW32HandleProcess *process_handle;
 	GSList *mods = NULL, *mods_iter;
 	MonoW32ProcessModule *module;
@@ -1034,7 +1041,6 @@ mono_w32process_try_get_modules (gpointer process, gpointer *modules, guint32 si
 	int i;
 	pid_t pid;
 	char *pname = NULL;
-	gboolean res;
 
 	/* Store modules in an array of pointers (main module as
 	 * modules[0]), using the load address for each module as a
@@ -1048,11 +1054,20 @@ mono_w32process_try_get_modules (gpointer process, gpointer *modules, guint32 si
 	if (size < sizeof(gpointer))
 		return FALSE;
 
-	res = mono_w32handle_lookup (process, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
-	if (!res) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find process %p", __func__, process);
+	if (!mono_w32handle_lookup_and_ref (handle, &handle_data)) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown handle %p", __func__, handle);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
+
+	if (handle_data->type != MONO_W32TYPE_PROCESS) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown process handle %p", __func__, handle);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
+		mono_w32handle_unref (handle_data);
+		return FALSE;
+	}
+
+	process_handle = (MonoW32HandleProcess*) handle_data->specific;
 
 	pid = process_handle->pid;
 	pname = g_strdup (process_handle->pname);
@@ -1060,6 +1075,7 @@ mono_w32process_try_get_modules (gpointer process, gpointer *modules, guint32 si
 	if (!pname) {
 		modules[0] = NULL;
 		*needed = sizeof(gpointer);
+		mono_w32handle_unref (handle_data);
 		return TRUE;
 	}
 
@@ -1068,6 +1084,7 @@ mono_w32process_try_get_modules (gpointer process, gpointer *modules, guint32 si
 		modules[0] = NULL;
 		*needed = sizeof(gpointer);
 		g_free (pname);
+		mono_w32handle_unref (handle_data);
 		return TRUE;
 	}
 
@@ -1103,12 +1120,12 @@ mono_w32process_try_get_modules (gpointer process, gpointer *modules, guint32 si
 
 	g_slist_free (mods);
 	g_free (pname);
-
+	mono_w32handle_unref (handle_data);
 	return TRUE;
 }
 
 guint32
-mono_w32process_module_get_filename (gpointer process, gpointer module, gunichar2 *basename, guint32 size)
+mono_w32process_module_get_filename (gpointer handle, gpointer module, gunichar2 *basename, guint32 size)
 {
 	gint pid, len;
 	gsize bytes;
@@ -1120,7 +1137,7 @@ mono_w32process_module_get_filename (gpointer process, gpointer module, gunichar
 	if (basename == NULL || size == 0)
 		return 0;
 
-	pid = mono_w32process_get_pid (process);
+	pid = mono_w32process_get_pid (handle);
 
 	path = mono_w32process_get_path (pid);
 	if (path == NULL)
@@ -1151,8 +1168,9 @@ mono_w32process_module_get_filename (gpointer process, gpointer module, gunichar
 }
 
 guint32
-mono_w32process_module_get_name (gpointer process, gpointer module, gunichar2 *basename, guint32 size)
+mono_w32process_module_get_name (gpointer handle, gpointer module, gunichar2 *basename, guint32 size)
 {
+	MonoW32Handle *handle_data;
 	MonoW32HandleProcess *process_handle;
 	pid_t pid;
 	gunichar2 *procname;
@@ -1162,29 +1180,38 @@ mono_w32process_module_get_name (gpointer process, gpointer module, gunichar2 *b
 	GSList *mods = NULL, *mods_iter;
 	MonoW32ProcessModule *found_module;
 	char *pname = NULL;
-	gboolean res;
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Getting module base name, process handle %p module %p basename %p size %" G_GUINT32_FORMAT,
-		   __func__, process, module, basename, size);
+		   __func__, handle, module, basename, size);
 
 	size = size * sizeof (gunichar2); /* adjust for unicode characters */
 
 	if (basename == NULL || size == 0)
 		return 0;
 
-	res = mono_w32handle_lookup (process, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
-	if (!res) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find process %p", __func__, process);
+	if (!mono_w32handle_lookup_and_ref (handle, &handle_data)) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown handle %p", __func__, handle);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return 0;
 	}
+
+	if (handle_data->type != MONO_W32TYPE_PROCESS) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown process handle %p", __func__, handle);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
+		mono_w32handle_unref (handle_data);
+		return 0;
+	}
+
+	process_handle = (MonoW32HandleProcess*) handle_data->specific;
 
 	pid = process_handle->pid;
 	pname = g_strdup (process_handle->pname);
 
 	mods = mono_w32process_get_modules (pid);
 	if (!mods && module != NULL) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't get modules %p", __func__, process);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't get modules %p", __func__, handle);
 		g_free (pname);
+		mono_w32handle_unref (handle_data);
 		return 0;
 	}
 
@@ -1204,14 +1231,14 @@ mono_w32process_module_get_name (gpointer process, gpointer module, gunichar2 *b
 	}
 
 	if (procname_ext == NULL) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find procname_ext from procmods %p", __func__, process);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find procname_ext from procmods %p", __func__, handle);
 		/* If it's *still* null, we might have hit the
 		 * case where reading /proc/$pid/maps gives an
 		 * empty file for this user.
 		 */
 		procname_ext = mono_w32process_get_name (pid);
 		if (!procname_ext)
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find procname_ext from proc_get_name %p pid %d", __func__, process, pid);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find procname_ext from proc_get_name %p pid %d", __func__, handle, pid);
 	}
 
 	g_slist_free (mods);
@@ -1223,9 +1250,10 @@ mono_w32process_module_get_name (gpointer process, gpointer module, gunichar2 *b
 
 		procname = mono_unicode_from_external (procname_ext, &bytes);
 		if (procname == NULL) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't get procname %p", __func__, process);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't get procname %p", __func__, handle);
 			/* bugger */
 			g_free (procname_ext);
+			mono_w32handle_unref (handle_data);
 			return 0;
 		}
 
@@ -1248,35 +1276,46 @@ mono_w32process_module_get_name (gpointer process, gpointer module, gunichar2 *b
 		g_free (procname);
 		g_free (procname_ext);
 
+		mono_w32handle_unref (handle_data);
 		return len;
 	}
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find procname_ext %p", __func__, process);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find procname_ext %p", __func__, handle);
+	mono_w32handle_unref (handle_data);
 	return 0;
 }
 
 gboolean
-mono_w32process_module_get_information (gpointer process, gpointer module, MODULEINFO *modinfo, guint32 size)
+mono_w32process_module_get_information (gpointer handle, gpointer module, MODULEINFO *modinfo, guint32 size)
 {
+	MonoW32Handle *handle_data;
 	MonoW32HandleProcess *process_handle;
 	pid_t pid;
 	GSList *mods = NULL, *mods_iter;
 	MonoW32ProcessModule *found_module;
 	gboolean ret = FALSE;
 	char *pname = NULL;
-	gboolean res;
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Getting module info, process handle %p module %p",
-		   __func__, process, module);
+		   __func__, handle, module);
 
 	if (modinfo == NULL || size < sizeof (MODULEINFO))
 		return FALSE;
 
-	res = mono_w32handle_lookup (process, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
-	if (!res) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find process %p", __func__, process);
+	if (!mono_w32handle_lookup_and_ref (handle, &handle_data)) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown handle %p", __func__, handle);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
+
+	if (handle_data->type != MONO_W32TYPE_PROCESS) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown process handle %p", __func__, handle);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
+		mono_w32handle_unref (handle_data);
+		return FALSE;
+	}
+
+	process_handle = (MonoW32HandleProcess*) handle_data->specific;
 
 	pid = process_handle->pid;
 	pname = g_strdup (process_handle->pname);
@@ -1284,6 +1323,7 @@ mono_w32process_module_get_information (gpointer process, gpointer module, MODUL
 	mods = mono_w32process_get_modules (pid);
 	if (!mods) {
 		g_free (pname);
+		mono_w32handle_unref (handle_data);
 		return FALSE;
 	}
 
@@ -1307,7 +1347,7 @@ mono_w32process_module_get_information (gpointer process, gpointer module, MODUL
 
 	g_slist_free (mods);
 	g_free (pname);
-
+	mono_w32handle_unref (handle_data);
 	return ret;
 }
 
@@ -1973,6 +2013,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 		break;
 	}
 	default: /* Parent */ {
+		MonoW32Handle *handle_data;
 		MonoW32HandleProcess process_handle;
 
 		memset (&process_handle, 0, sizeof (process_handle));
@@ -1989,7 +2030,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 
 		process_handle.process = process;
 
-		handle = mono_w32handle_new (MONO_W32HANDLE_PROCESS, &process_handle);
+		handle = mono_w32handle_new (MONO_W32TYPE_PROCESS, &process_handle);
 		if (handle == INVALID_HANDLE_VALUE) {
 			g_warning ("%s: error creating process handle", __func__);
 
@@ -2001,9 +2042,15 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 			break;
 		}
 
+		if (!mono_w32handle_lookup_and_ref (handle, &handle_data))
+			g_error ("%s: unknown handle %p", __func__, handle);
+
+		if (handle_data->type != MONO_W32TYPE_PROCESS)
+			g_error ("%s: unknown process handle %p", __func__, handle);
+
 		/* Keep the process handle artificially alive until the process
 		 * exits so that the information in the handle isn't lost. */
-		process->handle = mono_w32handle_duplicate (handle);
+		process->handle = mono_w32handle_duplicate (handle_data);
 
 		mono_os_mutex_lock (&processes_mutex);
 		process->next = processes;
@@ -2019,6 +2066,8 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 			process_info->thread_handle = INVALID_HANDLE_VALUE;
 			process_info->tid = 0;
 		}
+
+		mono_w32handle_unref (handle_data);
 
 		break;
 	}
@@ -2320,20 +2369,30 @@ ves_icall_Microsoft_Win32_NativeMethods_GetCurrentProcess (void)
 MonoBoolean
 ves_icall_Microsoft_Win32_NativeMethods_GetExitCodeProcess (gpointer handle, gint32 *exitcode)
 {
+	MonoW32Handle *handle_data;
 	MonoW32HandleProcess *process_handle;
-	gboolean res;
 
 	if (!exitcode)
 		return FALSE;
 
-	res = mono_w32handle_lookup (handle, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
-	if (!res) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find process %p", __func__, handle);
+	if (!mono_w32handle_lookup_and_ref (handle, &handle_data)) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown handle %p", __func__, handle);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
 
+	if (handle_data->type != MONO_W32TYPE_PROCESS) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown process handle %p", __func__, handle);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
+		mono_w32handle_unref (handle_data);
+		return FALSE;
+	}
+
+	process_handle = (MonoW32HandleProcess*) handle_data->specific;
+
 	if (process_handle->pid == current_pid) {
 		*exitcode = STILL_ACTIVE;
+		mono_w32handle_unref (handle_data);
 		return TRUE;
 	}
 
@@ -2343,7 +2402,10 @@ ves_icall_Microsoft_Win32_NativeMethods_GetExitCodeProcess (gpointer handle, gin
 	 * Fixes bug 325463. */
 	mono_w32handle_wait_one (handle, 0, TRUE);
 
-	*exitcode = mono_w32handle_issignalled (handle) ? process_handle->exitstatus : STILL_ACTIVE;
+	*exitcode = mono_w32handle_issignalled (handle_data) ? process_handle->exitstatus : STILL_ACTIVE;
+
+	mono_w32handle_unref (handle_data);
+
 	return TRUE;
 }
 
@@ -2357,23 +2419,30 @@ MonoBoolean
 ves_icall_Microsoft_Win32_NativeMethods_TerminateProcess (gpointer handle, gint32 exitcode)
 {
 #ifdef HAVE_KILL
-	MonoW32HandleProcess *process_handle;
+	MonoW32Handle *handle_data;
 	int ret;
 	pid_t pid;
-	gboolean res;
 
-	res = mono_w32handle_lookup (handle, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
-	if (!res) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find process %p", __func__, handle);
+	if (!mono_w32handle_lookup_and_ref (handle, &handle_data)) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
 
-	pid = process_handle->pid;
+	if (handle_data->type != MONO_W32TYPE_PROCESS) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown process handle %p", __func__, handle);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
+		mono_w32handle_unref (handle_data);
+		return FALSE;
+	}
+
+	pid = ((MonoW32HandleProcess*) handle_data->specific)->pid;
 
 	ret = kill (pid, exitcode == -1 ? SIGKILL : SIGTERM);
-	if (ret == 0)
+	if (ret == 0) {
+		mono_w32handle_unref (handle_data);
 		return TRUE;
+	}
 
 	switch (errno) {
 	case EINVAL: mono_w32error_set_last (ERROR_INVALID_PARAMETER); break;
@@ -2382,6 +2451,7 @@ ves_icall_Microsoft_Win32_NativeMethods_TerminateProcess (gpointer handle, gint3
 	default:     mono_w32error_set_last (ERROR_GEN_FAILURE);       break;
 	}
 
+	mono_w32handle_unref (handle_data);
 	return FALSE;
 #else
 	g_error ("kill() is not supported by this platform");
@@ -2391,43 +2461,69 @@ ves_icall_Microsoft_Win32_NativeMethods_TerminateProcess (gpointer handle, gint3
 MonoBoolean
 ves_icall_Microsoft_Win32_NativeMethods_GetProcessWorkingSetSize (gpointer handle, gsize *min, gsize *max)
 {
+	MonoW32Handle *handle_data;
 	MonoW32HandleProcess *process_handle;
-	gboolean res;
 
 	if (!min || !max)
 		return FALSE;
 
-	res = mono_w32handle_lookup (handle, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
-	if (!res) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find process %p", __func__, handle);
+	if (!mono_w32handle_lookup_and_ref (handle, &handle_data)) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown handle %p", __func__, handle);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
 
-	if (!process_handle->child)
+	if (handle_data->type != MONO_W32TYPE_PROCESS) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown process handle %p", __func__, handle);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
+		mono_w32handle_unref (handle_data);
 		return FALSE;
+	}
+
+	process_handle = (MonoW32HandleProcess*) handle_data->specific;
+
+	if (!process_handle->child) {
+		mono_w32handle_unref (handle_data);
+		return FALSE;
+	}
 
 	*min = process_handle->min_working_set;
 	*max = process_handle->max_working_set;
+
+	mono_w32handle_unref (handle_data);
 	return TRUE;
 }
 
 MonoBoolean
 ves_icall_Microsoft_Win32_NativeMethods_SetProcessWorkingSetSize (gpointer handle, gsize min, gsize max)
 {
+	MonoW32Handle *handle_data;
 	MonoW32HandleProcess *process_handle;
-	gboolean res;
 
-	res = mono_w32handle_lookup (handle, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
-	if (!res) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find process %p", __func__, handle);
+	if (!mono_w32handle_lookup_and_ref (handle, &handle_data)) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown handle %p", __func__, handle);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
 
-	if (!process_handle->child)
+	if (handle_data->type != MONO_W32TYPE_PROCESS) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown process handle %p", __func__, handle);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
+		mono_w32handle_unref (handle_data);
 		return FALSE;
+	}
+
+	process_handle = (MonoW32HandleProcess*) handle_data->specific;
+
+	if (!process_handle->child) {
+		mono_w32handle_unref (handle_data);
+		return FALSE;
+	}
 
 	process_handle->min_working_set = min;
 	process_handle->max_working_set = max;
+
+	mono_w32handle_unref (handle_data);
 	return TRUE;
 }
 
@@ -2435,22 +2531,29 @@ gint32
 ves_icall_Microsoft_Win32_NativeMethods_GetPriorityClass (gpointer handle)
 {
 #ifdef HAVE_GETPRIORITY
-	MonoW32HandleProcess *process_handle;
-	gint ret;
+	MonoW32Handle *handle_data;
+	gint res;
+	gint32 ret;
 	pid_t pid;
-	gboolean res;
 
-	res = mono_w32handle_lookup (handle, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
-	if (!res) {
+	if (!mono_w32handle_lookup_and_ref (handle, &handle_data)) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return 0;
 	}
 
-	pid = process_handle->pid;
+	if (handle_data->type != MONO_W32TYPE_PROCESS) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown process handle %p", __func__, handle);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
+		mono_w32handle_unref (handle_data);
+		return 0;
+	}
+
+	pid = ((MonoW32HandleProcess*) handle_data->specific)->pid;
 
 	errno = 0;
-	ret = getpriority (PRIO_PROCESS, pid);
-	if (ret == -1 && errno != 0) {
+	res = getpriority (PRIO_PROCESS, pid);
+	if (res == -1 && errno != 0) {
 		switch (errno) {
 		case EPERM:
 		case EACCES:
@@ -2462,23 +2565,28 @@ ves_icall_Microsoft_Win32_NativeMethods_GetPriorityClass (gpointer handle)
 		default:
 			mono_w32error_set_last (ERROR_GEN_FAILURE);
 		}
+
+		mono_w32handle_unref (handle_data);
 		return 0;
 	}
 
-	if (ret == 0)
-		return MONO_W32PROCESS_PRIORITY_CLASS_NORMAL;
-	else if (ret < -15)
-		return MONO_W32PROCESS_PRIORITY_CLASS_REALTIME;
-	else if (ret < -10)
-		return MONO_W32PROCESS_PRIORITY_CLASS_HIGH;
-	else if (ret < 0)
-		return MONO_W32PROCESS_PRIORITY_CLASS_ABOVE_NORMAL;
-	else if (ret > 10)
-		return MONO_W32PROCESS_PRIORITY_CLASS_IDLE;
-	else if (ret > 0)
-		return MONO_W32PROCESS_PRIORITY_CLASS_BELOW_NORMAL;
+	if (res == 0)
+		ret = MONO_W32PROCESS_PRIORITY_CLASS_NORMAL;
+	else if (res < -15)
+		ret = MONO_W32PROCESS_PRIORITY_CLASS_REALTIME;
+	else if (res < -10)
+		ret = MONO_W32PROCESS_PRIORITY_CLASS_HIGH;
+	else if (res < 0)
+		ret = MONO_W32PROCESS_PRIORITY_CLASS_ABOVE_NORMAL;
+	else if (res > 10)
+		ret = MONO_W32PROCESS_PRIORITY_CLASS_IDLE;
+	else if (res > 0)
+		ret = MONO_W32PROCESS_PRIORITY_CLASS_BELOW_NORMAL;
+	else
+		ret = MONO_W32PROCESS_PRIORITY_CLASS_NORMAL;
 
-	return MONO_W32PROCESS_PRIORITY_CLASS_NORMAL;
+	mono_w32handle_unref (handle_data);
+	return ret;
 #else
 	mono_w32error_set_last (ERROR_NOT_SUPPORTED);
 	return 0;
@@ -2489,19 +2597,25 @@ MonoBoolean
 ves_icall_Microsoft_Win32_NativeMethods_SetPriorityClass (gpointer handle, gint32 priorityClass)
 {
 #ifdef HAVE_SETPRIORITY
-	MonoW32HandleProcess *process_handle;
+	MonoW32Handle *handle_data;
 	int ret;
 	int prio;
 	pid_t pid;
-	gboolean res;
 
-	res = mono_w32handle_lookup (handle, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
-	if (!res) {
+	if (!mono_w32handle_lookup_and_ref (handle, &handle_data)) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
 
-	pid = process_handle->pid;
+	if (handle_data->type != MONO_W32TYPE_PROCESS) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown process handle %p", __func__, handle);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
+		mono_w32handle_unref (handle_data);
+		return FALSE;
+	}
+
+	pid = ((MonoW32HandleProcess*) handle_data->specific)->pid;
 
 	switch (priorityClass) {
 	case MONO_W32PROCESS_PRIORITY_CLASS_IDLE:
@@ -2524,6 +2638,7 @@ ves_icall_Microsoft_Win32_NativeMethods_SetPriorityClass (gpointer handle, gint3
 		break;
 	default:
 		mono_w32error_set_last (ERROR_INVALID_PARAMETER);
+		mono_w32handle_unref (handle_data);
 		return FALSE;
 	}
 
@@ -2542,6 +2657,7 @@ ves_icall_Microsoft_Win32_NativeMethods_SetPriorityClass (gpointer handle, gint3
 		}
 	}
 
+	mono_w32handle_unref (handle_data);
 	return ret == 0;
 #else
 	mono_w32error_set_last (ERROR_NOT_SUPPORTED);
@@ -2559,9 +2675,9 @@ ticks_to_processtime (guint64 ticks, ProcessTime *processtime)
 MonoBoolean
 ves_icall_Microsoft_Win32_NativeMethods_GetProcessTimes (gpointer handle, gint64 *creation_time, gint64 *exit_time, gint64 *kernel_time, gint64 *user_time)
 {
+	MonoW32Handle *handle_data;
 	MonoW32HandleProcess *process_handle;
 	ProcessTime *creation_processtime, *exit_processtime, *kernel_processtime, *user_processtime;
-	gboolean res;
 
 	if (!creation_time || !exit_time || !kernel_time || !user_time) {
 		/* Not sure if w32 allows NULLs here or not */
@@ -2578,11 +2694,20 @@ ves_icall_Microsoft_Win32_NativeMethods_GetProcessTimes (gpointer handle, gint64
 	memset (kernel_processtime, 0, sizeof (ProcessTime));
 	memset (user_processtime, 0, sizeof (ProcessTime));
 
-	res = mono_w32handle_lookup (handle, MONO_W32HANDLE_PROCESS, (gpointer*) &process_handle);
-	if (!res) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find process %p", __func__, handle);
+	if (!mono_w32handle_lookup_and_ref (handle, &handle_data)) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown handle %p", __func__, handle);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
+
+	if (handle_data->type != MONO_W32TYPE_PROCESS) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown process handle %p", __func__, handle);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
+		mono_w32handle_unref (handle_data);
+		return FALSE;
+	}
+
+	process_handle = (MonoW32HandleProcess*) handle_data->specific;
 
 	if (!process_handle->child) {
 		gint64 start_ticks, user_ticks, kernel_ticks;
@@ -2593,6 +2718,8 @@ ves_icall_Microsoft_Win32_NativeMethods_GetProcessTimes (gpointer handle, gint64
 		ticks_to_processtime (start_ticks, creation_processtime);
 		ticks_to_processtime (kernel_ticks, kernel_processtime);
 		ticks_to_processtime (user_ticks, user_processtime);
+
+		mono_w32handle_unref (handle_data);
 		return TRUE;
 	}
 
@@ -2600,7 +2727,7 @@ ves_icall_Microsoft_Win32_NativeMethods_GetProcessTimes (gpointer handle, gint64
 
 	/* A process handle is only signalled if the process has
 	 * exited, otherwise exit_processtime isn't set */
-	if (mono_w32handle_issignalled (handle))
+	if (mono_w32handle_issignalled (handle_data))
 		ticks_to_processtime (process_handle->exit_time, exit_processtime);
 
 #ifdef HAVE_GETRUSAGE
@@ -2613,6 +2740,7 @@ ves_icall_Microsoft_Win32_NativeMethods_GetProcessTimes (gpointer handle, gint64
 	}
 #endif
 
+	mono_w32handle_unref (handle_data);
 	return TRUE;
 }
 

@@ -731,7 +731,16 @@ ves_icall_System_IO_MonoIO_DuplicateHandle (HANDLE source_process_handle, HANDLE
 		HANDLE target_process_handle, HANDLE *target_handle, gint32 access, gint32 inherit, gint32 options, gint32 *error)
 {
 #ifndef HOST_WIN32
-	*target_handle = mono_w32handle_duplicate (source_handle);
+	MonoW32Handle *source_handle_data;
+
+	if (!mono_w32handle_lookup_and_ref (source_handle, &source_handle_data)) {
+		*error = ERROR_INVALID_HANDLE;
+		return FALSE;
+	}
+
+	*target_handle = mono_w32handle_duplicate (source_handle_data);
+
+	mono_w32handle_unref (source_handle);
 #else
 	gboolean ret;
 
