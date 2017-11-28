@@ -306,7 +306,7 @@ namespace System
                 NumberToStringFormat(ref sb, ref number, format, info);
             }
 
-            return sb.GetString();
+            return sb.ToString();
         }
 
         public static bool TryFormatDecimal(decimal value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
@@ -405,7 +405,7 @@ namespace System
                             NumberToString(ref sb, ref number, 'G', 17, info, isDecimal: false);
                         }
 
-                        return sb.GetString();
+                        return sb.ToString();
                     }
 
                 case 'E':
@@ -446,7 +446,7 @@ namespace System
                 NumberToStringFormat(ref sb, ref number, format, info);
             }
 
-            return sb.GetString();
+            return sb.ToString();
         }
 
         public static string FormatSingle(float value, string format, NumberFormatInfo info)
@@ -490,7 +490,7 @@ namespace System
                             NumberToString(ref sb, ref number, 'G', 9, info, isDecimal: false);
                         }
 
-                        return sb.GetString();
+                        return sb.ToString();
                     }
 
                 case 'E':
@@ -531,7 +531,7 @@ namespace System
                 NumberToStringFormat(ref sb, ref number, format, info);
             }
 
-            return sb.GetString();
+            return sb.ToString();
         }
 
         public static string FormatInt32(int value, ReadOnlySpan<char> format, NumberFormatInfo info)
@@ -570,7 +570,7 @@ namespace System
                 {
                     NumberToStringFormat(ref sb, ref number, format, info);
                 }
-                return sb.GetString();
+                return sb.ToString();
             }
         }
 
@@ -648,7 +648,7 @@ namespace System
                 {
                     NumberToStringFormat(ref sb, ref number, format, info);
                 }
-                return sb.GetString();
+                return sb.ToString();
             }
         }
 
@@ -727,7 +727,7 @@ namespace System
                 {
                     NumberToStringFormat(ref sb, ref number, format, info);
                 }
-                return sb.GetString();
+                return sb.ToString();
             }
         }
 
@@ -807,7 +807,7 @@ namespace System
                 {
                     NumberToStringFormat(ref sb, ref number, format, info);
                 }
-                return sb.GetString();
+                return sb.ToString();
             }
         }
 
