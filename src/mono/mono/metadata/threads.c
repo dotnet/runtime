@@ -749,6 +749,10 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 
 	THREAD_DEBUG (g_message ("%s: mono_thread_detach for %p (%"G_GSIZE_FORMAT")", __func__, thread, (gsize)thread->tid));
 
+	/* Can happen when we attach the profiler helper thread in order to heapshot. */
+	if (!mono_thread_info_lookup (MONO_UINT_TO_NATIVE_THREAD_ID (thread->tid))->tools_thread)
+		MONO_PROFILER_RAISE (thread_stopping, (thread->tid));
+
 #ifndef HOST_WIN32
 	mono_w32mutex_abandon ();
 #endif
@@ -886,6 +890,10 @@ done:
 	mono_domain_unset ();
 
 	mono_thread_info_unset_internal_thread_gchandle ((MonoThreadInfo*) thread->thread_info);
+
+	/* Can happen when we attach the profiler helper thread in order to heapshot. */
+	if (!mono_thread_info_lookup (MONO_UINT_TO_NATIVE_THREAD_ID (thread->tid))->tools_thread)
+		MONO_PROFILER_RAISE (thread_exited, (thread->tid));
 
 	/* Don't need to close the handle to this thread, even though we took a
 	 * reference in mono_thread_attach (), because the GC will do it
