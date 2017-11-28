@@ -30497,7 +30497,7 @@ RelativePath=GC\Scenarios\muldimjagary\muldimjagary\muldimjagary.cmd
 WorkingDir=GC\Scenarios\muldimjagary\muldimjagary
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_FAIL;3392
 HostStyle=0
 
 [GCSimulator_261.cmd_3830]
