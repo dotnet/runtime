@@ -366,13 +366,28 @@ namespace System
 
         public static string FormatDouble(double value, string format, NumberFormatInfo info)
         {
-            ValueStringBuilder sb;
-            unsafe
-            {
-                char* stackPtr = stackalloc char[CharStackBufferSize];
-                sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
-            }
+            Span<char> stackBuffer = stackalloc char[CharStackBufferSize];
+            var sb = new ValueStringBuilder(stackBuffer);
+            return FormatDouble(ref sb, value, format, info) ?? sb.ToString();
+        }
 
+        public static bool TryFormatDouble(double value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
+        {
+            Span<char> stackBuffer = stackalloc char[CharStackBufferSize];
+            var sb = new ValueStringBuilder(stackBuffer);
+            string s = FormatDouble(ref sb, value, format, info);
+            return s != null ?
+                TryCopyTo(s, destination, out charsWritten) :
+                sb.TryCopyTo(destination, out charsWritten);
+        }
+
+        /// <summary>Formats the specified value according to the specified format and info.</summary>
+        /// <returns>
+        /// Non-null if an existing string can be returned, in which case the builder will be unmodified.
+        /// Null if no existing string was returned, in which case the formatted output is in the builder.
+        /// </returns>
+        private static string FormatDouble(ref ValueStringBuilder sb, double value, ReadOnlySpan<char> format, NumberFormatInfo info)
+        {
             char fmt = ParseFormatSpecifier(format, out int digits);
             int precision = DoublePrecision;
             NumberBuffer number = default;
@@ -405,7 +420,7 @@ namespace System
                             NumberToString(ref sb, ref number, 'G', 17, info, isDecimal: false);
                         }
 
-                        return sb.ToString();
+                        return null;
                     }
 
                 case 'E':
@@ -446,18 +461,33 @@ namespace System
                 NumberToStringFormat(ref sb, ref number, format, info);
             }
 
-            return sb.ToString();
+            return null;
         }
 
         public static string FormatSingle(float value, string format, NumberFormatInfo info)
         {
-            ValueStringBuilder sb;
-            unsafe
-            {
-                char* stackPtr = stackalloc char[CharStackBufferSize];
-                sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
-            }
+            Span<char> stackBuffer = stackalloc char[CharStackBufferSize];
+            var sb = new ValueStringBuilder(stackBuffer);
+            return FormatSingle(ref sb, value, format, info) ?? sb.ToString();
+        }
 
+        public static bool TryFormatSingle(float value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
+        {
+            Span<char> stackBuffer = stackalloc char[CharStackBufferSize];
+            var sb = new ValueStringBuilder(stackBuffer);
+            string s = FormatSingle(ref sb, value, format, info);
+            return s != null ?
+                TryCopyTo(s, destination, out charsWritten) :
+                sb.TryCopyTo(destination, out charsWritten);
+        }
+
+        /// <summary>Formats the specified value according to the specified format and info.</summary>
+        /// <returns>
+        /// Non-null if an existing string can be returned, in which case the builder will be unmodified.
+        /// Null if no existing string was returned, in which case the formatted output is in the builder.
+        /// </returns>
+        private static string FormatSingle(ref ValueStringBuilder sb, float value, ReadOnlySpan<char> format, NumberFormatInfo info)
+        {
             char fmt = ParseFormatSpecifier(format, out int digits);
             int precision = FloatPrecision;
             NumberBuffer number = default;
@@ -489,8 +519,7 @@ namespace System
                             DoubleToNumber(value, 9, ref number);
                             NumberToString(ref sb, ref number, 'G', 9, info, isDecimal: false);
                         }
-
-                        return sb.ToString();
+                        return null;
                     }
 
                 case 'E':
@@ -530,8 +559,21 @@ namespace System
             {
                 NumberToStringFormat(ref sb, ref number, format, info);
             }
+            return null;
+        }
 
-            return sb.ToString();
+        private static bool TryCopyTo(string source, Span<char> destination, out int charsWritten)
+        {
+            Debug.Assert(source != null);
+
+            if (source.AsReadOnlySpan().TryCopyTo(destination))
+            {
+                charsWritten = source.Length;
+                return true;
+            }
+
+            charsWritten = 0;
+            return false;
         }
 
         public static string FormatInt32(int value, ReadOnlySpan<char> format, NumberFormatInfo info)
