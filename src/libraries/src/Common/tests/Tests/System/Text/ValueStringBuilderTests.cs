@@ -186,10 +186,6 @@ namespace System.Text.Tests
             Span<char> dst = new char[Text.Length - 1];
             Assert.False(vsb.TryCopyTo(dst, out int charsWritten));
             Assert.Equal(0, charsWritten);
-
-            dst = new char[Text.Length];
-            Assert.True(vsb.TryCopyTo(dst, out charsWritten));
-            Assert.Equal(Text.Length, charsWritten);
             Assert.Equal(0, vsb.Length);
         }
 
