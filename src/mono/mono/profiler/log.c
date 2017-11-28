@@ -4689,7 +4689,7 @@ mono_profiler_init_log (const char *desc)
 	mono_profiler_set_gc_event_callback (handle, gc_event);
 
 	mono_profiler_set_thread_started_callback (handle, thread_start);
-	mono_profiler_set_thread_stopped_callback (handle, thread_end);
+	mono_profiler_set_thread_exited_callback (handle, thread_end);
 	mono_profiler_set_thread_name_callback (handle, thread_name);
 
 	mono_profiler_set_domain_loaded_callback (handle, domain_loaded);
