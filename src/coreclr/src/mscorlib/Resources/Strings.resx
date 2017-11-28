@@ -2369,10 +2369,10 @@
     <value>Index (zero based) must be greater than or equal to zero and less than the size of the argument list.</value>
   </data>
   <data name="Format_InvalidEnumFormatSpecification" xml:space="preserve">
-    <value>Format String can be only "G", "g", "X", "x", "F", "f", "D" or "d".</value>
+    <value>Format string can be only "G", "g", "X", "x", "F", "f", "D" or "d".</value>
   </data>
   <data name="Format_InvalidGuidFormatSpecification" xml:space="preserve">
-    <value>Format String can be only "D", "d", "N", "n", "P", "p", "B", "b", "X" or "x".</value>
+    <value>Format string can be only "D", "d", "N", "n", "P", "p", "B", "b", "X" or "x".</value>
   </data>
   <data name="Format_InvalidString" xml:space="preserve">
     <value>Input string was not in a correct format.</value>
