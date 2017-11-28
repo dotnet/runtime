@@ -100,4 +100,7 @@
   <data name="Overflow_Decimal" xml:space="preserve">
     <value>Value was either too large or too small for a Decimal.</value>
   </data>
+  <data name="Overflow_Negative_Unsigned" xml:space="preserve">
+    <value>Negative values do not have an unsigned representation.</value>
+  </data>
 </root>

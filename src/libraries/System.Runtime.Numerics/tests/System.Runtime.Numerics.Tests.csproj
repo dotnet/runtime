@@ -55,6 +55,7 @@
     <Compile Include="BigInteger\sign.cs" />
     <Compile Include="BigInteger\stackcalculator.cs" />
     <Compile Include="BigInteger\ToByteArray.cs" />
+    <Compile Include="BigInteger\ToByteArray.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="BigInteger\TryWriteBytes.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="ComplexTests.cs" />
   </ItemGroup>

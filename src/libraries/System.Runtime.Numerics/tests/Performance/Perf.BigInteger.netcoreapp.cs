@@ -30,6 +30,24 @@ namespace System.Numerics.Tests
 
         [Benchmark]
         [MemberData(nameof(NumberStrings))]
+        public void Ctor_ByteSpan_BigEndian(string numberString)
+        {
+            Span<byte> input = BigInteger.Parse(numberString).ToByteArray(isBigEndian: true);
+
+            foreach (var iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < 1000000; i++)
+                    {
+                        var bi = new BigInteger(input, isBigEndian: true);
+                    }
+                }
+            }
+        }
+
+        [Benchmark]
+        [MemberData(nameof(NumberStrings))]
         public void TryWriteBytes(string numberString)
         {
             BigInteger bi = BigInteger.Parse(numberString);
@@ -41,6 +59,24 @@ namespace System.Numerics.Tests
                     for (int i = 0; i < 1000000; i++)
                     {
                         bi.TryWriteBytes(destination, out int bytesWritten);
+                    }
+                }
+            }
+        }
+
+        [Benchmark]
+        [MemberData(nameof(NumberStrings))]
+        public void TryWriteBytes_BigEndian(string numberString)
+        {
+            BigInteger bi = BigInteger.Parse(numberString);
+            Span<byte> destination = new byte[bi.GetByteCount()];
+            foreach (var iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < 1000000; i++)
+                    {
+                        bi.TryWriteBytes(destination, out int bytesWritten, isBigEndian: true);
                     }
                 }
             }
