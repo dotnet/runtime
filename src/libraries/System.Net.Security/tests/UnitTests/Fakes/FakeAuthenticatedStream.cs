@@ -34,6 +34,7 @@ namespace System.Net.Security
         public abstract bool IsServer { get; }
 
         public new abstract Task WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken token);
+        public new abstract ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken);
     }
 }
 
