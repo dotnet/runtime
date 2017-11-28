@@ -28,7 +28,7 @@
     </BuildDependsOn>
   </PropertyGroup>
 
-  <Target Name="Build" DependsOnTargets="@(BuildDependsOn)" />
+  <Target Name="Build" DependsOnTargets="$(BuildDependsOn)" />
 
   <Target Name="PublishFinalOutput"
           Condition="'$(Finalize)' == 'true'"
