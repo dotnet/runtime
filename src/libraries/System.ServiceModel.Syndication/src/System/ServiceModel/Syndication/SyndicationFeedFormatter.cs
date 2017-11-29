@@ -7,11 +7,9 @@ namespace System.ServiceModel.Syndication
     using System;
     using System.Diagnostics;
     using System.Globalization;
-    using System.Runtime;
     using System.Runtime.Serialization;
     using System.Xml;
     using DiagnosticUtility = System.ServiceModel.DiagnosticUtility;
-    using System.Runtime.CompilerServices;
 
     [DataContract]
     public abstract class SyndicationFeedFormatter
@@ -21,6 +19,7 @@ namespace System.ServiceModel.Syndication
         protected SyndicationFeedFormatter()
         {
             _feed = null;
+            DateTimeParser = GetDefaultDateTimeParser();
         }
 
         protected SyndicationFeedFormatter(SyndicationFeed feedToWrite)
@@ -30,6 +29,7 @@ namespace System.ServiceModel.Syndication
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("feedToWrite");
             }
             _feed = feedToWrite;
+            DateTimeParser = GetDefaultDateTimeParser();
         }
 
         public SyndicationFeed Feed
@@ -38,6 +38,21 @@ namespace System.ServiceModel.Syndication
             {
                 return _feed;
             }
+        }
+
+        public Func<string, UriKind, string, string, Uri> UriParser { get; set; } = DefaultUriParser;
+
+        // Different DateTimeParsers are needed for Atom and Rss so can't set inline
+        public Func<string, string, string, DateTimeOffset> DateTimeParser { get; set; }
+
+        internal virtual Func<string, string, string, DateTimeOffset> GetDefaultDateTimeParser()
+        {
+            return NotImplementedDateTimeParser;
+        }
+
+        private DateTimeOffset NotImplementedDateTimeParser(string dtoString, string localName, string ns)
+        {
+            throw new NotImplementedException();
         }
 
         public abstract string Version
@@ -374,6 +389,24 @@ namespace System.ServiceModel.Syndication
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("feed");
             }
             _feed = feed;
+        }
+
+        internal DateTimeOffset DateFromString(string dateTimeString, XmlReader reader)
+        {
+            try
+            {
+                return DateTimeParser(dateTimeString, reader.LocalName, reader.NamespaceURI);
+            }
+            catch (FormatException e)
+            {
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
+                    new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingDateTime), e));
+            }
+        }
+
+        private static Uri DefaultUriParser(string value, UriKind kind, string localName, string ns)
+        {
+            return new Uri(value, kind);
         }
 
         internal static void CloseBuffer(XmlBuffer buffer, XmlDictionaryWriter extWriter)
