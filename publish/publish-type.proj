@@ -56,6 +56,8 @@
     </PropertyGroup>
     <MakeDir Directories="$(DownloadDirectory)" Condition="!Exists('$(DownloadDirectory)')" />
 
+    <Messsage Text="Downloading files from $(AzureAccountName)/$(ContainerName)/$(BinariesRelativePath) into $(DownloadDirectory)" />
+
     <DownloadFromAzure AccountName="$(AzureAccountName)"
                        AccountKey="$(AzureAccessToken)"
                        ContainerName="$(ContainerName)"
@@ -68,7 +70,7 @@
 
       <!-- Setup item groups for PublishPackagesToBlobFeed and PublishFilesToBlobFeed -->
       <PackagesToPublish Include="$(DownloadDirectory)**\*.nupkg" />
-      <FilesToPublish Include="$(DownloadDirectory)**\*.*" Exclude="$(PackagesToPublish)" />
+      <FilesToPublish Include="$(DownloadDirectory)**\*.*" Exclude="@(PackagesToPublish)" />
     </ItemGroup>
   </Target>
 
