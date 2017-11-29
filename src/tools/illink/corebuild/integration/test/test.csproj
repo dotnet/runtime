@@ -14,10 +14,12 @@
            explicitly. -->
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="NuGet.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
+
+  <Target Name="CopyNuGetConfig"
+          AfterTargets="AfterBuild">
+    <Copy SourceFiles="nuget/NuGet.config" DestinationFolder="$(OutDir)" />
+  </Target>
 
   <ItemGroup>
     <Compile Include="IntegrationTestBase.cs" />
