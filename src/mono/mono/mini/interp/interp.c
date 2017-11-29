@@ -2213,11 +2213,11 @@ static int opcode_counts[512];
 		sp->data.l = 0; \
 		output_indent (); \
 		char *mn = mono_method_full_name (frame->imethod->method, FALSE); \
-		g_print ("(%p) %s -> ", mono_thread_internal_current (), mn); \
+		char *disasm = mono_interp_dis_mintop(rtm->code, ip); \
+		g_print ("(%p) %s -> %s\t%d:%s\n", mono_thread_internal_current (), mn, disasm, vt_sp - vtalloc, ins); \
 		g_free (mn); \
-		mono_interp_dis_mintop(rtm->code, ip); \
-		g_print ("\t%d:%s\n", vt_sp - vtalloc, ins); \
 		g_free (ins); \
+		g_free (disasm); \
 	}
 #else
 #define DUMP_INSTR()
