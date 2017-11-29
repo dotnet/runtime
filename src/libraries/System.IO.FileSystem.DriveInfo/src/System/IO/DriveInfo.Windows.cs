@@ -21,10 +21,6 @@ namespace System.IO
                 name = driveName + ":\\";
             else
             {
-                // GetPathRoot does not check all invalid characters
-                if (PathInternal.HasIllegalCharacters(driveName))
-                    throw new ArgumentException(SR.Format(SR.Arg_InvalidDriveChars, driveName), nameof(driveName));
-
                 name = Path.GetPathRoot(driveName);
                 // Disallow null or empty drive letters and UNC paths
                 if (name == null || name.Length == 0 || name.StartsWith("\\\\", StringComparison.Ordinal))

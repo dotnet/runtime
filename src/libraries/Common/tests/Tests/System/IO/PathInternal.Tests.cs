@@ -11,12 +11,6 @@ namespace Tests.System.IO
 {
     public class PathInternalTests
     {
-        [Fact]
-        public void CheckInvalidPathChars_ThrowsOnNull()
-        {
-            Assert.Throws<ArgumentNullException>(() => PathInternal.CheckInvalidPathChars(null));
-        }
-
         [Theory,
             InlineData("Foo", "Foos"),
             InlineData("Foo", null)]
