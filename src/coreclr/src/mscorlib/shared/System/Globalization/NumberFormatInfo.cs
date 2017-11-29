@@ -218,34 +218,24 @@ namespace System.Globalization
 
         public static NumberFormatInfo GetInstance(IFormatProvider formatProvider)
         {
-            if (formatProvider != null)
+            return formatProvider == null ?
+                CurrentInfo : // Fast path for a null provider
+                GetProviderNonNull(formatProvider);
+
+            NumberFormatInfo GetProviderNonNull(IFormatProvider provider)
             {
-                // Fast case for a regular CultureInfo
-                NumberFormatInfo info;
-                CultureInfo cultureProvider = formatProvider as CultureInfo;
-                if (cultureProvider != null && !cultureProvider._isInherited)
+                // Fast path for a regular CultureInfo
+                if (provider is CultureInfo cultureProvider && !cultureProvider._isInherited)
                 {
                     return cultureProvider.numInfo ?? cultureProvider.NumberFormat;
                 }
 
-                // Fast case for an NFI;
-                info = formatProvider as NumberFormatInfo;
-                if (info != null)
-                {
-                    return info;
-                }
-
-                info = formatProvider.GetFormat(typeof(NumberFormatInfo)) as NumberFormatInfo;
-                if (info != null)
-                {
-                    return info;
-                }
+                return
+                    provider as NumberFormatInfo ?? // Fast path for an NFI
+                    provider.GetFormat(typeof(NumberFormatInfo)) as NumberFormatInfo ??
+                    CurrentInfo;
             }
-
-            return CurrentInfo;
         }
-
-
 
         public Object Clone()
         {
