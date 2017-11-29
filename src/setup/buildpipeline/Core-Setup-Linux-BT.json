@@ -209,7 +209,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Init tools - Ubuntu14.04",
+      "displayName": "Clean - Ubuntu14.04",
       "timeoutInMinutes": 0,
       "refName": "Task11",
       "task": {
@@ -219,7 +219,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1404) /bin/bash -c \"HOME=$(PB_GitDirectory); git clean -X -d -f; $(PB_GitDirectory)/init-tools.sh\"",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1404) /bin/bash $(DockerCommonCleanCommands)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -309,7 +309,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Init tools - Ubuntu16.04 ",
+      "displayName": "Clean - Ubuntu16.04 ",
       "timeoutInMinutes": 0,
       "refName": "Task16",
       "task": {
@@ -319,7 +319,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1604) /bin/bash -c \"HOME=$(PB_GitDirectory); git clean -X -d -f; $(PB_GitDirectory)/init-tools.sh\"",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1604) /bin/bash $(DockerCommonCleanCommands)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -409,7 +409,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Init tools - Ubuntu17.04",
+      "displayName": "Clean - Ubuntu17.04",
       "timeoutInMinutes": 0,
       "refName": "ClonedTask162",
       "task": {
@@ -419,7 +419,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1704) /bin/bash -c \"HOME=$(PB_GitDirectory); git clean -X -d -f; $(PB_GitDirectory)/init-tools.sh\"",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1704) /bin/bash $(DockerCommonCleanCommands)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -509,7 +509,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Init tools - Ubuntu17.10",
+      "displayName": "Clean - Ubuntu17.10",
       "timeoutInMinutes": 0,
       "refName": "ClonedClonedTask1622",
       "task": {
@@ -519,7 +519,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1710) /bin/bash -c \"HOME=$(PB_GitDirectory); git clean -X -d -f; $(PB_GitDirectory)/init-tools.sh\"",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1710) /bin/bash $(DockerCommonCleanCommands)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -609,7 +609,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Init tools - Debian 8 container",
+      "displayName": "Clean - Debian 8 container",
       "timeoutInMinutes": 0,
       "refName": "Task26",
       "task": {
@@ -619,7 +619,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Debian8) /bin/bash -c \"HOME=$(PB_GitDirectory); git clean -X -d -f; $(PB_GitDirectory)/init-tools.sh\"",
+        "arguments": "run --rm $(DockerCommonRunArgs_Debian8) /bin/bash $(DockerCommonCleanCommands)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -709,7 +709,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Init tools - Debian 9 container",
+      "displayName": "Clean - Debian 9 container",
       "timeoutInMinutes": 0,
       "refName": "Task31",
       "task": {
@@ -719,7 +719,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Debian9) /bin/bash -c \"HOME=$(PB_GitDirectory); git clean -X -d -f; $(PB_GitDirectory)/init-tools.sh\"",
+        "arguments": "run --rm $(DockerCommonRunArgs_Debian9) /bin/bash $(DockerCommonCleanCommands)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -809,7 +809,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Init tools - Rhel7",
+      "displayName": "Clean - Rhel7",
       "timeoutInMinutes": 0,
       "refName": "Task36",
       "task": {
@@ -819,7 +819,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Rhel7) /bin/bash -c \"HOME=$(PB_GitDirectory); git clean -X -d -f; $(PB_GitDirectory)/init-tools.sh\"",
+        "arguments": "run --rm $(DockerCommonRunArgs_Rhel7) /bin/bash $(DockerCommonCleanCommands)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -1272,6 +1272,9 @@
     },
     "PB_PackageVersionPropsUrl": {
       "value": ""
+    },
+    "DockerCommonCleanCommands": {
+      "value": "-c \"HOME=$(PB_GitDirectory); $(PB_GitDirectory)/clean.sh\""
     }
   },
   "demands": [
