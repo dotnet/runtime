@@ -166,6 +166,12 @@ typedef struct {
 	int small_id;
 } MonoProfilerThread;
 
+// Default value in `profiler_tls` for new threads.
+#define MONO_PROFILER_THREAD_ZERO ((MonoProfilerThread *) NULL)
+
+// This is written to `profiler_tls` to indicate that a thread has stopped.
+#define MONO_PROFILER_THREAD_DEAD ((MonoProfilerThread *) -1)
+
 // Do not use these TLS macros directly unless you know what you're doing.
 
 #ifdef HOST_WIN32
@@ -234,19 +240,19 @@ process_id (void)
 #define ENTER_LOG(COUNTER, BUFFER, SIZE) \
 	do { \
 		MonoProfilerThread *thread__ = get_thread (); \
-		if (thread__->attached) \
-			buffer_lock (); \
 		g_assert (!thread__->busy && "Why are we trying to write a new event while already writing one?"); \
 		thread__->busy = TRUE; \
 		mono_atomic_inc_i32 ((COUNTER)); \
+		if (thread__->attached) \
+			buffer_lock (); \
 		LogBuffer *BUFFER = ensure_logbuf_unsafe (thread__, (SIZE))
 
 #define EXIT_LOG_EXPLICIT(SEND) \
-		thread__->busy = FALSE; \
 		if ((SEND)) \
 			send_log_unsafe (TRUE); \
 		if (thread__->attached) \
 			buffer_unlock (); \
+		thread__->busy = FALSE; \
 	} while (0)
 
 // Pass these to EXIT_LOG_EXPLICIT () for easier reading.
@@ -512,6 +518,8 @@ init_thread (gboolean add_to_lls)
 {
 	MonoProfilerThread *thread = PROF_TLS_GET ();
 
+	g_assert (thread != MONO_PROFILER_THREAD_DEAD && "Why are we trying to resurrect a stopped thread?");
+
 	/*
 	 * Sometimes we may try to initialize a thread twice. One example is the
 	 * main thread: We initialize it when setting up the profiler, but we will
@@ -523,14 +531,14 @@ init_thread (gboolean add_to_lls)
 	 * These cases are harmless anyhow. Just return if we've already done the
 	 * initialization work.
 	 */
-	if (thread)
+	if (thread != MONO_PROFILER_THREAD_ZERO)
 		return thread;
 
 	thread = g_malloc (sizeof (MonoProfilerThread));
 	thread->node.key = thread_id ();
 	thread->attached = add_to_lls;
 	thread->call_depth = 0;
-	thread->busy = 0;
+	thread->busy = FALSE;
 	thread->ended = FALSE;
 
 	init_buffer_state (thread);
@@ -559,7 +567,7 @@ deinit_thread (MonoProfilerThread *thread)
 	g_assert (!thread->attached && "Why are we manually freeing an attached thread?");
 
 	g_free (thread);
-	PROF_TLS_SET (NULL);
+	PROF_TLS_SET (MONO_PROFILER_THREAD_DEAD);
 }
 
 static MonoProfilerThread *
@@ -665,7 +673,7 @@ buffer_unlock (void)
 	gint32 state = mono_atomic_load_i32 (&log_profiler.buffer_lock_state);
 
 	// See the comment in buffer_lock ().
-	if (state == PROF_TLS_GET ()->small_id << 16)
+	if (state == get_thread ()->small_id << 16)
 		return;
 
 	g_assert (state && "Why are we decrementing a zero reader count?");
@@ -702,7 +710,7 @@ buffer_unlock_excl (void)
 	gint32 excl = state >> 16;
 
 	g_assert (excl && "Why is the exclusive lock not held?");
-	g_assert (excl == PROF_TLS_GET ()->small_id && "Why does another thread hold the exclusive lock?");
+	g_assert (excl == get_thread ()->small_id && "Why does another thread hold the exclusive lock?");
 	g_assert (!(state & 0xFFFF) && "Why are there readers when the exclusive lock is held?");
 
 	mono_atomic_store_i32 (&log_profiler.buffer_lock_state, 0);
@@ -1108,7 +1116,7 @@ dump_buffer_threadless (LogBuffer *buf)
 static void
 send_log_unsafe (gboolean if_needed)
 {
-	MonoProfilerThread *thread = PROF_TLS_GET ();
+	MonoProfilerThread *thread = get_thread ();
 
 	if (!if_needed || (if_needed && thread->buffer->next)) {
 		if (!thread->attached)
@@ -1124,7 +1132,7 @@ send_log_unsafe (gboolean if_needed)
 static void
 sync_point_flush (void)
 {
-	g_assert (mono_atomic_load_i32 (&log_profiler.buffer_lock_state) == PROF_TLS_GET ()->small_id << 16 && "Why don't we hold the exclusive lock?");
+	g_assert (mono_atomic_load_i32 (&log_profiler.buffer_lock_state) == get_thread ()->small_id << 16 && "Why don't we hold the exclusive lock?");
 
 	MONO_LLS_FOREACH_SAFE (&log_profiler.profiler_thread_list, MonoProfilerThread, thread) {
 		g_assert (thread->attached && "Why is a thread in the LLS not attached?");
@@ -1138,7 +1146,7 @@ sync_point_flush (void)
 static void
 sync_point_mark (MonoProfilerSyncPointType type)
 {
-	g_assert (mono_atomic_load_i32 (&log_profiler.buffer_lock_state) == PROF_TLS_GET ()->small_id << 16 && "Why don't we hold the exclusive lock?");
+	g_assert (mono_atomic_load_i32 (&log_profiler.buffer_lock_state) == get_thread ()->small_id << 16 && "Why don't we hold the exclusive lock?");
 
 	ENTER_LOG (&sync_points_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
@@ -2015,7 +2023,7 @@ thread_end (MonoProfiler *prof, uintptr_t tid)
 	thread->ended = TRUE;
 	remove_thread (thread);
 
-	PROF_TLS_SET (NULL);
+	PROF_TLS_SET (MONO_PROFILER_THREAD_DEAD);
 }
 
 static void
@@ -3969,7 +3977,7 @@ handle_writer_queue_entry (void)
 		g_ptr_array_free (entry->methods, TRUE);
 
 		if (wrote_methods) {
-			MonoProfilerThread *thread = PROF_TLS_GET ();
+			MonoProfilerThread *thread = get_thread ();
 
 			dump_buffer_threadless (thread->buffer);
 			init_buffer_state (thread);
@@ -4700,7 +4708,7 @@ mono_profiler_init_log (const char *desc)
 	mono_profiler_set_gc_event_callback (handle, gc_event);
 
 	mono_profiler_set_thread_started_callback (handle, thread_start);
-	mono_profiler_set_thread_stopped_callback (handle, thread_end);
+	mono_profiler_set_thread_exited_callback (handle, thread_end);
 	mono_profiler_set_thread_name_callback (handle, thread_name);
 
 	mono_profiler_set_domain_loaded_callback (handle, domain_loaded);
