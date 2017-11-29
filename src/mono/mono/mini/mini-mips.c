@@ -3975,7 +3975,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_jalr (code, mips_t9, mips_ra);
 			mips_nop (code);
 			/*FIXME should it be before the NOP or not? Does MIPS has a delay slot like sparc?*/
-			mono_cfg_add_try_hole (cfg, ins->inst_eh_block, code, bb);
+			for (GList *tmp = ins->inst_eh_blocks; tmp != bb->clause_holes; tmp = tmp->prev)
+				mono_cfg_add_try_hole (cfg, (MonoExceptionClause *)tmp->data, code, bb);
 			break;
 		case OP_LABEL:
 			ins->inst_c0 = code - cfg->native_code;

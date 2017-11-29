@@ -320,7 +320,7 @@ mono_get_throw_exception_addr (void)
 	return &throw_exception_func;
 }
 
-static gboolean
+static gboolean 
 is_address_protected (MonoJitInfo *ji, MonoJitExceptionInfo *ei, gpointer ip)
 {
 	MonoTryBlockHoleTableJitInfo *table;
@@ -2113,7 +2113,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 		} else {
 			free_stack = 0xffffff;
 		}
-				
+
 		for (i = clause_index_start; i < ji->num_clauses; i++) {
 			MonoJitExceptionInfo *ei = &ji->clauses [i];
 			gboolean filtered = FALSE;

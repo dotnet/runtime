@@ -679,7 +679,7 @@ struct MonoInst {
 			MonoClass *klass;
 			int *phi_args;
 			MonoCallInst *call_inst;
-			MonoExceptionClause *exception_clause;
+			GList *exception_clauses;
 		} op [2];
 		gint64 i8const;
 		double r8const;
@@ -838,7 +838,7 @@ enum {
 #define inst_call   data.op[1].call_inst
 
 #define inst_phi_args   data.op[1].phi_args
-#define inst_eh_block	 data.op[1].exception_clause
+#define inst_eh_blocks	 data.op[1].exception_clauses
 
 static inline void
 mono_inst_set_src_registers (MonoInst *ins, int *regs)

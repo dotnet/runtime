@@ -5294,7 +5294,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_target_bb);
 			code = mono_arm_patchable_bl (code, ARMCOND_AL);
 			cfg->thunk_area += THUNK_SIZE;
-			mono_cfg_add_try_hole (cfg, ins->inst_eh_block, code, bb);
+			for (GList *tmp = ins->inst_eh_blocks; tmp != bb->clause_holes; tmp = tmp->prev)
+				mono_cfg_add_try_hole (cfg, (MonoExceptionClause *)tmp->data, code, bb);
 			break;
 		case OP_GET_EX_OBJ:
 			if (ins->dreg != ARMREG_R0)
