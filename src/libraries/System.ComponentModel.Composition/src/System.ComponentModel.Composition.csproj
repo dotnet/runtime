@@ -3,7 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{2D694AC8-A12F-4622-9405-74E20EC40C3A}</ProjectGuid>
-    <RootNamespace>System.ComponentModel.Composition</RootNamespace>
     <AssemblyName>System.ComponentModel.Composition</AssemblyName>
     <DefineConstants>$(DefineConstants);FEATURE_TRACING</DefineConstants>
     <!-- Workaround for issue buildtools #1784 -->
@@ -20,6 +19,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
+    <Compile Include="Microsoft\Internal\AdaptationHelpers.cs" />
     <Compile Include="Microsoft\Internal\AttributeServices.cs" />
     <Compile Include="Microsoft\Internal\Collections\CollectionServices.cs" />
     <Compile Include="Microsoft\Internal\Collections\CollectionServices.CollectionOfObject.cs" />
@@ -31,11 +31,11 @@
     <Compile Include="Microsoft\Internal\Lock.cs" />
     <Compile Include="Microsoft\Internal\Lock.Reader.cs" />
     <Compile Include="Microsoft\Internal\Lock.Writer.cs" />
-    <Compile Include="Microsoft\Internal\Runtime\Serialization\SerializationServices.cs" />
     <Compile Include="Microsoft\Internal\StringComparers.cs" />
     <Compile Include="Microsoft\Internal\ReflectionServices.cs" />
     <Compile Include="Microsoft\Internal\ReflectionInvoke.cs" />
     <Compile Include="Microsoft\Internal\Requires.cs" />
+    <Compile Include="Properties\InternalsVisibleTo.cs" />
     <Compile Include="System\ComponentModel\Composition\AttributedModelServices.cs" />
     <Compile Include="System\ComponentModel\Composition\CatalogReflectionContextAttribute.cs" />
     <Compile Include="System\ComponentModel\Composition\ChangeRejectedException.cs" />
@@ -78,6 +78,7 @@
     <Compile Include="System\ComponentModel\Composition\PartCreationPolicyAttribute.cs" />
     <Compile Include="System\ComponentModel\Composition\PartMetadataAttribute.cs" />
     <Compile Include="System\ComponentModel\Composition\PartNotDiscoverableAttribute.cs" />
+    <Compile Include="System\ComponentModel\Composition\AdaptationConstants.cs" />
     <Compile Include="System\ComponentModel\Composition\AttributedModel\AttributedExportDefinition.cs" />
     <Compile Include="System\ComponentModel\Composition\AttributedModel\AttributedModelDiscovery.cs" />
     <Compile Include="System\ComponentModel\Composition\AttributedModel\AttributedPartCreationInfo.cs" />
@@ -152,7 +153,6 @@
     <Compile Include="System\ComponentModel\Composition\Primitives\ImportDefinition.cs" />
     <Compile Include="System\ComponentModel\Composition\Primitives\IPartCreatorImportDefinition.cs" />
     <Compile Include="System\ComponentModel\Composition\Primitives\PrimitivesServices.cs" />
-    <Compile Include="System\ComponentModel\Composition\Primitives\SerializableCompositionElement.cs" />
     <Compile Include="System\ComponentModel\Composition\ReflectionModel\DisposableReflectionComposablePart.cs" />
     <Compile Include="System\ComponentModel\Composition\ReflectionModel\ExportfactoryCreator.cs" />
     <Compile Include="System\ComponentModel\Composition\ReflectionModel\ExportfactoryCreator.LifetimeContext.cs" />
@@ -200,6 +200,14 @@
     <Compile Include="$(CommonPath)\Microsoft\Internal\Requires.cs">
       <Link>Microsoft\Internal\Requires.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="$(CommonPath)\Microsoft\Internal\CommonStrings.resx">
+      <Link>Microsoft\Internal\CommonStrings.resx</Link>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>CommonStrings.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>Microsoft.Internal</CustomToolNamespace>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
     <Reference Include="Microsoft.Win32.Primitives" />
