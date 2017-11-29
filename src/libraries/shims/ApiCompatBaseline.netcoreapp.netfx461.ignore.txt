@@ -198,6 +198,13 @@ MembersMustExist : Member 'System.Reflection.Emit.TypeBuilder.DefinePInvokeMetho
 MembersMustExist : Member 'System.Reflection.Emit.TypeBuilder.TypeToken.get()' does not exist in the implementation but it does exist in the contract.
 
 // Interfaces were intentional removals
+CannotRemoveBaseTypeOrInterface : Type 'Microsoft.SqlServer.Server.SqlMethodAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'Microsoft.SqlServer.Server.SqlUserDefinedAggregateAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'Microsoft.SqlServer.Server.SqlUserDefinedTypeAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.RegexStringValidatorAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Text.RegularExpressions.RegexMatchTimeoutException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'Microsoft.SqlServer.Server.InvalidUdtException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'Microsoft.SqlServer.Server.SqlFunctionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.ServiceProcess.TimeoutException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Net.NetworkInformation.PingException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.AccessViolationException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
