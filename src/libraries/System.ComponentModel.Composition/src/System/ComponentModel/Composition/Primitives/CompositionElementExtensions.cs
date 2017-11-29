@@ -2,19 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using Microsoft.Internal;
-
 namespace System.ComponentModel.Composition.Primitives
 {
     internal static class CompositionElementExtensions
     {
-#if FEATURE_SERIALIZATION
-        public static ICompositionElement ToSerializableElement(this ICompositionElement element)
-        {
-            return SerializableCompositionElement.FromICompositionElement(element);
-        }
-#endif //FEATURE_SERIALIZATION
         public static ICompositionElement ToElement(this Export export)
         {
             // First try the export

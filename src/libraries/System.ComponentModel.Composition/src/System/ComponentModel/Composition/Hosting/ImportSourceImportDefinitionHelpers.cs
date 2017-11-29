@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.Linq.Expressions;
-using Microsoft.Internal;
-using System.Diagnostics.Contracts;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Primitives;
+using System.Diagnostics.Contracts;
+using System.Linq.Expressions;
+using Microsoft.Internal;
 
 namespace System.ComponentModel.Composition.Hosting
 {
