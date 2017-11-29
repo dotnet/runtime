@@ -2535,6 +2535,9 @@ Constants.allScenarios.each { scenario ->
                                 def coreRootLocation = "%WORKSPACE%\\bin\\tests\\Windows_NT.${architecture}.${configuration}\\Tests\\Core_Root"
                                 def addEnvVariable =  { variable, value -> buildCommands += "set ${variable}=${value}\r\n"}
                                 def addCommand = { cmd -> buildCommands += "${cmd}\r\n"}
+
+                                // Make sure Command Extensions are enabled. Used so %ERRORLEVEL% is available.
+                                addCommand("SETLOCAL ENABLEEXTENSIONS")
     
                                 // For all jobs 
                                 addEnvVariable("CORE_ROOT", coreRootLocation)
@@ -2611,11 +2614,16 @@ Constants.allScenarios.each { scenario ->
                                 addCommand("copy %WORKSPACE%\\tests\\${archLocation}\\Tests.lst bin\\tests\\${osGroup}.${architecture}.${configuration}")
                                 addCommand("pushd bin\\tests\\${osGroup}.${architecture}.${configuration}")
                                 addCommand("${smartyCommand}")
+                                addCommand("set __save_smarty_errorlevel=%errorlevel%")
+                                addCommand("popd")
+
+                                // ZIP up the smarty output, no matter what the smarty result.
+                                addCommand("powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${architecture}.${configuration}\\Smarty.run.0', '.\\bin\\tests\\${osGroup}.${architecture}.${configuration}\\Smarty.run.0.zip')\"")
+
+                                // Use the smarty errorlevel as the script errorlevel.
+                                addCommand("exit /b %__save_smarty_errorlevel%")
 
                                 batchFile(buildCommands)
-
-                                // ZIP up the smarty output.
-                                batchFile("powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${architecture}.${configuration}\\Smarty.run.0', '.\\bin\\tests\\${osGroup}.${architecture}.${configuration}\\Smarty.run.0.zip')\"")
                             }
                         }
                     }
