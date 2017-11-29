@@ -2,16 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition.Hosting;
 using System.ComponentModel.Composition.Primitives;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 using Microsoft.Internal;
 using Microsoft.Internal.Collections;
-using System.ComponentModel.Composition.Hosting;
 
 namespace System.ComponentModel.Composition.ReflectionModel
 {
@@ -131,7 +129,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-[SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         public override ComposablePart CreatePart()
         {
             if (IsDisposalRequired)
@@ -182,11 +180,11 @@ namespace System.ComponentModel.Composition.ReflectionModel
                             if (TryMakeGenericPartDefinition(candidateParameters, out candidatePart))
                             {
                                 bool alreadyProcessed = false;
-                                if(candidates == null)
+                                if (candidates == null)
                                 {
-                                    if(previousPart != null)
+                                    if (previousPart != null)
                                     {
-                                        if(candidatePart.Equals(previousPart))
+                                        if (candidatePart.Equals(previousPart))
                                         {
                                             alreadyProcessed = true;
                                         }
@@ -204,7 +202,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                                 }
                                 else
                                 {
-                                    if(candidates.Contains(candidatePart))
+                                    if (candidates.Contains(candidatePart))
                                     {
                                         alreadyProcessed = true;
                                     }
@@ -213,7 +211,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                                         candidates.Add(candidatePart);
                                     }
                                 }
-                                if(!alreadyProcessed)
+                                if (!alreadyProcessed)
                                 {
                                     Tuple<ComposablePartDefinition, ExportDefinition> candidateSingleMatch;
                                     IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>> candidateMultipleMatches;
@@ -301,7 +299,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 }
             }
 
-}
+        }
 
         private static bool TryGetGenericTypeParameters(IEnumerable<object> genericParameters, out Type[] genericTypeParameters)
         {

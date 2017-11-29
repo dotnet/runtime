@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.ComponentModel.Composition;
 using System.Data;
 using System.Data.SqlClient;
 using System.Data.SqlTypes;
@@ -1019,20 +1020,26 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         public static bool IsEqual(this Exception @this, Exception other)
         {
-            return @this != null &&
-                other != null &&
-                // On full framework, line number may be method body start
-                // On Net Native we can't reflect on Exceptions and change its StackTrace
-                ((PlatformDetection.IsFullFramework || PlatformDetection.IsNetNative) ? true :
-                (@this.StackTrace == other.StackTrace &&
-                @this.ToString() == other.ToString())) &&
-                @this.Data.CheckSequenceEquals(other.Data) &&
-                @this.Message == other.Message &&
-                @this.Source == other.Source &&
-                // On Net Native we can't reflect on Exceptions and change its HResult
-                (PlatformDetection.IsNetNative ? true : @this.HResult == other.HResult) &&
-                @this.HelpLink == other.HelpLink &&
-                CheckEquals(@this.InnerException, other.InnerException);
+            Assert.NotNull(@this);
+            Assert.NotNull(other);
+            Assert.True(@this.Data.CheckSequenceEquals(other.Data));
+            Assert.Equal(@this.Message, other.Message);
+            Assert.Equal(@this.Source, other.Source);
+            Assert.Equal(@this.HelpLink, other.HelpLink);
+            Assert.True(CheckEquals(@this.InnerException, other.InnerException));
+
+            if (!PlatformDetection.IsFullFramework && !PlatformDetection.IsNetNative)
+            {
+                Assert.Equal(@this.StackTrace, other.StackTrace);
+                Assert.Equal(@this.ToString(), other.ToString());
+            }
+
+            if (!PlatformDetection.IsNetNative)
+            {
+                Assert.Equal(@this.HResult, other.HResult);
+            }
+
+            return true;
         }
 
         public static bool IsEqual(this AggregateException @this, AggregateException other)

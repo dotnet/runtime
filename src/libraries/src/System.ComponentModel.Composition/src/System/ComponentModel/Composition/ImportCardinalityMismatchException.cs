@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.ComponentModel.Composition.Hosting;
-using System.ComponentModel.Composition.Primitives;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 
@@ -17,6 +14,7 @@ namespace System.ComponentModel.Composition
     /// </summary>
     [DebuggerTypeProxy(typeof(ImportCardinalityMismatchExceptionDebuggerProxy))]
     [DebuggerDisplay("{Message}")]
+    [Serializable]
     public class ImportCardinalityMismatchException : Exception
     {
         /// <summary>
@@ -60,9 +58,7 @@ namespace System.ComponentModel.Composition
             : base(message, innerException)
         {
         }
-
-#if FEATURE_SERIALIZATION
-
+        
         /// <summary>
         ///     Initializes a new instance of the <see cref="ImportCardinalityMismatchException"/> class 
         ///     with the specified serialization data.
@@ -88,6 +84,5 @@ namespace System.ComponentModel.Composition
             : base(info, context)
         {
         }
-#endif //FEATURE_SERIALIZATION
     }
 }
