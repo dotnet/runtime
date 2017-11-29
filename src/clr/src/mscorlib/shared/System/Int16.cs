@@ -69,22 +69,28 @@ namespace System
 
         public override String ToString()
         {
-            return Number.FormatInt32(m_value, null, NumberFormatInfo.CurrentInfo);
+            return Number.FormatInt32(m_value, null, null);
         }
 
         public String ToString(IFormatProvider provider)
         {
-            return Number.FormatInt32(m_value, null, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatInt32(m_value, null, provider);
         }
 
         public String ToString(String format)
         {
-            return ToString(format, NumberFormatInfo.CurrentInfo);
+            return ToString(format, null);
         }
 
         public String ToString(String format, IFormatProvider provider)
         {
-            return ToString(format, NumberFormatInfo.GetInstance(provider));
+            if (m_value < 0 && format != null && format.Length > 0 && (format[0] == 'X' || format[0] == 'x'))
+            {
+                uint temp = (uint)(m_value & 0x0000FFFF);
+                return Number.FormatUInt32(temp, format, provider);
+            }
+
+            return Number.FormatInt32(m_value, format, provider);
         }
 
         // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
@@ -93,24 +99,12 @@ namespace System
 
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider provider = null)
         {
-            NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
-
             if (m_value < 0 && format.Length > 0 && (format[0] == 'X' || format[0] == 'x'))
             {
                 uint temp = (uint)(m_value & 0x0000FFFF);
-                return Number.TryFormatUInt32(temp, format, info, destination, out charsWritten);
+                return Number.TryFormatUInt32(temp, format, provider, destination, out charsWritten);
             }
-            return Number.TryFormatInt32(m_value, format, info, destination, out charsWritten);
-        }
-
-        private String ToString(String format, NumberFormatInfo info)
-        {
-            if (m_value < 0 && format != null && format.Length > 0 && (format[0] == 'X' || format[0] == 'x'))
-            {
-                uint temp = (uint)(m_value & 0x0000FFFF);
-                return Number.FormatUInt32(temp, format, info);
-            }
-            return Number.FormatInt32(m_value, format, info);
+            return Number.TryFormatInt32(m_value, format, provider, destination, out charsWritten);
         }
 
         public static short Parse(String s)
