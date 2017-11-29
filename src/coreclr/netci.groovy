@@ -2167,14 +2167,17 @@ Constants.allScenarios.each { scenario ->
                         }
                     }
                     else {
+                        // Non-Windows
                         if (architecture == 'arm64') {
                             if (scenario != 'default' && scenario != 'r2r' && scenario != 'gcstress0x3' && scenario != 'gcstress0xc') {
                                 return
                             }
-                    else if (architecture == 'x86') {
-                        // Linux/x86 only want default test
-                        if (scenario != 'default') {
-                            return
+                        }
+                        else if (architecture == 'x86') {
+                            // Linux/x86 only want default test
+                            if (scenario != 'default') {
+                                return
+                            }
                         }
                     }
 
