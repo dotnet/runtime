@@ -89,7 +89,7 @@
       </ItemsToPublish>
     </ItemGroup>
 
-    <Messsage Text="Uploading files to $(AzureAccountName)/$(ContainerName)/$(RelativeBlobPath)" />
+    <Message Text="Uploading files to $(AzureAccountName)/$(ContainerName)/$(RelativeBlobPath)" />
 
     <UploadToAzure AccountName="$(AzureAccountName)"
                    AccountKey="$(AzureAccessToken)"
@@ -112,7 +112,7 @@
       </ItemsToPublish>
     </ItemGroup>
 
-    <Messsage Text="Uploading checksum files to $(ChecksumAzureAccountName)/$(ChecksumContainerName)/$(RelativeBlobPath)" />
+    <Message Text="Uploading checksum files to $(ChecksumAzureAccountName)/$(ChecksumContainerName)/$(RelativeBlobPath)" />
 
     <UploadToAzure AccountName="$(ChecksumAzureAccountName)"
                    AccountKey="$(ChecksumAzureAccessToken)"
