@@ -954,7 +954,7 @@ namespace System
                 (*((uint*)&d + 1) >> 20) & 0x000007ff;
 
             public static unsafe ulong Mantissa(double d) =>
-                *((uint*)&d) | ((ulong)(*((uint*)&d + 1) & 0x000fffff) << 32);
+                *((ulong*)&d) & 0x000fffffffffffff;
 
             public static unsafe bool Sign(double d) =>
                 (*((uint*)&d + 1) >> 31) != 0;
