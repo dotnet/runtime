@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -290,6 +291,59 @@ namespace System
         public static void CopyTo<T>(this T[] array, Memory<T> destination)
         {
            array.CopyTo(destination.Span);
+        }
+
+        // TODO: XML doc
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int BinarySearch<T>(
+            this Span<T> span, IComparable<T> comparable)
+        {
+            return BinarySearch<T, IComparable<T>>(span, comparable);
+        }
+        // TODO: XML doc
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int BinarySearch<T, TComparable>(
+            this Span<T> span, TComparable comparable)
+            where TComparable : IComparable<T>
+        {
+            return BinarySearch((ReadOnlySpan<T>)span, comparable);
+        }
+
+        // TODO: XML doc
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int BinarySearch<T, TComparer>(
+            this Span<T> span, T value, TComparer comparer)
+            where TComparer : IComparer<T>
+        {
+            return BinarySearch((ReadOnlySpan<T>)span, value, comparer);
+        }
+
+        // TODO: XML doc
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int BinarySearch<T>(
+            this ReadOnlySpan<T> span, IComparable<T> comparable)
+        {
+            return BinarySearch<T, IComparable<T>>(span, comparable);
+        }
+
+        // TODO: XML doc
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int BinarySearch<T, TComparable>(
+            this ReadOnlySpan<T> span, TComparable comparable)
+            where TComparable : IComparable<T>
+        {
+            return SpanHelpers.BinarySearch(span, comparable);
+        }
+
+        // TODO: XML doc
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int BinarySearch<T, TComparer>(
+            this ReadOnlySpan<T> span, T value, TComparer comparer)
+            where TComparer : IComparer<T>
+        {
+            var comparable = new SpanHelpers.ComparerComparable<T, TComparer>(
+                value, comparer);
+            return BinarySearch(span, comparable);
         }
     }
 }
