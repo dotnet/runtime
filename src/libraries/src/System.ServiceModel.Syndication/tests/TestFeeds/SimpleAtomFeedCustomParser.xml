@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<feed xml:base="http://mypage.com/" xmlns="http://www.w3.org/2005/Atom">
+  <title type="text">FeedTitle</title>
+  <subtitle type="text">FeedSubtitle</subtitle>
+  <id>FeedID</id>
+  <updated>2017-06-26T14:41:43-07:00</updated>
+  <logo>FeedLogo</logo>
+  <generator>FeedGenerator</generator>
+  <author>
+    <name>AuthorName</name>
+    <email>author@Contoso.com</email>
+    <uri>AuthorUri</uri>
+  </author>
+  <link rel="alternate" href="http://www.contoso.com/news" />
+  <CustomElement xmlns="">asd</CustomElement>
+  <entry>
+    <id>EntryId</id>
+    <title type="text">SyndicationFeed released for .net Core</title>
+    <updated>2017-06-26T21:41:43Z</updated>
+    <link rel="alternate" href="EntryLinkHref" />
+    <content src="EntryContentSrc" />
+  </entry>
+</feed>
