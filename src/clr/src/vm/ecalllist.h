@@ -744,10 +744,9 @@ FCFuncStart(gWaitHandleFuncs)
 FCFuncEnd()
 
 FCFuncStart(gNumberFuncs)
-    FCFuncElement("FormatDouble", COMNumber::FormatDouble)
-    FCFuncElement("FormatSingle", COMNumber::FormatSingle)
+    FCFuncElement("DoubleToNumber", COMNumber::DoubleToNumberFC)
+    FCFuncElement("NumberToDouble", COMNumber::NumberToDoubleFC)
     FCFuncElement("NumberBufferToDecimal", COMNumber::NumberBufferToDecimal)
-    FCFuncElement("NumberBufferToDouble", COMNumber::NumberBufferToDouble)
 FCFuncEnd()
 
 #ifdef FEATURE_COMINTEROP
