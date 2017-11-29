@@ -815,20 +815,38 @@ void LinearScan::TreeNodeInfoInitSIMD(GenTreeSIMD* simdTree)
             break;
 
         case SIMDIntrinsicGetItem:
-            // We have an object and an item, which may be contained.
-            info->srcCount = simdTree->gtGetOp2()->isContained() ? 1 : 2;
+            op1 = simdTree->gtGetOp1();
+            op2 = simdTree->gtGetOp2();
 
-            if (!simdTree->gtGetOp2()->IsCnsIntOrI())
+            // We have an object and an item, which may be contained.
+            info->srcCount = (op2->isContained() ? 1 : 2);
+
+            if (op1->isContained())
             {
-                // If the index is not a constant, we will need a general purpose register
+                // Although GT_IND of TYP_SIMD12 reserves an internal register for reading 4 and 8 bytes from memory
+                // and assembling them into target reg, it is not required in this case.
+                op1->gtLsraInfo.internalIntCount   = 0;
+                op1->gtLsraInfo.internalFloatCount = 0;
+                info->srcCount -= 1;
+                info->srcCount += GetOperandSourceCount(op1);
+            }
+
+            if (!op2->IsCnsIntOrI() && (!op1->isContained() || op1->OperIsLocal()))
+            {
+                // If the index is not a constant and not contained or is a local
+                // we will need a general purpose register to calculate the address
                 info->internalIntCount = 1;
 
-                // If the index is not a constant, we will use the SIMD temp location to store the vector.
-                compiler->getSIMDInitTempVarNum();
-
                 // internal register must not clobber input index
-                simdTree->gtOp.gtOp2->gtLsraInfo.isDelayFree = true;
-                info->hasDelayFreeSrc                        = true;
+                op2->gtLsraInfo.isDelayFree = true;
+                info->hasDelayFreeSrc       = true;
+            }
+
+            if (!op2->IsCnsIntOrI() && (!op1->isContained()))
+            {
+                // If vector is not already in memory (contained) and the index is not a constant,
+                // we will use the SIMD temp location to store the vector.
+                compiler->getSIMDInitTempVarNum();
             }
             break;
 
