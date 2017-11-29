@@ -4,10 +4,24 @@
 
 using System.Diagnostics;
 using System.Globalization;
-using System.Text;
 
 namespace System
 {
+    // The Parse methods provided by the numeric classes convert a
+    // string to a numeric value. The optional style parameter specifies the
+    // permitted style of the numeric string. It must be a combination of bit flags
+    // from the NumberStyles enumeration. The optional info parameter
+    // specifies the NumberFormatInfo instance to use when parsing the
+    // string. If the info parameter is null or omitted, the numeric
+    // formatting information is obtained from the current culture.
+    //
+    // Numeric strings produced by the Format methods using the Currency,
+    // Decimal, Engineering, Fixed point, General, or Number standard formats
+    // (the C, D, E, F, G, and N format specifiers) are guaranteed to be parseable
+    // by the Parse methods if the NumberStyles.Any style is
+    // specified. Note, however, that the Parse methods do not accept
+    // NaNs or Infinities.
+
     internal partial class Number
     {
         private const int Int32Precision = 10;
@@ -913,5 +927,37 @@ namespace System
         }
 
         private static bool IsWhite(char ch) => ch == 0x20 || (ch >= 0x09 && ch <= 0x0D);
+
+        private static bool NumberBufferToDouble(ref NumberBuffer number, ref double value)
+        {
+            double d = NumberToDouble(ref number);
+            uint e = DoubleHelper.Exponent(d);
+            ulong m = DoubleHelper.Mantissa(d);
+
+            if (e == 0x7FF)
+            {
+                return false;
+            }
+
+            if (e == 0 && m == 0)
+            {
+                d = 0;
+            }
+
+            value = d;
+            return true;
+        }
+
+        private static class DoubleHelper
+        {
+            public static unsafe uint Exponent(double d) =>
+                (*((uint*)&d + 1) >> 20) & 0x000007ff;
+
+            public static unsafe ulong Mantissa(double d) =>
+                *((ulong*)&d) & 0x000fffffffffffff;
+
+            public static unsafe bool Sign(double d) =>
+                (*((uint*)&d + 1) >> 31) != 0;
+        }
     }
 }

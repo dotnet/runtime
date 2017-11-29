@@ -956,33 +956,6 @@ namespace System.Text
 
         public StringBuilder Append(bool value) => Append(value.ToString());
 
-        [CLSCompliant(false)]
-        public StringBuilder Append(sbyte value)
-        {
-            if (value.TryFormat(RemainingCurrentChunk, out int charsWritten))
-            {
-                m_ChunkLength += charsWritten;
-                return this;
-            }
-            else
-            {
-                return Append(value.ToString());
-            }
-        }
-
-        public StringBuilder Append(byte value)
-        {
-            if (value.TryFormat(RemainingCurrentChunk, out int charsWritten))
-            {
-                m_ChunkLength += charsWritten;
-                return this;
-            }
-            else
-            {
-                return Append(value.ToString());
-            }
-        }
-
         public StringBuilder Append(char value)
         {
             if (m_ChunkLength < m_ChunkChars.Length)
@@ -997,102 +970,41 @@ namespace System.Text
             return this;
         }
 
-        public StringBuilder Append(short value)
-        {
-            if (value.TryFormat(RemainingCurrentChunk, out int charsWritten))
-            {
-                m_ChunkLength += charsWritten;
-                return this;
-            }
-            else
-            {
-                return Append(value.ToString());
-            }
-        }
+        [CLSCompliant(false)]
+        public StringBuilder Append(sbyte value) => AppendSpanFormattable(value);
 
-        public StringBuilder Append(int value)
-        {
-            if (value.TryFormat(RemainingCurrentChunk, out int charsWritten))
-            {
-                m_ChunkLength += charsWritten;
-                return this;
-            }
-            else
-            {
-                return Append(value.ToString());
-            }
-        }
+        public StringBuilder Append(byte value) => AppendSpanFormattable(value);
 
-        public StringBuilder Append(long value)
-        {
-            if (value.TryFormat(RemainingCurrentChunk, out int charsWritten))
-            {
-                m_ChunkLength += charsWritten;
-                return this;
-            }
-            else
-            {
-                return Append(value.ToString());
-            }
-        }
+        public StringBuilder Append(short value) => AppendSpanFormattable(value);
 
-        public StringBuilder Append(float value) => Append(value.ToString());
+        public StringBuilder Append(int value) => AppendSpanFormattable(value);
 
-        public StringBuilder Append(double value) => Append(value.ToString());
+        public StringBuilder Append(long value) => AppendSpanFormattable(value);
 
-        public StringBuilder Append(decimal value)
-        {
-            if (value.TryFormat(RemainingCurrentChunk, out int charsWritten))
-            {
-                m_ChunkLength += charsWritten;
-                return this;
-            }
-            else
-            {
-                return Append(value.ToString());
-            }
-        }
+        public StringBuilder Append(float value) => AppendSpanFormattable(value);
+
+        public StringBuilder Append(double value) => AppendSpanFormattable(value);
+
+        public StringBuilder Append(decimal value) => AppendSpanFormattable(value);
 
         [CLSCompliant(false)]
-        public StringBuilder Append(ushort value)
-        {
-            if (value.TryFormat(RemainingCurrentChunk, out int charsWritten))
-            {
-                m_ChunkLength += charsWritten;
-                return this;
-            }
-            else
-            {
-                return Append(value.ToString());
-            }
-        }
+        public StringBuilder Append(ushort value) => AppendSpanFormattable(value);
 
         [CLSCompliant(false)]
-        public StringBuilder Append(uint value)
-        {
-            if (value.TryFormat(RemainingCurrentChunk, out int charsWritten))
-            {
-                m_ChunkLength += charsWritten;
-                return this;
-            }
-            else
-            {
-                return Append(value.ToString());
-            }
-        }
+        public StringBuilder Append(uint value) => AppendSpanFormattable(value);
 
         [CLSCompliant(false)]
-        public StringBuilder Append(ulong value)
+        public StringBuilder Append(ulong value) => AppendSpanFormattable(value);
+
+        private StringBuilder AppendSpanFormattable<T>(T value) where T : ISpanFormattable
         {
-            if (value.TryFormat(RemainingCurrentChunk, out int charsWritten))
+            if (value.TryFormat(RemainingCurrentChunk, out int charsWritten, format: default, provider: null))
             {
                 m_ChunkLength += charsWritten;
                 return this;
             }
-            else
-            {
-                return Append(value.ToString());
-            }
+
+            return Append(value.ToString());
         }
 
         public StringBuilder Append(object value) => (value == null) ? this : Append(value.ToString());

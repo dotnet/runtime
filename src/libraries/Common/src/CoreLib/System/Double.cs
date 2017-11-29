@@ -22,7 +22,7 @@ namespace System
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct Double : IComparable, IConvertible, IFormattable, IComparable<Double>, IEquatable<Double>
+    public struct Double : IComparable, IConvertible, IFormattable, IComparable<Double>, IEquatable<Double>, ISpanFormattable
     {
         private double m_value; // Do not rename (binary serialization)
 
@@ -251,6 +251,11 @@ namespace System
         public String ToString(String format, IFormatProvider provider)
         {
             return Number.FormatDouble(m_value, format, NumberFormatInfo.GetInstance(provider));
+        }
+
+        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider provider = null)
+        {
+            return Number.TryFormatDouble(m_value, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }
 
         public static double Parse(String s)
