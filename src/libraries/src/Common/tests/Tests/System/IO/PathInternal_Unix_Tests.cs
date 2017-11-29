@@ -39,20 +39,4 @@ public class PathInternal_Unix_Tests
         if (string.Equals(path, expected, StringComparison.Ordinal))
             Assert.Same(path, result);
     }
-    
-    [Theory]
-    [InlineData(@"\", 0)]
-    [InlineData("", 0)]
-    [InlineData(":", 0)]
-    [InlineData(";", 0)]
-    [InlineData("/", 1)]
-    [InlineData(@"Foo\/\/\", 7)]
-    [InlineData("Foo:Bar", 0)]
-    [InlineData("/usr/foo/", 9)]
-    [InlineData("/home/bar", 6)]
-    [PlatformSpecific(TestPlatforms.AnyUnix)]
-    public void FindFileNameIndexTests(string path, int expected)
-    {
-        Assert.Equal(expected, PathInternal.FindFileNameIndex(path));
-    }
 }
