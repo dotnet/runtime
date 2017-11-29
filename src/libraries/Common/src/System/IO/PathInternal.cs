@@ -11,22 +11,6 @@ namespace System.IO
     internal static partial class PathInternal
     {
         /// <summary>
-        /// Checks for invalid path characters in the given path.
-        /// </summary>
-        /// <exception cref="System.ArgumentNullException">Thrown if the path is null.</exception>
-        /// <exception cref="System.ArgumentException">Thrown if the path has invalid characters.</exception>
-        /// <param name="path">The path to check for invalid characters.</param>
-        internal static void CheckInvalidPathChars(string path)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            if (HasIllegalCharacters(path))
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidPathChars, path), nameof(path));
-        }
-
-
-        /// <summary>
         /// Returns true if the given StringBuilder starts with the given value.
         /// </summary>
         /// <param name="value">The string to compare against the start of the StringBuilder.</param>
@@ -81,33 +65,6 @@ namespace System.IO
 
             builder.Length = end + 1;
             return builder;
-        }
-        
-        /// <summary>
-        /// Returns the start index of the filename
-        /// in the given path, or 0 if no directory
-        /// or volume separator is found.
-        /// </summary>
-        /// <param name="path">The path in which to find the index of the filename.</param>
-        /// <remarks>
-        /// This method returns path.Length for
-        /// inputs like "/usr/foo/" on Unix. As such,
-        /// it is not safe for being used to index
-        /// the string without additional verification.
-        /// </remarks>
-        internal static int FindFileNameIndex(string path)
-        {
-            Debug.Assert(path != null);
-            CheckInvalidPathChars(path);
-
-            for (int i = path.Length - 1; i >= 0; i--)
-            {
-                char ch = path[i];
-                if (IsDirectoryOrVolumeSeparator(ch))
-                    return i + 1;
-            }
-
-            return 0; // the whole path is the filename
         }
 
         /// <summary>

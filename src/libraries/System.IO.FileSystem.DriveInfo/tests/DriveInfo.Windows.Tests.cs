@@ -17,7 +17,6 @@ namespace System.IO.FileSystem.DriveInfoTests
     public class DriveInfoWindowsTests
     {
         [Theory]
-        [InlineData(":\0", "driveName")]
         [InlineData(":", null)]
         [InlineData("://", null)]
         [InlineData(@":\", null)]
