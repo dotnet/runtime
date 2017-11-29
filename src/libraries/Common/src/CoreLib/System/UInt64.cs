@@ -76,22 +76,22 @@ namespace System
 
         public override String ToString()
         {
-            return Number.FormatUInt64(m_value, null, NumberFormatInfo.CurrentInfo);
+            return Number.FormatUInt64(m_value, null, null);
         }
 
         public String ToString(IFormatProvider provider)
         {
-            return Number.FormatUInt64(m_value, null, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatUInt64(m_value, null, provider);
         }
 
         public String ToString(String format)
         {
-            return Number.FormatUInt64(m_value, format, NumberFormatInfo.CurrentInfo);
+            return Number.FormatUInt64(m_value, format, null);
         }
 
         public String ToString(String format, IFormatProvider provider)
         {
-            return Number.FormatUInt64(m_value, format, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatUInt64(m_value, format, provider);
         }
 
         // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
@@ -100,7 +100,7 @@ namespace System
 
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider provider = null)
         {
-            return Number.TryFormatUInt64(m_value, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
+            return Number.TryFormatUInt64(m_value, format, provider, destination, out charsWritten);
         }
 
         [CLSCompliant(false)]
