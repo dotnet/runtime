@@ -167,7 +167,7 @@ namespace System.Net.Security
                 SafeSslHandle sslContext = ((SafeDeleteSslContext)context).SslContext;
                 if (done && sslAuthenticationOptions.IsServer && sslAuthenticationOptions.ApplicationProtocols != null && sslContext.AlpnHandle.IsAllocated && sslContext.AlpnHandle.Target == null)
                 {
-                    throw Interop.OpenSsl.CreateSslException(SR.net_alpn_failed);
+                    return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, Interop.OpenSsl.CreateSslException(SR.net_alpn_failed));
                 }
 
                 outputBuffer.size = outputSize;

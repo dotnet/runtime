@@ -151,12 +151,14 @@ namespace System.Net.Security.Tests
                             (PlatformDetection.IsWindows && !PlatformDetection.IsWindows7))
                         {
                             Task t1 = Assert.ThrowsAsync<IOException>(() => clientStream.AuthenticateAsClientAsync(clientOptions, CancellationToken.None));
-                            Task t2 = Assert.ThrowsAsync<AuthenticationException>(() => serverStream.AuthenticateAsServerAsync(serverOptions, CancellationToken.None)).ContinueWith(t =>
+                            try
                             {
-                                server.Dispose();
-                            }, TaskScheduler.Default);
+                                await serverStream.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+                                Assert.True(false, "AuthenticationException was not thrown.");
+                            }
+                            catch (AuthenticationException) { server.Dispose(); }
 
-                            await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
+                            await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1);
                         }
                         else
                         {
