@@ -8,38 +8,13 @@ namespace System
 {
     internal static partial class Number
     {
-        public static unsafe void DoubleToNumber(double value, int precision, ref NumberBuffer number)
-        {
-            fixed (NumberBuffer* numberPtr = &number)
-            {
-                DoubleToNumber(value, precision, (byte*)numberPtr);
-            }
-        }
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void DoubleToNumber(double value, int precision, byte* number);
+        public static extern void DoubleToNumber(double value, int precision, ref NumberBuffer number);
 
-
-        public static unsafe double NumberToDouble(ref NumberBuffer number)
-        {
-            fixed (NumberBuffer* numberPtr = &number)
-            {
-                double d = 0;
-                NumberToDouble((byte*)numberPtr, &d);
-                return d;
-            }
-        }
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void NumberToDouble(byte* number, double* result);
+        public static extern double NumberToDouble(ref NumberBuffer number);
 
-
-        public static unsafe bool NumberBufferToDecimal(ref Number.NumberBuffer number, ref decimal value)
-        {
-            fixed (NumberBuffer* numberPtr = &number)
-            {
-                return NumberBufferToDecimal((byte*)numberPtr, ref value);
-            }
-        }
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe bool NumberBufferToDecimal(byte* number, ref decimal value);
+        public static extern bool NumberBufferToDecimal(ref NumberBuffer number, ref decimal value);
     }
 }

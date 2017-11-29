@@ -2009,26 +2009,28 @@ ParseSection:
 #pragma warning(pop)
 #endif
 
-FCIMPL3(void, COMNumber::DoubleToNumberFC, double value, int precision, BYTE* number)
+FCIMPL3(void, COMNumber::DoubleToNumberFC, double value, int precision, NUMBER* number)
 {
     FCALL_CONTRACT;
 
-    DoubleToNumber(value, precision, (NUMBER*)number);
+    DoubleToNumber(value, precision, number);
 }
 FCIMPLEND
 
-FCIMPL2(void, COMNumber::NumberToDoubleFC, BYTE* number, double* result)
+FCIMPL1(double, COMNumber::NumberToDoubleFC, NUMBER* number)
 {
     FCALL_CONTRACT;
 
-    NumberToDouble((NUMBER*)number, result);
+    double d = 0;
+    NumberToDouble(number, &d);
+    return d;
 }
 FCIMPLEND
 
-FCIMPL2(FC_BOOL_RET, COMNumber::NumberBufferToDecimal, BYTE* number, DECIMAL* value)
+FCIMPL2(FC_BOOL_RET, COMNumber::NumberBufferToDecimal, NUMBER* number, DECIMAL* value)
 {
     FCALL_CONTRACT;
 
-    FC_RETURN_BOOL(COMDecimal::NumberToDecimal((NUMBER *) number, value) != 0);
+    FC_RETURN_BOOL(COMDecimal::NumberToDecimal(number, value) != 0);
 }
 FCIMPLEND
