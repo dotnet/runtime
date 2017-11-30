@@ -11,21 +11,6 @@ namespace System.IO
     internal static partial class PathInternal
     {
         /// <summary>
-        /// Checks for invalid path characters in the given path.
-        /// </summary>
-        /// <exception cref="System.ArgumentNullException">Thrown if the path is null.</exception>
-        /// <exception cref="System.ArgumentException">Thrown if the path has invalid characters.</exception>
-        /// <param name="path">The path to check for invalid characters.</param>
-        internal static void CheckInvalidPathChars(string path)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            if (HasIllegalCharacters(path))
-                throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
-        }
-
-        /// <summary>
         /// Returns the start index of the filename
         /// in the given path, or 0 if no directory
         /// or volume separator is found.
@@ -40,7 +25,6 @@ namespace System.IO
         internal static int FindFileNameIndex(string path)
         {
             Debug.Assert(path != null);
-            CheckInvalidPathChars(path);
 
             for (int i = path.Length - 1; i >= 0; i--)
             {
