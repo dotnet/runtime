@@ -2070,7 +2070,6 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
 
     vnStore               = nullptr;
     m_opAsgnVarDefSsaNums = nullptr;
-    m_indirAssignMap      = nullptr;
     fgSsaPassesCompleted  = 0;
     fgVNPassesCompleted   = 0;
 
