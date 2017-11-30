@@ -326,7 +326,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 ExprList list = (ExprList)pExpr.OptionalArguments;
                 ExprList list2 = (ExprList)list.OptionalNextListNode;
                 e = GetExpression(list.OptionalElement);
-                t = ((ExprTypeOf)list2.OptionalElement).SourceType.Type.AssociatedSystemType;
+                t = ((ExprTypeOf)list2.OptionalElement).SourceType.AssociatedSystemType;
 
                 if (e.Type.MakeByRefType() == t)
                 {
@@ -354,7 +354,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 ExprList list = (ExprList)pExpr.OptionalArguments;
 
                 e = GetExpression(list.OptionalElement);
-                t = ((ExprTypeOf)list.OptionalNextListNode).SourceType.Type.AssociatedSystemType;
+                t = ((ExprTypeOf)list.OptionalNextListNode).SourceType.AssociatedSystemType;
 
                 if (e.Type.MakeByRefType() == t)
                 {
@@ -470,7 +470,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             return Expression.Constant(
                 GetObject(list.OptionalElement),
-                ((ExprTypeOf)list.OptionalNextListNode).SourceType.Type.AssociatedSystemType);
+                ((ExprTypeOf)list.OptionalNextListNode).SourceType.AssociatedSystemType);
         }
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -784,7 +784,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                         ExprList list = (ExprList)call.OptionalArguments;
                         return
                             Expression.NewArrayInit(
-                                ((ExprTypeOf)list.OptionalElement).SourceType.Type.AssociatedSystemType,
+                                ((ExprTypeOf)list.OptionalElement).SourceType.AssociatedSystemType,
                                 GetArgumentsFromArrayInit((ExprArrayInit)list.OptionalNextListNode));
                     }
 
@@ -885,7 +885,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 }
                 else if (pExpr is ExprTypeOf typeOf)
                 {
-                    return typeOf.SourceType.Type.AssociatedSystemType;
+                    return typeOf.SourceType.AssociatedSystemType;
                 }
                 else if (pExpr is ExprMethodInfo methodInfo)
                 {

@@ -367,17 +367,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private CType getVoidType() { return VoidType; }
 
-        private Expr GenerateAssignmentConversion(Expr op1, Expr op2, bool allowExplicit)
-        {
-            if (allowExplicit)
-            {
-                return mustCastCore(op2, GetExprFactory().CreateClass(op1.Type), 0);
-            }
-            else
-            {
-                return mustConvertCore(op2, GetExprFactory().CreateClass(op1.Type));
-            }
-        }
+        private Expr GenerateAssignmentConversion(Expr op1, Expr op2, bool allowExplicit) =>
+            allowExplicit ? mustCastCore(op2, op1.Type, 0) : mustConvertCore(op2, op1.Type);
 
         ////////////////////////////////////////////////////////////////////////////////
         // Bind the simple assignment operator =.
@@ -420,10 +411,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 x =>
                 {
                     Expr pTemp = mustConvert(x, pDestType);
-                    if (pDestType == pIntType)
-                        return pTemp;
-                    ExprClass exprType = GetExprFactory().CreateClass(pDestType);
-                    return GetExprFactory().CreateCast(EXPRFLAG.EXF_INDEXEXPR, exprType, pTemp);
+                    return pDestType == pIntType
+                        ? pTemp
+                        : GetExprFactory().CreateCast(EXPRFLAG.EXF_INDEXEXPR, pDestType, pTemp);
                 });
 
             // Allocate a new expression, the type is the element type of the array.
@@ -440,16 +430,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
         // Create a cast node with the given expression flags. 
-        private void bindSimpleCast(Expr exprSrc, ExprClass typeDest, out Expr pexprDest)
-        {
+        private void bindSimpleCast(Expr exprSrc, CType typeDest, out Expr pexprDest) =>
             bindSimpleCast(exprSrc, typeDest, out pexprDest, 0);
-        }
 
-        private void bindSimpleCast(Expr exprSrc, ExprClass exprTypeDest, out Expr pexprDest, EXPRFLAG exprFlags)
+        private void bindSimpleCast(Expr exprSrc, CType typeDest, out Expr pexprDest, EXPRFLAG exprFlags)
         {
-            Debug.Assert(exprTypeDest != null);
-            Debug.Assert(exprTypeDest.Type != null);
-            CType typeDest = exprTypeDest.Type;
+            Debug.Assert(typeDest != null);
             // If the source is a constant, and cast is really simple (no change in fundamental
             // type, no flags), then create a new constant node with the new type instead of
             // creating a cast node. This allows compile-time constants to be easily recognized.
@@ -458,7 +444,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // Make the cast expr anyway, and if we find that we have a constant, then set the cast expr
             // as the original tree for the constant. Otherwise, return the cast expr.
 
-            ExprCast exprCast = GetExprFactory().CreateCast(exprFlags, exprTypeDest, exprSrc);
+            ExprCast exprCast = GetExprFactory().CreateCast(exprFlags, typeDest, exprSrc);
             if (Context.Checked)
             {
                 exprCast.Flags |= EXPRFLAG.EXF_CHECKOVERFLOW;

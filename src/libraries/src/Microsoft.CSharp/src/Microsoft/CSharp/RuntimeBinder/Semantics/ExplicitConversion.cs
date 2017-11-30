@@ -19,7 +19,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private Expr _exprSrc;
             private readonly CType _typeSrc;
             private readonly CType _typeDest;
-            private readonly ExprClass _exprTypeDest;
 
             // This is for lambda error reporting. The reason we have this is because we 
             // store errors for lambda conversions, and then we don't bind the conversion
@@ -36,7 +35,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // to report the error on, so that when the lambda conversion fails, it reports
             // errors on the correct type.
 
-            private readonly CType _pDestinationTypeForLambdaErrorReporting;
             private Expr _exprDest;
             private readonly bool _needsExprDest;
             private readonly CONVERTTYPE _flags;
@@ -45,14 +43,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // BindExplicitConversion
             // ----------------------------------------------------------------------------
 
-            public ExplicitConversion(ExpressionBinder binder, Expr exprSrc, CType typeSrc, ExprClass typeDest, CType pDestinationTypeForLambdaErrorReporting, bool needsExprDest, CONVERTTYPE flags)
+            public ExplicitConversion(ExpressionBinder binder, Expr exprSrc, CType typeSrc, CType typeDest, bool needsExprDest, CONVERTTYPE flags)
             {
                 _binder = binder;
                 _exprSrc = exprSrc;
                 _typeSrc = typeSrc;
-                _typeDest = typeDest.Type;
-                _pDestinationTypeForLambdaErrorReporting = pDestinationTypeForLambdaErrorReporting;
-                _exprTypeDest = typeDest;
+                _typeDest = typeDest;
                 _needsExprDest = needsExprDest;
                 _flags = flags;
                 _exprDest = null;
@@ -100,7 +96,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // The set of explicit conversions includes all implicit conversions.
 
                 // Don't try user-defined conversions now because we'll try them again later.
-                if (_binder.BindImplicitConversion(_exprSrc, _typeSrc, _exprTypeDest, _pDestinationTypeForLambdaErrorReporting, _needsExprDest, out _exprDest, _flags | CONVERTTYPE.ISEXPLICIT))
+                if (_binder.BindImplicitConversion(_exprSrc, _typeSrc, _typeDest, _needsExprDest, out _exprDest, _flags | CONVERTTYPE.ISEXPLICIT))
                 {
                     return true;
                 }
@@ -194,7 +190,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 // If S and T are value types and there is a builtin conversion from S => T then there is an
                 // explicit conversion from S? => T that throws on null.
-                if (_typeDest.IsValType() && _binder.BindExplicitConversion(null, _typeSrc.StripNubs(), _exprTypeDest, _pDestinationTypeForLambdaErrorReporting, _flags | CONVERTTYPE.NOUDC))
+                if (_typeDest.IsValType() && _binder.BindExplicitConversion(null, _typeSrc.StripNubs(), _typeDest, _flags | CONVERTTYPE.NOUDC))
                 {
                     if (_needsExprDest)
                     {
@@ -205,7 +201,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         }
 
                         Debug.Assert(valueSrc.Type == _typeSrc.StripNubs());
-                        if (!_binder.BindExplicitConversion(valueSrc, valueSrc.Type, _exprTypeDest, _pDestinationTypeForLambdaErrorReporting, _needsExprDest, out _exprDest, _flags | CONVERTTYPE.NOUDC))
+                        if (!_binder.BindExplicitConversion(valueSrc, valueSrc.Type, _typeDest, _needsExprDest, out _exprDest, _flags | CONVERTTYPE.NOUDC))
                         {
                             Debug.Fail("BindExplicitConversion failed unexpectedly");
                             return false;
@@ -263,7 +259,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
 
                 if (_needsExprDest)
-                    _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest, EXPRFLAG.EXF_REFCHECK);
+                    _binder.bindSimpleCast(_exprSrc, _typeDest, out _exprDest, EXPRFLAG.EXF_REFCHECK);
                 return true;
             }
 
@@ -304,7 +300,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return false;
                 }
                 if (_needsExprDest)
-                    _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest, EXPRFLAG.EXF_REFCHECK);
+                    _binder.bindSimpleCast(_exprSrc, _typeDest, out _exprDest, EXPRFLAG.EXF_REFCHECK);
                 return true;
             }
 
@@ -330,7 +326,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 if (CConversions.FExpRefConv(GetSymbolLoader(), arraySrc.GetElementType(), arrayDest.GetElementType()))
                 {
                     if (_needsExprDest)
-                        _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest, EXPRFLAG.EXF_REFCHECK);
+                        _binder.bindSimpleCast(_exprSrc, _typeDest, out _exprDest, EXPRFLAG.EXF_REFCHECK);
                     return true;
                 }
 
@@ -361,7 +357,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 if (_binder.canConvert(_binder.GetPredefindType(PredefinedType.PT_ARRAY), _typeSrc, CONVERTTYPE.NOUDC))
                 {
                     if (_needsExprDest)
-                        _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest, EXPRFLAG.EXF_REFCHECK);
+                        _binder.bindSimpleCast(_exprSrc, _typeDest, out _exprDest, EXPRFLAG.EXF_REFCHECK);
                     return true;
                 }
                 return false;
@@ -380,7 +376,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 if (_typeSrc is PointerType || _typeSrc.fundType() <= FUNDTYPE.FT_LASTINTEGRAL && _typeSrc.isNumericType())
                 {
                     if (_needsExprDest)
-                        _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest);
+                        _binder.bindSimpleCast(_exprSrc, _typeDest, out _exprDest);
                     return true;
                 }
                 return false;
@@ -428,7 +424,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if (_exprSrc.GetConst() != null)
                 {
-                    ConstCastResult result = _binder.bindConstantCast(_exprSrc, _exprTypeDest, _needsExprDest, out _exprDest, true);
+                    ConstCastResult result = _binder.bindConstantCast(_exprSrc, _typeDest, _needsExprDest, out _exprDest, true);
                     if (result == ConstCastResult.Success)
                     {
                         return AggCastResult.Success;
@@ -440,7 +436,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
 
                 if (_needsExprDest)
-                    _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest);
+                    _binder.bindSimpleCast(_exprSrc, _typeDest, out _exprDest);
                 return AggCastResult.Success;
             }
 
@@ -453,7 +449,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 if (_exprSrc.GetConst() != null)
                 {
                     // Fold the constant cast if possible.
-                    ConstCastResult result = _binder.bindConstantCast(_exprSrc, _exprTypeDest, _needsExprDest, out _exprDest, true);
+                    ConstCastResult result = _binder.bindConstantCast(_exprSrc, _typeDest, _needsExprDest, out _exprDest, true);
                     if (result == ConstCastResult.Success)
                     {
                         return AggCastResult.Success;  // else, don't fold and use a regular cast, below.
@@ -478,7 +474,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     if (bIsConversionOK)
                     {
                         // upcast to the Enum type
-                        _binder.bindSimpleCast(_exprDest, _exprTypeDest, out _exprDest);
+                        _binder.bindSimpleCast(_exprDest, _typeDest, out _exprDest);
                     }
                 }
                 return bIsConversionOK ? AggCastResult.Success : AggCastResult.Failure;
@@ -502,8 +498,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
                 else
                 {
-                    ExprClass underlyingExpr = GetExprFactory().CreateClass(underlyingType);
-                    _binder.bindSimpleCast(_exprSrc, underlyingExpr, out exprCast);
+                    _binder.bindSimpleCast(_exprSrc, underlyingType, out exprCast);
                 }
 
                 // There is always an implicit conversion from any integral type to decimal.
@@ -511,7 +506,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 if (exprCast.GetConst() != null)
                 {
                     // Fold the constant cast if possible.
-                    ConstCastResult result = _binder.bindConstantCast(exprCast, _exprTypeDest, _needsExprDest, out _exprDest, true);
+                    ConstCastResult result = _binder.bindConstantCast(exprCast, _typeDest, _needsExprDest, out _exprDest, true);
                     if (result == ConstCastResult.Success)
                     {
                         return AggCastResult.Success;  // else, don't fold and use a regular cast, below.
@@ -558,7 +553,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // Transform constant to constant.
                     if (_exprSrc.GetConst() != null)
                     {
-                        ConstCastResult result = _binder.bindConstantCast(_exprSrc, _exprTypeDest, _needsExprDest, out _exprDest, true);
+                        ConstCastResult result = _binder.bindConstantCast(_exprSrc, _typeDest, _needsExprDest, out _exprDest, true);
                         if (result == ConstCastResult.Success)
                         {
                             return AggCastResult.Success;
@@ -569,14 +564,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         }
                     }
                     if (_needsExprDest)
-                        _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest);
+                        _binder.bindSimpleCast(_exprSrc, _typeDest, out _exprDest);
                     return AggCastResult.Success;
                 }
                 else if (_typeSrc.isPredefined() &&
                          (_typeSrc.isPredefType(PredefinedType.PT_OBJECT) || _typeSrc.isPredefType(PredefinedType.PT_VALUE) || _typeSrc.isPredefType(PredefinedType.PT_ENUM)))
                 {
                     if (_needsExprDest)
-                        _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest, EXPRFLAG.EXF_UNBOX);
+                        _binder.bindSimpleCast(_exprSrc, _typeDest, out _exprDest, EXPRFLAG.EXF_UNBOX);
                     return AggCastResult.Success;
                 }
                 return AggCastResult.Failure;
@@ -620,7 +615,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 if (_exprSrc.GetConst() != null)
                 {
                     // Fold the constant cast if possible.
-                    ConstCastResult result = _binder.bindConstantCast(_exprSrc, _exprTypeDest, _needsExprDest, out _exprDest, true);
+                    ConstCastResult result = _binder.bindConstantCast(_exprSrc, _typeDest, _needsExprDest, out _exprDest, true);
                     if (result == ConstCastResult.Success)
                     {
                         return AggCastResult.Success;  // else, don't fold and use a regular cast, below.
@@ -644,7 +639,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                     else
                     {
-                        _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest, (_flags & CONVERTTYPE.CHECKOVERFLOW) != 0 ? EXPRFLAG.EXF_CHECKOVERFLOW : 0);
+                        _binder.bindSimpleCast(_exprSrc, _typeDest, out _exprDest, (_flags & CONVERTTYPE.CHECKOVERFLOW) != 0 ? EXPRFLAG.EXF_CHECKOVERFLOW : 0);
                     }
                 }
                 return bConversionOk ? AggCastResult.Success : AggCastResult.Failure;
@@ -681,11 +676,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     {
                         if (aggDest.IsValueType() && aggSrc.getThisType().fundType() == FUNDTYPE.FT_REF)
                         {
-                            _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest, EXPRFLAG.EXF_UNBOX);
+                            _binder.bindSimpleCast(_exprSrc, _typeDest, out _exprDest, EXPRFLAG.EXF_UNBOX);
                         }
                         else
                         {
-                            _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest, EXPRFLAG.EXF_REFCHECK | (_exprSrc?.Flags & EXPRFLAG.EXF_CANTBENULL ?? 0));
+                            _binder.bindSimpleCast(_exprSrc, _typeDest, out _exprDest, EXPRFLAG.EXF_REFCHECK | (_exprSrc?.Flags & EXPRFLAG.EXF_CANTBENULL ?? 0));
                         }
                     }
                     return AggCastResult.Success;
@@ -697,7 +692,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     CConversions.HasGenericDelegateExplicitReferenceConversion(GetSymbolLoader(), _typeSrc, aggTypeDest))
                 {
                     if (_needsExprDest)
-                        _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest, EXPRFLAG.EXF_REFCHECK | (_exprSrc?.Flags & EXPRFLAG.EXF_CANTBENULL ?? 0));
+                        _binder.bindSimpleCast(_exprSrc, _typeDest, out _exprDest, EXPRFLAG.EXF_REFCHECK | (_exprSrc?.Flags & EXPRFLAG.EXF_CANTBENULL ?? 0));
                     return AggCastResult.Success;
                 }
                 return AggCastResult.Failure;
@@ -716,7 +711,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return AggCastResult.Failure;
                 }
                 if (_needsExprDest)
-                    _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest);
+                    _binder.bindSimpleCast(_exprSrc, _typeDest, out _exprDest);
                 return AggCastResult.Success;
             }
 

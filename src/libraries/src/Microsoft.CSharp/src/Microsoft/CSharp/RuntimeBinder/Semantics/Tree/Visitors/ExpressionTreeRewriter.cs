@@ -939,8 +939,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Expr newIndex = it.Current();
                 if (newIndex.Type != intType)
                 {
-                    ExprClass exprType = expressionFactory.CreateClass(intType);
-                    newIndex = expressionFactory.CreateCast(EXPRFLAG.EXF_INDEXEXPR, exprType, newIndex);
+                    newIndex = expressionFactory.CreateCast(EXPRFLAG.EXF_INDEXEXPR, intType, newIndex);
                     newIndex.Flags |= EXPRFLAG.EXF_CHECKOVERFLOW;
                 }
                 Expr rewrittenIndex = Visit(newIndex);
@@ -967,8 +966,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 flags = EXPRFLAG.EXF_BOX;
             }
 
-            ExprClass objectType = GetExprFactory().CreateClass(pObject);
-            ExprCast cast = GetExprFactory().CreateCast(flags, objectType, expr);
+            ExprCast cast = GetExprFactory().CreateCast(flags, pObject, expr);
             ExprTypeOf pTypeOf2 = CreateTypeOf(expr.Type);
 
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_CONSTANT_OBJECT_TYPE, cast, pTypeOf2);
