@@ -25,8 +25,6 @@ namespace System.IO
             if (path.Length == 0)
                 throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
 
-            PathInternal.CheckInvalidPathChars(path);
-
             // Expand with current directory if necessary
             if (!IsPathRooted(path))
             {
@@ -176,7 +174,6 @@ namespace System.IO
             if (path == null)
                 return false;
 
-            PathInternal.CheckInvalidPathChars(path);
             return path.Length > 0 && path[0] == PathInternal.DirectorySeparatorChar;
         }
 
