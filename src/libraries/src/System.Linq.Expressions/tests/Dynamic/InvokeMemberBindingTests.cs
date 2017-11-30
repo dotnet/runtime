@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using Microsoft.CSharp.RuntimeBinder;
@@ -360,6 +361,29 @@ namespace System.Dynamic.Tests
             Assert.Equal(10, d.GetValue2(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
             Assert.Equal(11, d.GetValue(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
             Assert.Equal(11, d.GetValue2(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
+        }
+
+        public static IEnumerable<object> SameNameObjectPairs()
+        {
+            object[] testObjects = Enumerable.Range(0, 4)
+                .Select(
+                    _ => Activator.CreateInstance(
+                        AssemblyBuilder
+                            .DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run)
+                            .DefineDynamicModule("TestModule")
+                            .DefineType("TestType", TypeAttributes.Public)
+                            .CreateType()))
+                .ToArray();
+            return testObjects.SelectMany(i => testObjects.Select(j => new[] { i, j }));
+        }
+
+        [Theory, MemberData(nameof(SameNameObjectPairs))]
+        public void OperationOnTwoObjectsDifferentTypesOfSameName(object x, object y)
+        {
+            dynamic dX = x;
+            dynamic dY = y;
+            bool equal = dX.Equals(dY);
+            Assert.Equal(x == y, equal);
         }
 
 #endif
