@@ -47,7 +47,8 @@ namespace System.Buffers.Text
 
             // Write the last group
             Unsafe.Add(ref utf8Bytes, idx++) = Utf8Constants.Separator;
-            idx += FormattingHelpers.WriteDigits(lastGroup, 3, ref utf8Bytes, idx);
+            FormattingHelpers.WriteDigits(lastGroup, 3, ref utf8Bytes, idx);
+            idx += 3;
 
             // Write out the trailing zeros
             if (precision > 0)
