@@ -91,22 +91,27 @@ namespace System.Buffers.Text
 
                         if (dayDigits > 0)
                         {
-                            idx += FormattingHelpers.WriteDigits(days, dayDigits, ref utf8Bytes, idx);
+                            FormattingHelpers.WriteDigits(days, dayDigits, ref utf8Bytes, idx);
+                            idx += dayDigits;
                             Unsafe.Add(ref utf8Bytes, idx++) = constant ? Utf8Constants.Period : Utf8Constants.Colon;
                         }
 
-                        idx += FormattingHelpers.WriteDigits(hours, hourDigits, ref utf8Bytes, idx);
+                        FormattingHelpers.WriteDigits(hours, hourDigits, ref utf8Bytes, idx);
+                        idx += hourDigits;
                         Unsafe.Add(ref utf8Bytes, idx++) = Utf8Constants.Colon;
 
-                        idx += FormattingHelpers.WriteDigits(minutes, 2, ref utf8Bytes, idx);
+                        FormattingHelpers.WriteDigits(minutes, 2, ref utf8Bytes, idx);
+                        idx += 2;
                         Unsafe.Add(ref utf8Bytes, idx++) = Utf8Constants.Colon;
 
-                        idx += FormattingHelpers.WriteDigits(seconds, 2, ref utf8Bytes, idx);
+                        FormattingHelpers.WriteDigits(seconds, 2, ref utf8Bytes, idx);
+                        idx += 2;
 
                         if (fractionDigits > 0)
                         {
                             Unsafe.Add(ref utf8Bytes, idx++) = Utf8Constants.Period;
-                            idx += FormattingHelpers.WriteFractionDigits(fraction, fractionDigits, ref utf8Bytes, idx);
+                            FormattingHelpers.WriteFractionDigits(fraction, fractionDigits, ref utf8Bytes, idx);
+                            idx += fractionDigits;
                         }
 
                         return true;

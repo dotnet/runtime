@@ -36,7 +36,8 @@ namespace System.Buffers.Text
             }
 
             ref byte utf8Bytes = ref buffer.DangerousGetPinnableReference();
-            bytesWritten += FormattingHelpers.WriteDigits(lastDigit, 1, ref utf8Bytes, bytesWritten);
+            FormattingHelpers.WriteDigits(lastDigit, 1, ref utf8Bytes, bytesWritten);
+            bytesWritten += 1;
             return true;
         }
     }
