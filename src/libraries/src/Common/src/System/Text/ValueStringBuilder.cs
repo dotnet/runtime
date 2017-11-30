@@ -21,7 +21,22 @@ namespace System.Text
             _pos = 0;
         }
 
-        public int Length => _pos;
+        public int Length
+        {
+            get => _pos;
+            set
+            {
+                int delta = value - _pos;
+                if (delta > 0)
+                {
+                    Append('\0', delta);
+                }
+                else
+                {
+                    _pos = value;
+                }
+            }
+        }
 
         public override string ToString()
         {
