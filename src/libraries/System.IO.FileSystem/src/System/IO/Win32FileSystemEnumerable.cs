@@ -217,7 +217,6 @@ namespace System.IO
 
             if (searchCriteria != null)
             {
-                PathInternal.CheckInvalidPathChars(fullPath);
                 if (PathInternal.HasWildCardCharacters(fullPath))
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidPathChars, fullPath), nameof(fullPath));
 
