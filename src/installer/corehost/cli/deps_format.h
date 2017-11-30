@@ -23,10 +23,10 @@ class deps_json_t
     struct rid_specific_assets_t { std::unordered_map<pal::string_t, rid_assets_t> libs; };
 
     typedef std::unordered_map<pal::string_t, std::vector<pal::string_t>> str_to_vector_map_t;
-    typedef str_to_vector_map_t rid_fallback_graph_t;
-
 
 public:
+    typedef str_to_vector_map_t rid_fallback_graph_t;
+
     deps_json_t()
         : m_valid(false)
         , m_file_exists(false)
@@ -44,7 +44,17 @@ public:
         m_valid = load(portable, deps_path, graph);
     }
 
-    const std::vector<deps_entry_t>& get_entries(deps_entry_t::asset_types type)
+    void parse(bool portable, const pal::string_t& deps_path)
+    {
+        m_valid = load(portable, deps_path, m_rid_fallback_graph /* dummy */);
+    }
+
+    void parse(bool portable, const pal::string_t& deps_path, const rid_fallback_graph_t& graph)
+    {
+        m_valid = load(portable, deps_path, graph);
+    }
+
+    const std::vector<deps_entry_t>& get_entries(deps_entry_t::asset_types type) const
     {
         assert(type < deps_entry_t::asset_types::count);
         return m_deps_entries[type];
@@ -52,22 +62,22 @@ public:
 
     bool has_package(const pal::string_t& name, const pal::string_t& ver) const;
 
-    bool exists()
+    bool exists() const
     {
         return m_file_exists;
     }
 
-    bool is_valid()
+    bool is_valid() const
     {
         return m_valid;
     }
 
-    const rid_fallback_graph_t& get_rid_fallback_graph()
+    const rid_fallback_graph_t& get_rid_fallback_graph() const
     {
         return m_rid_fallback_graph;
     }
 
-	const deps_entry_t& try_ni(const deps_entry_t& entry) const;
+    const deps_entry_t& try_ni(const deps_entry_t& entry) const;
 
 private:
     bool load_standalone(const pal::string_t& deps_path, const json_value& json, const pal::string_t& target_name);
