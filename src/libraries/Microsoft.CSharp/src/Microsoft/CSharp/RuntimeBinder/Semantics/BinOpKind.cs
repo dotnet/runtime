@@ -42,9 +42,5 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         Enum = Sub | Equal | Compare | Bitwise | BitXor,
         EnumUnder = Add | Sub,
         UnderEnum = Add,
-        Ptr = Sub,
-        PtrNum = Add | Sub,
-        NumPtr = Add,
-        VoidPtr = Equal | Compare,
     }
 }
