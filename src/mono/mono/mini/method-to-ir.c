@@ -75,6 +75,7 @@
 #include "seq-points.h"
 #include "aot-compiler.h"
 #include "mini-llvm.h"
+#include "mini-runtime.h"
 
 #define BRANCH_COST 10
 #define INLINE_LENGTH_LIMIT 20

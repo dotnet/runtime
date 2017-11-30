@@ -24,6 +24,7 @@
 
 #include "mini.h"
 #include "mini-arm.h"
+#include "mini-runtime.h"
 #include "debugger-agent.h"
 #include "jit-icalls.h"
 

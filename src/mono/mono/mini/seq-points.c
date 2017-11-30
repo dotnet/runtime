@@ -10,6 +10,7 @@
  */
 
 #include "mini.h"
+#include "mini-runtime.h"
 #include "seq-points.h"
 
 static void

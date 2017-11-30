@@ -11,6 +11,7 @@
 #include "mini.h"
 #include "mini-arm64.h"
 #include "mini-arm64-gsharedvt.h"
+#include "aot-runtime.h"
 
 /*
  * GSHAREDVT

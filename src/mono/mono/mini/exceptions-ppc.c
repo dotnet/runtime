@@ -30,6 +30,8 @@
 
 #include "mini.h"
 #include "mini-ppc.h"
+#include "mini-runtime.h"
+#include "aot-runtime.h"
 
 /*
 

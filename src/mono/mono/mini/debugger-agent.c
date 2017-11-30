@@ -76,6 +76,8 @@
 #include "debugger-agent.h"
 #include "mini.h"
 #include "seq-points.h"
+#include "aot-runtime.h"
+#include "mini-runtime.h"
 #include "interp/interp.h"
 
 /*

@@ -60,6 +60,8 @@
 #include "mini.h"
 #include "mini-s390x.h"
 #include "support-s390x.h"
+#include "mini-runtime.h"
+#include "aot-runtime.h"
 
 /*========================= End of Includes ========================*/
 

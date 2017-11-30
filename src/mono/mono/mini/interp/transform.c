@@ -18,6 +18,7 @@
 #include <mono/metadata/seq-points-data.h>
 
 #include <mono/mini/mini.h>
+#include <mono/mini/mini-runtime.h>
 
 #include "mintops.h"
 #include "interp-internals.h"

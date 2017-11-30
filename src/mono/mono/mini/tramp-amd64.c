@@ -28,6 +28,7 @@
 
 #include "mini.h"
 #include "mini-amd64.h"
+#include "mini-runtime.h"
 #include "debugger-agent.h"
 
 #ifndef DISABLE_INTERPRETER

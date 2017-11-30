@@ -12,6 +12,7 @@
 #include <mono/metadata/domain-internals.h>
 #include <mono/utils/mono-threads.h>
 #include "mini.h"
+#include "mini-runtime.h"
 
 #ifdef HOST_WIN32
 #include <windows.h>

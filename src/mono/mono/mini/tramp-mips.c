@@ -25,6 +25,7 @@
 
 #include "mini.h"
 #include "mini-mips.h"
+#include "mini-runtime.h"
 
 /*
  * get_unbox_trampoline:

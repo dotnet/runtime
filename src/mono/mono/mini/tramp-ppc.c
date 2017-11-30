@@ -23,6 +23,7 @@
 
 #include "mini.h"
 #include "mini-ppc.h"
+#include "mini-runtime.h"
 
 #if 0
 /* Same as mono_create_ftnptr, but doesn't require a domain */

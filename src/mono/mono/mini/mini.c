@@ -78,6 +78,8 @@
 #include "llvm-runtime.h"
 #include "mini-llvm.h"
 #include "lldb.h"
+#include "aot-runtime.h"
+#include "mini-runtime.h"
 
 MonoCallSpec *mono_jit_trace_calls;
 MonoMethodDesc *mono_inject_async_exc_method;

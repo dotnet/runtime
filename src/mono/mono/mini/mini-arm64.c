@@ -19,6 +19,8 @@
 #include "mini.h"
 #include "cpu-arm64.h"
 #include "ir-emit.h"
+#include "aot-runtime.h"
+#include "mini-runtime.h"
 
 #include <mono/arch/arm64/arm64-codegen.h>
 #include <mono/utils/mono-mmap.h>

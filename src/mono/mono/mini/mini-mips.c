@@ -29,6 +29,8 @@
 #include "cpu-mips.h"
 #include "trace.h"
 #include "ir-emit.h"
+#include "aot-runtime.h"
+#include "mini-runtime.h"
 
 #define SAVE_FP_REGS		0
 
@@ -62,8 +64,6 @@ enum {
 #define mono_mini_arch_lock() mono_os_mutex_lock (&mini_arch_mutex)
 #define mono_mini_arch_unlock() mono_os_mutex_unlock (&mini_arch_mutex)
 static mono_mutex_t mini_arch_mutex;
-
-int mono_exc_esp_offset = 0;
 
 /* Whenever the host is little-endian */
 static int little_endian;

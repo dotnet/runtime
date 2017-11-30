@@ -75,6 +75,8 @@
 #include "seq-points.h"
 #include "llvm-runtime.h"
 #include "mini-llvm.h"
+#include "aot-runtime.h"
+#include "mini-runtime.h"
 #include "interp/interp.h"
 
 #ifdef ENABLE_LLVM

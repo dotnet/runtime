@@ -60,11 +60,13 @@
 #include <mono/utils/w32api.h>
 
 #include "aot-compiler.h"
+#include "aot-runtime.h"
 #include "seq-points.h"
 #include "image-writer.h"
 #include "dwarfwriter.h"
 #include "mini-gc.h"
 #include "mini-llvm.h"
+#include "mini-runtime.h"
 
 #if !defined(DISABLE_AOT) && !defined(DISABLE_JIT)
 

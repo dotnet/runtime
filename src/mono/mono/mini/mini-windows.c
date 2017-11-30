@@ -45,6 +45,7 @@
 #include <mono/utils/dtrace.h>
 
 #include "mini.h"
+#include "mini-runtime.h"
 #include "mini-windows.h"
 #include <string.h>
 #include <ctype.h>

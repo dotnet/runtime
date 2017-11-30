@@ -21,6 +21,7 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-dl.h>
 #include "mini.h"
+#include "mini-runtime.h"
 
 #ifdef HAVE_UNISTD_H
 #  include <unistd.h>

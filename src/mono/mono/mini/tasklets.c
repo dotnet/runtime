@@ -7,6 +7,7 @@
 #include "mono/metadata/exception.h"
 #include "mono/metadata/gc-internals.h"
 #include "mini.h"
+#include "mini-runtime.h"
 
 #if defined(MONO_SUPPORT_TASKLETS)
 

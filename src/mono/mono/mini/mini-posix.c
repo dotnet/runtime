@@ -65,7 +65,7 @@
 #include "trace.h"
 #include "version.h"
 #include "debugger-agent.h"
-
+#include "mini-runtime.h"
 #include "jit-icalls.h"
 
 #ifdef HOST_DARWIN

@@ -46,6 +46,7 @@
 
 #include "mini.h"
 #include "mini-s390x.h"
+#include "mini-runtime.h"
 #include "support-s390x.h"
 #include "jit-icalls.h"
 

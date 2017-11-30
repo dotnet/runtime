@@ -498,7 +498,9 @@ common_sources = \
 	lldb.h			\
 	lldb.c	\
 	memory-access.c	\
-	mini-profiler.c
+	mini-profiler.c	\
+	aot-runtime.h	\
+	mini-runtime.h
 
 test_sources = 			\
 	basic-calls.cs 		\

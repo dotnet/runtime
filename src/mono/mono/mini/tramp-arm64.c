@@ -16,6 +16,7 @@
  */
 
 #include "mini.h"
+#include "mini-runtime.h"
 #include "debugger-agent.h"
 
 #include <mono/arch/arm64/arm64-codegen.h>

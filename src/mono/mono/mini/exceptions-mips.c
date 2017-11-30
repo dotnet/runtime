@@ -28,6 +28,8 @@
 
 #include "mini.h"
 #include "mini-mips.h"
+#include "mini-runtime.h"
+#include "aot-runtime.h"
 
 #define GENERIC_EXCEPTION_SIZE 256
 

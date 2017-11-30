@@ -15,6 +15,8 @@
  */
 
 #include "mini.h"
+#include "mini-runtime.h"
+#include "aot-runtime.h"
 
 #include <mono/arch/arm64/arm64-codegen.h>
 #include <mono/metadata/abi-details.h>

@@ -42,6 +42,8 @@
 
 #include "mini.h"
 #include "mini-amd64.h"
+#include "mini-runtime.h"
+#include "aot-runtime.h"
 #include "tasklets.h"
 
 #define ALIGN_TO(val,align) (((val) + ((align) - 1)) & ~((align) - 1))

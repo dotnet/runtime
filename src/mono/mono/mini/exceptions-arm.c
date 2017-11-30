@@ -36,6 +36,8 @@
 
 #include "mini.h"
 #include "mini-arm.h"
+#include "mini-runtime.h"
+#include "aot-runtime.h"
 #include "mono/utils/mono-sigcontext.h"
 #include "mono/utils/mono-compiler.h"
 

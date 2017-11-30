@@ -6,6 +6,7 @@
 #define __MONO_MINI_LLVM_H__
 
 #include "mini.h"
+#include "aot-runtime.h"
 
 /* LLVM backend */
 /* KEEP THIS IN SYNCH WITH mini-llvm-loaded.c */
