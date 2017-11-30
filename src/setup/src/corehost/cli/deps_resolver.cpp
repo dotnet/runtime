@@ -221,10 +221,12 @@ void deps_resolver_t::setup_probe_config(
         m_probes.push_back(probe_config_t::svc(ext_pkgs));
     }
 
-    if (pal::directory_exists(m_fx_dir))
+    for (int i = 1; i < init.fx_definitions.size(); ++i)
     {
-        // FX probe
-        m_probes.push_back(probe_config_t::fx(m_fx_dir, m_fx_deps.get()));
+        if (pal::directory_exists(init.fx_definitions[i]->get_dir()))
+        {
+            m_probes.push_back(probe_config_t::fx(init.fx_definitions[i]->get_dir(), &init.fx_definitions[i]->get_deps()));
+        }
     }
 
     // The published deps directory to be probed: either app or FX directory.
@@ -372,7 +374,7 @@ bool deps_resolver_t::resolve_tpa_list(
     const std::vector<deps_entry_t> empty(0);
     dir_assemblies_t items;
 
-    auto process_entry = [&](const pal::string_t& deps_dir, deps_json_t* deps, const deps_entry_t& entry) -> bool
+    auto process_entry = [&](const pal::string_t& deps_dir, const deps_entry_t& entry) -> bool
     {
         if (entry.is_serviceable)
         {
@@ -428,10 +430,11 @@ bool deps_resolver_t::resolve_tpa_list(
     // Workaround for: csc.deps.json doesn't have the csc.dll
     pal::string_t managed_app_asset = get_filename_without_ext(m_managed_app);
     add_tpa_asset(managed_app_asset, m_managed_app, &items);
-    const auto& deps_entries = m_deps->get_entries(deps_entry_t::asset_types::runtime);
+
+    const auto& deps_entries = get_deps().get_entries(deps_entry_t::asset_types::runtime);
     for (const auto& entry : deps_entries)
     {
-        if (!process_entry(m_app_dir, m_deps.get(), entry))
+        if (!process_entry(m_app_dir, entry))
         {
             return false;
         }
@@ -439,7 +442,7 @@ bool deps_resolver_t::resolve_tpa_list(
 
     // If the deps file wasn't present or has missing entries, then
     // add the app local assemblies to the TPA.
-    if (!m_deps->exists())
+    if (!get_deps().exists())
     {
         dir_assemblies_t local_assemblies;
 
@@ -458,7 +461,7 @@ bool deps_resolver_t::resolve_tpa_list(
         auto additional_deps_entries = additional_deps->get_entries(deps_entry_t::asset_types::runtime);
         for (auto entry : additional_deps_entries)
         {
-            if (!process_entry(m_app_dir, additional_deps.get(), entry))
+            if (!process_entry(m_app_dir, entry))
             {
                 return false;
             }
@@ -466,12 +469,15 @@ bool deps_resolver_t::resolve_tpa_list(
     }
 
     // Probe FX deps entries after app assemblies are added.
-    const auto& fx_entries = m_portable ? m_fx_deps->get_entries(deps_entry_t::asset_types::runtime) : empty;
-    for (const auto& entry : fx_entries)
+    for (int i = 1; i < m_fx_definitions.size(); ++i)
     {
-        if (!process_entry(m_fx_dir, m_fx_deps.get(), entry))
+        const auto& fx_entries = m_portable ? m_fx_definitions[i]->get_deps().get_entries(deps_entry_t::asset_types::runtime) : empty;
+        for (const auto& entry : fx_entries)
         {
-            return false;
+            if (!process_entry(m_fx_definitions[i]->get_dir(), entry))
+            {
+                return false;
+            }
         }
     }
 
@@ -523,8 +529,6 @@ void deps_resolver_t::resolve_additional_deps(const hostpolicy_init_t& init)
     }
 
     pal::string_t additional_deps_serialized = init.additional_deps_serialized;
-    pal::string_t fx_name = init.fx_name;
-    pal::string_t fx_ver = init.fx_ver;
 
     if (additional_deps_serialized.empty())
     {
@@ -544,7 +548,7 @@ void deps_resolver_t::resolve_additional_deps(const hostpolicy_init_t& init)
             {
                 trace::verbose(_X("Using specified additional deps.json: '%s'"), 
                     additional_deps_path.c_str());
-                    
+
                 m_additional_deps_files.push_back(additional_deps_path);
             }
             else
@@ -555,30 +559,35 @@ void deps_resolver_t::resolve_additional_deps(const hostpolicy_init_t& init)
         }
         else
         {
-            // We'll search deps files in 'base_dir'/shared/fx_name/fx_ver
-            append_path(&additional_deps_path, _X("shared"));
-            append_path(&additional_deps_path, fx_name.c_str());
-            append_path(&additional_deps_path, fx_ver.c_str());
-
-            // The resulting list will be empty if 'additional_deps_path' is not a valid directory path
-            std::vector<pal::string_t> list;
-            pal::readdir(additional_deps_path, _X("*.deps.json"), &list);
-            for (pal::string_t json_file : list)
+            for (int i = 1; i < m_fx_definitions.size(); ++i)
             {
-                pal::string_t json_full_path = additional_deps_path;
-                append_path(&json_full_path, json_file.c_str());
-                m_additional_deps_files.push_back(json_full_path);
+                // We'll search deps files in 'base_dir'/shared/fx_name/fx_ver
+                pal::string_t additional_deps_path_fx = additional_deps_path;
+                append_path(&additional_deps_path_fx, _X("shared"));
+                append_path(&additional_deps_path_fx, m_fx_definitions[i]->get_name().c_str());
+                append_path(&additional_deps_path_fx, m_fx_definitions[i]->get_found_version().c_str());
 
-                trace::verbose(_X("Using specified additional deps.json: '%s'"), 
-                    json_full_path.c_str());
+                // The resulting list will be empty if 'additional_deps_path_fx' is not a valid directory path
+                std::vector<pal::string_t> list;
+                pal::readdir(additional_deps_path_fx, _X("*.deps.json"), &list);
+                for (pal::string_t json_file : list)
+                {
+                    pal::string_t json_full_path = additional_deps_path_fx;
+                    append_path(&json_full_path, json_file.c_str());
+                    m_additional_deps_files.push_back(json_full_path);
+
+                    trace::verbose(_X("Using specified additional deps.json: '%s'"),
+                        json_full_path.c_str());
+                }
             }
         }
     }
 
+    auto rids = get_root_framework(m_fx_definitions).get_deps().get_rid_fallback_graph();
     for (pal::string_t json_file : m_additional_deps_files)
     {
         m_additional_deps.push_back(std::unique_ptr<deps_json_t>(
-            new deps_json_t(true, json_file, m_fx_deps->get_rid_fallback_graph())));
+            new deps_json_t(true, json_file, rids)));
     }
 }
 
@@ -615,8 +624,6 @@ bool deps_resolver_t::resolve_probe_dirs(
     pal::string_t non_serviced;
 
     std::vector<deps_entry_t> empty(0);
-    const auto& entries = m_deps->get_entries(asset_type);
-    const auto& fx_entries = m_portable ? m_fx_deps->get_entries(asset_type) : empty;
 
     pal::string_t candidate;
 
@@ -660,6 +667,8 @@ bool deps_resolver_t::resolve_probe_dirs(
         return true;
     };
 
+    // Add app entries
+    const auto& entries = get_deps().get_entries(asset_type);
     for (const auto& entry : entries)
     {
         if (!add_package_cache_entry(entry, m_app_dir))
@@ -669,7 +678,7 @@ bool deps_resolver_t::resolve_probe_dirs(
     }
 
     // If the deps file is missing add known locations.
-    if (!m_deps->exists())
+    if (!get_deps().exists())
     {
         // App local path
         add_unique_path(asset_type, m_app_dir, &items, output, &non_serviced, core_servicing);
@@ -692,11 +701,16 @@ bool deps_resolver_t::resolve_probe_dirs(
         }
     }
     
-    for (const auto& entry : fx_entries)
+    // Add fx package locations to fx_dir
+    for (int i = 1; i < m_fx_definitions.size(); ++i)
     {
-        if (!add_package_cache_entry(entry, m_fx_dir))
+        const auto& fx_entries = m_fx_definitions[i]->get_deps().get_entries(asset_type);
+        for (const auto& entry : fx_entries)
         {
-            return false;
+            if (!add_package_cache_entry(entry, m_fx_definitions[i]->get_dir()))
+            {
+                return false;
+            }
         }
     }
 

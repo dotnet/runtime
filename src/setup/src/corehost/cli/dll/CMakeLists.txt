@@ -41,7 +41,9 @@ set(SOURCES
     ../coreclr.cpp
     ../deps_resolver.cpp
     ../deps_format.cpp
-    ../deps_entry.cpp)
+    ../deps_entry.cpp
+    ../fx_definition.cpp
+)
 
 
 if(WIN32)
