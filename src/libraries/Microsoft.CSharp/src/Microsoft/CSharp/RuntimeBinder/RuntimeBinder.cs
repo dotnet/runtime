@@ -1504,7 +1504,6 @@ namespace Microsoft.CSharp.RuntimeBinder
                 throw Error.NullReferenceOnMemberException();
             }
 
-            Debug.Assert(_bindingContext.ContextForMemberLookup != null);
             SymWithType swt = _symbolTable.LookupMember(
                     binder.Name,
                     callingObject,
@@ -1526,7 +1525,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 // this is an event. This is due to the Dev10 design change around
                 // the binding of +=, and the fact that the "IsEvent" binding question
                 // is only ever asked about the LHS of a += or -=.
-                if (swt.Sym is FieldSymbol field && field.isEvent)
+                else if (swt.Sym is FieldSymbol field && field.isEvent)
                 {
                     result = true;
                 }
