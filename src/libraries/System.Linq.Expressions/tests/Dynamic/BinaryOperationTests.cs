@@ -6,9 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Linq.Expressions.Tests;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
 using Microsoft.CSharp.RuntimeBinder;
 using Xunit;
 
@@ -747,27 +744,6 @@ namespace System.Dynamic.Tests
             Func<object> func = Expression.Lambda<Func<object>>(expression).Compile(useInterpreter);
             Assert.Equal("42", func().ToString());
         }
-
-#if FEATURE_COMPILE // We're not testing compilation, but we do need Reflection.Emit for the test
-        [Fact]
-        public void OperationOnTwoObjectsDifferentTypesOfSameName()
-        {
-            object objX = Activator.CreateInstance(
-                AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run)
-                    .DefineDynamicModule("TestModule").DefineType("TestType", TypeAttributes.Public).CreateType());
-            object objY = Activator.CreateInstance(
-                AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run)
-                    .DefineDynamicModule("TestModule").DefineType("TestType", TypeAttributes.Public).CreateType());
-
-            CallSiteBinder binder =
-                Microsoft.CSharp.RuntimeBinder.Binder.BinaryOperation(
-                    CSharpBinderFlags.None, ExpressionType.Equal,
-                    GetType(), new[] { CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null), CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null) });
-            var cs = CallSite<Func<CallSite, object, object, object>>.Create(binder);
-            var t = cs.Target;
-            Assert.Throws<RuntimeBinderException>(() => t(cs, objX, objY));
-        }
-#endif
 
         private class BinaryCallSiteBinder : BinaryOperationBinder
         {

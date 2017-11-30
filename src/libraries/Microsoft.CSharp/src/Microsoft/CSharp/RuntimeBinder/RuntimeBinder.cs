@@ -103,35 +103,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             lock (_bindLock)
             {
-                // this is a strategy for realizing correct binding when the symboltable
-                // finds a name collision across different types, e.g. one dynamic binding
-                // uses a type "N.T" and now a second binding uses a different type "N.T".
-
-                // In order to make this work, we have to reset the symbol table and begin
-                // the second binding over again when we detect the collision. So this is
-                // something like a longjmp to the beginning of binding. For a single binding,
-                // if we have to do this more than once, we give an RBE--this would be a
-                // scenario that needs to know about both N.T's simultaneously to work.
-
-                // See SymbolTable.LoadSymbolsFromType for more information.
-
-                try
-                {
-                    return BindCore(binder, parameters, args, out deferredBinding);
-                }
-                catch (ResetBindException)
-                {
-                    Reset();
-                    try
-                    {
-                        return BindCore(binder, parameters, args, out deferredBinding);
-                    }
-                    catch (ResetBindException)
-                    {
-                        Reset();
-                        throw Error.BindingNameCollision();
-                    }
-                }
+                return BindCore(binder, parameters, args, out deferredBinding);
             }
         }
 
