@@ -7,8 +7,8 @@
       "alwaysRun": false,
       "displayName": "Install Signing Plugin",
       "timeoutInMinutes": 0,
-      "refName": "Task1",
       "condition": "and(succeeded(), in(variables.PB_SignType, 'real', 'test'))",
+      "refName": "Task1",
       "task": {
         "id": "30666190-6959-11e5-9f96-f56098202fef",
         "versionSpec": "1.*",
@@ -117,6 +117,10 @@
       },
       "inputs": {
         "solution": "src\\sign.builds",
+        "msbuildLocationMethod": "version",
+        "msbuildVersion": "14.0",
+        "msbuildArchitecture": "x86",
+        "msbuildLocation": "",
         "platform": "",
         "configuration": "",
         "msbuildArguments": "/p:SignType=$(PB_SignType) /p:BuildType=$(PB_BuildType) /p:BuildArch=$(Architecture)",
@@ -124,11 +128,7 @@
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
         "logProjectEvents": "false",
-        "createLogFile": "false",
-        "msbuildLocationMethod": "version",
-        "msbuildVersion": "14.0",
-        "msbuildArchitecture": "x86",
-        "msbuildLocation": ""
+        "createLogFile": "false"
       }
     },
     {
@@ -195,9 +195,10 @@
       "environment": {},
       "enabled": true,
       "continueOnError": false,
-      "alwaysRun": true,
+      "alwaysRun": false,
       "displayName": "Perform Cleanup Tasks",
       "timeoutInMinutes": 0,
+      "condition": "always()",
       "refName": "Task10",
       "task": {
         "id": "521a94ea-9e68-468a-8167-6dcf361ea776",
@@ -213,6 +214,7 @@
       "alwaysRun": true,
       "displayName": "Copy Files to: $(Build.StagingDirectory)\\BuildLogs",
       "timeoutInMinutes": 0,
+      "condition": "succeededOrFailed()",
       "refName": "CopyFiles1",
       "task": {
         "id": "5bfb729a-a7c8-4a78-a7c3-8d717bb7c13c",
@@ -235,6 +237,7 @@
       "alwaysRun": true,
       "displayName": "Publish Artifact: BuildLogs",
       "timeoutInMinutes": 0,
+      "condition": "succeededOrFailed()",
       "refName": "PublishBuildArtifacts1",
       "task": {
         "id": "2ff763a7-ce83-4e1f-bc89-0ae63477cebe",
@@ -265,7 +268,6 @@
       },
       "inputs": {
         "PathtoPublish": "$(Build.StagingDirectory)\\symbols",
-        "Contents": "bin\\Product\\*$(Architecture).$(PB_BuildType)\\*.dll\nbin\\Product\\*$(Architecture).$(PB_BuildType)\\PDB\\*.pdb",
         "ArtifactName": "symbols",
         "ArtifactType": "FilePath",
         "TargetPath": "\\\\cpvsbuild\\drops\\DotNetCore\\$(Build.DefinitionName)\\$(Build.BuildNumber)\\FullSymbols",
@@ -275,27 +277,6 @@
     }
   ],
   "options": [
-    {
-      "enabled": false,
-      "definition": {
-        "id": "5bc3cfb7-6b54-4a4b-b5d2-a3905949f8a6"
-      },
-      "inputs": {
-        "additionalFields": "{}"
-      }
-    },
-    {
-      "enabled": false,
-      "definition": {
-        "id": "7c555368-ca64-4199-add6-9ebaf0b0137d"
-      },
-      "inputs": {
-        "multipliers": "[]",
-        "parallel": "false",
-        "continueOnError": "true",
-        "additionalFields": "{}"
-      }
-    },
     {
       "enabled": false,
       "definition": {
@@ -313,6 +294,16 @@
         "id": "57578776-4c22-4526-aeb0-86b6da17ee9c"
       },
       "inputs": {
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "5d58cc01-7c75-450c-be18-a388ddb129ec"
+      },
+      "inputs": {
+        "branchFilters": "[\"+refs/heads/*\"]",
         "additionalFields": "{}"
       }
     }
@@ -388,6 +379,7 @@
   "buildNumberFormat": "$(date:yyyyMMdd)$(rev:-rr)",
   "jobAuthorizationScope": "projectCollection",
   "jobTimeoutInMinutes": 180,
+  "jobCancelTimeoutInMinutes": 5,
   "repository": {
     "properties": {
       "labelSources": "0",
@@ -395,7 +387,9 @@
       "fetchDepth": "0",
       "gitLfsSupport": "false",
       "skipSyncSource": "false",
-      "cleanOptions": "0"
+      "cleanOptions": "0",
+      "checkoutNestedSubmodules": "false",
+      "labelSourcesFormat": "$(build.buildNumber)"
     },
     "id": "670e3783-ab4f-44fc-9786-d332007da311",
     "type": "TfsGit",
@@ -405,7 +399,9 @@
     "clean": "true",
     "checkoutSubmodules": false
   },
+  "processParameters": {},
   "quality": "definition",
+  "drafts": [],
   "queue": {
     "id": 36,
     "name": "DotNet-Build",
@@ -425,7 +421,7 @@
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418098211,
+    "revision": 418098432,
     "visibility": "organization"
   }
 }
