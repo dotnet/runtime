@@ -36,10 +36,11 @@ set(SOURCES
     ../json/casablanca/src/json/json_parsing.cpp
     ../json/casablanca/src/json/json_serialization.cpp
     ../json/casablanca/src/utilities/asyncrt_utils.cpp
+    ../fx_definition.cpp
     ./hostfxr.cpp
     ./fx_ver.cpp
-    ./fx_muxer.cpp)
-
+    ./fx_muxer.cpp
+)
 
 if(WIN32)
     list(APPEND SOURCES

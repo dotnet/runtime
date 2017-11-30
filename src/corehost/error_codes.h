@@ -27,5 +27,6 @@ enum StatusCode
     InvalidConfigFile           = 0x80008093,
     AppArgNotRunnable           = 0x80008094,
     AppHostExeNotBoundFailure   = 0x80008095,
+    FrameworkMissingFailure     = 0x80008096,
 };
 #endif // __ERROR_CODES_H__

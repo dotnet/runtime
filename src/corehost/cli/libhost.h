@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include "trace.h"
 #include "runtime_config.h"
+#include "fx_definition.h"
 #include "fx_ver.h"
 
 enum host_mode_t
@@ -51,6 +52,10 @@ struct host_interface_t
     const pal::char_t* tfm;
     const pal::char_t* additional_deps_serialized;
     const pal::char_t* fx_ver;
+    strarr_t fx_names;
+    strarr_t fx_dirs;
+    strarr_t fx_requested_versions;
+    strarr_t fx_found_versions;
     // !! WARNING / WARNING / WARNING / WARNING / WARNING / WARNING / WARNING / WARNING / WARNING
     // !! 1. Only append to this structure to maintain compat.
     // !! 2. Any nested structs should not use compiler specific padding (pack with _HOST_INTERFACE_PACK)
@@ -76,7 +81,11 @@ static_assert(offsetof(host_interface_t, host_mode) == 14 * sizeof(size_t), "Str
 static_assert(offsetof(host_interface_t, tfm) == 15 * sizeof(size_t), "Struct offset breaks backwards compatibility");
 static_assert(offsetof(host_interface_t, additional_deps_serialized) == 16 * sizeof(size_t), "Struct offset breaks backwards compatibility");
 static_assert(offsetof(host_interface_t, fx_ver) == 17 * sizeof(size_t), "Struct offset breaks backwards compatibility");
-static_assert(sizeof(host_interface_t) == 18 * sizeof(size_t), "Did you add static asserts for the newly added fields?");
+static_assert(offsetof(host_interface_t, fx_names) == 18 * sizeof(size_t), "Struct offset breaks backwards compatibility");
+static_assert(offsetof(host_interface_t, fx_dirs) == 20 * sizeof(size_t), "Struct offset breaks backwards compatibility");
+static_assert(offsetof(host_interface_t, fx_requested_versions) == 22 * sizeof(size_t), "Struct offset breaks backwards compatibility");
+static_assert(offsetof(host_interface_t, fx_found_versions) == 24 * sizeof(size_t), "Struct offset breaks backwards compatibility");
+static_assert(sizeof(host_interface_t) == 26 * sizeof(size_t), "Did you add static asserts for the newly added fields?");
 
 #define HOST_INTERFACE_LAYOUT_VERSION_HI 0x16041101 // YYMMDD:nn always increases when layout breaks compat.
 #define HOST_INTERFACE_LAYOUT_VERSION_LO sizeof(host_interface_t)
@@ -89,8 +98,6 @@ private:
     std::vector<const pal::char_t*> m_clr_keys_cstr;
     std::vector<const pal::char_t*> m_clr_values_cstr;
     const pal::string_t m_tfm;
-    const pal::string_t m_fx_dir;
-    const pal::string_t m_fx_name;
     const pal::string_t m_deps_file;
     const pal::string_t m_additional_deps_serialized;
     bool m_portable;
@@ -100,52 +107,65 @@ private:
     bool m_prerelease_roll_forward;
     host_mode_t m_host_mode;
     host_interface_t m_host_interface;
-    const pal::string_t m_fx_ver;
+    std::vector<pal::string_t> m_fx_names;
+    std::vector<const pal::char_t*> m_fx_names_cstr;
+    std::vector<pal::string_t> m_fx_dirs;
+    std::vector<const pal::char_t*> m_fx_dirs_cstr;
+    std::vector<pal::string_t> m_fx_requested_versions;
+    std::vector<const pal::char_t*> m_fx_requested_versions_cstr;
+    std::vector<pal::string_t> m_fx_found_versions;
+    std::vector<const pal::char_t*> m_fx_found_versions_cstr;
 public:
     corehost_init_t(
         const pal::string_t& deps_file,
         const pal::string_t& additional_deps_serialized,
         const std::vector<pal::string_t>& probe_paths,
-        const pal::string_t& fx_dir,
         const host_mode_t mode,
-        const runtime_config_t& runtime_config)
-        : m_fx_dir(fx_dir)
-        , m_fx_name(runtime_config.get_fx_name())
-        , m_deps_file(deps_file)
+        const fx_definition_vector_t& fx_definitions)
+        : m_deps_file(deps_file)
         , m_additional_deps_serialized(additional_deps_serialized)
-        , m_portable(runtime_config.get_portable())
+        , m_portable(get_app(fx_definitions).get_runtime_config().get_portable())
         , m_probe_paths(probe_paths)
-        , m_patch_roll_forward(runtime_config.get_patch_roll_fwd())
-        , m_prerelease_roll_forward(runtime_config.get_prerelease_roll_fwd())
         , m_host_mode(mode)
         , m_host_interface()
-        , m_fx_ver(runtime_config.get_fx_version())
-        , m_tfm(runtime_config.get_tfm())
+        , m_tfm(get_app(fx_definitions).get_runtime_config().get_tfm())
     {
-        runtime_config.config_kv(&m_clr_keys, &m_clr_values);
         make_cstr_arr(m_clr_keys, &m_clr_keys_cstr);
         make_cstr_arr(m_clr_values, &m_clr_values_cstr);
         make_cstr_arr(m_probe_paths, &m_probe_paths_cstr);
-    }
 
-    const pal::string_t& fx_dir() const
-    {
-        return m_fx_dir;
+        int fx_count = fx_definitions.size();
+        m_fx_names.reserve(fx_count);
+        m_fx_dirs.reserve(fx_count);
+        m_fx_requested_versions.reserve(fx_count);
+        m_fx_found_versions.reserve(fx_count);
+
+        std::unordered_map<pal::string_t, pal::string_t> combined_properties;
+        for (auto& fx : fx_definitions)
+        {
+            fx->get_runtime_config().combine_properties(combined_properties);
+
+            m_fx_names.push_back(fx->get_name());
+            m_fx_dirs.push_back(fx->get_dir());
+            m_fx_requested_versions.push_back(fx->get_requested_version());
+            m_fx_found_versions.push_back(fx->get_found_version());
+        }
+
+        for (const auto& kv : combined_properties)
+        {
+            m_clr_keys.push_back(kv.first);
+            m_clr_values.push_back(kv.second);
+        }
+
+        make_cstr_arr(m_fx_names, &m_fx_names_cstr);
+        make_cstr_arr(m_fx_dirs, &m_fx_dirs_cstr);
+        make_cstr_arr(m_fx_requested_versions, &m_fx_requested_versions_cstr);
+        make_cstr_arr(m_fx_found_versions, &m_fx_found_versions_cstr);
     }
 
     const pal::string_t& tfm() const
     {
         return m_tfm;
-    }
-
-    const pal::string_t& fx_name() const
-    {
-        return m_fx_name;
-    }
-
-    const pal::string_t& fx_version() const
-    {
-        return m_fx_ver;
     }
 
     const host_interface_t& get_host_init_data()
@@ -161,9 +181,20 @@ public:
         hi.config_values.len = m_clr_values_cstr.size();
         hi.config_values.arr = m_clr_values_cstr.data();
 
-        hi.fx_dir = m_fx_dir.c_str();
-        hi.fx_name = m_fx_name.c_str();
-        hi.fx_ver = m_fx_ver.c_str();
+        // Keep these for backwards compat
+        if (m_fx_names_cstr.size() > 1)
+        {
+            hi.fx_name = m_fx_names_cstr[1];
+            hi.fx_dir = m_fx_dirs_cstr[1];
+            hi.fx_ver = m_fx_found_versions_cstr[1];
+        }
+        else
+        {
+            hi.fx_name = _X("");
+            hi.fx_dir = _X("");
+            hi.fx_ver = _X("");
+        }
+
         hi.deps_file = m_deps_file.c_str();
         hi.additional_deps_serialized = m_additional_deps_serialized.c_str();
         hi.is_portable = m_portable;
@@ -176,7 +207,19 @@ public:
         hi.host_mode = m_host_mode;
 
         hi.tfm = m_tfm.c_str();
-        
+
+        hi.fx_names.len = m_fx_names_cstr.size();
+        hi.fx_names.arr = m_fx_names_cstr.data();
+
+        hi.fx_dirs.len = m_fx_dirs_cstr.size();
+        hi.fx_dirs.arr = m_fx_dirs_cstr.data();
+
+        hi.fx_requested_versions.len = m_fx_requested_versions_cstr.size();
+        hi.fx_requested_versions.arr = m_fx_requested_versions_cstr.data();
+
+        hi.fx_found_versions.len = m_fx_found_versions_cstr.size();
+        hi.fx_found_versions.arr = m_fx_found_versions_cstr.data();
+
         return hi;
     }
 
@@ -192,7 +235,6 @@ private:
     }
 };
 
-
 struct hostpolicy_init_t
 {
     std::vector<std::vector<char>> cfg_keys;
@@ -200,10 +242,8 @@ struct hostpolicy_init_t
     pal::string_t deps_file;
     pal::string_t additional_deps_serialized;
     std::vector<pal::string_t> probe_paths;
+    fx_definition_vector_t fx_definitions;
     pal::string_t tfm;
-    pal::string_t fx_dir;
-    pal::string_t fx_name;
-    pal::string_t fx_ver;
     host_mode_t host_mode;
     bool patch_roll_forward;
     bool prerelease_roll_forward;
@@ -220,15 +260,17 @@ struct hostpolicy_init_t
 
         trace::verbose(_X("Reading from host interface version: [0x%04x:%d] to initialize policy version: [0x%04x:%d]"), input->version_hi, input->version_lo, HOST_INTERFACE_LAYOUT_VERSION_HI, HOST_INTERFACE_LAYOUT_VERSION_LO);
 
-		//This check is to ensure is an old hostfxr can still load new hostpolicy.
-		//We should not read garbage due to potentially shorter struct size
+        
+        //This check is to ensure is an old hostfxr can still load new hostpolicy.
+        //We should not read garbage due to potentially shorter struct size
+
+        pal::string_t fx_requested_ver;
+
         if (input->version_lo >= offsetof(host_interface_t, host_mode) + sizeof(input->host_mode))
         {
             make_clrstr_arr(input->config_keys.len, input->config_keys.arr, &init->cfg_keys);
             make_clrstr_arr(input->config_values.len, input->config_values.arr, &init->cfg_values);
 
-            init->fx_dir = input->fx_dir;
-            init->fx_name = input->fx_name;
             init->deps_file = input->deps_file;
             init->is_portable = input->is_portable;
 
@@ -251,10 +293,63 @@ struct hostpolicy_init_t
         {
             init->tfm = input->tfm;
         }
+        
         if (input->version_lo >= offsetof(host_interface_t, fx_ver) + sizeof(input->fx_ver))
         {
             init->additional_deps_serialized = input->additional_deps_serialized;
-            init->fx_ver = input->fx_ver;
+            fx_requested_ver = input->fx_ver;
+        }
+
+        int fx_count = 0;
+        if (input->version_lo >= offsetof(host_interface_t, fx_names) + sizeof(input->fx_names))
+        {
+            int fx_count = input->fx_names.len;
+            assert(fx_count > 0);
+            assert(fx_count == input->fx_dirs.len);
+            assert(fx_count == input->fx_requested_versions.len);
+            assert(fx_count == input->fx_found_versions.len);
+
+            std::vector<pal::string_t> fx_names;
+            std::vector<pal::string_t> fx_dirs;
+            std::vector<pal::string_t> fx_requested_versions;
+            std::vector<pal::string_t> fx_found_versions;
+
+            make_palstr_arr(input->fx_names.len, input->fx_names.arr, &fx_names);
+            make_palstr_arr(input->fx_dirs.len, input->fx_dirs.arr, &fx_dirs);
+            make_palstr_arr(input->fx_requested_versions.len, input->fx_requested_versions.arr, &fx_requested_versions);
+            make_palstr_arr(input->fx_found_versions.len, input->fx_found_versions.arr, &fx_found_versions);
+
+            init->fx_definitions.reserve(fx_count);
+            for (int i = 0; i < fx_count; ++i)
+            {
+                auto fx = new fx_definition_t(fx_names[i], fx_dirs[i], fx_requested_versions[i], fx_found_versions[i]);
+                init->fx_definitions.push_back(std::unique_ptr<fx_definition_t>(fx));
+            }
+        }
+        else
+        {
+            // Backward compat; create the fx_definitions[0] and [1] from the previous information
+            init->fx_definitions.reserve(2);
+
+            auto fx = new fx_definition_t();
+            init->fx_definitions.push_back(std::unique_ptr<fx_definition_t>(fx));
+
+            if (init->is_portable)
+            {
+                pal::string_t fx_dir = input->fx_dir;
+                pal::string_t fx_name = input->fx_name;
+
+                // The found_ver was not passed previously, so obtain that from fx_dir
+                pal::string_t fx_found_ver;
+                int index = fx_dir.rfind(DIR_SEPARATOR);
+                if (index != pal::string_t::npos)
+                {
+                    fx_found_ver = fx_dir.substr(index + 1);
+                }
+
+                fx = new fx_definition_t(fx_name, fx_dir, fx_requested_ver, fx_found_ver);
+                init->fx_definitions.push_back(std::unique_ptr<fx_definition_t>(fx));
+            }
         }
 
         return true;
@@ -282,6 +377,7 @@ private:
 
 void get_runtime_config_paths_from_app(const pal::string_t& file, pal::string_t* config_file, pal::string_t* dev_config_file);
 void get_runtime_config_paths_from_arg(const pal::string_t& file, pal::string_t* config_file, pal::string_t* dev_config_file);
+void get_runtime_config_paths(const pal::string_t& path, const pal::string_t& name, pal::string_t* config_file, pal::string_t* dev_config_file);
 
 host_mode_t detect_operating_mode(const pal::string_t& own_dir, const pal::string_t& own_dll, const pal::string_t& own_name);
 bool hostpolicy_exists_in_svc(pal::string_t* resolved_dir);
