@@ -19,8 +19,7 @@ namespace System.Buffers.Text
         {
             if (format.IsDefault)
             {
-                // Officially, the default is "G" but "G without a precision is equivalent to "D" and so that's why we're using "D" (eliminates an unnecessary HasPrecision check)
-                format = 'D';
+                return TryFormatUInt64Default(value, buffer, out bytesWritten);
             }
 
             switch (format.Symbol)
