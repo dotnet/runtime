@@ -2,17 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Globalization;
-using System.Linq;
-using System.Reflection;
-using System.Threading;
-using Microsoft.Internal;
-using System.Reflection.Emit;
 using System.Collections;
-using System.Security;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Reflection;
+using System.Reflection.Emit;
+using Microsoft.Internal;
 
 namespace System.ComponentModel.Composition
 {

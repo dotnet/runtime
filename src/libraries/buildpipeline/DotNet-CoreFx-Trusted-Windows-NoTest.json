@@ -186,50 +186,6 @@
     {
       "environment": {},
       "enabled": true,
-      "continueOnError": true,
-      "alwaysRun": true,
-      "displayName": "Copy Files to: $(Build.StagingDirectory)\\BuildLogs",
-      "timeoutInMinutes": 0,
-      "refName": "CopyFiles1",
-      "task": {
-        "id": "5bfb729a-a7c8-4a78-a7c3-8d717bb7c13c",
-        "versionSpec": "2.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "SourceFolder": "$(Build.SourcesDirectory)\\corefx",
-        "Contents": "*.log",
-        "TargetFolder": "$(Build.StagingDirectory)\\BuildLogs",
-        "CleanTargetFolder": "false",
-        "OverWrite": "false",
-        "flattenFolders": "false"
-      }
-    },
-    {
-      "environment": {},
-      "enabled": true,
-      "continueOnError": true,
-      "alwaysRun": true,
-      "displayName": "Publish Artifact: BuildLogs",
-      "timeoutInMinutes": 0,
-      "refName": "PublishBuildArtifacts2",
-      "task": {
-        "id": "2ff763a7-ce83-4e1f-bc89-0ae63477cebe",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "PathtoPublish": "$(Build.StagingDirectory)\\BuildLogs",
-        "ArtifactName": "BuildLogs",
-        "ArtifactType": "Container",
-        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)",
-        "Parallel": "false",
-        "ParallelCount": "8"
-      }
-    },
-    {
-      "environment": {},
-      "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Index symbol sources",
@@ -255,10 +211,57 @@
     {
       "environment": {},
       "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": true,
+      "displayName": "Copy Files to: $(Build.StagingDirectory)\\BuildLogs",
+      "timeoutInMinutes": 0,
+      "condition": "succeededOrFailed()",
+      "refName": "CopyFiles1",
+      "task": {
+        "id": "5bfb729a-a7c8-4a78-a7c3-8d717bb7c13c",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "SourceFolder": "$(Build.SourcesDirectory)\\corefx",
+        "Contents": "*.log",
+        "TargetFolder": "$(Build.StagingDirectory)\\BuildLogs",
+        "CleanTargetFolder": "false",
+        "OverWrite": "false",
+        "flattenFolders": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": true,
+      "displayName": "Publish Artifact: BuildLogs",
+      "timeoutInMinutes": 0,
+      "condition": "succeededOrFailed()",
+      "refName": "PublishBuildArtifacts2",
+      "task": {
+        "id": "2ff763a7-ce83-4e1f-bc89-0ae63477cebe",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "PathtoPublish": "$(Build.StagingDirectory)\\BuildLogs",
+        "ArtifactName": "BuildLogs",
+        "ArtifactType": "Container",
+        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)",
+        "Parallel": "false",
+        "ParallelCount": "8"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Execute cleanup tasks",
       "timeoutInMinutes": 0,
+      "condition": "always()",
       "refName": "Task12",
       "task": {
         "id": "521a94ea-9e68-468a-8167-6dcf361ea776",
@@ -274,6 +277,7 @@
       "alwaysRun": false,
       "displayName": "Final clean to remove any lingering process",
       "timeoutInMinutes": 0,
+      "condition": "always()",
       "refName": "Task13",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -294,6 +298,7 @@
       "alwaysRun": false,
       "displayName": "Build solution corefx\\Tools\\scripts\\vstsagent\\cleanupagent.proj",
       "timeoutInMinutes": 0,
+      "condition": "always()",
       "refName": "Task14",
       "task": {
         "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
@@ -474,6 +479,7 @@
   },
   "processParameters": {},
   "quality": "definition",
+  "drafts": [],
   "queue": {
     "id": 36,
     "name": "DotNet-Build",
@@ -493,7 +499,7 @@
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418098167,
+    "revision": 418098432,
     "visibility": "organization"
   }
 }

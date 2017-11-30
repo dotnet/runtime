@@ -2,17 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.ObjectModel;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Primitives;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Diagnostics;
 using Microsoft.Internal;
 using Microsoft.Internal.Collections;
-using System.Collections;
 
 namespace System.ComponentModel.Composition.Hosting
 {

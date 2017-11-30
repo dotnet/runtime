@@ -85,6 +85,7 @@
       "alwaysRun": false,
       "displayName": "Create host machine tools sandbox",
       "timeoutInMinutes": 0,
+      "refName": "Task5",
       "task": {
         "id": "5bfb729a-a7c8-4a78-a7c3-8d717bb7c13c",
         "versionSpec": "2.*",
@@ -100,6 +101,7 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
@@ -204,8 +206,8 @@
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Build tests",
-      "condition": "and(succeeded(), ne(variables.PB_SkipTests, 'true'), ne(variables.PB_SkipTestBuild, 'true'))",
       "timeoutInMinutes": 0,
+      "condition": "and(succeeded(), ne(variables.PB_SkipTests, 'true'), ne(variables.PB_SkipTestBuild, 'true'))",
       "refName": "Task10",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -225,8 +227,8 @@
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Create Helix Test Jobs",
-      "condition": "and(succeeded(), ne(variables.PB_SkipTests, 'true'), ne(variables.PB_EnableCloudTest, 'false'))",
       "timeoutInMinutes": 0,
+      "condition": "and(succeeded(), ne(variables.PB_SkipTests, 'true'), ne(variables.PB_EnableCloudTest, 'false'))",
       "refName": "Task11",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -267,6 +269,7 @@
       "alwaysRun": true,
       "displayName": "Copy Files to: $(Build.StagingDirectory)\\BuildLogs",
       "timeoutInMinutes": 0,
+      "condition": "succeededOrFailed()",
       "refName": "CopyFiles1",
       "task": {
         "id": "5bfb729a-a7c8-4a78-a7c3-8d717bb7c13c",
@@ -289,6 +292,7 @@
       "alwaysRun": true,
       "displayName": "Publish Artifact: BuildLogs",
       "timeoutInMinutes": 0,
+      "condition": "succeededOrFailed()",
       "refName": "PublishBuildArtifacts2",
       "task": {
         "id": "2ff763a7-ce83-4e1f-bc89-0ae63477cebe",
@@ -308,9 +312,10 @@
       "environment": {},
       "enabled": true,
       "continueOnError": true,
-      "alwaysRun": true,
+      "alwaysRun": false,
       "displayName": "Cleanup Docker",
       "timeoutInMinutes": 0,
+      "condition": "always()",
       "refName": "Task14",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -328,9 +333,10 @@
       "environment": {},
       "enabled": true,
       "continueOnError": true,
-      "alwaysRun": true,
+      "alwaysRun": false,
       "displayName": "Cleanup VSTS Agent",
       "timeoutInMinutes": 0,
+      "condition": "always()",
       "refName": "Task15",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -525,6 +531,7 @@
   },
   "processParameters": {},
   "quality": "definition",
+  "drafts": [],
   "queue": {
     "id": 36,
     "name": "DotNet-Build",
@@ -544,7 +551,7 @@
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418098167,
+    "revision": 418098432,
     "visibility": "organization"
   }
 }
