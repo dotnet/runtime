@@ -92,9 +92,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 Debug.Assert(_pGroup.SymKind == SYMKIND.SK_MethodSymbol || _pGroup.SymKind == SYMKIND.SK_PropertySymbol && 0 != (_pGroup.Flags & EXPRFLAG.EXF_INDEXER));
 
-                // We need the Exprs for error reporting for non-delegates
-                Debug.Assert(_pArguments.fHasExprs);
-
                 LookForCandidates();
                 if (!GetResultOfBind())
                 {
@@ -175,23 +172,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
 
                     // If we have named arguments, reorder them for this method.
-                    if (_pArguments.fHasExprs)
+                    // If we don't have Exprs, its because we're doing a method group conversion.
+                    // In those scenarios, we never want to add named arguments or optional arguments.
+                    if (_bHasNamedArguments)
                     {
-                        // If we don't have Exprs, its because we're doing a method group conversion.
-                        // In those scenarios, we never want to add named arguments or optional arguments.
-                        if (_bHasNamedArguments)
+                        if (!ReOrderArgsForNamedArguments())
                         {
-                            if (!ReOrderArgsForNamedArguments())
-                            {
-                                continue;
-                            }
+                            continue;
                         }
-                        else if (HasOptionalParameters())
+                    }
+                    else if (HasOptionalParameters())
+                    {
+                        if (!AddArgumentsForOptionalParameters())
                         {
-                            if (!AddArgumentsForOptionalParameters())
-                            {
-                                continue;
-                            }
+                            continue;
                         }
                     }
 
@@ -312,8 +306,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 dst.carg = src.carg;
                 dst.types = src.types;
-                dst.fHasExprs = src.fHasExprs;
-
                 dst.prgexpr.Clear();
                 for (int i = 0; i < src.prgexpr.Count; i++)
                 {
@@ -938,15 +930,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                     // Try to infer. If we have an errorsym in the type arguments, we know we cant infer,
                     // but we want to attempt it anyway. We'll mark this as "cant infer" so that we can
-                    // report the appropriate error, but we'll continue inferring, since we want 
+                    // report the appropriate error, but we'll continue inferring, since we want
                     // error sym to go to any type.
 
-                    bool inferenceSucceeded;
-
-                    inferenceSucceeded = MethodTypeInferrer.Infer(
-                                _pExprBinder, GetSymbolLoader(),
-                                methSym, _pCurrentType.GetTypeArgsAll(), _pCurrentParameters,
-                                _pArguments, out _pCurrentTypeArgs);
+                    bool inferenceSucceeded = MethodTypeInferrer.Infer(
+                        _pExprBinder, GetSymbolLoader(), methSym, _pCurrentParameters, _pArguments,
+                        out _pCurrentTypeArgs);
 
                     if (!inferenceSucceeded)
                     {
@@ -995,22 +984,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         containsErrorSym |= DoesTypeArgumentsContainErrorSym(var);
                         bool fresult;
 
-                        if (_pArguments.fHasExprs)
-                        {
-                            Expr pArgument = _pArguments.prgexpr[ivar];
+                        Expr pArgument = _pArguments.prgexpr[ivar];
 
-                            // If we have a named argument, strip it to do the conversion.
-                            if (pArgument is ExprNamedArgumentSpecification named)
-                            {
-                                pArgument = named.Value;
-                            }
-
-                            fresult = _pExprBinder.canConvert(pArgument, var);
-                        }
-                        else
+                        // If we have a named argument, strip it to do the conversion.
+                        if (pArgument is ExprNamedArgumentSpecification named)
                         {
-                            fresult = _pExprBinder.canConvert(_pArguments.types[ivar], var);
+                            pArgument = named.Value;
                         }
+
+                        fresult = _pExprBinder.canConvert(pArgument, var);
 
                         // Mark this as a legitimate error if we didn't have any error syms.
                         if (!fresult && !containsErrorSym)
