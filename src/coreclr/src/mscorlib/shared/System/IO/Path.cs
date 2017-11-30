@@ -41,8 +41,6 @@ namespace System.IO
         {
             if (path != null)
             {
-                PathInternal.CheckInvalidPathChars(path);
-
                 string s = path;
                 for (int i = path.Length - 1; i >= 0; i--)
                 {
@@ -81,7 +79,6 @@ namespace System.IO
             if (PathInternal.IsEffectivelyEmpty(path))
                 throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
 
-            PathInternal.CheckInvalidPathChars(path);
             path = PathInternal.NormalizeDirectorySeparators(path);
             int root = PathInternal.GetRootLength(path);
 
@@ -104,7 +101,6 @@ namespace System.IO
             if (path == null)
                 return null;
 
-            PathInternal.CheckInvalidPathChars(path);
             int length = path.Length;
             for (int i = length - 1; i >= 0; i--)
             {
@@ -194,8 +190,6 @@ namespace System.IO
         {
             if (path != null)
             {
-                PathInternal.CheckInvalidPathChars(path);
-
                 for (int i = path.Length - 1; i >= 0; i--)
                 {
                     char ch = path[i];
@@ -214,9 +208,6 @@ namespace System.IO
             if (path1 == null || path2 == null)
                 throw new ArgumentNullException((path1 == null) ? nameof(path1) : nameof(path2));
 
-            PathInternal.CheckInvalidPathChars(path1);
-            PathInternal.CheckInvalidPathChars(path2);
-
             return CombineNoChecks(path1, path2);
         }
 
@@ -225,10 +216,6 @@ namespace System.IO
             if (path1 == null || path2 == null || path3 == null)
                 throw new ArgumentNullException((path1 == null) ? nameof(path1) : (path2 == null) ? nameof(path2) : nameof(path3));
 
-            PathInternal.CheckInvalidPathChars(path1);
-            PathInternal.CheckInvalidPathChars(path2);
-            PathInternal.CheckInvalidPathChars(path3);
-
             return CombineNoChecks(path1, path2, path3);
         }
 
@@ -236,11 +223,6 @@ namespace System.IO
         {
             if (path1 == null || path2 == null || path3 == null || path4 == null)
                 throw new ArgumentNullException((path1 == null) ? nameof(path1) : (path2 == null) ? nameof(path2) : (path3 == null) ? nameof(path3) : nameof(path4));
-
-            PathInternal.CheckInvalidPathChars(path1);
-            PathInternal.CheckInvalidPathChars(path2);
-            PathInternal.CheckInvalidPathChars(path3);
-            PathInternal.CheckInvalidPathChars(path4);
 
             return CombineNoChecks(path1, path2, path3, path4);
         }
@@ -269,8 +251,6 @@ namespace System.IO
                 {
                     continue;
                 }
-
-                PathInternal.CheckInvalidPathChars(paths[i]);
 
                 if (IsPathRooted(paths[i]))
                 {
