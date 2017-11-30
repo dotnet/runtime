@@ -16514,10 +16514,10 @@ bool GenTree::isContained() const
         assert(!isMarkedContained);
     }
 
-    // if it's contained it better have a user
+    // if it's contained it can't be unused.
     if (isMarkedContained)
     {
-        assert(gtNext != nullptr);
+        assert(!IsUnusedValue());
     }
 #endif // DEBUG
     return isMarkedContained;
