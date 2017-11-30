@@ -52,7 +52,7 @@ Areas are tracked by labels area-&#42; (e.g. area-System.Collections). Each area
 | [System.Collections](https://github.com/dotnet/corefx/labels/area-System.Collections)         |**[@safern](https://github.com/safern)**,  [@ianhays](https://github.com/ianhays) | </ul>Excluded:<ul><li>System.Array -> System.Runtime</li></ul> |
 | [System.ComponentModel](https://github.com/dotnet/corefx/labels/area-System.ComponentModel)   |  **[@maryamariyan](https://github.com/maryamariyan)**, [@safern](https://github.com/safern) |  |
 | [System.ComponentModel.DataAnnotations](https://github.com/dotnet/corefx/labels/area-System.ComponentModel.DataAnnotations) | [@lajones](https://github.com/lajones), [@divega](https://github.com/divega), [@ajcvickers](https://github.com/ajcvickers) | |
-| [System.Composition](https://github.com/dotnet/corefx/labels/area-System.Composition)         | [@ViktorHofer](https://github.com/ViktorHofer) |  |
+| [System.Composition](https://github.com/dotnet/corefx/labels/area-System.Composition)         |  **[@maryamariyan](https://github.com/maryamariyan)**, [@ViktorHofer](https://github.com/ViktorHofer) |  |
 | [System.Configuration](https://github.com/dotnet/corefx/labels/area-System.Configuration)     | [@maryamariyan](https://github.com/maryamariyan) |  |
 | [System.Console](https://github.com/dotnet/corefx/labels/area-System.Console)                 | **[@joperezr](https://github.com/joperezr)**, [@ianhays](https://github.com/ianhays) |  |
 | [System.Data](https://github.com/dotnet/corefx/labels/area-System.Data)                       | [@saurabh500](https://github.com/saurabh500), [@corivera](https://github.com/corivera) |  |
