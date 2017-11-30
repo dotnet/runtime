@@ -2405,8 +2405,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (ptOp == PredefinedType.PT_UINT && op.Type.fundType() == FUNDTYPE.FT_U4)
             {
-                ExprClass exprObj = GetExprFactory().CreateClass(GetPredefindType(PredefinedType.PT_LONG));
-                op = mustConvertCore(op, exprObj, CONVERTTYPE.NOUDC);
+                op = mustConvertCore(op, GetPredefindType(PredefinedType.PT_LONG), CONVERTTYPE.NOUDC);
             }
 
             ExprOperator exprRes = GetExprFactory().CreateNeg(flags, op);
