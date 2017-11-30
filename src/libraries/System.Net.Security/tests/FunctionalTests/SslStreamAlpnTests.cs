@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
@@ -116,34 +118,64 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [ActiveIssue(24853)]
-        [PlatformSpecific(~TestPlatforms.OSX)]
         public async Task SslStream_StreamToStream_Alpn_NonMatchingProtocols_Fail()
         {
-            VirtualNetwork network = new VirtualNetwork();
-            using (var clientStream = new VirtualNetworkStream(network, false))
-            using (var serverStream = new VirtualNetworkStream(network, true))
-            using (var client = new SslStream(clientStream, false))
-            using (var server = new SslStream(serverStream, false))
-            using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
+            TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
+            try
             {
-                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
+                listener.Start();
+                using (TcpClient client = new TcpClient())
                 {
-                    ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http11 },
-                    RemoteCertificateValidationCallback = AllowAnyServerCertificate,
-                    TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false),
-                };
+                    Task<TcpClient> serverTask = listener.AcceptTcpClientAsync();
+                    await client.ConnectAsync(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndpoint).Port);
 
-                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
-                {
-                    ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http2 },
-                    ServerCertificate = certificate,
-                };
+                    using (TcpClient server = await serverTask)
+                    using (SslStream serverStream = new SslStream(server.GetStream(), leaveInnerStreamOpen: false))
+                    using (SslStream clientStream = new SslStream(client.GetStream(), leaveInnerStreamOpen: false))
+                    using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
+                    {
+                        SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
+                        {
+                            ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http2 },
+                            ServerCertificate = certificate,
+                        };
+                        SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
+                        {
+                            ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http11 },
+                            RemoteCertificateValidationCallback = AllowAnyServerCertificate,
+                            TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false),
+                        };
 
-                Task t1 = Assert.ThrowsAsync<AuthenticationException>(() => client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None));
-                Task t2 = Assert.ThrowsAsync<AuthenticationException>(() => server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None));
+                        // Test alpn failure only on platforms that supports ALPN.
+                        if ((RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && !(PlatformDetection.IsUbuntu1404 || PlatformDetection.IsDebian8 || PlatformDetection.IsCentos6)) ||
+                            (PlatformDetection.IsWindows && !PlatformDetection.IsWindows7))
+                        {
+                            Task t1 = Assert.ThrowsAsync<IOException>(() => clientStream.AuthenticateAsClientAsync(clientOptions, CancellationToken.None));
+                            try
+                            {
+                                await serverStream.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+                                Assert.True(false, "AuthenticationException was not thrown.");
+                            }
+                            catch (AuthenticationException) { server.Dispose(); }
 
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
+                            await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1);
+                        }
+                        else
+                        {
+                            Task t1 = clientStream.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+                            Task t2 = serverStream.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+
+                            await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
+
+                            Assert.Equal(default(SslApplicationProtocol), clientStream.NegotiatedApplicationProtocol);
+                            Assert.Equal(default(SslApplicationProtocol), serverStream.NegotiatedApplicationProtocol);
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                listener.Stop();
             }
         }
 
@@ -163,7 +195,7 @@ namespace System.Net.Security.Tests
             {
                 // Works on linux distros with openssl 1.0.2, CI machines Ubuntu14.04 and Debian 87 don't have openssl 1.0.2
                 // Works on Windows OSes > 7.0
-                bool featureWorks = (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && !(PlatformDetection.IsUbuntu1404 || PlatformDetection.IsDebian8)) ||
+                bool featureWorks = (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && !(PlatformDetection.IsUbuntu1404 || PlatformDetection.IsDebian8 || PlatformDetection.IsCentos6)) ||
                                     (PlatformDetection.IsWindows && !PlatformDetection.IsWindows7);
 
                 yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, new List<SslApplicationProtocol> { SslApplicationProtocol.Http2 }, featureWorks ? SslApplicationProtocol.Http2 : default };
