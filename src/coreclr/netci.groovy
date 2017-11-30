@@ -2617,8 +2617,18 @@ Constants.allScenarios.each { scenario ->
                                 addCommand("set __save_smarty_errorlevel=%errorlevel%")
                                 addCommand("popd")
 
+                                // BEGIN Temporarily add some logging to see why the ZIP command isn't working reliably.
+                                addCommand("dir .\\bin\\tests\\${osGroup}.${architecture}.${configuration}")
+                                addCommand("dir .\\bin\\tests\\${osGroup}.${architecture}.${configuration}\\Smarty.run.0")
+                                // END temporary logging
+
                                 // ZIP up the smarty output, no matter what the smarty result.
                                 addCommand("powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${architecture}.${configuration}\\Smarty.run.0', '.\\bin\\tests\\${osGroup}.${architecture}.${configuration}\\Smarty.run.0.zip')\"")
+
+                                // BEGIN Temporary logging
+                                addCommand("echo %errorlevel%")
+                                addCommand("dir .\\bin\\tests\\${osGroup}.${architecture}.${configuration}")
+                                // END temporary logging
 
                                 // Use the smarty errorlevel as the script errorlevel.
                                 addCommand("exit /b %__save_smarty_errorlevel%")
