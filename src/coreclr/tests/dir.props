@@ -43,7 +43,6 @@
     <_TargetFrameworkDirectories Condition="'$(BuildToolsTargetsDesktop)' != 'true'">$(MSBuildThisFileDirectory)/Documentation</_TargetFrameworkDirectories>
     <_FullFrameworkReferenceAssemblyPaths Condition="'$(BuildToolsTargetsDesktop)' != 'true'">$(MSBuildThisFileDirectory)/Documentation</_FullFrameworkReferenceAssemblyPaths>
     <ExcludeSigningImport>true</ExcludeSigningImport>
-    <SkipImportILTargets>true</SkipImportILTargets>
   </PropertyGroup>
 
   <!-- Common properties -->
