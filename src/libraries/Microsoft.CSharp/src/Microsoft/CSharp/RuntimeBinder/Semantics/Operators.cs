@@ -1226,7 +1226,40 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             UnaOpKind unaryOpKind;
             EXPRFLAG flags;
 
-            if (pArgument.Type == null ||
+            CType type = pArgument.Type;
+            if (type is NullableType nub)
+            {
+                CType nonNub = nub.UnderlyingType;
+                if (nonNub.isEnumType())
+                {
+                    PredefinedType ptOp;
+                    switch (nonNub.fundType())
+                    {
+                        case FUNDTYPE.FT_U4:
+                            ptOp = PredefinedType.PT_UINT;
+                            break;
+
+                        case FUNDTYPE.FT_I8:
+                            ptOp = PredefinedType.PT_LONG;
+                            break;
+
+                        case FUNDTYPE.FT_U8:
+                            ptOp = PredefinedType.PT_ULONG;
+                            break;
+
+                        default:
+                            // Promote all smaller types to int.
+                            ptOp = PredefinedType.PT_INT;
+                            break;
+                    }
+
+                    return mustCast(
+                        BindStandardUnaryOperator(
+                            op, mustCast(pArgument, GetTypes().GetNullable(GetPredefindType(ptOp)))), nub);
+                }
+            }
+
+            if (type == null ||
                 !CalculateExprAndUnaryOpKinds(
                            op,
                            Context.Checked,
@@ -1238,7 +1271,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             UnaOpMask unaryOpMask = (UnaOpMask)(1 << (int)unaryOpKind);
-            CType type = pArgument.Type;
 
             List<UnaOpFullSig> pSignatures = new List<UnaOpFullSig>();
 
@@ -1364,26 +1396,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // Enum types are special in that they carry a set of "predefined" operators (~ and inc/dec).
                 if (pRawType.isEnumType())
                 {
+                    // Nullable enums are dealt with already.
+                    Debug.Assert(pRawType == pArgumentType);
+                    Debug.Assert(pArgumentType is AggregateType);
                     if ((unaryOpMask & (UnaOpMask.Tilde | UnaOpMask.IncDec)) != 0)
                     {
                         // We have an exact match.
-                        LiftFlags liftFlags = LiftFlags.None;
-                        CType typeSig = pArgumentType;
-
-                        if (typeSig is NullableType nubTypeSig)
-                        {
-                            if (nubTypeSig.GetUnderlyingType() != pRawType)
-                            {
-                                typeSig = GetSymbolLoader().GetTypeManager().GetNullable(pRawType);
-                            }
-                            liftFlags = LiftFlags.Lift1;
-                        }
                         if (unaryOpKind == UnaOpKind.Tilde)
                         {
                             pSignatures.Add(new UnaOpFullSig(
-                                    typeSig.getAggregate().GetUnderlyingType(),
+                                    pArgumentType.getAggregate().GetUnderlyingType(),
                                     BindEnumUnaOp,
-                                    liftFlags,
+                                    LiftFlags.None,
                                     UnaOpFuncKind.EnumUnaOp));
                         }
                         else
@@ -1391,11 +1415,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             // For enums, we want to add the signature as the underlying type so that we'll
                             // perform the conversions to and from the enum type.
                             pSignatures.Add(new UnaOpFullSig(
-                                    typeSig.getAggregate().GetUnderlyingType(),
+                                    pArgumentType.getAggregate().GetUnderlyingType(),
                                     null,
-                                    liftFlags,
+                                    LiftFlags.None,
                                     UnaOpFuncKind.None));
                         }
+
                         return UnaryOperatorSignatureFindResult.Match;
                     }
                 }

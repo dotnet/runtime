@@ -25,18 +25,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return _pErrorContext;
         }
+
         private static bool IsNullableConstructor(Expr expr, out ExprCall call)
         {
             Debug.Assert(expr != null);
 
-            if (expr is ExprCall pCall && pCall.MemberGroup.OptionalObject == null)
+            if (expr is ExprCall pCall && pCall.MemberGroup.OptionalObject == null
+                && (pCall.MethWithInst?.Meth().IsNullableConstructor() ?? false))
             {
-                MethodSymbol meth = pCall.MethWithInst.Meth();
-                if (meth != null && meth.IsNullableConstructor())
-                {
-                    call = pCall;
-                    return true;
-                }
+                call = pCall;
+                return true;
             }
 
             call = null;
