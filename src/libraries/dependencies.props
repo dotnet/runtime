@@ -9,9 +9,9 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>c1c732982a459885712239f25e9804523ca6be52</CoreFxCurrentRef>
+    <CoreFxCurrentRef>bba1a4613ae42244b45f786e64cfd3f7e27a17af</CoreFxCurrentRef>
     <CoreClrCurrentRef>c1c732982a459885712239f25e9804523ca6be52</CoreClrCurrentRef>
-    <CoreSetupCurrentRef>711413367b0da40e10c8e2862d41e49a45fe422e</CoreSetupCurrentRef>
+    <CoreSetupCurrentRef>bba1a4613ae42244b45f786e64cfd3f7e27a17af</CoreSetupCurrentRef>
     <ExternalCurrentRef>96dc7805f5df4a70a55783964ce69dcd91bfca80</ExternalCurrentRef>
     <ProjectNTfsCurrentRef>711413367b0da40e10c8e2862d41e49a45fe422e</ProjectNTfsCurrentRef>
     <ProjectNTfsTestILCCurrentRef>711413367b0da40e10c8e2862d41e49a45fe422e</ProjectNTfsTestILCCurrentRef>
@@ -31,16 +31,16 @@
 
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>preview1-25929-02</CoreFxExpectedPrerelease>
-    <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview1-25929-02</MicrosoftNETCorePlatformsPackageVersion>
+    <CoreFxExpectedPrerelease>preview1-25930-02</CoreFxExpectedPrerelease>
+    <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview1-25930-02</MicrosoftNETCorePlatformsPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-25929-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <ProjectNTfsExpectedPrerelease>beta-25929-01</ProjectNTfsExpectedPrerelease>
     <ProjectNTfsTestILCExpectedPrerelease>beta-25929-01</ProjectNTfsTestILCExpectedPrerelease>
     <ProjectNTfsTestILCPackageVersion>1.0.0-beta-25929-01</ProjectNTfsTestILCPackageVersion>
     <MicrosoftNETCoreDotNetHostPackageVersion>2.0.1-servicing-25615-03</MicrosoftNETCoreDotNetHostPackageVersion>
     <MicrosoftNETCoreDotNetHostPolicyPackageVersion>2.0.1-servicing-25615-03</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
-    <MicrosoftNETCoreAppPackageVersion>2.1.0-preview1-25929-05</MicrosoftNETCoreAppPackageVersion>
-    <MicrosoftDotNetPlatformAbstractionsPackageVersion>2.1.0-preview1-25929-05</MicrosoftDotNetPlatformAbstractionsPackageVersion>
+    <MicrosoftNETCoreAppPackageVersion>2.1.0-preview1-25929-08</MicrosoftNETCoreAppPackageVersion>
+    <MicrosoftDotNetPlatformAbstractionsPackageVersion>2.1.0-preview1-25929-08</MicrosoftDotNetPlatformAbstractionsPackageVersion>
 
     <!-- CoreFX-built SNI identity package -->
     <RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeNativeSystemDataSqlClientSniPackageVersion>
