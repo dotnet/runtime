@@ -23,6 +23,7 @@ namespace Internal.Runtime.Augments
         public static string GetEnvironmentVariable(string variable, EnvironmentVariableTarget target) => Environment.GetEnvironmentVariable(variable, target);
         public static IEnumerable<KeyValuePair<string, string>> EnumerateEnvironmentVariables() => Environment.EnumerateEnvironmentVariables();
         public static IEnumerable<KeyValuePair<string, string>> EnumerateEnvironmentVariables(EnvironmentVariableTarget target) => Environment.EnumerateEnvironmentVariables(target);
+        public static int ProcessorCount => Environment.ProcessorCount;
 
         public static void SetEnvironmentVariable(string variable, string value) => Environment.SetEnvironmentVariable(variable, value);
         public static void SetEnvironmentVariable(string variable, string value, EnvironmentVariableTarget target) => Environment.SetEnvironmentVariable(variable, value, target);
