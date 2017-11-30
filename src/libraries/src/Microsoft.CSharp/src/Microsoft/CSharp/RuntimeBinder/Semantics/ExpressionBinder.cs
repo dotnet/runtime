@@ -117,8 +117,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         DelBinOp,
         EnumBinOp,
         IntBinOp,
-        PtrBinOp,
-        PtrCmpOp,
         RealBinOp,
         RefCmpOp,
         ShiftOp,
@@ -483,7 +481,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             bool fConstrained;
             Expr pObject = pMemGroup.OptionalObject;
             CType callingObjectType = pObject?.Type;
-            PostBindMethod(ref mwi);
+            PostBindMethod(mwi);
             pObject = AdjustMemberObject(mwi, pObject, out fConstrained);
             pMemGroup.OptionalObject = pObject;
 
@@ -549,14 +547,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             checkUnsafe(pFieldType); // added to the binder so we don't bind to pointer ops
 
-            bool isLValue = pOptionalObject?.Type is PointerType || objectIsLvalue(pOptionalObject);
-
-            // Exception: a readonly field is not an lvalue unless we're in the constructor/static constructor appropriate
-            // for the field.
-            if (fwt.Field().isReadOnly)
-            {
-                isLValue = false;
-            }
+            // lvalue if the object is an lvalue (or it's static) and the field is not readonly.
+            bool isLValue = objectIsLvalue(pOptionalObject) && !fwt.Field().isReadOnly;
 
             AggregateType fieldType = null;
             // If this field is the backing field of a WindowsRuntime event then we need to bind to its
@@ -1112,24 +1104,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return true;
         }
 
-        private void PostBindMethod(ref MethWithInst pMWI)
+        private void PostBindMethod(MethWithInst pMWI)
         {
-            if (pMWI.Meth().RetType != null)
+            MethodSymbol meth = pMWI.Meth();
+            if (meth.RetType != null)
             {
-                checkUnsafe(pMWI.Meth().RetType);
+                checkUnsafe(meth.RetType);
 
                 // We need to check unsafe on the parameters as well, since we cannot check in conversion.
-                TypeArray pParams = pMWI.Meth().Params;
-
-                for (int i = 0; i < pParams.Count; i++)
+                foreach (CType type in meth.Params.Items)
                 {
-                    // This is an optimization: don't call this in the vast majority of cases
-                    CType type = pParams[i];
-
-                    if (type.isUnsafe())
-                    {
-                        checkUnsafe(type);
-                    }
+                    checkUnsafe(type);
                 }
             }
         }

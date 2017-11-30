@@ -44,15 +44,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 (enum,      under)      :       + -
                 (under,     enum)       :       +
          
-                (ptr,       ptr)        :         -
-                (ptr,       int)        :       + -
-                (ptr,       uint)       :       + -
-                (ptr,       long)       :       + -
-                (ptr,       ulong)      :       + -
-                (int,       ptr)        :       +
-                (uint,      ptr)        :       +
-                (long,      ptr)        :       +
-                (ulong,     ptr)        :       +
+                (ptr,       ptr)        :         -     Not callable through dynamic
+                (ptr,       int)        :       + -     Not callable through dynamic
+                (ptr,       uint)       :       + -     Not callable through dynamic
+                (ptr,       long)       :       + -     Not callable through dynamic
+                (ptr,       ulong)      :       + -     Not callable through dynamic
+                (int,       ptr)        :       +       Not callable through dynamic
+                (uint,      ptr)        :       +       Not callable through dynamic
+                (long,      ptr)        :       +       Not callable through dynamic
+                (ulong,     ptr)        :       +       Not callable through dynamic
          
                 (void,     void)      :                   == != < > <= >=
          
@@ -73,7 +73,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 enum    :       ~
                 ptr     :          
          
-            Note that pointer operators cannot be lifted over nullable.
+            Note that pointer operators cannot be lifted over nullable and are not callable through dynamic
         */
 
         // BinOpBindMethod and UnaOpBindMethod are method pointer arrays to dispatch the appropriate operator binder.
@@ -144,7 +144,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
             return GetDelBinOpSigs(prgbofs, info) ||
                    GetEnumBinOpSigs(prgbofs, info) ||
-                   GetPtrBinOpSigs(prgbofs, info) ||
                    GetRefEqualSigs(prgbofs, info);
         }
 
@@ -860,103 +859,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
 
         /*
-            Get the special signatures when at least one of the args is a pointer. Since pointers can't be
-            type arguments, a nullable pointer is illegal, so no sense trying to lift any of these.
-         
-            NOTE: We don't filter out bad operators on void pointers since BindPtrBinOp gives better
-            error messages than the operator overload resolution does.
-        */
-        private bool GetPtrBinOpSigs(List<BinOpFullSig> prgbofs, BinOpArgInfo info)
-        {
-            if (!(info.type1 is PointerType) && !(info.type2 is PointerType))
-            {
-                return false;
-            }
-
-            // (ptr,       ptr)        :         -
-            // (ptr,       int)        :       + -
-            // (ptr,       uint)       :       + -
-            // (ptr,       long)       :       + -
-            // (ptr,       ulong)      :       + -
-            // (int,       ptr)        :       +
-            // (uint,      ptr)        :       +
-            // (long,      ptr)        :       +
-            // (ulong,     ptr)        :       +
-            // (void,     void)      :                   == != < > <= >=
-
-            // Check the common case first.
-            if (info.type1 is PointerType && info.type2 is PointerType)
-            {
-                if (info.ValidForVoidPointer())
-                {
-                    prgbofs.Add(new BinOpFullSig(info.type1, info.type2, BindPtrCmpOp, OpSigFlags.None, LiftFlags.None, BinOpFuncKind.PtrCmpOp));
-                    return true;
-                }
-                if (info.type1 == info.type2 && info.ValidForPointer())
-                {
-                    prgbofs.Add(new BinOpFullSig(info.type1, info.type2, BindPtrBinOp, OpSigFlags.None, LiftFlags.None, BinOpFuncKind.PtrBinOp));
-                    return true;
-                }
-                return false;
-            }
-
-            CType typeT;
-
-            if (info.type1 is PointerType)
-            {
-                if (info.type2 is NullType)
-                {
-                    if (!info.ValidForVoidPointer())
-                    {
-                        return false;
-                    }
-                    prgbofs.Add(new BinOpFullSig(info.type1, info.type1, BindPtrCmpOp, OpSigFlags.Convert, LiftFlags.None, BinOpFuncKind.PtrCmpOp));
-                    return true;
-                }
-                if (!info.ValidForPointerAndNumber())
-                {
-                    return false;
-                }
-
-                for (uint i = 0; i < s_rgptIntOp.Length; i++)
-                {
-                    if (canConvert(info.arg2, typeT = GetPredefindType(s_rgptIntOp[i])))
-                    {
-                        prgbofs.Add(new BinOpFullSig(info.type1, typeT, BindPtrBinOp, OpSigFlags.Convert, LiftFlags.None, BinOpFuncKind.PtrBinOp));
-                        return true;
-                    }
-                }
-                return false;
-            }
-
-            Debug.Assert(info.type2 is PointerType);
-            if (info.type1 is NullType)
-            {
-                if (!info.ValidForVoidPointer())
-                {
-                    return false;
-                }
-                prgbofs.Add(new BinOpFullSig(info.type2, info.type2, BindPtrCmpOp, OpSigFlags.Convert, LiftFlags.None, BinOpFuncKind.PtrCmpOp));
-                return true;
-            }
-            if (!info.ValidForNumberAndPointer())
-            {
-                return false;
-            }
-
-            for (uint i = 0; i < s_rgptIntOp.Length; i++)
-            {
-                if (canConvert(info.arg1, typeT = GetPredefindType(s_rgptIntOp[i])))
-                {
-                    prgbofs.Add(new BinOpFullSig(typeT, info.type2, BindPtrBinOp, OpSigFlags.Convert, LiftFlags.None, BinOpFuncKind.PtrBinOp));
-                    return true;
-                }
-            }
-            return false;
-        }
-
-
-        /*
             See if standard reference equality applies. Make sure not to return true if another == operator
             may be applicable and better (or ambiguous)! This also handles == on System.Delegate, since
             it has special rules as well.
@@ -1426,16 +1328,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
                 else if (unaryOpKind == UnaOpKind.IncDec)
                 {
-                    // Check for pointers
-                    if (pArgumentType is PointerType)
-                    {
-                        pSignatures.Add(new UnaOpFullSig(
-                                pArgumentType,
-                                null,
-                                LiftFlags.None,
-                                UnaOpFuncKind.None));
-                        return UnaryOperatorSignatureFindResult.Match;
-                    }
+                    Debug.Assert(!(pArgumentType is PointerType));
 
                     // Check for user defined inc/dec
                     ExprMultiGet exprGet = GetExprFactory().CreateMultiGet(0, pArgumentType, null);
@@ -1741,6 +1634,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 type = GetPredefindType(PredefinedType.PT_INT);
             }
 
+            Debug.Assert(type.fundType() != FUNDTYPE.FT_PTR); // Can't have a pointer.
             switch (type.fundType())
             {
                 default:
@@ -1758,9 +1652,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
 
                     return CreateUnaryOpForPredefMethodCall(ek, predefMeth, type, exprVal);
-
-                case FUNDTYPE.FT_PTR:
-                    return BindPtrBinOp(ek, flags, exprVal, GetExprFactory().CreateConstant(GetPredefindType(PredefinedType.PT_INT), ConstVal.Get(1)));
 
                 case FUNDTYPE.FT_I1:
                 case FUNDTYPE.FT_I2:
@@ -2241,25 +2132,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             return mustCastInUncheckedContext(exprRes, typeEnum, CONVERTTYPE.NOUDC);
         }
-
-
-        /*
-            Handles pointer binary operators (+ and -).
-        */
-        private Expr BindPtrBinOp(ExpressionKind ek, EXPRFLAG flags, Expr arg1, Expr arg2)
-        {
-            return null;
-        }
-
-
-        /*
-            Handles pointer comparison operators.
-        */
-        private Expr BindPtrCmpOp(ExpressionKind ek, EXPRFLAG flags, Expr arg1, Expr arg2)
-        {
-            return null;
-        }
-
 
         /*
             Given a binary operator EXPRKIND, get the BinOpKind and flags.
