@@ -109,6 +109,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue(25498, TargetFrameworkMonikers.UapAot)]
         public void GetMetadataView_AbstractClassWithConstructor_ShouldThrowMemberAccessException()
         {
             var metadata = new Dictionary<string, object>();

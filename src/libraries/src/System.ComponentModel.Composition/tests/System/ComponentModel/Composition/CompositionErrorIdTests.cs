@@ -10,6 +10,7 @@ namespace System.ComponentModel.Composition
     public class CompositionErrorIdTests
     {
         [Fact]
+        [ActiveIssue(25498, TargetFrameworkMonikers.UapAot)]
         public void CompositionErrorIdsAreInSyncWithErrorIds()
         {
             ExtendedAssert.EnumsContainSameValues<CompositionErrorId, ErrorId>();

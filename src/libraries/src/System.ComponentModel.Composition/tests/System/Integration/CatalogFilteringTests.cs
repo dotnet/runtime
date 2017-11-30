@@ -24,6 +24,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue(25498, TargetFrameworkMonikers.UapAot)]
         public void FilteredCatalog_ScopeB()
         {
             var cat = GetCatalog();
