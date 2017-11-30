@@ -71,6 +71,11 @@
       <!-- Setup item groups for PublishPackagesToBlobFeed and PublishFilesToBlobFeed -->
       <PackagesToPublish Include="$(DownloadDirectory)**\*.nupkg" />
       <FilesToPublish Include="$(DownloadDirectory)**\*.*" Exclude="@(PackagesToPublish)" />
+
+      <!-- Make the local relative path match what dotnet-install scripts expect -->
+      <FilesToPublish>
+        <RelativeBlobPath>assets/$(BinariesRelativePath)/$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\' ,'/'))</RelativeBlobPath>
+      </FilesToPublish>
     </ItemGroup>
   </Target>
 
