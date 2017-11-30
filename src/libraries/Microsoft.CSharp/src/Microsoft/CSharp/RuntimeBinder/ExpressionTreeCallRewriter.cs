@@ -212,6 +212,10 @@ namespace Microsoft.CSharp.RuntimeBinder
             return new ExpressionExpr(exp);
         }
 
+        // ExpressionTreeRewriter has optimized away identity or up-cast conversions, leaving us with a bare parameter
+        // access. Just get the expression for that parameter so the lambda produced can be p0 => p0
+        protected override Expr VisitWRAP(ExprWrap pExpr) => new ExpressionExpr(GetExpression(pExpr));
+
         #region Generators
         /////////////////////////////////////////////////////////////////////////////////
 

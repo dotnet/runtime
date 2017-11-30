@@ -58,7 +58,6 @@ namespace System.Buffers.Text.Tests
             Assert.All<ParserTestData<T>>(testDataCollection,
                 (testData) =>
                 {
-                    Console.WriteLine(testData);
                     unsafe
                     {
                         Span<byte> buffer = new Span<byte>((void*)pMemory, int.MaxValue);

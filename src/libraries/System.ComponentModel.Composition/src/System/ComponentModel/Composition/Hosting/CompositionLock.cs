@@ -3,15 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 #define SINGLETHREADEDLOCKENFORCEMENT
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.Composition.Primitives;
-using System.Diagnostics;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using Microsoft.Internal;
-using Microsoft.Internal.Collections;
 using System.Threading;
+using Microsoft.Internal;
 
 namespace System.ComponentModel.Composition.Hosting
 {
