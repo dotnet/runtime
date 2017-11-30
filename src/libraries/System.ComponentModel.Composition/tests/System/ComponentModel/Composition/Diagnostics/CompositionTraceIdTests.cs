@@ -10,6 +10,7 @@ namespace System.ComponentModel.Composition.Diagnostics
     public class CompositionTraceIdTests
     {
         [Fact]
+        [ActiveIssue(25498, TargetFrameworkMonikers.UapAot)]
         public void CompositionTraceIdsAreInSyncWithTraceIds()
         {
             ExtendedAssert.EnumsContainSameValues<CompositionTraceId, TraceId>();
