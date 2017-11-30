@@ -17,6 +17,7 @@
     <Compile Include="IntegerBinaryOperationTests.cs" />
     <Compile Include="IntegerUnaryOperationTests.cs" />
     <Compile Include="IsEventTests.cs" />
+    <Compile Include="NullableEnumUnaryOperationTest.cs" />
     <Compile Include="RuntimeBinderExceptionTests.cs" />
     <Compile Include="RuntimeBinderInternalCompilerExceptionTests.cs" />
     <Compile Include="RuntimeBinderTests.cs" />
