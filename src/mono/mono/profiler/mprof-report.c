@@ -3003,7 +3003,7 @@ decode_buffer (ProfContext *ctx)
 					}
 					name = pstrdup ((char*)p);
 					while (*p++);
-					if (ctx->data_version > 12) {
+					if (ctx->data_version > 12 && ctx->data_version < 15) {
 						type = *p++;
 						unit = *p++;
 						variance = *p++;
@@ -3040,7 +3040,7 @@ decode_buffer (ProfContext *ctx)
 						}
 					}
 
-					if (ctx->data_version > 12)
+					if (ctx->data_version > 12 && ctx->data_version < 15)
 						type = *p++;
 					else
 						type = decode_uleb128 (p, &p);

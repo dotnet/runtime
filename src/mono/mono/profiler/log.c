@@ -2657,9 +2657,9 @@ counters_emit (void)
 		name = mono_counter_get_name (agent->counter);
 		emit_value (logbuffer, mono_counter_get_section (agent->counter));
 		emit_string (logbuffer, name, strlen (name) + 1);
-		emit_byte (logbuffer, mono_counter_get_type (agent->counter));
-		emit_byte (logbuffer, mono_counter_get_unit (agent->counter));
-		emit_byte (logbuffer, mono_counter_get_variance (agent->counter));
+		emit_value (logbuffer, mono_counter_get_type (agent->counter));
+		emit_value (logbuffer, mono_counter_get_unit (agent->counter));
+		emit_value (logbuffer, mono_counter_get_variance (agent->counter));
 		emit_value (logbuffer, agent->index);
 
 		agent->emitted = TRUE;
@@ -2746,7 +2746,7 @@ counters_sample (uint64_t timestamp)
 		}
 
 		emit_uvalue (logbuffer, agent->index);
-		emit_byte (logbuffer, type);
+		emit_value (logbuffer, type);
 		switch (type) {
 		case MONO_COUNTER_INT:
 #if SIZEOF_VOID_P == 4
