@@ -417,6 +417,9 @@
   <data name="net_alpn_config_failed" xml:space="preserve">
     <value>ALPN configuration failed on this platform.</value>
   </data>
+  <data name="net_alpn_failed" xml:space="preserve">
+    <value>No common application protocol exists between the client and the server. Application negotiation failed.</value>
+  </data>
   <data name="net_ssl_app_protocols_invalid" xml:space="preserve">
     <value>The application protocol list is invalid.</value>
   </data>

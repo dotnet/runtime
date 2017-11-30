@@ -83,7 +83,7 @@ namespace System.Net.Security
 
         public static SecurityStatusPal EncryptMessage(SafeDeleteContext securityContext, ReadOnlyMemory<byte> input, int headerSize, int trailerSize, ref byte[] output, out int resultSize)
         {
-            return EncryptDecryptHelper(securityContext, input, offset:0, size: 0, encrypt: true, output: ref output, resultSize: out resultSize);
+            return EncryptDecryptHelper(securityContext, input, offset: 0, size: 0, encrypt: true, output: ref output, resultSize: out resultSize);
         }
 
         public static SecurityStatusPal DecryptMessage(SafeDeleteContext securityContext, byte[] buffer, ref int offset, ref int count)
@@ -158,6 +158,16 @@ namespace System.Net.Security
                 else
                 {
                     done = Interop.OpenSsl.DoSslHandshake(((SafeDeleteSslContext)context).SslContext, inputBuffer.token, inputBuffer.offset, inputBuffer.size, out output, out outputSize);
+                }
+
+                // When the handshake is done, and the context is server, check if the alpnHandle target was set to null during ALPN.
+                // If it was, then that indiciates ALPN failed, send failure.
+                // We have this workaround, as openssl supports terminating handshake only from version 1.1.0,
+                // whereas ALPN is supported from version 1.0.2.
+                SafeSslHandle sslContext = ((SafeDeleteSslContext)context).SslContext;
+                if (done && sslAuthenticationOptions.IsServer && sslAuthenticationOptions.ApplicationProtocols != null && sslContext.AlpnHandle.IsAllocated && sslContext.AlpnHandle.Target == null)
+                {
+                    return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, Interop.OpenSsl.CreateSslException(SR.net_alpn_failed));
                 }
 
                 outputBuffer.size = outputSize;
