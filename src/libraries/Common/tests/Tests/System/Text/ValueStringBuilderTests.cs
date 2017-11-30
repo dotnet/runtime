@@ -212,5 +212,33 @@ namespace System.Text.Tests
             Assert.Equal(Text2.Length, vsb.Length);
             Assert.Equal(Text2, vsb.ToString());
         }
+
+        [Fact]
+        public unsafe void Length_Growing_SetsNulls()
+        {
+            const string Text1 = "foobar";
+            var vsb = new ValueStringBuilder();
+
+            // Shrink then grow within capacity
+            vsb.Append(Text1);
+            Assert.Equal(Text1.Length, vsb.Length);
+            vsb.Length = 3;
+            Assert.Equal(3, vsb.Length);
+            vsb.Length = 6;
+            Assert.Equal(6, vsb.Length);
+            Assert.Equal("foo\0\0\0", vsb.ToString());
+
+            // Grow over capacity
+            const string Text2 = "bar";
+            Span<char> stackSpace = stackalloc char[Text2.Length];
+            var vsb2 = new ValueStringBuilder(stackSpace);
+            Assert.Equal(0, vsb2.Length);
+            vsb2.Append(Text2);
+            Assert.True(Text2.AsReadOnlySpan().SequenceEqual(stackSpace), "existing stack buffer should have been used");
+            Assert.Equal(Text2.Length, vsb2.Length);
+            vsb2.Length = 6;
+            Assert.Equal(6, vsb2.Length);
+            Assert.Equal("bar\0\0\0", vsb2.ToString());
+        }
     }
 }

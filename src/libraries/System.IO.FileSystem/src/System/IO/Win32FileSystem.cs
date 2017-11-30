@@ -186,22 +186,31 @@ namespace System.IO
 
         public override IEnumerable<string> EnumeratePaths(string fullPath, string searchPattern, SearchOption searchOption, SearchTarget searchTarget)
         {
-            return Win32FileSystemEnumerableFactory.CreateFileNameIterator(fullPath, fullPath, searchPattern,
-                (searchTarget & SearchTarget.Files) == SearchTarget.Files,
-                (searchTarget & SearchTarget.Directories) == SearchTarget.Directories,
-                searchOption);
+            FindEnumerableFactory.NormalizeInputs(ref fullPath, ref searchPattern);
+            switch (searchTarget)
+            {
+                case SearchTarget.Files:
+                    return FindEnumerableFactory.UserFiles(fullPath, searchPattern, searchOption == SearchOption.AllDirectories);
+                case SearchTarget.Directories:
+                    return FindEnumerableFactory.UserDirectories(fullPath, searchPattern, searchOption == SearchOption.AllDirectories);
+                case SearchTarget.Both:
+                    return FindEnumerableFactory.UserEntries(fullPath, searchPattern, searchOption == SearchOption.AllDirectories);
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(searchTarget));
+            }
         }
 
         public override IEnumerable<FileSystemInfo> EnumerateFileSystemInfos(string fullPath, string searchPattern, SearchOption searchOption, SearchTarget searchTarget)
         {
+            FindEnumerableFactory.NormalizeInputs(ref fullPath, ref searchPattern);
             switch (searchTarget)
             {
                 case SearchTarget.Directories:
-                    return Win32FileSystemEnumerableFactory.CreateDirectoryInfoIterator(fullPath, fullPath, searchPattern, searchOption);
+                    return FindEnumerableFactory.DirectoryInfos(fullPath, searchPattern, searchOption == SearchOption.AllDirectories);
                 case SearchTarget.Files:
-                    return Win32FileSystemEnumerableFactory.CreateFileInfoIterator(fullPath, fullPath, searchPattern, searchOption);
+                    return FindEnumerableFactory.FileInfos(fullPath, searchPattern, searchOption == SearchOption.AllDirectories);
                 case SearchTarget.Both:
-                    return Win32FileSystemEnumerableFactory.CreateFileSystemInfoIterator(fullPath, fullPath, searchPattern, searchOption);
+                    return FindEnumerableFactory.FileSystemInfos(fullPath, searchPattern, searchOption == SearchOption.AllDirectories);
                 default:
                     throw new ArgumentException(SR.ArgumentOutOfRange_Enum, nameof(searchTarget));
             }

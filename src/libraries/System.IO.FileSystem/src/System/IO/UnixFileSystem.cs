@@ -510,7 +510,6 @@ namespace System.IO
                 searchPattern = NormalizeSearchPattern(searchPattern);
                 if (searchPattern.Length > 0)
                 {
-                    PathHelpers.CheckSearchPattern(searchPattern);
                     PathHelpers.ThrowIfEmptyOrRootedPath(searchPattern);
 
                     // If the search pattern contains any paths, make sure we factor those into 

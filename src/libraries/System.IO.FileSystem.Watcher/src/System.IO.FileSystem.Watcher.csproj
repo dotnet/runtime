@@ -58,6 +58,9 @@
     <Compile Include="System\IO\FileSystemWatcher.Win32.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CloseHandle.cs">
+      <Link>Common\Interop\Windows\Interop.CloseHandle.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- Windows : Win32 only -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'uap'">
