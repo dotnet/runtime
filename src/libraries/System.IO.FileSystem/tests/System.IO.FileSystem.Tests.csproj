@@ -24,6 +24,7 @@
     <Compile Include="Base\InfoGetSetTimes.cs" />
     <Compile Include="Base\AllGetSetAttributes.cs" />
     <Compile Include="Base\StaticGetSetTimes.cs" />
+    <Compile Include="Directory\EnumerableTests.cs" />
     <Compile Include="FileInfo\GetSetAttributesCommon.cs" />
     <Compile Include="FileInfo\IsReadOnly.cs" />
     <Compile Include="FileInfo\Replace.cs" />

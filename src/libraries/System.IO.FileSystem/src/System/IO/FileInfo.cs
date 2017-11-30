@@ -17,44 +17,27 @@ namespace System.IO
         private FileInfo() { }
 
         public FileInfo(string fileName)
+            : this(fileName, isNormalized: false)
         {
-            if (fileName == null)
-                throw new ArgumentNullException(nameof(fileName));
-            Contract.EndContractBlock();
-
-            Init(fileName);
         }
 
-        private void Init(string fileName)
+        internal FileInfo(string originalPath, string fullPath = null, string fileName = null, bool isNormalized = false)
         {
-            OriginalPath = fileName;
-            // Must fully qualify the path for the security check
-            string fullPath = Path.GetFullPath(fileName);
+            // Want to throw the original argument name
+            OriginalPath = originalPath ?? throw new ArgumentNullException("fileName");
 
-            _name = Path.GetFileName(fileName);
-            FullPath = fullPath;
-            DisplayPath = GetDisplayPath(fileName);
-        }
+            fullPath = fullPath ?? originalPath;
+            Debug.Assert(!isNormalized || !PathInternal.IsPartiallyQualified(fullPath), "should be fully qualified if normalized");
 
-        private string GetDisplayPath(string originalPath)
-        {
-            return originalPath;
-        }
-
-        internal FileInfo(string fullPath, string originalPath)
-        {
-            Debug.Assert(Path.IsPathRooted(fullPath), "fullPath must be fully qualified!");
-            _name = originalPath ?? Path.GetFileName(fullPath);
-            OriginalPath = _name;
-            FullPath = fullPath;
-            DisplayPath = _name;
+            FullPath = isNormalized ? fullPath ?? originalPath : Path.GetFullPath(fullPath);
+            _name = fileName ?? Path.GetFileName(originalPath);
+            DisplayPath = originalPath;
         }
 
         public override string Name
         {
             get { return _name; }
         }
-
 
         public long Length
         {
@@ -135,10 +118,8 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(destFileName), SR.ArgumentNull_FileName);
             if (destFileName.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destFileName));
-            Contract.EndContractBlock();
 
-            destFileName = File.InternalCopy(FullPath, destFileName, false);
-            return new FileInfo(destFileName, null);
+            return new FileInfo(File.InternalCopy(FullPath, destFileName, false), isNormalized: true);
         }
 
 
@@ -159,8 +140,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destFileName));
             Contract.EndContractBlock();
 
-            destFileName = File.InternalCopy(FullPath, destFileName, overwrite);
-            return new FileInfo(destFileName, null);
+            return new FileInfo(File.InternalCopy(FullPath, destFileName, overwrite), isNormalized: true);
         }
 
         public FileStream Create()
@@ -266,7 +246,7 @@ namespace System.IO
             FullPath = fullDestFileName;
             OriginalPath = destFileName;
             _name = Path.GetFileName(fullDestFileName);
-            DisplayPath = GetDisplayPath(destFileName);
+            DisplayPath = destFileName;
             // Flush any cached information about the file.
             Invalidate();
         }

@@ -17,10 +17,14 @@ namespace System.IO
         // throw an appropriate error when attempting to access the cached info.
         private int _dataInitialized = -1;
 
-        internal void Init(ref Interop.Kernel32.WIN32_FIND_DATA findData)
+        internal unsafe void Init(Interop.NtDll.FILE_FULL_DIR_INFORMATION* info)
         {
-            // Copy the information to data
-            _data.PopulateFrom(ref findData);
+            _data.dwFileAttributes = (int)info->FileAttributes;
+            _data.ftCreationTime = *((Interop.Kernel32.FILE_TIME*)&info->CreationTime);
+            _data.ftLastAccessTime = *((Interop.Kernel32.FILE_TIME*)&info->LastAccessTime);
+            _data.ftLastWriteTime = *((Interop.Kernel32.FILE_TIME*)&info->LastWriteTime);
+            _data.nFileSizeHigh = (uint)(info->EndOfFile >> 32);
+            _data.nFileSizeLow = (uint)info->EndOfFile;
             _dataInitialized = 0;
         }
 
