@@ -2614,21 +2614,21 @@ Constants.allScenarios.each { scenario ->
                                 addCommand("copy %WORKSPACE%\\tests\\${archLocation}\\Tests.lst bin\\tests\\${osGroup}.${architecture}.${configuration}")
                                 addCommand("pushd bin\\tests\\${osGroup}.${architecture}.${configuration}")
                                 addCommand("${smartyCommand}")
-                                addCommand("set __save_smarty_errorlevel=%errorlevel%")
-                                addCommand("popd")
 
-                                // BEGIN Temporarily add some logging to see why the ZIP command isn't working reliably.
-                                addCommand("dir .\\bin\\tests\\${osGroup}.${architecture}.${configuration}")
-                                addCommand("dir .\\bin\\tests\\${osGroup}.${architecture}.${configuration}\\Smarty.run.0")
-                                // END temporary logging
+                                // Save the errorlevel from the smarty command to be used as the errorlevel of this batch file.
+                                // However, we also need to remove all the variables that were set during this batch file, so we
+                                // can run the ZIP powershell command (below) in a clean environment. (We can't run the powershell
+                                // command with the COMPlus_AltJit variables set, for example.) To do that, we do ENDLOCAL as well
+                                // as save the current errorlevel on the same line. This works because CMD evaluates the %errorlevel%
+                                // variable expansion (or any variable expansion on the line) BEFORE it executes the ENDLOCAL command.
+                                // Note that the ENDLOCAL also undoes the pushd command, but we add the popd here for clarity.
+                                addCommand("popd & ENDLOCAL & set __save_smarty_errorlevel=%errorlevel%")
 
                                 // ZIP up the smarty output, no matter what the smarty result.
                                 addCommand("powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${architecture}.${configuration}\\Smarty.run.0', '.\\bin\\tests\\${osGroup}.${architecture}.${configuration}\\Smarty.run.0.zip')\"")
 
-                                // BEGIN Temporary logging
                                 addCommand("echo %errorlevel%")
                                 addCommand("dir .\\bin\\tests\\${osGroup}.${architecture}.${configuration}")
-                                // END temporary logging
 
                                 // Use the smarty errorlevel as the script errorlevel.
                                 addCommand("exit /b %__save_smarty_errorlevel%")
