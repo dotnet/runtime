@@ -49,7 +49,7 @@ def osShortName = ['Windows 10': 'win10',
 // **************************
 [true, false].each { isPR ->
     ['Release'].each { configurationGroup ->
-        ['Windows_NT', 'Ubuntu14.04'].each { os ->
+        ['Windows_NT', 'Ubuntu16.04'].each { os ->
             def osGroup = osGroupMap[os]
             def newJobName = "perf_${os.toLowerCase()}_${configurationGroup.toLowerCase()}"
 
