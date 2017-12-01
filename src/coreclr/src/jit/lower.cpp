@@ -2695,7 +2695,11 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
 #ifdef _TARGET_ARM64_
                     (op2Value == 0) && cmp->OperIs(GT_EQ, GT_NE, GT_GT) &&
 #endif
-                    (castOp->OperIs(GT_CALL, GT_LCL_VAR) || castOp->OperIsLogical() || IsContainableMemoryOp(castOp));
+                    (castOp->OperIs(GT_CALL, GT_LCL_VAR) || castOp->OperIsLogical()
+#ifdef _TARGET_XARCH_
+                     || IsContainableMemoryOp(castOp)
+#endif
+                         );
 
                 if (removeCast)
                 {
