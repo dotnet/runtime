@@ -2016,7 +2016,7 @@ void CodeGen::genCodeForInitBlk(GenTreeBlk* initBlkNode)
 #ifdef _TARGET_ARM64_
     if (size != 0)
     {
-        assert(size > INITBLK_UNROLL_LIMIT);
+        assert((size > INITBLK_UNROLL_LIMIT) || !initVal->IsCnsIntOrI());
     }
 #endif // _TARGET_ARM64_
 
