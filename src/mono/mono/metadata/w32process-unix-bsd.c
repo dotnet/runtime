@@ -35,7 +35,7 @@ mono_w32process_get_name (pid_t pid)
 	mib [2] = KERN_PROC_PID;
 	mib [3] = pid;
 	if (sysctl(mib, 4, NULL, &size, NULL, 0) < 0) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: sysctl() failed: %d", __func__, errno);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: sysctl() failed: %d", __func__, errno);
 		return NULL;
 	}
 
@@ -45,7 +45,7 @@ mono_w32process_get_name (pid_t pid)
 	if (sysctl (mib, 4, pi, &size, NULL, 0) < 0) {
 		if (errno == ENOMEM) {
 			g_free (pi);
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Didn't allocate enough memory for kproc info", __func__);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Didn't allocate enough memory for kproc info", __func__);
 		}
 		return NULL;
 	}
@@ -63,7 +63,7 @@ mono_w32process_get_name (pid_t pid)
 
 retry:
 	if (sysctl(mib, 6, NULL, &size, NULL, 0) < 0) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: sysctl() failed: %d", __func__, errno);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: sysctl() failed: %d", __func__, errno);
 		return NULL;
 	}
 
@@ -134,7 +134,7 @@ mono_w32process_get_modules (pid_t pid)
 		mod->inode = i;
 		mod->filename = g_strdup (info->dlpi_name);
 
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: inode=%d, filename=%s, address_start=%p, address_end=%p",
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: inode=%d, filename=%s, address_start=%p, address_end=%p",
 			__func__, mod->inode, mod->filename, mod->address_start, mod->address_end);
 
 		g_free (info);

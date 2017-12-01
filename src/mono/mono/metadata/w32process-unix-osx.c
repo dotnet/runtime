@@ -47,7 +47,7 @@ mono_w32process_get_name (pid_t pid)
 	if (sysctl (mib, 4, pi, &size, NULL, 0) < 0) {
 		if (errno == ENOMEM) {
 			g_free (pi);
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Didn't allocate enough memory for kproc info", __func__);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Didn't allocate enough memory for kproc info", __func__);
 		}
 		return(ret);
 	}
@@ -64,7 +64,7 @@ mono_w32process_get_name (pid_t pid)
 	memset (buf, '\0', sizeof(buf));
 	res = proc_name (pid, buf, sizeof(buf));
 	if (res == 0) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: proc_name failed, error (%d) \"%s\"", __func__, errno, g_strerror (errno));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: proc_name failed, error (%d) \"%s\"", __func__, errno, g_strerror (errno));
 		return NULL;
 	}
 

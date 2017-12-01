@@ -33,15 +33,15 @@ static void sem_handle_signal (MonoW32Handle *handle_data)
 
 	sem_handle = (MonoW32HandleSemaphore*) handle_data->specific;
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: signalling %s handle %p",
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: signalling %s handle %p",
 		__func__, mono_w32handle_get_typename (handle_data->type), handle_data);
 
 	/* No idea why max is signed, but thats the spec :-( */
 	if (sem_handle->val + 1 > (guint32)sem_handle->max) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: %s handle %p val %d count %d max %d, max value would be exceeded",
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: %s handle %p val %d count %d max %d, max value would be exceeded",
 			__func__, mono_w32handle_get_typename (handle_data->type), handle_data, sem_handle->val, 1, sem_handle->max);
 	} else {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: %s handle %p val %d count %d max %d",
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: %s handle %p val %d count %d max %d",
 			__func__, mono_w32handle_get_typename (handle_data->type), handle_data, sem_handle->val, 1, sem_handle->max);
 
 		sem_handle->val += 1;
@@ -57,7 +57,7 @@ static gboolean sem_handle_own (MonoW32Handle *handle_data, gboolean *abandoned)
 
 	sem_handle = (MonoW32HandleSemaphore*) handle_data->specific;
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: owning %s handle %p",
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: owning %s handle %p",
 		__func__, mono_w32handle_get_typename (handle_data->type), handle_data);
 
 	sem_handle->val--;
@@ -166,7 +166,7 @@ sem_handle_create (MonoW32HandleSemaphore *sem_handle, MonoW32Type type, gint32 
 
 	mono_w32handle_unlock (handle_data);
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: created %s handle %p",
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: created %s handle %p",
 		__func__, mono_w32handle_get_typename (type), handle);
 
 	mono_w32handle_unref (handle_data);
@@ -178,7 +178,7 @@ static gpointer
 sem_create (gint32 initial, gint32 max)
 {
 	MonoW32HandleSemaphore sem_handle;
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: creating %s handle, initial %d max %d",
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: creating %s handle, initial %d max %d",
 		__func__, mono_w32handle_get_typename (MONO_W32TYPE_SEM), initial, max);
 	return sem_handle_create (&sem_handle, MONO_W32TYPE_SEM, initial, max);
 }
@@ -189,7 +189,7 @@ namedsem_create (gint32 initial, gint32 max, const gunichar2 *name)
 	gpointer handle;
 	gchar *utf8_name;
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: creating %s handle, initial %d max %d name \"%s\"",
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: creating %s handle, initial %d max %d name \"%s\"",
 		    __func__, mono_w32handle_get_typename (MONO_W32TYPE_NAMEDSEM), initial, max, (const char*)name);
 
 	/* w32 seems to guarantee that opening named objects can't race each other */
@@ -198,7 +198,7 @@ namedsem_create (gint32 initial, gint32 max, const gunichar2 *name)
 	glong utf8_len = 0;
 	utf8_name = g_utf16_to_utf8 (name, -1, NULL, &utf8_len, NULL);
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Creating named sem name [%s] initial %d max %d", __func__, utf8_name, initial, max);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: Creating named sem name [%s] initial %d max %d", __func__, utf8_name, initial, max);
 
 	handle = mono_w32handle_namespace_search_handle (MONO_W32TYPE_NAMEDSEM, utf8_name);
 	if (handle == INVALID_HANDLE_VALUE) {
@@ -234,14 +234,14 @@ ves_icall_System_Threading_Semaphore_CreateSemaphore_internal (gint32 initialCou
 	gpointer sem;
 
 	if (maximumCount <= 0) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: maximumCount <= 0", __func__);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: maximumCount <= 0", __func__);
 
 		*error = ERROR_INVALID_PARAMETER;
 		return NULL;
 	}
 
 	if (initialCount > maximumCount || initialCount < 0) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: initialCount > maximumCount or < 0", __func__);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: initialCount > maximumCount or < 0", __func__);
 
 		*error = ERROR_INVALID_PARAMETER;
 		return NULL;
@@ -285,7 +285,7 @@ ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (gpointer handle,
 
 	sem_handle = (MonoW32HandleSemaphore*) handle_data->specific;
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: releasing %s handle %p",
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: releasing %s handle %p",
 		__func__, mono_w32handle_get_typename (handle_data->type), handle);
 
 	mono_w32handle_lock (handle_data);
@@ -297,12 +297,12 @@ ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (gpointer handle,
 
 	/* No idea why max is signed, but thats the spec :-( */
 	if (sem_handle->val + releaseCount > (guint32)sem_handle->max) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: %s handle %p val %d count %d max %d, max value would be exceeded",
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: %s handle %p val %d count %d max %d, max value would be exceeded",
 			__func__, mono_w32handle_get_typename (handle_data->type), handle, sem_handle->val, releaseCount, sem_handle->max);
 
 		ret = FALSE;
 	} else {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: %s handle %p val %d count %d max %d",
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: %s handle %p val %d count %d max %d",
 			__func__, mono_w32handle_get_typename (handle_data->type), handle, sem_handle->val, releaseCount, sem_handle->max);
 
 		sem_handle->val += releaseCount;
@@ -330,7 +330,7 @@ ves_icall_System_Threading_Semaphore_OpenSemaphore_internal (MonoString *name, g
 
 	utf8_name = g_utf16_to_utf8 (mono_string_chars (name), -1, NULL, NULL, NULL);
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Opening named sem [%s]", __func__, utf8_name);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: Opening named sem [%s]", __func__, utf8_name);
 
 	handle = mono_w32handle_namespace_search_handle (MONO_W32TYPE_NAMEDSEM, utf8_name);
 	if (handle == INVALID_HANDLE_VALUE) {
@@ -343,7 +343,7 @@ ves_icall_System_Threading_Semaphore_OpenSemaphore_internal (MonoString *name, g
 		goto cleanup;
 	}
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: returning named sem handle %p", __func__, handle);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: returning named sem handle %p", __func__, handle);
 
 cleanup:
 	g_free (utf8_name);

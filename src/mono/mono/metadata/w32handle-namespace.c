@@ -81,11 +81,11 @@ mono_w32handle_namespace_search_handle_callback (MonoW32Handle *handle_data, gpo
 	if (strcmp (sharedns->name, search_data->name) == 0) {
 		if (handle_data->type != search_data->type) {
 			/* Its the wrong type, so fail now */
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle %p matches name but is wrong type: %s",
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_HANDLE, "%s: handle %p matches name but is wrong type: %s",
 				__func__, handle_data, mono_w32handle_get_typename (handle_data->type));
 			search_data->ret = INVALID_HANDLE_VALUE;
 		} else {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle %p matches name and type",
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_HANDLE, "%s: handle %p matches name and type",
 				__func__, handle_data);
 
 			/* we do not want the handle to be destroyed before we return it  */
@@ -106,7 +106,7 @@ mono_w32handle_namespace_search_handle (MonoW32Type type, const gchar *name)
 	if (!has_namespace (type))
 		g_error ("%s: type %s does not have a namespace", __func__, type);
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Lookup for handle named [%s] type %s",
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_HANDLE, "%s: Lookup for handle named [%s] type %s",
 		__func__, name, mono_w32handle_get_typename (type));
 
 	search_data.ret = NULL;

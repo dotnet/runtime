@@ -594,7 +594,7 @@ process_wait (MonoW32Handle *handle_data, guint32 timeout, gboolean *alerted)
 	gint64 start, now;
 	Process *process;
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT ")", __func__, handle_data, timeout);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s (%p, %" G_GUINT32_FORMAT ")", __func__, handle_data, timeout);
 
 	if (alerted)
 		*alerted = FALSE;
@@ -603,21 +603,21 @@ process_wait (MonoW32Handle *handle_data, guint32 timeout, gboolean *alerted)
 
 	if (process_handle->exited) {
 		/* We've already done this one */
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): Process already exited", __func__, handle_data, timeout);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s (%p, %" G_GUINT32_FORMAT "): Process already exited", __func__, handle_data, timeout);
 		return MONO_W32HANDLE_WAIT_RET_SUCCESS_0;
 	}
 
 	pid = process_handle->pid;
 
 	if (pid == mono_process_current_pid ()) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): waiting on current process", __func__, handle_data, timeout);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s (%p, %" G_GUINT32_FORMAT "): waiting on current process", __func__, handle_data, timeout);
 		return MONO_W32HANDLE_WAIT_RET_TIMEOUT;
 	}
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): PID: %d", __func__, handle_data, timeout, pid);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s (%p, %" G_GUINT32_FORMAT "): PID: %d", __func__, handle_data, timeout, pid);
 
 	if (!process_handle->child) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): waiting on non-child process", __func__, handle_data, timeout);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s (%p, %" G_GUINT32_FORMAT "): waiting on non-child process", __func__, handle_data, timeout);
 
 		if (!process_is_alive (pid)) {
 			/* assume the process has exited */
@@ -625,11 +625,11 @@ process_wait (MonoW32Handle *handle_data, guint32 timeout, gboolean *alerted)
 			process_handle->exitstatus = -1;
 			mono_w32handle_set_signal_state (handle_data, TRUE, TRUE);
 
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): non-child process is not alive anymore (2)", __func__, handle_data, timeout);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s (%p, %" G_GUINT32_FORMAT "): non-child process is not alive anymore (2)", __func__, handle_data, timeout);
 			return MONO_W32HANDLE_WAIT_RET_SUCCESS_0;
 		}
 
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): non-child process wait failed, error : %s (%d))", __func__, handle_data, timeout, g_strerror (errno), errno);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s (%p, %" G_GUINT32_FORMAT "): non-child process wait failed, error : %s (%d))", __func__, handle_data, timeout, g_strerror (errno), errno);
 		return MONO_W32HANDLE_WAIT_RET_FAILED;
 	}
 
@@ -643,11 +643,11 @@ process_wait (MonoW32Handle *handle_data, guint32 timeout, gboolean *alerted)
 
 	while (1) {
 		if (timeout != MONO_INFINITE_WAIT) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): waiting on semaphore for %" G_GINT64_FORMAT " ms...",
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s (%p, %" G_GUINT32_FORMAT "): waiting on semaphore for %" G_GINT64_FORMAT " ms...",
 				__func__, handle_data, timeout, timeout - (now - start));
 			ret = mono_os_sem_timedwait (&process->exit_sem, (timeout - (now - start)), alerted ? MONO_SEM_FLAGS_ALERTABLE : MONO_SEM_FLAGS_NONE);
 		} else {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): waiting on semaphore forever...",
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s (%p, %" G_GUINT32_FORMAT "): waiting on semaphore forever...",
 				__func__, handle_data, timeout);
 			ret = mono_os_sem_wait (&process->exit_sem, alerted ? MONO_SEM_FLAGS_ALERTABLE : MONO_SEM_FLAGS_NONE);
 		}
@@ -659,25 +659,25 @@ process_wait (MonoW32Handle *handle_data, guint32 timeout, gboolean *alerted)
 		}
 
 		if (ret == MONO_SEM_TIMEDWAIT_RET_TIMEDOUT) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): wait timeout (timeout = 0)", __func__, handle_data, timeout);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s (%p, %" G_GUINT32_FORMAT "): wait timeout (timeout = 0)", __func__, handle_data, timeout);
 			return MONO_W32HANDLE_WAIT_RET_TIMEOUT;
 		}
 
 		now = mono_msec_ticks ();
 		if (now - start >= timeout) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): wait timeout", __func__, handle_data, timeout);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s (%p, %" G_GUINT32_FORMAT "): wait timeout", __func__, handle_data, timeout);
 			return MONO_W32HANDLE_WAIT_RET_TIMEOUT;
 		}
 
 		if (alerted && ret == MONO_SEM_TIMEDWAIT_RET_ALERTED) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): wait alerted", __func__, handle_data, timeout);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s (%p, %" G_GUINT32_FORMAT "): wait alerted", __func__, handle_data, timeout);
 			*alerted = TRUE;
 			return MONO_W32HANDLE_WAIT_RET_ALERTED;
 		}
 	}
 
 	/* Process must have exited */
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): Waited successfully", __func__, handle_data, timeout);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s (%p, %" G_GUINT32_FORMAT "): Waited successfully", __func__, handle_data, timeout);
 
 	status = process->status;
 	if (WIFSIGNALED (status))
@@ -689,7 +689,7 @@ process_wait (MonoW32Handle *handle_data, guint32 timeout, gboolean *alerted)
 
 	process_handle->exited = TRUE;
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %" G_GUINT32_FORMAT "): Setting pid %d signalled, exit status %d",
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s (%p, %" G_GUINT32_FORMAT "): Setting pid %d signalled, exit status %d",
 		   __func__, handle_data, timeout, process_handle->pid, process_handle->exitstatus);
 
 	mono_w32handle_set_signal_state (handle_data, TRUE, TRUE);
@@ -704,7 +704,7 @@ processes_cleanup (void)
 	Process *process;
 	Process *prev = NULL;
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s", __func__);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s", __func__);
 
 	/* Ensure we're not in here in multiple threads at once, nor recursive. */
 	if (mono_atomic_cas_i32 (&cleaning_up, 1, 0) != 0)
@@ -745,7 +745,7 @@ processes_cleanup (void)
 
 	mono_os_mutex_unlock (&processes_mutex);
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s done", __func__);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s done", __func__);
 
 	mono_atomic_xchg_i32 (&cleaning_up, 0);
 }
@@ -755,7 +755,7 @@ process_close (gpointer handle, gpointer data)
 {
 	MonoW32HandleProcess *process_handle;
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s", __func__);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s", __func__);
 
 	process_handle = (MonoW32HandleProcess *) data;
 	g_free (process_handle->pname);
@@ -795,7 +795,7 @@ process_set_name (MonoW32HandleProcess *process_handle)
 	progname = g_get_prgname ();
 	utf8_progname = mono_utf8_from_external (progname);
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: using [%s] as prog name", __func__, progname);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: using [%s] as prog name", __func__, progname);
 
 	if (utf8_progname) {
 		slash = strrchr (utf8_progname, '/');
@@ -887,13 +887,13 @@ mono_w32process_get_pid (gpointer handle)
 	guint32 ret;
 
 	if (!mono_w32handle_lookup_and_ref (handle, &handle_data)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown handle %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unknown handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return 0;
 	}
 
 	if (handle_data->type != MONO_W32TYPE_PROCESS) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown process handle %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unknown process handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		mono_w32handle_unref (handle_data);
 		return 0;
@@ -923,7 +923,7 @@ get_process_foreach_callback (MonoW32Handle *handle_data, gpointer user_data)
 
 	process_handle = (MonoW32HandleProcess*) handle_data->specific;
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: looking at process %d", __func__, process_handle->pid);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: looking at process %d", __func__, process_handle->pid);
 
 	pid = process_handle->pid;
 	if (pid == 0)
@@ -949,7 +949,7 @@ ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid)
 	GetProcessForeachData foreach_data;
 	gpointer handle;
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: looking for process %d", __func__, pid);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: looking for process %d", __func__, pid);
 
 	memset (&foreach_data, 0, sizeof (foreach_data));
 	foreach_data.pid = pid;
@@ -979,7 +979,7 @@ ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid)
 		return handle;
 	}
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find pid %d", __func__, pid);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Can't find pid %d", __func__, pid);
 
 	mono_w32error_set_last (ERROR_PROC_NOT_FOUND);
 	return NULL;
@@ -997,7 +997,7 @@ match_procname_to_modulename (char *procname, char *modulename)
 	if (procname == NULL || modulename == NULL)
 		return (FALSE);
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: procname=\"%s\", modulename=\"%s\"", __func__, procname, modulename);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: procname=\"%s\", modulename=\"%s\"", __func__, procname, modulename);
 	pname = mono_path_resolve_symlinks (procname);
 	mname = mono_path_resolve_symlinks (modulename);
 
@@ -1026,7 +1026,7 @@ match_procname_to_modulename (char *procname, char *modulename)
 	g_free (pname);
 	g_free (mname);
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: result is %" G_GINT32_FORMAT, __func__, result);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: result is %" G_GINT32_FORMAT, __func__, result);
 	return result;
 }
 
@@ -1055,13 +1055,13 @@ mono_w32process_try_get_modules (gpointer handle, gpointer *modules, guint32 siz
 		return FALSE;
 
 	if (!mono_w32handle_lookup_and_ref (handle, &handle_data)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown handle %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unknown handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
 
 	if (handle_data->type != MONO_W32TYPE_PROCESS) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown process handle %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unknown process handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		mono_w32handle_unref (handle_data);
 		return FALSE;
@@ -1155,10 +1155,10 @@ mono_w32process_module_get_filename (gpointer handle, gpointer module, gunichar2
 	bytes += 2;
 
 	if (size < bytes) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Size %" G_GUINT32_FORMAT " smaller than needed (%zd); truncating", __func__, size, bytes);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Size %" G_GUINT32_FORMAT " smaller than needed (%zd); truncating", __func__, size, bytes);
 		memcpy (basename, proc_path, size);
 	} else {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Size %" G_GUINT32_FORMAT " larger than needed (%zd)", __func__, size, bytes);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Size %" G_GUINT32_FORMAT " larger than needed (%zd)", __func__, size, bytes);
 		memcpy (basename, proc_path, bytes);
 	}
 
@@ -1181,7 +1181,7 @@ mono_w32process_module_get_name (gpointer handle, gpointer module, gunichar2 *ba
 	MonoW32ProcessModule *found_module;
 	char *pname = NULL;
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Getting module base name, process handle %p module %p basename %p size %" G_GUINT32_FORMAT,
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Getting module base name, process handle %p module %p basename %p size %" G_GUINT32_FORMAT,
 		   __func__, handle, module, basename, size);
 
 	size = size * sizeof (gunichar2); /* adjust for unicode characters */
@@ -1190,13 +1190,13 @@ mono_w32process_module_get_name (gpointer handle, gpointer module, gunichar2 *ba
 		return 0;
 
 	if (!mono_w32handle_lookup_and_ref (handle, &handle_data)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown handle %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unknown handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return 0;
 	}
 
 	if (handle_data->type != MONO_W32TYPE_PROCESS) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown process handle %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unknown process handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		mono_w32handle_unref (handle_data);
 		return 0;
@@ -1209,7 +1209,7 @@ mono_w32process_module_get_name (gpointer handle, gpointer module, gunichar2 *ba
 
 	mods = mono_w32process_get_modules (pid);
 	if (!mods && module != NULL) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't get modules %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Can't get modules %p", __func__, handle);
 		g_free (pname);
 		mono_w32handle_unref (handle_data);
 		return 0;
@@ -1231,26 +1231,26 @@ mono_w32process_module_get_name (gpointer handle, gpointer module, gunichar2 *ba
 	}
 
 	if (procname_ext == NULL) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find procname_ext from procmods %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Can't find procname_ext from procmods %p", __func__, handle);
 		/* If it's *still* null, we might have hit the
 		 * case where reading /proc/$pid/maps gives an
 		 * empty file for this user.
 		 */
 		procname_ext = mono_w32process_get_name (pid);
 		if (!procname_ext)
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find procname_ext from proc_get_name %p pid %d", __func__, handle, pid);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Can't find procname_ext from proc_get_name %p pid %d", __func__, handle, pid);
 	}
 
 	g_slist_free (mods);
 	g_free (pname);
 
 	if (procname_ext) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Process name is [%s]", __func__,
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Process name is [%s]", __func__,
 			   procname_ext);
 
 		procname = mono_unicode_from_external (procname_ext, &bytes);
 		if (procname == NULL) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't get procname %p", __func__, handle);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Can't get procname %p", __func__, handle);
 			/* bugger */
 			g_free (procname_ext);
 			mono_w32handle_unref (handle_data);
@@ -1263,11 +1263,11 @@ mono_w32process_module_get_name (gpointer handle, gpointer module, gunichar2 *ba
 		bytes += 2;
 
 		if (size < bytes) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Size %" G_GUINT32_FORMAT " smaller than needed (%zd); truncating", __func__, size, bytes);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Size %" G_GUINT32_FORMAT " smaller than needed (%zd); truncating", __func__, size, bytes);
 
 			memcpy (basename, procname, size);
 		} else {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Size %" G_GUINT32_FORMAT " larger than needed (%zd)",
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Size %" G_GUINT32_FORMAT " larger than needed (%zd)",
 				   __func__, size, bytes);
 
 			memcpy (basename, procname, bytes);
@@ -1280,7 +1280,7 @@ mono_w32process_module_get_name (gpointer handle, gpointer module, gunichar2 *ba
 		return len;
 	}
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find procname_ext %p", __func__, handle);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Can't find procname_ext %p", __func__, handle);
 	mono_w32handle_unref (handle_data);
 	return 0;
 }
@@ -1296,20 +1296,20 @@ mono_w32process_module_get_information (gpointer handle, gpointer module, MODULE
 	gboolean ret = FALSE;
 	char *pname = NULL;
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Getting module info, process handle %p module %p",
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Getting module info, process handle %p module %p",
 		   __func__, handle, module);
 
 	if (modinfo == NULL || size < sizeof (MODULEINFO))
 		return FALSE;
 
 	if (!mono_w32handle_lookup_and_ref (handle, &handle_data)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown handle %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unknown handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
 
 	if (handle_data->type != MONO_W32TYPE_PROCESS) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown process handle %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unknown process handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		mono_w32handle_unref (handle_data);
 		return FALSE;
@@ -1388,7 +1388,7 @@ process_add_sigchld_handler (void)
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = SA_NOCLDSTOP | SA_SIGINFO | SA_RESTART;
 	g_assert (sigaction (SIGCHLD, &sa, NULL) != -1);
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "Added SIGCHLD handler");
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "Added SIGCHLD handler");
 }
 
 #endif
@@ -1638,7 +1638,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 	if (appname != NULL) {
 		cmd = mono_unicode_to_external (appname);
 		if (cmd == NULL) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unicode conversion returned NULL",
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unicode conversion returned NULL",
 				   __func__);
 
 			mono_w32error_set_last (ERROR_PATH_NOT_FOUND);
@@ -1651,7 +1651,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 	if (cmdline != NULL) {
 		args = mono_unicode_to_external (cmdline);
 		if (args == NULL) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unicode conversion returned NULL", __func__);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unicode conversion returned NULL", __func__);
 
 			mono_w32error_set_last (ERROR_PATH_NOT_FOUND);
 			goto free_strings;
@@ -1661,7 +1661,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 	if (cwd != NULL) {
 		dir = mono_unicode_to_external (cwd);
 		if (dir == NULL) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unicode conversion returned NULL", __func__);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unicode conversion returned NULL", __func__);
 
 			mono_w32error_set_last (ERROR_PATH_NOT_FOUND);
 			goto free_strings;
@@ -1691,7 +1691,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 
 			/* Executable existing ? */
 			if (!is_readable_or_executable (prog)) {
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Couldn't find executable %s",
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Couldn't find executable %s",
 					   __func__, prog);
 				g_free (unquoted);
 				mono_w32error_set_last (ERROR_FILE_NOT_FOUND);
@@ -1708,7 +1708,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 
 			/* And make sure it's readable */
 			if (!is_readable_or_executable (prog)) {
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Couldn't find executable %s",
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Couldn't find executable %s",
 					   __func__, prog);
 				g_free (unquoted);
 				mono_w32error_set_last (ERROR_FILE_NOT_FOUND);
@@ -1773,7 +1773,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 
 		if (token == NULL) {
 			/* Give up */
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Couldn't find what to exec", __func__);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Couldn't find what to exec", __func__);
 
 			mono_w32error_set_last (ERROR_PATH_NOT_FOUND);
 			goto free_strings;
@@ -1799,7 +1799,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 
 			/* Executable existing ? */
 			if (!is_readable_or_executable (prog)) {
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Couldn't find executable %s",
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Couldn't find executable %s",
 					   __func__, token);
 				g_free (token);
 				mono_w32error_set_last (ERROR_FILE_NOT_FOUND);
@@ -1826,7 +1826,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 				g_free (prog);
 				prog = g_find_program_in_path (token);
 				if (prog == NULL) {
-					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Couldn't find executable %s", __func__, token);
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Couldn't find executable %s", __func__, token);
 
 					g_free (token);
 					mono_w32error_set_last (ERROR_FILE_NOT_FOUND);
@@ -1838,7 +1838,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 		g_free (token);
 	}
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Exec prog [%s] args [%s]",
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Exec prog [%s] args [%s]",
 		__func__, prog, args_after_prog);
 
 	/* Check for CLR binaries; if found, we will try to invoke
@@ -1867,7 +1867,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 		}
 	} else {
 		if (!is_executable (prog)) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Executable permisson not set on %s", __func__, prog);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Executable permisson not set on %s", __func__, prog);
 			mono_w32error_set_last (ERROR_ACCESS_DENIED);
 			goto free_strings;
 		}
@@ -1959,7 +1959,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 		/* Could not create the pipe to synchroniz process startup. We'll just not synchronize.
 		 * This is just for a very hard to hit race condition in the first place */
 		startup_pipe [0] = startup_pipe [1] = -1;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: new process startup not synchronized. We may not notice if the newly created process exits immediately.", __func__);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: new process startup not synchronized. We may not notice if the newly created process exits immediately.", __func__);
 	}
 
 	switch (pid = fork ()) {
@@ -1972,7 +1972,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 		if (startup_pipe [0] != -1) {
 			/* Wait until the parent has updated it's internal data */
 			ssize_t _i G_GNUC_UNUSED = read (startup_pipe [0], &dummy, 1);
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: child: parent has completed its setup", __func__);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: child: parent has completed its setup", __func__);
 			close (startup_pipe [0]);
 			close (startup_pipe [1]);
 		}
@@ -1989,7 +1989,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 			close (i);
 
 #ifdef DEBUG_ENABLED
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: exec()ing [%s] in dir [%s]", __func__, cmd,
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: exec()ing [%s] in dir [%s]", __func__, cmd,
 			   dir == NULL?".":dir);
 		for (i = 0; argv[i] != NULL; i++)
 			g_message ("arg %" G_GUINT32_FORMAT ": [%s]", i, argv[i]);
@@ -2096,7 +2096,7 @@ free_strings:
 	if (argv)
 		g_strfreev (argv);
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: returning handle %p for pid %d", __func__, handle, pid);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: returning handle %p for pid %d", __func__, handle, pid);
 
 	/* Check if something needs to be cleaned up. */
 	processes_cleanup ();
@@ -2376,13 +2376,13 @@ ves_icall_Microsoft_Win32_NativeMethods_GetExitCodeProcess (gpointer handle, gin
 		return FALSE;
 
 	if (!mono_w32handle_lookup_and_ref (handle, &handle_data)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown handle %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unknown handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
 
 	if (handle_data->type != MONO_W32TYPE_PROCESS) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown process handle %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unknown process handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		mono_w32handle_unref (handle_data);
 		return FALSE;
@@ -2424,13 +2424,13 @@ ves_icall_Microsoft_Win32_NativeMethods_TerminateProcess (gpointer handle, gint3
 	pid_t pid;
 
 	if (!mono_w32handle_lookup_and_ref (handle, &handle_data)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown handle %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unknown handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
 
 	if (handle_data->type != MONO_W32TYPE_PROCESS) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown process handle %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unknown process handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		mono_w32handle_unref (handle_data);
 		return FALSE;
@@ -2468,13 +2468,13 @@ ves_icall_Microsoft_Win32_NativeMethods_GetProcessWorkingSetSize (gpointer handl
 		return FALSE;
 
 	if (!mono_w32handle_lookup_and_ref (handle, &handle_data)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown handle %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unknown handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
 
 	if (handle_data->type != MONO_W32TYPE_PROCESS) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown process handle %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unknown process handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		mono_w32handle_unref (handle_data);
 		return FALSE;
@@ -2501,13 +2501,13 @@ ves_icall_Microsoft_Win32_NativeMethods_SetProcessWorkingSetSize (gpointer handl
 	MonoW32HandleProcess *process_handle;
 
 	if (!mono_w32handle_lookup_and_ref (handle, &handle_data)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown handle %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unknown handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
 
 	if (handle_data->type != MONO_W32TYPE_PROCESS) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown process handle %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unknown process handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		mono_w32handle_unref (handle_data);
 		return FALSE;
@@ -2537,13 +2537,13 @@ ves_icall_Microsoft_Win32_NativeMethods_GetPriorityClass (gpointer handle)
 	pid_t pid;
 
 	if (!mono_w32handle_lookup_and_ref (handle, &handle_data)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown handle %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unknown handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return 0;
 	}
 
 	if (handle_data->type != MONO_W32TYPE_PROCESS) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown process handle %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unknown process handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		mono_w32handle_unref (handle_data);
 		return 0;
@@ -2603,13 +2603,13 @@ ves_icall_Microsoft_Win32_NativeMethods_SetPriorityClass (gpointer handle, gint3
 	pid_t pid;
 
 	if (!mono_w32handle_lookup_and_ref (handle, &handle_data)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown handle %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unknown handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
 
 	if (handle_data->type != MONO_W32TYPE_PROCESS) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown process handle %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unknown process handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		mono_w32handle_unref (handle_data);
 		return FALSE;
@@ -2695,13 +2695,13 @@ ves_icall_Microsoft_Win32_NativeMethods_GetProcessTimes (gpointer handle, gint64
 	memset (user_processtime, 0, sizeof (ProcessTime));
 
 	if (!mono_w32handle_lookup_and_ref (handle, &handle_data)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown handle %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unknown handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
 
 	if (handle_data->type != MONO_W32TYPE_PROCESS) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unknown process handle %p", __func__, handle);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unknown process handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		mono_w32handle_unref (handle_data);
 		return FALSE;
@@ -2868,14 +2868,14 @@ find_pe_file_resources32 (gpointer file_map, guint32 map_size, guint32 res_id, g
 
 	dos_header = (IMAGE_DOS_HEADER *)file_map;
 	if (dos_header->e_magic != IMAGE_DOS_SIGNATURE) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Bad dos signature 0x%x", __func__, dos_header->e_magic);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Bad dos signature 0x%x", __func__, dos_header->e_magic);
 
 		mono_w32error_set_last (ERROR_INVALID_DATA);
 		return(NULL);
 	}
 
 	if (map_size < sizeof(IMAGE_NT_HEADERS32) + GUINT32_FROM_LE (dos_header->e_lfanew)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: File is too small: %" G_GUINT32_FORMAT, __func__, map_size);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: File is too small: %" G_GUINT32_FORMAT, __func__, map_size);
 
 		mono_w32error_set_last (ERROR_BAD_LENGTH);
 		return(NULL);
@@ -2883,7 +2883,7 @@ find_pe_file_resources32 (gpointer file_map, guint32 map_size, guint32 res_id, g
 
 	nt_headers = (IMAGE_NT_HEADERS32 *)((guint8 *)file_map + GUINT32_FROM_LE (dos_header->e_lfanew));
 	if (nt_headers->Signature != IMAGE_NT_SIGNATURE) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Bad NT signature 0x%x", __func__, nt_headers->Signature);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Bad NT signature 0x%x", __func__, nt_headers->Signature);
 
 		mono_w32error_set_last (ERROR_INVALID_DATA);
 		return(NULL);
@@ -2897,7 +2897,7 @@ find_pe_file_resources32 (gpointer file_map, guint32 map_size, guint32 res_id, g
 	}
 
 	if (resource_rva == 0) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: No resources in file!", __func__);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: No resources in file!", __func__);
 
 		mono_w32error_set_last (ERROR_INVALID_DATA);
 		return(NULL);
@@ -2905,7 +2905,7 @@ find_pe_file_resources32 (gpointer file_map, guint32 map_size, guint32 res_id, g
 
 	resource_dir = (IMAGE_RESOURCE_DIRECTORY *)get_ptr_from_rva (resource_rva, (IMAGE_NT_HEADERS32 *)nt_headers, file_map);
 	if (resource_dir == NULL) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find resource directory", __func__);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Can't find resource directory", __func__);
 
 		mono_w32error_set_last (ERROR_INVALID_DATA);
 		return(NULL);
@@ -2940,14 +2940,14 @@ find_pe_file_resources64 (gpointer file_map, guint32 map_size, guint32 res_id, g
 
 	dos_header = (IMAGE_DOS_HEADER *)file_map;
 	if (dos_header->e_magic != IMAGE_DOS_SIGNATURE) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Bad dos signature 0x%x", __func__, dos_header->e_magic);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Bad dos signature 0x%x", __func__, dos_header->e_magic);
 
 		mono_w32error_set_last (ERROR_INVALID_DATA);
 		return(NULL);
 	}
 
 	if (map_size < sizeof(IMAGE_NT_HEADERS64) + GUINT32_FROM_LE (dos_header->e_lfanew)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: File is too small: %" G_GUINT32_FORMAT, __func__, map_size);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: File is too small: %" G_GUINT32_FORMAT, __func__, map_size);
 
 		mono_w32error_set_last (ERROR_BAD_LENGTH);
 		return(NULL);
@@ -2955,7 +2955,7 @@ find_pe_file_resources64 (gpointer file_map, guint32 map_size, guint32 res_id, g
 
 	nt_headers = (IMAGE_NT_HEADERS64 *)((guint8 *)file_map + GUINT32_FROM_LE (dos_header->e_lfanew));
 	if (nt_headers->Signature != IMAGE_NT_SIGNATURE) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Bad NT signature 0x%x", __func__,
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Bad NT signature 0x%x", __func__,
 			   nt_headers->Signature);
 
 		mono_w32error_set_last (ERROR_INVALID_DATA);
@@ -2970,7 +2970,7 @@ find_pe_file_resources64 (gpointer file_map, guint32 map_size, guint32 res_id, g
 	}
 
 	if (resource_rva == 0) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: No resources in file!", __func__);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: No resources in file!", __func__);
 
 		mono_w32error_set_last (ERROR_INVALID_DATA);
 		return(NULL);
@@ -2978,7 +2978,7 @@ find_pe_file_resources64 (gpointer file_map, guint32 map_size, guint32 res_id, g
 
 	resource_dir = (IMAGE_RESOURCE_DIRECTORY *)get_ptr_from_rva (resource_rva, (IMAGE_NT_HEADERS32 *)nt_headers, file_map);
 	if (resource_dir == NULL) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find resource directory", __func__);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Can't find resource directory", __func__);
 
 		mono_w32error_set_last (ERROR_INVALID_DATA);
 		return(NULL);
@@ -3029,7 +3029,7 @@ map_pe_file (gunichar2 *filename, gint32 *map_size, void **handle)
 
 	filename_ext = mono_unicode_to_external (filename);
 	if (filename_ext == NULL) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unicode conversion returned NULL", __func__);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unicode conversion returned NULL", __func__);
 
 		mono_w32error_set_last (ERROR_INVALID_NAME);
 		return(NULL);
@@ -3046,7 +3046,7 @@ map_pe_file (gunichar2 *filename, gint32 *map_size, void **handle)
 		if (!located_filename) {
 			errno = saved_errno;
 
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Error opening file %s (1): %s", __func__, filename_ext, strerror (errno));
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Error opening file %s (1): %s", __func__, filename_ext, strerror (errno));
 
 			g_free (filename_ext);
 
@@ -3056,7 +3056,7 @@ map_pe_file (gunichar2 *filename, gint32 *map_size, void **handle)
 
 		fd = open (located_filename, O_RDONLY, 0);
 		if (fd == -1) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Error opening file %s (2): %s", __func__, filename_ext, strerror (errno));
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Error opening file %s (2): %s", __func__, filename_ext, strerror (errno));
 
 			g_free (filename_ext);
 			g_free (located_filename);
@@ -3069,7 +3069,7 @@ map_pe_file (gunichar2 *filename, gint32 *map_size, void **handle)
 	}
 
 	if (fstat (fd, &statbuf) == -1) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Error stat()ing file %s: %s", __func__, filename_ext, strerror (errno));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Error stat()ing file %s: %s", __func__, filename_ext, strerror (errno));
 
 		mono_w32error_set_last (mono_w32error_unix_to_win32 (errno));
 		g_free (filename_ext);
@@ -3080,7 +3080,7 @@ map_pe_file (gunichar2 *filename, gint32 *map_size, void **handle)
 
 	/* Check basic file size */
 	if (statbuf.st_size < sizeof(IMAGE_DOS_HEADER)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: File %s is too small: %lld", __func__, filename_ext, (long long) statbuf.st_size);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: File %s is too small: %lld", __func__, filename_ext, (long long) statbuf.st_size);
 
 		mono_w32error_set_last (ERROR_BAD_LENGTH);
 		g_free (filename_ext);
@@ -3090,7 +3090,7 @@ map_pe_file (gunichar2 *filename, gint32 *map_size, void **handle)
 
 	file_map = mono_file_map (statbuf.st_size, MONO_MMAP_READ | MONO_MMAP_PRIVATE, fd, 0, handle);
 	if (file_map == NULL) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Error mmap()int file %s: %s", __func__, filename_ext, strerror (errno));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Error mmap()int file %s: %s", __func__, filename_ext, strerror (errno));
 
 		mono_w32error_set_last (mono_w32error_unix_to_win32 (errno));
 		g_free (filename_ext);
@@ -3200,12 +3200,12 @@ get_fixedfileinfo_block (gconstpointer data, version_data *block)
 	data_ptr = get_versioninfo_block (data, block);
 
 	if (block->value_len != sizeof(VS_FIXEDFILEINFO)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: FIXEDFILEINFO size mismatch", __func__);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: FIXEDFILEINFO size mismatch", __func__);
 		return(NULL);
 	}
 
 	if (!unicode_string_equals (block->key, "VS_VERSION_INFO")) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: VS_VERSION_INFO mismatch", __func__);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: VS_VERSION_INFO mismatch", __func__);
 
 		return(NULL);
 	}
@@ -3213,7 +3213,7 @@ get_fixedfileinfo_block (gconstpointer data, version_data *block)
 	ffi = ((VS_FIXEDFILEINFO *)data_ptr);
 	if ((ffi->dwSignature != VS_FFI_SIGNATURE) ||
 	    (ffi->dwStrucVersion != VS_FFI_STRUCVERSION)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: FIXEDFILEINFO bad signature", __func__);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: FIXEDFILEINFO bad signature", __func__);
 
 		return(NULL);
 	}
@@ -3252,7 +3252,7 @@ get_string_block (gconstpointer data_ptr, const gunichar2 *string_key, gpointer 
 			/* We must have hit padding, so give up
 			 * processing now
 			 */
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Hit 0-length block, giving up", __func__);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Hit 0-length block, giving up", __func__);
 
 			return(NULL);
 		}
@@ -3304,7 +3304,7 @@ get_stringtable_block (gconstpointer data_ptr, gchar *lang, const gunichar2 *str
 			/* We must have hit padding, so give up
 			 * processing now
 			 */
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Hit 0-length block, giving up", __func__);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Hit 0-length block, giving up", __func__);
 			return(NULL);
 		}
 
@@ -3312,7 +3312,7 @@ get_stringtable_block (gconstpointer data_ptr, gchar *lang, const gunichar2 *str
 
 		found_lang = g_utf16_to_utf8 (block->key, 8, NULL, NULL, NULL);
 		if (found_lang == NULL) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Didn't find a valid language key, giving up", __func__);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Didn't find a valid language key, giving up", __func__);
 			return(NULL);
 		}
 
@@ -3335,7 +3335,7 @@ get_stringtable_block (gconstpointer data_ptr, gchar *lang, const gunichar2 *str
 
 		if (data_ptr == NULL) {
 			/* Child block hit padding */
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Child block hit 0-length block, giving up", __func__);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Child block hit 0-length block, giving up", __func__);
 			return(NULL);
 		}
 	}
@@ -3365,7 +3365,7 @@ big_up_string_block (gconstpointer data_ptr, version_data *block)
 			/* We must have hit padding, so give up
 			 * processing now
 			 */
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Hit 0-length block, giving up", __func__);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Hit 0-length block, giving up", __func__);
 			return(NULL);
 		}
 
@@ -3376,7 +3376,7 @@ big_up_string_block (gconstpointer data_ptr, version_data *block)
 				       "UTF-16BE", "UTF-16LE", NULL, NULL,
 				       NULL);
 		if (big_value == NULL) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Didn't find a valid string, giving up", __func__);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Didn't find a valid string, giving up", __func__);
 			return(NULL);
 		}
 
@@ -3393,7 +3393,7 @@ big_up_string_block (gconstpointer data_ptr, version_data *block)
 				       "UTF-16BE", "UTF-16LE", NULL, NULL,
 				       NULL);
 		if (big_value == NULL) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Didn't find a valid data string, giving up", __func__);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Didn't find a valid data string, giving up", __func__);
 			return(NULL);
 		}
 		memcpy ((gpointer)data_ptr, big_value,
@@ -3432,7 +3432,7 @@ big_up_stringtable_block (gconstpointer data_ptr, version_data *block)
 			/* We must have hit padding, so give up
 			 * processing now
 			 */
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Hit 0-length block, giving up", __func__);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Hit 0-length block, giving up", __func__);
 			return(NULL);
 		}
 
@@ -3441,7 +3441,7 @@ big_up_stringtable_block (gconstpointer data_ptr, version_data *block)
 		big_value = g_convert ((gchar *)block->key, 16, "UTF-16BE",
 				       "UTF-16LE", NULL, NULL, NULL);
 		if (big_value == NULL) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Didn't find a valid string, giving up", __func__);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Didn't find a valid string, giving up", __func__);
 			return(NULL);
 		}
 
@@ -3452,7 +3452,7 @@ big_up_stringtable_block (gconstpointer data_ptr, version_data *block)
 
 		if (data_ptr == NULL) {
 			/* Child block hit padding */
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Child block hit 0-length block, giving up", __func__);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Child block hit 0-length block, giving up", __func__);
 			return(NULL);
 		}
 	}
@@ -3504,7 +3504,7 @@ big_up (gconstpointer datablock, guint32 size)
 				/* We must have hit padding, so give
 				 * up processing now
 				 */
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Hit 0-length block, giving up", __func__);
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Hit 0-length block, giving up", __func__);
 				return;
 			}
 
@@ -3520,13 +3520,13 @@ big_up (gconstpointer datablock, guint32 size)
 								     &block);
 			} else {
 				/* Bogus data */
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Not a valid VERSIONINFO child block", __func__);
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Not a valid VERSIONINFO child block", __func__);
 				return;
 			}
 
 			if (data_ptr == NULL) {
 				/* Child block hit padding */
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Child block hit 0-length block, giving up", __func__);
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Child block hit 0-length block, giving up", __func__);
 				return;
 			}
 		}
@@ -3635,7 +3635,7 @@ mono_w32process_ver_query_value (gconstpointer datablock, const gunichar2 *subbl
 					/* We must have hit padding,
 					 * so give up processing now
 					 */
-					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Hit 0-length block, giving up", __func__);
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Hit 0-length block, giving up", __func__);
 					goto done;
 				}
 
@@ -3664,13 +3664,13 @@ mono_w32process_ver_query_value (gconstpointer datablock, const gunichar2 *subbl
 					}
 				} else {
 					/* Bogus data */
-					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Not a valid VERSIONINFO child block", __func__);
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Not a valid VERSIONINFO child block", __func__);
 					goto done;
 				}
 
 				if (data_ptr == NULL) {
 					/* Child block hit padding */
-					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Child block hit 0-length block, giving up", __func__);
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Child block hit 0-length block, giving up", __func__);
 					goto done;
 				}
 			}

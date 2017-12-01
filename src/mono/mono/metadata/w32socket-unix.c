@@ -88,7 +88,7 @@ socket_data_close (MonoFDHandle *fdhandle)
 
 	info = mono_thread_info_current ();
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: closing fd %d", __func__, ((MonoFDHandle*) sockethandle)->fd);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: closing fd %d", __func__, ((MonoFDHandle*) sockethandle)->fd);
 
 	/* Shutdown the socket for reading, to interrupt any potential
 	 * receives that may be blocking for data.  See bug 75705. */
@@ -168,7 +168,7 @@ mono_w32socket_accept (SOCKET sock, struct sockaddr *addr, socklen_t *addrlen, g
 
 	if (accepted_fd == -1) {
 		gint error = mono_w32socket_convert_error (errno);
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: accept error: %s", __func__, g_strerror(errno));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: accept error: %s", __func__, g_strerror(errno));
 		mono_w32socket_set_last_error (error);
 		mono_fdhandle_unref ((MonoFDHandle*) sockethandle);
 		return INVALID_SOCKET;
@@ -182,7 +182,7 @@ mono_w32socket_accept (SOCKET sock, struct sockaddr *addr, socklen_t *addrlen, g
 
 	mono_fdhandle_insert ((MonoFDHandle*) accepted_socket_data);
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: returning accepted handle %p", __func__, GINT_TO_POINTER(((MonoFDHandle*) accepted_socket_data)->fd));
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: returning accepted handle %p", __func__, GINT_TO_POINTER(((MonoFDHandle*) accepted_socket_data)->fd));
 
 	mono_fdhandle_unref ((MonoFDHandle*) sockethandle);
 	return ((MonoFDHandle*) accepted_socket_data)->fd;
@@ -217,7 +217,7 @@ mono_w32socket_connect (SOCKET sock, const struct sockaddr *addr, int addrlen, g
 		errnum = errno;
 
 		if (errno != EINTR) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: connect error: %s", __func__,
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: connect error: %s", __func__,
 				   g_strerror (errnum));
 
 			errnum = mono_w32socket_convert_error (errnum);
@@ -254,7 +254,7 @@ mono_w32socket_connect (SOCKET sock, const struct sockaddr *addr, int addrlen, g
 
 			if (errno != EINTR) {
 				gint errnum = errno;
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: connect poll error: %s", __func__, g_strerror (errno));
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: connect poll error: %s", __func__, g_strerror (errno));
 				mono_w32socket_set_last_error (mono_w32socket_convert_error (errnum));
 				mono_fdhandle_unref ((MonoFDHandle*) sockethandle);
 				return SOCKET_ERROR;
@@ -267,7 +267,7 @@ mono_w32socket_connect (SOCKET sock, const struct sockaddr *addr, int addrlen, g
 		MONO_EXIT_GC_SAFE;
 		if (ret == -1) {
 			gint errnum = errno;
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: connect getsockopt error: %s", __func__, g_strerror (errno));
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: connect getsockopt error: %s", __func__, g_strerror (errno));
 			mono_w32socket_set_last_error (mono_w32socket_convert_error (errnum));
 			mono_fdhandle_unref ((MonoFDHandle*) sockethandle);
 			return SOCKET_ERROR;
@@ -279,7 +279,7 @@ mono_w32socket_connect (SOCKET sock, const struct sockaddr *addr, int addrlen, g
 			/* Need to save this socket error */
 			sockethandle->saved_error = errnum;
 
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: connect getsockopt returned error: %s",
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: connect getsockopt returned error: %s",
 				   __func__, g_strerror (so_error));
 
 			mono_w32socket_set_last_error (errnum);
@@ -351,7 +351,7 @@ mono_w32socket_recvfrom (SOCKET sock, char *buf, int len, int flags, struct sock
 
 	if (ret == -1) {
 		gint errnum = errno;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: recv error: %s", __func__, g_strerror(errno));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: recv error: %s", __func__, g_strerror(errno));
 		mono_w32socket_set_last_error (mono_w32socket_convert_error (errnum));
 		mono_fdhandle_unref ((MonoFDHandle*) sockethandle);
 		return SOCKET_ERROR;
@@ -424,7 +424,7 @@ mono_w32socket_recvbuffers (SOCKET sock, WSABUF *buffers, guint32 count, guint32
 
 	if (ret == -1) {
 		gint errnum = errno;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: recvmsg error: %s", __func__, g_strerror(errno));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: recvmsg error: %s", __func__, g_strerror(errno));
 		mono_w32socket_set_last_error (mono_w32socket_convert_error (errnum));
 		mono_fdhandle_unref ((MonoFDHandle*) sockethandle);
 		return SOCKET_ERROR;
@@ -465,7 +465,7 @@ mono_w32socket_send (SOCKET sock, char *buf, int len, int flags, gboolean blocki
 
 	if (ret == -1) {
 		gint errnum = errno;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: send error: %s", __func__, g_strerror (errno));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: send error: %s", __func__, g_strerror (errno));
 
 #ifdef O_NONBLOCK
 		/* At least linux returns EAGAIN/EWOULDBLOCK when the timeout has been set on
@@ -514,7 +514,7 @@ mono_w32socket_sendto (SOCKET sock, const char *buf, int len, int flags, const s
 
 	if (ret == -1) {
 		gint errnum = errno;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: send error: %s", __func__, g_strerror (errno));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: send error: %s", __func__, g_strerror (errno));
 		mono_w32socket_set_last_error (mono_w32socket_convert_error (errnum));
 		mono_fdhandle_unref ((MonoFDHandle*) sockethandle);
 		return SOCKET_ERROR;
@@ -559,7 +559,7 @@ mono_w32socket_sendbuffers (SOCKET sock, WSABUF *buffers, guint32 count, guint32
 
 	if (ret == -1) {
 		gint errnum = errno;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: sendmsg error: %s", __func__, g_strerror (errno));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: sendmsg error: %s", __func__, g_strerror (errno));
 		mono_w32socket_set_last_error (mono_w32socket_convert_error (errnum));
 		mono_fdhandle_unref ((MonoFDHandle*) sockethandle);
 		return SOCKET_ERROR;
@@ -696,7 +696,7 @@ retry_socket:
 		}
 
 		gint errnum = errno;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: socket error: %s", __func__, g_strerror (errno));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: socket error: %s", __func__, g_strerror (errno));
 		mono_w32socket_set_last_error (mono_w32socket_convert_error (errnum));
 		return INVALID_SOCKET;
 	}
@@ -730,7 +730,7 @@ retry_socket:
 		MONO_EXIT_GC_SAFE;
 		if (ret == -1) {
 			gint errnum = errno;
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Error setting SO_REUSEADDR", __func__);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: Error setting SO_REUSEADDR", __func__);
 			mono_w32socket_set_last_error (mono_w32socket_convert_error (errnum));
 
 			MONO_ENTER_GC_SAFE;
@@ -744,7 +744,7 @@ retry_socket:
 
 	mono_fdhandle_insert ((MonoFDHandle*) sockethandle);
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: returning socket handle %p", __func__, GINT_TO_POINTER(((MonoFDHandle*) sockethandle)->fd));
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: returning socket handle %p", __func__, GINT_TO_POINTER(((MonoFDHandle*) sockethandle)->fd));
 
 	return ((MonoFDHandle*) sockethandle)->fd;
 }
@@ -771,7 +771,7 @@ mono_w32socket_bind (SOCKET sock, struct sockaddr *addr, socklen_t addrlen)
 	MONO_EXIT_GC_SAFE;
 	if (ret == -1) {
 		gint errnum = errno;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: bind error: %s", __func__, g_strerror(errno));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: bind error: %s", __func__, g_strerror(errno));
 		mono_w32socket_set_last_error (mono_w32socket_convert_error (errnum));
 		mono_fdhandle_unref ((MonoFDHandle*) sockethandle);
 		return SOCKET_ERROR;
@@ -803,7 +803,7 @@ mono_w32socket_getpeername (SOCKET sock, struct sockaddr *name, socklen_t *namel
 	MONO_EXIT_GC_SAFE;
 	if (ret == -1) {
 		gint errnum = errno;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: getpeername error: %s", __func__, g_strerror (errno));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: getpeername error: %s", __func__, g_strerror (errno));
 		mono_w32socket_set_last_error (mono_w32socket_convert_error (errnum));
 		mono_fdhandle_unref ((MonoFDHandle*) sockethandle);
 		return SOCKET_ERROR;
@@ -835,7 +835,7 @@ mono_w32socket_getsockname (SOCKET sock, struct sockaddr *name, socklen_t *namel
 	MONO_EXIT_GC_SAFE;
 	if (ret == -1) {
 		gint errnum = errno;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: getsockname error: %s", __func__, g_strerror (errno));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: getsockname error: %s", __func__, g_strerror (errno));
 		mono_w32socket_set_last_error (mono_w32socket_convert_error (errnum));
 		mono_fdhandle_unref ((MonoFDHandle*) sockethandle);
 		return SOCKET_ERROR;
@@ -876,7 +876,7 @@ mono_w32socket_getsockopt (SOCKET sock, gint level, gint optname, gpointer optva
 	MONO_EXIT_GC_SAFE;
 	if (ret == -1) {
 		gint errnum = errno;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: getsockopt error: %s", __func__, g_strerror (errno));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: getsockopt error: %s", __func__, g_strerror (errno));
 		mono_w32socket_set_last_error (mono_w32socket_convert_error (errnum));
 		mono_fdhandle_unref ((MonoFDHandle*) sockethandle);
 		return SOCKET_ERROR;
@@ -951,7 +951,7 @@ mono_w32socket_setsockopt (SOCKET sock, gint level, gint optname, const gpointer
 	MONO_EXIT_GC_SAFE;
 	if (ret == -1) {
 		gint errnum = errno;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: setsockopt error: %s", __func__, g_strerror (errno));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: setsockopt error: %s", __func__, g_strerror (errno));
 		mono_w32socket_set_last_error (mono_w32socket_convert_error (errnum));
 		mono_fdhandle_unref ((MonoFDHandle*) sockethandle);
 		return SOCKET_ERROR;
@@ -1002,7 +1002,7 @@ mono_w32socket_listen (SOCKET sock, gint backlog)
 	MONO_EXIT_GC_SAFE;
 	if (ret == -1) {
 		gint errnum = errno;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: listen error: %s", __func__, g_strerror (errno));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: listen error: %s", __func__, g_strerror (errno));
 		mono_w32socket_set_last_error (mono_w32socket_convert_error (errnum));
 		mono_fdhandle_unref ((MonoFDHandle*) sockethandle);
 		return SOCKET_ERROR;
@@ -1037,7 +1037,7 @@ mono_w32socket_shutdown (SOCKET sock, gint how)
 	MONO_EXIT_GC_SAFE;
 	if (ret == -1) {
 		gint errnum = errno;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: shutdown error: %s", __func__, g_strerror (errno));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: shutdown error: %s", __func__, g_strerror (errno));
 		mono_w32socket_set_last_error (mono_w32socket_convert_error (errnum));
 		mono_fdhandle_unref ((MonoFDHandle*) sockethandle);
 		return SOCKET_ERROR;
@@ -1054,7 +1054,7 @@ mono_w32socket_disconnect (SOCKET sock, gboolean reuse)
 	SOCKET newsock;
 	gint ret;
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: called on socket %d!", __func__, sock);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: called on socket %d!", __func__, sock);
 
 	/* We could check the socket type here and fail unless its
 	 * SOCK_STREAM, SOCK_SEQPACKET or SOCK_RDM (according to msdn)
@@ -1076,7 +1076,7 @@ mono_w32socket_disconnect (SOCKET sock, gboolean reuse)
 	MONO_EXIT_GC_SAFE;
 	if (newsock == -1) {
 		gint errnum = errno;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: socket error: %s", __func__, g_strerror (errnum));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: socket error: %s", __func__, g_strerror (errnum));
 		mono_w32socket_set_last_error (mono_w32socket_convert_error (errnum));
 		mono_fdhandle_unref ((MonoFDHandle*) sockethandle);
 		return SOCKET_ERROR;
@@ -1094,7 +1094,7 @@ mono_w32socket_disconnect (SOCKET sock, gboolean reuse)
 
 	if (ret == -1) {
 		gint errnum = errno;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: dup2 error: %s", __func__, g_strerror (errnum));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: dup2 error: %s", __func__, g_strerror (errnum));
 		mono_w32socket_set_last_error (mono_w32socket_convert_error (errnum));
 		mono_fdhandle_unref ((MonoFDHandle*) sockethandle);
 		return SOCKET_ERROR;
@@ -1267,7 +1267,7 @@ mono_w32socket_ioctl (SOCKET sock, gint32 command, gchar *input, gint inputlen, 
 		g_free (buffer);
 
 		gint errnum = errno;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: WSAIoctl error: %s", __func__, g_strerror (errno));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: WSAIoctl error: %s", __func__, g_strerror (errno));
 		mono_w32socket_set_last_error (mono_w32socket_convert_error (errnum));
 		mono_fdhandle_unref ((MonoFDHandle*) sockethandle);
 		return SOCKET_ERROR;
@@ -1332,7 +1332,7 @@ mono_w32socket_set_blocking (SOCKET sock, gboolean blocking)
 	MONO_EXIT_GC_SAFE;
 	if (ret == -1) {
 		gint errnum = mono_w32socket_convert_error (errno);
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: fcntl(F_GETFL) error: %s", __func__, g_strerror (errno));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: fcntl(F_GETFL) error: %s", __func__, g_strerror (errno));
 		mono_w32socket_set_last_error (errnum);
 		mono_fdhandle_unref ((MonoFDHandle*) sockethandle);
 		return SOCKET_ERROR;
@@ -1343,7 +1343,7 @@ mono_w32socket_set_blocking (SOCKET sock, gboolean blocking)
 	MONO_EXIT_GC_SAFE;
 	if (ret == -1) {
 		gint errnum = mono_w32socket_convert_error (errno);
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: fcntl(F_SETFL) error: %s", __func__, g_strerror (errno));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: fcntl(F_SETFL) error: %s", __func__, g_strerror (errno));
 		mono_w32socket_set_last_error (errnum);
 		mono_fdhandle_unref ((MonoFDHandle*) sockethandle);
 		return SOCKET_ERROR;
@@ -1391,7 +1391,7 @@ mono_w32socket_get_available (SOCKET sock, guint64 *amount)
 	MONO_EXIT_GC_SAFE;
 	if (ret == -1) {
 		gint errnum = mono_w32socket_convert_error (errno);
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: getsockopt error: %s", __func__, g_strerror (errno));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: getsockopt error: %s", __func__, g_strerror (errno));
 		mono_w32socket_set_last_error (errnum);
 		mono_fdhandle_unref ((MonoFDHandle*) sockethandle);
 		return SOCKET_ERROR;
@@ -1402,7 +1402,7 @@ mono_w32socket_get_available (SOCKET sock, guint64 *amount)
 	MONO_EXIT_GC_SAFE;
 	if (ret == -1) {
 		gint errnum = mono_w32socket_convert_error (errno);
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: ioctl error: %s", __func__, g_strerror (errno));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: ioctl error: %s", __func__, g_strerror (errno));
 		mono_w32socket_set_last_error (errnum);
 		mono_fdhandle_unref ((MonoFDHandle*) sockethandle);
 		return SOCKET_ERROR;

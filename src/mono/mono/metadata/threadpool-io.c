@@ -253,7 +253,7 @@ wait_callback (gint fd, gint events, gpointer user_data)
 		return;
 
 	if (fd == threadpool_io->wakeup_pipes [0]) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_THREADPOOL, "io threadpool: wke");
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_SELECTOR, "io threadpool: wke");
 		selector_thread_wakeup_drain_pipes ();
 	} else {
 		MonoGHashTable *states;
@@ -265,7 +265,7 @@ wait_callback (gint fd, gint events, gpointer user_data)
 		g_assert (user_data);
 		states = (MonoGHashTable *)user_data;
 
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_THREADPOOL, "io threadpool: cal fd %3d, events = %2s | %2s | %3s",
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_SELECTOR, "io threadpool: cal fd %3d, events = %2s | %2s | %3s",
 			fd, (events & EVENT_IN) ? "RD" : "..", (events & EVENT_OUT) ? "WR" : "..", (events & EVENT_ERR) ? "ERR" : "...");
 
 		if (!mono_g_hash_table_lookup_extended (states, GINT_TO_POINTER (fd), &k, (gpointer*) &list))
@@ -293,12 +293,12 @@ wait_callback (gint fd, gint events, gpointer user_data)
 
 			operations = get_operations_for_jobs (list);
 
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_THREADPOOL, "io threadpool: res fd %3d, events = %2s | %2s | %3s",
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_SELECTOR, "io threadpool: res fd %3d, events = %2s | %2s | %3s",
 				fd, (operations & EVENT_IN) ? "RD" : "..", (operations & EVENT_OUT) ? "WR" : "..", (operations & EVENT_ERR) ? "ERR" : "...");
 
 			threadpool_io->backend.register_fd (fd, operations, FALSE);
 		} else {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_THREADPOOL, "io threadpool: err fd %d", fd);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_SELECTOR, "io threadpool: err fd %d", fd);
 
 			mono_g_hash_table_remove (states, GINT_TO_POINTER (fd));
 
@@ -363,7 +363,7 @@ selector_thread (gpointer data)
 
 				operations = get_operations_for_jobs (list);
 
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_THREADPOOL, "io threadpool: %3s fd %3d, operations = %2s | %2s | %3s",
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_SELECTOR, "io threadpool: %3s fd %3d, operations = %2s | %2s | %3s",
 					exists ? "mod" : "add", fd, (operations & EVENT_IN) ? "RD" : "..", (operations & EVENT_OUT) ? "WR" : "..", (operations & EVENT_ERR) ? "ERR" : "...");
 
 				threadpool_io->backend.register_fd (fd, operations, !exists);
@@ -392,7 +392,7 @@ selector_thread (gpointer data)
 						mono_error_assert_ok (&error);
 					}
 
-					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_THREADPOOL, "io threadpool: del fd %3d", fd);
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_SELECTOR, "io threadpool: del fd %3d", fd);
 					threadpool_io->backend.remove_fd (fd);
 				}
 
@@ -429,7 +429,7 @@ selector_thread (gpointer data)
 
 		mono_coop_mutex_unlock (&threadpool_io->updates_lock);
 
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_THREADPOOL, "io threadpool: wai");
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_SELECTOR, "io threadpool: wai");
 
 		mono_thread_info_install_interrupt (selector_thread_interrupt, NULL, &interrupted);
 		if (interrupted)

@@ -12,18 +12,22 @@
 G_BEGIN_DECLS
 
 typedef enum {
-	MONO_TRACE_ASSEMBLY      =  (gint32)(1 << 0),
-	MONO_TRACE_TYPE          =  (gint32)(1 << 1),
-	MONO_TRACE_DLLIMPORT     =  (gint32)(1 << 2),
-	MONO_TRACE_GC            =  (gint32)(1 << 3),
-	MONO_TRACE_CONFIG        =  (gint32)(1 << 4),
-	MONO_TRACE_AOT           =  (gint32)(1 << 5),
-	MONO_TRACE_SECURITY      =  (gint32)(1 << 6),
-	MONO_TRACE_THREADPOOL    =  (gint32)(1 << 7),
-	MONO_TRACE_IO_THREADPOOL =  (gint32)(1 << 8),
-	MONO_TRACE_IO_LAYER      =  (gint32)(1 << 9),
-	MONO_TRACE_W32HANDLE     =  (gint32)(1 << 10),
-	MONO_TRACE_ALL           = ~(gint32)(0)
+	MONO_TRACE_ASSEMBLY           = 1 << 0,
+	MONO_TRACE_TYPE               = 1 << 1,
+	MONO_TRACE_DLLIMPORT          = 1 << 2,
+	MONO_TRACE_GC                 = 1 << 3,
+	MONO_TRACE_CONFIG             = 1 << 4,
+	MONO_TRACE_AOT                = 1 << 5,
+	MONO_TRACE_SECURITY           = 1 << 6,
+	MONO_TRACE_THREADPOOL         = 1 << 7,
+	MONO_TRACE_IO_SELECTOR        = 1 << 8,
+	MONO_TRACE_IO_LAYER_PROCESS   = 1 << 9,
+	MONO_TRACE_IO_LAYER_SOCKET    = 1 << 10,
+	MONO_TRACE_IO_LAYER_FILE      = 1 << 11,
+	MONO_TRACE_IO_LAYER_EVENT     = 1 << 12,
+	MONO_TRACE_IO_LAYER_SEMAPHORE = 1 << 13,
+	MONO_TRACE_IO_LAYER_MUTEX     = 1 << 14,
+	MONO_TRACE_IO_LAYER_HANDLE    = 1 << 15,
 } MonoTraceMask;
 
 MONO_API extern GLogLevelFlags mono_internal_current_level;
@@ -56,7 +60,7 @@ mono_trace_is_traced (GLogLevelFlags level, MonoTraceMask mask);
 G_GNUC_UNUSED static void
 mono_tracev (GLogLevelFlags level, MonoTraceMask mask, const char *format, va_list args)
 {
-	if(G_UNLIKELY (level <= mono_internal_current_level && mask & mono_internal_current_mask))
+	if(G_UNLIKELY (level <= mono_internal_current_level && (mask & mono_internal_current_mask)))
 		mono_tracev_inner (level, mask, format, args);
 }
 
@@ -72,7 +76,7 @@ mono_tracev (GLogLevelFlags level, MonoTraceMask mask, const char *format, va_li
 G_GNUC_UNUSED MONO_ATTR_FORMAT_PRINTF(3,4) static void
 mono_trace (GLogLevelFlags level, MonoTraceMask mask, const char *format, ...)
 {
-	if(G_UNLIKELY (level <= mono_internal_current_level && mask & mono_internal_current_mask)) {
+	if(G_UNLIKELY (level <= mono_internal_current_level && (mask & mono_internal_current_mask))) {
 		va_list args;
 		va_start (args, format);
 		mono_tracev_inner (level, mask, format, args);

@@ -16,7 +16,7 @@ typedef struct {
 } MonoLogLevelEntry;
 
 GLogLevelFlags mono_internal_current_level	= INT_MAX;
-MonoTraceMask  mono_internal_current_mask	= MONO_TRACE_ALL;
+MonoTraceMask  mono_internal_current_mask	= ~((MonoTraceMask)0);
 gboolean mono_trace_log_header			= FALSE;
 
 static GQueue		*level_stack		= NULL;
@@ -276,11 +276,37 @@ mono_trace_set_mask_string (const char *value)
 	const char *tok;
 	guint32 flags = 0;
 
-	const char *valid_flags[] = {"asm", "type", "dll", "gc", "cfg", "aot", "security", "threadpool", "io-threadpool", "io-layer", "w32handle", "all", NULL};
-	const MonoTraceMask	valid_masks[] = {MONO_TRACE_ASSEMBLY, MONO_TRACE_TYPE, MONO_TRACE_DLLIMPORT,
-						 MONO_TRACE_GC, MONO_TRACE_CONFIG, MONO_TRACE_AOT, MONO_TRACE_SECURITY,
-						 MONO_TRACE_THREADPOOL, MONO_TRACE_IO_THREADPOOL, MONO_TRACE_IO_LAYER,
-						 MONO_TRACE_W32HANDLE, MONO_TRACE_ALL };
+	static const struct { const char * const flag; const MonoTraceMask mask; } flag_mask_map[] = {
+		{ "asm", MONO_TRACE_ASSEMBLY },
+		{ "type", MONO_TRACE_TYPE },
+		{ "dll", MONO_TRACE_DLLIMPORT },
+		{ "gc", MONO_TRACE_GC },
+		{ "cfg", MONO_TRACE_CONFIG },
+		{ "aot", MONO_TRACE_AOT },
+		{ "security", MONO_TRACE_SECURITY },
+		{ "threadpool", MONO_TRACE_THREADPOOL },
+		{ "io-threadpool", MONO_TRACE_IO_SELECTOR },
+		{ "io-selector", MONO_TRACE_IO_SELECTOR },
+		{ "io-layer-process", MONO_TRACE_IO_LAYER_PROCESS },
+		{ "io-layer-socket", MONO_TRACE_IO_LAYER_SOCKET },
+		{ "io-layer-file", MONO_TRACE_IO_LAYER_FILE },
+		{ "io-layer-console", MONO_TRACE_IO_LAYER_FILE },
+		{ "io-layer-pipe", MONO_TRACE_IO_LAYER_FILE },
+		{ "io-layer-event", MONO_TRACE_IO_LAYER_EVENT },
+		{ "io-layer-semaphore", MONO_TRACE_IO_LAYER_SEMAPHORE },
+		{ "io-layer-mutex", MONO_TRACE_IO_LAYER_MUTEX },
+		{ "io-layer-handle", MONO_TRACE_IO_LAYER_HANDLE },
+		{ "io-layer", MONO_TRACE_IO_LAYER_PROCESS
+		               | MONO_TRACE_IO_LAYER_SOCKET
+		               | MONO_TRACE_IO_LAYER_FILE
+		               | MONO_TRACE_IO_LAYER_EVENT
+		               | MONO_TRACE_IO_LAYER_SEMAPHORE
+		               | MONO_TRACE_IO_LAYER_MUTEX
+		               | MONO_TRACE_IO_LAYER_HANDLE },
+		{ "w32handle", MONO_TRACE_IO_LAYER_HANDLE },
+		{ "all", ~((MonoTraceMask)0) },
+		{ NULL, 0 },
+	};
 
 	if(!value)
 		return;
@@ -292,15 +318,15 @@ mono_trace_set_mask_string (const char *value)
 			tok++;
 			continue;
 		}
-		for (i = 0; valid_flags[i]; i++) {
-			size_t len = strlen (valid_flags[i]);
-			if (strncmp (tok, valid_flags[i], len) == 0 && (tok[len] == 0 || tok[len] == ',')) {
-				flags |= valid_masks[i];
+		for (i = 0; flag_mask_map[i].flag; i++) {
+			size_t len = strlen (flag_mask_map[i].flag);
+			if (strncmp (tok, flag_mask_map[i].flag, len) == 0 && (tok[len] == 0 || tok[len] == ',')) {
+				flags |= flag_mask_map[i].mask;
 				tok += len;
 				break;
 			}
 		}
-		if (!valid_flags[i]) {
+		if (!flag_mask_map[i].flag) {
 			g_print("Unknown trace flag: %s\n", tok);
 			break;
 		}
@@ -317,7 +343,7 @@ mono_trace_set_mask_string (const char *value)
 gboolean
 mono_trace_is_traced (GLogLevelFlags level, MonoTraceMask mask)
 {
-	return (level <= mono_internal_current_level && mask & mono_internal_current_mask);
+	return (level <= mono_internal_current_level && (mask & mono_internal_current_mask));
 }
 
 /**

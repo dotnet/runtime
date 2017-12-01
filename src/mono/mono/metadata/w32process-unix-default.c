@@ -153,7 +153,7 @@ mono_w32process_get_modules (pid_t pid)
 
 	fp = open_process_map (pid, "r");
 	if (!fp) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't open process map file for pid %d", __func__, pid);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Can't open process map file for pid %d", __func__, pid);
 		return NULL;
 	}
 
