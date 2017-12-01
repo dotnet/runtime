@@ -8,6 +8,7 @@
   <UsingTask TaskName="UploadToAzure" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll" />
 
   <Import Project="$(PackagesDir)/$(FeedTasksPackage.ToLower())/$(FeedTasksPackageVersion)/build/$(FeedTasksPackage).targets" />
+  <Import Project="$(PackagesDir)/$(PublishSymbolsPackage.ToLower())/$(PublishSymbolsPackageVersion)/build/PublishSymbols.targets" />
 
   <PropertyGroup>
     <!-- Always push the build assets to azure for final publish -->
@@ -32,7 +33,7 @@
 
   <Target Name="PublishFinalOutput"
           Condition="'$(Finalize)' == 'true'"
-          DependsOnTargets="PublishCoreHostPackages;FinalizeBuildInAzure;UpdateVersionsRepo" />
+          DependsOnTargets="PublishCoreHostPackages;SetupPublishSymbols;PublishSymbols;FinalizeBuildInAzure;UpdateVersionsRepo" />
 
   <!--
     Target wrapping UpdatePublishedVersions: ensures that ShippedNuGetPackage items are created and
@@ -176,7 +177,7 @@
   </Target>
 
   <Target Name="PublishCoreHostPackages"
-          DependsOnTargets="CheckIfAllBuildsHavePublished;DownloadCoreHostPackages;SignSymbolPackages;DoPushCoreHostPackagesToFeed;DoPushCoreHostPackagesToAzure"
+          DependsOnTargets="CheckIfAllBuildsHavePublished;DownloadCoreHostPackages;DoPushCoreHostPackagesToFeed;DoPushCoreHostPackagesToAzure"
           Condition="'@(_MissingBlobNames)' == '' AND '$(NuGetFeedUrl)' != ''">
     <Error Condition="'$(NuGetFeedUrl)' ==''" Text="Missing required property NuGetFeedUrl" />
     <Error Condition="'$(NuGetApiKey)' == ''" Text="Missing required property NuGetApiKey" />
@@ -221,32 +222,16 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="FindDownloadedPackagesForSigning">
+  <Target Name="SetupPublishSymbols" Condition="'$(SymbolServerPath)'!=''" >
     <PropertyGroup>
-      <!-- Glob matching packages that we want to embed symbol signatures in. Used in BuildTools. -->
-      <SymbolPackagesToPublishGlob Condition="'$(SymbolPackagesToPublishGlob)' == ''">$(DownloadDirectory)**\*.symbols.nupkg</SymbolPackagesToPublishGlob>
+      <SymbolExpirationInDays Condition="'$(SymbolExpirationInDays)'=='' and '$(SymbolExpirationDate)'==''">1</SymbolExpirationInDays>
+      <ConvertPortablePdbsToWindowsPdbs>true</ConvertPortablePdbsToWindowsPdbs>
     </PropertyGroup>
-
     <ItemGroup>
-      <SymbolPackagesToEmbedIndex Include="$(SymbolPackagesToPublishGlob)" />
-      <NormalPackagesToNotEmbedIndex Include="$(DownloadDirectory)**\*.nupkg"
-                                     Exclude="@(SymbolPackagesToEmbedIndex)" />
+      <SymbolPackagesToPublish Include="$(DownloadDirectory)**\*.symbols.nupkg" />
     </ItemGroup>
-
-    <!-- Copy any nupkgs we skip running EmbedIndex on directly to the output folder. -->
-    <Copy SourceFiles="@(NormalPackagesToNotEmbedIndex)"
-          DestinationFolder="$(PublishDirectory)" />
-  </Target>
-
-  <Target Name="SignSymbolPackages"
-          DependsOnTargets="FindDownloadedPackagesForSigning;InjectSignedSymbolCatalogIntoSymbolPackages"
-          Condition="'$(WindowsSdkDir)' != '' AND '$(SignType)' == 'real'">
-    <ItemGroup>
-      <EmbedIndexArgPairs Include="@(SymbolPackagesToEmbedIndex -> '%(Identity) $(PublishDirectory)%(Filename)%(Extension)')" />
-    </ItemGroup>
-
-    <!-- Inline the EmbedIndex.ps1 script used in CoreFX and CoreCLR: directly call EmbedIndex. -->
-    <Exec Command="$(DotNetToolDir)\dotnet $(EmbedIndexToolDir)\tools\EmbedIndex.dll %(EmbedIndexArgPairs.Identity)" />
+    <Error Condition="'$(SymbolServerPAT)'==''" Text="Missing property SymbolServerPAT" />
+    <Message Importance="High" Text="Publishing @(SymbolPackagesToPublish) to $(SymbolServerPath)"/>
   </Target>
 
   <Target Name="DoPushCoreHostPackagesToFeed">

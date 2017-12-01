@@ -8,8 +8,7 @@
   <PropertyGroup>
     <BuildDependsOn>
       ValidateProperties;
-      DownloadFilesFromContainer;
-      SignSymbolPackages
+      DownloadFilesFromContainer
     </BuildDependsOn>
 
     <BuildDependsOn Condition="$(PublishType.Contains('blob'))">
@@ -77,34 +76,6 @@
         <RelativeBlobPath>assets/$(BinariesRelativePath)/$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\' ,'/'))</RelativeBlobPath>
       </FilesToPublish>
     </ItemGroup>
-  </Target>
-
-  <Target Name="FindDownloadedPackagesForSigning">
-    <ItemGroup>
-      <!-- Find the downloaded symbol packages -->
-      <SymbolPackagesToEmbedIndex Include="$(DownloadDirectory)**\*.symbols.nupkg" />
-    </ItemGroup>
-
-    <PropertyGroup>
-      <UnsignedSymbolsDirectory Condition="'$(UnsignedSymbolsDirectory)' == ''">$(BinDir)UnsignedSymbolsDirectory/</UnsignedSymbolsDirectory>
-      <!-- Glob matching packages that we want to embed symbol signatures in. Used in BuildTools. -->
-      <SymbolPackagesToPublishGlob Condition="'$(SymbolPackagesToPublishGlob)' == ''">$(DownloadDirectory)**\*.symbols.nupkg</SymbolPackagesToPublishGlob>
-    </PropertyGroup>
-
-    <!-- Move all the symbol packages to an unsigned directory -->
-    <MakeDir Directories="$(UnsignedSymbolsDirectory)" />
-    <Move SourceFiles="@(SymbolPackagesToEmbedIndex)" DestinationFolder="$(UnsignedSymbolsDirectory)" />
-  </Target>
-
-  <Target Name="SignSymbolPackages"
-          DependsOnTargets="FindDownloadedPackagesForSigning;InjectSignedSymbolCatalogIntoSymbolPackages"
-          Condition="'$(WindowsSdkDir)' != '' AND '$(SignType)' == 'real'">
-    <ItemGroup>
-      <EmbedIndexArgPairs Include="@(SymbolPackagesToEmbedIndex -> '$(UnsignedSymbolsDirectory)%(Filename)%(Extension) %(Identity)')" />
-    </ItemGroup>
-
-    <!-- Inline the EmbedIndex.ps1 script used in CoreFX and CoreCLR: directly call EmbedIndex. -->
-    <Exec Command="$(DotNetToolDir)\dotnet $(EmbedIndexToolDir)\tools\EmbedIndex.dll %(EmbedIndexArgPairs.Identity)" />
   </Target>
 
   <!--

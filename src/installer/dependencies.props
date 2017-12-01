@@ -53,6 +53,12 @@
     <FeedTasksPackageVersion>2.1.0-prerelease-02301-01</FeedTasksPackageVersion>
   </PropertyGroup>
 
+  <!-- Publish symbol build task package -->
+  <PropertyGroup>
+    <PublishSymbolsPackage>Microsoft.SymbolUploader.Build.Task</PublishSymbolsPackage>
+    <PublishSymbolsPackageVersion>1.0.0-alpha-00001</PublishSymbolsPackageVersion>
+  </PropertyGroup>
+
   <ItemGroup>
     <RemoteDependencyBuildInfo Include="CoreFx">
       <BuildInfoPath>$(BaseDotNetBuildInfo)corefx/$(DependencyBranch)</BuildInfoPath>
