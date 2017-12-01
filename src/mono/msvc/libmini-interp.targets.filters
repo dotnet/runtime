@@ -13,9 +13,6 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp\interp.c">
       <Filter>Source Files$(MonoMiniFilterSubFolder)\interp</Filter>
     </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp\interp-stubs.c">
-      <Filter>Source Files$(MonoMiniFilterSubFolder)\interp</Filter>
-    </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\mini\interp\mintops.h">
       <Filter>Header Files$(MonoMiniFilterSubFolder)\interp</Filter>
     </ClInclude>

@@ -48,7 +48,6 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/reflection.h>
-#include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/opcodes.h>
@@ -268,8 +267,8 @@ lookup_imethod (MonoDomain *domain, MonoMethod *method)
 }
 
 #ifndef DISABLE_REMOTING
-gpointer
-mono_interp_get_remoting_invoke (gpointer imethod, MonoError *error)
+static gpointer
+interp_get_remoting_invoke (gpointer imethod, MonoError *error)
 {
 	InterpMethod *imethod_cast = (InterpMethod*) imethod;
 
@@ -318,8 +317,8 @@ mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *erro
 	return rtm;
 }
 
-gpointer
-mono_interp_create_trampoline (MonoDomain *domain, MonoMethod *method, MonoError *error)
+static gpointer
+interp_create_trampoline (MonoDomain *domain, MonoMethod *method, MonoError *error)
 {
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 		method = mono_marshal_get_synchronized_wrapper (method);
@@ -807,7 +806,7 @@ ves_array_element_address (InterpFrame *frame, MonoClass *required_type, MonoArr
 	return mono_array_addr_with_size (ao, esize, pos);
 }
 
-void
+static void
 interp_walk_stack_with_ctx (MonoInternalStackWalk func, MonoContext *ctx, MonoUnwindOptions options, void *user_data)
 {
 	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
@@ -1089,8 +1088,8 @@ ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr
 	g_free (margs);
 }
 
-void
-mono_interp_init_delegate (MonoDelegate *del)
+static void
+interp_init_delegate (MonoDelegate *del)
 {
 	if (del->method)
 		return;
@@ -1407,8 +1406,8 @@ get_trace_ips (MonoDomain *domain, InterpFrame *top)
 #define CHECK_MUL_OVERFLOW_NAT_UN(a,b) CHECK_MUL_OVERFLOW64_UN(a,b)
 #endif
 
-MonoObject*
-mono_interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error)
+static MonoObject*
+interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error)
 {
 	InterpFrame frame, *old_frame;
 	ThreadContext * volatile context = mono_native_tls_get_value (thread_context_id);
@@ -2132,13 +2131,13 @@ interp_entry_general (gpointer this_arg, gpointer res, gpointer *args, gpointer 
 }
 
 /*
- * mono_interp_create_method_pointer:
+ * interp_create_method_pointer:
  *
  * Return a function pointer which can be used to call METHOD using the
  * interpreter. Return NULL for methods which are not supported.
  */
-gpointer
-mono_interp_create_method_pointer (MonoMethod *method, MonoError *error)
+static gpointer
+interp_create_method_pointer (MonoMethod *method, MonoError *error)
 {
 	gpointer addr;
 	MonoMethodSignature *sig = mono_method_signature (method);
@@ -5170,187 +5169,15 @@ mono_interp_parse_options (const char *options)
 	}
 }
 
-void
-mono_interp_init ()
-{
-	mono_native_tls_alloc (&thread_context_id, NULL);
-	set_context (NULL);
-
-	mono_interp_transform_init ();
-}
-
 typedef int (*TestMethod) (void);
 
-static void
-interp_regression_step (MonoImage *image, int verbose, int *total_run, int *total, GTimer *timer, MonoDomain *domain)
-{
-	int result, expected, failed, cfailed, run;
-	double elapsed, transform_time;
-	int i;
-	MonoObject *result_obj;
-	static gboolean filter_method_init = FALSE;
-	static const char *filter_method = NULL;
-
-	g_print ("Test run: image=%s\n", mono_image_get_filename (image));
-	cfailed = failed = run = 0;
-	transform_time = elapsed = 0.0;
-
-	g_timer_start (timer);
-	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
-		MonoObject *exc = NULL;
-		MonoError error;
-		MonoMethod *method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, &error);
-		if (!method) {
-			mono_error_cleanup (&error); /* FIXME don't swallow the error */
-			continue;
-		}
-
-		if (!filter_method_init) {
-			filter_method = g_getenv ("INTERP_FILTER_METHOD");
-			filter_method_init = TRUE;
-		}
-		gboolean filter = FALSE;
-		if (filter_method) {
-			const char *name = filter_method;
-
-			if ((strchr (name, '.') > name) || strchr (name, ':')) {
-				MonoMethodDesc *desc = mono_method_desc_new (name, TRUE);
-				filter = mono_method_desc_full_match (desc, method);
-				mono_method_desc_free (desc);
-			} else {
-				filter = strcmp (method->name, name) == 0;
-			}
-		} else { /* no filter, check for `Category' attribute on method */
-			filter = TRUE;
-			MonoCustomAttrInfo* ainfo = mono_custom_attrs_from_method_checked (method, &error);
-			mono_error_cleanup (&error);
-
-			if (ainfo) {
-				int j;
-				for (j = 0; j < ainfo->num_attrs && filter; ++j) {
-					MonoCustomAttrEntry *centry = &ainfo->attrs [j];
-					if (centry->ctor == NULL)
-						continue;
-
-					MonoClass *klass = centry->ctor->klass;
-					if (strcmp (klass->name, "CategoryAttribute"))
-						continue;
-
-					MonoObject *obj = mono_custom_attrs_get_attr_checked (ainfo, klass, &error);
-					/* FIXME: there is an ordering problem if there're multiple attributes, do this instead:
-					 * MonoObject *obj = create_custom_attr (ainfo->image, centry->ctor, centry->data, centry->data_size, &error); */
-					mono_error_cleanup (&error);
-					MonoMethod *getter = mono_class_get_method_from_name (klass, "get_Category", -1);
-					MonoObject *str = mono_interp_runtime_invoke (getter, obj, NULL, &exc, &error);
-					mono_error_cleanup (&error);
-					char *utf8_str = mono_string_to_utf8_checked ((MonoString *) str, &error);
-					mono_error_cleanup (&error);
-					if (!strcmp (utf8_str, "!INTERPRETER")) {
-						g_print ("skip %s...\n", method->name);
-						filter = FALSE;
-					}
-				}
-			}
-		}
-		if (strncmp (method->name, "test_", 5) == 0 && filter) {
-			MonoError interp_error;
-			MonoObject *exc = NULL;
-
-			result_obj = mono_interp_runtime_invoke (method, NULL, NULL, &exc, &interp_error);
-			if (!mono_error_ok (&interp_error)) {
-				cfailed++;
-				g_print ("Test '%s' execution failed.\n", method->name);
-			} else if (exc != NULL) {
-				g_print ("Exception in Test '%s' occured:\n", method->name);
-				mono_object_describe (exc);
-				run++;
-				failed++;
-			} else {
-				result = *(gint32 *) mono_object_unbox (result_obj);
-				expected = atoi (method->name + 5);  // FIXME: oh no.
-				run++;
-
-				if (result != expected) {
-					failed++;
-					g_print ("Test '%s' failed result (got %d, expected %d).\n", method->name, result, expected);
-				}
-			}
-		}
-	}
-	g_timer_stop (timer);
-	elapsed = g_timer_elapsed (timer, NULL);
-	if (failed > 0 || cfailed > 0){
-		g_print ("Results: total tests: %d, failed: %d, cfailed: %d (pass: %.2f%%)\n",
-				run, failed, cfailed, 100.0*(run-failed-cfailed)/run);
-	} else {
-		g_print ("Results: total tests: %d, all pass \n",  run);
-	}
-
-	g_print ("Elapsed time: %f secs (%f, %f)\n\n", elapsed,
-			elapsed - transform_time, transform_time);
-	*total += failed + cfailed;
-	*total_run += run;
-}
-
-static int
-interp_regression (MonoImage *image, int verbose, int *total_run)
-{
-	MonoMethod *method;
-	GTimer *timer = g_timer_new ();
-	MonoDomain *domain = mono_domain_get ();
-	guint32 i;
-	int total;
-
-	/* load the metadata */
-	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
-		MonoError error;
-		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, &error);
-		if (!method) {
-			mono_error_cleanup (&error);
-			continue;
-		}
-		mono_class_init (method->klass);
-	}
-
-	total = 0;
-	*total_run = 0;
-	interp_regression_step (image, verbose, total_run, &total, timer, domain);
-
-	g_timer_destroy (timer);
-	return total;
-}
-
-int
-mono_interp_regression_list (int verbose, int count, char *images [])
-{
-	int i, total, total_run, run;
-	
-	total_run = total = 0;
-	for (i = 0; i < count; ++i) {
-		MonoAssembly *ass = mono_assembly_open_predicate (images [i], FALSE, FALSE, NULL, NULL, NULL);
-		if (!ass) {
-			g_warning ("failed to load assembly: %s", images [i]);
-			continue;
-		}
-		total += interp_regression (mono_assembly_get_image (ass), verbose, &run);
-		total_run += run;
-	}
-	if (total > 0) {
-		g_print ("Overall results: tests: %d, failed: %d (pass: %.2f%%)\n", total_run, total, 100.0*(total_run-total)/total_run);
-	} else {
-		g_print ("Overall results: tests: %d, 100%% pass\n", total_run);
-	}
-	
-	return total;
-}
-
 /*
- * mono_interp_set_resume_state:
+ * interp_set_resume_state:
  *
  *   Set the state the interpeter will continue to execute from after execution returns to the interpreter.
  */
-void
-mono_interp_set_resume_state (MonoJitTlsData *jit_tls, MonoException *ex, MonoJitExceptionInfo *ei, MonoInterpFrameHandle interp_frame, gpointer handler_ip)
+static void
+interp_set_resume_state (MonoJitTlsData *jit_tls, MonoException *ex, MonoJitExceptionInfo *ei, MonoInterpFrameHandle interp_frame, gpointer handler_ip)
 {
 	ThreadContext *context;
 
@@ -5369,14 +5196,14 @@ mono_interp_set_resume_state (MonoJitTlsData *jit_tls, MonoException *ex, MonoJi
 }
 
 /*
- * mono_interp_run_finally:
+ * interp_run_finally:
  *
  *   Run the finally clause identified by CLAUSE_INDEX in the intepreter frame given by
  * frame->interp_frame.
  * Return TRUE if the finally clause threw an exception.
  */
-gboolean
-mono_interp_run_finally (StackFrameInfo *frame, int clause_index, gpointer handler_ip)
+static gboolean
+interp_run_finally (StackFrameInfo *frame, int clause_index, gpointer handler_ip)
 {
 	InterpFrame *iframe = frame->interp_frame;
 	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
@@ -5389,13 +5216,13 @@ mono_interp_run_finally (StackFrameInfo *frame, int clause_index, gpointer handl
 }
 
 /*
- * mono_interp_run_filter:
+ * interp_run_filter:
  *
  *   Run the filter clause identified by CLAUSE_INDEX in the intepreter frame given by
  * frame->interp_frame.
  */
-gboolean
-mono_interp_run_filter (StackFrameInfo *frame, MonoException *ex, int clause_index, gpointer handler_ip)
+static gboolean
+interp_run_filter (StackFrameInfo *frame, MonoException *ex, int clause_index, gpointer handler_ip)
 {
 	InterpFrame *iframe = frame->interp_frame;
 	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
@@ -5421,12 +5248,12 @@ typedef struct {
 } StackIter;
 
 /*
- * mono_interp_frame_iter_init:
+ * interp_frame_iter_init:
  *
  *   Initialize an iterator for iterating through interpreted frames.
  */
-void
-mono_interp_frame_iter_init (MonoInterpStackIter *iter, gpointer interp_exit_data)
+static void
+interp_frame_iter_init (MonoInterpStackIter *iter, gpointer interp_exit_data)
 {
 	StackIter *stack_iter = (StackIter*)iter;
 
@@ -5434,12 +5261,12 @@ mono_interp_frame_iter_init (MonoInterpStackIter *iter, gpointer interp_exit_dat
 }
 
 /*
- * mono_interp_frame_iter_next:
+ * interp_frame_iter_next:
  *
  *   Fill out FRAME with date for the next interpreter frame.
  */
-gboolean
-mono_interp_frame_iter_next (MonoInterpStackIter *iter, StackFrameInfo *frame)
+static gboolean
+interp_frame_iter_next (MonoInterpStackIter *iter, StackFrameInfo *frame)
 {
 	StackIter *stack_iter = (StackIter*)iter;
 	InterpFrame *iframe = stack_iter->current;
@@ -5465,8 +5292,8 @@ mono_interp_frame_iter_next (MonoInterpStackIter *iter, StackFrameInfo *frame)
 	return TRUE;
 }
 
-MonoJitInfo*
-mono_interp_find_jit_info (MonoDomain *domain, MonoMethod *method)
+static MonoJitInfo*
+interp_find_jit_info (MonoDomain *domain, MonoMethod *method)
 {
 	InterpMethod* rtm;
 
@@ -5477,24 +5304,24 @@ mono_interp_find_jit_info (MonoDomain *domain, MonoMethod *method)
 		return NULL;
 }
 
-void
-mono_interp_set_breakpoint (MonoJitInfo *jinfo, gpointer ip)
+static void
+interp_set_breakpoint (MonoJitInfo *jinfo, gpointer ip)
 {
 	guint16 *code = (guint16*)ip;
 	g_assert (*code == MINT_SDB_SEQ_POINT);
 	*code = MINT_SDB_BREAKPOINT;
 }
 
-void
-mono_interp_clear_breakpoint (MonoJitInfo *jinfo, gpointer ip)
+static void
+interp_clear_breakpoint (MonoJitInfo *jinfo, gpointer ip)
 {
 	guint16 *code = (guint16*)ip;
 	g_assert (*code == MINT_SDB_BREAKPOINT);
 	*code = MINT_SDB_SEQ_POINT;
 }
 
-MonoJitInfo*
-mono_interp_frame_get_jit_info (MonoInterpFrameHandle frame)
+static MonoJitInfo*
+interp_frame_get_jit_info (MonoInterpFrameHandle frame)
 {
 	InterpFrame *iframe = (InterpFrame*)frame;
 
@@ -5502,8 +5329,8 @@ mono_interp_frame_get_jit_info (MonoInterpFrameHandle frame)
 	return iframe->imethod->jinfo;
 }
 
-gpointer
-mono_interp_frame_get_ip (MonoInterpFrameHandle frame)
+static gpointer
+interp_frame_get_ip (MonoInterpFrameHandle frame)
 {
 	InterpFrame *iframe = (InterpFrame*)frame;
 
@@ -5511,8 +5338,8 @@ mono_interp_frame_get_ip (MonoInterpFrameHandle frame)
 	return (gpointer)iframe->ip;
 }
 
-gpointer
-mono_interp_frame_get_arg (MonoInterpFrameHandle frame, int pos)
+static gpointer
+interp_frame_get_arg (MonoInterpFrameHandle frame, int pos)
 {
 	InterpFrame *iframe = (InterpFrame*)frame;
 
@@ -5523,8 +5350,8 @@ mono_interp_frame_get_arg (MonoInterpFrameHandle frame, int pos)
 	return iframe->args + arg_offset;
 }
 
-gpointer
-mono_interp_frame_get_local (MonoInterpFrameHandle frame, int pos)
+static gpointer
+interp_frame_get_local (MonoInterpFrameHandle frame, int pos)
 {
 	InterpFrame *iframe = (InterpFrame*)frame;
 
@@ -5533,8 +5360,8 @@ mono_interp_frame_get_local (MonoInterpFrameHandle frame, int pos)
 	return iframe->locals + iframe->imethod->local_offsets [pos];
 }
 
-gpointer
-mono_interp_frame_get_this (MonoInterpFrameHandle frame)
+static gpointer
+interp_frame_get_this (MonoInterpFrameHandle frame)
 {
 	InterpFrame *iframe = (InterpFrame*)frame;
 
@@ -5546,22 +5373,58 @@ mono_interp_frame_get_this (MonoInterpFrameHandle frame)
 	return iframe->args + arg_offset;
 }
 
-MonoInterpFrameHandle
-mono_interp_frame_get_parent (MonoInterpFrameHandle frame)
+static MonoInterpFrameHandle
+interp_frame_get_parent (MonoInterpFrameHandle frame)
 {
 	InterpFrame *iframe = (InterpFrame*)frame;
 
 	return iframe->parent;
 }
 
-void
-mono_interp_start_single_stepping (void)
+static void
+interp_start_single_stepping (void)
 {
 	ss_enabled = TRUE;
 }
 
-void
-mono_interp_stop_single_stepping (void)
+static void
+interp_stop_single_stepping (void)
 {
 	ss_enabled = FALSE;
+}
+
+void
+mono_interp_init ()
+{
+	mono_native_tls_alloc (&thread_context_id, NULL);
+	set_context (NULL);
+
+	mono_interp_transform_init ();
+
+	MonoInterpCallbacks c;
+	c.create_method_pointer = interp_create_method_pointer;
+	c.runtime_invoke = interp_runtime_invoke;
+	c.init_delegate = interp_init_delegate;
+#ifndef DISABLE_REMOTING
+	c.get_remoting_invoke = interp_get_remoting_invoke;
+#endif
+	c.create_trampoline = interp_create_trampoline;
+	c.walk_stack_with_ctx = interp_walk_stack_with_ctx;
+	c.set_resume_state = interp_set_resume_state;
+	c.run_finally = interp_run_finally;
+	c.run_filter = interp_run_filter;
+	c.frame_iter_init = interp_frame_iter_init;
+	c.frame_iter_next = interp_frame_iter_next;
+	c.find_jit_info = interp_find_jit_info;
+	c.set_breakpoint = interp_set_breakpoint;
+	c.clear_breakpoint = interp_clear_breakpoint;
+	c.frame_get_jit_info = interp_frame_get_jit_info;
+	c.frame_get_ip = interp_frame_get_ip;
+	c.frame_get_arg = interp_frame_get_arg;
+	c.frame_get_local = interp_frame_get_local;
+	c.frame_get_this = interp_frame_get_this;
+	c.frame_get_parent = interp_frame_get_parent;
+	c.start_single_stepping = interp_start_single_stepping;
+	c.stop_single_stepping = interp_stop_single_stepping;
+	mini_install_interp_callbacks (&c);
 }

@@ -9,6 +9,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-internals.h>
 #include "config.h"
+#include "interp.h"
 
 #define MINT_TYPE_I1 0
 #define MINT_TYPE_U1 1

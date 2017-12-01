@@ -388,8 +388,7 @@ endif
 
 if DISABLE_INTERPRETER
 interp_sources =	\
-	interp/interp.h	\
-	interp/interp-stubs.c
+	interp/interp.h
 else
 interp_sources =	\
 	interp/hacks.h		\
@@ -483,6 +482,7 @@ common_sources = \
 	lldb.c	\
 	memory-access.c	\
 	mini-profiler.c	\
+	interp-stubs.c \
 	aot-runtime.h	\
 	mini-runtime.h
 

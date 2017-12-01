@@ -204,7 +204,7 @@ mini_profiler_context_get_this (MonoProfilerCallContext *ctx)
 		return NULL;
 
 	if (ctx->interp_frame)
-		return memdup_with_type (mono_interp_frame_get_this (ctx->interp_frame), &ctx->method->klass->this_arg);
+		return memdup_with_type (mini_get_interp_callbacks ()->frame_get_this (ctx->interp_frame), &ctx->method->klass->this_arg);
 
 	MonoDebugMethodJitInfo *info = mono_debug_find_method (ctx->method, mono_domain_get ());
 
@@ -223,7 +223,7 @@ mini_profiler_context_get_argument (MonoProfilerCallContext *ctx, guint32 pos)
 		return NULL;
 
 	if (ctx->interp_frame)
-		return memdup_with_type (mono_interp_frame_get_arg (ctx->interp_frame, pos), sig->params [pos]);
+		return memdup_with_type (mini_get_interp_callbacks ()->frame_get_arg (ctx->interp_frame, pos), sig->params [pos]);
 
 	MonoDebugMethodJitInfo *info = mono_debug_find_method (ctx->method, mono_domain_get ());
 
@@ -250,7 +250,7 @@ mini_profiler_context_get_local (MonoProfilerCallContext *ctx, guint32 pos)
 	mono_metadata_free_mh (header);
 
 	if (ctx->interp_frame)
-		return memdup_with_type (mono_interp_frame_get_local (ctx->interp_frame, pos), t);
+		return memdup_with_type (mini_get_interp_callbacks ()->frame_get_local (ctx->interp_frame, pos), t);
 
 	MonoDebugMethodJitInfo *info = mono_debug_find_method (ctx->method, mono_domain_get ());
 
