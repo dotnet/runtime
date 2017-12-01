@@ -267,7 +267,7 @@ def static getFullPerfJobName(def project, def os, def isPR) {
 
 
     // Actual perf testing on the following OSes
-    def perfOSList = ['Ubuntu14.04']
+    def perfOSList = ['Ubuntu16.04']
     perfOSList.each { os ->
         def newJob = job(getFullPerfJobName(project, os, isPR)) {
 
