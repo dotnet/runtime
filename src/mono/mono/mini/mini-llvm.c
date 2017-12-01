@@ -34,6 +34,7 @@
 #include "llvm-jit.h"
 #include "aot-compiler.h"
 #include "mini-llvm.h"
+#include "mini-runtime.h"
 
 #ifndef DISABLE_JIT
 
