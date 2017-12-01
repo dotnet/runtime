@@ -134,7 +134,7 @@ typedef struct {
  */
 typedef struct _Process {
 	pid_t pid; /* the pid of the process. This value is only valid until the process has exited. */
-	MonoSemType exit_sem; /* this semaphore will be released when the process exits */
+	MonoCoopSem exit_sem; /* this semaphore will be released when the process exits */
 	int status; /* the exit status */
 	gint32 handle_count; /* the number of handles to this process instance */
 	/* we keep a ref to the creating _WapiHandle_process handle until
@@ -528,7 +528,7 @@ static mono_lazy_init_t process_sig_chld_once = MONO_LAZY_INIT_STATUS_NOT_INITIA
 static gchar *cli_launcher;
 
 static Process *processes;
-static mono_mutex_t processes_mutex;
+static MonoCoopMutex processes_mutex;
 
 static pid_t current_pid;
 static gpointer current_process;
@@ -645,16 +645,16 @@ process_wait (MonoW32Handle *handle_data, guint32 timeout, gboolean *alerted)
 		if (timeout != MONO_INFINITE_WAIT) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s (%p, %" G_GUINT32_FORMAT "): waiting on semaphore for %" G_GINT64_FORMAT " ms...",
 				__func__, handle_data, timeout, timeout - (now - start));
-			ret = mono_os_sem_timedwait (&process->exit_sem, (timeout - (now - start)), alerted ? MONO_SEM_FLAGS_ALERTABLE : MONO_SEM_FLAGS_NONE);
+			ret = mono_coop_sem_timedwait (&process->exit_sem, (timeout - (now - start)), alerted ? MONO_SEM_FLAGS_ALERTABLE : MONO_SEM_FLAGS_NONE);
 		} else {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s (%p, %" G_GUINT32_FORMAT "): waiting on semaphore forever...",
 				__func__, handle_data, timeout);
-			ret = mono_os_sem_wait (&process->exit_sem, alerted ? MONO_SEM_FLAGS_ALERTABLE : MONO_SEM_FLAGS_NONE);
+			ret = mono_coop_sem_wait (&process->exit_sem, alerted ? MONO_SEM_FLAGS_ALERTABLE : MONO_SEM_FLAGS_NONE);
 		}
 
 		if (ret == MONO_SEM_TIMEDWAIT_RET_SUCCESS) {
 			/* Success, process has exited */
-			mono_os_sem_post (&process->exit_sem);
+			mono_coop_sem_post (&process->exit_sem);
 			break;
 		}
 
@@ -722,7 +722,7 @@ processes_cleanup (void)
 		}
 	}
 
-	mono_os_mutex_lock (&processes_mutex);
+	mono_coop_mutex_lock (&processes_mutex);
 
 	for (process = processes; process;) {
 		Process *next = process->next;
@@ -735,7 +735,7 @@ processes_cleanup (void)
 			else
 				prev->next = process->next;
 
-			mono_os_sem_destroy (&process->exit_sem);
+			mono_coop_sem_destroy (&process->exit_sem);
 			g_free (process);
 		} else {
 			prev = process;
@@ -743,7 +743,7 @@ processes_cleanup (void)
 		process = next;
 	}
 
-	mono_os_mutex_unlock (&processes_mutex);
+	mono_coop_mutex_unlock (&processes_mutex);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s done", __func__);
 
@@ -827,7 +827,7 @@ mono_w32process_init (void)
 	current_process = mono_w32handle_new (MONO_W32TYPE_PROCESS, &process_handle);
 	g_assert (current_process != INVALID_HANDLE_VALUE);
 
-	mono_os_mutex_init (&processes_mutex);
+	mono_coop_mutex_init (&processes_mutex);
 }
 
 void
@@ -1413,7 +1413,7 @@ mono_w32process_signal_finished (void)
 		if (pid <= 0)
 			break;
 
-		mono_os_mutex_lock (&processes_mutex);
+		mono_coop_mutex_lock (&processes_mutex);
 
 		for (process = processes; process; process = process->next) {
 			if (process->pid != pid)
@@ -1423,11 +1423,11 @@ mono_w32process_signal_finished (void)
 
 			process->signalled = TRUE;
 			process->status = status;
-			mono_os_sem_post (&process->exit_sem);
+			mono_coop_sem_post (&process->exit_sem);
 			break;
 		}
 
-		mono_os_mutex_unlock (&processes_mutex);
+		mono_coop_mutex_unlock (&processes_mutex);
 	} while (1);
 }
 
@@ -2026,7 +2026,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 		process = (Process *) g_malloc0 (sizeof (Process));
 		process->pid = pid;
 		process->handle_count = 1;
-		mono_os_sem_init (&process->exit_sem, 0);
+		mono_coop_sem_init (&process->exit_sem, 0);
 
 		process_handle.process = process;
 
@@ -2034,7 +2034,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 		if (handle == INVALID_HANDLE_VALUE) {
 			g_warning ("%s: error creating process handle", __func__);
 
-			mono_os_sem_destroy (&process->exit_sem);
+			mono_coop_sem_destroy (&process->exit_sem);
 			g_free (process);
 
 			mono_w32error_set_last (ERROR_OUTOFMEMORY);
@@ -2052,11 +2052,11 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 		 * exits so that the information in the handle isn't lost. */
 		process->handle = mono_w32handle_duplicate (handle_data);
 
-		mono_os_mutex_lock (&processes_mutex);
+		mono_coop_mutex_lock (&processes_mutex);
 		process->next = processes;
 		mono_memory_barrier ();
 		processes = process;
-		mono_os_mutex_unlock (&processes_mutex);
+		mono_coop_mutex_unlock (&processes_mutex);
 
 		if (process_info != NULL) {
 			process_info->process_handle = handle;

@@ -32,6 +32,7 @@ class Driver {
 		return 0;
 	}
 
+	[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
 	static Assembly TriggerLoadingSystemCore ()
 	{
 		int[] x = new int[] { 1,2,3};

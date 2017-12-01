@@ -1909,17 +1909,17 @@ ves_icall_System_Threading_WaitHandle_Wait_internal (gpointer *handles, gint32 n
 	timeoutLeft = timeout;
 
 	for (;;) {
-		MONO_ENTER_GC_SAFE;
 #ifdef HOST_WIN32
+		MONO_ENTER_GC_SAFE;
 		if (numhandles != 1)
 			ret = mono_w32handle_convert_wait_ret (mono_win32_wait_for_multiple_objects_ex(numhandles, handles, waitall, timeoutLeft, TRUE), numhandles);
 		else
 			ret = mono_w32handle_convert_wait_ret (mono_win32_wait_for_single_object_ex (handles [0], timeoutLeft, TRUE), 1);
+		MONO_EXIT_GC_SAFE;
 #else
 		/* mono_w32handle_wait_multiple optimizes the case for numhandles == 1 */
 		ret = mono_w32handle_wait_multiple (handles, numhandles, waitall, timeoutLeft, TRUE);
 #endif /* HOST_WIN32 */
-		MONO_EXIT_GC_SAFE;
 
 		if (ret != MONO_W32HANDLE_WAIT_RET_ALERTED)
 			break;
@@ -4456,7 +4456,9 @@ mono_thread_execute_interruption (void)
 
 	/* this will consume pending APC calls */
 #ifdef HOST_WIN32
+	MONO_ENTER_GC_SAFE;
 	mono_win32_wait_for_single_object_ex (GetCurrentThread (), 0, TRUE);
+	MONO_EXIT_GC_SAFE;
 #endif
 
 	/* Clear the interrupted flag of the thread so it can wait again */

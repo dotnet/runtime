@@ -497,13 +497,13 @@ mono_threadpool_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, MonoObj
 			MONO_OBJECT_SETREF (ares, handle, (MonoObject*) wait_handle);
 		}
 		mono_monitor_exit ((MonoObject*) ares);
-		MONO_ENTER_GC_SAFE;
 #ifdef HOST_WIN32
+		MONO_ENTER_GC_SAFE;
 		mono_win32_wait_for_single_object_ex (wait_event, INFINITE, TRUE);
+		MONO_EXIT_GC_SAFE;
 #else
 		mono_w32handle_wait_one (wait_event, MONO_INFINITE_WAIT, TRUE);
 #endif
-		MONO_EXIT_GC_SAFE;
 	}
 
 	ac = (MonoAsyncCall*) ares->object_data;
