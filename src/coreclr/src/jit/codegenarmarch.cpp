@@ -1266,6 +1266,8 @@ void CodeGen::genMultiRegCallStoreToLocal(GenTreePtr treeNode)
                 getEmitter()->emitIns_R_R_I(INS_mov, emitTypeSize(type), dst, reg, i);
             }
         }
+
+        genProduceReg(treeNode);
     }
     else
     {
