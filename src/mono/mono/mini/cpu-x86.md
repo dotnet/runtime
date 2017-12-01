@@ -81,18 +81,18 @@ int_ble_un: len:6
 int_blt_un: len:6
 label: len:0
 
-template: name:ibalu dest:i src1:i src2:i clob:1 len:2
+#template: name:ibalu
 
-int_add: template:ibalu
-int_sub: template:ibalu
-int_mul: template:ibalu len:3
+int_add: dest:i src1:i src2:i clob:1 len:2
+int_sub: dest:i src1:i src2:i clob:1 len:2
+int_mul: dest:i src1:i src2:i clob:1 len:3
 int_div: dest:a src1:a src2:i len:15 clob:d
 int_div_un: dest:a src1:a src2:i len:15 clob:d
 int_rem: dest:d src1:a src2:i len:15 clob:a
 int_rem_un: dest:d src1:a src2:i len:15 clob:a
-int_and: template:ibalu
-int_or: template:ibalu
-int_xor: template:ibalu
+int_and: dest:i src1:i src2:i clob:1 len:2
+int_or: dest:i src1:i src2:i clob:1 len:2
+int_xor: dest:i src1:i src2:i clob:1 len:2
 int_shl: dest:i src1:i src2:s clob:1 len:2
 int_shr: dest:i src1:i src2:s clob:1 len:2
 int_shr_un: dest:i src1:i src2:s clob:1 len:2

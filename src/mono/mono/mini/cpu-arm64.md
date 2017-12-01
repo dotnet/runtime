@@ -440,7 +440,7 @@ long_conv_to_u2: dest:i src1:i len:4
 long_conv_to_r8: dest:f src1:i len:8
 long_conv_to_r4: dest:f src1:i len:12
 loadi8_membase: dest:i src1:b len:12
-storei8_membase_imm: dest:b  len:20
+storei8_membase_imm: dest:b len:20
 storei8_membase_reg: dest:b src1:i len:12
 long_conv_to_r_un: dest:f src1:i len:8
 arm_setfreg_r4: dest:f src1:f len:8

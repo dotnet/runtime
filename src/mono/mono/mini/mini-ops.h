@@ -1172,7 +1172,7 @@ MINI_OP(OP_AMD64_LOADI8_MEMINDEX,        "amd64_loadi8_memindex", IREG, IREG, IR
 MINI_OP(OP_AMD64_SAVE_SP_TO_LMF,         "amd64_save_sp_to_lmf", NONE, NONE, NONE)
 #endif
 
-#if  defined(__ppc__) || defined(__powerpc__) || defined(__ppc64__) || defined(TARGET_POWERPC)
+#if  defined(TARGET_POWERPC)
 MINI_OP(OP_PPC_SUBFIC,             "ppc_subfic", IREG, IREG, NONE)
 MINI_OP(OP_PPC_SUBFZE,             "ppc_subfze", IREG, IREG, NONE)
 MINI_OP(OP_CHECK_FINITE,           "ppc_check_finite", NONE, IREG, NONE)
@@ -1185,7 +1185,7 @@ MINI_OP(OP_ARM_RSC_IMM,             "arm_rsc_imm", IREG, IREG, NONE)
 MINI_OP(OP_ARM_SETFREG_R4,             "arm_setfreg_r4", FREG, FREG, NONE)
 #endif
 
-#if defined(__sparc__) || defined(sparc)
+#if defined(TARGET_SPARC)
 MINI_OP(OP_SPARC_BRZ,              "sparc_brz", NONE, NONE, NONE)
 MINI_OP(OP_SPARC_BRLEZ,            "sparc_brlez", NONE, NONE, NONE)
 MINI_OP(OP_SPARC_BRLZ,             "sparc_brlz", NONE, NONE, NONE)
@@ -1200,7 +1200,7 @@ MINI_OP(OP_SPARC_COND_EXC_LTZ,     "sparc_cond_exc_ltz", NONE, NONE, NONE)
 MINI_OP(OP_SPARC_COND_EXC_NEZ,     "sparc_cond_exc_nez", NONE, NONE, NONE)
 #endif
 
-#if defined(__s390__) || defined(s390)
+#if defined(TARGET_S390X)
 MINI_OP(OP_S390_LOADARG,	   "s390_loadarg", NONE, NONE, NONE)
 MINI_OP(OP_S390_ARGREG, 	   "s390_argreg", NONE, NONE, NONE)
 MINI_OP(OP_S390_ARGPTR, 	   "s390_argptr", NONE, NONE, NONE)
@@ -1229,7 +1229,7 @@ MINI_OP(OP_S390_CGIJ,           "s390_cgij", LREG, NONE, NONE)
 MINI_OP(OP_S390_CLGIJ,          "s390_cgij_un", LREG, NONE, NONE)
 #endif
 
-#if defined(__mips__)
+#if defined(TARGET_MIPS)
 MINI_OP(OP_MIPS_BEQ,   "mips_beq", NONE, IREG, IREG)
 MINI_OP(OP_MIPS_BGEZ,  "mips_bgez", NONE, IREG, NONE)
 MINI_OP(OP_MIPS_BGTZ,  "mips_bgtz", NONE, IREG, NONE)

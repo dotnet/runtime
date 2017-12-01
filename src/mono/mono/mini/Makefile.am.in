@@ -78,9 +78,6 @@ export HOST_CC
 PLATFORM_CFLAGS = -O
 endif
 
-# hack for automake to have the same source file in a library and a bin
-genmdesc_CFLAGS = $(AM_CFLAGS)
-
 monoldflags=$(export_ldflags)
 monobinldflags=$(export_ldflags) $(extra_runtime_ldflags)
 
@@ -137,9 +134,9 @@ endif
 endif
 
 if DISABLE_EXECUTABLES
-noinst_PROGRAMS = genmdesc
+noinst_PROGRAMS =
 else
-noinst_PROGRAMS = genmdesc mono
+noinst_PROGRAMS = mono
 endif
 
 if DISABLE_EXECUTABLES
@@ -298,19 +295,6 @@ monow_LDFLAGS = $(mono_sgen_LDFLAGS) -mwindows
 monow_SOURCES = $(mono_sgen_SOURCES)
 endif
 endif
-
-genmdesc_SOURCES = \
-	mini.h		\
-	seq-points.h	\
-	genmdesc.c	\
-	helpers.c	\
-	../metadata/opcodes.c
-
-# Don't link this against libmonoruntime to speed up rebuilds
-genmdesc_LDADD = \
-	$(monodir)/mono/utils/libmonoutils.la -lm	\
-	$(GLIB_LIBS)					\
-	$(LIBICONV)
 
 wasm_sources = \
 	mini-wasm.c		\
@@ -566,12 +550,14 @@ if X86
 arch_sources = $(x86_sources)
 arch_built=cpu-x86.h
 arch_define=__i386__
+target_define=TARGET_X86
 endif
 
 if AMD64
 arch_sources = $(amd64_sources)
 arch_built=cpu-amd64.h
 arch_define=__x86_64__
+target_define=TARGET_AMD64
 ARCH_FULLAOT_EXCLUDE=
 endif
 
@@ -579,18 +565,21 @@ if POWERPC
 arch_sources = $(ppc_sources)
 arch_built=cpu-ppc.h
 arch_define=__ppc__
+target_define=TARGET_POWERPC
 endif
 
 if POWERPC64
 arch_sources = $(ppc_sources)
 arch_built=cpu-ppc64.h
 arch_define=__ppc64__
+target_define=TARGET_POWERPC
 endif
 
 if MIPS
 arch_sources = $(mips_sources)
 arch_built=cpu-mips.h
 arch_define=__mips__
+target_define=TARGET_MIPS
 endif
 
 if ARM
@@ -599,30 +588,35 @@ ARCH_CFLAGS = -I../arch/arm
 arch_sources = $(arm_sources)
 arch_built=cpu-arm.h
 arch_define=__arm__
+target_define=TARGET_ARM
 endif
 
 if ARM64
 arch_sources = $(arm64_sources)
 arch_built=cpu-arm64.h
 arch_define=__aarch64__
+target_define=TARGET_ARM64
 endif
 
 if SPARC
 arch_sources = $(sparc_sources)
 arch_built=cpu-sparc.h
 arch_define=__sparc__
+target_define=TARGET_SPARC
 endif
 
 if SPARC64
 arch_sources = $(sparc_sources)
 arch_built=cpu-sparc.h
 arch_define=__sparc__
+target_define=TARGET_SPARC
 endif
 
 if S390X
 arch_sources = $(s390x_sources)
 arch_built=cpu-s390x.h
 arch_define=__s390__
+target_define=TARGET_S390X
 endif
 
 if HOST_WIN32
@@ -704,49 +698,36 @@ MemoryIntrinsics.dll: MemoryIntrinsics.il
 
 GENMDESC_OPTS=
 
-# we don't always use the perl impl because it's an additional
-# build dependency for the poor windows users
-# $(arch_define) is the preprocessor symbol that enables all the opcodes
-# for the specific platform in mini-ops.h
+GENMDESC_PRG=python $(srcdir)/genmdesc.py $(target_define) $(srcdir)
 
-if CROSS_COMPILING
-GENMDESC_PRG=perl $(srcdir)/genmdesc.pl $(arch_define) $(srcdir) $(GENMDESC_OPTS)
-else
-if WASM
-GENMDESC_PRG=perl $(srcdir)/genmdesc.pl $(arch_define) $(srcdir) $(GENMDESC_OPTS)
-else
-GENMDESC_PRG=./genmdesc $(GENMDESC_OPTS)
-endif
-endif !CROSS_COMPILING
-
-cpu-wasm.h: cpu-wasm.md genmdesc$(EXEEXT)
+cpu-wasm.h: cpu-wasm.md
 	$(GENMDESC_PRG) cpu-wasm.h wasm_desc $(srcdir)/cpu-wasm.md
 
-cpu-x86.h: cpu-x86.md genmdesc$(EXEEXT)
+cpu-x86.h: cpu-x86.md
 	$(GENMDESC_PRG) cpu-x86.h x86_desc $(srcdir)/cpu-x86.md
 
-cpu-amd64.h: cpu-amd64.md genmdesc$(EXEEXT)
+cpu-amd64.h: cpu-amd64.md
 	$(GENMDESC_PRG) cpu-amd64.h amd64_desc $(srcdir)/cpu-amd64.md
 
-cpu-ppc.h: cpu-ppc.md genmdesc$(EXEEXT)
+cpu-ppc.h: cpu-ppc.md
 	$(GENMDESC_PRG) cpu-ppc.h ppcg4 $(srcdir)/cpu-ppc.md
 
-cpu-ppc64.h: cpu-ppc64.md genmdesc$(EXEEXT)
+cpu-ppc64.h: cpu-ppc64.md
 	$(GENMDESC_PRG) cpu-ppc64.h ppc64_cpu_desc $(srcdir)/cpu-ppc64.md
 
-cpu-arm.h: cpu-arm.md genmdesc$(EXEEXT)
+cpu-arm.h: cpu-arm.md
 	$(GENMDESC_PRG) cpu-arm.h arm_cpu_desc $(srcdir)/cpu-arm.md
 
-cpu-arm64.h: cpu-arm64.md genmdesc$(EXEEXT)
+cpu-arm64.h: cpu-arm64.md
 	$(GENMDESC_PRG) cpu-arm64.h arm64_cpu_desc $(srcdir)/cpu-arm64.md
 
-cpu-sparc.h: cpu-sparc.md genmdesc$(EXEEXT)
+cpu-sparc.h: cpu-sparc.md
 	$(GENMDESC_PRG) cpu-sparc.h sparc_desc $(srcdir)/cpu-sparc.md
 
-cpu-s390x.h: cpu-s390x.md genmdesc$(EXEEXT)
+cpu-s390x.h: cpu-s390x.md
 	$(GENMDESC_PRG) cpu-s390x.h s390x_cpu_desc $(srcdir)/cpu-s390x.md
 
-cpu-mips.h: cpu-mips.md genmdesc$(EXEEXT)
+cpu-mips.h: cpu-mips.md
 	$(GENMDESC_PRG) cpu-mips.h mips_desc $(srcdir)/cpu-mips.md
 
 testi: mono test.exe
@@ -909,7 +890,7 @@ BUILT_SOURCES = version.h $(arch_built)
 CLEANFILES= $(BUILT_SOURCES) *.exe *.dll
 EXTRA_DIST = TestDriver.cs \
 	TestHelpers.cs \
-	genmdesc.pl				\
+	genmdesc.py				\
 	$(test_sources) 			\
 	$(wasm_sources) cpu-wasm.md 		\
 	$(x86_sources) cpu-x86.md 		\
