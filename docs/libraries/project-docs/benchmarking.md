@@ -29,7 +29,8 @@ Follow the instructions described here https://github.com/dotnet/corefx/blob/mas
 Add a benchmark class, configure it either with a manual configuration or by attributing it and pass the class type to the BenchmarkRunner:
 
 ```
-[InProcess]
+[MemoryDiagnoser]
+// ...
 public class Benchmark
 {
      // Benchmark code ...
