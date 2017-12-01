@@ -28,7 +28,7 @@ Follow the instructions described here https://github.com/dotnet/corefx/blob/mas
 
 Add a benchmark class, configure it either with a manual configuration or by attributing it and pass the class type to the BenchmarkRunner:
 
-```
+```csharp
 [MemoryDiagnoser]
 // ...
 public class Benchmark
@@ -51,7 +51,7 @@ Make sure to build your local corefx repository in RELEASE mode `.\build -releas
 
 Currently there is no straightforward way to run your BenchmarkDotNet application in a dedicated process, therefore we are using the InProcess switch `[InProcess]`:
 
-```
+```csharp
 [InProcess]
 public class Benchmark
 {
@@ -74,7 +74,7 @@ Follow the instructions described here https://github.com/dotnet/corefx/blob/mas
 
 Add the desired amount of Jobs and add `NetCoreAppSettings` to specify the `targetFrameworkMoniker`, `runtimeFrameworkVersion` and `customDotNetCliPath` for each:
 
-```
+```csharp
 public class MainConfig : ManualConfig
 {
     public MainConfig()
