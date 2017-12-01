@@ -94,9 +94,6 @@ internal static partial class Interop
                 if (sslAuthenticationOptions.IsServer && sslAuthenticationOptions.RemoteCertRequired)
                 {
                     Ssl.SslCtxSetVerify(innerContext, s_verifyClientCertificate);
-
-                    //update the client CA list 
-                    UpdateCAListFromRootStore(innerContext);
                 }
 
                 GCHandle alpnHandle = default;
@@ -400,25 +397,6 @@ internal static partial class Interop
             protocolHandle.Target = null;
 
             return Ssl.SSL_TLSEXT_ERR_NOACK;
-        }
-
-        private static void UpdateCAListFromRootStore(SafeSslContextHandle context)
-        {
-            using (SafeX509NameStackHandle nameStack = Crypto.NewX509NameStack())
-            {
-                //maintaining the HashSet of Certificate's issuer name to keep track of duplicates 
-                HashSet<string> issuerNameHashSet = new HashSet<string>();
-
-                //Enumerate Certificates from LocalMachine and CurrentUser root store 
-                AddX509Names(nameStack, StoreLocation.LocalMachine, issuerNameHashSet);
-                AddX509Names(nameStack, StoreLocation.CurrentUser, issuerNameHashSet);
-
-                Ssl.SslCtxSetClientCAList(context, nameStack);
-
-                // The handle ownership has been transferred into the CTX.
-                nameStack.SetHandleAsInvalid();
-            }
-
         }
 
         private static void AddX509Names(SafeX509NameStackHandle nameStack, StoreLocation storeLocation, HashSet<string> issuerNameHashSet)
