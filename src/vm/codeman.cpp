@@ -42,8 +42,6 @@
 #include "perfmap.h"
 #endif
 
-#define MAX_M_ALLOCATED         (16 * 1024)
-
 // Default number of jump stubs in a jump stub block
 #define DEFAULT_JUMPSTUBS_PER_BLOCK  32
 
@@ -564,7 +562,6 @@ Need EEJitManager::m_CodeHeapCritSec to be set
 NewCodeHeap
 allocCodeRaw
 GetCodeHeapList
-GetCodeHeap
 RemoveCodeHeapFromDomainList
 DeleteCodeHeap
 AddRangeToJitHeapCache
@@ -2056,12 +2053,36 @@ VOID EEJitManager::EnsureJumpStubReserve(BYTE * pImageBase, SIZE_T imageSize, SI
 }
 #endif // _TARGET_AMD64_
 
+static size_t GetDefaultReserveForJumpStubs(size_t codeHeapSize)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifdef _TARGET_AMD64_
+    //
+    // Keep a small default reserve at the end of the codeheap for jump stubs. It should reduce
+    // chance that we won't be able allocate jump stub because of lack of suitable address space.
+    //
+    static ConfigDWORD configCodeHeapReserveForJumpStubs;
+    int percentReserveForJumpStubs = configCodeHeapReserveForJumpStubs.val(CLRConfig::INTERNAL_CodeHeapReserveForJumpStubs);
+
+    size_t reserveForJumpStubs = percentReserveForJumpStubs * (codeHeapSize / 100);
+
+    size_t minReserveForJumpStubs = sizeof(CodeHeader) +
+        sizeof(JumpStubBlockHeader) + (size_t) DEFAULT_JUMPSTUBS_PER_BLOCK * BACK_TO_BACK_JUMP_ALLOCATE_SIZE +
+        CODE_SIZE_ALIGN + BYTES_PER_BUCKET;
+
+    return max(reserveForJumpStubs, minReserveForJumpStubs);
+#else
+    return 0;
+#endif
+}
+
 HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap *pJitMetaHeap)
 {
     CONTRACT(HeapList *) {
         THROWS;
         GC_NOTRIGGER;
-        POSTCONDITION(CheckPointer(RETVAL));
+        POSTCONDITION(CheckPointer(RETVAL) || !pInfo->getThrowOnOutOfMemoryWithinRange());
     } CONTRACT_END;
 
     size_t * pPrivatePCLBytes   = NULL;
@@ -2101,11 +2122,19 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     {
         if (loAddr != NULL || hiAddr != NULL)
         {
+#ifdef _DEBUG
+            // Always exercise the fallback path in the caller when forced relocs are turned on
+            if (!pInfo->getThrowOnOutOfMemoryWithinRange() && PEDecoder::GetForceRelocs())
+                RETURN NULL;
+#endif
             pBaseAddr = ClrVirtualAllocWithinRange(loAddr, hiAddr,
                                                    reserveSize, MEM_RESERVE, PAGE_NOACCESS);
 
             if (!pBaseAddr)
             {
+                // Conserve emergency jump stub reserve until when it is really needed
+                if (!pInfo->getThrowOnOutOfMemoryWithinRange())
+                    RETURN NULL;
 #ifdef _TARGET_AMD64_
                 pBaseAddr = ExecutionManager::GetEEJitManager()->AllocateFromEmergencyJumpStubReserve(loAddr, hiAddr, &reserveSize);
                 if (!pBaseAddr)
@@ -2138,16 +2167,12 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
 
     pHp->endAddress      = pHp->startAddress;
     pHp->maxCodeHeapSize = heapSize;
+    pHp->reserveForJumpStubs = fAllocatedFromEmergencyJumpStubReserve ? pHp->maxCodeHeapSize : GetDefaultReserveForJumpStubs(pHp->maxCodeHeapSize);
 
     _ASSERTE(heapSize >= initialRequestSize);
 
     // We do not need to memset this memory, since ClrVirtualAlloc() guarantees that the memory is zero.
     // Furthermore, if we avoid writing to it, these pages don't come into our working set
-
-    pHp->bFull           = fAllocatedFromEmergencyJumpStubReserve;
-    pHp->bFullForJumpStubs = false;
-
-    pHp->cBlocks         = 0;
 
     pHp->mapBase         = ROUND_DOWN_TO_PAGE(pHp->startAddress);  // round down to next lower page align
     pHp->pHdrMap         = (DWORD*)(void*)pJitMetaHeap->AllocMem(S_SIZE_T(nibbleMapSize));
@@ -2165,7 +2190,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     RETURN pHp;
 }
 
-void * LoaderCodeHeap::AllocMemForCode_NoThrow(size_t header, size_t size, DWORD alignment)
+void * LoaderCodeHeap::AllocMemForCode_NoThrow(size_t header, size_t size, DWORD alignment, size_t reserveForJumpStubs)
 {
     CONTRACTL {
         NOTHROW;
@@ -2174,7 +2199,7 @@ void * LoaderCodeHeap::AllocMemForCode_NoThrow(size_t header, size_t size, DWORD
 
     if (m_cbMinNextPad > (SSIZE_T)header) header = m_cbMinNextPad;
 
-    void * p = m_LoaderHeap.AllocMemForCode_NoThrow(header, size, alignment);
+    void * p = m_LoaderHeap.AllocMemForCode_NoThrow(header, size, alignment, reserveForJumpStubs);
     if (p == NULL)
         return NULL;
 
@@ -2199,6 +2224,7 @@ void CodeHeapRequestInfo::Init()
         m_pAllocator = m_pMD->GetLoaderAllocatorForCode();
     m_isDynamicDomain = (m_pMD != NULL) ? m_pMD->IsLCGMethod() : false;
     m_isCollectible = m_pAllocator->IsCollectible() ? true : false;
+    m_throwOnOutOfMemoryWithinRange = true;
 }
 
 #ifdef WIN64EXCEPTIONS
@@ -2260,7 +2286,7 @@ HeapList* EEJitManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapLi
         THROWS;
         GC_NOTRIGGER;
         PRECONDITION(m_CodeHeapCritSec.OwnedByCurrentThread());
-        POSTCONDITION(CheckPointer(RETVAL));
+        POSTCONDITION(CheckPointer(RETVAL) || !pInfo->getThrowOnOutOfMemoryWithinRange());
     } CONTRACT_END;
 
     size_t initialRequestSize = pInfo->getRequestSize();
@@ -2278,7 +2304,7 @@ HeapList* EEJitManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapLi
         // we bump up the reserve size for the 64-bit platforms
         if (!pInfo->IsDynamicDomain())
         {
-            minReserveSize *= 4; // CodeHeaps are larger on AMD64 (256 KB to 1024 KB)
+            minReserveSize *= 8; // CodeHeaps are larger on AMD64 (256 KB to 2048 KB)
         }
     }
 #endif
@@ -2313,6 +2339,11 @@ HeapList* EEJitManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapLi
             flags |= RangeSection::RANGE_SECTION_COLLECTIBLE;
 
         pHp = LoaderCodeHeap::CreateCodeHeap(pInfo, pJitMetaHeap);
+    }
+    if (pHp == NULL)
+    {
+        _ASSERTE(!pInfo->getThrowOnOutOfMemoryWithinRange());
+        RETURN(NULL);
     }
 
     _ASSERTE (pHp != NULL);
@@ -2368,125 +2399,84 @@ HeapList* EEJitManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapLi
 
 void* EEJitManager::allocCodeRaw(CodeHeapRequestInfo *pInfo,
                                  size_t header, size_t blockSize, unsigned align, 
-                                 HeapList ** ppCodeHeap /* Writeback, Can be null */ )
+                                 HeapList ** ppCodeHeap)
 {
     CONTRACT(void *) {
         THROWS;
         GC_NOTRIGGER;
         PRECONDITION(m_CodeHeapCritSec.OwnedByCurrentThread());
-        POSTCONDITION(CheckPointer(RETVAL));
+        POSTCONDITION(CheckPointer(RETVAL) || !pInfo->getThrowOnOutOfMemoryWithinRange());
     } CONTRACT_END;
 
-    pInfo->setRequestSize(header+blockSize+(align-1));
+    pInfo->setRequestSize(header+blockSize+(align-1)+pInfo->getReserveForJumpStubs());
 
-    // Initialize the writeback value to NULL if a non-NULL pointer was provided
-    if (ppCodeHeap)
-        *ppCodeHeap = NULL;
+    void *      mem         = NULL;
+    HeapList * pCodeHeap    = NULL;
+    DomainCodeHeapList *pList = NULL;
 
-    void *      mem       = NULL;
-
-    bool bForJumpStubs = (pInfo->m_loAddr != 0) || (pInfo->m_hiAddr != 0);
-    bool bUseCachedDynamicCodeHeap = pInfo->IsDynamicDomain();
-
-    HeapList * pCodeHeap;
-
-    for (;;)
+    // Avoid going through the full list in the common case - try to use the most recently used codeheap
+    if (pInfo->IsDynamicDomain())
     {
-        // Avoid going through the full list in the common case - try to use the most recently used codeheap
-        if (bUseCachedDynamicCodeHeap)
-        {
-            pCodeHeap = (HeapList *)pInfo->m_pAllocator->m_pLastUsedDynamicCodeHeap;
-            pInfo->m_pAllocator->m_pLastUsedDynamicCodeHeap = NULL;
-        }
-        else
-        {
-            pCodeHeap = (HeapList *)pInfo->m_pAllocator->m_pLastUsedCodeHeap;
-            pInfo->m_pAllocator->m_pLastUsedCodeHeap = NULL;
-        }
+        pCodeHeap = (HeapList *)pInfo->m_pAllocator->m_pLastUsedDynamicCodeHeap;
+        pInfo->m_pAllocator->m_pLastUsedDynamicCodeHeap = NULL;
+    }
+    else
+    {
+        pCodeHeap = (HeapList *)pInfo->m_pAllocator->m_pLastUsedCodeHeap;
+        pInfo->m_pAllocator->m_pLastUsedCodeHeap = NULL;
+    }
 
-
-        // If we will use a cached code heap for jump stubs, ensure that the code heap meets the loAddr and highAddr constraint
-        if (bForJumpStubs && pCodeHeap && !CanUseCodeHeap(pInfo, pCodeHeap))
-        {
-            pCodeHeap = NULL;
-        }
-
-        // If we don't have a cached code heap or can't use it, get a code heap
-        if (pCodeHeap == NULL)
-        {
-            pCodeHeap = GetCodeHeap(pInfo);
-            if (pCodeHeap == NULL)
-                break;
-        }
-
-#ifdef _WIN64
-        if (!bForJumpStubs)
-        {
-            //
-            // Keep a small reserve at the end of the codeheap for jump stubs. It should reduce
-            // chance that we won't be able allocate jump stub because of lack of suitable address space.
-            //
-            // It is not a perfect solution. Ideally, we would be able to either ensure that jump stub
-            // allocation won't fail or handle jump stub allocation gracefully (see DevDiv #381823 and 
-            // related bugs for details).
-            //
-            static ConfigDWORD configCodeHeapReserveForJumpStubs;
-            int percentReserveForJumpStubs = configCodeHeapReserveForJumpStubs.val(CLRConfig::INTERNAL_CodeHeapReserveForJumpStubs);
-
-            size_t reserveForJumpStubs = percentReserveForJumpStubs * (pCodeHeap->maxCodeHeapSize / 100);
-
-            size_t minReserveForJumpStubs = sizeof(CodeHeader) +
-                sizeof(JumpStubBlockHeader) + (size_t) DEFAULT_JUMPSTUBS_PER_BLOCK * BACK_TO_BACK_JUMP_ALLOCATE_SIZE +
-                CODE_SIZE_ALIGN + BYTES_PER_BUCKET;
-
-            // Reserve only if the size can fit a cluster of jump stubs
-            if (reserveForJumpStubs > minReserveForJumpStubs)
-            {
-                size_t occupiedSize = pCodeHeap->endAddress - pCodeHeap->startAddress;
-
-                if (occupiedSize + pInfo->getRequestSize() + reserveForJumpStubs > pCodeHeap->maxCodeHeapSize)
-                {
-                    pCodeHeap->SetHeapFull();
-                    continue;
-                }
-            }
-        }
-#endif
-
-        mem = (pCodeHeap->pHeap)->AllocMemForCode_NoThrow(header, blockSize, align);
-        if (mem != NULL)
-            break;
-
-        // The current heap couldn't handle our request. Mark it as full.
-        if (bForJumpStubs)
-            pCodeHeap->SetHeapFullForJumpStubs();
-        else
-            pCodeHeap->SetHeapFull();
+    // If we will use a cached code heap, ensure that the code heap meets the constraints
+    if (pCodeHeap && CanUseCodeHeap(pInfo, pCodeHeap))
+    {
+        mem = (pCodeHeap->pHeap)->AllocMemForCode_NoThrow(header, blockSize, align, pInfo->getReserveForJumpStubs());
     }
 
     if (mem == NULL)
     {
-        // Let us create a new heap.
-
-        DomainCodeHeapList *pList = GetCodeHeapList(pInfo, pInfo->m_pAllocator);
-        if (pList == NULL)
+        pList = GetCodeHeapList(pInfo, pInfo->m_pAllocator);
+        if (pList != NULL)
         {
-            // not found so need to create the first one
-            pList = CreateCodeHeapList(pInfo);
-            _ASSERTE(pList == GetCodeHeapList(pInfo, pInfo->m_pAllocator));
+            for (int i = 0; i < pList->m_CodeHeapList.Count(); i++)
+            {
+                pCodeHeap = pList->m_CodeHeapList[i];
+
+                // Validate that the code heap can be used for the current request
+                if (CanUseCodeHeap(pInfo, pCodeHeap))
+                {
+                    mem = (pCodeHeap->pHeap)->AllocMemForCode_NoThrow(header, blockSize, align, pInfo->getReserveForJumpStubs());
+                    if (mem != NULL)
+                        break;
+                }
+            }
         }
-        _ASSERTE(pList);
 
-        pCodeHeap = NewCodeHeap(pInfo, pList);
-        _ASSERTE(pCodeHeap);
-
-        mem = (pCodeHeap->pHeap)->AllocMemForCode_NoThrow(header, blockSize, align);
         if (mem == NULL)
-            ThrowOutOfMemory();
-        _ASSERTE(mem);
+        {
+            // Let us create a new heap.
+            if (pList == NULL)
+            {
+                // not found so need to create the first one
+                pList = CreateCodeHeapList(pInfo);
+                _ASSERTE(pList == GetCodeHeapList(pInfo, pInfo->m_pAllocator));
+            }
+            _ASSERTE(pList);
+
+            pCodeHeap = NewCodeHeap(pInfo, pList);
+            if (pCodeHeap == NULL)
+            {
+                _ASSERTE(!pInfo->getThrowOnOutOfMemoryWithinRange());
+                RETURN(NULL);
+            }
+
+            mem = (pCodeHeap->pHeap)->AllocMemForCode_NoThrow(header, blockSize, align, pInfo->getReserveForJumpStubs());
+            if (mem == NULL)
+                ThrowOutOfMemory();
+            _ASSERTE(mem);
+        }
     }
     
-    if (bUseCachedDynamicCodeHeap)
+    if (pInfo->IsDynamicDomain())
     {
         pInfo->m_pAllocator->m_pLastUsedDynamicCodeHeap = pCodeHeap;
     }
@@ -2495,10 +2485,8 @@ void* EEJitManager::allocCodeRaw(CodeHeapRequestInfo *pInfo,
         pInfo->m_pAllocator->m_pLastUsedCodeHeap = pCodeHeap;
     }
 
-
-    // Record the pCodeHeap value into ppCodeHeap, if a non-NULL pointer was provided
-    if (ppCodeHeap)
-        *ppCodeHeap = pCodeHeap;
+    // Record the pCodeHeap value into ppCodeHeap
+    *ppCodeHeap = pCodeHeap;
 
     _ASSERTE((TADDR)mem >= pCodeHeap->startAddress);
 
@@ -2511,7 +2499,7 @@ void* EEJitManager::allocCodeRaw(CodeHeapRequestInfo *pInfo,
     RETURN(mem);
 }
 
-CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, CorJitAllocMemFlag flag
+CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag
 #ifdef WIN64EXCEPTIONS
                                     , UINT nUnwindInfos
                                     , TADDR * pModuleBase
@@ -2565,6 +2553,7 @@ CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, CorJitAll
         requestInfo.SetDynamicDomain();
     }
 #endif
+    requestInfo.setReserveForJumpStubs(reserveForJumpStubs);
 
 #if defined(USE_INDIRECT_CODEHEADER)
     SIZE_T realHeaderSize = offsetof(RealCodeHeader, unwindInfos[0]) + (sizeof(T_RUNTIME_FUNCTION) * nUnwindInfos); 
@@ -2675,49 +2664,6 @@ EEJitManager::DomainCodeHeapList *EEJitManager::GetCodeHeapList(CodeHeapRequestI
     return pList;
 }
 
-HeapList* EEJitManager::GetCodeHeap(CodeHeapRequestInfo *pInfo)
-{
-    CONTRACT(HeapList *) {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(m_CodeHeapCritSec.OwnedByCurrentThread());
-    } CONTRACT_END;
-
-    HeapList *pResult = NULL;
-
-    _ASSERTE(pInfo->m_pAllocator != NULL);
-
-    // loop through the m_DomainCodeHeaps to find the AppDomain
-    // if not found, then create it
-    DomainCodeHeapList *pList = GetCodeHeapList(pInfo, pInfo->m_pAllocator);
-    if (pList)
-    {
-        // Set pResult to the largest non-full HeapList
-        // that also satisfies the [loAddr..hiAddr] constraint
-        for (int i=0; i < pList->m_CodeHeapList.Count(); i++)
-        {
-            HeapList *pCurrent   = pList->m_CodeHeapList[i];
-
-            // Validate that the code heap can be used for the current request
-            if(CanUseCodeHeap(pInfo, pCurrent))
-            {
-                if (pResult == NULL)
-                {
-                    // pCurrent is the first (and possibly only) heap that would satistfy
-                    pResult = pCurrent;
-                }
-                // We use the initial creation size as a discriminator (i.e largest heap)
-                else if (pResult->maxCodeHeapSize < pCurrent->maxCodeHeapSize)
-                {
-                    pResult = pCurrent;
-                }
-            }
-        }
-    }
-
-    RETURN (pResult);
-}
-
 bool EEJitManager::CanUseCodeHeap(CodeHeapRequestInfo *pInfo, HeapList *pCodeHeap)
 {
     CONTRACTL {
@@ -2730,81 +2676,80 @@ bool EEJitManager::CanUseCodeHeap(CodeHeapRequestInfo *pInfo, HeapList *pCodeHea
 
     if ((pInfo->m_loAddr == 0) && (pInfo->m_hiAddr == 0))
     {
-        if (!pCodeHeap->IsHeapFull())
+        // We have no constraint so this non empty heap will be able to satisfy our request
+        if (pInfo->IsDynamicDomain())
         {
-            // We have no constraint so this non empty heap will be able to satistfy our request
-            if (pInfo->IsDynamicDomain())
+            _ASSERTE(pCodeHeap->reserveForJumpStubs == 0);
+            retVal = true;
+        }
+        else
+        {
+            BYTE * lastAddr = (BYTE *) pCodeHeap->startAddress + pCodeHeap->maxCodeHeapSize;
+
+            BYTE * loRequestAddr  = (BYTE *) pCodeHeap->endAddress;
+            BYTE * hiRequestAddr = loRequestAddr + pInfo->getRequestSize() + BYTES_PER_BUCKET;
+            if (hiRequestAddr <= lastAddr - pCodeHeap->reserveForJumpStubs)
             {
                 retVal = true;
-            }
-            else
-            {
-                BYTE * lastAddr = (BYTE *) pCodeHeap->startAddress + pCodeHeap->maxCodeHeapSize;
-
-                BYTE * loRequestAddr  = (BYTE *) pCodeHeap->endAddress;
-                BYTE * hiRequestAddr  = loRequestAddr + pInfo->getRequestSize() + BYTES_PER_BUCKET;
-                if (hiRequestAddr <= lastAddr)
-                {
-                    retVal = true;
-                }
             }
         }
     }
     else
     {
-        if (!pCodeHeap->IsHeapFullForJumpStubs())
+        // We also check to see if an allocation in this heap would satisfy
+        // the [loAddr..hiAddr] requirement
+            
+        // Calculate the byte range that can ever be returned by
+        // an allocation in this HeapList element
+        //
+        BYTE * firstAddr      = (BYTE *) pCodeHeap->startAddress;
+        BYTE * lastAddr       = (BYTE *) pCodeHeap->startAddress + pCodeHeap->maxCodeHeapSize;
+
+        _ASSERTE(pCodeHeap->startAddress <= pCodeHeap->endAddress);
+        _ASSERTE(firstAddr <= lastAddr);
+            
+        if (pInfo->IsDynamicDomain())
         {
-            // We also check to see if an allocation in this heap would satistfy
-            // the [loAddr..hiAddr] requirement
-            
-            // Calculate the byte range that can ever be returned by
-            // an allocation in this HeapList element
+            _ASSERTE(pCodeHeap->reserveForJumpStubs == 0);
+
+            // We check to see if every allocation in this heap
+            // will satisfy the [loAddr..hiAddr] requirement.
             //
-            BYTE * firstAddr      = (BYTE *) pCodeHeap->startAddress;
-            BYTE * lastAddr       = (BYTE *) pCodeHeap->startAddress + pCodeHeap->maxCodeHeapSize;
-
-            _ASSERTE(pCodeHeap->startAddress <= pCodeHeap->endAddress);
-            _ASSERTE(firstAddr <= lastAddr);
+            // Dynamic domains use a free list allocator, 
+            // thus we can receive any address in the range
+            // when calling AllocMemory with a DynamicDomain
             
-            if (pInfo->IsDynamicDomain())
+            // [firstaddr .. lastAddr] must be entirely within
+            // [pInfo->m_loAddr .. pInfo->m_hiAddr]
+            //
+            if ((pInfo->m_loAddr <= firstAddr)   &&
+                (lastAddr        <= pInfo->m_hiAddr))
             {
-                // We check to see if every allocation in this heap
-                // will satistfy the [loAddr..hiAddr] requirement.
-                //
-                // Dynamic domains use a free list allocator, 
-                // thus we can receive any address in the range
-                // when calling AllocMemory with a DynamicDomain
-            
-                // [firstaddr .. lastAddr] must be entirely within
-                // [pInfo->m_loAddr .. pInfo->m_hiAddr]
-                //
-                if ((pInfo->m_loAddr <= firstAddr)   &&
-                    (lastAddr        <= pInfo->m_hiAddr))
-                {
-                    // This heap will always satisfy our constraint
-                    retVal = true;
-                }
+                // This heap will always satisfy our constraint
+                retVal = true;
             }
-            else // non-DynamicDomain
-            {
-                // Calculate the byte range that would be allocated for the
-                // next allocation request into [loRequestAddr..hiRequestAddr]
-                //
-                BYTE * loRequestAddr  = (BYTE *) pCodeHeap->endAddress;
-                BYTE * hiRequestAddr  = loRequestAddr + pInfo->getRequestSize() + BYTES_PER_BUCKET;
-                _ASSERTE(loRequestAddr <= hiRequestAddr);
+        }
+        else // non-DynamicDomain
+        {
+            // Calculate the byte range that would be allocated for the
+            // next allocation request into [loRequestAddr..hiRequestAddr]
+            //
+            BYTE * loRequestAddr  = (BYTE *) pCodeHeap->endAddress;
+            BYTE * hiRequestAddr  = loRequestAddr + pInfo->getRequestSize() + BYTES_PER_BUCKET;
+            _ASSERTE(loRequestAddr <= hiRequestAddr);
 
-                // loRequestAddr and hiRequestAddr must be entirely within
-                // [pInfo->m_loAddr .. pInfo->m_hiAddr]
-                // additionally hiRequestAddr must also be less than
-                // or equal to lastAddr
-                //
-                if ((pInfo->m_loAddr <= loRequestAddr)   &&
-                    (hiRequestAddr   <= pInfo->m_hiAddr) &&
-                    (hiRequestAddr   <= lastAddr))
+            // loRequestAddr and hiRequestAddr must be entirely within
+            // [pInfo->m_loAddr .. pInfo->m_hiAddr]
+            //
+            if ((pInfo->m_loAddr <= loRequestAddr)   &&
+                (hiRequestAddr   <= pInfo->m_hiAddr))
+            {
+                // Additionally hiRequestAddr must also be less than or equal to lastAddr. 
+                // If throwOnOutOfMemoryWithinRange is not set, conserve reserveForJumpStubs until when it is really needed.
+                if (hiRequestAddr <= lastAddr - (pInfo->getThrowOnOutOfMemoryWithinRange() ? 0 : pCodeHeap->reserveForJumpStubs))
                 {
-                   // This heap will be able to satistfy our constraint
-                   retVal = true;
+                    // This heap will be able to satisfy our constraint
+                    retVal = true;
                 }
             }
        }
@@ -2927,23 +2872,24 @@ EE_ILEXCEPTION* EEJitManager::allocEHInfo(CodeHeader* pCodeHeader, unsigned numC
 
 JumpStubBlockHeader *  EEJitManager::allocJumpStubBlock(MethodDesc* pMD, DWORD numJumps, 
                                                         BYTE * loAddr, BYTE * hiAddr,
-                                                        LoaderAllocator *pLoaderAllocator)
+                                                        LoaderAllocator *pLoaderAllocator,
+                                                        bool throwOnOutOfMemoryWithinRange)
 {
     CONTRACT(JumpStubBlockHeader *) {
         THROWS;
         GC_NOTRIGGER;
         PRECONDITION(loAddr < hiAddr);
         PRECONDITION(pLoaderAllocator != NULL);
-        POSTCONDITION(CheckPointer(RETVAL));
+        POSTCONDITION(CheckPointer(RETVAL) || !throwOnOutOfMemoryWithinRange);
     } CONTRACT_END;
 
     _ASSERTE((sizeof(JumpStubBlockHeader) % CODE_SIZE_ALIGN) == 0);
-    _ASSERTE(numJumps < MAX_M_ALLOCATED);
 
     size_t blockSize = sizeof(JumpStubBlockHeader) + (size_t) numJumps * BACK_TO_BACK_JUMP_ALLOCATE_SIZE;
 
     HeapList *pCodeHeap = NULL;
     CodeHeapRequestInfo    requestInfo(pMD, pLoaderAllocator, loAddr, hiAddr);
+    requestInfo.setThrowOnOutOfMemoryWithinRange(throwOnOutOfMemoryWithinRange);
 
     TADDR                  mem;
     JumpStubBlockHeader *  pBlock;
@@ -2953,6 +2899,11 @@ JumpStubBlockHeader *  EEJitManager::allocJumpStubBlock(MethodDesc* pMD, DWORD n
         CrstHolder ch(&m_CodeHeapCritSec);
 
         mem = (TADDR) allocCodeRaw(&requestInfo, sizeof(TADDR), blockSize, CODE_SIZE_ALIGN, &pCodeHeap);
+        if (mem == NULL)
+        {
+            _ASSERTE(!throwOnOutOfMemoryWithinRange);
+            RETURN(NULL);
+        }
 
         // CodeHeader comes immediately before the block
         CodeHeader * pCodeHdr = (CodeHeader *) (mem - sizeof(CodeHeader));
@@ -2993,6 +2944,12 @@ void * EEJitManager::allocCodeFragmentBlock(size_t blockSize, unsigned alignment
     HeapList *pCodeHeap = NULL;
     CodeHeapRequestInfo    requestInfo(NULL, pLoaderAllocator, NULL, NULL);
 
+#ifdef _TARGET_AMD64_
+    // CodeFragments are pretty much always Precodes that may need to be patched with jump stubs at some point in future
+    // We will assume the worst case that every FixupPrecode will need to be patched and reserve the jump stubs accordingly
+    requestInfo.setReserveForJumpStubs((blockSize / 8) * JUMP_ALLOCATE_SIZE);
+#endif
+
     TADDR                  mem;
 
     // Scope the lock
@@ -3006,6 +2963,9 @@ void * EEJitManager::allocCodeFragmentBlock(size_t blockSize, unsigned alignment
         pCodeHdr->SetStubCodeBlockKind(kind);
 
         NibbleMapSet(pCodeHeap, (TADDR)mem, TRUE);
+
+        // Record the jump stub reservation
+        pCodeHeap->reserveForJumpStubs += requestInfo.getReserveForJumpStubs();
     }
 
     RETURN((void *)mem);
@@ -3217,7 +3177,6 @@ void EEJitManager::RemoveJitData (CodeHeader * pCHdr, size_t GCinfo_len, size_t 
         }
 
         _ASSERTE(pHp && pHp->pHdrMap);
-        _ASSERTE(pHp && pHp->cBlocks);
 
         // Better to just return than AV?
         if (pHp == NULL)
@@ -3864,8 +3823,6 @@ void EEJitManager::NibbleMapSet(HeapList * pHp, TADDR pCode, BOOL bSet)
 
     // It is important for this update to be atomic. Synchronization would be required with FindMethodCode otherwise.
     *(pMap+index) = ((*(pMap+index))&mask)|value;
-
-    pHp->cBlocks += (bSet ? 1 : -1);
 }
 #endif // !DACCESS_COMPILE
 
@@ -4949,7 +4906,8 @@ void ExecutionManager::Unload(LoaderAllocator *pLoaderAllocator)
 
 PCODE ExecutionManager::jumpStub(MethodDesc* pMD, PCODE target,
                                  BYTE * loAddr,   BYTE * hiAddr,
-                                 LoaderAllocator *pLoaderAllocator)
+                                 LoaderAllocator *pLoaderAllocator,
+                                 bool throwOnOutOfMemoryWithinRange)
 {
     CONTRACT(PCODE) {
         THROWS;
@@ -4957,7 +4915,7 @@ PCODE ExecutionManager::jumpStub(MethodDesc* pMD, PCODE target,
         MODE_ANY;
         PRECONDITION(pLoaderAllocator != NULL || pMD != NULL);
         PRECONDITION(loAddr < hiAddr);
-        POSTCONDITION(RETVAL != NULL);
+        POSTCONDITION((RETVAL != NULL) || !throwOnOutOfMemoryWithinRange);
     } CONTRACT_END;
 
     PCODE jumpStub = NULL;
@@ -5021,7 +4979,12 @@ PCODE ExecutionManager::jumpStub(MethodDesc* pMD, PCODE target,
 
     // If we get here we need to create a new jump stub
     // add or change the jump stub table to point at the new one
-    jumpStub = getNextJumpStub(pMD, target, loAddr, hiAddr, pLoaderAllocator);    // this statement can throw
+    jumpStub = getNextJumpStub(pMD, target, loAddr, hiAddr, pLoaderAllocator, throwOnOutOfMemoryWithinRange); // this statement can throw
+    if (jumpStub == NULL)
+    {
+        _ASSERTE(!throwOnOutOfMemoryWithinRange);
+        RETURN(NULL);
+    }
 
     _ASSERTE(((TADDR)loAddr <= jumpStub) && (jumpStub <= (TADDR)hiAddr));
 
@@ -5032,14 +4995,16 @@ PCODE ExecutionManager::jumpStub(MethodDesc* pMD, PCODE target,
 }
 
 PCODE ExecutionManager::getNextJumpStub(MethodDesc* pMD, PCODE target,
-                                        BYTE * loAddr, BYTE * hiAddr, LoaderAllocator *pLoaderAllocator)
+                                        BYTE * loAddr, BYTE * hiAddr, 
+                                        LoaderAllocator *pLoaderAllocator, 
+                                        bool throwOnOutOfMemoryWithinRange)
 {
     CONTRACT(PCODE) {
         THROWS;
         GC_NOTRIGGER;
         PRECONDITION(pLoaderAllocator != NULL);
         PRECONDITION(m_JumpStubCrst.OwnedByCurrentThread());
-        POSTCONDITION(RETVAL != NULL);
+        POSTCONDITION((RETVAL != NULL) || !throwOnOutOfMemoryWithinRange);
     } CONTRACT_END;
 
     DWORD            numJumpStubs   = DEFAULT_JUMPSTUBS_PER_BLOCK;  // a block of 32 JumpStubs
@@ -5112,7 +5077,12 @@ PCODE ExecutionManager::getNextJumpStub(MethodDesc* pMD, PCODE target,
     //
     // note that this can throw an OOM exception
 
-    curBlock = ExecutionManager::GetEEJitManager()->allocJumpStubBlock(pMD, numJumpStubs, loAddr, hiAddr, pLoaderAllocator);
+    curBlock = ExecutionManager::GetEEJitManager()->allocJumpStubBlock(pMD, numJumpStubs, loAddr, hiAddr, pLoaderAllocator, throwOnOutOfMemoryWithinRange);
+    if (curBlock == NULL)
+    {
+        _ASSERTE(!throwOnOutOfMemoryWithinRange);
+        RETURN(NULL);
+    }
 
     jumpStub = (BYTE *) curBlock + sizeof(JumpStubBlockHeader) + ((size_t) curBlock->m_used * BACK_TO_BACK_JUMP_ALLOCATE_SIZE);
 

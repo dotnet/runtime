@@ -247,7 +247,7 @@ private:
     PTR_BYTE m_pBaseAddr;
     PTR_BYTE m_pLastAvailableCommittedAddr;
     size_t m_TotalBytesAvailable;
-    size_t m_ReservedData;
+    size_t m_ApproximateLargestBlock;
     // Heap ref count
     DWORD m_AllocationCount;
 
@@ -260,10 +260,6 @@ private:
             TrackAllocation *pNext;
         };
         size_t size;
-
-        // the location of this TrackAllocation record will be stored right before the start of the allocated memory
-        // if there is padding between them it will be stored in that padding, otherwise it will be stored in this pad field
-        void *pad;
     };
     TrackAllocation *m_pFreeList;
 
@@ -275,18 +271,16 @@ public:
     static HeapList* CreateCodeHeap(CodeHeapRequestInfo *pInfo, EEJitManager *pJitManager);
 
 private:
-    HostCodeHeap(size_t ReserveBlockSize, EEJitManager *pJitManager, CodeHeapRequestInfo *pInfo);
-    BYTE* InitCodeHeapPrivateData(size_t ReserveBlockSize, size_t otherData, size_t nibbleMapSize);
-    void* AllocFromFreeList(size_t size, DWORD alignment);
+    HostCodeHeap(EEJitManager *pJitManager);
+    HeapList* InitializeHeapList(CodeHeapRequestInfo *pInfo);
+    TrackAllocation* AllocFromFreeList(size_t header, size_t size, DWORD alignment, size_t reserveForJumpStubs);
     void AddToFreeList(TrackAllocation *pBlockToInsert);
-    static size_t GetPadding(TrackAllocation *pCurrent, size_t size, DWORD alignement);
 
-    void* AllocMemory(size_t size, DWORD alignment);
-    void* AllocMemory_NoThrow(size_t size, DWORD alignment);
+    TrackAllocation* AllocMemory_NoThrow(size_t header, size_t size, DWORD alignment, size_t reserveForJumpStubs);
 
 public:
     // Space for header is reserved immediately before. It is not included in size.
-    virtual void* AllocMemForCode_NoThrow(size_t header, size_t size, DWORD alignment) DAC_EMPTY_RET(NULL);
+    virtual void* AllocMemForCode_NoThrow(size_t header, size_t size, DWORD alignment, size_t reserveForJumpStubs) DAC_EMPTY_RET(NULL);
 
     virtual ~HostCodeHeap() DAC_EMPTY();
 
