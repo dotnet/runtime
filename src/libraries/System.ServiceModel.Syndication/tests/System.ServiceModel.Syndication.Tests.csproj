@@ -4,22 +4,18 @@
   <PropertyGroup>
     <ProjectGuid>{A622B2C0-DD74-4218-9CF0-F9B2E52F4E91}</ProjectGuid>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="$(MsBuildThisFileDirectory)**\*.cs" Exclude="$(MsBuildThisFileDirectory)async\**\*.cs" />
+    <Compile Include="$(MsBuildThisFileDirectory)**\*.cs" Exclude="$(MsBuildThisFileDirectory)netcoreapp\**\*.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="$(MsBuildThisFileDirectory)netcoreapp\**\*.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="$(MsBuildThisFileDirectory)\TestFeeds\*.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MsBuildThisFileDirectory)\TestFeeds\AtomFeeds\*.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MsBuildThisFileDirectory)\TestFeeds\RssFeeds\*.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MsBuildThisFileDirectory)\TestFeeds\FailureFeeds\*.xml">
+    <Content Include="$(MsBuildThisFileDirectory)\TestFeeds\**\*.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
