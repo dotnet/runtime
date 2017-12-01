@@ -1360,11 +1360,29 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_fRel32Overflow;
     }
+
+    size_t GetReserveForJumpStubs()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_reserveForJumpStubs;
+    }
+
+    void SetReserveForJumpStubs(size_t value)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_reserveForJumpStubs = value;
+    }
 #else
     BOOL JitAgain()
     {
         LIMITED_METHOD_CONTRACT;
         return FALSE;
+    }
+
+    size_t GetReserveForJumpStubs()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return 0;
     }
 #endif
 
@@ -1385,6 +1403,7 @@ public:
 #ifdef _TARGET_AMD64_
           m_fAllowRel32(FALSE),
           m_fRel32Overflow(FALSE),
+          m_reserveForJumpStubs(0),
 #endif
           m_GCinfo_len(0),
           m_EHinfo_len(0),
@@ -1469,6 +1488,7 @@ protected :
     BOOL                    m_fAllowRel32;      // Use 32-bit PC relative address modes
     BOOL                    m_fRel32Overflow;   // Overflow while trying to use encode 32-bit PC relative address. 
                                                 // The code will need to be regenerated with m_fRel32Allowed == FALSE.
+    size_t                  m_reserveForJumpStubs; // Space to reserve for jump stubs when allocating code
 #endif
 
 #if defined(_DEBUG)
