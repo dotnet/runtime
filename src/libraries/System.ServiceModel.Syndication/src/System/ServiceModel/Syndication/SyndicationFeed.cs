@@ -12,6 +12,7 @@ using System.Globalization;
 using System.Xml.Serialization;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Linq;
 
 namespace System.ServiceModel.Syndication
 {
@@ -33,6 +34,9 @@ namespace System.ServiceModel.Syndication
         private DateTimeOffset _lastUpdatedTime;
         private Collection<SyndicationLink> _links;
         private TextSyndicationContent _title;
+
+        // optional RSS tags
+        private SyndicationLink _documentation;
 
         public SyndicationFeed()
             : this((IEnumerable<SyndicationItem>)null)
@@ -265,6 +269,44 @@ namespace System.ServiceModel.Syndication
             set { _title = value; }
         }
 
+        internal SyndicationLink GetDocumentation()
+        {
+            return _documentation;
+        }
+
+        public SyndicationLink Documentation
+        {
+            get
+            {
+                if (_documentation == null)
+                {
+                    _documentation = TryReadDocumentationFromExtension(ElementExtensions);
+                }
+
+                return _documentation;
+            }
+            set
+            {
+                _documentation = value;
+            }
+        }
+
+        private SyndicationLink TryReadDocumentationFromExtension(SyndicationElementExtensionCollection elementExtensions)
+        {
+            SyndicationElementExtension documentationElement = elementExtensions
+                                      .Where((e) => e.OuterName == Rss20Constants.DocumentationTag && e.OuterNamespace == Rss20Constants.Rss20Namespace)
+                                      .FirstOrDefault();
+
+            if (documentationElement == null)
+                return null;
+
+            using (XmlReader reader = documentationElement.GetReader())
+            {
+                SyndicationLink documentation = Rss20FeedFormatter.ReadAlternateLink(reader, BaseUri, SyndicationFeedFormatter.DefaultUriParser, true);
+                return documentation;
+            }
+        }
+
         public static SyndicationFeed Load(XmlReader reader)
         {
             return Load<SyndicationFeed>(reader);
@@ -359,7 +401,26 @@ namespace System.ServiceModel.Syndication
 
         protected internal virtual void WriteElementExtensions(XmlWriter writer, string version)
         {
-            _extensions.WriteElementExtensions(writer);
+            _extensions.WriteElementExtensions(writer, ShouldSkipWritingElements);
+        }
+
+        private bool ShouldSkipWritingElements(string localName, string ns)
+        {
+            switch (localName)
+            {
+                case Rss20Constants.DocumentationTag:
+                    if (ns == Rss20Constants.Rss20Namespace && GetDocumentation() != null)
+                    {
+                        return true;
+                    }
+
+                    break;
+
+                default:
+                    break;
+            }
+
+            return false;
         }
 
         internal void LoadElementExtensions(XmlReader readerOverUnparsedExtensions, int maxExtensionSize)
