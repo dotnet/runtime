@@ -493,19 +493,30 @@ GenTreePtr Compiler::fgMorphCast(GenTreePtr tree)
                 if (shiftAmount->IsIntegralConst())
                 {
                     const ssize_t shiftAmountValue = shiftAmount->AsIntCon()->IconValue();
-                    assert(shiftAmountValue >= 0);
 
-                    if (shiftAmountValue >= 32)
+                    if (shiftAmountValue >= 64)
+                    {
+                        // Shift amount is large enough that result is undefined.
+                        // Don't try and optimize.
+                        assert(!canPushCast);
+                    }
+                    else if (shiftAmountValue >= 32)
                     {
                         // Result of the shift is zero.
                         DEBUG_DESTROY_NODE(tree);
                         GenTree* zero = gtNewZeroConNode(TYP_INT);
                         return fgMorphTree(zero);
                     }
-                    else
+                    else if (shiftAmountValue >= 0)
                     {
                         // Shift amount is small enough that we can push the cast through.
                         canPushCast = true;
+                    }
+                    else
+                    {
+                        // Shift amount is negative and so result is undefined.
+                        // Don't try and optimize.
+                        assert(!canPushCast);
                     }
                 }
                 else
