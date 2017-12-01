@@ -20,10 +20,9 @@ Make sure to download the .NET Core 2.1 SDK zip archive (https://github.com/dotn
 
 For the sake of this tutorial we won't modify the `PATH` variable and instead always explicitly call the `dotnet.exe` from the downloaded SDK folder.
 
-## Shared framework
 The shared framework is a set of assemblies that are packed into a `netcoreapp` Nuget package which is used when you set your `TargetFramework` to `netcoreappX.X`. You can either decide to use your local self-compiled shared framework package or use the one which is bundled with the .NET Core 2.1 SDK.
 
-### Alternative 1 - Using the shared framework from the .NET Core 2.1 SDK
+## Alternative 1 - Using the shared framework from the .NET Core 2.1 SDK
 Follow the instructions described here https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/dogfooding.md#advanced-scenario---using-a-nightly-build-of-microsoftnetcoreapp and skip the last part which calls the `dotnet.exe` to run the application.
 
 Add a benchmark class, configure it either with a manual configuration or by attributing it and pass the class type to the BenchmarkRunner:
@@ -45,7 +44,7 @@ public class Program
 }
 ```
 
-### Alternative 2 - Using your self-compiled shared framework
+## Alternative 2 - Using your self-compiled shared framework
 Follow the instructions described here https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/dogfooding.md#more-advanced-scenario---using-your-local-corefx-build and skip the last part which calls the `dotnet.exe` to run the application.
 Make sure to build your local corefx repository in RELEASE mode `.\build -release`! You currently need to have a self-contained application to inject your local shared framework package.
 
@@ -67,7 +66,7 @@ public class Program
 }
 ```
 
-### Alternative 3 - Benchmarking with multiple or custom .NET Core 2.1 SDKs
+## Alternative 3 - Benchmarking with multiple or custom .NET Core 2.1 SDKs
 Whenever you want to benchmark an application with one or multiple different .NET Core 2.1 run time framework versions simultaneously, you want to create a manual BenchmarkDotNet configuration file. 
 
 Follow the instructions described here https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/dogfooding.md#advanced-scenario---using-a-nightly-build-of-microsoftnetcoreapp and skip the last part which calls the `dotnet.exe` to run the application.
