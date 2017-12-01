@@ -778,6 +778,9 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_defaults.threadpool_perform_wait_callback_method = mono_class_get_method_from_name (
 		mono_defaults.threadpool_wait_callback_class, "PerformWaitCallback", 0);
 
+	mono_defaults.console_class = mono_class_try_load_from_name (
+		mono_defaults.corlib, "System", "Console");
+
 	domain->friendly_name = g_path_get_basename (filename);
 
 	MONO_PROFILER_RAISE (domain_name, (domain, domain->friendly_name));
