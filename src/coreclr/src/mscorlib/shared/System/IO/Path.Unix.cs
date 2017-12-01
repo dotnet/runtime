@@ -14,8 +14,6 @@ namespace System.IO
 
         public static char[] GetInvalidPathChars() => new char[] { '\0' };
 
-        internal static int MaxPath => Interop.Sys.MaxPath;
-
         // Expands the given path to a fully qualified path. 
         public static string GetFullPath(string path)
         {
