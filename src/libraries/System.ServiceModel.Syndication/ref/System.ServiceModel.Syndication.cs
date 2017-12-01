@@ -391,9 +391,7 @@ namespace System.ServiceModel.Syndication
     {
         protected SyndicationFeedFormatter() { }
         protected SyndicationFeedFormatter(System.ServiceModel.Syndication.SyndicationFeed feedToWrite) { }
-        public System.Func<string, string, string, System.DateTimeOffset> DateTimeParser { get { throw null; } set { } }
         public System.ServiceModel.Syndication.SyndicationFeed Feed { get { throw null; } }
-        public System.Func<string, System.UriKind, string, string, System.Uri> UriParser { get { throw null; } set { } }
         public abstract string Version { get; }
         public abstract bool CanRead(System.Xml.XmlReader reader);
         protected internal static System.ServiceModel.Syndication.SyndicationCategory CreateCategory(System.ServiceModel.Syndication.SyndicationFeed feed) { throw null; }
