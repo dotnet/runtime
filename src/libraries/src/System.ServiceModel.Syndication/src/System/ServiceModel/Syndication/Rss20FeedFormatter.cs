@@ -1026,6 +1026,13 @@ namespace System.ServiceModel.Syndication
                 writer.WriteEndElement(); // image
             }
 
+            // Optional spec items
+            // docs
+            if (Feed.GetDocumentation() != null)
+            {
+                writer.WriteElementString(Rss20Constants.DocumentationTag, Feed.GetDocumentation().Uri.ToString());
+            }
+
             if (_serializeExtensionsAsAtom)
             {
                 _atomSerializer.WriteElement(writer, Atom10Constants.IdTag, this.Feed.Id);
