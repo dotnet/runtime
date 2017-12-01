@@ -102,14 +102,29 @@ public class MainConfig : ManualConfig
 ```
 
 In your application entry point pass the configuration to the BenchmarkRunner:
-`BenchmarkRunner.Run<T>(new MainConfig()); // <-- Configuration class`
+```csharp
+public class Benchmark
+{
+     // Benchmark code ...
+}
+
+public class Program
+{
+    public static void Main()
+    {
+         BenchmarkRunner.Run<Benchmark>(new MainConfig());
+    }
+}
+```
 
 ## Running the benchmark
 
 To get valid results make sure to run your project with RELEASE configuration:
 
-> cd "path/to/your/benchmark/project"
-> "C:\dotnet-nightly\dotnet.exe" run -c Release
+```
+cd "path/to/your/benchmark/project"
+"C:\dotnet-nightly\dotnet.exe" run -c Release
+```
 
 # Reporting results
 
