@@ -206,6 +206,11 @@ extern "C" int32_t SystemNative_ForkAndExecProcess(const char* filename,
     // where the parent process uses members of Process, like ProcessName, when the Process
     // is still the clone of this one. This is a best-effort attempt, so ignore any errors.
     // If the child fails to exec we use the pipe to pass the errno to the parent process.
+    // NOTE: It's tempting to use SystemNative_Pipe here, as that would simulate pipe2 even
+    // on platforms that don't have it.  But it's potentially problematic, in that if another
+    // process is launched between the pipe creation and the fcntl call to set CLOEXEC on it,
+    // that file descriptor will be inherited into the child process, which will in turn cause
+    // the loop below that waits for that pipe to be closed to loop indefinitely.
 #if HAVE_PIPE2
     pipe2(waitForChildToExecPipe, O_CLOEXEC);
 #endif
