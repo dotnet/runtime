@@ -134,5 +134,32 @@ namespace System.ServiceModel.Syndication.Tests
             Assert.Equal(new Uri("http://value-EntryLinkHref-kind-relativeorabsolute-localName-link-ns-http//www.w3.org/2005/Atom-end"), feed.Items.First().Links.First().Uri);
             Assert.Equal(new Uri("http://value-EntryContentSrc-kind-relativeorabsolute-localName-content-ns-http://www.w3.org/2005/Atom-end"), ((UrlSyndicationContent)feed.Items.First().Content).Url);
         }
+        
+        [Fact]
+        public static void SyndicationFeed_RSS_Optional_Documentation()
+        {
+            using (XmlReader reader = XmlReader.Create(@"rssSpecExample.xml"))
+            {
+                SyndicationFeed rss = SyndicationFeed.Load(reader);
+                Assert.NotNull(rss.Documentation);
+                Assert.True(rss.Documentation.GetAbsoluteUri().ToString() == "http://contoso.com/rss");
+            }
+        }
+
+        [Fact]
+        public static void SyndicationFeed_Load_Write_RSS_Documentation()
+        {
+            List<AllowableDifference> allowableDifferences = GetRssFeedPositiveTestAllowableDifferences();
+            ReadWriteSyndicationFeed(
+                file: "rssOptionalElements.xml",
+                feedFormatter: (feedObject) => new Rss20FeedFormatter(feedObject),
+                allowableDifferences: allowableDifferences,
+                verifySyndicationFeedRead: (feed) =>
+                {
+                    Assert.NotNull(feed);
+                    Assert.NotNull(feed.Documentation);
+                    Assert.True(feed.Documentation.GetAbsoluteUri().ToString() == "http://contoso.com/rss");
+                });
+        }
     }
 }

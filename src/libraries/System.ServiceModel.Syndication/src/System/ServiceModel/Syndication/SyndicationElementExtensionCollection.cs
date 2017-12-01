@@ -133,7 +133,7 @@ namespace System.ServiceModel.Syndication
             return ReadExtensions<TExtension>(extensionName, extensionNamespace, null, serializer);
         }
 
-        internal void WriteTo(XmlWriter writer)
+        internal void WriteTo(XmlWriter writer, Func<string, string, bool> shouldSkipElement)
         {
             if (_buffer != null)
             {
@@ -142,6 +142,12 @@ namespace System.ServiceModel.Syndication
                     reader.ReadStartElement();
                     while (reader.IsStartElement())
                     {
+                        if (shouldSkipElement != null && shouldSkipElement(reader.LocalName, reader.NamespaceURI))
+                        {
+                            reader.Skip();
+                            continue;
+                        }
+
                         writer.WriteNode(reader, false);
                     }
                 }

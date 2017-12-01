@@ -117,7 +117,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        internal void WriteElementExtensions(XmlWriter writer)
+        internal void WriteElementExtensions(XmlWriter writer, Func<string, string, bool> shouldSkipElement = null)
         {
             if (writer == null)
             {
@@ -125,7 +125,7 @@ namespace System.ServiceModel.Syndication
             }
             if (_elementExtensions != null)
             {
-                _elementExtensions.WriteTo(writer);
+                _elementExtensions.WriteTo(writer, shouldSkipElement);
             }
         }
 

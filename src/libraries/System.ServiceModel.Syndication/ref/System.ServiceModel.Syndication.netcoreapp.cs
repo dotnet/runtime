@@ -20,6 +20,10 @@ namespace System.ServiceModel.Syndication
         public System.UriKind UriKind { get; }
         public string UriString { get; }
     }
+    public partial class SyndicationFeed
+    {
+        public SyndicationLink Documentation { get{ throw null; } set{ } }
+    }
     public abstract partial class SyndicationFeedFormatter
     {
         public System.ServiceModel.Syndication.TryParseDateTimeCallback DateTimeParser { get; set; }
