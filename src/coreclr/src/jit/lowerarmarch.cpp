@@ -362,7 +362,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             // we should unroll the loop to improve CQ.
             // For reference see the code in lowerxarch.cpp.
 
-            if ((size != 0) && (size <= INITBLK_UNROLL_LIMIT))
+            if ((size != 0) && (size <= CPBLK_UNROLL_LIMIT))
             {
                 blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
             }
