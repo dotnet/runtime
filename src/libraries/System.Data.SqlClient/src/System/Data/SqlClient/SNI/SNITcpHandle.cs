@@ -374,8 +374,6 @@ namespace System.Data.SqlClient.SNI
         public override void SetBufferSize(int bufferSize)
         {
             _bufferSize = bufferSize;
-            _socket.SendBufferSize = bufferSize;
-            _socket.ReceiveBufferSize = bufferSize;
         }
 
         /// <summary>
