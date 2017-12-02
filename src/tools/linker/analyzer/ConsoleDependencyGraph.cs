@@ -15,7 +15,7 @@ namespace LinkerAnalyzer
 {
 	public class ConsoleDependencyGraph : DependencyGraph
 	{
-		public bool Tree = false;
+		public bool Tree;
 		public bool FlatDeps;
 
 		public void ShowDependencies (string raw, List<VertexData> verticesList, string searchString)
@@ -48,14 +48,23 @@ namespace LinkerAnalyzer
 			Console.WriteLine ();
 
 			foreach (var d in flatDeps) {
+				var dSize = SpaceAnalyzer == null ? 0 : SpaceAnalyzer.GetSize (d.Item1);
 				if (first) {
-					Console.WriteLine ($"Distance | {d.Item1.value} [total deps: {flatDeps.Count}]");
+					var sizeStr = dSize > 0 ? $" [size: {dSize}]" : "";
+					Console.WriteLine ($"Distance | {d.Item1.value} [total deps: {flatDeps.Count}]{sizeStr}");
 					Line ();
 					first = false;
 					continue;
 				}
-				Console.WriteLine ($"{string.Format ("{0,8}", d.Item2)} | {d.Item1.value}");
+				var sizeStr2 = dSize > 0 ? $" [size: {dSize}]" : "";
+				Console.WriteLine ($"{string.Format ("{0,8}", d.Item2)} | {d.Item1.value}{d.Item1.DepsCount}{sizeStr2}");
 			}
+		}
+
+		string SizeString (VertexData vertex)
+		{
+			return SpaceAnalyzer == null ?
+				"" : string.Format (" size: {0}", SpaceAnalyzer.GetSize (vertex));
 		}
 
 		public void ShowDependencies (VertexData vertex)
@@ -73,7 +82,7 @@ namespace LinkerAnalyzer
 				int i = 0;
 				foreach (int index in vertex.parentIndexes) {
 					Console.WriteLine ("Dependency #{0}", ++i);
-					Console.WriteLine ("\t{0}", vertex.value);
+					Console.WriteLine ($"\t{vertex.value}{SizeString (vertex)}");
 					var childVertex = Vertex (index);
 					Console.WriteLine ("\t| {0}{1}", childVertex.value, childVertex.DepsCount);
 					while (childVertex.parentIndexes != null) {
@@ -166,7 +175,7 @@ namespace LinkerAnalyzer
 			Console.WriteLine ();
 		}
 
-		void Header (string header, params object[] values)
+		static public void Header (string header, params object[] values)
 		{
 			string formatted = string.Format (header, values);
 			Console.WriteLine ();
