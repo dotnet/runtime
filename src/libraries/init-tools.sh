@@ -10,6 +10,7 @@ if [ -z "$__BUILDTOOLS_SOURCE" ]; then __BUILDTOOLS_SOURCE=https://dotnet.myget.
 export __BUILDTOOLS_USE_CSPROJ=true
 __BUILD_TOOLS_PACKAGE_VERSION=$(cat $__scriptpath/BuildToolsVersion.txt)
 __DOTNET_TOOLS_VERSION=$(cat $__scriptpath/DotnetCLIVersion.txt)
+__ILASM_VERSION=$(cat $__scriptpath/tools-local/ILAsmVersion.txt)
 __BUILD_TOOLS_PATH=$__PACKAGES_DIR/microsoft.dotnet.buildtools/$__BUILD_TOOLS_PACKAGE_VERSION/lib
 __INIT_TOOLS_RESTORE_PROJECT=$__scriptpath/init-tools.msbuild
 __BUILD_TOOLS_SEMAPHORE=$__TOOLRUNTIME_DIR/$__BUILD_TOOLS_PACKAGE_VERSION/init-tools.complete
@@ -47,7 +48,7 @@ display_error_message()
 execute_with_retry() {
     local count=0
     local retries=${retries:-5}
-    local waitFactor=${waitFactor:-6} 
+    local waitFactor=${waitFactor:-6}
     until "$@"; do
         local exit=$?
         count=$(( $count + 1 ))
@@ -55,7 +56,7 @@ execute_with_retry() {
             local wait=$(( waitFactor ** (( count - 1 )) ))
             echo "Retry $count/$retries exited $exit, retrying in $wait seconds..."
             sleep $wait
-        else    
+        else
             say_err "Retry $count/$retries exited $exit, no more retries left."
             return $exit
         fi
@@ -146,6 +147,15 @@ if [ ! -e $__BUILD_TOOLS_PATH ]; then
         display_error_message
     fi
 fi
+
+if [ -z "$__ILASM_RID" ]; then
+    __ILASM_RID=$__PKG_RID-$__PKG_ARCH
+fi
+
+echo "Using RID $__ILASM_RID for BuildTools native tools"
+
+export ILASMCOMPILER_VERSION=$__ILASM_VERSION
+export NATIVE_TOOLS_RID=$__ILASM_RID
 
 echo "Initializing BuildTools..."
 echo "Running: $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR" >> $__init_tools_log
