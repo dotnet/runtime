@@ -816,6 +816,15 @@ namespace System.Net.Sockets
             return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
+        public static unsafe SocketError GetAtOutOfBandMark(SafeCloseSocket handle, out int atOutOfBandMark)
+        {
+            int value = 0;
+            Interop.Error err = Interop.Sys.GetAtOutOfBandMark(handle, &value);
+            atOutOfBandMark = value;
+
+            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
+        }
+
         public static unsafe SocketError GetPeerName(SafeCloseSocket handle, byte[] buffer, ref int nameLen)
         {
             Interop.Error err;
@@ -1029,8 +1038,45 @@ namespace System.Net.Sockets
         }
 
         public static SocketError WindowsIoctl(SafeCloseSocket handle, int ioControlCode, byte[] optionInValue, byte[] optionOutValue, out int optionLength)
-        {            
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_IOControl);
+        {
+            // Three codes are called out in the Winsock IOCTLs documentation as "The following Unix IOCTL codes (commands) are supported." They are
+            // also the three codes available for use with ioctlsocket on Windows. Developers should be discouraged from using Socket.IOControl in
+            // cross -platform applications, as it accepts Windows-specific values (the value of FIONREAD is different on different platforms), but
+            // we make a best-effort attempt to at least keep these codes behaving as on Windows.
+            const int FIONBIO = unchecked((int)IOControlCode.NonBlockingIO);
+            const int FIONREAD = (int)IOControlCode.DataToRead;
+            const int SIOCATMARK = (int)IOControlCode.OobDataRead;
+
+            optionLength = 0;
+            switch (ioControlCode)
+            {
+                case FIONBIO:
+                    // The Windows implementation explicitly throws this exception, so that all
+                    // changes to blocking/non-blocking are done via Socket.Blocking.
+                    throw new InvalidOperationException(SR.net_sockets_useblocking);
+
+                case FIONREAD:
+                case SIOCATMARK:
+                    if (optionOutValue == null || optionOutValue.Length < sizeof(int))
+                    {
+                        return SocketError.Fault;
+                    }
+
+                    int result;
+                    SocketError error = ioControlCode == FIONREAD ?
+                        GetAvailable(handle, out result) :
+                        GetAtOutOfBandMark(handle, out result);
+                    if (error == SocketError.Success)
+                    {
+                        optionLength = sizeof(int);
+                        BitConverter.TryWriteBytes(optionOutValue, result);
+                    }
+                    return error;
+
+                default:
+                    // Every other control code is unknown to us for and is considered unsupported on Unix.
+                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_IOControl);
+            }
         }
 
         private static SocketError GetErrorAndTrackSetting(SafeCloseSocket handle, SocketOptionLevel optionLevel, SocketOptionName optionName, Interop.Error err)
