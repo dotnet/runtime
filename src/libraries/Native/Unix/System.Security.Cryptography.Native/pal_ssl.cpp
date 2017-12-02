@@ -94,7 +94,16 @@ extern "C" SSL* CryptoNative_SslCreate(SSL_CTX* ctx)
 
 extern "C" int32_t CryptoNative_SslGetError(SSL* ssl, int32_t ret)
 {
-    return SSL_get_error(ssl, ret);
+    // This pops off "old" errors left by other operations
+    // until the first and last error are the same
+    // this should be looked at again when OpenSsl 1.1 is migrated to
+    while (ERR_peek_error() != ERR_peek_last_error())
+    {
+        ERR_get_error();
+    }
+    int32_t errorCode = SSL_get_error(ssl, ret);
+    ERR_clear_error();
+    return errorCode;
 }
 
 extern "C" void CryptoNative_SslDestroy(SSL* ssl)
@@ -219,7 +228,10 @@ static ExchangeAlgorithmType MapExchangeAlgorithmType(const char* keyExchange, s
     return ExchangeAlgorithmType::None;
 }
 
-static void GetHashAlgorithmTypeAndSize(const char* mac, size_t macLength, HashAlgorithmType& dataHashAlg, DataHashSize& hashKeySize)
+static void GetHashAlgorithmTypeAndSize(const char* mac,
+                                        size_t macLength,
+                                        HashAlgorithmType& dataHashAlg,
+                                        DataHashSize& hashKeySize)
 {
     if (StringSpanEquals(mac, "MD5", macLength))
     {
@@ -274,7 +286,8 @@ Given a keyName string like "Enc=XXX", parses the description string and returns
 
 Returns a value indicating whether the pattern starting with keyName was found in description.
 */
-static bool GetDescriptionValue(const char* description, const char* keyName, size_t keyNameLength, const char** value, size_t& valueLength)
+static bool GetDescriptionValue(
+    const char* description, const char* keyName, size_t keyNameLength, const char** value, size_t& valueLength)
 {
     // search for keyName in description
     const char* keyNameStart = strstr(description, keyName);
@@ -384,13 +397,11 @@ err:
 
 extern "C" int32_t CryptoNative_SslWrite(SSL* ssl, const void* buf, int32_t num)
 {
-    ERR_clear_error();
     return SSL_write(ssl, buf, num);
 }
 
 extern "C" int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num)
 {
-    ERR_clear_error();
     return SSL_read(ssl, buf, num);
 }
 
@@ -581,4 +592,3 @@ extern "C" int32_t CryptoNative_SslSetTlsExtHostName(SSL* ssl, const uint8_t* na
 {
     return static_cast<int32_t>(SSL_set_tlsext_host_name(ssl, name));
 }
-
