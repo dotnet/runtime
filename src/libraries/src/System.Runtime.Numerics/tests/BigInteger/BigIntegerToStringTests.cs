@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Numerics.Tests
 {
-    public class ToStringTest
+    public partial class ToStringTest
     {
         private static bool s_noZeroOut = true;
 
@@ -1418,36 +1418,41 @@ namespace System.Numerics.Tests
 
                 Assert.False(expectError, "Expected exception not encountered.");
 
-                if (expectedResult != result)
-                {
-                    Assert.Equal(expectedResult.Length, result.Length);
-
-                    int index = expectedResult.LastIndexOf("E", StringComparison.OrdinalIgnoreCase);
-                    Assert.False(index == 0, "'E' found at beginning of expectedResult");
-
-                    bool equal = false;
-                    if (index > 0)
-                    {
-                        var dig1 = (byte)expectedResult[index - 1];
-                        var dig2 = (byte)result[index - 1];
-
-                        equal |= (dig2 == dig1 - 1 || dig2 == dig1 + 1);
-                        equal |= (dig1 == '9' && dig2 == '0' || dig2 == '9' && dig1 == '0');
-                        equal |= (index == 1 && (dig1 == '9' && dig2 == '1' || dig2 == '9' && dig1 == '1'));
-                    }
-
-                    Assert.True(equal);
-                }
-                else
-                {
-                    Assert.Equal(expectedResult, result);
-                }
+                VerifyExpectedStringResult(expectedResult, result);
             }
-            catch (Exception e)
+            catch (FormatException)
             {
-                Assert.True(expectError && e.GetType() == typeof(FormatException), "Unexpected Exception:" + e);
+                Assert.True(expectError);
+            }
+
+            VerifyTryFormat(test, format, provider, expectError, expectedResult);
+        }
+
+        private static void VerifyExpectedStringResult(string expectedResult, string result)
+        {
+            if (expectedResult != result)
+            {
+                Assert.Equal(expectedResult.Length, result.Length);
+
+                int index = expectedResult.LastIndexOf("E", StringComparison.OrdinalIgnoreCase);
+                Assert.False(index == 0, "'E' found at beginning of expectedResult");
+
+                bool equal = false;
+                if (index > 0)
+                {
+                    var dig1 = (byte)expectedResult[index - 1];
+                    var dig2 = (byte)result[index - 1];
+
+                    equal |= (dig2 == dig1 - 1 || dig2 == dig1 + 1);
+                    equal |= (dig1 == '9' && dig2 == '0' || dig2 == '9' && dig1 == '0');
+                    equal |= (index == 1 && (dig1 == '9' && dig2 == '1' || dig2 == '9' && dig1 == '1'));
+                }
+
+                Assert.True(equal);
             }
         }
+
+        static partial void VerifyTryFormat(string test, string format, IFormatProvider provider, bool expectError, string expectedResult);
 
         private static String GetDigitSequence(int min, int max, Random random)
         {
