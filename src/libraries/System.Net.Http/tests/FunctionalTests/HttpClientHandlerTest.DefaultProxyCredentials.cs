@@ -80,14 +80,9 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue(25640, TestPlatforms.Windows)] // TODO It should be enabled for managed Handler on all platforms
         public void ProxySetViaEnvironmentVariable_DefaultProxyCredentialsUsed(bool useProxy)
         {
-            bool envVarsSupported = UseManagedHandler || !RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-            if (!envVarsSupported)
-            {
-                return;
-            }
-
             int port = 0;
             Task<LoopbackGetRequestHttpProxy.ProxyResult> proxyTask = null;
             if (useProxy)
