@@ -2272,7 +2272,7 @@ int32_t SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t p
     return *createdSocket != -1 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
-int32_t SystemNative_GetBytesAvailable(intptr_t socket, int32_t* available)
+int32_t GetInt32Ioctl(intptr_t socket, unsigned long request, int32_t* available)
 {
     if (available == NULL)
     {
@@ -2283,7 +2283,7 @@ int32_t SystemNative_GetBytesAvailable(intptr_t socket, int32_t* available)
 
     int avail;
     int err;
-    while ((err = ioctl(fd, FIONREAD, &avail)) < 0 && errno == EINTR);
+    while ((err = ioctl(fd, request, &avail)) < 0 && errno == EINTR);
     if (err == -1)
     {
         return SystemNative_ConvertErrorPlatformToPal(errno);
@@ -2291,6 +2291,16 @@ int32_t SystemNative_GetBytesAvailable(intptr_t socket, int32_t* available)
 
     *available = (int32_t)avail;
     return Error_SUCCESS;
+}
+
+int32_t SystemNative_GetAtOutOfBandMark(intptr_t socket, int32_t* available)
+{
+    return GetInt32Ioctl(socket, SIOCATMARK, available);
+}
+
+int32_t SystemNative_GetBytesAvailable(intptr_t socket, int32_t* available)
+{
+    return GetInt32Ioctl(socket, FIONREAD, available);
 }
 
 #if HAVE_EPOLL
