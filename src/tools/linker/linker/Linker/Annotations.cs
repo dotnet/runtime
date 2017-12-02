@@ -74,7 +74,7 @@ namespace Mono.Linker {
 			writer.WriteStartDocument ();
 			writer.WriteStartElement ("dependencies");
 			writer.WriteStartAttribute ("version");
-			writer.WriteString ("1.0");
+			writer.WriteString ("1.1");
 			writer.WriteEndAttribute ();
 		}
 
@@ -349,10 +349,36 @@ namespace Mono.Linker {
 			dependency_stack.Pop ();
 		}
 
+		static bool IsAssemblyBound (TypeDefinition td)
+		{
+			do {
+				if (td.IsNestedPrivate || td.IsNestedAssembly || td.IsNestedFamilyAndAssembly)
+					return true;
+
+				td = td.DeclaringType;
+			} while (td != null);
+
+			return false;
+		}
+
 		string TokenString (object o)
 		{
 			if (o == null)
 				return "N:null";
+
+			if (o is TypeReference t) {
+				bool addAssembly = true;
+				var td = t as TypeDefinition ?? t.Resolve ();
+
+				if (td != null) {
+					addAssembly = td.IsNotPublic || IsAssemblyBound (td);
+					t = td;
+				}
+
+				var addition = addAssembly ? $":{t.Module}" : "";
+
+				return $"{(o as IMetadataTokenProvider).MetadataToken.TokenType}:{o}{addition}";
+			}
 
 			if (o is IMetadataTokenProvider)
 				return (o as IMetadataTokenProvider).MetadataToken.TokenType + ":" + o;
