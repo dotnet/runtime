@@ -62,14 +62,6 @@ Direct shim to sk_X509_NAME_pop_free
 extern "C" void CryptoNative_RecursiveFreeX509NameStack(STACK_OF(X509_NAME) * stack);
 
 /*
-Function:
-DuplicateX509Name
-
-Direct shim to X509_NAME_dup
-*/
-extern "C" X509_NAME* CryptoNative_DuplicateX509Name(X509_NAME* x509Name);
-
-/*
 Direct shim to X509_NAME_entry_count
 */
 extern "C" int32_t CryptoNative_GetX509NameEntryCount(X509_NAME* x509Name);
