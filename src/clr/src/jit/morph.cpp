@@ -16266,7 +16266,13 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, GenTreeStmt* stmt DEBUGARG(co
     }
 
     // Can the entire tree be removed?
-    bool removedStmt = fgCheckRemoveStmt(block, stmt);
+    bool removedStmt = false;
+
+    // Defer removing statements during CSE so we don't inadvertently remove any CSE defs.
+    if (!optValnumCSE_phase)
+    {
+        removedStmt = fgCheckRemoveStmt(block, stmt);
+    }
 
     // Or this is the last statement of a conditional branch that was just folded?
     if (!removedStmt && (stmt->getNextStmt() == nullptr) && !fgRemoveRestOfBlock)
