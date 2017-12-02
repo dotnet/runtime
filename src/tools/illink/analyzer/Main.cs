@@ -23,23 +23,23 @@ namespace LinkerAnalyzer
 			bool showRawDeps = false;
 			string rawName = null;
 			bool showRoots = false;
-			bool showSpaceUsage = false;
 			bool showStat = false;
 			bool showTypes = false;
 			bool reduceToTree = false;
 			bool verbose = false;
 			bool flatDeps = false;
+			string linkedPath = null;
 
 			var optionsParser = new OptionSet () {
 				{ "a|alldeps", "show all dependencies", v => { showAllDeps = v != null; } },
 				{ "h|help", "show this message and exit.", v => showUsage = v != null },
+				{ "l|linkedpath=", "sets the linked assemblies directory path. Enables displaying size estimates.", v => { linkedPath = v; } },
 				{ "r|rawdeps=", "show raw vertex dependencies. Raw vertex VALUE is in the raw format written by linker to the dependency XML file. VALUE can be regular expression", v => { showRawDeps = v != null; rawName = v; } },
 				{ "roots", "show root dependencies.", v => showRoots = v != null },
 				{ "stat", "show statistic of loaded dependencies.", v => showStat = v != null },
 				{ "tree", "reduce the dependency graph to the tree.", v => reduceToTree = v != null },
 				{ "types", "show all types dependencies.", v => showTypes = v != null },
 				{ "t|typedeps=", "show type dependencies. The VALUE can be regular expression", v => { showTypeDeps = v != null; typeName = v; } },
-				//{ "u|spaceusage", "show space analysis.", v => showSpaceUsage = v != null },
 				{ "f|flat", "show all dependencies per vertex and their distance", v => flatDeps = v != null },
 				{ "v|verbose", "be more verbose. Enables stat and roots options.", v => verbose = v != null },
 			};
@@ -61,9 +61,9 @@ namespace LinkerAnalyzer
 			ConsoleDependencyGraph deps = new ConsoleDependencyGraph () { Tree = reduceToTree, FlatDeps = flatDeps };
 			deps.Load (dependencyFile);
 
-			if (showSpaceUsage) {
-//				SpaceAnalyzer sa = new SpaceAnalyzer (System.IO.Path.GetDirectoryName (dependencyFile));
-//				sa.LoadAssemblies (verbose);
+			if (linkedPath != null) {
+				deps.SpaceAnalyzer = new SpaceAnalyzer (linkedPath);
+				deps.SpaceAnalyzer.LoadAssemblies (verbose);
 			}
 
 			if (verbose) {
