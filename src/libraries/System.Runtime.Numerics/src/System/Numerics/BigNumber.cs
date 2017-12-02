@@ -271,6 +271,7 @@
 // NaNs or Infinities.
 //
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
@@ -502,20 +503,25 @@ namespace System.Numerics
             return (char)0; // Custom format
         }
 
-        private static string FormatBigIntegerToHex(BigInteger value, char format, int digits, NumberFormatInfo info)
+        private static string FormatBigIntegerToHex(bool targetSpan, BigInteger value, char format, int digits, NumberFormatInfo info, Span<char> destination, out int charsWritten, out bool spanSuccess)
         {
             Debug.Assert(format == 'x' || format == 'X');
 
             // Get the bytes that make up the BigInteger.
-            Span<byte> bits = stackalloc byte[64]; // arbitrary limit to switch from stack to heap
-            bits = value.TryWriteBytes(bits, out int bytesWritten) ?
-                bits.Slice(0, bytesWritten) :
-                value.ToByteArray();
+            byte[] arrayToReturnToPool = null;
+            Span<byte> bits = stackalloc byte[64]; // arbitrary threshold
+            if (!value.TryWriteOrCountBytes(bits, out int bytesWrittenOrNeeded))
+            {
+                bits = arrayToReturnToPool = ArrayPool<byte>.Shared.Rent(bytesWrittenOrNeeded);
+                bool success = value.TryWriteBytes(bits, out bytesWrittenOrNeeded);
+                Debug.Assert(success);
+            }
+            bits = bits.Slice(0, bytesWrittenOrNeeded);
 
             Span<char> stackSpace = stackalloc char[128]; // each byte is typically two chars
             var sb = new ValueStringBuilder(stackSpace);
-            int cur = bits.Length - 1;
 
+            int cur = bits.Length - 1;
             if (cur > -1)
             {
                 // [FF..F8] drop the high F as the two's complement negative number remains clear
@@ -563,30 +569,64 @@ namespace System.Numerics
                     digits - sb.Length);
             }
 
-            return sb.ToString();
+            if (arrayToReturnToPool != null)
+            {
+                ArrayPool<byte>.Shared.Return(arrayToReturnToPool);
+            }
+
+            if (targetSpan)
+            {
+                spanSuccess = sb.TryCopyTo(destination, out charsWritten);
+                return null;
+            }
+            else
+            {
+                charsWritten = 0;
+                spanSuccess = false;
+                return sb.ToString();
+            }
         }
 
         internal static string FormatBigInteger(BigInteger value, string format, NumberFormatInfo info)
         {
+            return FormatBigInteger(targetSpan: false, value, format, info, default, out _, out _);
+        }
+
+        internal static bool TryFormatBigInteger(BigInteger value, string format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
+        {
+            FormatBigInteger(targetSpan: true, value, format, info, destination, out charsWritten, out bool spanSuccess);
+            return spanSuccess;
+        }
+
+        private static string FormatBigInteger(bool targetSpan, BigInteger value, string format, NumberFormatInfo info, Span<char> destination, out int charsWritten, out bool spanSuccess)
+        {
             int digits = 0;
             char fmt = ParseFormatSpecifier(format, out digits);
             if (fmt == 'x' || fmt == 'X')
-                return FormatBigIntegerToHex(value, fmt, digits, info);
+            {
+                return FormatBigIntegerToHex(targetSpan, value, fmt, digits, info, destination, out charsWritten, out spanSuccess);
+            }
 
-            bool decimalFmt = (fmt == 'g' || fmt == 'G' || fmt == 'd' || fmt == 'D' || fmt == 'r' || fmt == 'R');
 
             if (value._bits == null)
             {
                 if (fmt == 'g' || fmt == 'G' || fmt == 'r' || fmt == 'R')
                 {
-                    if (digits > 0)
-                        format = string.Format(CultureInfo.InvariantCulture, "D{0}", digits.ToString(CultureInfo.InvariantCulture));
-                    else
-                        format = "D";
+                    format = digits > 0 ? string.Format("D{0}", digits) : "D";
                 }
-                return value._sign.ToString(format, info);
-            }
 
+                if (targetSpan)
+                {
+                    spanSuccess = value._sign.TryFormat(destination, out charsWritten, format, info);
+                    return null;
+                }
+                else
+                {
+                    charsWritten = 0;
+                    spanSuccess = false;
+                    return value._sign.ToString(format, info);
+                }
+            }
 
             // First convert to base 10^9.
             const uint kuBase = 1000000000; // 10^9
@@ -629,6 +669,7 @@ namespace System.Numerics
             }
             catch (OverflowException e) { throw new FormatException(SR.Format_TooLarge, e); }
 
+            bool decimalFmt = (fmt == 'g' || fmt == 'G' || fmt == 'd' || fmt == 'D' || fmt == 'r' || fmt == 'R');
             if (decimalFmt)
             {
                 if (digits > 0 && digits > cchMax)
@@ -682,7 +723,21 @@ namespace System.Numerics
                 int precision = 29;
                 int scale = cchMax - ichDst;
 
-                return FormatProvider.FormatBigInteger(precision, scale, sign, format, info, rgch, ichDst);
+                Span<char> stackSpace = stackalloc char[128]; // arbitrary stack cut-off
+                var sb = new ValueStringBuilder(stackSpace);
+                FormatProvider.FormatBigInteger(ref sb, precision, scale, sign, format, info, rgch, ichDst);
+
+                if (targetSpan)
+                {
+                    spanSuccess = sb.TryCopyTo(destination, out charsWritten);
+                    return null;
+                }
+                else
+                {
+                    charsWritten = 0;
+                    spanSuccess = false;
+                    return sb.ToString();
+                }
             }
 
             // Format Round-trip decimal
@@ -704,7 +759,26 @@ namespace System.Numerics
                 for (int i = info.NegativeSign.Length - 1; i > -1; i--)
                     rgch[--ichDst] = info.NegativeSign[i];
             }
-            return new string(rgch, ichDst, cchMax - ichDst);
+
+            int resultLength = cchMax - ichDst;
+            if (!targetSpan)
+            {
+                charsWritten = 0;
+                spanSuccess = false;
+                return new string(rgch, ichDst, cchMax - ichDst);
+            }
+            else if (new ReadOnlySpan<char>(rgch, ichDst, cchMax - ichDst).TryCopyTo(destination))
+            {
+                charsWritten = resultLength;
+                spanSuccess = true;
+                return null;
+            }
+            else
+            {
+                charsWritten = 0;
+                spanSuccess = false;
+                return null;
+            }
         }
     }
 }

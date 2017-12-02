@@ -668,11 +668,9 @@ namespace System.Globalization
                 return 'G';
             }
 
-            internal static unsafe string NumberToString(NumberBuffer number, char format, int nMaxDigits, NumberFormatInfo info, bool isDecimal)
+            internal static unsafe void NumberToString(ref ValueStringBuilder sb, NumberBuffer number, char format, int nMaxDigits, NumberFormatInfo info, bool isDecimal)
             {
                 int nMinDigits = -1;
-
-                StringBuilder sb = new StringBuilder(MIN_SB_BUFFER_SIZE);
 
                 switch (format)
                 {
@@ -685,7 +683,7 @@ namespace System.Globalization
 
                             RoundNumber(ref number, number.scale + nMaxDigits); // Don't change this line to use digPos since digCount could have its sign changed.
 
-                            FormatCurrency(sb, number, nMinDigits, nMaxDigits, info);
+                            FormatCurrency(ref sb, number, nMinDigits, nMaxDigits, info);
 
                             break;
                         }
@@ -703,7 +701,7 @@ namespace System.Globalization
                             if (number.sign)
                                 sb.Append(info.NegativeSign);
 
-                            FormatFixed(sb, number, nMinDigits, nMaxDigits, info, null, info.NumberDecimalSeparator, null);
+                            FormatFixed(ref sb, number, nMinDigits, nMaxDigits, info, null, info.NumberDecimalSeparator, null);
 
                             break;
                         }
@@ -718,7 +716,7 @@ namespace System.Globalization
 
                             RoundNumber(ref number, number.scale + nMaxDigits);
 
-                            FormatNumber(sb, number, nMinDigits, nMaxDigits, info);
+                            FormatNumber(ref sb, number, nMinDigits, nMaxDigits, info);
 
                             break;
                         }
@@ -737,7 +735,7 @@ namespace System.Globalization
                             if (number.sign)
                                 sb.Append(info.NegativeSign);
 
-                            FormatScientific(sb, number, nMinDigits, nMaxDigits, info, format);
+                            FormatScientific(ref sb, number, nMinDigits, nMaxDigits, info, format);
 
                             break;
                         }
@@ -778,7 +776,7 @@ namespace System.Globalization
                             if (number.sign)
                                 sb.Append(info.NegativeSign);
 
-                            FormatGeneral(sb, number, nMinDigits, nMaxDigits, info, (char)(format - ('G' - 'E')), !enableRounding);
+                            FormatGeneral(ref sb, number, nMinDigits, nMaxDigits, info, (char)(format - ('G' - 'E')), !enableRounding);
 
                             break;
                         }
@@ -794,7 +792,7 @@ namespace System.Globalization
 
                             RoundNumber(ref number, number.scale + nMaxDigits);
 
-                            FormatPercent(sb, number, nMinDigits, nMaxDigits, info);
+                            FormatPercent(ref sb, number, nMinDigits, nMaxDigits, info);
 
                             break;
                         }
@@ -802,11 +800,9 @@ namespace System.Globalization
                     default:
                         throw new FormatException(SR.Argument_BadFormatSpecifier);
                 }
-
-                return sb.ToString();
             }
 
-            private static void FormatCurrency(StringBuilder sb, NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info)
+            private static void FormatCurrency(ref ValueStringBuilder sb, NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info)
             {
                 string fmt = number.sign ?
                     s_negCurrencyFormats[info.CurrencyNegativePattern] :
@@ -817,7 +813,7 @@ namespace System.Globalization
                     switch (ch)
                     {
                         case '#':
-                            FormatFixed(sb, number, nMinDigits, nMaxDigits, info, info.CurrencyGroupSizes, info.CurrencyDecimalSeparator, info.CurrencyGroupSeparator);
+                            FormatFixed(ref sb, number, nMinDigits, nMaxDigits, info, info.CurrencyGroupSizes, info.CurrencyDecimalSeparator, info.CurrencyGroupSeparator);
                             break;
                         case '-':
                             sb.Append(info.NegativeSign);
@@ -840,7 +836,7 @@ namespace System.Globalization
                 return result;
             }
 
-            private static unsafe void FormatFixed(StringBuilder sb, NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info, int[] groupDigits, string sDecimal, string sGroup)
+            private static unsafe void FormatFixed(ref ValueStringBuilder sb, NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info, int[] groupDigits, string sDecimal, string sGroup)
             {
                 int digPos = number.scale;
                 char* dig = number.digits;
@@ -944,7 +940,7 @@ namespace System.Globalization
                 }
             }
 
-            private static void FormatNumber(StringBuilder sb, NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info)
+            private static void FormatNumber(ref ValueStringBuilder sb, NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info)
             {
                 string fmt = number.sign ?
                     s_negNumberFormats[info.NumberNegativePattern] :
@@ -955,7 +951,7 @@ namespace System.Globalization
                     switch (ch)
                     {
                         case '#':
-                            FormatFixed(sb, number, nMinDigits, nMaxDigits, info, info.NumberGroupSizes, info.NumberDecimalSeparator, info.NumberGroupSeparator);
+                            FormatFixed(ref sb, number, nMinDigits, nMaxDigits, info, info.NumberGroupSizes, info.NumberDecimalSeparator, info.NumberGroupSeparator);
                             break;
                         case '-':
                             sb.Append(info.NegativeSign);
@@ -967,7 +963,7 @@ namespace System.Globalization
                 }
             }
 
-            private static unsafe void FormatScientific(StringBuilder sb, NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info, char expChar)
+            private static unsafe void FormatScientific(ref ValueStringBuilder sb, NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info, char expChar)
             {
                 char* dig = number.digits;
 
@@ -980,10 +976,10 @@ namespace System.Globalization
                     sb.Append((*dig != 0) ? *dig++ : '0');
 
                 int e = number.digits[0] == 0 ? 0 : number.scale - 1;
-                FormatExponent(sb, info, e, expChar, 3, true);
+                FormatExponent(ref sb, info, e, expChar, 3, true);
             }
 
-            private static unsafe void FormatExponent(StringBuilder sb, NumberFormatInfo info, int value, char expChar, int minDigits, bool positiveSign)
+            private static unsafe void FormatExponent(ref ValueStringBuilder sb, NumberFormatInfo info, int value, char expChar, int minDigits, bool positiveSign)
             {
                 sb.Append(expChar);
 
@@ -1006,7 +1002,7 @@ namespace System.Globalization
                     sb.Append(digits[index++]);
             }
 
-            private static unsafe void FormatGeneral(StringBuilder sb, NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info, char expChar, bool bSuppressScientific)
+            private static unsafe void FormatGeneral(ref ValueStringBuilder sb, NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info, char expChar, bool bSuppressScientific)
             {
                 int digPos = number.scale;
                 bool scientific = false;
@@ -1050,10 +1046,10 @@ namespace System.Globalization
                 }
 
                 if (scientific)
-                    FormatExponent(sb, info, number.scale - 1, expChar, 2, true);
+                    FormatExponent(ref sb, info, number.scale - 1, expChar, 2, true);
             }
 
-            private static void FormatPercent(StringBuilder sb, NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info)
+            private static void FormatPercent(ref ValueStringBuilder sb, NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info)
             {
                 string fmt = number.sign ?
                     s_negPercentFormats[info.PercentNegativePattern] :
@@ -1064,7 +1060,7 @@ namespace System.Globalization
                     switch (ch)
                     {
                         case '#':
-                            FormatFixed(sb, number, nMinDigits, nMaxDigits, info, info.PercentGroupSizes, info.PercentDecimalSeparator, info.PercentGroupSeparator);
+                            FormatFixed(ref sb, number, nMinDigits, nMaxDigits, info, info.PercentGroupSizes, info.PercentDecimalSeparator, info.PercentGroupSeparator);
                             break;
                         case '-':
                             sb.Append(info.NegativeSign);
@@ -1153,7 +1149,7 @@ namespace System.Globalization
                 }
             }
 
-            internal static unsafe string NumberToStringFormat(NumberBuffer number, string format, NumberFormatInfo info)
+            internal static unsafe void NumberToStringFormat(ref ValueStringBuilder sb, NumberBuffer number, string format, NumberFormatInfo info)
             {
                 int digitCount;
                 int decimalPos;
@@ -1346,8 +1342,6 @@ namespace System.Globalization
                     }
                 }
 
-                StringBuilder sb = new StringBuilder(MIN_SB_BUFFER_SIZE);
-
                 if (number.sign && section == 0)
                     sb.Append(info.NegativeSign);
 
@@ -1484,7 +1478,7 @@ namespace System.Globalization
                                             i = 10;
 
                                         int exp = dig[0] == 0 ? 0 : number.scale - decimalPos;
-                                        FormatExponent(sb, info, exp, ch, i, positiveSign);
+                                        FormatExponent(ref sb, info, exp, ch, i, positiveSign);
                                         scientific = false;
                                     }
                                     else
@@ -1503,8 +1497,6 @@ namespace System.Globalization
                         }
                     }
                 }
-
-                return sb.ToString();
             }
         }
     }

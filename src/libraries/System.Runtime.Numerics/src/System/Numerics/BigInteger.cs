@@ -1176,6 +1176,17 @@ namespace System.Numerics
         public bool TryWriteBytes(Span<byte> destination, out int bytesWritten, bool isUnsigned=false, bool isBigEndian=false)
         {
             bytesWritten = 0;
+            if (TryGetBytes(GetBytesMode.Span, destination, isUnsigned, isBigEndian, ref bytesWritten) == null)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+            return true;
+        }
+
+        internal bool TryWriteOrCountBytes(Span<byte> destination, out int bytesWritten, bool isUnsigned = false, bool isBigEndian = false)
+        {
+            bytesWritten = 0;
             return TryGetBytes(GetBytesMode.Span, destination, isUnsigned, isBigEndian, ref bytesWritten) != null;
         }
 
@@ -1204,7 +1215,7 @@ namespace System.Numerics
         /// <param name="bytesWritten">
         /// If <paramref name="mode"/>==<see cref="GetBytesMode.AllocateArray"/>, ignored.
         /// If <paramref name="mode"/>==<see cref="GetBytesMode.Count"/>, the number of bytes that would be written.
-        /// If <paramref name="mode"/>==<see cref="GetBytesMode.Span"/>, the number of bytes written to the span.
+        /// If <paramref name="mode"/>==<see cref="GetBytesMode.Span"/>, the number of bytes written to the span or that would be written if it were long enough.
         /// </param>
         /// <returns>
         /// If <paramref name="mode"/>==<see cref="GetBytesMode.AllocateArray"/>, the result array.
@@ -1228,10 +1239,10 @@ namespace System.Numerics
                         bytesWritten = 1;
                         return null;
                     default: // case GetBytesMode.Span:
+                        bytesWritten = 1;
                         if (destination.Length != 0)
                         {
                             destination[0] = 0;
-                            bytesWritten = 1;
                             return s_success;
                         }
                         return null;
@@ -1325,11 +1336,11 @@ namespace System.Numerics
                     bytesWritten = length;
                     return null;
                 default: // case GetBytesMode.Span:
+                    bytesWritten = length;
                     if (destination.Length < length)
                     {
                         return null;
                     }
-                    bytesWritten = length;
                     array = s_success;
                     break;
             }
@@ -1460,6 +1471,11 @@ namespace System.Numerics
         public string ToString(string format, IFormatProvider provider)
         {
             return BigNumber.FormatBigInteger(this, format, NumberFormatInfo.GetInstance(provider));
+        }
+
+        public bool TryFormat(Span<char> destination, out int charsWritten, string format = default, IFormatProvider provider = null) // TODO: change format to ReadOnlySpan<char>
+        {
+            return BigNumber.TryFormatBigInteger(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }
 
         private static BigInteger Add(uint[] leftBits, int leftSign, uint[] rightBits, int rightSign)
