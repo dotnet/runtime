@@ -77,6 +77,7 @@ namespace System
         public static bool IsNotRedHatFamily6 { get { throw null; } }
         public static bool IsUap { get { throw null; } }
         public static Version ICUVersion { get { return null; } }
+        public static Version OpenSslVersion { get { return null; } }
         public static bool IsUbuntu { get { throw null; } }
         public static bool IsUbuntu1404 { get { throw null; } }
         public static bool IsUbuntu1604 { get { throw null; } }
