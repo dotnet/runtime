@@ -20,67 +20,14 @@ namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-#if TargetsLinux
-    internal static class OpenSslVersionProvider
-    {
-        private static string s_opensslVersion;
-
-        [DllImport("System.Security.Cryptography.Native.OpenSsl", EntryPoint = "CryptoNative_SSLEayVersion")]
-        private static extern string OpenSslVersionDescription();
-
-        private static string OpenSslVersionNumber
-        {
-            get
-            {
-                if (s_opensslVersion == null)
-                {
-                    const string OpenSSL = "OpenSSL ";
-
-                    // Skip OpenSSL part, and get the version string of format x.y.z
-                    s_opensslVersion  = OpenSslVersionDescription().Substring(OpenSSL.Length, 5);
-                }
-
-                return s_opensslVersion;
-            }
-        }
-
-        internal static int MajorVersion
-        {
-            get
-            {
-                int digit = OpenSslVersionNumber[0] - '0';
-                return (digit >= 0 && digit <= 9) ? digit : -1;
-            }
-        }
-
-        internal static int MinorVersion
-        {
-            get
-            {
-                int digit = OpenSslVersionNumber[2] - '0';
-                return (digit >= 0 && digit <= 9) ? digit : -1;
-            }
-        }
-
-        internal static int BuildVersion
-        {
-            get
-            {
-                int digit = OpenSslVersionNumber[4] - '0';
-                return (digit >= 0 && digit <= 9) ? digit : -1;
-            }
-        }
-    }
-#endif
-
     public class SslStreamAlpnTests
     {
-        private static bool BackendSupportsAlpn =>
-#if TargetsLinux
-            OpenSslVersionProvider.MajorVersion >= 1 && (OpenSslVersionProvider.MinorVersion >= 1 || OpenSslVersionProvider.BuildVersion >= 2);
-#else
-            PlatformDetection.IsWindows && !PlatformDetection.IsWindows7;
-#endif
+        // Windows - Schannel supports alpn from win8 and higher.
+        // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
+        // OSX - SecureTransport doesn't expose alpn APIs.
+        private static bool BackendSupportsAlpn => (PlatformDetection.IsWindows && !PlatformDetection.IsWindows7) ||
+            (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) &&
+            (PlatformDetection.OpenSslVersion.Major >= 1 && (PlatformDetection.OpenSslVersion.Minor >= 1 || PlatformDetection.OpenSslVersion.Build >= 2)));
 
         private async Task DoHandshakeWithOptions(SslStream clientSslStream, SslStream serverSslStream, SslClientAuthenticationOptions clientOptions, SslServerAuthenticationOptions serverOptions)
         {
