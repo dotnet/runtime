@@ -66,12 +66,10 @@ public class Program
 }
 ```
 
-## Alternative 3 - Benchmarking with multiple or custom .NET Core 2.1 SDKs
-Whenever you want to benchmark an application with one or multiple different .NET Core 2.1 run time framework versions simultaneously, you want to create a manual BenchmarkDotNet configuration file. 
-
+# Benchmark multiple or custom .NET Core 2.x SDKs
 Follow the instructions described here https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/dogfooding.md#advanced-scenario---using-a-nightly-build-of-microsoftnetcoreapp and skip the last part which calls the `dotnet.exe` to run the application.
 
-Add the desired amount of Jobs and add `NetCoreAppSettings` to specify the `targetFrameworkMoniker`, `runtimeFrameworkVersion` and `customDotNetCliPath` for each:
+Whenever you want to benchmark an application simultaneously with one or multiple different .NET Core run time framework versions, you want to create a manual BenchmarkDotNet configuration file. Add the desired amount of Jobs and `NetCoreAppSettings` to specify the `targetFrameworkMoniker`, `runtimeFrameworkVersion` and `customDotNetCliPath`:
 
 ```csharp
 public class MainConfig : ManualConfig
@@ -88,6 +86,9 @@ public class MainConfig : ManualConfig
                 name: "Core 2.1.0-preview")));
             
         // Job #2 which could be in-process (see Alternative #2)
+        // ...
+        
+        // Job #3 which could be .NET Core 2.0
         // ...
 
         // Add whatever jobs you need
@@ -116,9 +117,9 @@ public class Program
 }
 ```
 
-## Running the benchmark
+# Running the benchmark
 
-To get valid results make sure to run your project with RELEASE configuration:
+To get valid results make sure to run your project in RELEASE configuration:
 
 ```
 cd "path/to/your/benchmark/project"
