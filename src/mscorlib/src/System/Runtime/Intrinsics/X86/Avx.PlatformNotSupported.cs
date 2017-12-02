@@ -117,7 +117,21 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256d _mm256_cmp_pd (__m256d a, __m256d b, const int imm8)
         /// </summary>
         public static Vector256<double> Compare(Vector256<double> left, Vector256<double> right, FloatComparisonMode mode) { throw new PlatformNotSupportedException(); }
-        
+
+        /// <summary>
+        /// __m128d _mm_cmp_sd (__m128d a, __m128d b, const int imm8)
+        /// </summary>
+        public static Vector128<double> CompareScalar(Vector128<double> left, Vector128<double> right, FloatComparisonMode mode) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128 _mm_cmp_ss (__m128 a, __m128 b, const int imm8)
+        /// </summary>
+        public static Vector128<float> CompareScalar(Vector128<float> left, Vector128<float> right, FloatComparisonMode mode) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float _mm256_cvtss_f32 (__m256 a)
+        /// </summary>
+        public static float ConvertToSingle(Vector256<float> value) { throw new PlatformNotSupportedException(); }
+
         /// <summary>
         /// __m128i _mm256_cvtpd_epi32 (__m256d a)
         /// </summary>
