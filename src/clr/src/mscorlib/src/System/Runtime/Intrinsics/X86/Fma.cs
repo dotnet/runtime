@@ -32,6 +32,15 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<double> MultiplyAdd(Vector256<double> a, Vector256<double> b, Vector256<double> c) => MultiplyAdd(a, b, c);
 
         /// <summary>
+        /// __m128 _mm_fmadd_ss (__m128 a, __m128 b, __m128 c)
+        /// </summary>
+        public static Vector128<float> MultiplyAddScalar(Vector128<float> a, Vector128<float> b, Vector128<float> c) => MultiplyAddScalar(a, b, c);
+        /// <summary>
+        /// __m128d _mm_fmadd_sd (__m128d a, __m128d b, __m128d c)
+        /// </summary>
+        public static Vector128<double> MultiplyAddScalar(Vector128<double> a, Vector128<double> b, Vector128<double> c) => MultiplyAddScalar(a, b, c);
+
+        /// <summary>
         /// __m128 _mm_fmaddsub_ps (__m128 a, __m128 b, __m128 c)
         /// </summary>
         public static Vector128<float> MultiplyAddSubtract(Vector128<float> a, Vector128<float> b, Vector128<float> c) => MultiplyAddSubtract(a, b, c);
@@ -64,6 +73,15 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256d _mm256_fmsub_pd (__m256d a, __m256d b, __m256d c)
         /// </summary>
         public static Vector256<double> MultiplySubtract(Vector256<double> a, Vector256<double> b, Vector256<double> c) => MultiplySubtract(a, b, c);
+
+        /// <summary>
+        /// __m128 _mm_fmsub_ss (__m128 a, __m128 b, __m128 c)
+        /// </summary>
+        public static Vector128<float> MultiplySubtractScalar(Vector128<float> a, Vector128<float> b, Vector128<float> c) => MultiplySubtractScalar(a, b, c);
+        /// <summary>
+        /// __m128d _mm_fmsub_sd (__m128d a, __m128d b, __m128d c)
+        /// </summary>
+        public static Vector128<double> MultiplySubtractScalar(Vector128<double> a, Vector128<double> b, Vector128<double> c) => MultiplySubtractScalar(a, b, c);
 
         /// <summary>
         /// __m128 _mm_fmsubadd_ps (__m128 a, __m128 b, __m128 c)
@@ -100,6 +118,15 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<double> MultiplyAddNegated(Vector256<double> a, Vector256<double> b, Vector256<double> c) => MultiplyAddNegated(a, b, c);
 
         /// <summary>
+        /// __m128 _mm_fnmadd_ss (__m128 a, __m128 b, __m128 c)
+        /// </summary>
+        public static Vector128<float> MultiplyAddNegatedScalar(Vector128<float> a, Vector128<float> b, Vector128<float> c) => MultiplyAddNegatedScalar(a, b, c);
+        /// <summary>
+        /// __m128d _mm_fnmadd_sd (__m128d a, __m128d b, __m128d c)
+        /// </summary>
+        public static Vector128<double> MultiplyAddNegatedScalar(Vector128<double> a, Vector128<double> b, Vector128<double> c) => MultiplyAddNegatedScalar(a, b, c);
+
+        /// <summary>
         /// __m128 _mm_fnmsub_ps (__m128 a, __m128 b, __m128 c)
         /// </summary>
         public static Vector128<float> MultiplySubtractNegated(Vector128<float> a, Vector128<float> b, Vector128<float> c) => MultiplySubtractNegated(a, b, c);
@@ -115,5 +142,14 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256d _mm256_fnmsub_pd (__m256d a, __m256d b, __m256d c)
         /// </summary>
         public static Vector256<double> MultiplySubtractNegated(Vector256<double> a, Vector256<double> b, Vector256<double> c) => MultiplySubtractNegated(a, b, c);
+
+        /// <summary>
+        /// __m128 _mm_fnmsub_ss (__m128 a, __m128 b, __m128 c)
+        /// </summary>
+        public static Vector128<float> MultiplySubtractNegatedScalar(Vector128<float> a, Vector128<float> b, Vector128<float> c) => MultiplySubtractNegatedScalar(a, b, c);
+        /// <summary>
+        /// __m128d _mm_fnmsub_sd (__m128d a, __m128d b, __m128d c)
+        /// </summary>
+        public static Vector128<double> MultiplySubtractNegatedScalar(Vector128<double> a, Vector128<double> b, Vector128<double> c) => MultiplySubtractNegatedScalar(a, b, c);
     }
 }
