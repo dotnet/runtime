@@ -41,6 +41,7 @@ namespace System.IO.Tests
             AssertExtensions.Throws<ArgumentException>("path", null, () => Path.GetDirectoryName(string.Empty));
         }
 
+        [ActiveIssue(25665)]
         [Theory,
             InlineData(" "),
             InlineData("\r\n")]
@@ -325,6 +326,7 @@ namespace System.IO.Tests
             }
         }
 
+        [ActiveIssue(25665)]
         [Fact]
         public static void GetInvalidPathChars()
         {

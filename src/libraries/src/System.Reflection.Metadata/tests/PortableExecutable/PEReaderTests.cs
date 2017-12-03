@@ -297,6 +297,7 @@ namespace System.Reflection.PortableExecutable.Tests
             }
         }
 
+        [ActiveIssue(25665)]
         [Fact]
         public void TryOpenAssociatedPortablePdb_Args()
         {
