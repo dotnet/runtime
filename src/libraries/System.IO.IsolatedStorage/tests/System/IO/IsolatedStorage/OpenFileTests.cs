@@ -57,6 +57,7 @@ namespace System.IO.IsolatedStorage
             }
         }
 
+        [ActiveIssue(25665)]
         [Fact]
         public void OpenFile_RaisesArgumentException()
         {
