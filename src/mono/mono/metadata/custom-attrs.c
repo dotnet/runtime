@@ -2155,3 +2155,181 @@ mono_assembly_metadata_foreach_custom_attr (MonoAssembly *assembly, MonoAssembly
 		stop_iterating = func (image, assembly_token, nspace, name, mtoken, user_data);
 	}
 }
+
+static void
+init_weak_fields_inner (MonoImage *image, GHashTable *indexes)
+{
+	MonoTableInfo *tdef;
+	MonoError error;
+	MonoClass *klass = NULL;
+	guint32 memberref_index = -1;
+	int first_method_idx = -1;
+	int method_count = -1;
+
+	if (image == mono_get_corlib ()) {
+		/* Typedef */
+		klass = mono_class_from_name_checked (image, "System", "WeakAttribute", &error);
+		if (!is_ok (&error)) {
+			mono_error_cleanup (&error);
+			return;
+		}
+		if (!klass)
+			return;
+		first_method_idx = mono_class_get_first_method_idx (klass);
+		method_count = mono_class_get_method_count (klass);
+
+		tdef = &image->tables [MONO_TABLE_CUSTOMATTRIBUTE];
+		guint32 parent, field_idx, col, mtoken, idx;
+		for (int i = 0; i < tdef->rows; ++i) {
+			parent = mono_metadata_decode_row_col (tdef, i, MONO_CUSTOM_ATTR_PARENT);
+			if ((parent & MONO_CUSTOM_ATTR_MASK) != MONO_CUSTOM_ATTR_FIELDDEF)
+				continue;
+
+			col = mono_metadata_decode_row_col (tdef, i, MONO_CUSTOM_ATTR_TYPE);
+			mtoken = col >> MONO_CUSTOM_ATTR_TYPE_BITS;
+			/* 1 based index */
+			idx = mtoken - 1;
+			if ((col & MONO_CUSTOM_ATTR_TYPE_MASK) == MONO_CUSTOM_ATTR_TYPE_METHODDEF) {
+				field_idx = parent >> MONO_CUSTOM_ATTR_BITS;
+				if (idx >= first_method_idx && idx < first_method_idx + method_count)
+					g_hash_table_insert (indexes, GUINT_TO_POINTER (field_idx), GUINT_TO_POINTER (1));
+			}
+		}
+	} else {
+		/* Memberref pointing to a typeref */
+		tdef = &image->tables [MONO_TABLE_MEMBERREF];
+
+		/* Check whenever the assembly references the WeakAttribute type */
+		gboolean found = FALSE;
+		tdef = &image->tables [MONO_TABLE_TYPEREF];
+		for (int i = 0; i < tdef->rows; ++i) {
+			guint32 string_offset = mono_metadata_decode_row_col (tdef, i, MONO_TYPEREF_NAME);
+			const char *name = mono_metadata_string_heap (image, string_offset);
+			if (!strcmp (name, "WeakAttribute")) {
+				found = TRUE;
+				break;
+			}
+		}
+
+		if (!found)
+			return;
+
+		/* Find the memberref pointing to a typeref */
+		tdef = &image->tables [MONO_TABLE_MEMBERREF];
+		for (int i = 0; i < tdef->rows; ++i) {
+			guint32 cols [MONO_MEMBERREF_SIZE];
+			const char *sig;
+
+			mono_metadata_decode_row (tdef, i, cols, MONO_MEMBERREF_SIZE);
+			sig = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
+			mono_metadata_decode_blob_size (sig, &sig);
+
+			guint32 nindex = cols [MONO_MEMBERREF_CLASS] >> MONO_MEMBERREF_PARENT_BITS;
+			guint32 class_index = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
+			const char *fname = mono_metadata_string_heap (image, cols [MONO_MEMBERREF_NAME]);
+
+			if (!strcmp (fname, ".ctor") && class_index == MONO_MEMBERREF_PARENT_TYPEREF) {
+				MonoTableInfo *typeref_table = &image->tables [MONO_TABLE_TYPEREF];
+				guint32 cols [MONO_TYPEREF_SIZE];
+
+				mono_metadata_decode_row (typeref_table, nindex - 1, cols, MONO_TYPEREF_SIZE);
+
+				const char *name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
+				const char *nspace = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]);
+
+				if (!strcmp (nspace, "System") && !strcmp (name, "WeakAttribute")) {
+					MonoClass *klass = mono_class_from_typeref (image, MONO_TOKEN_TYPE_REF | nindex);
+					g_assert (!strcmp (klass->name, "WeakAttribute"));
+					/* Allow a testing dll as well since some profiles don't have WeakAttribute */
+					if (klass && (klass->image == mono_get_corlib () || strstr (klass->image->name, "Mono.Runtime.Testing"))) {
+						/* Sanity check that it only has 1 ctor */
+						gpointer iter = NULL;
+						int count = 0;
+						MonoMethod *method;
+						while ((method = mono_class_get_methods (klass, &iter))) {
+							if (!strcmp (method->name, ".ctor"))
+								count ++;
+						}
+						count ++;
+						memberref_index = i;
+						break;
+					}
+				}
+			}
+		}
+		if (memberref_index == -1)
+			return;
+
+		tdef = &image->tables [MONO_TABLE_CUSTOMATTRIBUTE];
+		guint32 parent, field_idx, col, mtoken, idx;
+		for (int i = 0; i < tdef->rows; ++i) {
+			parent = mono_metadata_decode_row_col (tdef, i, MONO_CUSTOM_ATTR_PARENT);
+			if ((parent & MONO_CUSTOM_ATTR_MASK) != MONO_CUSTOM_ATTR_FIELDDEF)
+				continue;
+
+			col = mono_metadata_decode_row_col (tdef, i, MONO_CUSTOM_ATTR_TYPE);
+			mtoken = col >> MONO_CUSTOM_ATTR_TYPE_BITS;
+			/* 1 based index */
+			idx = mtoken - 1;
+			field_idx = parent >> MONO_CUSTOM_ATTR_BITS;
+			if ((col & MONO_CUSTOM_ATTR_TYPE_MASK) == MONO_CUSTOM_ATTR_TYPE_MEMBERREF) {
+				if (idx == memberref_index)
+					g_hash_table_insert (indexes, GUINT_TO_POINTER (field_idx), GUINT_TO_POINTER (1));
+			}
+		}
+	}
+}
+
+/*
+ * mono_assembly_init_weak_fields:
+ *
+ *   Initialize the image->weak_field_indexes hash.
+ */
+void
+mono_assembly_init_weak_fields (MonoImage *image)
+{
+	if (image->weak_fields_inited)
+		return;
+
+	GHashTable *indexes = NULL;
+
+	if (mono_get_runtime_callbacks ()->get_weak_field_indexes)
+		indexes = mono_get_runtime_callbacks ()->get_weak_field_indexes (image);
+	if (!indexes) {
+		indexes = g_hash_table_new (NULL, NULL);
+
+		/*
+		 * To avoid lookups for every field, we scan the customattr table for entries whose
+		 * parent is a field and whose type is WeakAttribute.
+		 */
+		init_weak_fields_inner (image, indexes);
+	}
+
+	mono_image_lock (image);
+	if (!image->weak_fields_inited) {
+		image->weak_field_indexes = indexes;
+		mono_memory_barrier ();
+		image->weak_fields_inited = TRUE;
+	} else {
+		g_hash_table_destroy (indexes);
+	}
+	mono_image_unlock (image);
+}
+
+/*
+ * mono_assembly_is_weak_field:
+ *
+ *   Return whenever the FIELD table entry with the 1-based index FIELD_IDX has
+ * a [Weak] attribute.
+ */
+gboolean
+mono_assembly_is_weak_field (MonoImage *image, guint32 field_idx)
+{
+	if (image->dynamic)
+		return FALSE;
+
+	mono_assembly_init_weak_fields (image);
+
+	/* The hash is not mutated, no need to lock */
+	return g_hash_table_lookup (image->weak_field_indexes, GINT_TO_POINTER (field_idx)) != NULL;
+}

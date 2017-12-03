@@ -224,6 +224,11 @@ gpointer sgen_client_get_provenance (void);
 void sgen_client_describe_invalid_pointer (GCObject *ptr);
 
 /*
+ * Return the weak bitmap for a class
+ */
+gsize *sgen_client_get_weak_bitmap (GCVTable vt, int *nbits);
+
+/*
  * These client binary protocol functions are called from the respective binary protocol
  * functions.  No action is necessary.  We suggest implementing them as inline functions in
  * the client header file so that no overhead is incurred if they don't actually do

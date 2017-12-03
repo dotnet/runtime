@@ -416,6 +416,10 @@ struct _MonoImage {
 	MonoGenericContainer *anonymous_generic_class_container;
 	MonoGenericContainer *anonymous_generic_method_container;
 
+	gboolean weak_fields_inited;
+	/* Contains 1 based indexes */
+	GHashTable *weak_field_indexes;
+
 	/*
 	 * No other runtime locks must be taken while holding this lock.
 	 * It's meant to be used only to mutate and query structures part of this image.

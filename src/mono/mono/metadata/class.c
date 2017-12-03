@@ -40,6 +40,7 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mono-debug.h>
+#include <mono/metadata/custom-attrs-internals.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-string.h>
 #include <mono/utils/mono-error-internals.h>
@@ -1666,6 +1667,7 @@ init_sizes_with_info (MonoClass *klass, MonoCachedClassInfo *cached_info)
 		klass->has_references = cached_info->has_references;
 		klass->has_static_refs = cached_info->has_static_refs;
 		klass->no_special_static_fields = cached_info->no_special_static_fields;
+		klass->has_weak_fields = cached_info->has_weak_fields;
 		mono_loader_unlock ();
 	}
 	else {
@@ -2204,18 +2206,40 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			mono_class_set_type_load_failure (klass, "Value type instance size (%d) cannot be zero, negative, or bigger than 1Mb", klass->instance_size);
 	}
 
+	// Weak field support
+	//
+	// FIXME:
+	// - generic instances
+	// - Disallow on structs/static fields/nonref fields
+	gboolean has_weak_fields = FALSE;
+
+	if (mono_class_has_static_metadata (klass)) {
+		for (MonoClass *p = klass; p != NULL; p = p->parent) {
+			gpointer iter = NULL;
+			guint32 first_field_idx = mono_class_get_first_field_idx (p);
+
+			while ((field = mono_class_get_fields (p, &iter))) {
+				guint32 field_idx = first_field_idx + (field - p->fields);
+				if (MONO_TYPE_IS_REFERENCE (field->type) && mono_assembly_is_weak_field (p->image, field_idx + 1)) {
+					has_weak_fields = TRUE;
+					mono_trace_message (MONO_TRACE_TYPE, "Field %s:%s at offset %x is weak.", field->parent->name, field->name, field->offset);
+				}
+			}
+		}
+	}
+
 	/* Publish the data */
 	mono_loader_lock ();
 	if (!klass->rank)
 		klass->sizes.class_size = class_size;
 	klass->has_static_refs = has_static_refs;
+	klass->has_weak_fields = has_weak_fields;
 	for (i = 0; i < top; ++i) {
 		field = &klass->fields [i];
 
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			field->offset = field_offsets [i];
 	}
-
 	mono_memory_barrier ();
 	klass->fields_inited = 1;
 	mono_loader_unlock ();

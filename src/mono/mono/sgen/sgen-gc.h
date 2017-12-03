@@ -794,6 +794,8 @@ gboolean sgen_object_is_live (GCObject *obj);
 
 void  sgen_init_fin_weak_hash (void);
 
+void sgen_register_obj_with_weak_fields (GCObject *obj);
+
 /* FIXME: move the toggleref stuff out of here */
 void sgen_mark_togglerefs (char *start, char *end, ScanCopyContext ctx);
 void sgen_clear_togglerefs (char *start, char *end, ScanCopyContext ctx);
@@ -961,6 +963,23 @@ sgen_major_is_object_alive (GCObject *object)
 
 	return major_collector.is_object_live (object);
 }
+
+
+/*
+ * If the object has been forwarded it means it's still referenced from a root. 
+ * If it is pinned it's still alive as well.
+ * A LOS object is only alive if we have pinned it.
+ * Return TRUE if @obj is ready to be finalized.
+ */
+static inline gboolean
+sgen_is_object_alive (GCObject *object)
+{
+	if (sgen_ptr_in_nursery (object))
+		return sgen_nursery_is_object_alive (object);
+
+	return sgen_major_is_object_alive (object);
+}
+
 
 /*
  * This function returns true if @object is either alive or it belongs to the old gen

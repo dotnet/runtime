@@ -16,7 +16,8 @@ typedef enum {
 	PROP_PROPERTY_INFO = 5, /* MonoClassPropertyInfo* */
 	PROP_EVENT_INFO = 6, /* MonoClassEventInfo* */
 	PROP_FIELD_DEF_VALUES = 7, /* MonoFieldDefaultValue* */
-	PROP_DECLSEC_FLAGS = 8 /* guint32 */
+	PROP_DECLSEC_FLAGS = 8, /* guint32 */
+	PROP_WEAK_BITMAP = 9
 }  InfrequentDataKind;
 
 /* Accessors based on class kind*/
@@ -389,4 +390,32 @@ mono_class_gtd_get_canonical_inst (MonoClass *klass)
 {
 	g_assert (mono_class_is_gtd (klass));
 	return &((MonoClassGtd*)klass)->canonical_inst;
+}
+
+typedef struct {
+	MonoPropertyBagItem head;
+
+	int nbits;
+	gsize *bits;
+} WeakBitmapData;
+
+void
+mono_class_set_weak_bitmap (MonoClass *klass, int nbits, gsize *bits)
+{
+	WeakBitmapData *info = mono_class_alloc (klass, sizeof (WeakBitmapData));
+	info->nbits = nbits;
+	info->bits = bits;
+
+	info->head.tag = PROP_WEAK_BITMAP;
+	mono_property_bag_add (&klass->infrequent_data, info);
+}
+
+gsize*
+mono_class_get_weak_bitmap (MonoClass *klass, int *nbits)
+{
+	WeakBitmapData *prop = mono_property_bag_get (&klass->infrequent_data, PROP_WEAK_BITMAP);
+
+	g_assert (prop);
+	*nbits = prop->nbits;
+	return prop->bits;
 }

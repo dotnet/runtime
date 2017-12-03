@@ -138,6 +138,8 @@ void* mono_gc_alloc_string (MonoVTable *vtable, size_t size, gint32 len);
 void* mono_gc_alloc_mature (MonoVTable *vtable, size_t size);
 MonoGCDescriptor mono_gc_make_descr_for_string (gsize *bitmap, int numbits);
 
+void mono_gc_register_obj_with_weak_fields (void *obj);
+
 void  mono_gc_register_for_finalization (MonoObject *obj, void *user_data);
 void  mono_gc_add_memory_pressure (gint64 value);
 MONO_API int   mono_gc_register_root (char *start, size_t size, MonoGCDescriptor descr, MonoGCRootSource source, const char *msg);

@@ -2657,21 +2657,6 @@ report_internal_mem_usage (void)
  */
 
 /*
- * If the object has been forwarded it means it's still referenced from a root. 
- * If it is pinned it's still alive as well.
- * A LOS object is only alive if we have pinned it.
- * Return TRUE if @obj is ready to be finalized.
- */
-static inline gboolean
-sgen_is_object_alive (GCObject *object)
-{
-	if (ptr_in_nursery (object))
-		return sgen_nursery_is_object_alive (object);
-
-	return sgen_major_is_object_alive (object);
-}
-
-/*
  * This function returns true if @object is either alive and belongs to the
  * current collection - major collections are full heap, so old gen objects
  * are never alive during a minor collection.

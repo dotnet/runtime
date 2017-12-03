@@ -2003,6 +2003,13 @@ mono_gchandle_free_domain (MonoDomain *domain)
 	}
 
 }
+
+void
+mono_gc_register_obj_with_weak_fields (void *obj)
+{
+	g_error ("Weak fields not supported by boehm gc");
+}
+
 #else
 
 MONO_EMPTY_SOURCE_FILE (boehm_gc);

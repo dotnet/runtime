@@ -1501,7 +1501,7 @@ mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box, gboolean know
 		return NULL;
 	if (known_instance_size && ALIGN_TO (klass->instance_size, SGEN_ALLOC_ALIGN) >= SGEN_MAX_SMALL_OBJ_SIZE)
 		return NULL;
-	if (mono_class_has_finalizer (klass) || mono_class_is_marshalbyref (klass))
+	if (mono_class_has_finalizer (klass) || mono_class_is_marshalbyref (klass) || klass->has_weak_fields)
 		return NULL;
 	if (klass->rank)
 		return NULL;
@@ -2643,6 +2643,12 @@ mono_gc_make_descr_for_string (gsize *bitmap, int numbits)
 	return SGEN_DESC_STRING;
 }
 
+void
+mono_gc_register_obj_with_weak_fields (void *obj)
+{
+	return sgen_register_obj_with_weak_fields (obj);
+}
+
 void*
 mono_gc_get_nursery (int *shift_bits, size_t *size)
 {
@@ -3093,6 +3099,14 @@ gboolean
 mono_gc_is_null (void)
 {
 	return FALSE;
+}
+
+gsize *
+sgen_client_get_weak_bitmap (MonoVTable *vt, int *nbits)
+{
+	MonoClass *klass = vt->klass;
+
+	return mono_class_get_weak_bitmap (klass, nbits);
 }
 
 #endif

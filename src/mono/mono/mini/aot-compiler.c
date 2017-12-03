@@ -49,6 +49,7 @@
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/threads-types.h>
+#include <mono/metadata/custom-attrs-internals.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-time.h>
@@ -6543,7 +6544,7 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 	} else {
 		gboolean has_nested = mono_class_get_nested_classes_property (klass) != NULL;
 		encode_value (klass->vtable_size, p, &p);
-		encode_value ((mono_class_is_gtd (klass) ? (1 << 8) : 0) | (no_special_static << 7) | (klass->has_static_refs << 6) | (klass->has_references << 5) | ((klass->blittable << 4) | (has_nested ? 1 : 0) << 3) | (klass->has_cctor << 2) | (klass->has_finalize << 1) | klass->ghcimpl, p, &p);
+		encode_value ((klass->has_weak_fields << 9) | (mono_class_is_gtd (klass) ? (1 << 8) : 0) | (no_special_static << 7) | (klass->has_static_refs << 6) | (klass->has_references << 5) | ((klass->blittable << 4) | (has_nested ? 1 : 0) << 3) | (klass->has_cctor << 2) | (klass->has_finalize << 1) | klass->ghcimpl, p, &p);
 		if (klass->has_cctor)
 			encode_method_ref (acfg, mono_class_get_cctor (klass), p, &p);
 		if (klass->has_finalize)
@@ -9889,6 +9890,32 @@ emit_image_table (MonoAotCompile *acfg)
 }
 
 static void
+emit_weak_field_indexes (MonoAotCompile *acfg)
+{
+	char symbol [128];
+	GHashTable *indexes;
+	GHashTableIter iter;
+	gpointer key, value;
+
+	/* Emit a table of weak field indexes, since computing these at runtime is expensive */
+	sprintf (symbol, "weak_field_indexes");
+	emit_section_change (acfg, ".text", 0);
+	emit_alignment_code (acfg, 8);
+	emit_info_symbol (acfg, symbol);
+
+	mono_assembly_init_weak_fields (acfg->image);
+	indexes = acfg->image->weak_field_indexes;
+	g_assert (indexes);
+
+	emit_int32 (acfg, g_hash_table_size (indexes));
+	g_hash_table_iter_init (&iter, indexes);
+	while (g_hash_table_iter_next (&iter, &key, &value)) {
+		guint32 index = GPOINTER_TO_UINT (key);
+		emit_int32 (acfg, index);
+	}
+}
+
+static void
 emit_got_info (MonoAotCompile *acfg, gboolean llvm)
 {
 	int i, first_plt_got_patch = 0, buf_size;
@@ -10286,6 +10313,7 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 		symbols [sindex ++] = NULL;
 		symbols [sindex ++] = NULL;
 	}
+	symbols [sindex ++] = "weak_field_indexes";
 
 	g_assert (sindex == MONO_AOT_FILE_INFO_NUM_SYMBOLS);
 
@@ -12763,6 +12791,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 	emit_plt (acfg);
 
 	emit_image_table (acfg);
+
+	emit_weak_field_indexes (acfg);
 
 	emit_got (acfg);
 
