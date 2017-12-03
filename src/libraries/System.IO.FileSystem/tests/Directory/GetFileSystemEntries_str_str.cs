@@ -903,6 +903,7 @@ namespace System.IO.Tests
             });
         }
 
+        [ActiveIssue(25665)]
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Unix-invalid sarch patterns throw ArgumentException
         public void UnixSearchPatternInvalid()
