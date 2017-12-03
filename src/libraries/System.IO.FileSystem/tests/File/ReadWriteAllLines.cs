@@ -28,6 +28,7 @@ namespace System.IO.Tests
 
         #region UniversalTests
 
+        [ActiveIssue(25665)]
         [Fact]
         public void InvalidPath()
         {
@@ -216,6 +217,7 @@ namespace System.IO.Tests
 
         #region UniversalTests
 
+        [ActiveIssue(25665)]
         [Fact]
         public void InvalidPath()
         {

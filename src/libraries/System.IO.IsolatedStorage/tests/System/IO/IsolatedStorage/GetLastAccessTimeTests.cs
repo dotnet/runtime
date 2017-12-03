@@ -49,6 +49,7 @@ namespace System.IO.IsolatedStorage
             }
         }
 
+        [ActiveIssue(25665)]
         [Fact]
         public void GetLastAccessTime_RaisesArgumentException()
         {
