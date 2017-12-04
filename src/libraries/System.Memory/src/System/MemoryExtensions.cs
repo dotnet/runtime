@@ -250,6 +250,11 @@ namespace System
         }
 
         /// <summary>
+        /// Creates a new readonly span over the entire target span.
+        /// </summary>
+        public static ReadOnlySpan<T> AsReadOnlySpan<T>(this Span<T> span) => span;
+
+        /// <summary>
         /// Creates a new readonly span over the target array segment.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -257,6 +262,11 @@ namespace System
         {
             return new ReadOnlySpan<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
         }
+
+        /// <summary>
+        /// Creates a new readonly memory over the entire target memory.
+        /// </summary>
+        public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this Memory<T> memory) => memory;
 
         /// <summary>
         /// Copies the contents of the array into the span. If the source

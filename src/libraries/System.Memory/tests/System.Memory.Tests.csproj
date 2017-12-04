@@ -77,6 +77,7 @@
     <Compile Include="ReadOnlySpan\ToArray.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Memory\AsReadOnlyMemory.cs" />
     <Compile Include="Memory\CopyTo.cs" />
     <Compile Include="Memory\CtorArray.cs" />
     <Compile Include="Memory\CtorArrayIntInt.cs" />
