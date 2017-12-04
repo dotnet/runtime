@@ -294,13 +294,48 @@ namespace System
         }
 
         // TODO: XML doc
+        /// <summary>
+        /// Searches the entire sorted <see cref="Span{T}"/> for an element
+        /// using the default comparer and returns the zero-based index of the element.
+        /// </summary>
+        /// <param name="span">The sorted span to search in.</param>
+        /// <param name="comparable">The object to locate as an Comparable.</param>
+        /// <returns>
+        /// The zero-based index of <paramref name="comparable"/> in the sorted <see cref="Span{T}"/>,
+        /// if <paramref name="comparable"/> is found; otherwise, a negative number that is the bitwise complement
+        /// of the index of the next element that is larger than <paramref name="comparable"/> or, if there is
+        /// no larger element, the bitwise complement of <see cref="Span{T}.Length"/>.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        /// The default comparer <see cref="Comparer{T}.Default"/> cannot
+        /// find an implementation of the <see cref="IComparable{T}"/> generic interface or
+        /// the <see cref="IComparable"/> interface for type <typeparamref name="T"/>.
+        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int BinarySearch<T>(
             this Span<T> span, IComparable<T> comparable)
         {
             return BinarySearch<T, IComparable<T>>(span, comparable);
         }
+
         // TODO: XML doc
+        /// <summary>
+        /// Searches the entire sorted <see cref="Span{T}"/> for an element
+        /// using the default comparer and returns the zero-based index of the element.
+        /// </summary>
+        /// <param name="span">The sorted span to search in.</param>
+        /// <param name="comparable">The object to locate. The value can be null for reference types.</param>
+        /// <returns>
+        /// The zero-based index of <paramref name="comparable"/> in the sorted <see cref="Span{T}"/>,
+        /// if <paramref name="comparable"/> is found; otherwise, a negative number that is the bitwise complement
+        /// of the index of the next element that is larger than <paramref name="comparable"/> or, if there is
+        /// no larger element, the bitwise complement of <see cref="Span{T}.Length"/>.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        /// The default comparer <see cref="Comparer{T}.Default"/> cannot
+        /// find an implementation of the <see cref="IComparable{T}"/> generic interface or
+        /// the <see cref="IComparable"/> interface for type <typeparamref name="T"/>.
+        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int BinarySearch<T, TComparable>(
             this Span<T> span, TComparable comparable)
@@ -310,6 +345,24 @@ namespace System
         }
 
         // TODO: XML doc
+        /// <summary>
+        /// Searches the entire sorted <see cref="Span{T}"/> for an element
+        /// using the default comparer and returns the zero-based index of the element.
+        /// </summary>
+        /// <param name="span">The sorted span to search in.</param>
+        /// <param name="value">The object to locate. The value can be null for reference types.</param>
+        /// <param name="comparer">The comparer to use for searching.</param>
+        /// <returns>
+        /// The zero-based index of <paramref name="value"/> in the sorted <see cref="Span{T}"/>,
+        /// if <paramref name="value"/> is found; otherwise, a negative number that is the bitwise complement
+        /// of the index of the next element that is larger than <paramref name="value"/> or, if there is
+        /// no larger element, the bitwise complement of <see cref="Span{T}.Length"/>.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        /// The default comparer <see cref="Comparer{T}.Default"/> cannot
+        /// find an implementation of the <see cref="IComparable{T}"/> generic interface or
+        /// the <see cref="IComparable"/> interface for type <typeparamref name="T"/>.
+        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int BinarySearch<T, TComparer>(
             this Span<T> span, T value, TComparer comparer)
@@ -319,6 +372,23 @@ namespace System
         }
 
         // TODO: XML doc
+        /// <summary>
+        /// Searches the entire sorted <see cref="Span{T}"/> for an element
+        /// using the default comparer and returns the zero-based index of the element.
+        /// </summary>
+        /// <param name="span">The sorted span to search in.</param>
+        /// <param name="comparable">The object to locate. The value can be null for reference types.</param>
+        /// <returns>
+        /// The zero-based index of <paramref name="comparable"/> in the sorted <see cref="Span{T}"/>,
+        /// if <paramref name="comparable"/> is found; otherwise, a negative number that is the bitwise complement
+        /// of the index of the next element that is larger than <paramref name="comparable"/> or, if there is
+        /// no larger element, the bitwise complement of <see cref="Span{T}.Length"/>.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        /// The default comparer <see cref="Comparer{T}.Default"/> cannot
+        /// find an implementation of the <see cref="IComparable{T}"/> generic interface or
+        /// the <see cref="IComparable"/> interface for type <typeparamref name="T"/>.
+        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int BinarySearch<T>(
             this ReadOnlySpan<T> span, IComparable<T> comparable)
@@ -327,6 +397,23 @@ namespace System
         }
 
         // TODO: XML doc
+        /// <summary>
+        /// Searches the entire sorted <see cref="Span{T}"/> for an element
+        /// using the default comparer and returns the zero-based index of the element.
+        /// </summary>
+        /// <param name="span">The sorted span to search in.</param>
+        /// <param name="comparable">The object to locate. The value can be null for reference types.</param>
+        /// <returns>
+        /// The zero-based index of <paramref name="comparable"/> in the sorted <see cref="Span{T}"/>,
+        /// if <paramref name="comparable"/> is found; otherwise, a negative number that is the bitwise complement
+        /// of the index of the next element that is larger than <paramref name="comparable"/> or, if there is
+        /// no larger element, the bitwise complement of <see cref="Span{T}.Length"/>.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        /// The default comparer <see cref="Comparer{T}.Default"/> cannot
+        /// find an implementation of the <see cref="IComparable{T}"/> generic interface or
+        /// the <see cref="IComparable"/> interface for type <typeparamref name="T"/>.
+        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int BinarySearch<T, TComparable>(
             this ReadOnlySpan<T> span, TComparable comparable)
@@ -336,6 +423,24 @@ namespace System
         }
 
         // TODO: XML doc
+        /// <summary>
+        /// Searches the entire sorted <see cref="Span{T}"/> for an element
+        /// using the default comparer and returns the zero-based index of the element.
+        /// </summary>
+        /// <param name="span">The sorted span to search in.</param>
+        /// <param name="value">The object to locate. The value can be null for reference types.</param>
+        /// <param name="comparer">The comparer to use for searching.</param>
+        /// <returns>
+        /// The zero-based index of <paramref name="value"/> in the sorted <see cref="Span{T}"/>,
+        /// if <paramref name="value"/> is found; otherwise, a negative number that is the bitwise complement
+        /// of the index of the next element that is larger than <paramref name="value"/> or, if there is
+        /// no larger element, the bitwise complement of <see cref="Span{T}.Length"/>.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        /// The default comparer <see cref="Comparer{T}.Default"/> cannot
+        /// find an implementation of the <see cref="IComparable{T}"/> generic interface or
+        /// the <see cref="IComparable"/> interface for type <typeparamref name="T"/>.
+        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int BinarySearch<T, TComparer>(
             this ReadOnlySpan<T> span, T value, TComparer comparer)
