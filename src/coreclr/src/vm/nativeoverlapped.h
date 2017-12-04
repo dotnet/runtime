@@ -21,8 +21,7 @@
 class OverlappedDataObject : public Object
 {
 public:
-    ASYNCRESULTREF m_asyncResult;
-
+    OBJECTREF m_asyncResult;
     OBJECTREF m_iocb;
     OBJECTREF m_iocbHelper;
     OBJECTREF m_overlapped;

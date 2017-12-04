@@ -877,12 +877,9 @@ public:
                                                   CORINFO_CLASS_HANDLE   implClass,
                                                   CORINFO_CONTEXT_HANDLE ownerType);
 
-    void recGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn,
-                            bool* requiresInstMethodTableArg,
-                            CORINFO_METHOD_HANDLE result);
+    void recGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg, CORINFO_METHOD_HANDLE result);
     void dmpGetUnboxedEntry(DWORDLONG key, DLD value);
-    CORINFO_METHOD_HANDLE repGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn,
-                                             bool* requiresInstMethodTableArg);
+    CORINFO_METHOD_HANDLE repGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
 
     void recGetDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result);
     void dmpGetDefaultEqualityComparerClass(DWORDLONG key, DWORDLONG value);

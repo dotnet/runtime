@@ -1089,14 +1089,14 @@ namespace System
             return ReplaceInternal(oldValue, newValue);
         }
 
-        public unsafe String[] Split(char separator, StringSplitOptions options = StringSplitOptions.None)
+        public String[] Split(char separator, StringSplitOptions options = StringSplitOptions.None)
         {
-            return SplitInternal(&separator, 1, int.MaxValue, options);
+            return SplitInternal(new ReadOnlySpan<char>(ref separator, 1), int.MaxValue, options);
         }
 
-        public unsafe String[] Split(char separator, int count, StringSplitOptions options = StringSplitOptions.None)
+        public String[] Split(char separator, int count, StringSplitOptions options = StringSplitOptions.None)
         {
-            return SplitInternal(&separator, 1, count, options);
+            return SplitInternal(new ReadOnlySpan<char>(ref separator, 1), count, options);
         }
 
         // Creates an array of strings by splitting this string at each
@@ -1139,16 +1139,7 @@ namespace System
             return SplitInternal(separator, count, options);
         }
 
-        private unsafe String[] SplitInternal(char[] separator, int count, StringSplitOptions options)
-        {
-            fixed (char* pSeparators = separator)
-            {
-                int separatorsLength = separator == null ? 0 : separator.Length;
-                return SplitInternal(pSeparators, separatorsLength, count, options);
-            }
-        }
-
-        private unsafe String[] SplitInternal(char* separators, int separatorsLength, int count, StringSplitOptions options)
+        private String[] SplitInternal(ReadOnlySpan<char> separators, int count, StringSplitOptions options)
         {
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count),
@@ -1170,7 +1161,7 @@ namespace System
             }
 
             int[] sepList = new int[Length];
-            int numReplaces = MakeSeparatorList(separators, separatorsLength, sepList);
+            int numReplaces = MakeSeparatorList(separators, sepList);
 
             // Handle the special case of no replaces.
             if (0 == numReplaces)
@@ -1377,45 +1368,83 @@ namespace System
         // Args: separator  -- A string containing all of the split characters.
         //       sepList    -- an array of ints for split char indicies.
         //--------------------------------------------------------------------    
-        private unsafe int MakeSeparatorList(char* separators, int separatorsLength, int[] sepList)
+        private int MakeSeparatorList(ReadOnlySpan<char> separators, int[] sepList)
         {
-            Debug.Assert(separatorsLength >= 0, "separatorsLength >= 0");
             int foundCount = 0;
+            char sep0, sep1, sep2;
 
-            if (separators == null || separatorsLength == 0)
+            switch (separators.Length)
             {
-                fixed (char* pwzChars = &_firstChar)
-                {
-                    //If they passed null or an empty string, look for whitespace.
-                    for (int i = 0; i < Length && foundCount < sepList.Length; i++)
+                // Special-case no separators to mean any whitespace is a separator.
+                case 0:
+                    for (int i = 0; i < Length; i++)
                     {
-                        if (Char.IsWhiteSpace(pwzChars[i]))
+                        if (char.IsWhiteSpace(this[i]))
                         {
                             sepList[foundCount++] = i;
                         }
                     }
-                }
-            }
-            else
-            {
-                int sepListCount = sepList.Length;
-                //If they passed in a string of chars, actually look for those chars.
-                fixed (char* pwzChars = &_firstChar)
-                {
-                    for (int i = 0; i < Length && foundCount < sepListCount; i++)
+                    break;
+
+                // Special-case the common cases of 1, 2, and 3 separators, with manual comparisons against each separator.
+                case 1:
+                    sep0 = separators[0];
+                    for (int i = 0; i < Length; i++)
                     {
-                        char* pSep = separators;
-                        for (int j = 0; j < separatorsLength; j++, pSep++)
+                        if (this[i] == sep0)
                         {
-                            if (pwzChars[i] == *pSep)
+                            sepList[foundCount++] = i;
+                        }
+                    }
+                    break;
+                case 2:
+                    sep0 = separators[0];
+                    sep1 = separators[1];
+                    for (int i = 0; i < Length; i++)
+                    {
+                        char c = this[i];
+                        if (c == sep0 || c == sep1)
+                        {
+                            sepList[foundCount++] = i;
+                        }
+                    }
+                    break;
+                case 3:
+                    sep0 = separators[0];
+                    sep1 = separators[1];
+                    sep2 = separators[2];
+                    for (int i = 0; i < Length; i++)
+                    {
+                        char c = this[i];
+                        if (c == sep0 || c == sep1 || c == sep2)
+                        {
+                            sepList[foundCount++] = i;
+                        }
+                    }
+                    break;
+
+                // Handle > 3 separators with a probabilistic map, ala IndexOfAny.
+                // This optimizes for chars being unlikely to match a separator.
+                default:
+                    unsafe
+                    {
+                        ProbabilisticMap map = default;
+                        uint* charMap = (uint*)&map;
+                        InitializeProbabilisticMap(charMap, separators);
+
+                        for (int i = 0; i < Length; i++)
+                        {
+                            char c = this[i];
+                            if (IsCharBitSet(charMap, (byte)c) && IsCharBitSet(charMap, (byte)(c >> 8)) &&
+                                separators.Contains(c))
                             {
                                 sepList[foundCount++] = i;
-                                break;
                             }
                         }
                     }
-                }
+                    break;
             }
+
             return foundCount;
         }
 

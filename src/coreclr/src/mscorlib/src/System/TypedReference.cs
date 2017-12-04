@@ -97,7 +97,7 @@ namespace System
         {
             get
             {
-                return Value.IsNull() && Type.IsNull();
+                return Value == IntPtr.Zero && Type == IntPtr.Zero;
             }
         }
 

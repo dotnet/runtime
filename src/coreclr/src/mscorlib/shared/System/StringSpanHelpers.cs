@@ -90,6 +90,19 @@ namespace System
             return -1;
         }
 
+        public static bool Contains(this ReadOnlySpan<char> source, char value)
+        {
+            for (int i = 0; i < source.Length; i++)
+            {
+                if (source[i] == value)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public static ReadOnlySpan<char> Remove(this ReadOnlySpan<char> source, int startIndex, int count)
         {
             if (startIndex < 0) throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);

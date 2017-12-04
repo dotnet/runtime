@@ -55,9 +55,6 @@ namespace System.Diagnostics.Tracing
     /// <summary>
     /// WindowsEventTask. Custom values must be in the range from 1 through 65534
     /// </summary>
-#if (!ES_BUILD_STANDALONE && !ES_BUILD_PN)
-    [System.Runtime.CompilerServices.FriendAccessAllowed]
-#endif
     public enum EventTask
     {
         /// <summary>
@@ -68,9 +65,6 @@ namespace System.Diagnostics.Tracing
     /// <summary>
     /// EventOpcode. Custom values must be in the range from 11 through 239
     /// </summary>
-#if (!ES_BUILD_STANDALONE && !ES_BUILD_PN)
-    [System.Runtime.CompilerServices.FriendAccessAllowed]
-#endif
     public enum EventOpcode
     {
         /// <summary>
@@ -124,9 +118,6 @@ namespace System.Diagnostics.Tracing
     /// EventChannel. Custom values must be in the range from 16 through 255. Currently only predefined values allowed.
     /// </summary>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1028:EnumStorageShouldBeInt32", Justification = "Backwards compatibility")]
-#if (!ES_BUILD_STANDALONE && !ES_BUILD_PN)
-    [System.Runtime.CompilerServices.FriendAccessAllowed]
-#endif
     public enum EventChannel : byte
     {
         /// <summary>

@@ -146,7 +146,7 @@ CrashInfo::EnumerateAndSuspendThreads()
 // Gather all the necessary crash dump info.
 //
 bool
-CrashInfo::GatherCrashInfo(const char* programPath, MINIDUMP_TYPE minidumpType)
+CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
 {
     // Get the process info
     if (!GetStatus(m_pid, &m_ppid, &m_tgid, &m_name))
@@ -206,7 +206,7 @@ CrashInfo::GatherCrashInfo(const char* programPath, MINIDUMP_TYPE minidumpType)
         }
     }
     // Gather all the useful memory regions from the DAC
-    if (!EnumerateMemoryRegionsWithDAC(programPath, minidumpType))
+    if (!EnumerateMemoryRegionsWithDAC(minidumpType))
     {
         return false;
     }
@@ -363,10 +363,21 @@ CrashInfo::EnumerateModuleMappings()
             }
             MemoryRegion memoryRegion(regionFlags, start, end, offset, moduleName);
 
-            if (moduleName != nullptr && *moduleName == '/') {
+            if (moduleName != nullptr && *moduleName == '/')
+            {
+                if (m_coreclrPath.empty())
+                {
+                    std::string coreclrPath;
+                    coreclrPath.append(moduleName);
+                    size_t last = coreclrPath.rfind(MAKEDLLNAME_A("coreclr"));
+                    if (last != -1) {
+                        m_coreclrPath = coreclrPath.substr(0, last);
+                    }
+                }
                 m_moduleMappings.insert(memoryRegion);
             }
-            else {
+            else 
+            {
                 m_otherMappings.insert(memoryRegion);
             }
             if (linuxGateAddress != nullptr && reinterpret_cast<void*>(start) == linuxGateAddress)
@@ -412,40 +423,15 @@ CrashInfo::GetDSOInfo()
         return false;
     }
     uint64_t baseAddress = (uint64_t)phdrAddr - sizeof(Ehdr);
+    ElfW(Dyn)* dynamicAddr = nullptr;
+
     TRACE("DSO: base %" PRIA PRIx64 " phdr %p phnum %d\n", baseAddress, phdrAddr, phnum);
 
-    // Search for the program PT_DYNAMIC header 
-    ElfW(Dyn)* dynamicAddr = nullptr;
-    for (int i = 0; i < phnum; i++, phdrAddr++)
+    // Enumerate program headers searching for the PT_DYNAMIC header, etc.
+    if (!EnumerateProgramHeaders(phdrAddr, phnum, baseAddress, &dynamicAddr))
     {
-        Phdr ph;
-        if (!ReadMemory(phdrAddr, &ph, sizeof(ph))) {
-            fprintf(stderr, "ReadMemory(%p, %" PRIx ") phdr FAILED\n", phdrAddr, sizeof(ph));
-            return false;
-        }
-        TRACE("DSO: phdr %p type %d (%x) vaddr %" PRIxA " memsz %" PRIxA " offset %" PRIxA "\n",
-            phdrAddr, ph.p_type, ph.p_type, ph.p_vaddr, ph.p_memsz, ph.p_offset);
-
-        switch (ph.p_type)
-        {
-        case PT_DYNAMIC:
-            dynamicAddr = reinterpret_cast<ElfW(Dyn)*>(ph.p_vaddr);
-            break;
-
-        case PT_NOTE:
-        case PT_GNU_EH_FRAME:
-            if (ph.p_vaddr != 0 && ph.p_memsz != 0) {
-                InsertMemoryRegion(ph.p_vaddr, ph.p_memsz);
-            }
-            break;
-
-        case PT_LOAD:
-            MemoryRegion region(0, ph.p_vaddr, ph.p_vaddr + ph.p_memsz, baseAddress);
-            m_moduleAddresses.insert(region);
-            break;
-        }
+        return false;
     }
-
     if (dynamicAddr == nullptr) {
         return false;
     }
@@ -542,32 +528,70 @@ CrashInfo::GetELFInfo(uint64_t baseAddress)
     {
         Phdr* phdrAddr = reinterpret_cast<Phdr*>(baseAddress + ehdr.e_phoff);
 
-        // Add the program headers and search for the module's note and unwind info segments
-        for (int i = 0; i < phnum; i++, phdrAddr++)
+        if (!EnumerateProgramHeaders(phdrAddr, phnum, baseAddress, nullptr))
         {
-            Phdr ph;
-            if (!ReadMemory(phdrAddr, &ph, sizeof(ph))) {
-                fprintf(stderr, "ReadMemory(%p, %" PRIx ") phdr FAILED\n", phdrAddr, sizeof(ph));
-                return false;
-            }
-            TRACE("ELF: phdr %p type %d (%x) vaddr %" PRIxA " memsz %" PRIxA " paddr %" PRIxA " filesz %" PRIxA " offset %" PRIxA " align %" PRIxA "\n",
-                phdrAddr, ph.p_type, ph.p_type, ph.p_vaddr, ph.p_memsz, ph.p_paddr, ph.p_filesz, ph.p_offset, ph.p_align);
+            return false;
+        }
+    }
 
-            switch (ph.p_type)
+    return true;
+}
+
+//
+// Enumerate the program headers adding the build id note, unwind frame 
+// region and module addresses to the crash info.
+//
+bool
+CrashInfo::EnumerateProgramHeaders(Phdr* phdrAddr, int phnum, uint64_t baseAddress, ElfW(Dyn)** pdynamicAddr)
+{
+    uint64_t loadbias = baseAddress;
+
+    for (int i = 0; i < phnum; i++)
+    {
+        Phdr ph;
+        if (!ReadMemory(phdrAddr + i, &ph, sizeof(ph))) {
+            fprintf(stderr, "ReadMemory(%p, %" PRIx ") phdr FAILED\n", phdrAddr + i, sizeof(ph));
+            return false;
+        }
+        if (ph.p_type == PT_LOAD && ph.p_offset == 0)
+        {
+            loadbias -= ph.p_vaddr;
+            TRACE("PHDR: loadbias %" PRIA PRIx64 "\n", loadbias);
+            break;
+        }
+    }
+
+    for (int i = 0; i < phnum; i++)
+    {
+        Phdr ph;
+        if (!ReadMemory(phdrAddr + i, &ph, sizeof(ph))) {
+            fprintf(stderr, "ReadMemory(%p, %" PRIx ") phdr FAILED\n", phdrAddr + i, sizeof(ph));
+            return false;
+        }
+        TRACE("PHDR: %p type %d (%x) vaddr %" PRIxA " memsz %" PRIxA " paddr %" PRIxA " filesz %" PRIxA " offset %" PRIxA " align %" PRIxA "\n",
+            phdrAddr + i, ph.p_type, ph.p_type, ph.p_vaddr, ph.p_memsz, ph.p_paddr, ph.p_filesz, ph.p_offset, ph.p_align);
+
+        switch (ph.p_type)
+        {
+        case PT_DYNAMIC:
+            if (pdynamicAddr != nullptr)
             {
-            case PT_DYNAMIC:
-            case PT_NOTE:
-            case PT_GNU_EH_FRAME:
-                if (ph.p_vaddr != 0 && ph.p_memsz != 0) {
-                    InsertMemoryRegion(baseAddress + ph.p_vaddr, ph.p_memsz);
-                }
-                break;
-
-            case PT_LOAD:
-                MemoryRegion region(0, baseAddress + ph.p_vaddr, baseAddress + ph.p_vaddr + ph.p_memsz, baseAddress);
-                m_moduleAddresses.insert(region);
+                *pdynamicAddr = reinterpret_cast<ElfW(Dyn)*>(loadbias + ph.p_vaddr);
                 break;
             }
+            // fall into InsertMemoryRegion
+
+        case PT_NOTE:
+        case PT_GNU_EH_FRAME:
+            if (ph.p_vaddr != 0 && ph.p_memsz != 0) {
+                InsertMemoryRegion(loadbias + ph.p_vaddr, ph.p_memsz);
+            }
+            break;
+
+        case PT_LOAD:
+            MemoryRegion region(0, loadbias + ph.p_vaddr, loadbias + ph.p_vaddr + ph.p_memsz, baseAddress);
+            m_moduleAddresses.insert(region);
+            break;
         }
     }
 
@@ -578,7 +602,7 @@ CrashInfo::GetELFInfo(uint64_t baseAddress)
 // Enumerate all the memory regions using the DAC memory region support given a minidump type
 //
 bool
-CrashInfo::EnumerateMemoryRegionsWithDAC(const char* programPath, MINIDUMP_TYPE minidumpType)
+CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
 {
     PFN_CLRDataCreateInstance pfnCLRDataCreateInstance = nullptr;
     ICLRDataEnumMemoryRegions* pClrDataEnumRegions = nullptr;
@@ -587,50 +611,55 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(const char* programPath, MINIDUMP_TYPE 
     HRESULT hr = S_OK;
     bool result = false;
 
-    // We assume that the DAC is in the same location as this createdump exe
-    std::string dacPath;
-    dacPath.append(programPath);
-    dacPath.append("/");
-    dacPath.append(MAKEDLLNAME_A("mscordaccore"));
+    if (!m_coreclrPath.empty())
+    {
+        // We assume that the DAC is in the same location as the libcoreclr.so module
+        std::string dacPath;
+        dacPath.append(m_coreclrPath);
+        dacPath.append(MAKEDLLNAME_A("mscordaccore"));
 
-    // Load and initialize the DAC
-    hdac = LoadLibraryA(dacPath.c_str());
-    if (hdac == nullptr)
-    {
-        fprintf(stderr, "LoadLibraryA(%s) FAILED %d\n", dacPath.c_str(), GetLastError());
-        goto exit;
-    }
-    pfnCLRDataCreateInstance = (PFN_CLRDataCreateInstance)GetProcAddress(hdac, "CLRDataCreateInstance");
-    if (pfnCLRDataCreateInstance == nullptr)
-    {
-        fprintf(stderr, "GetProcAddress(CLRDataCreateInstance) FAILED %d\n", GetLastError());
-        goto exit;
-    }
-    if ((minidumpType & MiniDumpWithFullMemory) == 0)
-    {
-        hr = pfnCLRDataCreateInstance(__uuidof(ICLRDataEnumMemoryRegions), m_dataTarget, (void**)&pClrDataEnumRegions);
-        if (FAILED(hr))
+        // Load and initialize the DAC
+        hdac = LoadLibraryA(dacPath.c_str());
+        if (hdac == nullptr)
         {
-            fprintf(stderr, "CLRDataCreateInstance(ICLRDataEnumMemoryRegions) FAILED %08x\n", hr);
+            fprintf(stderr, "LoadLibraryA(%s) FAILED %d\n", dacPath.c_str(), GetLastError());
             goto exit;
         }
-        // Calls CrashInfo::EnumMemoryRegion for each memory region found by the DAC
-        hr = pClrDataEnumRegions->EnumMemoryRegions(this, minidumpType, CLRDATA_ENUM_MEM_DEFAULT);
+        pfnCLRDataCreateInstance = (PFN_CLRDataCreateInstance)GetProcAddress(hdac, "CLRDataCreateInstance");
+        if (pfnCLRDataCreateInstance == nullptr)
+        {
+            fprintf(stderr, "GetProcAddress(CLRDataCreateInstance) FAILED %d\n", GetLastError());
+            goto exit;
+        }
+        if ((minidumpType & MiniDumpWithFullMemory) == 0)
+        {
+            hr = pfnCLRDataCreateInstance(__uuidof(ICLRDataEnumMemoryRegions), m_dataTarget, (void**)&pClrDataEnumRegions);
+            if (FAILED(hr))
+            {
+                fprintf(stderr, "CLRDataCreateInstance(ICLRDataEnumMemoryRegions) FAILED %08x\n", hr);
+                goto exit;
+            }
+            // Calls CrashInfo::EnumMemoryRegion for each memory region found by the DAC
+            hr = pClrDataEnumRegions->EnumMemoryRegions(this, minidumpType, CLRDATA_ENUM_MEM_DEFAULT);
+            if (FAILED(hr))
+            {
+                fprintf(stderr, "EnumMemoryRegions FAILED %08x\n", hr);
+                goto exit;
+            }
+        }
+        hr = pfnCLRDataCreateInstance(__uuidof(IXCLRDataProcess), m_dataTarget, (void**)&pClrDataProcess);
         if (FAILED(hr))
         {
-            fprintf(stderr, "EnumMemoryRegions FAILED %08x\n", hr);
+            fprintf(stderr, "CLRDataCreateInstance(IXCLRDataProcess) FAILED %08x\n", hr);
+            goto exit;
+        }
+        if (!EnumerateManagedModules(pClrDataProcess))
+        {
             goto exit;
         }
     }
-    hr = pfnCLRDataCreateInstance(__uuidof(IXCLRDataProcess), m_dataTarget, (void**)&pClrDataProcess);
-    if (FAILED(hr))
-    {
-        fprintf(stderr, "CLRDataCreateInstance(IXCLRDataProcess) FAILED %08x\n", hr);
-        goto exit;
-    }
-    if (!EnumerateManagedModules(pClrDataProcess))
-    {
-        goto exit;
+    else {
+        TRACE("EnumerateMemoryRegionsWithDAC: coreclr not found; not using DAC\n");
     }
     if (!UnwindAllThreads(pClrDataProcess))
     {

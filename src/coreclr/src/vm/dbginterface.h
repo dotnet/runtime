@@ -279,13 +279,14 @@ public:
                                                                             DWORD nativeOffset,
                                                                             DWORD *ilOffset) = 0;
 
-    virtual HRESULT GetILToNativeMapping(UINT_PTR pNativeCodeStartAddress,
+    virtual HRESULT GetILToNativeMapping(PCODE pNativeCodeStartAddress,
                                          ULONG32 cMap,
                                          ULONG32 *pcMap,
                                          COR_DEBUG_IL_TO_NATIVE_MAP map[]) = 0;
 
     virtual HRESULT GetILToNativeMappingIntoArrays(
-        MethodDesc * pMD, 
+        MethodDesc * pMethodDesc,
+        PCODE pCode, 
         USHORT cMapMax, 
         USHORT * pcMap,
         UINT ** prguiILOffset, 

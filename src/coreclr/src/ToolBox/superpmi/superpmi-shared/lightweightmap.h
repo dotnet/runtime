@@ -374,7 +374,7 @@ public:
         // O(log n) version
         int first = 0;
         int mid   = 0;
-        int last  = numItems;
+        int last  = numItems - 1;
         while (first <= last)
         {
             mid     = (first + last) / 2; // compute mid point.

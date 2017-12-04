@@ -102,13 +102,13 @@ Build the Framework Managed Components
 
 We don't _yet_ have support for building managed code on FreeBSD, so you'll need a Windows machine with clones of both the CoreCLR and CoreFX projects.
 
-You will build `mscorlib.dll` out of the coreclr repository and the rest of the framework that out of the corefx repository.  For mscorlib (from a regular command prompt window) run:
+You will build `System.Private.CoreLib.dll` out of the coreclr repository and the rest of the framework that out of the corefx repository.  For System.Private.CoreLib (from a regular command prompt window) run:
 
 ```
 D:\git\coreclr> build.cmd freebsdmscorlib
 ```
 
-The output is placed in `bin\Product\FreeBSD.x64.Debug\mscorlib.dll`.  You'll want to copy this to the runtime folder on your FreeBSD machine. (e.g. `~/coreclr-demo/runtime`)
+The output is placed in `bin\Product\FreeBSD.x64.Debug\System.Private.CoreLib.dll`.  You'll want to copy this to the runtime folder on your FreeBSD machine. (e.g. `~/coreclr-demo/runtime`)
 
 For the rest of the framework, you need to pass some special parameters to build.cmd when building out of the CoreFX repository.
 
@@ -126,13 +126,13 @@ After you've done these steps, the runtime directory on FreeBSD should look like
 
 ```
 janhenke@freebsd-frankfurt:~/git/coreclr % ls ~/coreclr-demo/runtime/
-System.Console.dll  System.Diagnostics.Debug.dll  corerun  libcoreclr.so  libcoreclrpal.so  mscorlib.dll
+System.Console.dll  System.Diagnostics.Debug.dll  corerun  libcoreclr.so  libcoreclrpal.so  System.Private.CoreLib.dll
 ```
 
 Download Dependencies
 =====================
 
-The rest of the assemblies you need to run are presently just facades that point to mscorlib.  We can pull these dependencies down via NuGet (which currently requires Mono).
+The rest of the assemblies you need to run are presently just facades that point to System.Private.CoreLib.  We can pull these dependencies down via NuGet (which currently requires Mono).
 
 Create a folder for the packages:
 
@@ -236,7 +236,7 @@ If all works, you should be greeted by a friendly daemon you know well.
 
 Over time, this process will get easier. We will remove the dependency on having to compile managed code on Windows. For example, we are working to get our NuGet packages to include both the Windows and FreeBSD versions of an assembly, so you can simply nuget restore the dependencies. 
 
-Pull Requests to enable building CoreFX and mscorlib on FreeBSD via Mono would be very welcome. A sample that builds Hello World on FreeBSD using the correct references but via XBuild or MonoDevelop would also be great! Some of our processes (e.g. the mscorlib build) rely on Windows specific tools, but we want to figure out how to solve these problems for FreeBSD as well. There's still a lot of work ahead, so if you're interested in helping, we're ready for you!
+A sample that builds Hello World on FreeBSD using the correct references but via XBuild or MonoDevelop would be great! Some of our processes (e.g. the System.Private.CoreLib build) rely on Windows specific tools, but we want to figure out how to solve these problems for FreeBSD as well. There's still a lot of work ahead, so if you're interested in helping, we're ready for you!
 
 
 Run the test suite

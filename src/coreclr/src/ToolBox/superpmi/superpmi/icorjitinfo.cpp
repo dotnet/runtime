@@ -189,8 +189,7 @@ CORINFO_METHOD_HANDLE MyICJI::resolveVirtualMethod(CORINFO_METHOD_HANDLE  virtua
 CORINFO_METHOD_HANDLE MyICJI::getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg)
 {
     jitInstance->mc->cr->AddCall("getUnboxedEntry");
-    CORINFO_METHOD_HANDLE result =
-        jitInstance->mc->repGetUnboxedEntry(ftn, requiresInstMethodTableArg);
+    CORINFO_METHOD_HANDLE result = jitInstance->mc->repGetUnboxedEntry(ftn, requiresInstMethodTableArg);
     return result;
 }
 

@@ -515,6 +515,7 @@ struct InlArgInfo
     unsigned   argIsThis : 1;               // the argument is the 'this' pointer
     unsigned   argHasSideEff : 1;           // the argument has side effects
     unsigned   argHasGlobRef : 1;           // the argument has a global ref
+    unsigned   argHasCallerLocalRef : 1;    // the argument value depends on an aliased caller local
     unsigned   argHasTmp : 1;               // the argument will be evaluated to a temp
     unsigned   argHasLdargaOp : 1;          // Is there LDARGA(s) operation on this argument?
     unsigned   argHasStargOp : 1;           // Is there STARG(s) operation on this argument?

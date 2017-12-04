@@ -188,8 +188,9 @@ still reach their intended target with a rel32 offset, so jump stubs are
 not expected to be required in most cases.
 
 If this attempt to create a jump stub fails, then the generated code
-cannot be used, and we hit a fatal error; we have no mechanism currently
-to recover from this failure, or to prevent it.
+cannot be used, and the VM restarts the compilation with reserving
+extra space in the code heap for jump stubs. The reserved extra space
+ensures that the retry succeeds with high probability.
 
 There are several problems with this system:
 1. Because the VM doesn't know whether a `IMAGE_REL_BASED_REL32`
@@ -205,8 +206,6 @@ code because the JIT generates `IMAGE_REL_BASED_REL32` relocations for
 intra-function jumps and calls that it expects and, in fact, requires,
 not be replaced with jump stubs, because it doesn't expect the register
 used by jump stubs (RAX) to be trashed.
-3. We don't have any mechanism to recover if a jump stub can't be
-allocated.
 
 In the NGEN case, rel32 calls are guaranteed to always reach, as PE
 image files are limited to 2GB in size, meaning a rel32 offset is
@@ -217,8 +216,8 @@ jump stubs, as described later.
 
 ### Failure mitigation
 
-There are several possible mitigations for JIT failure to allocate jump
-stubs.
+There are several possible alternative mitigations for JIT failure to 
+allocate jump stubs.
 1. When we get into "rel32 overflow" mode, the JIT could always generate
 large calls, and never generate rel32 offsets. This is obviously
 somewhat expensive, as every external call, such as every call to a JIT
@@ -469,19 +468,9 @@ bytes allocated, to reserve space for one jump stub per FixupPrecode in
 the chunk. When the FixupPrecode is patched, for LCG methods it will use
 the pre-allocated space if a jump stub is required.
 
-For the non-LCG, non-FixupPrecode cases, we need a different solution.
-It would be easy to similarly allocate additional space for each type of
-precode with the precode itself. This might prove expensive. An
-alternative would be to ensure, by design, that somehow shared jump stub
-space is available, perhaps by reserving it in a shared area when the
-precode is allocated, and falling back to a mechanism where the precode
-reserves its own jump stub space if shared jump stub space cannot be
-allocated.
-
-A possibly better implementation would be to reserve, but not allocate,
-jump stub space at the end of the code heap, similar to how
-CodeHeapReserveForJumpStubs works, but instead the reserve amount should
-be computed precisely.
+For non-LCG, we are reserving, but not allocating, a space at the end
+of the code heap. This is similar and in addition to the reservation done by
+COMPlus_CodeHeapReserveForJumpStubs. (See https://github.com/dotnet/coreclr/pull/15296).
 
 ## Ready2Run
 
