@@ -904,6 +904,10 @@ PROFILE_DISABLED_TESTS += \
 	appdomain-loader.exe \
 	assemblyresolve_event3.exe \
 	appdomain-serialize-exception.exe
+
+# https://bugzilla.xamarin.com/show_bug.cgi?id=60973
+PROFILE_DISABLED_TESTS += \
+	weak-fields.exe
 endif
 
 if HYBRID_AOT_TESTS
