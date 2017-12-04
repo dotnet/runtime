@@ -111,7 +111,9 @@ namespace System
         public static Span<T> AsSpan<T>(this T[] array) { throw null; }
         public static Span<T> AsSpan<T>(this ArraySegment<T> arraySegment) { throw null; }
         public static ReadOnlySpan<T> AsReadOnlySpan<T>(this T[] array) { throw null; }
+        public static ReadOnlySpan<T> AsReadOnlySpan<T>(this Span<T> span) { throw null; }
         public static ReadOnlySpan<T> AsReadOnlySpan<T>(this ArraySegment<T> arraySegment) { throw null; }
+        public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this Memory<T> memory) { throw null; }
 
         public static void CopyTo<T>(this T[] array, Span<T> destination) { throw null; }
         public static void CopyTo<T>(this T[] array, Memory<T> destination) { throw null; }
