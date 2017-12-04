@@ -25,6 +25,8 @@
     <Compile Include="Span\DangerousCreate.cs" />
     <Compile Include="Span\DangerousGetPinnableReference.cs" />
     <Compile Include="Span\Empty.cs" />
+    <Compile Include="Span\EndsWith.byte.cs" />
+    <Compile Include="Span\EndsWith.T.cs" />
     <Compile Include="Span\Equality.cs" />
     <Compile Include="Span\GcReporting.cs" />
     <Compile Include="Span\GetEnumerator.cs" />
@@ -56,6 +58,8 @@
     <Compile Include="ReadOnlySpan\DangerousCreate.cs" />
     <Compile Include="ReadOnlySpan\DangerousGetPinnableReference.cs" />
     <Compile Include="ReadOnlySpan\Empty.cs" />
+    <Compile Include="ReadOnlySpan\EndsWith.byte.cs" />
+    <Compile Include="ReadOnlySpan\EndsWith.T.cs" />
     <Compile Include="ReadOnlySpan\Equality.cs" />
     <Compile Include="ReadOnlySpan\GetEnumerator.cs" />
     <Compile Include="ReadOnlySpan\GetHashCode.cs" />

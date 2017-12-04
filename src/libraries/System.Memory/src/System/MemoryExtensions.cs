@@ -223,6 +223,50 @@ namespace System
         }
 
         /// <summary>
+        /// Determines whether the specified sequence appears at the end of the span.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool EndsWith<T>(this Span<T> span, ReadOnlySpan<T> value)
+            where T : IEquatable<T>
+        {
+            int spanLength = span.Length;
+            int valueLength = value.Length;
+            if (typeof(T) == typeof(byte))
+                return valueLength <= spanLength &&
+                SpanHelpers.SequenceEqual(
+                    ref Unsafe.As<T, byte>(ref Unsafe.Add(ref span.DangerousGetPinnableReference(), spanLength - valueLength)),
+                    ref Unsafe.As<T, byte>(ref value.DangerousGetPinnableReference()),
+                    valueLength);
+            return valueLength <= spanLength && 
+                SpanHelpers.SequenceEqual(
+                    ref Unsafe.Add(ref span.DangerousGetPinnableReference(), spanLength - valueLength), 
+                    ref value.DangerousGetPinnableReference(), 
+                    valueLength);
+        }
+
+        /// <summary>
+        /// Determines whether the specified sequence appears at the end of the span.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool EndsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value)
+            where T : IEquatable<T>
+        {
+            int spanLength = span.Length;
+            int valueLength = value.Length;
+            if (typeof(T) == typeof(byte))
+                return valueLength <= spanLength &&
+                SpanHelpers.SequenceEqual(
+                    ref Unsafe.As<T, byte>(ref Unsafe.Add(ref span.DangerousGetPinnableReference(), spanLength - valueLength)),
+                    ref Unsafe.As<T, byte>(ref value.DangerousGetPinnableReference()),
+                    valueLength);
+            return valueLength <= spanLength &&
+                SpanHelpers.SequenceEqual(
+                    ref Unsafe.Add(ref span.DangerousGetPinnableReference(), spanLength - valueLength),
+                    ref value.DangerousGetPinnableReference(), 
+                    valueLength);
+        }
+
+        /// <summary>
         /// Creates a new  span over the portion of the target array.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
