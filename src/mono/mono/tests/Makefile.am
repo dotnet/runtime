@@ -707,7 +707,7 @@ PLATFORM_DISABLED_TESTS += monitor.exe threadpool-exceptions5.exe appdomain-unlo
 endif
 
 if ARM
-PLATFORM_DISABLED_TESTS += filter-stack.exe
+PLATFORM_DISABLED_TESTS += filter-stack.exe weak-fields.exe
 INTERP_PLATFORM_DISABLED_TESTS= \
 	assemblyresolve_event6.exe \
 	delegate-async-exit.exe \
@@ -720,6 +720,7 @@ INTERP_PLATFORM_DISABLED_TESTS= \
 endif
 
 if ARM64
+PLATFORM_DISABLED_TESTS += weak-fields.exe
 INTERP_PLATFORM_DISABLED_TESTS= \
 	assemblyresolve_event6.exe \
 	finalizer-exception.exe
