@@ -5,6 +5,8 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Collections.Generic;
+
 namespace System
 {
     public readonly ref struct ReadOnlySpan<T>
@@ -130,6 +132,13 @@ namespace System
         public static ReadOnlySpan<TTo> NonPortableCast<TFrom, TTo>(this ReadOnlySpan<TFrom> source) where TFrom : struct where TTo : struct { throw null; }
 
         public static bool TryGetString(this ReadOnlyMemory<char> readOnlyMemory, out string text, out int start, out int length) { throw null; }
+
+        public static int BinarySearch<T>(this ReadOnlySpan<T> span, IComparable<T> comparable) { throw null; }
+        public static int BinarySearch<T, TComparable>(this ReadOnlySpan<T> span, TComparable comparable) where TComparable : IComparable<T> { throw null; }
+        public static int BinarySearch<T, TComparer>(this ReadOnlySpan<T> span, T value, TComparer comparer) where TComparer : IComparer<T> { throw null; }
+        public static int BinarySearch<T>(this Span<T> span, IComparable<T> comparable) { throw null; }
+        public static int BinarySearch<T, TComparable>(this Span<T> span, TComparable comparable) where TComparable : IComparable<T> { throw null; }
+        public static int BinarySearch<T, TComparer>(this Span<T> span, T value, TComparer comparer) where TComparer : IComparer<T> { throw null; }
     }
 
     public readonly struct ReadOnlyMemory<T>

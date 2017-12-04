@@ -13,9 +13,9 @@ namespace System.SpanTests
         public static void BinarySearch()
         {
             uint[] a = { 1, 2, 3, 4 };
-            var span = new ReadOnlySpan<uint>(a);
+            ReadOnlySpan<uint> span = new ReadOnlySpan<uint>(a);
 
-            var index = span.BinarySearch(2);
+            var index = span.BinarySearch(2u);
 
             Assert.Equal(1, index);
         }
