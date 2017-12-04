@@ -12,7 +12,7 @@
 ** 
 ===========================================================*/
 
-using System.Globalization;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
@@ -94,6 +94,24 @@ namespace System
         public String ToString(IFormatProvider provider)
         {
             return ToString();
+        }
+
+        public bool TryFormat(Span<char> destination, out int charsWritten)
+        {
+            string s = m_value ? TrueLiteral : FalseLiteral;
+
+            if (s.Length <= destination.Length)
+            {
+                bool copied = s.AsReadOnlySpan().TryCopyTo(destination);
+                Debug.Assert(copied);
+                charsWritten = s.Length;
+                return true;
+            }
+            else
+            {
+                charsWritten = 0;
+                return false;
+            }
         }
 
         // Determines whether two Boolean objects are equal.

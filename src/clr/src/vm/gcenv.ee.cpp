@@ -1201,7 +1201,7 @@ namespace
         };
 
         InlineSString<MaxThreadNameSize> wideName;
-        const WCHAR* namePtr;
+        const WCHAR* namePtr = nullptr;
         EX_TRY
         {
             if (name != nullptr)
@@ -1214,7 +1214,6 @@ namespace
         {
             // we're not obligated to provide a name - if it's not valid,
             // just report nullptr as the name.
-            namePtr = nullptr;
         }
         EX_END_CATCH(SwallowAllExceptions)
 
@@ -1305,5 +1304,83 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
     else
     {
         return CreateNonSuspendableThread(threadStart, arg, name);
+    }
+}
+
+void GCToEEInterface::WalkAsyncPinnedForPromotion(Object* object, ScanContext* sc, promote_func* callback)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    assert(object != nullptr);
+    assert(sc != nullptr);
+    assert(callback != nullptr);
+    if (object->GetGCSafeMethodTable() != g_pOverlappedDataClass)
+    {
+        // not an overlapped data object - nothing to do.
+        return;
+    }
+
+    // reporting the pinned user objects
+    OverlappedDataObject *pOverlapped = (OverlappedDataObject *)object;
+    if (pOverlapped->m_userObject != NULL)
+    {
+        //callback(OBJECTREF_TO_UNCHECKED_OBJECTREF(pOverlapped->m_userObject), (ScanContext *)lp1, GC_CALL_PINNED);
+        if (pOverlapped->m_isArray)
+        {
+            // OverlappedDataObject is very special.  An async pin handle keeps it alive.
+            // During GC, we also make sure
+            // 1. m_userObject itself does not move if m_userObject is not array
+            // 2. Every object pointed by m_userObject does not move if m_userObject is array
+            // We do not want to pin m_userObject if it is array.  But m_userObject may be updated
+            // during relocation phase before OverlappedDataObject is doing relocation.
+            // m_userObjectInternal is used to track the location of the m_userObject before it is updated.
+            pOverlapped->m_userObjectInternal = static_cast<void*>(OBJECTREFToObject(pOverlapped->m_userObject));
+            ArrayBase* pUserObject = (ArrayBase*)OBJECTREFToObject(pOverlapped->m_userObject);
+            Object **ppObj = (Object**)pUserObject->GetDataPtr(TRUE);
+            size_t num = pUserObject->GetNumComponents();
+            for (size_t i = 0; i < num; i++)
+            {
+                callback(ppObj + i, sc, GC_CALL_PINNED);
+            }
+        }
+        else
+        {
+            callback(&OBJECTREF_TO_UNCHECKED_OBJECTREF(pOverlapped->m_userObject), (ScanContext *)sc, GC_CALL_PINNED);
+        }
+    }
+
+    if (pOverlapped->GetAppDomainId() != DefaultADID && pOverlapped->GetAppDomainIndex().m_dwIndex == DefaultADID)
+    {
+        OverlappedDataObject::MarkCleanupNeededFromGC();
+    }
+}
+
+void GCToEEInterface::WalkAsyncPinned(Object* object, void* context, void (*callback)(Object*, Object*, void*))
+{
+    LIMITED_METHOD_CONTRACT;
+
+    assert(object != nullptr);
+    assert(callback != nullptr);
+
+    if (object->GetGCSafeMethodTable() != g_pOverlappedDataClass)
+    {
+        return;
+    }
+
+    OverlappedDataObject *pOverlapped = (OverlappedDataObject *)(object);
+    if (pOverlapped->m_userObject != NULL)
+    {
+        Object * pUserObject = OBJECTREFToObject(pOverlapped->m_userObject);
+        callback(object, pUserObject, context);
+        if (pOverlapped->m_isArray)
+        {
+            ArrayBase* pUserArrayObject = (ArrayBase*)pUserObject;
+            Object **pObj = (Object**)pUserArrayObject->GetDataPtr(TRUE);
+            size_t num = pUserArrayObject->GetNumComponents();
+            for (size_t i = 0; i < num; i ++)
+            {
+                callback(pUserObject, pObj[i], context);
+            }
+        }
     }
 }

@@ -43,7 +43,6 @@
     <_TargetFrameworkDirectories Condition="'$(BuildToolsTargetsDesktop)' != 'true'">$(MSBuildThisFileDirectory)/Documentation</_TargetFrameworkDirectories>
     <_FullFrameworkReferenceAssemblyPaths Condition="'$(BuildToolsTargetsDesktop)' != 'true'">$(MSBuildThisFileDirectory)/Documentation</_FullFrameworkReferenceAssemblyPaths>
     <ExcludeSigningImport>true</ExcludeSigningImport>
-    <SkipImportILTargets>true</SkipImportILTargets>
   </PropertyGroup>
 
   <!-- Common properties -->
@@ -114,7 +113,7 @@
   <PropertyGroup Condition="'$(OverwriteCoreClrPackageVersion)' == 'true'">
     <VersionToRestore Condition="'$(StableVersion)' != ''">$(StableVersion)</VersionToRestore>
     <VersionToRestore Condition="'$(VersionToRestore)' == ''">$(PackageVersion)-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)</VersionToRestore>
-    <PackageVersionArg>/p:CoreClrPackageVersion=$(VersionToRestore)</PackageVersionArg>
+    <PackageVersionArg>/p:MicrosoftNETCoreRuntimeCoreCLRPackageVersion=$(VersionToRestore)</PackageVersionArg>
   </PropertyGroup>
 
   <!-- Which tests shall we build? Default: Priority 0 tests.

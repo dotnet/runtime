@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime.Serialization;
 using System.Text;
 
 namespace System.Globalization
@@ -69,7 +68,6 @@ namespace System.Globalization
         internal String perMilleSymbol = "\u2030";
 
 
-        [OptionalField(VersionAdded = 2)]
         internal String[] nativeDigits = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 
         internal int numberDecimalDigits = 2;
@@ -81,28 +79,16 @@ namespace System.Globalization
         internal int percentNegativePattern = 0;
         internal int percentDecimalDigits = 2;
 
-        [OptionalField(VersionAdded = 2)]
         internal int digitSubstitution = (int)DigitShapes.None;
 
         internal bool isReadOnly = false;
 
         // Is this NumberFormatInfo for invariant culture?
-
-        [OptionalField(VersionAdded = 2)]
         internal bool m_isInvariant = false;
 
         public NumberFormatInfo() : this(null)
         {
         }
-
-        [OnSerializing]
-        private void OnSerializing(StreamingContext ctx) { }
-
-        [OnDeserializing]
-        private void OnDeserializing(StreamingContext ctx) { }
-
-        [OnDeserialized]
-        private void OnDeserialized(StreamingContext ctx) { }
 
         private static void VerifyDecimalSeparator(String decSep, String propertyName)
         {
@@ -232,34 +218,24 @@ namespace System.Globalization
 
         public static NumberFormatInfo GetInstance(IFormatProvider formatProvider)
         {
-            if (formatProvider != null)
+            return formatProvider == null ?
+                CurrentInfo : // Fast path for a null provider
+                GetProviderNonNull(formatProvider);
+
+            NumberFormatInfo GetProviderNonNull(IFormatProvider provider)
             {
-                // Fast case for a regular CultureInfo
-                NumberFormatInfo info;
-                CultureInfo cultureProvider = formatProvider as CultureInfo;
-                if (cultureProvider != null && !cultureProvider._isInherited)
+                // Fast path for a regular CultureInfo
+                if (provider is CultureInfo cultureProvider && !cultureProvider._isInherited)
                 {
                     return cultureProvider.numInfo ?? cultureProvider.NumberFormat;
                 }
 
-                // Fast case for an NFI;
-                info = formatProvider as NumberFormatInfo;
-                if (info != null)
-                {
-                    return info;
-                }
-
-                info = formatProvider.GetFormat(typeof(NumberFormatInfo)) as NumberFormatInfo;
-                if (info != null)
-                {
-                    return info;
-                }
+                return
+                    provider as NumberFormatInfo ?? // Fast path for an NFI
+                    provider.GetFormat(typeof(NumberFormatInfo)) as NumberFormatInfo ??
+                    CurrentInfo;
             }
-
-            return CurrentInfo;
         }
-
-
 
         public Object Clone()
         {

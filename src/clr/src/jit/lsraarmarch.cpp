@@ -77,6 +77,17 @@ void LinearScan::TreeNodeInfoInitStoreLoc(GenTreeLclVarCommon* storeLoc)
     {
         info->srcCount = 1;
     }
+
+#ifdef FEATURE_SIMD
+    if (varTypeIsSIMD(storeLoc))
+    {
+        if (storeLoc->TypeGet() == TYP_SIMD12)
+        {
+            // Need an additional register to extract upper 4 bytes of Vector3.
+            info->internalIntCount = 1;
+        }
+    }
+#endif // FEATURE_SIMD
 }
 
 //------------------------------------------------------------------------

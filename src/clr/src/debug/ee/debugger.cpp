@@ -1027,9 +1027,7 @@ MemoryRange Debugger::s_hijackFunction[kMaxHijackFunctions] =
      GetMemoryRangeForFunction(RedirectedHandledJITCaseForDbgThreadControl_Stub,
                                RedirectedHandledJITCaseForDbgThreadControl_StubEnd),
      GetMemoryRangeForFunction(RedirectedHandledJITCaseForUserSuspend_Stub,
-                               RedirectedHandledJITCaseForUserSuspend_StubEnd),
-     GetMemoryRangeForFunction(RedirectedHandledJITCaseForYieldTask_Stub,
-                               RedirectedHandledJITCaseForYieldTask_StubEnd)
+                               RedirectedHandledJITCaseForUserSuspend_StubEnd)
 #if defined(HAVE_GCCOVER) && defined(_TARGET_AMD64_)
      ,
      GetMemoryRangeForFunction(RedirectedHandledJITCaseForGCStress_Stub,
@@ -3029,7 +3027,7 @@ DebuggerMethodInfo *Debugger::GetOrCreateMethodInfo(Module *pModule, mdMethodDef
  * structs will be returned, and some of the ilOffsets in this array
  * may be the values specified in CorDebugIlToNativeMappingTypes.
  ******************************************************************************/
-HRESULT Debugger::GetILToNativeMapping(UINT_PTR pNativeCodeStartAddress, ULONG32 cMap,
+HRESULT Debugger::GetILToNativeMapping(PCODE pNativeCodeStartAddress, ULONG32 cMap,
                                        ULONG32 *pcMap, COR_DEBUG_IL_TO_NATIVE_MAP map[])
 {
     CONTRACTL
@@ -3133,7 +3131,8 @@ HRESULT Debugger::GetILToNativeMapping(UINT_PTR pNativeCodeStartAddress, ULONG32
 //
 
 HRESULT Debugger::GetILToNativeMappingIntoArrays(
-    MethodDesc * pMD, 
+    MethodDesc * pMethodDesc,
+    PCODE pCode, 
     USHORT cMapMax, 
     USHORT * pcMap,
     UINT ** prguiILOffset, 
@@ -3157,7 +3156,7 @@ HRESULT Debugger::GetILToNativeMappingIntoArrays(
 
     // Get the JIT info by functionId.
 
-    DebuggerJitInfo * pDJI = GetLatestJitInfoFromMethodDesc(pMD);
+    DebuggerJitInfo * pDJI = GetJitInfo(pMethodDesc, (const BYTE *)pCode);
 
     // Dunno what went wrong
     if (pDJI == NULL)

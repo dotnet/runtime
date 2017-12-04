@@ -42,6 +42,7 @@ private:
     static void UnionDLong(Env env, BitSetShortLongRep& bs1, BitSetShortLongRep bs2);
     static void DiffDLong(Env env, BitSetShortLongRep& bs1, BitSetShortLongRep bs2);
     static void AddElemDLong(Env env, BitSetShortLongRep& bs, unsigned i);
+    static bool TryAddElemDLong(Env env, BitSetShortLongRep& bs, unsigned i);
     static void RemoveElemDLong(Env env, BitSetShortLongRep& bs, unsigned i);
     static void ClearDLong(Env env, BitSetShortLongRep& bs);
     static BitSetShortLongRep MakeUninitArrayBits(Env env);
@@ -274,6 +275,23 @@ public:
         BitSetShortLongRep res = MakeCopy(env, bs);
         AddElemD(env, res, i);
         return res;
+    }
+
+    static bool TryAddElemD(Env env, BitSetShortLongRep& bs, unsigned i)
+    {
+        assert(i < BitSetTraits::GetSize(env));
+        if (IsShort(env))
+        {
+            size_t mask  = ((size_t)1) << i;
+            size_t bits  = (size_t)bs;
+            bool   added = (bits & mask) == 0;
+            bs           = (BitSetShortLongRep)(bits | mask);
+            return added;
+        }
+        else
+        {
+            return TryAddElemDLong(env, bs, i);
+        }
     }
 
     static bool IsMember(Env env, const BitSetShortLongRep bs, unsigned i)
@@ -642,6 +660,21 @@ void BitSetOps</*BitSetType*/ BitSetShortLongRep,
     unsigned index = i / BitsInSizeT;
     size_t   mask  = ((size_t)1) << (i % BitsInSizeT);
     bs[index] |= mask;
+}
+
+template <typename Env, typename BitSetTraits>
+bool BitSetOps</*BitSetType*/ BitSetShortLongRep,
+               /*Brand*/ BSShortLong,
+               /*Env*/ Env,
+               /*BitSetTraits*/ BitSetTraits>::TryAddElemDLong(Env env, BitSetShortLongRep& bs, unsigned i)
+{
+    assert(!IsShort(env));
+    unsigned index = i / BitsInSizeT;
+    size_t   mask  = ((size_t)1) << (i % BitsInSizeT);
+    size_t   bits  = bs[index];
+    bool     added = (bits & mask) == 0;
+    bs[index]      = bits | mask;
+    return added;
 }
 
 template <typename Env, typename BitSetTraits>

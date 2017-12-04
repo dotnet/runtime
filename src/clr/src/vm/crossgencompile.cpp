@@ -263,7 +263,8 @@ BOOL Runtime_Test_For_SSE2()
 #endif
 
 #ifdef _TARGET_AMD64_
-INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMethod, LoaderAllocator *pLoaderAllocator /* = NULL */)
+INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMethod,
+    LoaderAllocator *pLoaderAllocator /* = NULL */, bool throwOnOutOfMemoryWithinRange /*= true*/)
 {
     // crossgen does not have jump stubs
     return 0;

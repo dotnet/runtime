@@ -23,7 +23,7 @@ public:
 
     virtual OBJECTHANDLE CreateDependentHandle(Object* primary, Object* secondary);
 
-    virtual void RelocateAsyncPinnedHandles(IGCHandleStore* pTarget);
+    virtual void RelocateAsyncPinnedHandles(IGCHandleStore* pTarget, void (*clearIfCompleteCallback)(Object* object), void (*setHandle)(Object* object, OBJECTHANDLE handle));
 
     virtual bool EnumerateAsyncPinnedHandles(async_pin_enum_fn callback, void* context);
 

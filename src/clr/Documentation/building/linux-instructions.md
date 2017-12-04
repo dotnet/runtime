@@ -83,7 +83,7 @@ After the build is completed, there should some files placed in `bin/Product/Lin
 
 * `corerun`: The command line host.  This program loads and starts the CoreCLR runtime and passes the managed program you want to run to it.
 * `libcoreclr.so`: The CoreCLR runtime itself.
-* `mscorlib.dll`: Microsoft Core Library.
+* `System.Private.CoreLib.dll`: Microsoft Core Library.
 
 Build the Framework
 ===================

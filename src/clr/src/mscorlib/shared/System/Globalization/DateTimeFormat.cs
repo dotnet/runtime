@@ -210,7 +210,7 @@ namespace System
             outputBuffer.Append(HebrewNumber.ToString(digits));
         }
 
-        internal static int ParseRepeatPattern(String format, int pos, char patternChar)
+        internal static int ParseRepeatPattern(ReadOnlySpan<char> format, int pos, char patternChar)
         {
             int len = format.Length;
             int index = pos + 1;
@@ -298,7 +298,7 @@ namespace System
         // The pos should point to a quote character. This method will
         // append to the result StringBuilder the string encloed by the quote character.
         //
-        internal static int ParseQuoteString(String format, int pos, StringBuilder result)
+        internal static int ParseQuoteString(ReadOnlySpan<char> format, int pos, StringBuilder result)
         {
             //
             // NOTE : pos will be the index of the quote character in the 'format' string.
@@ -361,7 +361,7 @@ namespace System
         // Return value of -1 means 'pos' is already at the end of the 'format' string.
         // Otherwise, return value is the int value of the next character.
         //
-        internal static int ParseNextChar(String format, int pos)
+        internal static int ParseNextChar(ReadOnlySpan<char> format, int pos)
         {
             if (pos >= format.Length - 1)
             {
@@ -383,7 +383,7 @@ namespace System
         //      tokenLen    The len of the current pattern character.  This indicates how many "M" that we have.
         //      patternToMatch  The pattern that we want to search. This generally uses "d"
         //
-        private static bool IsUseGenitiveForm(String format, int index, int tokenLen, char patternToMatch)
+        private static bool IsUseGenitiveForm(ReadOnlySpan<char> format, int index, int tokenLen, char patternToMatch)
         {
             int i;
             int repeat = 0;
@@ -446,12 +446,19 @@ namespace System
         //
         //  Actions: Format the DateTime instance using the specified format.
         // 
-        private static StringBuilder FormatCustomized(DateTime dateTime, String format, DateTimeFormatInfo dtfi, TimeSpan offset)
+        private static StringBuilder FormatCustomized(
+            DateTime dateTime, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, TimeSpan offset, StringBuilder result)
         {
             Calendar cal = dtfi.Calendar;
-            StringBuilder result = StringBuilderCache.Acquire();
-            // This is a flag to indicate if we are format the dates using Hebrew calendar.
 
+            bool resultBuilderIsPooled = false;
+            if (result == null)
+            {
+                resultBuilderIsPooled = true;
+                result = StringBuilderCache.Acquire();
+            }
+            
+            // This is a flag to indicate if we are format the dates using Hebrew calendar.
             bool isHebrewCalendar = (cal.ID == CalendarId.HEBREW);
             // This is a flag to indicate if we are formating hour/minute/second only.
             bool bTimeOnly = true;
@@ -532,7 +539,10 @@ namespace System
                         }
                         else
                         {
-                            StringBuilderCache.Release(result);
+                            if (resultBuilderIsPooled)
+                            {
+                                StringBuilderCache.Release(result);
+                            }
                             throw new FormatException(SR.Format_InvalidString);
                         }
                         break;
@@ -690,9 +700,11 @@ namespace System
                         nextChar = ParseNextChar(format, i);
                         // nextChar will be -1 if we already reach the end of the format string.
                         // Besides, we will not allow "%%" appear in the pattern.
-                        if (nextChar >= 0 && nextChar != (int)'%')
+                        if (nextChar >= 0 && nextChar != '%')
                         {
-                            result.Append(FormatCustomized(dateTime, ((char)nextChar).ToString(), dtfi, offset));
+                            char nextCharChar = (char)nextChar;
+                            StringBuilder origStringBuilder = FormatCustomized(dateTime, ReadOnlySpan<char>.DangerousCreate(null, ref nextCharChar, 1), dtfi, offset, result);
+                            Debug.Assert(ReferenceEquals(origStringBuilder, result));
                             tokenLen = 2;
                         }
                         else
@@ -701,7 +713,10 @@ namespace System
                             // This means that '%' is at the end of the format string or
                             // "%%" appears in the format string.
                             //
-                            StringBuilderCache.Release(result);
+                            if (resultBuilderIsPooled)
+                            {
+                                StringBuilderCache.Release(result);
+                            }
                             throw new FormatException(SR.Format_InvalidString);
                         }
                         break;
@@ -725,7 +740,10 @@ namespace System
                             //
                             // This means that '\' is at the end of the formatting string.
                             //
-                            StringBuilderCache.Release(result);
+                            if (resultBuilderIsPooled)
+                            {
+                                StringBuilderCache.Release(result);
+                            }
                             throw new FormatException(SR.Format_InvalidString);
                         }
                         break;
@@ -745,7 +763,7 @@ namespace System
 
 
         // output the 'z' famliy of formats, which output a the offset from UTC, e.g. "-07:30"
-        private static void FormatCustomizedTimeZone(DateTime dateTime, TimeSpan offset, String format, Int32 tokenLen, Boolean timeOnly, StringBuilder result)
+        private static void FormatCustomizedTimeZone(DateTime dateTime, TimeSpan offset, ReadOnlySpan<char> format, Int32 tokenLen, Boolean timeOnly, StringBuilder result)
         {
             // See if the instance already has an offset
             Boolean dateTimeFormat = (offset == NullOffset);
@@ -838,8 +856,7 @@ namespace System
             AppendNumber(result, offset.Minutes, 2);
         }
 
-
-        internal static String GetRealFormat(String format, DateTimeFormatInfo dtfi)
+        internal static String GetRealFormat(ReadOnlySpan<char> format, DateTimeFormatInfo dtfi)
         {
             String realFormat = null;
 
@@ -906,7 +923,7 @@ namespace System
         // This method also convert the dateTime if necessary (e.g. when the format is in Universal time),
         // and change dtfi if necessary (e.g. when the format should use invariant culture).
         //
-        private static String ExpandPredefinedFormat(String format, ref DateTime dateTime, ref DateTimeFormatInfo dtfi, ref TimeSpan offset)
+        private static String ExpandPredefinedFormat(ReadOnlySpan<char> format, ref DateTime dateTime, ref DateTimeFormatInfo dtfi, ref TimeSpan offset)
         {
             switch (format[0])
             {
@@ -960,8 +977,7 @@ namespace System
                     dateTime = dateTime.ToUniversalTime();
                     break;
             }
-            format = GetRealFormat(format, dtfi);
-            return (format);
+            return GetRealFormat(format, dtfi);
         }
 
         internal static String Format(DateTime dateTime, String format, DateTimeFormatInfo dtfi)
@@ -972,10 +988,10 @@ namespace System
         internal static string Format(DateTime dateTime, String format, DateTimeFormatInfo dtfi, TimeSpan offset) =>
             StringBuilderCache.GetStringAndRelease(FormatStringBuilder(dateTime, format, dtfi, offset));
 
-        internal static bool TryFormat(DateTime dateTime, Span<char> destination, out int charsWritten, string format, DateTimeFormatInfo dtfi) =>
+        internal static bool TryFormat(DateTime dateTime, Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi) =>
             TryFormat(dateTime, destination, out charsWritten, format, dtfi, NullOffset);
 
-        internal static bool TryFormat(DateTime dateTime, Span<char> destination, out int charsWritten, string format, DateTimeFormatInfo dtfi, TimeSpan offset)
+        internal static bool TryFormat(DateTime dateTime, Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, TimeSpan offset)
         {
             StringBuilder sb = FormatStringBuilder(dateTime, format, dtfi, offset);
 
@@ -994,10 +1010,10 @@ namespace System
             return success;
         }
 
-        internal static StringBuilder FormatStringBuilder(DateTime dateTime, String format, DateTimeFormatInfo dtfi, TimeSpan offset)
+        internal static StringBuilder FormatStringBuilder(DateTime dateTime, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, TimeSpan offset)
         {
             Debug.Assert(dtfi != null);
-            if (format == null || format.Length == 0)
+            if (format.Length == 0)
             {
                 Boolean timeOnlySpecialCase = false;
                 if (dateTime.Ticks < Calendar.TicksPerDay)
@@ -1032,26 +1048,12 @@ namespace System
                 if (offset == NullOffset)
                 {
                     // Default DateTime.ToString case.
-                    if (timeOnlySpecialCase)
-                    {
-                        format = "s";
-                    }
-                    else
-                    {
-                        format = "G";
-                    }
+                    format = timeOnlySpecialCase ? "s" : "G";
                 }
                 else
                 {
                     // Default DateTimeOffset.ToString case.
-                    if (timeOnlySpecialCase)
-                    {
-                        format = RoundtripDateTimeUnfixed;
-                    }
-                    else
-                    {
-                        format = dtfi.DateTimeOffsetPattern;
-                    }
+                    format = timeOnlySpecialCase ? RoundtripDateTimeUnfixed : dtfi.DateTimeOffsetPattern;
                 }
             }
 
@@ -1070,7 +1072,7 @@ namespace System
                 format = ExpandPredefinedFormat(format, ref dateTime, ref dtfi, ref offset);
             }
 
-            return FormatCustomized(dateTime, format, dtfi, offset);
+            return FormatCustomized(dateTime, format, dtfi, offset, result: null);
         }
 
         internal static StringBuilder FastFormatRfc1123(DateTime dateTime, TimeSpan offset, DateTimeFormatInfo dtfi)
@@ -1227,7 +1229,7 @@ namespace System
 
         // This is a placeholder for an MDA to detect when the user is using a
         // local DateTime with a format that will be interpreted as UTC.
-        internal static void InvalidFormatForLocal(String format, DateTime dateTime)
+        internal static void InvalidFormatForLocal(ReadOnlySpan<char> format, DateTime dateTime)
         {
         }
     }

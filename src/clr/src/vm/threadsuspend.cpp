@@ -39,7 +39,6 @@ CLREventBase * ThreadSuspend::s_hAbortEvtCache = NULL;
 extern "C" void             RedirectedHandledJITCaseForGCThreadControl_Stub(void);
 extern "C" void             RedirectedHandledJITCaseForDbgThreadControl_Stub(void);
 extern "C" void             RedirectedHandledJITCaseForUserSuspend_Stub(void);
-extern "C" void             RedirectedHandledJITCaseForYieldTask_Stub(void);
 
 #define GetRedirectHandlerForGCThreadControl()      \
                 ((PFN_REDIRECTTARGET) GetEEFuncEntryPoint(RedirectedHandledJITCaseForGCThreadControl_Stub))
@@ -47,8 +46,6 @@ extern "C" void             RedirectedHandledJITCaseForYieldTask_Stub(void);
                 ((PFN_REDIRECTTARGET) GetEEFuncEntryPoint(RedirectedHandledJITCaseForDbgThreadControl_Stub))
 #define GetRedirectHandlerForUserSuspend()          \
                 ((PFN_REDIRECTTARGET) GetEEFuncEntryPoint(RedirectedHandledJITCaseForUserSuspend_Stub))
-#define GetRedirectHandlerForYieldTask()            \
-                ((PFN_REDIRECTTARGET) GetEEFuncEntryPoint(RedirectedHandledJITCaseForYieldTask_Stub))
 
 #if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
 #if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) // GCCOVER
@@ -3090,12 +3087,6 @@ void Thread::RareDisablePreemptiveGC()
     // waiting for GC
     _ASSERTE ((m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
 
-    // If this thread is asked to yield
-    if (m_State & TS_YieldRequested)
-    {
-        __SwitchToThread(0, CALLER_LIMITS_SPINNING);
-    }
-
     if (!GCHeapUtilities::IsGCHeapInitialized())
     {
         goto Exit;
@@ -3931,12 +3922,6 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
             case RedirectReason_UserSuspension:
                 // Do nothing;
                 break;
-            case RedirectReason_YieldTask:
-                if (pThread->IsYieldRequested())
-                {
-                    __SwitchToThread(0, CALLER_LIMITS_SPINNING);
-                }
-                break;
             default:
                 _ASSERTE(!"Invalid redirect reason");
                 break;
@@ -4096,15 +4081,6 @@ void __stdcall Thread::RedirectedHandledJITCaseForUserSuspend()
 {
     WRAPPER_NO_CONTRACT;
     RedirectedHandledJITCase(RedirectReason_UserSuspension);
-}
-
-//***********************
-// Like the above, but called for YieldTask.
-//
-void __stdcall Thread::RedirectedHandledJITCaseForYieldTask()
-{
-    WRAPPER_NO_CONTRACT;
-    RedirectedHandledJITCase(RedirectReason_YieldTask);
 }
 
 #if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) // GCCOVER
@@ -4348,8 +4324,7 @@ BOOL Thread::IsAddrOfRedirectFunc(void * pFuncAddr)
     return
         (pFuncAddr == GetRedirectHandlerForGCThreadControl()) ||
         (pFuncAddr == GetRedirectHandlerForDbgThreadControl()) ||
-        (pFuncAddr == GetRedirectHandlerForUserSuspend()) ||
-        (pFuncAddr == GetRedirectHandlerForYieldTask());
+        (pFuncAddr == GetRedirectHandlerForUserSuspend());
 }
 
 //************************************************************************
@@ -4398,22 +4373,6 @@ BOOL Thread::CheckForAndDoRedirectForUserSuspend()
 
     LOG((LF_SYNC, LL_INFO1000, "Redirecting thread %08x for UserSuspension", GetThreadId()));
     return CheckForAndDoRedirect(GetRedirectHandlerForUserSuspend());
-}
-
-//*************************************************************************
-// Redirect thread to make task yield.
-BOOL Thread::CheckForAndDoRedirectForYieldTask()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    LOG((LF_SYNC, LL_INFO1000, "Redirecting thread %08x for YieldTask", GetThreadId()));
-    return CheckForAndDoRedirect(GetRedirectHandlerForYieldTask());
 }
 
 #if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) // GCCOVER

@@ -20,5 +20,7 @@ namespace JitBench
         public double FirstRequestTime { get; set; }
 
         public double SteadystateTime { get; set; }
+
+        public double SteadystateMedianTime { get; set; }
     }
 }

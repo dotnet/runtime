@@ -60,7 +60,7 @@ bool IsAVXOnlyInstruction(instruction ins)
 bool emitter::IsAVXInstruction(instruction ins)
 {
 #ifndef LEGACY_BACKEND
-    return (UseAVX() && IsSSEOrAVXInstruction(ins));
+    return (UseVEXEncoding() && IsSSEOrAVXInstruction(ins));
 #else
     return false;
 #endif
@@ -120,7 +120,7 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 // that use the SSE38 or SSE3A macro.
 bool emitter::Is4ByteAVXInstruction(instruction ins)
 {
-    return UseAVX() && (IsSSE4Instruction(ins) || IsAVXOnlyInstruction(ins)) && EncodedBySSE38orSSE3A(ins);
+    return UseVEXEncoding() && (IsSSE4Instruction(ins) || IsAVXOnlyInstruction(ins)) && EncodedBySSE38orSSE3A(ins);
 }
 #endif // !LEGACY_BACKEND
 
@@ -353,7 +353,7 @@ unsigned RegEncoding(regNumber reg)
 // AVX:  specific bits within VEX prefix need to be set in bit-inverted form.
 emitter::code_t emitter::AddRexWPrefix(instruction ins, code_t code)
 {
-    if (UseAVX() && IsAVXInstruction(ins))
+    if (UseVEXEncoding() && IsAVXInstruction(ins))
     {
         // W-bit is available only in 3-byte VEX prefix that starts with byte C4.
         assert(hasVexPrefix(code));
@@ -373,7 +373,7 @@ emitter::code_t emitter::AddRexWPrefix(instruction ins, code_t code)
 
 emitter::code_t emitter::AddRexRPrefix(instruction ins, code_t code)
 {
-    if (UseAVX() && IsAVXInstruction(ins))
+    if (UseVEXEncoding() && IsAVXInstruction(ins))
     {
         // Right now support 3-byte VEX prefix
         assert(hasVexPrefix(code));
@@ -387,7 +387,7 @@ emitter::code_t emitter::AddRexRPrefix(instruction ins, code_t code)
 
 emitter::code_t emitter::AddRexXPrefix(instruction ins, code_t code)
 {
-    if (UseAVX() && IsAVXInstruction(ins))
+    if (UseVEXEncoding() && IsAVXInstruction(ins))
     {
         // Right now support 3-byte VEX prefix
         assert(hasVexPrefix(code));
@@ -401,7 +401,7 @@ emitter::code_t emitter::AddRexXPrefix(instruction ins, code_t code)
 
 emitter::code_t emitter::AddRexBPrefix(instruction ins, code_t code)
 {
-    if (UseAVX() && IsAVXInstruction(ins))
+    if (UseVEXEncoding() && IsAVXInstruction(ins))
     {
         // Right now support 3-byte VEX prefix
         assert(hasVexPrefix(code));
@@ -416,7 +416,7 @@ emitter::code_t emitter::AddRexBPrefix(instruction ins, code_t code)
 // Adds REX prefix (0x40) without W, R, X or B bits set
 emitter::code_t emitter::AddRexPrefix(instruction ins, code_t code)
 {
-    assert(!UseAVX() || !IsAVXInstruction(ins));
+    assert(!UseVEXEncoding() || !IsAVXInstruction(ins));
     return code | 0x4000000000ULL;
 }
 
@@ -446,7 +446,7 @@ unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, c
     if (hasVexPrefix(code))
     {
         // Only AVX instructions should have a VEX prefix
-        assert(UseAVX() && IsAVXInstruction(ins));
+        assert(UseVEXEncoding() && IsAVXInstruction(ins));
         code_t vexPrefix = (code >> 32) & 0x00FFFFFF;
         code &= 0x00000000FFFFFFFFLL;
 
@@ -3771,7 +3771,7 @@ void emitter::emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regN
         // AVX: 3 byte VEX prefix + 1 byte opcode + 1 byte ModR/M + 1 byte immediate
         // SSE4: 4 byte opcode + 1 byte ModR/M + 1 byte immediate
         // SSE2: 3 byte opcode + 1 byte ModR/M + 1 byte immediate
-        sz = (UseAVX() || UseSSE4()) ? 6 : 5;
+        sz = (UseVEXEncoding() || UseSSE4()) ? 6 : 5;
     }
 
 #ifdef _TARGET_AMD64_

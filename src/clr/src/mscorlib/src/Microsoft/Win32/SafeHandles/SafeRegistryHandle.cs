@@ -33,7 +33,6 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         [DllImport(Win32Native.ADVAPI32)]
-        [SuppressUnmanagedCodeSecurity]
         internal static extern int RegCloseKey(IntPtr hKey);
     }
 }

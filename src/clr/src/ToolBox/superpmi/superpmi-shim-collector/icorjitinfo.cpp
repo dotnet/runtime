@@ -246,9 +246,8 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::resolveVirtualMethod(CORINFO_METHOD_HAND
 CORINFO_METHOD_HANDLE interceptor_ICJI::getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg)
 {
     mc->cr->AddCall("getUnboxedEntry");
-    bool localRequiresInstMethodTableArg = false;
-    CORINFO_METHOD_HANDLE result =
-        original_ICorJitInfo->getUnboxedEntry(ftn, &localRequiresInstMethodTableArg);
+    bool                  localRequiresInstMethodTableArg = false;
+    CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getUnboxedEntry(ftn, &localRequiresInstMethodTableArg);
     mc->recGetUnboxedEntry(ftn, &localRequiresInstMethodTableArg, result);
     if (requiresInstMethodTableArg != nullptr)
     {
