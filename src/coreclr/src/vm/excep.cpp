@@ -7898,7 +7898,8 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
             // on second pass and this subjects us to false positives.
             if ((!fAVisOk) && !(pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING))
             {
-                if (IsIPInModule(g_pMSCorEE, (PCODE)GetIP(pContext)))
+                PCODE ip = (PCODE)GetIP(pContext);
+                if (IsIPInModule(g_pMSCorEE, ip) || IsIPInModule(GCHeapUtilities::GetGCModule(), ip))
                 {
                     CONTRACT_VIOLATION(ThrowsViolation|FaultViolation|SOToleranceViolation);
 

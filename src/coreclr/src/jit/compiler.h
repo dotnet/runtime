@@ -25,6 +25,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "jit.h"
 #include "opcode.h"
 #include "varset.h"
+#include "jitstd.h"
+#include "jithashtable.h"
 #include "gentree.h"
 #include "lir.h"
 #include "block.h"
@@ -33,10 +35,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "instr.h"
 #include "regalloc.h"
 #include "sm.h"
-#include "jithashtable.h"
 #include "cycletimer.h"
 #include "blockset.h"
-#include "jitstd.h"
 #include "arraystack.h"
 #include "hashbv.h"
 #include "fp.h"
@@ -2162,7 +2162,7 @@ public:
 
     unsigned gtSetListOrder(GenTree* list, bool regs, bool isListCallArgs);
 
-    void gtWalkOp(GenTree** op1, GenTree** op2, GenTree* adr, bool constOnly);
+    void gtWalkOp(GenTree** op1, GenTree** op2, GenTree* base, bool constOnly);
 
 #ifdef DEBUG
     unsigned gtHashValue(GenTree* tree);
@@ -2500,7 +2500,8 @@ public:
                          // we will redirect all "ldarg(a) 0" and "starg 0" to this temp.
 
     unsigned lvaInlineeReturnSpillTemp; // The temp to spill the non-VOID return expression
-                                        // in case there are multiple BBJ_RETURN blocks in the inlinee.
+                                        // in case there are multiple BBJ_RETURN blocks in the inlinee
+                                        // or if the inlinee has GC ref locals.
 
 #if FEATURE_FIXED_OUT_ARGS
     unsigned            lvaOutgoingArgSpaceVar;  // dummy TYP_LCLBLK var for fixed outgoing argument space
@@ -4832,6 +4833,7 @@ public:
 private:
     GenTreePtr fgMorphField(GenTreePtr tree, MorphAddrContext* mac);
     bool fgCanFastTailCall(GenTreeCall* call);
+    bool fgCheckStmtAfterTailCall();
     void fgMorphTailCall(GenTreeCall* call);
     void fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCall* recursiveTailCall);
     GenTreePtr fgAssignRecursiveCallArgToCallerParam(GenTreePtr       arg,
@@ -5032,6 +5034,8 @@ private:
     bool fgIsUnsignedDivOptimizable(GenTreePtr divisor);
     bool fgIsSignedModOptimizable(GenTreePtr divisor);
     bool fgIsUnsignedModOptimizable(GenTreePtr divisor);
+
+    bool fgNeedReturnSpillTemp();
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -7323,11 +7327,11 @@ private:
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     */
 
-    // Get highest available level for floating point codegen
-    SIMDLevel getFloatingPointCodegenLevel()
+    // Get highest available level for SIMD codegen
+    SIMDLevel getSIMDSupportLevel()
     {
 #if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
-        if (canUseAVX())
+        if (compSupports(InstructionSet_AVX2))
         {
             return SIMD_AVX2_Supported;
         }
@@ -7340,18 +7344,6 @@ private:
         // min bar is SSE2
         assert(canUseSSE2());
         return SIMD_SSE2_Supported;
-#else
-        assert(!"getFPInstructionSet() is not implemented for target arch");
-        unreached();
-        return SIMD_Not_Supported;
-#endif
-    }
-
-    // Get highest available level for SIMD codegen
-    SIMDLevel getSIMDSupportLevel()
-    {
-#if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
-        return getFloatingPointCodegenLevel();
 #else
         assert(!"Available instruction set(s) for SIMD codegen is not defined for target arch");
         unreached();
@@ -7635,13 +7627,13 @@ private:
     var_types getSIMDVectorType()
     {
 #if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
-        if (canUseAVX())
+        if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
         {
             return TYP_SIMD32;
         }
         else
         {
-            assert(canUseSSE2());
+            assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
             return TYP_SIMD16;
         }
 #elif defined(_TARGET_ARM64_)
@@ -7673,13 +7665,13 @@ private:
     unsigned getSIMDVectorRegisterByteLength()
     {
 #if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
-        if (canUseAVX())
+        if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
         {
             return YMM_REGSIZE_BYTES;
         }
         else
         {
-            assert(canUseSSE2());
+            assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(_TARGET_ARM64_)
@@ -7828,19 +7820,19 @@ private:
 #endif
     }
 
-    bool canUseAVX() const
+    bool compSupports(InstructionSet isa) const
     {
 #ifdef _TARGET_XARCH_
-        return opts.compCanUseAVX;
+        return (opts.compSupportsISA & (1ULL << isa)) != 0;
 #else
         return false;
 #endif
     }
 
-    bool compSupports(InstructionSet isa)
+    bool canUseVexEncoding() const
     {
 #ifdef _TARGET_XARCH_
-        return (opts.compSupportsISA & (1ULL << isa)) != 0;
+        return compSupports(InstructionSet_AVX);
 #else
         return false;
 #endif
@@ -7954,7 +7946,6 @@ public:
 #ifdef _TARGET_XARCH_
         bool compCanUseSSE2; // Allow CodeGen to use "movq XMM" instructions
         bool compCanUseSSE4; // Allow CodeGen to use SSE3, SSSE3, SSE4.1 and SSE4.2 instructions
-        bool compCanUseAVX;  // Allow CodeGen to use AVX 256-bit vectors for SIMD operations
 #endif                       // _TARGET_XARCH_
 
 #ifdef _TARGET_XARCH_

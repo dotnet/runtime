@@ -284,6 +284,10 @@ TRACEPOINT_EVENT_INSTANCE(\\
 def generateMethodBody(template, providerName, eventName):
     #emit code to init variables convert unicode to ansi string
     result = []
+
+    if template is None:
+        return "\n    do_tracepoint(%s, %s);\n" % (providerName, eventName)
+
     fnSig = template.signature
     
     for paramName in fnSig.paramlist:
@@ -454,9 +458,8 @@ def generateLttngTpProvider(providerName, eventNodes, allTemplates):
         lTTngImpl.append("    if (!EventXplatEnabled%s())\n" % (eventName,))
         lTTngImpl.append("        return ERROR_SUCCESS;\n")
 
-        if template:
-            result = generateMethodBody(template, providerName, eventName)
-            lTTngImpl.append(result)
+        result = generateMethodBody(template, providerName, eventName)
+        lTTngImpl.append(result)
 
         lTTngImpl.append("\n    return ERROR_SUCCESS;\n}\n\n")
 

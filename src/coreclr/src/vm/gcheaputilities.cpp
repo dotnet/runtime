@@ -56,6 +56,9 @@ GC_LOAD_STATUS g_gc_load_status = GC_LOAD_STATUS_BEFORE_START;
 // The version of the GC that we have loaded.
 VersionInfo g_gc_version_info;
 
+// The module that contains the GC.
+HMODULE g_gc_module;
+
 // GC entrypoints for the the linked-in GC. These symbols are invoked
 // directly if we are not using a standalone GC.
 extern "C" void GC_VersionInfo(/* Out */ VersionInfo* info);
@@ -67,6 +70,12 @@ extern "C" HRESULT GC_Initialize(
 );
 
 #ifndef DACCESS_COMPILE
+
+HMODULE GCHeapUtilities::GetGCModule()
+{
+    assert(g_gc_module);
+    return g_gc_module;
+}
 
 namespace
 {
@@ -148,6 +157,7 @@ HRESULT LoadAndInitializeGC(LPWSTR standaloneGcLocation)
         g_pGCHandleManager = manager;
         g_gcDacGlobals = &g_gc_dac_vars;
         g_gc_load_status = GC_LOAD_STATUS_LOAD_COMPLETE;
+        g_gc_module = hMod;
         LOG((LF_GC, LL_INFO100, "GC load successful\n"));
     }
     else
@@ -192,6 +202,7 @@ HRESULT InitializeDefaultGC()
         g_pGCHandleManager = manager;
         g_gcDacGlobals = &g_gc_dac_vars;
         g_gc_load_status = GC_LOAD_STATUS_LOAD_COMPLETE;
+        g_gc_module = GetModuleInst();
         LOG((LF_GC, LL_INFO100, "GC load successful\n"));
     }
     else

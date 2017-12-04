@@ -16,6 +16,7 @@
 
 .assembly Finally.exe{}
 
+
 .class		Finally {
 .field static int32 iResult
 .field static int32 finally_flag

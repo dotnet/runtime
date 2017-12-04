@@ -18,7 +18,6 @@
 #endif
 
 #include "utilcode.h"
-#include "sortversioning.h"
 
 namespace NewApis
 {

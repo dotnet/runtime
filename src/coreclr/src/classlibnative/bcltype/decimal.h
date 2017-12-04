@@ -43,7 +43,6 @@ public:
     static FCDECL1(INT32, ToInt32, FC_DECIMAL d);	
     static FCDECL1(Object*, ToString, FC_DECIMAL d);
     
-    static void DecimalToNumber(DECIMAL* value, NUMBER* number);
     static int NumberToDecimal(NUMBER* number, DECIMAL* value);
     
 

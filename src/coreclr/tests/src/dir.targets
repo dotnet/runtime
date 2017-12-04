@@ -106,10 +106,9 @@
   <PropertyGroup Condition="'$(ProjectLanguage)' == ''">
     <ProjectLanguage Condition="'$(MSBuildProjectExtension)' == '.ilproj' OR '$(Language)' == 'IL'">IL</ProjectLanguage>
     <ProjectLanguage Condition="'$(MSBuildProjectExtension)' == '.csproj' OR '$(Language)' == 'C#' OR '$(ProjectLanguage)'==''">CSharp</ProjectLanguage>
-  </PropertyGroup>
-  
-  <Import Project="$(ProjectDir)src\IL.targets" Condition="'$(ProjectLanguage)' == 'IL' And '$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)'" />
 
+    <SkipImportILTargets Condition="'$(CLRTestPriority)' &gt; '$(CLRTestPriorityToBuild)'">true</SkipImportILTargets>
+  </PropertyGroup>
 
   <Import Project="CLRTest.Execute.targets" />
   <Target Name="CreateExecuteScript" 

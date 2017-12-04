@@ -103,7 +103,7 @@ Build CoreFX native x64 Debug and the work (build) dir is in /usr/pkgsrc/wip/cor
 cd /usr/pkgsrc/wip/corefx-git && make
 ```
 
-Build CoreCLR Debug x64 on Linux and copy mscorlib.dll from ./bin/Product/Linux.x64.Debug/mscorlib.dll to NetBSD machine under /usr/pkg/CoreCLR:
+Build CoreCLR Debug x64 on Linux and copy System.Private.CoreLib.dll from ./bin/Product/Linux.x64.Debug/System.Private.CoreLib.dll to NetBSD machine under /usr/pkg/CoreCLR:
 
 ```
 ./build.sh mscorlib Debug

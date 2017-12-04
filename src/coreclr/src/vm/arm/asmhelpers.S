@@ -880,8 +880,6 @@ RedirectedHandledJITCaseFor\reason\()_StubEnd:
         GenerateRedirectedHandledJITCaseStub DbgThreadControl
 // ------------------------------------------------------------------
         GenerateRedirectedHandledJITCaseStub UserSuspend
-// ------------------------------------------------------------------
-        GenerateRedirectedHandledJITCaseStub YieldTask
 
 #ifdef _DEBUG
 // ------------------------------------------------------------------

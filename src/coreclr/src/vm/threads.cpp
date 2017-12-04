@@ -1241,11 +1241,11 @@ void Dbg_TrackSyncStack::EnterSync(UINT_PTR caller, void *pAwareLock)
 {
     LIMITED_METHOD_CONTRACT;
 
-    STRESS_LOG4(LF_SYNC, LL_INFO100, "Dbg_TrackSyncStack::EnterSync, IP=%p, Recursion=%d, MonitorHeld=%d, HoldingThread=%p.\n",
+    STRESS_LOG4(LF_SYNC, LL_INFO100, "Dbg_TrackSyncStack::EnterSync, IP=%p, Recursion=%u, LockState=%x, HoldingThread=%p.\n",
                     caller,
-                    ((AwareLock*)pAwareLock)->m_Recursion,
-                    ((AwareLock*)pAwareLock)->m_MonitorHeld.LoadWithoutBarrier(),
-                    ((AwareLock*)pAwareLock)->m_HoldingThread );
+                    ((AwareLock*)pAwareLock)->GetRecursionLevel(),
+                    ((AwareLock*)pAwareLock)->GetLockState(),
+                    ((AwareLock*)pAwareLock)->GetHoldingThread());
 
     if (m_Active)
     {
@@ -1267,11 +1267,11 @@ void Dbg_TrackSyncStack::LeaveSync(UINT_PTR caller, void *pAwareLock)
 {
     WRAPPER_NO_CONTRACT;
 
-    STRESS_LOG4(LF_SYNC, LL_INFO100, "Dbg_TrackSyncStack::LeaveSync, IP=%p, Recursion=%d, MonitorHeld=%d, HoldingThread=%p.\n",
+    STRESS_LOG4(LF_SYNC, LL_INFO100, "Dbg_TrackSyncStack::LeaveSync, IP=%p, Recursion=%u, LockState=%x, HoldingThread=%p.\n",
                     caller,
-                    ((AwareLock*)pAwareLock)->m_Recursion,
-                    ((AwareLock*)pAwareLock)->m_MonitorHeld.LoadWithoutBarrier(),
-                    ((AwareLock*)pAwareLock)->m_HoldingThread );
+                    ((AwareLock*)pAwareLock)->GetRecursionLevel(),
+                    ((AwareLock*)pAwareLock)->GetLockState(),
+                    ((AwareLock*)pAwareLock)->GetHoldingThread());
 
     if (m_Active)
     {
@@ -7549,11 +7549,6 @@ void CommonTripThread()
 
     thread->HandleThreadAbort ();
 
-    if (thread->IsYieldRequested())
-    {
-        __SwitchToThread(0, CALLER_LIMITS_SPINNING);
-    }
-
     if (thread->CatchAtSafePoint())
     {
         _ASSERTE(!ThreadStore::HoldingThreadStore(thread));
@@ -10212,10 +10207,6 @@ void Thread::InternalSwitchOut()
         m_ThreadHandleForClose = hThread;
     }
 
-    // The host is getting control of this thread, so if we were trying
-    // to yield this thread, we can stop those attempts now.
-    ResetThreadState(TS_YieldRequested);
-
     _ASSERTE (!fNoTLS ||
               (CExecutionEngine::CheckThreadStateNoCreate(0) == NULL));
     }
@@ -10438,11 +10429,6 @@ HRESULT Thread::Reset(BOOL fFull)
         IfFailGo(E_UNEXPECTED);
     }
 
-    if (HasThreadState(Thread::TS_YieldRequested))
-    {
-        ResetThreadState(Thread::TS_YieldRequested);
-    }
-
     _ASSERTE (!PreemptiveGCDisabled());
     _ASSERTE (m_pFrame == FRAME_TOP);
     // A host should not recycle a CLRTask if the task is created by us through CreateNewThread.
@@ -10534,11 +10520,6 @@ HRESULT Thread::ExitTask ()
     //_ASSERTE (m_UnmanagedRefCount == 0);
     if (this != GetThread())
         IfFailGo(HOST_E_INVALIDOPERATION);
-
-    if (HasThreadState(Thread::TS_YieldRequested))
-    {
-        ResetThreadState(Thread::TS_YieldRequested);
-    }
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     if (IsCoInitialized())

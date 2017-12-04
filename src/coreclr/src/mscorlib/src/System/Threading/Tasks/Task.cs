@@ -200,7 +200,7 @@ namespace System.Threading.Tasks
 
         // A private flag that would be set (only) by the debugger
         // When true the Async Causality logging trace is enabled as well as a dictionary to relate operation ids with Tasks
-        [FriendAccessAllowed]
+        // [FriendAccessAllowed]
         internal static bool s_asyncDebuggingEnabled; //false by default
 
         // This dictonary relates the task id, from an operation id located in the Async Causality log to the actual
@@ -210,7 +210,7 @@ namespace System.Threading.Tasks
 
         // These methods are a way to access the dictionary both from this class and for other classes that also
         // activate dummy tasks. Specifically the AsyncTaskMethodBuilder and AsyncTaskMethodBuilder<>
-        [FriendAccessAllowed]
+        // [FriendAccessAllowed]
         internal static bool AddToActiveTasks(Task task)
         {
             Debug.Assert(task != null, "Null Task objects can't be added to the ActiveTasks collection");
@@ -222,7 +222,7 @@ namespace System.Threading.Tasks
             return true;
         }
 
-        [FriendAccessAllowed]
+        // [FriendAccessAllowed]
         internal static void RemoveFromActiveTasks(int taskId)
         {
             lock (s_activeTasksLock)
@@ -2580,7 +2580,7 @@ namespace System.Threading.Tasks
                 // then ignore it.  This helps with performance by avoiding unnecessary posts and queueing
                 // of work items, but more so it ensures that if code happens to publish the default context 
                 // as current, it won't prevent usage of a current task scheduler if there is one.
-                var syncCtx = SynchronizationContext.CurrentNoFlow;
+                var syncCtx = SynchronizationContext.Current;
                 if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
                 {
                     tc = new SynchronizationContextAwaitTaskContinuation(syncCtx, continuationAction, flowExecutionContext);
@@ -2641,7 +2641,7 @@ namespace System.Threading.Tasks
             // fall back to using the state machine's delegate.
             if (continueOnCapturedContext)
             {
-                SynchronizationContext syncCtx = SynchronizationContext.CurrentNoFlow;
+                SynchronizationContext syncCtx = SynchronizationContext.Current;
                 if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
                 {
                     var tc = new SynchronizationContextAwaitTaskContinuation(syncCtx, stateMachineBox.MoveNextAction, flowExecutionContext: false);
@@ -5151,25 +5151,6 @@ namespace System.Threading.Tasks
             return task;
         }
 
-        /// <summary>Creates a <see cref="Task"/> that's completed due to cancellation with the specified token.</summary>
-        /// <param name="cancellationToken">The token with which to complete the task.</param>
-        /// <returns>The canceled task.</returns>
-        [FriendAccessAllowed]
-        internal static Task FromCancellation(CancellationToken cancellationToken)
-        {
-            return FromCanceled(cancellationToken);
-        }
-
-        /// <summary>Creates a <see cref="Task{TResult}"/> that's completed due to cancellation with the specified token.</summary>
-        /// <typeparam name="TResult">The type of the result returned by the task.</typeparam>
-        /// <param name="cancellationToken">The token with which to complete the task.</param>
-        /// <returns>The canceled task.</returns>
-        [FriendAccessAllowed]
-        internal static Task<TResult> FromCancellation<TResult>(CancellationToken cancellationToken)
-        {
-            return FromCanceled<TResult>(cancellationToken);
-        }
-
         #endregion
 
         #region Run methods
@@ -6138,7 +6119,6 @@ namespace System.Threading.Tasks
         }
         #endregion
 
-        [FriendAccessAllowed]
         internal static Task<TResult> CreateUnwrapPromise<TResult>(Task outerTask, bool lookForOce)
         {
             Debug.Assert(outerTask != null);

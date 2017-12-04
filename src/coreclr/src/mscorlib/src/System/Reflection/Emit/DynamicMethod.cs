@@ -286,7 +286,7 @@ namespace System.Reflection.Emit
                     if (signature[i] == null)
                         throw new ArgumentException(SR.Arg_InvalidTypeInSignature);
                     m_parameterTypes[i] = signature[i].UnderlyingSystemType as RuntimeType;
-                    if (m_parameterTypes[i] == null || !(m_parameterTypes[i] is RuntimeType) || m_parameterTypes[i] == (RuntimeType)typeof(void))
+                    if (m_parameterTypes[i] == null || m_parameterTypes[i] == (RuntimeType)typeof(void))
                         throw new ArgumentException(SR.Arg_InvalidTypeInSignature);
                 }
             }
@@ -297,7 +297,7 @@ namespace System.Reflection.Emit
 
             // check and store the return value
             m_returnType = (returnType == null) ? (RuntimeType)typeof(void) : returnType.UnderlyingSystemType as RuntimeType;
-            if ((m_returnType == null) || !(m_returnType is RuntimeType) || m_returnType.IsByRef)
+            if (m_returnType == null)
                 throw new NotSupportedException(SR.Arg_InvalidTypeInRetType);
 
             if (transparentMethod)

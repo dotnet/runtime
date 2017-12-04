@@ -93,7 +93,8 @@ jit_list = {
 
 os_group_list = {
     'Windows_NT': 'Windows_NT',
-    'Ubuntu14.04': 'Linux'
+    'Ubuntu14.04': 'Linux',
+    'Ubuntu16.04': 'Linux'
 }
 
 python_exe_list = {
@@ -168,7 +169,7 @@ def validate_args(args):
     valid_archs = {'Windows_NT': ['x86', 'x64'], 'Linux': ['x64']}
     valid_build_types = ['Release']
     valid_run_types = ['rolling', 'private']
-    valid_os = ['Windows_NT', 'Ubuntu14.04']
+    valid_os = ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04']
     valid_opt_levels = ['full_opt', 'min_opt']
     valid_jit_names = {'x64': ['ryujit'], 'x86': ['ryujit', 'legacy_backend']}
 

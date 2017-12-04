@@ -1886,10 +1886,10 @@ void MethodContext::dmpGetBuiltinClass(DWORD key, DWORDLONG value)
 }
 CORINFO_CLASS_HANDLE MethodContext::repGetBuiltinClass(CorInfoClassId classId)
 {
-	AssertCodeMsg(GetBuiltinClass != nullptr, EXCEPTIONCODE_MC,
-		"Encountered an empty LWM while looking for %016llX", (DWORDLONG)classId);
-	AssertCodeMsg(GetBuiltinClass->GetIndex((DWORDLONG)classId) != -1, EXCEPTIONCODE_MC,
-		"Didn't find %016llX", (DWORDLONG)classId);
+    AssertCodeMsg(GetBuiltinClass != nullptr, EXCEPTIONCODE_MC, "Encountered an empty LWM while looking for %016llX",
+                  (DWORDLONG)classId);
+    AssertCodeMsg(GetBuiltinClass->GetIndex((DWORDLONG)classId) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX",
+                  (DWORDLONG)classId);
     CORINFO_CLASS_HANDLE value = (CORINFO_CLASS_HANDLE)GetBuiltinClass->Get((DWORD)classId);
     DEBUG_REP(dmpGetBuiltinClass((DWORDLONG)classId, (DWORDLONG)value));
     return value;
@@ -2147,13 +2147,14 @@ void MethodContext::recGetHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection
     value.A = (DWORDLONG)*ppIndirection;
     value.B = (DWORDLONG)result;
 
-	if (GetHelperFtn->GetIndex((DWORD)ftnNum) != -1)
-	{
-		DLDL oldValue = GetHelperFtn->Get((DWORD)ftnNum);
+    if (GetHelperFtn->GetIndex((DWORD)ftnNum) != -1)
+    {
+        DLDL oldValue = GetHelperFtn->Get((DWORD)ftnNum);
 
-		AssertCodeMsg(oldValue.A == value.A && oldValue.B == oldValue.B, EXCEPTIONCODE_MC, "collision! old: %016llX %016llX, new: %016llX %016llX \n", oldValue.A, oldValue.B, value.A, value.B);
-	
-	}
+        AssertCodeMsg(oldValue.A == value.A && oldValue.B == oldValue.B, EXCEPTIONCODE_MC,
+                      "collision! old: %016llX %016llX, new: %016llX %016llX \n", oldValue.A, oldValue.B, value.A,
+                      value.B);
+    }
 
     GetHelperFtn->Add((DWORD)ftnNum, value);
     DEBUG_REC(dmpGetHelperFtn((DWORD)ftnNum, value));
@@ -3031,7 +3032,7 @@ CORINFO_METHOD_HANDLE MethodContext::repResolveVirtualMethod(CORINFO_METHOD_HAND
 }
 
 void MethodContext::recGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn,
-                                       bool *requiresInstMethodTableArg,
+                                       bool*                 requiresInstMethodTableArg,
                                        CORINFO_METHOD_HANDLE result)
 {
     if (GetUnboxedEntry == nullptr)
@@ -3039,12 +3040,12 @@ void MethodContext::recGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn,
         GetUnboxedEntry = new LightWeightMap<DWORDLONG, DLD>();
     }
 
-    DWORDLONG key = (DWORDLONG) ftn;
-    DLD value;
-    value.A = (DWORDLONG) result;
+    DWORDLONG key = (DWORDLONG)ftn;
+    DLD       value;
+    value.A = (DWORDLONG)result;
     if (requiresInstMethodTableArg != nullptr)
     {
-        value.B = (DWORD) *requiresInstMethodTableArg ? 1 : 0;
+        value.B = (DWORD)*requiresInstMethodTableArg ? 1 : 0;
     }
     else
     {
@@ -3056,12 +3057,10 @@ void MethodContext::recGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn,
 
 void MethodContext::dmpGetUnboxedEntry(DWORDLONG key, DLD value)
 {
-    printf("GetUnboxedEntry ftn-%016llX, result-%016llX, requires-inst-%u",
-        key, value.A, value.B);
+    printf("GetUnboxedEntry ftn-%016llX, result-%016llX, requires-inst-%u", key, value.A, value.B);
 }
 
-CORINFO_METHOD_HANDLE MethodContext::repGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn,
-                                                        bool* requiresInstMethodTableArg)
+CORINFO_METHOD_HANDLE MethodContext::repGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg)
 {
     DWORDLONG key = (DWORDLONG)ftn;
 
