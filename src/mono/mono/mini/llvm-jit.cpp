@@ -195,7 +195,7 @@ public:
 
 #if LLVM_API_VERSION >= 500
 		ModuleHandleT m = CompileLayer.addModule(M,
-												 std::move(Resolver));
+												 std::move(Resolver)).get ();
 		return m;
 #else
 		return CompileLayer.addModuleSet(singletonSet(M),
@@ -245,15 +245,23 @@ public:
 			auto sym = CompileLayer.findSymbolIn (ModuleHandle, mangle (var->getName ()), true);
 			auto addr = sym.getAddress ();
 			g_assert (addr);
+#if LLVM_API_VERSION >= 500
+			callee_addrs [i] = (gpointer)addr.get ();
+#else
 			callee_addrs [i] = (gpointer)addr;
+#endif
 		}
 
 		auto ehsym = CompileLayer.findSymbolIn(ModuleHandle, "mono_eh_frame", false);
 		auto ehaddr = ehsym.getAddress ();
 		g_assert (ehaddr);
+#if LLVM_API_VERSION >= 500
+		*eh_frame = (gpointer)ehaddr.get ();
+		return (gpointer)BodyAddr.get ();
+#else
 		*eh_frame = (gpointer)ehaddr;
-
 		return (gpointer)BodyAddr;
+#endif
 	}
 
 private:
