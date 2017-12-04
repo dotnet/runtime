@@ -6,6 +6,7 @@
     <Assembly Name="System.Collections" BinaryFormatter="All" Dynamic="Required Public" />
     <Assembly Name="System.Collections.NonGeneric" BinaryFormatter="All" Dynamic="Required Public" />
     <Assembly Name="System.Collections.Specialized" BinaryFormatter="All" Dynamic="Required Public" />
+    <Assembly Name="System.ComponentModel.Composition" BinaryFormatter="All" Dynamic="Required Public" />
     <Assembly Name="System.ComponentModel.Primitives" BinaryFormatter="All" Dynamic="Required Public" />
     <Assembly Name="System.ComponentModel.TypeConverter" BinaryFormatter="All" Dynamic="Required Public" />
     <Assembly Name="System.Configuration.ConfigurationManager" BinaryFormatter="All" Dynamic="Required Public" />
