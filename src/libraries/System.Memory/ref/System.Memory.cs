@@ -134,6 +134,11 @@ namespace System
         public static ReadOnlySpan<TTo> NonPortableCast<TFrom, TTo>(this ReadOnlySpan<TFrom> source) where TFrom : struct where TTo : struct { throw null; }
 
         public static bool TryGetString(this ReadOnlyMemory<char> readOnlyMemory, out string text, out int start, out int length) { throw null; }
+
+        public static bool Overlaps<T>(this Span<T> first, ReadOnlySpan<T> second) { throw null; }
+        public static bool Overlaps<T>(this Span<T> first, ReadOnlySpan<T> second, out int elementOffset) { throw null; }
+        public static bool Overlaps<T>(this ReadOnlySpan<T> first, ReadOnlySpan<T> second) { throw null; }
+        public static bool Overlaps<T>(this ReadOnlySpan<T> first, ReadOnlySpan<T> second, out int elementOffset) { throw null; }
     }
 
     public readonly struct ReadOnlyMemory<T>
