@@ -183,7 +183,7 @@ namespace System
             }
         }
 
-        [FriendAccessAllowed]
+        // [FriendAccessAllowed]
         internal void AddExceptionDataForRestrictedErrorInfo(
             string restrictedError,
             string restrictedErrorReference,
@@ -335,7 +335,7 @@ namespace System
             return remoteStackTraceString + tempStackTraceString;
         }
 
-        [FriendAccessAllowed]
+        // [FriendAccessAllowed]
         internal void SetErrorCode(int hr)
         {
             HResult = hr;
@@ -753,7 +753,6 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private static extern void GetMessageFromNativeResources(ExceptionMessageKind kind, StringHandleOnStack retMesg);
     }
 

@@ -49,9 +49,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // the get_Value property, allocate an appropriately-sized managed object, marshal the native object
         // to the managed object, and free the native method.  Also we want the return value boxed (aka normal value type boxing).
         //
-        // This method is called by VM. Mark the method with FriendAccessAllowed attribute to ensure that the unreferenced method
-        // optimization skips it and the code will be saved into NGen image.
-        [System.Runtime.CompilerServices.FriendAccessAllowed]
+        // This method is called by VM.
         internal static Object UnboxHelper(Object wrapper)
         {
             Debug.Assert(wrapper != null);
@@ -212,9 +210,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // the get_Value property, allocate an appropriately-sized managed object, marshal the native object
         // to the managed object, and free the native method.
         //
-        // This method is called by VM. Mark the method with FriendAccessAllowed attribute to ensure that the unreferenced method
-        // optimization skips it and the code will be saved into NGen image.
-        [System.Runtime.CompilerServices.FriendAccessAllowed]
+        // This method is called by VM.
         internal static Object UnboxHelper(Object wrapper)
         {
             Debug.Assert(wrapper != null);

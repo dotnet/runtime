@@ -28,7 +28,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.Serialization;
 using System.Threading;
 
 namespace System.Globalization
@@ -49,10 +48,6 @@ namespace System.Globalization
         //                        Internal Information                        //
         //--------------------------------------------------------------------//
 
-        //--------------------------------------------------------------------//
-        // Data members to be serialized:
-        //--------------------------------------------------------------------//
-
         // We use an RFC4646 type string to construct CultureInfo.
         // This string is stored in _name and is authoritative.
         // We use the _cultureData to get the data for our object
@@ -68,13 +63,10 @@ namespace System.Globalization
         // For supported culture, this will be the CultureData instance that read data from mscorlib assembly.
         // For customized culture, this will be the CultureData instance that read data from user customized culture binary file.
         //
-        [NonSerialized]
         internal CultureData _cultureData;
 
-        [NonSerialized]
         internal bool _isInherited;
 
-        [NonSerialized]
         private CultureInfo _consoleFallbackCulture;
 
         // Names are confusing.  Here are 3 names we have:
@@ -88,20 +80,16 @@ namespace System.Globalization
         // Note that in Silverlight we ask the OS for the text and sort behavior, so the 
         // textinfo and compareinfo names are the same as the name
 
-        // Note that the name used to be serialized for Everett; it is now serialized
-        // because alernate sorts can have alternate names.
         // This has a de-DE, de-DE_phoneb or fj-FJ style name
         internal string _name;
 
         // This will hold the non sorting name to be returned from CultureInfo.Name property.
         // This has a de-DE style name even for de-DE_phoneb type cultures
-        [NonSerialized]
         private string _nonSortName;
 
         // This will hold the sorting name to be returned from CultureInfo.SortName property.
         // This might be completely unrelated to the culture name if a custom culture.  Ie en-US for fj-FJ.
         // Otherwise its the sort name, ie: de-DE or de-DE_phoneb
-        [NonSerialized]
         private string _sortName;
 
         //--------------------------------------------------------------------//
@@ -149,7 +137,6 @@ namespace System.Globalization
         private static volatile StringLcidDictionary s_LcidCachedCultures;       
 
         //The parent culture.
-        [NonSerialized]
         private CultureInfo _parent;
 
         // LOCALE constants of interest to us internally and privately for LCID functions
@@ -419,20 +406,6 @@ namespace System.Globalization
 
         // We need to store the override from the culture data record.
         private bool _useUserOverride;
-
-        [OnSerializing]
-        private void OnSerializing(StreamingContext ctx)
-        {
-            _name = _cultureData.CultureName;
-            _useUserOverride = _cultureData.UseUserOverride;
-        }
-
-        [OnDeserialized]
-        private void OnDeserialized(StreamingContext ctx)
-        {
-            Debug.Assert(_name != null, "[CultureInfo.OnDeserialized] _name != null");
-            InitializeFromName(_name, _useUserOverride);
-        }
         
         internal static CultureInfo GetCurrentUICultureNoAppX()
         {

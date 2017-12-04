@@ -463,6 +463,9 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
         if (head != fieldList)
         {
             head->gtFlags |= GTF_FIELD_LIST_HEAD;
+            head->SetContained();
+
+            fieldList->ClearContained();
             fieldList->gtFlags &= ~GTF_FIELD_LIST_HEAD;
 
 #ifdef DEBUG

@@ -14,16 +14,13 @@
 
 using System;
 using System.Diagnostics;
-using System.Runtime.Serialization;
 
 namespace System.Globalization
 {
     public class StringInfo
     {
-        [OptionalField(VersionAdded = 2)] 
         private string _str;
 
-        [NonSerialized]
         private int[] _indexes;
 
         // Legacy constructor
@@ -33,21 +30,6 @@ namespace System.Globalization
         public StringInfo(string value)
         {
             this.String = value;
-        }
-
-        [OnDeserializing]
-        private void OnDeserializing(StreamingContext ctx)
-        {
-            _str = String.Empty;
-        }
-
-        [OnDeserialized]
-        private void OnDeserialized(StreamingContext ctx)
-        {
-            if (_str.Length == 0)
-            {
-                _indexes = null;
-            }
         }
 
         public override bool Equals(Object value)

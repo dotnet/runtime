@@ -256,35 +256,6 @@ namespace System.Runtime.InteropServices
             return SizeOf(typeof(T));
         }
 
-        /// <summary>
-        /// Returns the aligned size of an instance of a value type.
-        /// </summary>
-        /// <typeparam name="T">Provide a value type to figure out its size</typeparam>
-        /// <returns>The aligned size of T in bytes.</returns>
-        internal static uint AlignedSizeOf<T>() where T : struct
-        {
-            uint size = SizeOfType(typeof(T));
-            if (size == 1 || size == 2)
-            {
-                return size;
-            }
-            if (IntPtr.Size == 8 && size == 4)
-            {
-                return size;
-            }
-            return AlignedSizeOfType(typeof(T));
-        }
-
-        // Type must be a value type with no object reference fields.  We only
-        // assert this, due to the lack of a suitable generic constraint.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern uint SizeOfType(Type type);
-
-        // Type must be a value type with no object reference fields.  We only
-        // assert this, due to the lack of a suitable generic constraint.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern uint AlignedSizeOfType(Type type);
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int SizeOfHelper(Type t, bool throwIfNotMarshalable);
 
@@ -875,7 +846,7 @@ namespace System.Runtime.InteropServices
             InternalPrelink(rmi);
         }
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void InternalPrelink(IRuntimeMethodInfo m);
 
         public static void PrelinkAll(Type c)
@@ -999,8 +970,7 @@ namespace System.Runtime.InteropServices
             return GetHINSTANCE(rtModule.GetNativeHandle());
         }
 
-        [SuppressUnmanagedCodeSecurity]
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private extern static IntPtr GetHINSTANCE(RuntimeModule m);
 
 #endif // FEATURE_COMINTEROP
@@ -1735,15 +1705,12 @@ namespace System.Runtime.InteropServices
         }
 
         [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
-        [SuppressUnmanagedCodeSecurity]
         private static extern void CreateBindCtx(UInt32 reserved, out IBindCtx ppbc);
 
         [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
-        [SuppressUnmanagedCodeSecurity]
         private static extern void MkParseDisplayName(IBindCtx pbc, [MarshalAs(UnmanagedType.LPWStr)] String szUserName, out UInt32 pchEaten, out IMoniker ppmk);
 
         [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
-        [SuppressUnmanagedCodeSecurity]
         private static extern void BindMoniker(IMoniker pmk, UInt32 grfOpt, ref Guid iidResult, [MarshalAs(UnmanagedType.Interface)] out Object ppvResult);
 
         //========================================================================

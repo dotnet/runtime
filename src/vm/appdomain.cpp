@@ -6422,22 +6422,6 @@ PVOID AppDomain::GetFriendlyNameNoSet(bool* isUtf8)
 
 #endif // DACCESS_COMPILE
 
-void AppDomain::CacheStringsForDAC()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    //
-    // If the application base, private bin paths, and configuration file are
-    // available, cache them so DAC can read them out of memory
-    //
-}
-
 #ifndef DACCESS_COMPILE
 
 BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly *pFile, BOOL fAllowFailure)
@@ -7694,8 +7678,6 @@ void AppDomain::InitializeDomainContext(BOOL allowRedirects,
         setupDomain.Call(args);
     }
     GCPROTECT_END();
-
-    CacheStringsForDAC();
 #endif // CROSSGEN_COMPILE
 }
 
@@ -9071,7 +9053,43 @@ void AppDomain::HandleAsyncPinHandles()
     // 4. Then we can delete all AsyncPinHandle marked with READYTOCLEAN.
     IGCHandleStore *pBucketInDefault = SystemDomain::System()->DefaultDomain()->m_handleStore;
 
-    pBucket->RelocateAsyncPinnedHandles(pBucketInDefault);
+    auto clearIfComplete = [](Object* object)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        assert(object != nullptr);
+        if (object->GetGCSafeMethodTable() != g_pOverlappedDataClass)
+        {
+            return;
+        }
+
+        OVERLAPPEDDATAREF overlapped = (OVERLAPPEDDATAREF)(ObjectToOBJECTREF((Object*)object));
+        if (overlapped->HasCompleted())
+        {
+            // IO has finished.  We don't need to pin the user buffer any longer.
+            overlapped->m_userObject = NULL;
+        }
+
+        BashMTForPinnedObject(ObjectToOBJECTREF(object));
+    };
+
+    auto setHandle = [](Object* object, OBJECTHANDLE handle)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        assert(object != nullptr);
+        assert(handle);
+
+        if (object->GetGCSafeMethodTable() != g_pOverlappedDataClass)
+        {
+            return;
+        }
+
+        OverlappedDataObject* overlapped = (OverlappedDataObject*)object;
+        overlapped->m_pinSelf = handle;
+    };
+
+    pBucket->RelocateAsyncPinnedHandles(pBucketInDefault, clearIfComplete, setHandle);
 
     OverlappedDataObject::RequestCleanup();
 }

@@ -1977,6 +1977,45 @@ void Compiler::fgComputeLife(VARSET_TP&       life,
     }
 }
 
+static bool HasAnyThrowableNodes(Compiler* compiler, BasicBlock* block, jitstd::vector<GenTree*>& disabledNodes)
+{
+
+    LIR::Range& blockRange  = LIR::AsRange(block);
+    GenTree*    currentNode = blockRange.LastNode();
+    GenTree*    endNode     = blockRange.FirstNonPhiNode()->gtPrev;
+
+    size_t left = disabledNodes.size();
+
+    while (currentNode != endNode)
+    {
+        for (size_t i = 0; i < disabledNodes.size(); ++i)
+        {
+            if (disabledNodes[i] == currentNode)
+            {
+                --left;
+                disabledNodes[i] = nullptr;
+                break;
+            }
+        }
+
+        if (currentNode->OperMayThrow(compiler))
+        {
+            return true;
+        }
+
+        if (left == 0)
+        {
+            return false;
+        }
+
+        currentNode = currentNode->gtPrev;
+    }
+
+    // If we reach here that means that there is an affecting node outside the current block
+    // so return true
+    return true;
+}
+
 void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALARG_TP volatileVars)
 {
     // Don't kill volatile vars and vars in scope.
@@ -2006,7 +2045,9 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                     JITDUMP("Removing dead call:\n");
                     DISPNODE(call);
 
-                    node->VisitOperands([](GenTree* operand) -> GenTree::VisitResult {
+                    jitstd::vector<GenTree*> disabledNodes(getAllocator());
+
+                    node->VisitOperands([&disabledNodes](GenTree* operand) -> GenTree::VisitResult {
                         if (operand->IsValue())
                         {
                             operand->SetUnusedValue();
@@ -2016,12 +2057,23 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                         // these nodes.
                         if (operand->OperIs(GT_PUTARG_STK))
                         {
+
+                            // collect stack-affecting nodes
+                            disabledNodes.push_back(operand);
                             operand->AsPutArgStk()->gtOp1->SetUnusedValue();
                             operand->gtBashToNOP();
                         }
 
                         return GenTree::VisitResult::Continue;
                     });
+
+                    if (!disabledNodes.empty())
+                    {
+                        if (HasAnyThrowableNodes(this, block, disabledNodes))
+                        {
+                            codeGen->setFramePointerRequired(true);
+                        }
+                    }
 
                     blockRange.Remove(node);
 

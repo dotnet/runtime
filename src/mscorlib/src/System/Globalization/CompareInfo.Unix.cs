@@ -390,7 +390,6 @@ namespace System.Globalization
         }
 
         [DllImport(JitHelpers.QCall)]
-        [SuppressUnmanagedCodeSecurity]
         private static unsafe extern int InternalHashSortKey(byte* sortKey, int sortKeyLength);
 
         private static CompareOptions GetOrdinalCompareOptions(CompareOptions options)

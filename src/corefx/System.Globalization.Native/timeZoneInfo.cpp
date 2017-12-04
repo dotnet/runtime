@@ -12,20 +12,6 @@
 #include "errors.h"
 
 /*
-Gets the symlink value for the path.
-*/
-extern "C" int32_t GlobalizationNative_ReadLink(const char* path, char* result, size_t resultCapacity)
-{
-    ssize_t r = readlink(path, result, resultCapacity - 1); // subtract one to make room for the NULL character
-
-    if (r < 1 || r >= resultCapacity)
-        return false;
-
-    result[r] = '\0';
-    return true;
-}
-
-/*
 These values should be kept in sync with the managed Interop.GlobalizationInterop.TimeZoneDisplayNameType enum.
 */
 enum TimeZoneDisplayNameType : int32_t
