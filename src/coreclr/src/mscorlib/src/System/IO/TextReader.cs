@@ -84,7 +84,7 @@ namespace System.IO {
         // buffer character array starting at position
         // index. Returns the actual number of characters read.
         //
-        public virtual int Read([In, Out] char[] buffer, int index, int count) 
+        public virtual int Read(char[] buffer, int index, int count) 
         {
             if (buffer==null)
                 throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
@@ -121,7 +121,7 @@ namespace System.IO {
         // Blocking version of read.  Returns only when count
         // characters have been read or the end of the file was reached.
         // 
-        public virtual int ReadBlock([In, Out] char[] buffer, int index, int count) 
+        public virtual int ReadBlock(char[] buffer, int index, int count) 
         {
             int i, n = 0;
             do {
@@ -297,13 +297,13 @@ namespace System.IO {
             }
 
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
-            public override int Read([In, Out] char[] buffer, int index, int count) 
+            public override int Read(char[] buffer, int index, int count) 
             {
                 return _in.Read(buffer, index, count);
             }
             
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
-            public override int ReadBlock([In, Out] char[] buffer, int index, int count) 
+            public override int ReadBlock(char[] buffer, int index, int count) 
             {
                 return _in.ReadBlock(buffer, index, count);
             }

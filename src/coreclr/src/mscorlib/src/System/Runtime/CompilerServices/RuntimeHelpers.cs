@@ -83,7 +83,7 @@ namespace System.Runtime.CompilerServices
         }
 
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern void _CompileMethod(IRuntimeMethodInfo method);
 
         public static void PrepareMethod(RuntimeMethodHandle method) { }

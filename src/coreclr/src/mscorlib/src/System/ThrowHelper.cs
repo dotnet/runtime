@@ -120,9 +120,9 @@ namespace System
             throw GetAddingDuplicateWithKeyArgumentException(key);
         }
 
-        internal static void ThrowKeyNotFoundException()
+        internal static void ThrowKeyNotFoundException(object key)
         {
-            throw new KeyNotFoundException();
+            throw new KeyNotFoundException(key.ToString());
         }
 
         internal static void ThrowArgumentException(ExceptionResource resource)
@@ -260,6 +260,11 @@ namespace System
             throw GetInvalidOperationException(ExceptionResource.InvalidOperation_EnumOpCantHappen);
         }
 
+        internal static void ThrowInvalidOperationException_InvalidOperation_NoValue()
+        {
+            throw GetInvalidOperationException(ExceptionResource.InvalidOperation_NoValue);
+        }
+
         internal static void ThrowArraySegmentCtorValidationFailedExceptions(Array array, int offset, int count)
         {
             throw GetArraySegmentCtorValidationFailedException(array, offset, count);
@@ -351,6 +356,18 @@ namespace System
 
             return SR.GetResourceString(resource.ToString());
         }
+
+        internal static void ThrowNotSupportedExceptionIfNonNumericType<T>()
+        {
+            if (typeof(T) != typeof(Byte) && typeof(T) != typeof(SByte) && 
+                typeof(T) != typeof(Int16) && typeof(T) != typeof(UInt16) && 
+                typeof(T) != typeof(Int32) && typeof(T) != typeof(UInt32) && 
+                typeof(T) != typeof(Int64) && typeof(T) != typeof(UInt64) &&
+                typeof(T) != typeof(Single) && typeof(T) != typeof(Double))
+            {
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+            }
+        }
     }
 
     //
@@ -433,7 +450,8 @@ namespace System
         input,
         ownedMemory,
         pointer,
-        start
+        start,
+        format
     }
 
     //

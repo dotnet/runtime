@@ -956,11 +956,6 @@ namespace System.Text
 
         public StringBuilder Append(bool value) => Append(value.ToString());
 
-        [CLSCompliant(false)]
-        public StringBuilder Append(sbyte value) => Append(value.ToString());
-
-        public StringBuilder Append(byte value) => Append(value.ToString());
-
         public StringBuilder Append(char value)
         {
             if (m_ChunkLength < m_ChunkChars.Length)
@@ -975,26 +970,42 @@ namespace System.Text
             return this;
         }
 
-        public StringBuilder Append(short value) => Append(value.ToString());
+        [CLSCompliant(false)]
+        public StringBuilder Append(sbyte value) => AppendSpanFormattable(value);
 
-        public StringBuilder Append(int value) => Append(value.ToString());
+        public StringBuilder Append(byte value) => AppendSpanFormattable(value);
 
-        public StringBuilder Append(long value) => Append(value.ToString());
+        public StringBuilder Append(short value) => AppendSpanFormattable(value);
 
-        public StringBuilder Append(float value) => Append(value.ToString());
+        public StringBuilder Append(int value) => AppendSpanFormattable(value);
 
-        public StringBuilder Append(double value) => Append(value.ToString());
+        public StringBuilder Append(long value) => AppendSpanFormattable(value);
 
-        public StringBuilder Append(decimal value) => Append(value.ToString());
+        public StringBuilder Append(float value) => AppendSpanFormattable(value);
+
+        public StringBuilder Append(double value) => AppendSpanFormattable(value);
+
+        public StringBuilder Append(decimal value) => AppendSpanFormattable(value);
 
         [CLSCompliant(false)]
-        public StringBuilder Append(ushort value) => Append(value.ToString());
+        public StringBuilder Append(ushort value) => AppendSpanFormattable(value);
 
         [CLSCompliant(false)]
-        public StringBuilder Append(uint value) => Append(value.ToString());
+        public StringBuilder Append(uint value) => AppendSpanFormattable(value);
 
         [CLSCompliant(false)]
-        public StringBuilder Append(ulong value) => Append(value.ToString());
+        public StringBuilder Append(ulong value) => AppendSpanFormattable(value);
+
+        private StringBuilder AppendSpanFormattable<T>(T value) where T : ISpanFormattable
+        {
+            if (value.TryFormat(RemainingCurrentChunk, out int charsWritten, format: default, provider: null))
+            {
+                m_ChunkLength += charsWritten;
+                return this;
+            }
+
+            return Append(value.ToString());
+        }
 
         public StringBuilder Append(object value) => (value == null) ? this : Append(value.ToString());
 
@@ -1453,6 +1464,7 @@ namespace System.Text
                 //
                 Object arg = args[index];
                 String itemFormat = null;
+                ReadOnlySpan<char> itemFormatSpan = default; // used if itemFormat is null
                 // Is current character a colon? which indicates start of formatting parameter.
                 if (ch == ':')
                 {
@@ -1507,13 +1519,13 @@ namespace System.Text
                         if (startPos != pos)
                         {
                             // There was no brace escaping, extract the item format as a single string
-                            itemFormat = format.Substring(startPos, pos - startPos);
+                            itemFormatSpan = format.AsReadOnlySpan().Slice(startPos, pos - startPos);
                         }
                     }
                     else
                     {
                         unescapedItemFormat.Append(format, startPos, pos - startPos);
-                        itemFormat = unescapedItemFormat.ToString();
+                        itemFormatSpan = itemFormat = unescapedItemFormat.ToString();
                         unescapedItemFormat.Clear();
                     }
                 }
@@ -1524,15 +1536,38 @@ namespace System.Text
                 String s = null;
                 if (cf != null)
                 {
+                    if (itemFormatSpan.Length != 0 && itemFormat == null)
+                    {
+                        itemFormat = new string(itemFormatSpan);
+                    }
                     s = cf.Format(itemFormat, arg, provider);
                 }
 
                 if (s == null)
                 {
-                    IFormattable formattableArg = arg as IFormattable;
-
-                    if (formattableArg != null)
+                    // If arg is ISpanFormattable and the beginning doesn't need padding,
+                    // try formatting it into the remaining current chunk.
+                    if (arg is ISpanFormattable spanFormattableArg &&
+                        (leftJustify || width == 0) &&
+                        spanFormattableArg.TryFormat(RemainingCurrentChunk, out int charsWritten, itemFormatSpan, provider))
                     {
+                        m_ChunkLength += charsWritten;
+
+                        // Pad the end, if needed.
+                        int padding = width - charsWritten;
+                        if (leftJustify && padding > 0) Append(' ', padding);
+
+                        // Continue to parse other characters.
+                        continue;
+                    }
+
+                    // Otherwise, fallback to trying IFormattable or calling ToString.
+                    if (arg is IFormattable formattableArg)
+                    {
+                        if (itemFormatSpan.Length != 0 && itemFormat == null)
+                        {
+                            itemFormat = new string(itemFormatSpan);
+                        }
                         s = formattableArg.ToString(itemFormat, provider);
                     }
                     else if (arg != null)
@@ -2054,6 +2089,13 @@ namespace System.Text
 
             Debug.Assert(result != null);
             return result;
+        }
+
+        /// <summary>Gets a span representing the remaining space available in the current chunk.</summary>
+        private Span<char> RemainingCurrentChunk
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => new Span<char>(m_ChunkChars, m_ChunkLength, m_ChunkChars.Length - m_ChunkLength);
         }
 
         /// <summary>

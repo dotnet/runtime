@@ -27,7 +27,7 @@ namespace System.Diagnostics.Tracing
     //
     // This will produce an XML file, where each event is pretty-printed with all its arguments nicely parsed.
     //
-    [FriendAccessAllowed]
+    // [FriendAccessAllowed]
     [EventSource(Guid = "8E9F5090-2D75-4d03-8A81-E5AFBF85DAF1", Name = "System.Diagnostics.Eventing.FrameworkEventSource")]
     sealed internal class FrameworkEventSource : EventSource
     {
@@ -52,7 +52,6 @@ namespace System.Diagnostics.Tracing
         }
 
         /// <summary>ETW tasks that have start/stop events.</summary>
-        [FriendAccessAllowed]
         public static class Tasks // this name is important for EventSource
         {
             /// <summary>Begin / End - GetResponse.</summary>
@@ -63,7 +62,6 @@ namespace System.Diagnostics.Tracing
             public const EventTask ThreadTransfer = (EventTask)3;
         }
 
-        [FriendAccessAllowed]
         public static class Opcodes
         {
             public const EventOpcode ReceiveHandled = (EventOpcode)11;

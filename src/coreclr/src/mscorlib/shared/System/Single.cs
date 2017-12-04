@@ -21,7 +21,7 @@ namespace System
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct Single : IComparable, IConvertible, IFormattable, IComparable<Single>, IEquatable<Single>
+    public struct Single : IComparable, IConvertible, IFormattable, IComparable<Single>, IEquatable<Single>, ISpanFormattable
     {
         private float m_value; // Do not rename (binary serialization)
 
@@ -245,6 +245,11 @@ namespace System
             return Number.FormatSingle(m_value, format, NumberFormatInfo.GetInstance(provider));
         }
 
+        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider provider = null)
+        {
+            return Number.TryFormatSingle(m_value, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
+        }
+
         // Parses a float from a String in the given style.  If
         // a NumberFormatInfo isn't specified, the current culture's
         // NumberFormatInfo is assumed.
@@ -256,27 +261,27 @@ namespace System
         public static float Parse(String s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseSingle(s.AsReadOnlySpan(), NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo);
+            return Number.ParseSingle(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo);
         }
 
         public static float Parse(String s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseSingle(s.AsReadOnlySpan(), style, NumberFormatInfo.CurrentInfo);
+            return Number.ParseSingle(s, style, NumberFormatInfo.CurrentInfo);
         }
 
         public static float Parse(String s, IFormatProvider provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseSingle(s.AsReadOnlySpan(), NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseSingle(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.GetInstance(provider));
         }
 
         public static float Parse(String s, NumberStyles style, IFormatProvider provider)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseSingle(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseSingle(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static float Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
@@ -293,7 +298,7 @@ namespace System
                 return false;
             }
 
-            return TryParse(s.AsReadOnlySpan(), NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo, out result);
+            return TryParse((ReadOnlySpan<char>)s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo, out result);
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, out float result)
@@ -311,12 +316,8 @@ namespace System
                 return false;
             }
 
-            return TryParse(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider), out result);
+            return TryParse((ReadOnlySpan<char>)s, style, NumberFormatInfo.GetInstance(provider), out result);
         }
-
-        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
-        public static Boolean TryParse(ReadOnlySpan<char> s, out Single result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null) =>
-            TryParse(s, style, provider, out result);
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out float result)
         {

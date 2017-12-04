@@ -275,7 +275,6 @@ namespace System
         internal static extern RuntimeType InternalGetUnderlyingType(RuntimeType enumType);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [System.Security.SuppressUnmanagedCodeSecurity]
         private static extern void GetEnumValuesAndNames(RuntimeTypeHandle enumType, ObjectHandleOnStack values, ObjectHandleOnStack names, bool getNames);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

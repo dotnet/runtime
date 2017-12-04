@@ -219,6 +219,38 @@ public:
     // or a server GC thread.
     virtual
     bool WasCurrentThreadCreatedByGC() = 0;
+
+    // Given an object, if this object is an instance of `System.Threading.OverlappedData`,
+    // and the runtime treats instances of this class specially, traverses the objects that
+    // are directly or (once) indirectly pinned by this object and reports them to the GC for
+    // the purposes of relocation and promotion.
+    //
+    // Overlapped objects are very special and as such the objects they wrap can't be promoted in
+    // the same manner as normal objects. This callback gives the EE the opportunity to hide these
+    // details, if they are implemented at all.
+    //
+    // This function is a no-op if "object" is not an OverlappedData object.
+    virtual
+    void WalkAsyncPinnedForPromotion(Object* object, ScanContext* sc, promote_func* callback) = 0;
+
+    // Given an object, if this object is an instance of `System.Threading.OverlappedData` and the
+    // runtime treats instances of this class specially, traverses the objects that are directly
+    // or once indirectly pinned by this object and invokes the given callback on them. The callback
+    // is passed the following arguments:
+    //     Object* "from" - The object that "caused" the "to" object to be pinned. If a single object
+    //                      is pinned directly by this OverlappedData, this object will be the
+    //                      OverlappedData object itself. If an array is pinned by this OverlappedData,
+    //                      this object will be the pinned array.
+    //     Object* "to"   - The object that is pinned by the "from" object. If a single object is pinned
+    //                      by an OverlappedData, "to" will be that single object. If an array is pinned
+    //                      by an OverlappedData, the callback will be invoked on all elements of that
+    //                      array and each element will be a "to" object.
+    //     void* "context" - Passed verbatim from "WalkOverlappedObject" to the callback function.
+    // The "context" argument will be passed directly to the callback without modification or inspection.
+    //
+    // This function is a no-op if "object" is not an OverlappedData object.
+    virtual
+    void WalkAsyncPinned(Object* object, void* context, void(*callback)(Object*, Object*, void*)) = 0;
 };
 
 #endif // _GCINTERFACE_EE_H_

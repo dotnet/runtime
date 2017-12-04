@@ -112,7 +112,7 @@ private:
     // need not be strict -- B2 and B may be the same node.  The iterated dominance frontier is formed by a closure
     // operation: the IDF of B is the smallest set that includes B's dominance frontier, and also includes the dominance
     // frontier of all elements of the set.)
-    BlkToBlkSetMap* ComputeIteratedDominanceFrontier(BasicBlock** postOrder, int count);
+    BlkToBlkVectorMap* ComputeIteratedDominanceFrontier(BasicBlock** postOrder, int count);
 
     // Requires "postOrder" to hold the blocks of the flowgraph in topologically sorted order. Requires
     // count to be the valid entries in the "postOrder" array. Inserts GT_PHI nodes at the beginning
@@ -175,6 +175,10 @@ private:
 private:
     Compiler*     m_pCompiler;
     CompAllocator m_allocator;
+
+    // Bit vector used by TopologicalSort and ComputeImmediateDom to track already visited blocks.
+    BitVecTraits m_visitedTraits;
+    BitVec       m_visited;
 
 #ifdef SSA_FEATURE_DOMARR
     // To answer queries of type a DOM b.

@@ -803,54 +803,6 @@ FCIMPL5(VOID, Buffer::BlockCopy, ArrayBase *src, int srcOffset, ArrayBase *dst, 
 FCIMPLEND
 
 
-// InternalBlockCopy
-// This method from one primitive array to another based
-//  upon an offset into each an a byte count.
-FCIMPL5(VOID, Buffer::InternalBlockCopy, ArrayBase *src, int srcOffset, ArrayBase *dst, int dstOffset, int count)
-{
-    FCALL_CONTRACT;
-
-    // @TODO: We should consider writing this in managed code.  We probably
-    // cannot easily do this though - how do we get at the array's data?
-
-    // Unfortunately, we must do a check to make sure we're writing within
-    // the bounds of the array.  This will ensure that we don't overwrite
-    // memory elsewhere in the system nor do we write out junk.  This can
-    // happen if multiple threads interact with our IO classes simultaneously
-    // without being threadsafe.  Throw here.  
-    // Unfortunately this even applies to setting our internal buffers to
-    // null.  We don't want to debug races between Close and Read or Write.
-    if (src == NULL || dst == NULL)
-        FCThrowResVoid(kIndexOutOfRangeException, W("IndexOutOfRange_IORaceCondition"));
-
-    SIZE_T srcLen = src->GetNumComponents() * src->GetComponentSize();
-    SIZE_T dstLen = srcLen;
-    if (src != dst)
-        dstLen = dst->GetNumComponents() * dst->GetComponentSize();
-
-    if (srcOffset < 0 || dstOffset < 0 || count < 0)
-        FCThrowResVoid(kIndexOutOfRangeException, W("IndexOutOfRange_IORaceCondition"));
-
-    if (srcLen < (SIZE_T)srcOffset + (SIZE_T)count || dstLen < (SIZE_T)dstOffset + (SIZE_T)count)
-        FCThrowResVoid(kIndexOutOfRangeException, W("IndexOutOfRange_IORaceCondition"));
-
-    _ASSERTE(srcOffset >= 0);
-    _ASSERTE((src->GetNumComponents() * src->GetComponentSize()) - (unsigned) srcOffset >= (unsigned) count);
-    _ASSERTE((dst->GetNumComponents() * dst->GetComponentSize()) - (unsigned) dstOffset >= (unsigned) count);
-    _ASSERTE(dstOffset >= 0);
-    _ASSERTE(count >= 0);
-
-    // Copy the data.
-#if defined(_AMD64_) && !defined(PLATFORM_UNIX)
-    JIT_MemCpy(dst->GetDataPtr() + dstOffset, src->GetDataPtr() + srcOffset, count);
-#else
-    memmove(dst->GetDataPtr() + dstOffset, src->GetDataPtr() + srcOffset, count);
-#endif
-
-    FC_GC_POLL();
-}
-FCIMPLEND
-
 void QCALLTYPE MemoryNative::Clear(void *dst, size_t length)
 {
     QCALL_CONTRACT;
