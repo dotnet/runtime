@@ -198,11 +198,6 @@ FCFuncStart(gCriticalHandleFuncs)
     FCFuncElement("FireCustomerDebugProbe", CriticalHandle::FireCustomerDebugProbe)
 FCFuncEnd()
 
-FCFuncStart(gSafeBufferFuncs)
-    FCFuncElement("PtrToStructureNative", SafeBuffer::PtrToStructure)
-    FCFuncElement("StructureToPtrNative", SafeBuffer::StructureToPtr)
-FCFuncEnd()
-
 FCFuncStart(gTypedReferenceFuncs)
     FCFuncElement("InternalToObject", ReflectionInvocation::TypedReferenceToObject)
     FCFuncElement("InternalSetTypedReference", ReflectionInvocation::SetTypedReference)
@@ -749,15 +744,9 @@ FCFuncStart(gWaitHandleFuncs)
 FCFuncEnd()
 
 FCFuncStart(gNumberFuncs)
-    FCFuncElement("FormatDecimal", COMNumber::FormatDecimal)
-    FCFuncElement("FormatDouble", COMNumber::FormatDouble)
-    FCFuncElement("FormatInt32", COMNumber::FormatInt32)
-    FCFuncElement("FormatUInt32", COMNumber::FormatUInt32)
-    FCFuncElement("FormatInt64", COMNumber::FormatInt64)
-    FCFuncElement("FormatUInt64", COMNumber::FormatUInt64)
-    FCFuncElement("FormatSingle", COMNumber::FormatSingle)
+    FCFuncElement("DoubleToNumber", COMNumber::DoubleToNumberFC)
+    FCFuncElement("NumberToDouble", COMNumber::NumberToDoubleFC)
     FCFuncElement("NumberBufferToDecimal", COMNumber::NumberBufferToDecimal)
-    FCFuncElement("NumberBufferToDouble", COMNumber::NumberBufferToDouble)
 FCFuncEnd()
 
 #ifdef FEATURE_COMINTEROP
@@ -843,7 +832,6 @@ FCFuncEnd()
 
 FCFuncStart(gBufferFuncs)
     FCFuncElement("BlockCopy", Buffer::BlockCopy)
-    FCFuncElement("InternalBlockCopy", Buffer::InternalBlockCopy)
     FCFuncElement("_GetByte", Buffer::GetByte)
     FCFuncElement("_SetByte", Buffer::SetByte)
     FCFuncElement("IsPrimitiveTypeArray", Buffer::IsPrimitiveTypeArray)
@@ -899,8 +887,6 @@ FCFuncStart(gInteropMarshalFuncs)
     QCFuncElement("GetHINSTANCE", COMModule::GetHINSTANCE)
 
     FCFuncElement("OffsetOfHelper", MarshalNative::OffsetOfHelper)
-    FCFuncElement("SizeOfType", SafeBuffer::SizeOfType)
-    FCFuncElement("AlignedSizeOfType", SafeBuffer::AlignedSizeOfType)
 
     QCFuncElement("InternalPrelink", MarshalNative::Prelink)
     FCFuncElement("CopyToNative", MarshalNative::CopyToNative)
@@ -1200,13 +1186,6 @@ FCFuncStart(gStreamFuncs)
 FCFuncEnd()
 
 
-#ifdef FEATURE_COMINTEROP
-FCFuncStart(gWindowsRuntimeBufferHelperFuncs)
-    QCFuncElement("StoreOverlappedPtrInCCW", WindowsRuntimeBufferHelper::StoreOverlappedPtrInCCW) 
-    //QCFuncElement("ReleaseOverlapped", WindowsRuntimeBufferHelper::ReleaseOverlapped) 
-FCFuncEnd()
-#endif // ifdef FEATURE_COMINTEROP
-
 #if defined(FEATURE_EVENTSOURCE_XPLAT)
 FCFuncStart(gEventLogger)
     QCFuncElement("IsEventSourceLoggingEnabled", XplatEventSourceLogger::IsEventSourceLoggingEnabled)
@@ -1398,7 +1377,6 @@ FCClassElement("RuntimeModule", "System.Reflection", gCOMModuleFuncs)
 FCClassElement("RuntimeThread", "Internal.Runtime.Augments", gRuntimeThreadFuncs)
 FCClassElement("RuntimeType", "System", gSystem_RuntimeType)
 FCClassElement("RuntimeTypeHandle", "System", gCOMTypeHandleFuncs)
-FCClassElement("SafeBuffer", "System.Runtime.InteropServices", gSafeBufferFuncs)
 FCClassElement("SafeHandle", "System.Runtime.InteropServices", gSafeHandleFuncs)
 FCClassElement("SafeTypeNameParserHandle", "System", gSafeTypeNameParserHandle)
 
@@ -1434,11 +1412,6 @@ FCClassElement("WeakReference`1", "System", gWeakReferenceOfTFuncs)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("WinRTTypeNameConverter", "System.StubHelpers", gWinRTTypeNameConverterFuncs)
 #endif // FEATURE_COMINTEROP
-
-#ifdef FEATURE_COMINTEROP
-FCClassElement("WindowsRuntimeBufferHelper", "System.Runtime.InteropServices.WindowsRuntime", gWindowsRuntimeBufferHelperFuncs)                    
-#endif
-
 
 
 #if defined(FEATURE_EVENTSOURCE_XPLAT)

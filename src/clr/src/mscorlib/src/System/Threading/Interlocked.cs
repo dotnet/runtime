@@ -194,7 +194,6 @@ namespace System.Threading
         public static extern void MemoryBarrier();
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private static extern void _MemoryBarrierProcessWide();
 
         public static void MemoryBarrierProcessWide()

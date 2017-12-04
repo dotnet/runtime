@@ -147,7 +147,7 @@ void Compiler::lvaInitTypeRef()
         if (howToReturnStruct == SPK_PrimitiveType)
         {
             assert(returnType != TYP_UNKNOWN);
-            assert(returnType != TYP_STRUCT);
+            assert(!varTypeIsStruct(returnType));
 
             info.compRetNativeType = returnType;
 
@@ -2224,14 +2224,14 @@ bool Compiler::lvaIsMultiregStruct(LclVarDsc* varDsc)
 
         if (howToPassStruct == SPK_ByValueAsHfa)
         {
-            assert(type == TYP_STRUCT);
+            assert(varTypeIsStruct(TYP_STRUCT));
             return true;
         }
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) || defined(_TARGET_ARM64_)
         if (howToPassStruct == SPK_ByValue)
         {
-            assert(type == TYP_STRUCT);
+            assert(varTypeIsStruct(TYP_STRUCT));
             return true;
         }
 #endif
@@ -6423,7 +6423,15 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
             {
                 noway_assert(promotionType == PROMOTION_TYPE_DEPENDENT);
                 noway_assert(varDsc->lvOnFrame);
-                varDsc->lvStkOffs = parentvarDsc->lvStkOffs + varDsc->lvFldOffset;
+                if (parentvarDsc->lvOnFrame)
+                {
+                    varDsc->lvStkOffs = parentvarDsc->lvStkOffs + varDsc->lvFldOffset;
+                }
+                else
+                {
+                    varDsc->lvOnFrame = false;
+                    noway_assert(varDsc->lvRefCnt == 0);
+                }
             }
         }
     }
@@ -7300,13 +7308,13 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTreePtr* pTree, fgWalkData
         // Calculate padding
         unsigned padding = LCL_FLD_PADDING(lclNum);
 
-#ifdef _TARGET_ARM_
-        // We need to support alignment requirements to access memory on ARM
+#ifdef _TARGET_ARMARCH_
+        // We need to support alignment requirements to access memory on ARM ARCH
         unsigned alignment = 1;
-        pComp->codeGen->InferOpSizeAlign(tree, &alignment);
-        alignment = roundUp(alignment, TARGET_POINTER_SIZE);
-        padding   = roundUp(padding, alignment);
-#endif // _TARGET_ARM_
+        pComp->codeGen->InferOpSizeAlign(lcl, &alignment);
+        alignment = (unsigned)roundUp(alignment, TARGET_POINTER_SIZE);
+        padding   = (unsigned)roundUp(padding, alignment);
+#endif // _TARGET_ARMARCH_
 
         // Change the variable to a TYP_BLK
         if (varType != TYP_BLK)

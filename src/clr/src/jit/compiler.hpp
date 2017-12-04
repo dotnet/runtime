@@ -1458,6 +1458,15 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
         gtIntCon.gtFieldSeq = nullptr;
     }
 
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+    if (oper == GT_MUL_LONG)
+    {
+        // We sometimes bash GT_MUL to GT_MUL_LONG, which converts it from GenTreeOp to GenTreeMultiRegOp.
+        gtMultiRegOp.gtOtherReg = REG_NA;
+        gtMultiRegOp.ClearOtherRegFlags();
+    }
+#endif
+
     if (vnUpdate == CLEAR_VN)
     {
         // Clear the ValueNum field as well.

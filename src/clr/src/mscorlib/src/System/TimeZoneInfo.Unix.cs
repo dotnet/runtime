@@ -383,21 +383,17 @@ namespace System
         {
             string id = null;
 
-            StringBuilder symlinkPathBuilder = StringBuilderCache.Acquire(Path.MaxPath);
-            bool result = Interop.GlobalizationInterop.ReadLink(tzFilePath, symlinkPathBuilder, (uint)symlinkPathBuilder.Capacity);
-            if (result)
+            string symlinkPath = Interop.Sys.ReadLink(tzFilePath);
+            if (symlinkPath != null)
             {
-                string symlinkPath = StringBuilderCache.GetStringAndRelease(symlinkPathBuilder);
-                // time zone Ids have to point under the time zone directory
+                // Use Path.Combine to resolve links that contain a relative path (e.g. /etc/localtime).
+                symlinkPath = Path.Combine(tzFilePath, symlinkPath);
+
                 string timeZoneDirectory = GetTimeZoneDirectory();
                 if (symlinkPath.StartsWith(timeZoneDirectory))
                 {
                     id = symlinkPath.Substring(timeZoneDirectory.Length);
                 }
-            }
-            else
-            {
-                StringBuilderCache.Release(symlinkPathBuilder);
             }
 
             return id;
@@ -461,7 +457,7 @@ namespace System
                         {
                             int n = stream.Read(buffer, index, count);
                             if (n == 0)
-                                __Error.EndOfFile();
+                                throw Error.GetEndOfFile();
 
                             int end = index + n;
                             for (; index < end; index++)

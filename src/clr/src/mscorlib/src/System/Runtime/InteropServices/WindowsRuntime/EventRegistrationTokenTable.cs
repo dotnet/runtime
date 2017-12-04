@@ -95,7 +95,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // Get the delegate associated with an event registration token if it exists.  Additionally,
         // remove the registration from the table at the same time.  If the token is not registered,
         // Extract returns null and does not modify the table.
-        [System.Runtime.CompilerServices.FriendAccessAllowed]
+        // [System.Runtime.CompilerServices.FriendAccessAllowed]
         internal T ExtractHandler(EventRegistrationToken token)
         {
             T handler = null;

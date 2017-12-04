@@ -33,13 +33,12 @@ namespace System.Reflection
         // This field is set by the VM to atomically transfer the ownership to the managed loader allocator
         internal IntPtr m_nativeLoaderAllocator;
 
-        [SuppressUnmanagedCodeSecurity]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern bool Destroy(IntPtr nativeLoaderAllocator);
 
         ~LoaderAllocatorScout()
         {
-            if (m_nativeLoaderAllocator.IsNull())
+            if (m_nativeLoaderAllocator == IntPtr.Zero)
                 return;
 
             // Assemblies and LoaderAllocators will be cleaned up during AppDomain shutdown in

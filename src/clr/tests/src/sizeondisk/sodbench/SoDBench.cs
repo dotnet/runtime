@@ -416,7 +416,7 @@ namespace SoDBench
             var psi = new ProcessStartInfo() {
                 WorkingDirectory = s_sandboxDir.FullName,
                 FileName = @"powershell.exe",
-                Arguments = $"wget https://raw.githubusercontent.com/dotnet/cli/master/scripts/obtain/dotnet-install.ps1 -OutFile Dotnet-Install.ps1"
+                Arguments = $"-NoProfile wget https://raw.githubusercontent.com/dotnet/cli/master/scripts/obtain/dotnet-install.ps1 -OutFile Dotnet-Install.ps1"
             };
             LaunchProcess(psi, 180000);
         }
@@ -426,7 +426,7 @@ namespace SoDBench
             var psi = new ProcessStartInfo() {
                 WorkingDirectory = s_sandboxDir.FullName,
                 FileName = @"powershell.exe",
-                Arguments = $".\\Dotnet-Install.ps1 -SharedRuntime -InstallDir .dotnet -Channel {s_dotnetChannel} -Architecture {s_targetArchitecture}"
+                Arguments = $"-NoProfile .\\Dotnet-Install.ps1 -SharedRuntime -InstallDir .dotnet -Channel {s_dotnetChannel} -Architecture {s_targetArchitecture}"
             };
             LaunchProcess(psi, 180000);
         }
@@ -436,7 +436,7 @@ namespace SoDBench
             var psi = new ProcessStartInfo() {
                 WorkingDirectory = s_sandboxDir.FullName,
                 FileName = @"powershell.exe",
-                Arguments = $".\\Dotnet-Install.ps1 -InstallDir .dotnet -Channel {s_dotnetChannel} -Architecture {s_targetArchitecture}"
+                Arguments = $"-NoProfile .\\Dotnet-Install.ps1 -InstallDir .dotnet -Channel {s_dotnetChannel} -Architecture {s_targetArchitecture}"
             };
             LaunchProcess(psi, 180000);
         }

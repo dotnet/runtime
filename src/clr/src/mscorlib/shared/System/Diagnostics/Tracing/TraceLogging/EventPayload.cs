@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Collections;
 using System.Diagnostics;
@@ -53,7 +54,7 @@ namespace System.Diagnostics.Tracing
                     position++;
                 }
 
-                throw new System.Collections.Generic.KeyNotFoundException();
+                throw new System.Collections.Generic.KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
             }
             set
             {

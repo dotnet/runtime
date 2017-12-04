@@ -1080,6 +1080,10 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
         {
             GenTree* next = shift->gtNext;
             // Remove shift and don't do anything else.
+            if (shift->IsUnusedValue())
+            {
+                gtLong->SetUnusedValue();
+            }
             Range().Remove(shift);
             use.ReplaceWith(m_compiler, gtLong);
             return next;

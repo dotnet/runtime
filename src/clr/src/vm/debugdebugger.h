@@ -45,7 +45,6 @@ public:
     THREADBASEREF targetThread;
     I4ARRAYREF rgiOffset;
     I4ARRAYREF rgiILOffset;
-    BASEARRAYREF rgMethodBase;
     PTRARRAYREF dynamicMethods;
     BASEARRAYREF rgMethodHandle;
     PTRARRAYREF rgAssemblyPath;

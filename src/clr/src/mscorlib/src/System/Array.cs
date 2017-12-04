@@ -1915,7 +1915,7 @@ namespace System
 
                 try
                 {
-                    IntroSort(left, length + left - 1, 2 * IntrospectiveSortUtilities.FloorLog2(keys.Length));
+                    IntroSort(left, length + left - 1, 2 * IntrospectiveSortUtilities.FloorLog2PlusOne(keys.Length));
                 }
                 catch (IndexOutOfRangeException)
                 {
@@ -2121,7 +2121,7 @@ namespace System
 
                 try
                 {
-                    IntroSort(left, length + left - 1, 2 * IntrospectiveSortUtilities.FloorLog2(keys.Length));
+                    IntroSort(left, length + left - 1, 2 * IntrospectiveSortUtilities.FloorLog2PlusOne(keys.Length));
                 }
                 catch (IndexOutOfRangeException)
                 {

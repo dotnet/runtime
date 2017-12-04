@@ -200,7 +200,11 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128 _mm_broadcastss_ps (__m128 a)
         /// __m128d _mm_broadcastsd_pd (__m128d a)
         /// </summary>
-        public static Vector128<T> BroadcastElementToVector128<T>(Vector128<T> value) where T : struct => BroadcastElementToVector128<T>(value);
+        public static Vector128<T> BroadcastElementToVector128<T>(Vector128<T> value) where T : struct
+        {
+            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
+            return BroadcastElementToVector128<T>(value);
+        }
 
         /// <summary>
         /// __m256i _mm256_broadcastb_epi8 (__m128i a)
@@ -210,7 +214,11 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256 _mm256_broadcastss_ps (__m128 a)
         /// __m256d _mm256_broadcastsd_pd (__m128d a)
         /// </summary>
-        public static Vector256<T> BroadcastElementToVector256<T>(Vector128<T> value) where T : struct => BroadcastElementToVector256<T>(value);
+        public static Vector256<T> BroadcastElementToVector256<T>(Vector128<T> value) where T : struct
+        {
+            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
+            return BroadcastElementToVector256<T>(value);
+        }
 
         /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)

@@ -1291,8 +1291,6 @@ $__RedirectionStubEndFuncName
         GenerateRedirectedHandledJITCaseStub DbgThreadControl
 ; ------------------------------------------------------------------
         GenerateRedirectedHandledJITCaseStub UserSuspend
-; ------------------------------------------------------------------
-        GenerateRedirectedHandledJITCaseStub YieldTask
 
 #ifdef _DEBUG
 ; ------------------------------------------------------------------
