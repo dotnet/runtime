@@ -1113,6 +1113,7 @@ namespace System
         public string ToString(System.IFormatProvider provider) { throw null; }
         public string ToString(string format) { throw null; }
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
+        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, System.IFormatProvider provider = null) { throw null; }
         public static bool TryParse(string s, out double result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out double result) { throw null; }
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out double result) { throw null; }
@@ -2093,6 +2094,7 @@ namespace System
         public string ToString(System.IFormatProvider provider) { throw null; }
         public string ToString(string format) { throw null; }
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
+        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, System.IFormatProvider provider = null) { throw null; }
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out float result) { throw null; }
         public static bool TryParse(string s, out float result) { throw null; }
         public static bool TryParse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out float result) { throw null; }
