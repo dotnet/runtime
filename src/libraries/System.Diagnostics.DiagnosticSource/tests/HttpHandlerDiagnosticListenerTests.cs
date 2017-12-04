@@ -135,6 +135,45 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
+        /// Test to make sure we get both request and response events.
+        /// </summary>
+        [Fact]
+        public async Task TestResponseWithoutContentEvents()
+        {
+            using (var eventRecords = new EventObserverAndRecorder())
+            {
+                // Send a random Http request to generate some events
+                using (var client = new HttpClient())
+                {
+                    (await client.GetAsync(Configuration.Http.RemoteEmptyContentServer)).Dispose();
+                }
+
+                // We should have exactly one Start and one Stop event
+                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
+                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
+                Assert.Equal(2, eventRecords.Records.Count);
+
+                // Check to make sure: The first record must be a request, the next record must be a response. 
+                KeyValuePair<string, object> startEvent;
+                Assert.True(eventRecords.Records.TryDequeue(out startEvent));
+                Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Start", startEvent.Key);
+                HttpWebRequest startRequest = ReadPublicProperty<HttpWebRequest>(startEvent.Value, "Request");
+                Assert.NotNull(startRequest);
+                Assert.NotNull(startRequest.Headers["Request-Id"]);
+
+                KeyValuePair<string, object> stopEvent;
+                Assert.True(eventRecords.Records.TryDequeue(out stopEvent));
+                Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Ex.Stop", stopEvent.Key);
+                HttpWebRequest stopRequest = ReadPublicProperty<HttpWebRequest>(stopEvent.Value, "Request");
+                Assert.Equal(startRequest, stopRequest);
+                HttpStatusCode status = ReadPublicProperty<HttpStatusCode>(stopEvent.Value, "StatusCode");
+                Assert.NotNull(status);
+
+                WebHeaderCollection headers = ReadPublicProperty<WebHeaderCollection>(stopEvent.Value, "Headers");
+                Assert.NotNull(headers);
+            }
+        }
+        /// <summary>
         /// Test that if request is redirected, it gets only one Start and one Stop event
         /// </summary>
         [Fact]
