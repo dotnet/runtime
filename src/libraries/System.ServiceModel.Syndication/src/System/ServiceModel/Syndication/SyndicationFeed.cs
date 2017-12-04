@@ -302,7 +302,7 @@ namespace System.ServiceModel.Syndication
 
             using (XmlReader reader = documentationElement.GetReader())
             {
-                SyndicationLink documentation = Rss20FeedFormatter.ReadAlternateLink(reader, BaseUri, SyndicationFeedFormatter.DefaultUriParser, true);
+                SyndicationLink documentation = Rss20FeedFormatter.ReadAlternateLink(reader, BaseUri, SyndicationFeedFormatter.DefaultUriParser, preserveAttributeExtensions: true);
                 return documentation;
             }
         }
