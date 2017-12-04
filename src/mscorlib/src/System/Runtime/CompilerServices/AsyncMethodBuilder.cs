@@ -38,7 +38,7 @@ namespace System.Runtime.CompilerServices
         /// <returns>The initialized <see cref="AsyncVoidMethodBuilder"/>.</returns>
         public static AsyncVoidMethodBuilder Create()
         {
-            SynchronizationContext sc = SynchronizationContext.CurrentNoFlow;
+            SynchronizationContext sc = SynchronizationContext.Current;
             sc?.OperationStarted();
             return new AsyncVoidMethodBuilder() { _synchronizationContext = sc };
         }

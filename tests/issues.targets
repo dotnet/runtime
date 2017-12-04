@@ -166,6 +166,9 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\GitHub_11408\GitHub_11408\GitHub_11408.cmd">
             <Issue>11408</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\DefaultInterfaceMethods\constrainedcall\constrainedcall\*">
+            <Issue>15353</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeGeneratorTests\TypeGeneratorTest612\Generated612\*">
             <Issue>6707</Issue>
         </ExcludeList>

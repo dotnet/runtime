@@ -433,15 +433,15 @@ void CodeGen::genPrepForEHCodegen()
             // has BBF_HAS_LABEL set.
         }
 
-#ifdef _TARGET_AMD64_
+#if FEATURE_EH_CALLFINALLY_THUNKS
         if (HBtab->HasFinallyHandler())
         {
             anyFinallys = true;
         }
-#endif // _TARGET_AMD64_
+#endif // FEATURE_EH_CALLFINALLY_THUNKS
     }
 
-#ifdef _TARGET_AMD64_
+#if FEATURE_EH_CALLFINALLY_THUNKS
     if (anyFinallys)
     {
         for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
@@ -460,7 +460,7 @@ void CodeGen::genPrepForEHCodegen()
             } // block is BBJ_CALLFINALLY
         }     // for each block
     }         // if (anyFinallys)
-#endif        // _TARGET_AMD64_
+#endif        // FEATURE_EH_CALLFINALLY_THUNKS
 }
 
 void CodeGenInterface::genUpdateLife(GenTreePtr tree)
@@ -1684,7 +1684,7 @@ void CodeGen::genAdjustStackLevel(BasicBlock* block)
 #endif // !FEATURE_FIXED_OUT_ARGS
 }
 
-#ifdef _TARGET_ARM_
+#ifdef _TARGET_ARMARCH_
 // return size
 // alignmentWB is out param
 unsigned CodeGenInterface::InferOpSizeAlign(GenTreePtr op, unsigned* alignmentWB)
@@ -1724,7 +1724,8 @@ unsigned CodeGenInterface::InferStructOpSizeAlign(GenTreePtr op, unsigned* align
     {
         CORINFO_CLASS_HANDLE clsHnd = op->AsObj()->gtClass;
         opSize                      = compiler->info.compCompHnd->getClassSize(clsHnd);
-        alignment = roundUp(compiler->info.compCompHnd->getClassAlignmentRequirement(clsHnd), TARGET_POINTER_SIZE);
+        alignment =
+            (unsigned)roundUp(compiler->info.compCompHnd->getClassAlignmentRequirement(clsHnd), TARGET_POINTER_SIZE);
     }
     else if (op->gtOper == GT_LCL_VAR)
     {
@@ -1732,11 +1733,13 @@ unsigned CodeGenInterface::InferStructOpSizeAlign(GenTreePtr op, unsigned* align
         LclVarDsc* varDsc = compiler->lvaTable + varNum;
         assert(varDsc->lvType == TYP_STRUCT);
         opSize = varDsc->lvSize();
+#ifndef _TARGET_64BIT_
         if (varDsc->lvStructDoubleAlign)
         {
             alignment = TARGET_POINTER_SIZE * 2;
         }
         else
+#endif // !_TARGET_64BIT_
         {
             alignment = TARGET_POINTER_SIZE;
         }
@@ -1750,13 +1753,13 @@ unsigned CodeGenInterface::InferStructOpSizeAlign(GenTreePtr op, unsigned* align
             if (op2->IsIconHandle(GTF_ICON_CLASS_HDL))
             {
                 CORINFO_CLASS_HANDLE clsHnd = (CORINFO_CLASS_HANDLE)op2->gtIntCon.gtIconVal;
-                opSize = roundUp(compiler->info.compCompHnd->getClassSize(clsHnd), TARGET_POINTER_SIZE);
-                alignment =
-                    roundUp(compiler->info.compCompHnd->getClassAlignmentRequirement(clsHnd), TARGET_POINTER_SIZE);
+                opSize    = (unsigned)roundUp(compiler->info.compCompHnd->getClassSize(clsHnd), TARGET_POINTER_SIZE);
+                alignment = (unsigned)roundUp(compiler->info.compCompHnd->getClassAlignmentRequirement(clsHnd),
+                                              TARGET_POINTER_SIZE);
             }
             else
             {
-                opSize         = op2->gtIntCon.gtIconVal;
+                opSize         = (unsigned)op2->gtIntCon.gtIconVal;
                 GenTreePtr op1 = op->gtOp.gtOp1;
                 assert(op1->OperGet() == GT_LIST);
                 GenTreePtr dstAddr = op1->gtOp.gtOp1;
@@ -1787,8 +1790,9 @@ unsigned CodeGenInterface::InferStructOpSizeAlign(GenTreePtr op, unsigned* align
     {
         CORINFO_CLASS_HANDLE clsHnd = op->gtArgPlace.gtArgPlaceClsHnd;
         assert(clsHnd != 0);
-        opSize    = roundUp(compiler->info.compCompHnd->getClassSize(clsHnd), TARGET_POINTER_SIZE);
-        alignment = roundUp(compiler->info.compCompHnd->getClassAlignmentRequirement(clsHnd), TARGET_POINTER_SIZE);
+        opSize = (unsigned)roundUp(compiler->info.compCompHnd->getClassSize(clsHnd), TARGET_POINTER_SIZE);
+        alignment =
+            (unsigned)roundUp(compiler->info.compCompHnd->getClassAlignmentRequirement(clsHnd), TARGET_POINTER_SIZE);
     }
     else
     {
@@ -1804,7 +1808,7 @@ unsigned CodeGenInterface::InferStructOpSizeAlign(GenTreePtr op, unsigned* align
     return opSize;
 }
 
-#endif // _TARGET_ARM_
+#endif // _TARGET_ARMARCH_
 
 /*****************************************************************************
  *
@@ -2018,7 +2022,7 @@ AGAIN:
         }
 #endif // LEGACY_BACKEND
 
-#if defined(_TARGET_ARM64_) || (defined(_TARGET_ARM_) && !defined(LEGACY_BACKEND))
+#if defined(_TARGET_ARMARCH_) && !defined(LEGACY_BACKEND)
         if (cns == 0)
 #endif
         {
@@ -2038,7 +2042,7 @@ AGAIN:
 
                     goto AGAIN;
 
-#if SCALED_ADDR_MODES && !defined(_TARGET_ARM64_) && !(defined(_TARGET_ARM_) && !defined(LEGACY_BACKEND))
+#if SCALED_ADDR_MODES && (!defined(_TARGET_ARMARCH_) || defined(LEGACY_BACKEND))
                 // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
                 case GT_MUL:
                     if (op1->gtOverflow())
@@ -2103,7 +2107,7 @@ AGAIN:
 
         switch (op1->gtOper)
         {
-#if !defined(_TARGET_ARM64_) && !(defined(_TARGET_ARM_) && !defined(LEGACY_BACKEND))
+#if !defined(_TARGET_ARMARCH_) || defined(LEGACY_BACKEND)
             // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
             case GT_ADD:
 
@@ -2165,7 +2169,7 @@ AGAIN:
                 break;
 
 #endif // SCALED_ADDR_MODES
-#endif // !_TARGET_ARM64_ && !(_TARGET_ARM_ && !LEGACY_BACKEND)
+#endif // !_TARGET_ARMARCH || LEGACY_BACKEND
 
             case GT_NOP:
 
@@ -2194,7 +2198,7 @@ AGAIN:
         noway_assert(op2);
         switch (op2->gtOper)
         {
-#if !defined(_TARGET_ARM64_) && !(defined(_TARGET_ARM_) && !defined(LEGACY_BACKEND))
+#if !defined(_TARGET_ARMARCH_) || defined(LEGACY_BACKEND)
             // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
             case GT_ADD:
 
@@ -2252,7 +2256,7 @@ AGAIN:
                 break;
 
 #endif // SCALED_ADDR_MODES
-#endif // !_TARGET_ARM64_ && !(_TARGET_ARM_ && !LEGACY_BACKEND)
+#endif // !_TARGET_ARMARCH || LEGACY_BACKEND
 
             case GT_NOP:
 
@@ -2647,7 +2651,7 @@ emitJumpKind CodeGen::genJumpKindForOper(genTreeOps cmp, CompareKind compareKind
 #ifdef _TARGET_ARMARCH_
 //------------------------------------------------------------------------
 // genEmitGSCookieCheck: Generate code to check that the GS cookie
-// wasn't thrashed by a buffer overrun. Coomon code for ARM32 and ARM64
+// wasn't thrashed by a buffer overrun. Common code for ARM32 and ARM64.
 //
 void CodeGen::genEmitGSCookieCheck(bool pushReg)
 {
@@ -2658,8 +2662,14 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     if (!pushReg && (compiler->info.compRetType == TYP_REF))
         gcInfo.gcRegGCrefSetCur |= RBM_INTRET;
 
-    regNumber regGSConst = REG_TMP_0;
-    regNumber regGSValue = REG_TMP_1;
+    // We need two temporary registers, to load the GS cookie values and compare them. We can't use
+    // any argument registers if 'pushReg' is true (meaning we have a JMP call). They should be
+    // callee-trash registers, which should not contain anything interesting at this point.
+    // We don't have any IR node representing this check, so LSRA can't communicate registers
+    // for us to use.
+
+    regNumber regGSConst = REG_GSCOOKIE_TMP_0;
+    regNumber regGSValue = REG_GSCOOKIE_TMP_1;
 
     if (compiler->gsGlobalSecurityCookieAddr == nullptr)
     {
@@ -3020,7 +3030,7 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
         }
         else if (compiler->info.genCPU == CPU_X64)
         {
-            if (compiler->canUseAVX())
+            if (compiler->canUseVexEncoding())
             {
                 printf("X64 CPU with AVX");
             }
@@ -6818,7 +6828,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
                 // Generate:
                 //      ldp fp,lr,[sp]
                 //      add sp,sp,#remainingFrameSz
-                genEpilogRestoreRegPair(REG_FP, REG_LR, alignmentAdjustment2, spAdjustment2, REG_IP0, nullptr);
+                genEpilogRestoreRegPair(REG_FP, REG_LR, alignmentAdjustment2, spAdjustment2, REG_IP1, nullptr);
             }
             else
             {
@@ -6836,7 +6846,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
                 //      add sp,sp,#remainingFrameSz     ; might need to load this constant in a scratch register if
                 //                                      ; it's large
 
-                genEpilogRestoreRegPair(REG_FP, REG_LR, compiler->lvaOutgoingArgSpaceSize, remainingFrameSz, REG_IP0,
+                genEpilogRestoreRegPair(REG_FP, REG_LR, compiler->lvaOutgoingArgSpaceSize, remainingFrameSz, REG_IP1,
                                         nullptr);
             }
 
@@ -11175,7 +11185,7 @@ void CodeGen::genVzeroupperIfNeeded(bool check256bitOnly /* = true*/)
 
     if (emitVzeroUpper)
     {
-        assert(compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported);
+        assert(compiler->canUseVexEncoding());
         instGen(INS_vzeroupper);
     }
 }
@@ -11201,7 +11211,7 @@ bool Compiler::IsMultiRegPassedType(CORINFO_CLASS_HANDLE hClass)
     structPassingKind howToPassStruct;
     var_types         returnType = getArgTypeForStruct(hClass, &howToPassStruct);
 
-    return (returnType == TYP_STRUCT);
+    return (varTypeIsStruct(returnType));
 }
 
 //-----------------------------------------------------------------------------------
@@ -11223,7 +11233,7 @@ bool Compiler::IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass)
     structPassingKind howToReturnStruct;
     var_types         returnType = getReturnTypeForStruct(hClass, &howToReturnStruct);
 
-    return (returnType == TYP_STRUCT);
+    return (varTypeIsStruct(returnType));
 }
 
 //----------------------------------------------
@@ -12600,3 +12610,30 @@ const char* CodeGen::siStackVarName(size_t offs, size_t size, unsigned reg, unsi
 #endif // !defined(DEBUG)
 #endif // defined(LATE_DISASM)
 /*****************************************************************************/
+
+#ifndef LEGACY_BACKEND
+
+//------------------------------------------------------------------------
+// indirForm: Make a temporary indir we can feed to pattern matching routines
+//    in cases where we don't want to instantiate all the indirs that happen.
+//
+GenTreeIndir CodeGen::indirForm(var_types type, GenTree* base)
+{
+    GenTreeIndir i(GT_IND, type, base, nullptr);
+    i.gtRegNum = REG_NA;
+    i.SetContained();
+    return i;
+}
+
+//------------------------------------------------------------------------
+// intForm: Make a temporary int we can feed to pattern matching routines
+//    in cases where we don't want to instantiate.
+//
+GenTreeIntCon CodeGen::intForm(var_types type, ssize_t value)
+{
+    GenTreeIntCon i(type, value);
+    i.gtRegNum = REG_NA;
+    return i;
+}
+
+#endif // !LEGACY_BACKEND

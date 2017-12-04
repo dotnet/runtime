@@ -163,7 +163,6 @@ namespace System
 
 #if FEATURE_APPX
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         [return: MarshalAs(UnmanagedType.I4)]
         private static extern APPX_FLAGS nGetAppXFlags();
 #endif
@@ -175,7 +174,7 @@ namespace System
         {
             // This should never happen under normal circumstances. However, there ar ways to create an
             // uninitialized object through remoting, etc.
-            if (_pDomain.IsNull())
+            if (_pDomain == IntPtr.Zero)
             {
                 throw new InvalidOperationException(SR.Argument_InvalidHandle);
             }
@@ -243,8 +242,6 @@ namespace System
             // case where the compat flags have been setup.
             Debug.Assert(!_compatFlagsInitialized);
             _compatFlagsInitialized = true;
-
-            CompatibilitySwitches.InitializeSwitches();
         }
 
         /// <summary>
@@ -407,7 +404,6 @@ namespace System
         internal extern void nCreateContext();
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private static extern void nSetupBindingPaths(String trustedPlatformAssemblies, String platformResourceRoots, String appPath, String appNiPaths, String appLocalWinMD);
 
         internal void SetupBindingPaths(String trustedPlatformAssemblies, String platformResourceRoots, String appPath, String appNiPaths, String appLocalWinMD)
@@ -624,7 +620,6 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private static extern void nSetNativeDllSearchDirectories(string paths);
 
         private void SetupFusionStore(AppDomainSetup info, AppDomainSetup oldInfo)

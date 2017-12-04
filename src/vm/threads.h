@@ -305,7 +305,6 @@ public:
 
     enum ThreadState
     {
-        TS_YieldRequested         = 0x00000040,    // The task should yield
     };
 
     BOOL HasThreadState(ThreadState ts)
@@ -1100,7 +1099,7 @@ public:
 
         TS_LegalToJoin            = 0x00000020,    // Is it now legal to attempt a Join()
 
-        TS_YieldRequested         = 0x00000040,    // The task should yield
+        // unused                 = 0x00000040,
 
 #ifdef FEATURE_HIJACK
         TS_Hijacked               = 0x00000080,    // Return address has been hijacked
@@ -1157,7 +1156,7 @@ public:
 
         // We require (and assert) that the following bits are less than 0x100.
         TS_CatchAtSafePoint = (TS_UserSuspendPending | TS_AbortRequested |
-                               TS_GCSuspendPending | TS_DebugSuspendPending | TS_GCOnTransitions | TS_YieldRequested),
+                               TS_GCSuspendPending | TS_DebugSuspendPending | TS_GCOnTransitions),
     };
 
     // Thread flags that aren't really states in themselves but rather things the thread
@@ -2966,12 +2965,6 @@ private:
     BOOL           ReadyForAsyncException();
 
 public:
-    inline BOOL IsYieldRequested()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_State & TS_YieldRequested);
-    }
-
     void           UserInterrupt(ThreadInterruptMode mode);
 
     void           SetAbortRequest(EEPolicy::ThreadAbortTypes abortType);  // Should only be called by ADUnload
@@ -3520,7 +3513,6 @@ private:
     BOOL CheckForAndDoRedirectForDbg();
     BOOL CheckForAndDoRedirectForGC();
     BOOL CheckForAndDoRedirectForUserSuspend();
-    BOOL CheckForAndDoRedirectForYieldTask();
 
     // Exception handling must be very aware of redirection, so we provide a helper
     // to identifying redirection targets
@@ -3689,7 +3681,6 @@ private:
         RedirectReason_GCSuspension,
         RedirectReason_DebugSuspension,
         RedirectReason_UserSuspension,
-        RedirectReason_YieldTask,
 #if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) // GCCOVER
         RedirectReason_GCStress,
 #endif // HAVE_GCCOVER && USE_REDIRECT_FOR_GCSTRESS
@@ -3698,7 +3689,6 @@ private:
     static void __stdcall RedirectedHandledJITCaseForDbgThreadControl();
     static void __stdcall RedirectedHandledJITCaseForGCThreadControl();
     static void __stdcall RedirectedHandledJITCaseForUserSuspend();
-    static void __stdcall RedirectedHandledJITCaseForYieldTask();
 #if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) // GCCOVER
     static void __stdcall Thread::RedirectedHandledJITCaseForGCStress();
 #endif // defined(HAVE_GCCOVER) && USE_REDIRECT_FOR_GCSTRESS

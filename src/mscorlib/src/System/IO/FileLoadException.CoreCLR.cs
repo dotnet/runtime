@@ -36,11 +36,9 @@ namespace System.IO
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private static extern void GetFileLoadExceptionMessage(int hResult, StringHandleOnStack retString);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private static extern void GetMessageForHR(int hresult, StringHandleOnStack retString);
     }
 }

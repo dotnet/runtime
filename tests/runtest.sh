@@ -52,6 +52,7 @@ function print_usage {
     echo '  --jitforcerelocs                 : Runs the tests with COMPlus_ForceRelocs=1'
     echo '  --jitdisasm                      : Runs jit-dasm on the tests'
     echo '  --gcstresslevel=<n>              : Runs the tests with COMPlus_GCStress=n'
+    echo '  --gcname=<n>                     : Runs the tests with COMPlus_GCName=n'
     echo '  --ilasmroundtrip                 : Runs ilasm round trip on the tests'
     echo '    0: None                                1: GC on all allocs and '"'easy'"' places'
     echo '    2: GC on transitions to preemptive GC  4: GC on every allowable JITed instr'
@@ -1143,6 +1144,9 @@ do
         --gcstresslevel=*)
             export COMPlus_GCStress=${i#*=}
             ;;            
+        --gcname=*)
+            export COMPlus_GCName=${i#*=}
+            ;;
         --show-time)
             showTime=ON
             ;;

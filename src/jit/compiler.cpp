@@ -918,6 +918,16 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
     {
         *wbPassStruct = howToPassStruct;
     }
+
+#if defined(FEATURE_MULTIREG_ARGS) && defined(_TARGET_ARM64_)
+    // Normalize struct return type for ARM64 FEATURE_MULTIREG_ARGS
+    // This is not yet enabled for ARM32 since FEATURE_SIMD is not enabled
+    if (varTypeIsStruct(useType))
+    {
+        useType = impNormStructType(clsHnd);
+    }
+#endif
+
     return useType;
 }
 
@@ -1138,6 +1148,17 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
     {
         *wbReturnStruct = howToReturnStruct;
     }
+
+#if defined(FEATURE_MULTIREG_RET) && defined(_TARGET_ARM64_)
+    // Normalize struct return type for ARM64 FEATURE_MULTIREG_RET
+    // This is not yet enabled for ARM32 since FEATURE_SIMD is not enabled
+    // This is not needed for XARCH as eeGetSystemVAmd64PassStructInRegisterDescriptor() is used
+    if (varTypeIsStruct(useType))
+    {
+        useType = impNormStructType(clsHnd);
+    }
+#endif
+
     return useType;
 }
 
@@ -2500,43 +2521,6 @@ void Compiler::compSetProcessor()
     //
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef _TARGET_XARCH_
-    opts.compCanUseSSE4 = false;
-    if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) && jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE41) &&
-        jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE42))
-    {
-        if (JitConfig.EnableSSE3_4() != 0)
-        {
-            opts.compCanUseSSE4 = true;
-        }
-    }
-
-    // COMPlus_EnableAVX can be used to disable using AVX if available on a target machine.
-    opts.compCanUseAVX = false;
-    if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) && jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX2))
-    {
-        if (JitConfig.EnableAVX() != 0)
-        {
-            opts.compCanUseAVX = true;
-        }
-    }
-
-    if (!compIsForInlining())
-    {
-        if (opts.compCanUseAVX)
-        {
-            codeGen->getEmitter()->SetUseAVX(true);
-            // Assume each JITted method does not contain AVX instruction at first
-            codeGen->getEmitter()->SetContainsAVX(false);
-            codeGen->getEmitter()->SetContains256bitAVX(false);
-        }
-        else if (opts.compCanUseSSE4)
-        {
-            codeGen->getEmitter()->SetUseSSE4(true);
-        }
-    }
-#endif // _TARGET_XARCH_
-
 #ifdef _TARGET_AMD64_
     opts.compUseFCOMI   = false;
     opts.compUseCMOV    = true;
@@ -2620,7 +2604,9 @@ void Compiler::compSetProcessor()
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX2))
             {
-                if (configEnableISA(InstructionSet_AVX2))
+                // COMPlus_EnableAVX is also used to control the code generation of
+                // System.Numerics.Vectors and floating-point arithmetics
+                if (configEnableISA(InstructionSet_AVX) && configEnableISA(InstructionSet_AVX2))
                 {
                     opts.setSupportedISA(InstructionSet_AVX2);
                 }
@@ -2695,6 +2681,31 @@ void Compiler::compSetProcessor()
                     opts.setSupportedISA(InstructionSet_SSSE3);
                 }
             }
+        }
+    }
+
+    opts.compCanUseSSE4 = false;
+    if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) && jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE41) &&
+        jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE42))
+    {
+        if (JitConfig.EnableSSE3_4() != 0)
+        {
+            opts.compCanUseSSE4 = true;
+        }
+    }
+
+    if (!compIsForInlining())
+    {
+        if (canUseVexEncoding())
+        {
+            codeGen->getEmitter()->SetUseVEXEncoding(true);
+            // Assume each JITted method does not contain AVX instruction at first
+            codeGen->getEmitter()->SetContainsAVX(false);
+            codeGen->getEmitter()->SetContains256bitAVX(false);
+        }
+        else if (CanUseSSE4())
+        {
+            codeGen->getEmitter()->SetUseSSE4(true);
         }
     }
 #endif
@@ -7370,7 +7381,7 @@ void Compiler::compCallArgStats()
                     regArgDeferred++;
                     argTotalObjPtr++;
 
-                    if (call->gtFlags & (GTF_CALL_VIRT_VTABLE | GTF_CALL_VIRT_STUB))
+                    if (call->IsVirtual())
                     {
                         /* virtual function */
                         argVirtualCalls++;
@@ -9731,15 +9742,15 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[CALL_INLINE_CANDIDATE]");
                 }
-                if (tree->gtFlags & GTF_CALL_NONVIRT)
+                if (!tree->AsCall()->IsVirtual())
                 {
                     chars += printf("[CALL_NONVIRT]");
                 }
-                if (tree->gtFlags & GTF_CALL_VIRT_VTABLE)
+                if (tree->AsCall()->IsVirtualVtable())
                 {
                     chars += printf("[CALL_VIRT_VTABLE]");
                 }
-                if (tree->gtFlags & GTF_CALL_VIRT_STUB)
+                if (tree->AsCall()->IsVirtualStub())
                 {
                     chars += printf("[CALL_VIRT_STUB]");
                 }

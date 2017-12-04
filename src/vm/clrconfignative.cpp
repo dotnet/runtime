@@ -9,13 +9,19 @@
 #include "clrconfignative.h"
 #include <configuration.h>
 
-BOOL QCALLTYPE ClrConfigNative::GetConfigBoolValue(LPCWSTR name)
+BOOL QCALLTYPE ClrConfigNative::GetConfigBoolValue(LPCWSTR name, BOOL *exist)
 {
     QCALL_CONTRACT;
 
     BOOL retValue = FALSE;
+    *exist = FALSE;
     BEGIN_QCALL;
-    retValue = Configuration::GetKnobBooleanValue(name, FALSE);
+
+    if (Configuration::GetKnobStringValue(name) != nullptr)
+    {
+        *exist = TRUE;
+        retValue = Configuration::GetKnobBooleanValue(name, FALSE);
+    }
     END_QCALL;
     return(retValue);
 }

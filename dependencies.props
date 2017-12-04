@@ -25,15 +25,15 @@
   <PropertyGroup>
     <CoreFxCurrentRef>fcdef8f14acc13fcbca91ec2a868168d369ccea7</CoreFxCurrentRef>
     <CoreClrCurrentRef>5aa34b4f79beeb70e495841afea1f65557e5f653</CoreClrCurrentRef>
-    <BuildToolsCurrentRef>fcdef8f14acc13fcbca91ec2a868168d369ccea7</BuildToolsCurrentRef>
-    <PgoDataCurrentRef>fcdef8f14acc13fcbca91ec2a868168d369ccea7</PgoDataCurrentRef>
+    <BuildToolsCurrentRef>cc40450166c276f47ef2570520910641e9731861</BuildToolsCurrentRef>
+    <PgoDataCurrentRef>81dac42a3820c8be14c788cca1d182d1ed40754f</PgoDataCurrentRef>
   </PropertyGroup>
 
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
-    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview1-25913-02</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
-    <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview1-25913-02</MicrosoftNETCorePlatformsPackageVersion>
-    <PgoDataPackageVersion>99.99.99-master-20171110-0018</PgoDataPackageVersion>
+    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview1-26002-01</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
+    <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview1-26002-01</MicrosoftNETCorePlatformsPackageVersion>
+    <PgoDataPackageVersion>99.99.99-master-20171202-0035</PgoDataPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-dev-di-25909-09</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <XunitPackageVersion>2.2.0-beta2-build3300</XunitPackageVersion>
     <XunitConsoleNetcorePackageVersion>1.0.2-prerelease-00177</XunitConsoleNetcorePackageVersion>
@@ -45,7 +45,7 @@
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>1.0.0-prerelease-02210-05</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>2.1.0-prerelease-02301-01</FeedTasksPackageVersion>
   </PropertyGroup>
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
@@ -108,6 +108,11 @@
       <ElementName>PgoDataPackageVersion</ElementName>
       <PackageId>optimization.PGO.CoreCLR</PackageId>
     </XmlUpdateStep>
+    <UpdateStep Include="ILAsm">
+      <UpdaterType>File</UpdaterType>
+      <Path>$(MSBuildThisFileDirectory)ILAsmVersion.txt</Path>
+      <PackageId>Microsoft.NETCore.ILAsm</PackageId>
+    </UpdateStep>
   </ItemGroup>
 
   <!-- Set up dependencies on packages that aren't found in a BuildInfo. -->

@@ -200,15 +200,12 @@ namespace System.Threading
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private static extern AppDomainTimerSafeHandle CreateAppDomainTimer(uint dueTime, int id);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private static extern bool ChangeAppDomainTimer(AppDomainTimerSafeHandle handle, uint dueTime);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private static extern bool DeleteAppDomainTimer(IntPtr handle);
 
         #endregion

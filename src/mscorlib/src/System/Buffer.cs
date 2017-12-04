@@ -35,14 +35,6 @@ namespace System
         public static extern void BlockCopy(Array src, int srcOffset,
             Array dst, int dstOffset, int count);
 
-        // A very simple and efficient memmove that assumes all of the
-        // parameter validation has already been done.  The count and offset
-        // parameters here are in bytes.  If you want to use traditional
-        // array element indices and counts, use Array.Copy.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void InternalBlockCopy(Array src, int srcOffsetBytes,
-            Array dst, int dstOffsetBytes, int byteCount);
-
         // This is ported from the optimized CRT assembly in memchr.asm. The JIT generates 
         // pretty good code here and this ends up being within a couple % of the CRT asm.
         // It is however cross platform as the CRT hasn't ported their fast version to 64-bit
@@ -243,7 +235,6 @@ namespace System
         // This behavioral difference is unfortunate but intentional because
         // 1. This method is given access to other internal dlls and this close to release we do not want to change it.
         // 2. It is difficult to get this right for arm and again due to release dates we would like to visit it later.
-        [FriendAccessAllowed]
 #if ARM
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal unsafe static extern void Memcpy(byte* dest, byte* src, int len);
@@ -447,7 +438,6 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         extern private unsafe static void __Memmove(byte* dest, byte* src, nuint len);
 
         // The attributes on this method are chosen for best JIT performance. 
