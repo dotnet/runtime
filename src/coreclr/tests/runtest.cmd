@@ -66,6 +66,8 @@ set __AgainstPackages=
 set __JitDisasm=
 set __IlasmRoundTrip=
 set __CollectDumps=
+set __DoCrossgen=
+set __CrossgenAltJit=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -93,12 +95,13 @@ if /i "%1" == "TestEnv"               (set __TestEnv=%2&shift&shift&goto Arg_Loo
 if /i "%1" == "AgainstPackages"       (set __AgainstPackages=1&shift&goto Arg_Loop)
 if /i "%1" == "sequential"            (set __Sequential=1&shift&goto Arg_Loop)
 if /i "%1" == "crossgen"              (set __DoCrossgen=1&shift&goto Arg_Loop)
+if /i "%1" == "crossgenaltjit"        (set __DoCrossgen=1&set __CrossgenAltJit=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "longgc"                (set __LongGCTests=1&shift&goto Arg_Loop)
 if /i "%1" == "gcsimulator"           (set __GCSimulatorTests=1&shift&goto Arg_Loop)
 if /i "%1" == "jitstress"             (set COMPlus_JitStress=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "jitstressregs"         (set COMPlus_JitStressRegs=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "jitminopts"            (set COMPlus_JITMinOpts=1&shift&shift&goto Arg_Loop)
-if /i "%1" == "jitforcerelocs"        (set COMPlus_ForceRelocs=1&shift&shift&goto Arg_Loop)
+if /i "%1" == "jitminopts"            (set COMPlus_JITMinOpts=1&shift&goto Arg_Loop)
+if /i "%1" == "jitforcerelocs"        (set COMPlus_ForceRelocs=1&shift&goto Arg_Loop)
 if /i "%1" == "jitdisasm"             (set __JitDisasm=1&shift&goto Arg_Loop)
 if /i "%1" == "ilasmroundtrip"        (set __IlasmRoundTrip=1&shift&goto Arg_Loop)
 if /i "%1" == "GenerateLayoutOnly"    (set __GenerateLayoutOnly=1&shift&goto Arg_Loop)
@@ -106,6 +109,7 @@ if /i "%1" == "PerfTests"             (set __PerfTests=true&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgentests"      (set RunCrossGen=true&shift&goto Arg_Loop)
 if /i "%1" == "link"                  (set DoLink=true&set ILLINK=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "tieredcompilation"     (set COMPLUS_EXPERIMENTAL_TieredCompilation=1&shift&goto Arg_Loop)
+if /i "%1" == "gcname"                (set COMPlus_GCName=%2&shift&shift&goto Arg_Loop)
 
 REM change it to COMPlus_GCStress when we stop using xunit harness
 if /i "%1" == "gcstresslevel"         (set __GCSTRESSLEVEL=%2&set __TestTimeout=1800000&shift&shift&goto Arg_Loop)
@@ -186,9 +190,9 @@ if defined DoLink (
 
 REM Prepare the Test Drop
 REM Cleans any NI from the last run
-powershell "Get-ChildItem -path %__TestWorkingDir% -Include '*.ni.*' -Recurse -Force | Remove-Item -force"
+powershell -NoProfile "Get-ChildItem -path %__TestWorkingDir% -Include '*.ni.*' -Recurse -Force | Remove-Item -force"
 REM Cleans up any lock folder used for synchronization from last run
-powershell "Get-ChildItem -path %__TestWorkingDir% -Include 'lock' -Recurse -Force |  where {$_.Attributes -eq 'Directory'}| Remove-Item -force -Recurse"
+powershell -NoProfile "Get-ChildItem -path %__TestWorkingDir% -Include 'lock' -Recurse -Force |  where {$_.Attributes -eq 'Directory'}| Remove-Item -force -Recurse"
 
 if defined CORE_ROOT goto SkipCoreRootSetup
 
@@ -213,10 +217,7 @@ if "%__PerfTests%"=="true" goto RunPerfTests
 
 call :ResolveDependecies
 
-if not defined __DoCrossgen goto :SkipPrecompileFX
-call :PrecompileFX
-
-:SkipPrecompileFX
+if defined __DoCrossgen call :PrecompileFX
 
 if  defined __GenerateLayoutOnly (
     REM Delete the unecessary mscorlib.ni file.
@@ -352,7 +353,22 @@ echo %__MsgPrefix%Successfully precompiled and generated dasm for %2
 exit /b 0
 
 :PrecompileFX
+setlocal
+
+if defined __CrossgenAltJit (
+    REM Set altjit flags for the crossgen run. Note that this entire crossgen section is within a setlocal/endlocal scope,
+    REM so we don't need to save or unset these afterwards.
+    echo %__MsgPrefix%Setting altjit environment variables for %__CrossgenAltJit%.
+    set COMPlus_AltJit=*
+    set COMPlus_AltJitNgen=*
+    set COMPlus_AltJitName=%__CrossgenAltJit%
+    set COMPlus_AltJitAssertOnNYI=1
+    set COMPlus_NoGuiOnAssert=1
+    set COMPlus_ContinueOnAssert=0
+)
+
 for %%F in (%CORE_ROOT%\*.dll) do call :PrecompileAssembly "%CORE_ROOT%" "%%F" %%~nF%%~xF
+endlocal
 exit /b 0
 
 :msbuild
@@ -465,6 +481,7 @@ echo AgainstPackages           - This indicates that we are running tests that w
 echo GenerateLayoutOnly        - If specified will not run the tests and will only create the Runtime Dependency Layout
 echo sequential                - Run tests sequentially (no parallelism).
 echo crossgen                  - Precompile ^(crossgen^) the managed assemblies in CORE_ROOT before running the tests.
+echo crossgenaltjit ^<altjit^>   - Precompile ^(crossgen^) the managed assemblies in CORE_ROOT before running the tests, using the given altjit.
 echo link ^<ILlink^>             - Runs the tests after linking via the IL linker ^<ILlink^>.
 echo RunCrossgenTests          - Runs ReadytoRun tests
 echo jitstress ^<n^>             - Runs the tests with COMPlus_JitStress=n
@@ -482,6 +499,7 @@ echo                               4: GC on every allowable JITed instruction
 echo                               8: GC on every allowable NGEN instruction
 echo                              16: GC only on a unique stack trace
 echo tieredcompilation         - Run the tests with COMPlus_EXPERIMENTAL_TieredCompilation=1
+echo gcname ^<n^>              - Runs the tests with COMPlus_GCName=n
 echo msbuildargs ^<args...^>     - Pass all subsequent args directly to msbuild invocations.
 echo ^<CORE_ROOT^>               - Path to the runtime to test (if specified).
 echo.

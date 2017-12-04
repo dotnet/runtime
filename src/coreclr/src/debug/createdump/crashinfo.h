@@ -32,7 +32,8 @@ private:
     pid_t m_ppid;                                   // parent pid
     pid_t m_tgid;                                   // process group
     char* m_name;                                   // exe name
-    bool m_sos;                                     // true if running under sos
+    bool m_sos;                                     // if true, running under sos
+    std::string m_coreclrPath;                      // the path of the coreclr module or empty if none
     ICLRDataTarget* m_dataTarget;                   // read process memory, etc.
     std::array<elf_aux_val_t, AT_MAX> m_auxvValues; // auxv values
     std::vector<elf_aux_entry> m_auxvEntries;       // full auxv entries
@@ -46,7 +47,7 @@ public:
     CrashInfo(pid_t pid, ICLRDataTarget* dataTarget, bool sos);
     virtual ~CrashInfo();
     bool EnumerateAndSuspendThreads();
-    bool GatherCrashInfo(const char* programPath, MINIDUMP_TYPE minidumpType);
+    bool GatherCrashInfo(MINIDUMP_TYPE minidumpType);
     void ResumeThreads();
     bool ReadMemory(void* address, void* buffer, size_t size);
     uint64_t GetBaseAddress(uint64_t ip);
@@ -80,7 +81,8 @@ private:
     bool EnumerateModuleMappings();
     bool GetDSOInfo();
     bool GetELFInfo(uint64_t baseAddress);
-    bool EnumerateMemoryRegionsWithDAC(const char* programPath, MINIDUMP_TYPE minidumpType);
+    bool EnumerateProgramHeaders(ElfW(Phdr)* phdrAddr, int phnum, uint64_t baseAddress, ElfW(Dyn)** pdynamicAddr);
+    bool EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType);
     bool EnumerateManagedModules(IXCLRDataProcess* pClrDataProcess);
     bool UnwindAllThreads(IXCLRDataProcess* pClrDataProcess);
     void ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, const char* pszName);

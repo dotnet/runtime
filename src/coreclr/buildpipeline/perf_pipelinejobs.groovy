@@ -27,5 +27,9 @@ def pipeline = perfPipeline
 params = ['XUNIT_PERFORMANCE_MAX_ITERATION':'6',
           'XUNIT_PERFORMANCE_MAX_ITERATION_INNER_SPECIFIED':'6']
 
-pipeline.triggerPipelineOnEveryGithubPR(triggerName, params)
+// Allow PR jobs on request.
+pipeline.triggerPipelineOnGithubPRComment(triggerName, params)
+
+// Disable automatic PR runs until throughput issues are addressed.
+// pipeline.triggerPipelineOnEveryGithubPR(triggerName, params)
 pipeline.triggerPipelineOnGithubPush()

@@ -34,9 +34,6 @@
 #include "nls.h"
 #include "nlsinfo.h"
 
-//#include <mlang.h>
-#include "sortversioning.h"
-
 #include "newapis.h"
 
 //

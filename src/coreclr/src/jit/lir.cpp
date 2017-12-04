@@ -1664,6 +1664,7 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
         {
             GenTree* node = kvp.Key();
             assert(node->IsUnusedValue() && "found an unmarked unused value");
+            assert(!node->isContained() && "a contained node should have a user");
         }
     }
 

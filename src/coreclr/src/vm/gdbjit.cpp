@@ -2413,6 +2413,27 @@ static void BuildDebugFrame(Elf_Builder &elfBuilder, PCODE pCode, TADDR codeSize
       // DW_CFA_def_cfa_register(6)
       0x0d, 0x06,
     };
+#elif defined(_TARGET_ARM64_)
+    const unsigned int code_alignment_factor = 1;
+    const int data_alignment_factor = -4;
+
+    UINT8 cieCode[] = {
+      // DW_CFA_def_cfa 31(sp), 0
+      0x0c, 0x1f, 0x00,
+    };
+
+    UINT8 fdeCode[] = {
+      // DW_CFA_advance_loc(1)
+      0x02, 0x01,
+      // DW_CFA_def_cfa_offset 16
+      0x0e, 0x10,
+      // DW_CFA_def_cfa_register 29(r29/fp)
+      0x0d, 0x1d,
+      // DW_CFA_offset: r30 (x30) at cfa-8
+      (0x02 << 6) | 0x1e, 0x02,
+      // DW_CFA_offset: r29 (x29) at cfa-16
+      (0x02 << 6) | 0x1d, 0x04,
+    };
 #else
 #error "Unsupported architecture"
 #endif

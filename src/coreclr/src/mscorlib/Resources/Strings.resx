@@ -413,7 +413,7 @@
     <value>Search pattern '{0}' cannot contain ".." to move up directories and can be contained only internally in file/directory names, as in "a..b".</value>
   </data>
   <data name="Arg_InvalidTypeInRetType" xml:space="preserve">
-    <value>The return Type contains some invalid type (i.e. null, ByRef)</value>
+    <value>The return Type must be a type provided by the runtime.</value>
   </data>
   <data name="Arg_InvalidTypeInSignature" xml:space="preserve">
     <value>The signature Type array contains some invalid type (i.e. null, void)</value>
@@ -426,6 +426,9 @@
   </data>
   <data name="Arg_KeyNotFound" xml:space="preserve">
     <value>The given key was not present in the dictionary.</value>
+  </data>
+    <data name="Arg_KeyNotFoundWithKey" xml:space="preserve">
+    <value>The given key '{0}' was not present in the dictionary.</value>
   </data>
   <data name="Arg_LongerThanDestArray" xml:space="preserve">
     <value>Destination array was not long enough. Check the destination index, length, and the array's lower bounds.</value>
@@ -1408,9 +1411,6 @@
   <data name="Argument_OffsetAndCapacityOutOfBounds" xml:space="preserve">
     <value>Offset and capacity were greater than the size of the view.</value>
   </data>
-  <data name="Argument_OffsetAndLengthOutOfBounds" xml:space="preserve">
-    <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
-  </data>
   <data name="Argument_OffsetLocalMismatch" xml:space="preserve">
     <value>The UTC Offset of the local dateTime parameter does not match the offset argument.</value>
   </data>
@@ -2174,7 +2174,7 @@
     <value>Attempt to define more than the maximum limit of 8 channels for a provider.</value>
   </data>
   <data name="EventSource_MismatchIdToWriteEvent" xml:space="preserve">
-    <value>Event {0} is givien event ID {1} but {2} was passed to WriteEvent.</value>
+    <value>Event {0} was assigned event ID {1} but {2} was passed to WriteEvent.</value>
   </data>
   <data name="EventSource_NeedGuid" xml:space="preserve">
     <value>The Guid of an EventSource must be non zero.</value>
@@ -2369,10 +2369,10 @@
     <value>Index (zero based) must be greater than or equal to zero and less than the size of the argument list.</value>
   </data>
   <data name="Format_InvalidEnumFormatSpecification" xml:space="preserve">
-    <value>Format String can be only "G", "g", "X", "x", "F", "f", "D" or "d".</value>
+    <value>Format string can be only "G", "g", "X", "x", "F", "f", "D" or "d".</value>
   </data>
   <data name="Format_InvalidGuidFormatSpecification" xml:space="preserve">
-    <value>Format String can be only "D", "d", "N", "n", "P", "p", "B", "b", "X" or "x".</value>
+    <value>Format string can be only "D", "d", "N", "n", "P", "p", "B", "b", "X" or "x".</value>
   </data>
   <data name="Format_InvalidString" xml:space="preserve">
     <value>Input string was not in a correct format.</value>
@@ -2427,9 +2427,6 @@
   </data>
   <data name="IndexOutOfRange_ArrayRankIndex" xml:space="preserve">
     <value>Array does not have that many dimensions.</value>
-  </data>
-  <data name="IndexOutOfRange_IORaceCondition" xml:space="preserve">
-    <value>Probable I/O race condition detected while copying memory. The I/O package is not thread safe by default. In multithreaded applications, a stream must be accessed in a thread-safe way, such as a thread-safe wrapper returned by TextReader's or TextWriter's Synchronized methods. This also applies to classes like StreamWriter and StreamReader.</value>
   </data>
   <data name="IndexOutOfRange_UMSPosition" xml:space="preserve">
     <value>Unmanaged memory stream position was beyond the capacity of the stream.</value>
@@ -3685,10 +3682,19 @@
   <data name="NotSupported_SignatureType" xml:space="preserve">
     <value>This method is not supported on signature types.</value>
   </data>
-    <data name="Memory_ThrowIfDisposed" xml:space="preserve">
+  <data name="Memory_ThrowIfDisposed" xml:space="preserve">
     <value>Memory&lt;T&gt; has been disposed.</value>
   </data>
   <data name="Memory_OutstandingReferences" xml:space="preserve">
     <value>Release all references before disposing this instance.</value>
+  </data>
+  <data name="HashCode_HashCodeNotSupported" xml:space="preserve">
+    <value>HashCode is a mutable struct and should not be compared with other HashCodes. Use ToHashCode to retrieve the computed hash code.</value>
+  </data>
+  <data name="HashCode_EqualityNotSupported" xml:space="preserve">
+    <value>HashCode is a mutable struct and should not be compared with other HashCodes.</value>
+  </data>
+  <data name="Arg_TypeNotSupported" xml:space="preserve">
+    <value>Specified type is not supported</value>
   </data>
 </root>

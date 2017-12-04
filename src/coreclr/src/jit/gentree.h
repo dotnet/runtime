@@ -24,6 +24,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "ssaconfig.h" // For "SsaConfig::RESERVED_SSA_NUM"
 #include "reglist.h"
 #include "valuenumtype.h"
+#include "jitstd.h"
 #include "jithashtable.h"
 #include "nodeinfo.h"
 #include "simd.h"
@@ -313,7 +314,6 @@ class GenTreeOperandIterator;
 /*****************************************************************************/
 
 typedef struct GenTree* GenTreePtr;
-struct GenTreeArgList;
 
 // Forward declarations of the subtypes
 #define GTSTRUCT_0(fn, en) struct GenTree##fn;
@@ -322,6 +322,8 @@ struct GenTreeArgList;
 #define GTSTRUCT_3(fn, en, en2, en3) struct GenTree##fn;
 #define GTSTRUCT_4(fn, en, en2, en3, en4) struct GenTree##fn;
 #define GTSTRUCT_N(fn, ...) struct GenTree##fn;
+#define GTSTRUCT_2_SPECIAL(fn, en, en2) GTSTRUCT_2(fn, en, en2)
+#define GTSTRUCT_3_SPECIAL(fn, en, en2, en3) GTSTRUCT_3(fn, en, en2, en3)
 #include "gtstructs.h"
 
 /*****************************************************************************/
@@ -426,6 +428,9 @@ struct GenTree
     }                                                                                                                  \
     __declspec(property(get = As##fn##Ref)) GenTree##fn& gt##fn;
 #endif
+
+#define GTSTRUCT_2_SPECIAL(fn, en, en2) GTSTRUCT_2(fn, en, en2)
+#define GTSTRUCT_3_SPECIAL(fn, en, en2, en3) GTSTRUCT_3(fn, en, en2, en3)
 
 #include "gtstructs.h"
 
@@ -1813,6 +1818,9 @@ public:
 
     inline GenTreePtr gtEffectiveVal(bool commaOnly = false);
 
+    // Tunnel through any GT_RET_EXPRs
+    inline GenTree* gtRetExprVal();
+
     // Return the child of this node if it is a GT_RELOAD or GT_COPY; otherwise simply return the node itself
     inline GenTree* gtSkipReloadOrCopy();
 
@@ -2059,6 +2067,7 @@ public:
     {
         assert(IsValue());
         gtFlags |= GTF_CONTAINED;
+        assert(isContained());
     }
 
     void ClearContained()
@@ -3174,16 +3183,16 @@ struct GenTreeFieldList : public GenTreeArgList
         if (prevList == nullptr)
         {
             gtFlags |= GTF_FIELD_LIST_HEAD;
+#ifndef LEGACY_BACKEND
+            // A GT_FIELD_LIST head is always contained. Other nodes return false from IsValue()
+            // and should not be marked as contained.
+            SetContained();
+#endif
         }
         else
         {
             prevList->gtOp2 = this;
         }
-#ifndef LEGACY_BACKEND
-        // A GT_FIELD_LIST is always contained. Note that this should only matter for the head node, but
-        // the list may be reordered.
-        gtFlags |= GTF_CONTAINED;
-#endif
     }
 };
 
@@ -6126,6 +6135,33 @@ inline GenTreePtr GenTree::gtEffectiveVal(bool commaOnly)
         else
         {
             return effectiveVal;
+        }
+    }
+}
+
+//-------------------------------------------------------------------------
+// gtRetExprVal - walk back through GT_RET_EXPRs
+//
+// Returns:
+//    tree representing return value from a successful inline,
+//    or original call for failed or yet to be determined inline.
+//
+// Notes:
+//    Multi-level inlines can form chains of GT_RET_EXPRs.
+//    This method walks back to the root of the chain.
+
+inline GenTree* GenTree::gtRetExprVal()
+{
+    GenTree* retExprVal = this;
+    for (;;)
+    {
+        if (retExprVal->gtOper == GT_RET_EXPR)
+        {
+            retExprVal = retExprVal->gtRetExpr.gtInlineCandidate;
+        }
+        else
+        {
+            return retExprVal;
         }
     }
 }

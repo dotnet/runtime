@@ -1973,7 +1973,6 @@ void LinearScan::identifyCandidatesExceptionDataflow()
 //
 bool LinearScan::isContainableMemoryOp(GenTree* node)
 {
-#ifdef _TARGET_XARCH_
     if (node->isMemoryOp())
     {
         return true;
@@ -1987,7 +1986,6 @@ bool LinearScan::isContainableMemoryOp(GenTree* node)
         LclVarDsc* varDsc = &compiler->lvaTable[node->AsLclVar()->gtLclNum];
         return varDsc->lvDoNotEnregister;
     }
-#endif // _TARGET_XARCH_
     return false;
 }
 
@@ -3387,8 +3385,9 @@ public:
     {
         if (preallocate > 0)
         {
-            size_t preallocateSize   = sizeof(LocationInfoListNode) * preallocate;
-            auto*  preallocatedNodes = reinterpret_cast<LocationInfoListNode*>(compiler->compGetMem(preallocateSize));
+            size_t                preallocateSize = sizeof(LocationInfoListNode) * preallocate;
+            LocationInfoListNode* preallocatedNodes =
+                reinterpret_cast<LocationInfoListNode*>(compiler->compGetMem(preallocateSize, CMK_LSRA));
 
             LocationInfoListNode* head = preallocatedNodes;
             head->m_next               = nullptr;

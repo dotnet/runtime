@@ -716,8 +716,6 @@ HRESULT CorHost2::_CreateAppDomain(
 
 
         pDomain->DoSetup(&_gc.setupInfo);
-
-        pDomain->CacheStringsForDAC();
         
         GCPROTECT_END();
 

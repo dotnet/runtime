@@ -1401,7 +1401,6 @@ namespace System.Threading
             ToObjectArray(GetLocallyQueuedWorkItems());
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         internal static extern bool RequestWorkerThread();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -1463,7 +1462,6 @@ namespace System.Threading
         internal static extern void NotifyWorkItemProgressNative();
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private static extern void InitializeVMTp(ref bool enableWorkerTracking);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

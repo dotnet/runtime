@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Buffers;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -10,7 +11,7 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetCwd", SetLastError = true)]
-        private static unsafe extern byte* GetCwd(byte* buffer, int bufferLength);
+        private static extern unsafe byte* GetCwd(byte* buffer, int bufferLength);
 
         internal static unsafe string GetCwd()
         {      
@@ -25,15 +26,13 @@ internal static partial class Interop
             }
 
             // If that was too small, try increasing large buffer sizes
-            // until we get one that works or until we hit MaxPath.
-            int maxPath = Interop.Sys.MaxPath;
-            if (StackLimit < maxPath)
+            int bufferSize = StackLimit;
+            do
             {
-                int bufferSize = StackLimit;
-                do
+                checked { bufferSize *= 2; }
+                byte[] buf = ArrayPool<byte>.Shared.Rent(bufferSize);
+                try
                 {
-                    checked { bufferSize *= 2; }
-                    var buf = new byte[Math.Min(bufferSize, maxPath)];
                     fixed (byte* ptr = &buf[0])
                     {
                         result = GetCwdHelper(ptr, buf.Length);
@@ -43,11 +42,12 @@ internal static partial class Interop
                         }
                     }
                 }
-                while (bufferSize < maxPath);
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buf);
+                }
             }
-
-            // If we couldn't get the cwd with a MaxPath-sized buffer, something's wrong.
-            throw Interop.GetExceptionForIoErrno(new ErrorInfo(Interop.Error.ENAMETOOLONG));
+            while (true);
         }
 
         private static unsafe string GetCwdHelper(byte* ptr, int bufferSize)

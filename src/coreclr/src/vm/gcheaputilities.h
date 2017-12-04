@@ -197,6 +197,9 @@ public:
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
 #ifndef DACCESS_COMPILE
+    // Gets the module that contains the GC.
+    static HMODULE GetGCModule();
+
     // Loads (if using a standalone GC) and initializes the GC.
     static HRESULT LoadAndInitialize();
 #endif // DACCESS_COMPILE

@@ -23229,11 +23229,7 @@ GenTreePtr Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                         //
                         // Chase through any GT_RET_EXPRs to find the actual argument
                         // expression.
-                        GenTree* actualArgNode = argNode;
-                        while (actualArgNode->gtOper == GT_RET_EXPR)
-                        {
-                            actualArgNode = actualArgNode->gtRetExpr.gtInlineCandidate;
-                        }
+                        GenTree* actualArgNode = argNode->gtRetExprVal();
 
                         // For case (1)
                         //
@@ -25875,4 +25871,16 @@ void Compiler::fgCompDominatedByExceptionalEntryBlocks()
             }
         }
     }
+}
+
+//------------------------------------------------------------------------
+// fgNeedReturnSpillTemp: Answers does the inlinee need to spill all returns
+//  as a temp.
+//
+// Return Value:
+//    true if the inlinee has to spill return exprs.
+bool Compiler::fgNeedReturnSpillTemp()
+{
+    assert(compIsForInlining());
+    return (lvaInlineeReturnSpillTemp != BAD_VAR_NUM);
 }
