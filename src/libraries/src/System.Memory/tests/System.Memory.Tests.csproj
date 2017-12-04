@@ -68,6 +68,7 @@
     <Compile Include="ReadOnlySpan\IndexOfSequence.char.cs" />
     <Compile Include="ReadOnlySpan\NonPortableCast.cs" />
     <Compile Include="ReadOnlySpan\Overflow.cs" />
+    <Compile Include="ReadOnlySpan\Overlaps.cs" />
     <Compile Include="ReadOnlySpan\SequenceEqual.T.cs" />
     <Compile Include="ReadOnlySpan\SequenceEqual.byte.cs" />
     <Compile Include="ReadOnlySpan\SequenceEqual.char.cs" />
