@@ -61,6 +61,8 @@
     <Compile Include="LinkXml\UnusedEventPreservedByLinkXmlIsKept.cs" />
     <Compile Include="LinkXml\UnusedTypePreservedByLinkXmlWithCommentIsKept.cs" />
     <Compile Include="LinkXml\UnusedTypeWithNoDefinedPreserveHasAllMembersPreserved.cs" />
+    <Compile Include="References\Dependencies\UserAssembliesAreLinkedByDefault_Library1.cs" />
+    <Compile Include="References\UserAssembliesAreLinkedByDefault.cs" />
     <Compile Include="Resources\EmbeddedLinkXmlFileIsNotProcessedIfNameDoesNotMatchAnAssembly.cs" />
     <Compile Include="Resources\EmbeddedLinkXmlFileIsNotProcessedWhenBlacklistStepIsDisabled.cs" />
     <Compile Include="Resources\EmbeddedLinkXmlFileIsNotProcessedWhenCoreLinkActionIsSkip.cs" />
