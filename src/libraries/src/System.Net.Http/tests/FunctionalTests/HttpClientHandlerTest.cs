@@ -1213,7 +1213,7 @@ namespace System.Net.Http.Functional.Tests
                     Task serverTask =
                         LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
                         {
-                            var list = await LoopbackServer.ReadWriteAcceptedAsync(s, reader, writer, partialResponse, shutdown: false);
+                            var list = await LoopbackServer.ReadWriteAcceptedAsync(s, reader, writer, partialResponse);
                             await tcs.Task;
                             return list;
                         }, null);
