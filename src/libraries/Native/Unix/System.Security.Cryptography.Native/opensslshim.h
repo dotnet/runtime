@@ -14,6 +14,7 @@
 #include <openssl/asn1.h>
 #include <openssl/bio.h>
 #include <openssl/bn.h>
+#include <openssl/crypto.h>
 #include <openssl/dsa.h>
 #include <openssl/ecdsa.h>
 #include <openssl/ec.h>
@@ -297,6 +298,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     PER_FUNCTION_BLOCK(SSL_set_connect_state, true) \
     PER_FUNCTION_BLOCK(SSL_shutdown, true) \
     PER_FUNCTION_BLOCK(SSL_state, true) \
+    PER_FUNCTION_BLOCK(SSLeay_version, true) \
     PER_FUNCTION_BLOCK(SSLv23_method, true) \
     PER_FUNCTION_BLOCK(SSL_write, true) \
     PER_FUNCTION_BLOCK(TLSv1_1_method, true) \
@@ -590,6 +592,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_set_connect_state SSL_set_connect_state_ptr
 #define SSL_shutdown SSL_shutdown_ptr
 #define SSL_state SSL_state_ptr
+#define SSLeay_version SSLeay_version_ptr
 #define SSLv23_method SSLv23_method_ptr
 #define SSL_write SSL_write_ptr
 #define TLSv1_1_method TLSv1_1_method_ptr
