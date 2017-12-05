@@ -652,9 +652,8 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot(DWORD slot)
 
     PCODE pCode = GetRestoredSlot(slot);
 
-    // This is an optimization that we can take advantage of if we're trying
-    // to get the MethodDesc for an interface virtual, since their slots
-    // always point to the stub.
+    // This is an optimization that we can take advantage of if we're trying to get the MethodDesc 
+    // for an interface virtual, since their slots usually point to stub.
     if (IsInterface() && slot < GetNumVirtuals())
     {
         return MethodDesc::GetMethodDescFromStubAddr(pCode);

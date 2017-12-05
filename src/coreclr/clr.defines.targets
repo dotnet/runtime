@@ -1,4 +1,10 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+    <!-- Features we're currently flighting, but don't intend to ship in officially supported releases -->
+    <PropertyGroup Condition="'$(IsPrerelease)' == 'true'">
+        <FeatureDefaultInterfaces>true</FeatureDefaultInterfaces>
+    </PropertyGroup>
+
     <PropertyGroup>
         <DefineConstants Condition="'$(FeatureAppX)' == 'true'">$(DefineConstants);FEATURE_APPX</DefineConstants>
         <DefineConstants Condition="'$(FeatureArrayStubAsIL)' == 'true'">$(DefineConstants);FEATURE_ARRAYSTUB_AS_IL</DefineConstants>
@@ -17,6 +23,7 @@
         <DefineConstants Condition="'$(FeatureXplatEventSource)' == 'true'">$(DefineConstants);FEATURE_EVENTSOURCE_XPLAT</DefineConstants>
         <DefineConstants Condition="'$(FeatureUseLcid)' == 'true'">$(DefineConstants);FEATURE_USE_LCID</DefineConstants>
         <DefineConstants Condition="'$(FeatureWin32Registry)' == 'true'">$(DefineConstants);FEATURE_WIN32_REGISTRY</DefineConstants>
+        <DefineConstants Condition="'$(FeatureDefaultInterfaces)' == 'true'">$(DefineConstants);FEATURE_DEFAULT_INTERFACES</DefineConstants>
 
         <DefineConstants Condition="'$(ProfilingSupportedBuild)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
 
