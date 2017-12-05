@@ -6807,6 +6807,7 @@ namespace System.Runtime.CompilerServices
     public sealed partial class RuntimeWrappedException : System.Exception
     {
         internal RuntimeWrappedException() { }
+        public RuntimeWrappedException(object thrownObject) { }
         public object WrappedException { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
