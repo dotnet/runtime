@@ -4,14 +4,14 @@
     <_SerializerDllIntermediateFolder>$(IntermediateOutputPath)$(_SerializationAssemblyName).dll</_SerializerDllIntermediateFolder>
     <_SerializerPdbIntermediateFolder>$(IntermediateOutputPath)$(_SerializationAssemblyName).pdb</_SerializerPdbIntermediateFolder>
     <_SerializerCsIntermediateFolder>$(IntermediateOutputPath)$(_SerializationAssemblyName).cs</_SerializerCsIntermediateFolder>
-    <_SGenWarningText>SGEN : warning SGEN1: Fail to generate the serializer for $(AssemblyName).dll. Please follow the instructions at https://go.microsoft.com/fwlink/?linkid=858594 and try again.</_SGenWarningText>
+    <_SGenWarningText>SGEN : warning SGEN1: Fail to generate the serializer for $(AssemblyName)$(TargetExt). Please follow the instructions at https://go.microsoft.com/fwlink/?linkid=858594 and try again.</_SGenWarningText>
   </PropertyGroup>
   <Target Name="GenerateSerializationAssembly" AfterTargets="Build">
     <Delete Condition="Exists('$(_SerializerDllIntermediateFolder)') == 'true'" Files="$(_SerializerDllIntermediateFolder)" ContinueOnError="true"/>
     <Delete Condition="Exists('$(_SerializerPdbIntermediateFolder)') == 'true'" Files="$(_SerializerPdbIntermediateFolder)" ContinueOnError="true"/>
     <Delete Condition="Exists('$(_SerializerCsIntermediateFolder)') == 'true'"  Files="$(_SerializerCsIntermediateFolder)" ContinueOnError="true"/>
     <Message Text="Running Serialization Tool" Importance="normal" />
-    <Exec Command="dotnet Microsoft.XmlSerializer.Generator $(IntermediateOutputPath)$(AssemblyName).dll /force /quiet" ContinueOnError="true"/>
+    <Exec Command="dotnet Microsoft.XmlSerializer.Generator $(IntermediateOutputPath)$(AssemblyName)$(TargetExt) /force /quiet" ContinueOnError="true"/>
     <Warning Condition="Exists('$(_SerializerCsIntermediateFolder)') != 'true'" Text="$(_SGenWarningText)" />
     <Csc Condition="Exists('$(_SerializerCsIntermediateFolder)') == 'true'" ContinueOnError="true" OutputAssembly="$(_SerializerDllIntermediateFolder)" References="@(ReferencePath);@(IntermediateAssembly)" EmitDebugInformation="$(DebugSymbols)" Sources="$(_SerializerCsIntermediateFolder)" TargetType="Library" ToolExe="$(CscToolExe)" ToolPath="$(CscToolPath)"/>
     <Warning Condition="Exists('$(_SerializerDllIntermediateFolder)') != 'true' And Exists('$(_SerializerCsIntermediateFolder)') == 'true'" Text="$(_SGenWarningText)"/>
