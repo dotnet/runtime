@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
@@ -10,7 +11,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 {
     public sealed class BinaryFormatter : IFormatter
     {
-        private static readonly Dictionary<Type, TypeInformation> s_typeNameCache = new Dictionary<Type, TypeInformation>();
+        private static readonly ConcurrentDictionary<Type, TypeInformation> s_typeNameCache = new ConcurrentDictionary<Type, TypeInformation>();
 
         internal ISurrogateSelector _surrogates;
         internal StreamingContext _context;
@@ -88,21 +89,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _crossAppDomainArray = sow._crossAppDomainArray;
         }
 
-
-        internal static TypeInformation GetTypeInformation(Type type)
-        {
-            lock (s_typeNameCache)
+        internal static TypeInformation GetTypeInformation(Type type) =>
+            s_typeNameCache.GetOrAdd(type, t =>
             {
-                TypeInformation typeInformation;
-                if (!s_typeNameCache.TryGetValue(type, out typeInformation))
-                {
-                    bool hasTypeForwardedFrom;
-                    string assemblyName = FormatterServices.GetClrAssemblyName(type, out hasTypeForwardedFrom);
-                    typeInformation = new TypeInformation(FormatterServices.GetClrTypeFullName(type), assemblyName, hasTypeForwardedFrom);
-                    s_typeNameCache.Add(type, typeInformation);
-                }
-                return typeInformation;
-            }
-        }
+                string assemblyName = FormatterServices.GetClrAssemblyName(t, out bool hasTypeForwardedFrom);
+                return new TypeInformation(FormatterServices.GetClrTypeFullName(t), assemblyName, hasTypeForwardedFrom);
+            });
     }
 }
