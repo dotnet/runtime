@@ -23,15 +23,16 @@ namespace System.ServiceModel.Syndication.Tests
             try
             {
                 // *** SETUP *** \\
-                SyndicationFeed sf = new SyndicationFeed("First feed on .net core ever!!", "This is the first feed on .net core ever!", new Uri("https://github.com/dotnet/wcf"));
+                var sf = new SyndicationFeed("First feed on .net core ever!!", "This is the first feed on .net core ever!", new Uri("https://github.com/dotnet/wcf"));
                 Assert.True(sf != null);
 
-                XmlWriter xmlw = XmlWriter.Create(filePath);
-                Rss20FeedFormatter rssf = new Rss20FeedFormatter(sf);
+                using (XmlWriter xmlw = XmlWriter.Create(filePath))
+                {
+                    var rssf = new Rss20FeedFormatter(sf);
 
-                // *** EXECUTE *** \\
-                rssf.WriteTo(xmlw);
-                xmlw.Close();
+                    // *** EXECUTE *** \\
+                    rssf.WriteTo(xmlw);
+                }
 
                 // *** VALIDATE *** \\
                 Assert.True(File.Exists(filePath));
@@ -62,8 +63,8 @@ namespace System.ServiceModel.Syndication.Tests
                 //Write the same feed that was read.
                 using (XmlWriter xmlw = XmlWriter.Create(path))
                 {
-                    Rss20FeedFormatter atomFeed = new Rss20FeedFormatter(sf);
-                    atomFeed.WriteTo(xmlw);
+                    var rss20FeedFormatter = new Rss20FeedFormatter(sf);
+                    rss20FeedFormatter.WriteTo(xmlw);
                 }
 
                 // *** VALIDATE *** \\
@@ -96,8 +97,8 @@ namespace System.ServiceModel.Syndication.Tests
                 XmlWriterSettings settingsWriter = new XmlWriterSettings();
                 using (XmlWriter xmlw = XmlWriter.Create(path, settingsWriter))
                 {
-                    Rss20FeedFormatter atomFeed = new Rss20FeedFormatter(sf);
-                    atomFeed.WriteTo(xmlw);
+                    var rss20FeedFormatter = new Rss20FeedFormatter(sf);
+                    rss20FeedFormatter.WriteTo(xmlw);
                 }
 
                 // *** VALIDATE *** \\
@@ -129,8 +130,8 @@ namespace System.ServiceModel.Syndication.Tests
                 //Write the same feed that was read.
                 using (XmlWriter xmlw = XmlWriter.Create(path))
                 {
-                    Atom10FeedFormatter atomFeed = new Atom10FeedFormatter(sf);
-                    atomFeed.WriteTo(xmlw);
+                    var atom10FeedFormatter = new Atom10FeedFormatter(sf);
+                    atom10FeedFormatter.WriteTo(xmlw);
                 }
 
                 // *** VALIDATE *** \\
@@ -162,8 +163,8 @@ namespace System.ServiceModel.Syndication.Tests
                 //Write the same feed that was read.
                 using (XmlWriter xmlw = XmlWriter.Create(path))
                 {
-                    Atom10FeedFormatter atomFeed = new Atom10FeedFormatter(sf);
-                    atomFeed.WriteTo(xmlw);
+                    var atom10FeedFormatter = new Atom10FeedFormatter(sf);
+                    atom10FeedFormatter.WriteTo(xmlw);
                 }
 
                 // *** VALIDATE *** \\
