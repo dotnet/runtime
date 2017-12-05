@@ -1057,7 +1057,7 @@ namespace Microsoft.XmlSerializer.Generator
         {
             for (StructMapping derived = mapping.DerivedMappings; derived != null; derived = derived.NextDerivedMapping)
             {
-                Writer.Write("else if (");
+                Writer.Write("if (");
                 WriteQNameEqual("xsiType", derived.TypeName, derived.Namespace);
                 Writer.WriteLine(")");
                 Writer.Indent++;
@@ -1094,7 +1094,7 @@ namespace Microsoft.XmlSerializer.Generator
                     if (m is EnumMapping)
                     {
                         EnumMapping mapping = (EnumMapping)m;
-                        Writer.Write("else if (");
+                        Writer.Write("if (");
                         WriteQNameEqual("xsiType", mapping.TypeName, mapping.Namespace);
                         Writer.WriteLine(") {");
                         Writer.Indent++;
@@ -1117,7 +1117,7 @@ namespace Microsoft.XmlSerializer.Generator
                         ArrayMapping mapping = (ArrayMapping)m;
                         if (mapping.TypeDesc.HasDefaultConstructor)
                         {
-                            Writer.Write("else if (");
+                            Writer.Write("if (");
                             WriteQNameEqual("xsiType", mapping.TypeName, mapping.Namespace);
                             Writer.WriteLine(") {");
                             Writer.Indent++;
@@ -1264,10 +1264,10 @@ namespace Microsoft.XmlSerializer.Generator
                 Writer.Indent--;
             }
             Writer.WriteLine("}");
+            Writer.WriteLine("else {");
+            Writer.Indent++;
             WriteDerivedTypes(structMapping, !useReflection && !structMapping.TypeDesc.IsRoot, typeName);
             if (structMapping.TypeDesc.IsRoot) WriteEnumAndArrayTypes();
-            Writer.WriteLine("else");
-            Writer.Indent++;
             if (structMapping.TypeDesc.IsRoot)
                 Writer.Write("return ReadTypedPrimitive((");
             else
@@ -1277,6 +1277,9 @@ namespace Microsoft.XmlSerializer.Generator
             Writer.Indent--;
             Writer.WriteLine("}");
 
+            if (structMapping.TypeDesc.IsRoot)
+                Writer.Indent--;
+            Writer.WriteLine("}");
             if (structMapping.TypeDesc.IsNullable)
                 Writer.WriteLine("if (isNull) return null;");
 
@@ -2217,16 +2220,28 @@ namespace Microsoft.XmlSerializer.Generator
                     ElementAccessor e = elements[j];
                     string ns = e.Form == XmlSchemaForm.Qualified ? e.Namespace : "";
                     if (!isSequence && e.Any && (e.Name == null || e.Name.Length == 0)) continue;
-                    if (!firstElement || (!isSequence && count > 0))
+
+                    if (!isSequence)
                     {
-                        Writer.Write("else ");
+                        if (firstElement && count == 0)
+                        {
+                            Writer.WriteLine("do {");
+                            Writer.Indent++;
+                        }
                     }
-                    else if (isSequence)
+                    else
                     {
-                        Writer.Write("case ");
-                        Writer.Write(cases.ToString(CultureInfo.InvariantCulture));
-                        Writer.WriteLine(":");
-                        Writer.Indent++;
+                        if (!firstElement || (!isSequence && count > 0))
+                        {
+                            Writer.Write("else ");
+                        }
+                        else if (isSequence)
+                        {
+                            Writer.Write("case ");
+                            Writer.Write(cases.ToString(CultureInfo.InvariantCulture));
+                            Writer.WriteLine(":");
+                            Writer.Indent++;
+                        }
                     }
                     count++;
                     firstElement = false;
@@ -2316,6 +2331,10 @@ namespace Microsoft.XmlSerializer.Generator
                         Writer.Write(member.ParamsReadSource);
                         Writer.WriteLine(" = true;");
                     }
+                    if (!isSequence)
+                    {
+                        Writer.WriteLine("break;");
+                    }
                     Writer.Indent--;
                     Writer.WriteLine("}");
                 }
@@ -2342,10 +2361,10 @@ namespace Microsoft.XmlSerializer.Generator
             if (count > 0)
             {
                 if (isSequence)
+                {
                     Writer.WriteLine("default:");
-                else
-                    Writer.WriteLine("else {");
-                Writer.Indent++;
+                    Writer.Indent++;
+                }
             }
             WriteMemberElementsElse(anyElement, elementElseString);
             if (count > 0)
@@ -2355,7 +2374,14 @@ namespace Microsoft.XmlSerializer.Generator
                     Writer.WriteLine("break;");
                 }
                 Writer.Indent--;
-                Writer.WriteLine("}");
+                if (!isSequence)
+                {
+                    Writer.WriteLine("} while (false);");
+                }
+                else
+                {
+                    Writer.WriteLine("}");
+                }
             }
         }
 
