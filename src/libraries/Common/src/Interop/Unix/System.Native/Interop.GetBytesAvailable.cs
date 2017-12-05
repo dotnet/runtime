@@ -13,6 +13,6 @@ internal static partial class Interop
         internal static extern unsafe Error GetBytesAvailable(SafeHandle socket, int* available);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetAtOutOfBandMark")]
-        internal static extern unsafe Error GetAtOutOfBandMark(SafeHandle socket, int* available);
+        internal static extern unsafe Error GetAtOutOfBandMark(SafeHandle socket, int* atMark);
     }
 }
