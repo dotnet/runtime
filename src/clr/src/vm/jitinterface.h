@@ -736,7 +736,8 @@ public:
     void getMethodSigInternal (
             CORINFO_METHOD_HANDLE ftnHnd,
             CORINFO_SIG_INFO* sigInfo,
-            CORINFO_CLASS_HANDLE owner = NULL
+            CORINFO_CLASS_HANDLE owner = NULL,
+            BOOL isCallSite = FALSE
             );
 
     void getEHinfo(
