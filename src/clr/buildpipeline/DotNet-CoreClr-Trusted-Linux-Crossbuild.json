@@ -434,7 +434,7 @@
       "value": "Release"
     },
     "GitHubRepo": {
-      "value": "https://github.com/dotnet/coreclr.git"
+      "value": "http://github.com/dotnet/coreclr.git"
     },
     "GitHubDirectory": {
       "value": "/root/coreclr"
