@@ -138,9 +138,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLogicalDrive.cs">
       <Link>Common\Interop\Windows\Interop.GetLogicalDrive.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLogicalProcessorInformationEx.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.GetLogicalProcessorInformationEx.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLongPathName.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetLongPathName.cs</Link>
     </Compile>
