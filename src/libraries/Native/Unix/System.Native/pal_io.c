@@ -856,8 +856,6 @@ int64_t SystemNative_SysConf(int32_t name)
             return sysconf(_SC_CLK_TCK);
         case PAL_SC_PAGESIZE:
             return sysconf(_SC_PAGESIZE);
-        case PAL_SC_NPROCESSORS_ONLN:
-            return sysconf(_SC_NPROCESSORS_ONLN);
     }
 
     assert_msg(false, "Unknown SysConf name", (int)name);
