@@ -156,7 +156,7 @@ You may also have noticed that the T=int entrypoint was optimized before and now
 Implementation
 ==============
 
-###Code Versions###
+### Code Versions ###
 
 The implementation can be located in [codeversion.h](../../src/vm/codeversion.h) and [codeversion.cpp](../../src/vm/codeversion.cpp)
 
@@ -286,7 +286,7 @@ Another interesting consideration is that in the future I anticipate having some
 
 Thus if the current implementation doesn't appear ideal partly this may be because I wasn't sufficiently clever, but the other part is that I was optimizing for future conditions.
 
-###Domains###
+### Domains ###
 There is one CodeVersionManager per AppDomain, and one for the SharedDomain. Versioning for a given method always looks up the appropriate CodeVersionManager by traversing from MethodDef token -> Module that defines that token -> Domain that loaded that module -> CodeVersionManager. In code this is either:
 
 ```
@@ -312,7 +312,7 @@ CoreCLR is largely moving away from multiple AppDomains but I left the domain di
 
 AppDomain unloading however has not been handled. If CoreCLR supports proper AppDomain unload at some point or the code moves back to desktop runtime we will need to handle this gap.
 
-###Code activation and publishing###
+### Code activation and publishing ###
 
 The CodeVersionManager abstracts selecting the active code versions and publishing them behind the APIs that individual build stages use to manipulate the versioning tree. For example a build stage would call either:
 
@@ -336,7 +336,7 @@ MethodDesc::IsVersionableWithPrecode()
 MethodDesc::IsVersionableWithJumpStamp()
 ```
 
-###Thread-safety###
+### Thread-safety ###
 CodeVersionManager is designed for use in a free-threaded environment, in many cases by requiring the caller to acquire a lock before calling. This lock can be acquired by constructing an instance of the
 
 ```
@@ -350,7 +350,7 @@ in some scope for the CodeVersionManager being operated on. CodeVersionManagers 
 
 APIs that require the lock is held/not held should ASSERT the lock state in debug builds. APIs with no ASSERT can be used with or without the lock.
 
-###Ambient/unrecorded/explicit version configuration###
+### Ambient/unrecorded/explicit version configuration ###
 
 The example build pipeline in the design section has many stages, but the implemented versioning tree only tracks a few specific chunks of configuration information:
 
@@ -367,8 +367,8 @@ All other information such as Edit and Continue IL modifications, or a profiler 
 The runtime's current classification is:
 
 - **Explicit** - ReJIT IL, IL mapping, jit flags, generic instantiation, optimization tier, versioning ids
--  **Ambient** - Profiler IL from SetILFunctionBody, Profiler metadata updates, runtime inlining policy, profiler NGEN search policy
--  **Unrecorded** - Profiler inlining policy, Profiler ELT configuration 
+- **Ambient** - Profiler IL from SetILFunctionBody, Profiler metadata updates, runtime inlining policy, profiler NGEN search policy
+- **Unrecorded** - Profiler inlining policy, Profiler ELT configuration 
 
 
 Future roadmap possibilities
