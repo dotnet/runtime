@@ -2211,6 +2211,13 @@ namespace System.Data.Common
         public virtual System.Data.Common.DbDataSourceEnumerator CreateDataSourceEnumerator() { throw null; }
         public virtual System.Data.Common.DbParameter CreateParameter() { throw null; }
     }
+    public static partial class DbProviderFactories
+    {
+        public static DbProviderFactory GetFactory(string providerInvariantName) { throw null; }
+        public static DbProviderFactory GetFactory(DataRow providerRow) { throw null; }
+        public static DbProviderFactory GetFactory(DbConnection connection) { throw null; }
+        public static DataTable GetFactoryClasses() { throw null; }
+    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(128), AllowMultiple = false, Inherited = true)]
     public sealed partial class DbProviderSpecificTypePropertyAttribute : System.Attribute
     {
