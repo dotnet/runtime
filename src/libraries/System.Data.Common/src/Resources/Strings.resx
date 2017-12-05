@@ -512,4 +512,9 @@
   <data name="DataColumns_RemoveExpression" xml:space="preserve"><value>Cannot remove this column, because it is part of an expression: {0} = {1}.</value></data>
   <data name="DataRow_RowInsertTwice" xml:space="preserve"><value>The rowOrder value={0} has been found twice for table named '{1}'.</value></data>
   <data name="Xml_ElementTypeNotFound" xml:space="preserve"><value>Cannot find ElementType name='{0}'.</value></data>
+  <data name="ADP_DbProviderFactories_InvariantNameNotFound" xml:space="preserve"><value>The specified invariant name '{0}' wasn't found in the list of registered .NET Data Providers.</value></data>
+  <data name="ADP_DbProviderFactories_NoInstance" xml:space="preserve"><value>The requested .NET Data Provider's implementation does not have an Instance field of a System.Data.Common.DbProviderFactory derived type.</value></data>
+  <data name="ADP_DbProviderFactories_FactoryNotLoadable" xml:space="preserve"><value>The registered .NET Data Provider's DbProviderFactory implementation type '{0}' couldn't be loaded.</value></data>
+  <data name="ADP_DbProviderFactories_NoAssemblyQualifiedName" xml:space="preserve"><value>The missing .NET Data Provider's assembly qualified name is required.</value></data>
+  <data name="ADP_DbProviderFactories_NotAFactoryType" xml:space="preserve"><value>The type '{0}' doesn't inherit from DbProviderFactory.</value></data>
 </root>

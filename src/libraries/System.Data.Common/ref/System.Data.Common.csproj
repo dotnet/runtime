@@ -12,6 +12,9 @@
   <ItemGroup>
     <Compile Include="System.Data.Common.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="System.Data.Common.netcoreapp.cs"/>
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
