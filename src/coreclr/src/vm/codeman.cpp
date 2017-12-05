@@ -1432,9 +1432,22 @@ void EEJitManager::SetCpuInfo()
             {
                 CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD);
             }
+
+            if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SIMD16ByteOnly) != 0)
+            {
+                CPUCompileFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX2);
+            }
         }
     }
 #endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+
+#if defined(_TARGET_ARM64_)
+    static ConfigDWORD fFeatureSIMD;
+    if (fFeatureSIMD.val(CLRConfig::EXTERNAL_FeatureSIMD) != 0)
+    {
+        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD);
+    }
+#endif
 
     m_CPUCompileFlags = CPUCompileFlags;
 }
