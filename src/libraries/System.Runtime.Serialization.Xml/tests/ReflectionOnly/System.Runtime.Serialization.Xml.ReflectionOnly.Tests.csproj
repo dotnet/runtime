@@ -22,6 +22,9 @@
     <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
       <Link>Common\System\IO\TempFile.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\DataContractSerializerHelper.cs">
+      <Link>Common\System\Runtime\Serialization\DataContractSerializerHelper.cs</Link>
+    </Compile>
     <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\ObjRefSample.cs">
       <Link>SerializationTestTypes\ObjRefSample.cs</Link>
     </Compile>
