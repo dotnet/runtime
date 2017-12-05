@@ -15,8 +15,6 @@ namespace System.IO
         private const char InvalidPathChar = '\0';
         internal static char[] GetInvalidPathChars() => new char[] { InvalidPathChar };
 
-        internal static readonly int MaxComponentLength = Interop.Sys.MaxName;
-
         internal const string ParentDirectoryPrefix = @"../";
 
         internal static int GetRootLength(ReadOnlySpan<char> path)
