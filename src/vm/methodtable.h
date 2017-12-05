@@ -2548,6 +2548,14 @@ public:
         UINT32         slotNumber, 
         DispatchSlot * pImplSlot);
 
+
+#ifndef DACCESS_COMPILE
+    BOOL FindDefaultInterfaceImplementation(
+        MethodDesc *pInterfaceMD,
+        MethodTable *pObjectMT,
+        MethodDesc **ppDefaultMethod);
+#endif // DACCESS_COMPILE
+
     DispatchSlot FindDispatchSlot(UINT32 typeID, UINT32 slotNumber);
 
     DispatchSlot FindDispatchSlot(DispatchToken tok);
