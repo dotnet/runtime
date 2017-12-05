@@ -81,7 +81,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ActiveIssue(25639, TestPlatforms.OSX)]
+        [ActiveIssue(25639)]
         [Fact]
         public void IOControl_SIOCATMARK_Success()
         {
