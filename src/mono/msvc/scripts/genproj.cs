@@ -756,7 +756,8 @@ class MsbuildGenerator {
 
 			sources.AppendFormat ("    <Compile Include=\"{0}\" />" + NewLine, src);
 		}
-		sources.Remove (sources.Length - 1, 1);
+		if (sources.Length > 1)
+			sources.Remove (sources.Length - 1, 1);
 
 		//if (library == "corlib-build") // otherwise, does not compile on fx_version == 4.0
 		//{
