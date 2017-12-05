@@ -619,6 +619,8 @@ namespace System.Net.Sockets.Tests
                             bytesSent += sent;
                             sentChecksum.Add(sendBuffer, 0, sent);
                         }
+
+                        client.Shutdown(SocketShutdown.Send);
                     }
                 });
 
@@ -869,6 +871,8 @@ namespace System.Net.Sockets.Tests
 
                         Assert.Equal(SegmentCount, bytesSent);
                         Assert.Equal(SocketError.Success, error);
+
+                        acceptSocket.Shutdown(SocketShutdown.Send);
                     }
                 });
 
