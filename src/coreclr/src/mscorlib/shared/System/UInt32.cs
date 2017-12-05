@@ -96,10 +96,6 @@ namespace System
             return Number.FormatUInt32(m_value, format, provider);
         }
 
-        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
-        public bool TryFormat(Span<char> destination, out int charsWritten, string format, IFormatProvider provider) =>
-            TryFormat(destination, out charsWritten, (ReadOnlySpan<char>)format, provider);
-
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider provider = null)
         {
             return Number.TryFormatUInt32(m_value, format, provider, destination, out charsWritten);

@@ -305,12 +305,6 @@ namespace System
                 input != null ? (ReadOnlySpan<char>)input : throw new ArgumentNullException(nameof(input)),
                 format != null ? (ReadOnlySpan<char>)format : throw new ArgumentNullException(nameof(format)));
 
-        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
-        public static Guid ParseExact(ReadOnlySpan<char> input, string format) =>
-            ParseExact(
-                input,
-                format != null ? (ReadOnlySpan<char>)format : throw new ArgumentNullException(nameof(format)));
-
         public static Guid ParseExact(ReadOnlySpan<char> input, ReadOnlySpan<char> format)
         {
             if (format.Length != 1)
@@ -368,10 +362,6 @@ namespace System
 
             return TryParseExact((ReadOnlySpan<char>)input, format, out result);
         }
-
-        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
-        public static bool TryParseExact(ReadOnlySpan<char> input, string format, out Guid result) =>
-            TryParseExact(input, (ReadOnlySpan<char>)format, out result);
 
         public static bool TryParseExact(ReadOnlySpan<char> input, ReadOnlySpan<char> format, out Guid result)
         {
@@ -1313,10 +1303,6 @@ namespace System
 
             return guidString;
         }
-
-        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
-        public bool TryFormat(Span<char> destination, out int charsWritten, string format) =>
-            TryFormat(destination, out charsWritten, (ReadOnlySpan<char>)format);
 
         // Returns whether the guid is successfully formatted as a span. 
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default)
