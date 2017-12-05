@@ -501,10 +501,6 @@ namespace System
             return Number.FormatDecimal(this, format, NumberFormatInfo.GetInstance(provider));
         }
 
-        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
-        public bool TryFormat(Span<char> destination, out int charsWritten, string format, IFormatProvider provider) =>
-            TryFormat(destination, out charsWritten, (ReadOnlySpan<char>)format, provider);
-
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider provider = null)
         {
             return Number.TryFormatDecimal(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);

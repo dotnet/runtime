@@ -344,13 +344,6 @@ namespace System
             return TimeSpanParse.ParseExact(input, format, formatProvider, styles);
         }
 
-        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
-        public static TimeSpan ParseExact(ReadOnlySpan<char> input, string format, IFormatProvider formatProvider, TimeSpanStyles styles)
-        {
-            if (format == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.format);
-            return TimeSpanParse.ParseExact(input, format, formatProvider, styles);
-        }
-
         public static TimeSpan ParseExact(ReadOnlySpan<char> input, ReadOnlySpan<char> format, IFormatProvider formatProvider, TimeSpanStyles styles = TimeSpanStyles.None)
         {
             ValidateStyles(styles, nameof(styles));
@@ -404,18 +397,6 @@ namespace System
             return TimeSpanParse.TryParseExact(input, format, formatProvider, TimeSpanStyles.None, out result);
         }
 
-        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
-        public static bool TryParseExact(ReadOnlySpan<char> input, string format, IFormatProvider formatProvider, out TimeSpan result)
-        {
-            if (format == null)
-            {
-                result = default;
-                return false;
-            }
-
-            return TryParseExact(input, (ReadOnlySpan<char>)format, formatProvider, out result);
-        }
-
         public static bool TryParseExact(ReadOnlySpan<char> input, ReadOnlySpan<char> format, IFormatProvider formatProvider, out TimeSpan result)
         {
             return TimeSpanParse.TryParseExact(input, format, formatProvider, TimeSpanStyles.None, out result);
@@ -438,18 +419,6 @@ namespace System
         {
             ValidateStyles(styles, nameof(styles));
             if (input == null || format == null)
-            {
-                result = default;
-                return false;
-            }
-
-            return TimeSpanParse.TryParseExact(input, format, formatProvider, styles, out result);
-        }
-
-        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
-        public static bool TryParseExact(ReadOnlySpan<char> input, string format, IFormatProvider formatProvider, TimeSpanStyles styles, out TimeSpan result)
-        {
-            if (format == null)
             {
                 result = default;
                 return false;
@@ -491,10 +460,6 @@ namespace System
         {
             return TimeSpanFormat.Format(this, format, formatProvider);
         }
-
-        // TODO https://github.com/dotnet/corefx/issues/23642: Remove once corefx has been updated with new overloads.
-        public bool TryFormat(Span<char> destination, out int charsWritten, string format, IFormatProvider formatProvider) =>
-            TryFormat(destination, out charsWritten, (ReadOnlySpan<char>)format, formatProvider);
 
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider formatProvider = null)
         {
