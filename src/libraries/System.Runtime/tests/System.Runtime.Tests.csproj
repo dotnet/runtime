@@ -213,6 +213,7 @@
     <Compile Include="System\Reflection\TypeInfoTests.netcoreapp.cs" />
     <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTableTests.netcoreapp.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpersTests.netcoreapp.cs" />
+    <Compile Include="System\Runtime\CompilerServices\RuntimeWrappedExceptionTests.cs" />
     <Compile Include="System\Runtime\ExceptionServices\ExceptionDispatchInfoTests.netcoreapp.cs" />
     <Compile Include="System\Text\StringBuilderTests.netcoreapp.cs" />
   </ItemGroup>
