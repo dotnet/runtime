@@ -634,16 +634,17 @@ namespace System.Net
                 Debug.Assert(scopeWritten);
 
                 hashCode = Marvin.ComputeHash32(
-                    ref addressAndScopeIdSpan[0],
-                    addressAndScopeIdLength,
+                    addressAndScopeIdSpan,
                     Marvin.DefaultSeed);
             }
             else
             {
+                Span<uint> addressOrScopeIdSpan = stackalloc uint[1];
+                addressOrScopeIdSpan[0] = _addressOrScopeId;
+ 
                 // For IPv4 addresses, we use Marvin on the integer representation of the Address.
                 hashCode = Marvin.ComputeHash32(
-                    ref Unsafe.As<uint, byte>(ref _addressOrScopeId),
-                    sizeof(uint),
+                    addressOrScopeIdSpan.AsBytes(),
                     Marvin.DefaultSeed);
             }
 

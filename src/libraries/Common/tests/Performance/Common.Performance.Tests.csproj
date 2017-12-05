@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <IncludePerformanceTests>true</IncludePerformanceTests>
+    <ProjectGuid>{B96198F5-9BF7-42DE-83E8-3EE39DA25F43}</ProjectGuid>
+    <DisableTests Condition="'$(TargetGroup)' == 'uap' AND ('$(ArchGroup)' == 'arm' OR '$(ArchGroup)' == 'arm64')">true</DisableTests>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(DisableTests)' != 'true'">
+    <Compile Include="$(CommonPath)\System\Marvin.cs">
+      <Link>Common\System\Marvin.cs</Link>
+    </Compile>
+    <Compile Include="Perf.Marvin.cs" />
+    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
+      <Link>Common\System\PerfUtils.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(DisableTests)' != 'true'">
+    <ProjectReference Include="$(CommonPath)\..\perf\PerfRunner\PerfRunner.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>PerfRunner</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
