@@ -2,24 +2,26 @@
   "runtimes": {
     "alpine": {
       "#import": [
-        "any"
+        "unix"
       ]
     },
     "alpine-corert": {
       "#import": [
         "alpine",
-        "corert"
+        "unix-corert"
       ]
     },
     "alpine-x64": {
       "#import": [
-        "alpine"
+        "alpine",
+        "unix-x64"
       ]
     },
     "alpine-x64-corert": {
       "#import": [
         "alpine-corert",
-        "alpine-x64"
+        "alpine-x64",
+        "unix-x64-corert"
       ]
     },
     "alpine.3.6": {
