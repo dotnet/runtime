@@ -73,6 +73,7 @@ monoutils_sources = \
 	mono-proclib.h		\
 	mono-proclib-windows-internals.h		\
 	mono-publib.c		\
+	mono-jemalloc.c		\
 	mono-string.h		\
 	mono-time.c  		\
 	mono-time.h  		\
@@ -262,13 +263,21 @@ arch_sources += mono-hwcap-cross.c
 endif
 
 libmonoutils_la_SOURCES = $(monoutils_sources) $(arch_sources)
+libmonoutils_la_CFLAGS = $(JEMALLOC_CFLAGS)
+libmonoutils_la_LDFLAGS = $(JEMALLOC_LDFLAGS)
 libmonoutilsincludedir = $(includedir)/mono-$(API_VER)/mono/utils
 
 libmonoutilsinclude_HEADERS = 	\
 	mono-logger.h		\
 	mono-error.h		\
 	mono-publib.h		\
+	mono-jemalloc.h		\
 	mono-dl-fallback.h	\
 	mono-counters.h
 
 EXTRA_DIST = mono-embed.h mono-embed.c
+
+if MONO_JEMALLOC_ENABLED
+SUBDIRS = jemalloc
+DIST_SUBDIRS = jemalloc
+endif
