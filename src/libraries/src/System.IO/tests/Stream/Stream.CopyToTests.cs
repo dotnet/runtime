@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public class StreamCopyToTests
+    public partial class StreamCopyToTests
     {
         [Fact]
         public void IfCanSeekIsFalseLengthAndPositionShouldNotBeCalled()
