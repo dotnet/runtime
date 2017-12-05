@@ -469,10 +469,10 @@ namespace System.Numerics
         }
 
         // This function is consistent with VM\COMNumber.cpp!COMNumber::ParseFormatSpecifier
-        internal static char ParseFormatSpecifier(string format, out int digits)
+        internal static char ParseFormatSpecifier(ReadOnlySpan<char> format, out int digits)
         {
             digits = -1;
-            if (string.IsNullOrEmpty(format))
+            if (format.Length == 0)
             {
                 return 'R';
             }
@@ -589,19 +589,24 @@ namespace System.Numerics
 
         internal static string FormatBigInteger(BigInteger value, string format, NumberFormatInfo info)
         {
-            return FormatBigInteger(targetSpan: false, value, format, info, default, out _, out _);
+            return FormatBigInteger(targetSpan: false, value, format, format, info, default, out _, out _);
         }
 
-        internal static bool TryFormatBigInteger(BigInteger value, string format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
+        internal static bool TryFormatBigInteger(BigInteger value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
         {
-            FormatBigInteger(targetSpan: true, value, format, info, destination, out charsWritten, out bool spanSuccess);
+            FormatBigInteger(targetSpan: true, value, null, format, info, destination, out charsWritten, out bool spanSuccess);
             return spanSuccess;
         }
 
-        private static string FormatBigInteger(bool targetSpan, BigInteger value, string format, NumberFormatInfo info, Span<char> destination, out int charsWritten, out bool spanSuccess)
+        private static string FormatBigInteger(
+            bool targetSpan, BigInteger value,
+            string formatString, ReadOnlySpan<char> formatSpan,
+            NumberFormatInfo info, Span<char> destination, out int charsWritten, out bool spanSuccess)
         {
+            Debug.Assert(formatString == null || formatString.Length == formatSpan.Length);
+
             int digits = 0;
-            char fmt = ParseFormatSpecifier(format, out digits);
+            char fmt = ParseFormatSpecifier(formatSpan, out digits);
             if (fmt == 'x' || fmt == 'X')
             {
                 return FormatBigIntegerToHex(targetSpan, value, fmt, digits, info, destination, out charsWritten, out spanSuccess);
@@ -612,19 +617,19 @@ namespace System.Numerics
             {
                 if (fmt == 'g' || fmt == 'G' || fmt == 'r' || fmt == 'R')
                 {
-                    format = digits > 0 ? string.Format("D{0}", digits) : "D";
+                    formatSpan = formatString = digits > 0 ? string.Format("D{0}", digits) : "D";
                 }
 
                 if (targetSpan)
                 {
-                    spanSuccess = value._sign.TryFormat(destination, out charsWritten, format, info);
+                    spanSuccess = value._sign.TryFormat(destination, out charsWritten, formatSpan, info);
                     return null;
                 }
                 else
                 {
                     charsWritten = 0;
                     spanSuccess = false;
-                    return value._sign.ToString(format, info);
+                    return value._sign.ToString(formatString, info);
                 }
             }
 
@@ -725,7 +730,7 @@ namespace System.Numerics
 
                 Span<char> stackSpace = stackalloc char[128]; // arbitrary stack cut-off
                 var sb = new ValueStringBuilder(stackSpace);
-                FormatProvider.FormatBigInteger(ref sb, precision, scale, sign, format, info, rgch, ichDst);
+                FormatProvider.FormatBigInteger(ref sb, precision, scale, sign, formatSpan, info, rgch, ichDst);
 
                 if (targetSpan)
                 {

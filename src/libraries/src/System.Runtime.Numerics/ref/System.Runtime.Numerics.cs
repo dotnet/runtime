@@ -158,7 +158,7 @@ namespace System.Numerics
         public string ToString(System.IFormatProvider provider) { throw null; }
         public string ToString(string format) { throw null; }
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
-        public bool TryFormat(Span<char> destination, out int charsWritten, string format = default, IFormatProvider provider = null) { throw null; }
+        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider provider = null) { throw null; }
         public static bool TryParse(string value, System.Globalization.NumberStyles style, System.IFormatProvider provider, out System.Numerics.BigInteger result) { throw null; }
         public static bool TryParse(string value, out System.Numerics.BigInteger result) { throw null; }
         public static bool TryParse(ReadOnlySpan<char> value, out System.Numerics.BigInteger result) { throw null; }
