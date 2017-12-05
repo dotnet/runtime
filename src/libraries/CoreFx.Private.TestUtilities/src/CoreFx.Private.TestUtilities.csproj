@@ -42,6 +42,7 @@
     <Compile Include="System\TheoryExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="System.Memory" />
     <Reference Include="Microsoft.Win32.Registry" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.IO.FileSystem" />
@@ -93,6 +94,9 @@
     <Compile Include="System\AdminHelpers.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs</Link>
+    </Compile>
     <Compile Include="System\AdminHelpers.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEUid.cs">
       <Link>Common\Interop\Unix\Interop.GetEUid.cs</Link>
