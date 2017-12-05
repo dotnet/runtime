@@ -1636,7 +1636,11 @@ BOOL MethodDesc::IsSharedByGenericMethodInstantiations()
 // Does this method require an extra MethodTable argument for instantiation information?
 // This is the case for
 // * per-inst static methods in shared-code instantiated generic classes (e.g. static void MyClass<string>::m())
+//     - there is no this pointer providing generic dictionary info
 // * shared-code instance methods in instantiated generic structs (e.g. void MyValueType<string>::m())
+//     - unboxed 'this' pointer in value-type instance methods don't have MethodTable pointer by definition
+// * default interface method called via interface dispatch (e. g. IFoo<string>.Foo calling into IFoo<object>::Foo())
+//     - this pointer is ambiguous as it can implement more than one IFoo<T>
 BOOL MethodDesc::RequiresInstMethodTableArg() 
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -1644,7 +1648,7 @@ BOOL MethodDesc::RequiresInstMethodTableArg()
     return
         IsSharedByGenericInstantiations() &&
         !HasMethodInstantiation() &&
-        (IsStatic() || GetMethodTable()->IsValueType());
+        (IsStatic() || GetMethodTable()->IsValueType() || IsDefaultInterfaceMethod());
 }
 
 //*******************************************************************************
@@ -1666,7 +1670,7 @@ BOOL MethodDesc::RequiresInstArg()
     LIMITED_METHOD_DAC_CONTRACT;
 
     BOOL fRet = IsSharedByGenericInstantiations() &&
-        (HasMethodInstantiation() || IsStatic() || GetMethodTable()->IsValueType());
+        (HasMethodInstantiation() || IsStatic() || GetMethodTable()->IsValueType() || IsDefaultInterfaceMethod());
 
     _ASSERT(fRet == (RequiresInstMethodTableArg() || RequiresInstMethodDescArg()));
     return fRet;
@@ -1742,7 +1746,8 @@ BOOL MethodDesc::AcquiresInstMethodTableFromThis() {
         IsSharedByGenericInstantiations()  &&
         !HasMethodInstantiation() &&
         !IsStatic() &&
-        !GetMethodTable()->IsValueType();
+        !GetMethodTable()->IsValueType() &&
+        !IsDefaultInterfaceMethod();
 }
 
 //*******************************************************************************
@@ -2430,7 +2435,7 @@ BOOL MethodDesc::RequiresStableEntryPoint(BOOL fEstimateForChunk /*=FALSE*/)
             return TRUE;
 
         // TODO: Can we avoid early allocation of precodes for interfaces and cominterop?
-        if ((IsInterface() && !IsStatic()) || IsComPlusCall())
+        if ((IsInterface() && !IsStatic() && IsVirtual()) || IsComPlusCall())
             return TRUE;
     }
 
@@ -2526,7 +2531,7 @@ BOOL MethodDesc::MayHaveNativeCode()
 
     _ASSERTE(IsIL());
 
-    if ((IsInterface() && !IsStatic()) || IsWrapperStub() || ContainsGenericVariables() || IsAbstract())
+    if ((IsInterface() && !IsStatic() && IsVirtual() && IsAbstract()) || IsWrapperStub() || ContainsGenericVariables() || IsAbstract())
     {
         return FALSE;
     }
@@ -4822,6 +4827,11 @@ BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
 
         return FastInterlockCompareExchangePointer(EnsureWritablePages(reinterpret_cast<TADDR*>(pSlot)),
             (TADDR&)value, (TADDR&)expected) == (TADDR&)expected;
+    }
+    
+    if (IsDefaultInterfaceMethod() && HasPrecode())
+    {        
+        return GetPrecode()->SetTargetInterlocked(addr);
     }
 
     _ASSERTE(pExpected == NULL);
