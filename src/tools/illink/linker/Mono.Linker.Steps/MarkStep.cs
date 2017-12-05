@@ -1433,7 +1433,7 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		bool ShouldParseMethodBody (MethodDefinition method)
+		protected virtual bool ShouldParseMethodBody (MethodDefinition method)
 		{
 			if (!method.HasBody)
 				return false;

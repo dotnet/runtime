@@ -356,10 +356,15 @@ namespace Mono.Linker.Steps {
 		protected void SweepCollection<T> (IList<T> list) where T : IMetadataTokenProvider
 		{
 			for (int i = 0; i < list.Count; i++)
-				if (!Annotations.IsMarked (list [i])) {
+				if (ShouldRemove (list [i])) {
 					ElementRemoved (list [i]);
 					list.RemoveAt (i--);
 				}
+		}
+
+		protected virtual bool ShouldRemove<T> (T element) where T : IMetadataTokenProvider
+		{
+			return !Annotations.IsMarked (element);
 		}
 
 		static bool AreSameReference (AssemblyNameReference a, AssemblyNameReference b)

@@ -8,7 +8,7 @@ using Mono.Linker.Tests.Extensions;
 using NUnit.Framework;
 
 namespace Mono.Linker.Tests.TestCasesRunner {
-	class AssemblyChecker {
+	public class AssemblyChecker {
 		readonly AssemblyDefinition originalAssembly, linkedAssembly;
 
 		HashSet<string> linkedMembers;
@@ -248,9 +248,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		void VerifyMethod (MethodDefinition src, MethodDefinition linked)
 		{
-			var srcSignature = src.GetSignature ();
-			bool expectedKept = ShouldBeKept (src, srcSignature) || (linked != null && linked.DeclaringType.Module.EntryPoint == linked);
-
+			bool expectedKept = ShouldMethodBeKept (src);
 			VerifyMethodInternal (src, linked, expectedKept);
 		}
 
@@ -264,13 +262,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				return;
 			}
 
-			if (linked == null)
-				Assert.Fail ($"Method `{src.FullName}' should have been kept");
-
-			Assert.AreEqual (src?.Attributes, linked?.Attributes, $"Method `{src}' attributes");
-
-			VerifyGenericParameters (src, linked);
-			VerifyCustomAttributes (src, linked);
+			VerifyMethodKept (src, linked);
 		}
 
 		void VerifyMemberBackingField (IMemberDefinition src, TypeDefinition linkedType)
@@ -298,6 +290,17 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			VerifyFieldKept (srcField, linkedType?.Fields.FirstOrDefault (l => srcField.Name == l.Name));
 			verifiedBackingFields.Add (srcField.FullName);
 			linkedMembers.Remove (srcField.FullName);
+		}
+
+		protected virtual void VerifyMethodKept (MethodDefinition src, MethodDefinition linked)
+		{
+			if (linked == null)
+				Assert.Fail ($"Method `{src.FullName}' should have been kept");
+
+			Assert.AreEqual (src?.Attributes, linked.Attributes, $"Method `{src}' attributes");
+
+			VerifyGenericParameters (src, linked);
+			VerifyCustomAttributes (src, linked);
 		}
 
 		void VerifyResources (AssemblyDefinition original, AssemblyDefinition linked)
@@ -340,7 +343,13 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			}
 		}
 
-		static bool ShouldBeKept<T> (T member, string signature = null) where T : MemberReference, ICustomAttributeProvider
+		protected virtual bool ShouldMethodBeKept (MethodDefinition method)
+		{
+			var srcSignature = method.GetSignature ();
+			return ShouldBeKept (method, srcSignature) || method.DeclaringType.Module.EntryPoint == method;
+		}
+
+		protected virtual bool ShouldBeKept<T> (T member, string signature = null) where T : MemberReference, ICustomAttributeProvider
 		{
 			if (member.HasAttribute (nameof (KeptAttribute)))
 				return true;
@@ -352,7 +361,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			return GetCustomAttributeCtorValues<string> (cap, nameof (KeptMemberAttribute)).Any (a => a == (signature ?? member.Name));
 		}
 
-		static IEnumerable<T> GetCustomAttributeCtorValues<T> (ICustomAttributeProvider provider, string attributeName) where T : class
+		protected static IEnumerable<T> GetCustomAttributeCtorValues<T> (ICustomAttributeProvider provider, string attributeName) where T : class
 		{
 			return provider.CustomAttributes.
 							Where (w => w.AttributeType.Name == attributeName && w.Constructor.Parameters.Count == 1).

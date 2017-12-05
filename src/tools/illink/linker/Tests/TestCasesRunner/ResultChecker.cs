@@ -39,7 +39,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 				var linked = ResolveLinkedAssembly (linkResult.OutputAssemblyPath.FileNameWithoutExtension);
 
-				new AssemblyChecker (original, linked).Verify ();
+				CreateAssemblyChecker (original, linked).Verify ();
 
 				VerifyLinkingOfOtherAssemblies (original);
 
@@ -52,6 +52,11 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				_originalsResolver.Dispose ();
 				_linkedResolver.Dispose ();
 			}
+		}
+
+		protected virtual AssemblyChecker CreateAssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked)
+		{
+			return new AssemblyChecker (original, linked);
 		}
 
 		void InitializeResolvers (LinkedTestCaseResult linkedResult)
