@@ -29,7 +29,7 @@ namespace Tests.System
         public void ComputeHash_Success(ulong seed, string testDataString, ulong expectedHash)
         {
             var testDataSpan = new Span<byte>(testDataString.HexToByteArray());
-            long hash = Marvin.ComputeHash(ref testDataSpan.DangerousGetPinnableReference(), testDataSpan.Length, seed);
+            long hash = Marvin.ComputeHash(testDataSpan, seed);
             Assert.Equal((long)expectedHash, hash);
         }
 
