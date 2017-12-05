@@ -100,10 +100,14 @@ namespace System.Numerics.Tests
             RunStandardFormatToStringTests(s_random, "D", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 0, DecimalFormatter);
             RunStandardFormatToStringTests(s_random, "d0", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 0, DecimalFormatter);
             RunStandardFormatToStringTests(s_random, "D1", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 1, DecimalFormatter);
+            RunStandardFormatToStringTests(s_random, "D0000001", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 1, DecimalFormatter);
             RunStandardFormatToStringTests(s_random, "d2", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 2, DecimalFormatter);
             RunStandardFormatToStringTests(s_random, "D5", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 5, DecimalFormatter);
             RunStandardFormatToStringTests(s_random, "d33", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 33, DecimalFormatter);
             RunStandardFormatToStringTests(s_random, "D99", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 99, DecimalFormatter);
+            RunStandardFormatToStringTests(s_random, "D\0", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 0, DecimalFormatter);
+            RunStandardFormatToStringTests(s_random, "D4\0", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 4, DecimalFormatter);
+            RunStandardFormatToStringTests(s_random, "D4\0Z", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 4, DecimalFormatter);
 
             // Exponential (note: negative precision means lower case e)
             RunStandardFormatToStringTests(s_random, "E", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 6, ExponentialFormatter);
@@ -180,7 +184,7 @@ namespace System.Numerics.Tests
                 VerifyToString(test, format, null, true, null);
             }
         }
-        
+
         [Fact]
         public static void RunRegionSpecificStandardFormatToStringTests()
         {
