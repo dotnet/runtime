@@ -504,17 +504,6 @@ extern "C" int64_t SystemNative_PathConf(const char* path, PathConfName name)
     return pathconf(path, confValue);
 }
 
-extern "C" int64_t SystemNative_GetMaximumPath()
-{
-    int64_t result = pathconf("/", _PC_PATH_MAX);
-    if (result == -1)
-    {
-        result = PATH_MAX;
-    }
-
-    return result;
-}
-
 extern "C" int32_t SystemNative_GetPriority(PriorityWhich which, int32_t who)
 {
     // GetPriority uses errno 0 to show success to make sure we don't have a stale value
