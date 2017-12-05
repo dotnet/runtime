@@ -27,6 +27,12 @@ namespace System.IO.Packaging
     /// </summary>
     internal class InternalRelationshipCollection : IEnumerable<PackageRelationship>
     {
+        // Mono will parse a URI starting with '/' as an absolute URI, while .NET Core and
+        // .NET Framework will parse this as relative. This will break internal relationships
+        // in packaging. For more information, see
+        // http://www.mono-project.com/docs/faq/known-issues/urikind-relativeorabsolute/
+        private static readonly UriKind DotNetRelativeOrAbsolute = Type.GetType ("Mono.Runtime") == null ? UriKind.RelativeOrAbsolute : (UriKind)300;
+
         #region IEnumerable
         /// <summary>
         /// Returns an enumerator over all the relationships for a Package or a PackagePart
@@ -354,7 +360,7 @@ namespace System.IO.Packaging
             if (string.IsNullOrEmpty(targetAttributeValue))
                 throw new XmlException(SR.Format(SR.RequiredRelationshipAttributeMissing, s_targetAttributeName), null, reader.LineNumber, reader.LinePosition);
 
-            Uri targetUri = new Uri(targetAttributeValue, UriKind.RelativeOrAbsolute);
+            Uri targetUri = new Uri(targetAttributeValue, DotNetRelativeOrAbsolute);
 
             // Attribute : Type
             string typeAttributeValue = reader.GetAttribute(s_typeAttributeName);
