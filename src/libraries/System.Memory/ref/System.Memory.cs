@@ -346,9 +346,9 @@ namespace System.Buffers
 {
     public readonly struct StandardFormat : IEquatable<StandardFormat>
     {
-        public const byte MaxPrecision = (byte)99;
-        public const byte NoPrecision = (byte)255;
-        public StandardFormat(char symbol, byte precision=(byte)255) => throw null;
+        public const byte MaxPrecision = 99;
+        public const byte NoPrecision = 255;
+        public StandardFormat(char symbol, byte precision= 255) => throw null;
         public bool HasPrecision => throw null;
         public bool IsDefault => throw null;
         public byte Precision => throw null;

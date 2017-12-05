@@ -32,5 +32,8 @@ namespace System.Buffers.Text
 
         public const int DateTimeNumFractionDigits = 7;  // TimeSpan and DateTime formats allow exactly up to many digits for specifying the fraction after the seconds.
         public const int MaxDateTimeFraction = 9999999;  // ... and hence, the largest fraction expressible is this.
+
+        public const ulong BillionMaxUIntValue = (ulong)uint.MaxValue * Billion; // maximum value that can be split into two uint32 {1-10 digits}{9 digits}
+        public const uint Billion = 1000000000; // 10^9, used to split int64/uint64 into three uint32 {1-2 digits}{9 digits}{9 digits}
     }
 }

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace System.Buffers.Text
@@ -15,6 +14,7 @@ namespace System.Buffers.Text
         //
         // Common worker for all signed integer TryFormat overloads
         //
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryFormatInt64(long value, ulong mask, Span<byte> buffer, out int bytesWritten, StandardFormat format)
         {
             if (format.IsDefault)

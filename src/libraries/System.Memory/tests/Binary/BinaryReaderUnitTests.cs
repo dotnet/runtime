@@ -7,7 +7,6 @@ using System.Runtime.InteropServices;
 using Xunit;
 
 using static System.Buffers.Binary.BinaryPrimitives;
-using static System.TestHelpers;
 
 namespace System.Buffers.Binary.Tests
 {
