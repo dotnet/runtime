@@ -2459,7 +2459,7 @@ namespace System
                     IntPtr gcHandle = Interlocked.CompareExchange(ref m_cache, newgcHandle, IntPtr.Zero);
                     // Leak the handle if the type is collectible. It will be reclaimed when
                     // the type goes away.
-                    if (gcHandle != IntPtr.Zero && !IsCollectible())
+                    if (gcHandle != IntPtr.Zero && !IsCollectible)
                         GCHandle.InternalFree(newgcHandle);
                 }
 
@@ -3151,10 +3151,7 @@ namespace System
             return new RuntimeTypeHandle(this);
         }
 
-        internal bool IsCollectible()
-        {
-            return RuntimeTypeHandle.IsCollectible(GetTypeHandleInternal());
-        }
+        public sealed override bool IsCollectible => RuntimeTypeHandle.IsCollectible(GetTypeHandleInternal());
 
         protected override TypeCode GetTypeCodeImpl()
         {
