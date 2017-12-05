@@ -112,6 +112,9 @@ namespace System.Reflection
         protected override bool IsCOMObjectImpl() => typeImpl.IsCOMObject;
         public override bool IsByRefLike => typeImpl.IsByRefLike;
         public override bool IsConstructedGenericType => typeImpl.IsConstructedGenericType;
+
+        public override bool IsCollectible => typeImpl.IsCollectible;
+
         public override Type GetElementType() => typeImpl.GetElementType();
         protected override bool HasElementTypeImpl() => typeImpl.HasElementType;
 
