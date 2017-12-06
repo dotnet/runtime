@@ -132,10 +132,14 @@ def static getOSGroup(def os) {
                         builder.triggerForBranch(branch)
                         builder.emitTrigger(newJob)
                     }
-                    else {
+                    else if (opt_level == 'full_opt') {
                         // Set a push trigger
                         TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
                         builder.emitTrigger(newJob)
+                    }
+                    else {
+                        // Set periodic trigger
+                        Utilities.addPeriodicTrigger(newJob, '@daily')
                     }
                 }
             }
@@ -231,10 +235,14 @@ def static getOSGroup(def os) {
                             builder.triggerForBranch(branch)
                             builder.emitTrigger(newJob)
                         }
-                        else {
+                        else if (opt_level == 'full_opt' && pgo_optimized) {
                             // Set a push trigger
                             TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
                             builder.emitTrigger(newJob)
+                        }
+                        else {
+                            // Set periodic trigger
+                            Utilities.addPeriodicTrigger(newJob, '@daily')
                         }
                     }
                 }
@@ -632,10 +640,14 @@ parallel(
                         builder.triggerForBranch(branch)
                         builder.emitTrigger(newJob)
                     }
-                    else {
+                    else if (opt_level == 'full_opt') {
                         // Set a push trigger
                         TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
                         builder.emitTrigger(newJob)
+                    }
+                    else {
+                        // Set periodic trigger
+                        Utilities.addPeriodicTrigger(newJob, '@daily')
                     }
                 }
             }
