@@ -6262,37 +6262,34 @@ method_from_method_def_or_ref (MonoImage *m, guint32 tok, MonoGenericContext *co
 /*
  * mono_class_get_overrides_full:
  *
- *   Return the method overrides belonging to class @type_token in @overrides, and
- * the number of overrides in @num_overrides.
+ *  Compute the method overrides belonging to class @type_token in @overrides, and the number of overrides in @num_overrides.
  *
- * Returns: TRUE on success, FALSE on failure.
  */
-gboolean
-mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod ***overrides, gint32 *num_overrides,
-			       MonoGenericContext *generic_context)
+void
+mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod ***overrides, gint32 *num_overrides, MonoGenericContext *generic_context, MonoError *error)
 {
-	MonoError error;
 	locator_t loc;
 	MonoTableInfo *tdef  = &image->tables [MONO_TABLE_METHODIMPL];
 	guint32 start, end;
 	gint32 i, num;
 	guint32 cols [MONO_METHODIMPL_SIZE];
 	MonoMethod **result;
-	gint32 ok = TRUE;
 	
+	error_init (error)
+
 	*overrides = NULL;
 	if (num_overrides)
 		*num_overrides = 0;
 
 	if (!tdef->base)
-		return TRUE;
+		return;
 
 	loc.t = tdef;
 	loc.col_idx = MONO_METHODIMPL_CLASS;
 	loc.idx = mono_metadata_token_index (type_token);
 
 	if (!mono_binary_search (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator))
-		return TRUE;
+		return;
 
 	start = loc.result;
 	end = start + 1;
@@ -6316,33 +6313,32 @@ mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod 
 	for (i = 0; i < num; ++i) {
 		MonoMethod *method;
 
-		if (!mono_verifier_verify_methodimpl_row (image, start + i, &error)) {
-			mono_error_cleanup (&error); /* FIXME don't swallow the error */
-			ok = FALSE;
+		if (!mono_verifier_verify_methodimpl_row (image, start + i, error))
 			break;
-		}
 
 		mono_metadata_decode_row (tdef, start + i, cols, MONO_METHODIMPL_SIZE);
-		method = method_from_method_def_or_ref (
-			image, cols [MONO_METHODIMPL_DECLARATION], generic_context, &error);
-		if (method == NULL) {
-			mono_error_cleanup (&error); /* FIXME don't swallow the error */
-			ok = FALSE;
-		}
+		method = method_from_method_def_or_ref (image, cols [MONO_METHODIMPL_DECLARATION], generic_context, error);
+		if (!method)
+			break;
+
 		result [i * 2] = method;
-		method = method_from_method_def_or_ref (
-			image, cols [MONO_METHODIMPL_BODY], generic_context, &error);
-		if (method == NULL) {
-			mono_error_cleanup (&error); /* FIXME don't swallow the error */
-			ok = FALSE;
-		}
+		method = method_from_method_def_or_ref (image, cols [MONO_METHODIMPL_BODY], generic_context, error);
+		if (!method)
+			break;
+
 		result [i * 2 + 1] = method;
 	}
 
-	*overrides = result;
-	if (num_overrides)
-		*num_overrides = num;
-	return ok;
+	if (!is_ok (error)) {
+		g_free (result);
+		*overrides = NULL;
+		if (num_overrides)
+			*num_overrides = 0;
+	} else {
+		*overrides = result;
+		if (num_overrides)
+			*num_overrides = num;
+	}
 }
 
 /**

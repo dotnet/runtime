@@ -956,9 +956,8 @@ mono_class_get_vtable_size (MonoClass *klass);
 gboolean
 mono_class_is_open_constructed_type (MonoType *t);
 
-gboolean
-mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod ***overrides, gint32 *num_overrides,
-			       MonoGenericContext *generic_context);
+void
+mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod ***overrides, gint32 *num_overrides, MonoGenericContext *generic_context, MonoError *error);
 
 MonoMethod*
 mono_class_get_cctor (MonoClass *klass) MONO_LLVM_INTERNAL;
