@@ -35,6 +35,10 @@ def static getOSGroup(def os) {
 // We use this class (vs variables) so that the static functions can access data here.
 class Constants {
 
+    // We have very limited ARM64 hardware (used for ARM/ARMLB/ARM64 testing). So only allow certain branches to use it.
+    def static WindowsArm64Branches = [
+               'master']
+
     // Innerloop build OS's
     // The Windows_NT_BuildOnly OS is a way to speed up the Non-NT builds temporarily by avoiding
     // test execution in the build flow runs.  It generates the exact same build
@@ -615,6 +619,15 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
 }
 
 def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def os, def configuration, def scenario, def isFlowJob, def isWindowsBuildOnlyJob, def bidailyCrossList) {
+
+    // Limited Windows ARM64 hardware is restricted for non-PR triggers to certain branches.
+    if (os == 'Windows_NT') {
+        if ((architecture == 'arm64') || (architecture == 'arm') || (architecture == 'armlb')) {
+            if (!(branch in Constants.WindowsArm64Branches)) {
+                return
+            }
+        }
+    }
 
     // Check scenario.
     switch (scenario) {
