@@ -122,7 +122,7 @@ namespace System
 
         internal static void ThrowKeyNotFoundException(object key)
         {
-            throw new KeyNotFoundException(key.ToString());
+            throw GetKeyNotFoundException(key);
         }
 
         internal static void ThrowArgumentException(ExceptionResource resource)
@@ -301,6 +301,11 @@ namespace System
         private static ArgumentException GetWrongValueTypeArgumentException(object value, Type targetType)
         {
             return new ArgumentException(SR.Format(SR.Arg_WrongType, value, targetType), nameof(value));
+        }
+
+        private static KeyNotFoundException GetKeyNotFoundException(object key)
+        {
+            return new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
         }
 
         internal static ArgumentOutOfRangeException GetArgumentOutOfRangeException(ExceptionArgument argument, ExceptionResource resource)
