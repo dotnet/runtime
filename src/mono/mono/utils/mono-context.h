@@ -247,10 +247,21 @@ typedef struct {
 
 #if !defined( HOST_WIN32 )
 
-#if defined(HAVE_SIGACTION) || defined(__APPLE__)  // the __APPLE__ check is required for the tvos simulator, which has ucontext_t but not sigaction
+// the __APPLE__ check is required for the tvos simulator, which has ucontext_t but not sigaction
+#if defined(HAVE_SIGACTION) || defined(__APPLE__)
 #define MONO_SIGNAL_USE_UCONTEXT_T 1
 #endif
 
+#endif
+
+#ifdef __HAIKU__
+/* sigcontext surrogate */
+struct sigcontext {
+	vregs regs;
+};
+
+// Haiku doesn't support this
+#undef MONO_SIGNAL_USE_UCONTEXT_T
 #endif
 
 typedef struct {

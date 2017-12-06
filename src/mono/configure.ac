@@ -368,8 +368,6 @@ case "$host" in
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		dnl Haiku does not support static TLS with __thread
 		with_tls=pthread
-		dnl Boehm is too much work to backport Haiku support for
-		support_boehm=no
 		libgc_threads=pthreads
 		use_sigposix=yes
 		;;

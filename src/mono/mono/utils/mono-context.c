@@ -233,6 +233,27 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	mctx->gregs [AMD64_R13] = context->R13;
 	mctx->gregs [AMD64_R14] = context->R14;
 	mctx->gregs [AMD64_R15] = context->R15;
+#elif defined(__HAIKU__)
+	// Haiku uses sigcontext because there's no ucontext
+	struct sigcontext *ctx = (struct sigcontext *)sigctx;
+
+	mctx->gregs [AMD64_RIP] = ctx->regs.rip;
+	mctx->gregs [AMD64_RAX] = ctx->regs.rax;
+	mctx->gregs [AMD64_RCX] = ctx->regs.rcx;
+	mctx->gregs [AMD64_RDX] = ctx->regs.rdx;
+	mctx->gregs [AMD64_RBX] = ctx->regs.rbx;
+	mctx->gregs [AMD64_RSP] = ctx->regs.rsp;
+	mctx->gregs [AMD64_RBP] = ctx->regs.rbp;
+	mctx->gregs [AMD64_RSI] = ctx->regs.rsi;
+	mctx->gregs [AMD64_RDI] = ctx->regs.rdi;
+	mctx->gregs [AMD64_R8] = ctx->regs.r8;
+	mctx->gregs [AMD64_R9] = ctx->regs.r9;
+	mctx->gregs [AMD64_R10] = ctx->regs.r10;
+	mctx->gregs [AMD64_R11] = ctx->regs.r11;
+	mctx->gregs [AMD64_R12] = ctx->regs.r12;
+	mctx->gregs [AMD64_R13] = ctx->regs.r13;
+	mctx->gregs [AMD64_R14] = ctx->regs.r14;
+	mctx->gregs [AMD64_R15] = ctx->regs.r15;
 #else
 	g_assert_not_reached ();
 #endif
@@ -305,6 +326,27 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 	context->R13 = mctx->gregs [AMD64_R13];
 	context->R14 = mctx->gregs [AMD64_R14];
 	context->R15 = mctx->gregs [AMD64_R15];
+#elif defined(__HAIKU__)
+	// Haiku uses sigcontext because there's no ucontext
+	struct sigcontext *ctx = (struct sigcontext *)sigctx;
+
+	ctx->regs.rip = mctx->gregs [AMD64_RIP];
+	ctx->regs.rax = mctx->gregs [AMD64_RAX];
+	ctx->regs.rcx = mctx->gregs [AMD64_RCX];
+	ctx->regs.rdx = mctx->gregs [AMD64_RDX];
+	ctx->regs.rbx = mctx->gregs [AMD64_RBX];
+	ctx->regs.rsp = mctx->gregs [AMD64_RSP];
+	ctx->regs.rbp = mctx->gregs [AMD64_RBP];
+	ctx->regs.rsi = mctx->gregs [AMD64_RSI];
+	ctx->regs.rdi = mctx->gregs [AMD64_RDI];
+	ctx->regs.r8 = mctx->gregs [AMD64_R8];
+	ctx->regs.r9 = mctx->gregs [AMD64_R9];
+	ctx->regs.r10 = mctx->gregs [AMD64_R10];
+	ctx->regs.r11 = mctx->gregs [AMD64_R11];
+	ctx->regs.r12 = mctx->gregs [AMD64_R12];
+	ctx->regs.r13 = mctx->gregs [AMD64_R13];
+	ctx->regs.r14 = mctx->gregs [AMD64_R14];
+	ctx->regs.r15 = mctx->gregs [AMD64_R15];
 #else
 	g_assert_not_reached ();
 #endif
