@@ -13337,7 +13337,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             !(prefixFlags & PREFIX_TAILCALL_EXPLICIT) && // User hasn't set "tail." prefix yet.
                             verCheckTailCallConstraint(opcode, &resolvedToken,
                                                        constraintCall ? &constrainedResolvedToken : nullptr,
-                                                       true) // Is it legal to do talcall?
+                                                       true) // Is it legal to do tailcall?
                             )
                         {
                             // Stress the tailcall.
