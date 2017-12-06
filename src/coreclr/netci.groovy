@@ -2604,10 +2604,13 @@ Constants.allScenarios.each { scenario ->
                                     addArchSpecificExclude(architecture, failTag)
                                     addArchSpecificExclude(architecture, excludeTag)
                                 }
-
                                 else {
                                     addExclude("pri1")
                                 }
+
+                                // Exclude any test marked LONG_RUNNING; these often exceed the standard timeout and fail as a result.
+                                // TODO: We should create a "long running" job that runs these with a longer timeout.
+                                addExclude("LONG_RUNNING")
 
                                 smartyCommand += "/lstFile Tests.lst"
 
