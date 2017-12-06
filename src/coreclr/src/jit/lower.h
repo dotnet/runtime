@@ -155,7 +155,7 @@ private:
     GenTree* NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryPtr info, var_types type);
     void LowerArg(GenTreeCall* call, GenTreePtr* ppTree);
 #ifdef _TARGET_ARMARCH_
-    GenTree* LowerFloatArg(GenTree* arg, fgArgTabEntry* info);
+    GenTree* LowerFloatArg(GenTree** pArg, fgArgTabEntry* info);
     GenTree* LowerFloatArgReg(GenTree* arg, regNumber regNum);
 #endif
 
