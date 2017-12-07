@@ -19,12 +19,12 @@ namespace System
             if (span.IsEmpty)
             {   return -1; }
 
-            // TODO: Make `readonly ref` when language permits
+            // TODO: Make `ref readonly`/`in` when language permits
             return BinarySearch(ref span.DangerousGetPinnableReference(), span.Length, comparable);
         }
 
-        // TODO: Make `readonly ref` when language permits
-        // TODO: Make `in TComparable` to allow pass by ref without forcing ref
+        // TODO: Make s `ref readonly`/`in` when language permits
+        // TODO: Make comparable `ref readonly`/`in` to allow pass by ref without forcing ref
         internal static int BinarySearch<T, TComparable>(
             ref T s, int length, TComparable comparable) 
             where TComparable : IComparable<T>
@@ -42,10 +42,14 @@ namespace System
                 int i = lo + ((hi - lo) >> 1);
 
                 int c = 0;
+                // TODO: Is the try/catch needed, can this be removed?
                 try
                 {
                     //c = comparable.Compare(Unsafe.Add(ref s, i), value);
                     // Note this is reversed, in that `value` is before, not after as above
+                    // TODO: We probably need to add `ref readonly`/`in` overloads or `AddReadOnly`to unsafe, 
+                    //       if this will be available in language
+                    // TODO: Revise all Unsafe APIs for `readonly` applicability...
                     c = comparable.CompareTo(Unsafe.Add(ref s, i));
                 }
                 catch (Exception e)
