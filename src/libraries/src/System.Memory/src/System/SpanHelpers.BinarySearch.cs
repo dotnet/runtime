@@ -34,8 +34,9 @@ namespace System
                 // TODO: Test/investigate if below is faster (if it gives better asm), perhaps via Unsafe.As to avoid unnecessary conversions
                 //       This is safe since we know span.Length < int.MaxValue, and indeces are >= 0
                 //       and thus cannot overflow an uint. Saves on subtraction per loop.
-                // int i = (int)(((uint)hi + (uint)lo) >> 1)
-                int i = lo + ((hi - lo) >> 1);
+                int i = (int)(((uint)hi + (uint)lo) >> 1);
+                // Below was intended to avoid overflows, but this cannot happen if we do the computation in uint
+                //int i = lo + ((hi - lo) >> 1);
 
                 // TODO: We probably need to add `ref readonly`/`in` overloads or `AddReadOnly`to unsafe, 
                 //       if this will be available in language
