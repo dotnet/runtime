@@ -3,9 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using System.Diagnostics;
 
 namespace System
 {
@@ -39,17 +37,15 @@ namespace System
                 // int i = (int)(((uint)hi + (uint)lo) >> 1)
                 int i = lo + ((hi - lo) >> 1);
 
-                //c = comparable.Compare(Unsafe.Add(ref s, i), value);
-                // Note this is reversed, in that `value` is before, not after as above
                 // TODO: We probably need to add `ref readonly`/`in` overloads or `AddReadOnly`to unsafe, 
                 //       if this will be available in language
                 // TODO: Revise all Unsafe APIs for `readonly` applicability...
-                var c = comparable.CompareTo(Unsafe.Add(ref s, i));
+                int c = comparable.CompareTo(Unsafe.Add(ref s, i));
                 if (c == 0)
                 {
                     return i;
                 }
-                else if (c > 0) // if (c < 0) old
+                else if (c > 0)
                 {
                     lo = i + 1;
                 }
