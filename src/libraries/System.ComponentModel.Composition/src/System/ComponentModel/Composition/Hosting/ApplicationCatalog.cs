@@ -1,19 +1,16 @@
-﻿// -----------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-// -----------------------------------------------------------------------
-using System;
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel.Composition.Diagnostics;
 using System.ComponentModel.Composition.Primitives;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Globalization;
-using System.Reflection;
-using System.Threading;
-using Microsoft.Internal;
 using System.IO;
+using System.Reflection;
+using Microsoft.Internal;
 
 namespace System.ComponentModel.Composition.Hosting
 {

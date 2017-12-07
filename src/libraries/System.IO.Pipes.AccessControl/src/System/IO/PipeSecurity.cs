@@ -16,7 +16,6 @@ namespace System.IO.Pipes
             : base(false, ResourceType.KernelObject) { }
 
         // Used by PipeStream.GetAccessControl
-        [System.Security.SecuritySafeCritical]
         internal PipeSecurity(SafePipeHandle safeHandle, AccessControlSections includeSections)
             : base(false, ResourceType.KernelObject, safeHandle, includeSections) { }
 
@@ -217,10 +216,6 @@ namespace System.IO.Pipes
             return persistRules;
         }
 
-        // Use this in your own Persist after you have demanded any appropriate CAS permissions.
-        // Note that you will want your version to be internal and use a specialized Safe Handle. 
-        [System.Security.SecurityCritical]
-        //[SecurityPermission(SecurityAction.Assert, UnmanagedCode = true)]
         protected internal void Persist(SafeHandle handle)
         {
             WriteLock();
@@ -237,10 +232,6 @@ namespace System.IO.Pipes
             }
         }
 
-        // Use this in your own Persist after you have demanded any appropriate CAS permissions.
-        // Note that you will want your version to be internal. 
-        [System.Security.SecurityCritical]
-        //[SecurityPermission(SecurityAction.Assert, UnmanagedCode = true)]
         protected internal void Persist(String name)
         {
             WriteLock();

@@ -6,28 +6,18 @@ using System.Diagnostics;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class ExprCast : Expr
+    internal sealed class ExprCast : ExprWithType
     {
-        private ExprClass _destinationType;
-
-        public ExprCast(EXPRFLAG flags, ExprClass destinationType, Expr argument)
-            : base(ExpressionKind.Cast)
+        public ExprCast(EXPRFLAG flags, CType type, Expr argument)
+            : base(ExpressionKind.Cast, type)
         {
             Debug.Assert(argument != null);
-            Debug.Assert(destinationType != null);
             Debug.Assert((flags & ~(EXPRFLAG.EXF_CAST_ALL | EXPRFLAG.EXF_MASK_ANY)) == 0);
             Argument = argument;
             Flags = flags;
-            DestinationType = destinationType;
         }
 
         public Expr Argument { get; set; }
-
-        public ExprClass DestinationType
-        {
-            get => _destinationType;
-            set => Type = (_destinationType = value).Type;
-        }
 
         public bool IsBoxingCast => (Flags & (EXPRFLAG.EXF_BOX | EXPRFLAG.EXF_FORCE_BOX)) != 0;
     }

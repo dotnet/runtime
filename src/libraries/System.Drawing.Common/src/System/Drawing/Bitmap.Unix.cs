@@ -46,7 +46,6 @@ using System.ComponentModel;
 
 namespace System.Drawing
 {
-    [ComVisible(true)]
     [Serializable]
 #if !NETCORE
     [Editor ("System.Drawing.Design.BitmapEditor, " + Consts.AssemblySystem_Drawing_Design, typeof (System.Drawing.Design.UITypeEditor))]

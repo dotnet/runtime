@@ -30,6 +30,8 @@
     <Compile Condition="'$(TargetGroup)' != 'uap'" Include="System\Diagnostics\RemoteExecutorTestBase.Process.cs" />
     <Compile Condition="'$(TargetGroup)' == 'uap'" Include="System\Diagnostics\RemoteExecutorTestBase.uap.cs" />
     <Compile Condition="'$(TargetGroup)' == 'uapaot'" Include="System\Diagnostics\RemoteExecutorTestBase.uapaot.cs" />
+    <Compile Condition="'$(TargetGroup)' == 'netfx'" Include="System\PlatformDetection.NetFx.cs" />
+    <Compile Condition="'$(TargetGroup)' != 'netfx'" Include="System\PlatformDetection.NonNetFx.cs" />
     <Compile Include="System\PlatformDetection.cs" />
     <Compile Include="System\PlatformDetection.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
     <Compile Include="System\PlatformDetection.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
@@ -40,6 +42,7 @@
     <Compile Include="System\TheoryExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="System.Memory" />
     <Reference Include="Microsoft.Win32.Registry" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.IO.FileSystem" />
@@ -91,6 +94,9 @@
     <Compile Include="System\AdminHelpers.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs</Link>
+    </Compile>
     <Compile Include="System\AdminHelpers.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEUid.cs">
       <Link>Common\Interop\Unix\Interop.GetEUid.cs</Link>

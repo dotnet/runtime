@@ -88,25 +88,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // This method does the actual binding.
             // ----------------------------------------------------------------------------
 
-            public bool Bind(bool bReportErrors)
+            public void Bind()
             {
                 Debug.Assert(_pGroup.SymKind == SYMKIND.SK_MethodSymbol || _pGroup.SymKind == SYMKIND.SK_PropertySymbol && 0 != (_pGroup.Flags & EXPRFLAG.EXF_INDEXER));
 
-                // We need the Exprs for error reporting for non-delegates
-                Debug.Assert(_pArguments.fHasExprs);
-
                 LookForCandidates();
-                if (!GetResultOfBind(bReportErrors))
+                if (!GetResultOfBind())
                 {
-                    if (bReportErrors)
-                    {
-                        throw ReportErrorsOnFailure();
-                    }
-
-                    return false;
+                    throw ReportErrorsOnFailure();
                 }
-
-                return true;
             }
 
             public GroupToArgsBinderResult GetResultsOfBind()
@@ -182,23 +172,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
 
                     // If we have named arguments, reorder them for this method.
-                    if (_pArguments.fHasExprs)
+                    // If we don't have Exprs, its because we're doing a method group conversion.
+                    // In those scenarios, we never want to add named arguments or optional arguments.
+                    if (_bHasNamedArguments)
                     {
-                        // If we don't have Exprs, its because we're doing a method group conversion.
-                        // In those scenarios, we never want to add named arguments or optional arguments.
-                        if (_bHasNamedArguments)
+                        if (!ReOrderArgsForNamedArguments())
                         {
-                            if (!ReOrderArgsForNamedArguments())
-                            {
-                                continue;
-                            }
+                            continue;
                         }
-                        else if (HasOptionalParameters())
+                    }
+                    else if (HasOptionalParameters())
+                    {
+                        if (!AddArgumentsForOptionalParameters())
                         {
-                            if (!AddArgumentsForOptionalParameters())
-                            {
-                                continue;
-                            }
+                            continue;
                         }
                     }
 
@@ -319,8 +306,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 dst.carg = src.carg;
                 dst.types = src.types;
-                dst.fHasExprs = src.fHasExprs;
-
                 dst.prgexpr.Clear();
                 for (int i = 0; i < src.prgexpr.Count; i++)
                 {
@@ -328,7 +313,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
 
-            private bool GetResultOfBind(bool bReportErrors)
+            private bool GetResultOfBind()
             {
                 // We looked at all the evidence, and we come to render the verdict:
 
@@ -348,27 +333,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                         if (null == pmethBest)
                         {
-                            // Arbitrarily use the first one, but make sure to report errors or give the ambiguous one
-                            // back to the caller.
-                            pmethBest = pAmbig1;
                             _results.AmbiguousResult = pAmbig2.mpwi;
-
-                            if (bReportErrors)
+                            if (pAmbig1.@params != pAmbig2.@params ||
+                                pAmbig1.mpwi.MethProp().Params.Count != pAmbig2.mpwi.MethProp().Params.Count ||
+                                pAmbig1.mpwi.TypeArgs != pAmbig2.mpwi.TypeArgs ||
+                                pAmbig1.mpwi.GetType() != pAmbig2.mpwi.GetType() ||
+                                pAmbig1.mpwi.MethProp().Params == pAmbig2.mpwi.MethProp().Params)
                             {
-                                if (pAmbig1.@params != pAmbig2.@params ||
-                                    pAmbig1.mpwi.MethProp().Params.Count != pAmbig2.mpwi.MethProp().Params.Count ||
-                                    pAmbig1.mpwi.TypeArgs != pAmbig2.mpwi.TypeArgs ||
-                                    pAmbig1.mpwi.GetType() != pAmbig2.mpwi.GetType() ||
-                                    pAmbig1.mpwi.MethProp().Params == pAmbig2.mpwi.MethProp().Params)
-                                {
-                                    throw GetErrorContext().Error(ErrorCode.ERR_AmbigCall, pAmbig1.mpwi, pAmbig2.mpwi);
-                                }
-                                else
-                                {
-                                    // The two signatures are identical so don't use the type args in the error message.
-                                    throw GetErrorContext().Error(ErrorCode.ERR_AmbigCall, pAmbig1.mpwi.MethProp(), pAmbig2.mpwi.MethProp());
-                                }
+                                throw GetErrorContext().Error(ErrorCode.ERR_AmbigCall, pAmbig1.mpwi, pAmbig2.mpwi);
                             }
+
+                            // The two signatures are identical so don't use the type args in the error message.
+                            throw GetErrorContext().Error(ErrorCode.ERR_AmbigCall, pAmbig1.mpwi.MethProp(), pAmbig2.mpwi.MethProp());
                         }
                     }
 
@@ -378,10 +354,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                     // Record our best match in the memgroup as well. This is temporary.
 
-                    if (bReportErrors)
+                    if (true)
                     {
                         ReportErrorsOnSuccess();
                     }
+
                     return true;
                 }
 
@@ -953,15 +930,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                     // Try to infer. If we have an errorsym in the type arguments, we know we cant infer,
                     // but we want to attempt it anyway. We'll mark this as "cant infer" so that we can
-                    // report the appropriate error, but we'll continue inferring, since we want 
+                    // report the appropriate error, but we'll continue inferring, since we want
                     // error sym to go to any type.
 
-                    bool inferenceSucceeded;
-
-                    inferenceSucceeded = MethodTypeInferrer.Infer(
-                                _pExprBinder, GetSymbolLoader(),
-                                methSym, _pCurrentType.GetTypeArgsAll(), _pCurrentParameters,
-                                _pArguments, out _pCurrentTypeArgs);
+                    bool inferenceSucceeded = MethodTypeInferrer.Infer(
+                        _pExprBinder, GetSymbolLoader(), methSym, _pCurrentParameters, _pArguments,
+                        out _pCurrentTypeArgs);
 
                     if (!inferenceSucceeded)
                     {
@@ -1010,22 +984,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         containsErrorSym |= DoesTypeArgumentsContainErrorSym(var);
                         bool fresult;
 
-                        if (_pArguments.fHasExprs)
-                        {
-                            Expr pArgument = _pArguments.prgexpr[ivar];
+                        Expr pArgument = _pArguments.prgexpr[ivar];
 
-                            // If we have a named argument, strip it to do the conversion.
-                            if (pArgument is ExprNamedArgumentSpecification named)
-                            {
-                                pArgument = named.Value;
-                            }
-
-                            fresult = _pExprBinder.canConvert(pArgument, var);
-                        }
-                        else
+                        // If we have a named argument, strip it to do the conversion.
+                        if (pArgument is ExprNamedArgumentSpecification named)
                         {
-                            fresult = _pExprBinder.canConvert(_pArguments.types[ivar], var);
+                            pArgument = named.Value;
                         }
+
+                        fresult = _pExprBinder.canConvert(pArgument, var);
 
                         // Mark this as a legitimate error if we didn't have any error syms.
                         if (!fresult && !containsErrorSym)

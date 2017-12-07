@@ -14,7 +14,6 @@ namespace Microsoft.Win32.SafeHandles
     /// and CFRelease to free; however, FSEventStream has it's own release
     /// function, so we need to extend the pattern to account for that.
     /// </summary>
-    [System.Security.SecurityCritical]
     internal sealed partial class SafeEventStreamHandle : SafeHandle
     {
         internal SafeEventStreamHandle() : base(IntPtr.Zero, true) { }
@@ -24,7 +23,6 @@ namespace Microsoft.Win32.SafeHandles
             this.SetHandle(ptr);
         }
 
-        [System.Security.SecurityCritical]
         protected override bool ReleaseHandle()
         {
             Interop.EventStream.FSEventStreamStop(handle);
@@ -36,7 +34,6 @@ namespace Microsoft.Win32.SafeHandles
 
         public override bool IsInvalid
         {
-            [System.Security.SecurityCritical]
             get
             {
                 return handle == IntPtr.Zero;

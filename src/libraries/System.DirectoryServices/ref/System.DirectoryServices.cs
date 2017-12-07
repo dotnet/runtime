@@ -130,7 +130,6 @@ namespace System.DirectoryServices {
     public System.Collections.IEnumerator GetEnumerator() { return default(System.Collections.IEnumerator); }
     public void Remove(System.DirectoryServices.DirectoryEntry entry) { }
   }
-  [System.Security.Permissions.EnvironmentPermissionAttribute(System.Security.Permissions.SecurityAction.Assert, Unrestricted=true)]
   public partial class DirectoryEntry : System.ComponentModel.Component {
     public DirectoryEntry() { }
     public DirectoryEntry(object adsObject) { }
@@ -243,7 +242,6 @@ namespace System.DirectoryServices {
     public DirectoryServicesCOMException(string message, System.Exception inner) { }
     public int ExtendedError { get { return default(int); } }
     public string ExtendedErrorMessage { get { return default(string); } }
-    [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.LinkDemand, SerializationFormatter=true)]
     public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
   }
   public partial class DirectorySynchronization {
@@ -424,7 +422,6 @@ namespace System.DirectoryServices {
     internal SearchResult() { }
     public string Path { get { return default(string); } }
     public System.DirectoryServices.ResultPropertyCollection Properties { get { return default(System.DirectoryServices.ResultPropertyCollection); } }
-    [System.Security.Permissions.EnvironmentPermissionAttribute(System.Security.Permissions.SecurityAction.Assert, Unrestricted=true)]
     public System.DirectoryServices.DirectoryEntry GetDirectoryEntry() { return default(System.DirectoryServices.DirectoryEntry); }
   }
   public partial class SearchResultCollection : System.MarshalByRefObject, System.Collections.ICollection, System.Collections.IEnumerable, System.IDisposable {
@@ -500,7 +497,6 @@ namespace System.DirectoryServices.ActiveDirectory {
     public ActiveDirectoryObjectNotFoundException(string message, System.Type type, string name) { }
     public string Name { get { return default(string); } }
     public System.Type Type { get { return default(System.Type); } }
-    [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.LinkDemand, SerializationFormatter=true)]
     public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
   }
   public partial class ActiveDirectoryOperationException : System.Exception, System.Runtime.Serialization.ISerializable {
@@ -511,7 +507,6 @@ namespace System.DirectoryServices.ActiveDirectory {
     public ActiveDirectoryOperationException(string message, System.Exception inner, int errorCode) { }
     public ActiveDirectoryOperationException(string message, int errorCode) { }
     public int ErrorCode { get { return default(int); } }
-    [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.LinkDemand, SerializationFormatter=true)]
     public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
   }
   public abstract partial class ActiveDirectoryPartition : System.IDisposable {
@@ -669,7 +664,6 @@ namespace System.DirectoryServices.ActiveDirectory {
     public int ErrorCode { get { return default(int); } }
     public override string Message { get { return default(string); } }
     public string Name { get { return default(string); } }
-    [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.LinkDemand, SerializationFormatter=true)]
     public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
   }
   public partial class ActiveDirectorySite : System.IDisposable {
@@ -1194,7 +1188,6 @@ namespace System.DirectoryServices.ActiveDirectory {
     public ForestTrustCollisionException(string message, System.Exception inner) { }
     public ForestTrustCollisionException(string message, System.Exception inner, System.DirectoryServices.ActiveDirectory.ForestTrustRelationshipCollisionCollection collisions) { }
     public System.DirectoryServices.ActiveDirectory.ForestTrustRelationshipCollisionCollection Collisions { get { return default(System.DirectoryServices.ActiveDirectory.ForestTrustRelationshipCollisionCollection); } }
-    [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.LinkDemand, SerializationFormatter=true)]
     public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
   }
   public enum ForestTrustCollisionType {
@@ -1538,7 +1531,6 @@ namespace System.DirectoryServices.ActiveDirectory {
     public SyncFromAllServersOperationException(string message, System.Exception inner) { }
     public SyncFromAllServersOperationException(string message, System.Exception inner, System.DirectoryServices.ActiveDirectory.SyncFromAllServersErrorInformation[] errors) { }
     public System.DirectoryServices.ActiveDirectory.SyncFromAllServersErrorInformation[] ErrorInformation { get { return default(System.DirectoryServices.ActiveDirectory.SyncFromAllServersErrorInformation[]); } }
-    [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.LinkDemand, SerializationFormatter=true)]
     public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
   }
   [System.FlagsAttribute]

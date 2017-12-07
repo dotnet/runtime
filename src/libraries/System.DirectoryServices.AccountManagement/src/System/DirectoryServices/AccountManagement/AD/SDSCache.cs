@@ -34,7 +34,6 @@ namespace System.DirectoryServices.AccountManagement
         private static SDSCache s_domainCache = new SDSCache(false);
         private static SDSCache s_localMachineCache = new SDSCache(true);
 
-        [System.Security.SecurityCritical]
         public PrincipalContext GetContext(string name, NetCred credentials, ContextOptions contextOptions)
         {
             string contextName = name;

@@ -18,12 +18,10 @@ namespace Windows.Foundation
 {
     public partial struct Point : IFormattable
     {
-        [SecuritySafeCriticalAttribute]
         string IFormattable.ToString(string format, IFormatProvider provider) { throw null; }
     }
     public partial struct Rect : IFormattable
     {
-        [SecuritySafeCriticalAttribute]
         string IFormattable.ToString(string format, IFormatProvider provider) { throw null; }
     }
 }
@@ -31,7 +29,6 @@ namespace Windows.UI
 {
     public partial struct Color : IFormattable
     {
-        [SecuritySafeCriticalAttribute]
         string IFormattable.ToString(string format, IFormatProvider provider) { throw null; }
     }
 }

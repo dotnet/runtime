@@ -90,13 +90,11 @@ namespace System.Security.AccessControl
         {
         }
 
-        [SecurityCritical]
         internal RegistrySecurity(SafeRegistryHandle hKey, string name, AccessControlSections includeSections)
             : base(true, ResourceType.RegistryKey, hKey, includeSections, _HandleErrorCode, null)
         {
         }
 
-        [SecurityCritical]
         private static Exception _HandleErrorCode(int errorCode, string name, SafeHandle handle, object context)
         {
             return _HandleErrorCodeCore(errorCode, name, handle, context);
@@ -138,7 +136,6 @@ namespace System.Security.AccessControl
             return persistRules;
         }
 
-        [SecurityCritical]
         internal void Persist(SafeRegistryHandle hKey, string keyName)
         {
             WriteLock();

@@ -8,7 +8,6 @@ namespace System.Security.AccessControl
 {
     public sealed partial class RegistrySecurity : NativeObjectSecurity
     {
-        [SecurityCritical]
         private static Exception _HandleErrorCodeCore(int errorCode, string name, SafeHandle handle, object context)
         {
             // TODO: Implement this

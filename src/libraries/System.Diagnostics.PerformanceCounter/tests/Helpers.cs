@@ -4,6 +4,10 @@
 using System.Threading;
 using Xunit;
 
+// Implementation is not robust with respect to modifying counter categories
+// while concurrently reading counters
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
+
 namespace System.Diagnostics.Tests
 {
     internal class Helpers

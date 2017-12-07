@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace System.Buffers.Text
@@ -47,7 +46,8 @@ namespace System.Buffers.Text
 
             // Write the last group
             Unsafe.Add(ref utf8Bytes, idx++) = Utf8Constants.Separator;
-            idx += FormattingHelpers.WriteDigits(lastGroup, 3, ref utf8Bytes, idx);
+            FormattingHelpers.WriteDigits(lastGroup, 3, ref utf8Bytes, idx);
+            idx += 3;
 
             // Write out the trailing zeros
             if (precision > 0)

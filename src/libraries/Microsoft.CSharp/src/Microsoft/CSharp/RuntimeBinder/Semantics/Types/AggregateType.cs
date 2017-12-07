@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -46,8 +47,35 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public AggregateType GetBaseClass()
         {
-            return _baseType ??
-                (_baseType = getAggregate().GetTypeManager().SubstType(getAggregate().GetBaseClass(), GetTypeArgsAll()) as AggregateType);
+            if (_baseType == null)
+            {
+                Type baseSysType = AssociatedSystemType.BaseType;
+                if (baseSysType == null)
+                {
+                    return null;
+                }
+
+                // If we have a generic type definition, then we need to set the
+                // base class to be our current base type, and use that to calculate 
+                // our agg type and its base, then set it to be the generic version of the
+                // base type. This is because:
+                //
+                // Suppose we have Foo<T> : IFoo<T>
+                //
+                // Initially, the BaseType will be IFoo<Foo.T>, which gives us the substitution
+                // that we want to use for our agg type's base type. However, in the Symbol chain,
+                // we want the base type to be IFoo<IFoo.T>. So we need to substitute.
+                //
+                // If we don't have a generic type definition, then we just need to set our base
+                // class. This is so that if we have a base type that's generic, we'll be
+                // getting the correctly instantiated base type.
+                TypeManager manager = GetOwningAggregate().GetTypeManager();
+                AggregateType baseClass = manager.SymbolTable.GetCTypeFromType(baseSysType) as AggregateType;
+                Debug.Assert(baseClass != null);
+                _baseType = manager.SubstType(baseClass, GetTypeArgsAll());
+            }
+
+            return _baseType;
         }
 
         public IEnumerable<AggregateType> TypeHierarchy
@@ -169,30 +197,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 _winrtifacesAll = pSymbolLoader.getBSymmgr().AllocParams(typeList.Count, typeList.ToArray());
             }
             return _winrtifacesAll;
-        }
-
-        public TypeArray GetDelegateParameters(SymbolLoader pSymbolLoader)
-        {
-            Debug.Assert(isDelegateType());
-            MethodSymbol invoke = pSymbolLoader.LookupInvokeMeth(getAggregate());
-            if (invoke == null || !invoke.isInvoke())
-            {
-                // This can happen if the delegate is internal to another assembly. 
-                return null;
-            }
-            return getAggregate().GetTypeManager().SubstTypeArray(invoke.Params, this);
-        }
-
-        public CType GetDelegateReturnType(SymbolLoader pSymbolLoader)
-        {
-            Debug.Assert(isDelegateType());
-            MethodSymbol invoke = pSymbolLoader.LookupInvokeMeth(getAggregate());
-            if (invoke == null || !invoke.isInvoke())
-            {
-                // This can happen if the delegate is internal to another assembly. 
-                return null;
-            }
-            return getAggregate().GetTypeManager().SubstType(invoke.RetType, this);
         }
     }
 }

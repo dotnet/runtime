@@ -271,26 +271,25 @@ namespace System.Runtime.Serialization
                     _ilg.LoadMember(XmlFormatGeneratorStatics.NamespaceProperty);
                 }
                 else
+                {
                     _ilg.LoadArrayElement(_contractNamespacesLocal, _typeIndex - 1);
+                }
+
                 _ilg.Store(namespaceLocal);
 
-                _ilg.Call(_contextArg, XmlFormatGeneratorStatics.IncrementItemCountMethod, classContract.Members.Count);
+                int classMemberCount = classContract.Members.Count;
+                _ilg.Call(thisObj: _contextArg, XmlFormatGeneratorStatics.IncrementItemCountMethod, classMemberCount);
 
-                for (int i = 0; i < classContract.Members.Count; i++, memberCount++)
+                for (int i = 0; i < classMemberCount; i++, memberCount++)
                 {
                     DataMember member = classContract.Members[i];
                     Type memberType = member.MemberType;
                     LocalBuilder memberValue = null;
-                    if (member.IsGetOnlyCollection)
-                    {
-                        _ilg.Load(_contextArg);
-                        _ilg.Call(XmlFormatGeneratorStatics.StoreIsGetOnlyCollectionMethod);
-                    }
-                    else
-                    {
-                        _ilg.Load(_contextArg);
-                        _ilg.Call(XmlFormatGeneratorStatics.ResetIsGetOnlyCollectionMethod);
-                    }
+
+                    _ilg.Load(_contextArg);
+                    _ilg.Call(methodInfo: member.IsGetOnlyCollection ? 
+                        XmlFormatGeneratorStatics.StoreIsGetOnlyCollectionMethod : 
+                        XmlFormatGeneratorStatics.ResetIsGetOnlyCollectionMethod);
 
                     if (!member.EmitDefaultValue)
                     {
@@ -298,14 +297,14 @@ namespace System.Runtime.Serialization
                         _ilg.IfNotDefaultValue(memberValue);
                     }
                     bool writeXsiType = CheckIfMemberHasConflict(member, classContract, derivedMostClassContract);
-                    if (writeXsiType || !TryWritePrimitive(memberType, memberValue, member.MemberInfo, null /*arrayItemIndex*/, namespaceLocal, null /*nameLocal*/, i + _childElementIndex))
+                    if (writeXsiType || !TryWritePrimitive(memberType, memberValue, member.MemberInfo, arrayItemIndex: null, ns: namespaceLocal, name: null, nameIndex: i + _childElementIndex))
                     {
-                        WriteStartElement(memberType, classContract.Namespace, namespaceLocal, null /*nameLocal*/, i + _childElementIndex);
+                        WriteStartElement(memberType, classContract.Namespace, namespaceLocal, nameLocal: null, nameIndex: i + _childElementIndex);
                         if (classContract.ChildElementNamespaces[i + _childElementIndex] != null)
                         {
                             _ilg.Load(_xmlWriterArg);
                             _ilg.LoadArrayElement(_childElementNamespacesLocal, i + _childElementIndex);
-                            _ilg.Call(XmlFormatGeneratorStatics.WriteNamespaceDeclMethod);
+                            _ilg.Call(methodInfo: XmlFormatGeneratorStatics.WriteNamespaceDeclMethod);
                         }
                         if (memberValue == null)
                             memberValue = LoadMemberValue(member);
@@ -315,23 +314,22 @@ namespace System.Runtime.Serialization
 
                     if (classContract.HasExtensionData)
                     {
-                        _ilg.Call(_contextArg, XmlFormatGeneratorStatics.WriteExtensionDataMethod, _xmlWriterArg, extensionDataLocal, memberCount);
+                        _ilg.Call(thisObj: _contextArg, XmlFormatGeneratorStatics.WriteExtensionDataMethod, _xmlWriterArg, extensionDataLocal, memberCount);
                     }
-
 
                     if (!member.EmitDefaultValue)
                     {
                         if (member.IsRequired)
                         {
                             _ilg.Else();
-                            _ilg.Call(null, XmlFormatGeneratorStatics.ThrowRequiredMemberMustBeEmittedMethod, member.Name, classContract.UnderlyingType);
+                            _ilg.Call(thisObj: null, XmlFormatGeneratorStatics.ThrowRequiredMemberMustBeEmittedMethod, member.Name, classContract.UnderlyingType);
                         }
                         _ilg.EndIf();
                     }
                 }
 
                 _typeIndex++;
-                _childElementIndex += classContract.Members.Count;
+                _childElementIndex += classMemberCount;
                 return memberCount;
             }
 

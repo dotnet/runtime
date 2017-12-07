@@ -59,26 +59,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 return (mask & BinOpMask.Enum) != 0;
             }
-
-            public bool ValidForPointer()
-            {
-                return (mask & BinOpMask.Ptr) != 0;
-            }
-
-            public bool ValidForVoidPointer()
-            {
-                return (mask & BinOpMask.VoidPtr) != 0;
-            }
-
-            public bool ValidForPointerAndNumber()
-            {
-                return (mask & BinOpMask.PtrNum) != 0;
-            }
-
-            public bool ValidForNumberAndPointer()
-            {
-                return (mask & BinOpMask.NumPtr) != 0;
-            }
         }
     }
 }

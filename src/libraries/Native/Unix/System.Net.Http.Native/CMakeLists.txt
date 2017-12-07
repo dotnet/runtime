@@ -31,8 +31,19 @@ add_library(System.Net.Http.Native
     ${VERSION_FILE_PATH}
 )
 
+add_library(System.Net.Http.Native-Static
+    STATIC
+    ${NATIVEHTTP_SOURCES}
+    ${VERSION_FILE_PATH}
+)
+
+# Disable the "lib" prefix and override default name
+set_target_properties(System.Net.Http.Native-Static PROPERTIES PREFIX "")
+set_target_properties(System.Net.Http.Native-Static PROPERTIES OUTPUT_NAME System.Net.Http.Native CLEAN_DIRECT_OUTPUT 1)
+
 target_link_libraries(System.Net.Http.Native
   ${CURL_LIBRARIES}
 )
 
 install_library_and_symbols (System.Net.Http.Native)
+install (TARGETS System.Net.Http.Native-Static DESTINATION .)

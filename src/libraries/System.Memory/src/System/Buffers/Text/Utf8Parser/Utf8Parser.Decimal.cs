@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.CompilerServices;
-
 namespace System.Buffers.Text
 {
     public static partial class Utf8Parser
@@ -33,7 +31,7 @@ namespace System.Buffers.Text
             ParseNumberOptions options;
             switch (standardFormat)
             {
-                case default(char):
+                case (default):
                 case 'G':
                 case 'g':
                 case 'E':
@@ -43,7 +41,7 @@ namespace System.Buffers.Text
 
                 case 'F':
                 case 'f':
-                    options = default(ParseNumberOptions);
+                    options = default;
                     break;
 
                 default:

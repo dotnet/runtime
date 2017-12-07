@@ -198,7 +198,6 @@ namespace System.Data.Odbc
         internal OdbcException() { }
         public System.Data.Odbc.OdbcErrorCollection Errors { get { throw null; } }
         public override string Source { get { throw null; } }
-        [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Flags=(System.Security.Permissions.SecurityPermissionFlag)(128))]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
     }
     public sealed partial class OdbcFactory : System.Data.Common.DbProviderFactory

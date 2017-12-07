@@ -11,7 +11,6 @@
 
 namespace Microsoft.Win32
 {
-    [System.Security.SecurityCriticalAttribute]
     public static partial class RegistryAclExtensions
     {
         public static System.Security.AccessControl.RegistrySecurity GetAccessControl(this Microsoft.Win32.RegistryKey key) { throw null; }

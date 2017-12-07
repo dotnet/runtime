@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Threading;
 using Xunit;
@@ -68,6 +69,32 @@ namespace System.Diagnostics.Tests
             Thread.Sleep(200);
             p.Kill();
             Assert.True(p.WaitForExit(WaitInMS));
+        }
+
+        /// <summary>
+        /// Checks if the program is installed
+        /// </summary>
+        /// <param name="program"></param>
+        /// <returns></returns>
+        protected static bool IsProgramInstalled(string program)
+        {
+            string path;
+            string pathEnvVar = Environment.GetEnvironmentVariable("PATH");
+            char separator = PlatformDetection.IsWindows ? ';' : ':';
+            if (pathEnvVar != null)
+            {
+                var pathParser = new StringParser(pathEnvVar, separator, skipEmpty: true);
+                while (pathParser.MoveNext())
+                {
+                    string subPath = pathParser.ExtractCurrent();
+                    path = Path.Combine(subPath, program);
+                    if (File.Exists(path))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
     }
 }

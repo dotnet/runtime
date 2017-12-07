@@ -38,7 +38,7 @@ namespace System.Net
 
         private Interop.HttpApi.HTTP_REQUEST* Allocate(ThreadPoolBoundHandle boundHandle, uint size)
         {
-            uint newSize = size != 0 ? size : RequestBuffer == null ? 4096 : Size;
+            uint newSize = size != 0 ? size : RequestBuffer == IntPtr.Zero ? 4096 : Size;
             if (_nativeOverlapped != null)
             {
 #if DEBUG
@@ -57,7 +57,7 @@ namespace System.Net
             _boundHandle = boundHandle;
             _nativeOverlapped = boundHandle.AllocateNativeOverlapped(ListenerAsyncResult.IOCallback, state: _result, pinData: RequestBuffer);
 
-            return (Interop.HttpApi.HTTP_REQUEST*)Marshal.UnsafeAddrOfPinnedArrayElement(RequestBuffer, 0);
+            return (Interop.HttpApi.HTTP_REQUEST*)RequestBuffer.ToPointer();
         }
 
         internal void Reset(ThreadPoolBoundHandle boundHandle, ulong requestId, uint size)

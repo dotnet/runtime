@@ -8,13 +8,11 @@
 
 namespace Microsoft.Win32.SafeHandles
 {
-    [System.Security.SecurityCriticalAttribute]
     public sealed partial class SafeAccessTokenHandle : System.Runtime.InteropServices.SafeHandle
     {
         public SafeAccessTokenHandle(System.IntPtr handle) : base(default(System.IntPtr), default(bool)) { }
-        public static Microsoft.Win32.SafeHandles.SafeAccessTokenHandle InvalidHandle {[System.Security.SecurityCriticalAttribute]get { throw null; } }
-        public override bool IsInvalid {[System.Security.SecurityCriticalAttribute]get { throw null; } }
-        [System.Security.SecurityCriticalAttribute]
+        public static Microsoft.Win32.SafeHandles.SafeAccessTokenHandle InvalidHandle { get { throw null; } }
+        public override bool IsInvalid { get { throw null; } }
         protected override bool ReleaseHandle() { throw null; }
     }
 }
@@ -327,7 +325,7 @@ namespace System.Security.Principal
         public WindowsIdentity(System.IntPtr userToken, string type) { }
         public WindowsIdentity(string sUserPrincipalName) { }
         public WindowsIdentity(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public Microsoft.Win32.SafeHandles.SafeAccessTokenHandle AccessToken {[System.Security.SecurityCriticalAttribute]get { throw null; } }
+        public Microsoft.Win32.SafeHandles.SafeAccessTokenHandle AccessToken { get { throw null; } }
         public sealed override string AuthenticationType { get { throw null; } }
         public override System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> Claims { get { throw null; } }
         public System.Security.Principal.IdentityReferenceCollection Groups { get { throw null; } }

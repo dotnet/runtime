@@ -26,8 +26,6 @@ namespace System.DirectoryServices
         /// Retrieves the <see cref='System.DirectoryServices.DirectoryEntry'/> that corresponds to the <see cref='System.DirectoryServices.SearchResult'/>, from the Active Directory 
         ///    hierarchy.
         /// </devdoc>
-        [EnvironmentPermission(SecurityAction.Assert, Unrestricted = true)]
-        [SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.UnmanagedCode)]
         public DirectoryEntry GetDirectoryEntry()
         {
             if (_parentCredentials != null)

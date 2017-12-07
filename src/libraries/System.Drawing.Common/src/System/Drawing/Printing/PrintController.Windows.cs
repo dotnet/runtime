@@ -22,7 +22,6 @@ namespace System.Drawing.Printing
         /// <summary>
         /// Represents a SafeHandle for a Printer's Device Mode struct handle (DEVMODE)
         /// </summary>
-        [SecurityCritical]
         internal sealed class SafeDeviceModeHandle : SafeHandle
         {
             // This constructor is used by the P/Invoke marshaling layer
@@ -45,7 +44,6 @@ namespace System.Drawing.Printing
             // The boolean returned should be true for success and false if the runtime
             // should fire a SafeHandleCriticalFailure MDA (CustomerDebugProbe) if that
             // MDA is enabled.
-            [SecurityCritical]
             protected override bool ReleaseHandle()
             {
                 if (!IsInvalid)

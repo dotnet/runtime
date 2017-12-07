@@ -156,7 +156,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.False(handler.PreAuthenticate);
                 Assert.True(handler.SupportsProxy);
                 Assert.True(handler.SupportsRedirectConfiguration);
-                
+
                 // Changes from .NET Framework (Desktop).
                 if (!PlatformDetection.IsFullFramework)
                 {
@@ -329,7 +329,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(22158, TargetFrameworkMonikers.Uap)] 
+        [ActiveIssue(22158, TargetFrameworkMonikers.Uap)]
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task GetAsync_IPv6LinkLocalAddressUri_Success()
@@ -599,7 +599,7 @@ namespace System.Net.Http.Functional.Tests
                             "\r\n");
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
-                    List <string> receivedRequest = await serverTask;
+                    List<string> receivedRequest = await serverTask;
                     string[] statusLineParts = receivedRequest[0].Split(' ');
 
                     using (HttpResponseMessage response = await getResponseTask)
@@ -1213,7 +1213,7 @@ namespace System.Net.Http.Functional.Tests
                     Task serverTask =
                         LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
                         {
-                            var list = await LoopbackServer.ReadWriteAcceptedAsync(s, reader, writer, partialResponse, shutdown: false);
+                            var list = await LoopbackServer.ReadWriteAcceptedAsync(s, reader, writer, partialResponse);
                             await tcs.Task;
                             return list;
                         }, null);
@@ -1392,7 +1392,7 @@ namespace System.Net.Http.Functional.Tests
                 // UAP platform allows this status code due to historical reasons.
                 return;
             }
-            
+
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 using (HttpClient client = CreateHttpClient())
@@ -2158,7 +2158,7 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP does not support custom proxies.")]
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        public void Proxy_HaveNoCredsAndUseAuthenticatedCustomProxy_ProxyAuthenticationRequiredStatusCode()
+        public async Task Proxy_HaveNoCredsAndUseAuthenticatedCustomProxy_ProxyAuthenticationRequiredStatusCode()
         {
             int port;
             Task<LoopbackGetRequestHttpProxy.ProxyResult> proxyTask = LoopbackGetRequestHttpProxy.StartAsync(
@@ -2172,7 +2172,7 @@ namespace System.Net.Http.Functional.Tests
             using (var client = new HttpClient(handler))
             {
                 Task<HttpResponseMessage> responseTask = client.GetAsync(Configuration.Http.RemoteEchoServer);
-                Task.WaitAll(proxyTask, responseTask);
+                await (new Task[] { proxyTask, responseTask }).WhenAllOrAnyFailed();
                 using (responseTask.Result)
                 {
                     Assert.Equal(HttpStatusCode.ProxyAuthenticationRequired, responseTask.Result.StatusCode);

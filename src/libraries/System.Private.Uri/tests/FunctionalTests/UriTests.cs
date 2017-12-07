@@ -889,5 +889,12 @@ namespace System.PrivateUri.Tests
             s = uri.GetComponents(UriComponents.Host, UriFormat.UriEscaped);
             Assert.Equal(s, "www.contoso.com");
         }
+
+        [Fact]
+        public static void TestCasingWhenCombiningAbsoluteAndRelativeUris()
+        {
+            Uri u = new Uri(new Uri("http://example.com/", UriKind.Absolute), new Uri("C(B:G", UriKind.Relative));
+            Assert.Equal("http://example.com/C(B:G", u.ToString());
+        }
     }
 }

@@ -168,7 +168,7 @@
   },
   {
     "Name": "Microsoft.XmlSerializer.Generator",
-    "Description": "Provides SGen tool to generate Xml serialization code for types in a specified assembly in order to improve the startup performance of a XmlSerializer when it serializes or deserializes objects of the specified types",
+    "Description": "Like the Xml Serializer Generator (sgen.exe) on desktop, Microsoft.XmlSerializer.Generator NuGet package is the solution for .NET Core and .NET Standard Libraries. It creates an Xml serialization assembly for types contained in an assembly in order to improve the startup performance of Xml serialization when serializing or de-serializing objects of those types using XmlSerializer.",
     "CommonTypes": []
   },
   {
@@ -337,6 +337,27 @@
       "System.ComponentModel.DataAnnotations.DataTypeAttribute",
       "System.ComponentModel.DataAnnotations.RangeAttribute",
       "System.ComponentModel.DataAnnotations.KeyAttribute"
+    ]
+  },
+  {
+    "Name": "System.ComponentModel.Composition",
+    "Description": "This namespace provides classes that constitute the core of the Managed Extensibility Framework, or MEF.",
+    "CommonTypes": [
+      "System.ComponentModel.Composition.ChangeRejectedException",
+      "System.ComponentModel.Composition.CompositionContractMismatchException",
+      "System.ComponentModel.Composition.CompositionError",
+      "System.ComponentModel.Composition.CompositionException",
+      "System.ComponentModel.Composition.ExportAttribute",
+      "System.ComponentModel.Composition.ImportAttribute",
+      "System.ComponentModel.Composition.ImportCardinalityMismatchException",
+      "System.ComponentModel.Composition.Hosting.AggregateCatalog",
+      "System.ComponentModel.Composition.Hosting.ApplicationCatalog",
+      "System.ComponentModel.Composition.Hosting.AssemblyCatalog",
+      "System.ComponentModel.Composition.Hosting.CompositionContainer",
+      "System.ComponentModel.Composition.Primitives.ComposablePartException",
+      "System.ComponentModel.Composition.Primitives.ExportDefinition",
+      "System.ComponentModel.Composition.Primitives.ImportDefinition",
+      "System.ComponentModel.Composition.ReflectionModel.ReflectionModelServices"
     ]
   },
   {

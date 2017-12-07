@@ -2,11 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Text;
 using System.Linq;
 using System.Numerics;
-using System.Globalization;
 using System.Collections.Generic;
 
 namespace System.Buffers.Text.Tests
@@ -203,7 +200,7 @@ namespace System.Buffers.Text.Tests
             {
                 foreach (string integerNegativeInput in GeneralIntegerNegativeInputs)
                 {
-                    yield return new ParserTestData<T>(integerNegativeInput, default(T), format.Symbol, expectedSuccess: false);
+                    yield return new ParserTestData<T>(integerNegativeInput, default, format.Symbol, expectedSuccess: false);
                 }
 
                 // The hex format always parses as an unsigned number. That violates the assumptions made by this next set of test data.
@@ -226,13 +223,13 @@ namespace System.Buffers.Text.Tests
                     {
                         BigInteger bigValue = maxValue + offset;
                         string text = bigValue.ToString(format.Symbol.ToString());
-                        yield return new ParserTestData<T>(text, default(T), format.Symbol, expectedSuccess: false);
+                        yield return new ParserTestData<T>(text, default, format.Symbol, expectedSuccess: false);
                     }
 
                     {
                         BigInteger bigValue = maxValue * 10;
                         string text = bigValue.ToString(format.Symbol.ToString());
-                        yield return new ParserTestData<T>(text, default(T), format.Symbol, expectedSuccess: false);
+                        yield return new ParserTestData<T>(text, default, format.Symbol, expectedSuccess: false);
                     }
 
                     if (isSigned) // No such thing as an underflow for unsigned integer parsing...
@@ -252,13 +249,13 @@ namespace System.Buffers.Text.Tests
                         {
                             BigInteger bigValue = minValue + offset;
                             string text = bigValue.ToString(format.Symbol.ToString());
-                            yield return new ParserTestData<T>(text, default(T), format.Symbol, expectedSuccess: false);
+                            yield return new ParserTestData<T>(text, default, format.Symbol, expectedSuccess: false);
                         }
 
                         {
                             BigInteger bigValue = minValue * 10;
                             string text = bigValue.ToString(format.Symbol.ToString());
-                            yield return new ParserTestData<T>(text, default(T), format.Symbol, expectedSuccess: false);
+                            yield return new ParserTestData<T>(text, default, format.Symbol, expectedSuccess: false);
                         }
                     }
                 }

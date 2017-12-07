@@ -220,6 +220,9 @@
   <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
     <value>Positive number required.</value>
   </data>
+  <data name="ArgumentOutOfRange_PathLengthInvalid" xml:space="preserve">
+    <value>The path '{0}' is of an invalid length for use with domain sockets on this platform.  The length must be between 1 and {1} characters, inclusive.</value>
+  </data>
   <data name="net_io_readwritefailure" xml:space="preserve">
     <value>Unable to transfer data on the transport connection: {0}.</value>
   </data>
@@ -231,5 +234,8 @@
   </data>
   <data name="PlatformNotSupported_IPProtectionLevel" xml:space="preserve">
     <value>IP protection level cannot be controlled on this platform.</value>
+  </data>
+  <data name="InvalidOperation_BufferNotExplicitArray" xml:space="preserve">
+    <value>This operation may only be performed when the buffer was set using the SetBuffer overload that accepts an array.</value>
   </data>
 </root>

@@ -196,7 +196,7 @@ namespace System
         //
         private static ulong Mul32x32To64(uint a, uint b)
         {
-            return (ulong)a * (ulong)b;
+            return a * (ulong)b;
         }
 
         //
@@ -455,7 +455,6 @@ namespace System
                 val = Mul64Lossy(val, multval, ref exp);
             }
 
-
             // round & scale down
             if (((int)val & (1 << 10)) != 0)
             {
@@ -518,7 +517,7 @@ namespace System
 
             public static unsafe ulong Mantissa(double d)
             {
-                return (ulong)*((uint*)&d) | ((ulong)(*((uint*)&d + 1) & 0x000fffff) << 32);
+                return (*((uint*)&d)) | ((ulong)(*((uint*)&d + 1) & 0x000fffff) << 32);
             }
 
             public static unsafe bool Sign(double d)

@@ -4,7 +4,6 @@
 
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace System
 {
@@ -42,7 +41,7 @@ namespace System
             for (int i = 0; i < str.Length; i++)
             {
                 // Add path separator so folders aren't too long.
-                if (i%20 == 0)
+                if (i % 20 == 0)
                 {
                     str[i] = Path.DirectorySeparatorChar;
                 }

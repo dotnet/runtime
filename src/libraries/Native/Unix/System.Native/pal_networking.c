@@ -2272,6 +2272,28 @@ int32_t SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t p
     return *createdSocket != -1 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
+int32_t SystemNative_GetAtOutOfBandMark(intptr_t socket, int32_t* atMark)
+{
+    if (atMark == NULL)
+    {
+        return Error_EFAULT;
+    }
+
+    int fd = ToFileDescriptor(socket);
+
+    int result;
+    int err;
+    while ((err = ioctl(fd, SIOCATMARK, &result)) < 0 && errno == EINTR);
+    if (err == -1)
+    {
+        *atMark = 0;
+        return SystemNative_ConvertErrorPlatformToPal(errno);
+    }
+
+    *atMark = (int32_t)result;
+    return Error_SUCCESS;
+}
+
 int32_t SystemNative_GetBytesAvailable(intptr_t socket, int32_t* available)
 {
     if (available == NULL)
@@ -2281,15 +2303,16 @@ int32_t SystemNative_GetBytesAvailable(intptr_t socket, int32_t* available)
 
     int fd = ToFileDescriptor(socket);
 
-    int avail;
+    int result;
     int err;
-    while ((err = ioctl(fd, FIONREAD, &avail)) < 0 && errno == EINTR);
+    while ((err = ioctl(fd, FIONREAD, &result)) < 0 && errno == EINTR);
     if (err == -1)
     {
+        *available = 0;
         return SystemNative_ConvertErrorPlatformToPal(errno);
     }
 
-    *available = (int32_t)avail;
+    *available = (int32_t)result;
     return Error_SUCCESS;
 }
 

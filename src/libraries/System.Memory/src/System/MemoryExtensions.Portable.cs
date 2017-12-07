@@ -165,7 +165,6 @@ namespace System
             return new ReadOnlySpan<TTo>(Unsafe.As<Pinnable<TTo>>(source.Pinnable), source.ByteOffset, newLength);
         }
 
-
         internal static readonly IntPtr StringAdjustment = MeasureStringAdjustment();
 
         private static IntPtr MeasureStringAdjustment()

@@ -48,7 +48,6 @@ namespace System.Text
     internal class EUCJPEncoding : DBCSCodePageEncoding
     {
         // This pretends to be CP 932 as far as memory tables are concerned.
-        [System.Security.SecurityCritical]  // auto-generated
         public EUCJPEncoding() : base(51932, 932)
         {
         }
@@ -145,7 +144,6 @@ namespace System.Text
             return true;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         protected override unsafe void CleanUpEndBytes(char* chars)
         {
             // Need to special case CP 51932

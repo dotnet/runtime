@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace System.Buffers.Text
@@ -15,12 +14,12 @@ namespace System.Buffers.Text
         //
         // Common worker for all unsigned integer TryFormat overloads
         //
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryFormatUInt64(ulong value, Span<byte> buffer, out int bytesWritten, StandardFormat format)
         {
             if (format.IsDefault)
             {
-                // Officially, the default is "G" but "G without a precision is equivalent to "D" and so that's why we're using "D" (eliminates an unnecessary HasPrecision check)
-                format = 'D';
+                return TryFormatUInt64Default(value, buffer, out bytesWritten);
             }
 
             switch (format.Symbol)

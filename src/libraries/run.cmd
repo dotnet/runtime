@@ -21,7 +21,7 @@ if defined VisualStudioVersion goto :Run
 
 set _VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 if exist %_VSWHERE% (
-  for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -property installationPath`) do set _VSCOMNTOOLS=%%i\Common7\Tools
+  for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -prerelease -property installationPath`) do set _VSCOMNTOOLS=%%i\Common7\Tools
 )
 if not exist "%_VSCOMNTOOLS%" set _VSCOMNTOOLS=%VS140COMNTOOLS%
 if not exist "%_VSCOMNTOOLS%" (
@@ -36,6 +36,11 @@ call "%_VSCOMNTOOLS%\VsDevCmd.bat"
 :: Clear the 'Platform' env variable for this session, as it's a per-project setting within the build, and
 :: misleading value (such as 'MCD' in HP PCs) may lead to build breakage (issue: #69).
 set Platform=
+
+:: Disable telemetry, first time experience, and global sdk look for the CLI
+set DOTNET_CLI_TELEMETRY_OPTOUT=1
+set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+set DOTNET_MULTILEVEL_LOOKUP=0
 
 :: Restore the Tools directory
 call %~dp0init-tools.cmd

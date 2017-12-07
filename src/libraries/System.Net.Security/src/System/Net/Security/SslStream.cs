@@ -715,5 +715,15 @@ namespace System.Net.Security
         {
             return _sslState.SecureStream.WriteAsync(source, cancellationToken);
         }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            return _sslState.SecureStream.ReadAsync(buffer, offset, count, cancellationToken);
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
+        {
+            return _sslState.SecureStream.ReadAsync(destination, cancellationToken);
+        }
     }
 }

@@ -117,6 +117,9 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Arg_KeyNotFoundWithKey" xml:space="preserve">
+    <value>The given key '{0}' was not present in the dictionary.</value>
+  </data>
   <data name="Argument_InvalidTypeName" xml:space="preserve">
     <value>The name of the type is invalid.</value>
   </data>
@@ -223,7 +226,7 @@
     <value>Attempt to define more than the maximum limit of 8 channels for a provider.</value>
   </data>
   <data name="EventSource_MismatchIdToWriteEvent" xml:space="preserve">
-    <value>Event {0} is givien event ID {1} but {2} was passed to WriteEvent.</value>
+    <value>Event {0} was assigned event ID {1} but {2} was passed to WriteEvent.</value>
   </data>
   <data name="EventSource_NeedGuid" xml:space="preserve">
     <value>The Guid of an EventSource must be non zero.</value>

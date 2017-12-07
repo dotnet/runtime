@@ -41,7 +41,6 @@ using System.ComponentModel;
 namespace System.Drawing
 {
     [Serializable]
-    [ComVisible(true)]
 #if !NETCORE
     [Editor ("System.Drawing.Design.FontEditor, " + Consts.AssemblySystem_Drawing_Design, typeof (System.Drawing.Design.UITypeEditor))]
     [TypeConverter (typeof (FontConverter))]

@@ -24,8 +24,6 @@ namespace System.Drawing.Design {
     ///       that may provide users with a user interface to visually edit
     ///       the values of the supported type or types.</para>
     /// </devdoc>
-    [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.InheritanceDemand, Name="FullTrust")]
-    [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Name="FullTrust")]
     public class UITypeEditor {
     
         /// <include file='doc\UITypeEditor.uex' path='docs/doc[@for="UITypeEditor.UITypeEditor"]/*' />

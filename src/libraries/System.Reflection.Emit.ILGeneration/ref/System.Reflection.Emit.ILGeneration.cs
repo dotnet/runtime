@@ -30,30 +30,23 @@ namespace System.Reflection.Emit
         public virtual System.Reflection.Emit.Label DefineLabel() { throw null; }
         public virtual void Emit(System.Reflection.Emit.OpCode opcode) { }
         public virtual void Emit(System.Reflection.Emit.OpCode opcode, byte arg) { }
-        [System.Security.SecuritySafeCriticalAttribute]
         public virtual void Emit(System.Reflection.Emit.OpCode opcode, double arg) { }
         public virtual void Emit(System.Reflection.Emit.OpCode opcode, short arg) { }
         public virtual void Emit(System.Reflection.Emit.OpCode opcode, int arg) { }
         public virtual void Emit(System.Reflection.Emit.OpCode opcode, long arg) { }
-        [System.Security.SecuritySafeCriticalAttribute]
         public virtual void Emit(System.Reflection.Emit.OpCode opcode, System.Reflection.ConstructorInfo con) { }
         public virtual void Emit(System.Reflection.Emit.OpCode opcode, System.Reflection.Emit.Label label) { }
         public virtual void Emit(System.Reflection.Emit.OpCode opcode, System.Reflection.Emit.Label[] labels) { }
         public virtual void Emit(System.Reflection.Emit.OpCode opcode, System.Reflection.Emit.LocalBuilder local) { }
         public virtual void Emit(System.Reflection.Emit.OpCode opcode, System.Reflection.Emit.SignatureHelper signature) { }
         public virtual void Emit(System.Reflection.Emit.OpCode opcode, System.Reflection.FieldInfo field) { }
-        [System.Security.SecuritySafeCriticalAttribute]
         public virtual void Emit(System.Reflection.Emit.OpCode opcode, System.Reflection.MethodInfo meth) { }
         [System.CLSCompliantAttribute(false)]
         public void Emit(System.Reflection.Emit.OpCode opcode, sbyte arg) { }
-        [System.Security.SecuritySafeCriticalAttribute]
         public virtual void Emit(System.Reflection.Emit.OpCode opcode, float arg) { }
         public virtual void Emit(System.Reflection.Emit.OpCode opcode, string str) { }
-        [System.Security.SecuritySafeCriticalAttribute]
         public virtual void Emit(System.Reflection.Emit.OpCode opcode, System.Type cls) { }
-        [System.Security.SecuritySafeCriticalAttribute]
         public virtual void EmitCall(System.Reflection.Emit.OpCode opcode, System.Reflection.MethodInfo methodInfo, System.Type[] optionalParameterTypes) { }
-        [System.Security.SecuritySafeCriticalAttribute]
         public virtual void EmitCalli(System.Reflection.Emit.OpCode opcode, System.Reflection.CallingConventions callingConvention, System.Type returnType, System.Type[] parameterTypes, System.Type[] optionalParameterTypes) { }
         public virtual void EmitWriteLine(System.Reflection.Emit.LocalBuilder localBuilder) { }
         public virtual void EmitWriteLine(System.Reflection.FieldInfo fld) { }
@@ -89,20 +82,15 @@ namespace System.Reflection.Emit
         public bool IsOut { get { throw null; } }
         public virtual string Name { get { throw null; } }
         public virtual int Position { get { throw null; } }
-        [System.Security.SecuritySafeCriticalAttribute]
         public virtual void SetConstant(object defaultValue) { }
-        [System.Security.SecuritySafeCriticalAttribute]
         public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
-        [System.Security.SecuritySafeCriticalAttribute]
         public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
     }
     public sealed partial class SignatureHelper
     {
         internal SignatureHelper() { }
         public void AddArgument(System.Type clsArgument) { }
-        [System.Security.SecuritySafeCriticalAttribute]
         public void AddArgument(System.Type argument, bool pinned) { }
-        [System.Security.SecuritySafeCriticalAttribute]
         public void AddArgument(System.Type argument, System.Type[] requiredCustomModifiers, System.Type[] optionalCustomModifiers) { }
         public void AddArguments(System.Type[] arguments, System.Type[][] requiredCustomModifiers, System.Type[][] optionalCustomModifiers) { }
         public void AddSentinel() { }
@@ -112,11 +100,8 @@ namespace System.Reflection.Emit
         public static System.Reflection.Emit.SignatureHelper GetLocalVarSigHelper() { throw null; }
         public static System.Reflection.Emit.SignatureHelper GetLocalVarSigHelper(System.Reflection.Module mod) { throw null; }
         public static System.Reflection.Emit.SignatureHelper GetMethodSigHelper(System.Reflection.CallingConventions callingConvention, System.Type returnType) { throw null; }
-        [System.Security.SecuritySafeCriticalAttribute]
         public static System.Reflection.Emit.SignatureHelper GetMethodSigHelper(System.Reflection.Module mod, System.Reflection.CallingConventions callingConvention, System.Type returnType) { throw null; }
-        [System.Security.SecuritySafeCriticalAttribute]
         public static System.Reflection.Emit.SignatureHelper GetMethodSigHelper(System.Reflection.Module mod, System.Type returnType, System.Type[] parameterTypes) { throw null; }
-        [System.Security.SecuritySafeCriticalAttribute]
         public static System.Reflection.Emit.SignatureHelper GetPropertySigHelper(System.Reflection.Module mod, System.Reflection.CallingConventions callingConvention, System.Type returnType, System.Type[] requiredReturnTypeCustomModifiers, System.Type[] optionalReturnTypeCustomModifiers, System.Type[] parameterTypes, System.Type[][] requiredParameterTypeCustomModifiers, System.Type[][] optionalParameterTypeCustomModifiers) { throw null; }
         public static System.Reflection.Emit.SignatureHelper GetPropertySigHelper(System.Reflection.Module mod, System.Type returnType, System.Type[] parameterTypes) { throw null; }
         public static System.Reflection.Emit.SignatureHelper GetPropertySigHelper(System.Reflection.Module mod, System.Type returnType, System.Type[] requiredReturnTypeCustomModifiers, System.Type[] optionalReturnTypeCustomModifiers, System.Type[] parameterTypes, System.Type[][] requiredParameterTypeCustomModifiers, System.Type[][] optionalParameterTypeCustomModifiers) { throw null; }

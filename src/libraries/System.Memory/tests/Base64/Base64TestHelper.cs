@@ -57,7 +57,7 @@ namespace System.Buffers.Text.Tests
                 // Workaroudn for indices.Cast<byte>().ToArray() since it throws
                 // InvalidCastException: Unable to cast object of type 'System.Int32' to type 'System.Byte'
                 byte[] bytes = new byte[indices.Length];
-                for(int i = 0; i < indices.Length; i++)
+                for (int i = 0; i < indices.Length; i++)
                 {
                     bytes[i] = (byte)indices[i];
                 }

@@ -78,6 +78,11 @@ namespace System.ServiceModel.Syndication
             _feedType = feedToWrite.GetType();
         }
 
+        internal override Func<string, string, string, DateTimeOffset> GetDefaultDateTimeParser()
+        {
+            return DateTimeHelper.DefaultRss20DateTimeParser;
+        }
+
         public bool PreserveAttributeExtensions
         {
             get { return _preserveAttributeExtensions; }
@@ -254,211 +259,10 @@ namespace System.ServiceModel.Syndication
                 this.WriteItem(writer, item, feedBaseUri);
             }
         }
-
-        private static DateTimeOffset DateFromString(string dateTimeString, XmlReader reader)
-        {
-            StringBuilder dateTimeStringBuilder = new StringBuilder(dateTimeString.Trim());
-            if (dateTimeStringBuilder.Length < 18)
-            {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
-                    new XmlException(FeedUtils.AddLineInfo(reader,
-                    SR.ErrorParsingDateTime)));
-            }
-            if (dateTimeStringBuilder[3] == ',')
-            {
-                // There is a leading (e.g.) "Tue, ", strip it off
-                dateTimeStringBuilder.Remove(0, 4);
-                // There's supposed to be a space here but some implementations dont have one
-                RemoveExtraWhiteSpaceAtStart(dateTimeStringBuilder);
-            }
-            ReplaceMultipleWhiteSpaceWithSingleWhiteSpace(dateTimeStringBuilder);
-            if (char.IsDigit(dateTimeStringBuilder[1]))
-            {
-                // two-digit day, we are good
-            }
-            else
-            {
-                dateTimeStringBuilder.Insert(0, '0');
-            }
-            if (dateTimeStringBuilder.Length < 19)
-            {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
-                    new XmlException(FeedUtils.AddLineInfo(reader,
-                    SR.ErrorParsingDateTime)));
-            }
-            bool thereAreSeconds = (dateTimeStringBuilder[17] == ':');
-            int timeZoneStartIndex;
-            if (thereAreSeconds)
-            {
-                timeZoneStartIndex = 21;
-            }
-            else
-            {
-                timeZoneStartIndex = 18;
-            }
-            string timeZoneSuffix = dateTimeStringBuilder.ToString().Substring(timeZoneStartIndex);
-            dateTimeStringBuilder.Remove(timeZoneStartIndex, dateTimeStringBuilder.Length - timeZoneStartIndex);
-            bool isUtc;
-            dateTimeStringBuilder.Append(NormalizeTimeZone(timeZoneSuffix, out isUtc));
-            string wellFormattedString = dateTimeStringBuilder.ToString();
-
-            DateTimeOffset theTime;
-            string parseFormat;
-            if (thereAreSeconds)
-            {
-                parseFormat = "dd MMM yyyy HH:mm:ss zzz";
-            }
-            else
-            {
-                parseFormat = "dd MMM yyyy HH:mm zzz";
-            }
-            if (DateTimeOffset.TryParseExact(wellFormattedString, parseFormat,
-                CultureInfo.InvariantCulture.DateTimeFormat,
-                (isUtc ? DateTimeStyles.AdjustToUniversal : DateTimeStyles.None), out theTime))
-            {
-                return theTime;
-            }
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
-                new XmlException(FeedUtils.AddLineInfo(reader,
-                SR.ErrorParsingDateTime)));
-        }
-
-        private static string NormalizeTimeZone(string rfc822TimeZone, out bool isUtc)
-        {
-            isUtc = false;
-            // return a string in "-08:00" format
-            if (rfc822TimeZone[0] == '+' || rfc822TimeZone[0] == '-')
-            {
-                // the time zone is supposed to be 4 digits but some feeds omit the initial 0
-                StringBuilder result = new StringBuilder(rfc822TimeZone);
-                if (result.Length == 4)
-                {
-                    // the timezone is +/-HMM. Convert to +/-HHMM
-                    result.Insert(1, '0');
-                }
-                result.Insert(3, ':');
-                return result.ToString();
-            }
-            switch (rfc822TimeZone)
-            {
-                case "UT":
-                case "Z":
-                    isUtc = true;
-                    return "-00:00";
-                case "GMT":
-                    return "-00:00";
-                case "A":
-                    return "-01:00";
-                case "B":
-                    return "-02:00";
-                case "C":
-                    return "-03:00";
-                case "D":
-                case "EDT":
-                    return "-04:00";
-                case "E":
-                case "EST":
-                case "CDT":
-                    return "-05:00";
-                case "F":
-                case "CST":
-                case "MDT":
-                    return "-06:00";
-                case "G":
-                case "MST":
-                case "PDT":
-                    return "-07:00";
-                case "H":
-                case "PST":
-                    return "-08:00";
-                case "I":
-                    return "-09:00";
-                case "K":
-                    return "-10:00";
-                case "L":
-                    return "-11:00";
-                case "M":
-                    return "-12:00";
-                case "N":
-                    return "+01:00";
-                case "O":
-                    return "+02:00";
-                case "P":
-                    return "+03:00";
-                case "Q":
-                    return "+04:00";
-                case "R":
-                    return "+05:00";
-                case "S":
-                    return "+06:00";
-                case "T":
-                    return "+07:00";
-                case "U":
-                    return "+08:00";
-                case "V":
-                    return "+09:00";
-                case "W":
-                    return "+10:00";
-                case "X":
-                    return "+11:00";
-                case "Y":
-                    return "+12:00";
-                default:
-                    return "";
-            }
-        }
-
-        private static void RemoveExtraWhiteSpaceAtStart(StringBuilder stringBuilder)
-        {
-            int i = 0;
-            while (i < stringBuilder.Length)
-            {
-                if (!char.IsWhiteSpace(stringBuilder[i]))
-                {
-                    break;
-                }
-                ++i;
-            }
-            if (i > 0)
-            {
-                stringBuilder.Remove(0, i);
-            }
-        }
-
-        private static void ReplaceMultipleWhiteSpaceWithSingleWhiteSpace(StringBuilder builder)
-        {
-            int index = 0;
-            int whiteSpaceStart = -1;
-            while (index < builder.Length)
-            {
-                if (char.IsWhiteSpace(builder[index]))
-                {
-                    if (whiteSpaceStart < 0)
-                    {
-                        whiteSpaceStart = index;
-                        // normalize all white spaces to be ' ' so that the date time parsing works
-                        builder[index] = ' ';
-                    }
-                }
-                else if (whiteSpaceStart >= 0)
-                {
-                    if (index > whiteSpaceStart + 1)
-                    {
-                        // there are at least 2 spaces... replace by 1
-                        builder.Remove(whiteSpaceStart, index - whiteSpaceStart - 1);
-                        index = whiteSpaceStart + 1;
-                    }
-                    whiteSpaceStart = -1;
-                }
-                ++index;
-            }
-            // we have already trimmed the start and end so there cannot be a trail of white spaces in the end
-            Debug.Assert(builder.Length == 0 || builder[builder.Length - 1] != ' ', "The string builder doesnt end in a white space");
-        }
-
+        
         private string AsString(DateTimeOffset dateTime)
         {
-            if (dateTime.Offset == Atom10FeedFormatter.zeroOffset)
+            if (dateTime.Offset == Atom10FeedFormatter.ZeroOffset)
             {
                 return dateTime.ToUniversalTime().ToString(Rfc822OutputUtcDateTimeFormat, CultureInfo.InvariantCulture);
             }
@@ -497,8 +301,9 @@ namespace System.ServiceModel.Syndication
                     }
                 }
             }
+
             string uri = reader.ReadElementString();
-            link.Uri = new Uri(uri, UriKind.RelativeOrAbsolute);
+            link.Uri = UriParser(uri, UriKind.RelativeOrAbsolute, Rss20Constants.LinkTag, Rss20Constants.Rss20Namespace);
             return link;
         }
 
@@ -601,6 +406,8 @@ namespace System.ServiceModel.Syndication
                 if (!isEmpty)
                 {
                     string fallbackAlternateLink = null;
+                    string fallbackAlternateLinkLocalName = null;
+                    string fallbackAlternateLinkNamespace = null;
                     XmlDictionaryWriter extWriter = null;
                     bool readAlternateLink = false;
                     try
@@ -641,10 +448,13 @@ namespace System.ServiceModel.Syndication
                                 {
                                     isPermalink = false;
                                 }
+
                                 result.Id = reader.ReadElementString();
                                 if (isPermalink)
                                 {
                                     fallbackAlternateLink = result.Id;
+                                    fallbackAlternateLinkLocalName = Rss20Constants.GuidTag;
+                                    fallbackAlternateLinkNamespace = Rss20Constants.Rss20Namespace;
                                 }
                             }
                             else if (reader.IsStartElement(Rss20Constants.PubDateTag, Rss20Constants.Rss20Namespace))
@@ -656,7 +466,14 @@ namespace System.ServiceModel.Syndication
                                     string str = reader.ReadString();
                                     if (!string.IsNullOrEmpty(str))
                                     {
-                                        result.PublishDate = DateFromString(str, reader);
+                                        try
+                                        {
+                                            result.PublishDate = DateFromString(str, reader);
+                                        }
+                                        catch (XmlException e)
+                                        {
+                                            result.PublishDateException = e;
+                                        }
                                     }
                                     reader.ReadEndElement();
                                 }
@@ -677,7 +494,7 @@ namespace System.ServiceModel.Syndication
                                         string val = reader.Value;
                                         if (name == Rss20Constants.UrlTag && ns == Rss20Constants.Rss20Namespace)
                                         {
-                                            feed.Links.Add(SyndicationLink.CreateSelfLink(new Uri(val, UriKind.RelativeOrAbsolute)));
+                                            feed.Links.Add(SyndicationLink.CreateSelfLink(UriParser(val, UriKind.RelativeOrAbsolute, Rss20Constants.UrlTag, Rss20Constants.Rss20Namespace)));
                                         }
                                         else if (!FeedUtils.IsXmlns(name, ns))
                                         {
@@ -692,6 +509,7 @@ namespace System.ServiceModel.Syndication
                                         }
                                     }
                                 }
+
                                 string feedTitle = reader.ReadElementString();
                                 feed.Title = new TextSyndicationContent(feedTitle);
                                 result.SourceFeed = feed;
@@ -729,7 +547,7 @@ namespace System.ServiceModel.Syndication
                     reader.ReadEndElement(); // item
                     if (!readAlternateLink && fallbackAlternateLink != null)
                     {
-                        result.Links.Add(SyndicationLink.CreateAlternateLink(new Uri(fallbackAlternateLink, UriKind.RelativeOrAbsolute)));
+                        result.Links.Add(SyndicationLink.CreateAlternateLink(UriParser(fallbackAlternateLink, UriKind.RelativeOrAbsolute, fallbackAlternateLinkLocalName, fallbackAlternateLinkNamespace)));
                         readAlternateLink = true;
                     }
 
@@ -775,7 +593,7 @@ namespace System.ServiceModel.Syndication
                     string val = reader.Value;
                     if (name == Rss20Constants.UrlTag && ns == Rss20Constants.Rss20Namespace)
                     {
-                        link.Uri = new Uri(val, UriKind.RelativeOrAbsolute);
+                        link.Uri = UriParser(val, UriKind.RelativeOrAbsolute, Rss20Constants.EnclosureTag, Rss20Constants.Rss20Namespace);
                     }
                     else if (name == Rss20Constants.TypeTag && ns == Rss20Constants.Rss20Namespace)
                     {
@@ -861,7 +679,11 @@ namespace System.ServiceModel.Syndication
             try
             {
                 string baseUri = null;
+                string baseUriLocalName = null;
+                string baseUriNamespace = null;
                 reader.MoveToContent();
+                string elementLocalName = reader.LocalName;
+                string elementNamespace = reader.NamespaceURI;
                 string version = reader.GetAttribute(Rss20Constants.VersionTag, Rss20Constants.Rss20Namespace);
                 if (version != Rss20Constants.Version)
                 {
@@ -873,10 +695,14 @@ namespace System.ServiceModel.Syndication
                     if (!string.IsNullOrEmpty(tmp))
                     {
                         baseUri = tmp;
+                        baseUriLocalName = elementLocalName;
+                        baseUriNamespace = elementNamespace;
                     }
                 }
                 reader.ReadStartElement();
                 reader.MoveToContent();
+                elementLocalName = reader.LocalName;
+                elementNamespace = reader.NamespaceURI;
                 if (reader.HasAttributes)
                 {
                     while (reader.MoveToNextAttribute())
@@ -886,6 +712,8 @@ namespace System.ServiceModel.Syndication
                         if (name == "base" && ns == Atom10FeedFormatter.XmlNs)
                         {
                             baseUri = reader.Value;
+                            baseUriLocalName = elementLocalName;
+                            baseUriNamespace = elementNamespace;
                             continue;
                         }
                         if (FeedUtils.IsXmlns(name, ns) || FeedUtils.IsXmlSchemaType(name, ns))
@@ -906,10 +734,12 @@ namespace System.ServiceModel.Syndication
                         }
                     }
                 }
+
                 if (!string.IsNullOrEmpty(baseUri))
                 {
-                    result.BaseUri = new Uri(baseUri, UriKind.RelativeOrAbsolute);
+                    result.BaseUri = UriParser(baseUri, UriKind.RelativeOrAbsolute, baseUriLocalName, baseUriNamespace);
                 }
+
                 bool areAllItemsRead = true;
                 reader.ReadStartElement(Rss20Constants.ChannelTag, Rss20Constants.Rss20Namespace);
 
@@ -954,7 +784,14 @@ namespace System.ServiceModel.Syndication
                                 string str = reader.ReadString();
                                 if (!string.IsNullOrEmpty(str))
                                 {
-                                    result.LastUpdatedTime = DateFromString(str, reader);
+                                    try
+                                    {
+                                        result.LastUpdatedTime = DateFromString(str, reader);
+                                    }
+                                    catch (XmlException e)
+                                    {
+                                        result.LastUpdatedTimeException = e;
+                                    }
                                 }
                                 reader.ReadEndElement();
                             }
@@ -974,7 +811,7 @@ namespace System.ServiceModel.Syndication
                             {
                                 if (reader.IsStartElement(Rss20Constants.UrlTag, Rss20Constants.Rss20Namespace))
                                 {
-                                    result.ImageUrl = new Uri(reader.ReadElementString(), UriKind.RelativeOrAbsolute);
+                                    result.ImageUrl = UriParser(reader.ReadElementString(), UriKind.RelativeOrAbsolute, Rss20Constants.UrlTag, Rss20Constants.Rss20Namespace);
                                 }
                                 else
                                 {

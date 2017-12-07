@@ -13,7 +13,7 @@ namespace System.Numerics
     {
         [System.CLSCompliantAttribute(false)]
         public BigInteger(byte[] value) { throw null; }
-        public BigInteger(System.ReadOnlySpan<byte> value) { throw null; }
+        public BigInteger(System.ReadOnlySpan<byte> value, bool isUnsigned=false, bool isBigEndian=false) { throw null; }
         public BigInteger(decimal value) { throw null; }
         public BigInteger(double value) { throw null; }
         public BigInteger(int value) { throw null; }
@@ -47,7 +47,7 @@ namespace System.Numerics
         [System.CLSCompliantAttribute(false)]
         public bool Equals(ulong other) { throw null; }
         public override int GetHashCode() { throw null; }
-        public int GetByteCount() { throw null; }
+        public int GetByteCount(bool isUnsigned=false) { throw null; }
         public static System.Numerics.BigInteger GreatestCommonDivisor(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
         public static double Log(System.Numerics.BigInteger value) { throw null; }
         public static double Log(System.Numerics.BigInteger value, double baseValue) { throw null; }
@@ -153,14 +153,17 @@ namespace System.Numerics
         public static System.Numerics.BigInteger Remainder(System.Numerics.BigInteger dividend, System.Numerics.BigInteger divisor) { throw null; }
         public static System.Numerics.BigInteger Subtract(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
         public byte[] ToByteArray() { throw null; }
+        public byte[] ToByteArray(bool isUnsigned=false, bool isBigEndian=false) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider provider) { throw null; }
         public string ToString(string format) { throw null; }
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
+        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider provider = null) { throw null; }
         public static bool TryParse(string value, System.Globalization.NumberStyles style, System.IFormatProvider provider, out System.Numerics.BigInteger result) { throw null; }
         public static bool TryParse(string value, out System.Numerics.BigInteger result) { throw null; }
-        public static bool TryParse(ReadOnlySpan<char> value, out System.Numerics.BigInteger result, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
-        public bool TryWriteBytes(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> value, out System.Numerics.BigInteger result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> value, System.Globalization.NumberStyles style, System.IFormatProvider provider, out System.Numerics.BigInteger result) { throw null; }
+        public bool TryWriteBytes(System.Span<byte> destination, out int bytesWritten, bool isUnsigned=false, bool isBigEndian=false) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Complex : System.IEquatable<System.Numerics.Complex>, System.IFormattable

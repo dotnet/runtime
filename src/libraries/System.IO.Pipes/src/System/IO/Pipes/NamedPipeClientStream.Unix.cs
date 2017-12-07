@@ -16,7 +16,6 @@ namespace System.IO.Pipes
     /// </summary>
     public sealed partial class NamedPipeClientStream : PipeStream
     {
-        [SecurityCritical]
         private bool TryConnect(int timeout, CancellationToken cancellationToken)
         {
             // timeout and cancellationToken aren't used as Connect will be very fast,
@@ -57,7 +56,6 @@ namespace System.IO.Pipes
 
         public int NumberOfServerInstances
         {
-            [SecurityCritical]
             [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
             get
             {

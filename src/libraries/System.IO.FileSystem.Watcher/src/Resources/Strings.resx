@@ -129,6 +129,9 @@
   <data name="InvalidDirName" xml:space="preserve">
     <value>The directory name {0} is invalid.</value>
   </data>
+  <data name="InvalidDirName_NotExists" xml:space="preserve">
+    <value>The directory name '{0}' does not exist.</value>
+  </data>
   <data name="InvalidEnumArgument" xml:space="preserve">
     <value>The value of argument '{0}' ({1}) is invalid for Enum type '{2}'.</value>
   </data>

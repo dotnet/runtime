@@ -2,15 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Text;
 using System.Linq;
-using System.Numerics;
-using System.Buffers.Text;
 using System.Globalization;
 using System.Collections.Generic;
-
-using Xunit;
 
 namespace System.Buffers.Text.Tests
 {
@@ -46,7 +40,7 @@ namespace System.Buffers.Text.Tests
         public static IEnumerable<object[]> UInt16FormatterTheoryData => UInt16FormatterTestData.Select(td => new object[] { td });
         public static IEnumerable<object[]> Int32FormatterTheoryData => Int32FormatterTestData.Select(td => new object[] { td });
         public static IEnumerable<object[]> UInt32FormatterTheoryData => UInt32FormatterTestData.Select(td => new object[] { td });
-        public static IEnumerable<object[]> Int64FormatterTheoryData =>  Int64FormatterTestData.Select(td => new object[] { td });
+        public static IEnumerable<object[]> Int64FormatterTheoryData => Int64FormatterTestData.Select(td => new object[] { td });
         public static IEnumerable<object[]> UInt64FormatterTheoryData => UInt64FormatterTestData.Select(td => new object[] { td });
         public static IEnumerable<object[]> DecimalFormatterTheoryData => DecimalFormatterTestData.Select(td => new object[] { td });
         public static IEnumerable<object[]> DoubleFormatterTheoryData => DoubleFormatterTestData.Select(td => new object[] { td });
@@ -85,7 +79,7 @@ namespace System.Buffers.Text.Tests
                     if (format.IsDefault)
                     {
                         string expectedOutput = ComputeExpectedOutput<T>(value, format.Symbol, StandardFormat.NoPrecision);
-                        yield return new FormatterTestData<T>(value, new SupportedFormat(default(char), format.SupportsPrecision), default(byte), expectedOutput);
+                        yield return new FormatterTestData<T>(value, new SupportedFormat(default, format.SupportsPrecision), default, expectedOutput);
                     }
 
                     if (!format.NoRepresentation)
@@ -97,7 +91,7 @@ namespace System.Buffers.Text.Tests
                         }
                         else
                         {
-                            foreach (byte precision in TestData.Precisions)
+                            foreach (byte precision in TestData.s_precisions)
                             {
                                 string expectedOutput = ComputeExpectedOutput<T>(value, format.Symbol, precision);
                                 yield return new FormatterTestData<T>(value, format, precision, expectedOutput);

@@ -9,7 +9,6 @@ namespace System.IO.Pipes
 {
     public static class PipesAclExtensions
     {
-        [System.Security.SecurityCritical]
         public static PipeSecurity GetAccessControl(this PipeStream stream)
         {
             // Checks that State != WaitingToConnect and State != Closed
@@ -19,7 +18,6 @@ namespace System.IO.Pipes
             return new PipeSecurity(handle, AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
         }
 
-        [System.Security.SecurityCritical]
         public static void SetAccessControl(this PipeStream stream, PipeSecurity pipeSecurity)
         {
             if (pipeSecurity == null)

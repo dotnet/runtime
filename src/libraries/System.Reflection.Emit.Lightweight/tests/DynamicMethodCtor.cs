@@ -9,6 +9,8 @@ namespace System.Reflection.Emit.Tests
 {
     public class DynamicMethodctor1
     {
+        delegate ref int GetRefIntoArrayDelegate(int[] array, int index);
+
         [Theory]
         [InlineData("Method", typeof(void), null)]
         [InlineData("Method", typeof(void), new Type[] { typeof(int), typeof(string) })]
@@ -113,24 +115,24 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void ByRefReturnType_ThrowsNotSupportedException()
+        public void ByRefReturnType_DoesNotThrow()
         {
             Module module = typeof(TestClass).GetTypeInfo().Module;
-            Assert.Throws<NotSupportedException>(() => new DynamicMethod("Method", typeof(int).MakeByRefType(), new Type[0], module));
 
-            Assert.Throws<NotSupportedException>(() => new DynamicMethod("Method", typeof(int).MakeByRefType(), new Type[0], module, true));
-            Assert.Throws<NotSupportedException>(() => new DynamicMethod("Method", typeof(int).MakeByRefType(), new Type[0], module, false));
+            DynamicMethod method = new DynamicMethod("Method", typeof(int).MakeByRefType(), new[] { typeof(int[]), typeof(int) });
+            ILGenerator generator = method.GetILGenerator();
+            generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(OpCodes.Ldarg_1);
+            generator.Emit(OpCodes.Ldelema, typeof(int));
+            generator.Emit(OpCodes.Ret);
 
-            Assert.Throws<NotSupportedException>(() => new DynamicMethod("Method", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(int).MakeByRefType(), new Type[0], module, true));
-            Assert.Throws<NotSupportedException>(() => new DynamicMethod("Method", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(int).MakeByRefType(), new Type[0], module, false));
+            var methodDelegate = (GetRefIntoArrayDelegate) method.CreateDelegate(typeof(GetRefIntoArrayDelegate));
 
-            Assert.Throws<NotSupportedException>(() => new DynamicMethod("Method", typeof(int).MakeByRefType(), new Type[0], typeof(TestClass)));
+            var array = new int[] { 0, 1, 2, 3 };
+            ref int element = ref methodDelegate(array, 2);
+            element = 10;
 
-            Assert.Throws<NotSupportedException>(() => new DynamicMethod("Method", typeof(int).MakeByRefType(), new Type[0], typeof(TestClass), true));
-            Assert.Throws<NotSupportedException>(() => new DynamicMethod("Method", typeof(int).MakeByRefType(), new Type[0], typeof(TestClass), false));
-
-            Assert.Throws<NotSupportedException>(() => new DynamicMethod("Method", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(int).MakeByRefType(), new Type[0], typeof(TestClass), true));
-            Assert.Throws<NotSupportedException>(() => new DynamicMethod("Method", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(int).MakeByRefType(), new Type[0], typeof(TestClass), false));
+            Assert.Equal(10, array[2]);
         }
 
         [Fact]

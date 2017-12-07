@@ -68,16 +68,6 @@ namespace System
 
         public static string NewLine => "\r\n";
 
-        private static int ProcessorCountFromSystemInfo
-        {
-            get
-            {
-                var info = default(Interop.Kernel32.SYSTEM_INFO);
-                Interop.Kernel32.GetSystemInfo(out info);
-                return info.dwNumberOfProcessors;
-            }
-        }
-
         public static int SystemPageSize
         {
             get
@@ -154,59 +144,6 @@ namespace System
                 PlatformID.Win32NT,
                 new Version(version.dwMajorVersion, version.dwMinorVersion, version.dwBuildNumber, (version.wServicePackMajor << 16) | version.wServicePackMinor),
                 Marshal.PtrToStringUni((IntPtr)version.szCSDVersion));
-        });
-
-        public static int ProcessorCount
-        {
-            get
-            {
-                // First try GetLogicalProcessorInformationEx, caching the result as desktop/coreclr does.
-                // If that fails for some reason, fall back to a non-cached result from GetSystemInfo.
-                // (See SystemNative::GetProcessorCount in coreclr for a comparison.)
-                int pc = s_processorCountFromGetLogicalProcessorInformationEx.Value;
-                return pc != 0 ? pc : ProcessorCountFromSystemInfo;
-            }
-        }
-
-        private static readonly unsafe Lazy<int> s_processorCountFromGetLogicalProcessorInformationEx = new Lazy<int>(() =>
-        {
-            // Determine how much size we need for a call to GetLogicalProcessorInformationEx
-            uint len = 0;
-            if (!Interop.Kernel32.GetLogicalProcessorInformationEx(Interop.Kernel32.LOGICAL_PROCESSOR_RELATIONSHIP.RelationGroup, IntPtr.Zero, ref len) &&
-                Marshal.GetLastWin32Error() == Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
-            {
-                // Allocate that much space
-                Debug.Assert(len > 0);
-                var buffer = new byte[len];
-                fixed (byte* bufferPtr = buffer)
-                {
-                    // Call GetLogicalProcessorInformationEx with the allocated buffer
-                    if (Interop.Kernel32.GetLogicalProcessorInformationEx(Interop.Kernel32.LOGICAL_PROCESSOR_RELATIONSHIP.RelationGroup, (IntPtr)bufferPtr, ref len))
-                    {
-                        // Walk each SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX in the buffer, where the Size of each dictates how
-                        // much space it's consuming.  For each group relation, count the number of active processors in each of its group infos.
-                        int processorCount = 0;
-                        byte* ptr = bufferPtr, endPtr = bufferPtr + len;
-                        while (ptr < endPtr)
-                        {
-                            var current = (Interop.Kernel32.SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)ptr;
-                            if (current->Relationship == Interop.Kernel32.LOGICAL_PROCESSOR_RELATIONSHIP.RelationGroup)
-                            {
-                                Interop.Kernel32.PROCESSOR_GROUP_INFO* groupInfo = &current->Group.GroupInfo;
-                                int groupCount = current->Group.ActiveGroupCount;
-                                for (int i = 0; i < groupCount; i++)
-                                {
-                                    processorCount += (groupInfo + i)->ActiveProcessorCount;
-                                }
-                            }
-                            ptr += current->Size;
-                        }
-                        return processorCount;
-                    }
-                }
-            }
-
-            return 0;
         });
 
         public static string SystemDirectory

@@ -11,7 +11,6 @@ namespace System
             return value.IsNormalized();
         }
 
-        [System.Security.SecurityCritical]
         public static bool IsNormalized(this string value, System.Text.NormalizationForm normalizationForm)
         {
             return value.IsNormalized(normalizationForm);
@@ -22,7 +21,6 @@ namespace System
             return value.Normalize();
         }
 
-        [System.Security.SecurityCritical]
         public static String Normalize(this string value, System.Text.NormalizationForm normalizationForm)
         {
             return value.Normalize(normalizationForm);

@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
-
 namespace System.Buffers.Text
 {
     public static partial class Utf8Formatter
@@ -98,7 +95,7 @@ namespace System.Buffers.Text
         /// </exceptions>
         public static bool TryFormat(DateTimeOffset value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default)
         {
-            TimeSpan offset = Utf8Constants.NullUtcOffset;
+            TimeSpan offset = Utf8Constants.s_nullUtcOffset;
             char symbol = format.Symbol;
             if (format.IsDefault)
             {
@@ -159,10 +156,10 @@ namespace System.Buffers.Text
                     return TryFormatDateTimeL(value, buffer, out bytesWritten);
 
                 case 'O':
-                    return TryFormatDateTimeO(value, Utf8Constants.NullUtcOffset, buffer, out bytesWritten);
+                    return TryFormatDateTimeO(value, Utf8Constants.s_nullUtcOffset, buffer, out bytesWritten);
 
                 case 'G':
-                    return TryFormatDateTimeG(value, Utf8Constants.NullUtcOffset, buffer, out bytesWritten);
+                    return TryFormatDateTimeG(value, Utf8Constants.s_nullUtcOffset, buffer, out bytesWritten);
 
                 default:
                     return ThrowHelper.TryFormatThrowFormatException(out bytesWritten);

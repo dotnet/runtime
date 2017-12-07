@@ -792,9 +792,12 @@ namespace System.Runtime.CompilerServices
         public fixed byte Bytes[512];
     }
 
+    [StructLayout(LayoutKind.Explicit, Size=16)]
     public unsafe struct Int32Double
     {
+        [FieldOffset(0)]
         public int Int32;
+        [FieldOffset(8)]
         public double Double;
 
         public static unsafe byte[] Unaligned(int i, double d)

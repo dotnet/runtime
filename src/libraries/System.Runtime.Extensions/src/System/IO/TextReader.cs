@@ -88,16 +88,14 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
 
-            int n = 0;
-            do
+            int n;
+            for (n = 0; n < count; n++)
             {
                 int ch = Read();
-                if (ch == -1)
-                {
-                    break;
-                }
-                buffer[index + n++] = (char)ch;
-            } while (n < count);
+                if (ch == -1) break;
+                buffer[index + n] = (char)ch;
+            }
+            
             return n;
         }
 

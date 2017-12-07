@@ -92,6 +92,58 @@ static int Dup2WithInterruptedRetry(int oldfd, int newfd)
     return result;
 }
 
+static ssize_t WriteSize(int fd, const void* buffer, size_t count)
+{
+    ssize_t rv = 0;
+    while (count > 0)
+    {
+        ssize_t result = 0;
+        while (CheckInterrupted(result = write(fd, buffer, count)));
+        if (result > 0)
+        {
+            rv += result;
+            buffer = reinterpret_cast<const uint8_t*>(buffer) + result;
+            count -= static_cast<size_t>(result);
+        }
+        else
+        {
+            return -1;
+        }
+    }
+    return rv;
+}
+
+static ssize_t ReadSize(int fd, void* buffer, size_t count)
+{
+    ssize_t rv = 0;
+    while (count > 0)
+    {
+        ssize_t result = 0;
+        while (CheckInterrupted(result = read(fd, buffer, count)));
+        if (result > 0)
+        {
+            rv += result;
+            buffer = reinterpret_cast<uint8_t*>(buffer) + result;
+            count -= static_cast<size_t>(result);
+        }
+        else
+        {
+            return -1;
+        }
+    }
+    return rv;
+}
+
+__attribute__((noreturn))
+static void ExitChild(int pipeToParent, int error)
+{
+    if (pipeToParent != -1)
+    {
+        WriteSize(pipeToParent, &error, sizeof(error));
+    }
+    _exit(error != 0 ? error : EXIT_FAILURE);
+}
+
 extern "C" int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       char* const argv[],
                                       char* const envp[],
@@ -153,6 +205,12 @@ extern "C" int32_t SystemNative_ForkAndExecProcess(const char* filename,
     // child process is actually transitioned to the target program.  This avoids problems
     // where the parent process uses members of Process, like ProcessName, when the Process
     // is still the clone of this one. This is a best-effort attempt, so ignore any errors.
+    // If the child fails to exec we use the pipe to pass the errno to the parent process.
+    // NOTE: It's tempting to use SystemNative_Pipe here, as that would simulate pipe2 even
+    // on platforms that don't have it.  But it's potentially problematic, in that if another
+    // process is launched between the pipe creation and the fcntl call to set CLOEXEC on it,
+    // that file descriptor will be inherited into the child process, which will in turn cause
+    // the loop below that waits for that pipe to be closed to loop indefinitely.
 #if HAVE_PIPE2
     pipe2(waitForChildToExecPipe, O_CLOEXEC);
 #endif
@@ -172,7 +230,7 @@ extern "C" int32_t SystemNative_ForkAndExecProcess(const char* filename,
             (redirectStdout && Dup2WithInterruptedRetry(stdoutFds[WRITE_END_OF_PIPE], STDOUT_FILENO) == -1) ||
             (redirectStderr && Dup2WithInterruptedRetry(stderrFds[WRITE_END_OF_PIPE], STDERR_FILENO) == -1))
         {
-            _exit(errno != 0 ? errno : EXIT_FAILURE);
+            ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno);
         }
 
         // Change to the designated working directory, if one was specified
@@ -182,13 +240,13 @@ extern "C" int32_t SystemNative_ForkAndExecProcess(const char* filename,
             while (CheckInterrupted(result = chdir(cwd)));
             if (result == -1)
             {
-                _exit(errno != 0 ? errno : EXIT_FAILURE);
+                ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno);
             }
         }
 
         // Finally, execute the new process.  execve will not return if it's successful.
         execve(filename, argv, envp);
-        _exit(errno != 0 ? errno : EXIT_FAILURE); // execve failed
+        ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno); // execve failed
     }
 
     // This is the parent process. processId == pid of the child
@@ -212,10 +270,15 @@ done:
     CloseIfOpen(waitForChildToExecPipe[WRITE_END_OF_PIPE]);
     if (waitForChildToExecPipe[READ_END_OF_PIPE] != -1)
     {
-        int ignored;
+        int childError;
         if (success)
         {
-            while (CheckInterrupted(read(waitForChildToExecPipe[READ_END_OF_PIPE], &ignored, 1)));
+            ssize_t result = ReadSize(waitForChildToExecPipe[READ_END_OF_PIPE], &childError, sizeof(childError));
+            if (result == sizeof(childError))
+            {
+                success = false;
+                priorErrno = childError;
+            }
         }
         CloseIfOpen(waitForChildToExecPipe[READ_END_OF_PIPE]);
     }
@@ -439,17 +502,6 @@ extern "C" int64_t SystemNative_PathConf(const char* path, PathConfName name)
     }
 
     return pathconf(path, confValue);
-}
-
-extern "C" int64_t SystemNative_GetMaximumPath()
-{
-    int64_t result = pathconf("/", _PC_PATH_MAX);
-    if (result == -1)
-    {
-        result = PATH_MAX;
-    }
-
-    return result;
 }
 
 extern "C" int32_t SystemNative_GetPriority(PriorityWhich which, int32_t who)

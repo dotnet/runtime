@@ -4,8 +4,8 @@ ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=System.ServiceMod
 ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Xaml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)' referenced by the contract assembly 'Assembly(Name=WindowsBase, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35)'.
 ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51)' referenced by the contract assembly 'Assembly(Name=System.DirectoryServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)'.
 ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51)' referenced by the contract assembly 'Assembly(Name=System.DirectoryServices.AccountManagement, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
-ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Security.AccessControl, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the contract assembly 'Assembly(Name=System.DirectoryServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)'.
 ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=System.IO.FileSystem.AccessControl, Version=4.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the contract assembly 'Assembly(Name=System.DirectoryServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)'.
+ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Security.AccessControl, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the contract assembly 'Assembly(Name=System.DirectoryServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)'.
 ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51)' referenced by the contract assembly 'Assembly(Name=System.DirectoryServices.Protocols, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)'.
 Compat issues with assembly System:
 MembersMustExist : Member 'System.CodeDom.Compiler.CompilerParameters.Evidence.get()' does not exist in the implementation but it does exist in the contract.
@@ -69,8 +69,6 @@ MembersMustExist : Member 'System.Data.SqlClient.SqlConnectionStringBuilder.Tran
 MembersMustExist : Member 'System.Data.SqlClient.SqlDataReader.IsCommandBehavior(System.Data.CommandBehavior)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlParameter.ForceColumnEncryption.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlParameter.ForceColumnEncryption.set(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlParameter.UdtTypeName.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlParameter.UdtTypeName.set(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlParameterCollection.Add(System.String, System.Object)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Security:
 MembersMustExist : Member 'System.Security.Cryptography.CryptographicAttributeObjectCollection.IsSynchronized.get()' does not exist in the implementation but it does exist in the contract.
@@ -131,7 +129,6 @@ TypesMustExist : Type 'System.ComponentModel.SortDescription' does not exist in 
 TypesMustExist : Type 'System.ComponentModel.SortDescriptionCollection' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Diagnostics.PresentationTraceLevel' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Diagnostics.PresentationTraceSources' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.FileFormatException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.IO.Packaging.CertificateEmbeddingOption' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.IO.Packaging.EncryptedPackageEnvelope' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.IO.Packaging.InvalidSignatureEventHandler' does not exist in the implementation but it does exist in the contract.
@@ -256,4 +253,4 @@ TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionEven
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionEventHandler' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionFilterEventArgs' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionFilterEventHandler' does not exist in the implementation but it does exist in the contract.
-Total Issues: 242
+Total Issues: 239

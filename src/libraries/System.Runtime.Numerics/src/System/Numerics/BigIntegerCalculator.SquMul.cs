@@ -9,7 +9,6 @@ namespace System.Numerics
 {
     internal static partial class BigIntegerCalculator
     {
-        [SecuritySafeCritical]
         public static unsafe uint[] Square(uint[] value)
         {
             Debug.Assert(value != null);
@@ -32,7 +31,6 @@ namespace System.Numerics
         private static int SquareThreshold = 32;
         private static int AllocationThreshold = 256;
 
-        [SecuritySafeCritical]
         private static unsafe void Square(uint* value, int valueLength,
                                           uint* bits, int bitsLength)
         {
@@ -185,7 +183,6 @@ namespace System.Numerics
             return bits;
         }
 
-        [SecuritySafeCritical]
         public static unsafe uint[] Multiply(uint[] left, uint[] right)
         {
             Debug.Assert(left != null);
@@ -210,7 +207,6 @@ namespace System.Numerics
         // Mutable for unit testing...
         private static int MultiplyThreshold = 32;
 
-        [SecuritySafeCritical]
         private static unsafe void Multiply(uint* left, int leftLength,
                                             uint* right, int rightLength,
                                             uint* bits, int bitsLength)
@@ -358,7 +354,6 @@ namespace System.Numerics
             }
         }
 
-        [SecuritySafeCritical]
         private static unsafe void SubtractCore(uint* left, int leftLength,
                                                 uint* right, int rightLength,
                                                 uint* core, int coreLength)

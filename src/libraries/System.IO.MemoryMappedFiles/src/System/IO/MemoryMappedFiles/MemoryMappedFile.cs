@@ -16,7 +16,6 @@ namespace System.IO.MemoryMappedFiles
         internal const int DefaultSize = 0;
 
         // Private constructors to be used by the factory methods.
-        [SecurityCritical]
         private MemoryMappedFile(SafeMemoryMappedFileHandle handle)
         {
             Debug.Assert(handle != null);
@@ -27,7 +26,6 @@ namespace System.IO.MemoryMappedFiles
             _leaveOpen = true; // No FileStream to dispose of in this case.
         }
 
-        [SecurityCritical]
         private MemoryMappedFile(SafeMemoryMappedFileHandle handle, FileStream fileStream, bool leaveOpen)
         {
             Debug.Assert(handle != null);
@@ -57,7 +55,6 @@ namespace System.IO.MemoryMappedFiles
             return OpenExisting(mapName, desiredAccessRights, HandleInheritability.None);
         }
 
-        [SecurityCritical]
         public static MemoryMappedFile OpenExisting(string mapName, MemoryMappedFileRights desiredAccessRights,
                                                                     HandleInheritability inheritability)
         {
@@ -112,7 +109,6 @@ namespace System.IO.MemoryMappedFiles
             return CreateFromFile(path, mode, mapName, capacity, MemoryMappedFileAccess.ReadWrite);
         }
 
-        [SecurityCritical]
         public static MemoryMappedFile CreateFromFile(string path, FileMode mode, string mapName, long capacity,
                                                                         MemoryMappedFileAccess access)
         {
@@ -194,7 +190,6 @@ namespace System.IO.MemoryMappedFiles
             return new MemoryMappedFile(handle, fileStream, false);
         }
 
-        [SecurityCritical]
         public static MemoryMappedFile CreateFromFile(FileStream fileStream, string mapName, long capacity,
                                                         MemoryMappedFileAccess access,
                                                         HandleInheritability inheritability, bool leaveOpen)
@@ -274,7 +269,6 @@ namespace System.IO.MemoryMappedFiles
                    HandleInheritability.None);
         }
 
-        [SecurityCritical]
         public static MemoryMappedFile CreateNew(string mapName, long capacity, MemoryMappedFileAccess access,
                                                     MemoryMappedFileOptions options,
                                                     HandleInheritability inheritability)
@@ -335,7 +329,6 @@ namespace System.IO.MemoryMappedFiles
             return CreateOrOpen(mapName, capacity, access, MemoryMappedFileOptions.None, HandleInheritability.None);
         }
 
-        [SecurityCritical]
         public static MemoryMappedFile CreateOrOpen(string mapName, long capacity,
                                                     MemoryMappedFileAccess access, MemoryMappedFileOptions options,
                                                     HandleInheritability inheritability)
@@ -400,7 +393,6 @@ namespace System.IO.MemoryMappedFiles
             return CreateViewStream(offset, size, MemoryMappedFileAccess.ReadWrite);
         }
 
-        [SecurityCritical]
         public MemoryMappedViewStream CreateViewStream(long offset, long size, MemoryMappedFileAccess access)
         {
             if (offset < 0)
@@ -438,7 +430,6 @@ namespace System.IO.MemoryMappedFiles
             return CreateViewAccessor(offset, size, MemoryMappedFileAccess.ReadWrite);
         }
 
-        [SecurityCritical]
         public MemoryMappedViewAccessor CreateViewAccessor(long offset, long size, MemoryMappedFileAccess access)
         {
             if (offset < 0)
@@ -471,7 +462,6 @@ namespace System.IO.MemoryMappedFiles
             GC.SuppressFinalize(this);
         }
 
-        [SecuritySafeCritical]
         protected virtual void Dispose(bool disposing)
         {
             try
@@ -492,7 +482,6 @@ namespace System.IO.MemoryMappedFiles
 
         public SafeMemoryMappedFileHandle SafeMemoryMappedFileHandle
         {
-            [SecurityCritical]
             get { return _handle; }
         }
 

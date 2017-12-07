@@ -23,6 +23,7 @@
     <PrereleaseLibraryPackage Include="Microsoft.Win32.Registry" />
     <PrereleaseLibraryPackage Include="Microsoft.Win32.Registry.AccessControl" />
     <PrereleaseLibraryPackage Include="System.CodeDom" />
+    <PrereleaseLibraryPackage Include="System.ComponentModel.Composition" />
     <PrereleaseLibraryPackage Include="System.Configuration.ConfigurationManager" />
     <PrereleaseLibraryPackage Include="System.Data.Odbc" />
     <PrereleaseLibraryPackage Include="System.Drawing.Common" />

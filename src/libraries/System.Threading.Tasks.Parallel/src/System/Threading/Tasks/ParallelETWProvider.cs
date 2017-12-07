@@ -98,7 +98,6 @@ namespace System.Threading.Tasks
         /// <param name="OperationType">The kind of fork/join operation.</param>
         /// <param name="InclusiveFrom">The lower bound of the loop.</param>
         /// <param name="ExclusiveTo">The upper bound of the loop.</param>
-        [SecuritySafeCritical]
         [Event(PARALLELLOOPBEGIN_ID, Level = EventLevel.Informational, Task = ParallelEtwProvider.Tasks.Loop, Opcode = EventOpcode.Start)]
         public void ParallelLoopBegin(Int32 OriginatingTaskSchedulerID, Int32 OriginatingTaskID,      // PFX_COMMON_EVENT_HEADER
                                       Int32 ForkJoinContextID, ForkJoinOperationType OperationType, // PFX_FORKJOIN_COMMON_EVENT_HEADER
@@ -141,7 +140,6 @@ namespace System.Threading.Tasks
         /// <param name="OriginatingTaskID">The task ID.</param>
         /// <param name="ForkJoinContextID">The loop ID.</param>
         /// <param name="TotalIterations">the total number of iterations processed.</param>
-        [SecuritySafeCritical]
         [Event(PARALLELLOOPEND_ID, Level = EventLevel.Informational, Task = ParallelEtwProvider.Tasks.Loop, Opcode = EventOpcode.Stop)]
         public void ParallelLoopEnd(Int32 OriginatingTaskSchedulerID, Int32 OriginatingTaskID,  // PFX_COMMON_EVENT_HEADER
                                     Int32 ForkJoinContextID, Int64 TotalIterations)
@@ -177,7 +175,6 @@ namespace System.Threading.Tasks
         /// <param name="ForkJoinContextID">The invoke ID.</param>
         /// <param name="OperationType">The kind of fork/join operation.</param>
         /// <param name="ActionCount">The number of actions being invoked.</param>
-        [SecuritySafeCritical]
         [Event(PARALLELINVOKEBEGIN_ID, Level = EventLevel.Informational, Task = ParallelEtwProvider.Tasks.Invoke, Opcode = EventOpcode.Start)]
         public void ParallelInvokeBegin(Int32 OriginatingTaskSchedulerID, Int32 OriginatingTaskID,      // PFX_COMMON_EVENT_HEADER
                                         Int32 ForkJoinContextID, ForkJoinOperationType OperationType, // PFX_FORKJOIN_COMMON_EVENT_HEADER

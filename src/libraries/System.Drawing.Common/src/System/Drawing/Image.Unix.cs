@@ -44,7 +44,6 @@ using System.Reflection;
 
 namespace System.Drawing
 {
-    [ComVisible(true)]
     [Serializable]
 #if !NETCORE
 [Editor ("System.Drawing.Design.ImageEditor, " + Consts.AssemblySystem_Drawing_Design, typeof (System.Drawing.Design.UITypeEditor))]

@@ -565,4 +565,7 @@
   <data name="SameKeyExistsInExpando" xml:space="preserve">
     <value>An element with the same key '{0}' already exists in the ExpandoObject.</value>
   </data>
+  <data name="Arg_KeyNotFoundWithKey" xml:space="preserve">
+    <value>The given key '{0}' was not present in the dictionary.</value>
+  </data>
 </root>

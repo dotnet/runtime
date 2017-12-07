@@ -13,21 +13,17 @@ namespace System.Text
         public ASCIIEncoding() { }
         public override bool IsSingleByte { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
-        [System.Security.SecurityCriticalAttribute]
         public unsafe override int GetByteCount(char* chars, int count) { throw null; }
         public override int GetByteCount(char[] chars, int index, int count) { throw null; }
         public override int GetByteCount(string chars) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        [System.Security.SecurityCriticalAttribute]
         public unsafe override int GetBytes(char* chars, int charCount, byte* bytes, int byteCount) { throw null; }
         public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex) { throw null; }
         public override int GetBytes(string chars, int charIndex, int charCount, byte[] bytes, int byteIndex) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        [System.Security.SecurityCriticalAttribute]
         public unsafe override int GetCharCount(byte* bytes, int count) { throw null; }
         public override int GetCharCount(byte[] bytes, int index, int count) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        [System.Security.SecurityCriticalAttribute]
         public unsafe override int GetChars(byte* bytes, int byteCount, char* chars, int charCount) { throw null; }
         public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) { throw null; }
         public override System.Text.Decoder GetDecoder() { throw null; }
@@ -45,20 +41,16 @@ namespace System.Text
         public override bool Equals(object value) { throw null; }
         public override int GetByteCount(char[] chars, int index, int count) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        [System.Security.SecurityCriticalAttribute]
         public unsafe override int GetByteCount(char* chars, int count) { throw null; }
         public override int GetByteCount(string s) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        [System.Security.SecurityCriticalAttribute]
         public unsafe override int GetBytes(char* chars, int charCount, byte* bytes, int byteCount) { throw null; }
         public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex) { throw null; }
         public override int GetBytes(string s, int charIndex, int charCount, byte[] bytes, int byteIndex) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        [System.Security.SecurityCriticalAttribute]
         public unsafe override int GetCharCount(byte* bytes, int count) { throw null; }
         public override int GetCharCount(byte[] bytes, int index, int count) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        [System.Security.SecurityCriticalAttribute]
         public unsafe override int GetChars(byte* bytes, int byteCount, char* chars, int charCount) { throw null; }
         public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) { throw null; }
         public override System.Text.Decoder GetDecoder() { throw null; }
@@ -76,21 +68,17 @@ namespace System.Text
         public UTF32Encoding(bool bigEndian, bool byteOrderMark, bool throwOnInvalidCharacters) { }
         public override bool Equals(object value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        [System.Security.SecurityCriticalAttribute]
         public unsafe override int GetByteCount(char* chars, int count) { throw null; }
         public override int GetByteCount(char[] chars, int index, int count) { throw null; }
         public override int GetByteCount(string s) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        [System.Security.SecurityCriticalAttribute]
         public unsafe override int GetBytes(char* chars, int charCount, byte* bytes, int byteCount) { throw null; }
         public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex) { throw null; }
         public override int GetBytes(string s, int charIndex, int charCount, byte[] bytes, int byteIndex) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        [System.Security.SecurityCriticalAttribute]
         public unsafe override int GetCharCount(byte* bytes, int count) { throw null; }
         public override int GetCharCount(byte[] bytes, int index, int count) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        [System.Security.SecurityCriticalAttribute]
         public unsafe override int GetChars(byte* bytes, int byteCount, char* chars, int charCount) { throw null; }
         public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) { throw null; }
         public override System.Text.Decoder GetDecoder() { throw null; }
@@ -107,21 +95,17 @@ namespace System.Text
         public UTF7Encoding(bool allowOptionals) { }
         public override bool Equals(object value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        [System.Security.SecurityCriticalAttribute]
         public unsafe override int GetByteCount(char* chars, int count) { throw null; }
         public override int GetByteCount(char[] chars, int index, int count) { throw null; }
         public override int GetByteCount(string s) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        [System.Security.SecurityCriticalAttribute]
         public unsafe override int GetBytes(char* chars, int charCount, byte* bytes, int byteCount) { throw null; }
         public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex) { throw null; }
         public override int GetBytes(string s, int charIndex, int charCount, byte[] bytes, int byteIndex) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        [System.Security.SecurityCriticalAttribute]
         public unsafe override int GetCharCount(byte* bytes, int count) { throw null; }
         public override int GetCharCount(byte[] bytes, int index, int count) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        [System.Security.SecurityCriticalAttribute]
         public unsafe override int GetChars(byte* bytes, int byteCount, char* chars, int charCount) { throw null; }
         public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) { throw null; }
         public override System.Text.Decoder GetDecoder() { throw null; }
@@ -138,21 +122,17 @@ namespace System.Text
         public UTF8Encoding(bool encoderShouldEmitUTF8Identifier, bool throwOnInvalidBytes) { }
         public override bool Equals(object value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        [System.Security.SecurityCriticalAttribute]
         public unsafe override int GetByteCount(char* chars, int count) { throw null; }
         public override int GetByteCount(char[] chars, int index, int count) { throw null; }
         public override int GetByteCount(string chars) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        [System.Security.SecurityCriticalAttribute]
         public unsafe override int GetBytes(char* chars, int charCount, byte* bytes, int byteCount) { throw null; }
         public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex) { throw null; }
         public override int GetBytes(string s, int charIndex, int charCount, byte[] bytes, int byteIndex) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        [System.Security.SecurityCriticalAttribute]
         public unsafe override int GetCharCount(byte* bytes, int count) { throw null; }
         public override int GetCharCount(byte[] bytes, int index, int count) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        [System.Security.SecurityCriticalAttribute]
         public unsafe override int GetChars(byte* bytes, int byteCount, char* chars, int charCount) { throw null; }
         public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) { throw null; }
         public override System.Text.Decoder GetDecoder() { throw null; }

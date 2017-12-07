@@ -33,7 +33,6 @@ namespace Microsoft.SqlServer.Server
         {
         }
 
-        [SecurityPermission(System.Security.Permissions.SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
         public override void GetObjectData(SerializationInfo si, StreamingContext context)
         {
             base.GetObjectData(si, context);

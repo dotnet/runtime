@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
-using System.Text;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-
 //
 // This code is copied almost verbatim from the same-named file in CoreRT with mechanical changes to Span-ify it.
 //

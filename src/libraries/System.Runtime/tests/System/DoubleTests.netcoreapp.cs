@@ -109,5 +109,54 @@ namespace System.Tests
                 Assert.Equal(0, result);
             }
         }
+
+        [Fact]
+        public static void TryFormat()
+        {
+            RemoteInvoke(() =>
+            {
+                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+
+                foreach (var testdata in ToString_TestData())
+                {
+                    double localI = (double)testdata[0];
+                    string localFormat = (string)testdata[1];
+                    IFormatProvider localProvider = (IFormatProvider)testdata[2];
+                    string localExpected = (string)testdata[3];
+
+                    try
+                    {
+                        char[] actual;
+                        int charsWritten;
+
+                        // Just right
+                        actual = new char[localExpected.Length];
+                        Assert.True(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat, localProvider));
+                        Assert.Equal(localExpected.Length, charsWritten);
+                        Assert.Equal(localExpected, new string(actual));
+
+                        // Longer than needed
+                        actual = new char[localExpected.Length + 1];
+                        Assert.True(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat, localProvider));
+                        Assert.Equal(localExpected.Length, charsWritten);
+                        Assert.Equal(localExpected, new string(actual, 0, charsWritten));
+
+                        // Too short
+                        if (localExpected.Length > 0)
+                        {
+                            actual = new char[localExpected.Length - 1];
+                            Assert.False(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat, localProvider));
+                            Assert.Equal(0, charsWritten);
+                        }
+                    }
+                    catch (Exception exc)
+                    {
+                        throw new Exception($"Failed on `{localI}`, `{localFormat}`, `{localProvider}`, `{localExpected}`. {exc}");
+                    }
+                }
+
+                return SuccessExitCode;
+            }).Dispose();
+        }
     }
 }

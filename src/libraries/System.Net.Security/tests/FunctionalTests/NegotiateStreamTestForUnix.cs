@@ -27,7 +27,7 @@ namespace System.Net.Security.Tests
         private const string ScriptUninstallArgs = "--uninstall --yes";
         private const string ScriptInstallArgs = "--password {0} --yes";
         private const int InstalledButUnconfiguredExitCode = 2;
-        private readonly bool _isKrbPreInstalled ;
+        private readonly bool _isKrbPreInstalled;
         public readonly string password;
         private const string NtlmUserFile = "NTLM_USER_FILE";
         private readonly bool _successfulSetup = true;
@@ -154,7 +154,7 @@ namespace System.Net.Security.Tests
 
         [Fact, OuterLoop]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public void NegotiateStream_StreamToStream_KerberosAuthentication_Success()
+        public async Task NegotiateStream_StreamToStream_KerberosAuthentication_Success()
         {
             if (!_isKrbAvailable)
             {
@@ -179,15 +179,14 @@ namespace System.Net.Security.Tests
                     server.AuthenticateAsServerAsync()
                 };
 
-                bool finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
-                Assert.True(finished, "Handshake completed in the allotted time");
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(auth);
                 AssertClientPropertiesForTarget(client, target);
             }
         }
 
         [Fact, OuterLoop]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public void NegotiateStream_StreamToStream_AuthToHttpTarget_Success()
+        public async Task NegotiateStream_StreamToStream_AuthToHttpTarget_Success()
         {
             if (!_isKrbAvailable)
             {
@@ -211,8 +210,7 @@ namespace System.Net.Security.Tests
                     server.AuthenticateAsServerAsync()
                 };
 
-                bool finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
-                Assert.True(finished, "Handshake completed in the allotted time");
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(auth);
 
                 AssertClientPropertiesForTarget(client, TestConfiguration.HttpTarget);
             }
@@ -220,7 +218,7 @@ namespace System.Net.Security.Tests
 
         [Fact, OuterLoop]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public void NegotiateStream_StreamToStream_KerberosAuthWithoutRealm_Success()
+        public async Task NegotiateStream_StreamToStream_KerberosAuthWithoutRealm_Success()
         {
             if (!_isKrbAvailable)
             {
@@ -243,8 +241,7 @@ namespace System.Net.Security.Tests
                     server.AuthenticateAsServerAsync()
                 };
 
-                bool finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
-                Assert.True(finished, "Handshake completed in the allotted time");
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(auth);
 
                 AssertClientPropertiesForTarget(client, TestConfiguration.HostTarget);
             }
@@ -252,7 +249,7 @@ namespace System.Net.Security.Tests
 
         [Fact, OuterLoop]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public void NegotiateStream_StreamToStream_KerberosAuthDefaultCredentials_Success()
+        public async Task NegotiateStream_StreamToStream_KerberosAuthDefaultCredentials_Success()
         {
             if (!_isKrbAvailable)
             {
@@ -278,8 +275,7 @@ namespace System.Net.Security.Tests
                     server.AuthenticateAsServerAsync()
                 };
 
-                bool finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
-                Assert.True(finished, "Handshake completed in the allotted time");
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(auth);
 
                 AssertClientPropertiesForTarget(client, target);
             }
@@ -287,7 +283,7 @@ namespace System.Net.Security.Tests
 
         [Fact, OuterLoop]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public void NegotiateStream_EchoServer_ClientWriteRead_Successive_Sync_Success()
+        public async Task NegotiateStream_EchoServer_ClientWriteRead_Successive_Sync_Success()
         {
             if (!_isKrbAvailable)
             {
@@ -313,8 +309,7 @@ namespace System.Net.Security.Tests
                     client.AuthenticateAsClientAsync(credential, target),
                     server.AuthenticateAsServerAsync()
                 };
-                bool finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
-                Assert.True(finished, "Handshake completed in the allotted time");
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(auth);
 
                 Task svrMsgTask = server.PollMessageAsync(2);
 
@@ -324,8 +319,7 @@ namespace System.Net.Security.Tests
                 client.Read(secondRecvBuffer, 0, secondRecvBuffer.Length);
                 Assert.True(_firstMessage.SequenceEqual(firstRecvBuffer), "first message received is as expected");
                 Assert.True(_secondMessage.SequenceEqual(secondRecvBuffer), "second message received is as expected");
-                finished = svrMsgTask.Wait(TestConfiguration.PassingTestTimeoutMilliseconds);
-                Assert.True(finished, "Message roundtrip completed in the allotted time");
+                await svrMsgTask.TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
             }
         }
 
@@ -431,7 +425,7 @@ namespace System.Net.Security.Tests
                 string user = string.Format("{0}@{1}", TestConfiguration.KerberosUser, TestConfiguration.Realm);
                 string target = string.Format("{0}@{1}", TestConfiguration.HostTarget, TestConfiguration.Realm);
                 NetworkCredential credential = new NetworkCredential(user.Substring(1), _fixture.password);
-                Assert.ThrowsAsync<AuthenticationException>(() =>client.AuthenticateAsClientAsync(credential, target));
+                Assert.ThrowsAsync<AuthenticationException>(() => client.AuthenticateAsClientAsync(credential, target));
                 Assert.ThrowsAsync<AuthenticationException>(() => server.AuthenticateAsServerAsync());
             }
         }
@@ -490,30 +484,30 @@ namespace System.Net.Security.Tests
 
         public static IEnumerable<object[]> ValidNtlmCredentials()
         {
-         
-                yield return new object[]{new NetworkCredential(TestConfiguration.NtlmUser, _ntlmPassword, TestConfiguration.Domain)};
-                yield return new object[] {new NetworkCredential(TestConfiguration.NtlmUser, _ntlmPassword)};
-                yield return new object[]
-                {
+
+            yield return new object[] { new NetworkCredential(TestConfiguration.NtlmUser, _ntlmPassword, TestConfiguration.Domain) };
+            yield return new object[] { new NetworkCredential(TestConfiguration.NtlmUser, _ntlmPassword) };
+            yield return new object[]
+            {
                     new NetworkCredential($@"{TestConfiguration.Domain}\{TestConfiguration.NtlmUser}", _ntlmPassword)
-                };
-                yield return new object[]
-                {
+            };
+            yield return new object[]
+            {
                     new NetworkCredential($"{TestConfiguration.NtlmUser}@{TestConfiguration.Domain}", _ntlmPassword)
-                };
+            };
         }
 
         public static IEnumerable<object[]> InvalidNtlmCredentials
         {
             get
             {
-                yield return new object[] { new NetworkCredential(TestConfiguration.NtlmUser, _ntlmPassword, TestConfiguration.Domain.Substring(1))};
+                yield return new object[] { new NetworkCredential(TestConfiguration.NtlmUser, _ntlmPassword, TestConfiguration.Domain.Substring(1)) };
                 yield return new object[] { new NetworkCredential(TestConfiguration.NtlmUser.Substring(1), _ntlmPassword, TestConfiguration.Domain) };
                 yield return new object[] { new NetworkCredential(TestConfiguration.NtlmUser, _ntlmPassword.Substring(1), TestConfiguration.Domain) };
-                yield return new object[] { new NetworkCredential($@"{TestConfiguration.Domain}\{TestConfiguration.NtlmUser}", _ntlmPassword, TestConfiguration.Domain.Substring(1))};
-                yield return new object[] { new NetworkCredential($"{TestConfiguration.NtlmUser}@{TestConfiguration.Domain.Substring(1)}", _ntlmPassword)};
-                yield return new object[] { new NetworkCredential($@"{TestConfiguration.Domain.Substring(1)}\{TestConfiguration.NtlmUser}", _ntlmPassword, TestConfiguration.Domain)};
-                yield return new object[] { new NetworkCredential(TestConfiguration.NtlmUser, _ntlmPassword, TestConfiguration.Realm)};
+                yield return new object[] { new NetworkCredential($@"{TestConfiguration.Domain}\{TestConfiguration.NtlmUser}", _ntlmPassword, TestConfiguration.Domain.Substring(1)) };
+                yield return new object[] { new NetworkCredential($"{TestConfiguration.NtlmUser}@{TestConfiguration.Domain.Substring(1)}", _ntlmPassword) };
+                yield return new object[] { new NetworkCredential($@"{TestConfiguration.Domain.Substring(1)}\{TestConfiguration.NtlmUser}", _ntlmPassword, TestConfiguration.Domain) };
+                yield return new object[] { new NetworkCredential(TestConfiguration.NtlmUser, _ntlmPassword, TestConfiguration.Realm) };
 
             }
         }
@@ -522,7 +516,7 @@ namespace System.Net.Security.Tests
         [Theory, OuterLoop]
         [MemberData(nameof(ValidNtlmCredentials))]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public void NegotiateStream_StreamToStream_NtlmAuthentication_ValidCredentials_Success(NetworkCredential credential)
+        public async Task NegotiateStream_StreamToStream_NtlmAuthentication_ValidCredentials_Success(NetworkCredential credential)
         {
             if (!_isNtlmAvailable)
             {
@@ -545,8 +539,7 @@ namespace System.Net.Security.Tests
                     server.AuthenticateAsServerAsync()
                 };
 
-                bool finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
-                Assert.True(finished, "Handshake completed in the allotted time");
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(auth);
 
                 // Expected Client property values:
                 Assert.True(client.IsAuthenticated, "client.IsAuthenticated");
@@ -564,10 +557,10 @@ namespace System.Net.Security.Tests
             }
         }
 
-     
+
         [Fact, OuterLoop]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public void NegotiateStream_StreamToStream_NtlmAuthentication_Fallback_Success()
+        public async Task NegotiateStream_StreamToStream_NtlmAuthentication_Fallback_Success()
         {
             if (!_isNtlmAvailable)
             {
@@ -592,8 +585,7 @@ namespace System.Net.Security.Tests
                     server.AuthenticateAsServerAsync()
                 };
 
-                bool finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
-                Assert.True(finished, "Handshake completed in the allotted time");
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(auth);
 
                 // Expected Client property values:
                 Assert.True(client.IsAuthenticated, "client.IsAuthenticated");
@@ -612,7 +604,7 @@ namespace System.Net.Security.Tests
 
         [Fact, OuterLoop]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public void NegotiateStream_StreamToStream_NtlmAuthentication_KerberosCreds_Success()
+        public async Task NegotiateStream_StreamToStream_NtlmAuthentication_KerberosCreds_Success()
         {
             if (!_isNtlmAvailable)
             {
@@ -636,8 +628,7 @@ namespace System.Net.Security.Tests
                     client.AuthenticateAsClientAsync(credential, TestConfiguration.HttpTarget, ProtectionLevel.None, TokenImpersonationLevel.Identification),
                     server.AuthenticateAsServerAsync()
                 };
-                bool finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
-                Assert.True(finished, "Handshake completed in the allotted time");
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(auth);
 
                 // Expected Client property values:
                 Assert.True(client.IsAuthenticated, "client.IsAuthenticated");
@@ -657,7 +648,7 @@ namespace System.Net.Security.Tests
 
         [Fact, OuterLoop]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public void NegotiateStream_EchoServer_NTLM_ClientWriteRead_Successive_Sync_Success()
+        public async Task NegotiateStream_EchoServer_NTLM_ClientWriteRead_Successive_Sync_Success()
         {
             if (!_isNtlmAvailable)
             {
@@ -684,8 +675,7 @@ namespace System.Net.Security.Tests
                     client.AuthenticateAsClientAsync(credential, TestConfiguration.HostTarget),
                     server.AuthenticateAsServerAsync()
                 };
-                bool finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
-                Assert.True(finished, "Handshake completed in the allotted time");
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(auth);
 
                 //clearing message queue
                 byte[] junkBytes = new byte[5];
@@ -698,14 +688,13 @@ namespace System.Net.Security.Tests
                 client.Read(secondRecvBuffer, 0, secondRecvBuffer.Length);
                 Assert.True(_firstMessage.SequenceEqual(firstRecvBuffer), "first message received is as expected");
                 Assert.True(_secondMessage.SequenceEqual(secondRecvBuffer), "second message received is as expected");
-                finished = svrMsgTask.Wait(TestConfiguration.PassingTestTimeoutMilliseconds);
-                Assert.True(finished, "Message roundtrip completed in the allotted time");
+                await svrMsgTask.TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
             }
         }
 
         [Fact, OuterLoop]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public void NegotiateStream_EchoServer_NTLM_ClientWriteRead_Successive_Async_Success()
+        public async Task NegotiateStream_EchoServer_NTLM_ClientWriteRead_Successive_Async_Success()
         {
             if (!_isNtlmAvailable)
             {
@@ -733,8 +722,7 @@ namespace System.Net.Security.Tests
                     server.AuthenticateAsServerAsync()
                 };
 
-                bool finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
-                Assert.True(finished, "Handshake completed in the allotted time");
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(auth);
 
                 //clearing message queue
                 byte[] junkBytes = new byte[5];
@@ -749,8 +737,7 @@ namespace System.Net.Security.Tests
                  serverTask
                 };
 
-                finished = Task.WaitAll(msgTasks, TestConfiguration.PassingTestTimeoutMilliseconds);
-                Assert.True(finished, "Messages sent and received in the allotted time");
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(msgTasks);
                 Assert.True(_firstMessage.SequenceEqual(firstRecvBuffer), "The first message received is as expected");
                 Assert.True(_secondMessage.SequenceEqual(secondRecvBuffer), "The second message received is as expected");
             }

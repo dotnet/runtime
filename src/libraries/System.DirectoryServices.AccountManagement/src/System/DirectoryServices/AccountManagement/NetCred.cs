@@ -31,7 +31,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public string ParsedUserName
         {
-            [System.Security.SecurityCritical]
             get
             {
                 if (null == _parsedUserName)
@@ -45,7 +44,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public string Domain
         {
-            [System.Security.SecurityCritical]
             get
             {
                 if (null == _parsedUserName)
@@ -57,7 +55,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        [System.Security.SecurityCritical]
         private void SplitUsername(string username, ref string parsedUserName, ref string parsedDomainName)
         {
             // If the user has passed null creds then parsed components should also be null.

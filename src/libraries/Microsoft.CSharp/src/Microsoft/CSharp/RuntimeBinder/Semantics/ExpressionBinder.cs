@@ -26,7 +26,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     {
         public int carg;
         public TypeArray types;
-        public bool fHasExprs;
         public List<Expr> prgexpr;
     }
 
@@ -117,8 +116,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         DelBinOp,
         EnumBinOp,
         IntBinOp,
-        PtrBinOp,
-        PtrCmpOp,
         RealBinOp,
         RefCmpOp,
         ShiftOp,
@@ -367,17 +364,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private CType getVoidType() { return VoidType; }
 
-        private Expr GenerateAssignmentConversion(Expr op1, Expr op2, bool allowExplicit)
-        {
-            if (allowExplicit)
-            {
-                return mustCastCore(op2, GetExprFactory().CreateClass(op1.Type), 0);
-            }
-            else
-            {
-                return mustConvertCore(op2, GetExprFactory().CreateClass(op1.Type));
-            }
-        }
+        private Expr GenerateAssignmentConversion(Expr op1, Expr op2, bool allowExplicit) =>
+            allowExplicit ? mustCastCore(op2, op1.Type, 0) : mustConvertCore(op2, op1.Type);
 
         ////////////////////////////////////////////////////////////////////////////////
         // Bind the simple assignment operator =.
@@ -420,10 +408,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 x =>
                 {
                     Expr pTemp = mustConvert(x, pDestType);
-                    if (pDestType == pIntType)
-                        return pTemp;
-                    ExprClass exprType = GetExprFactory().CreateClass(pDestType);
-                    return GetExprFactory().CreateCast(EXPRFLAG.EXF_INDEXEXPR, exprType, pTemp);
+                    return pDestType == pIntType
+                        ? pTemp
+                        : GetExprFactory().CreateCast(EXPRFLAG.EXF_INDEXEXPR, pDestType, pTemp);
                 });
 
             // Allocate a new expression, the type is the element type of the array.
@@ -440,16 +427,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
         // Create a cast node with the given expression flags. 
-        private void bindSimpleCast(Expr exprSrc, ExprClass typeDest, out Expr pexprDest)
-        {
+        private void bindSimpleCast(Expr exprSrc, CType typeDest, out Expr pexprDest) =>
             bindSimpleCast(exprSrc, typeDest, out pexprDest, 0);
-        }
 
-        private void bindSimpleCast(Expr exprSrc, ExprClass exprTypeDest, out Expr pexprDest, EXPRFLAG exprFlags)
+        private void bindSimpleCast(Expr exprSrc, CType typeDest, out Expr pexprDest, EXPRFLAG exprFlags)
         {
-            Debug.Assert(exprTypeDest != null);
-            Debug.Assert(exprTypeDest.Type != null);
-            CType typeDest = exprTypeDest.Type;
+            Debug.Assert(typeDest != null);
             // If the source is a constant, and cast is really simple (no change in fundamental
             // type, no flags), then create a new constant node with the new type instead of
             // creating a cast node. This allows compile-time constants to be easily recognized.
@@ -458,7 +441,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // Make the cast expr anyway, and if we find that we have a constant, then set the cast expr
             // as the original tree for the constant. Otherwise, return the cast expr.
 
-            ExprCast exprCast = GetExprFactory().CreateCast(exprFlags, exprTypeDest, exprSrc);
+            ExprCast exprCast = GetExprFactory().CreateCast(exprFlags, typeDest, exprSrc);
             if (Context.Checked)
             {
                 exprCast.Flags |= EXPRFLAG.EXF_CHECKOVERFLOW;
@@ -497,7 +480,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             bool fConstrained;
             Expr pObject = pMemGroup.OptionalObject;
             CType callingObjectType = pObject?.Type;
-            PostBindMethod(ref mwi);
+            PostBindMethod(mwi);
             pObject = AdjustMemberObject(mwi, pObject, out fConstrained);
             pMemGroup.OptionalObject = pObject;
 
@@ -563,14 +546,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             checkUnsafe(pFieldType); // added to the binder so we don't bind to pointer ops
 
-            bool isLValue = pOptionalObject?.Type is PointerType || objectIsLvalue(pOptionalObject);
-
-            // Exception: a readonly field is not an lvalue unless we're in the constructor/static constructor appropriate
-            // for the field.
-            if (fwt.Field().isReadOnly)
-            {
-                isLValue = false;
-            }
+            // lvalue if the object is an lvalue (or it's static) and the field is not readonly.
+            bool isLValue = objectIsLvalue(pOptionalObject) && !fwt.Field().isReadOnly;
 
             AggregateType fieldType = null;
             // If this field is the backing field of a WindowsRuntime event then we need to bind to its
@@ -880,9 +857,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
         // Given a method group or indexer group, bind it to the arguments for an 
-        // invocation. This method can change the arguments to bind with Extension 
-        // Methods
-        private bool BindMethodGroupToArgumentsCore(out GroupToArgsBinderResult pResults, BindingFlag bindFlags, ExprMemberGroup grp, ref Expr args, int carg, bool bHasNamedArgumentSpecifiers)
+        // invocation.
+        private GroupToArgsBinderResult BindMethodGroupToArgumentsCore(BindingFlag bindFlags, ExprMemberGroup grp, ref Expr args, int carg, bool bHasNamedArgumentSpecifiers)
         {
             ArgInfos pargInfo = new ArgInfos {carg = carg};
             FillInArgInfoFromArgList(pargInfo, args);
@@ -891,10 +867,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             FillInArgInfoFromArgList(pOriginalArgInfo, args);
 
             GroupToArgsBinder binder = new GroupToArgsBinder(this, bindFlags, grp, pargInfo, pOriginalArgInfo, bHasNamedArgumentSpecifiers);
-            bool retval = binder.Bind(bReportErrors: true);
+            binder.Bind();
 
-            pResults = binder.GetResultsOfBind();
-            return retval;
+            return binder.GetResultsOfBind();
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -921,14 +896,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // fixed arguments.
             bool seenNamed = VerifyNamedArgumentsAfterFixed(args);
 
-            GroupToArgsBinderResult result;
-            if (!BindMethodGroupToArgumentsCore(out result, bindFlags, grp, ref args, carg, seenNamed))
-            {
-                Debug.Assert(false, "Why didn't BindMethodGroupToArgumentsCore throw an error?");
-                return null;
-            }
-
-            MethPropWithInst mpwiBest = result.GetBestResult();
+            MethPropWithInst mpwiBest = BindMethodGroupToArgumentsCore(bindFlags, grp, ref args, carg, seenNamed)
+                .GetBestResult();
             if (grp.SymKind == SYMKIND.SK_PropertySymbol)
             {
                 Debug.Assert((grp.Flags & EXPRFLAG.EXF_INDEXER) != 0);
@@ -1134,24 +1103,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return true;
         }
 
-        private void PostBindMethod(ref MethWithInst pMWI)
+        private void PostBindMethod(MethWithInst pMWI)
         {
-            if (pMWI.Meth().RetType != null)
+            MethodSymbol meth = pMWI.Meth();
+            if (meth.RetType != null)
             {
-                checkUnsafe(pMWI.Meth().RetType);
+                checkUnsafe(meth.RetType);
 
                 // We need to check unsafe on the parameters as well, since we cannot check in conversion.
-                TypeArray pParams = pMWI.Meth().Params;
-
-                for (int i = 0; i < pParams.Count; i++)
+                foreach (CType type in meth.Params.Items)
                 {
-                    // This is an optimization: don't call this in the vast majority of cases
-                    CType type = pParams[i];
-
-                    if (type.isUnsafe())
-                    {
-                        checkUnsafe(type);
-                    }
+                    checkUnsafe(type);
                 }
             }
         }
@@ -1605,7 +1567,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         internal void FillInArgInfoFromArgList(ArgInfos argInfo, Expr args)
         {
             CType[] prgtype = new CType[argInfo.carg];
-            argInfo.fHasExprs = true;
             argInfo.prgexpr = new List<Expr>();
 
             int iarg = 0;

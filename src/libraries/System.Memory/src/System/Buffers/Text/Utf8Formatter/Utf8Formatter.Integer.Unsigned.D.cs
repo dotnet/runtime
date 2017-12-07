@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
-
 namespace System.Buffers.Text
 {
     /// <summary>
@@ -36,7 +33,8 @@ namespace System.Buffers.Text
             }
 
             ref byte utf8Bytes = ref buffer.DangerousGetPinnableReference();
-            bytesWritten += FormattingHelpers.WriteDigits(lastDigit, 1, ref utf8Bytes, bytesWritten);
+            FormattingHelpers.WriteDigits(lastDigit, 1, ref utf8Bytes, bytesWritten);
+            bytesWritten += 1;
             return true;
         }
     }

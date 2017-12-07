@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace System
@@ -76,7 +75,7 @@ namespace System
         /// Thrown if the Length property of the new Span would exceed Int32.MaxValue.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Span<TTo> NonPortableCast<TFrom, TTo>(this Span<TFrom> source) 
+        public static Span<TTo> NonPortableCast<TFrom, TTo>(this Span<TFrom> source)
             where TFrom : struct
             where TTo : struct
             => Span.NonPortableCast<TFrom, TTo>(source);
@@ -98,7 +97,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlySpan<TTo> NonPortableCast<TFrom, TTo>(this ReadOnlySpan<TFrom> source)
             where TFrom : struct
-            where TTo : struct 
+            where TTo : struct
             => Span.NonPortableCast<TFrom, TTo>(source);
     }
 }

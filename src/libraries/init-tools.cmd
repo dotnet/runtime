@@ -10,7 +10,8 @@ if [%BUILDTOOLS_SOURCE%]==[] set BUILDTOOLS_SOURCE=https://dotnet.myget.org/F/do
 set /P BUILDTOOLS_VERSION=< "%~dp0BuildToolsVersion.txt"
 set BUILD_TOOLS_PATH=%PACKAGES_DIR%Microsoft.DotNet.BuildTools\%BUILDTOOLS_VERSION%\lib\
 set INIT_TOOLS_RESTORE_PROJECT=%~dp0init-tools.msbuild
-set BUILD_TOOLS_SEMAPHORE=%TOOLRUNTIME_DIR%\%BUILDTOOLS_VERSION%\init-tools.completed
+set BUILD_TOOLS_SEMAPHORE_DIR=%TOOLRUNTIME_DIR%\%BUILDTOOLS_VERSION%
+set BUILD_TOOLS_SEMAPHORE=%BUILD_TOOLS_SEMAPHORE_DIR%\init-tools.completed
 
 :: if force option is specified then clean the tool runtime and build tools package directory to force it to get recreated
 if [%1]==[force] (
@@ -25,6 +26,8 @@ if exist "%BUILD_TOOLS_SEMAPHORE%" (
 )
 
 if exist "%TOOLRUNTIME_DIR%" rmdir /S /Q "%TOOLRUNTIME_DIR%"
+
+if NOT exist "%BUILD_TOOLS_SEMAPHORE_DIR%" mkdir "%BUILD_TOOLS_SEMAPHORE_DIR%"
 
 if exist "%DotNetBuildToolsDir%" (
   echo Using tools from '%DotNetBuildToolsDir%'.
@@ -69,6 +72,9 @@ if NOT exist "%BUILD_TOOLS_PATH%init-tools.cmd" (
 )
 
 :afterbuildtoolsrestore
+
+:: Ask init-tools to also restore ILAsm
+set /p ILASMCOMPILER_VERSION=< "%~dp0tools-local\ILAsmVersion.txt"
 
 echo Initializing BuildTools...
 echo Running: "%BUILD_TOOLS_PATH%init-tools.cmd" "%~dp0" "%DOTNET_CMD%" "%TOOLRUNTIME_DIR%" >> "%INIT_TOOLS_LOG%"

@@ -50,6 +50,7 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Write a UInt16 into a span of bytes as big endian.
         /// </summary>
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteUInt16BigEndian(Span<byte> buffer, ushort value)
         {
@@ -63,6 +64,7 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Write a UInt32 into a span of bytes as big endian.
         /// </summary>
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteUInt32BigEndian(Span<byte> buffer, uint value)
         {
@@ -76,6 +78,7 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Write a UInt64 into a span of bytes as big endian.
         /// </summary>
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteUInt64BigEndian(Span<byte> buffer, ulong value)
         {
@@ -132,6 +135,7 @@ namespace System.Buffers.Binary
         /// Write a UInt16 into a span of bytes as big endian.
         /// <returns>If the span is too small to contain the value, return false.</returns>
         /// </summary>
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWriteUInt16BigEndian(Span<byte> buffer, ushort value)
         {
@@ -146,6 +150,7 @@ namespace System.Buffers.Binary
         /// Write a UInt32 into a span of bytes as big endian.
         /// <returns>If the span is too small to contain the value, return false.</returns>
         /// </summary>
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWriteUInt32BigEndian(Span<byte> buffer, uint value)
         {
@@ -160,6 +165,7 @@ namespace System.Buffers.Binary
         /// Write a UInt64 into a span of bytes as big endian.
         /// <returns>If the span is too small to contain the value, return false.</returns>
         /// </summary>
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWriteUInt64BigEndian(Span<byte> buffer, ulong value)
         {

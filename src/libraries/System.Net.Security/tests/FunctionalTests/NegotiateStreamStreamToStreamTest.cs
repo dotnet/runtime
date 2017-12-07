@@ -22,7 +22,7 @@ namespace System.Net.Security.Tests
         protected abstract Task AuthenticateAsServerAsync(NegotiateStream server);
 
         [Fact]
-        public void NegotiateStream_StreamToStream_Authentication_Success()
+        public async Task NegotiateStream_StreamToStream_Authentication_Success()
         {
             VirtualNetwork network = new VirtualNetwork();
 
@@ -37,9 +37,7 @@ namespace System.Net.Security.Tests
                 Task[] auth = new Task[2];
                 auth[0] = AuthenticateAsClientAsync(client, CredentialCache.DefaultNetworkCredentials, string.Empty);
                 auth[1] = AuthenticateAsServerAsync(server);
-
-                bool finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
-                Assert.True(finished, "Handshake completed in the allotted time");
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(auth);
 
                 // Expected Client property values:
                 Assert.True(client.IsAuthenticated);
@@ -74,7 +72,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public void NegotiateStream_StreamToStream_Authentication_TargetName_Success()
+        public async Task NegotiateStream_StreamToStream_Authentication_TargetName_Success()
         {
             string targetName = "testTargetName";
 
@@ -93,8 +91,7 @@ namespace System.Net.Security.Tests
                 auth[0] = AuthenticateAsClientAsync(client, CredentialCache.DefaultNetworkCredentials, targetName);
                 auth[1] = AuthenticateAsServerAsync(server);
 
-                bool finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
-                Assert.True(finished, "Handshake completed in the allotted time");
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(auth);
 
                 // Expected Client property values:
                 Assert.True(client.IsAuthenticated);
@@ -130,7 +127,7 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Core difference in behavior: https://github.com/dotnet/corefx/issues/5241")]
-        public void NegotiateStream_StreamToStream_Authentication_EmptyCredentials_Fails()
+        public async Task NegotiateStream_StreamToStream_Authentication_EmptyCredentials_Fails()
         {
             string targetName = "testTargetName";
 
@@ -155,8 +152,7 @@ namespace System.Net.Security.Tests
                 auth[0] = AuthenticateAsClientAsync(client, emptyNetworkCredential, targetName);
                 auth[1] = AuthenticateAsServerAsync(server);
 
-                bool finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
-                Assert.True(finished, "Handshake completed in the allotted time");
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(auth);
 
                 // Expected Client property values:
                 Assert.True(client.IsAuthenticated);
@@ -193,7 +189,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public void NegotiateStream_StreamToStream_Successive_ClientWrite_Sync_Success()
+        public async Task NegotiateStream_StreamToStream_Successive_ClientWrite_Sync_Success()
         {
             byte[] recvBuf = new byte[_sampleMsg.Length];
             VirtualNetwork network = new VirtualNetwork();
@@ -210,8 +206,7 @@ namespace System.Net.Security.Tests
                 auth[0] = AuthenticateAsClientAsync(client, CredentialCache.DefaultNetworkCredentials, string.Empty);
                 auth[1] = AuthenticateAsServerAsync(server);
 
-                bool finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
-                Assert.True(finished, "Handshake completed in the allotted time");
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(auth);
 
                 client.Write(_sampleMsg, 0, _sampleMsg.Length);
                 server.Read(recvBuf, 0, _sampleMsg.Length);
@@ -226,7 +221,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public void NegotiateStream_StreamToStream_Successive_ClientWrite_Async_Success()
+        public async Task NegotiateStream_StreamToStream_Successive_ClientWrite_Async_Success()
         {
             byte[] recvBuf = new byte[_sampleMsg.Length];
             VirtualNetwork network = new VirtualNetwork();
@@ -243,19 +238,16 @@ namespace System.Net.Security.Tests
                 auth[0] = AuthenticateAsClientAsync(client, CredentialCache.DefaultNetworkCredentials, string.Empty);
                 auth[1] = AuthenticateAsServerAsync(server);
 
-                bool finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
-                Assert.True(finished, "Handshake completed in the allotted time");
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(auth);
 
                 auth[0] = client.WriteAsync(_sampleMsg, 0, _sampleMsg.Length);
                 auth[1] = server.ReadAsync(recvBuf, 0, _sampleMsg.Length);
-                finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
-                Assert.True(finished, "Send/receive completed in the allotted time");
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(auth);
                 Assert.True(_sampleMsg.SequenceEqual(recvBuf));
 
                 auth[0] = client.WriteAsync(_sampleMsg, 0, _sampleMsg.Length);
                 auth[1] = server.ReadAsync(recvBuf, 0, _sampleMsg.Length);
-                finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
-                Assert.True(finished, "Send/receive completed in the allotted time");
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(auth);
                 Assert.True(_sampleMsg.SequenceEqual(recvBuf));
             }
         }

@@ -95,8 +95,8 @@ namespace System.IO.Tests
             using (var buffer = new TestSafeBuffer(capacity))
             using (var uma = new UnmanagedMemoryAccessor(buffer, 0, capacity, FileAccess.ReadWrite))
             {
-                AssertExtensions.Throws<ArgumentException>("type", () => uma.WriteArray<UmaTestStruct_ContainsReferenceType>(0, structArr, 0, 1));
-                AssertExtensions.Throws<ArgumentException>("type", () => uma.ReadArray<UmaTestStruct_ContainsReferenceType>(0, structArr, 0, 1));
+                AssertExtensions.Throws<ArgumentException>(null, "type", () => uma.WriteArray<UmaTestStruct_ContainsReferenceType>(0, structArr, 0, 1));
+                AssertExtensions.Throws<ArgumentException>(null, "type", () => uma.ReadArray<UmaTestStruct_ContainsReferenceType>(0, structArr, 0, 1));
             }
         }
 
@@ -123,8 +123,8 @@ namespace System.IO.Tests
             using (var buffer = new TestSafeBuffer(capacity))
             using (var uma = new UnmanagedMemoryAccessor(buffer, 0, capacity, FileAccess.ReadWrite))
             {
-                AssertExtensions.Throws<ArgumentException>("type", () => uma.WriteArray<UmaTestStruct_Generic<string>>(0, structArr, 0, 1));
-                AssertExtensions.Throws<ArgumentException>("type", () => uma.ReadArray<UmaTestStruct_Generic<string>>(0, structArr, 0, 1));
+                AssertExtensions.Throws<ArgumentException>(null, "type", () => uma.WriteArray<UmaTestStruct_Generic<string>>(0, structArr, 0, 1));
+                AssertExtensions.Throws<ArgumentException>(null, "type", () => uma.ReadArray<UmaTestStruct_Generic<string>>(0, structArr, 0, 1));
             }
         }
 

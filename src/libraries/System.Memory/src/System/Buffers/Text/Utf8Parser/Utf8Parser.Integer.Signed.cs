@@ -32,11 +32,12 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
+        [CLSCompliant(false)]
         public static bool TryParse(ReadOnlySpan<byte> text, out sbyte value, out int bytesConsumed, char standardFormat = default)
         {
             switch (standardFormat)
             {
-                case default(char):
+                case (default):
                 case 'g':
                 case 'G':
                 case 'd':
@@ -82,7 +83,7 @@ namespace System.Buffers.Text
         {
             switch (standardFormat)
             {
-                case default(char):
+                case (default):
                 case 'g':
                 case 'G':
                 case 'd':
@@ -128,7 +129,7 @@ namespace System.Buffers.Text
         {
             switch (standardFormat)
             {
-                case default(char):
+                case (default):
                 case 'g':
                 case 'G':
                 case 'd':
@@ -174,7 +175,7 @@ namespace System.Buffers.Text
         {
             switch (standardFormat)
             {
-                case default(char):
+                case (default):
                 case 'g':
                 case 'G':
                 case 'd':
