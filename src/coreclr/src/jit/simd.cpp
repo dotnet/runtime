@@ -129,6 +129,14 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
         return TYP_UNKNOWN;
     }
 
+#if FEATURE_HW_INTRINSICS && DEBUG
+    if (isIntrinsicType(typeHnd))
+    {
+        JITDUMP("\nFound Vector Type: %s with base type %s\n", getClassNameFromMetadata(typeHnd, nullptr),
+                getClassNameFromMetadata(getTypeInstantiationArgument(typeHnd, 0), nullptr));
+    }
+#endif
+
     // fast path search using cached type handles of important types
     var_types simdBaseType = TYP_UNKNOWN;
     unsigned  size         = 0;
