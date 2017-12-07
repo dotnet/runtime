@@ -430,6 +430,10 @@ CORINFO_CLASS_HANDLE getBuiltinClass(CorInfoClassId classId);
 // "System.Int32" ==> CORINFO_TYPE_INT..
 CorInfoType getTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE cls);
 
+// "System.Int32" ==> CORINFO_TYPE_INT..
+// "System.UInt32" ==> CORINFO_TYPE_UINT..
+CorInfoType getTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls);
+
 // TRUE if child is a subtype of parent
 // if parent is an interface, then does child implement / extend parent
 BOOL canCast(CORINFO_CLASS_HANDLE child, // subtype (extends parent)

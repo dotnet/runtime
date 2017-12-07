@@ -704,6 +704,14 @@ CorInfoType interceptor_ICJI::getTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE
     return original_ICorJitInfo->getTypeForPrimitiveValueClass(cls);
 }
 
+// "System.Int32" ==> CORINFO_TYPE_INT..
+// "System.UInt32" ==> CORINFO_TYPE_UINT..
+CorInfoType interceptor_ICJI::getTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls)
+{
+    mcs->AddCall("getTypeForPrimitiveNumericClass");
+    return original_ICorJitInfo->getTypeForPrimitiveNumericClass(cls);
+}
+
 // TRUE if child is a subtype of parent
 // if parent is an interface, then does child implement / extend parent
 BOOL interceptor_ICJI::canCast(CORINFO_CLASS_HANDLE child, // subtype (extends parent)
