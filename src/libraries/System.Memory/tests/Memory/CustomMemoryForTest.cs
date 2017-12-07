@@ -39,13 +39,13 @@ namespace System.MemoryTests
             }
         }
 
-        public override MemoryHandle Pin()
+        public override MemoryHandle Pin(int index = 0)
         {
             unsafe
             {
                 Retain();
                 var handle = GCHandle.Alloc(_array, GCHandleType.Pinned);
-                return new MemoryHandle(this, (void*)handle.AddrOfPinnedObject(), handle);
+                return new MemoryHandle(this, Unsafe.Add<byte>((void*)handle.AddrOfPinnedObject(), index), handle);
             }
         }
 
