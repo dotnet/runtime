@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using System.Runtime.CompilerServices;
 
 namespace System.SpanTests
 {
@@ -44,12 +43,13 @@ namespace System.SpanTests
         }
 
         [Theory]
-        [InlineData(new string[] { "b", "c", "d", "e" }, "a", -1)]
-        [InlineData(new string[] { "b", "c", "d", "e" }, "b", 0)]
-        [InlineData(new string[] { "b", "c", "d", "e" }, "c", 1)]
-        [InlineData(new string[] { "b", "c", "d", "e" }, "d", 2)]
-        [InlineData(new string[] { "b", "c", "d", "e" }, "e", 3)]
-        [InlineData(new string[] { "b", "c", "d", "e" }, "f", -5)]
+        [InlineData(new string[] { "b", "c", "e", "f" }, "a", -1)]
+        [InlineData(new string[] { "b", "c", "e", "f" }, "b", 0)]
+        [InlineData(new string[] { "b", "c", "e", "f" }, "c", 1)]
+        [InlineData(new string[] { "b", "c", "e", "f" }, "d", -3)]
+        [InlineData(new string[] { "b", "c", "e", "f" }, "e", 2)]
+        [InlineData(new string[] { "b", "c", "e", "f" }, "f", 3)]
+        [InlineData(new string[] { "b", "c", "e", "f" }, "g", -5)]
         public static void BinarySearch_String(string[] a, string value, int expectedIndex)
         {
             var span = new ReadOnlySpan<string>(a);
@@ -58,12 +58,5 @@ namespace System.SpanTests
 
             Assert.Equal(expectedIndex, index);
         }
-
-        //[Fact]
-        //public static void AsBytesContainsReferences()
-        //{
-        //    ReadOnlySpan<StructWithReferences> span = new ReadOnlySpan<StructWithReferences>(Array.Empty<StructWithReferences>());
-        //    TestHelpers.AssertThrows<ArgumentException, StructWithReferences>(span, (_span) => _span.AsBytes().DontBox());
-        //}
     }
 }
