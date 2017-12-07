@@ -306,11 +306,6 @@ namespace System
         /// of the index of the next element that is larger than <paramref name="comparable"/> or, if there is
         /// no larger element, the bitwise complement of <see cref="Span{T}.Length"/>.
         /// </returns>
-        /// <exception cref="InvalidOperationException">
-        /// The default comparer <see cref="Comparer{T}.Default"/> cannot
-        /// find an implementation of the <see cref="IComparable{T}"/> generic interface or
-        /// the <see cref="IComparable"/> interface for type <typeparamref name="T"/>.
-        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int BinarySearch<T>(
             this Span<T> span, IComparable<T> comparable)
@@ -331,11 +326,6 @@ namespace System
         /// of the index of the next element that is larger than <paramref name="comparable"/> or, if there is
         /// no larger element, the bitwise complement of <see cref="Span{T}.Length"/>.
         /// </returns>
-        /// <exception cref="InvalidOperationException">
-        /// The default comparer <see cref="Comparer{T}.Default"/> cannot
-        /// find an implementation of the <see cref="IComparable{T}"/> generic interface or
-        /// the <see cref="IComparable"/> interface for type <typeparamref name="T"/>.
-        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int BinarySearch<T, TComparable>(
             this Span<T> span, TComparable comparable)
@@ -358,11 +348,6 @@ namespace System
         /// of the index of the next element that is larger than <paramref name="value"/> or, if there is
         /// no larger element, the bitwise complement of <see cref="Span{T}.Length"/>.
         /// </returns>
-        /// <exception cref="InvalidOperationException">
-        /// The default comparer <see cref="Comparer{T}.Default"/> cannot
-        /// find an implementation of the <see cref="IComparable{T}"/> generic interface or
-        /// the <see cref="IComparable"/> interface for type <typeparamref name="T"/>.
-        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int BinarySearch<T, TComparer>(
             this Span<T> span, T value, TComparer comparer)
@@ -384,11 +369,6 @@ namespace System
         /// of the index of the next element that is larger than <paramref name="comparable"/> or, if there is
         /// no larger element, the bitwise complement of <see cref="Span{T}.Length"/>.
         /// </returns>
-        /// <exception cref="InvalidOperationException">
-        /// The default comparer <see cref="Comparer{T}.Default"/> cannot
-        /// find an implementation of the <see cref="IComparable{T}"/> generic interface or
-        /// the <see cref="IComparable"/> interface for type <typeparamref name="T"/>.
-        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int BinarySearch<T>(
             this ReadOnlySpan<T> span, IComparable<T> comparable)
@@ -409,11 +389,6 @@ namespace System
         /// of the index of the next element that is larger than <paramref name="comparable"/> or, if there is
         /// no larger element, the bitwise complement of <see cref="Span{T}.Length"/>.
         /// </returns>
-        /// <exception cref="InvalidOperationException">
-        /// The default comparer <see cref="Comparer{T}.Default"/> cannot
-        /// find an implementation of the <see cref="IComparable{T}"/> generic interface or
-        /// the <see cref="IComparable"/> interface for type <typeparamref name="T"/>.
-        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int BinarySearch<T, TComparable>(
             this ReadOnlySpan<T> span, TComparable comparable)
@@ -436,11 +411,6 @@ namespace System
         /// of the index of the next element that is larger than <paramref name="value"/> or, if there is
         /// no larger element, the bitwise complement of <see cref="Span{T}.Length"/>.
         /// </returns>
-        /// <exception cref="InvalidOperationException">
-        /// The default comparer <see cref="Comparer{T}.Default"/> cannot
-        /// find an implementation of the <see cref="IComparable{T}"/> generic interface or
-        /// the <see cref="IComparable"/> interface for type <typeparamref name="T"/>.
-        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int BinarySearch<T, TComparer>(
             this ReadOnlySpan<T> span, T value, TComparer comparer)
