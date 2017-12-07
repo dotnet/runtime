@@ -13,5 +13,6 @@ namespace System.Memory.Tests
         // List:
         // https://github.com/dotnet/corefx/blob/157fff35c2427dd0ce5e79557d506e8e7947c8d4/src/System.Collections/tests/Performance/Perf.List.cs#L550
         // https://github.com/dotnet/corefx/blob/157fff35c2427dd0ce5e79557d506e8e7947c8d4/src/System.Collections/tests/Performance/Perf.List.cs#L577
+        // TODO: What tests do we need here? What types (short, int, string ...)? Range? Scenarios?
     }
 }
