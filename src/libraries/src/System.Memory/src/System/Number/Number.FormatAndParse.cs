@@ -455,7 +455,6 @@ namespace System
                 val = Mul64Lossy(val, multval, ref exp);
             }
 
-
             // round & scale down
             if (((int)val & (1 << 10)) != 0)
             {

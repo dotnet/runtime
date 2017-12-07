@@ -28,7 +28,7 @@ namespace System.SpanTests
 
                 for (int i = 0; i < length; i++)
                 {
-                    byte target0 = default(byte);
+                    byte target0 = default;
                     int idx = span.IndexOf<byte>(target0);
                     Assert.Equal(0, idx);
                 }
@@ -215,7 +215,7 @@ namespace System.SpanTests
                 byte[] a = new byte[length];
                 ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(a);
 
-                byte[] targets = { default(byte), 99 };
+                byte[] targets = { default, 99 };
 
                 for (int i = 0; i < length; i++)
                 {
@@ -346,7 +346,7 @@ namespace System.SpanTests
                 byte[] a = new byte[length];
                 ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(a);
 
-                byte[] targets = { default(byte), 99, 98 };
+                byte[] targets = { default, 99, 98 };
 
                 for (int i = 0; i < length; i++)
                 {
@@ -486,7 +486,7 @@ namespace System.SpanTests
                 byte[] a = new byte[length];
                 ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(a);
 
-                var values = new ReadOnlySpan<byte>(new byte[] { default(byte), 99, 98, 0 });
+                var values = new ReadOnlySpan<byte>(new byte[] { default, 99, 98, 0 });
 
                 for (int i = 0; i < length; i++)
                 {

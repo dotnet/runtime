@@ -22,7 +22,6 @@ namespace System.Buffers.Text
                 + 2  // 'E' or 'e' followed by '+' or '-'
                 + NumExponentDigits; // exponent digits
 
-
             if (buffer.Length < numBytesNeeded)
             {
                 bytesWritten = 0;

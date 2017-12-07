@@ -116,7 +116,7 @@ namespace System.Buffers.Text.Tests
             get
             {
                 // The "default" format for DateTimeOffset is weird - it's like "G" but also suffixes an offset so it doesn't exactly match any of the explicit offsets.
-                yield return new SupportedFormat(default(char), supportsPrecision: false) { IsDefault = true, NoRepresentation = true };
+                yield return new SupportedFormat(default, supportsPrecision: false) { IsDefault = true, NoRepresentation = true };
                 yield return new SupportedFormat('G', supportsPrecision: false);
                 yield return new SupportedFormat('R', supportsPrecision: false);
                 yield return new SupportedFormat('l', supportsPrecision: false);

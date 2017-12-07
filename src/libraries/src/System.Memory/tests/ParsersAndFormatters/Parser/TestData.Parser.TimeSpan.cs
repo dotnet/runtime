@@ -178,30 +178,30 @@ namespace System.Buffers.Text.Tests
         {
             get
             {
-                yield return "1"; 
-                yield return "1.9999999"; 
-                yield return "4294967295"; 
-                yield return "1:2"; 
-                yield return "1:2.9999999"; 
-                yield return "1:4294967295"; 
+                yield return "1";
+                yield return "1.9999999";
+                yield return "4294967295";
+                yield return "1:2";
+                yield return "1:2.9999999";
+                yield return "1:4294967295";
                 yield return "1:2:3";
                 yield return "1.2:3";
                 yield return "1.2:3:4";
-                yield return "1:2:3.9999999"; 
-                yield return "1:2:3.$$$$$$$"; 
-                yield return "1:2:4294967295"; 
-                yield return "1:2:4294967295.9999999"; 
-                yield return "1:2:3:4"; 
-                yield return "1:2:3:4.9999999"; 
+                yield return "1:2:3.9999999";
+                yield return "1:2:3.$$$$$$$";
+                yield return "1:2:4294967295";
+                yield return "1:2:4294967295.9999999";
+                yield return "1:2:3:4";
+                yield return "1:2:3:4.9999999";
                 yield return "1:2:3:4.$$$$$$$";
-                yield return "1:2:3:4294967295"; 
+                yield return "1:2:3:4294967295";
                 yield return "1:2:3:4294967295.9999999";
                 yield return "1.2:3:4.9999999";
                 yield return "1.2:3:4.$$$$$$$";
                 yield return "1.2:3:4294967295";
                 yield return "1.2:3:4294967295.9999999";
-                yield return "1.2:3:4:5"; 
-                yield return "1.2:3:4:5.9999999"; 
+                yield return "1.2:3:4:5";
+                yield return "1.2:3:4:5.9999999";
                 yield return "1.2:3:4.9999999:";
                 yield return "1.2:3:4.9999999.";
 

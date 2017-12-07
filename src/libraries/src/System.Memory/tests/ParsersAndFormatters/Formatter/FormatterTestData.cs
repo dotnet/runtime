@@ -33,10 +33,10 @@ namespace System.Buffers.Text.Tests
             // Take good care of this method: it affects Xunit output and makes a lot of difference in how annoying test investigations are.
             //
 
-            string formatString = (FormatSymbol == default) ? 
-                "default" : 
-                FormatSymbol + ((Precision == StandardFormat.NoPrecision) ? 
-                    string.Empty : 
+            string formatString = (FormatSymbol == default) ?
+                "default" :
+                FormatSymbol + ((Precision == StandardFormat.NoPrecision) ?
+                    string.Empty :
                     Precision.ToString());
 
             string bufferLengthString;
@@ -46,7 +46,7 @@ namespace System.Buffers.Text.Tests
             }
             else if (PassedInBufferLength < ExpectedOutput.Length)
             {
-                bufferLengthString = $", Buffer Length = {PassedInBufferLength} bytes (too short)"; 
+                bufferLengthString = $", Buffer Length = {PassedInBufferLength} bytes (too short)";
             }
             else
             {
