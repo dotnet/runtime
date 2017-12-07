@@ -675,6 +675,15 @@ CorInfoType WrapICorJitInfo::getTypeForPrimitiveValueClass(
     return temp;
 }
 
+CorInfoType WrapICorJitInfo::getTypeForPrimitiveNumericClass(
+            CORINFO_CLASS_HANDLE        cls)
+{
+    API_ENTER(getTypeForPrimitiveNumericClass);
+    CorInfoType temp = wrapHnd->getTypeForPrimitiveNumericClass(cls);
+    API_LEAVE(getTypeForPrimitiveNumericClass);
+    return temp;
+}
+
 BOOL WrapICorJitInfo::canCast(
             CORINFO_CLASS_HANDLE        child,
             CORINFO_CLASS_HANDLE        parent  )
