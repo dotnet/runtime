@@ -189,6 +189,7 @@ if defined DoLink (
 )
 
 REM Prepare the Test Drop
+echo %__MsgPrefix%Removing 'ni' files and 'lock' folders from %__TestWorkingDir%
 REM Cleans any NI from the last run
 powershell -NoProfile "Get-ChildItem -path %__TestWorkingDir% -Include '*.ni.*' -Recurse -Force | Remove-Item -force"
 REM Cleans up any lock folder used for synchronization from last run
