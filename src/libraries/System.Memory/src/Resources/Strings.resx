@@ -150,7 +150,4 @@
   <data name="Argument_PrecisionTooLarge" xml:space="preserve">
     <value>Precision cannot be larger than {0}.</value>
   </data>
-  <data name="InvalidOperation_IComparableFailed" xml:space="preserve">
-    <value>Failed to compare value with comparable.</value>
-  </data>
 </root>

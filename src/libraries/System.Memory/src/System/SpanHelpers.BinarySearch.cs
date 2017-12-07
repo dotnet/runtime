@@ -39,22 +39,12 @@ namespace System
                 // int i = (int)(((uint)hi + (uint)lo) >> 1)
                 int i = lo + ((hi - lo) >> 1);
 
-                int c = 0;
-                // TODO: Is the try/catch needed, can this be removed?
-                try
-                {
-                    //c = comparable.Compare(Unsafe.Add(ref s, i), value);
-                    // Note this is reversed, in that `value` is before, not after as above
-                    // TODO: We probably need to add `ref readonly`/`in` overloads or `AddReadOnly`to unsafe, 
-                    //       if this will be available in language
-                    // TODO: Revise all Unsafe APIs for `readonly` applicability...
-                    c = comparable.CompareTo(Unsafe.Add(ref s, i));
-                }
-                catch (Exception e)
-                {
-                    // TODO: Is this correct? Don't like the try/catch, why should we have this??
-                    ThrowHelper.ThrowInvalidOperationException_IComparableFailed(e);
-                }
+                //c = comparable.Compare(Unsafe.Add(ref s, i), value);
+                // Note this is reversed, in that `value` is before, not after as above
+                // TODO: We probably need to add `ref readonly`/`in` overloads or `AddReadOnly`to unsafe, 
+                //       if this will be available in language
+                // TODO: Revise all Unsafe APIs for `readonly` applicability...
+                var c = comparable.CompareTo(Unsafe.Add(ref s, i));
                 if (c == 0)
                 {
                     return i;
