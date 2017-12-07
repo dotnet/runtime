@@ -19,7 +19,7 @@
   <PropertyGroup>
     <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview1-26006-07</MicrosoftNETCorePlatformsPackageVersion>
     <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview1-26006-07</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
-    <MicrosoftPrivateCoreFxUAPPackageVersion>4.6.0-preview1-26006-07</MicrosoftPrivateCoreFxUAPPackageVersion>
+    <MicrosoftPrivateCoreFxUAPPackageVersion>4.6.0-preview1-26006-06</MicrosoftPrivateCoreFxUAPPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-26006-06</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <NETStandardLibraryPackageVersion>2.0.1</NETStandardLibraryPackageVersion>
     <MicrosoftNetNativeCompilerPackageVersion>2.0.0-preview-25429-00</MicrosoftNetNativeCompilerPackageVersion>
