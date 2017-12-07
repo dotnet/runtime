@@ -98,7 +98,7 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
 #endif
 #endif // !HAVE_MACH_EXCEPTIONS
 
-static void handle_signal(int signal_id, SIGFUNC sigfunc, struct sigaction *previousAction, int additionalFlags = 0);
+static void handle_signal(int signal_id, SIGFUNC sigfunc, struct sigaction *previousAction, int additionalFlags = 0, bool skipIgnored = false);
 static void restore_signal(int signal_id, struct sigaction *previousAction);
 
 /* internal data declarations *********************************************/
@@ -246,8 +246,11 @@ BOOL SEHInitializeSignals(DWORD flags)
     handle_signal(SIGBUS, sigbus_handler, &g_previous_sigbus);
     // SIGSEGV handler runs on a separate stack so that we can handle stack overflow
     handle_signal(SIGSEGV, sigsegv_handler, &g_previous_sigsegv, SA_ONSTACK);
-    handle_signal(SIGINT, sigint_handler, &g_previous_sigint);
-    handle_signal(SIGQUIT, sigquit_handler, &g_previous_sigquit);
+    // We don't setup a handler for SIGINT/SIGQUIT when those signals are ignored.
+    // Otherwise our child processes would reset to the default on exec causing them
+    // to terminate on these signals.
+    handle_signal(SIGINT, sigint_handler, &g_previous_sigint   , 0 /* additionalFlags */, true /* skipIgnored */);
+    handle_signal(SIGQUIT, sigquit_handler, &g_previous_sigquit, 0 /* additionalFlags */, true /* skipIgnored */);
 
     if (!EnsureSignalAlternateStack())
     {
@@ -903,7 +906,7 @@ Parameters :
     
 note : if sigfunc is NULL, the default signal handler is restored    
 --*/
-void handle_signal(int signal_id, SIGFUNC sigfunc, struct sigaction *previousAction, int additionalFlags)
+void handle_signal(int signal_id, SIGFUNC sigfunc, struct sigaction *previousAction, int additionalFlags, bool skipIgnored)
 {
     struct sigaction newAction;
 
@@ -926,6 +929,19 @@ void handle_signal(int signal_id, SIGFUNC sigfunc, struct sigaction *previousAct
         sigaddset(&newAction.sa_mask, INJECT_ACTIVATION_SIGNAL);
     }
 #endif
+
+    if (skipIgnored)
+    {
+        if (-1 == sigaction(signal_id, NULL, previousAction))
+        {
+            ASSERT("handle_signal: sigaction() call failed with error code %d (%s)\n",
+                errno, strerror(errno));
+        }
+        else if (previousAction->sa_handler == SIG_IGN)
+        {
+            return;
+        }
+    }
 
     if (-1 == sigaction(signal_id, &newAction, previousAction))
     {
