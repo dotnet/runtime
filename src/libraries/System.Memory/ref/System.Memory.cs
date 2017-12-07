@@ -222,7 +222,7 @@ namespace System.Buffers
         public abstract Span<T> Span { get; }
         public void Dispose() { throw null; }
         protected abstract void Dispose(bool disposing);
-        public abstract MemoryHandle Pin();
+        public abstract MemoryHandle Pin(int offset = 0);
         public abstract bool Release();
         public abstract void Retain();
         protected internal abstract bool TryGetArray(out ArraySegment<T> arraySegment);
