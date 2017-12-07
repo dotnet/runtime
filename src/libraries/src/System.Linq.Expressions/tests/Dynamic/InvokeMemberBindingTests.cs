@@ -190,7 +190,7 @@ namespace System.Dynamic.Tests
 
         private static dynamic GetObjectWithNonIndexerParameterProperty(bool hasGetter, bool hasSetter)
         {
-            TypeBuilder typeBuild = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run)
+            TypeBuilder typeBuild = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.RunAndCollect)
                 .DefineDynamicModule("TestModule")
                 .DefineType("TestType", TypeAttributes.Public);
             FieldBuilder field = typeBuild.DefineField("_value", typeof(int), FieldAttributes.Private);
@@ -369,7 +369,7 @@ namespace System.Dynamic.Tests
                 .Select(
                     _ => Activator.CreateInstance(
                         AssemblyBuilder
-                            .DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run)
+                            .DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.RunAndCollect)
                             .DefineDynamicModule("TestModule")
                             .DefineType("TestType", TypeAttributes.Public)
                             .CreateType()))

@@ -253,7 +253,7 @@ namespace System.Linq.Expressions.Tests
                         new[]{ typeof(RuntimeCompatibilityAttribute).GetProperty(nameof(RuntimeCompatibilityAttribute.WrapNonExceptionThrows)) },
                         new object[] { assemblyWraps });
                 AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
-                    new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+                    new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect);
                 assembly.SetCustomAttribute(custAtt);
                 ModuleBuilder module = assembly.DefineDynamicModule("Name");
                 TypeBuilder type = module.DefineType("Type");

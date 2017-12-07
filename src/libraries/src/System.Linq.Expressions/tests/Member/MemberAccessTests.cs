@@ -556,7 +556,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Property_NoGetOrSetAccessors_ThrowsArgumentException()
         {
-            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect);
             ModuleBuilder module = assembly.DefineDynamicModule("Module");
 
             TypeBuilder type = module.DefineType("Type");
