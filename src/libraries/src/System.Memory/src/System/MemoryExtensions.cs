@@ -675,7 +675,7 @@ namespace System
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int BinarySearch<T, TComparable>(
-            this Span<T> span, TComparable comparable)
+            this Span<T> span, in TComparable comparable)
             where TComparable : IComparable<T>
         {
             return BinarySearch((ReadOnlySpan<T>)span, comparable);
@@ -697,7 +697,7 @@ namespace System
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int BinarySearch<T, TComparer>(
-            this Span<T> span, T value, TComparer comparer)
+            this Span<T> span, in T value, in TComparer comparer)
             where TComparer : IComparer<T>
         {
             return BinarySearch((ReadOnlySpan<T>)span, value, comparer);
@@ -738,7 +738,7 @@ namespace System
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int BinarySearch<T, TComparable>(
-            this ReadOnlySpan<T> span, TComparable comparable)
+            this ReadOnlySpan<T> span, in TComparable comparable)
             where TComparable : IComparable<T>
         {
             return SpanHelpers.BinarySearch(span, comparable);
@@ -760,7 +760,7 @@ namespace System
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int BinarySearch<T, TComparer>(
-            this ReadOnlySpan<T> span, T value, TComparer comparer)
+            this ReadOnlySpan<T> span, in T value, in TComparer comparer)
             where TComparer : IComparer<T>
         {
             var comparable = new SpanHelpers.ComparerComparable<T, TComparer>(
