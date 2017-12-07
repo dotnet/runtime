@@ -573,6 +573,7 @@ public:
     CORINFO_METHOD_HANDLE mapMethodDeclToMethodImpl(CORINFO_METHOD_HANDLE methHnd);
     CORINFO_CLASS_HANDLE getBuiltinClass(CorInfoClassId classId);
     CorInfoType getTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE cls);
+    CorInfoType getTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls);
     BOOL canCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent);
     BOOL areTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
     TypeCompareState compareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass);
