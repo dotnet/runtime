@@ -5397,7 +5397,7 @@ void CodeGen::genEnregisterIncomingStackArgs()
             otherReg          = genRegPairHi(regPair);
         }
         else
-#endif // _TARGET_ARM
+#endif // _TARGET_ARM_
         {
             regNum   = varDsc->lvArgInitReg;
             otherReg = REG_NA;
