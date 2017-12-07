@@ -76,11 +76,12 @@ namespace System.Linq.Expressions.Compiler
             if (!curTypeInfo.TypeChain.TryGetValue(lookingUp, out nextTypeInfo))
             {
                 nextTypeInfo = new TypeInfo();
-                if (lookingUp.CanCache())
+                if (!lookingUp.IsCollectible)
                 {
                     curTypeInfo.TypeChain[lookingUp] = nextTypeInfo;
                 }
             }
+
             return nextTypeInfo;
         }
 
