@@ -36,8 +36,9 @@ namespace System
             while (lo <= hi)
             {
                 // lo or hi will never be negative inside the loop
-                // TODO: Test/investigate if below is faster (gives better asm), perhaps via Unsafe.As to avoid unnecessary conversions
+                // TODO: Test/investigate if below is faster (if it gives better asm), perhaps via Unsafe.As to avoid unnecessary conversions
                 //       This is safe since we know span.Length < int.MaxValue, and indeces are >= 0
+                //       and thus cannot overflow an uint. Saves on subtraction per loop.
                 // int i = (int)(((uint)hi + (uint)lo) >> 1)
                 int i = lo + ((hi - lo) >> 1);
 
