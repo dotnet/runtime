@@ -11,7 +11,7 @@ namespace System
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int BinarySearch<T, TComparable>(
-            this ReadOnlySpan<T> span, TComparable comparable)
+            this ReadOnlySpan<T> span, in TComparable comparable)
             where TComparable : IComparable<T>
         {
             // TODO: Make `ref readonly`/`in` when language permits
@@ -21,7 +21,7 @@ namespace System
         // TODO: Make s `ref readonly`/`in` when language permits
         // TODO: Make comparable `ref readonly`/`in` to allow pass by ref without forcing ref
         internal static int BinarySearch<T, TComparable>(
-            ref T s, int length, TComparable comparable) 
+            ref T s, int length, in TComparable comparable) 
             where TComparable : IComparable<T>
         {
             // Array.BinarySearch implementation:
