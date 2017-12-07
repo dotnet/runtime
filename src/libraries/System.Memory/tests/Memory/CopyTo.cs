@@ -91,7 +91,7 @@ namespace System.MemoryTests
             int[] dst = { 99, 100 };
 
             Memory<int> srcMemory = src;
-            Assert.Throws<ArgumentException>( () => srcMemory.CopyTo(dst) );
+            Assert.Throws<ArgumentException>(() => srcMemory.CopyTo(dst));
             int[] expected = { 99, 100 };
             Assert.Equal<int>(expected, dst);  // CopyTo() checks for sufficient space before doing any copying.
         }
@@ -176,7 +176,7 @@ namespace System.MemoryTests
             int[] src = { 1, 2, 3 };
             Memory<int> dst = new int[2] { 99, 100 };
 
-            Assert.Throws<ArgumentException>( () => src.CopyTo(dst) );
+            Assert.Throws<ArgumentException>(() => src.CopyTo(dst));
             int[] expected = { 99, 100 };
             Assert.Equal<int>(expected, dst.ToArray());  // CopyTo() checks for sufficient space before doing any copying.
         }

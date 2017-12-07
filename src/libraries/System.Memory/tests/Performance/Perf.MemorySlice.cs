@@ -10,7 +10,7 @@ namespace System.Memory.Tests
     public class MemorySlice
     {
         private const int InnerCount = 1000;
-        volatile static int volatileInt = 0;
+        volatile static int s_volatileInt = 0;
 
         [Benchmark(InnerIterationCount = InnerCount)]
         [InlineData(1000)]
@@ -34,7 +34,7 @@ namespace System.Memory.Tests
                         }
                     }
                 }
-                volatileInt = localInt;
+                s_volatileInt = localInt;
             }
         }
 
@@ -60,7 +60,7 @@ namespace System.Memory.Tests
                         }
                     }
                 }
-                volatileInt = localInt;
+                s_volatileInt = localInt;
             }
         }
 
@@ -87,7 +87,7 @@ namespace System.Memory.Tests
                         }
                     }
                 }
-                volatileInt = localInt;
+                s_volatileInt = localInt;
             }
         }
 
@@ -114,7 +114,7 @@ namespace System.Memory.Tests
                         }
                     }
                 }
-                volatileInt = localInt;
+                s_volatileInt = localInt;
             }
         }
 
@@ -136,7 +136,7 @@ namespace System.Memory.Tests
                 }
             }
 
-            volatileInt = result.Count;
+            s_volatileInt = result.Count;
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
@@ -157,7 +157,7 @@ namespace System.Memory.Tests
                 }
             }
 
-            volatileInt = result.Count;
+            s_volatileInt = result.Count;
         }
     }
 }

@@ -75,7 +75,6 @@ namespace System.Buffers.Text
                     return ThrowHelper.TryFormatThrowFormatException(out bytesWritten);
             }
 
-
             bytesWritten = GuidChars + (dash ? 4 : 0) + (bookEnds ? 2 : 0);
             if (buffer.Length < bytesWritten)
             {

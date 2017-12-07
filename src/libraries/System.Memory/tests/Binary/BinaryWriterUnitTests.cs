@@ -267,9 +267,9 @@ namespace System.Buffers.Binary.Tests
             uint uintValue = 1;
             long longValue = 1;
             ulong ulongValue = 1;
-            
+
             Span<byte> span = new byte[1];
-            
+
             WriteMachineEndian<byte>(span, ref byteValue);
             byte read = ReadMachineEndian<byte>(span);
             Assert.Equal<byte>(byteValue, read);
@@ -302,7 +302,7 @@ namespace System.Buffers.Binary.Tests
             TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => WriteMachineEndian<ulong>(_span, ref ulongValue));
             Assert.False(TryWriteMachineEndian<ulong>(span, ref ulongValue));
 
-            var structValue = new TestHelpers.TestValueTypeWithReference{ I = 1, S = "1" };
+            var structValue = new TestHelpers.TestValueTypeWithReference { I = 1, S = "1" };
             TestHelpers.AssertThrows<ArgumentException, byte>(span, (_span) => WriteMachineEndian<TestHelpers.TestValueTypeWithReference>(_span, ref structValue));
             TestHelpers.AssertThrows<ArgumentException, byte>(span, (_span) => TryWriteMachineEndian<TestHelpers.TestValueTypeWithReference>(_span, ref structValue));
         }

@@ -13,7 +13,7 @@ namespace System
     internal struct TInt : IEquatable<TInt>
     {
         public TInt(int value)
-            : this(value, (Action<int,int>)null)
+            : this(value, (Action<int, int>)null)
         {
             // This constructor does not report comparisons but is still useful for catching uses of the boxing Equals().
         }

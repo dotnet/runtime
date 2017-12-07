@@ -172,7 +172,6 @@ namespace System
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
         }
 
-
         /// <summary>
         /// Copies the contents of this read-only span into destination span. If the source
         /// and destinations overlap, this method behaves as if the original values in

@@ -63,20 +63,20 @@ namespace System.Buffers
         /// Frees the pinned handle and releases IRetainable.
         /// </summary>
         public void Dispose()
-        { 
-            if (_handle.IsAllocated) 
+        {
+            if (_handle.IsAllocated)
             {
                 _handle.Free();
             }
 
-            if (_retainable != null) 
+            if (_retainable != null)
             {
                 _retainable.Release();
                 _retainable = null;
             }
 
-            _pointer = null;           
+            _pointer = null;
         }
-        
+
     }
 }

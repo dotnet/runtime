@@ -12,7 +12,7 @@ namespace System.Buffers.Text.Tests
     //
     internal static partial class TestData
     {
-        public static readonly IEnumerable<byte> Precisions = new byte[] { StandardFormat.NoPrecision, 0, 1, 3, 10, StandardFormat.MaxPrecision };
+        public static readonly IEnumerable<byte> s_precisions = new byte[] { StandardFormat.NoPrecision, 0, 1, 3, 10, StandardFormat.MaxPrecision };
 
         public static IEnumerable<object[]> IntegerTypesTheoryData => IntegerTypes.Select(t => new object[] { t });
 

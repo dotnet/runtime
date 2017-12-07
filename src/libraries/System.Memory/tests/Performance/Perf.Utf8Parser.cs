@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Text;
-using System.Runtime.CompilerServices;
 using Microsoft.Xunit.Performance;
 using Xunit;
 
