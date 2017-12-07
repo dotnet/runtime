@@ -62,25 +62,6 @@ namespace System.SpanTests
         }
 
         [Theory]
-        [InlineData(new double[] { }, 0, -1)]
-        [InlineData(new double[] { 1, 2, 4, 5 }, 0, -1)]
-        [InlineData(new double[] { 1, 2, 4, 5 }, 1, 0)]
-        [InlineData(new double[] { 1, 2, 4, 5 }, 2, 1)]
-        [InlineData(new double[] { 1, 2, 4, 5 }, 3, -3)]
-        [InlineData(new double[] { 1, 2, 4, 5 }, 4, 2)]
-        [InlineData(new double[] { 1, 2, 4, 5 }, 5, 3)]
-        [InlineData(new double[] { 1, 2, 4, 5 }, 6, -5)]
-        public static void BinarySearch_Double(double[] a, double value, int expectedIndex)
-        {
-            // Implicitly tests ReadOnlySpan
-            var span = new Span<double>(a);
-
-            var index = span.BinarySearch(value);
-
-            Assert.Equal(expectedIndex, index);
-        }
-
-        [Theory]
         [InlineData(new string[] { }, null, -1)]
         [InlineData(new string[] { "b", "c", "e", "f" }, "a", -1)]
         [InlineData(new string[] { "b", "c", "e", "f" }, "b", 0)]
