@@ -490,6 +490,11 @@ GenTreePtr Compiler::fgMorphCast(GenTreePtr tree)
                 shiftAmount      = gtFoldExpr(shiftAmount);
                 oper->gtOp.gtOp2 = shiftAmount;
 
+#if DEBUG
+                // We may remorph the shift amount tree again later, so clear any morphed flag.
+                shiftAmount->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
+#endif // DEBUG
+
                 if (shiftAmount->IsIntegralConst())
                 {
                     const ssize_t shiftAmountValue = shiftAmount->AsIntCon()->IconValue();
