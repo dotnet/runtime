@@ -62,6 +62,46 @@ namespace System.SpanTests
         {
             TestOverloads(c.Array, c.Value, c.ExpectedIndex);
         }
+        
+        [Fact]
+        // TODO: Does it need to be OuterLoop, it's pretty fast, compared to total time
+        //[OuterLoop]
+        // TODO: Do we need to be platform specific?
+        //[PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        public unsafe static void BinarySearch_MaxLength_NoOverflow()
+        {
+            if (sizeof(IntPtr) == sizeof(long))
+            {
+                // Allocate max size span memory
+                var length = int.MaxValue;
+                IntPtr memory;
+                if (!AllocationHelper.TryAllocNative(new IntPtr(length), out memory))
+                {
+                    Console.WriteLine($"Span.BinarySearch test {nameof(BinarySearch_MaxLength_NoOverflow)} skipped (could not alloc memory).");
+                    return;
+                }
+                try
+                {
+                    var span = new Span<byte>(memory.ToPointer(), length);
+                    span.Fill(0);
+                    // Fill end of span, so we can search for a value there, just at the end.
+                    // But only to 254 so we can search for 255 just after end.
+                    for (int i = 0; i < byte.MaxValue; i++)
+                    {
+                        var index = span.Length - (byte.MaxValue - i);
+                        span[index] = (byte)i;
+                    }
+
+                    Assert.Equal(int.MaxValue - 2, span.BinarySearch((byte)(byte.MaxValue - 2)));
+                    Assert.Equal(int.MaxValue - 1, span.BinarySearch((byte)(byte.MaxValue - 1)));
+                    Assert.Equal(int.MinValue, span.BinarySearch(byte.MaxValue));
+                }
+                finally
+                {
+                    AllocationHelper.ReleaseNative(ref memory);
+                }
+            }
+        }
 
         private static void TestOverloads<T, TComparable>(
             T[] array, TComparable value, int expectedIndex)
