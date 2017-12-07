@@ -91,7 +91,7 @@ namespace System.MemoryTests
             int[] dst = { 99, 100 };
 
             ReadOnlyMemory<int> srcMemory = src;
-            Assert.Throws<ArgumentException>( () => srcMemory.CopyTo(dst) );
+            Assert.Throws<ArgumentException>(() => srcMemory.CopyTo(dst));
             int[] expected = { 99, 100 };
             Assert.Equal<int>(expected, dst);  // CopyTo() checks for sufficient space before doing any copying.
         }

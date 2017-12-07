@@ -7,7 +7,6 @@ using Xunit;
 using System.Net;
 
 using static System.Buffers.Binary.BinaryPrimitives;
-using static System.TestHelpers;
 
 namespace System.Buffers.Binary.Tests
 {
@@ -47,7 +46,7 @@ namespace System.Buffers.Binary.Tests
                 }
             }
 
-            Assert.Equal(TestHelpers.testExplicitStruct, readStruct);
+            Assert.Equal(TestHelpers.s_testExplicitStruct, readStruct);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
@@ -82,7 +81,7 @@ namespace System.Buffers.Binary.Tests
                 }
             }
 
-            Assert.Equal(TestHelpers.testExplicitStruct, readStruct);
+            Assert.Equal(TestHelpers.s_testExplicitStruct, readStruct);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
@@ -116,7 +115,7 @@ namespace System.Buffers.Binary.Tests
                 }
             }
 
-            Assert.Equal(TestHelpers.testExplicitStruct, readStruct);
+            Assert.Equal(TestHelpers.s_testExplicitStruct, readStruct);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
@@ -150,7 +149,7 @@ namespace System.Buffers.Binary.Tests
                 }
             }
 
-            Assert.Equal(TestHelpers.testExplicitStruct, readStruct);
+            Assert.Equal(TestHelpers.s_testExplicitStruct, readStruct);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
@@ -185,7 +184,7 @@ namespace System.Buffers.Binary.Tests
                 }
             }
 
-            Assert.Equal(TestHelpers.testExplicitStruct, readStruct);
+            Assert.Equal(TestHelpers.s_testExplicitStruct, readStruct);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
@@ -235,14 +234,14 @@ namespace System.Buffers.Binary.Tests
                 }
             }
 
-            Assert.Equal(TestHelpers.testExplicitStruct, readStruct);
+            Assert.Equal(TestHelpers.s_testExplicitStruct, readStruct);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
         private static void MeasureReverseEndianness()
         {
             var myArray = new int[1000];
-            
+
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())

@@ -38,6 +38,12 @@
     <Compile Include="Span\IndexOfSequence.T.cs" />
     <Compile Include="Span\IndexOfSequence.byte.cs" />
     <Compile Include="Span\IndexOfSequence.char.cs" />
+    <Compile Include="Span\LastIndexOf.T.cs" />
+    <Compile Include="Span\LastIndexOf.byte.cs" />
+    <Compile Include="Span\LastIndexOf.char.cs" />
+    <Compile Include="Span\LastIndexOfSequence.T.cs" />
+    <Compile Include="Span\LastIndexOfSequence.byte.cs" />
+    <Compile Include="Span\LastIndexOfSequence.char.cs" />
     <Compile Include="Span\NonPortableCast.cs" />
     <Compile Include="Span\Overflow.cs" />
     <Compile Include="Span\SequenceEqual.T.cs" />
@@ -70,6 +76,12 @@
     <Compile Include="ReadOnlySpan\IndexOfSequence.T.cs" />
     <Compile Include="ReadOnlySpan\IndexOfSequence.byte.cs" />
     <Compile Include="ReadOnlySpan\IndexOfSequence.char.cs" />
+    <Compile Include="ReadOnlySpan\LastIndexOf.T.cs" />
+    <Compile Include="ReadOnlySpan\LastIndexOf.byte.cs" />
+    <Compile Include="ReadOnlySpan\LastIndexOf.char.cs" />
+    <Compile Include="ReadOnlySpan\LastIndexOfSequence.T.cs" />
+    <Compile Include="ReadOnlySpan\LastIndexOfSequence.byte.cs" />
+    <Compile Include="ReadOnlySpan\LastIndexOfSequence.char.cs" />
     <Compile Include="ReadOnlySpan\NonPortableCast.cs" />
     <Compile Include="ReadOnlySpan\Overflow.cs" />
     <Compile Include="ReadOnlySpan\Overlaps.cs" />
