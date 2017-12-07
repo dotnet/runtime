@@ -948,62 +948,25 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
         // Report a bad operator types error to the user.
-        private ExprOperator BadOperatorTypesError(ExpressionKind ek, Expr pOperand1, Expr pOperand2)
+        private RuntimeBinderException BadOperatorTypesError(Expr pOperand1, Expr pOperand2)
         {
-            return BadOperatorTypesError(ek, pOperand1, pOperand2, null);
-        }
-
-        private ExprOperator BadOperatorTypesError(ExpressionKind ek, Expr pOperand1, Expr pOperand2, CType pTypeErr)
-        {
-            // This is a hack, but we need to store the operation somewhere... the first argument's as 
+            // This is a hack, but we need to store the operation somewhere... the first argument's as
             // good a place as any.
             string strOp = pOperand1.ErrorString;
 
-            pOperand1 = UnwrapExpression(pOperand1);
+            Debug.Assert(pOperand1 != null);
+            Debug.Assert(pOperand1.Type != null);
+            Debug.Assert(!(pOperand1.Type is ErrorType));
 
-            if (pOperand1 != null)
+            if (pOperand2 != null)
             {
-                if (pOperand2 != null)
-                {
-                    pOperand2 = UnwrapExpression(pOperand2);
-                    if (pOperand1.Type != null &&
-                            !(pOperand1.Type is ErrorType) &&
-                            pOperand2.Type != null &&
-                            !(pOperand2.Type is ErrorType))
-                    {
-                        throw ErrorContext.Error(ErrorCode.ERR_BadBinaryOps, strOp, pOperand1.Type, pOperand2.Type);
-                    }
-                }
-                else if (pOperand1.Type != null && !(pOperand1.Type is ErrorType))
-                {
-                    throw ErrorContext.Error(ErrorCode.ERR_BadUnaryOp, strOp, pOperand1.Type);
-                }
+                Debug.Assert(pOperand2.Type != null);
+                Debug.Assert(!(pOperand2.Type is ErrorType));
+
+                return ErrorContext.Error(ErrorCode.ERR_BadBinaryOps, strOp, pOperand1.Type, pOperand2.Type);
             }
 
-            if (pTypeErr == null)
-            {
-                pTypeErr = GetPredefindType(PredefinedType.PT_OBJECT);
-            }
-
-            ExprOperator rval = GetExprFactory().CreateOperator(ek, pTypeErr, pOperand1, pOperand2);
-            rval.SetError();
-            return rval;
-        }
-
-        private Expr UnwrapExpression(Expr pExpression)
-        {
-            while (pExpression is ExprWrap wrap)
-            {
-                Expr wrapped = wrap.OptionalExpression;
-                if (wrapped == null)
-                {
-                    break;
-                }
-
-                pExpression = wrapped;
-            }
-
-            return pExpression;
+            return ErrorContext.Error(ErrorCode.ERR_BadUnaryOp, strOp, pOperand1.Type);
         }
 
         private static ErrorCode GetStandardLvalueError(CheckLvalueKind kind)
