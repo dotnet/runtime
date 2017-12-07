@@ -9,15 +9,20 @@ namespace System.SpanTests
 {
     public static partial class ReadOnlySpanTests
     {
-        [Fact]
-        public static void BinarySearch_Int_2()
+        [Theory]
+        [InlineData(new uint[] { 1u, 2u, 3u, 4u }, 0u, -1)]
+        [InlineData(new uint[] { 1u, 2u, 3u, 4u }, 1u, 0)]
+        [InlineData(new uint[] { 1u, 2u, 3u, 4u }, 2u, 1)]
+        [InlineData(new uint[] { 1u, 2u, 3u, 4u }, 3u, 2)]
+        [InlineData(new uint[] { 1u, 2u, 3u, 4u }, 4u, 3)]
+        [InlineData(new uint[] { 1u, 2u, 3u, 4u }, 5u, -5)]
+        public static void BinarySearch_UInt(uint[] a, uint value, int expectedIndex)
         {
-            uint[] a = { 1, 2, 3, 4 };
             ReadOnlySpan<uint> span = new ReadOnlySpan<uint>(a);
 
-            var index = span.BinarySearch(2u);
+            var index = span.BinarySearch(value);
 
-            Assert.Equal(1, index);
+            Assert.Equal(expectedIndex, index);
         }
 
         [Fact]
