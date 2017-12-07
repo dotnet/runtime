@@ -76,7 +76,6 @@ namespace Microsoft.Win32.SafeHandles
 
         public override bool IsInvalid
         {
-            [SecurityCritical]
             get { return (long)handle < 0 && _namedPipeSocket == null; }
         }
     }

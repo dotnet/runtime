@@ -41,6 +41,7 @@ namespace System
         public static System.PlatformDetection.Range[] FrameworkRanges { get { throw null; } }
         public static bool HasWindowsShell { get { throw null; } }
         public static bool IsArmProcess { get { throw null; } }
+        public static bool IsCentos6 { get { throw null; } }
         public static bool IsDebian { get { throw null; } }
         public static bool IsDebian8 { get { throw null; } }
         public static bool IsDrawingSupported { get { throw null; } }
@@ -56,7 +57,7 @@ namespace System
         public static bool IsNotArmProcess { get { throw null; } }
         public static bool IsNotFedoraOrRedHatFamily { get { throw null; } }
         public static bool IsNotMacOsHighSierraOrHigher { get { throw null; } }
-        public static bool IsNotNetNativeRunningAsConsoleApp { get { throw null; } } 
+        public static bool IsNotNetNativeRunningAsConsoleApp { get { throw null; } }
         public static bool IsNotOneCoreUAP { get { throw null; } }
         public static bool IsNotWindows8x { get { throw null; } }
         public static bool IsNotWindowsIoTCore { get { throw null; } }
@@ -76,6 +77,7 @@ namespace System
         public static bool IsNotRedHatFamily6 { get { throw null; } }
         public static bool IsUap { get { throw null; } }
         public static Version ICUVersion { get { return null; } }
+        public static Version OpenSslVersion { get { return null; } }
         public static bool IsUbuntu { get { throw null; } }
         public static bool IsUbuntu1404 { get { throw null; } }
         public static bool IsUbuntu1604 { get { throw null; } }
@@ -101,6 +103,8 @@ namespace System
         public static bool IsNetfx462OrNewer() { throw null; }
         public static bool IsNetfx470OrNewer() { throw null; }
         public static bool IsNetfx471OrNewer() { throw null; }
+        public static bool TargetsNetFx452OrLower { get { throw null; } }
+
         public partial class Range
         {
             public Range(System.Version start, System.Version finish, System.Version frameworkVersion) { }

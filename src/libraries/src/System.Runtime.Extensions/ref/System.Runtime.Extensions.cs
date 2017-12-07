@@ -649,9 +649,7 @@ namespace System
         public static long WorkingSet { get { throw null; } }
         public static string ExpandEnvironmentVariables(string name) { throw null; }
         public static void Exit(int exitCode) { }
-        [System.Security.SecurityCriticalAttribute]
         public static void FailFast(string message) { }
-        [System.Security.SecurityCriticalAttribute]
         public static void FailFast(string message, System.Exception exception) { }
         public static string[] GetCommandLineArgs() { throw null; }
         public static string GetEnvironmentVariable(string variable) { throw null; }
@@ -975,10 +973,8 @@ namespace System
     public static class StringNormalizationExtensions
     {
         public static bool IsNormalized(this string value) { throw null; }
-        [System.Security.SecurityCritical]
         public static bool IsNormalized(this string value, System.Text.NormalizationForm normalizationForm) { throw null; }
         public static String Normalize(this string value) { throw null; }
-        [System.Security.SecurityCritical]
         public static String Normalize(this string value, System.Text.NormalizationForm normalizationForm) { throw null; }
     }
 }

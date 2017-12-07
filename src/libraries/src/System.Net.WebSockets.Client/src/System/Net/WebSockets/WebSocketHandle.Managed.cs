@@ -177,12 +177,15 @@ namespace System.Net.WebSockets
                 {
                     Debug.Assert(subprotocolEnumerableValues is string[]);
                     string[] subprotocolArray = (string[])subprotocolEnumerableValues;
-                    if (subprotocolArray.Length != 1 ||
-                        (subprotocol = options.RequestedSubProtocols.Find(requested => string.Equals(requested, subprotocolArray[0], StringComparison.OrdinalIgnoreCase))) == null)
+                    if (subprotocolArray.Length > 0 && !string.IsNullOrEmpty(subprotocolArray[0]))
                     {
-                        throw new WebSocketException(
-                            WebSocketError.UnsupportedProtocol,
-                            SR.Format(SR.net_WebSockets_AcceptUnsupportedProtocol, string.Join(", ", options.RequestedSubProtocols), subprotocol));
+                        subprotocol = options.RequestedSubProtocols.Find(requested => string.Equals(requested, subprotocolArray[0], StringComparison.OrdinalIgnoreCase));
+                        if (subprotocol == null)
+                        {
+                            throw new WebSocketException(
+                                WebSocketError.UnsupportedProtocol,
+                                SR.Format(SR.net_WebSockets_AcceptUnsupportedProtocol, string.Join(", ", options.RequestedSubProtocols), string.Join(", ", subprotocolArray)));
+                        }
                     }
                 }
 

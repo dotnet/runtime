@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 namespace System.Buffers.Text
 {
@@ -22,7 +21,6 @@ namespace System.Buffers.Text
                 + ((precision == 0) ? 0 : (precision + 1)) // period and the digits after the decimal point
                 + 2  // 'E' or 'e' followed by '+' or '-'
                 + NumExponentDigits; // exponent digits
-
 
             if (buffer.Length < numBytesNeeded)
             {

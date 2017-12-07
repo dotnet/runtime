@@ -150,9 +150,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // start next value at PredefinedType.PT_VOID + 1,
         SIG_CLASS_TYVAR = (int)PredefinedType.PT_VOID + 1,          // next element in signature is index of class tyvar
         SIG_METH_TYVAR,                         // next element in signature is index of method tyvar
-        SIG_SZ_ARRAY,                           // must be followed by signature type of array elements
-        SIG_REF,                                // must be followed by signature of ref type
-        SIG_OUT,                                // must be followed by signature of out type
+        SIG_SZ_ARRAY                            // must be followed by signature type of array elements
     }
 
     // A description of a method the compiler uses while compiling.
@@ -210,7 +208,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private AggregateSymbol GetMethParent(PREDEFMETH method)
         {
-            return GetOptPredefAgg(GetMethPredefType(method));
+            return GetPredefAgg(GetMethPredefType(method));
         }
 
         private PropertySymbol LoadProperty(PREDEFPROP property)
@@ -234,7 +232,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(propertyGetter >= 0 && propertyGetter < PREDEFMETH.PM_COUNT);
 
             RuntimeBinderSymbolTable.AddPredefinedPropertyToSymbolTable(
-                GetOptPredefAgg(GetPropPredefType(predefProp)), propertyName);
+                GetPredefAgg(GetPropPredefType(predefProp)), propertyName);
             MethodSymbol getter = GetMethod(propertyGetter);
 
             getter.SetMethKind(MethodKindEnum.PropAccessor);
@@ -266,7 +264,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return NameManager.GetPredefinedName(pn);
         }
-        private AggregateSymbol GetOptPredefAgg(PredefinedType pt)
+        private AggregateSymbol GetPredefAgg(PredefinedType pt)
         {
             return GetSymbolLoader().GetPredefAgg(pt);
         }
@@ -280,76 +278,38 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             switch (current)
             {
-                case MethodSignatureEnum.SIG_REF:
-                    {
-                        CType refType = LoadTypeFromSignature(signature, ref indexIntoSignatures, classTyVars);
-                        if (refType == null)
-                        {
-                            return null;
-                        }
-                        return GetTypeManager().GetParameterModifier(refType, false);
-                    }
-                case MethodSignatureEnum.SIG_OUT:
-                    {
-                        CType outType = LoadTypeFromSignature(signature, ref indexIntoSignatures, classTyVars);
-                        if (outType == null)
-                        {
-                            return null;
-                        }
-                        return GetTypeManager().GetParameterModifier(outType, true);
-                    }
                 case MethodSignatureEnum.SIG_SZ_ARRAY:
-                    {
-                        CType elementType = LoadTypeFromSignature(signature, ref indexIntoSignatures, classTyVars);
-                        if (elementType == null)
-                        {
-                            return null;
-                        }
-                        return GetTypeManager().GetArray(elementType, 1, true);
-                    }
+                    return GetTypeManager()
+                        .GetArray(LoadTypeFromSignature(signature, ref indexIntoSignatures, classTyVars), 1, true);
+
                 case MethodSignatureEnum.SIG_METH_TYVAR:
-                    {
-                        int index = signature[indexIntoSignatures];
-                        indexIntoSignatures++;
-                        return GetTypeManager().GetStdMethTypeVar(index);
-                    }
+                    return GetTypeManager().GetStdMethTypeVar(signature[indexIntoSignatures++]);
+
                 case MethodSignatureEnum.SIG_CLASS_TYVAR:
-                    {
-                        int index = signature[indexIntoSignatures];
-                        indexIntoSignatures++;
-                        return classTyVars[index];
-                    }
+                    return classTyVars[signature[indexIntoSignatures++]];
+
                 case (MethodSignatureEnum)PredefinedType.PT_VOID:
                     return GetTypeManager().GetVoid();
+
                 default:
+                    Debug.Assert(current >= 0 && (int)current < (int)PredefinedType.PT_COUNT);
+                    AggregateSymbol agg = GetPredefAgg((PredefinedType)current);
+                    int typeCount = agg.GetTypeVars().Count;
+                    if (typeCount == 0)
                     {
-                        Debug.Assert(current >= 0 && (int)current < (int)PredefinedType.PT_COUNT);
-                        AggregateSymbol agg = GetOptPredefAgg((PredefinedType)current);
-                        if (agg != null)
-                        {
-                            CType[] typeArgs = new CType[agg.GetTypeVars().Count];
-                            for (int iTypeArg = 0; iTypeArg < agg.GetTypeVars().Count; iTypeArg++)
-                            {
-                                typeArgs[iTypeArg] = LoadTypeFromSignature(signature, ref indexIntoSignatures, classTyVars);
-                                if (typeArgs[iTypeArg] == null)
-                                {
-                                    return null;
-                                }
-                            }
-                            AggregateType type = GetTypeManager().GetAggregate(agg, getBSymmgr().AllocParams(agg.GetTypeVars().Count, typeArgs));
-                            if (type.isPredefType(PredefinedType.PT_G_OPTIONAL))
-                            {
-                                return GetTypeManager().GetNubFromNullable(type);
-                            }
-
-                            return type;
-                        }
+                        return GetTypeManager().GetAggregate(agg, BSYMMGR.EmptyTypeArray());
                     }
-                    break;
-            }
 
-            return null;
+                    CType[] typeArgs = new CType[typeCount];
+                    for (int iTypeArg = 0; iTypeArg < typeArgs.Length; iTypeArg++)
+                    {
+                        typeArgs[iTypeArg] = LoadTypeFromSignature(signature, ref indexIntoSignatures, classTyVars);
+                    }
+
+                    return GetTypeManager().GetAggregate(agg, getBSymmgr().AllocParams(typeArgs));
+            }
         }
+
         private TypeArray LoadTypeArrayFromSignature(int[] signature, ref int indexIntoSignatures, TypeArray classTyVars)
         {
             Debug.Assert(signature != null);
@@ -360,14 +320,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(count >= 0);
 
             CType[] ptypes = new CType[count];
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < ptypes.Length; i++)
             {
                 ptypes[i] = LoadTypeFromSignature(signature, ref indexIntoSignatures, classTyVars);
-                if (ptypes[i] == null)
-                {
-                    return null;
-                }
             }
+
             return getBSymmgr().AllocParams(count, ptypes);
         }
 

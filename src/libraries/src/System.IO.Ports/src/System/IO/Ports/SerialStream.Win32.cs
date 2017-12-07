@@ -11,7 +11,7 @@ namespace System.IO.Ports
     {
         public SafeFileHandle OpenPort(uint portNumber)
         {
-            return Interop.Kernel32.CreateFileDefaultSecurity(
+            return Interop.Kernel32.CreateFile(
                 @"\\?\COM" + portNumber.ToString(CultureInfo.InvariantCulture),
                 Interop.Kernel32.GenericOperations.GENERIC_READ | Interop.Kernel32.GenericOperations.GENERIC_WRITE,
                 0,              // comm devices must be opened w/exclusive-access

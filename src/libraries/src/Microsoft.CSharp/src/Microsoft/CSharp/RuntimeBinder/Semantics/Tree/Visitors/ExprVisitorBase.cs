@@ -121,7 +121,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case ExpressionKind.Constant:
                     return VisitCONSTANT(pExpr as ExprConstant);
                 case ExpressionKind.Class:
-                    return VisitCLASS(pExpr as ExprClass);
+                    return pExpr;
                 case ExpressionKind.Property:
                     return VisitPROP(pExpr as ExprProperty);
                 case ExpressionKind.Multi:
@@ -329,16 +329,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     break;
 
                 case ExpressionKind.TypeOf:
-                    exprRet = Visit((pExpr as ExprTypeOf).SourceType);
-                    (pExpr as ExprTypeOf).SourceType = exprRet as ExprClass;
                     break;
 
                 case ExpressionKind.Cast:
                     exprRet = Visit((pExpr as ExprCast).Argument);
                     Debug.Assert(exprRet != null);
                     (pExpr as ExprCast).Argument = exprRet;
-                    exprRet = Visit((pExpr as ExprCast).DestinationType);
-                    (pExpr as ExprCast).DestinationType = exprRet as ExprClass;
                     break;
 
                 case ExpressionKind.UserDefinedConversion:
@@ -485,10 +481,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         protected virtual Expr VisitRETURN(ExprReturn pExpr)
         {
             return VisitSTMT(pExpr);
-        }
-        protected virtual Expr VisitCLASS(ExprClass pExpr)
-        {
-            return VisitEXPR(pExpr);
         }
         protected virtual Expr VisitSTMT(ExprStatement pExpr)
         {

@@ -2,14 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Text;
-using System.Numerics;
-using System.Buffers.Text;
-using System.Globalization;
-using System.Collections.Generic;
-
-using Xunit;
 
 namespace System.Buffers.Text.Tests
 {
@@ -36,8 +29,8 @@ namespace System.Buffers.Text.Tests
             // Take good care of this method: it affects Xunit output and makes a lot of difference in how annoying test investigations are.
             //
 
-            string formatString = (FormatSymbol == default) ? 
-                "default" : 
+            string formatString = (FormatSymbol == default) ?
+                "default" :
                 FormatSymbol.ToString();
 
             return $"[Parse{typeof(T).Name} '{Text}',{formatString} to {(ExpectedSuccess ? ExpectedValue.DisplayString() : "(should-not-parse)")})]";

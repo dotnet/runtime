@@ -2,15 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Text;
-using System.Linq;
-using System.Numerics;
-using System.Buffers.Text;
-using System.Globalization;
 using System.Collections.Generic;
-
-using Xunit;
 
 namespace System.Buffers.Text.Tests
 {
@@ -62,7 +54,7 @@ namespace System.Buffers.Text.Tests
                 // Wrong day of week.
                 yield return new ParserTestData<DateTimeOffset>("Thu, 13 Jan 2017 03:45:32 GMT", default, 'R', expectedSuccess: false);
 
-                foreach (ParserTestData<DateTimeOffset> bad in GenerateCorruptedDateTimeText("05/08/2017 10:30:45 +00:00", default(char)))
+                foreach (ParserTestData<DateTimeOffset> bad in GenerateCorruptedDateTimeText("05/08/2017 10:30:45 +00:00", default))
                 {
                     yield return bad;
                 }
@@ -125,7 +117,7 @@ namespace System.Buffers.Text.Tests
                         }
                         catch (ArgumentOutOfRangeException)
                         {
-                            throw new Exception($"Failed on converting {expectedDto.DateTime} to local time. This is probably a piece of data that fails only in certain time zones. Time zone on this machine is {TimeZoneInfo.Local}");  
+                            throw new Exception($"Failed on converting {expectedDto.DateTime} to local time. This is probably a piece of data that fails only in certain time zones. Time zone on this machine is {TimeZoneInfo.Local}");
                         }
                     }
                     else
@@ -136,7 +128,7 @@ namespace System.Buffers.Text.Tests
                     string text;
                     if ((text = pseudoDateTime.DefaultString) != null)
                     {
-                        yield return new ParserTestData<DateTimeOffset>(text, expectedDto, default(char), pseudoDateTime.ExpectSuccess);
+                        yield return new ParserTestData<DateTimeOffset>(text, expectedDto, default, pseudoDateTime.ExpectSuccess);
                     }
 
                     if ((text = pseudoDateTime.GFormatString) != null)

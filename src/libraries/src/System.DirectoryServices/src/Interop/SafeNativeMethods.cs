@@ -9,7 +9,6 @@ using System.Runtime.InteropServices;
 namespace System.DirectoryServices.Interop
 {
 #pragma warning disable BCL0015 // CoreFxPort
-    [SuppressUnmanagedCodeSecurity]
     internal class SafeNativeMethods
     {
         [DllImport(ExternDll.Oleaut32, PreserveSig = false)]
@@ -122,18 +121,14 @@ namespace System.DirectoryServices.Interop
         [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
         public interface IEnumVariant
         {
-            [SuppressUnmanagedCodeSecurity]
             void Next([In, MarshalAs(UnmanagedType.U4)] int celt,
                       [In, Out] IntPtr rgvar,
                       [Out, MarshalAs(UnmanagedType.LPArray)] int[] pceltFetched);
 
-            [SuppressUnmanagedCodeSecurity]
             void Skip([In, MarshalAs(UnmanagedType.U4)] int celt);
 
-            [SuppressUnmanagedCodeSecurity]
             void Reset();
 
-            [SuppressUnmanagedCodeSecurity]
             void Clone([Out, MarshalAs(UnmanagedType.LPArray)] IEnumVariant[] ppenum);
         }
     }

@@ -12,7 +12,7 @@ namespace System.Buffers.Text.Tests
     //
     internal static partial class TestData
     {
-        public static readonly IEnumerable<byte> Precisions = new byte[] { StandardFormat.NoPrecision, 0, 1, 3, 10, StandardFormat.MaxPrecision };
+        public static readonly IEnumerable<byte> s_precisions = new byte[] { StandardFormat.NoPrecision, 0, 1, 3, 10, StandardFormat.MaxPrecision };
 
         public static IEnumerable<object[]> IntegerTypesTheoryData => IntegerTypes.Select(t => new object[] { t });
 
@@ -136,6 +136,15 @@ namespace System.Buffers.Text.Tests
                 yield return -1234L;
                 yield return 12345L;
                 yield return -12345L;
+                
+                yield return 4294967294999999999L; // uint.MaxValue * Billion - 1
+                yield return 4294967295000000000L; // uint.MaxValue * Billion
+                yield return 4294967295000000001L; // uint.MaxValue * Billion + 1
+                yield return -4294967294999999999L; // -(uint.MaxValue * Billion - 1)
+                yield return -4294967295000000000L; // -(uint.MaxValue * Billion)
+                yield return -4294967295000000001L; // -(uint.MaxValue * Billion + 1)
+                yield return 4294967296000000000L; // (uint.MaxValue + 1) * Billion
+                yield return -4294967296000000000L; // -(uint.MaxValue + 1) * Billion
 
                 long powerOf10 = 1L;
                 for (int i = 0; i < 21; i++)
@@ -200,7 +209,7 @@ namespace System.Buffers.Text.Tests
                     }
                 }
 
-                yield return ((ulong)(long.MaxValue)) + 1LU;
+                yield return long.MaxValue + 1LU;
                 yield return ulong.MaxValue - 1LU;
                 yield return ulong.MaxValue;
             }
@@ -212,7 +221,7 @@ namespace System.Buffers.Text.Tests
             {
                 foreach (long l in Int64TestData)
                 {
-                    yield return (decimal)l;
+                    yield return l;
                 }
 
                 yield return decimal.MinValue;
@@ -244,7 +253,7 @@ namespace System.Buffers.Text.Tests
             {
                 foreach (long l in Int64TestData)
                 {
-                    yield return (double)l;
+                    yield return l;
                 }
 
                 yield return 1.23;
@@ -257,7 +266,7 @@ namespace System.Buffers.Text.Tests
             {
                 foreach (long d in DoubleTestData)
                 {
-                    float f = (float)d;
+                    float f = d;
                     if (!float.IsInfinity(f))
                         yield return f;
                 }

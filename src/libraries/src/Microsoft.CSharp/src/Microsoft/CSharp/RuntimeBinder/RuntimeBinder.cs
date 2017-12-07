@@ -103,35 +103,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             lock (_bindLock)
             {
-                // this is a strategy for realizing correct binding when the symboltable
-                // finds a name collision across different types, e.g. one dynamic binding
-                // uses a type "N.T" and now a second binding uses a different type "N.T".
-
-                // In order to make this work, we have to reset the symbol table and begin
-                // the second binding over again when we detect the collision. So this is
-                // something like a longjmp to the beginning of binding. For a single binding,
-                // if we have to do this more than once, we give an RBE--this would be a
-                // scenario that needs to know about both N.T's simultaneously to work.
-
-                // See SymbolTable.LoadSymbolsFromType for more information.
-
-                try
-                {
-                    return BindCore(binder, parameters, args, out deferredBinding);
-                }
-                catch (ResetBindException)
-                {
-                    Reset();
-                    try
-                    {
-                        return BindCore(binder, parameters, args, out deferredBinding);
-                    }
-                    catch (ResetBindException)
-                    {
-                        Reset();
-                        throw Error.BindingNameCollision();
-                    }
-                }
+                return BindCore(binder, parameters, args, out deferredBinding);
             }
         }
 
@@ -217,7 +189,6 @@ namespace Microsoft.CSharp.RuntimeBinder
                 MemberLookup mem = new MemberLookup();
                 Expr callingObject = CreateCallingObjectForCall(callPayload, arguments, locals);
 
-                Debug.Assert(_bindingContext.ContextForMemberLookup != null);
                 SymWithType swt = _symbolTable.LookupMember(
                         callPayload.Name,
                         callingObject,
@@ -839,7 +810,6 @@ namespace Microsoft.CSharp.RuntimeBinder
             int arity = payload.TypeArguments?.Length ?? 0;
             MemberLookup mem = new MemberLookup();
 
-            Debug.Assert(_bindingContext.ContextForMemberLookup != null);
             SymWithType swt = _symbolTable.LookupMember(
                     payload.Name,
                     callingObject,
@@ -1506,7 +1476,6 @@ namespace Microsoft.CSharp.RuntimeBinder
                 throw Error.NullReferenceOnMemberException();
             }
 
-            Debug.Assert(_bindingContext.ContextForMemberLookup != null);
             SymWithType swt = _symbolTable.LookupMember(
                     binder.Name,
                     callingObject,
@@ -1528,7 +1497,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 // this is an event. This is due to the Dev10 design change around
                 // the binding of +=, and the fact that the "IsEvent" binding question
                 // is only ever asked about the LHS of a += or -=.
-                if (swt.Sym is FieldSymbol field && field.isEvent)
+                else if (swt.Sym is FieldSymbol field && field.isEvent)
                 {
                     result = true;
                 }

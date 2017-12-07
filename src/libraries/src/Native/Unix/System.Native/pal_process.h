@@ -242,13 +242,6 @@ extern "C" int32_t SystemNative_WTermSig(int32_t status);
 extern "C" int64_t SystemNative_PathConf(const char* path, PathConfName name);
 
 /**
- * Gets the current (or default, on failure) Maximum Path allowed by the system.
- *
- * This is called out explicitly, rather than using PathConf, since the default value changes depending on the platform.
- */
-extern "C" int64_t SystemNative_GetMaximumPath();
-
-/**
  * Gets the priority (nice value) of a certain execution group.
  *
  * Returns the nice value (from -20 to 20) of the group on success; otherwise, returns -1. Unfortunately, -1 is also a

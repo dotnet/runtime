@@ -105,8 +105,11 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(filter));
 
             // Early check for directory parameter so that an exception can be thrown as early as possible.
-            if (path.Length == 0 || !Directory.Exists(path))
+            if (path.Length == 0)
                 throw new ArgumentException(SR.Format(SR.InvalidDirName, path), nameof(path));
+
+            if (!Directory.Exists(path))
+                throw new ArgumentException(SR.Format(SR.InvalidDirName_NotExists, path), nameof(path));
 
             _directory = path;
             _filter = filter;
@@ -150,13 +153,13 @@ namespace System.IO
                 {
                     return;
                 }
-                
+
                 if (IsSuspended())
                 {
                     _enabled = value; // Alert the Component to start watching for events when EndInit is called.
                 }
                 else
-                { 
+                {
                     if (value)
                     {
                         StartRaisingEventsIfNotDisposed(); // will set _enabled to true once successfully started
@@ -256,7 +259,7 @@ namespace System.IO
 
         /// <devdoc>
         ///    Gets or sets the path of the directory to watch.
-        /// </devdoc>
+        /// </devdoc>        
         public string Path
         {
             get
@@ -268,11 +271,12 @@ namespace System.IO
                 value = (value == null) ? string.Empty : value;
                 if (!string.Equals(_directory, value, PathInternal.StringComparison))
                 {
-                    if (!Directory.Exists(value))
-                    {
-                        throw new ArgumentException(SR.Format(SR.InvalidDirName, value));
-                    }
+                    if (value.Length == 0)
+                        throw new ArgumentException(SR.Format(SR.InvalidDirName, value), nameof(Path));
 
+                    if (!Directory.Exists(value))
+                        throw new ArgumentException(SR.Format(SR.InvalidDirName_NotExists, value), nameof(Path));
+      
                     _directory = value;
                     Restart();
                 }
@@ -416,7 +420,7 @@ namespace System.IO
         {
             // filter if there's no handler or neither new name or old name match a specified pattern
             RenamedEventHandler handler = _onRenamedHandler;
-            if (handler != null && 
+            if (handler != null &&
                 (MatchPattern(name) || MatchPattern(oldName)))
             {
                 handler(this, new RenamedEventArgs(action, _directory, name, oldName));
@@ -525,7 +529,7 @@ namespace System.IO
             }
         }
 
-        public WaitForChangedResult WaitForChanged(WatcherChangeTypes changeType) => 
+        public WaitForChangedResult WaitForChanged(WatcherChangeTypes changeType) =>
             WaitForChanged(changeType, Timeout.Infinite);
 
         public WaitForChangedResult WaitForChanged(WatcherChangeTypes changeType, int timeout)

@@ -256,21 +256,42 @@ namespace System.Numerics
         {
         }
 
-        public BigInteger(ReadOnlySpan<byte> value)
+        public BigInteger(ReadOnlySpan<byte> value, bool isUnsigned=false, bool isBigEndian=false)
         {
             int byteCount = value.Length;
 
             bool isNegative;
             if (byteCount > 0)
             {
-                byte lastByte = value[byteCount - 1];
-                isNegative = (lastByte & 0x80) != 0;
-                if (lastByte == 0)
+                byte mostSignificantByte = isBigEndian ? value[0] : value[byteCount - 1];
+                isNegative = (mostSignificantByte & 0x80) != 0 && !isUnsigned;
+
+                if (mostSignificantByte == 0)
                 {
                     // Try to conserve space as much as possible by checking for wasted leading byte[] entries 
-                    byteCount -= 2;
-                    while (byteCount >= 0 && value[byteCount] == 0) byteCount--;
-                    byteCount++;
+                    if (isBigEndian)
+                    {
+                        int offset = 1;
+
+                        while (offset < byteCount && value[offset] == 0)
+                        {
+                            offset++;
+                        }
+
+                        value = value.Slice(offset);
+                        byteCount = value.Length;
+                    }
+                    else
+                    {
+                        byteCount -= 2;
+
+                        while (byteCount >= 0 && value[byteCount] == 0)
+                        {
+                            byteCount--;
+                        }
+
+                        byteCount++;
+                    }
                 }
             }
             else
@@ -290,9 +311,20 @@ namespace System.Numerics
             if (byteCount <= 4)
             {
                 _sign = isNegative ? unchecked((int)0xffffffff) : 0;
-                for (int i = byteCount - 1; i >= 0; i--)
+
+                if (isBigEndian)
                 {
-                    _sign = (_sign << 8) | value[i];
+                    for (int i = 0; i < byteCount; i++)
+                    {
+                        _sign = (_sign << 8) | value[i];
+                    }
+                }
+                else
+                {
+                    for (int i = byteCount - 1; i >= 0; i--)
+                    {
+                        _sign = (_sign << 8) | value[i];
+                    }
                 }
 
                 _bits = null;
@@ -315,28 +347,65 @@ namespace System.Numerics
                 int unalignedBytes = byteCount % 4;
                 int dwordCount = byteCount / 4 + (unalignedBytes == 0 ? 0 : 1);
                 uint[] val = new uint[dwordCount];
+                int byteCountMinus1 = byteCount - 1;
 
-                // Copy all dwords, except but don't do the last one if it's not a full four bytes
-                int curDword, curByte = 3;
-                for (curDword = 0; curDword < dwordCount - (unalignedBytes == 0 ? 0 : 1); curDword++)
+                // Copy all dwords, except don't do the last one if it's not a full four bytes
+                int curDword, curByte;
+
+                if (isBigEndian)
                 {
-                    for (int byteInDword = 0; byteInDword < 4; byteInDword++)
+                    curByte = byteCount - sizeof(int);
+                    for (curDword = 0; curDword < dwordCount - (unalignedBytes == 0 ? 0 : 1); curDword++)
                     {
-                        byte curByteValue = value[curByte];
-                        val[curDword] = (val[curDword] << 8) | curByteValue;
-                        curByte--;
+                        for (int byteInDword = 0; byteInDword < 4; byteInDword++)
+                        {
+                            byte curByteValue = value[curByte];
+                            val[curDword] = (val[curDword] << 8) | curByteValue;
+                            curByte++;
+                        }
+
+                        curByte -= 8;
                     }
-                    curByte += 8;
+                }
+                else
+                {
+                    curByte = sizeof(int) - 1;
+                    for (curDword = 0; curDword < dwordCount - (unalignedBytes == 0 ? 0 : 1); curDword++)
+                    {
+                        for (int byteInDword = 0; byteInDword < 4; byteInDword++)
+                        {
+                            byte curByteValue = value[curByte];
+                            val[curDword] = (val[curDword] << 8) | curByteValue;
+                            curByte--;
+                        }
+
+                        curByte += 8;
+                    }
                 }
 
                 // Copy the last dword specially if it's not aligned
                 if (unalignedBytes != 0)
                 {
-                    if (isNegative) val[dwordCount - 1] = 0xffffffff;
-                    for (curByte = byteCount - 1; curByte >= byteCount - unalignedBytes; curByte--)
+                    if (isNegative)
                     {
-                        byte curByteValue = value[curByte];
-                        val[curDword] = (val[curDword] << 8) | curByteValue;
+                        val[dwordCount - 1] = 0xffffffff;
+                    }
+
+                    if (isBigEndian)
+                    {
+                        for (curByte = 0; curByte < unalignedBytes; curByte++)
+                        {
+                            byte curByteValue = value[curByte];
+                            val[curDword] = (val[curDword] << 8) | curByteValue;
+                        }
+                    }
+                    else
+                    {
+                        for (curByte = byteCountMinus1; curByte >= byteCount - unalignedBytes; curByte--)
+                        {
+                            byte curByteValue = value[curByte];
+                            val[curDword] = (val[curDword] << 8) | curByteValue;
+                        }
                     }
                 }
 
@@ -622,7 +691,12 @@ namespace System.Numerics
             return BigNumber.ParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static bool TryParse(ReadOnlySpan<char> value, out BigInteger result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
+        public static bool TryParse(ReadOnlySpan<char> value, out BigInteger result)
+        {
+            return BigNumber.TryParseBigInteger(value, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+        }
+
+        public static bool TryParse(ReadOnlySpan<char> value, NumberStyles style, IFormatProvider provider, out BigInteger result)
         {
             return BigNumber.TryParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider), out result);
         }
@@ -1044,10 +1118,48 @@ namespace System.Numerics
         /// return an array of one byte whose element is 0x00.
         /// </summary>
         /// <returns></returns>
-        public byte[] ToByteArray()
+        public byte[] ToByteArray() => ToByteArray(isUnsigned: false, isBigEndian: false);
+
+        /// <summary>
+        /// Returns the value of this BigInteger as a byte array using the fewest number of bytes possible.
+        /// If the value is zero, returns an array of one byte whose element is 0x00.
+        /// </summary>
+        /// <param name="isUnsigned">Whether or not an unsigned encoding is to be used</param>
+        /// <param name="isBigEndian">Whether or not to write the bytes in a big-endian byte order</param>
+        /// <returns></returns>
+        /// <exception cref="OverflowException">
+        ///   If <paramref name="isUnsigned"/> is <c>true</c> and <see cref="Sign"/> is negative.
+        /// </exception>
+        /// <remarks>
+        /// The integer value <c>33022</c> can be exported as four different arrays.
+        ///
+        /// <list type="bullet">
+        ///   <item>
+        ///     <description>
+        ///       <c>(isUnsigned: false, isBigEndian: false)</c> => <c>new byte[] { 0xFE, 0x80, 0x00 }</c>
+        ///     </description>
+        ///   </item>
+        ///   <item>
+        ///     <description>
+        ///       <c>(isUnsigned: false, isBigEndian: true)</c> => <c>new byte[] { 0x00, 0x80, 0xFE }</c>
+        ///     </description>
+        ///   </item>
+        ///   <item>
+        ///     <description>
+        ///       <c>(isUnsigned: true, isBigEndian: false)</c> => <c>new byte[] { 0xFE, 0x80 }</c>
+        ///     </description>
+        ///   </item>
+        ///   <item>
+        ///     <description>
+        ///       <c>(isUnsigned: true, isBigEndian: true)</c> => <c>new byte[] { 0x80, 0xFE }</c>
+        ///     </description>
+        ///   </item>
+        /// </list>
+        /// </remarks>
+        public byte[] ToByteArray(bool isUnsigned=false, bool isBigEndian=false)
         {
             int ignored = 0;
-            return TryGetBytes(GetBytesMode.AllocateArray, default(Span<byte>), ref ignored);
+            return TryGetBytes(GetBytesMode.AllocateArray, default, isUnsigned, isBigEndian, ref ignored);
         }
 
         /// <summary>
@@ -1057,42 +1169,61 @@ namespace System.Numerics
         /// </summary>
         /// <param name="destination">The destination span to which the resulting bytes should be written.</param>
         /// <param name="bytesWritten">The number of bytes written to <paramref name="destination"/>.</param>
+        /// <param name="isUnsigned">Whether or not an unsigned encoding is to be used</param>
+        /// <param name="isBigEndian">Whether or not to write the bytes in a big-endian byte order</param>
         /// <returns>true if the bytes fit in <see cref="destination"/>; false if not all bytes could be written due to lack of space.</returns>
-        public bool TryWriteBytes(Span<byte> destination, out int bytesWritten)
+        /// <exception cref="OverflowException">If <paramref name="isUnsigned"/> is <c>true</c> and <see cref="Sign"/> is negative.</exception>
+        public bool TryWriteBytes(Span<byte> destination, out int bytesWritten, bool isUnsigned=false, bool isBigEndian=false)
         {
             bytesWritten = 0;
-            return TryGetBytes(GetBytesMode.Span, destination, ref bytesWritten) != null;
+            if (TryGetBytes(GetBytesMode.Span, destination, isUnsigned, isBigEndian, ref bytesWritten) == null)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+            return true;
         }
 
-        /// <summary>Gets the number of bytes that will be output by <see cref="ToByteArray"/> and <see cref="TryWriteBytes(Span{byte}, out int)"/>.</summary>
+        internal bool TryWriteOrCountBytes(Span<byte> destination, out int bytesWritten, bool isUnsigned = false, bool isBigEndian = false)
+        {
+            bytesWritten = 0;
+            return TryGetBytes(GetBytesMode.Span, destination, isUnsigned, isBigEndian, ref bytesWritten) != null;
+        }
+
+        /// <summary>Gets the number of bytes that will be output by <see cref="ToByteArray(bool, bool)"/> and <see cref="TryWriteBytes(Span{byte}, out int, bool, bool)"/>.</summary>
         /// <returns>The number of bytes.</returns>
-        public int GetByteCount()
+        public int GetByteCount(bool isUnsigned=false)
         {
             int count = 0;
-            TryGetBytes(GetBytesMode.Count, default(Span<byte>), ref count);
+            // Big or Little Endian doesn't matter for the byte count.
+            const bool IsBigEndian = false;
+            TryGetBytes(GetBytesMode.Count, default(Span<byte>), isUnsigned, IsBigEndian, ref count);
             return count;
         }
 
-        /// <summary>Mode used to enable sharing <see cref="TryGetBytes(GetBytesMode, Span{byte}, out byte[], out int)"/> for multiple purposes.</summary>
+        /// <summary>Mode used to enable sharing <see cref="TryGetBytes(GetBytesMode, Span{byte}, bool, bool, ref int)"/> for multiple purposes.</summary>
         private enum GetBytesMode { AllocateArray, Count, Span }
 
         /// <summary>Dummy array returned from TryGetBytes to indicate success when in span mode.</summary>
         private static readonly byte[] s_success = Array.Empty<byte>();
 
-        /// <summary>Shared logic for <see cref="ToByteArray"/>, <see cref="TryWriteBytes(Span{byte}, out int)"/>, and <see cref="GetByteCount"/>.</summary>
+        /// <summary>Shared logic for <see cref="ToByteArray(bool, bool)"/>, <see cref="TryWriteBytes(Span{byte}, out int, bool, bool)"/>, and <see cref="GetByteCount"/>.</summary>
         /// <param name="mode">Which entry point is being used.</param>
         /// <param name="destination">The destination span, if mode is <see cref="GetBytesMode.Span"/>.</param>
+        /// <param name="isUnsigned">True to never write a padding byte, false to write it if the high bit is set.</param>
+        /// <param name="isBigEndian">True for big endian byte ordering, false for little endian byte ordering.</param>
         /// <param name="bytesWritten">
         /// If <paramref name="mode"/>==<see cref="GetBytesMode.AllocateArray"/>, ignored.
         /// If <paramref name="mode"/>==<see cref="GetBytesMode.Count"/>, the number of bytes that would be written.
-        /// If <paramref name="mode"/>==<see cref="GetBytesMode.Span"/>, the number of bytes written to the span.
+        /// If <paramref name="mode"/>==<see cref="GetBytesMode.Span"/>, the number of bytes written to the span or that would be written if it were long enough.
         /// </param>
         /// <returns>
         /// If <paramref name="mode"/>==<see cref="GetBytesMode.AllocateArray"/>, the result array.
         /// If <paramref name="mode"/>==<see cref="GetBytesMode.Count"/>, null.
         /// If <paramref name="mode"/>==<see cref="GetBytesMode.Span"/>, non-null if the span was long enough, null if there wasn't enough room.
         /// </returns>
-        private byte[] TryGetBytes(GetBytesMode mode, Span<byte> destination, ref int bytesWritten)
+        /// <exception cref="OverflowException">If <paramref name="isUnsigned"/> is <c>true</c> and <see cref="Sign"/> is negative.</exception>
+        private byte[] TryGetBytes(GetBytesMode mode, Span<byte> destination, bool isUnsigned, bool isBigEndian, ref int bytesWritten)
         {
             Debug.Assert(mode == GetBytesMode.AllocateArray || mode == GetBytesMode.Count || mode == GetBytesMode.Span, $"Unexpected mode {mode}.");
             Debug.Assert(mode == GetBytesMode.Span || destination.IsEmpty, $"If we're not in span mode, we shouldn't have been passed a destination.");
@@ -1108,14 +1239,19 @@ namespace System.Numerics
                         bytesWritten = 1;
                         return null;
                     default: // case GetBytesMode.Span:
+                        bytesWritten = 1;
                         if (destination.Length != 0)
                         {
                             destination[0] = 0;
-                            bytesWritten = 1;
                             return s_success;
                         }
                         return null;
                 }
+            }
+
+            if (isUnsigned && sign < 0)
+            {
+                throw new OverflowException(SR.Overflow_Negative_Unsigned);
             }
 
             byte highByte;
@@ -1183,7 +1319,7 @@ namespace System.Numerics
             }
 
             // Ensure high bit is 0 if positive, 1 if negative
-            bool needExtraByte = (msb & 0x80) != (highByte & 0x80);
+            bool needExtraByte = (msb & 0x80) != (highByte & 0x80) && !isUnsigned;
             int length = msbIndex + 1 + (needExtraByte ? 1 : 0);
             if (bits != null)
             {
@@ -1200,16 +1336,18 @@ namespace System.Numerics
                     bytesWritten = length;
                     return null;
                 default: // case GetBytesMode.Span:
+                    bytesWritten = length;
                     if (destination.Length < length)
                     {
                         return null;
                     }
-                    bytesWritten = length;
                     array = s_success;
                     break;
             }
 
-            int curByte = 0;
+            int curByte = isBigEndian ? length - 1 : 0;
+            int increment = isBigEndian ? -1 : 1;
+
             if (bits != null)
             {
                 for (int i = 0; i < bits.Length - 1; i++)
@@ -1225,10 +1363,14 @@ namespace System.Numerics
                         }
                     }
 
-                    destination[curByte++] = unchecked((byte)dword);
-                    destination[curByte++] = unchecked((byte)(dword >> 8));
-                    destination[curByte++] = unchecked((byte)(dword >> 16));
-                    destination[curByte++] = unchecked((byte)(dword >> 24));
+                    destination[curByte] = unchecked((byte)dword);
+                    curByte += increment;
+                    destination[curByte] = unchecked((byte)(dword >> 8));
+                    curByte += increment;
+                    destination[curByte] = unchecked((byte)(dword >> 16));
+                    curByte += increment;
+                    destination[curByte] = unchecked((byte)(dword >> 24));
+                    curByte += increment;
                 }
             }
 
@@ -1236,21 +1378,29 @@ namespace System.Numerics
             destination[curByte] = unchecked((byte)highDword);
             if (msbIndex != 0)
             {
-                destination[++curByte] = unchecked((byte)(highDword >> 8));
+                curByte += increment;
+                destination[curByte] = unchecked((byte)(highDword >> 8));
                 if (msbIndex != 1)
                 {
-                    destination[++curByte] = unchecked((byte)(highDword >> 16));
+                    curByte += increment;
+                    destination[curByte] = unchecked((byte)(highDword >> 16));
                     if (msbIndex != 2)
                     {
-                        destination[++curByte] = unchecked((byte)(highDword >> 24));
+                        curByte += increment;
+                        destination[curByte] = unchecked((byte)(highDword >> 24));
                     }
                 }
             }
 
-            Debug.Assert((!needExtraByte && curByte == length - 1) || (needExtraByte && curByte == length - 2));
+            // Assert we're big endian, or little endian consistency holds.
+            Debug.Assert(isBigEndian || (!needExtraByte && curByte == length - 1) || (needExtraByte && curByte == length - 2));
+            // Assert we're little endian, or big endian consistency holds.
+            Debug.Assert(!isBigEndian || (!needExtraByte && curByte == 0) || (needExtraByte && curByte == 1));
+
             if (needExtraByte)
             {
-                destination[length - 1] = highByte;
+                curByte += increment;
+                destination[curByte] = highByte;
             }
 
             return array;
@@ -1321,6 +1471,11 @@ namespace System.Numerics
         public string ToString(string format, IFormatProvider provider)
         {
             return BigNumber.FormatBigInteger(this, format, NumberFormatInfo.GetInstance(provider));
+        }
+
+        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider provider = null) // TODO: change format to ReadOnlySpan<char>
+        {
+            return BigNumber.TryFormatBigInteger(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }
 
         private static BigInteger Add(uint[] leftBits, int leftSign, uint[] rightBits, int rightSign)

@@ -1109,7 +1109,6 @@ namespace System.DirectoryServices.Protocols
             return value;
         }
 
-        [PermissionSet(SecurityAction.Assert, Unrestricted = true)]
         private static bool AddLdapHandleRef(LdapConnection ldapConnection)
         {
             bool success = false;
@@ -1126,7 +1125,6 @@ namespace System.DirectoryServices.Protocols
             return success;
         }
 
-        [PermissionSet(SecurityAction.Assert, Unrestricted = true)]
         private static void ReleaseLdapHandleRef(LdapConnection ldapConnection)
         {
             if (ldapConnection != null && ldapConnection._ldapHandle != null && !ldapConnection._ldapHandle.IsInvalid)

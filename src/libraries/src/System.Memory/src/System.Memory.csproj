@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{4BBC8F69-D03E-4432-AA8A-D458FA5B235A}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLSCompliant>false</CLSCompliant>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'">true</IsPartialFacadeAssembly>
     <DefineConstants Condition="'$(IsPartialFacadeAssembly)' != 'true'">$(DefineConstants);netstandard</DefineConstants>
@@ -57,9 +56,11 @@
     <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.cs" />
     <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Signed.cs" />
     <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Signed.D.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Signed.Default.cs" />
     <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Signed.N.cs" />
     <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Unsigned.cs" />
     <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Unsigned.D.cs" />
+    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Unsigned.Default.cs" />
     <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Unsigned.N.cs" />
     <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Unsigned.X.cs" />
     <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.TimeSpan.cs" />

@@ -89,7 +89,7 @@ namespace System.Net.Test.Common
             return AcceptSocketAsync(server, (s, stream, reader, writer) => ReadWriteAcceptedAsync(s, reader, writer, response), options);
         }
 
-        public static async Task<List<string>> ReadWriteAcceptedAsync(Socket s, StreamReader reader, StreamWriter writer, string response = null, bool shutdown = true)
+        public static async Task<List<string>> ReadWriteAcceptedAsync(Socket s, StreamReader reader, StreamWriter writer, string response = null)
         {
             // Read request line and headers. Skip any request body.
             var lines = new List<string>();
@@ -100,11 +100,6 @@ namespace System.Net.Test.Common
             }
 
             await writer.WriteAsync(response ?? DefaultHttpResponse).ConfigureAwait(false);
-
-            if (shutdown)
-            {
-                s.Shutdown(SocketShutdown.Send);
-            }
 
             return lines;
         }
@@ -157,7 +152,8 @@ namespace System.Net.Test.Common
         public static async Task<List<string>> AcceptSocketAsync(Socket server, Func<Socket, Stream, StreamReader, StreamWriter, Task<List<string>>> funcAsync, Options options = null)
         {
             options = options ?? new Options();
-            using (Socket s = await server.AcceptAsync().ConfigureAwait(false))
+            Socket s = await server.AcceptAsync().ConfigureAwait(false);
+            try
             {
                 Stream stream = new NetworkStream(s, ownsSocket: false);
                 if (options.UseSsl)
@@ -166,9 +162,9 @@ namespace System.Net.Test.Common
                     using (var cert = Configuration.Certificates.GetServerCertificate())
                     {
                         await sslStream.AuthenticateAsServerAsync(
-                            cert, 
+                            cert,
                             clientCertificateRequired: true, // allowed but not required
-                            enabledSslProtocols: options.SslProtocols, 
+                            enabledSslProtocols: options.SslProtocols,
                             checkCertificateRevocation: false).ConfigureAwait(false);
                     }
                     stream = sslStream;
@@ -178,6 +174,18 @@ namespace System.Net.Test.Common
                 using (var writer = new StreamWriter(options?.ResponseStreamWrapper?.Invoke(stream) ?? stream, Encoding.ASCII) { AutoFlush = true })
                 {
                     return await funcAsync(s, stream, reader, writer).ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                try
+                {
+                    s.Shutdown(SocketShutdown.Send);
+                    s.Dispose();
+                }
+                catch (ObjectDisposedException)
+                {
+                    // In case the test itself disposes of the socket
                 }
             }
         }
@@ -250,8 +258,6 @@ namespace System.Net.Test.Common
                     await writer.WriteAsync($"{content}\r\n").ConfigureAwait(false);
                 }
 
-                client.Shutdown(SocketShutdown.Both);
-                
                 return null;
             }), out localEndPoint);
         }        

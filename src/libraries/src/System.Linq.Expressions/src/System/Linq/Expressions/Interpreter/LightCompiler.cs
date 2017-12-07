@@ -305,6 +305,8 @@ namespace System.Linq.Expressions.Interpreter
 
         public LightDelegateCreator CompileTop(LambdaExpression node)
         {
+            node.ValidateArgumentCount();
+
             //Console.WriteLine(node.DebugView);
             for (int i = 0, n = node.ParameterCount; i < n; i++)
             {

@@ -129,11 +129,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private TypeArray RearrangeNamedArguments(TypeArray pta, MethPropWithInst mpwi,
             CType pTypeThrough, ArgInfos args)
         {
-            if (!args.fHasExprs)
-            {
-                return pta;
-            }
-
 #if DEBUG
             // We never have a named argument that is in a position in the argument
             // list past the end of what would be the formal parameter list.
@@ -238,7 +233,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             int carg = args.carg;
             for (int i = 0; i < carg; i++)
             {
-                Expr arg = args.fHasExprs ? args.prgexpr[i] : null;
+                Expr arg = args.prgexpr[i];
                 CType p1 = pta1[i];
                 CType p2 = pta2[i];
 

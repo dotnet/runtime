@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
-
 namespace System.Buffers.Text
 {
     /// <summary>
@@ -57,6 +54,7 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
+        [CLSCompliant(false)]
         public static bool TryFormat(sbyte value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default)
             => TryFormatInt64(value, 0xff, buffer, out bytesWritten, format);
 
@@ -81,6 +79,7 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
+        [CLSCompliant(false)]
         public static bool TryFormat(ushort value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default)
             => TryFormatUInt64(value, buffer, out bytesWritten, format);
 
@@ -129,6 +128,7 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
+        [CLSCompliant(false)]
         public static bool TryFormat(uint value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default)
             => TryFormatUInt64(value, buffer, out bytesWritten, format);
 
@@ -177,6 +177,7 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
+        [CLSCompliant(false)]
         public static bool TryFormat(ulong value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default)
             => TryFormatUInt64(value, buffer, out bytesWritten, format);
 

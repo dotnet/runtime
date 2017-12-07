@@ -8,7 +8,6 @@ using System.Security;
 
 namespace System.Drawing.Internal
 {
-    [SuppressUnmanagedCodeSecurity]
     internal static partial class IntUnsafeNativeMethods
     {
         [DllImport(ExternDll.User32, SetLastError = true, ExactSpelling = true, EntryPoint = "GetDC", CharSet = CharSet.Auto)]

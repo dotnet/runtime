@@ -33,8 +33,8 @@ namespace System.Net.Security
             if (copy)
             {
                 byte[] temp = new byte[protocol.Length];
-                Array.Copy(protocol, temp, protocol.Length);
-                _readOnlyProtocol = new ReadOnlyMemory<byte>(protocol);
+                Array.Copy(protocol, 0, temp, 0, protocol.Length);
+                _readOnlyProtocol = new ReadOnlyMemory<byte>(temp);
             }
             else
             {

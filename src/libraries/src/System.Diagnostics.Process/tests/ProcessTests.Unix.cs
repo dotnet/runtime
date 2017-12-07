@@ -266,7 +266,22 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.OSX)] // OSX doesn't support throwing on Process.Start
         public void TestStartOnUnixWithBadFormat()
+        {
+            string path = GetTestFilePath();
+            File.Create(path).Dispose();
+            int mode = Convert.ToInt32("744", 8);
+
+            Assert.Equal(0, chmod(path, mode)); // execute permissions
+
+            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(path));
+            Assert.NotEqual(0, e.NativeErrorCode);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)] // OSX doesn't support throwing on Process.Start
+        public void TestStartOnOSXWithBadFormat()
         {
             string path = GetTestFilePath();
             File.Create(path).Dispose();
@@ -285,30 +300,5 @@ namespace System.Diagnostics.Tests
         private static extern int chmod(string path, int mode);
 
         private readonly string[] s_allowedProgramsToRun = new string[] { "xdg-open", "gnome-open", "kfmclient" };
-
-        /// <summary>
-        /// Checks if the program is installed
-        /// </summary>
-        /// <param name="program"></param>
-        /// <returns></returns>
-        private bool IsProgramInstalled(string program)
-        {
-            string path;
-            string pathEnvVar = Environment.GetEnvironmentVariable("PATH");
-            if (pathEnvVar != null)
-            {
-                var pathParser = new StringParser(pathEnvVar, ':', skipEmpty: true);
-                while (pathParser.MoveNext())
-                {
-                    string subPath = pathParser.ExtractCurrent();
-                    path = Path.Combine(subPath, program);
-                    if (File.Exists(path))
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
     }
 }

@@ -28,7 +28,6 @@ namespace System.IO
             return new DirectoryInfo(s);
         }
 
-        [System.Security.SecuritySafeCritical]
         public static DirectoryInfo CreateDirectory(string path)
         {
             if (path == null)
@@ -64,7 +63,6 @@ namespace System.IO
         // Your application must have Read permission to the directory's
         // contents.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static bool Exists(string path)
         {
             try
@@ -471,7 +469,6 @@ namespace System.IO
                 (includeFiles ? SearchTarget.Files : 0) | (includeDirs ? SearchTarget.Directories : 0));
         }
 
-        [System.Security.SecuritySafeCritical]
         public static string GetDirectoryRoot(string path)
         {
             if (path == null)
@@ -497,14 +494,11 @@ namespace System.IO
        **Arguments: The current DirectoryInfo to which to switch to the setter.
        **Exceptions: 
        ==============================================================================*/
-        [System.Security.SecuritySafeCritical]
         public static string GetCurrentDirectory()
         {
             return FileSystem.Current.GetCurrentDirectory();
         }
 
-
-        [System.Security.SecurityCritical] // auto-generated
         public static void SetCurrentDirectory(string path)
         {
             if (path == null)
@@ -518,7 +512,6 @@ namespace System.IO
             FileSystem.Current.SetCurrentDirectory(fulldestDirName);
         }
 
-        [System.Security.SecuritySafeCritical]
         public static void Move(string sourceDirName, string destDirName)
         {
             if (sourceDirName == null)
@@ -559,14 +552,12 @@ namespace System.IO
             FileSystem.Current.MoveDirectory(fullsourceDirName, fulldestDirName);
         }
 
-        [System.Security.SecuritySafeCritical]
         public static void Delete(string path)
         {
             string fullPath = Path.GetFullPath(path);
             FileSystem.Current.RemoveDirectory(fullPath, false);
         }
 
-        [System.Security.SecuritySafeCritical]
         public static void Delete(string path, bool recursive)
         {
             string fullPath = Path.GetFullPath(path);

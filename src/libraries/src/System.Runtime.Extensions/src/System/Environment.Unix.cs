@@ -358,8 +358,6 @@ namespace System
             return num;
         }
 
-        public static int ProcessorCount => CheckedSysConf(Interop.Sys.SysConfName._SC_NPROCESSORS_ONLN);
-
         public static string SystemDirectory => GetFolderPathCore(SpecialFolder.System, SpecialFolderOption.None);
 
         public static int SystemPageSize => CheckedSysConf(Interop.Sys.SysConfName._SC_PAGESIZE);

@@ -198,9 +198,8 @@ namespace Microsoft.Win32.SafeHandles
         private SafeBioHandle _writeBio;
         private bool _isServer;
         private bool _handshakeCompleted = false;
-        private GCHandle _alpnHandle;
 
-        public GCHandle AlpnHandle { set => _alpnHandle = value; }
+        public GCHandle AlpnHandle;
 
         public bool IsServer
         {
@@ -283,9 +282,9 @@ namespace Microsoft.Win32.SafeHandles
                 _writeBio?.Dispose();
             }
 
-            if (_alpnHandle.IsAllocated)
+            if (AlpnHandle.IsAllocated)
             {
-                _alpnHandle.Free();
+                AlpnHandle.Free();
             }
 
             base.Dispose(disposing);

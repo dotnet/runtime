@@ -25,7 +25,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public dSPropertyValueCollection this[string propertyName]
         {
-            [System.Security.SecurityCritical]
             get
             {
                 if (propertyName == null)
@@ -54,7 +53,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public object this[int index]
         {
-            [System.Security.SecurityCritical]
             get
             {
                 if (_pc != null)

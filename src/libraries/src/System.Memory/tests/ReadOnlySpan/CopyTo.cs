@@ -181,8 +181,10 @@ namespace System.SpanTests
                 }
                 finally
                 {
-                    if (allocatedFirst) AllocationHelper.ReleaseNative(ref memBlockFirst);
-                    if (allocatedSecond) AllocationHelper.ReleaseNative(ref memBlockSecond);
+                    if (allocatedFirst)
+                        AllocationHelper.ReleaseNative(ref memBlockFirst);
+                    if (allocatedSecond)
+                        AllocationHelper.ReleaseNative(ref memBlockSecond);
                 }
             }
         }

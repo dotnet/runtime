@@ -57,7 +57,6 @@
     <Compile Include="Common\System\Data\ProviderBase\DbConnectionPoolOptions.cs" />
     <Compile Include="Common\System\Data\ProviderBase\DbConnectionPoolProviderInfo.cs" />
     <Compile Include="Common\System\Data\ProviderBase\DbReferenceCollection.cs" />
-    <Compile Include="Properties\SecurityTransparent.cs" />
     <Compile Include="System\Data\Odbc\DbDataRecord.cs" />
     <Compile Include="System\Data\Odbc\Odbc32.cs" />
     <Compile Include="System\Data\Odbc\OdbcCommand.cs">
@@ -114,7 +113,7 @@
       <Link>Common\Interop\Interop.Odbc.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true' OR '$(TargetsFreeBSD)' == 'true'">
     <Compile Include="$(CommonPath)\Interop\Linux\Interop.Libraries.cs">
       <Link>Common\Interop\Linux\Interop.Libraries.cs</Link>
     </Compile>

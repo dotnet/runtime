@@ -18,7 +18,7 @@ namespace System.CodeDom.Compiler
 }
 namespace System.Diagnostics.CodeAnalysis
 {
-    [System.AttributeUsageAttribute((System.AttributeTargets)748, Inherited=false, AllowMultiple=false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)749, Inherited=false, AllowMultiple=false)]
     public sealed partial class ExcludeFromCodeCoverageAttribute : System.Attribute {
         public ExcludeFromCodeCoverageAttribute() { }
     }    

@@ -745,7 +745,7 @@ namespace Microsoft.XmlSerializer.Generator
             for (StructMapping derived = mapping.DerivedMappings; derived != null; derived = derived.NextDerivedMapping)
             {
                 string fullTypeName = derived.TypeDesc.CSharpName;
-                Writer.Write("else if (");
+                Writer.Write("if (");
                 WriteTypeCompare("t", fullTypeName, derived.TypeDesc.UseReflection);
                 Writer.WriteLine(") {");
                 Writer.Indent++;
@@ -783,7 +783,7 @@ namespace Microsoft.XmlSerializer.Generator
                     {
                         EnumMapping mapping = (EnumMapping)m;
                         string fullTypeName = mapping.TypeDesc.CSharpName;
-                        Writer.Write("else if (");
+                        Writer.Write("if (");
                         WriteTypeCompare("t", fullTypeName, mapping.TypeDesc.UseReflection);
                         Writer.WriteLine(") {");
                         Writer.Indent++;
@@ -815,7 +815,7 @@ namespace Microsoft.XmlSerializer.Generator
                         ArrayMapping mapping = m as ArrayMapping;
                         if (mapping == null || m.IsSoap) continue;
                         string fullTypeName = mapping.TypeDesc.CSharpName;
-                        Writer.Write("else if (");
+                        Writer.Write("if (");
                         if (mapping.TypeDesc.IsArray)
                             WriteArrayTypeCompare("t", fullTypeName, mapping.TypeDesc.ArrayElementTypeDesc.CSharpName, mapping.TypeDesc.UseReflection);
                         else
@@ -885,12 +885,12 @@ namespace Microsoft.XmlSerializer.Generator
                 WriteTypeCompare("t", fullTypeName, mapping.TypeDesc.UseReflection);
                 Writer.WriteLine(") {");
                 Writer.WriteLine("}");
+                Writer.WriteLine("else {");
+                Writer.Indent++;
                 WriteDerivedTypes(mapping);
                 if (mapping.TypeDesc.IsRoot)
                     WriteEnumAndArrayTypes();
-                Writer.WriteLine("else {");
 
-                Writer.Indent++;
                 if (mapping.TypeDesc.IsRoot)
                 {
                     Writer.WriteLine("WriteTypedPrimitive(n, ns, o, true);");

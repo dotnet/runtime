@@ -1389,3 +1389,18 @@ done:
     pthread_mutex_unlock(&g_initLock);
     return ret;
 }
+
+/*
+Function:
+SSLEayVersion
+
+Gets the version of openssl library.
+
+Return values:
+Textual description of the version on success.
+"not available" string on failure.
+*/
+extern "C" char* CryptoNative_SSLEayVersion()
+{
+    return strdup(SSLeay_version(SSLEAY_VERSION));
+}

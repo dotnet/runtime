@@ -5,7 +5,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Tests;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;

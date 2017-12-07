@@ -36,7 +36,6 @@ namespace System.Threading.Tasks.Tests
         }
 
 
-        [SecurityCritical]
         protected override void QueueTask(Task task)
         {
             if (task == null) throw new ArgumentNullException("When requesting to QueueTask, the input task can not be null");
@@ -52,13 +51,11 @@ namespace System.Threading.Tasks.Tests
             }, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
         }
 
-        [SecuritySafeCritical] //This has to be SecuritySafeCritical since its accesses TaskScheduler.TryExecuteTask (which is safecritical)
         private void ExecuteTask(Task task)
         {
             base.TryExecuteTask(task);
         }
 
-        [SecurityCritical]
         protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
         {
             if (taskWasPreviouslyQueued) return false;
@@ -72,7 +69,6 @@ namespace System.Threading.Tasks.Tests
         //	set;
         //}
 
-        [SecurityCritical]
         protected override IEnumerable<Task> GetScheduledTasks() { return null; }
         private Object _lockObj = new Object();
         private int _counter = 1; //This is used to keep track of how many scheduler tasks were created

@@ -597,7 +597,7 @@ namespace System.Collections.Generic
                 if (i >= 0)
                     return values[i];
 
-                throw new KeyNotFoundException();
+                throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
             }
             set
             {

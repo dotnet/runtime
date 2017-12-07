@@ -2922,4 +2922,29 @@ public static partial class XmlSerializerTests
 
         Assert.StrictEqual(value, actual);
     }
+
+    [ConditionalFact(nameof(IsTimeSpanSerializationAvailable))]
+    public static void VerifyRestrictionElementForTimeSpanTest()
+    {
+        var schemas = new XmlSchemas();
+        var exporter = new XmlSchemaExporter(schemas);
+        XmlTypeMapping mapping = new XmlReflectionImporter().ImportTypeMapping(typeof(TimeSpan));
+        exporter.ExportTypeMapping(mapping);
+        XmlSchema schema = schemas.Where(s => s.TargetNamespace == "http://microsoft.com/wsdl/types/").FirstOrDefault();
+        Assert.NotNull(schema);
+        var ms = new MemoryStream();
+        schema.Write(ms);
+        ms.Position = 0;
+        string actualOutput = new StreamReader(ms).ReadToEnd();
+        XElement element = XElement.Parse(actualOutput);
+        while (element.Elements().Count() != 0)
+        {
+            element = element.Elements().First();
+        }
+
+        string expectedAttribute = "xs:duration";
+        string baseline = "<?xml version=\"1.0\"?>\r\n<xs:schema xmlns:tns=\"http://microsoft.com/wsdl/types/\" elementFormDefault=\"qualified\" targetNamespace=\"http://microsoft.com/wsdl/types/\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">\r\n  <xs:simpleType name=\"TimeSpan\">\r\n    <xs:restriction base=\"xs:duration\" />\r\n  </xs:simpleType>\r\n</xs:schema>";
+        Assert.True(element.LastAttribute.Value == expectedAttribute, string.Format("{0}Test failed for wrong output from schema: {0}Expected Output: {1}{0}Actual Output: {2}",
+                Environment.NewLine, baseline, actualOutput));
+    }
 }

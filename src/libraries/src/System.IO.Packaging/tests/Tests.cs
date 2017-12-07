@@ -1279,6 +1279,31 @@ namespace System.IO.Packaging.Tests
             packagePath1.Delete();
         }
 
+        [Fact]
+        public void OpenInternalTargetRelationships()
+        {
+            // This is to test different behavior on Mono vs .NET Core
+            using (var ms = new MemoryStream())
+            {
+                using (var package = Package.Open(ms, FileMode.OpenOrCreate, FileAccess.ReadWrite))
+                {
+                    package.CreateRelationship(new Uri("/target", UriKind.Relative), TargetMode.Internal, "type");
+                }
+
+                ms.Position = 0;
+
+                using (var package = Package.Open(ms, FileMode.OpenOrCreate, FileAccess.ReadWrite))
+                {
+                    var relationships = package.GetRelationships();
+
+                    var relationship = Assert.Single(relationships);
+
+                    Assert.Equal(new Uri("/", UriKind.Relative), relationship.SourceUri);
+                    Assert.Equal(new Uri("/target", UriKind.Relative), relationship.TargetUri);
+                    Assert.Equal(TargetMode.Internal, relationship.TargetMode);
+                }
+            }
+        }
 
         [Fact]
         public void T035_ModifyAllPackageProperties()

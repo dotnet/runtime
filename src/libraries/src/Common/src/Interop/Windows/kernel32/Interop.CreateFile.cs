@@ -11,42 +11,73 @@ internal partial class Interop
 {
     internal partial class Kernel32
     {
+        // https://msdn.microsoft.com/en-us/library/windows/desktop/aa363858.aspx
         /// <summary>
         /// WARNING: The private methods do not implicitly handle long paths. Use CreateFile.
         /// </summary>
         [DllImport(Libraries.Kernel32, EntryPoint = "CreateFileW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false, ExactSpelling = true)]
-        private static extern SafeFileHandle CreateFilePrivate(
+        private unsafe static extern IntPtr CreateFilePrivate(
             string lpFileName,
             int dwDesiredAccess,
             FileShare dwShareMode,
-            [In] ref SECURITY_ATTRIBUTES securityAttrs,
+            SECURITY_ATTRIBUTES* securityAttrs,
             FileMode dwCreationDisposition,
             int dwFlagsAndAttributes,
             IntPtr hTemplateFile);
 
-        internal static SafeFileHandle CreateFile(
+        internal unsafe static SafeFileHandle CreateFile(
             string lpFileName,
             int dwDesiredAccess,
             FileShare dwShareMode,
-            [In] ref SECURITY_ATTRIBUTES securityAttrs,
+            ref SECURITY_ATTRIBUTES securityAttrs,
             FileMode dwCreationDisposition,
             int dwFlagsAndAttributes,
             IntPtr hTemplateFile)
         {
             lpFileName = PathInternal.EnsureExtendedPrefixOverMaxPath(lpFileName);
-            return CreateFilePrivate(lpFileName, dwDesiredAccess, dwShareMode, ref securityAttrs, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+            fixed (SECURITY_ATTRIBUTES* sa = &securityAttrs)
+            {
+                IntPtr handle = CreateFilePrivate(lpFileName, dwDesiredAccess, dwShareMode, sa, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+                try
+                {
+                    return new SafeFileHandle(handle, ownsHandle: true);
+                }
+                catch
+                {
+                    CloseHandle(handle);
+                    throw;
+                }
+            }
         }
 
-        internal static SafeFileHandle CreateFileDefaultSecurity(
+        internal unsafe static SafeFileHandle CreateFile(
             string lpFileName,
             int dwDesiredAccess,
             FileShare dwShareMode,
             FileMode dwCreationDisposition,
             int dwFlagsAndAttributes)
         {
-            // This is technically equivalent to passing a null SECURITY_ATTRIBUTES
-            SECURITY_ATTRIBUTES security = new SECURITY_ATTRIBUTES();
-            return CreateFilePrivate(lpFileName, dwDesiredAccess, dwShareMode, ref security, dwCreationDisposition, dwFlagsAndAttributes, IntPtr.Zero);
+            IntPtr handle = CreateFile_IntPtr(lpFileName, dwDesiredAccess, dwShareMode, dwCreationDisposition, dwFlagsAndAttributes);
+            try
+            {
+                return new SafeFileHandle(handle, ownsHandle: true);
+            }
+            catch
+            {
+                CloseHandle(handle);
+                throw;
+            }
+        }
+
+        internal unsafe static IntPtr CreateFile_IntPtr(
+            string lpFileName,
+            int dwDesiredAccess,
+            FileShare dwShareMode,
+            FileMode dwCreationDisposition,
+            int dwFlagsAndAttributes)
+        {
+            lpFileName = PathInternal.EnsureExtendedPrefixOverMaxPath(lpFileName);
+            return CreateFilePrivate(lpFileName, dwDesiredAccess, dwShareMode, null, dwCreationDisposition, dwFlagsAndAttributes, IntPtr.Zero);
         }
     }
 }

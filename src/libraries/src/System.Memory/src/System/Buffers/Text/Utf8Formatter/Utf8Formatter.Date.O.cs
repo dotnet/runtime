@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace System.Buffers.Text
@@ -25,7 +24,7 @@ namespace System.Buffers.Text
             bytesWritten = MinimumBytesNeeded;
             DateTimeKind kind = DateTimeKind.Local;
 
-            if (offset == Utf8Constants.NullUtcOffset)
+            if (offset == Utf8Constants.s_nullUtcOffset)
             {
                 kind = value.Kind;
                 if (kind == DateTimeKind.Local)

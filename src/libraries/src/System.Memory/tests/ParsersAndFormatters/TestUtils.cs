@@ -2,14 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Text;
 using System.Numerics;
-using System.Buffers.Text;
 using System.Globalization;
-using System.Collections.Generic;
-
-using Xunit;
 
 namespace System.Buffers.Text.Tests
 {
@@ -18,7 +13,7 @@ namespace System.Buffers.Text.Tests
         public static MutableDecimal ToMutableDecimal(this decimal d)
         {
             int[] bits = decimal.GetBits(d);
-            return new MutableDecimal() { High = (uint)bits[0], Low = (uint)bits[1], Mid = (uint)bits[2], Flags = (uint)bits[3] }; 
+            return new MutableDecimal() { High = (uint)bits[0], Low = (uint)bits[1], Mid = (uint)bits[2], Flags = (uint)bits[3] };
         }
 
         public static decimal ToDecimal(this MutableDecimal md)

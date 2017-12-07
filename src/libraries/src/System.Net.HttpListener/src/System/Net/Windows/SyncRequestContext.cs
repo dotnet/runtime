@@ -9,30 +9,20 @@ namespace System.Net
 {
     internal unsafe class SyncRequestContext : RequestContextBase
     {
-        private GCHandle _pinnedHandle;
-
         internal SyncRequestContext(int size)
         {
             BaseConstruction(Allocate(size));
         }
 
-        private Interop.HttpApi.HTTP_REQUEST* Allocate(int size)
+        private Interop.HttpApi.HTTP_REQUEST* Allocate(int newSize)
         {
-            if (_pinnedHandle.IsAllocated)
+            if (Size > 0 && Size == newSize)
             {
-                if (RequestBuffer.Length == size)
-                {
-                    return RequestBlob;
-                }
-                _pinnedHandle.Free();
+                return RequestBlob;
             }
-            SetBuffer(size);
-            if (RequestBuffer == null)
-            {
-                return null;
-            }
-            _pinnedHandle = GCHandle.Alloc(RequestBuffer, GCHandleType.Pinned);
-            return (Interop.HttpApi.HTTP_REQUEST*)Marshal.UnsafeAddrOfPinnedArrayElement(RequestBuffer, 0);
+            SetBuffer(newSize);
+
+            return RequestBuffer == IntPtr.Zero ? null : (Interop.HttpApi.HTTP_REQUEST*)RequestBuffer.ToPointer();
         }
 
         internal void Reset(int size)
@@ -40,25 +30,6 @@ namespace System.Net
             SetBlob(Allocate(size));
         }
 
-        protected override void OnReleasePins()
-        {
-            if (_pinnedHandle.IsAllocated)
-            {
-                _pinnedHandle.Free();
-            }
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (_pinnedHandle.IsAllocated)
-            {
-                Debug.Assert(!disposing, "AsyncRequestContext::Dispose()|Must call ReleasePins() before calling Dispose().");
-                if (!Environment.HasShutdownStarted || disposing)
-                {
-                    _pinnedHandle.Free();
-                }
-            }
-            base.Dispose(disposing);
-        }
+        protected override void OnReleasePins() { }
     }
 }

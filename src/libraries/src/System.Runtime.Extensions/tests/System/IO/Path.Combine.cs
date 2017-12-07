@@ -134,6 +134,7 @@ namespace System.IO.Tests
             CommonCasesException<ArgumentNullException>(null);
         }
 
+        [ActiveIssue(25665)]
         [Fact]
         public static void ContainsInvalidCharWithoutRootedAfterArgumentNull()
         {
@@ -141,6 +142,7 @@ namespace System.IO.Tests
             CommonCasesException<ArgumentException>("ab\0cd");
         }
 
+        [ActiveIssue(25665)]
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Tests Windows-specific invalid paths
         public static void ContainsInvalidCharWithoutRootedAfterArgumentNull_Windows()
@@ -152,6 +154,7 @@ namespace System.IO.Tests
             CommonCasesException<ArgumentException>("ab\tcd");
         }
 
+        [ActiveIssue(25665)]
         [Fact]
         public static void ContainsInvalidCharWithRootedAfterArgumentNull()
         {
@@ -159,6 +162,7 @@ namespace System.IO.Tests
             CommonCasesException<ArgumentException>("ab\0cd", s_separator + "abc");
         }
 
+        [ActiveIssue(25665)]
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Tests Windows-specific invalid paths
         public static void ContainsInvalidCharWithRootedAfterArgumentNull_Windows()

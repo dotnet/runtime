@@ -48,7 +48,6 @@ namespace System.Threading
 
     #region class WinRTSynchronizationContextFactory
 
-    [FriendAccessAllowed]
     internal sealed class WinRTSynchronizationContextFactory : WinRTSynchronizationContextFactoryBase
     {
         //
@@ -115,7 +114,6 @@ namespace System.Threading
             _dispatcher = dispatcher;
         }
 
-        [SecuritySafeCritical]
         public override void Post(SendOrPostCallback d, object state)
         {
             if (d == null)
@@ -139,7 +137,6 @@ namespace System.Threading
             _dispatcherQueue = dispatcherQueue;
         }
 
-        [SecuritySafeCritical]
         public override void Post(SendOrPostCallback d, object state)
         {
             if (d == null)
@@ -281,7 +278,6 @@ namespace System.Threading
 
         #endregion class WinRTSynchronizationContext.Invoker
 
-        [SecuritySafeCritical]
         public override void Send(SendOrPostCallback d, object state)
         {
             throw new NotSupportedException(SR.InvalidOperation_SendNotSupportedOnWindowsRTSynchronizationContext);

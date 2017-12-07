@@ -14,7 +14,8 @@ namespace System.Configuration
 
         public GenericEnumConverter(Type typeEnum)
         {
-            if (typeEnum == null) throw new ArgumentNullException(nameof(typeEnum));
+            if (typeEnum == null)
+                throw new ArgumentNullException(nameof(typeEnum));
 
             _enumType = typeEnum;
         }
@@ -26,41 +27,39 @@ namespace System.Configuration
 
         public override object ConvertFrom(ITypeDescriptorContext ctx, CultureInfo ci, object data)
         {
-            object result;
-
             // For any error, throw the ArgumentException with SR.Invalid_enum_value
-            try
+            if ((data is string value) && (value.Length > 0))
             {
-                string value = (string)data;
-                if (string.IsNullOrEmpty(value)) throw new Exception();
-
-                // Disallow numeric values for enums.
-                if (!string.IsNullOrEmpty(value) &&
-                    (char.IsDigit(value[0]) ||
-                    (value[0] == '-') ||
-                    (value[0] == '+')))
-                    throw new Exception();
-
-                if (value != value.Trim())
+                // Disallow numeric values and whitespace at start and end.
+                if ((!char.IsDigit(value[0])) && (value[0] != '-') && (value[0] != '+') &&
+                    (!char.IsWhiteSpace(value[0])) && (!char.IsWhiteSpace(value[value.Length - 1])))
                 {
-                    // throw if the value has whitespace 
-                    throw new Exception();
+                    try
+                    {
+                        return Enum.Parse(_enumType, value);
+                    }
+                    catch
+                    {
+                        // Exception from parse. Will throw more appropriate exception below.
+                    }
                 }
-
-                result = Enum.Parse(_enumType, value);
             }
-            catch
+            throw CreateExceptionForInvalidValue();
+        }
+
+        private ArgumentException CreateExceptionForInvalidValue()
+        {
+            StringBuilder names = new StringBuilder();
+
+            foreach (string name in Enum.GetNames(_enumType))
             {
-                StringBuilder names = new StringBuilder();
-
-                foreach (string name in Enum.GetNames(_enumType))
+                if (names.Length != 0)
                 {
-                    if (names.Length != 0) names.Append(", ");
-                    names.Append(name);
+                    names.Append(", ");
                 }
-                throw new ArgumentException(string.Format(SR.Invalid_enum_value, names.ToString()));
+                names.Append(name);
             }
-            return result;
+            return new ArgumentException(string.Format(SR.Invalid_enum_value, names.ToString()));
         }
     }
 }

@@ -195,7 +195,8 @@ namespace System.Diagnostics
             }
 
             // If the handle is invalid because the process has exited, only throw an exception if throwIfExited is true.            
-            if (!IsProcessRunning(processId))
+            // Assume the process is still running if the error was ERROR_ACCESS_DENIED for better performance
+            if (result != Interop.Errors.ERROR_ACCESS_DENIED && !IsProcessRunning(processId))
             {
                 if (throwIfExited)
                 {

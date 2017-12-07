@@ -62,7 +62,6 @@ namespace System.Drawing
             }
         }
 
-        [SecurityPermissionAttribute(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
         void ISerializable.GetObjectData(SerializationInfo si, StreamingContext context)
         {
             using (MemoryStream stream = new MemoryStream())

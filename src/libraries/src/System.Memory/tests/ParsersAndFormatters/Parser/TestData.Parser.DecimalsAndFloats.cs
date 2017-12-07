@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Text;
 using System.Linq;
 using System.Globalization;
 using System.Collections.Generic;
@@ -23,7 +21,7 @@ namespace System.Buffers.Text.Tests
                         continue;
 
                     MutableDecimal d = ftd.Value.ToMutableDecimal();
-                    if (d.High == 0 && d.Mid == 0 && d.Low  == 0 && d.IsNegative)
+                    if (d.High == 0 && d.Mid == 0 && d.Low == 0 && d.IsNegative)
                         continue; // -0 is not roundtrippable
 
                     foreach (ParserTestData<decimal> testData in new FormatterTestData<decimal>[] { ftd }.ToParserTheoryDataCollection())

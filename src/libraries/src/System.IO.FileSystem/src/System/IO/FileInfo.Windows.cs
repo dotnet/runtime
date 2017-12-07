@@ -3,18 +3,16 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Security;
 
 namespace System.IO
 {
     partial class FileInfo
     {
-        [SecurityCritical]
-        internal FileInfo(string fullPath, ref Interop.Kernel32.WIN32_FIND_DATA findData)
-            : this(fullPath, findData.cFileName.GetStringFromFixedBuffer())
+        internal unsafe FileInfo(string fullPath, string fileName, ref RawFindData findData)
+            : this(fullPath, fileName: fileName, isNormalized: true)
         {
-            Debug.Assert(findData.cFileName.FixedBufferEqualsString(Path.GetFileName(fullPath)));
-            Init(ref findData);
+            Debug.Assert(fileName.Equals(Path.GetFileName(fullPath)));
+            Init(findData._info);
         }
     }
 }

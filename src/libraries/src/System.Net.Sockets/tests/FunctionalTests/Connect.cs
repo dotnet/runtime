@@ -12,7 +12,7 @@ namespace System.Net.Sockets.Tests
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [MemberData(nameof(Loopbacks))]
-        public void Connect_Success(IPAddress listenAt)
+        public async Task Connect_Success(IPAddress listenAt)
         {
             int port;
             using (SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, listenAt, out port))
@@ -20,7 +20,7 @@ namespace System.Net.Sockets.Tests
                 using (Socket client = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
                 {
                     Task connectTask = ConnectAsync(client, new IPEndPoint(listenAt, port));
-                    Assert.True(connectTask.Wait(TestSettings.PassingTestTimeout), "IPv4: Timed out while waiting for connection");
+                    await connectTask;
                     Assert.True(client.Connected);
                 }
             }
@@ -29,7 +29,7 @@ namespace System.Net.Sockets.Tests
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [MemberData(nameof(Loopbacks))]
-        public void Connect_MultipleIPAddresses_Success(IPAddress listenAt)
+        public async Task Connect_MultipleIPAddresses_Success(IPAddress listenAt)
         {
             if (!SupportsMultiConnect)
                 return;
@@ -39,7 +39,7 @@ namespace System.Net.Sockets.Tests
             using (Socket client = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
             {
                 Task connectTask = MultiConnectAsync(client, new IPAddress[] { IPAddress.Loopback, IPAddress.IPv6Loopback }, port);
-                Assert.True(connectTask.Wait(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
+                await connectTask;
                 Assert.True(client.Connected);
             }
         }

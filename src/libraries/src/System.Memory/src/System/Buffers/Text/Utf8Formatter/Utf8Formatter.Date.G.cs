@@ -27,7 +27,7 @@ namespace System.Buffers.Text
             const int MinimumBytesNeeded = 19;
 
             bytesWritten = MinimumBytesNeeded;
-            if (offset != Utf8Constants.NullUtcOffset)
+            if (offset != Utf8Constants.s_nullUtcOffset)
             {
                 bytesWritten += 7; // Space['+'|'-']hh:ss
             }
@@ -57,7 +57,7 @@ namespace System.Buffers.Text
 
             FormattingHelpers.WriteDigits(value.Second, 2, ref utf8Bytes, 17);
 
-            if (offset != Utf8Constants.NullUtcOffset)
+            if (offset != Utf8Constants.s_nullUtcOffset)
             {
                 Unsafe.Add(ref utf8Bytes, 19) = Utf8Constants.Space;
 

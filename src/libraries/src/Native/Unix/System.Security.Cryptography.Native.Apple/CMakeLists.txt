@@ -31,8 +31,18 @@ add_library(System.Security.Cryptography.Native.Apple
     ${VERSION_FILE_PATH}
 )
 
+add_library(System.Security.Cryptography.Native.Apple-Static
+    STATIC
+    ${NATIVECRYPTO_SOURCES}
+    ${VERSION_FILE_PATH}
+)
+
 # Disable the "lib" prefix.
 set_target_properties(System.Security.Cryptography.Native.Apple PROPERTIES PREFIX "")
+
+# Disable the "lib" prefix and override default name
+set_target_properties(System.Security.Cryptography.Native.Apple-Static PROPERTIES PREFIX "")
+set_target_properties(System.Security.Cryptography.Native.Apple-Static PROPERTIES OUTPUT_NAME System.Security.Cryptography.Native.Apple CLEAN_DIRECT_OUTPUT 1)
 
 target_link_libraries(System.Security.Cryptography.Native.Apple
     ${COREFOUNDATION_LIBRARY}

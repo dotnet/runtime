@@ -3,9 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Text;
-using System.Linq;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 using AllocationHelper = System.SpanTests.AllocationHelper;
@@ -58,7 +55,6 @@ namespace System.Buffers.Text.Tests
             Assert.All<ParserTestData<T>>(testDataCollection,
                 (testData) =>
                 {
-                    Console.WriteLine(testData);
                     unsafe
                     {
                         Span<byte> buffer = new Span<byte>((void*)pMemory, int.MaxValue);

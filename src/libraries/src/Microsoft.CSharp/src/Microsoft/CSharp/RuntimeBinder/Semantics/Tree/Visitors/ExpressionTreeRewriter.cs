@@ -499,28 +499,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
             Expr origOp = expr.Child;
 
-            return GenerateBuiltInUnaryOperator(pdm, origOp, expr);
-        }
-
-        private Expr GenerateBuiltInUnaryOperator(PREDEFMETH pdm, Expr pOriginalOperator, Expr pOperator)
-        {
-            Expr op = Visit(pOriginalOperator);
-            bool isNullableEnum = pOriginalOperator.Type is NullableType nub && nub.underlyingType().isEnumType();
-            if (isNullableEnum)
-            {
-                Debug.Assert(pOperator.Kind == ExpressionKind.BitwiseNot); // The only built-in unary operator defined on nullable enum.
-                CType underlyingType = pOriginalOperator.Type.StripNubs().underlyingEnumType();
-                CType nullableType = GetSymbolLoader().GetTypeManager().GetNullable(underlyingType);
-                op = GenerateCall(PREDEFMETH.PM_EXPRESSION_CONVERT, op, CreateTypeOf(nullableType));
-            }
-
-            Expr call = GenerateCall(pdm, op);
-            if (isNullableEnum)
-            {
-                call = GenerateCall(PREDEFMETH.PM_EXPRESSION_CONVERT, call, CreateTypeOf(pOperator.Type));
-            }
-
-            return call;
+            // Such operations are always already casts on operations on casts.
+            Debug.Assert(!(origOp.Type is NullableType nub) || !nub.UnderlyingType.isEnumType());
+            return GenerateCall(pdm, Visit(origOp));
         }
 
         private Expr GenerateUserDefinedBinaryOperator(ExprBinOp expr)
@@ -958,8 +939,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Expr newIndex = it.Current();
                 if (newIndex.Type != intType)
                 {
-                    ExprClass exprType = expressionFactory.CreateClass(intType);
-                    newIndex = expressionFactory.CreateCast(EXPRFLAG.EXF_INDEXEXPR, exprType, newIndex);
+                    newIndex = expressionFactory.CreateCast(EXPRFLAG.EXF_INDEXEXPR, intType, newIndex);
                     newIndex.Flags |= EXPRFLAG.EXF_CHECKOVERFLOW;
                 }
                 Expr rewrittenIndex = Visit(newIndex);
@@ -986,8 +966,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 flags = EXPRFLAG.EXF_BOX;
             }
 
-            ExprClass objectType = GetExprFactory().CreateClass(pObject);
-            ExprCast cast = GetExprFactory().CreateCast(flags, objectType, expr);
+            ExprCast cast = GetExprFactory().CreateCast(flags, pObject, expr);
             ExprTypeOf pTypeOf2 = CreateTypeOf(expr.Type);
 
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_CONSTANT_OBJECT_TYPE, cast, pTypeOf2);

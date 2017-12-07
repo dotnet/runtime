@@ -19,7 +19,9 @@
     <Compile Include="System\IO\ErrorEventHandler.cs" />
     <Compile Include="System\IO\FileSystemEventArgs.cs" />
     <Compile Include="System\IO\FileSystemEventHandler.cs" />
-    <Compile Include="System\IO\FileSystemWatcher.cs" />
+    <Compile Include="System\IO\FileSystemWatcher.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="System\IO\InternalBufferOverflowException.cs" />
     <Compile Include="System\IO\NotifyFilters.cs" />
     <Compile Include="System\IO\PatternMatcher.cs" />
@@ -53,13 +55,15 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ReadDirectoryChangesW.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.ReadDirectoryChangesW.cs</Link>
     </Compile>
-    <Compile Include="System\IO\FileSystemWatcher.Win32.cs" />
+    <Compile Include="System\IO\FileSystemWatcher.Win32.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CloseHandle.cs">
+      <Link>Common\Interop\Windows\Interop.CloseHandle.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- Windows : Win32 only -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'uap'">
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.UnsafeCreateFile.cs">
-      <Link>Common\Interop\Windows\Interop.UnsafeCreateFile.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateFile.cs">
       <Link>Common\Interop\Windows\Interop.CreateFile.cs</Link>
     </Compile>
@@ -68,9 +72,6 @@
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' == 'uap'">
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateFile2.cs">
       <Link>Common\Interop\Windows\Interop.CreateFile2.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.UnsafeCreateFile.Uap.cs">
-      <Link>Common\Interop\Windows\Interop.UnsafeCreateFile.Uap.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.COPYFILE2_EXTENDED_PARAMETERS.cs">
       <Link>Common\Interop\Windows\Interop.COPYFILE2_EXTENDED_PARAMETERS.cs</Link>

@@ -18,7 +18,6 @@ using Windows.Storage;
 namespace System.Resources
 {
 #if FEATURE_APPX
-    [FriendAccessAllowed]
     // Please see the comments regarding thread safety preceding the implementations
     // of Initialize() and GetString() below.
     internal sealed class WindowsRuntimeResourceManager : WindowsRuntimeResourceManagerBase

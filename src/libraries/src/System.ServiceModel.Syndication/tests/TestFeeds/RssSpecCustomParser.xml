@@ -1,0 +1,26 @@
+﻿<?xml version="1.0"?>
+<rss version="2.0">
+  <channel xml:base="ChannelBase" customAttribute="customAtt">
+    <title>FeedTitle</title>
+    <link>FeedLink</link>
+    <description>FeedDescription</description>
+    <language>FeedLanguage</language>
+    <lastBuildDate>Tue, 23 August 2016 16:08:00 EDT</lastBuildDate>
+    <docs>http://blogs.law.harvard.edu/tech/rss</docs>
+    <generator>FeedGenerator</generator>
+    <managingEditor>FeedEditorEmail</managingEditor>
+    <category>FeedCategory</category>
+    <copyright>FeedCopyright</copyright>
+    <ttl>60</ttl>
+    <image>
+      <url>ImageUrl</url>
+    </image>
+    <item>
+      <title>ItemTitle</title>
+      <link>ItemLink</link>
+      <description>ItemDescription</description>
+      <pubDate>Tue, 03 Jun 2003 09:39:21 GMT</pubDate>
+      <guid>ItemGuid</guid>
+    </item>
+  </channel>
+</rss>

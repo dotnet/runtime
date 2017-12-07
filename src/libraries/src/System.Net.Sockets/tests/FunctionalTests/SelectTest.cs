@@ -241,7 +241,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop]
         [Fact]
-        public static void Select_AcceptNonBlocking_Success()
+        public static async Task Select_AcceptNonBlocking_Success()
         {
             using (Socket listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
@@ -264,8 +264,7 @@ namespace System.Net.Sockets.Tests
                 }
 
                 // Give the task 5 seconds to complete; if not, assume it's hung.
-                bool completed = t.Wait(5000);
-                Assert.True(completed);
+                await t.TimeoutAfter(5000);
             }
         }
 

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -175,7 +176,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             Assert.True(res);
         }
 
-        [Fact, ActiveIssue(7527)]
+        [Fact]
         public void CyclicTypeDefinition()
         {
             dynamic x = new Third<int>();
@@ -193,6 +194,130 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
 
         class Third<T> : Second<Third<T>>
         {
+        }
+
+        public class Castable
+        {
+            public static implicit operator int(Castable _) => 2;
+
+            public static implicit operator string(Castable _) => "abc";
+        }
+
+        [Fact]
+        public void ImplicitOperatorForPlus()
+        {
+            dynamic d = new Castable();
+            dynamic result = d + 1;
+            Assert.Equal(3, result);
+            result = 5 + d;
+            Assert.Equal(7, result);
+            result = d + "def";
+            Assert.Equal("abcdef", result);
+            result = "xyz" + d;
+            Assert.Equal("xyzabc", result);
+        }
+
+        [Fact]
+        public void DynamicArgumentToCyclicTypeDefinition()
+        {
+            dynamic arg = 5;
+            new Builder<object>().SomeMethod(arg);
+        }
+
+        public class Builder<TItem> : BuilderBaseEx<Builder<TItem>>
+        {
+            public Builder<TItem> SomeMethod(object arg)
+            {
+                return this;
+            }
+        }
+        public class BuilderBaseEx<T> : BuilderBase<T> where T : BuilderBaseEx<T> { }
+        public class BuilderBase<T> where T : BuilderBase<T> { }
+
+        [Fact]
+        public void CircularOnOwnNested()
+        {
+            dynamic d = new Generic<string>.Inner
+            {
+                Foo = "expected"
+            };
+
+            Assert.Equal("expected", d.Foo);
+        }
+
+
+        [Fact]
+        public void CircularOnOwnNestedAbsentMember()
+        {
+            dynamic d = new Generic<string>.Inner
+            {
+                Foo = "expected"
+            };
+
+            Assert.Throws<RuntimeBinderException>(() => d.Bar);
+        }
+
+        class Generic<T> : BindingList<Generic<T>.Inner>
+        {
+            public class Inner
+            {
+                public object Foo { get; set; }
+            }
+        }
+
+        public class SomeType
+        {
+            public string SomeMethod(int i) => "ABC " + i;
+        }
+
+        private class SomePrivateType
+        {
+            public string SomeMethod(int i) => "ABC " + i;
+        }
+
+        internal class SomeInternalType
+        {
+            public string SomeMethod(int i) => "ABC " + i;
+        }
+
+        protected class SomeProtectedType
+        {
+            public string SomeMethod(int i) => "ABC " + i;
+        }
+
+        [Fact]
+        public void MethodCallWithNullContext()
+        {
+            CallSiteBinder binder = Binder.InvokeMember(
+                CSharpBinderFlags.None, nameof(SomeType.SomeMethod), Type.EmptyTypes, null,
+                new[]
+                {
+                    CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
+                    CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
+                });
+            CallSite<Func<CallSite, object, object, object>> site =
+                CallSite<Func<CallSite, object, object, object>>.Create(binder);
+            Func<CallSite, object, object, object> targ = site.Target;
+            object res = targ(site, new SomeType(), 9);
+            Assert.Equal("ABC 9", res);
+        }
+
+        [Fact]
+        public void MethodCallWithNullContextCannotSeeNonPublic()
+        {
+            CallSiteBinder binder = Binder.InvokeMember(
+                CSharpBinderFlags.None, nameof(SomePrivateType.SomeMethod), Type.EmptyTypes, null,
+                new[]
+                {
+                    CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
+                    CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
+                });
+            CallSite<Func<CallSite, object, object, object>> site =
+                CallSite<Func<CallSite, object, object, object>>.Create(binder);
+            Func<CallSite, object, object, object> targ = site.Target;
+            Assert.Throws<RuntimeBinderException>(() => targ(site, new SomePrivateType(), 9));
+            Assert.Throws<RuntimeBinderException>(() => targ(site, new SomeInternalType(), 9));
+            Assert.Throws<RuntimeBinderException>(() => targ(site, new SomeProtectedType(), 9));
         }
     }
 }

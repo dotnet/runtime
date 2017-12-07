@@ -26,38 +26,32 @@ namespace System.IO.Pipes
         private readonly PipeDirection _direction;
 
         // Creates a named pipe client using default server (same machine, or "."), and PipeDirection.InOut 
-        [SecuritySafeCritical]
         public NamedPipeClientStream(String pipeName)
             : this(".", pipeName, PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.None, HandleInheritability.None)
         { 
         }
 
-        [SecuritySafeCritical]
         public NamedPipeClientStream(String serverName, String pipeName)
             : this(serverName, pipeName, PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.None, HandleInheritability.None)
         {
         }
 
-        [SecuritySafeCritical]
         public NamedPipeClientStream(String serverName, String pipeName, PipeDirection direction)
             : this(serverName, pipeName, direction, PipeOptions.None, TokenImpersonationLevel.None, HandleInheritability.None)
         {
         }
 
-        [SecuritySafeCritical]
         public NamedPipeClientStream(String serverName, String pipeName, PipeDirection direction, PipeOptions options)
             : this(serverName, pipeName, direction, options, TokenImpersonationLevel.None, HandleInheritability.None)
         {
         }
 
-        [SecuritySafeCritical]
         public NamedPipeClientStream(String serverName, String pipeName, PipeDirection direction,
             PipeOptions options, TokenImpersonationLevel impersonationLevel)
             : this(serverName, pipeName, direction, options, impersonationLevel, HandleInheritability.None)
         {
         }
 
-        [SecuritySafeCritical]
         public NamedPipeClientStream(String serverName, String pipeName, PipeDirection direction,
             PipeOptions options, TokenImpersonationLevel impersonationLevel, HandleInheritability inheritability)
             : base(direction, 0)
@@ -99,7 +93,6 @@ namespace System.IO.Pipes
         }
 
         // Create a NamedPipeClientStream from an existing server pipe handle.
-        [SecuritySafeCritical]
         public NamedPipeClientStream(PipeDirection direction, bool isAsync, bool isConnected, SafePipeHandle safePipeHandle)
             : base(direction, 0)
         {
@@ -142,7 +135,6 @@ namespace System.IO.Pipes
             ConnectInternal(timeout, CancellationToken.None, Environment.TickCount);
         }
 
-        [SecurityCritical]
         private void ConnectInternal(int timeout, CancellationToken cancellationToken, int startTime)
         {
             // This is the main connection loop. It will loop until the timeout expires.  
@@ -213,7 +205,6 @@ namespace System.IO.Pipes
 
         // override because named pipe clients can't get/set properties when waiting to connect
         // or broken
-        [SecurityCritical]
         protected internal override void CheckPipePropertyOperations()
         {
             base.CheckPipePropertyOperations();

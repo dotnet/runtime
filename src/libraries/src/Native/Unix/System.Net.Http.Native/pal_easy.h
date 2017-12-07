@@ -51,6 +51,10 @@ enum PAL_CURLoption : int32_t
     PAL_CURLOPT_COPYPOSTFIELDS = CurlOptionObjectPointBase + 165,
     PAL_CURLOPT_USERNAME = CurlOptionObjectPointBase + 173,
     PAL_CURLOPT_PASSWORD = CurlOptionObjectPointBase + 174,
+    PAL_CURLOPT_CAPATH = CurlOptionObjectPointBase + 97,
+    PAL_CURLOPT_PROXY_CAPATH = CurlOptionObjectPointBase + 247,
+    PAL_CURLOPT_CAINFO = CurlOptionObjectPointBase + 65,
+    PAL_CURLOPT_PROXY_CAINFO = CurlOptionObjectPointBase + 246,
 
     PAL_CURLOPT_INFILESIZE_LARGE = CurlOptionOffTBase + 115,
     PAL_CURLOPT_POSTFIELDSIZE_LARGE = CurlOptionOffTBase + 120,
