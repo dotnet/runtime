@@ -22,13 +22,6 @@ namespace System.IO
 
         internal const string ParentDirectoryPrefix = @"../";
 
-        /// <summary>Returns a value indicating if the given path contains invalid characters.</summary>
-        internal static bool HasIllegalCharacters(string path)
-        {
-            Debug.Assert(path != null);
-            return path.IndexOf(InvalidPathChar) >= 0;
-        }
-
         internal static int GetRootLength(string path)
         {
             return path.Length > 0 && IsDirectorySeparator(path[0]) ? 1 : 0;
