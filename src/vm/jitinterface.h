@@ -464,6 +464,8 @@ public:
     void LongLifetimeFree(void* obj);
     size_t getClassModuleIdForStatics(CORINFO_CLASS_HANDLE clsHnd, CORINFO_MODULE_HANDLE *pModuleHandle, void **ppIndirection);
     const char* getClassName (CORINFO_CLASS_HANDLE cls);
+    const char* getClassNameFromMetadata (CORINFO_CLASS_HANDLE cls, const char** namespaceName);
+    CORINFO_CLASS_HANDLE getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index);
     const char* getHelperName(CorInfoHelpFunc ftnNum);
     int appendClassName(__deref_inout_ecount(*pnBufLen) WCHAR** ppBuf,
                                   int* pnBufLen,

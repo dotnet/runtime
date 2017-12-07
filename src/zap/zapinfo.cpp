@@ -3024,6 +3024,16 @@ const char* ZapInfo::getClassName(CORINFO_CLASS_HANDLE cls)
     return m_pEEJitInfo->getClassName(cls);
 }
 
+const char* ZapInfo::getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char** namespaceName)
+{
+    return m_pEEJitInfo->getClassNameFromMetadata(cls, namespaceName);
+}
+
+CORINFO_CLASS_HANDLE ZapInfo::getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index)
+{
+    return m_pEEJitInfo->getTypeInstantiationArgument(cls, index);
+}
+
 const char* ZapInfo::getHelperName(CorInfoHelpFunc func)
 {
     return m_pEEJitInfo->getHelperName(func);

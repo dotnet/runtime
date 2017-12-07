@@ -1398,6 +1398,18 @@ public:
         SetFlag(enum_flag_HasModuleDependencies);
     }
 
+    inline BOOL IsIntrinsicType()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;;
+        return GetFlag(enum_flag_IsIntrinsicType);
+    }
+
+    inline void SetIsIntrinsicType()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;;
+        SetFlag(enum_flag_IsIntrinsicType);
+    }
+
     // See the comment in code:MethodTable.DoFullyLoad for detailed description.
     inline BOOL DependsOnEquivalentOrForwardedStructs()
     {
@@ -4003,7 +4015,7 @@ private:
 
         enum_flag_HasModuleDependencies     = 0x0080,
 
-        // enum_Unused                      = 0x0100,
+        enum_flag_IsIntrinsicType           = 0x0100,
 
         enum_flag_RequiresDispatchTokenFat  = 0x0200,
 
