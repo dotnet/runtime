@@ -9,10 +9,11 @@ using System.ServiceModel.Syndication;
 using System.Xml;
 using System.IO;
 using Xunit;
+using System.Linq;
 
 namespace System.ServiceModel.Syndication.Tests
 {
-    public static class BasicScenarioTests
+    public static partial class BasicScenarioTests
     {
         [Fact]
         public static void SyndicationFeed_CreateNewFeed()
@@ -285,19 +286,22 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        [ActiveIssue(25156)]
         public static void SyndicationFeed_Rss_WrongDateFormat()
         {
             // *** SETUP *** \\
-            Rss20FeedFormatter rssformatter = new Rss20FeedFormatter();
-
             XmlReader reader = XmlReader.Create(@"rssSpecExampleWrongDateFormat.xml");
 
             // *** EXECUTE *** \\
             SyndicationFeed res = SyndicationFeed.Load(reader);
 
             // *** ASSERT *** \\
-            Assert.True(!res.LastUpdatedTime.Equals(new DateTimeOffset()));
+            Assert.True(res != null, "res was null.");
+            Assert.Equal(new DateTimeOffset(2016, 8, 23, 16, 8, 0, new TimeSpan(-4, 0, 0)), res.LastUpdatedTime);
+            Assert.True(res.Items != null, "res.Items was null.");
+            Assert.True(res.Items.Count() == 4, $"res.Items.Count() was not as expected. Expected: 4; Actual: {res.Items.Count()}");
+            SyndicationItem[] items = res.Items.ToArray();
+            DateTimeOffset dateTimeOffset;
+            Assert.Throws<XmlException>(() => dateTimeOffset = items[2].PublishDate);
         }
 
         [Fact]

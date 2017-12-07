@@ -255,7 +255,6 @@ namespace System.Security.Claims
         /// The <see cref="SerializationInfo"/> to read from.
         /// </param>
         /// <exception cref="ArgumentNullException">Thrown is the <paramref name="info"/> is null.</exception>
-        [SecurityCritical]
         protected ClaimsIdentity(SerializationInfo info)
         {
             throw new PlatformNotSupportedException();

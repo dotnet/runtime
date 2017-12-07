@@ -71,6 +71,16 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "#23810 not fixed on .NET Framework")]
+        public void ReadZeroCharacters()
+        {
+            using (CharArrayTextReader tr = GetCharArray().textReader)
+            {
+                Assert.Equal(0, tr.Read(new char[0], 0, 0));
+            }            
+        }
+
+        [Fact]
         public void ArgumentNullOnNullArray()
         {
             (char[] chArr, CharArrayTextReader textReader) baseInfo = GetCharArray();

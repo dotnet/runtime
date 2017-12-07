@@ -324,41 +324,47 @@ static void ConvertDirent(const struct dirent* entry, struct DirectoryEntry* out
 #endif
 }
 
-int32_t SystemNative_GetDirentSize(void)
+#if HAVE_READDIR_R
+// struct dirent typically contains 64-bit numbers (e.g. d_ino), so we align it at 8-byte.
+static const size_t dirent_alignment = 8;
+#endif
+
+int32_t SystemNative_GetReadDirRBufferSize(void)
 {
+#if HAVE_READDIR_R
     // dirent should be under 2k in size
     assert(sizeof(struct dirent) < 2048);
-    return sizeof(struct dirent);
+    // add some extra space so we can align the buffer to dirent.
+    return sizeof(struct dirent) + dirent_alignment - 1;
+#else
+    return 0;
+#endif
 }
 
-// To reduce the number of string copies, this function calling pattern works as follows:
-// 1) The managed code calls GetDirentSize() to get the platform-specific
-//    size of the dirent struct.
-// 2) The managed code creates a byte[] buffer of the size of the native dirent
-//    and passes a pointer to this buffer to this function.
-// 3) This function passes input byte[] buffer to the OS to fill with dirent
-//    data which makes the 1st strcpy.
-// 4) The ConvertDirent function will fill DirectoryEntry outputEntry with
-//    pointers from byte[] buffer.
-// 5) The managed code uses DirectoryEntry outputEntry to find start of d_name
-//    and the value of d_namelen, if avalable, to copy the name from
-//    byte[] buffer into a managed string that the caller can use; this makes
-//    the 2nd and final strcpy.
-int32_t SystemNative_ReadDirR(DIR* dir, void* buffer, int32_t bufferSize, struct DirectoryEntry* outputEntry)
+// To reduce the number of string copies, the caller of this function is responsible to ensure the memory
+// referenced by outputEntry remains valid until it is read.
+// If the platform supports readdir_r, the caller provides a buffer into which the data is read.
+// If the platform uses readdir, the caller must ensure no calls are made to readdir/closedir since those will invalidate
+// the current dirent. We assume the platform supports concurrent readdir calls to different DIRs.
+int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, struct DirectoryEntry* outputEntry)
 {
-    assert(buffer != NULL);
     assert(dir != NULL);
     assert(outputEntry != NULL);
 
-    if (bufferSize < (int32_t)sizeof(struct dirent))
+#if HAVE_READDIR_R
+    assert(buffer != NULL);
+
+    // align to dirent
+    struct dirent* entry = (struct dirent*)((size_t)(buffer + dirent_alignment - 1) & ~(dirent_alignment - 1));
+
+    // check there is dirent size available at entry
+    if ((buffer + bufferSize) < ((uint8_t*)entry + sizeof(struct dirent)))
     {
-        assert(false && "Buffer size too small; use GetDirentSize to get required buffer size");
+        assert(false && "Buffer size too small; use GetReadDirRBufferSize to get required buffer size");
         return ERANGE;
     }
 
     struct dirent* result = NULL;
-    struct dirent* entry = (struct dirent*)buffer;
-#if HAVE_READDIR_R
     int error = readdir_r(dir, entry, &result);
 
     // positive error number returned -> failure
@@ -379,13 +385,15 @@ int32_t SystemNative_ReadDirR(DIR* dir, void* buffer, int32_t bufferSize, struct
     // 0 returned with non-null result (guaranteed to be set to entry arg) -> success
     assert(result == entry);
 #else
+    (void)buffer;     // unused
+    (void)bufferSize; // unused
     errno = 0;
-    result = readdir(dir);
+    struct dirent* entry = readdir(dir);
 
     // 0 returned with null result -> end-of-stream
-    if (result == NULL)
+    if (entry == NULL)
     {
-        *outputEntry = {}; // managed out param must be initialized
+        memset(outputEntry, 0, sizeof(*outputEntry)); // managed out param must be initialized
 
         //  kernel set errno -> failure
         if (errno != 0)
@@ -395,9 +403,6 @@ int32_t SystemNative_ReadDirR(DIR* dir, void* buffer, int32_t bufferSize, struct
         }
         return -1;
     }
-
-    assert(result->d_reclen <= bufferSize);
-    memcpy_s(entry, sizeof(struct dirent), result, (size_t)result->d_reclen);
 #endif
     ConvertDirent(entry, outputEntry);
     return 0;
@@ -851,8 +856,6 @@ int64_t SystemNative_SysConf(int32_t name)
             return sysconf(_SC_CLK_TCK);
         case PAL_SC_PAGESIZE:
             return sysconf(_SC_PAGESIZE);
-        case PAL_SC_NPROCESSORS_ONLN:
-            return sysconf(_SC_NPROCESSORS_ONLN);
     }
 
     assert_msg(false, "Unknown SysConf name", (int)name);
@@ -999,7 +1002,7 @@ int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t bufferSize
     assert(buffer != NULL || bufferSize == 0);
     assert(bufferSize >= 0);
 
-    if (bufferSize < 0)
+    if (bufferSize <= 0)
     {
         errno = EINVAL;
         return -1;
@@ -1007,6 +1010,7 @@ int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t bufferSize
 
     ssize_t count = readlink(path, buffer, (size_t)bufferSize);
     assert(count >= -1 && count <= bufferSize);
+
     return (int32_t)count;
 }
 

@@ -127,7 +127,6 @@ namespace System.Diagnostics
 
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         [Browsable(false)]
-        [ComVisible(false)]
         public long MaximumKilobytes
         {
             get => _underlyingEventLog.MaximumKilobytes;
@@ -135,14 +134,12 @@ namespace System.Diagnostics
         }
 
         [Browsable(false)]
-        [ComVisible(false)]
         public OverflowAction OverflowAction
         {
             get => _underlyingEventLog.OverflowAction;
         }
 
         [Browsable(false)]
-        [ComVisible(false)]
         public int MinimumRetentionDays
         {
             get => _underlyingEventLog.MinimumRetentionDays;
@@ -762,13 +759,11 @@ namespace System.Diagnostics
             }
         }
 
-        [ComVisible(false)]
         public void ModifyOverflowPolicy(OverflowAction action, int retentionDays)
         {
             _underlyingEventLog.ModifyOverflowPolicy(action, retentionDays);
         }
 
-        [ComVisible(false)]
         public void RegisterDisplayName(string resourceFile, long resourceId)
         {
             _underlyingEventLog.RegisterDisplayName(resourceFile, resourceId);
@@ -1020,13 +1015,11 @@ namespace System.Diagnostics
             _underlyingEventLog.WriteEntry(message, type, eventID, category, rawData);
         }
 
-        [ComVisible(false)]
         public void WriteEvent(EventInstance instance, params Object[] values)
         {
             WriteEvent(instance, null, values);
         }
 
-        [ComVisible(false)]
         public void WriteEvent(EventInstance instance, byte[] data, params Object[] values)
         {
             _underlyingEventLog.WriteEvent(instance, data, values);

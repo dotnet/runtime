@@ -179,7 +179,6 @@ namespace System.DirectoryServices.Protocols
         }
     }
 
-    [SuppressUnmanagedCodeSecurity]
     internal class Wldap32
     {
         private const string Wldap32dll = "wldap32.dll";

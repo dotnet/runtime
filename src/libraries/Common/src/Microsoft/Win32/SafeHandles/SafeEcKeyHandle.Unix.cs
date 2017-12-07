@@ -9,7 +9,6 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    [SecurityCritical]
     internal sealed class SafeEcKeyHandle : SafeHandle
     {
         private SafeEcKeyHandle() :

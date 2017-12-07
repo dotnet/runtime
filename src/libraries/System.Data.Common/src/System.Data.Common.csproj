@@ -57,7 +57,9 @@
     <Compile Include="System\Data\ConstraintCollection.cs" />
     <Compile Include="System\Data\ConstraintConverter.cs" />
     <Compile Include="System\Data\ConstraintEnumerator.cs" />
-    <Compile Include="System\Data\DataColumn.cs" />
+    <Compile Include="System\Data\DataColumn.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="System\Data\DataColumnChangeEvent.cs" />
     <Compile Include="System\Data\DataColumnChangeEventHandler.cs" />
     <Compile Include="System\Data\DataColumnCollection.cs" />
@@ -78,10 +80,14 @@
     <Compile Include="System\Data\DataRowVersion.cs" />
     <Compile Include="System\Data\DataRowView.cs" />
     <Compile Include="System\Data\DataSerializationFormat.cs" />
-    <Compile Include="System\Data\DataSet.cs" />
+    <Compile Include="System\Data\DataSet.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="System\Data\DataSetDateTime.cs" />
     <Compile Include="System\Data\DataSysAttribute.cs" />
-    <Compile Include="System\Data\DataTable.cs" />
+    <Compile Include="System\Data\DataTable.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="System\Data\DataTableClearEvent.cs" />
     <Compile Include="System\Data\DataTableClearEventHandler.cs" />
     <Compile Include="System\Data\DataTableCollection.cs" />
@@ -91,9 +97,13 @@
     <Compile Include="System\Data\DataTableReader.cs" />
     <Compile Include="System\Data\DataTableReaderListener.cs" />
     <Compile Include="System\Data\DataTableTypeConverter.cs" />
-    <Compile Include="System\Data\DataView.cs" />
+    <Compile Include="System\Data\DataView.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="System\Data\DataViewListener.cs" />
-    <Compile Include="System\Data\DataViewManager.cs" />
+    <Compile Include="System\Data\DataViewManager.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="System\Data\DataViewManagerListItemTypeDescriptor.cs" />
     <Compile Include="System\Data\DataViewRowState.cs" />
     <Compile Include="System\Data\DataViewSetting.cs" />
@@ -135,7 +145,9 @@
     <Compile Include="System\Data\RecordManager.cs" />
     <Compile Include="System\Data\StatementCompletedEventArgs.cs" />
     <Compile Include="System\Data\StatementCompletedEventHandler.cs" />
-    <Compile Include="System\Data\RelatedView.cs" />
+    <Compile Include="System\Data\RelatedView.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="System\Data\RelationshipConverter.cs" />
     <Compile Include="System\Data\Rule.cs" />
     <Compile Include="System\Data\SchemaSerializationMode.cs" />
@@ -160,7 +172,9 @@
     <Compile Include="System\Data\Common\BooleanStorage.cs" />
     <Compile Include="System\Data\Common\ByteStorage.cs" />
     <Compile Include="System\Data\Common\CharStorage.cs" />
-    <Compile Include="System\Data\Common\DataAdapter.cs" />
+    <Compile Include="System\Data\Common\DataAdapter.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="System\Data\Common\DataColumnMapping.cs" />
     <Compile Include="System\Data\Common\DataColumnMappingCollection.cs" />
     <Compile Include="System\Data\Common\DataCommonEventSource.cs" />
@@ -170,9 +184,15 @@
     <Compile Include="System\Data\Common\DataTableMappingCollection.cs" />
     <Compile Include="System\Data\Common\DateTimeOffsetStorage.cs" />
     <Compile Include="System\Data\Common\DateTimeStorage.cs" />
-    <Compile Include="System\Data\Common\DbCommand.cs" />
-    <Compile Include="System\Data\Common\DBCommandBuilder.cs" />
-    <Compile Include="System\Data\Common\DbConnection.cs" />
+    <Compile Include="System\Data\Common\DbCommand.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="System\Data\Common\DBCommandBuilder.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="System\Data\Common\DbConnection.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="System\Data\Common\DbConnectionOptions.cs" />
     <Compile Include="$(CommonPath)\System\Data\Common\DbConnectionOptions.Common.cs">
       <Link>System\Data\Common\DbConnectionOptions.Common.cs</Link>
@@ -183,7 +203,9 @@
     <Compile Include="System\Data\Common\DbConnectionStringBuilder.cs" />
     <Compile Include="System\Data\Common\DbConnectionStringCommon.cs" />
     <Compile Include="System\Data\Common\DbConnectionStringBuilderDescriptor.cs" />
-    <Compile Include="System\Data\Common\DbDataAdapter.cs" />
+    <Compile Include="System\Data\Common\DbDataAdapter.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="System\Data\Common\DbDataReader.cs" />
     <Compile Include="System\Data\Common\DbDataReaderExtensions.cs" />
     <Compile Include="System\Data\Common\DbDataRecord.cs" />
@@ -195,6 +217,7 @@
     <Compile Include="System\Data\Common\DbParameter.cs" />
     <Compile Include="System\Data\Common\DbParameterCollection.cs" />
     <Compile Include="System\Data\Common\DbProviderFactory.cs" />
+    <Compile Include="System\Data\Common\DbProviderFactories.cs" />
     <Compile Include="System\Data\Common\DbProviderSpecificTypePropertyAttribute.cs" />
     <Compile Include="System\Data\Common\DBSchemaRow.cs" />
     <Compile Include="System\Data\Common\DBSchemaTable.cs" />

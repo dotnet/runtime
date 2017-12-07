@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
 using System.Text;
 using Xunit;
 
@@ -65,7 +64,7 @@ namespace System.Buffers.Text.Tests
         {
             Span<byte> source = Span<byte>.Empty;
             Span<byte> encodedBytes = new byte[Base64.GetMaxEncodedToUtf8Length(source.Length)];
-            
+
             Assert.Equal(OperationStatus.Done, Base64.EncodeToUtf8(source, encodedBytes, out int consumed, out int encodedBytesCount));
             Assert.Equal(source.Length, consumed);
             Assert.Equal(encodedBytes.Length, encodedBytesCount);
@@ -80,7 +79,7 @@ namespace System.Buffers.Text.Tests
             // CLR default limit of 2 gigabytes (GB).
             try
             {
-                 // 1610612734, larger than MaximumEncodeLength, requires output buffer of size 2147483648 (which is > int.MaxValue)
+                // 1610612734, larger than MaximumEncodeLength, requires output buffer of size 2147483648 (which is > int.MaxValue)
                 Span<byte> source = new byte[(int.MaxValue >> 2) * 3 + 1];
                 Span<byte> encodedBytes = new byte[2000000000];
                 Assert.Equal(OperationStatus.DestinationTooSmall, Base64.EncodeToUtf8(source, encodedBytes, out int consumed, out int encodedBytesCount));
@@ -250,7 +249,7 @@ namespace System.Buffers.Text.Tests
         [Fact]
         public void EncodeInPlaceOutputTooSmall()
         {
-            byte[] testBytes = {1, 2, 3};
+            byte[] testBytes = { 1, 2, 3 };
 
             for (int numberOfBytesToTest = 1; numberOfBytesToTest <= testBytes.Length; numberOfBytesToTest++)
             {
@@ -262,7 +261,7 @@ namespace System.Buffers.Text.Tests
         [Fact]
         public void EncodeInPlaceDataLengthTooLarge()
         {
-            byte[] testBytes = {1, 2, 3};
+            byte[] testBytes = { 1, 2, 3 };
             Assert.Equal(OperationStatus.DestinationTooSmall, Base64.EncodeToUtf8InPlace(testBytes, testBytes.Length + 1, out int bytesWritten));
             Assert.Equal(0, bytesWritten);
         }

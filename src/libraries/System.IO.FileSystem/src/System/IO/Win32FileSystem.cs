@@ -15,7 +15,6 @@ namespace System.IO
 
         public override void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
             int errorCode = Interop.Kernel32.CopyFile(sourceFullPath, destFullPath, !overwrite);
 
             if (errorCode != Interop.Errors.ERROR_SUCCESS)
@@ -24,10 +23,9 @@ namespace System.IO
 
                 if (errorCode != Interop.Errors.ERROR_FILE_EXISTS)
                 {
-                    // For a number of error codes (sharing violation, path 
-                    // not found, etc) we don't know if the problem was with
+                    // For a number of error codes (sharing violation, path not found, etc) we don't know if the problem was with
                     // the source or dest file.  Try reading the source file.
-                    using (SafeFileHandle handle = Interop.Kernel32.UnsafeCreateFile(sourceFullPath, GENERIC_READ, FileShare.Read, ref secAttrs, FileMode.Open, 0, IntPtr.Zero))
+                    using (SafeFileHandle handle = Interop.Kernel32.CreateFile(sourceFullPath, GENERIC_READ, FileShare.Read, FileMode.Open, 0))
                     {
                         if (handle.IsInvalid)
                             fileName = sourceFullPath;
@@ -54,7 +52,6 @@ namespace System.IO
             }
         }
 
-        [System.Security.SecuritySafeCritical]
         public override void CreateDirectory(string fullPath)
         {
             // We can save a bunch of work if the directory we want to create already exists.  This also
@@ -189,22 +186,31 @@ namespace System.IO
 
         public override IEnumerable<string> EnumeratePaths(string fullPath, string searchPattern, SearchOption searchOption, SearchTarget searchTarget)
         {
-            return Win32FileSystemEnumerableFactory.CreateFileNameIterator(fullPath, fullPath, searchPattern,
-                (searchTarget & SearchTarget.Files) == SearchTarget.Files,
-                (searchTarget & SearchTarget.Directories) == SearchTarget.Directories,
-                searchOption);
+            FindEnumerableFactory.NormalizeInputs(ref fullPath, ref searchPattern);
+            switch (searchTarget)
+            {
+                case SearchTarget.Files:
+                    return FindEnumerableFactory.UserFiles(fullPath, searchPattern, searchOption == SearchOption.AllDirectories);
+                case SearchTarget.Directories:
+                    return FindEnumerableFactory.UserDirectories(fullPath, searchPattern, searchOption == SearchOption.AllDirectories);
+                case SearchTarget.Both:
+                    return FindEnumerableFactory.UserEntries(fullPath, searchPattern, searchOption == SearchOption.AllDirectories);
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(searchTarget));
+            }
         }
 
         public override IEnumerable<FileSystemInfo> EnumerateFileSystemInfos(string fullPath, string searchPattern, SearchOption searchOption, SearchTarget searchTarget)
         {
+            FindEnumerableFactory.NormalizeInputs(ref fullPath, ref searchPattern);
             switch (searchTarget)
             {
                 case SearchTarget.Directories:
-                    return Win32FileSystemEnumerableFactory.CreateDirectoryInfoIterator(fullPath, fullPath, searchPattern, searchOption);
+                    return FindEnumerableFactory.DirectoryInfos(fullPath, searchPattern, searchOption == SearchOption.AllDirectories);
                 case SearchTarget.Files:
-                    return Win32FileSystemEnumerableFactory.CreateFileInfoIterator(fullPath, fullPath, searchPattern, searchOption);
+                    return FindEnumerableFactory.FileInfos(fullPath, searchPattern, searchOption == SearchOption.AllDirectories);
                 case SearchTarget.Both:
-                    return Win32FileSystemEnumerableFactory.CreateFileSystemInfoIterator(fullPath, fullPath, searchPattern, searchOption);
+                    return FindEnumerableFactory.FileSystemInfos(fullPath, searchPattern, searchOption == SearchOption.AllDirectories);
                 default:
                     throw new ArgumentException(SR.ArgumentOutOfRange_Enum, nameof(searchTarget));
             }
@@ -215,7 +221,6 @@ namespace System.IO
         /// classes should use -1 as the uninitialized state for dataInitialized.
         /// </summary>
         /// <param name="returnErrorOnNotFound">Return the error code for not found errors?</param>
-        [System.Security.SecurityCritical]
         internal static int FillAttributeInfo(string path, ref Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data, bool returnErrorOnNotFound)
         {
             int errorCode = Interop.Errors.ERROR_SUCCESS;
@@ -379,7 +384,6 @@ namespace System.IO
             }
         }
 
-        [System.Security.SecurityCritical]
         private static SafeFileHandle OpenHandle(string fullPath, bool asDirectory)
         {
             string root = fullPath.Substring(0, PathInternal.GetRootLength(fullPath));
@@ -389,16 +393,12 @@ namespace System.IO
                 throw new ArgumentException(SR.Arg_PathIsVolume, "path");
             }
 
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
-            SafeFileHandle handle = Interop.Kernel32.SafeCreateFile(
+            SafeFileHandle handle = Interop.Kernel32.CreateFile(
                 fullPath,
                 Interop.Kernel32.GenericOperations.GENERIC_WRITE,
                 FileShare.ReadWrite | FileShare.Delete,
-                ref secAttrs,
                 FileMode.Open,
-                asDirectory ? Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS : (int)FileOptions.None,
-                IntPtr.Zero
-            );
+                asDirectory ? Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS : 0);
 
             if (handle.IsInvalid)
             {
@@ -412,6 +412,7 @@ namespace System.IO
 
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
             }
+
             return handle;
         }
 
@@ -574,13 +575,7 @@ namespace System.IO
 
         public override void SetAttributes(string fullPath, FileAttributes attributes)
         {
-            SetAttributesInternal(fullPath, attributes);
-        }
-
-        private static void SetAttributesInternal(string fullPath, FileAttributes attributes)
-        {
-            bool r = Interop.Kernel32.SetFileAttributes(fullPath, (int)attributes);
-            if (!r)
+            if (!Interop.Kernel32.SetFileAttributes(fullPath, (int)attributes))
             {
                 int errorCode = Marshal.GetLastWin32Error();
                 if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
@@ -591,15 +586,9 @@ namespace System.IO
 
         public override void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
         {
-            SetCreationTimeInternal(fullPath, time, asDirectory);
-        }
-
-        private static void SetCreationTimeInternal(string fullPath, DateTimeOffset time, bool asDirectory)
-        {
             using (SafeFileHandle handle = OpenHandle(fullPath, asDirectory))
             {
-                bool r = Interop.Kernel32.SetFileTime(handle, creationTime: time.ToFileTime());
-                if (!r)
+                if (!Interop.Kernel32.SetFileTime(handle, creationTime: time.ToFileTime()))
                 {
                     throw Win32Marshal.GetExceptionForLastWin32Error(fullPath);
                 }
@@ -622,15 +611,9 @@ namespace System.IO
 
         public override void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)
         {
-            SetLastAccessTimeInternal(fullPath, time, asDirectory);
-        }
-
-        private static void SetLastAccessTimeInternal(string fullPath, DateTimeOffset time, bool asDirectory)
-        {
             using (SafeFileHandle handle = OpenHandle(fullPath, asDirectory))
             {
-                bool r = Interop.Kernel32.SetFileTime(handle, lastAccessTime: time.ToFileTime());
-                if (!r)
+                if (!Interop.Kernel32.SetFileTime(handle, lastAccessTime: time.ToFileTime()))
                 {
                     throw Win32Marshal.GetExceptionForLastWin32Error(fullPath);
                 }
@@ -639,15 +622,9 @@ namespace System.IO
 
         public override void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)
         {
-            SetLastWriteTimeInternal(fullPath, time, asDirectory);
-        }
-
-        private static void SetLastWriteTimeInternal(string fullPath, DateTimeOffset time, bool asDirectory)
-        {
             using (SafeFileHandle handle = OpenHandle(fullPath, asDirectory))
             {
-                bool r = Interop.Kernel32.SetFileTime(handle, lastWriteTime: time.ToFileTime());
-                if (!r)
+                if (!Interop.Kernel32.SetFileTime(handle, lastWriteTime: time.ToFileTime()))
                 {
                     throw Win32Marshal.GetExceptionForLastWin32Error(fullPath);
                 }

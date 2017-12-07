@@ -25,7 +25,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public Nullable<DateTime> AccountLockoutTime
         {
-            [System.Security.SecurityCritical]
             get
             {
                 return _owningPrincipal.HandleGet<Nullable<DateTime>>(ref _accountLockoutTime, PropertyNames.AcctInfoAcctLockoutTime, ref _accountLockoutTimeLoaded);
@@ -38,7 +37,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public Nullable<DateTime> LastLogon
         {
-            [System.Security.SecurityCritical]
             get
             {
                 return _owningPrincipal.HandleGet<Nullable<DateTime>>(ref _lastLogon, PropertyNames.AcctInfoLastLogon, ref _lastLogonLoaded);
@@ -51,7 +49,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public PrincipalValueCollection<string> PermittedWorkstations
         {
-            [System.Security.SecurityCritical]
             get
             {
                 if (!_owningPrincipal.GetStoreCtxToUse().IsValidProperty(_owningPrincipal, PropertyNames.AcctInfoPermittedWorkstations))
@@ -73,13 +70,11 @@ namespace System.DirectoryServices.AccountManagement
 
         public byte[] PermittedLogonTimes
         {
-            [System.Security.SecurityCritical]
             get
             {
                 return _owningPrincipal.HandleGet<byte[]>(ref _permittedLogonTimes, PropertyNames.AcctInfoPermittedLogonTimes, ref _permittedLogonTimesLoaded);
             }
 
-            [System.Security.SecurityCritical]
             set
             {
                 // We don't use HandleSet<T> here because of the slightly non-standard implementation of the change-tracking
@@ -109,13 +104,11 @@ namespace System.DirectoryServices.AccountManagement
 
         public Nullable<DateTime> AccountExpirationDate
         {
-            [System.Security.SecurityCritical]
             get
             {
                 return _owningPrincipal.HandleGet<Nullable<DateTime>>(ref _expirationDate, PropertyNames.AcctInfoExpirationDate, ref _expirationDateChanged);
             }
 
-            [System.Security.SecurityCritical]
             set
             {
                 if (!_owningPrincipal.GetStoreCtxToUse().IsValidProperty(_owningPrincipal, PropertyNames.AcctInfoExpirationDate))
@@ -132,13 +125,11 @@ namespace System.DirectoryServices.AccountManagement
 
         public bool SmartcardLogonRequired
         {
-            [System.Security.SecurityCritical]
             get
             {
                 return _owningPrincipal.HandleGet<bool>(ref _smartcardLogonRequired, PropertyNames.AcctInfoSmartcardRequired, ref _smartcardLogonRequiredChanged);
             }
 
-            [System.Security.SecurityCritical]
             set
             {
                 if (!_owningPrincipal.GetStoreCtxToUse().IsValidProperty(_owningPrincipal, PropertyNames.AcctInfoSmartcardRequired))
@@ -155,13 +146,11 @@ namespace System.DirectoryServices.AccountManagement
 
         public bool DelegationPermitted
         {
-            [System.Security.SecurityCritical]
             get
             {
                 return _owningPrincipal.HandleGet<bool>(ref _delegationPermitted, PropertyNames.AcctInfoDelegationPermitted, ref _delegationPermittedChanged);
             }
 
-            [System.Security.SecurityCritical]
             set
             {
                 if (!_owningPrincipal.GetStoreCtxToUse().IsValidProperty(_owningPrincipal, PropertyNames.AcctInfoDelegationPermitted))
@@ -178,7 +167,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public int BadLogonCount
         {
-            [System.Security.SecurityCritical]
             get
             {
                 return _owningPrincipal.HandleGet<int>(ref _badLogonCount, PropertyNames.AcctInfoBadLogonCount, ref _badLogonCountChanged);
@@ -191,13 +179,11 @@ namespace System.DirectoryServices.AccountManagement
 
         public string HomeDirectory
         {
-            [System.Security.SecurityCritical]
             get
             {
                 return _owningPrincipal.HandleGet<string>(ref _homeDirectory, PropertyNames.AcctInfoHomeDirectory, ref _homeDirectoryChanged);
             }
 
-            [System.Security.SecurityCritical]
             set
             {
                 if (!_owningPrincipal.GetStoreCtxToUse().IsValidProperty(_owningPrincipal, PropertyNames.AcctInfoHomeDirectory))
@@ -214,13 +200,11 @@ namespace System.DirectoryServices.AccountManagement
 
         public string HomeDrive
         {
-            [System.Security.SecurityCritical]
             get
             {
                 return _owningPrincipal.HandleGet<string>(ref _homeDrive, PropertyNames.AcctInfoHomeDrive, ref _homeDriveChanged);
             }
 
-            [System.Security.SecurityCritical]
             set
             {
                 if (!_owningPrincipal.GetStoreCtxToUse().IsValidProperty(_owningPrincipal, PropertyNames.AcctInfoHomeDrive))
@@ -237,13 +221,11 @@ namespace System.DirectoryServices.AccountManagement
 
         public string ScriptPath
         {
-            [System.Security.SecurityCritical]
             get
             {
                 return _owningPrincipal.HandleGet<string>(ref _scriptPath, PropertyNames.AcctInfoScriptPath, ref _scriptPathChanged);
             }
 
-            [System.Security.SecurityCritical]
             set
             {
                 if (!_owningPrincipal.GetStoreCtxToUse().IsValidProperty(_owningPrincipal, PropertyNames.AcctInfoScriptPath))
@@ -257,7 +239,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Methods exposed to the public through AuthenticablePrincipal
         //
-        [System.Security.SecurityCritical]
         public bool IsAccountLockedOut()
         {
             if (!_owningPrincipal.unpersisted)
@@ -275,7 +256,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        [System.Security.SecurityCritical]
         public void UnlockAccount()
         {
             if (!_owningPrincipal.unpersisted)
@@ -294,7 +274,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Internal constructor
         //
-        [System.Security.SecurityCritical]
         internal AccountInfo(AuthenticablePrincipal principal)
         {
             _owningPrincipal = principal;
@@ -313,7 +292,6 @@ namespace System.DirectoryServices.AccountManagement
         // Loading with query results
         //
 
-        [System.Security.SecurityCritical]
         internal void LoadValueIntoProperty(string propertyName, object value)
         {
             //            GlobalDebug.WriteLineIf(GlobalDebug.Info, "AccountInfo", "LoadValueIntoProperty: name=" + propertyName + " value=" + value.ToString());
@@ -387,7 +365,6 @@ namespace System.DirectoryServices.AccountManagement
         //
 
         // Given a property name, returns true if that property has changed since it was loaded, false otherwise.
-        [System.Security.SecurityCritical]
         internal bool GetChangeStatusForProperty(string propertyName)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "AccountInfo", "GetChangeStatusForProperty: name=" + propertyName);
@@ -469,7 +446,6 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // Reset all change-tracking status for all properties on the object to "unchanged".
-        [System.Security.SecurityCritical]
         internal void ResetAllChangeStatus()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "AccountInfo", "ResetAllChangeStatus");

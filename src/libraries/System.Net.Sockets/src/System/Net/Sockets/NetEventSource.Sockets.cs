@@ -4,6 +4,7 @@
 
 using System.Diagnostics.Tracing;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 
 namespace System.Net
 {
@@ -75,6 +76,42 @@ namespace System.Net
         private void NotLoggedFile(string filePath, int socketHash, SocketAsyncOperation completedOperation)
         {
             WriteEvent(NotLoggedFileId, filePath, socketHash, (int)completedOperation);
+        }
+
+        /// <summary>Logs the contents of a buffer.</summary>
+        /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
+        /// <param name="buffer">The buffer to be logged.</param>
+        /// <param name="memberName">The calling member.</param>
+        [NonEvent]
+        public static void DumpBuffer(object thisOrContextObject, Memory<byte> buffer, [CallerMemberName] string memberName = null)
+        {
+            DumpBuffer(thisOrContextObject, buffer, 0, buffer.Length, memberName);
+        }
+
+        /// <summary>Logs the contents of a buffer.</summary>
+        /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
+        /// <param name="buffer">The buffer to be logged.</param>
+        /// <param name="offset">The starting offset from which to log.</param>
+        /// <param name="count">The number of bytes to log.</param>
+        /// <param name="memberName">The calling member.</param>
+        [NonEvent]
+        public static void DumpBuffer(object thisOrContextObject, Memory<byte> buffer, int offset, int count, [CallerMemberName] string memberName = null)
+        {
+            if (IsEnabled)
+            {
+                if (offset < 0 || offset > buffer.Length - count)
+                {
+                    Fail(thisOrContextObject, $"Invalid {nameof(DumpBuffer)} Args. Length={buffer.Length}, Offset={offset}, Count={count}", memberName);
+                    return;
+                }
+
+                buffer = buffer.Slice(offset, Math.Min(count, MaxDumpSize));
+                byte[] slice = buffer.TryGetArray(out ArraySegment<byte> arraySegment) && arraySegment.Offset == 0 && arraySegment.Count == buffer.Length ?
+                    arraySegment.Array :
+                    buffer.ToArray();
+
+                Log.DumpBuffer(IdOf(thisOrContextObject), memberName, slice);
+            }
         }
     }
 }

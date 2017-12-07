@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.Threading.Tests
@@ -158,6 +159,28 @@ namespace System.Threading.Tests
             testWaitHandle.SafeWaitHandle = null;
             Assert.Throws<ObjectDisposedException>(() => testWaitHandle.WaitOne(0));
         }
+
+        [Fact]
+        public static void SafeWaitHandleViaExtension()
+        {
+            ManualResetEvent eventWaitHandle = new ManualResetEvent(false);
+            SafeWaitHandle eventSafeWaitHandle = eventWaitHandle.GetSafeWaitHandle();
+            TestWaitHandle testWaitHandle = new TestWaitHandle();
+            testWaitHandle.SetSafeWaitHandle(eventSafeWaitHandle);
+            Assert.False(testWaitHandle.WaitOne(0));
+            eventWaitHandle.Set();
+            Assert.True(testWaitHandle.WaitOne(0));
+            testWaitHandle.SetSafeWaitHandle(null);
+            Assert.Throws<ObjectDisposedException>(() => testWaitHandle.WaitOne(0));
+        }
+
+        [Fact]
+        public static void SetSafeWaitHandleOnNull() =>
+            AssertExtensions.Throws<ArgumentNullException>("waitHandle", () => default(WaitHandle).SetSafeWaitHandle(null));
+
+        [Fact]
+        public static void GetSafeWaitHandleOnNull() =>
+            AssertExtensions.Throws<ArgumentNullException>("waitHandle", () => default(WaitHandle).GetSafeWaitHandle());
 
         private static void Unsignal(WaitHandle wh)
         {

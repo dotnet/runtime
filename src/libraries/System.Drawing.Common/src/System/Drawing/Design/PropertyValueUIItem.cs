@@ -20,8 +20,6 @@ namespace System.Drawing.Design {
     ///       handler, tool tip, and the glyph icon to be displayed on the property
     ///       browser.</para>
     /// </devdoc>
-    [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.InheritanceDemand, Name="FullTrust")]
-    [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Name="FullTrust")]
     public class PropertyValueUIItem {
     
       /// <include file='doc\PropertyValueUIItem.uex' path='docs/doc[@for="PropertyValueUIItem.itemImage"]/*' />

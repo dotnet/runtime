@@ -4,7 +4,10 @@
   <PropertyGroup>
     <ProjectGuid>{B473F77D-4168-4123-932A-E88020B768FA}</ProjectGuid>
     <NoWarn>0168,0169,0414,0219,0649</NoWarn>
+    <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
@@ -74,7 +77,9 @@
     <Compile Include="System\Data\InRowChangingEventExceptionTest.cs" />
     <Compile Include="System\Data\InvalidConstraintExceptionTest.cs" />
     <Compile Include="System\Data\MissingPrimaryKeyExceptionTest.cs" />
-    <Compile Include="System\Data\MonkeyDataSet.cs" />
+    <Compile Include="System\Data\MonkeyDataSet.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="System\Data\NoNullAllowedExceptionTest.cs" />
     <Compile Include="System\Data\ReadOnlyExceptionTest.cs" />
     <Compile Include="System\Data\RowNotInTableExceptionTest.cs" />
@@ -108,6 +113,9 @@
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="System\Data\Common\DbProviderFactoriesTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">

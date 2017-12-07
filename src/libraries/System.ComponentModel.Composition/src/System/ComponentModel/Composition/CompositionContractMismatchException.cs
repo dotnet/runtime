@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Runtime.Serialization;
 
 namespace System.ComponentModel.Composition
@@ -12,6 +11,7 @@ namespace System.ComponentModel.Composition
     ///     <see cref="Lazy{T}"/> or <see cref="Lazy{T, TMetadataView}"/> object cannot be 
     ///     cast to <c>T</c> or <c>TMetadataView</c>, respectively.
     /// </summary>
+    [Serializable]
     public class CompositionContractMismatchException : Exception
     {
         /// <summary>
@@ -55,9 +55,7 @@ namespace System.ComponentModel.Composition
             : base(message, innerException)
         {
         }
-
-#if FEATURE_SERIALIZATION
-
+        
         /// <summary>
         ///     Initializes a new instance of the <see cref="CompositionContractMismatchException"/> class 
         ///     with the specified serialization data.
@@ -83,7 +81,5 @@ namespace System.ComponentModel.Composition
             : base(info, context)
         {
         }
-
-#endif
     }
 }

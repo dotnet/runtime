@@ -142,8 +142,9 @@ namespace BasicEventSourceTests
             Assert.Equal("EventSourceMessage", _event.EventName);
             string message = _event.PayloadString(0, "message");
             Debug.WriteLine(String.Format("Message=\"{0}\"", message));
-            // expected message: "ERROR: Exception in Command Processing for EventSource BadEventSource_MismatchedIds: Event Event2 is given event ID 2 but 1 was passed to WriteEvent. "
-            Assert.True(Regex.IsMatch(message, "Event Event2 is givien event ID 2 but 1 was passed to WriteEvent"));
+            // expected message: "ERROR: Exception in Command Processing for EventSource BadEventSource_MismatchedIds: Event Event2 was assigned event ID 2 but 1 was passed to WriteEvent. "
+            if (!PlatformDetection.IsFullFramework) // Full framework has typo
+                Assert.True(Regex.IsMatch(message, "Event Event2 was assigned event ID 2 but 1 was passed to WriteEvent"));
         }
 
         [Fact]

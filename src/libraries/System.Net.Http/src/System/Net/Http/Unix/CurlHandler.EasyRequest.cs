@@ -884,6 +884,11 @@ namespace System.Net.Http
                 ThrowIfCURLEError(Interop.Http.EasySetOptionString(_easyHandle, option, value));
             }
 
+            internal CURLcode TrySetCurlOption(CURLoption option, string value)
+            {
+                return Interop.Http.EasySetOptionString(_easyHandle, option, value);
+            }
+
             internal void SetCurlOption(CURLoption option, long value)
             {
                 ThrowIfCURLEError(Interop.Http.EasySetOptionLong(_easyHandle, option, value));

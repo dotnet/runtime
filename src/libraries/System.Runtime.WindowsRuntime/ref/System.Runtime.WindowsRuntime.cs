@@ -9,7 +9,6 @@
 namespace System
 {
     [global::System.CLSCompliantAttribute(false)]
-    [global::System.Security.SecurityCriticalAttribute]
     public static partial class WindowsRuntimeSystemExtensions
     {
         public static global::Windows.Foundation.IAsyncAction AsAsyncAction(this global::System.Threading.Tasks.Task source) { throw null; }
@@ -38,7 +37,6 @@ namespace System
 }
 namespace System.IO
 {
-    [global::System.Security.SecurityCriticalAttribute]
     public static partial class WindowsRuntimeStorageExtensions
     {
         [global::System.CLSCompliantAttribute(false)]
@@ -69,7 +67,6 @@ namespace System.IO
             global::System.IO.FileShare share = global::System.IO.FileShare.Read,
             global::System.IO.FileOptions options = global::System.IO.FileOptions.None) { throw null; }
     }
-    [global::System.Security.SecurityCriticalAttribute]
     public static partial class WindowsRuntimeStreamExtensions
     {
         [global::System.CLSCompliantAttribute(false)]
@@ -95,7 +92,6 @@ namespace System.IO
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
     [global::System.CLSCompliantAttribute(false)]
-    [global::System.Security.SecurityCriticalAttribute]
     public static partial class AsyncInfo
     {
         public static global::Windows.Foundation.IAsyncAction Run(global::System.Func<global::System.Threading.CancellationToken, global::System.Threading.Tasks.Task> taskProvider) { throw null; }
@@ -103,7 +99,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public static global::Windows.Foundation.IAsyncOperation<TResult> Run<TResult>(global::System.Func<global::System.Threading.CancellationToken, global::System.Threading.Tasks.Task<TResult>> taskProvider) { throw null; }
         public static global::Windows.Foundation.IAsyncOperationWithProgress<TResult, TProgress> Run<TResult, TProgress>(global::System.Func<global::System.Threading.CancellationToken, global::System.IProgress<TProgress>, global::System.Threading.Tasks.Task<TResult>> taskProvider) { throw null; }
     }
-    [global::System.Security.SecurityCriticalAttribute]
     public sealed partial class WindowsRuntimeBuffer
     {
         internal WindowsRuntimeBuffer() { }
@@ -112,7 +107,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         [global::System.CLSCompliantAttribute(false)]
         public static global::Windows.Storage.Streams.IBuffer Create(int capacity) { throw null; }
     }
-    [global::System.Security.SecurityCriticalAttribute]
     public static partial class WindowsRuntimeBufferExtensions
     {
         [global::System.CLSCompliantAttribute(false)]
@@ -151,25 +145,20 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 }
 namespace Windows.Foundation
 {
-    [global::System.Security.SecurityCriticalAttribute]
     [global::System.Runtime.InteropServices.StructLayoutAttribute(global::System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Point
     {
         public Point(double x, double y) { throw null; }
         public double X { get { throw null; } set { } }
         public double Y { get { throw null; } set { } }
-        [global::System.Security.SecuritySafeCriticalAttribute]
         public override bool Equals(object o) { throw null; }
         public bool Equals(global::Windows.Foundation.Point value) { throw null; }
-        [global::System.Security.SecuritySafeCriticalAttribute]
         public override int GetHashCode() { throw null; }
         public static bool operator ==(global::Windows.Foundation.Point point1, global::Windows.Foundation.Point point2) { throw null; }
         public static bool operator !=(global::Windows.Foundation.Point point1, global::Windows.Foundation.Point point2) { throw null; }
-        [global::System.Security.SecuritySafeCriticalAttribute]
         public override string ToString() { throw null; }
         public string ToString(global::System.IFormatProvider provider) { throw null; }
     }
-    [global::System.Security.SecurityCriticalAttribute]
     [global::System.Runtime.InteropServices.StructLayoutAttribute(global::System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Rect
     {
@@ -187,21 +176,17 @@ namespace Windows.Foundation
         public double X { get { throw null; } set { } }
         public double Y { get { throw null; } set { } }
         public bool Contains(global::Windows.Foundation.Point point) { throw null; }
-        [global::System.Security.SecuritySafeCriticalAttribute]
         public override bool Equals(object o) { throw null; }
         public bool Equals(global::Windows.Foundation.Rect value) { throw null; }
-        [global::System.Security.SecuritySafeCriticalAttribute]
         public override int GetHashCode() { throw null; }
         public void Intersect(global::Windows.Foundation.Rect rect) { }
         public static bool operator ==(global::Windows.Foundation.Rect rect1, global::Windows.Foundation.Rect rect2) { throw null; }
         public static bool operator !=(global::Windows.Foundation.Rect rect1, global::Windows.Foundation.Rect rect2) { throw null; }
-        [global::System.Security.SecuritySafeCriticalAttribute]
         public override string ToString() { throw null; }
         public string ToString(global::System.IFormatProvider provider) { throw null; }
         public void Union(global::Windows.Foundation.Point point) { }
         public void Union(global::Windows.Foundation.Rect rect) { }
     }
-    [global::System.Security.SecurityCriticalAttribute]
     [global::System.Runtime.InteropServices.StructLayoutAttribute(global::System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Size
     {
@@ -210,20 +195,16 @@ namespace Windows.Foundation
         public double Height { get { throw null; } set { } }
         public bool IsEmpty { get { throw null; } }
         public double Width { get { throw null; } set { } }
-        [global::System.Security.SecuritySafeCriticalAttribute]
         public override bool Equals(object o) { throw null; }
         public bool Equals(global::Windows.Foundation.Size value) { throw null; }
-        [global::System.Security.SecuritySafeCriticalAttribute]
         public override int GetHashCode() { throw null; }
         public static bool operator ==(global::Windows.Foundation.Size size1, global::Windows.Foundation.Size size2) { throw null; }
         public static bool operator !=(global::Windows.Foundation.Size size1, global::Windows.Foundation.Size size2) { throw null; }
-        [global::System.Security.SecuritySafeCriticalAttribute]
         public override string ToString() { throw null; }
     }
 }
 namespace Windows.UI
 {
-    [global::System.Security.SecurityCriticalAttribute]
     [global::System.Runtime.InteropServices.StructLayoutAttribute(global::System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Color
     {
@@ -231,15 +212,12 @@ namespace Windows.UI
         public byte B { get { throw null; } set { } }
         public byte G { get { throw null; } set { } }
         public byte R { get { throw null; } set { } }
-        [global::System.Security.SecuritySafeCriticalAttribute]
         public override bool Equals(object o) { throw null; }
         public bool Equals(global::Windows.UI.Color color) { throw null; }
         public static global::Windows.UI.Color FromArgb(byte a, byte r, byte g, byte b) { throw null; }
-        [global::System.Security.SecuritySafeCriticalAttribute]
         public override int GetHashCode() { throw null; }
         public static bool operator ==(global::Windows.UI.Color color1, global::Windows.UI.Color color2) { throw null; }
         public static bool operator !=(global::Windows.UI.Color color1, global::Windows.UI.Color color2) { throw null; }
-        [global::System.Security.SecuritySafeCriticalAttribute]
         public override string ToString() { throw null; }
         public string ToString(global::System.IFormatProvider provider) { throw null; }
     }

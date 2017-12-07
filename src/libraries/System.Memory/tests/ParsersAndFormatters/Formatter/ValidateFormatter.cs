@@ -4,9 +4,6 @@
 
 using Xunit;
 
-using System.Text;
-using System.Linq;
-
 namespace System.Buffers.Text.Tests
 {
     public static partial class FormatterTests

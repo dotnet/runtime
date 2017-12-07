@@ -862,8 +862,6 @@ namespace System.Data.ProviderBase
             CleanupConnectionOnTransactionCompletion(transaction);
         }
 
-        // TODO: Review whether we need the unmanaged code permission when we have the new object model available.
-        // [SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.UnmanagedCode)]
         private void TransactionOutcomeEnlist(Transaction transaction)
         {
             transaction.TransactionCompleted += new TransactionCompletedEventHandler(TransactionCompletedEvent);

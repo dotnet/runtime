@@ -53,6 +53,7 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reads a UInt16 out of a read-only span of bytes as big endian.
         /// </summary>
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ushort ReadUInt16BigEndian(ReadOnlySpan<byte> buffer)
         {
@@ -67,6 +68,7 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reads a UInt32 out of a read-only span of bytes as big endian.
         /// </summary>
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint ReadUInt32BigEndian(ReadOnlySpan<byte> buffer)
         {
@@ -81,6 +83,7 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reads a UInt64 out of a read-only span of bytes as big endian.
         /// </summary>
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong ReadUInt64BigEndian(ReadOnlySpan<byte> buffer)
         {
@@ -141,6 +144,7 @@ namespace System.Buffers.Binary
         /// Reads a UInt16 out of a read-only span of bytes as big endian.
         /// <returns>If the span is too small to contain a UInt16, return false.</returns>
         /// </summary>
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadUInt16BigEndian(ReadOnlySpan<byte> buffer, out ushort value)
         {
@@ -156,6 +160,7 @@ namespace System.Buffers.Binary
         /// Reads a UInt32 out of a read-only span of bytes as big endian.
         /// <returns>If the span is too small to contain a UInt32, return false.</returns>
         /// </summary>
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadUInt32BigEndian(ReadOnlySpan<byte> buffer, out uint value)
         {
@@ -171,6 +176,7 @@ namespace System.Buffers.Binary
         /// Reads a UInt64 out of a read-only span of bytes as big endian.
         /// <returns>If the span is too small to contain a UInt64, return false.</returns>
         /// </summary>
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadUInt64BigEndian(ReadOnlySpan<byte> buffer, out ulong value)
         {

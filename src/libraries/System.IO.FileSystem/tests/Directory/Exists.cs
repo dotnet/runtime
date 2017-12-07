@@ -49,6 +49,7 @@ namespace System.IO.Tests
             Assert.True(Exists(path));
         }
 
+	[ActiveIssue(25665)]
         [Theory, MemberData(nameof(PathsWithInvalidCharacters))]
         public void PathWithInvalidCharactersAsPath_ReturnsFalse(string invalidPath)
         {

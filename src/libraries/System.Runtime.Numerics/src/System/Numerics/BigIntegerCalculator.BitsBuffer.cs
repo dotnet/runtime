@@ -44,7 +44,6 @@ namespace System.Numerics
                 Array.Copy(value, 0, _bits, 0, _length);
             }
 
-            [SecuritySafeCritical]
             public unsafe void MultiplySelf(ref BitsBuffer value,
                                             ref BitsBuffer temp)
             {
@@ -73,7 +72,6 @@ namespace System.Numerics
                 Apply(ref temp, _length + value._length);
             }
 
-            [SecuritySafeCritical]
             public unsafe void SquareSelf(ref BitsBuffer temp)
             {
                 Debug.Assert(temp._length == 0);
@@ -99,7 +97,6 @@ namespace System.Numerics
                 _length = reducer.Reduce(_bits, _length);
             }
 
-            [SecuritySafeCritical]
             public unsafe void Reduce(uint[] modulus)
             {
                 Debug.Assert(modulus != null);
@@ -120,7 +117,6 @@ namespace System.Numerics
                 }
             }
 
-            [SecuritySafeCritical]
             public unsafe void Reduce(ref BitsBuffer modulus)
             {
                 // Executes a modulo operation using the divide operation.

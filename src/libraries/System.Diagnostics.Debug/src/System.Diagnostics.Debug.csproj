@@ -17,9 +17,5 @@
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="System\Diagnostics\DebuggerStepperBoundaryAttribute.cs" />
-    <Compile Include="System\Diagnostics\DebuggerVisualizerAttribute.cs" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

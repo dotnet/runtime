@@ -9,6 +9,28 @@ namespace System.IO.Tests
 {
     public class Directory_Create_Tests : FileSystemWatcherTest
     {
+        [Fact]        
+        public void FileSystemWatcher_Directory_EmptyPath()
+        {
+            Assert.Throws<ArgumentException>(() =>
+            {
+                using (var watcher = new FileSystemWatcher(""))
+                {
+                }
+            });
+        }
+
+        [Fact]        
+        public void FileSystemWatcher_Directory_PathNotExists()
+        {
+            Assert.Throws<ArgumentException>(() =>
+            {
+                using (var watcher = new FileSystemWatcher(GetTestFilePath()))
+                {
+                }
+            });
+        }
+
         [Fact]
         public void FileSystemWatcher_Directory_Create()
         {

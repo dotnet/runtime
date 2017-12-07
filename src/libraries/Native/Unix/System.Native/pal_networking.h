@@ -386,6 +386,8 @@ int32_t SystemNative_SetSockOpt(
 
 int32_t SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t protocolType, intptr_t* createdSocket);
 
+int32_t SystemNative_GetAtOutOfBandMark(intptr_t socket, int32_t* available);
+
 int32_t SystemNative_GetBytesAvailable(intptr_t socket, int32_t* available);
 
 int32_t SystemNative_CreateSocketEventPort(intptr_t* port);

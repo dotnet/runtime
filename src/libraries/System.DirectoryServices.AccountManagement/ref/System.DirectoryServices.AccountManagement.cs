@@ -156,7 +156,7 @@ namespace System.DirectoryServices.AccountManagement {
   }
   public abstract partial class Principal : System.IDisposable {
     protected Principal() { }
-    public System.DirectoryServices.AccountManagement.PrincipalContext Context { [System.Security.SecuritySafeCriticalAttribute]get { return default(System.DirectoryServices.AccountManagement.PrincipalContext); } }
+    public System.DirectoryServices.AccountManagement.PrincipalContext Context { get { return default(System.DirectoryServices.AccountManagement.PrincipalContext); } }
     protected internal System.DirectoryServices.AccountManagement.PrincipalContext ContextRaw { get { return default(System.DirectoryServices.AccountManagement.PrincipalContext); } set { } }
     public System.DirectoryServices.AccountManagement.ContextType ContextType { get { return default(System.DirectoryServices.AccountManagement.ContextType); } }
     public string Description { get { return default(string); } set { } }
@@ -261,7 +261,7 @@ namespace System.DirectoryServices.AccountManagement {
     public PrincipalSearcher() { }
 
     public PrincipalSearcher(System.DirectoryServices.AccountManagement.Principal queryFilter) { }
-    public System.DirectoryServices.AccountManagement.PrincipalContext Context { [System.Security.SecuritySafeCriticalAttribute]get { return default(System.DirectoryServices.AccountManagement.PrincipalContext); } }
+    public System.DirectoryServices.AccountManagement.PrincipalContext Context { get { return default(System.DirectoryServices.AccountManagement.PrincipalContext); } }
     public System.DirectoryServices.AccountManagement.Principal QueryFilter { get { return default(System.DirectoryServices.AccountManagement.Principal); } set { } }
 
     public virtual void Dispose() { }

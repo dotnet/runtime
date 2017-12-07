@@ -169,7 +169,6 @@ public class MyNavigator : XPathNavigator
 
     // Selection
     /// <include file='doc\XPathNavigator.uex' path='docs/doc[@for="XPathNavigator.Compile"]/*' />
-    //[PermissionSetAttribute(SecurityAction.Deny, Name = "FullTrust")]
     public override XPathExpression Compile(string xpath)
     {
         if (xpath.IndexOf("custom", 0, xpath.Length) >= 0)

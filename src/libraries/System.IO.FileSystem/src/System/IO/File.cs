@@ -100,7 +100,6 @@ namespace System.IO
         /// <devdoc>
         ///    Note: This returns the fully qualified name of the destination file.
         /// </devdoc>
-        [System.Security.SecuritySafeCritical]
         internal static string InternalCopy(string sourceFileName, string destFileName, bool overwrite)
         {
             Debug.Assert(sourceFileName != null);
@@ -158,7 +157,6 @@ namespace System.IO
         // 
         // Your application must have Delete permission to the target file.
         // 
-        [System.Security.SecuritySafeCritical]
         public static void Delete(string path)
         {
             if (path == null)
@@ -178,7 +176,6 @@ namespace System.IO
         //
         // Your application must have Read permission for the target directory.
         // 
-        [System.Security.SecuritySafeCritical]
         public static bool Exists(string path)
         {
             try
@@ -209,7 +206,6 @@ namespace System.IO
             return false;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal static bool InternalExists(string path)
         {
             return FileSystem.Current.FileExists(path);
@@ -254,14 +250,12 @@ namespace System.IO
             FileSystem.Current.SetCreationTime(fullPath, GetUtcDateTimeOffset(creationTimeUtc), asDirectory: false);
         }
 
-        [System.Security.SecuritySafeCritical]
         public static DateTime GetCreationTime(string path)
         {
             string fullPath = Path.GetFullPath(path);
             return FileSystem.Current.GetCreationTime(fullPath).LocalDateTime;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static DateTime GetCreationTimeUtc(string path)
         {
             string fullPath = Path.GetFullPath(path);
@@ -280,14 +274,12 @@ namespace System.IO
             FileSystem.Current.SetLastAccessTime(fullPath, GetUtcDateTimeOffset(lastAccessTimeUtc), asDirectory: false);
         }
 
-        [System.Security.SecuritySafeCritical]
         public static DateTime GetLastAccessTime(string path)
         {
             string fullPath = Path.GetFullPath(path);
             return FileSystem.Current.GetLastAccessTime(fullPath).LocalDateTime;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static DateTime GetLastAccessTimeUtc(string path)
         {
             string fullPath = Path.GetFullPath(path);
@@ -306,35 +298,30 @@ namespace System.IO
             FileSystem.Current.SetLastWriteTime(fullPath, GetUtcDateTimeOffset(lastWriteTimeUtc), asDirectory: false);
         }
 
-        [System.Security.SecuritySafeCritical]
         public static DateTime GetLastWriteTime(string path)
         {
             string fullPath = Path.GetFullPath(path);
             return FileSystem.Current.GetLastWriteTime(fullPath).LocalDateTime;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static DateTime GetLastWriteTimeUtc(string path)
         {
             string fullPath = Path.GetFullPath(path);
             return FileSystem.Current.GetLastWriteTime(fullPath).UtcDateTime;
         }
 
-        [System.Security.SecuritySafeCritical]
         public static FileAttributes GetAttributes(string path)
         {
             string fullPath = Path.GetFullPath(path);
             return FileSystem.Current.GetAttributes(fullPath);
         }
 
-        [System.Security.SecurityCritical]
         public static void SetAttributes(string path, FileAttributes fileAttributes)
         {
             string fullPath = Path.GetFullPath(path);
             FileSystem.Current.SetAttributes(fullPath, fileAttributes);
         }
 
-        [System.Security.SecuritySafeCritical]
         public static FileStream OpenRead(string path)
         {
             return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -346,7 +333,6 @@ namespace System.IO
                                   FileAccess.Write, FileShare.None);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static string ReadAllText(string path)
         {
             if (path == null)
@@ -358,7 +344,6 @@ namespace System.IO
             return InternalReadAllText(path, Encoding.UTF8);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static string ReadAllText(string path, Encoding encoding)
         {
             if (path == null)
@@ -372,7 +357,6 @@ namespace System.IO
             return InternalReadAllText(path, encoding);
         }
 
-        [System.Security.SecurityCritical]
         private static string InternalReadAllText(string path, Encoding encoding)
         {
             Debug.Assert(path != null);
@@ -383,7 +367,6 @@ namespace System.IO
                 return sr.ReadToEnd();
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static void WriteAllText(string path, string contents)
         {
             if (path == null)
@@ -398,7 +381,6 @@ namespace System.IO
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static void WriteAllText(string path, string contents, Encoding encoding)
         {
             if (path == null)
@@ -415,13 +397,11 @@ namespace System.IO
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static byte[] ReadAllBytes(string path)
         {
             return InternalReadAllBytes(path);
         }
 
-        [System.Security.SecurityCritical]
         private static byte[] InternalReadAllBytes(string path)
         {
             // bufferSize == 1 used to avoid unnecessary buffer in FileStream
@@ -446,7 +426,6 @@ namespace System.IO
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static void WriteAllBytes(string path, byte[] bytes)
         {
             if (path == null)
@@ -460,7 +439,6 @@ namespace System.IO
             InternalWriteAllBytes(path, bytes);
         }
 
-        [System.Security.SecurityCritical]
         private static void InternalWriteAllBytes(string path, byte[] bytes)
         {
             Debug.Assert(path != null);
@@ -673,7 +651,6 @@ namespace System.IO
         // sourceFileName and Write 
         // permissions to destFileName.
         // 
-        [System.Security.SecuritySafeCritical]
         public static void Move(string sourceFileName, string destFileName)
         {
             if (sourceFileName == null)

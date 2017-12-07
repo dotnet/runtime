@@ -8,7 +8,6 @@ using System.Security;
 
 namespace System.Drawing
 {
-    [SuppressUnmanagedCodeSecurity]
     internal class UnsafeNativeMethods
     {
         [DllImport(ExternDll.Kernel32, SetLastError = true, ExactSpelling = true, EntryPoint = "RtlMoveMemory", CharSet = CharSet.Auto)]

@@ -9,12 +9,15 @@
   <ItemGroup>
     <Compile Include="ArrayHandling.cs" />
     <Compile Include="BindingErrors.cs" />
+    <Compile Include="ImplicitConversionTests.cs" />
     <Compile Include="CSharpArgumentInfoTests.cs" />
     <Compile Include="DelegateInDynamicTests.cs" />
     <Compile Include="EnumArithmeticTests.cs" />
     <Compile Include="IndexingTests.cs" />
     <Compile Include="IntegerBinaryOperationTests.cs" />
     <Compile Include="IntegerUnaryOperationTests.cs" />
+    <Compile Include="IsEventTests.cs" />
+    <Compile Include="NullableEnumUnaryOperationTest.cs" />
     <Compile Include="RuntimeBinderExceptionTests.cs" />
     <Compile Include="RuntimeBinderInternalCompilerExceptionTests.cs" />
     <Compile Include="RuntimeBinderTests.cs" />

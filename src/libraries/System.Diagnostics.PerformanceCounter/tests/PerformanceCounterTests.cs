@@ -222,6 +222,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [ActiveIssue(25349)]
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
         public static void PerformanceCounter_IncrementBy_IncrementByReadOnly()
         {

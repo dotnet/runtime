@@ -1,12 +1,15 @@
 {
   "alpine": [
     "alpine",
+    "unix",
     "any",
     "base"
   ],
   "alpine-corert": [
     "alpine-corert",
     "alpine",
+    "unix-corert",
+    "unix",
     "corert",
     "any",
     "base"
@@ -14,6 +17,8 @@
   "alpine-x64": [
     "alpine-x64",
     "alpine",
+    "unix-x64",
+    "unix",
     "any",
     "base"
   ],
@@ -21,7 +26,11 @@
     "alpine-x64-corert",
     "alpine-corert",
     "alpine-x64",
+    "unix-x64-corert",
     "alpine",
+    "unix-corert",
+    "unix-x64",
+    "unix",
     "corert",
     "any",
     "base"
@@ -29,6 +38,7 @@
   "alpine.3.6": [
     "alpine.3.6",
     "alpine",
+    "unix",
     "any",
     "base"
   ],
@@ -37,6 +47,8 @@
     "alpine.3.6",
     "alpine-corert",
     "alpine",
+    "unix-corert",
+    "unix",
     "corert",
     "any",
     "base"
@@ -46,6 +58,8 @@
     "alpine.3.6",
     "alpine-x64",
     "alpine",
+    "unix-x64",
+    "unix",
     "any",
     "base"
   ],
@@ -58,6 +72,10 @@
     "alpine-corert",
     "alpine-x64",
     "alpine",
+    "unix-x64-corert",
+    "unix-corert",
+    "unix-x64",
+    "unix",
     "corert",
     "any",
     "base"

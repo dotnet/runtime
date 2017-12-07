@@ -93,6 +93,7 @@ namespace System.IO.Tests
             Assert.Throws<FileNotFoundException>(() => Replace(src, GetTestFilePath(), null));
         }
 
+        [ActiveIssue(25665)]
         [Fact]
         public void InvalidFileNames()
         {

@@ -218,8 +218,7 @@ enum MemoryAdvice
 enum SysConfName
 {
     PAL_SC_CLK_TCK = 1,  // Number of clock ticks per second
-    PAL_SC_PAGESIZE = 2, // Size of a page in bytes,
-    PAL_SC_NPROCESSORS_ONLN = 3, // Number of active processors
+    PAL_SC_PAGESIZE = 2, // Size of a page in bytes
 };
 
 /**
@@ -356,14 +355,14 @@ int32_t SystemNative_ShmUnlink(const char* name);
 /**
  * Returns the size of the dirent struct on the current architecture
  */
-int32_t SystemNative_GetDirentSize(void);
+int32_t SystemNative_GetReadDirRBufferSize(void);
 
 /**
  * Re-entrant readdir that will retrieve the next dirent from the directory stream pointed to by dir.
  *
  * Returns 0 when data is retrieved; returns -1 when end-of-stream is reached; returns an error code on failure
  */
-int32_t SystemNative_ReadDirR(DIR* dir, void* buffer, int32_t bufferSize, struct DirectoryEntry* outputEntry);
+int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, struct DirectoryEntry* outputEntry);
 
 /**
  * Returns a DIR struct containing info about the current path or NULL on failure; sets errno on fail.

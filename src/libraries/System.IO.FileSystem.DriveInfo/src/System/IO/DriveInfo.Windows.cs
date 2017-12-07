@@ -21,10 +21,6 @@ namespace System.IO
                 name = driveName + ":\\";
             else
             {
-                // GetPathRoot does not check all invalid characters
-                if (PathInternal.HasIllegalCharacters(driveName))
-                    throw new ArgumentException(SR.Format(SR.Arg_InvalidDriveChars, driveName), nameof(driveName));
-
                 name = Path.GetPathRoot(driveName);
                 // Disallow null or empty drive letters and UNC paths
                 if (name == null || name.Length == 0 || name.StartsWith("\\\\", StringComparison.Ordinal))
@@ -48,7 +44,6 @@ namespace System.IO
 
         public DriveType DriveType
         {
-            [System.Security.SecuritySafeCritical]
             get
             {
                 // GetDriveType can't fail
@@ -58,7 +53,6 @@ namespace System.IO
 
         public String DriveFormat
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 const int volNameLen = 50;
@@ -88,7 +82,6 @@ namespace System.IO
 
         public long AvailableFreeSpace
         {
-            [System.Security.SecuritySafeCritical]
             get
             {
                 long userBytes, totalBytes, freeBytes;
@@ -111,7 +104,6 @@ namespace System.IO
 
         public long TotalFreeSpace
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 long userBytes, totalBytes, freeBytes;
@@ -134,7 +126,6 @@ namespace System.IO
 
         public long TotalSize
         {
-            [System.Security.SecuritySafeCritical]
             get
             {
                 // Don't cache this, to handle variable sized floppy drives
@@ -170,7 +161,6 @@ namespace System.IO
         // Null is a valid volume label.
         public String VolumeLabel
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 // NTFS uses a limit of 32 characters for the volume label,
@@ -203,7 +193,6 @@ namespace System.IO
                 }
                 return volumeName.ToString();
             }
-            [System.Security.SecuritySafeCritical]  // auto-generated
             set
             {
                 uint oldMode;

@@ -87,9 +87,7 @@ namespace System.Diagnostics.Contracts
         public string Message { get { throw null; } }
         public System.Exception OriginalException { get { throw null; } }
         public bool Unwind { get { throw null; } }
-        [System.Security.SecurityCriticalAttribute]
         public void SetHandled() { }
-        [System.Security.SecurityCriticalAttribute]
         public void SetUnwind() { }
     }
     public enum ContractFailureKind

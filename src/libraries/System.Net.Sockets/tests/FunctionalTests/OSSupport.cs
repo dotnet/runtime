@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 
+using System.Threading;
 using Xunit;
 
 namespace System.Net.Sockets.Tests
@@ -42,20 +43,121 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)] // Windows IOCTL
         [Fact]
         public void IOControl_FIONREAD_Success()
         {
             using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                byte[] outValue = new byte[sizeof(int)];
+                Assert.Throws<SocketException>(() => client.IOControl(IOControlCode.DataToRead, null, null));
+                Assert.Throws<SocketException>(() => client.IOControl(IOControlCode.DataToRead, null, new byte[0]));
+                Assert.Throws<SocketException>(() => client.IOControl(IOControlCode.DataToRead, null, new byte[sizeof(int) - 1]));
 
-                const int FIONREAD = 0x4004667F;
-                Assert.Equal(4, client.IOControl(FIONREAD, null, outValue));
-                Assert.Equal(client.Available, BitConverter.ToInt32(outValue, 0));
+                byte[] fionreadResult = new byte[sizeof(int)];
 
-                Assert.Equal(4, client.IOControl(IOControlCode.DataToRead, null, outValue));
-                Assert.Equal(client.Available, BitConverter.ToInt32(outValue, 0));
+                Assert.Equal(4, client.IOControl(IOControlCode.DataToRead, null, fionreadResult));
+                Assert.Equal(client.Available, BitConverter.ToInt32(fionreadResult, 0));
+                Assert.Equal(0, BitConverter.ToInt32(fionreadResult, 0));
+
+                Assert.Equal(4, client.IOControl((int)IOControlCode.DataToRead, null, fionreadResult));
+                Assert.Equal(client.Available, BitConverter.ToInt32(fionreadResult, 0));
+                Assert.Equal(0, BitConverter.ToInt32(fionreadResult, 0));
+
+                using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                    listener.Listen(1);
+
+                    client.Connect(listener.LocalEndPoint);
+                    using (Socket server = listener.Accept())
+                    {
+                        server.Send(new byte[] { 42 });
+                        Assert.True(SpinWait.SpinUntil(() => client.Available != 0, 10_000));
+
+                        Assert.Equal(4, client.IOControl(IOControlCode.DataToRead, null, fionreadResult));
+                        Assert.Equal(client.Available, BitConverter.ToInt32(fionreadResult, 0));
+                        Assert.Equal(1, BitConverter.ToInt32(fionreadResult, 0));
+                    }
+                }
+            }
+        }
+
+        [ActiveIssue(25639)]
+        [Fact]
+        public void IOControl_SIOCATMARK_Success()
+        {
+            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.Throws<SocketException>(() => client.IOControl(IOControlCode.OobDataRead, null, null));
+                Assert.Throws<SocketException>(() => client.IOControl(IOControlCode.OobDataRead, null, new byte[0]));
+                Assert.Throws<SocketException>(() => client.IOControl(IOControlCode.OobDataRead, null, new byte[sizeof(int) - 1]));
+
+                using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                    listener.Listen(1);
+
+                    client.Connect(listener.LocalEndPoint);
+                    using (Socket server = listener.Accept())
+                    {
+                        byte[] siocatmarkResult = new byte[sizeof(int)];
+
+                        server.Send(new byte[] { 42 }, SocketFlags.None);
+                        server.Send(new byte[] { 43 }, SocketFlags.OutOfBand);
+
+                        Assert.Equal(4, client.IOControl(IOControlCode.OobDataRead, null, siocatmarkResult));
+                        Assert.Equal(0, BitConverter.ToInt32(siocatmarkResult, 0));
+
+                        var received = new byte[1];
+
+                        Assert.Equal(1, client.Receive(received));
+                        Assert.Equal(42, received[0]);
+
+                        Assert.Equal(1, client.Receive(received, SocketFlags.OutOfBand));
+                        Assert.Equal(43, received[0]);
+
+                        Assert.True(SpinWait.SpinUntil(() =>
+                        {
+                            Assert.Equal(4, client.IOControl(IOControlCode.OobDataRead, null, siocatmarkResult));
+                            return BitConverter.ToInt32(siocatmarkResult, 0) == 1;
+                        }, 10_000));
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public void IOControl_FIONBIO_Throws()
+        {
+            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.Throws<InvalidOperationException>(() => client.IOControl(unchecked((int)IOControlCode.NonBlockingIO), null, null));
+                Assert.Throws<InvalidOperationException>(() => client.IOControl(IOControlCode.NonBlockingIO, null, null));
+            }
+        }
+
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [Fact]
+        public void IOControl_UnknownValues_Unix_Throws()
+        {
+            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                foreach (IOControlCode code in Enum.GetValues(typeof(IOControlCode)))
+                {
+                    switch (code)
+                    {
+                        case IOControlCode.NonBlockingIO:
+                        case IOControlCode.DataToRead:
+                        case IOControlCode.OobDataRead:
+                            // These three codes are currently enabled on Unix.
+                            break;
+
+                        default:
+                            // The rest should throw PNSE.
+                            Assert.Throws<PlatformNotSupportedException>(() => client.IOControl((int)code, null, null));
+                            Assert.Throws<PlatformNotSupportedException>(() => client.IOControl(code, null, null));
+                            break;
+                    }
+                }
             }
         }
     }

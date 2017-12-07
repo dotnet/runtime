@@ -1586,7 +1586,6 @@ namespace System.Xml
             return false;
         }
 
-        [System.Security.SecuritySafeCritical]
         private static unsafe long DoubleToInt64Bits(double value)
         {
             // NOTE: BitConverter.DoubleToInt64Bits is missing in Silverlight

@@ -26,15 +26,13 @@ namespace System.IO
                 return;
 
             // Create handle to directory being monitored
-            var defaultSecAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
-            _directoryHandle = Interop.Kernel32.UnsafeCreateFile(
+            _directoryHandle = Interop.Kernel32.CreateFile(
                 lpFileName: _directory,
                 dwDesiredAccess: Interop.Kernel32.FileOperations.FILE_LIST_DIRECTORY,
                 dwShareMode: FileShare.Read | FileShare.Delete | FileShare.Write,
-                securityAttrs: ref defaultSecAttrs,
                 dwCreationDisposition: FileMode.Open,
-                dwFlagsAndAttributes: Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS | Interop.Kernel32.FileOperations.FILE_FLAG_OVERLAPPED,
-                hTemplateFile: IntPtr.Zero);
+                dwFlagsAndAttributes: Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS | Interop.Kernel32.FileOperations.FILE_FLAG_OVERLAPPED);
+
             if (IsHandleInvalid(_directoryHandle))
             {
                 _directoryHandle = null;

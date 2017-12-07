@@ -184,9 +184,9 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ParseExact_Invalid_TestData))]
-        public static void ParseExactTest__Span_Invalid(string inputString, string format, Type exceptionType)
+        public static void ParseExactTest_Span_Invalid(string inputString, string format, Type exceptionType)
         {
-            if (inputString != null)
+            if (inputString != null && format != null)
             {
                 Assert.Throws(exceptionType, () => TimeSpan.ParseExact(inputString.AsReadOnlySpan(), format, new CultureInfo("en-US")));
 

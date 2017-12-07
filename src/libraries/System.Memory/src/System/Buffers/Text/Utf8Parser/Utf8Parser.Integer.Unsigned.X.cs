@@ -18,7 +18,7 @@ namespace System.Buffers.Text
             byte nextDigit;
 
             // Cache Parsers.s_HexLookup in order to avoid static constructor checks
-            byte[] hexLookup = ParserHelpers.HexLookup;
+            byte[] hexLookup = ParserHelpers.s_hexLookup;
 
             // Parse the first digit separately. If invalid here, we need to return false.
             nextCharacter = text[0];
@@ -101,7 +101,7 @@ namespace System.Buffers.Text
             byte nextDigit;
 
             // Cache Parsers.s_HexLookup in order to avoid static constructor checks
-            byte[] hexLookup = ParserHelpers.HexLookup;
+            byte[] hexLookup = ParserHelpers.s_hexLookup;
 
             // Parse the first digit separately. If invalid here, we need to return false.
             nextCharacter = text[0];
@@ -184,7 +184,7 @@ namespace System.Buffers.Text
             byte nextDigit;
 
             // Cache Parsers.s_HexLookup in order to avoid static constructor checks
-            byte[] hexLookup = ParserHelpers.HexLookup;
+            byte[] hexLookup = ParserHelpers.s_hexLookup;
 
             // Parse the first digit separately. If invalid here, we need to return false.
             nextCharacter = text[0];
@@ -267,7 +267,7 @@ namespace System.Buffers.Text
             byte nextDigit;
 
             // Cache Parsers.s_HexLookup in order to avoid static constructor checks
-            byte[] hexLookup = ParserHelpers.HexLookup;
+            byte[] hexLookup = ParserHelpers.s_hexLookup;
 
             // Parse the first digit separately. If invalid here, we need to return false.
             nextCharacter = text[0];

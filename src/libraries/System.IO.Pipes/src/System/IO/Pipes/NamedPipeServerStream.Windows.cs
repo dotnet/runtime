@@ -20,7 +20,6 @@ namespace System.IO.Pipes
     /// </summary>
     public sealed partial class NamedPipeServerStream : PipeStream
     {
-        [SecurityCritical]
         private void Create(string pipeName, PipeDirection direction, int maxNumberOfServerInstances,
                 PipeTransmissionMode transmissionMode, PipeOptions options, int inBufferSize, int outBufferSize,
                 HandleInheritability inheritability)
@@ -71,7 +70,6 @@ namespace System.IO.Pipes
         // was called (but not before this server is been created, or, if we were servicing another client, 
         // not before we called Disconnect), in which case, there may be some buffer already in the pipe waiting
         // for us to read.  See NamedPipeClientStream.Connect for more information.
-        [SecurityCritical]
         [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
         public void WaitForConnection()
         {
@@ -122,7 +120,6 @@ namespace System.IO.Pipes
             return WaitForConnectionCoreAsync(cancellationToken);
         }
 
-        [SecurityCritical]
         public void Disconnect()
         {
             CheckDisconnectOperations();
@@ -139,7 +136,6 @@ namespace System.IO.Pipes
         // Gets the username of the connected client.  Not that we will not have access to the client's 
         // username until it has written at least once to the pipe (and has set its impersonationLevel 
         // argument appropriately). 
-        [SecurityCritical]
         public String GetImpersonationUserName()
         {
             CheckWriteOperations();
@@ -230,7 +226,6 @@ namespace System.IO.Pipes
             internal int _impersonateErrorCode;
             internal int _revertImpersonateErrorCode;
 
-            [SecurityCritical]
             internal ExecuteHelper(PipeStreamImpersonationWorker userCode, SafePipeHandle handle)
             {
                 _userCode = userCode;

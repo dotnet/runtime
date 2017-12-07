@@ -95,22 +95,42 @@ namespace System.Tests
 
         public static IEnumerable<object[]> ToString_TestData()
         {
-            NumberFormatInfo emptyFormat = NumberFormatInfo.CurrentInfo;
-            yield return new object[] { int.MinValue, "G", emptyFormat, "-2147483648" };
-            yield return new object[] { -4567, "G", emptyFormat, "-4567" };
-            yield return new object[] { 0, "G", emptyFormat, "0" };
-            yield return new object[] { 4567, "G", emptyFormat, "4567" };
-            yield return new object[] { int.MaxValue, "G", emptyFormat, "2147483647" };
+            foreach (NumberFormatInfo defaultFormat in new[] { null, NumberFormatInfo.CurrentInfo })
+            {
+                foreach (string defaultSpecifier in new[] { "G", "G\0", "\0N222", "\0", "" })
+                {
+                    yield return new object[] { int.MinValue, defaultSpecifier, defaultFormat, "-2147483648" };
+                    yield return new object[] { -4567, defaultSpecifier, defaultFormat, "-4567" };
+                    yield return new object[] { 0, defaultSpecifier, defaultFormat, "0" };
+                    yield return new object[] { 4567, defaultSpecifier, defaultFormat, "4567" };
+                    yield return new object[] { int.MaxValue, defaultSpecifier, defaultFormat, "2147483647" };
+                }
 
-            yield return new object[] { 0x2468, "x", emptyFormat, "2468" };
-            yield return new object[] { 2468, "N", emptyFormat, string.Format("{0:N}", 2468.00) };
+                yield return new object[] { 4567, "D", defaultFormat, "4567" };
+                yield return new object[] { 4567, "D99", defaultFormat, "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004567" };
+                yield return new object[] { 4567, "D99\09", defaultFormat, "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004567" };
 
-            NumberFormatInfo customFormat = new NumberFormatInfo();
-            customFormat.NegativeSign = "#";
-            customFormat.NumberDecimalSeparator = "~";
-            customFormat.NumberGroupSeparator = "*";
+                yield return new object[] { 0x2468, "x", defaultFormat, "2468" };
+                yield return new object[] { 2468, "N", defaultFormat, string.Format("{0:N}", 2468.00) };
+            }
+
+            var customFormat = new NumberFormatInfo()
+            {
+                NegativeSign = "#",
+                NumberDecimalSeparator = "~",
+                NumberGroupSeparator = "*",
+                PositiveSign = "&",
+                NumberDecimalDigits = 2,
+                PercentSymbol = "@",
+                PercentGroupSeparator = ",",
+                PercentDecimalSeparator = ".",
+                PercentDecimalDigits = 5
+            };
             yield return new object[] { -2468, "N", customFormat, "#2*468~00" };
             yield return new object[] { 2468, "N", customFormat, "2*468~00" };
+            yield return new object[] { 123, "E", customFormat, "1~230000E&002" };
+            yield return new object[] { 123, "F", customFormat, "123~00" };
+            yield return new object[] { 123, "P", customFormat, "12,300.00000 @" };
         }
 
         [Theory]

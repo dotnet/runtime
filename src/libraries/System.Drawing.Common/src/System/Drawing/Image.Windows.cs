@@ -17,7 +17,6 @@ namespace System.Drawing
     /// An abstract base class that provides functionality for 'Bitmap', 'Icon', 'Cursor', and 'Metafile' descended classes.
     /// </summary>
     [ImmutableObject(true)]
-    [ComVisible(true)]
     public abstract partial class Image : MarshalByRefObject, ICloneable, IDisposable, ISerializable
     {
 #if FINALIZATION_WATCH

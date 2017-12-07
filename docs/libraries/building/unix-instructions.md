@@ -19,6 +19,10 @@ For more information about the different options when building, run `build.sh -?
 
 ### Linux
 
+First, the package lists might need to be updated
+
+`sudo apt-get update`
+
 #### Native build
 
 For Ubuntu 14.04, the following packages should be installed to build the native

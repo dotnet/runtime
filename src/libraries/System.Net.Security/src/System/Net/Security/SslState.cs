@@ -521,14 +521,14 @@ namespace System.Net.Security
         //
         // Must be called under the lock in case concurrent handshake is going.
         //
-        internal int CheckOldKeyDecryptedData(byte[] buffer, int offset, int count)
+        internal int CheckOldKeyDecryptedData(Memory<byte> buffer)
         {
             CheckThrow(true);
             if (_queuedReadData != null)
             {
                 // This is inefficient yet simple and should be a REALLY rare case.
-                int toCopy = Math.Min(_queuedReadCount, count);
-                Buffer.BlockCopy(_queuedReadData, 0, buffer, offset, toCopy);
+                int toCopy = Math.Min(_queuedReadCount, buffer.Length);
+                new Span<byte>(_queuedReadData, 0, toCopy).CopyTo(buffer.Span);
                 _queuedReadCount -= toCopy;
                 if (_queuedReadCount == 0)
                 {
@@ -1183,43 +1183,28 @@ namespace System.Net.Security
                 }
 
                 _lockReadState = LockRead;
-                object obj = _queuedReadStateRequest;
-                if (obj == null)
-                {
-                    // Other thread did not get under the lock yet.
-                    return;
-                }
-
-                _queuedReadStateRequest = null;
-                if (obj is LazyAsyncResult)
-                {
-                    ((LazyAsyncResult)obj).InvokeCallback();
-                }
-                else
-                {
-                    ThreadPool.QueueUserWorkItem(new WaitCallback(CompleteRequestWaitCallback), obj);
-                }
+                HandleQueuedCallback(ref _queuedReadStateRequest);
             }
         }
-
+        
         // Returns:
         // -1    - proceed
         // 0     - queued
         // X     - some bytes are ready, no need for IO
-        internal int CheckEnqueueRead(byte[] buffer, int offset, int count, AsyncProtocolRequest request)
+        internal int CheckEnqueueRead(Memory<byte> buffer)
         {
             int lockState = Interlocked.CompareExchange(ref _lockReadState, LockRead, LockNone);
 
             if (lockState != LockHandshake)
             {
                 // Proceed, no concurrent handshake is ongoing so no need for a lock.
-                return CheckOldKeyDecryptedData(buffer, offset, count);
+                return CheckOldKeyDecryptedData(buffer);
             }
 
             LazyAsyncResult lazyResult = null;
             lock (this)
             {
-                int result = CheckOldKeyDecryptedData(buffer, offset, count);
+                int result = CheckOldKeyDecryptedData(buffer);
                 if (result != -1)
                 {
                     return result;
@@ -1235,12 +1220,6 @@ namespace System.Net.Security
 
                 _lockReadState = LockPendingRead;
 
-                if (request != null)
-                {
-                    // Request queued.
-                    _queuedReadStateRequest = request;
-                    return 0;
-                }
                 lazyResult = new LazyAsyncResult(null, null, /*must be */ null);
                 _queuedReadStateRequest = lazyResult;
             }
@@ -1248,7 +1227,40 @@ namespace System.Net.Security
             lazyResult.InternalWaitForCompletion();
             lock (this)
             {
-                return CheckOldKeyDecryptedData(buffer, offset, count);
+                return CheckOldKeyDecryptedData(buffer);
+            }
+        }
+
+        internal ValueTask<int> CheckEnqueueReadAsync(Memory<byte> buffer)
+        {
+            int lockState = Interlocked.CompareExchange(ref _lockReadState, LockRead, LockNone);
+
+            if (lockState != LockHandshake)
+            {
+                // Proceed, no concurrent handshake is ongoing so no need for a lock.
+                return new ValueTask<int>(CheckOldKeyDecryptedData(buffer));
+            }
+
+            lock (this)
+            {
+                int result = CheckOldKeyDecryptedData(buffer);
+                if (result != -1)
+                {
+                    return new ValueTask<int>(result);
+                }
+
+                // Check again under lock.
+                if (_lockReadState != LockHandshake)
+                {
+                    // The other thread has finished before we grabbed the lock.
+                    _lockReadState = LockRead;
+                    return new ValueTask<int>(-1);
+                }
+
+                _lockReadState = LockPendingRead;
+                TaskCompletionSource<int> taskCompletionSource = new TaskCompletionSource<int>(buffer, TaskCreationOptions.RunContinuationsAsynchronously);
+                _queuedReadStateRequest = taskCompletionSource;
+                return new ValueTask<int>(taskCompletionSource.Task);
             }
         }
 
@@ -1346,23 +1358,30 @@ namespace System.Net.Security
 
             lock (this)
             {
-                HandleWriteCallback();
+                HandleQueuedCallback(ref _queuedWriteStateRequest);
             }
         }
 
-        private void HandleWriteCallback()
+        private void HandleQueuedCallback(ref object queuedStateRequest)
         {
-            object obj = _queuedWriteStateRequest;
-            _queuedWriteStateRequest = null;
+            object obj = queuedStateRequest;
+            if (obj == null)
+            {
+                return;
+            }
+            queuedStateRequest = null;
+                        
             switch (obj)
             {
-                case null:
-                    break;
                 case LazyAsyncResult lazy:
                     lazy.InvokeCallback();
                     break;
-                case TaskCompletionSource<int> tsc:
-                    tsc.SetResult(0);
+                case TaskCompletionSource<int> taskCompletionSource when taskCompletionSource.Task.AsyncState != null:
+                    Memory<byte> array = (Memory<byte>)taskCompletionSource.Task.AsyncState;
+                    taskCompletionSource.SetResult(CheckOldKeyDecryptedData(array));
+                    break;
+                case TaskCompletionSource<int> taskCompletionSource:
+                    taskCompletionSource.SetResult(0);
                     break;
                 default:
                     ThreadPool.QueueUserWorkItem(new WaitCallback(AsyncResumeHandshake), obj);
@@ -1427,7 +1446,7 @@ namespace System.Net.Security
                     }
 
                     _lockWriteState = LockWrite;
-                    HandleWriteCallback();
+                    HandleQueuedCallback(ref _queuedWriteStateRequest);
                 }
             }
             finally

@@ -166,6 +166,8 @@ namespace System
 
         public static OperatingSystem OSVersion => s_osVersion.Value;
 
+        public static int ProcessorCount => EnvironmentAugments.ProcessorCount;
+
         public static string StackTrace
         {
             [MethodImpl(MethodImplOptions.NoInlining)] // Prevent inlining from affecting where the stacktrace starts

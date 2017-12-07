@@ -38,6 +38,18 @@ namespace System.Net.Security.Tests
             Assert.Throws<EncoderFallbackException>(() => { new SslApplicationProtocol("\uDC00"); });
         }
 
+        [Fact]
+        public void Constructor_ByteArray_Copies()
+        {
+            byte[] expected = Encoding.UTF8.GetBytes("hello");
+            SslApplicationProtocol byteProtocol = new SslApplicationProtocol(expected);
+
+            ArraySegment<byte> arraySegment;
+            Assert.True(byteProtocol.Protocol.DangerousTryGetArray(out arraySegment));
+            Assert.Equal(expected, arraySegment.Array);
+            Assert.NotSame(expected, arraySegment.Array);
+        }
+
         [Theory]
         [MemberData(nameof(Protocol_Equality_TestData))]
         public void Equality_Tests_Succeeds(SslApplicationProtocol left, SslApplicationProtocol right)

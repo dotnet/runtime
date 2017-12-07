@@ -16,7 +16,7 @@ namespace System.Dynamic
     {
 #if FEATURE_COMPILE
 <#
-for (int i = 0; i <= 10; i++)
+for (int i = 1; i <= 10; i++)
 {
     string genericParameters = string.Join(", ", Enumerable.Range(0, i).Select(j => "T" + j).Concat(new[] { "TRet" }));
     string parameters = string.Join(", ", new[] { "CallSite site" }.Concat(Enumerable.Range(0, i).Select(j => "T" + j + " arg" + j)));

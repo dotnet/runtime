@@ -42,8 +42,10 @@ add_library(System.Native-Static
     ${NATIVE_SOURCES}
     ${VERSION_FILE_PATH}
 )
-SET_TARGET_PROPERTIES(System.Native-Static PROPERTIES PREFIX "")
-SET_TARGET_PROPERTIES(System.Native-Static PROPERTIES OUTPUT_NAME System.Native CLEAN_DIRECT_OUTPUT 1)
+
+# Disable the "lib" prefix and override default name
+set_target_properties(System.Native-Static PROPERTIES PREFIX "")
+set_target_properties(System.Native-Static PROPERTIES OUTPUT_NAME System.Native CLEAN_DIRECT_OUTPUT 1)
 
 if (CMAKE_SYSTEM_NAME STREQUAL Linux AND NOT CLR_CMAKE_PLATFORM_ANDROID)
     target_link_libraries(System.Native rt)

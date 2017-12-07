@@ -141,7 +141,7 @@ namespace System.Net.Sockets.Tests
                     using (remote)
                     {
                         var recvBuffer = new byte[256];
-                        for (;;)
+                        for (; ; )
                         {
                             int received = remote.Receive(recvBuffer, 0, recvBuffer.Length, SocketFlags.None);
                             if (received == 0)
@@ -183,7 +183,7 @@ namespace System.Net.Sockets.Tests
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [MemberData(nameof(SendFile_MemberData))]
-        public void SendFile_APM(IPAddress listenAt, bool sendPreAndPostBuffers, int bytesToSend)
+        public async Task SendFile_APM(IPAddress listenAt, bool sendPreAndPostBuffers, int bytesToSend)
         {
             const int ListenBacklog = 1, TestTimeout = 30000;
 
@@ -228,10 +228,7 @@ namespace System.Net.Sockets.Tests
                 });
 
                 // Wait for the tasks to complete
-                Task<Task> firstCompleted = Task.WhenAny(serverTask, clientTask);
-                Assert.True(firstCompleted.Wait(TestTimeout), "Neither client nor server task completed within allowed time");
-                firstCompleted.Result.GetAwaiter().GetResult();
-                Assert.True(Task.WaitAll(new[] { serverTask, clientTask }, TestTimeout), $"Tasks didn't complete within allowed time. Server:{serverTask.Status} Client:{clientTask.Status}");
+                await (new[] { serverTask, clientTask }).WhenAllOrAnyFailed(TestTimeout);
 
                 // Validate the results
                 Assert.Equal(bytesToSend, bytesReceived);

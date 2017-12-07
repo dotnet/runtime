@@ -58,19 +58,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     }
     public static partial class WindowsRuntimeMarshal
     {
-        [global::System.Security.SecurityCriticalAttribute]
         public static void AddEventHandler<T>(global::System.Func<T, global::System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken> addMethod, global::System.Action<global::System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken> removeMethod, T handler) { }
-        [global::System.Security.SecurityCriticalAttribute]
         public static void FreeHString(global::System.IntPtr ptr) { }
-        [global::System.Security.SecurityCriticalAttribute]
         public static global::System.Runtime.InteropServices.WindowsRuntime.IActivationFactory GetActivationFactory(global::System.Type type) { throw null; }
-        [global::System.Security.SecurityCriticalAttribute]
         public static string PtrToStringHString(global::System.IntPtr ptr) { throw null; }
-        [global::System.Security.SecurityCriticalAttribute]
         public static void RemoveAllEventHandlers(global::System.Action<global::System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken> removeMethod) { }
-        [global::System.Security.SecurityCriticalAttribute]
         public static void RemoveEventHandler<T>(global::System.Action<global::System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken> removeMethod, T handler) { }
-        [global::System.Security.SecurityCriticalAttribute]
         public static global::System.IntPtr StringToHString(string s) { throw null; }
     }
     [global::System.AttributeUsageAttribute((global::System.AttributeTargets)(2048), Inherited = false, AllowMultiple = false)]
