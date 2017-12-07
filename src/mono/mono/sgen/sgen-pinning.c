@@ -43,6 +43,7 @@ sgen_init_pinning (void)
 {
 	memset (pin_hash_filter, 0, sizeof (pin_hash_filter));
 	pin_queue.mem_type = INTERNAL_MEM_PIN_QUEUE;
+	sgen_client_pinning_start ();
 }
 
 void
@@ -367,6 +368,7 @@ pin_from_hash (CementHashEntry *hash, gboolean has_been_reset)
 		if (has_been_reset)
 			SGEN_ASSERT (5, hash [i].count >= SGEN_CEMENT_THRESHOLD, "Cementing hash inconsistent");
 
+		sgen_client_pinned_cemented_object (hash [i].obj);
 		sgen_pin_stage_ptr (hash [i].obj);
 		binary_protocol_cement_stage (hash [i].obj);
 		/* FIXME: do pin stats if enabled */

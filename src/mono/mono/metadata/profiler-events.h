@@ -12,6 +12,7 @@
  * MONO_PROFILER_EVENT_2(name, type, arg1_type, arg1_name, arg2_type, arg2_name)
  * MONO_PROFILER_EVENT_3(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name)
  * MONO_PROFILER_EVENT_4(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name)
+ * MONO_PROFILER_EVENT_5(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name, arg5_type, arg5_name)
  *
  * To add new callbacks to the API, simply add a line in this file and use
  * MONO_PROFILER_RAISE to raise the event wherever.
@@ -22,10 +23,14 @@
  * to prevent errors in existing code, you must add something like this at the
  * beginning of this file:
  *
- * #ifndef MONO_PROFILER_EVENT_5
- * #define MONO_PROFILER_EVENT_5(...) # Do nothing.
+ * #ifndef MONO_PROFILER_EVENT_6
+ * #define MONO_PROFILER_EVENT_6(...) # Do nothing.
  * #endif
  */
+
+#ifndef MONO_PROFILER_EVENT_5
+#define MONO_PROFILER_EVENT_5(...)
+#endif
 
 MONO_PROFILER_EVENT_0(runtime_initialized, RuntimeInitialized)
 MONO_PROFILER_EVENT_0(runtime_shutdown_begin, RuntimeShutdownBegin)
@@ -50,6 +55,10 @@ MONO_PROFILER_EVENT_4(jit_code_buffer, JitCodeBuffer, const mono_byte *, buffer,
 MONO_PROFILER_EVENT_1(class_loading, ClassLoading, MonoClass *, klass)
 MONO_PROFILER_EVENT_1(class_failed, ClassFailed, MonoClass *, klass)
 MONO_PROFILER_EVENT_1(class_loaded, ClassLoaded, MonoClass *, klass)
+
+MONO_PROFILER_EVENT_1(vtable_loading, VTableLoading, MonoVTable *, vtable)
+MONO_PROFILER_EVENT_1(vtable_failed, VTableFailed, MonoVTable *, vtable)
+MONO_PROFILER_EVENT_1(vtable_loaded, VTableLoaded, MonoVTable *, vtable)
 
 MONO_PROFILER_EVENT_1(image_loading, ModuleLoading, MonoImage *, image)
 MONO_PROFILER_EVENT_1(image_failed, ModuleFailed, MonoImage *, image)
@@ -83,18 +92,9 @@ MONO_PROFILER_EVENT_0(gc_finalizing, GCFinalizing)
 MONO_PROFILER_EVENT_0(gc_finalized, GCFinalized)
 MONO_PROFILER_EVENT_1(gc_finalizing_object, GCFinalizingObject, MonoObject *, object)
 MONO_PROFILER_EVENT_1(gc_finalized_object, GCFinalizedObject, MonoObject *, object)
-
-/*
- * This callback provides very low quality data and doesn't really match how
- * roots are actually handled in the runtime. It will be replaced with a more
- * sensible callback in the future. **This will be a breaking change.**
- *
- * In the meantime, you must define MONO_PROFILER_UNSTABLE_GC_ROOTS to be able
- * to use this interface.
- */
-#ifdef MONO_PROFILER_UNSTABLE_GC_ROOTS
-MONO_PROFILER_EVENT_4(gc_roots, GCRoots, MonoObject *const *, roots, const MonoProfilerGCRootType *, types, const uintptr_t *, extra, uint64_t, count)
-#endif
+MONO_PROFILER_EVENT_5(gc_root_register, RootRegister, const mono_byte *, start, uintptr_t, size, MonoGCRootSource, source, const void *, key, const char *, name)
+MONO_PROFILER_EVENT_1(gc_root_unregister, RootUnregister, const mono_byte *, start)
+MONO_PROFILER_EVENT_3(gc_roots, GCRoots, uint64_t, count, const mono_byte *const *, addresses, MonoObject *const *, objects)
 
 MONO_PROFILER_EVENT_1(monitor_contention, MonitorContention, MonoObject *, object)
 MONO_PROFILER_EVENT_1(monitor_failed, MonitorFailed, MonoObject *, object)

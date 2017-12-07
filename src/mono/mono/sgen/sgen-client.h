@@ -107,19 +107,30 @@ void sgen_client_nursery_objects_pinned (void **definitely_pinned, int count);
 /*
  * Called at a semi-random point during minor collections.  No action is necessary.
  */
-void sgen_client_collecting_minor (SgenPointerQueue *fin_ready_queue, SgenPointerQueue *critical_fin_queue);
+void sgen_client_collecting_minor_report_roots (SgenPointerQueue *fin_ready_queue, SgenPointerQueue *critical_fin_queue);
 
 /*
  * Called at semi-random points during major collections.  No action is necessary.
  */
-void sgen_client_collecting_major_1 (void);
-void sgen_client_collecting_major_2 (void);
-void sgen_client_collecting_major_3 (SgenPointerQueue *fin_ready_queue, SgenPointerQueue *critical_fin_queue);
+void sgen_client_collecting_major_report_roots (SgenPointerQueue *fin_ready_queue, SgenPointerQueue *critical_fin_queue);
 
 /*
  * Called after a LOS object has been pinned.  No action is necessary.
  */
 void sgen_client_pinned_los_object (GCObject *obj);
+
+/*
+ * Called for each cemented obj
+ */
+void sgen_client_pinned_cemented_object (GCObject *obj);
+
+/*
+ * Called for each major heap obj pinned
+ */
+void sgen_client_pinned_major_heap_object (GCObject *obj);
+
+void sgen_client_pinning_start (void);
+void sgen_client_pinning_end (void);
 
 /*
  * Called for every degraded allocation.  No action is necessary.

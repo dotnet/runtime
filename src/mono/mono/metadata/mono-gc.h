@@ -12,36 +12,85 @@ MONO_BEGIN_DECLS
 
 typedef int (*MonoGCReferences) (MonoObject *obj, MonoClass *klass, uintptr_t size, uintptr_t num, MonoObject **refs, uintptr_t *offsets, void *data);
 
+/**
+ * This enum is used by the profiler API when reporting root registration.
+ */
 typedef enum {
-	// Roots external to Mono.  Embedders may only use this value.
+	/**
+	 * Roots external to Mono. Embedders may only use this value.
+	 */
 	MONO_ROOT_SOURCE_EXTERNAL = 0,
-	// Thread stack.  Must not be used to register roots.
+	/**
+	 * Thread call stack.
+	 *
+	 * The \c key parameter is a thread ID as a \c uintptr_t.
+	 */
 	MONO_ROOT_SOURCE_STACK = 1,
-	// Roots in the finalizer queue.  Must not be used to register roots.
+	/**
+	 * Roots in the finalizer queue. This is a pseudo-root.
+	 */
 	MONO_ROOT_SOURCE_FINALIZER_QUEUE = 2,
-	// Managed static variables.
+	/**
+	 * Managed \c static variables.
+	 *
+	 * The \c key parameter is a \c MonoVTable pointer.
+	 */
 	MONO_ROOT_SOURCE_STATIC = 3,
-	// Static variables with ThreadStaticAttribute.
+	/**
+	 * Managed \c static variables with \c ThreadStaticAttribute.
+	 *
+	 * The \c key parameter is a thread ID as a \c uintptr_t.
+	 */
 	MONO_ROOT_SOURCE_THREAD_STATIC = 4,
-	// Static variables with ContextStaticAttribute.
+	/**
+	 * Managed \c static variables with \c ContextStaticAttribute.
+	 *
+	 * The \c key parameter is a \c MonoAppContext pointer.
+	 */
 	MONO_ROOT_SOURCE_CONTEXT_STATIC = 5,
-	// GCHandle structures.
+	/**
+	 * \c GCHandle structures.
+	 */
 	MONO_ROOT_SOURCE_GC_HANDLE = 6,
-	// Roots in the just-in-time compiler.
+	/**
+	 * Roots in the just-in-time compiler.
+	 */
 	MONO_ROOT_SOURCE_JIT = 7,
-	// Roots in the threading subsystem.
+	/**
+	 * Roots in the threading subsystem.
+	 *
+	 * The \c key parameter, if not \c NULL, is a thread ID as a \c uintptr_t.
+	 */
 	MONO_ROOT_SOURCE_THREADING = 8,
-	// Roots in application domains.
+	/**
+	 * Roots in application domains.
+	 *
+	 * The \c key parameter, if not \c NULL, is a \c MonoDomain pointer.
+	 */
 	MONO_ROOT_SOURCE_DOMAIN = 9,
-	// Roots in reflection code.
+	/**
+	 * Roots in reflection code.
+	 *
+	 * The \c key parameter, if not \c NULL, is a \c MonoVTable pointer.
+	 */
 	MONO_ROOT_SOURCE_REFLECTION = 10,
-	// Roots from P/Invoke or other marshaling.
+	/**
+	 * Roots from P/Invoke or other marshaling infrastructure.
+	 */
 	MONO_ROOT_SOURCE_MARSHAL = 11,
-	// Roots in the thread pool data structures.
+	/**
+	 * Roots in the thread pool data structures.
+	 */
 	MONO_ROOT_SOURCE_THREAD_POOL = 12,
-	// Roots in the debugger agent.
+	/**
+	 * Roots in the debugger agent.
+	 */
 	MONO_ROOT_SOURCE_DEBUGGER = 13,
-	// Handle structures, used for object passed to internal functions
+	/**
+	 * Roots in the runtime handle stack. This is a pseudo-root.
+	 *
+	 * The \c key parameter is a thread ID as a \c uintptr_t.
+	 */
 	MONO_ROOT_SOURCE_HANDLE = 14,
 } MonoGCRootSource;
 

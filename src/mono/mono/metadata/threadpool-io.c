@@ -319,12 +319,17 @@ selector_thread (gpointer data)
 	MonoError error;
 	MonoGHashTable *states;
 
+	MonoString *thread_name = mono_string_new_checked (mono_get_root_domain (), "Thread Pool I/O Selector", &error);
+	mono_error_assert_ok (&error);
+	mono_thread_set_name_internal (mono_thread_internal_current (), thread_name, FALSE, TRUE, &error);
+	mono_error_assert_ok (&error);
+
 	if (mono_runtime_is_shutting_down ()) {
 		io_selector_running = FALSE;
 		return 0;
 	}
 
-	states = mono_g_hash_table_new_type (g_direct_hash, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_THREAD_POOL, "i/o thread pool states table");
+	states = mono_g_hash_table_new_type (g_direct_hash, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_THREAD_POOL, NULL, "Thread Pool I/O State Table");
 
 	while (!mono_runtime_is_shutting_down ()) {
 		gint i, j;
@@ -541,7 +546,7 @@ initialize (void)
 
 	mono_coop_mutex_init (&threadpool_io->updates_lock);
 	mono_coop_cond_init (&threadpool_io->updates_cond);
-	mono_gc_register_root ((char *)&threadpool_io->updates [0], sizeof (threadpool_io->updates), MONO_GC_DESCRIPTOR_NULL, MONO_ROOT_SOURCE_THREAD_POOL, "i/o thread pool updates list");
+	mono_gc_register_root ((char *)&threadpool_io->updates [0], sizeof (threadpool_io->updates), MONO_GC_DESCRIPTOR_NULL, MONO_ROOT_SOURCE_THREAD_POOL, NULL, "Thread Pool I/O Update List");
 
 	threadpool_io->updates_size = 0;
 

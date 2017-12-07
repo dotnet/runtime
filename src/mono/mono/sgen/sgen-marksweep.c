@@ -1410,6 +1410,7 @@ mark_pinned_objects_in_block (MSBlockInfo *block, size_t first_entry, size_t las
 			continue;
 		MS_MARK_OBJECT_AND_ENQUEUE (obj, sgen_obj_get_descriptor (obj), block, queue);
 		sgen_pin_stats_register_object (obj, GENERATION_OLD);
+		sgen_client_pinned_major_heap_object (obj);
 		last_index = index;
 	}
 

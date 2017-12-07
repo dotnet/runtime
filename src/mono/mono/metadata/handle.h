@@ -132,7 +132,7 @@ MonoRawHandle mono_handle_new_full (gpointer rawptr, gboolean interior, const ch
 MonoRawHandle mono_handle_new_interior (gpointer rawptr, const char *owner);
 #endif
 
-void mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data, gboolean precise);
+void mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data, gboolean precise, gboolean check);
 gboolean mono_handle_stack_is_empty (HandleStack *stack);
 HandleStack* mono_handle_stack_alloc (void);
 void mono_handle_stack_free (HandleStack *handlestack);

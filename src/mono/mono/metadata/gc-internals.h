@@ -22,7 +22,7 @@
 #define mono_domain_finalizers_unlock(domain) mono_os_mutex_unlock (&(domain)->finalizable_objects_hash_lock);
 
 /* Register a memory area as a conservatively scanned GC root */
-#define MONO_GC_REGISTER_ROOT_PINNING(x,src,msg) mono_gc_register_root ((char*)&(x), sizeof(x), MONO_GC_DESCRIPTOR_NULL, (src), (msg))
+#define MONO_GC_REGISTER_ROOT_PINNING(x,src,key,msg) mono_gc_register_root ((char*)&(x), sizeof(x), MONO_GC_DESCRIPTOR_NULL, (src), (key), (msg))
 
 #define MONO_GC_UNREGISTER_ROOT(x) mono_gc_deregister_root ((char*)&(x))
 
@@ -34,18 +34,18 @@
 #define MONO_GC_ROOT_DESCR_FOR_FIXED(n) (mono_gc_is_moving () ? mono_gc_make_root_descr_all_refs (0) : MONO_GC_DESCRIPTOR_NULL)
 
 /* Register a memory location holding a single object reference as a GC root */
-#define MONO_GC_REGISTER_ROOT_SINGLE(x,src,msg) do { \
+#define MONO_GC_REGISTER_ROOT_SINGLE(x,src,key,msg) do { \
 	g_assert (sizeof (x) == sizeof (MonoObject*)); \
-	mono_gc_register_root ((char*)&(x), sizeof(MonoObject*), mono_gc_make_root_descr_all_refs (1), (src), (msg)); \
+	mono_gc_register_root ((char*)&(x), sizeof(MonoObject*), mono_gc_make_root_descr_all_refs (1), (src), (key),(msg)); \
 	} while (0)
 
 /*
  * This is used for fields which point to objects which are kept alive by other references
  * when using Boehm.
  */
-#define MONO_GC_REGISTER_ROOT_IF_MOVING(x,src,msg) do { \
+#define MONO_GC_REGISTER_ROOT_IF_MOVING(x,src,key,msg) do { \
 	if (mono_gc_is_moving ()) \
-		MONO_GC_REGISTER_ROOT_SINGLE(x,src,msg);		\
+		MONO_GC_REGISTER_ROOT_SINGLE(x,src,key,msg);		\
 } while (0)
 
 #define MONO_GC_UNREGISTER_ROOT_IF_MOVING(x) do { \
@@ -121,7 +121,7 @@ gboolean mono_gc_user_markers_supported (void);
  * size bytes will be available from the returned address (ie, descr
  * must not be stored in the returned memory)
  */
-void* mono_gc_alloc_fixed            (size_t size, MonoGCDescriptor descr, MonoGCRootSource source, const char *msg);
+void* mono_gc_alloc_fixed            (size_t size, MonoGCDescriptor descr, MonoGCRootSource source, void *key, const char *msg);
 void  mono_gc_free_fixed             (void* addr);
 
 /* make sure the gchandle was allocated for an object in domain */
@@ -142,7 +142,7 @@ void mono_gc_register_obj_with_weak_fields (void *obj);
 
 void  mono_gc_register_for_finalization (MonoObject *obj, void *user_data);
 void  mono_gc_add_memory_pressure (gint64 value);
-MONO_API int   mono_gc_register_root (char *start, size_t size, MonoGCDescriptor descr, MonoGCRootSource source, const char *msg);
+MONO_API int   mono_gc_register_root (char *start, size_t size, MonoGCDescriptor descr, MonoGCRootSource source, void *key, const char *msg);
 void  mono_gc_deregister_root (char* addr);
 void  mono_gc_finalize_domain (MonoDomain *domain);
 void  mono_gc_run_finalize (void *obj, void *data);
@@ -161,7 +161,7 @@ void  mono_gc_suspend_finalizers (void);
  * FIXME: Add an API for clearing remset entries if a root with a user defined
  * mark routine is deleted.
  */
-int mono_gc_register_root_wbarrier (char *start, size_t size, MonoGCDescriptor descr, MonoGCRootSource source, const char *msg);
+int mono_gc_register_root_wbarrier (char *start, size_t size, MonoGCDescriptor descr, MonoGCRootSource source, void *key, const char *msg);
 
 void mono_gc_wbarrier_set_root (gpointer ptr, MonoObject *value);
 
@@ -347,6 +347,8 @@ MONO_API void mono_gc_register_finalizer_callbacks (MonoGCFinalizerCallbacks *ca
 #ifdef HOST_WIN32
 BOOL APIENTRY mono_gc_dllmain (HMODULE module_handle, DWORD reason, LPVOID reserved);
 #endif
+
+MonoVTable *mono_gc_get_vtable (MonoObject *obj);
 
 guint mono_gc_get_vtable_bits (MonoClass *klass);
 

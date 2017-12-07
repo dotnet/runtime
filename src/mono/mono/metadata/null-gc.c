@@ -110,10 +110,17 @@ mono_object_is_alive (MonoObject* o)
 }
 
 int
-mono_gc_register_root (char *start, size_t size, void *descr, MonoGCRootSource source, const char *msg)
+mono_gc_register_root (char *start, size_t size, void *descr, MonoGCRootSource source, void *key, const char *msg)
 {
 	return TRUE;
 }
+
+int
+mono_gc_register_root_wbarrier (char *start, size_t size, MonoGCDescriptor descr, MonoGCRootSource source, void *key, const char *msg)
+{
+	return TRUE;
+}
+
 
 void
 mono_gc_deregister_root (char* addr)
@@ -157,7 +164,7 @@ mono_gc_make_root_descr_all_refs (int numbits)
 }
 
 void*
-mono_gc_alloc_fixed (size_t size, void *descr, MonoGCRootSource source, const char *msg)
+mono_gc_alloc_fixed (size_t size, void *descr, MonoGCRootSource source, void *key, const char *msg)
 {
 	return g_malloc0 (size);
 }
@@ -523,6 +530,13 @@ BOOL APIENTRY mono_gc_dllmain (HMODULE module_handle, DWORD reason, LPVOID reser
 	return TRUE;
 }
 #endif
+
+MonoVTable *
+mono_gc_get_vtable (MonoObject *obj)
+{
+	// No pointer tagging.
+	return obj->vtable;
+}
 
 guint
 mono_gc_get_vtable_bits (MonoClass *klass)

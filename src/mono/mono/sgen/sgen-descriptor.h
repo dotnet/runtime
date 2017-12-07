@@ -122,6 +122,7 @@ enum {
 };
 
 typedef void (*SgenUserMarkFunc)     (GCObject **addr, void *gc_data);
+typedef void (*SgenUserReportRootFunc)     (void *addr, GCObject *obj, void *gc_data);
 typedef void (*SgenUserRootMarkFunc) (void *addr, SgenUserMarkFunc mark_func, void *gc_data);
 
 SgenDescriptor sgen_make_user_root_descriptor (SgenUserRootMarkFunc marker);

@@ -217,7 +217,8 @@ mono_thread_set_main (MonoThread *thread)
 	static gboolean registered = FALSE;
 
 	if (!registered) {
-		MONO_GC_REGISTER_ROOT_SINGLE (main_thread, MONO_ROOT_SOURCE_THREADING, "main thread object");
+		void *key = thread->internal_thread ? (void *) MONO_UINT_TO_NATIVE_THREAD_ID (thread->internal_thread->tid) : NULL;
+		MONO_GC_REGISTER_ROOT_SINGLE (main_thread, MONO_ROOT_SOURCE_THREADING, key, "Thread Main Object");
 		registered = TRUE;
 	}
 
@@ -507,7 +508,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 			 */
 			mono_domain_lock (domain);
 			if (!domain->type_init_exception_hash)
-				domain->type_init_exception_hash = mono_g_hash_table_new_type (mono_aligned_addr_hash, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, "type initialization exceptions table");
+				domain->type_init_exception_hash = mono_g_hash_table_new_type (mono_aligned_addr_hash, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Type Initialization Exception Table");
 			mono_g_hash_table_insert (domain->type_init_exception_hash, klass, exc_to_throw);
 			mono_domain_unlock (domain);
 		}
@@ -557,6 +558,18 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 		return FALSE;
 	}
 	return TRUE;
+}
+
+MonoDomain *
+mono_vtable_domain (MonoVTable *vtable)
+{
+	return vtable->domain;
+}
+
+MonoClass *
+mono_vtable_class (MonoVTable *vtable)
+{
+	return vtable->klass;
 }
 
 static
@@ -1964,6 +1977,8 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 	vt->rank = klass->rank;
 	vt->domain = domain;
 
+	MONO_PROFILER_RAISE (vtable_loading, (vt));
+
 	mono_class_compute_gc_descriptor (klass);
 	/*
 	 * For Boehm:
@@ -1999,7 +2014,8 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 			bitmap = compute_class_bitmap (klass, default_bitmap, sizeof (default_bitmap) * 8, 0, &max_set, TRUE);
 			/*g_print ("bitmap 0x%x for %s.%s (size: %d)\n", bitmap [0], klass->name_space, klass->name, class_size);*/
 			statics_gc_descr = mono_gc_make_descr_from_bitmap (bitmap, max_set + 1);
-			vt->vtable [klass->vtable_size] = mono_gc_alloc_fixed (class_size, statics_gc_descr, MONO_ROOT_SOURCE_STATIC, "managed static variables");
+			vt->vtable [klass->vtable_size] = mono_gc_alloc_fixed (class_size, statics_gc_descr, MONO_ROOT_SOURCE_STATIC, vt, "Static Fields");
+
 			if (bitmap != default_bitmap)
 				g_free (bitmap);
 		} else {
@@ -2097,6 +2113,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 				if (!is_ok (error)) {
 					mono_domain_unlock (domain);
 					mono_loader_unlock ();
+					MONO_PROFILER_RAISE (vtable_failed, (vt));
 					return NULL;
 				}
 			}
@@ -2119,6 +2136,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 		if (!is_ok (error)) {
 			mono_domain_unlock (domain);
 			mono_loader_unlock ();
+			MONO_PROFILER_RAISE (vtable_failed, (vt));
 			return NULL;
 		}
 
@@ -2126,7 +2144,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 			/* This is unregistered in
 			   unregister_vtable_reflection_type() in
 			   domain.c. */
-			MONO_GC_REGISTER_ROOT_IF_MOVING(vt->type, MONO_ROOT_SOURCE_REFLECTION, "vtable reflection type");
+			MONO_GC_REGISTER_ROOT_IF_MOVING (vt->type, MONO_ROOT_SOURCE_REFLECTION, vt, "Reflection Type Object");
 	}
 
 	mono_vtable_set_is_remote (vt, mono_class_is_contextbound (klass));
@@ -2178,6 +2196,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 		if (!is_ok (error)) {
 			mono_domain_unlock (domain);
 			mono_loader_unlock ();
+			MONO_PROFILER_RAISE (vtable_failed, (vt));
 			return NULL;
 		}
 
@@ -2185,7 +2204,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 			/* This is unregistered in
 			   unregister_vtable_reflection_type() in
 			   domain.c. */
-			MONO_GC_REGISTER_ROOT_IF_MOVING(vt->type, MONO_ROOT_SOURCE_REFLECTION, "vtable reflection type");
+			MONO_GC_REGISTER_ROOT_IF_MOVING(vt->type, MONO_ROOT_SOURCE_REFLECTION, vt, "Reflection Type Object");
 	}
 
 	mono_domain_unlock (domain);
@@ -2195,6 +2214,8 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 	/*FIXME shouldn't this fail the current type?*/
 	if (klass->parent)
 		mono_class_vtable_full (domain, klass->parent, error);
+
+	MONO_PROFILER_RAISE (vtable_loaded, (vt));
 
 	return vt;
 }
@@ -2306,6 +2327,9 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	memcpy (pvt, vt, MONO_SIZEOF_VTABLE + klass->vtable_size * sizeof (gpointer));
 
 	pvt->klass = mono_defaults.transparent_proxy_class;
+
+	MONO_PROFILER_RAISE (vtable_loading, (pvt));
+
 	/* we need to keep the GC descriptor for a transparent proxy or we confuse the precise GC */
 	pvt->gc_descr = mono_defaults.transparent_proxy_class->gc_descr;
 
@@ -2396,6 +2420,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 #else
 	pvt->interface_bitmap = bitmap;
 #endif
+	MONO_PROFILER_RAISE (vtable_loaded, (pvt));
 	return pvt;
 failure:
 	if (extra_interfaces)
@@ -2403,6 +2428,7 @@ failure:
 #ifdef COMPRESSED_INTERFACE_BITMAP
 	g_free (bitmap);
 #endif
+	MONO_PROFILER_RAISE (vtable_failed, (pvt));
 	return NULL;
 }
 
@@ -6470,6 +6496,13 @@ mono_value_copy_array (MonoArray *dest, int dest_idx, gpointer src, int count)
 	char *d = mono_array_addr_with_size_fast (dest, size, dest_idx);
 	g_assert (size == mono_class_value_size (mono_object_class (dest)->element_class, NULL));
 	mono_gc_wbarrier_value_copy (d, src, count, mono_object_class (dest)->element_class);
+}
+
+MonoVTable *
+mono_object_get_vtable (MonoObject *obj)
+{
+	// This could be called during STW, so untag the vtable if needed.
+	return mono_gc_get_vtable (obj);
 }
 
 /**

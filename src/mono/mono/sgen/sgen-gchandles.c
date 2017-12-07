@@ -94,15 +94,24 @@ static void
 bucket_alloc_callback (gpointer *bucket, guint32 new_bucket_size, gboolean alloc)
 {
 	if (alloc)
-		sgen_register_root ((char *)bucket, new_bucket_size, SGEN_DESCRIPTOR_NULL, ROOT_TYPE_PINNED, MONO_ROOT_SOURCE_GC_HANDLE, "pinned gc handles");
+		sgen_register_root ((char *)bucket, new_bucket_size, SGEN_DESCRIPTOR_NULL, ROOT_TYPE_PINNED, MONO_ROOT_SOURCE_GC_HANDLE, NULL, "GC Handle Bucket (SGen, Pinned)");
 	else
 		sgen_deregister_root ((char *)bucket);
+}
+
+static void
+bucket_alloc_report_root (gpointer *bucket, guint32 new_bucket_size, gboolean alloc)
+{
+	if (alloc)
+		sgen_client_root_registered ((char *)bucket, new_bucket_size, MONO_ROOT_SOURCE_GC_HANDLE, NULL, "GC Handle Bucket (SGen, Normal)");
+	else
+		sgen_client_root_deregistered ((char *)bucket);
 }
 
 static HandleData gc_handles [] = {
 	{ SGEN_ARRAY_LIST_INIT (NULL, is_slot_set, try_occupy_slot, -1), (HANDLE_WEAK) },
 	{ SGEN_ARRAY_LIST_INIT (NULL, is_slot_set, try_occupy_slot, -1), (HANDLE_WEAK_TRACK) },
-	{ SGEN_ARRAY_LIST_INIT (NULL, is_slot_set, try_occupy_slot, -1), (HANDLE_NORMAL) },
+	{ SGEN_ARRAY_LIST_INIT (bucket_alloc_report_root, is_slot_set, try_occupy_slot, -1), (HANDLE_NORMAL) },
 	{ SGEN_ARRAY_LIST_INIT (bucket_alloc_callback, is_slot_set, try_occupy_slot, -1), (HANDLE_PINNED) },
 	{ SGEN_ARRAY_LIST_INIT (NULL, is_slot_set, try_occupy_slot, -1), (HANDLE_WEAK_FIELDS) },
 };
@@ -133,6 +142,22 @@ sgen_mark_normal_gc_handles (void *addr, SgenUserMarkFunc mark_func, void *gc_da
 	} SGEN_ARRAY_LIST_END_FOREACH_SLOT;
 }
 
+void
+sgen_gc_handles_report_roots (SgenUserReportRootFunc report_func, void *gc_data)
+{
+	HandleData *handles = gc_handles_for_type (HANDLE_NORMAL);
+	SgenArrayList *array = &handles->entries_array;
+	volatile gpointer *slot;
+	gpointer hidden, revealed;
+
+	SGEN_ARRAY_LIST_FOREACH_SLOT (array, slot) {
+		hidden = *slot;
+		revealed = MONO_GC_REVEAL_POINTER (hidden, FALSE);
+
+		if (MONO_GC_HANDLE_IS_OBJECT_POINTER (hidden))
+			report_func ((void*)slot, revealed, gc_data);
+	} SGEN_ARRAY_LIST_END_FOREACH_SLOT;
+}
 
 static guint32
 alloc_handle (HandleData *handles, GCObject *obj, gboolean track)

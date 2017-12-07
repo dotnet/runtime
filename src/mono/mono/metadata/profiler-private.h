@@ -8,7 +8,6 @@
 #define __MONO_PROFILER_PRIVATE_H__
 
 #include <mono/metadata/class-internals.h>
-#define MONO_PROFILER_UNSTABLE_GC_ROOTS
 #include <mono/metadata/profiler.h>
 #include <mono/utils/mono-context.h>
 #include <mono/utils/mono-os-mutex.h>
@@ -33,12 +32,15 @@ struct _MonoProfilerDesc {
 	_MONO_PROFILER_EVENT(name)
 #define MONO_PROFILER_EVENT_4(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name) \
 	_MONO_PROFILER_EVENT(name)
+#define MONO_PROFILER_EVENT_5(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name, arg5_type, arg5_name) \
+	_MONO_PROFILER_EVENT(name)
 #include <mono/metadata/profiler-events.h>
 #undef MONO_PROFILER_EVENT_0
 #undef MONO_PROFILER_EVENT_1
 #undef MONO_PROFILER_EVENT_2
 #undef MONO_PROFILER_EVENT_3
 #undef MONO_PROFILER_EVENT_4
+#undef MONO_PROFILER_EVENT_5
 #undef _MONO_PROFILER_EVENT
 };
 
@@ -78,12 +80,15 @@ typedef struct {
 	_MONO_PROFILER_EVENT(name)
 #define MONO_PROFILER_EVENT_4(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name) \
 	_MONO_PROFILER_EVENT(name)
+#define MONO_PROFILER_EVENT_5(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name, arg5_type, arg5_name) \
+	_MONO_PROFILER_EVENT(name)
 #include <mono/metadata/profiler-events.h>
 #undef MONO_PROFILER_EVENT_0
 #undef MONO_PROFILER_EVENT_1
 #undef MONO_PROFILER_EVENT_2
 #undef MONO_PROFILER_EVENT_3
 #undef MONO_PROFILER_EVENT_4
+#undef MONO_PROFILER_EVENT_5
 #undef _MONO_PROFILER_EVENT
 } MonoProfilerState;
 
@@ -150,12 +155,15 @@ mono_profiler_allocations_enabled (void)
 	_MONO_PROFILER_EVENT(name, arg1_type arg1_name, arg2_type arg2_name, arg3_type arg3_name)
 #define MONO_PROFILER_EVENT_4(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name) \
 	_MONO_PROFILER_EVENT(name, arg1_type arg1_name, arg2_type arg2_name, arg3_type arg3_name, arg4_type arg4_name)
+#define MONO_PROFILER_EVENT_5(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name, arg5_type, arg5_name) \
+	_MONO_PROFILER_EVENT(name, arg1_type arg1_name, arg2_type arg2_name, arg3_type arg3_name, arg4_type arg4_name, arg5_type arg5_name)
 #include <mono/metadata/profiler-events.h>
 #undef MONO_PROFILER_EVENT_0
 #undef MONO_PROFILER_EVENT_1
 #undef MONO_PROFILER_EVENT_2
 #undef MONO_PROFILER_EVENT_3
 #undef MONO_PROFILER_EVENT_4
+#undef MONO_PROFILER_EVENT_5
 #undef _MONO_PROFILER_EVENT
 
 /* These are the macros the rest of the runtime should use. */

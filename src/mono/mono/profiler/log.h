@@ -2,7 +2,6 @@
 #define __MONO_PROFLOG_H__
 
 #include <glib.h>
-#define MONO_PROFILER_UNSTABLE_GC_ROOTS
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/callspec.h>
 
@@ -73,6 +72,10 @@
                removed MONO_GC_EVENT_{MARK,RECLAIM}_{START,END}
                reverted the root_type field back to uleb128
  * version 15: reverted the type, unit, and variance fields back to uleb128
+               added TYPE_HEAP_ROOT_{REGISTER,UNREGISTER}
+               TYPE_HEAP_ROOT now has a different, saner format
+               added TYPE_VTABLE metadata load event
+               changed TYPE_ALLOC and TYPE_HEAP_OBJECT to include a vtable pointer instead of a class pointer
  */
 
 /*
@@ -153,7 +156,7 @@
  * type alloc format:
  * type: TYPE_ALLOC
  * exinfo: zero or TYPE_ALLOC_BT
- * [ptr: sleb128] class as a byte difference from ptr_base
+ * [vtable: sleb128] MonoVTable* as a pointer difference from ptr_base
  * [obj: sleb128] object address as a byte difference from obj_base
  * [size: uleb128] size of the object in the heap
  * If exinfo == TYPE_ALLOC_BT, a backtrace follows.
@@ -192,7 +195,7 @@
  * exinfo: one of: TYPE_END_LOAD, TYPE_END_UNLOAD (optional for TYPE_THREAD and TYPE_DOMAIN,
  * doesn't occur for TYPE_CLASS)
  * [mtype: byte] metadata type, one of: TYPE_CLASS, TYPE_IMAGE, TYPE_ASSEMBLY, TYPE_DOMAIN,
- * TYPE_THREAD, TYPE_CONTEXT
+ * TYPE_THREAD, TYPE_CONTEXT, TYPE_VTABLE
  * [pointer: sleb128] pointer of the metadata type depending on mtype
  * if mtype == TYPE_CLASS
  *	[image: sleb128] MonoImage* as a pointer difference from ptr_base
@@ -205,9 +208,12 @@
  * if mtype == TYPE_DOMAIN && exinfo == 0
  * 	[name: string] domain friendly name
  * if mtype == TYPE_CONTEXT
- * 	[domain: sleb128] domain id as pointer
+ * 	[domain: sleb128] domain id as pointer difference from ptr_base
  * if mtype == TYPE_THREAD && exinfo == 0
  * 	[name: string] thread name
+ * if mtype == TYPE_VTABLE
+ * 	[domain: sleb128] domain id as pointer difference from ptr_base, can be zero for proxy VTables
+ * 	[class: sleb128] MonoClass* as a pointer difference from ptr_base
  *
  * type method format:
  * type: TYPE_METHOD
@@ -251,10 +257,10 @@
  *
  * type heap format
  * type: TYPE_HEAP
- * exinfo: one of TYPE_HEAP_START, TYPE_HEAP_END, TYPE_HEAP_OBJECT, TYPE_HEAP_ROOT
+ * exinfo: one of TYPE_HEAP_START, TYPE_HEAP_END, TYPE_HEAP_OBJECT, TYPE_HEAP_ROOT, TYPE_HEAP_ROOT_REGISTER, TYPE_HEAP_ROOT_UNREGISTER
  * if exinfo == TYPE_HEAP_OBJECT
  * 	[object: sleb128] the object as a difference from obj_base
- * 	[class: sleb128] the object MonoClass* as a difference from ptr_base
+ * 	[vtable: sleb128] MonoVTable* as a pointer difference from ptr_base
  * 	[size: uleb128] size of the object on the heap
  * 	[num_refs: uleb128] number of object references
  * 	each referenced objref is preceded by a uleb128 encoded offset: the
@@ -266,11 +272,17 @@
  * 	provide additional referenced objects.
  * if exinfo == TYPE_HEAP_ROOT
  * 	[num_roots: uleb128] number of root references
- * 	[num_gc: uleb128] number of major gcs
- * 	[object: sleb128] the object as a difference from obj_base
- * 	[root_type: uleb128] the root_type: MonoProfileGCRootType (profiler.h)
- * 	[extra_info: uleb128] the extra_info value
- * 	object, root_type and extra_info are repeated num_roots times
+ * 	for i = 0 to num_roots
+ * 		[address: sleb128] the root address as a difference from ptr_base
+ * 		[object: sleb128] the object address as a difference from obj_base
+ * if exinfo == TYPE_HEAP_ROOT_REGISTER
+ * 	[start: sleb128] start address as a difference from ptr_base
+ * 	[size: uleb] size of the root region
+ * 	[source: byte] MonoGCRootSource enum value
+ * 	[key: sleb128] root key, meaning dependent on type, value as a difference from ptr_base
+ * 	[desc: string] description of the root
+ * if exinfo == TYPE_HEAP_ROOT_UNREGISTER
+ * 	[start: sleb128] start address as a difference from ptr_base
  *
  * type sample format
  * type: TYPE_SAMPLE
@@ -377,6 +389,8 @@ enum {
 	TYPE_HEAP_END    = 1 << 4,
 	TYPE_HEAP_OBJECT = 2 << 4,
 	TYPE_HEAP_ROOT   = 3 << 4,
+	TYPE_HEAP_ROOT_REGISTER = 4 << 4,
+	TYPE_HEAP_ROOT_UNREGISTER = 5 << 4,
 	/* extended type for TYPE_METADATA */
 	TYPE_END_LOAD     = 2 << 4,
 	TYPE_END_UNLOAD   = 4 << 4,
@@ -432,6 +446,7 @@ enum {
 	TYPE_DOMAIN   = 4,
 	TYPE_THREAD   = 5,
 	TYPE_CONTEXT  = 6,
+	TYPE_VTABLE   = 7,
 };
 
 typedef enum {

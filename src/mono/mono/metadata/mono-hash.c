@@ -49,6 +49,7 @@ struct _MonoGHashTable {
 	GDestroyNotify value_destroy_func, key_destroy_func;
 	MonoGHashGCType gc_type;
 	MonoGCRootSource source;
+	void *key;
 	const char *msg;
 };
 
@@ -138,7 +139,7 @@ static inline int mono_g_hash_table_find_slot (MonoGHashTable *hash, const MonoO
 
 
 MonoGHashTable *
-mono_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, MonoGHashGCType type, MonoGCRootSource source, const char *msg)
+mono_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, MonoGHashGCType type, MonoGCRootSource source, void *key, const char *msg)
 {
 	MonoGHashTable *hash;
 
@@ -156,15 +157,16 @@ mono_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, Mono
 
 	hash->gc_type = type;
 	hash->source = source;
+	hash->key = key;
 	hash->msg = msg;
 
 	if (type > MONO_HASH_KEY_VALUE_GC)
 		g_error ("wrong type for gc hashtable");
 
 	if (hash->gc_type & MONO_HASH_KEY_GC)
-		mono_gc_register_root_wbarrier ((char*)hash->keys, sizeof (MonoObject*) * hash->table_size, mono_gc_make_vector_descr (), hash->source, hash->msg);
+		mono_gc_register_root_wbarrier ((char*)hash->keys, sizeof (MonoObject*) * hash->table_size, mono_gc_make_vector_descr (), hash->source, hash->key, hash->msg);
 	if (hash->gc_type & MONO_HASH_VALUE_GC)
-		mono_gc_register_root_wbarrier ((char*)hash->values, sizeof (MonoObject*) * hash->table_size, mono_gc_make_vector_descr (), hash->source, hash->msg);
+		mono_gc_register_root_wbarrier ((char*)hash->values, sizeof (MonoObject*) * hash->table_size, mono_gc_make_vector_descr (), hash->source, hash->key, hash->msg);
 
 	return hash;
 }
@@ -221,9 +223,9 @@ rehash (MonoGHashTable *hash)
 	data.values = g_new0 (MonoObject*, data.new_size);
 
 	if (hash->gc_type & MONO_HASH_KEY_GC)
-		mono_gc_register_root_wbarrier ((char*)data.keys, sizeof (MonoObject*) * data.new_size, mono_gc_make_vector_descr (), hash->source, hash->msg);
+		mono_gc_register_root_wbarrier ((char*)data.keys, sizeof (MonoObject*) * data.new_size, mono_gc_make_vector_descr (), hash->source, hash->key, hash->msg);
 	if (hash->gc_type & MONO_HASH_VALUE_GC)
-		mono_gc_register_root_wbarrier ((char*)data.values, sizeof (MonoObject*) * data.new_size, mono_gc_make_vector_descr (), hash->source, hash->msg);
+		mono_gc_register_root_wbarrier ((char*)data.values, sizeof (MonoObject*) * data.new_size, mono_gc_make_vector_descr (), hash->source, hash->key, hash->msg);
 
 	if (!mono_threads_is_coop_enabled ()) {
 		mono_gc_invoke_with_gc_lock (do_rehash, &data);

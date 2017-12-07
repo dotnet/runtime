@@ -35,7 +35,6 @@ Add counters for:
 Actually do something in mono_handle_verify
 
 Shrink the handles stack in mono_handle_stack_scan
-Properly report it to the profiler.
 Add a boehm implementation
 
 TODO (things to explore):
@@ -382,10 +381,11 @@ check_handle_stack_monotonic (HandleStack *stack)
 }
 
 void
-mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data, gboolean precise)
+mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data, gboolean precise, gboolean check)
 {
-	if (precise) /* run just once (per handle stack) per GC */
+	if (check) /* run just once (per handle stack) per GC */
 		check_handle_stack_monotonic (stack);
+
 	/*
 	  We're called twice - on the imprecise pass we call func to pin the
 	  objects where the handle points to its interior.  On the precise

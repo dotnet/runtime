@@ -76,6 +76,23 @@
 #define HASH_SIZE 9371
 #define SMALL_HASH_SIZE 31
 
+/* Version < 14 root type enum */
+typedef enum {
+	/* Upper 2 bytes. */
+	MONO_PROFILER_GC_ROOT_PINNING = 1 << 8,
+	MONO_PROFILER_GC_ROOT_WEAKREF = 2 << 8,
+	MONO_PROFILER_GC_ROOT_INTERIOR = 4 << 8,
+
+	/* Lower 2 bytes (flags). */
+	MONO_PROFILER_GC_ROOT_STACK = 1 << 0,
+	MONO_PROFILER_GC_ROOT_FINALIZER = 1 << 1,
+	MONO_PROFILER_GC_ROOT_HANDLE = 1 << 2,
+	MONO_PROFILER_GC_ROOT_OTHER = 1 << 3,
+	MONO_PROFILER_GC_ROOT_MISC = 1 << 4,
+
+	MONO_PROFILER_GC_ROOT_TYPEMASK = 0xff,
+} MonoProfilerGCRootType;
+
 static int debug = 0;
 static int collect_traces = 0;
 static int show_traces = 0;
@@ -659,6 +676,54 @@ lookup_class (intptr_t klass)
 		return add_class (klass, buf);
 	}
 	return cd;
+}
+
+typedef struct _VTableDesc VTableDesc;
+struct _VTableDesc {
+	VTableDesc *next;
+	intptr_t vtable;
+	ClassDesc *klass;
+};
+
+static VTableDesc* vtable_hash [HASH_SIZE] = {0};
+
+static VTableDesc*
+add_vtable (intptr_t vtable, intptr_t klass)
+{
+	int slot = ((vtable >> 2) & 0xffff) % HASH_SIZE;
+
+	VTableDesc *vt = vtable_hash [slot];
+
+	while (vt && vt->vtable != vtable)
+		vt = vt->next;
+
+	if (vt)
+		return vt;
+
+	vt = (VTableDesc *) g_calloc (sizeof (VTableDesc), 1);
+
+	vt->vtable = vtable;
+	vt->klass = lookup_class (klass);
+	vt->next = vtable_hash [slot];
+
+	vtable_hash [slot] = vt;
+
+	return vt;
+}
+
+static VTableDesc *
+lookup_vtable (intptr_t vtable)
+{
+	int slot = ((vtable >> 2) & 0xffff) % HASH_SIZE;
+	VTableDesc *vt = vtable_hash [slot];
+
+	while (vt && vt->vtable != vtable)
+		vt = vt->next;
+
+	if (!vt)
+		return add_vtable (vtable, 0);
+
+	return vt;
 }
 
 typedef struct _MethodDesc MethodDesc;
@@ -2562,6 +2627,12 @@ decode_buffer (ProfContext *ctx)
 					while (*p) p++;
 					p++;
 				}
+			} else if (mtype == TYPE_VTABLE) {
+				intptr_t domaindiff = decode_sleb128 (p, &p);
+				intptr_t classdiff = decode_sleb128 (p, &p);
+				if (debug)
+					fprintf (outfile, "vtable %p for class %p in domain %p at %llu\n", (void *) (ptrdiff + ptr_base), (void *) (classdiff + ptr_base), (void *) (domaindiff + ptr_base), (unsigned long long) time_base);
+				add_vtable (ptr_base + ptrdiff, ptr_base + classdiff);
 			}
 			break;
 		}
@@ -2574,12 +2645,17 @@ decode_buffer (ProfContext *ctx)
 			int num_bt = 0;
 			MethodDesc* sframes [8];
 			MethodDesc** frames = sframes;
-			ClassDesc *cd = lookup_class (ptr_base + ptrdiff);
+			ClassDesc *cd;
+			if (ctx->data_version > 14) {
+				VTableDesc *vt = lookup_vtable (ptr_base + ptrdiff);
+				cd = vt->klass;
+			} else
+				cd = lookup_class (ptr_base + ptrdiff);
 			len = decode_uleb128 (p, &p);
 			LOG_TIME (time_base, tdiff);
 			time_base += tdiff;
 			if (debug)
-				fprintf (outfile, "alloced object %p, size %llu (%s) at %llu\n", (void*)OBJ_ADDR (objdiff), (unsigned long long) len, lookup_class (ptr_base + ptrdiff)->name, (unsigned long long) time_base);
+				fprintf (outfile, "alloced object %p, size %llu (%s) at %llu\n", (void*)OBJ_ADDR (objdiff), (unsigned long long) len, cd->name, (unsigned long long) time_base);
 			if (has_bt) {
 				num_bt = 8;
 				frames = decode_bt (ctx, sframes, &num_bt, p, &p, ptr_base, &method_base);
@@ -2663,7 +2739,12 @@ decode_buffer (ProfContext *ctx)
 				uintptr_t num = decode_uleb128 (p, &p);
 				uintptr_t ref_offset = 0;
 				uintptr_t last_obj_offset = 0;
-				ClassDesc *cd = lookup_class (ptr_base + ptrdiff);
+				ClassDesc *cd;
+				if (ctx->data_version > 14) {
+					VTableDesc *vt = lookup_vtable (ptr_base + ptrdiff);
+					cd = vt->klass;
+				} else
+					cd = lookup_class (ptr_base + ptrdiff);
 				if (size) {
 					HeapClassDesc *hcd = add_heap_shot_class (thread->current_heap_shot, cd, size);
 					if (collect_traces) {
@@ -2691,29 +2772,68 @@ decode_buffer (ProfContext *ctx)
 					fprintf (outfile, "traced object %p, size %llu (%s), refs: %zd\n", (void*)OBJ_ADDR (objdiff), (unsigned long long) size, cd->name, num);
 			} else if (subtype == TYPE_HEAP_ROOT) {
 				uintptr_t num;
-				if (ctx->data_version > 12) {
+				if (ctx->data_version > 14) {
+					int i;
 					uint64_t tdiff = decode_uleb128 (p + 1, &p);
 					LOG_TIME (time_base, tdiff);
 					time_base += tdiff;
 					num = decode_uleb128 (p, &p);
-				} else
-					num = decode_uleb128 (p + 1, &p);
-				uintptr_t gc_num G_GNUC_UNUSED = decode_uleb128 (p, &p);
-				int i;
-				for (i = 0; i < num; ++i) {
-					intptr_t objdiff = decode_sleb128 (p, &p);
-					int root_type;
-					if (ctx->data_version == 13)
-						root_type = *p++;
-					else
-						root_type = decode_uleb128 (p, &p);
-					/* we just discard the extra info for now */
-					uintptr_t extra_info = decode_uleb128 (p, &p);
-					if (debug)
-						fprintf (outfile, "object %p is a %s root\n", (void*)OBJ_ADDR (objdiff), get_root_name (root_type));
-					if (collect_traces)
-						thread_add_root (thread, OBJ_ADDR (objdiff), root_type, extra_info);
+					for (i = 0; i < num; ++i) {
+						intptr_t ptrdiff = decode_sleb128 (p, &p);
+						intptr_t objdiff = decode_sleb128 (p, &p);
+
+						if (debug)
+							fprintf (outfile, "root object %p at address %p\n", (void*)OBJ_ADDR (objdiff), (void *) (ptr_base + ptrdiff));
+						if (collect_traces)
+							thread_add_root (thread, OBJ_ADDR (objdiff), MONO_PROFILER_GC_ROOT_MISC, 0);
+					}
+				} else {
+					if (ctx->data_version > 12) {
+						uint64_t tdiff = decode_uleb128 (p + 1, &p);
+						LOG_TIME (time_base, tdiff);
+						time_base += tdiff;
+						num = decode_uleb128 (p, &p);
+					} else
+						num = decode_uleb128 (p + 1, &p);
+					uintptr_t gc_num G_GNUC_UNUSED = decode_uleb128 (p, &p);
+					int i;
+					for (i = 0; i < num; ++i) {
+						intptr_t objdiff = decode_sleb128 (p, &p);
+						int root_type;
+						if (ctx->data_version == 13)
+							root_type = *p++;
+						else
+							root_type = decode_uleb128 (p, &p);
+						/* we just discard the extra info for now */
+						uintptr_t extra_info = decode_uleb128 (p, &p);
+						if (debug)
+							fprintf (outfile, "object %p is a %s root\n", (void*)OBJ_ADDR (objdiff), get_root_name (root_type));
+						if (collect_traces)
+							thread_add_root (thread, OBJ_ADDR (objdiff), root_type, extra_info);
+					}
 				}
+			} else if (subtype == TYPE_HEAP_ROOT_REGISTER) {
+				uint64_t tdiff = decode_uleb128 (p + 1, &p);
+				LOG_TIME (time_base, tdiff);
+				time_base += tdiff;
+
+				int64_t ptrdiff = decode_sleb128 (p, &p);
+				uint64_t size = decode_uleb128 (p, &p);
+				int type = *p++;
+				int64_t keydiff = decode_sleb128 (p, &p);
+				char *desc = (char*) p;
+				while (*p++);
+
+				if (debug)
+					fprintf (outfile, "root register address %p size %lld type %d key %p name %s\n", (void *) (ptr_base + ptrdiff), (unsigned long long) size, type, (void *) (ptr_base + keydiff), desc);
+			} else if (subtype == TYPE_HEAP_ROOT_UNREGISTER) {
+				uint64_t tdiff = decode_uleb128 (p + 1, &p);
+				LOG_TIME (time_base, tdiff);
+				time_base += tdiff;
+				int64_t ptrdiff = decode_sleb128 (p, &p);
+
+				if (debug)
+					fprintf (outfile, "root unregister address %p\n", (void *) (ptr_base + ptrdiff));
 			} else if (subtype == TYPE_HEAP_END) {
 				uint64_t tdiff = decode_uleb128 (p + 1, &p);
 				LOG_TIME (time_base, tdiff);

@@ -673,6 +673,7 @@ pin_objects_from_nursery_pin_queue (gboolean do_scan_objects, ScanCopyContext ct
 		 * Finally - pin the object!
 		 */
 		desc = sgen_obj_get_descriptor_safe (obj_to_pin);
+
 		if (do_scan_objects) {
 			scan_func (obj_to_pin, desc, queue);
 		} else {
@@ -1773,6 +1774,7 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 	time_minor_pinning += TV_ELAPSED (btv, atv);
 	SGEN_LOG (2, "Finding pinned pointers: %zd in %lld usecs", sgen_get_pinned_count (), (long long)TV_ELAPSED (btv, atv));
 	SGEN_LOG (4, "Start scan with %zd pinned objects", sgen_get_pinned_count ());
+	sgen_client_pinning_end ();
 
 	remset.start_scan_remsets ();
 
@@ -1784,9 +1786,6 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 	SGEN_LOG (2, "Old generation scan: %lld usecs", (long long)TV_ELAPSED (atv, btv));
 
 	sgen_pin_stats_report ();
-
-	/* FIXME: Why do we do this at this specific, seemingly random, point? */
-	sgen_client_collecting_minor (&fin_ready_queue, &critical_fin_queue);
 
 	TV_GETTIME (atv);
 	time_minor_scan_pinned += TV_ELAPSED (btv, atv);
@@ -1860,6 +1859,10 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 	UnlockedAdd64 (&gc_stats.minor_gc_time, TV_ELAPSED (last_minor_collection_start_tv, last_minor_collection_end_tv));
 
 	sgen_debug_dump_heap ("minor", mono_atomic_load_i32 (&gc_stats.minor_gc_count) - 1, NULL);
+
+	// This is used by the profiler to report GC roots.
+	// Invariants: Heap's finished, no more moves left. Pin queue no longer in use, we can do whatever with it.
+	sgen_client_collecting_minor_report_roots (&fin_ready_queue, &critical_fin_queue);
 
 	/* prepare the pin queue for the next collection */
 	sgen_finish_pinning ();
@@ -1976,8 +1979,6 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 		sgen_cement_force_pinned ();
 	}
 
-	sgen_client_collecting_major_1 ();
-
 	/*
 	 * pin_queue now contains all candidate pointers, sorted and
 	 * uniqued.  We must do two passes now to figure out which
@@ -2028,6 +2029,7 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 	time_major_pinning += TV_ELAPSED (atv, btv);
 	SGEN_LOG (2, "Finding pinned pointers: %zd in %lld usecs", sgen_get_pinned_count (), (long long)TV_ELAPSED (atv, btv));
 	SGEN_LOG (4, "Start scan with %zd pinned objects", sgen_get_pinned_count ());
+	sgen_client_pinning_end ();
 
 	if (mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT)
 		sgen_finish_pinning_for_conc ();
@@ -2056,12 +2058,8 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 	main_gc_thread = mono_native_thread_self ();
 #endif
 
-	sgen_client_collecting_major_2 ();
-
 	TV_GETTIME (atv);
 	time_major_scan_pinned += TV_ELAPSED (btv, atv);
-
-	sgen_client_collecting_major_3 (&fin_ready_queue, &critical_fin_queue);
 
 	enqueue_scan_from_roots_jobs (gc_thread_gray_queue, heap_start, heap_end, object_ops_nopar, FALSE);
 
@@ -2256,6 +2254,8 @@ major_finish_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason
 
 	if (do_concurrent_checks && concurrent_collection_in_progress)
 		sgen_debug_check_nursery_is_clean ();
+
+	sgen_client_collecting_major_report_roots (&fin_ready_queue, &critical_fin_queue);
 
 	/* prepare the pin queue for the next collection */
 	sgen_finish_pinning ();
@@ -2785,10 +2785,13 @@ sgen_have_pending_finalizers (void)
  * We do not coalesce roots.
  */
 int
-sgen_register_root (char *start, size_t size, SgenDescriptor descr, int root_type, int source, const char *msg)
+sgen_register_root (char *start, size_t size, SgenDescriptor descr, int root_type, int source, void *key, const char *msg)
 {
 	RootRecord new_root;
 	int i;
+
+	sgen_client_root_registered (start, size, source, key, msg);
+
 	LOCK_GC;
 	for (i = 0; i < ROOT_TYPE_NUM; ++i) {
 		RootRecord *root = (RootRecord *)sgen_hash_table_lookup (&roots_hash [i], start);
@@ -2826,6 +2829,8 @@ sgen_deregister_root (char* addr)
 {
 	int root_type;
 	RootRecord root;
+
+	sgen_client_root_deregistered (addr);
 
 	LOCK_GC;
 	for (root_type = 0; root_type < ROOT_TYPE_NUM; ++root_type) {
@@ -3707,7 +3712,7 @@ sgen_gc_init (void)
 
 	sgen_card_table_init (&remset);
 
-	sgen_register_root (NULL, 0, sgen_make_user_root_descriptor (sgen_mark_normal_gc_handles), ROOT_TYPE_NORMAL, MONO_ROOT_SOURCE_GC_HANDLE, "normal gc handles");
+	sgen_register_root (NULL, 0, sgen_make_user_root_descriptor (sgen_mark_normal_gc_handles), ROOT_TYPE_NORMAL, MONO_ROOT_SOURCE_GC_HANDLE, NULL, "GC Handles (SGen, Normal)");
 
 	gc_initialized = 1;
 

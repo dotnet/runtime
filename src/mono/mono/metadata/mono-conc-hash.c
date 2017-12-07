@@ -38,6 +38,7 @@ struct _MonoConcGHashTable {
 	GDestroyNotify value_destroy_func;
 	MonoGHashGCType gc_type;
 	MonoGCRootSource source;
+	void *key;
 	const char *msg;
 };
 
@@ -46,16 +47,16 @@ static conc_table*
 conc_table_new (MonoConcGHashTable *hash, int size)
 {
 	conc_table *table = g_new0 (conc_table, 1);
-	
+
 	table->keys = g_new0 (void*, size);
 	table->values = g_new0 (void*, size);
 	table->table_size = size;
 	table->gc_type = hash->gc_type;
 
 	if (hash->gc_type & MONO_HASH_KEY_GC)
-		mono_gc_register_root_wbarrier ((char*)table->keys, sizeof (MonoObject*) * size, mono_gc_make_vector_descr (), hash->source, hash->msg);
+		mono_gc_register_root_wbarrier ((char*)table->keys, sizeof (MonoObject*) * size, mono_gc_make_vector_descr (), hash->source, hash->key, hash->msg);
 	if (hash->gc_type & MONO_HASH_VALUE_GC)
-		mono_gc_register_root_wbarrier ((char*)table->values, sizeof (MonoObject*) * size, mono_gc_make_vector_descr (), hash->source, hash->msg);
+		mono_gc_register_root_wbarrier ((char*)table->values, sizeof (MonoObject*) * size, mono_gc_make_vector_descr (), hash->source, hash->key, hash->msg);
 
 	return table;
 }
@@ -168,7 +169,7 @@ expand_table (MonoConcGHashTable *hash_table)
 
 
 MonoConcGHashTable *
-mono_conc_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, MonoGHashGCType type, MonoGCRootSource source, const char *msg)
+mono_conc_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, MonoGHashGCType type, MonoGCRootSource source, void *key, const char *msg)
 {
 	MonoConcGHashTable *hash;
 
@@ -183,6 +184,7 @@ mono_conc_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func,
 	hash->overflow_count = (int)(INITIAL_SIZE * LOAD_FACTOR);
 	hash->gc_type = type;
 	hash->source = source;
+	hash->key = key;
 	hash->msg = msg;
 
 	hash->table = conc_table_new (hash, INITIAL_SIZE);

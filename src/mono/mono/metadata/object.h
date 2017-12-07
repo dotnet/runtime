@@ -200,6 +200,9 @@ mono_value_copy             (void* dest, void* src, MonoClass *klass);
 MONO_API void
 mono_value_copy_array       (MonoArray *dest, int dest_idx, void* src, int count);
 
+MONO_API MonoVTable *
+mono_object_get_vtable      (MonoObject *obj);
+
 MONO_API MonoDomain*
 mono_object_get_domain      (MonoObject *obj);
 
@@ -255,6 +258,12 @@ mono_runtime_object_init    (MonoObject *this_obj);
 MONO_RT_EXTERNAL_ONLY
 MONO_API void
 mono_runtime_class_init	    (MonoVTable *vtable);
+
+MONO_API MonoDomain *
+mono_vtable_domain          (MonoVTable *vtable);
+
+MONO_API MonoClass *
+mono_vtable_class           (MonoVTable *vtable);
 
 MONO_API MonoMethod*
 mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method);

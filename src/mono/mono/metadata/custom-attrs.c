@@ -761,7 +761,7 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 		memset (params, 0, sizeof (void*) * sig->param_count);
 	} else {
 		/* Allocate using GC so it gets GC tracking */
-		params = (void **)mono_gc_alloc_fixed (sig->param_count * sizeof (void*), MONO_GC_DESCRIPTOR_NULL, MONO_ROOT_SOURCE_REFLECTION, "custom attribute parameters");
+		params = (void **)mono_gc_alloc_fixed (sig->param_count * sizeof (void*), MONO_GC_DESCRIPTOR_NULL, MONO_ROOT_SOURCE_REFLECTION, NULL, "Reflection Custom Attribute Parameters");
 	}
 
 	/* skip prolog */

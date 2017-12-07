@@ -774,12 +774,15 @@ mono_profiler_cleanup (void)
 	_MONO_PROFILER_EVENT(name)
 #define MONO_PROFILER_EVENT_4(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name) \
 	_MONO_PROFILER_EVENT(name)
+#define MONO_PROFILER_EVENT_5(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name, arg5_type, arg5_name) \
+	_MONO_PROFILER_EVENT(name)
 #include <mono/metadata/profiler-events.h>
 #undef MONO_PROFILER_EVENT_0
 #undef MONO_PROFILER_EVENT_1
 #undef MONO_PROFILER_EVENT_2
 #undef MONO_PROFILER_EVENT_3
 #undef MONO_PROFILER_EVENT_4
+#undef MONO_PROFILER_EVENT_5
 #undef _MONO_PROFILER_EVENT
 	}
 
@@ -795,12 +798,15 @@ mono_profiler_cleanup (void)
 	_MONO_PROFILER_EVENT(name, type)
 #define MONO_PROFILER_EVENT_4(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name) \
 	_MONO_PROFILER_EVENT(name, type)
+#define MONO_PROFILER_EVENT_5(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name, arg5_type, arg5_name)	\
+		_MONO_PROFILER_EVENT(name, type)
 #include <mono/metadata/profiler-events.h>
 #undef MONO_PROFILER_EVENT_0
 #undef MONO_PROFILER_EVENT_1
 #undef MONO_PROFILER_EVENT_2
 #undef MONO_PROFILER_EVENT_3
 #undef MONO_PROFILER_EVENT_4
+#undef MONO_PROFILER_EVENT_5
 #undef _MONO_PROFILER_EVENT
 
 	MonoProfilerHandle head = mono_profiler_state.profilers;
@@ -877,12 +883,15 @@ update_callback (volatile gpointer *location, gpointer new_, volatile gint32 *co
 	_MONO_PROFILER_EVENT(name, type)
 #define MONO_PROFILER_EVENT_4(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name) \
 	_MONO_PROFILER_EVENT(name, type)
+#define MONO_PROFILER_EVENT_5(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name, arg5_type, arg5_name)	\
+	_MONO_PROFILER_EVENT(name, type)
 #include <mono/metadata/profiler-events.h>
 #undef MONO_PROFILER_EVENT_0
 #undef MONO_PROFILER_EVENT_1
 #undef MONO_PROFILER_EVENT_2
 #undef MONO_PROFILER_EVENT_3
 #undef MONO_PROFILER_EVENT_4
+#undef MONO_PROFILER_EVENT_5
 #undef _MONO_PROFILER_EVENT
 
 #define _MONO_PROFILER_EVENT(name, type, params, args) \
@@ -905,12 +914,15 @@ update_callback (volatile gpointer *location, gpointer new_, volatile gint32 *co
 	_MONO_PROFILER_EVENT(name, type, (arg1_type arg1_name, arg2_type arg2_name, arg3_type arg3_name), (h->prof, arg1_name, arg2_name, arg3_name))
 #define MONO_PROFILER_EVENT_4(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name) \
 	_MONO_PROFILER_EVENT(name, type, (arg1_type arg1_name, arg2_type arg2_name, arg3_type arg3_name, arg4_type arg4_name), (h->prof, arg1_name, arg2_name, arg3_name, arg4_name))
+#define MONO_PROFILER_EVENT_5(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name, arg5_type, arg5_name)	\
+	_MONO_PROFILER_EVENT(name, type, (arg1_type arg1_name, arg2_type arg2_name, arg3_type arg3_name, arg4_type arg4_name, arg5_type arg5_name), (h->prof, arg1_name, arg2_name, arg3_name, arg4_name, arg5_name))
 #include <mono/metadata/profiler-events.h>
 #undef MONO_PROFILER_EVENT_0
 #undef MONO_PROFILER_EVENT_1
 #undef MONO_PROFILER_EVENT_2
 #undef MONO_PROFILER_EVENT_3
 #undef MONO_PROFILER_EVENT_4
+#undef MONO_PROFILER_EVENT_5
 #undef _MONO_PROFILER_EVENT
 
 /*
