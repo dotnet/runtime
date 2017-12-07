@@ -550,6 +550,22 @@ const char* interceptor_ICJI::getClassName(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
+const char* interceptor_ICJI::getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char** namespaceName)
+{
+    mc->cr->AddCall("getClassNameFromMetadata");
+    const char* temp = original_ICorJitInfo->getClassNameFromMetadata(cls, namespaceName);
+    mc->recGetClassNameFromMetadata(cls, (char*)temp, namespaceName);
+    return temp;
+}
+
+CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index)
+{
+    mc->cr->AddCall("getTypeInstantiationArgument");
+    CORINFO_CLASS_HANDLE temp = original_ICorJitInfo->getTypeInstantiationArgument(cls, index);
+    mc->recGetTypeInstantiationArgument(cls, temp, index);
+    return temp;
+}
+
 // Append a (possibly truncated) representation of the type cls to the preallocated buffer ppBuf of length pnBufLen
 // If fNamespace=TRUE, include the namespace/enclosing classes
 // If fFullInst=TRUE (regardless of fNamespace and fAssembly), include namespace and assembly for any type parameters

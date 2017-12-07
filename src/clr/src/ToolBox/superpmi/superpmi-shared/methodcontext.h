@@ -1222,6 +1222,16 @@ public:
     void dmpGetClassName(DWORDLONG key, DWORD value);
     const char* repGetClassName(CORINFO_CLASS_HANDLE cls);
 
+    void recGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls,
+                                     char*                className,
+                                     const char**         namespaceName);
+    void dmpGetClassNameFromMetadata(DLD key, DD value);
+    const char* repGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char** namespaceName);
+
+    void recGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result, unsigned index);
+    void dmpGetTypeInstantiationArgument(DWORDLONG key, DWORDLONG value);
+    CORINFO_CLASS_HANDLE repGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index);
+
     void recAppendClassName(
         CORINFO_CLASS_HANDLE cls, BOOL fNamespace, BOOL fFullInst, BOOL fAssembly, const WCHAR* result);
     void dmpAppendClassName(const Agnostic_AppendClassName& key, DWORD value);
@@ -1273,7 +1283,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 165
+// Highest packet number: 167
 // *************************************************************************************
 enum mcPackets
 {
@@ -1337,6 +1347,8 @@ enum mcPackets
     Packet_GetClassGClayout                              = 43,
     Packet_GetClassModuleIdForStatics                    = 44,
     Packet_GetClassName                                  = 45,
+    Packet_GetClassNameFromMetadata                      = 166, // Added 12/4/17
+    Packet_GetTypeInstantiationArgument                  = 167, // Added 12/4/17
     Packet_GetClassNumInstanceFields                     = 46,
     Packet_GetClassSize                                  = 47,
     Packet_GetIntConfigValue                             = 151, // Added 2/12/2015

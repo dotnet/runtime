@@ -5608,6 +5608,7 @@ NativeImageDumper::EnumMnemonics s_MTFlags2[] =
     MTFLAG2_ENTRY(IsZapped),
     MTFLAG2_ENTRY(IsPreRestored),
     MTFLAG2_ENTRY(HasModuleDependencies),
+    MTFLAG2_ENTRY(IsIntrinsicType),
     MTFLAG2_ENTRY(RequiresDispatchTokenFat),
     MTFLAG2_ENTRY(HasCctor),
     MTFLAG2_ENTRY(HasCCWTemplate),
