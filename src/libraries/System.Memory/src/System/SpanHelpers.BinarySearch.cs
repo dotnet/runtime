@@ -16,9 +16,6 @@ namespace System
             this ReadOnlySpan<T> span, TComparable comparable)
             where TComparable : IComparable<T>
         {
-            if (span.IsEmpty)
-            {   return -1; }
-
             // TODO: Make `ref readonly`/`in` when language permits
             return BinarySearch(ref span.DangerousGetPinnableReference(), span.Length, comparable);
         }
