@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.SpanTests
@@ -42,54 +43,67 @@ namespace System.SpanTests
             };
 
         [Theory, MemberData(nameof(UIntCases))]
-        public static void BinarySearch_UInt_Span(
+        public static void BinarySearch_UInt(
             (uint[] Array, uint Value, int ExpectedIndex) c)
         {
-            var span = new Span<uint>(c.Array);
-            var index = span.BinarySearch(c.Value);
-            Assert.Equal(c.ExpectedIndex, index);
-        }
-        [Theory, MemberData(nameof(UIntCases))]
-        public static void BinarySearch_UInt_ReadOnlySpan(
-            (uint[] Array, uint Value, int ExpectedIndex) c)
-        {
-            var span = new ReadOnlySpan<uint>(c.Array);
-            var index = span.BinarySearch(c.Value);
-            Assert.Equal(c.ExpectedIndex, index);
+            TestOverloads(c.Array, c.Value, c.ExpectedIndex);
         }
 
         [Theory, MemberData(nameof(DoubleCases))]
-        public static void BinarySearch_Double_Span(
+        public static void BinarySearch_Double(
             (double[] Array, double Value, int ExpectedIndex) c)
         {
-            var span = new Span<double>(c.Array);
-            var index = span.BinarySearch(c.Value);
-            Assert.Equal(c.ExpectedIndex, index);
-        }
-        [Theory, MemberData(nameof(DoubleCases))]
-        public static void BinarySearch_Double_ReadOnlySpan(
-            (double[] Array, double Value, int ExpectedIndex) c)
-        {
-            var span = new ReadOnlySpan<double>(c.Array);
-            var index = span.BinarySearch(c.Value);
-            Assert.Equal(c.ExpectedIndex, index);
+            TestOverloads(c.Array, c.Value, c.ExpectedIndex);
         }
 
         [Theory, MemberData(nameof(StringCases))]
-        public static void BinarySearch_String_Span(
+        public static void BinarySearch_String(
             (string[] Array, string Value, int ExpectedIndex) c)
         {
-            var span = new Span<string>(c.Array);
-            var index = span.BinarySearch(c.Value);
-            Assert.Equal(c.ExpectedIndex, index);
+            TestOverloads(c.Array, c.Value, c.ExpectedIndex);
         }
-        [Theory, MemberData(nameof(StringCases))]
-        public static void BinarySearch_String_ReadOnlySpan(
-            (string[] Array, string Value, int ExpectedIndex) c)
+
+        private static void TestOverloads<T, TComparable>(
+            T[] array, TComparable value, int expectedIndex)
+            where TComparable : IComparable<T>, T
         {
-            var span = new ReadOnlySpan<string>(c.Array);
-            var index = span.BinarySearch(c.Value);
-            Assert.Equal(c.ExpectedIndex, index);
+            TestSpan(array, value, expectedIndex);
+            TestReadOnlySpan(array, value, expectedIndex);
+            TestComparerSpan(array, value, expectedIndex);
+            TestComparerReadOnlySpan(array, value, expectedIndex);
+        }
+
+        private static void TestSpan<T, TComparable>(
+            T[] array, TComparable value, int expectedIndex)
+            where TComparable : IComparable<T>
+        {
+            var span = new Span<T>(array);
+            var index = span.BinarySearch(value);
+            Assert.Equal(expectedIndex, index);
+        }
+        private static void TestReadOnlySpan<T, TComparable>(
+            T[] array, TComparable value, int expectedIndex)
+            where TComparable : IComparable<T>
+        {
+            var span = new ReadOnlySpan<T>(array);
+            var index = span.BinarySearch(value);
+            Assert.Equal(expectedIndex, index);
+        }
+        private static void TestComparerSpan<T, TComparable>(
+            T[] array, TComparable value, int expectedIndex)
+            where TComparable : IComparable<T>, T
+        {
+            var span = new Span<T>(array);
+            var index = span.BinarySearch(value, Comparer<T>.Default);
+            Assert.Equal(expectedIndex, index);
+        }
+        private static void TestComparerReadOnlySpan<T, TComparable>(
+            T[] array, TComparable value, int expectedIndex)
+            where TComparable : IComparable<T>, T
+        {
+            var span = new ReadOnlySpan<T>(array);
+            var index = span.BinarySearch(value, Comparer<T>.Default);
+            Assert.Equal(expectedIndex, index);
         }
     }
 }
