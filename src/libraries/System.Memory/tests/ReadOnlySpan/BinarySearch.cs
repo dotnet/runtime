@@ -74,8 +74,7 @@ namespace System.SpanTests
             {
                 // Allocate max size span memory
                 var length = int.MaxValue;
-                IntPtr memory;
-                if (!AllocationHelper.TryAllocNative(new IntPtr(length), out memory))
+                if (!AllocationHelper.TryAllocNative(new IntPtr(length), out IntPtr memory))
                 {
                     Console.WriteLine($"Span.BinarySearch test {nameof(BinarySearch_MaxLength_NoOverflow)} skipped (could not alloc memory).");
                     return;
