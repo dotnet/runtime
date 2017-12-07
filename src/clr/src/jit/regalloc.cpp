@@ -4392,7 +4392,7 @@ regMaskTP Compiler::rpPredictTreeRegUse(GenTreePtr   tree,
                 }
                 tree->gtUsedRegs = (regMaskSmall)(regMask | tmpMask);
                 goto RETURN_CHECK;
-#else  // !_TARGET_ARM
+#else  // !_TARGET_ARM_
                 goto GENERIC_UNARY;
 #endif // _TARGET_ARM_
             }

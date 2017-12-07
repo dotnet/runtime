@@ -6356,7 +6356,7 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
                     // need to be spilled as they are already in memory and
                     // codegen considers them as contained memory operands.
                     CLANG_FORMAT_COMMENT_ANCHOR;
-#ifdef _TARGET_ARM
+#ifdef _TARGET_ARM_
                     // TODO-CQ-ARM: Just conservatively "and" two condition. We may implement better condision later.
                     isBetterLocation = true;
                     if (recentAssignedRef != nullptr)
