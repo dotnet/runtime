@@ -278,6 +278,9 @@
       "InboxOn": {}
     },
     "Microsoft.XmlSerializer.Generator": {
+       "StableVersions": [
+        "1.0.0"
+      ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "1.0.0.0": "1.0.0",
