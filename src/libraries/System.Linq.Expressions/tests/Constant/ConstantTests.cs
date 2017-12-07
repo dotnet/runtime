@@ -282,7 +282,7 @@ namespace System.Linq.Expressions.Tests
 #if FEATURE_COMPILE
         private static TypeBuilder GetTypeBuilder()
         {
-            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect);
             ModuleBuilder module = assembly.DefineDynamicModule("Name");
             return module.DefineType("Type");
         }
@@ -313,7 +313,7 @@ namespace System.Linq.Expressions.Tests
 
         private static MethodInfo GlobalMethod(params Type[] parameterTypes)
         {
-            ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run).DefineDynamicModule("Module");
+            ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect).DefineDynamicModule("Module");
             MethodBuilder globalMethod = module.DefineGlobalMethod("GlobalMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(void), parameterTypes);
             globalMethod.GetILGenerator().Emit(OpCodes.Ret);
             module.CreateGlobalFunctions();

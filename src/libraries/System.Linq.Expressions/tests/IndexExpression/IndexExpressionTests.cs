@@ -95,7 +95,7 @@ namespace System.Linq.Expressions.Tests
 
 #if FEATURE_COMPILE
         private static TypeBuilder GetTestTypeBuilder() =>
-            AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run)
+            AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.RunAndCollect)
                 .DefineDynamicModule("TestModule")
                 .DefineType("TestType");
 

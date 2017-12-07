@@ -518,7 +518,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void GlobalMethodInMembers()
         {
-            ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run).DefineDynamicModule("Module");
+            ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect).DefineDynamicModule("Module");
             MethodBuilder globalMethod = module.DefineGlobalMethod("GlobalMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
             globalMethod.GetILGenerator().Emit(OpCodes.Ret);
             module.CreateGlobalFunctions();
@@ -532,7 +532,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void GlobalFieldInMembers()
         {
-            ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run).DefineDynamicModule("Module");
+            ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect).DefineDynamicModule("Module");
             FieldBuilder fieldBuilder = module.DefineInitializedData("GlobalField", new byte[1], FieldAttributes.Public);
             module.CreateGlobalFunctions();
             FieldInfo globalField = module.GetField(fieldBuilder.Name);

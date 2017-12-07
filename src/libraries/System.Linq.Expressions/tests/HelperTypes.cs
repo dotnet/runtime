@@ -363,7 +363,7 @@ namespace System.Linq.Expressions.Tests
         private static ModuleBuilder GetModuleBuilder()
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
-                new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+                new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect);
             return assembly.DefineDynamicModule("Name");
         }
 

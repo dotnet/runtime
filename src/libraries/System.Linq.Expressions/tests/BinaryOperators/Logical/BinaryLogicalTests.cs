@@ -615,7 +615,7 @@ namespace System.Linq.Expressions.Tests
         [InlineData("op_False")]
         public static void Method_NoTrueFalseOperator_ThrowsArgumentException(string name)
         {
-            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect);
             ModuleBuilder module = assembly.DefineDynamicModule("Name");
             TypeBuilder builder = module.DefineType("Type");
 
@@ -638,7 +638,7 @@ namespace System.Linq.Expressions.Tests
         [InlineData("op_False")]
         public static void AndAlso_NoMethod_NoTrueFalseOperator_ThrowsArgumentException(string name)
         {
-            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect);
             ModuleBuilder module = assembly.DefineDynamicModule("Name");
             TypeBuilder builder = module.DefineType("Type");
 
@@ -658,7 +658,7 @@ namespace System.Linq.Expressions.Tests
         [InlineData("op_False")]
         public static void OrElse_NoMethod_NoTrueFalseOperator_ThrowsArgumentException(string name)
         {
-            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect);
             ModuleBuilder module = assembly.DefineDynamicModule("Name");
             TypeBuilder builder = module.DefineType("Type");
 
@@ -797,14 +797,14 @@ namespace System.Linq.Expressions.Tests
 
         private static TypeBuilder GetTypeBuilder()
         {
-            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect);
             ModuleBuilder module = assembly.DefineDynamicModule("Name");
             return module.DefineType("Type");
         }
 
         private static MethodInfo GlobalMethod(Type returnType, Type[] parameterTypes)
         {
-            ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run).DefineDynamicModule("Module");
+            ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect).DefineDynamicModule("Module");
             MethodBuilder globalMethod = module.DefineGlobalMethod("GlobalMethod", MethodAttributes.Public | MethodAttributes.Static, returnType, parameterTypes);
             globalMethod.GetILGenerator().Emit(OpCodes.Ret);
             module.CreateGlobalFunctions();
