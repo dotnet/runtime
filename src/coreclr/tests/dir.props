@@ -103,7 +103,7 @@
     <RestorePackages>false</RestorePackages>
   </PropertyGroup>
 
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(OverwriteCoreClrPackageVersion)' == 'true'">
     <BuildVersionFile>$(BaseIntermediateOutputPath)BuildVersion-$(OfficialBuildId).props</BuildVersionFile>
   </PropertyGroup>
 
