@@ -9,6 +9,7 @@ namespace System.SpanTests
     public static partial class ReadOnlySpanTests
     {
         [Theory]
+        [InlineData(new uint[] { }, 0u, -1)]
         [InlineData(new uint[] { 1u, 2u, 4u, 5u }, 0u, -1)]
         [InlineData(new uint[] { 1u, 2u, 4u, 5u }, 1u, 0)]
         [InlineData(new uint[] { 1u, 2u, 4u, 5u }, 2u, 1)]
@@ -26,6 +27,7 @@ namespace System.SpanTests
         }
 
         [Theory]
+        [InlineData(new double[] { }, 0, -1)]
         [InlineData(new double[] { 1, 2, 4, 5 }, 0, -1)]
         [InlineData(new double[] { 1, 2, 4, 5 }, 1, 0)]
         [InlineData(new double[] { 1, 2, 4, 5 }, 2, 1)]
@@ -43,6 +45,7 @@ namespace System.SpanTests
         }
 
         [Theory]
+        [InlineData(new string[] { }, null, -1)]
         [InlineData(new string[] { "b", "c", "e", "f" }, "a", -1)]
         [InlineData(new string[] { "b", "c", "e", "f" }, "b", 0)]
         [InlineData(new string[] { "b", "c", "e", "f" }, "c", 1)]
