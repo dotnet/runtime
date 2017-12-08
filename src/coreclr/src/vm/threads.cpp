@@ -902,12 +902,6 @@ void DestroyThread(Thread *th)
 #endif // _TARGET_X86_
 #endif // WIN64EXCEPTIONS
 
-    if (g_fEEShutDown == 0) 
-    {
-        th->SetThreadState(Thread::TS_ReportDead);
-        th->OnThreadTerminate(FALSE);
-    }
-
 #ifdef FEATURE_PERFTRACING
     // Before the thread dies, mark its buffers as no longer owned
     // so that they can be cleaned up after the thread dies.
@@ -917,6 +911,12 @@ void DestroyThread(Thread *th)
         pBufferList->SetOwnedByThread(false);
     }
 #endif // FEATURE_PERFTRACING
+
+    if (g_fEEShutDown == 0) 
+    {
+        th->SetThreadState(Thread::TS_ReportDead);
+        th->OnThreadTerminate(FALSE);
+    }
 }
 
 //-------------------------------------------------------------------------
