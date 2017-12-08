@@ -386,7 +386,7 @@ def static isArmWindowsScenario(def scenario) {
     return Constants.validArmWindowsScenarios.containsKey(scenario)
 }
 
-def static setTestJobTimeOut(newJob, scenario) {
+def static setTestJobTimeOut(newJob, isPR, architecture, scenario) {
     if (isGCStressRelatedTesting(scenario)) {
         Utilities.setJobTimeout(newJob, 4320)
     }
@@ -407,6 +407,14 @@ def static setTestJobTimeOut(newJob, scenario) {
     }
     else if (isGcReliabilityFramework(scenario)) {
         Utilities.setJobTimeout(newJob, 1440)
+    }
+    else if (architecture == 'arm' || architecture == 'armlb' || architecture == 'arm64') {
+        Utilities.setJobTimeout(newJob, 240)
+    }
+    else if (!(scenario == 'default' && isPR == true)) {
+        // Pri-1 test builds take a long time. Default PR jobs are Pri-0; everything else is Pri-1
+        // (see calculateBuildCommands()). So up the Pri-1 build jobs timeout.
+        Utilities.setJobTimeout(newJob, 180)
     }
     // Non-test jobs use the default timeout value.
 }
@@ -1565,7 +1573,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 
                             buildCommands += "python -u %WORKSPACE%\\tests\\scripts\\run-corefx-tests.py -arch ${arch} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${branch} -env_script ${envScriptPath}"
 
-                            setTestJobTimeOut(newJob, scenario)
+                            setTestJobTimeOut(newJob, isPR, architecture, scenario)
 
                             // Archive and process (only) the test results
                             Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
@@ -1614,7 +1622,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 
                         if (!isBuildOnly) {
                             Utilities.addXUnitDotNETResults(newJob, 'bin/**/TestRun*.xml', true)
-                            setTestJobTimeOut(newJob, scenario)
+                            setTestJobTimeOut(newJob, isPR, architecture, scenario)
                         }
                     }
                     break
@@ -1625,15 +1633,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     def machineAffinityOptions = ['use_arm64_build_machine' : true]
                     setMachineAffinity(newJob, os, architecture, machineAffinityOptions)
 
-                    // Set time out
-                    setTestJobTimeOut(newJob, scenario)
-
-                    if ((scenario != 'gcstress0x3') && (scenario != 'gcstress0xc'))
-                    {
-                        // Up the timeout for arm checked testing only.
-                        // Keep the longer timeout for gcstress.
-                        Utilities.setJobTimeout(newJob, 240)
-                    }
+                    setTestJobTimeOut(newJob, isPR, architecture, scenario)
 
                     def buildArchitecture = 'arm'
 
@@ -1663,14 +1663,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     def machineAffinityOptions = ['use_arm64_build_machine' : true]
                     setMachineAffinity(newJob, os, architecture, machineAffinityOptions)
                    
-                    // Set time out
-                    setTestJobTimeOut(newJob, scenario)
-                    if ((scenario != 'gcstress0x3') && (scenario != 'gcstress0xc'))
-                    {
-                        // Up the timeout for arm checked testing only.
-                        // Keep the longer timeout for gcstress.
-                        Utilities.setJobTimeout(newJob, 240)
-                    }
+                    setTestJobTimeOut(newJob, isPR, architecture, scenario)
 
                     // Hack: build pri1 tests for arm/armlb/arm64 build job, until we have separate pri0 and pri1 builds for the flow job to use.
                     priority = '1'
@@ -1734,8 +1727,8 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         buildCommands += "${bootstrapRidEnv}./build.sh verbose ${lowerConfiguration} ${architecture}" 
                         buildCommands += "src/pal/tests/palsuite/runpaltests.sh \${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration} \${WORKSPACE}/bin/paltestout"
 
-                        // Set time out
-                        setTestJobTimeOut(newJob, scenario)
+                        setTestJobTimeOut(newJob, isPR, architecture, scenario)
+
                         // Basic archiving of the build
                         Utilities.addArchival(newJob, "bin/Product/**,bin/obj/*/tests/**/*.dylib,bin/obj/*/tests/**/*.so", "bin/Product/**/.nuget/**")
                         // And pal tests
@@ -1760,7 +1753,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 
                         buildCommands += "python -u \$WORKSPACE/tests/scripts/run-corefx-tests.py -arch ${architecture} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${branch} -env_script ${scriptFileName}"
 
-                        setTestJobTimeOut(newJob, scenario)
+                        setTestJobTimeOut(newJob, isPR, architecture, scenario)
 
                         // Archive and process (only) the test results
                         Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
@@ -1777,7 +1770,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         buildCommands += "mkdir ./bin/Product/Linux.arm64.${configuration}/corefxNative"
                         buildCommands += "cp fx/bin/Linux.arm64.Release/native/* ./bin/Product/Linux.arm64.${configuration}/corefxNative"
 
-                        setTestJobTimeOut(newJob, scenario)
+                        setTestJobTimeOut(newJob, isPR, architecture, scenario)
                         // Basic archiving of the build
                         Utilities.addArchival(newJob, "bin/Product/**,bin/obj/*/tests/**/*.dylib,bin/obj/*/tests/**/*.so", "bin/Product/**/.nuget/**")
                     }
@@ -2680,13 +2673,7 @@ Constants.allScenarios.each { scenario ->
                     setMachineAffinity(newJob, os, architecture, affinityOptions)
                     Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
-                    // REVIEW: Should the scenario-base timeout be set in the "else" clause of the "architecture==arm64"?
-                    //         Should the "architecture==arm64" include arm/armlb?
-                    //         Should we be overriding possibly higher timeouts that would be set by setTestJobTimeOut()?
-                    setTestJobTimeOut(newJob, scenario)
-                    if (architecture == 'arm64') {
-                        Utilities.setJobTimeout(newJob, 240)
-                    }
+                    setTestJobTimeOut(newJob, isPR, architecture, scenario)
 
                     if (windowsArmJob != true) {
                         Utilities.addXUnitDotNETResults(newJob, '**/coreclrtests.xml')
