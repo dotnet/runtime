@@ -1,13 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Collections;
-using System.Collections.Generic;
-using Microsoft.Build.Utilities;
-using Microsoft.Build.Framework;
-using System.Reflection.PortableExecutable;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
+using Microsoft.Build.Framework;
+using Microsoft.Build.Utilities;
 
 namespace ILLink.Tasks
 {

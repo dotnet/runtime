@@ -1,15 +1,7 @@
-using System;
-using System.IO;
 using System.Xml;
 using System.Xml.Linq;
-using System.Linq;
-using System.Reflection;
-using System.Collections.Generic;
-using Microsoft.Build.Utilities; // Task
-using Microsoft.Build.Framework; // MessageImportance
-using Microsoft.NET.Build.Tasks; // LockFileCache
-using NuGet.ProjectModel; // LockFileTargetLibrary
-using NuGet.Frameworks; // NuGetFramework.Parse(targetframework)
+using Microsoft.Build.Framework;
+using Microsoft.Build.Utilities;
 
 namespace ILLink.Tasks
 {
