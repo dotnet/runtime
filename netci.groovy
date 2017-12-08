@@ -818,7 +818,8 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
                 assert (os == 'Windows_NT') || (os in Constants.crossList)
                 if ((architecture == 'arm64') || (architecture == 'arm') || (architecture == 'armlb')) {
                     if (os == 'Windows_NT') {
-                        Utilities.addPeriodicTrigger(job, '@daily')
+                        // We don't have enough ARM64 machines to run these more frequently than weekly.
+                        Utilities.addPeriodicTrigger(job, '@weekly')
                     }
                     // TODO: Add once external email sending is available again
                     // addEmailPublisher(job, 'dotnetonarm64@microsoft.com')
