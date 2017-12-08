@@ -47,7 +47,6 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => GetEntries(string.Empty));
         }
 
-        [ActiveIssue(25665)]
         [Fact]
         public void InvalidFileNames()
         {
@@ -180,7 +179,6 @@ namespace System.IO.Tests
 
         #region PlatformSpecific
 
-        [ActiveIssue(25665)]
         [Fact]
         public void InvalidPath()
         {
