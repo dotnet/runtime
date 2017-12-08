@@ -27,7 +27,7 @@ namespace System
     public readonly ref struct Span<T>
     {
         /// <summary>A byref or a native ptr.</summary>
-        private readonly ByReference<T> _pointer;
+        internal readonly ByReference<T> _pointer;
         /// <summary>The number of elements this Span contains.</summary>
 #if PROJECTN
         [Bound]
