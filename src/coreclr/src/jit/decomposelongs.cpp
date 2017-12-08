@@ -952,13 +952,27 @@ GenTree* DecomposeLongs::DecomposeNeg(LIR::Use& use)
     loResult->gtOp.gtOp1 = loOp1;
 
     GenTree* zero = m_compiler->gtNewZeroConNode(TYP_INT);
+
 #if defined(_TARGET_X86_)
+
     GenTree* hiAdjust = m_compiler->gtNewOperNode(GT_ADD_HI, TYP_INT, hiOp1, zero);
     GenTree* hiResult = m_compiler->gtNewOperNode(GT_NEG, TYP_INT, hiAdjust);
     Range().InsertAfter(loResult, zero, hiAdjust, hiResult);
+
+    loResult->gtFlags |= GTF_SET_FLAGS;
+    hiAdjust->gtFlags |= GTF_USE_FLAGS;
+
 #elif defined(_TARGET_ARM_)
+
+    // We tend to use "movs" to load zero to a register, and that sets the flags, so put the
+    // zero before the loResult, which is setting the flags needed by GT_SUB_HI.
     GenTree* hiResult = m_compiler->gtNewOperNode(GT_SUB_HI, TYP_INT, zero, hiOp1);
-    Range().InsertAfter(loResult, zero, hiResult);
+    Range().InsertBefore(loResult, zero);
+    Range().InsertAfter(loResult, hiResult);
+
+    loResult->gtFlags |= GTF_SET_FLAGS;
+    hiResult->gtFlags |= GTF_USE_FLAGS;
+
 #endif
 
     return FinalizeDecomposition(use, loResult, hiResult, hiResult);
@@ -1198,7 +1212,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
                         //
                         // TODO-CQ: we could go perform this removal transitively (i.e. iteratively remove everything
                         // that feeds the lo operand while there are no side effects)
-                        if ((loOp1->gtFlags & GTF_ALL_EFFECT) == 0)
+                        if ((loOp1->gtFlags & (GTF_ALL_EFFECT | GTF_SET_FLAGS)) == 0)
                         {
                             Range().Remove(loOp1, true);
                         }
@@ -1258,7 +1272,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
                     //
                     // TODO-CQ: we could go perform this removal transitively (i.e. iteratively remove everything that
                     // feeds the lo operand while there are no side effects)
-                    if ((loOp1->gtFlags & GTF_ALL_EFFECT) == 0)
+                    if ((loOp1->gtFlags & (GTF_ALL_EFFECT | GTF_SET_FLAGS)) == 0)
                     {
                         Range().Remove(loOp1, true);
                     }
@@ -1356,7 +1370,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
                     //
                     // TODO-CQ: we could go perform this removal transitively (i.e. iteratively remove everything that
                     // feeds the lo operand while there are no side effects)
-                    if ((loOp1->gtFlags & GTF_ALL_EFFECT) == 0)
+                    if ((loOp1->gtFlags & (GTF_ALL_EFFECT | GTF_SET_FLAGS)) == 0)
                     {
                         Range().Remove(loOp1, true);
                     }
