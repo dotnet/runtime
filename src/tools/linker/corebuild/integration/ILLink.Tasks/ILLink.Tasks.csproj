@@ -83,6 +83,7 @@
   <Target Name="BinPlacePackageDeps">
     <Copy SourceFiles="$(NuspecFileName)" DestinationFolder="$(BaseOutputPath)" />
     <Copy SourceFiles="ILLink.Tasks.targets" DestinationFolder="$(BaseOutputPath)" />
+    <Copy SourceFiles="ILLink.CrossGen.targets" DestinationFolder="$(BaseOutputPath)" />
   </Target>
 
   <Target Name="LayoutPackage">
@@ -99,9 +100,11 @@
     <Compile Include="LinkTask.cs" />
     <Compile Include="CompareSizes.cs" />
     <Compile Include="ComputeManagedAssemblies.cs" />
+    <Compile Include="ComputeReadyToRunAssemblies.cs" />
     <Compile Include="GetRuntimeLibraries.cs" />
     <Compile Include="CreateRootDescriptorFile.cs" />
     <Compile Include="CreateRuntimeRootDescriptorFile.cs" />
+    <Compile Include="FilterByMetadata.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="Microsoft.NET.Build.Tasks/LockFileCache.cs" />
     <Compile Include="Microsoft.NET.Build.Tasks/BuildErrorException.cs" />

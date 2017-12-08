@@ -4,7 +4,7 @@ using Microsoft.Build.Utilities;
 
 namespace ILLink.Tasks
 {
-	public class ComputeManagedAssemblies : Task
+	public class ComputeReadyToRunAssemblies : Task
 	{
 		/// <summary>
 		///   Paths to assemblies.
@@ -13,17 +13,17 @@ namespace ILLink.Tasks
 		public ITaskItem[] Assemblies { get; set; }
 
 		/// <summary>
-		///   This will contain the output list of managed
-		///   assemblies. Metadata from the input parameter
-		///   Assemblies is preserved.
+		///   This will contain the output list of
+		///   ready-to-run assemblies. Metadata from the input
+		///   parameter Assemblies is preserved.
 		/// </summary>
 		[Output]
-		public ITaskItem[] ManagedAssemblies { get; set; }
+		public ITaskItem[] ReadyToRunAssemblies { get; set; }
 
 		public override bool Execute()
 		{
-			ManagedAssemblies = Assemblies
-				.Where(f => Utils.IsManagedAssembly(f.ItemSpec))
+			ReadyToRunAssemblies = Assemblies
+				.Where(f => Utils.IsReadyToRunAssembly(f.ItemSpec))
 				.ToArray();
 			return true;
 		}

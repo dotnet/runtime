@@ -17,7 +17,11 @@
     <ShowLinkerSizeComparison Condition=" '$(ShowLinkerSizeComparison)' == '' ">false</ShowLinkerSizeComparison>
     <LinkerDumpDependencies Condition=" '$(LinkerDumpDependencies)' == '' ">false</LinkerDumpDependencies>
   </PropertyGroup>
-  
+
+  <!-- This depends on LinkDuringPublish, so it needs to be imported
+       after the property is set. -->
+  <Import Project="$(MSBuildThisFileDirectory)ILLink.CrossGen.targets" />
+
   <ItemGroup>
     <!-- LinkerRootDescriptors (the ItemGroup) is set to contain
          LinkerRootDescriptors (the Property), which allows adding

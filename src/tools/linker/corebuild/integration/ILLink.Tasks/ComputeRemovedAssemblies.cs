@@ -1,9 +1,8 @@
-using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
-using Microsoft.Build.Utilities;
 using Microsoft.Build.Framework;
+using Microsoft.Build.Utilities;
 
 namespace ILLink.Tasks
 {
