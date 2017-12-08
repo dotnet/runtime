@@ -737,24 +737,29 @@ void LinearScan::TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* argNode)
         // 1. Consume all of the items in the GT_FIELD_LIST (source)
         // 2. Store to target slot and move to target registers (destination) from source
         //
-        unsigned slotCount = 0;
+        unsigned sourceRegCount = 0;
 
         // To avoid redundant moves, have the argument operand computed in the
         // register in which the argument is passed to the call.
-        GenTreeFieldList* fieldListPtr = putArgChild->AsFieldList();
-        for (unsigned idx = 0; fieldListPtr != nullptr; fieldListPtr = fieldListPtr->Rest(), idx++)
+
+        for (GenTreeFieldList* fieldListPtr = putArgChild->AsFieldList(); fieldListPtr != nullptr;
+             fieldListPtr                   = fieldListPtr->Rest())
         {
-            if (idx < argNode->gtNumRegs)
+            GenTreePtr node = fieldListPtr->gtGetOp1();
+            assert(!node->isContained());
+            unsigned  currentRegCount = node->gtLsraInfo.dstCount;
+            regMaskTP sourceMask      = RBM_NONE;
+            if (sourceRegCount < argNode->gtNumRegs)
             {
-                GenTreePtr node = fieldListPtr->gtGetOp1();
-                node->gtLsraInfo.setSrcCandidates(this, genRegMask((regNumber)((unsigned)argReg + idx)));
+                for (unsigned regIndex = 0; regIndex < currentRegCount; regIndex++)
+                {
+                    sourceMask |= genRegMask((regNumber)((unsigned)argReg + sourceRegCount + regIndex));
+                }
+                node->gtLsraInfo.setSrcCandidates(this, sourceMask);
             }
-            else
-            {
-                slotCount++;
-            }
+            sourceRegCount += currentRegCount;
         }
-        argNode->gtLsraInfo.srcCount = argNode->gtNumRegs + slotCount;
+        argNode->gtLsraInfo.srcCount = sourceRegCount;
         assert(putArgChild->isContained());
     }
     else
