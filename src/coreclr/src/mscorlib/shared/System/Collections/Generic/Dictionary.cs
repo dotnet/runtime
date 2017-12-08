@@ -503,34 +503,40 @@ namespace System.Collections.Generic
         private void Resize(int newSize, bool forceNewHashCodes)
         {
             Debug.Assert(newSize >= _entries.Length);
-            int[] newBuckets = new int[newSize];
-            for (int i = 0; i < newBuckets.Length; i++) newBuckets[i] = -1;
-            Entry[] newEntries = new Entry[newSize];
-            Array.Copy(_entries, 0, newEntries, 0, _count);
+
+            int[] buckets = new int[newSize];
+            for (int i = 0; i < buckets.Length; i++)
+            {
+                buckets[i] = -1;
+            }
+            Entry[] entries = new Entry[newSize];
+
+            int count = _count;
+            Array.Copy(_entries, 0, entries, 0, count);
 
             if (forceNewHashCodes)
             {
-                for (int i = 0; i < _count; i++)
+                for (int i = 0; i < count; i++)
                 {
-                    if (newEntries[i].hashCode != -1)
+                    if (entries[i].hashCode != -1)
                     {
-                        newEntries[i].hashCode = (_comparer.GetHashCode(newEntries[i].key) & 0x7FFFFFFF);
+                        entries[i].hashCode = (_comparer.GetHashCode(entries[i].key) & 0x7FFFFFFF);
                     }
                 }
             }
 
-            for (int i = 0; i < _count; i++)
+            for (int i = 0; i < count; i++)
             {
-                if (newEntries[i].hashCode >= 0)
+                if (entries[i].hashCode >= 0)
                 {
-                    int bucket = newEntries[i].hashCode % newSize;
-                    newEntries[i].next = newBuckets[bucket];
-                    newBuckets[bucket] = i;
+                    int bucket = entries[i].hashCode % newSize;
+                    entries[i].next = buckets[bucket];
+                    buckets[bucket] = i;
                 }
             }
 
-            _buckets = newBuckets;
-            _entries = newEntries;
+            _buckets = buckets;
+            _entries = entries;
         }
 
         // The overload Remove(TKey key, out TValue value) is a copy of this method with one additional
