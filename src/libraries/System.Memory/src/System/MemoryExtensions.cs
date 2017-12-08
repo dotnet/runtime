@@ -791,6 +791,8 @@ namespace System
             this ReadOnlySpan<T> span, T value, TComparer comparer)
             where TComparer : IComparer<T>
         {
+            if (comparer == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparer);
             // TODO: Do we accept a null comparer and then revert to T as IComparable if possible??
             //   T:System.ArgumentException:
             //     comparer is null, and value is of a type that is not compatible with the elements

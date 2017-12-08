@@ -9,7 +9,7 @@ namespace System.SpanTests
 {
     public static partial class ReadOnlySpanTests
     {
-        public static TheoryData<(uint[] Array, uint Value, int ExpectedIndex)> UIntCases =>
+        public static readonly TheoryData<(uint[] Array, uint Value, int ExpectedIndex)> UIntCases =
             new TheoryData<(uint[] Array, uint Value, int ExpectedIndex)> {
                 (new uint[] { }, 0u, -1),
                 (new uint[] { 1u }, 0u, -1),
@@ -23,7 +23,7 @@ namespace System.SpanTests
                 (new uint[] { 1u, 2u, 4u, 5u }, 5u, 3),
                 (new uint[] { 1u, 2u, 4u, 5u }, 6u, -5),
             };
-        public static TheoryData<(double[] Array, double Value, int ExpectedIndex)> DoubleCases =>
+        public static readonly TheoryData<(double[] Array, double Value, int ExpectedIndex)> DoubleCases =
             new TheoryData<(double[] Array, double Value, int ExpectedIndex)> {
                 (new double[] { }, 0.0, -1),
                 (new double[] { 1.0 }, 0.0, -1),
@@ -37,7 +37,7 @@ namespace System.SpanTests
                 (new double[] { 1.0, 2.0, 4.0, 5u }, 5.0, 3),
                 (new double[] { 1.0, 2.0, 4.0, 5u }, 6.0, -5),
             };
-        public static TheoryData<(string[] Array, string Value, int ExpectedIndex)> StringCases =>
+        public static readonly TheoryData<(string[] Array, string Value, int ExpectedIndex)> StringCases =
             new TheoryData<(string[] Array, string Value, int ExpectedIndex)> {
                 (new string[] { }, "a", -1),
                 (new string[] { "b" }, "a", -1),
@@ -72,7 +72,24 @@ namespace System.SpanTests
         {
             TestOverloads(c.Array, c.Value, c.ExpectedIndex);
         }
-        
+
+        [Fact]
+        public static void BinarySearch_NullComparableThrows()
+        {
+            Assert.Throws<ArgumentNullException>(() => new Span<int>(new int[] { }).BinarySearch<int>(null));
+            Assert.Throws<ArgumentNullException>(() => new ReadOnlySpan<int>(new int[] { }).BinarySearch<int>(null));
+            Assert.Throws<ArgumentNullException>(() => new Span<int>(new int[] { }).BinarySearch<int, IComparable<int>>(null));
+            Assert.Throws<ArgumentNullException>(() => new ReadOnlySpan<int>(new int[] { }).BinarySearch<int, IComparable<int>>(null));
+        }
+
+        // TODO: Revise whether this should actually throw
+        [Fact]
+        public static void BinarySearch_NullComparerThrows()
+        {
+            Assert.Throws<ArgumentNullException>(() => new Span<int>(new int[] { }).BinarySearch<int, IComparer<int>>(0, null));
+            Assert.Throws<ArgumentNullException>(() => new ReadOnlySpan<int>(new int[] { }).BinarySearch<int, IComparer<int>>(0, null));
+        }
+
         [Fact]
         // TODO: Does it need to be OuterLoop, it's pretty fast, compared to total time
         //[OuterLoop]
