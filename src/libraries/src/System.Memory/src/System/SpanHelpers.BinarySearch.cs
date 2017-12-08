@@ -11,17 +11,18 @@ namespace System
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int BinarySearch<T, TComparable>(
-            this ReadOnlySpan<T> span, in TComparable comparable)
+            this ReadOnlySpan<T> span, TComparable comparable)
             where TComparable : IComparable<T>
         {
-            // TODO: Make `ref readonly`/`in` when language permits
+            if (comparable == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparable);
+            // TODO: Make `ref readonly`/`in` when Unsafe.Add(ReadOnly) supports it
             return BinarySearch(ref span.DangerousGetPinnableReference(), span.Length, comparable);
         }
 
-        // TODO: Make s `ref readonly`/`in` when language permits
-        // TODO: Make comparable `ref readonly`/`in` to allow pass by ref without forcing ref
+        // TODO: Make s `ref readonly`/`in` when Unsafe.Add(ReadOnly) supports it
         internal static int BinarySearch<T, TComparable>(
-            ref T s, int length, in TComparable comparable) 
+            ref T s, int length, TComparable comparable) 
             where TComparable : IComparable<T>
         {
             // Array.BinarySearch implementation:
@@ -33,14 +34,14 @@ namespace System
                 // lo or hi will never be negative inside the loop
                 // TODO: Test/investigate if below is faster (if it gives better asm), perhaps via Unsafe.As to avoid unnecessary conversions
                 //       This is safe since we know span.Length < int.MaxValue, and indeces are >= 0
-                //       and thus cannot overflow an uint. Saves on subtraction per loop.
+                //       and thus cannot overflow an uint. Saves one subtraction per loop.
                 int i = (int)(((uint)hi + (uint)lo) >> 1);
                 // Below was intended to avoid overflows, but this cannot happen if we do the computation in uint
                 //int i = lo + ((hi - lo) >> 1);
 
                 // TODO: We probably need to add `ref readonly`/`in` overloads or `AddReadOnly`to unsafe, 
                 //       if this will be available in language
-                // TODO: Revise all Unsafe APIs for `readonly` applicability...
+                // TODO: Revise all Unsafe APIs for `ref readonly` applicability...
                 int c = comparable.CompareTo(Unsafe.Add(ref s, i));
                 if (c == 0)
                 {
