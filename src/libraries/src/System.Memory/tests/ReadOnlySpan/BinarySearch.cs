@@ -110,17 +110,14 @@ namespace System.SpanTests
                 {
                     var span = new Span<byte>(memory.ToPointer(), length);
                     span.Fill(0);
-                    // Fill end of span, so we can search for a value there, just at the end.
-                    // But only to 254 so we can search for 255 just after end.
-                    for (int i = 0; i < byte.MaxValue; i++)
-                    {
-                        var index = span.Length - (byte.MaxValue - i);
-                        span[index] = (byte)i;
-                    }
-
-                    Assert.Equal(int.MaxValue - 2, span.BinarySearch((byte)(byte.MaxValue - 2)));
-                    Assert.Equal(int.MaxValue - 1, span.BinarySearch((byte)(byte.MaxValue - 1)));
-                    Assert.Equal(int.MinValue, span.BinarySearch(byte.MaxValue));
+                    // Fill last two elements
+                    span[int.MaxValue - 2] = 2;
+                    span[int.MaxValue - 1] = 3;
+                    // Search at end and assert no overflow
+                    Assert.Equal(~(int.MaxValue - 2), span.BinarySearch((byte)1));
+                    Assert.Equal(int.MaxValue - 2, span.BinarySearch((byte)2));
+                    Assert.Equal(int.MaxValue - 1, span.BinarySearch((byte)3));
+                    Assert.Equal(int.MinValue, span.BinarySearch((byte)4));
                 }
                 finally
                 {
