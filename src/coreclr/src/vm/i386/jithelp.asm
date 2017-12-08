@@ -483,6 +483,8 @@ ret
         ALIGN 16
 PUBLIC JIT_LLsh
 JIT_LLsh PROC
+; Reduce shift amount mod 64
+        and     ecx, 63
 ; Handle shifts of between bits 0 and 31
         cmp     ecx, 32
         jae     short LLshMORE32
