@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Buffers;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -29,14 +30,21 @@ internal static partial class Interop
             do
             {
                 checked { bufferSize *= 2; }
-                var buf = new byte[bufferSize];
-                fixed (byte* ptr = &buf[0])
+                byte[] buf = ArrayPool<byte>.Shared.Rent(bufferSize);
+                try
                 {
-                    result = GetCwdHelper(ptr, buf.Length);
-                    if (result != null)
+                    fixed (byte* ptr = &buf[0])
                     {
-                        return result;
+                        result = GetCwdHelper(ptr, buf.Length);
+                        if (result != null)
+                        {
+                            return result;
+                        }
                     }
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buf);
                 }
             }
             while (true);
