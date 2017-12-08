@@ -12,6 +12,9 @@ namespace System.SpanTests
         public static TheoryData<(uint[] Array, uint Value, int ExpectedIndex)> UIntCases =>
             new TheoryData<(uint[] Array, uint Value, int ExpectedIndex)> {
                 (new uint[] { }, 0u, -1),
+                (new uint[] { 1u }, 0u, -1),
+                (new uint[] { 1u }, 1u, 0),
+                (new uint[] { 1u }, 2u, -2),
                 (new uint[] { 1u, 2u, 4u, 5u }, 0u, -1),
                 (new uint[] { 1u, 2u, 4u, 5u }, 1u, 0),
                 (new uint[] { 1u, 2u, 4u, 5u }, 2u, 1),
@@ -22,7 +25,10 @@ namespace System.SpanTests
             };
         public static TheoryData<(double[] Array, double Value, int ExpectedIndex)> DoubleCases =>
             new TheoryData<(double[] Array, double Value, int ExpectedIndex)> {
-                (new double[] { }, 0u, -1),
+                (new double[] { }, 0.0, -1),
+                (new double[] { 1.0 }, 0.0, -1),
+                (new double[] { 1.0 }, 1.0, 0),
+                (new double[] { 1.0 }, 2.0, -2),
                 (new double[] { 1.0, 2.0, 4.0, 5u }, 0.0, -1),
                 (new double[] { 1.0, 2.0, 4.0, 5u }, 1.0, 0),
                 (new double[] { 1.0, 2.0, 4.0, 5u }, 2.0, 1),
@@ -33,6 +39,10 @@ namespace System.SpanTests
             };
         public static TheoryData<(string[] Array, string Value, int ExpectedIndex)> StringCases =>
             new TheoryData<(string[] Array, string Value, int ExpectedIndex)> {
+                (new string[] { }, "a", -1),
+                (new string[] { "b" }, "a", -1),
+                (new string[] { "b" }, "b", 0),
+                (new string[] { "b" }, "c", -2),
                 (new string[] { "b", "c", "e", "f" }, "a", -1),
                 (new string[] { "b", "c", "e", "f" }, "b", 0),
                 (new string[] { "b", "c", "e", "f" }, "c", 1),
@@ -72,7 +82,7 @@ namespace System.SpanTests
         {
             if (sizeof(IntPtr) == sizeof(long))
             {
-                // Allocate max size span memory
+                // Allocate maximum length span native memory
                 var length = int.MaxValue;
                 if (!AllocationHelper.TryAllocNative(new IntPtr(length), out IntPtr memory))
                 {
