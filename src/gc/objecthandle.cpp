@@ -285,7 +285,7 @@ void CALLBACK AsyncPinObject(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInf
     Object **pRef = (Object **)pObjRef;
     _ASSERTE(lp2);
     promote_func* callback = (promote_func*)lp2;
-    callback(pRef, (ScanContext *)lp2, GC_CALL_PINNED);
+    callback(pRef, (ScanContext *)lp1, GC_CALL_PINNED);
     Object* pPinnedObj = *pRef;
     if (!HndIsNullOrDestroyedHandle(pPinnedObj))
     {
