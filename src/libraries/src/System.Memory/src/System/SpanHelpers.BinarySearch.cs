@@ -39,9 +39,7 @@ namespace System
                 // Below was intended to avoid overflows, but this cannot happen if we do the computation in uint
                 //int i = lo + ((hi - lo) >> 1);
 
-                // TODO: We probably need to add `ref readonly`/`in` overloads or `AddReadOnly`to unsafe, 
-                //       if this will be available in language
-                // TODO: Revise all Unsafe APIs for `ref readonly` applicability...
+                // TODO: We probably need to add `ref readonly`/`in` methods e.g. `AddReadOnly` to unsafe, 
                 int c = comparable.CompareTo(Unsafe.Add(ref s, i));
                 if (c == 0)
                 {
