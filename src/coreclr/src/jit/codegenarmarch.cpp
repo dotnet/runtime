@@ -1000,17 +1000,17 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
 
     if (source->OperGet() == GT_FIELD_LIST)
     {
-        GenTreeFieldList* fieldListPtr = source->AsFieldList();
-
         // Evaluate each of the GT_FIELD_LIST items into their register
         // and store their register into the outgoing argument area
-        for (unsigned idx = 0; fieldListPtr != nullptr; fieldListPtr = fieldListPtr->Rest(), idx++)
+        unsigned regIndex = 0;
+        for (GenTreeFieldList* fieldListPtr = source->AsFieldList(); fieldListPtr != nullptr;
+             fieldListPtr                   = fieldListPtr->Rest())
         {
             GenTreePtr nextArgNode = fieldListPtr->gtGetOp1();
             regNumber  fieldReg    = nextArgNode->gtRegNum;
             genConsumeReg(nextArgNode);
 
-            if (idx >= treeNode->gtNumRegs)
+            if (regIndex >= treeNode->gtNumRegs)
             {
                 var_types type = nextArgNode->TypeGet();
                 emitAttr  attr = emitTypeSize(type);
@@ -1023,14 +1023,32 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             }
             else
             {
-                var_types type   = treeNode->GetRegType(idx);
-                regNumber argReg = treeNode->GetRegNumByIdx(idx);
+                var_types type   = treeNode->GetRegType(regIndex);
+                regNumber argReg = treeNode->GetRegNumByIdx(regIndex);
+                if (type == TYP_LONG)
+                {
+                    // We should only see long fields for DOUBLEs passed in 2 integer registers, via bitcast.
+                    // All other LONGs should have been decomposed.
+                    // Handle the first INT, and then handle the 2nd below.
+                    assert(nextArgNode->OperIs(GT_BITCAST));
+                    type = TYP_INT;
+                    if (argReg != fieldReg)
+                    {
+                        inst_RV_RV(ins_Copy(type), argReg, fieldReg, type);
+                    }
+                    // Now set up the next register for the 2nd INT
+                    argReg = REG_NEXT(argReg);
+                    regIndex++;
+                    assert(argReg == treeNode->GetRegNumByIdx(regIndex));
+                    fieldReg = nextArgNode->AsMultiRegOp()->GetRegNumByIdx(1);
+                }
 
                 // If child node is not already in the register we need, move it
                 if (argReg != fieldReg)
                 {
                     inst_RV_RV(ins_Copy(type), argReg, fieldReg, type);
                 }
+                regIndex++;
             }
         }
     }
