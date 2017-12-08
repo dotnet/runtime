@@ -100,14 +100,16 @@ namespace System
                                                     ExceptionResource.ArgumentOutOfRange_Count);
         }
 
-        internal static void ThrowWrongKeyTypeArgumentException(object key, Type targetType)
+        internal static void ThrowWrongKeyTypeArgumentException<T>(T key, Type targetType)
         {
-            throw GetWrongKeyTypeArgumentException(key, targetType);
+            // Generic key to move the boxing to the right hand side of throw
+            throw GetWrongKeyTypeArgumentException((object)key, targetType);
         }
 
-        internal static void ThrowWrongValueTypeArgumentException(object value, Type targetType)
+        internal static void ThrowWrongValueTypeArgumentException<T>(T value, Type targetType)
         {
-            throw GetWrongValueTypeArgumentException(value, targetType);
+            // Generic key to move the boxing to the right hand side of throw
+            throw GetWrongValueTypeArgumentException((object)value, targetType);
         }
 
         private static ArgumentException GetAddingDuplicateWithKeyArgumentException(object key)
@@ -115,14 +117,16 @@ namespace System
             return new ArgumentException(SR.Format(SR.Argument_AddingDuplicateWithKey, key));
         }
 
-        internal static void ThrowAddingDuplicateWithKeyArgumentException(object key)
+        internal static void ThrowAddingDuplicateWithKeyArgumentException<T>(T key)
         {
-            throw GetAddingDuplicateWithKeyArgumentException(key);
+            // Generic key to move the boxing to the right hand side of throw
+            throw GetAddingDuplicateWithKeyArgumentException((object)key);
         }
 
-        internal static void ThrowKeyNotFoundException(object key)
+        internal static void ThrowKeyNotFoundException<T>(T key)
         {
-            throw GetKeyNotFoundException(key);
+            // Generic key to move the boxing to the right hand side of throw
+            throw GetKeyNotFoundException((object)key);
         }
 
         internal static void ThrowArgumentException(ExceptionResource resource)
