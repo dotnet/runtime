@@ -33,7 +33,7 @@
 
   <Target Name="PublishFinalOutput"
           Condition="'$(Finalize)' == 'true'"
-          DependsOnTargets="PublishCoreHostPackages;SetupPublishSymbols;PublishSymbols;FinalizeBuildInAzure;UpdateVersionsRepo" />
+          DependsOnTargets="PublishCoreHostPackages;FinalizeBuildInAzure;UpdateVersionsRepo" />
 
   <!--
     Target wrapping UpdatePublishedVersions: ensures that ShippedNuGetPackage items are created and
