@@ -17,6 +17,7 @@
        ldarg.s      0x0
        clt         
        shl         
+       conv.i4
        ret 
   }
 
