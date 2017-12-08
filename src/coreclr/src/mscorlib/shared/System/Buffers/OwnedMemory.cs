@@ -25,7 +25,7 @@ namespace System.Buffers
             }
         }
 
-        public abstract MemoryHandle Pin();
+        public abstract MemoryHandle Pin(int offset = 0);
 
         protected internal abstract bool TryGetArray(out ArraySegment<T> arraySegment);
 
