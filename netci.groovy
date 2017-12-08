@@ -1816,7 +1816,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     --testDirFile=./tests/testsRunningInsideARM.txt"""
 
                     // Basic archiving of the build, no pal tests
-                    Utilities.addArchival(newJob, "bin/Product/**", "bin/Product/**/.nuget/**")
+                    Utilities.addArchival(newJob, "bin/Product/**,bin/obj/*/tests/**/*.dylib,bin/obj/*/tests/**/*.so", "bin/Product/**/.nuget/**")
                     break
                 default:
                     println("Unknown architecture: ${architecture}");
