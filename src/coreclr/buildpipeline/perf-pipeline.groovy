@@ -343,7 +343,7 @@ if (isPR()) {
 }*/
 
 stage ('Build Product') {
-    parallel innerLoopBuilds + outerLoopBuilds //+ baselineBuilds
+    parallel innerLoopBuilds //+ outerLoopBuilds //+ baselineBuilds
 }
 
 // Pipeline builds don't allow outside scripts (ie ArrayList.Add) if running from a script from SCM, so manually list these for now.
@@ -429,5 +429,5 @@ if (!isPR()) {
 }
 
 stage ('Run testing') {
-    parallel innerLoopTests + outerLoopTests
+    parallel innerLoopTests //+ outerLoopTests
 }

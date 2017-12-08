@@ -32,4 +32,4 @@ pipeline.triggerPipelineOnGithubPRComment(triggerName, params)
 
 // Disable automatic PR runs until throughput issues are addressed.
 // pipeline.triggerPipelineOnEveryGithubPR(triggerName, params)
-pipeline.triggerPipelineOnGithubPush()
+pipeline.triggerPipelinePeriodically('*/12 * * * *')
