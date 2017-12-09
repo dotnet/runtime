@@ -4946,14 +4946,18 @@ CoCreateGuid(OUT GUID * pguid);
 #define atol          PAL_atol
 #define labs          PAL_labs
 #define acos          PAL_acos
+#define acosh         PAL_acosh
 #define asin          PAL_asin
+#define asinh         PAL_asinh
 #define atan2         PAL_atan2
 #define exp           PAL_exp
 #define log           PAL_log
 #define log10         PAL_log10
 #define pow           PAL_pow
 #define acosf         PAL_acosf
+#define acoshf        PAL_acoshf
 #define asinf         PAL_asinf
+#define asinhf        PAL_asinhf
 #define atan2f        PAL_atan2f
 #define expf          PAL_expf
 #define logf          PAL_logf
@@ -5198,9 +5202,13 @@ PALIMPORT int __cdecl _finite(double);
 PALIMPORT int __cdecl _isnan(double);
 PALIMPORT double __cdecl _copysign(double, double);
 PALIMPORT double __cdecl acos(double);
+PALIMPORT double __cdecl acosh(double);
 PALIMPORT double __cdecl asin(double);
+PALIMPORT double __cdecl asinh(double);
 PALIMPORT double __cdecl atan(double);
+PALIMPORT double __cdecl atanh(double);
 PALIMPORT double __cdecl atan2(double, double);
+PALIMPORT double __cdecl cbrt(double);
 PALIMPORT double __cdecl ceil(double);
 PALIMPORT double __cdecl cos(double);
 PALIMPORT double __cdecl cosh(double);
@@ -5222,9 +5230,13 @@ PALIMPORT int __cdecl _finitef(float);
 PALIMPORT int __cdecl _isnanf(float);
 PALIMPORT float __cdecl _copysignf(float, float);
 PALIMPORT float __cdecl acosf(float);
+PALIMPORT float __cdecl acoshf(float);
 PALIMPORT float __cdecl asinf(float);
+PALIMPORT float __cdecl asinhf(float);
 PALIMPORT float __cdecl atanf(float);
+PALIMPORT float __cdecl atanhf(float);
 PALIMPORT float __cdecl atan2f(float, float);
+PALIMPORT float __cdecl cbrtf(float);
 PALIMPORT float __cdecl ceilf(float);
 PALIMPORT float __cdecl cosf(float);
 PALIMPORT float __cdecl coshf(float);
