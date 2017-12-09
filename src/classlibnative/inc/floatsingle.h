@@ -12,9 +12,13 @@ class COMSingle {
 public:
     FCDECL1_V(static float, Abs, float x);
     FCDECL1_V(static float, Acos, float x);
+    FCDECL1_V(static float, Acosh, float x);
     FCDECL1_V(static float, Asin, float x);
+    FCDECL1_V(static float, Asinh, float x);
     FCDECL1_V(static float, Atan, float x);
+    FCDECL1_V(static float, Atanh, float x);
     FCDECL2_VV(static float, Atan2, float y, float x);
+    FCDECL1_V(static float, Cbrt, float x);
     FCDECL1_V(static float, Ceil, float x);
     FCDECL1_V(static float, Cos, float x);
     FCDECL1_V(static float, Cosh, float x);
