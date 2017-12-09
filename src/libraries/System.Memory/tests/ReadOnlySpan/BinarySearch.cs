@@ -9,7 +9,7 @@ namespace System.SpanTests
 {
     public static partial class ReadOnlySpanTests
     {
-        public static readonly TheoryData<(uint[] Array, uint Value, int ExpectedIndex)> UIntCases =
+        public static readonly TheoryData<(uint[] Array, uint Value, int ExpectedIndex)> s_casesUInt =
             new TheoryData<(uint[] Array, uint Value, int ExpectedIndex)> {
                 (new uint[] { }, 0u, -1),
                 (new uint[] { 1u }, 0u, -1),
@@ -22,22 +22,24 @@ namespace System.SpanTests
                 (new uint[] { 1u, 2u, 4u, 5u }, 4u, 2),
                 (new uint[] { 1u, 2u, 4u, 5u }, 5u, 3),
                 (new uint[] { 1u, 2u, 4u, 5u }, 6u, -5),
+                (new uint[] { 1u, 2u, 2u, 2u }, 2u, 1),
             };
-        public static readonly TheoryData<(double[] Array, double Value, int ExpectedIndex)> DoubleCases =
+        public static readonly TheoryData<(double[] Array, double Value, int ExpectedIndex)> s_casesDouble =
             new TheoryData<(double[] Array, double Value, int ExpectedIndex)> {
                 (new double[] { }, 0.0, -1),
                 (new double[] { 1.0 }, 0.0, -1),
                 (new double[] { 1.0 }, 1.0, 0),
                 (new double[] { 1.0 }, 2.0, -2),
-                (new double[] { 1.0, 2.0, 4.0, 5u }, 0.0, -1),
-                (new double[] { 1.0, 2.0, 4.0, 5u }, 1.0, 0),
-                (new double[] { 1.0, 2.0, 4.0, 5u }, 2.0, 1),
-                (new double[] { 1.0, 2.0, 4.0, 5u }, 3.0, -3),
-                (new double[] { 1.0, 2.0, 4.0, 5u }, 4.0, 2),
-                (new double[] { 1.0, 2.0, 4.0, 5u }, 5.0, 3),
-                (new double[] { 1.0, 2.0, 4.0, 5u }, 6.0, -5),
+                (new double[] { 1.0, 2.0, 4.0, 5.0 }, 0.0, -1),
+                (new double[] { 1.0, 2.0, 4.0, 5.0 }, 1.0, 0),
+                (new double[] { 1.0, 2.0, 4.0, 5.0 }, 2.0, 1),
+                (new double[] { 1.0, 2.0, 4.0, 5.0 }, 3.0, -3),
+                (new double[] { 1.0, 2.0, 4.0, 5.0 }, 4.0, 2),
+                (new double[] { 1.0, 2.0, 4.0, 5.0 }, 5.0, 3),
+                (new double[] { 1.0, 2.0, 4.0, 5.0 }, 6.0, -5),
+                (new double[] { 2.0, 2.0, 2.0, 1.0 }, 2.0, 1),
             };
-        public static readonly TheoryData<(string[] Array, string Value, int ExpectedIndex)> StringCases =
+        public static readonly TheoryData<(string[] Array, string Value, int ExpectedIndex)> s_casesString =
             new TheoryData<(string[] Array, string Value, int ExpectedIndex)> {
                 (new string[] { }, "a", -1),
                 (new string[] { "b" }, "a", -1),
@@ -50,27 +52,41 @@ namespace System.SpanTests
                 (new string[] { "b", "c", "e", "f" }, "e", 2),
                 (new string[] { "b", "c", "e", "f" }, "f", 3),
                 (new string[] { "b", "c", "e", "f" }, "g", -5),
+                (new string[] { "b", "b", "c", "c" }, "c", 2),
             };
 
-        [Theory, MemberData(nameof(UIntCases))]
+        [Theory, MemberData(nameof(s_casesUInt))]
         public static void BinarySearch_UInt(
-            (uint[] Array, uint Value, int ExpectedIndex) c)
+            (uint[] Array, uint Value, int ExpectedIndex) testCase)
         {
-            TestOverloads(c.Array, c.Value, c.ExpectedIndex);
+            TestOverloads(testCase.Array, testCase.Value, testCase.ExpectedIndex);
         }
 
-        [Theory, MemberData(nameof(DoubleCases))]
+        [Theory, MemberData(nameof(s_casesDouble))]
         public static void BinarySearch_Double(
-            (double[] Array, double Value, int ExpectedIndex) c)
+            (double[] Array, double Value, int ExpectedIndex) testCase)
         {
-            TestOverloads(c.Array, c.Value, c.ExpectedIndex);
+            TestOverloads(testCase.Array, testCase.Value, testCase.ExpectedIndex);
         }
 
-        [Theory, MemberData(nameof(StringCases))]
+        [Theory, MemberData(nameof(s_casesString))]
         public static void BinarySearch_String(
-            (string[] Array, string Value, int ExpectedIndex) c)
+            (string[] Array, string Value, int ExpectedIndex) testCase)
         {
-            TestOverloads(c.Array, c.Value, c.ExpectedIndex);
+            TestOverloads(testCase.Array, testCase.Value, testCase.ExpectedIndex);
+        }
+
+        [Fact]
+        public static void BinarySearch_Slice()
+        {
+            var array = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            var span = new ReadOnlySpan<int>(array, 1, array.Length - 2);
+
+            Assert.Equal(-1, span.BinarySearch(1));
+            Assert.Equal(0, span.BinarySearch(2));
+            Assert.Equal(3, span.BinarySearch(5));
+            Assert.Equal(6, span.BinarySearch(8));
+            Assert.Equal(-8, span.BinarySearch(9));
         }
 
         [Fact]
@@ -90,11 +106,13 @@ namespace System.SpanTests
             Assert.Throws<ArgumentNullException>(() => new ReadOnlySpan<int>(new int[] { }).BinarySearch<int, IComparer<int>>(0, null));
         }
 
+        // NOTE: BinarySearch_MaxLength_NoOverflow test is constrained to run on Windows and MacOSX because it causes
+        //       problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can
+        //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
+        //       time the memory is accessed which triggers the full memory allocation.
         [Fact]
-        // TODO: Does it need to be OuterLoop, it's pretty fast, compared to total time
-        //[OuterLoop]
-        // TODO: Do we need to be platform specific?
-        //[PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        [OuterLoop]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         public unsafe static void BinarySearch_MaxLength_NoOverflow()
         {
             if (sizeof(IntPtr) == sizeof(long))
@@ -113,6 +131,8 @@ namespace System.SpanTests
                     // Fill last two elements
                     span[int.MaxValue - 2] = 2;
                     span[int.MaxValue - 1] = 3;
+
+                    Assert.Equal(int.MaxValue / 2, span.BinarySearch((byte)0));
                     // Search at end and assert no overflow
                     Assert.Equal(~(int.MaxValue - 2), span.BinarySearch((byte)1));
                     Assert.Equal(int.MaxValue - 2, span.BinarySearch((byte)2));
