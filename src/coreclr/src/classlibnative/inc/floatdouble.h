@@ -12,9 +12,13 @@ class COMDouble {
 public:
     FCDECL1_V(static double, Abs, double x);
     FCDECL1_V(static double, Acos, double x);
+    FCDECL1_V(static double, Acosh, double x);
     FCDECL1_V(static double, Asin, double x);
+    FCDECL1_V(static double, Asinh, double x);
     FCDECL1_V(static double, Atan, double x);
+    FCDECL1_V(static double, Atanh, double x);
     FCDECL2_VV(static double, Atan2, double y, double x);
+    FCDECL1_V(static double, Cbrt, double x);
     FCDECL1_V(static double, Ceil, double x);
     FCDECL1_V(static double, Cos, double x);
     FCDECL1_V(static double, Cosh, double x);
