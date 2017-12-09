@@ -24,10 +24,10 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:alpine-3.6-3148f11-2017111
         sh "./build-managed.sh -runtimeos=alpine.3.6 -- /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true /p:PortableBuild=false"
     }
     stage ('Sync') {
-        sh "./sync.sh -p -runtimeos=alpine.3.6 -- /p:ArchGroup=x64 /p:PortableBuild=false"
+        sh "./sync.sh -p -runtimeos=alpine.3.6 -BuildTests=false -- /p:ArchGroup=x64 /p:PortableBuild=false"
     }
     stage ('Build Product') {
-        sh "./build.sh -buildArch=x64 -runtimeos=alpine.3.6 -${params.CGroup} -- /p:PortableBuild=false"
+        sh "./build.sh -buildArch=x64 -runtimeos=alpine.3.6 -${params.CGroup} -BuildTests=false -- /p:PortableBuild=false"
     }
     stage ('Build Tests') {
         def additionalArgs = ''
