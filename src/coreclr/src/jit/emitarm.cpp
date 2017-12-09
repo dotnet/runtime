@@ -2392,7 +2392,7 @@ void emitter::emitIns_R_R_I(instruction ins,
             assert(insOptsNone(opt));
 
             // Is it just a mov?
-            if (imm == 0)
+            if ((imm == 0) && insDoesNotSetFlags(flags))
             {
                 // Is the mov even necessary?
                 // Fix 383915 ARM ILGEN
