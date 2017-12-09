@@ -20,27 +20,26 @@ namespace System
             return BinarySearch(ref span.DangerousGetPinnableReference(), span.Length, comparable);
         }
 
-        // TODO: Make s `ref readonly`/`in` when Unsafe.Add(ReadOnly) supports it
+        // TODO: Make spanStart `ref readonly`/`in` when Unsafe.Add(ReadOnly) supports it
         internal static int BinarySearch<T, TComparable>(
-            ref T s, int length, TComparable comparable) 
+            ref T spanStart, int length, TComparable comparable) 
             where TComparable : IComparable<T>
         {
-            // Array.BinarySearch implementation:
-            // https://github.com/dotnet/coreclr/blob/master/src/mscorlib/src/System/Array.cs#L802
             int lo = 0;
             int hi = length - 1;
+            // If length == 0, hi == -1, and loop will not be entered
             while (lo <= hi)
             {
-                // lo or hi will never be negative inside the loop
-                // TODO: Test/investigate if below is faster (if it gives better asm), perhaps via Unsafe.As to avoid unnecessary conversions
-                //       This is safe since we know span.Length < int.MaxValue, and indeces are >= 0
-                //       and thus cannot overflow an uint. Saves one subtraction per loop.
+                // PERF: `lo` or `hi` will never be negative inside the loop,
+                //       so computing median using uints is safe since we know 
+                //       `length <= int.MaxValue`, and indices are >= 0
+                //       and thus cannot overflow an uint. 
+                //       Saves one subtraction per loop compared to 
+                //       `int i = lo + ((hi - lo) >> 1);`
                 int i = (int)(((uint)hi + (uint)lo) >> 1);
-                // Below was intended to avoid overflows, but this cannot happen if we do the computation in uint
-                //int i = lo + ((hi - lo) >> 1);
 
-                // TODO: We probably need to add `ref readonly`/`in` methods e.g. `AddReadOnly` to unsafe, 
-                int c = comparable.CompareTo(Unsafe.Add(ref s, i));
+                // TODO: We probably need to add `ref readonly`/`in` methods e.g. `AddReadOnly` to unsafe
+                int c = comparable.CompareTo(Unsafe.Add(ref spanStart, i));
                 if (c == 0)
                 {
                     return i;
@@ -54,6 +53,10 @@ namespace System
                     hi = i - 1;
                 }
             }
+            // If none found, then a negative number that is the bitwise complement
+            // of the index of the next element that is larger than or, if there is
+            // no larger element, the bitwise complement of `length`, which
+            // is `lo` at this point.
             return ~lo;
         }
 
