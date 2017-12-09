@@ -744,6 +744,12 @@ is_field_on_inst (MonoClassField *field)
 	return mono_class_is_ginst (field->parent) && mono_class_get_generic_class (field->parent)->is_dynamic;
 }
 
+static gboolean
+is_field_on_gtd (MonoClassField *field)
+{
+	return mono_class_is_gtd (field->parent);
+}
+
 #ifndef DISABLE_REFLECTION_EMIT
 static guint32
 mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoClassField *field)
@@ -1159,7 +1165,8 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObjectHandle obj,
 			} else
 				token = mono_image_get_inflated_method_token (assembly, method);
 		} else if ((method->klass->image == &assembly->image) &&
-			 !mono_class_is_ginst (method->klass)) {
+			   !mono_class_is_ginst (method->klass) &&
+			   !mono_class_is_gtd (method->klass)) {
 			static guint32 method_table_idx = 0xffffff;
 			if (method->klass->wastypebuilder) {
 				/* we use the same token as the one that was assigned
@@ -1198,10 +1205,13 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObjectHandle obj,
 	} else if (strcmp (klass->name, "MonoField") == 0) {
 		MonoReflectionFieldHandle f = MONO_HANDLE_CAST (MonoReflectionField, obj);
 		MonoClassField *field = MONO_HANDLE_GETVAL (f, field);
-		if ((field->parent->image == &assembly->image) && !is_field_on_inst (field)) {
+		if ((field->parent->image == &assembly->image) &&
+		    !is_field_on_gtd (field) &&
+		    !is_field_on_inst (field)) {
 			static guint32 field_table_idx = 0xffffff;
 			field_table_idx --;
 			token = MONO_TOKEN_FIELD_DEF | field_table_idx;
+			g_assert (!mono_class_is_gtd (field->parent));
 			how_collide = MONO_DYN_IMAGE_TOK_NEW;
 		} else {
 			guint32 fieldref_token = mono_image_get_fieldref_token (assembly, field);
