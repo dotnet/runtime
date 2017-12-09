@@ -1028,9 +1028,9 @@ namespace System.ServiceModel.Syndication
 
             // Optional spec items
             // docs
-            if (Feed.GetDocumentation() != null)
+            if (Feed.InternalDocumentation?.Uri != null)
             {
-                writer.WriteElementString(Rss20Constants.DocumentationTag, Feed.GetDocumentation().Uri.ToString());
+                writer.WriteElementString(Rss20Constants.DocumentationTag, Feed.InternalDocumentation.Uri.ToString());
             }
 
             if (_serializeExtensionsAsAtom)

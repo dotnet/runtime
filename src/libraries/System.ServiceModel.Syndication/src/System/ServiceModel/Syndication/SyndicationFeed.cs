@@ -269,9 +269,12 @@ namespace System.ServiceModel.Syndication
             set { _title = value; }
         }
 
-        internal SyndicationLink GetDocumentation()
+        internal SyndicationLink InternalDocumentation
         {
-            return _documentation;
+            get
+            {
+                return _documentation;
+            }
         }
 
         public SyndicationLink Documentation
@@ -409,7 +412,7 @@ namespace System.ServiceModel.Syndication
             switch (localName)
             {
                 case Rss20Constants.DocumentationTag:
-                    if (ns == Rss20Constants.Rss20Namespace && GetDocumentation() != null)
+                    if (ns == Rss20Constants.Rss20Namespace && InternalDocumentation != null)
                     {
                         return true;
                     }
