@@ -9,10 +9,145 @@ namespace System.Memory.Tests
 {
     public class Perf_Span_BinarySearch
     {
-        // Existing.
-        // List:
-        // https://github.com/dotnet/corefx/blob/157fff35c2427dd0ce5e79557d506e8e7947c8d4/src/System.Collections/tests/Performance/Perf.List.cs#L550
-        // https://github.com/dotnet/corefx/blob/157fff35c2427dd0ce5e79557d506e8e7947c8d4/src/System.Collections/tests/Performance/Perf.List.cs#L577
-        // TODO: What tests do we need here? What types (short, int, string ...)? Range? Scenarios?
+        private const int InnerCount = 100000;
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public void SpanBinarySearch_Int_FirstIndex(int size)
+        {
+            BenchmarkAndAssert(size, 0, 0);
+        }
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public void SpanBinarySearch_Int_MiddleIndex(int size)
+        {
+            BenchmarkAndAssert(size, size / 2, size / 2);
+        }
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public void SpanBinarySearch_Int_LastIndex(int size)
+        {
+            BenchmarkAndAssert(size, size - 1, size - 1);
+        }
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public void SpanBinarySearch_Int_NotFoundBefore(int size)
+        {
+            BenchmarkAndAssert(size, -1, -1);
+        }
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public void SpanBinarySearch_Int_NotFoundAfter(int size)
+        {
+            BenchmarkAndAssert(size, size, ~size);
+        }
+
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public void SpanBinarySearch_String_FirstIndex(int size)
+        {
+            BenchmarkAndAssert(size, 0.ToString(), 0);
+        }
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public void SpanBinarySearch_String_MiddleIndex(int size)
+        {
+            BenchmarkAndAssert(size, (size / 2).ToString(), size / 2);
+        }
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public void SpanBinarySearch_String_LastIndex(int size)
+        {
+            BenchmarkAndAssert(size, (size - 1).ToString(), size - 1);
+        }
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public void SpanBinarySearch_String_NotFoundBefore(int size)
+        {
+            BenchmarkAndAssert(size, (-1).ToString(), -1);
+        }
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public void SpanBinarySearch_String_NotFoundAfter(int size)
+        {
+            BenchmarkAndAssert(size, (size).ToString(), ~size);
+        }
+
+        private static void BenchmarkAndAssert(int size, int value, int expectedIndex)
+        {
+            Span<int> span = new int[size];
+            for (int i = 0; i < span.Length; i++)
+            {
+                span[i] = i;
+            }
+
+            int index = 0;
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
+                    index |= span.BinarySearch(value);
+                }
+            }
+            Assert.Equal(expectedIndex, index);
+        }
+
+        private static void BenchmarkAndAssert(int size, string value, int expectedIndex)
+        {
+            Span<string> span = new string[size];
+            for (int i = 0; i < span.Length; i++)
+            {
+                span[i] = i.ToString();
+            }
+
+            int index = 0;
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
+                    index |= span.BinarySearch(value);
+                }
+            }
+            Assert.Equal(expectedIndex, index);
+        }
     }
 }
