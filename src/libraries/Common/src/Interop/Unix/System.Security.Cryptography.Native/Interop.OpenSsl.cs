@@ -177,12 +177,18 @@ internal static partial class Interop
         {
             sendBuf = null;
             sendCount = 0;
+            int retVal;
             if ((recvBuf != null) && (recvCount > 0))
             {
-                BioWrite(context.InputBio, recvBuf, recvOffset, recvCount);
+                retVal = BioWrite(context.InputBio, recvBuf, recvOffset, recvCount);
+                if(retVal <= 0)
+                {
+                    // Make sure we clear out the error that is stored in the queue
+                    Crypto.ErrGetError();
+                }
             }
 
-            int retVal = Ssl.SslDoHandshake(context);
+            retVal = Ssl.SslDoHandshake(context);
 
             if (retVal != 1)
             {
@@ -209,6 +215,8 @@ internal static partial class Interop
                 {
                     if (sendCount <= 0)
                     {
+                        // Make sure we clear out the error that is stored in the queue
+                        Crypto.ErrGetError();
                         sendBuf = null;
                         sendCount = 0;
                     }
@@ -262,6 +270,11 @@ internal static partial class Interop
                 }
 
                 retVal = BioRead(context.OutputBio, output, capacityNeeded);
+                if (retVal <= 0)
+                {
+                    // Make sure we clear out the error that is stored in the queue
+                    Crypto.ErrGetError();
+                }
             }
 
             return retVal;
