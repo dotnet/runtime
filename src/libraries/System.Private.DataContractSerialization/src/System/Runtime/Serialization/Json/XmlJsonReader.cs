@@ -354,7 +354,7 @@ namespace System.Runtime.Serialization.Json
                         throw;
                     }
 
-                    throw new Exception(SR.GenericCallbackException, e);
+                    throw new InvalidOperationException(SR.GenericCallbackException, e);
                 }
             }
             base.Dispose(disposing);
