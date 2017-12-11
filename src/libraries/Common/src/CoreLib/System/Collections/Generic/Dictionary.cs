@@ -410,17 +410,27 @@ namespace System.Collections.Generic
             }
 
             if (_buckets == null) Initialize(0);
-            int hashCode = _comparer.GetHashCode(key) & 0x7FFFFFFF;
-            int targetBucket = hashCode % _buckets.Length;
+            IEqualityComparer<TKey> comparer = _comparer;
+            int hashCode = comparer.GetHashCode(key) & 0x7FFFFFFF;
             int collisionCount = 0;
 
-            for (int i = _buckets[targetBucket]; i >= 0; i = _entries[i].next)
+            ref int bucket = ref _buckets[hashCode % _buckets.Length];
+            int i = bucket;
+            Entry[] entries = _entries;
+            do
             {
-                if (_entries[i].hashCode == hashCode && _comparer.Equals(_entries[i].key, key))
+                // Should be a while loop https://github.com/dotnet/coreclr/issues/15476
+                // Test uint in if rather than loop condition to drop range check for following array access
+                if ((uint)i >= (uint)entries.Length)
+                {
+                    break;
+                }
+
+                if (entries[i].hashCode == hashCode && comparer.Equals(entries[i].key, key))
                 {
                     if (behavior == InsertionBehavior.OverwriteExisting)
                     {
-                        _entries[i].value = value;
+                        entries[i].value = value;
                         _version++;
                         return true;
                     }
@@ -432,41 +442,56 @@ namespace System.Collections.Generic
 
                     return false;
                 }
-                collisionCount++;
-            }
 
+                i = entries[i].next;
+                collisionCount++;
+            } while (true);
+
+            // Can be improved with "Ref Local Reassignment"
+            // https://github.com/dotnet/csharplang/blob/master/proposals/ref-local-reassignment.md
+            bool resized = false;
+            bool updateFreeList = false;
             int index;
             if (_freeCount > 0)
             {
                 index = _freeList;
-                _freeList = _entries[index].next;
+                updateFreeList = true;
                 _freeCount--;
             }
             else
             {
-                if (_count == _entries.Length)
+                int count = _count;
+                if (count == entries.Length)
                 {
                     Resize();
-                    targetBucket = hashCode % _buckets.Length;
+                    resized = true;
                 }
-                index = _count;
-                _count++;
+                index = count;
+                _count = count + 1;
+                entries = _entries;
             }
 
-            _entries[index].hashCode = hashCode;
-            _entries[index].next = _buckets[targetBucket];
-            _entries[index].key = key;
-            _entries[index].value = value;
-            _buckets[targetBucket] = index;
+            ref int targetBucket = ref resized ? ref _buckets[hashCode % _buckets.Length] : ref bucket;
+            ref Entry entry = ref entries[index];
+
+            if (updateFreeList)
+            {
+                _freeList = entry.next;
+            }
+            entry.hashCode = hashCode;
+            entry.next = targetBucket;
+            entry.key = key;
+            entry.value = value;
+            targetBucket = index;
             _version++;
 
-            // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
-            // i.e. EqualityComparer<string>.Default.
-
-            if (collisionCount > HashHelpers.HashCollisionThreshold && _comparer is NonRandomizedStringEqualityComparer)
+            // Value types never rehash
+            if (default(TKey) == null && collisionCount > HashHelpers.HashCollisionThreshold && _comparer is NonRandomizedStringEqualityComparer)
             {
+                // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
+                // i.e. EqualityComparer<string>.Default.
                 _comparer = (IEqualityComparer<TKey>)EqualityComparer<string>.Default;
-                Resize(_entries.Length, true);
+                Resize(entries.Length, true);
             }
 
             return true;
@@ -525,6 +550,8 @@ namespace System.Collections.Generic
 
         private void Resize(int newSize, bool forceNewHashCodes)
         {
+            // Value types never rehash
+            Debug.Assert(!forceNewHashCodes || default(TKey) == null);
             Debug.Assert(newSize >= _entries.Length);
 
             int[] buckets = new int[newSize];
@@ -537,7 +564,7 @@ namespace System.Collections.Generic
             int count = _count;
             Array.Copy(_entries, 0, entries, 0, count);
 
-            if (forceNewHashCodes)
+            if (default(TKey) == null && forceNewHashCodes)
             {
                 for (int i = 0; i < count; i++)
                 {
