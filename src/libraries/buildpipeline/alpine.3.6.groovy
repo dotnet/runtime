@@ -29,13 +29,6 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:alpine-3.6-3148f11-2017111
     stage ('Build Product') {
         sh "./build.sh -buildArch=x64 -runtimeos=alpine.3.6 -${params.CGroup} -BuildTests=false -- /p:PortableBuild=false"
     }
-    stage ('Build Tests') {
-        def additionalArgs = ''
-        if (params.TestOuter) {
-            additionalArgs = '-Outerloop'
-        }
-        sh "./build-tests.sh -buildArch=x64 -${params.CGroup} -SkipTests ${additionalArgs} -- /p:ArchiveTests=true /p:EnableDumpling=true /p:PortableBuild=false"
-    }
 
     // TODO: Add submission for Helix testing once we have queue for Alpine Linux working
 }
