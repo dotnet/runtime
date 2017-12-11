@@ -40,10 +40,9 @@ namespace System.ServiceModel.Syndication
         // optional RSS tags
         private SyndicationLink _documentation;
         private int? _timeToLive;
-        private Collection<int> _skipHours;
-        private Collection<string> _skipDays;
+        private ICollection<int> _skipHours;
+        private ICollection<string> _skipDays;
         private SyndicationTextInput _textInput;
-        private Uri _iconImage;
 
         public SyndicationFeed()
             : this((IEnumerable<SyndicationItem>)null)
@@ -345,6 +344,10 @@ namespace System.ServiceModel.Syndication
 
                 return _skipHours;
             }
+            set
+            {
+                _skipHours = value;
+            }
         }
 
         internal ICollection<string> InternalSkipDays
@@ -365,6 +368,10 @@ namespace System.ServiceModel.Syndication
                 }
 
                 return _skipDays;
+            }
+            set
+            {
+                _skipDays = value;
             }
         }
 
@@ -389,25 +396,7 @@ namespace System.ServiceModel.Syndication
             }
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
-
                 _textInput = value;
-            }
-        }
-
-        public Uri IconImage
-        {
-            get
-            {
-                return _iconImage;
-            }
-            set
-            {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
-
-                _iconImage = value;
             }
         }
 
