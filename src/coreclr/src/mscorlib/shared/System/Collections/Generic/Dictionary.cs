@@ -376,10 +376,15 @@ namespace System.Collections.Generic
         private void Initialize(int capacity)
         {
             int size = HashHelpers.GetPrime(capacity);
-            _buckets = new int[size];
-            for (int i = 0; i < _buckets.Length; i++) _buckets[i] = -1;
-            _entries = new Entry[size];
+            int[] buckets = new int[size];
+            for (int i = 0; i < buckets.Length; i++)
+            {
+                buckets[i] = -1;
+            }
+
             _freeList = -1;
+            _buckets = buckets;
+            _entries = new Entry[size];
         }
 
         private bool TryInsert(TKey key, TValue value, InsertionBehavior behavior)
@@ -470,10 +475,7 @@ namespace System.Collections.Generic
 
             if (hashsize != 0)
             {
-                _buckets = new int[hashsize];
-                for (int i = 0; i < _buckets.Length; i++) _buckets[i] = -1;
-                _entries = new Entry[hashsize];
-                _freeList = -1;
+                Initialize(hashsize);
 
                 KeyValuePair<TKey, TValue>[] array = (KeyValuePair<TKey, TValue>[])
                     siInfo.GetValue(KeyValuePairsName, typeof(KeyValuePair<TKey, TValue>[]));
