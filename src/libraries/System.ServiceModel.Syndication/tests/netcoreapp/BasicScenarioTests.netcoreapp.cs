@@ -136,7 +136,7 @@ namespace System.ServiceModel.Syndication.Tests
         }
         
         [Fact]
-        public static void SyndicationFeed_RSS_Optional_Documentation()
+        public static void SyndicationFeed_RSS_Optional_Elements()
         {
             using (XmlReader reader = XmlReader.Create(@"rssSpecExample.xml"))
             {
@@ -162,7 +162,7 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        public static void SyndicationFeed_Load_Write_RSS_Documentation()
+        public static void SyndicationFeed_Load_Write_RSS_With_Optional_Elements()
         {
             List<AllowableDifference> allowableDifferences = GetRssFeedPositiveTestAllowableDifferences();
             ReadWriteSyndicationFeed(
@@ -173,7 +173,7 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        public static void SyndicationFeed_Load_Write_RSS_Documentation_Using_Optional_Element_Properties()
+        public static void SyndicationFeed_Load_Write_RSS_Use_Optional_Element_Properties()
         {
             List<AllowableDifference> allowableDifferences = GetRssFeedPositiveTestAllowableDifferences();
             ReadWriteSyndicationFeed(
