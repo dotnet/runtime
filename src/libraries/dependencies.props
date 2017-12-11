@@ -37,8 +37,8 @@
     <ProjectNTfsExpectedPrerelease>beta-26007-00</ProjectNTfsExpectedPrerelease>
     <ProjectNTfsTestILCExpectedPrerelease>beta-26007-00</ProjectNTfsTestILCExpectedPrerelease>
     <ProjectNTfsTestILCPackageVersion>1.0.0-beta-26007-00</ProjectNTfsTestILCPackageVersion>
-    <MicrosoftNETCoreDotNetHostPackageVersion>2.0.1-servicing-25615-03</MicrosoftNETCoreDotNetHostPackageVersion>
-    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>2.0.1-servicing-25615-03</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
+    <MicrosoftNETCoreDotNetHostPackageVersion>2.1.0-preview1-25929-07</MicrosoftNETCoreDotNetHostPackageVersion>
+    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>2.1.0-preview1-25929-07</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
     <MicrosoftNETCoreAppPackageVersion>2.1.0-preview1-26007-02</MicrosoftNETCoreAppPackageVersion>
     <MicrosoftDotNetPlatformAbstractionsPackageVersion>2.1.0-preview1-26007-02</MicrosoftDotNetPlatformAbstractionsPackageVersion>
 
