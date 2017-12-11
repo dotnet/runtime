@@ -3429,6 +3429,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         GenTreePtr op1, op2;
 
         case CORINFO_INTRINSIC_Sin:
+        case CORINFO_INTRINSIC_Cbrt:
         case CORINFO_INTRINSIC_Sqrt:
         case CORINFO_INTRINSIC_Abs:
         case CORINFO_INTRINSIC_Cos:
@@ -3438,9 +3439,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         case CORINFO_INTRINSIC_Tan:
         case CORINFO_INTRINSIC_Tanh:
         case CORINFO_INTRINSIC_Asin:
+        case CORINFO_INTRINSIC_Asinh:
         case CORINFO_INTRINSIC_Acos:
+        case CORINFO_INTRINSIC_Acosh:
         case CORINFO_INTRINSIC_Atan:
         case CORINFO_INTRINSIC_Atan2:
+        case CORINFO_INTRINSIC_Atanh:
         case CORINFO_INTRINSIC_Log10:
         case CORINFO_INTRINSIC_Pow:
         case CORINFO_INTRINSIC_Exp:
@@ -3969,13 +3973,15 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
     GenTree* op2;
 
     assert(callType != TYP_STRUCT);
-    assert((intrinsicID == CORINFO_INTRINSIC_Sin) || (intrinsicID == CORINFO_INTRINSIC_Sqrt) ||
-           (intrinsicID == CORINFO_INTRINSIC_Abs) || (intrinsicID == CORINFO_INTRINSIC_Cos) ||
-           (intrinsicID == CORINFO_INTRINSIC_Round) || (intrinsicID == CORINFO_INTRINSIC_Cosh) ||
-           (intrinsicID == CORINFO_INTRINSIC_Sinh) || (intrinsicID == CORINFO_INTRINSIC_Tan) ||
-           (intrinsicID == CORINFO_INTRINSIC_Tanh) || (intrinsicID == CORINFO_INTRINSIC_Asin) ||
-           (intrinsicID == CORINFO_INTRINSIC_Acos) || (intrinsicID == CORINFO_INTRINSIC_Atan) ||
-           (intrinsicID == CORINFO_INTRINSIC_Atan2) || (intrinsicID == CORINFO_INTRINSIC_Log10) ||
+    assert((intrinsicID == CORINFO_INTRINSIC_Sin) || intrinsicID == CORINFO_INTRINSIC_Cbrt ||
+           (intrinsicID == CORINFO_INTRINSIC_Sqrt) || (intrinsicID == CORINFO_INTRINSIC_Abs) ||
+           (intrinsicID == CORINFO_INTRINSIC_Cos) || (intrinsicID == CORINFO_INTRINSIC_Round) ||
+           (intrinsicID == CORINFO_INTRINSIC_Cosh) || (intrinsicID == CORINFO_INTRINSIC_Sinh) ||
+           (intrinsicID == CORINFO_INTRINSIC_Tan) || (intrinsicID == CORINFO_INTRINSIC_Tanh) ||
+           (intrinsicID == CORINFO_INTRINSIC_Asin) || (intrinsicID == CORINFO_INTRINSIC_Asinh) ||
+           (intrinsicID == CORINFO_INTRINSIC_Acos) || (intrinsicID == CORINFO_INTRINSIC_Acosh) ||
+           (intrinsicID == CORINFO_INTRINSIC_Atan) || (intrinsicID == CORINFO_INTRINSIC_Atan2) ||
+           (intrinsicID == CORINFO_INTRINSIC_Atanh) || (intrinsicID == CORINFO_INTRINSIC_Log10) ||
            (intrinsicID == CORINFO_INTRINSIC_Pow) || (intrinsicID == CORINFO_INTRINSIC_Exp) ||
            (intrinsicID == CORINFO_INTRINSIC_Ceiling) || (intrinsicID == CORINFO_INTRINSIC_Floor));
 
@@ -19161,6 +19167,7 @@ bool Compiler::IsMathIntrinsic(CorInfoIntrinsics intrinsicId)
     switch (intrinsicId)
     {
         case CORINFO_INTRINSIC_Sin:
+        case CORINFO_INTRINSIC_Cbrt:
         case CORINFO_INTRINSIC_Sqrt:
         case CORINFO_INTRINSIC_Abs:
         case CORINFO_INTRINSIC_Cos:
@@ -19170,9 +19177,12 @@ bool Compiler::IsMathIntrinsic(CorInfoIntrinsics intrinsicId)
         case CORINFO_INTRINSIC_Tan:
         case CORINFO_INTRINSIC_Tanh:
         case CORINFO_INTRINSIC_Asin:
+        case CORINFO_INTRINSIC_Asinh:
         case CORINFO_INTRINSIC_Acos:
+        case CORINFO_INTRINSIC_Acosh:
         case CORINFO_INTRINSIC_Atan:
         case CORINFO_INTRINSIC_Atan2:
+        case CORINFO_INTRINSIC_Atanh:
         case CORINFO_INTRINSIC_Log10:
         case CORINFO_INTRINSIC_Pow:
         case CORINFO_INTRINSIC_Exp:

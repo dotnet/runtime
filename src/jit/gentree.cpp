@@ -3511,13 +3511,17 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         case CORINFO_INTRINSIC_Sin:
                         case CORINFO_INTRINSIC_Cos:
                         case CORINFO_INTRINSIC_Sqrt:
+                        case CORINFO_INTRINSIC_Cbrt:
                         case CORINFO_INTRINSIC_Cosh:
                         case CORINFO_INTRINSIC_Sinh:
                         case CORINFO_INTRINSIC_Tan:
                         case CORINFO_INTRINSIC_Tanh:
                         case CORINFO_INTRINSIC_Asin:
+                        case CORINFO_INTRINSIC_Asinh:
                         case CORINFO_INTRINSIC_Acos:
+                        case CORINFO_INTRINSIC_Acosh:
                         case CORINFO_INTRINSIC_Atan:
+                        case CORINFO_INTRINSIC_Atanh:
                         case CORINFO_INTRINSIC_Atan2:
                         case CORINFO_INTRINSIC_Log10:
                         case CORINFO_INTRINSIC_Pow:
@@ -11428,6 +11432,9 @@ void Compiler::gtDispTree(GenTreePtr   tree,
                 case CORINFO_INTRINSIC_Cos:
                     printf(" cos");
                     break;
+                case CORINFO_INTRINSIC_Cbrt:
+                    printf(" cbrt");
+                    break;
                 case CORINFO_INTRINSIC_Sqrt:
                     printf(" sqrt");
                     break;
@@ -11452,14 +11459,23 @@ void Compiler::gtDispTree(GenTreePtr   tree,
                 case CORINFO_INTRINSIC_Asin:
                     printf(" asin");
                     break;
+                case CORINFO_INTRINSIC_Asinh:
+                    printf(" asinh");
+                    break;
                 case CORINFO_INTRINSIC_Acos:
                     printf(" acos");
+                    break;
+                case CORINFO_INTRINSIC_Acosh:
+                    printf(" acosh");
                     break;
                 case CORINFO_INTRINSIC_Atan:
                     printf(" atan");
                     break;
                 case CORINFO_INTRINSIC_Atan2:
                     printf(" atan2");
+                    break;
+                case CORINFO_INTRINSIC_Atanh:
+                    printf(" atanh");
                     break;
                 case CORINFO_INTRINSIC_Log10:
                     printf(" log10");
