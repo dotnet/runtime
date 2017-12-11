@@ -22625,7 +22625,7 @@ RelativePath=GC\LargeMemory\Allocation\finalizertest\finalizertest.cmd
 WorkingDir=GC\LargeMemory\Allocation\finalizertest
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_FAIL;3392;Pri1
 HostStyle=0
 
 [_il_reltest1.cmd_2842]
