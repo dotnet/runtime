@@ -140,14 +140,40 @@ namespace System.ServiceModel.Syndication.Tests
         {
             using (XmlReader reader = XmlReader.Create(@"rssSpecExample.xml"))
             {
-                SyndicationFeed rss = SyndicationFeed.Load(reader);
-                Assert.NotNull(rss.Documentation);
-                Assert.True(rss.Documentation.GetAbsoluteUri().ToString() == "http://contoso.com/rss");
+                SyndicationFeed feed = SyndicationFeed.Load(reader);
+
+                Assert.NotNull(feed.Documentation);
+                Assert.Equal("http://contoso.com/rss", feed.Documentation.GetAbsoluteUri().ToString());
+
+                Assert.Equal(60, feed.TimeToLive);
+
+                Assert.NotNull(feed.SkipHours);
+                Assert.Equal(3, feed.SkipHours.Count);
+
+                Assert.NotNull(feed.SkipDays);
+                Assert.Equal(2, feed.SkipDays.Count);
+
+                Assert.NotNull(feed.TextInput);
+                Assert.Equal("Search Online", feed.TextInput.Description);
+                Assert.Equal("Search", feed.TextInput.Title);
+                Assert.Equal("input Name", feed.TextInput.Name);
+                Assert.Equal("http://www.contoso.no/search?", feed.TextInput.Link.Uri.ToString());
             }
         }
 
         [Fact]
         public static void SyndicationFeed_Load_Write_RSS_Documentation()
+        {
+            List<AllowableDifference> allowableDifferences = GetRssFeedPositiveTestAllowableDifferences();
+            ReadWriteSyndicationFeed(
+                file: "rssOptionalElements.xml",
+                feedFormatter: (feedObject) => new Rss20FeedFormatter(feedObject),
+                allowableDifferences: allowableDifferences
+                );
+        }
+
+        [Fact]
+        public static void SyndicationFeed_Load_Write_RSS_Documentation_Using_Optional_Element_Properties()
         {
             List<AllowableDifference> allowableDifferences = GetRssFeedPositiveTestAllowableDifferences();
             ReadWriteSyndicationFeed(
@@ -159,6 +185,20 @@ namespace System.ServiceModel.Syndication.Tests
                     Assert.NotNull(feed);
                     Assert.NotNull(feed.Documentation);
                     Assert.True(feed.Documentation.GetAbsoluteUri().ToString() == "http://contoso.com/rss");
+
+                    Assert.Equal(60, feed.TimeToLive);
+
+                    Assert.NotNull(feed.SkipHours);
+                    Assert.Equal(3, feed.SkipHours.Count);
+
+                    Assert.NotNull(feed.SkipDays);
+                    Assert.Equal(2, feed.SkipDays.Count);
+
+                    Assert.NotNull(feed.TextInput);
+                    Assert.Equal("Search Online", feed.TextInput.Description);
+                    Assert.Equal("Search", feed.TextInput.Title);
+                    Assert.Equal("input Name", feed.TextInput.Name);
+                    Assert.Equal("http://www.contoso.no/search?", feed.TextInput.Link.Uri.ToString());
                 });
         }
     }
