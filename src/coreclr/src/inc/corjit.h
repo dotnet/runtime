@@ -161,7 +161,31 @@ public:
 
         CORJIT_FLAG_NO_INLINING             = 42, // JIT should not inline any called method into this method
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(_TARGET_ARM64_)
+
+        CORJIT_FLAG_HAS_ARM64_AES           = 43, // ID_AA64ISAR0_EL1.AES is 1 or better
+        CORJIT_FLAG_HAS_ARM64_ATOMICS       = 44, // ID_AA64ISAR0_EL1.Atomic is 2 or better
+        CORJIT_FLAG_HAS_ARM64_CRC32         = 45, // ID_AA64ISAR0_EL1.CRC32 is 1 or better
+        CORJIT_FLAG_HAS_ARM64_DCPOP         = 46, // ID_AA64ISAR1_EL1.DPB is 1 or better
+        CORJIT_FLAG_HAS_ARM64_DP            = 47, // ID_AA64ISAR0_EL1.DP is 1 or better
+        CORJIT_FLAG_HAS_ARM64_FCMA          = 48, // ID_AA64ISAR1_EL1.FCMA is 1 or better
+        CORJIT_FLAG_HAS_ARM64_FP            = 49, // ID_AA64PFR0_EL1.FP is 0 or better
+        CORJIT_FLAG_HAS_ARM64_FP16          = 50, // ID_AA64PFR0_EL1.FP is 1 or better
+        CORJIT_FLAG_HAS_ARM64_JSCVT         = 51, // ID_AA64ISAR1_EL1.JSCVT is 1 or better
+        CORJIT_FLAG_HAS_ARM64_LRCPC         = 52, // ID_AA64ISAR1_EL1.LRCPC is 1 or better
+        CORJIT_FLAG_HAS_ARM64_PMULL         = 53, // ID_AA64ISAR0_EL1.AES is 2 or better
+        CORJIT_FLAG_HAS_ARM64_SHA1          = 54, // ID_AA64ISAR0_EL1.SHA1 is 1 or better
+        CORJIT_FLAG_HAS_ARM64_SHA2          = 55, // ID_AA64ISAR0_EL1.SHA2 is 1 or better
+        CORJIT_FLAG_HAS_ARM64_SHA512        = 56, // ID_AA64ISAR0_EL1.SHA2 is 2 or better
+        CORJIT_FLAG_HAS_ARM64_SHA3          = 57, // ID_AA64ISAR0_EL1.SHA3 is 1 or better
+        CORJIT_FLAG_HAS_ARM64_SIMD          = 58, // ID_AA64PFR0_EL1.AdvSIMD is 0 or better
+        CORJIT_FLAG_HAS_ARM64_SIMD_V81      = 59, // ID_AA64ISAR0_EL1.RDM is 1 or better
+        CORJIT_FLAG_HAS_ARM64_SIMD_FP16     = 60, // ID_AA64PFR0_EL1.AdvSIMD is 1 or better
+        CORJIT_FLAG_HAS_ARM64_SM3           = 61, // ID_AA64ISAR0_EL1.SM3 is 1 or better
+        CORJIT_FLAG_HAS_ARM64_SM4           = 62, // ID_AA64ISAR0_EL1.SM4 is 1 or better
+        CORJIT_FLAG_HAS_ARM64_SVE           = 63  // ID_AA64PFR0_EL1.SVE is 1 or better
+
+#elif defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
 
         CORJIT_FLAG_USE_SSE3                = 43,
         CORJIT_FLAG_USE_SSSE3               = 44,
@@ -173,10 +197,20 @@ public:
         CORJIT_FLAG_USE_FMA                 = 50,
         CORJIT_FLAG_USE_LZCNT               = 51,
         CORJIT_FLAG_USE_PCLMULQDQ           = 52,
-        CORJIT_FLAG_USE_POPCNT              = 53
+        CORJIT_FLAG_USE_POPCNT              = 53,
+        CORJIT_FLAG_UNUSED23                = 54,
+        CORJIT_FLAG_UNUSED24                = 55,
+        CORJIT_FLAG_UNUSED25                = 56,
+        CORJIT_FLAG_UNUSED26                = 57,
+        CORJIT_FLAG_UNUSED27                = 58,
+        CORJIT_FLAG_UNUSED28                = 59,
+        CORJIT_FLAG_UNUSED29                = 60,
+        CORJIT_FLAG_UNUSED30                = 61,
+        CORJIT_FLAG_UNUSED31                = 62,
+        CORJIT_FLAG_UNUSED32                = 63
         
 
-#else // !defined(_TARGET_X86_) && !defined(_TARGET_AMD64_)
+#else // !defined(_TARGET_ARM64_) && !defined(_TARGET_X86_) && !defined(_TARGET_AMD64_)
 
         CORJIT_FLAG_UNUSED12                = 43,
         CORJIT_FLAG_UNUSED13                = 44,
@@ -188,9 +222,19 @@ public:
         CORJIT_FLAG_UNUSED19                = 50,
         CORJIT_FLAG_UNUSED20                = 51,
         CORJIT_FLAG_UNUSED21                = 52,
-        CORJIT_FLAG_UNUSED22                = 53
+        CORJIT_FLAG_UNUSED22                = 53,
+        CORJIT_FLAG_UNUSED23                = 54,
+        CORJIT_FLAG_UNUSED24                = 55,
+        CORJIT_FLAG_UNUSED25                = 56,
+        CORJIT_FLAG_UNUSED26                = 57,
+        CORJIT_FLAG_UNUSED27                = 58,
+        CORJIT_FLAG_UNUSED28                = 59,
+        CORJIT_FLAG_UNUSED29                = 60,
+        CORJIT_FLAG_UNUSED30                = 61,
+        CORJIT_FLAG_UNUSED31                = 62,
+        CORJIT_FLAG_UNUSED32                = 63
 
-#endif // !defined(_TARGET_X86_) && !defined(_TARGET_AMD64_)
+#endif // !defined(_TARGET_ARM64_) && !defined(_TARGET_X86_) && !defined(_TARGET_AMD64_)
     };
 
     CORJIT_FLAGS()
