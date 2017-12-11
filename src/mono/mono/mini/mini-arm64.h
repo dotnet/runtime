@@ -154,6 +154,8 @@ typedef struct {
 #define MONO_ARCH_HAVE_OPCODE_NEEDS_EMULATION 1
 #define MONO_ARCH_HAVE_DECOMPOSE_LONG_OPTS 1
 
+#define MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP 1
+
 #ifdef TARGET_IOS
 
 #define MONO_ARCH_REDZONE_SIZE 128
@@ -228,6 +230,15 @@ typedef struct {
 	ArgInfo args [1];
 } CallInfo;
 
+typedef struct {
+	/* General registers + ARMREG_R8 for indirect returns */
+	mgreg_t gregs [PARAM_REGS + 1];
+	/* Floating registers */
+	double fregs [FP_PARAM_REGS];
+	/* Stack usage, used for passing params on stack */
+	guint32 stack_size;
+	guint8* stack;
+} CallContext;
 
 guint8* mono_arm_emit_imm64 (guint8 *code, int dreg, gint64 imm);
 

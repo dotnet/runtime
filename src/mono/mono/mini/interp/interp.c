@@ -1128,13 +1128,11 @@ static gpointer
 interp_frame_arg_to_storage (MonoInterpFrameHandle frame, MonoMethodSignature *sig, int index)
 {
 	InterpFrame *iframe = (InterpFrame*)frame;
-	MonoType *type = sig->ret;
-	stackval *val = iframe->retval;
 
-	g_assert (index == -1);
-	g_assert (type->type == MONO_TYPE_VALUETYPE);
-
-	return stackval_to_data_addr (type, val);
+	if (index == -1)
+		return stackval_to_data_addr (sig->ret, iframe->retval);
+	else
+		return stackval_to_data_addr (sig->params [index], &iframe->stack_args [index]);
 }
 
 static void 

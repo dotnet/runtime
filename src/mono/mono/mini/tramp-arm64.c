@@ -620,10 +620,8 @@ gpointer
 mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 {
 #ifndef DISABLE_INTERPRETER
-	const int gregs_num = INTERP_ICALL_TRAMP_IARGS;
-	const int fregs_num = INTERP_ICALL_TRAMP_FARGS;
-
-	guint8 *start = NULL, *code, *label_gexits [gregs_num], *label_fexits [fregs_num], *label_leave_tramp [3], *label_is_float_ret;
+	guint8 *start = NULL, *code;
+	guint8 *label_start_copy, *label_exit_copy;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
 	int buf_len, i, framesize = 0, off_methodargs, off_targetaddr;
@@ -631,7 +629,7 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 	buf_len = 512 + 1024;
 	start = code = (guint8 *) mono_global_codeman_reserve (buf_len);
 
-	/* save FP and LR */
+	/* allocate frame */
 	framesize += 2 * sizeof (mgreg_t);
 
 	off_methodargs = framesize;
@@ -642,109 +640,66 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 
 	framesize = ALIGN_TO (framesize, MONO_ARCH_FRAME_ALIGNMENT);
 
-	/* allocate space on stack for argument passing */
-	const int stack_space = ALIGN_TO (((gregs_num - ARMREG_R7) * sizeof (mgreg_t)), MONO_ARCH_FRAME_ALIGNMENT);
+	arm_subx_imm (code, ARMREG_SP, ARMREG_SP, framesize);
+	arm_stpx (code, ARMREG_FP, ARMREG_LR, ARMREG_SP, 0);
+	arm_movspx (code, ARMREG_FP, ARMREG_SP);
 
-	arm_subx_imm (code, ARMREG_SP, ARMREG_SP, stack_space + framesize);
-	arm_stpx (code, ARMREG_FP, ARMREG_LR, ARMREG_SP, stack_space);
-	arm_addx_imm (code, ARMREG_FP, ARMREG_SP, stack_space);
-
-	/* save InterpMethodArguments* onto stack */
+	/* save CallContext* onto stack */
 	arm_strx (code, ARMREG_R1, ARMREG_FP, off_methodargs);
 
 	/* save target address onto stack */
 	arm_strx (code, ARMREG_R0, ARMREG_FP, off_targetaddr);
 
-	/* load pointer to InterpMethodArguments* into IP0 */
-	arm_movx (code, ARMREG_IP0, ARMREG_R1);
+	/* allocate the stack space necessary for the call */
+	arm_ldrx (code, ARMREG_R0, ARMREG_R1, MONO_STRUCT_OFFSET (CallContext, stack_size));
+	arm_movspx (code, ARMREG_IP0, ARMREG_SP);
+	arm_subx (code, ARMREG_IP0, ARMREG_IP0, ARMREG_R0);
+	arm_movspx (code, ARMREG_SP, ARMREG_IP0);
 
-	/* move flen into R9 */
-	arm_ldrx (code, ARMREG_R9, ARMREG_IP0, MONO_STRUCT_OFFSET (InterpMethodArguments, flen));
-	/* load pointer to fargs into R10 */
-	arm_ldrx (code, ARMREG_R10, ARMREG_IP0, MONO_STRUCT_OFFSET (InterpMethodArguments, fargs));
+	/* copy stack from the CallContext, IP0 = dest, IP1 = source */
+	arm_movspx (code, ARMREG_IP0, ARMREG_SP);
+	arm_ldrx (code, ARMREG_IP1, ARMREG_R1, MONO_STRUCT_OFFSET (CallContext, stack));
 
-	for (i = 0; i < fregs_num; ++i) {
-		arm_cmpx_imm (code, ARMREG_R9, 0);
-		label_fexits [i] = code;
-		arm_bcc (code, ARMCOND_EQ, 0);
+	label_start_copy = code;
 
-		g_assert (i <= ARMREG_D7); /* otherwise, need to pass args on stack */
-		arm_ldrfpx (code, i, ARMREG_R10, i * sizeof (double));
-		arm_subx_imm (code, ARMREG_R9, ARMREG_R9, 1);
-	}
+	arm_cmpx_imm (code, ARMREG_R0, 0);
+	label_exit_copy = code;
+	arm_bcc (code, ARMCOND_EQ, 0);
+	arm_ldrx (code, ARMREG_R2, ARMREG_IP1, 0);
+	arm_strx (code, ARMREG_R2, ARMREG_IP0, 0);
+	arm_addx_imm (code, ARMREG_IP0, ARMREG_IP0, sizeof (mgreg_t));
+	arm_addx_imm (code, ARMREG_IP1, ARMREG_IP1, sizeof (mgreg_t));
+	arm_subx_imm (code, ARMREG_R0, ARMREG_R0, sizeof (mgreg_t));
+	arm_b (code, label_start_copy);
+	mono_arm_patch (label_exit_copy, code, MONO_R_ARM64_BCC);
 
-	for (i = 0; i < fregs_num; i++)
-		mono_arm_patch (label_fexits [i], code, MONO_R_ARM64_BCC);
-
-	/* move ilen into R9 */
-	arm_ldrx (code, ARMREG_R9, ARMREG_IP0, MONO_STRUCT_OFFSET (InterpMethodArguments, ilen));
-	/* load pointer to iargs into R10 */
-	arm_ldrx (code, ARMREG_R10, ARMREG_IP0, MONO_STRUCT_OFFSET (InterpMethodArguments, iargs));
-
-	int stack_offset = 0;
-	for (i = 0; i < gregs_num; i++) {
-		arm_cmpx_imm (code, ARMREG_R9, 0);
-		label_gexits [i] = code;
-		arm_bcc (code, ARMCOND_EQ, 0);
-
-		if (i <= ARMREG_R7) {
-			arm_ldrx (code, i, ARMREG_R10, i * sizeof (mgreg_t));
-		} else {
-			arm_ldrx (code, ARMREG_R11, ARMREG_R10, i * sizeof (mgreg_t));
-			arm_strx (code, ARMREG_R11, ARMREG_SP, stack_offset);
-			stack_offset += sizeof (mgreg_t);
-		}
-		arm_subx_imm (code, ARMREG_R9, ARMREG_R9, 1);
-	}
-
-	for (i = 0; i < gregs_num; i++)
-		mono_arm_patch (label_gexits [i], code, MONO_R_ARM64_BCC);
-
-	/* load target addr */
-	arm_ldrx (code, ARMREG_R11, ARMREG_FP, off_targetaddr);
-
-	/* call into native function */
-	arm_blrx (code, ARMREG_R11);
-
-	/* load InterpMethodArguments */
+	/* Load CallContext* into IP0 */
 	arm_ldrx (code, ARMREG_IP0, ARMREG_FP, off_methodargs);
 
-	/* load is_float_ret */
-	arm_ldrx (code, ARMREG_R11, ARMREG_IP0, MONO_STRUCT_OFFSET (InterpMethodArguments, is_float_ret));
+	/* set all general purpose registers from CallContext */
+	for (i = 0; i < PARAM_REGS + 1; i++)
+		arm_ldrx (code, i, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, gregs) + i * sizeof (mgreg_t));
 
-	/* check if a float return value is expected */
-	arm_cmpx_imm (code, ARMREG_R11, 0);
-	label_is_float_ret = code;
-	arm_bcc (code, ARMCOND_NE, 0);
+	/* set all floating registers from CallContext  */
+	for (i = 0; i < FP_PARAM_REGS; i++)
+		arm_ldrfpx (code, i, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, fregs) + i * sizeof (double));
 
-	/* greg return */
-	/* load retval */
-	arm_ldrx (code, ARMREG_R11, ARMREG_IP0, MONO_STRUCT_OFFSET (InterpMethodArguments, retval));
+	/* load target addr */
+	arm_ldrx (code, ARMREG_IP0, ARMREG_FP, off_targetaddr);
 
-	arm_cmpx_imm (code, ARMREG_R11, 0);
-	label_leave_tramp [0] = code;
-	arm_bcc (code, ARMCOND_EQ, 0);
+	/* call into native function */
+	arm_blrx (code, ARMREG_IP0);
 
-	/* store greg result */
-	arm_strx (code, ARMREG_R0, ARMREG_R11, 0);
+	/* load CallContext* */
+	arm_ldrx (code, ARMREG_IP0, ARMREG_FP, off_methodargs);
 
-	label_leave_tramp [1] = code;
-	arm_bcc (code, ARMCOND_AL, 0);
+	/* set all general purpose registers to CallContext */
+	for (i = 0; i < PARAM_REGS; i++)
+		arm_strx (code, i, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, gregs) + i * sizeof (mgreg_t));
 
-	/* freg return */
-	mono_arm_patch (label_is_float_ret, code, MONO_R_ARM64_BCC);
-	/* load retval */
-	arm_ldrx (code, ARMREG_R11, ARMREG_IP0, MONO_STRUCT_OFFSET (InterpMethodArguments, retval));
-
-	arm_cmpx_imm (code, ARMREG_R11, 0);
-	label_leave_tramp [2] = code;
-	arm_bcc (code, ARMCOND_EQ, 0);
-
-	/* store freg result */
-	arm_strfpx (code, ARMREG_D0, ARMREG_R11, 0);
-
-	for (i = 0; i < 3; i++)
-		mono_arm_patch (label_leave_tramp [i], code, MONO_R_ARM64_BCC);
+	/* set all floating registers to CallContext  */
+	for (i = 0; i < FP_PARAM_REGS; i++)
+		arm_strfpx (code, i, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, fregs) + i * sizeof (double));
 
 	arm_movspx (code, ARMREG_SP, ARMREG_FP);
 	arm_ldpx (code, ARMREG_FP, ARMREG_LR, ARMREG_SP, 0);
