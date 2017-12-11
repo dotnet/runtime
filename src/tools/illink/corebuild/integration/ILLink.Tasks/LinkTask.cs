@@ -54,6 +54,11 @@ namespace ILLink.Tasks
 		/// </summary>
 		public string ExtraArgs { get; set; }
 
+		/// <summary>
+		///   Make illink dump dependencies file for linker analyzer tool.
+		/// </summary>
+		public bool DumpDependencies { get; set; }
+
 		public override bool Execute()
 		{
 			string[] args = GenerateCommandLineCommands();
@@ -94,6 +99,9 @@ namespace ILLink.Tasks
 			if (ExtraArgs != null) {
 				args.AddRange(ExtraArgs.Split(' '));
 			}
+
+			if (DumpDependencies)
+				args.Add ("--dump-dependencies");
 
 			return args.ToArray();
 		}

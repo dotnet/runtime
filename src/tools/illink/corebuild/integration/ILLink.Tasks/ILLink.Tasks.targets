@@ -15,6 +15,7 @@
     <LinkDuringPublish Condition=" '$(LinkDuringPublish)' == '' ">true</LinkDuringPublish>
     <LinkDuringPublish Condition=" '$(LinkDuringPublish)' != 'true' ">false</LinkDuringPublish>
     <ShowLinkerSizeComparison Condition=" '$(ShowLinkerSizeComparison)' == '' ">false</ShowLinkerSizeComparison>
+    <LinkerDumpDependencies Condition=" '$(LinkerDumpDependencies)' == '' ">false</LinkerDumpDependencies>
   </PropertyGroup>
   
   <ItemGroup>
@@ -186,6 +187,7 @@
             RootAssemblyNames="@(LinkerRootAssemblies)"
             RootDescriptorFiles="@(LinkerRootDescriptors)"
             OutputDirectory="$(IntermediateLinkDir)"
+            DumpDependencies="$(LinkerDumpDependencies)"
             ExtraArgs="$(ExtraLinkerArgs)" />
 
     <Touch Files="$(_LinkSemaphore)" AlwaysCreate="true">

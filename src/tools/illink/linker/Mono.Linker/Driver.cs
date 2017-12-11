@@ -101,6 +101,14 @@ namespace Mono.Linker {
 							continue;
 						}
 
+						if (token == "--dump-dependencies")
+						{
+							var prepareDependenciesDump = context.Annotations.GetType ().GetMethod ("PrepareDependenciesDump", new Type [] { });
+							if (prepareDependenciesDump != null)
+								prepareDependenciesDump.Invoke (context.Annotations, null);
+							continue;
+						}
+
 						switch (token [2]) {
 						case 'v':
 							Version ();
@@ -311,6 +319,7 @@ namespace Mono.Linker {
 			Console.WriteLine ("   --about             About the {0}", _linker);
 			Console.WriteLine ("   --version           Print the version number of the {0}", _linker);
 			Console.WriteLine ("   --skip-unresolved   Ignore unresolved types and methods (true or false)");
+			Console.WriteLine ("   --dump-dependencies Dump dependencies for the linker analyzer tool");
 			Console.WriteLine ("   -out                Specify the output directory, default to `output'");
 			Console.WriteLine ("   -c                  Action on the core assemblies, skip, copy, copyused, addbypassngen, addbypassngenused or link, default to skip");
 			Console.WriteLine ("   -u                  Action on the user assemblies, skip, copy, copyused, addbypassngen, addbypassngenused or link, default to link");
