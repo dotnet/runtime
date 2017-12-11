@@ -19,6 +19,8 @@ namespace System.ServiceModel.Syndication
     // NOTE: This class implements Clone so if you add any members, please update the copy ctor
     public class SyndicationFeed : IExtensibleSyndicationObject
     {
+        private readonly static List<string> s_acceptedDays = new List<string> { "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday" };
+
         private Collection<SyndicationPerson> _authors;
         private Uri _baseUri;
         private Collection<SyndicationCategory> _categories;
@@ -37,6 +39,11 @@ namespace System.ServiceModel.Syndication
 
         // optional RSS tags
         private SyndicationLink _documentation;
+        private int? _timeToLive;
+        private Collection<int> _skipHours;
+        private Collection<string> _skipDays;
+        private SyndicationTextInput _textInput;
+        private Uri _iconImage;
 
         public SyndicationFeed()
             : this((IEnumerable<SyndicationItem>)null)
@@ -294,6 +301,116 @@ namespace System.ServiceModel.Syndication
             }
         }
 
+        internal int? InternalTimeToLive
+        {
+            get
+            {
+                return _timeToLive;
+            }
+        }
+
+        public int TimeToLive
+        {
+            get
+            {
+                if (_timeToLive == null)
+                {
+                    _timeToLive = TryReadTimeToLiveFromExtension(ElementExtensions);
+                }
+
+                return _timeToLive.Value;
+            }
+            set
+            {
+                _timeToLive = value;
+            }
+        }
+
+        internal ICollection<int> InternalSkipHours
+        {
+            get
+            {
+                return _skipHours;
+            }
+        }
+
+        public ICollection<int> SkipHours
+        {
+            get
+            {
+                if (_skipHours == null)
+                {
+                    _skipHours = TryReadSkipHoursFromExtension(ElementExtensions);
+                }
+
+                return _skipHours;
+            }
+        }
+
+        internal ICollection<string> InternalSkipDays
+        {
+            get
+            {
+                return _skipDays;
+            }
+        }
+
+        public ICollection<string> SkipDays
+        {
+            get
+            {
+                if (_skipDays == null)
+                {
+                    _skipDays = TryReadSkipDaysFromExtension(ElementExtensions);
+                }
+
+                return _skipDays;
+            }
+        }
+
+        internal SyndicationTextInput InternalTextInput
+        {
+            get
+            {
+                return _textInput;
+            }
+        }
+
+        public SyndicationTextInput TextInput
+        {
+            get
+            {
+                if (_textInput == null)
+                {
+                    _textInput = TryReadTextInputFromExtension(ElementExtensions);
+                }
+
+                return _textInput;
+            }
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
+
+                _textInput = value;
+            }
+        }
+
+        public Uri IconImage
+        {
+            get
+            {
+                return _iconImage;
+            }
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
+
+                _iconImage = value;
+            }
+        }
+
         private SyndicationLink TryReadDocumentationFromExtension(SyndicationElementExtensionCollection elementExtensions)
         {
             SyndicationElementExtension documentationElement = elementExtensions
@@ -308,6 +425,169 @@ namespace System.ServiceModel.Syndication
                 SyndicationLink documentation = Rss20FeedFormatter.ReadAlternateLink(reader, BaseUri, SyndicationFeedFormatter.DefaultUriParser, preserveAttributeExtensions: true);
                 return documentation;
             }
+        }
+
+        private int? TryReadTimeToLiveFromExtension(SyndicationElementExtensionCollection elementExtensions)
+        {
+            SyndicationElementExtension timeToLiveElement = elementExtensions
+                                      .Where((e) => e.OuterName == Rss20Constants.TimeToLiveTag && e.OuterNamespace == Rss20Constants.Rss20Namespace)
+                                      .FirstOrDefault();
+
+            if (timeToLiveElement == null)
+                return null;
+
+            using (XmlReader reader = timeToLiveElement.GetReader())
+            {
+                string value = reader.ReadElementString();
+                int timeToLive = int.Parse(value);
+                return timeToLive;
+            }
+        }
+
+        private Collection<int> TryReadSkipHoursFromExtension(SyndicationElementExtensionCollection elementExtensions)
+        {
+            SyndicationElementExtension skipHoursElement = elementExtensions
+                                      .Where((e) => e.OuterName == Rss20Constants.SkipHoursTag && e.OuterNamespace == Rss20Constants.Rss20Namespace)
+                                      .FirstOrDefault();
+
+            if (skipHoursElement == null)
+                return null;
+
+            var skipHours = new Collection<int>();
+            using (XmlReader reader = skipHoursElement.GetReader())
+            {
+                reader.ReadStartElement();
+
+                while (reader.IsStartElement())
+                {
+                    if (reader.LocalName == Rss20Constants.HourTag)
+                    {
+                        string value = reader.ReadElementString();
+                        int hour = int.Parse(value);
+                        bool parsed = false;
+                        parsed = int.TryParse(value, NumberStyles.Integer, NumberFormatInfo.InvariantInfo, out hour);
+
+                        if (!parsed)
+                        {
+                            throw new ArgumentException("The number on skip hours must be an integer betwen 0 and 23.");
+                        }
+
+                        if (hour < 0 || hour > 23)
+                        {
+                            throw new ArgumentException("The hour can't be lower than 0 or greater than 23.");
+                        }
+
+                        skipHours.Add(hour);
+                    }
+                    else
+                    {
+                        reader.Skip();
+                    }
+                }
+            }
+
+            return skipHours;
+        }
+
+        private Collection<string> TryReadSkipDaysFromExtension(SyndicationElementExtensionCollection elementExtensions)
+        {
+            SyndicationElementExtension skipDaysElement = elementExtensions
+                                      .Where((e) => e.OuterName == Rss20Constants.SkipDaysTag && e.OuterNamespace == Rss20Constants.Rss20Namespace)
+                                      .FirstOrDefault();
+
+            if (skipDaysElement == null)
+                return null;
+
+            var skipDays = new Collection<string>();
+            using (XmlReader reader = skipDaysElement.GetReader())
+            {
+                reader.ReadStartElement();
+
+                while (reader.IsStartElement())
+                {
+                    if (reader.LocalName == Rss20Constants.DayTag)
+                    {
+                        string day = reader.ReadElementString();
+
+                        //Check if the day is actually an accepted day.
+                        if (checkDay(day))
+                        {
+                            skipDays.Add(day);
+                        }
+                    }
+                    else
+                    {
+                        reader.Skip();
+                    }
+                }
+
+                reader.ReadEndElement();
+            }
+
+            return skipDays;
+        }
+
+        private bool checkDay(string day)
+        {
+            if (s_acceptedDays.Contains(day.ToLower()))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private SyndicationTextInput TryReadTextInputFromExtension(SyndicationElementExtensionCollection elementExtensions)
+        {
+            SyndicationElementExtension textInputElement = elementExtensions
+                                      .Where((e) => e.OuterName == Rss20Constants.TextInputTag && e.OuterNamespace == Rss20Constants.Rss20Namespace)
+                                      .FirstOrDefault();
+
+            if (textInputElement == null)
+                return null;
+
+            var textInput = new SyndicationTextInput();
+            using (XmlReader reader = textInputElement.GetReader())
+            {
+                reader.ReadStartElement();
+                while (reader.IsStartElement())
+                {
+                    string name = reader.LocalName;
+                    string value = reader.ReadElementString();
+
+                    switch (name)
+                    {
+                        case Rss20Constants.DescriptionTag:
+                            textInput.Description = value;
+                            break;
+
+                        case Rss20Constants.TitleTag:
+                            textInput.Title = value;
+                            break;
+
+                        case Rss20Constants.LinkTag:
+                            textInput.Link = new SyndicationLink(new Uri(value, UriKind.RelativeOrAbsolute));
+                            break;
+
+                        case Rss20Constants.NameTag:
+                            textInput.Name = value;
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
+
+                reader.ReadEndElement();
+            }
+
+            return isValidTextInput(textInput) ? textInput : null;
+        }
+
+        private bool isValidTextInput(SyndicationTextInput textInput)
+        {
+            //All textInput items are required, we check if all items were instantiated.
+            return textInput.Description != null && textInput.Title != null && textInput.Name != null && textInput.Link != null;
         }
 
         public static SyndicationFeed Load(XmlReader reader)
@@ -409,18 +689,53 @@ namespace System.ServiceModel.Syndication
 
         private bool ShouldSkipWritingElements(string localName, string ns)
         {
-            switch (localName)
+            if (ns == Rss20Constants.Rss20Namespace)
             {
-                case Rss20Constants.DocumentationTag:
-                    if (ns == Rss20Constants.Rss20Namespace && InternalDocumentation != null)
-                    {
-                        return true;
-                    }
+                switch (localName)
+                {
+                    case Rss20Constants.DocumentationTag:
+                        if (InternalDocumentation != null)
+                        {
+                            return true;
+                        }
 
-                    break;
+                        break;
 
-                default:
-                    break;
+                    case Rss20Constants.TimeToLiveTag:
+                        if (InternalTimeToLive != null)
+                        {
+                            return true;
+                        }
+
+                        break;
+
+                    case Rss20Constants.TextInputTag:
+                        if (InternalTextInput != null)
+                        {
+                            return true;
+                        }
+
+                        break;
+
+                    case Rss20Constants.SkipHoursTag:
+                        if (InternalSkipHours != null)
+                        {
+                            return true;
+                        }
+
+                        break;
+
+                    case Rss20Constants.SkipDaysTag:
+                        if (InternalSkipDays != null)
+                        {
+                            return true;
+                        }
+
+                        break;
+
+                    default:
+                        break;
+                }
             }
 
             return false;

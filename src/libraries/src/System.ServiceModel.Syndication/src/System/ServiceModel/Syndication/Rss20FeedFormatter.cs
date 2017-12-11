@@ -1027,10 +1027,50 @@ namespace System.ServiceModel.Syndication
             }
 
             // Optional spec items
-            // docs
             if (Feed.InternalDocumentation?.Uri != null)
             {
                 writer.WriteElementString(Rss20Constants.DocumentationTag, Feed.InternalDocumentation.Uri.ToString());
+            }
+
+            if (Feed.InternalTimeToLive != null)
+            {
+                writer.WriteElementString(Rss20Constants.TimeToLiveTag, Feed.InternalTimeToLive.ToString());
+            }
+
+            if (Feed.InternalSkipHours?.Count > 0)
+            {
+                writer.WriteStartElement(Rss20Constants.SkipHoursTag);
+
+                foreach (int hour in Feed.InternalSkipHours)
+                {
+                    writer.WriteElementString(Rss20Constants.HourTag, hour.ToString());
+                }
+
+                writer.WriteEndElement();
+            }
+
+            if (Feed.InternalSkipDays?.Count > 0)
+            {
+                writer.WriteStartElement(Rss20Constants.SkipDaysTag);
+
+                foreach (string day in Feed.InternalSkipDays)
+                {
+                    writer.WriteElementString(Rss20Constants.DayTag, day);
+                }
+
+                writer.WriteEndElement();
+            }
+
+            if (Feed.InternalTextInput != null)
+            {
+                writer.WriteStartElement(Rss20Constants.TextInputTag);
+
+                writer.WriteElementString(Rss20Constants.DescriptionTag, Feed.InternalTextInput.Description);
+                writer.WriteElementString(Rss20Constants.TitleTag, Feed.InternalTextInput.Title);
+                writer.WriteElementString(Rss20Constants.LinkTag, Feed.InternalTextInput.Link.GetAbsoluteUri().ToString());
+                writer.WriteElementString(Rss20Constants.NameTag, Feed.InternalTextInput.Name);
+
+                writer.WriteEndElement();
             }
 
             if (_serializeExtensionsAsAtom)

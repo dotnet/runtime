@@ -23,6 +23,10 @@ namespace System.ServiceModel.Syndication
     public partial class SyndicationFeed
     {
         public SyndicationLink Documentation { get{ throw null; } set{ } }
+        public System.Collections.Generic.ICollection<string> SkipDays { get { throw null; } }
+        public System.Collections.Generic.ICollection<int> SkipHours { get { throw null; } }
+        public System.ServiceModel.Syndication.SyndicationTextInput TextInput { get { throw null; } set { } }
+        public int TimeToLive { get { throw null; } set { } }
     }
     public abstract partial class SyndicationFeedFormatter
     {
@@ -31,4 +35,12 @@ namespace System.ServiceModel.Syndication
     }
     public delegate bool TryParseDateTimeCallback(System.ServiceModel.Syndication.XmlDateTimeData data, out System.DateTimeOffset dateTimeOffset);
     public delegate bool TryParseUriCallback(System.ServiceModel.Syndication.XmlUriData data, out System.Uri uri);
+    public partial class SyndicationTextInput
+    {
+        public string Description;
+        public System.ServiceModel.Syndication.SyndicationLink Link;
+        public string Name;
+        public string Title;
+        public SyndicationTextInput() { }
+    }
 }
