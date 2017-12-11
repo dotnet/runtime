@@ -125,7 +125,10 @@ namespace System.Memory.Tests
             {
                 using (iteration.StartMeasurement())
                 {
-                    index |= span.BinarySearch(value);
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        index |= span.BinarySearch(value);
+                    }
                 }
             }
             Assert.Equal(expectedIndex, index);
