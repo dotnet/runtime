@@ -3598,6 +3598,9 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, CorInfoIntrinsics gtMat
             case CORINFO_INTRINSIC_Cos:
                 vnf = VNF_Cos;
                 break;
+            case CORINFO_INTRINSIC_Cbrt:
+                vnf = VNF_Cbrt;
+                break;
             case CORINFO_INTRINSIC_Sqrt:
                 vnf = VNF_Sqrt;
                 break;
@@ -3637,11 +3640,20 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, CorInfoIntrinsics gtMat
             case CORINFO_INTRINSIC_Asin:
                 vnf = VNF_Asin;
                 break;
+            case CORINFO_INTRINSIC_Asinh:
+                vnf = VNF_Asinh;
+                break;
             case CORINFO_INTRINSIC_Acos:
                 vnf = VNF_Acos;
                 break;
+            case CORINFO_INTRINSIC_Acosh:
+                vnf = VNF_Acosh;
+                break;
             case CORINFO_INTRINSIC_Atan:
                 vnf = VNF_Atan;
+                break;
+            case CORINFO_INTRINSIC_Atanh:
+                vnf = VNF_Atanh;
                 break;
             case CORINFO_INTRINSIC_Log10:
                 vnf = VNF_Log10;
