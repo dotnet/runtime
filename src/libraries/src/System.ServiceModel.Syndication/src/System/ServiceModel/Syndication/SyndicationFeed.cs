@@ -40,8 +40,8 @@ namespace System.ServiceModel.Syndication
         // optional RSS tags
         private SyndicationLink _documentation;
         private int? _timeToLive;
-        private ICollection<int> _skipHours;
-        private ICollection<string> _skipDays;
+        private Collection<int> _skipHours;
+        private Collection<string> _skipDays;
         private SyndicationTextInput _textInput;
 
         public SyndicationFeed()
@@ -325,7 +325,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        internal ICollection<int> InternalSkipHours
+        internal Collection<int> InternalSkipHours
         {
             get
             {
@@ -333,24 +333,22 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public ICollection<int> SkipHours
+        public Collection<int> SkipHours
         {
             get
             {
                 if (_skipHours == null)
                 {
-                    _skipHours = TryReadSkipHoursFromExtension(ElementExtensions);
+                    var skipHours = new Collection<int>();
+                    TryReadSkipHoursFromExtension(ElementExtensions, skipHours);
+                    _skipHours = skipHours;
                 }
 
                 return _skipHours;
             }
-            set
-            {
-                _skipHours = value;
-            }
         }
 
-        internal ICollection<string> InternalSkipDays
+        internal Collection<string> InternalSkipDays
         {
             get
             {
@@ -358,20 +356,18 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public ICollection<string> SkipDays
+        public Collection<string> SkipDays
         {
             get
             {
                 if (_skipDays == null)
                 {
-                    _skipDays = TryReadSkipDaysFromExtension(ElementExtensions);
+                    var skipDays = new Collection<string>();
+                    TryReadSkipDaysFromExtension(ElementExtensions, skipDays);
+                    _skipDays = skipDays;
                 }
 
                 return _skipDays;
-            }
-            set
-            {
-                _skipDays = value;
             }
         }
 
@@ -433,16 +429,15 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        private Collection<int> TryReadSkipHoursFromExtension(SyndicationElementExtensionCollection elementExtensions)
+        private void TryReadSkipHoursFromExtension(SyndicationElementExtensionCollection elementExtensions, Collection<int> skipHours)
         {
             SyndicationElementExtension skipHoursElement = elementExtensions
                                       .Where((e) => e.OuterName == Rss20Constants.SkipHoursTag && e.OuterNamespace == Rss20Constants.Rss20Namespace)
                                       .FirstOrDefault();
 
             if (skipHoursElement == null)
-                return null;
+                return;
 
-            var skipHours = new Collection<int>();
             using (XmlReader reader = skipHoursElement.GetReader())
             {
                 reader.ReadStartElement();
@@ -474,20 +469,17 @@ namespace System.ServiceModel.Syndication
                     }
                 }
             }
-
-            return skipHours;
         }
 
-        private Collection<string> TryReadSkipDaysFromExtension(SyndicationElementExtensionCollection elementExtensions)
+        private void TryReadSkipDaysFromExtension(SyndicationElementExtensionCollection elementExtensions, Collection<string> skipDays)
         {
             SyndicationElementExtension skipDaysElement = elementExtensions
                                       .Where((e) => e.OuterName == Rss20Constants.SkipDaysTag && e.OuterNamespace == Rss20Constants.Rss20Namespace)
                                       .FirstOrDefault();
 
             if (skipDaysElement == null)
-                return null;
+                return;
 
-            var skipDays = new Collection<string>();
             using (XmlReader reader = skipDaysElement.GetReader())
             {
                 reader.ReadStartElement();
@@ -512,8 +504,6 @@ namespace System.ServiceModel.Syndication
 
                 reader.ReadEndElement();
             }
-
-            return skipDays;
         }
 
         private bool checkDay(string day)
