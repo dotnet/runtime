@@ -130,8 +130,6 @@ public:
         , m_host_interface()
         , m_tfm(get_app(fx_definitions).get_runtime_config().get_tfm())
     {
-        make_cstr_arr(m_clr_keys, &m_clr_keys_cstr);
-        make_cstr_arr(m_clr_values, &m_clr_values_cstr);
         make_cstr_arr(m_probe_paths, &m_probe_paths_cstr);
 
         int fx_count = fx_definitions.size();
@@ -161,6 +159,8 @@ public:
         make_cstr_arr(m_fx_dirs, &m_fx_dirs_cstr);
         make_cstr_arr(m_fx_requested_versions, &m_fx_requested_versions_cstr);
         make_cstr_arr(m_fx_found_versions, &m_fx_found_versions_cstr);
+        make_cstr_arr(m_clr_keys, &m_clr_keys_cstr);
+        make_cstr_arr(m_clr_values, &m_clr_values_cstr);
     }
 
     const pal::string_t& tfm() const
