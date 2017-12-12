@@ -163,9 +163,8 @@ namespace Mono.Linker.Steps {
 					if (assembly.MainModule.HasExportedTypes) {
 						foreach (var exported in assembly.MainModule.ExportedTypes) {
 							if (fullname == exported.FullName) {
-								Annotations.Mark (exported);
 								Annotations.Push (exported);
-								Annotations.Mark (assembly.MainModule);
+								MarkingHelpers.MarkExportedType (exported, assembly.MainModule);
 								var resolvedExternal = exported.Resolve ();
 								Annotations.Pop ();
 								if (resolvedExternal != null) {
@@ -209,8 +208,7 @@ namespace Mono.Linker.Steps {
 		void MatchExportedType (ExportedType exportedType, ModuleDefinition module, Regex regex, XPathNavigator nav)
 		{
 			if (regex.Match (exportedType.FullName).Success) {
-				Annotations.Mark (exportedType);
-				Annotations.Mark (module);
+				MarkingHelpers.MarkExportedType (exportedType, module);
 				TypeDefinition type = null;
 				try {
 					type = exportedType.Resolve ();

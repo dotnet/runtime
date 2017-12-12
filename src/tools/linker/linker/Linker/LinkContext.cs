@@ -127,6 +127,8 @@ namespace Mono.Linker {
 
 		public ILogger Logger { get; set; } = new ConsoleLogger ();
 
+		public MarkingHelpers MarkingHelpers { get; private set; }
+
 		public LinkContext (Pipeline pipeline)
 			: this (pipeline, new AssemblyResolver ())
 		{
@@ -149,6 +151,7 @@ namespace Mono.Linker {
 			_parameters = new Dictionary<string, string> ();
 			_annotations = annotations;
 			_readerParameters = readerParameters;
+			MarkingHelpers = CreateMarkingHelpers ();
 		}
 
 		public TypeDefinition GetType (string fullName)
@@ -326,6 +329,11 @@ namespace Mono.Linker {
 		{
 			if (LogInternalExceptions && Logger != null)
 				Logger.LogMessage (importance, message, values);
+		}
+
+		protected virtual MarkingHelpers CreateMarkingHelpers ()
+		{
+			return new MarkingHelpers (this);
 		}
 	}
 }

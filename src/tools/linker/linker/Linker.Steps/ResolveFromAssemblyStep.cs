@@ -144,10 +144,7 @@ namespace Mono.Linker.Steps
 
 					context.Resolve (resolvedExportedType.Scope);
 					MarkType (context, resolvedExportedType, rootVisibility);
-					context.Annotations.Mark (exported);
-					if (context.KeepTypeForwarderOnlyAssemblies) {
-						context.Annotations.Mark (assembly.MainModule);
-					}
+					context.MarkingHelpers.MarkExportedType (exported, assembly.MainModule);
 				}
 			}
 
