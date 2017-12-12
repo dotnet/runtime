@@ -198,20 +198,30 @@ namespace System.Drawing.Tests
         }
 
         [Theory]
-        [InlineData("'", typeof(Exception))]
-        [InlineData("'\"", typeof(Exception))]
-        [InlineData("\"'", typeof(Exception))]
-        [InlineData("#", typeof(Exception))]
+        [InlineData("'")]
+        [InlineData("'\"")]
+        [InlineData("\"'")]
+        [InlineData("#")]
+        [InlineData("  #G12  ")]
+        [InlineData("  #G12345  ")]
+        [InlineData("#FFFFFFFFF")]
+        [InlineData("0x")]
+        [InlineData("0xFFFFFFFFF")]
+        [InlineData("0xG12")]
+        [InlineData("&h")]
+        [InlineData("&hG12")]
+        public void FromHtml_Invalid_Throws(string htmlColor)
+        {
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
+            {
+                Exception exception = AssertExtensions.Throws<ArgumentException, Exception>(() => ColorTranslator.FromHtml(htmlColor));
+                if (exception is ArgumentException argumentException)
+                    Assert.Equal("htmlColor", argumentException.ParamName);
+            }
+        }
+
         [InlineData("#G12", typeof(FormatException))]
         [InlineData("#G12345", typeof(FormatException))]
-        [InlineData("  #G12  ", typeof(Exception))]
-        [InlineData("  #G12345  ", typeof(Exception))]
-        [InlineData("#FFFFFFFFF", typeof(Exception))]
-        [InlineData("0x", typeof(Exception))]
-        [InlineData("0xFFFFFFFFF", typeof(Exception))]
-        [InlineData("0xG12", typeof(Exception))]
-        [InlineData("&h", typeof(Exception))]
-        [InlineData("&hG12", typeof(Exception))]
         [InlineData("1,2", typeof(ArgumentException))]
         [InlineData("1,2,3,4,5", typeof(ArgumentException))]
         [InlineData("-1,2,3", typeof(ArgumentException))]
@@ -220,7 +230,8 @@ namespace System.Drawing.Tests
         [InlineData("1,256,3", typeof(ArgumentException))]
         [InlineData("1,2,-1", typeof(ArgumentException))]
         [InlineData("1,2,256", typeof(ArgumentException))]
-        public void FromHtml_Invalid_Throws(string htmlColor, Type exception)
+
+        public void FromHtml_Invalid_Throw(string htmlColor, Type exception)
         {
             using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {
