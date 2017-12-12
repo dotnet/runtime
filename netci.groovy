@@ -414,7 +414,7 @@ def static setTestJobTimeOut(newJob, isPR, architecture, scenario) {
     else if (!(scenario == 'default' && isPR == true)) {
         // Pri-1 test builds take a long time. Default PR jobs are Pri-0; everything else is Pri-1
         // (see calculateBuildCommands()). So up the Pri-1 build jobs timeout.
-        Utilities.setJobTimeout(newJob, 180)
+        Utilities.setJobTimeout(newJob, 240)
     }
     // Non-test jobs use the default timeout value.
 }
