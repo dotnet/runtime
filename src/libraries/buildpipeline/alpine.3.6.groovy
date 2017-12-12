@@ -40,13 +40,4 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:alpine-3.6-3148f11-2017111
     // TODO: Add submission for Helix testing once we have queue for Alpine Linux working
 }
 
-stage ('Execute Tests') {
-    def contextBase
-    if (params.TestOuter) {
-        contextBase = "Alpine.3.6 x64 Tests w/outer - ${params.CGroup}"
-    }
-    else {
-        contextBase = "Alpine.3.6 x64 Tests - ${params.CGroup}"
-    }
-    waitForHelixRuns(submittedHelixJson, contextBase)
-}
+// TODO: Add "Execute tests" stage once we have queue for Alpine Linux working
