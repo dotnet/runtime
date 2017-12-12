@@ -106,50 +106,54 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		{
 			var checks = BuildOtherAssemblyCheckTable (original);
 
-			foreach (var assemblyName in checks.Keys) {
-				using (var linkedAssembly = ResolveLinkedAssembly (assemblyName)) {
-					foreach (var checkAttrInAssembly in checks [assemblyName]) {
-						var expectedTypeName = checkAttrInAssembly.ConstructorArguments [1].Value.ToString ();
-						var linkedType = linkedAssembly.MainModule.GetType (expectedTypeName);
+			try {
+				foreach (var assemblyName in checks.Keys) {
+					using (var linkedAssembly = ResolveLinkedAssembly (assemblyName)) {
+						foreach (var checkAttrInAssembly in checks [assemblyName]) {
+							var expectedTypeName = checkAttrInAssembly.ConstructorArguments [1].Value.ToString ();
+							var linkedType = linkedAssembly.MainModule.GetType (expectedTypeName);
 
-						switch (checkAttrInAssembly.AttributeType.Name) {
-						case nameof (RemovedTypeInAssemblyAttribute):
-							if (linkedType != null)
-								Assert.Fail ($"Type `{expectedTypeName}' should have been removed");
-							break;
-						case nameof (KeptTypeInAssemblyAttribute):
-							if (linkedType == null)
-								Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
-							break;
-						case nameof (RemovedMemberInAssemblyAttribute):
-							if (linkedType == null)
-								continue;
+							switch (checkAttrInAssembly.AttributeType.Name) {
+							case nameof (RemovedTypeInAssemblyAttribute):
+								if (linkedType != null)
+									Assert.Fail ($"Type `{expectedTypeName}' should have been removed");
+								break;
+							case nameof (KeptTypeInAssemblyAttribute):
+								if (linkedType == null)
+									Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
+								break;
+							case nameof (RemovedMemberInAssemblyAttribute):
+								if (linkedType == null)
+									continue;
 
-							VerifyRemovedMemberInAssembly (checkAttrInAssembly, linkedType);
-							break;
-						case nameof (KeptMemberInAssemblyAttribute):
-							if (linkedType == null)
-								Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
+								VerifyRemovedMemberInAssembly (checkAttrInAssembly, linkedType);
+								break;
+							case nameof (KeptMemberInAssemblyAttribute):
+								if (linkedType == null)
+									Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
 
-							VerifyKeptMemberInAssembly (checkAttrInAssembly, linkedType);
-							break;
-						case nameof (RemovedForwarderAttribute):
-							if (linkedAssembly.MainModule.ExportedTypes.Any (l => l.Name == expectedTypeName))
-								Assert.Fail ($"Forwarder `{expectedTypeName}' should have been removed");
+								VerifyKeptMemberInAssembly (checkAttrInAssembly, linkedType);
+								break;
+							case nameof (RemovedForwarderAttribute):
+								if (linkedAssembly.MainModule.ExportedTypes.Any (l => l.Name == expectedTypeName))
+									Assert.Fail ($"Forwarder `{expectedTypeName}' should have been removed");
 							
-							break;
-						case nameof (KeptResourceInAssemblyAttribute):
-							VerifyKeptResourceInAssembly (checkAttrInAssembly);
-							break;
-						case nameof (RemovedResourceInAssemblyAttribute):
-							VerifyRemovedResourceInAssembly (checkAttrInAssembly);
-							break;
-						default:
-							UnhandledOtherAssemblyAssertion (expectedTypeName, checkAttrInAssembly, linkedType);
-							break;
+								break;
+							case nameof (KeptResourceInAssemblyAttribute):
+								VerifyKeptResourceInAssembly (checkAttrInAssembly);
+								break;
+							case nameof (RemovedResourceInAssemblyAttribute):
+								VerifyRemovedResourceInAssembly (checkAttrInAssembly);
+								break;
+							default:
+								UnhandledOtherAssemblyAssertion (expectedTypeName, checkAttrInAssembly, linkedType);
+								break;
+							}
 						}
 					}
 				}
+			} catch (AssemblyResolutionException e) {
+				Assert.Fail ($"Failed to resolve linked assembly `{e.AssemblyReference.Name}`.  It must not exist in any of the output directories:\n\t{_linkedResolver.GetSearchDirectories ().Aggregate ((buff, s) => $"{buff}\n\t{s}")}\n");
 			}
 		}
 
