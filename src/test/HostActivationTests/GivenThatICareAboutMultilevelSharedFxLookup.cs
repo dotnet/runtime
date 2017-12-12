@@ -405,7 +405,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
             // Add versions in the exe folders
             AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0");
-            AddAvailableSharedUberFxVersions(_exeSharedUberFxBaseDir, "9999.0.0", "7777.0.0");
+            AddAvailableSharedUberFxVersions(_exeSharedUberFxBaseDir, "9999.0.0", null, "7777.0.0");
 
             // Version: NetCoreApp 9999.0.0
             //          UberFramework 7777.0.0
@@ -428,7 +428,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
             // Add a newer version to verify roll-forward
             AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.1");
-            AddAvailableSharedUberFxVersions(_exeSharedUberFxBaseDir, "9999.0.0", "7777.0.1");
+            AddAvailableSharedUberFxVersions(_exeSharedUberFxBaseDir, "9999.0.0", null, "7777.0.1");
 
             // Version: NetCoreApp 9999.0.0
             //          UberFramework 7777.0.0
@@ -472,7 +472,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
         }
 
         [Fact]
-        public void Multiple_SharedFxLookup_Propagated_RuntimeConfig_Value()
+        public void Multiple_SharedFxLookup_Propagated_RuntimeConfig_Values()
         {
             var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
                 .Copy();
@@ -485,7 +485,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
             // Add versions in the exe folders
             AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.0");
-            AddAvailableSharedUberFxVersions(_exeSharedUberFxBaseDir, "9999.0.0", "7777.0.0");
+            AddAvailableSharedUberFxVersions(_exeSharedUberFxBaseDir, "9999.0.0", "UberValue", "7777.0.0");
 
             // Version: NetCoreApp 9999.0.0
             //          UberFramework 7777.0.0
@@ -503,8 +503,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .And
                 .HaveStdErrContaining("It was not possible to find any compatible framework version");
 
-            // Add the rollForwardOnNoCandidateFx value to the Uber runtimeconfig which should carry over to NetCoreApp
-            SetRuntimeConfigJson(runtimeConfig, "7777.0.0", rollFwdOnNoCandidateFx: 1, useUberFramework: true);
+            // Enable rollForwardOnNoCandidateFx
+            SetRuntimeConfigJson(runtimeConfig, "7777.0.0", rollFwdOnNoCandidateFx: 1, testConfigPropertyValue : null, useUberFramework: true);
 
             // Version: NetCoreApp 9999.0.0
             //          UberFramework 7777.0.0
@@ -523,7 +523,33 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .And
                 .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.1.0"))
                 .And
-                .HaveStdErrContaining(Path.Combine(_exeFoundUberFxMessage, "7777.0.0"));
+                .HaveStdErrContaining(Path.Combine(_exeFoundUberFxMessage, "7777.0.0"))
+                .And
+                .HaveStdErrContaining("Property TestProperty = UberValue");
+
+            // Change the app's TestProperty value which should override the uber's config value
+            SetRuntimeConfigJson(runtimeConfig, "7777.0.0", rollFwdOnNoCandidateFx: 1, testConfigPropertyValue: "AppValue", useUberFramework: true);
+
+            // Version: NetCoreApp 9999.0.0
+            //          UberFramework 7777.0.0
+            // Exe: NetCoreApp 9999.1.0
+            //      UberFramework 7777.0.0
+            // Expected: 9999.1.0
+            //           7777.0.0
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.1.0"))
+                .And
+                .HaveStdErrContaining(Path.Combine(_exeFoundUberFxMessage, "7777.0.0"))
+                .And
+                .HaveStdErrContaining("Property TestProperty = AppValue");
 
             DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.0");
             DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.0.0");
@@ -543,7 +569,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
             // Add versions in the exe folders
             AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0");
-            AddAvailableSharedUberFxVersions(_exeSharedUberFxBaseDir, "9999.0.0", "7777.0.0");
+            AddAvailableSharedUberFxVersions(_exeSharedUberFxBaseDir, "9999.0.0", null, "7777.0.0");
 
             // The System.Collections.Immutable.dll is located in the UberFramework and NetCoreApp
             // The System.Collections.dll is only located in NetCoreApp
@@ -590,7 +616,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
         // This method adds a list of new framework version folders in the specified
         // sharedFxUberBaseDir. A runtimeconfig file is created that references
         // Microsoft.NETCore.App version=sharedFxBaseVersion
-        private void AddAvailableSharedUberFxVersions(string sharedUberFxBaseDir, string sharedFxBaseVersion, params string[] availableUberVersions)
+        private void AddAvailableSharedUberFxVersions(string sharedUberFxBaseDir, string sharedFxBaseVersion, string testConfigPropertyValue = null, params string[] availableUberVersions)
         {
             DirectoryInfo sharedFxUberBaseDirInfo = new DirectoryInfo(sharedUberFxBaseDir);
 
@@ -605,7 +631,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 CopyDirectory(_builtSharedUberFxDir, newSharedFxDir);
 
                 string runtimeBaseConfig = Path.Combine(newSharedFxDir, "Microsoft.UberFramework.runtimeconfig.json");
-                SetRuntimeConfigJson(runtimeBaseConfig, sharedFxBaseVersion);
+                SetRuntimeConfigJson(runtimeBaseConfig, sharedFxBaseVersion, null, testConfigPropertyValue);
             }
         }
 
@@ -702,7 +728,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
          *   }
          * }
         */
-        private void SetRuntimeConfigJson(string destFile, string version, int? rollFwdOnNoCandidateFx = null, bool? useUberFramework = false)
+        private void SetRuntimeConfigJson(string destFile, string version, int? rollFwdOnNoCandidateFx = null, string testConfigPropertyValue = null, bool? useUberFramework = false)
         {
             string name = useUberFramework.HasValue && useUberFramework.Value ? "Microsoft.UberFramework" : "Microsoft.NETCore.App";
 
@@ -718,6 +744,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             if (rollFwdOnNoCandidateFx.HasValue)
             {
                 runtimeOptions.Add("rollForwardOnNoCandidateFx", rollFwdOnNoCandidateFx);
+            }
+
+            if (testConfigPropertyValue != null)
+            {
+                runtimeOptions.Add(
+                    new JProperty("configProperties",
+                        new JObject(
+                            new JProperty("TestProperty", testConfigPropertyValue)
+                        )
+                    )
+                );
             }
 
             FileInfo file = new FileInfo(destFile);
