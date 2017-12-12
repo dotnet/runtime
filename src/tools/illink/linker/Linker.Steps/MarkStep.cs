@@ -522,9 +522,9 @@ namespace Mono.Linker.Steps {
 			while (_topLevelAttributes.Count != 0) {
 				var customAttribute = _topLevelAttributes.Dequeue ();
 
-				var resolved = customAttribute.AttributeType.Resolve ();
+				var resolved = customAttribute.Constructor.Resolve ();
 				if (resolved == null) {
-					HandleUnresolvedType (customAttribute.AttributeType);
+					HandleUnresolvedMethod (customAttribute.Constructor);
 					continue;
 				}
 
