@@ -715,7 +715,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocMemory_NoThrow(size_t header, 
 
         _ASSERTE(totalRequiredSize > availableInFreeList);
         size_t sizeToCommit = totalRequiredSize - availableInFreeList;
-        sizeToCommit = ROUND_UP_TO_PAGE(size); // round up to page
+        sizeToCommit = ROUND_UP_TO_PAGE(sizeToCommit);
 
         if (m_pLastAvailableCommittedAddr + sizeToCommit <= m_pBaseAddr + m_TotalBytesAvailable)
         {
