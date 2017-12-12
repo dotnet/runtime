@@ -57,6 +57,7 @@
     <Compile Include="Basic\UnusedPropertySetterRemoved.cs" />
     <Compile Include="Basic\UsedPropertyIsKept.cs" />
     <Compile Include="Basic\UsedStructIsKept.cs" />
+    <Compile Include="LinkXml\CanPreserveTypesUsingRegex.cs" />
     <Compile Include="LinkXml\UnusedAssemblyWithNoDefinedPreserveHasAllTypesPreserved.cs" />
     <Compile Include="LinkXml\UnusedEventPreservedByLinkXmlIsKept.cs" />
     <Compile Include="LinkXml\UnusedTypePreservedByLinkXmlWithCommentIsKept.cs" />
@@ -152,6 +153,7 @@
     <Compile Include="Basic\UsedInterfaceIsKept.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="LinkXml\CanPreserveTypesUsingRegex.xml" />
     <Content Include="LinkXml\TypeWithPreserveFieldsHasBackingFieldsOfPropertiesRemoved.xml" />
     <Content Include="LinkXml\UnusedAssemblyWithNoDefinedPreserveHasAllTypesPreserved.xml" />
     <Content Include="LinkXml\UnusedEventPreservedByLinkXmlIsKept.xml" />
