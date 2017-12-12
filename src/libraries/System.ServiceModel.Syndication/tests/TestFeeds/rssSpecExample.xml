@@ -18,6 +18,11 @@
       <hour>3</hour>
     </skipHours>
     <skipDays>
+      <day>Monday</day>
+      <day>TUESDAY</day>
+      <day>Wednesday</day>
+      <day>Thursday</day>
+      <day>FridaY</day>
       <day>Saturday</day>
       <day>Sunday</day>
     </skipDays>

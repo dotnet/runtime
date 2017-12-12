@@ -26,7 +26,7 @@ namespace System.ServiceModel.Syndication
         public System.Collections.ObjectModel.Collection<string> SkipDays { get { throw null; } }
         public System.Collections.ObjectModel.Collection<int> SkipHours { get { throw null; } }
         public System.ServiceModel.Syndication.SyndicationTextInput TextInput { get { throw null; } set { } }
-        public int TimeToLive { get { throw null; } set { } }
+        public int? TimeToLive { get { throw null; } set { } }
     }
     public abstract partial class SyndicationFeedFormatter
     {

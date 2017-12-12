@@ -145,13 +145,14 @@ namespace System.ServiceModel.Syndication.Tests
                 Assert.NotNull(feed.Documentation);
                 Assert.Equal("http://contoso.com/rss", feed.Documentation.GetAbsoluteUri().ToString());
 
+                Assert.NotNull(feed.TimeToLive);
                 Assert.Equal(60, feed.TimeToLive);
 
                 Assert.NotNull(feed.SkipHours);
                 Assert.Equal(3, feed.SkipHours.Count);
 
                 Assert.NotNull(feed.SkipDays);
-                Assert.Equal(2, feed.SkipDays.Count);
+                Assert.Equal(7, feed.SkipDays.Count);
 
                 Assert.NotNull(feed.TextInput);
                 Assert.Equal("Search Online", feed.TextInput.Description);
@@ -186,6 +187,7 @@ namespace System.ServiceModel.Syndication.Tests
                     Assert.NotNull(feed.Documentation);
                     Assert.True(feed.Documentation.GetAbsoluteUri().ToString() == "http://contoso.com/rss");
 
+                    Assert.NotNull(feed.TimeToLive);
                     Assert.Equal(60, feed.TimeToLive);
 
                     Assert.NotNull(feed.SkipHours);
