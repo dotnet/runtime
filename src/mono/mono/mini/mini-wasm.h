@@ -45,4 +45,7 @@ typedef struct {
 #define MONO_ARCH_IMT_REG WASM_REG_0
 #define MONO_ARCH_RGCTX_REG WASM_REG_0
 
+/* must be at a power of 2 and >= 8 */
+#define MONO_ARCH_FRAME_ALIGNMENT 16
+
 #endif /* __MONO_MINI_WASM_H__ */  

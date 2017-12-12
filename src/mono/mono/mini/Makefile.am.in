@@ -544,6 +544,7 @@ if WASM
 arch_sources = $(wasm_sources)
 arch_built=cpu-wasm.h
 arch_define=__wasm__
+target_define=TARGET_WASM
 endif
 
 if X86
