@@ -346,7 +346,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 //      There are 2 ways depending from build version to generate code for localloc:
 //          1) For debug build where memory should be initialized we generate loop
 //             which invoke push {tmpReg} N times.
-//          2) Fore /o build  However, we tickle the pages to ensure that SP is always
+//          2) For non-debug build, we tickle the pages to ensure that SP is always
 //             valid and is in sync with the "stack guard page". Amount of iteration
 //             is N/eeGetPageSize().
 //
@@ -355,7 +355,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 //          1) It's not needed to generate loop for zero size allocation
 //          2) For small allocation (less than 4 store) we unroll loop
 //          3) For allocation less than eeGetPageSize() and when it's not needed to initialize
-//             memory to zero, we can just increment SP.
+//             memory to zero, we can just decrement SP.
 //
 // Notes: Size N should be aligned to STACK_ALIGN before any allocation
 //
@@ -529,17 +529,17 @@ void CodeGen::genLclHeap(GenTreePtr tree)
         // to tickle the pages to ensure that SP is always valid and is
         // in sync with the "stack guard page".  Note that in the worst
         // case SP is on the last byte of the guard page.  Thus you must
-        // touch SP+0 first not SP+0x1000.
+        // touch SP-0 first not SP-0x1000.
         //
         // Another subtlety is that you don't want SP to be exactly on the
         // boundary of the guard page because PUSH is predecrement, thus
         // call setup would not touch the guard page but just beyond it
         //
         // Note that we go through a few hoops so that SP never points to
-        // illegal pages at any time during the ticking process
+        // illegal pages at any time during the tickling process
         //
         //       subs  regCnt, SP, regCnt      // regCnt now holds ultimate SP
-        //       jb    Loop                    // result is smaller than orignial SP (no wrap around)
+        //       bvc   Loop                    // result is smaller than original SP (no wrap around)
         //       mov   regCnt, #0              // Overflow, pick lowest possible value
         //
         //  Loop:
@@ -565,7 +565,7 @@ void CodeGen::genLclHeap(GenTreePtr tree)
 
         inst_JMP(EJ_vc, loop); // branch if the V flag is not set
 
-        // Ups... Overflow, set regCnt to lowest possible value
+        // Overflow, set regCnt to lowest possible value
         instGen_Set_Reg_To_Zero(EA_PTRSIZE, regCnt);
 
         genDefineTempLabel(loop);
@@ -581,7 +581,7 @@ void CodeGen::genLclHeap(GenTreePtr tree)
         inst_JMP(jmpLTU, done);
 
         // Update SP to be at the next page of stack that we will tickle
-        getEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_SPBASE, regCnt);
+        getEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_SPBASE, regTmp);
 
         // Jump to loop and tickle new stack address
         inst_JMP(EJ_jmp, loop);
