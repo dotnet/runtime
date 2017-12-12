@@ -26,6 +26,7 @@
     <PrereleaseLibraryPackage Include="System.ComponentModel.Composition" />
     <PrereleaseLibraryPackage Include="System.Configuration.ConfigurationManager" />
     <PrereleaseLibraryPackage Include="System.Data.Odbc" />
+    <PrereleaseLibraryPackage Include="System.Data.DataSetExtensions" />
     <PrereleaseLibraryPackage Include="System.Drawing.Common" />
     <PrereleaseLibraryPackage Include="System.Diagnostics.EventLog" />
     <PrereleaseLibraryPackage Include="System.Diagnostics.PerformanceCounter" />
@@ -49,10 +50,14 @@
     <PrereleaseLibraryPackage Include="System.Text.Encoding.CodePages" />
     <PrereleaseLibraryPackage Include="System.Threading.AccessControl" />
 
+    <!-- External pre-release packages -->
+    <LibraryPackage Include="System.ServiceModel.Primitives">
+      <Version>4.4.1-servicing-25917-01</Version>
+    </LibraryPackage>
+
     <!-- Stable packages shipped already for netcoreapp2.0 -->
     <LibraryPackage Include="System.Data.SqlClient" />
     <LibraryPackage Include="System.Security.Cryptography.Cng" />
-    <LibraryPackage Include="System.ServiceModel.Primitives" />
     <LibraryPackage Include="System.ServiceModel.Duplex" />
     <LibraryPackage Include="System.ServiceModel.Http" />
     <LibraryPackage Include="System.ServiceModel.NetTcp" />
