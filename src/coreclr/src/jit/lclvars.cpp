@@ -5753,7 +5753,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
     alloc_order[cur] = 0;
 
-    noway_assert(cur < sizeof(alloc_order) / sizeof(alloc_order[0]));
+    noway_assert(cur < _countof(alloc_order));
 
     // Force first pass to happen
     UINT assignMore             = 0xFFFFFFFF;

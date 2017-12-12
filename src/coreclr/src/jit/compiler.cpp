@@ -7818,7 +7818,7 @@ void CompTimeSummaryInfo::Print(FILE* f)
                 extraHdr2);
 
         // Ensure that at least the names array and the Phases enum have the same number of entries:
-        assert(sizeof(PhaseNames) / sizeof(const char*) == PHASE_NUMBER_OF);
+        assert(_countof(PhaseNames) == PHASE_NUMBER_OF);
         for (int i = 0; i < PHASE_NUMBER_OF; i++)
         {
             double phase_tot_ms  = (((double)m_total.m_cyclesByPhase[i]) / countsPerSec) * 1000.0;
@@ -7882,7 +7882,7 @@ void CompTimeSummaryInfo::Print(FILE* f)
         fprintf(f, "     PHASE                            inv/meth Mcycles    time (ms)  %% of total\n");
         fprintf(f, "     --------------------------------------------------------------------------------------\n");
         // Ensure that at least the names array and the Phases enum have the same number of entries:
-        assert(sizeof(PhaseNames) / sizeof(const char*) == PHASE_NUMBER_OF);
+        assert(_countof(PhaseNames) == PHASE_NUMBER_OF);
         for (int i = 0; i < PHASE_NUMBER_OF; i++)
         {
             double phase_tot_ms = (((double)m_filtered.m_cyclesByPhase[i]) / countsPerSec) * 1000.0;

@@ -1106,7 +1106,7 @@ size_t DisAssembler::CbDisassemble(DIS*        pdis,
     }
 
     wchar_t wz[MAX_CLASSNAME_LENGTH];
-    pdis->CchFormatInstr(wz, sizeof(wz) / sizeof(wz[0]));
+    pdis->CchFormatInstr(wz, _countof(wz));
 
     if (printit)
     {
@@ -1137,7 +1137,7 @@ size_t DisAssembler::CbDisassemble(DIS*        pdis,
             wchar_t wzBytes[MAX_CLASSNAME_LENGTH];
             assert(cchBytesMax < MAX_CLASSNAME_LENGTH);
 
-            size_t cchBytes = pdis->CchFormatBytes(wzBytes, sizeof(wzBytes) / sizeof(wzBytes[0]));
+            size_t cchBytes = pdis->CchFormatBytes(wzBytes, _countof(wzBytes));
 
             if (cchBytes > CCH_INDENT)
             {
@@ -1172,7 +1172,7 @@ size_t CbDisassembleWithBytes(DIS* pdis, DIS::ADDR addr, const BYTE* pb, size_t 
 
     wchar_t wz[MAX_CLASSNAME_LENGTH];
 
-    pdis->CchFormatAddr(addr, wz, sizeof(wz) / sizeof(wz[0]));
+    pdis->CchFormatAddr(addr, wz, _countof(wz));
 
     size_t cchIndent = (size_t)fprintf(pfile, "  %ls: ", wz);
 
@@ -1194,7 +1194,7 @@ size_t CbDisassembleWithBytes(DIS* pdis, DIS::ADDR addr, const BYTE* pb, size_t 
     }
 
     wchar_t wzBytes[64];
-    size_t  cchBytes = pdis->CchFormatBytes(wzBytes, sizeof(wzBytes) / sizeof(wzBytes[0]));
+    size_t  cchBytes = pdis->CchFormatBytes(wzBytes, _countof(wzBytes));
 
     wchar_t* pwzBytes;
     wchar_t* pwzNext;
@@ -1232,7 +1232,7 @@ size_t CbDisassembleWithBytes(DIS* pdis, DIS::ADDR addr, const BYTE* pb, size_t 
 
         if (fFirst)
         {
-            pdis->CchFormatInstr(wz, sizeof(wz) / sizeof(wz[0]));
+            pdis->CchFormatInstr(wz, _countof(wz));
             fprintf(pfile, "%-*ls %ls\n", cchBytesMax, pwzBytes, wz);
         }
 

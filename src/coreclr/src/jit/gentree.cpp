@@ -221,7 +221,7 @@ static const char* opNames[] = {
 
 const char* GenTree::OpName(genTreeOps op)
 {
-    assert((unsigned)op < sizeof(opNames) / sizeof(opNames[0]));
+    assert((unsigned)op < _countof(opNames));
 
     return opNames[op];
 }
@@ -237,7 +237,7 @@ static const char* opStructNames[] = {
 
 const char* GenTree::OpStructName(genTreeOps op)
 {
-    assert((unsigned)op < sizeof(opStructNames) / sizeof(opStructNames[0]));
+    assert((unsigned)op < _countof(opStructNames));
 
     return opStructNames[op];
 }
@@ -10660,7 +10660,7 @@ int Compiler::gtGetLclVarName(unsigned lclNum, char* buf, unsigned buf_remaining
 char* Compiler::gtGetLclVarName(unsigned lclNum)
 {
     char buf[BUF_SIZE];
-    int  charsPrinted = gtGetLclVarName(lclNum, buf, sizeof(buf) / sizeof(buf[0]));
+    int  charsPrinted = gtGetLclVarName(lclNum, buf, _countof(buf));
     if (charsPrinted < 0)
     {
         return nullptr;
@@ -10675,7 +10675,7 @@ char* Compiler::gtGetLclVarName(unsigned lclNum)
 void Compiler::gtDispLclVar(unsigned lclNum, bool padForBiggestDisp)
 {
     char buf[BUF_SIZE];
-    int  charsPrinted = gtGetLclVarName(lclNum, buf, sizeof(buf) / sizeof(buf[0]));
+    int  charsPrinted = gtGetLclVarName(lclNum, buf, _countof(buf));
 
     if (charsPrinted < 0)
     {

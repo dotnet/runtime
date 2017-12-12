@@ -269,6 +269,6 @@ const short g_StateWeights[] = {
     DEFAULT_WEIGHT_VALUE, // state 249 [ldarga.s -> ldfld -> ldarga.s -> ldfld -> sub]
 };
 
-static_assert_no_msg(NUM_SM_STATES == sizeof(g_StateWeights) / sizeof(g_StateWeights[0]));
+static_assert_no_msg(NUM_SM_STATES == _countof(g_StateWeights));
 
 const short* gp_StateWeights = g_StateWeights;
