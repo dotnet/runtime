@@ -5921,6 +5921,7 @@ public:
     EXCEPTION_DISPOSITION disposition = EXCEPTION_CONTINUE_EXECUTION;           \
     auto exceptionFilter = [&disposition, &__param](PAL_SEHException& ex)       \
     {                                                                           \
+        (void)__param;                                                          \
         disposition = dispositionExpression;                                    \
         _ASSERTE(disposition != EXCEPTION_CONTINUE_EXECUTION);                  \
         return disposition;                                                     \
