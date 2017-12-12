@@ -45,6 +45,12 @@ void SampleProfiler::Enable()
             false /* NeedStack */);
     }
 
+    // Check to see if the sample profiler event is enabled.  If it is not, do not spin up the sampling thread.
+    if(!s_pThreadTimeEvent->IsEnabled())
+    {
+        return;
+    }
+
     if(s_pPayloadExternal == NULL)
     {
         s_pPayloadExternal = new BYTE[sizeof(unsigned int)];
