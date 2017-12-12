@@ -379,27 +379,50 @@ The “@ 15” is the location number of the node.  The “0=1” indicates that
 
 ## <a name="reg-alloc"/>Register allocation
 
-The RyuJIT register allocator uses a Linear Scan algorithm, with an approach similar to [[2]](#[2]). In brief, it operates on two main data structures:
+The RyuJIT register allocator uses a Linear Scan algorithm, with an approach similar to [[2]](#[2]). In discussion it is referred to as either `LinearScan` (the name of the implementing class), or LSRA (Linear Scan Register Allocation). In brief, it operates on two main data structures:
 
 * `Intervals` (representing live ranges of variables or tree expressions) and `RegRecords` (representing physical registers), both of which derive from `Referenceable`.
 * `RefPositions`, which represent uses or defs (or variants thereof, such as ExposedUses) of either `Intervals` or physical registers.
 
-Pre-conditions:
+### Notable features of RyuJIT LinearScan
 
-* The `NodeInfo` is initialized for each tree node to indicate:
-  * Number of registers consumed and produced by the node.
-  * Number and type (int versus float) of internal registers required.
+Unlike most register allocators, LSRA performs register allocation on an IR (Intermediate Representation) that is not a direct representation of the target instrutions. A given IR node may map to 0, 1 or multiple target instructions. Nodes that are "contained" are handled by code generation as part of their parent node and thus may map to 0 instructions. A simple node will have a 1-to-1 mapping to a target instruction, and a more complex node (e.g. `GT_STORE_BLK`) may map to multiple instructions.
+
+### Pre-conditions:
+
+It is the job of the `Lowering` phase to transform the IR such that:
+* The nodes are in `LIR` form (i.e. all expression trees have been linearized, and the execution order of the nodes within a BasicBlock is specified by the `gtNext` and `gtPrev` links)
+* All contained nodes are identified (`gtFlags` has the `GTF_CONTAINED` bit set)
+* All nodes for which a register is optional are identified (`gtLsraInfo.regOptional` is `true`)
+  * This is used for x86 and x64 on operands that can be directly consumed from memory if no register is allocated.
+* All unused values (nodes that produce a result that is not consumed) are identified (gtLIRFlags has the LIR::Flags::UnusedValue bit set)
+  * Since tree temps (the values produced by nodes and consumed by their parent) are expected to be single-def, single-use (SDSU), normally the live range can be determined to end at the use. If there is no use, the register allocator doesn't know where the live range ends.
+* Code can be generated without any context from the parent (consumer) of each node.
+
+After `Lowering` has completed, liveness analysis is performed:
+* It identifies which `lclVar`s should have their liveness computed.
+  * The reason this is done after `Lowering` is that it can introduce new `lclVar`s.
+* It then does liveness analysis on those `lclVar`s, updating the `bbLiveIn` and `bbLiveOut` sets for each `BasicBlock`.
+  * This tells the register allocator which `lclVars` are live at block boundaries.
+  * Note that "tree temps" cannot be live at block boundaries.
+
+### Allocation Overview
 
 Allocation proceeds in 4 phases:
 
-* Determine the order in which the `BasicBlocks` will be allocated, and which predecessor of each block will be used to determine the starting location for variables live-in to the `BasicBlock`.
-* Construct Intervals for each tracked lclVar, then walk the `BasicBlocks` in the determined order building `RefPositions` for each register use, def, or kill.
+* Prepration:
+  * Determine the order in which the `BasicBlocks` will be allocated, and which predecessor of each block will be used to determine the starting location for variables live-in to the `BasicBlock`.
+  * Construct an `Interval` for each `lclVar` that may be enregistered.
+  * Construct a `RegRecord` for each physical register.
+* Walk the `BasicBlocks` in the determined order building `RefPositions` for each register use, def, or kill.
+  * Just prior to building `RefPosition`s for the node, the `TreeNodeInfoInit()` method is called to determine its register requirements.
 * Allocate the registers by traversing the `RefPositions`.
 * Write back the register assignments, and perform any necessary moves at block boundaries where the allocations don’t match.
 
 Post-conditions:
 
-* The `gtRegNum` property of all `GenTree` nodes that require a register has been set to a valid register number.
+* The `gtRegNum` property of all `GenTree` nodes that require a register has been set to `a valid register number.
+  * For reg-optional nodes, the `GTF_NOREG_AT_USE` bit is set in `gtFlags` if a register was not allocated.
 * The `gtRsvdRegs` field (a set/mask of registers) has the requested number of registers specified for internal use.
 * All spilled values (lclVar or expression) are marked with `GTF_SPILL` at their definition. For lclVars, they are also marked with `GTF_SPILLED` at any use at which the value must be reloaded.
 * For all lclVars that are register candidates:
