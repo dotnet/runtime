@@ -85,6 +85,7 @@
     <Compile Include="Linker\LinkContext.cs" />
     <Compile Include="Linker\LoadException.cs" />
     <Compile Include="Linker\MarkException.cs" />
+    <Compile Include="Linker\MarkingHelpers.cs" />
     <Compile Include="Linker\MethodAction.cs" />
     <Compile Include="Linker\MethodReferenceExtensions.cs" />
     <Compile Include="Linker\Pipeline.cs" />

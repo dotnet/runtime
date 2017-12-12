@@ -51,6 +51,8 @@ namespace Mono.Linker.Steps {
 			get { return _context.Annotations; }
 		}
 
+		private MarkingHelpers MarkingHelpers => _context.MarkingHelpers;
+
 		public MarkStep ()
 		{
 			_methods = new Queue<MethodDefinition> ();
@@ -159,10 +161,7 @@ namespace Mono.Linker.Steps {
 						continue;
 					Annotations.Push (type);
 					try {
-						Annotations.Mark (exported);
-						if (_context.KeepTypeForwarderOnlyAssemblies) {
-							Annotations.Mark (assembly.MainModule);
-						}
+						MarkingHelpers.MarkExportedType (exported, assembly.MainModule);
 					} finally {
 						Annotations.Pop ();
 					}
