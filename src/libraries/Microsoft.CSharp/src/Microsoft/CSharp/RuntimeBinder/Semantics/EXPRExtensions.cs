@@ -73,23 +73,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             // Scan through EK_SEQUENCE and EK_SEQREV exprs to get the real value.
             if (expr == null)
+            {
                 return null;
+            }
 
             Expr exprVal = expr;
-            for (;;)
+            while (exprVal.Kind == ExpressionKind.Sequence)
             {
-                switch (exprVal.Kind)
-                {
-                    default:
-                        return exprVal;
-                    case ExpressionKind.Sequence:
-                        exprVal = ((ExprBinOp)exprVal).OptionalRightChild;
-                        break;
-                    case ExpressionKind.SequenceReverse:
-                        exprVal = ((ExprBinOp)exprVal).OptionalLeftChild;
-                        break;
-                }
+                exprVal = ((ExprBinOp)exprVal).OptionalRightChild;
             }
+
+            return exprVal;
         }
 
         /***************************************************************************************************

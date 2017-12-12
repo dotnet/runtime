@@ -21,65 +21,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return pResult;
             }
 
-            if (pExpr is ExprStatement statement)
-            {
-                return CacheExprMapping(pExpr, DispatchStatementList(statement));
-            }
-
             return CacheExprMapping(pExpr, Dispatch(pExpr));
         }
-
-        /////////////////////////////////////////////////////////////////////////////////
-
-        private ExprStatement DispatchStatementList(ExprStatement expr)
-        {
-            Debug.Assert(expr != null);
-
-            ExprStatement first = expr;
-            ExprStatement pexpr = first;
-
-            while (pexpr != null)
-            {
-                // If the processor replaces the statement -- potentially with
-                // null, another statement, or a list of statements -- then we
-                // make sure that the statement list is hooked together correctly.
-
-                ExprStatement next = pexpr.OptionalNextStatement;
-                ExprStatement old = pexpr;
-
-                // Unhook the next one.
-                pexpr.OptionalNextStatement = null;
-
-                ExprStatement result = Dispatch(pexpr) as ExprStatement;
-
-                if (pexpr == first)
-                {
-                    first = result;
-                }
-                else
-                {
-                    pexpr.OptionalNextStatement = result;
-                }
-
-                // A transformation may return back a list of statements (or
-                // if the statements have been determined to be unnecessary,
-                // perhaps it has simply returned null.)
-                //
-                // Skip visiting the new list, then hook the tail of the old list
-                // up to the end of the new list.
-
-                while (pexpr.OptionalNextStatement != null)
-                {
-                    pexpr = pexpr.OptionalNextStatement;
-                }
-
-                // Re-hook the next pointer.
-                pexpr.OptionalNextStatement = next;
-            }
-            return first;
-        }
-
-        /////////////////////////////////////////////////////////////////////////////////
 
         private bool IsCachedExpr(Expr pExpr, out Expr pTransformedExpr)
         {
@@ -98,10 +41,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             switch (pExpr.Kind)
             {
-                case ExpressionKind.Block:
-                    return VisitBLOCK(pExpr as ExprBlock);
-                case ExpressionKind.Return:
-                    return VisitRETURN(pExpr as ExprReturn);
                 case ExpressionKind.BinaryOp:
                     return VisitBINOP(pExpr as ExprBinOp);
                 case ExpressionKind.UnaryOp:
@@ -146,10 +85,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return VisitUSERLOGOP(pExpr as ExprUserLogicalOp);
                 case ExpressionKind.MemberGroup:
                     return VisitMEMGRP(pExpr as ExprMemberGroup);
-                case ExpressionKind.BoundLambda:
-                    return VisitBOUNDLAMBDA(pExpr as ExprBoundLambda);
-                case ExpressionKind.HoistedLocalExpression:
-                    return VisitHOISTEDLOCALEXPR(pExpr as ExprHoistedLocalExpr);
                 case ExpressionKind.FieldInfo:
                     return VisitFIELDINFO(pExpr as ExprFieldInfo);
                 case ExpressionKind.MethodInfo:
@@ -196,8 +131,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return VisitLOGOR(pExpr as ExprBinOp);
                 case ExpressionKind.Sequence:
                     return VisitSEQUENCE(pExpr as ExprBinOp);
-                case ExpressionKind.SequenceReverse:
-                    return VisitSEQREV(pExpr as ExprBinOp);
                 case ExpressionKind.Save:
                     return VisitSAVE(pExpr as ExprBinOp);
                 case ExpressionKind.Swap:
@@ -346,11 +279,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case ExpressionKind.ZeroInit:
                     break;
 
-                case ExpressionKind.Block:
-                    exprRet = Visit((pExpr as ExprBlock).OptionalStatements);
-                    (pExpr as ExprBlock).OptionalStatements = exprRet as ExprStatement;
-                    break;
-
                 case ExpressionKind.MemberGroup:
 
                     // The object expression. NULL for a static invocation.
@@ -377,11 +305,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case ExpressionKind.Field:
                     exprRet = Visit((pExpr as ExprField).OptionalObject);
                     (pExpr as ExprField).OptionalObject = exprRet;
-                    break;
-
-                case ExpressionKind.Return:
-                    exprRet = Visit((pExpr as ExprReturn).OptionalObject);
-                    (pExpr as ExprReturn).OptionalObject = exprRet;
                     break;
 
                 case ExpressionKind.Constant:
@@ -444,17 +367,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     (pExpr as ExprArrayInit).OptionalArgumentDimensions = exprRet;
                     break;
 
-                case ExpressionKind.BoundLambda:
-                    exprRet = Visit((pExpr as ExprBoundLambda).OptionalBody);
-                    (pExpr as ExprBoundLambda).OptionalBody = exprRet as ExprBlock;
-                    break;
-
                 case ExpressionKind.Local:
                 case ExpressionKind.Class:
                 case ExpressionKind.MultiGet:
                 case ExpressionKind.Wrap:
                 case ExpressionKind.NoOp:
-                case ExpressionKind.HoistedLocalExpression:
                 case ExpressionKind.FieldInfo:
                 case ExpressionKind.MethodInfo:
                     break;
@@ -473,18 +390,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             VisitChildren(pExpr);
             return pExpr;
-        }
-        protected virtual Expr VisitBLOCK(ExprBlock pExpr)
-        {
-            return VisitSTMT(pExpr);
-        }
-        protected virtual Expr VisitRETURN(ExprReturn pExpr)
-        {
-            return VisitSTMT(pExpr);
-        }
-        protected virtual Expr VisitSTMT(ExprStatement pExpr)
-        {
-            return VisitEXPR(pExpr);
         }
         protected virtual Expr VisitBINOP(ExprBinOp pExpr)
         {
@@ -572,15 +477,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual Expr VisitBOUNDLAMBDA(ExprBoundLambda pExpr)
-        {
-            return VisitEXPR(pExpr);
-        }
 
-        protected virtual Expr VisitHOISTEDLOCALEXPR(ExprHoistedLocalExpr pExpr)
-        {
-            return VisitEXPR(pExpr);
-        }
         protected virtual Expr VisitFIELDINFO(ExprFieldInfo pExpr)
         {
             return VisitEXPR(pExpr);
@@ -683,10 +580,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return VisitBINOP(pExpr);
         }
         protected virtual Expr VisitLOGOR(ExprBinOp pExpr)
-        {
-            return VisitBINOP(pExpr);
-        }
-        protected virtual Expr VisitSEQREV(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }

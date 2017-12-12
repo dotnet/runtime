@@ -6,6 +6,5 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class Scope : ParentSymbol
     {
-        public uint nestingOrder;  // the nesting order of this scopes. outermost == 0
     }
 }

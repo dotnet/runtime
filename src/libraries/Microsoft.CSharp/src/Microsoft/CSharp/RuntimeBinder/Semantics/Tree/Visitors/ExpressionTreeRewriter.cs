@@ -9,15 +9,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExpressionTreeRewriter : ExprVisitorBase
     {
-        public static Expr Rewrite(Expr expr, ExprFactory expressionFactory, SymbolLoader symbolLoader)
-        {
-            ExpressionTreeRewriter rewriter = new ExpressionTreeRewriter(expressionFactory, symbolLoader);
-            return rewriter.Visit(expr);
-        }
+        public static ExprBinOp Rewrite(ExprBoundLambda expr, ExprFactory expressionFactory, SymbolLoader symbolLoader) =>
+            new ExpressionTreeRewriter(expressionFactory, symbolLoader).VisitBoundLambda(expr);
 
         private ExprFactory expressionFactory;
         private SymbolLoader symbolLoader;
-        private ExprBoundLambda currentAnonMeth;
 
         private ExprFactory GetExprFactory() { return expressionFactory; }
 
@@ -94,42 +90,27 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         /////////////////////////////////////////////////////////////////////////////////
         // Expression types.
 
-        protected override Expr VisitBOUNDLAMBDA(ExprBoundLambda anonmeth)
+        private ExprBinOp VisitBoundLambda(ExprBoundLambda anonmeth)
         {
             Debug.Assert(anonmeth != null);
 
-            ExprBoundLambda prevAnonMeth = currentAnonMeth;
-            currentAnonMeth = anonmeth;
             MethodSymbol lambdaMethod = GetPreDefMethod(PREDEFMETH.PM_EXPRESSION_LAMBDA);
-
-            CType delegateType = anonmeth.DelegateType;
+            AggregateType delegateType = anonmeth.DelegateType;
             TypeArray lambdaTypeParams = GetSymbolLoader().getBSymmgr().AllocParams(1, new CType[] { delegateType });
             AggregateType expressionType = GetSymbolLoader().GetPredefindType(PredefinedType.PT_EXPRESSION);
             MethWithInst mwi = new MethWithInst(lambdaMethod, expressionType, lambdaTypeParams);
             Expr createParameters = CreateWraps(anonmeth);
-            Expr body = RewriteLambdaBody(anonmeth);
-            Expr parameters = RewriteLambdaParameters(anonmeth);
+            Debug.Assert(createParameters != null);
+            Debug.Assert(anonmeth.Expression != null);
+            Expr body = Visit(anonmeth.Expression);
+            Debug.Assert(anonmeth.ArgumentScope.nextChild == null);
+            Expr parameters = GenerateParamsArray(null, PredefinedType.PT_PARAMETEREXPRESSION);
             Expr args = GetExprFactory().CreateList(body, parameters);
             CType typeRet = GetSymbolLoader().GetTypeManager().SubstType(mwi.Meth().RetType, mwi.GetType(), mwi.TypeArgs);
             ExprMemberGroup pMemGroup = GetExprFactory().CreateMemGroup(null, mwi);
             ExprCall call = GetExprFactory().CreateCall(0, typeRet, args, pMemGroup, mwi);
-            Expr callLambda = call;
-
             call.PredefinedMethod = PREDEFMETH.PM_EXPRESSION_LAMBDA;
-
-            currentAnonMeth = prevAnonMeth;
-            if (createParameters != null)
-            {
-                callLambda = GetExprFactory().CreateSequence(createParameters, callLambda);
-            }
-            Expr expr = DestroyWraps(anonmeth, callLambda);
-            // If we are already inside an expression tree rewrite and this is an expression tree lambda
-            // then it needs to be quoted.
-            if (currentAnonMeth != null)
-            {
-                expr = GenerateCall(PREDEFMETH.PM_EXPRESSION_QUOTE, expr);
-            }
-            return expr;
+            return GetExprFactory().CreateSequence(createParameters, call);
         }
         protected override Expr VisitCONSTANT(ExprConstant expr)
         {
@@ -139,14 +120,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         protected override Expr VisitLOCAL(ExprLocal local)
         {
             Debug.Assert(local != null);
-            Debug.Assert(!local.Local.isThis);
-            // this is true for all parameters of an expression lambda
-            if (local.Local.wrap != null)
-            {
-                return local.Local.wrap;
-            }
-            Debug.Assert(local.Local.fUsedInAnonMeth);
-            return GetExprFactory().CreateHoistedLocalInExpression();
+            Debug.Assert(local.Local.wrap != null);
+            return local.Local.wrap;
         }
         protected override Expr VisitFIELD(ExprField expr)
         {
@@ -672,54 +647,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GenerateCall(pdm, p1, p2, lift, methodInfo);
         }
 
-        private Expr RewriteLambdaBody(ExprBoundLambda anonmeth)
-        {
-            Debug.Assert(anonmeth != null);
-            Debug.Assert(anonmeth.OptionalBody != null);
-            Debug.Assert(anonmeth.OptionalBody.OptionalStatements != null);
-            // There ought to be no way to get an empty statement block successfully converted into an expression tree.
-            Debug.Assert(anonmeth.OptionalBody.OptionalStatements.OptionalNextStatement== null);
-
-            ExprBlock body = anonmeth.OptionalBody;
-
-            // The most likely case:
-            if (body.OptionalStatements is ExprReturn ret)
-            {
-                Debug.Assert(ret.OptionalObject != null);
-                return Visit(ret.OptionalObject);
-            }
-            // This can only if it is a void delegate and this is a void expression, such as a call to a void method
-            // or something like Expression<Action<Foo>> e = (Foo f) => f.MyEvent += MyDelegate;
-
-            throw Error.InternalCompilerError();
-        }
-
-        private Expr RewriteLambdaParameters(ExprBoundLambda anonmeth)
-        {
-            Debug.Assert(anonmeth != null);
-
-            // new ParameterExpression[2] {Parameter(typeof(type1), name1), Parameter(typeof(type2), name2)}
-
-            Expr paramArrayInitializerArgs = null;
-            Expr paramArrayInitializerArgsTail = paramArrayInitializerArgs;
-
-            for (Symbol sym = anonmeth.ArgumentScope; sym != null; sym = sym.nextChild)
-            {
-                if (!(sym is LocalVariableSymbol local))
-                {
-                    continue;
-                }
-
-                if (local.isThis)
-                {
-                    continue;
-                }
-                GetExprFactory().AppendItemToList(local.wrap, ref paramArrayInitializerArgs, ref paramArrayInitializerArgsTail);
-            }
-
-            return GenerateParamsArray(paramArrayInitializerArgs, PredefinedType.PT_PARAMETEREXPRESSION);
-        }
-
         private Expr GenerateConversion(Expr arg, CType CType, bool bChecked)
         {
             return GenerateConversionWithSource(Visit(arg), CType, bChecked || arg.isChecked());
@@ -864,11 +791,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     continue;
                 }
 
-                if (local.isThis)
-                {
-                    continue;
-                }
-                Debug.Assert(anonmeth.OptionalBody != null);
+                Debug.Assert(anonmeth.Expression != null);
                 Expr create = GenerateParameter(local.name.Text, local.GetType());
                 local.wrap = GetExprFactory().CreateWrap(create);
                 Expr save = GetExprFactory().CreateSave(local.wrap);
@@ -882,27 +805,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
 
-            return sequence;
-        }
-
-        private Expr DestroyWraps(ExprBoundLambda anonmeth, Expr sequence)
-        {
-            for (Symbol sym = anonmeth.ArgumentScope; sym != null; sym = sym.nextChild)
-            {
-                if (!(sym is LocalVariableSymbol local))
-                {
-                    continue;
-                }
-
-                if (local.isThis)
-                {
-                    continue;
-                }
-                Debug.Assert(local.wrap != null);
-                Debug.Assert(anonmeth.OptionalBody != null);
-                Expr freeWrap = GetExprFactory().CreateWrap(local.wrap);
-                sequence = GetExprFactory().CreateReverseSequence(sequence, freeWrap);
-            }
             return sequence;
         }
 
