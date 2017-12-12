@@ -72,7 +72,7 @@ const char* CodeGen::genInsName(instruction ins)
     };
     // clang-format on
 
-    assert((unsigned)ins < sizeof(insNames) / sizeof(insNames[0]));
+    assert((unsigned)ins < _countof(insNames));
     assert(insNames[ins] != nullptr);
 
     return insNames[ins];
@@ -213,7 +213,7 @@ void CodeGen::instGen(instruction ins)
 // static inline
 bool CodeGenInterface::instIsFP(instruction ins)
 {
-    assert((unsigned)ins < sizeof(instInfo) / sizeof(instInfo[0]));
+    assert((unsigned)ins < _countof(instInfo));
 
     return (instInfo[ins] & INST_FP) != 0;
 }

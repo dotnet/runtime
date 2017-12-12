@@ -1545,7 +1545,7 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     strncpy(buf, methodName, sizeof(buf));
     buf[sizeof(buf) - 1] = 0;
 
-    for (int i = 0; i < sizeof(buf); i++)
+    for (int i = 0; i < _countof(buf); i++)
     {
         switch (buf[i])
         {
