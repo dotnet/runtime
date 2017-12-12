@@ -50,6 +50,14 @@ namespace System
             return exception;
         }
 
+        public static T Throws<T>(Action action)
+            where T : Exception
+        {
+            T exception = Assert.Throws<T>(action);
+
+            return exception;
+        }
+
         public static T Throws<T>(string paramName, Func<object> testCode)
             where T : ArgumentException
         {
@@ -72,15 +80,29 @@ namespace System
             return exception;
         }
 
-        public static void Throws<TNetCoreExceptionType, TNetFxExceptionType>(string paramName, Action action) 
-            where TNetCoreExceptionType : ArgumentException 
+        public static void Throws<TNetCoreExceptionType, TNetFxExceptionType>(string paramName, Action action)
+            where TNetCoreExceptionType : ArgumentException
             where TNetFxExceptionType : ArgumentException
         {
             Throws<TNetCoreExceptionType, TNetFxExceptionType>(paramName, paramName, action);
         }
 
+        public static Exception Throws<TNetCoreExceptionType, TNetFxExceptionType>(Action action)
+            where TNetCoreExceptionType : Exception
+            where TNetFxExceptionType : Exception
+        {
+            if (IsFullFramework)
+            {
+                return Throws<TNetFxExceptionType>(action);
+            }
+            else
+            {
+                return Throws<TNetCoreExceptionType>(action);
+            }
+        }
+
         public static void Throws<TNetCoreExceptionType, TNetFxExceptionType>(string netCoreParamName, string netFxParamName, Action action)
-            where TNetCoreExceptionType : ArgumentException 
+            where TNetCoreExceptionType : ArgumentException
             where TNetFxExceptionType : ArgumentException
         {
             if (IsFullFramework)

@@ -1731,7 +1731,7 @@ namespace System.Drawing
                 throw new ArgumentNullException("image");
 
             if ((image.PixelFormat & PixelFormat.Indexed) != 0)
-                throw new Exception("Cannot create Graphics from an indexed bitmap.");
+                throw new ArgumentException("Cannot create Graphics from an indexed bitmap.", nameof(image));            
 
             int status = SafeNativeMethods.Gdip.GdipGetImageGraphicsContext(image.nativeObject, out graphics);
             SafeNativeMethods.Gdip.CheckStatus(status);
