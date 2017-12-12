@@ -299,7 +299,7 @@ They are also the lclVars for which GC ranges will be reported. Although the CLR
 ### Liveness Analysis
 - The live-in and live-out sets are captured in the bbLiveIn and bbLiveOut fields of the BasicBlock.
   - The GTF_VAR_DEF flag is set on a lclVar GenTree node that is a definition.
-  - The GTF_VAR_USEASG flag is set (in addition to the GTF_VAR_DEF flag) for the target of an update (e.g. +=).
+  - The GTF_VAR_USEASG flag is set (in addition to the GTF_VAR_DEF flag) on partial definitions of a local variable (i.e. `GT_LCL_FLD` nodes that do not define the entire variable).
   - GTF_VAR_DEATH is set to indicate the last uses.
 - The bitvector implementation is abstracted and can be changed to a variable sized set.
 
