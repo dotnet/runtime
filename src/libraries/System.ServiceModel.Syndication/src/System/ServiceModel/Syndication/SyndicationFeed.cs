@@ -2,24 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Text;
-using System.Xml;
-using System.Runtime.Serialization;
 using System.Globalization;
-using System.Xml.Serialization;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using System.Linq;
+using System.Xml;
 
 namespace System.ServiceModel.Syndication
 {
     // NOTE: This class implements Clone so if you add any members, please update the copy ctor
     public class SyndicationFeed : IExtensibleSyndicationObject
     {
-        private readonly static List<string> s_acceptedDays = new List<string> { "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday" };
+        private static readonly HashSet<string> s_acceptedDays = new HashSet<string>(
+            new string[] { "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday" },
+            StringComparer.OrdinalIgnoreCase
+        );        
 
         private Collection<SyndicationPerson> _authors;
         private Uri _baseUri;
@@ -275,13 +272,7 @@ namespace System.ServiceModel.Syndication
             set { _title = value; }
         }
 
-        internal SyndicationLink InternalDocumentation
-        {
-            get
-            {
-                return _documentation;
-            }
-        }
+        internal SyndicationLink InternalDocumentation => _documentation;
 
         public SyndicationLink Documentation
         {
@@ -300,15 +291,9 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        internal int? InternalTimeToLive
-        {
-            get
-            {
-                return _timeToLive;
-            }
-        }
+        internal int? InternalTimeToLive => _timeToLive;
 
-        public int TimeToLive
+        public int? TimeToLive
         {
             get
             {
@@ -317,7 +302,7 @@ namespace System.ServiceModel.Syndication
                     _timeToLive = TryReadTimeToLiveFromExtension(ElementExtensions);
                 }
 
-                return _timeToLive.Value;
+                return _timeToLive;
             }
             set
             {
@@ -325,13 +310,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        internal Collection<int> InternalSkipHours
-        {
-            get
-            {
-                return _skipHours;
-            }
-        }
+        internal Collection<int> InternalSkipHours => _skipHours;
 
         public Collection<int> SkipHours
         {
@@ -348,13 +327,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        internal Collection<string> InternalSkipDays
-        {
-            get
-            {
-                return _skipDays;
-            }
-        }
+        internal Collection<string> InternalSkipDays => _skipDays;
 
         public Collection<string> SkipDays
         {
@@ -371,13 +344,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        internal SyndicationTextInput InternalTextInput
-        {
-            get
-            {
-                return _textInput;
-            }
-        }
+        internal SyndicationTextInput InternalTextInput => _textInput;
 
         public SyndicationTextInput TextInput
         {
@@ -399,7 +366,7 @@ namespace System.ServiceModel.Syndication
         private SyndicationLink TryReadDocumentationFromExtension(SyndicationElementExtensionCollection elementExtensions)
         {
             SyndicationElementExtension documentationElement = elementExtensions
-                                      .Where((e) => e.OuterName == Rss20Constants.DocumentationTag && e.OuterNamespace == Rss20Constants.Rss20Namespace)
+                                      .Where(e => e.OuterName == Rss20Constants.DocumentationTag && e.OuterNamespace == Rss20Constants.Rss20Namespace)
                                       .FirstOrDefault();
 
             if (documentationElement == null)
@@ -415,7 +382,7 @@ namespace System.ServiceModel.Syndication
         private int? TryReadTimeToLiveFromExtension(SyndicationElementExtensionCollection elementExtensions)
         {
             SyndicationElementExtension timeToLiveElement = elementExtensions
-                                      .Where((e) => e.OuterName == Rss20Constants.TimeToLiveTag && e.OuterNamespace == Rss20Constants.Rss20Namespace)
+                                      .Where(e => e.OuterName == Rss20Constants.TimeToLiveTag && e.OuterNamespace == Rss20Constants.Rss20Namespace)
                                       .FirstOrDefault();
 
             if (timeToLiveElement == null)
@@ -424,15 +391,21 @@ namespace System.ServiceModel.Syndication
             using (XmlReader reader = timeToLiveElement.GetReader())
             {
                 string value = reader.ReadElementString();
-                int timeToLive = int.Parse(value);
-                return timeToLive;
+                if (int.TryParse(value, out int timeToLive))
+                {
+                    return timeToLive;
+                }
+                else
+                {
+                    return null;
+                }
             }
         }
 
         private void TryReadSkipHoursFromExtension(SyndicationElementExtensionCollection elementExtensions, Collection<int> skipHours)
         {
             SyndicationElementExtension skipHoursElement = elementExtensions
-                                      .Where((e) => e.OuterName == Rss20Constants.SkipHoursTag && e.OuterNamespace == Rss20Constants.Rss20Namespace)
+                                      .Where(e => e.OuterName == Rss20Constants.SkipHoursTag && e.OuterNamespace == Rss20Constants.Rss20Namespace)
                                       .FirstOrDefault();
 
             if (skipHoursElement == null)
@@ -447,18 +420,12 @@ namespace System.ServiceModel.Syndication
                     if (reader.LocalName == Rss20Constants.HourTag)
                     {
                         string value = reader.ReadElementString();
-                        int hour = int.Parse(value);
-                        bool parsed = false;
-                        parsed = int.TryParse(value, NumberStyles.Integer, NumberFormatInfo.InvariantInfo, out hour);
+                        int hour;
+                        bool parsed = int.TryParse(value, NumberStyles.Integer, NumberFormatInfo.InvariantInfo, out hour);
 
-                        if (!parsed)
+                        if (!parsed || (hour < 0 || hour > 23))
                         {
-                            throw new ArgumentException("The number on skip hours must be an integer betwen 0 and 23.");
-                        }
-
-                        if (hour < 0 || hour > 23)
-                        {
-                            throw new ArgumentException("The hour can't be lower than 0 or greater than 23.");
+                            throw new FormatException(string.Format(SR.InvalidSkipHourValue, value));
                         }
 
                         skipHours.Add(hour);
@@ -474,7 +441,7 @@ namespace System.ServiceModel.Syndication
         private void TryReadSkipDaysFromExtension(SyndicationElementExtensionCollection elementExtensions, Collection<string> skipDays)
         {
             SyndicationElementExtension skipDaysElement = elementExtensions
-                                      .Where((e) => e.OuterName == Rss20Constants.SkipDaysTag && e.OuterNamespace == Rss20Constants.Rss20Namespace)
+                                      .Where(e => e.OuterName == Rss20Constants.SkipDaysTag && e.OuterNamespace == Rss20Constants.Rss20Namespace)
                                       .FirstOrDefault();
 
             if (skipDaysElement == null)
@@ -491,7 +458,7 @@ namespace System.ServiceModel.Syndication
                         string day = reader.ReadElementString();
 
                         //Check if the day is actually an accepted day.
-                        if (checkDay(day))
+                        if (IsValidDay(day))
                         {
                             skipDays.Add(day);
                         }
@@ -506,20 +473,12 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        private bool checkDay(string day)
-        {
-            if (s_acceptedDays.Contains(day.ToLower()))
-            {
-                return true;
-            }
-
-            return false;
-        }
+        private static bool IsValidDay(string day) => s_acceptedDays.Contains(day);
 
         private SyndicationTextInput TryReadTextInputFromExtension(SyndicationElementExtensionCollection elementExtensions)
         {
             SyndicationElementExtension textInputElement = elementExtensions
-                                      .Where((e) => e.OuterName == Rss20Constants.TextInputTag && e.OuterNamespace == Rss20Constants.Rss20Namespace)
+                                      .Where(e => e.OuterName == Rss20Constants.TextInputTag && e.OuterNamespace == Rss20Constants.Rss20Namespace)
                                       .FirstOrDefault();
 
             if (textInputElement == null)
@@ -560,10 +519,10 @@ namespace System.ServiceModel.Syndication
                 reader.ReadEndElement();
             }
 
-            return isValidTextInput(textInput) ? textInput : null;
+            return IsValidTextInput(textInput) ? textInput : null;
         }
 
-        private bool isValidTextInput(SyndicationTextInput textInput)
+        private static bool IsValidTextInput(SyndicationTextInput textInput)
         {
             //All textInput items are required, we check if all items were instantiated.
             return textInput.Description != null && textInput.Title != null && textInput.Name != null && textInput.Link != null;
@@ -673,47 +632,19 @@ namespace System.ServiceModel.Syndication
                 switch (localName)
                 {
                     case Rss20Constants.DocumentationTag:
-                        if (InternalDocumentation != null)
-                        {
-                            return true;
-                        }
-
-                        break;
+                        return InternalDocumentation != null;
 
                     case Rss20Constants.TimeToLiveTag:
-                        if (InternalTimeToLive != null)
-                        {
-                            return true;
-                        }
-
-                        break;
+                        return InternalTimeToLive != null;
 
                     case Rss20Constants.TextInputTag:
-                        if (InternalTextInput != null)
-                        {
-                            return true;
-                        }
-
-                        break;
+                        return InternalTextInput != null;
 
                     case Rss20Constants.SkipHoursTag:
-                        if (InternalSkipHours != null)
-                        {
-                            return true;
-                        }
-
-                        break;
+                        return InternalSkipHours != null;
 
                     case Rss20Constants.SkipDaysTag:
-                        if (InternalSkipDays != null)
-                        {
-                            return true;
-                        }
-
-                        break;
-
-                    default:
-                        break;
+                        return InternalSkipDays != null;
                 }
             }
 

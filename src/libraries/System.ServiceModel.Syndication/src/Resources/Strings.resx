@@ -258,4 +258,7 @@
   <data name="XmlStartElementExpected" xml:space="preserve">
     <value>Start element expected. Found {0}.</value>
   </data>
+  <data name="InvalidSkipHourValue" xml:space="preserve">
+    <value>Cannot parse string `{0}` as skip hour. The value for skip hours must be an integer betwen 0 and 23.</value>
+  </data>
 </root>
