@@ -2314,7 +2314,7 @@ void DumpUnwindInfo(Compiler*         comp,
     else
     {
         printf("  --- One epilog, unwind codes at %u\n", epilogCount);
-        assert(epilogCount < sizeof(epilogStartAt) / sizeof(epilogStartAt[0]));
+        assert(epilogCount < _countof(epilogStartAt));
         epilogStartAt[epilogCount] = true; // the one and only epilog starts its unwind codes at this offset
     }
 

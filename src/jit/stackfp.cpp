@@ -2277,7 +2277,7 @@ void CodeGen::genCodeForTreeStackFP_SmpOp(GenTreePtr tree)
             assert(mathIns[CORINFO_INTRINSIC_Sqrt] == INS_fsqrt);
             assert(mathIns[CORINFO_INTRINSIC_Abs] == INS_fabs);
             assert(mathIns[CORINFO_INTRINSIC_Round] == INS_frndint);
-            assert((unsigned)(tree->gtIntrinsic.gtIntrinsicId) < sizeof(mathIns) / sizeof(mathIns[0]));
+            assert((unsigned)(tree->gtIntrinsic.gtIntrinsicId) < _countof(mathIns));
             instGen(mathIns[tree->gtIntrinsic.gtIntrinsicId]);
 
             // mark register that holds tree

@@ -270,7 +270,7 @@ const SMState g_SMStates[] =
 };
 // clang-format on
 
-static_assert_no_msg(NUM_SM_STATES == sizeof(g_SMStates) / sizeof(g_SMStates[0]));
+static_assert_no_msg(NUM_SM_STATES == _countof(g_SMStates));
 
 const SMState* gp_SMStates = g_SMStates;
 

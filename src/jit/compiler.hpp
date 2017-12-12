@@ -569,7 +569,7 @@ extern const BYTE genTypeSizes[TYP_COUNT];
 template <class T>
 inline unsigned genTypeSize(T type)
 {
-    assert((unsigned)TypeGet(type) < sizeof(genTypeSizes) / sizeof(genTypeSizes[0]));
+    assert((unsigned)TypeGet(type) < _countof(genTypeSizes));
 
     return genTypeSizes[TypeGet(type)];
 }
@@ -584,7 +584,7 @@ extern const BYTE genTypeStSzs[TYP_COUNT];
 
 inline unsigned genTypeStSz(var_types type)
 {
-    assert((unsigned)type < sizeof(genTypeStSzs) / sizeof(genTypeStSzs[0]));
+    assert((unsigned)type < _countof(genTypeStSzs));
 
     return genTypeStSzs[type];
 }

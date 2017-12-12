@@ -92,7 +92,7 @@ const char* emitter::emitIfName(unsigned f)
 
     static char errBuff[32];
 
-    if (f < sizeof(ifNames) / sizeof(*ifNames))
+    if (f < _countof(ifNames))
     {
         return ifNames[f];
     }
@@ -3118,7 +3118,7 @@ const BYTE emitter::emitFmtToOps[] = {
 };
 
 #ifdef DEBUG
-const unsigned emitter::emitFmtCount = sizeof(emitFmtToOps) / sizeof(emitFmtToOps[0]);
+const unsigned emitter::emitFmtCount = _countof(emitFmtToOps);
 #endif
 
 /*****************************************************************************

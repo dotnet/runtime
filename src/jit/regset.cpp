@@ -3601,7 +3601,7 @@ bool Compiler::tmpAllFree() const
         return false;
     }
 
-    for (unsigned i = 0; i < sizeof(tmpUsed) / sizeof(tmpUsed[0]); i++)
+    for (unsigned i = 0; i < _countof(tmpUsed); i++)
     {
         if (tmpUsed[i] != nullptr)
         {

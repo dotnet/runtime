@@ -120,7 +120,7 @@ const char* varTypeName(var_types vt)
 #undef DEF_TP
     };
 
-    assert((unsigned)vt < sizeof(varTypeNames) / sizeof(varTypeNames[0]));
+    assert((unsigned)vt < _countof(varTypeNames));
 
     return varTypeNames[vt];
 }
