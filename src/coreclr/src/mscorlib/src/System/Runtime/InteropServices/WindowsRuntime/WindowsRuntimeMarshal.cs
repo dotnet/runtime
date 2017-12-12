@@ -351,7 +351,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             // Key = (target object, event)
             // We use a key of object+event to save an extra dictionary
             //
-            internal struct EventCacheKey
+            internal struct EventCacheKey : IEquatable<EventCacheKey>
             {
                 internal object target;
                 internal MethodInfo method;
@@ -360,13 +360,10 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 {
                     return "(" + target + ", " + method + ")";
                 }
-            }
 
-            internal class EventCacheKeyEqualityComparer : IEqualityComparer<EventCacheKey>
-            {
-                public bool Equals(EventCacheKey lhs, EventCacheKey rhs)
+                public bool Equals(EventCacheKey other)
                 {
-                    return (Object.Equals(lhs.target, rhs.target) && Object.Equals(lhs.method, rhs.method));
+                    return (Object.Equals(target, other.target) && Object.Equals(method, other.method));
                 }
 
                 public int GetHashCode(EventCacheKey key)
@@ -517,7 +514,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             //   them the latest token in this case. This is guaranteed by always giving the last token and always use equality to
             //   add/remove event handlers
             internal volatile static Dictionary<EventCacheKey, EventCacheEntry> s_eventRegistrations =
-                new Dictionary<EventCacheKey, EventCacheEntry>(new EventCacheKeyEqualityComparer());
+                new Dictionary<EventCacheKey, EventCacheEntry>();
 
             // Prevent add/remove handler code to run at the same with with cache cleanup code
             private volatile static MyReaderWriterLock s_eventCacheRWLock = new MyReaderWriterLock();
