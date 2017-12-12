@@ -351,10 +351,6 @@ class CEECompileInfo : public ICorCompileInfo
             IN  CORINFO_METHOD_HANDLE    hMethod,
             OUT CORJIT_FLAGS            *pFlags);
 
-#ifdef _WIN64
-    SIZE_T  getPersonalityValue();
-#endif
-
     void* GetStubSize(void *pStubAddress, DWORD *pSizeToCopy);
 
     HRESULT GetStubClone(void *pStub, BYTE *pBuffer, DWORD dwBufferSize);
