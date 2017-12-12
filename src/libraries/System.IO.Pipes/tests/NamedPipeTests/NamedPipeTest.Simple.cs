@@ -365,7 +365,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/1011
+        [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Unix implemented on sockets, where disposal information doesn't propagate
         public async Task Unix_OperationsOnNamedServerWithDisposedClient()
         {
