@@ -299,8 +299,6 @@ void MethodContext::MethodInitHelperFile(HANDLE hFile)
 
 void MethodContext::MethodInitHelper(unsigned char* buff2, unsigned int totalLen)
 {
-    MethodContext::MethodContext();
-
     unsigned int   buffIndex = 0;
     unsigned int   localsize = 0;
     unsigned char  canary    = 0xff;
