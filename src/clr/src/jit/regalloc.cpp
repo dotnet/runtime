@@ -219,7 +219,7 @@ const regNumber* Compiler::raGetRegVarOrder(var_types regType, unsigned* wbVarOr
     if (varTypeIsFloating(regType))
     {
         static const regNumber raRegVarOrderFlt[]   = {REG_VAR_ORDER_FLT};
-        const unsigned         raRegVarOrderFltSize = sizeof(raRegVarOrderFlt) / sizeof(raRegVarOrderFlt[0]);
+        const unsigned         raRegVarOrderFltSize = _countof(raRegVarOrderFlt);
 
         if (wbVarOrderSize != NULL)
             *wbVarOrderSize = raRegVarOrderFltSize;
@@ -230,7 +230,7 @@ const regNumber* Compiler::raGetRegVarOrder(var_types regType, unsigned* wbVarOr
 #endif
     {
         static const regNumber raRegVarOrder[]   = {REG_VAR_ORDER};
-        const unsigned         raRegVarOrderSize = sizeof(raRegVarOrder) / sizeof(raRegVarOrder[0]);
+        const unsigned         raRegVarOrderSize = _countof(raRegVarOrder);
 
         if (wbVarOrderSize != NULL)
             *wbVarOrderSize = raRegVarOrderSize;
@@ -392,7 +392,7 @@ inline regMaskTP Compiler::genReturnRegForTree(GenTreePtr tree)
         RBM_ILLEGAL,   // TYP_UNKNOWN,
     };
 
-    assert((unsigned)type < sizeof(returnMap) / sizeof(returnMap[0]));
+    assert((unsigned)type < _countof(returnMap));
     assert(returnMap[TYP_LONG] == RBM_LNGRET);
     assert(returnMap[TYP_DOUBLE] == RBM_DOUBLERET);
     assert(returnMap[TYP_REF] == RBM_INTRET);
@@ -1064,7 +1064,7 @@ inline regMaskTP Compiler::rpPredictRegMask(rpPredictReg predictReg, var_types t
     if (rpHasVarIndexForPredict(predictReg))
         predictReg = PREDICT_REG;
 
-    noway_assert((unsigned)predictReg < sizeof(rpPredictMap) / sizeof(rpPredictMap[0]));
+    noway_assert((unsigned)predictReg < _countof(rpPredictMap));
     noway_assert(rpPredictMap[predictReg] != RBM_ILLEGAL);
 
     regMaskTP regAvailForType = rpPredictMap[predictReg];

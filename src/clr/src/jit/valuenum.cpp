@@ -4133,8 +4133,7 @@ void ValueNumStore::InitValueNumStoreStatics()
 #include "valuenumfuncs.h"
 #undef ValueNumFuncDef
 
-    unsigned n = sizeof(genTreeOpsIllegalAsVNFunc) / sizeof(genTreeOps);
-    for (unsigned i = 0; i < n; i++)
+    for (unsigned i = 0; i < _countof(genTreeOpsIllegalAsVNFunc); i++)
     {
         vnfOpAttribs[genTreeOpsIllegalAsVNFunc[i]] |= VNFOA_IllegalGenTreeOp;
     }
