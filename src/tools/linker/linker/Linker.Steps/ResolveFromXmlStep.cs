@@ -100,20 +100,25 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		void ProcessAssemblies (LinkContext context, XPathNodeIterator iterator)
+		protected virtual void ProcessAssemblies (LinkContext context, XPathNodeIterator iterator)
 		{
 			while (iterator.MoveNext ()) {
-				AssemblyDefinition assembly = GetAssembly (context, GetFullName (iterator.Current));
-				Annotations.Push (assembly);
-				if (GetTypePreserve (iterator.Current) == TypePreserve.All) {
-					foreach (var type in assembly.MainModule.Types)
-						MarkAndPreserveAll (type);
-				} else {
-					ProcessTypes (assembly, iterator.Current.SelectChildren ("type", _ns));
-					ProcessNamespaces (assembly, iterator.Current.SelectChildren ("namespace", _ns));
-				}
-				Annotations.Pop (); 
+				AssemblyDefinition assembly = GetAssembly (context, GetAssemblyName (iterator.Current));
+				ProcessAssembly (assembly, iterator);
 			}
+		}
+
+		protected void ProcessAssembly (AssemblyDefinition assembly, XPathNodeIterator iterator)
+		{
+			Annotations.Push (assembly);
+			if (GetTypePreserve (iterator.Current) == TypePreserve.All) {
+				foreach (var type in assembly.MainModule.Types)
+					MarkAndPreserveAll (type);
+			} else {
+				ProcessTypes (assembly, iterator.Current.SelectChildren ("type", _ns));
+				ProcessNamespaces (assembly, iterator.Current.SelectChildren ("namespace", _ns));
+			}
+			Annotations.Pop ();
 		}
 
 		void ProcessNamespaces (AssemblyDefinition assembly, XPathNodeIterator iterator)
@@ -311,11 +316,10 @@ namespace Mono.Linker.Steps {
 			if (attribute == null || attribute.Length == 0)
 				return nav.HasChildren ? TypePreserve.Nothing : TypePreserve.All;
 
-			try {
-				return (TypePreserve) Enum.Parse (typeof (TypePreserve), attribute, true);
-			} catch {
-				return TypePreserve.Nothing;
-			}
+			TypePreserve result;
+			if (Enum.TryParse (attribute, true, out result))
+				return result;
+			return TypePreserve.Nothing;
 		}
 
 		void ProcessFields (TypeDefinition type, XPathNodeIterator iterator)
@@ -372,17 +376,21 @@ namespace Mono.Linker.Steps {
 			return field.FieldType.FullName + " " + field.Name;
 		}
 
-		void ProcessMethods (TypeDefinition type, XPathNodeIterator iterator)
+		protected virtual void ProcessMethods (TypeDefinition type, XPathNodeIterator iterator)
 		{
-			while (iterator.MoveNext ()) {
-				string value = GetSignature (iterator.Current);
-				if (!String.IsNullOrEmpty (value))
-					ProcessMethodSignature (type, value);
+			while (iterator.MoveNext ())
+				ProcessMethod (type, iterator);
+		}
 
-				value = GetAttribute (iterator.Current, "name");
-				if (!String.IsNullOrEmpty (value))
-					ProcessMethodName (type, value);
-			}
+		protected void ProcessMethod(TypeDefinition type, XPathNodeIterator iterator)
+		{
+			string value = GetSignature (iterator.Current);
+			if (!String.IsNullOrEmpty (value))
+				ProcessMethodSignature (type, value);
+
+			value = GetAttribute (iterator.Current, "name");
+			if (!String.IsNullOrEmpty (value))
+				ProcessMethodName (type, value);
 		}
 
 		void ProcessMethodSignature (TypeDefinition type, string signature)
@@ -423,7 +431,7 @@ namespace Mono.Linker.Steps {
 					MarkMethod (type, method, name);
 		}
 
-		static MethodDefinition GetMethod (TypeDefinition type, string signature)
+		protected static MethodDefinition GetMethod (TypeDefinition type, string signature)
 		{
 			if (type.HasMethods)
 				foreach (MethodDefinition meth in type.Methods)
@@ -587,15 +595,16 @@ namespace Mono.Linker.Steps {
 			return property.PropertyType.FullName + " " + property.Name;
 		}
 
-		static AssemblyDefinition GetAssembly (LinkContext context, string assemblyName)
+		protected AssemblyDefinition GetAssembly (LinkContext context, AssemblyNameReference assemblyName)
 		{
-			AssemblyNameReference reference = AssemblyNameReference.Parse (assemblyName);
-			AssemblyDefinition assembly;
-
-			assembly = context.Resolve (reference);
-
+			var assembly = context.Resolve (assemblyName);
 			ProcessReferences (assembly, context);
 			return assembly;
+		}
+
+		protected virtual AssemblyNameReference GetAssemblyName (XPathNavigator nav)
+		{
+			return AssemblyNameReference.Parse (GetFullName (nav));
 		}
 
 		static void ProcessReferences (AssemblyDefinition assembly, LinkContext context)
@@ -609,19 +618,13 @@ namespace Mono.Linker.Steps {
 			if (attribute == null || attribute.Length == 0)
 				return true;
 
-			return TryParseBool (attribute);
+			bool result;
+			if (bool.TryParse (attribute, out result))
+				return result;
+			return false;
 		}
 
-		static bool TryParseBool (string s)
-		{
-			try {
-				return bool.Parse (s);
-			} catch {
-				return false;
-			}
-		}
-
-		static string GetSignature (XPathNavigator nav)
+		protected static string GetSignature (XPathNavigator nav)
 		{
 			return GetAttribute (nav, _signature);
 		}
@@ -649,7 +652,7 @@ namespace Mono.Linker.Steps {
 			return _accessorsAll;
 		}
 
-		static string GetAttribute (XPathNavigator nav, string attribute)
+		protected static string GetAttribute (XPathNavigator nav, string attribute)
 		{
 			return nav.GetAttribute (attribute, _ns);
 		}
