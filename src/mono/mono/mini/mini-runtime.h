@@ -159,7 +159,6 @@ MONO_API void        mono_parse_env_options         (int *ref_argc, char **ref_a
 MONO_API char       *mono_parse_options_from        (const char *options, int *ref_argc, char **ref_argv []);
 
 /* actual definition in interp.h */
-struct _MonoInterpCallbacks;
 typedef struct _MonoInterpCallbacks MonoInterpCallbacks;
 
 void                   mono_interp_stub_init         (void);

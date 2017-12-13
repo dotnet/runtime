@@ -24,9 +24,7 @@
 #include "aot-runtime.h"
 #include "mini-runtime.h"
 
-#ifndef DISABLE_INTERPRETER
 #include "interp/interp.h"
-#endif
 
 /*
  * Address of the trampoline code.  This is used by the debugger to check
