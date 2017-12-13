@@ -241,6 +241,122 @@ namespace System
         }
 
         /// <summary>
+        /// Searches for the last index of any of the specified values similar to calling LastIndexOf several times with the logical OR operator. If not found, returns -1.
+        /// </summary>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value0">One of the values to search for.</param>
+        /// <param name="value1">One of the values to search for.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int LastIndexOfAny<T>(this Span<T> span, T value0, T value1)
+            where T : IEquatable<T>
+        {
+            if (typeof(T) == typeof(byte))
+                return SpanHelpers.LastIndexOfAny(
+                    ref Unsafe.As<T, byte>(ref span.DangerousGetPinnableReference()),
+                    Unsafe.As<T, byte>(ref value0),
+                    Unsafe.As<T, byte>(ref value1),
+                    span.Length);
+            return SpanHelpers.LastIndexOfAny(ref span.DangerousGetPinnableReference(), value0, value1, span.Length);
+        }
+
+        /// <summary>
+        /// Searches for the last index of any of the specified values similar to calling LastIndexOf several times with the logical OR operator. If not found, returns -1.
+        /// </summary>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value0">One of the values to search for.</param>
+        /// <param name="value1">One of the values to search for.</param>
+        /// <param name="value2">One of the values to search for.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int LastIndexOfAny<T>(this Span<T> span, T value0, T value1, T value2)
+            where T : IEquatable<T>
+        {
+            if (typeof(T) == typeof(byte))
+                return SpanHelpers.LastIndexOfAny(
+                    ref Unsafe.As<T, byte>(ref span.DangerousGetPinnableReference()),
+                    Unsafe.As<T, byte>(ref value0),
+                    Unsafe.As<T, byte>(ref value1),
+                    Unsafe.As<T, byte>(ref value2),
+                    span.Length);
+            return SpanHelpers.LastIndexOfAny(ref span.DangerousGetPinnableReference(), value0, value1, value2, span.Length);
+        }
+
+        /// <summary>
+        /// Searches for the last index of any of the specified values similar to calling LastIndexOf several times with the logical OR operator. If not found, returns -1. 
+        /// </summary>
+        /// <param name="span">The span to search.</param>
+        /// <param name="values">The set of values to search for.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int LastIndexOfAny<T>(this Span<T> span, ReadOnlySpan<T> values)
+            where T : IEquatable<T>
+        {
+            if (typeof(T) == typeof(byte))
+                return SpanHelpers.LastIndexOfAny(
+                    ref Unsafe.As<T, byte>(ref span.DangerousGetPinnableReference()),
+                    span.Length,
+                    ref Unsafe.As<T, byte>(ref values.DangerousGetPinnableReference()),
+                    values.Length);
+            return SpanHelpers.LastIndexOfAny(ref span.DangerousGetPinnableReference(), span.Length, ref values.DangerousGetPinnableReference(), values.Length);
+        }
+
+        /// <summary>
+        /// Searches for the last index of any of the specified values similar to calling LastIndexOf several times with the logical OR operator. If not found, returns -1.
+        /// </summary>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value0">One of the values to search for.</param>
+        /// <param name="value1">One of the values to search for.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1)
+            where T : IEquatable<T>
+        {
+            if (typeof(T) == typeof(byte))
+                return SpanHelpers.LastIndexOfAny(
+                    ref Unsafe.As<T, byte>(ref span.DangerousGetPinnableReference()),
+                    Unsafe.As<T, byte>(ref value0),
+                    Unsafe.As<T, byte>(ref value1),
+                    span.Length);
+            return SpanHelpers.LastIndexOfAny(ref span.DangerousGetPinnableReference(), value0, value1, span.Length);
+        }
+
+        /// <summary>
+        /// Searches for the last index of any of the specified values similar to calling LastIndexOf several times with the logical OR operator. If not found, returns -1. 
+        /// </summary>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value0">One of the values to search for.</param>
+        /// <param name="value1">One of the values to search for.</param>
+        /// <param name="value2">One of the values to search for.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2)
+            where T : IEquatable<T>
+        {
+            if (typeof(T) == typeof(byte))
+                return SpanHelpers.LastIndexOfAny(
+                    ref Unsafe.As<T, byte>(ref span.DangerousGetPinnableReference()),
+                    Unsafe.As<T, byte>(ref value0),
+                    Unsafe.As<T, byte>(ref value1),
+                    Unsafe.As<T, byte>(ref value2),
+                    span.Length);
+            return SpanHelpers.LastIndexOfAny(ref span.DangerousGetPinnableReference(), value0, value1, value2, span.Length);
+        }
+
+        /// <summary>
+        /// Searches for the last index of any of the specified values similar to calling LastIndexOf several times with the logical OR operator. If not found, returns -1. 
+        /// </summary>
+        /// <param name="span">The span to search.</param>
+        /// <param name="values">The set of values to search for.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values)
+            where T : IEquatable<T>
+        {
+            if (typeof(T) == typeof(byte))
+                return SpanHelpers.LastIndexOfAny(
+                    ref Unsafe.As<T, byte>(ref span.DangerousGetPinnableReference()),
+                    span.Length,
+                    ref Unsafe.As<T, byte>(ref values.DangerousGetPinnableReference()),
+                    values.Length);
+            return SpanHelpers.LastIndexOfAny<T>(ref span.DangerousGetPinnableReference(), span.Length, ref values.DangerousGetPinnableReference(), values.Length);
+        }
+
+        /// <summary>
         /// Determines whether two sequences are equal by comparing the elements using IEquatable{T}.Equals(T). 
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
