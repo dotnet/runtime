@@ -151,6 +151,7 @@ publish/
 *.nupkg
 *.nuget.g.props
 *.nuget.g.targets
+*.nuget.cache
 **/packages/*
 project.lock.json
 project.assets.json
