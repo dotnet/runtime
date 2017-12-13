@@ -547,17 +547,21 @@ namespace System.Globalization
                 return false;
             }
 
-            private static bool TrailingZeros(ReadOnlySpan<char> s, int index)
+            private static unsafe bool TrailingZeros(ReadOnlySpan<char> s, int index)
             {
-                // For compatibility, we need to allow trailing zeros at the end of a number string
-                for (int i = index; i < s.Length; i++)
+                fixed (char* sPtr = &s.DangerousGetPinnableReference())
                 {
-                    if (s[i] != '\0')
+                    var span = new Span<char>(sPtr, s.Length);
+                    // For compatibility, we need to allow trailing zeros at the end of a number string
+                    for (int i = index; i < s.Length; i++)
                     {
-                        return false;
+                        if (span[i] != '\0')
+                        {
+                            return false;
+                        }
                     }
+                    return true;
                 }
-                return true;
             }
 
             internal static unsafe bool TryStringToNumber(ReadOnlySpan<char> str, NumberStyles options, ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt, bool parseDecimal)
@@ -634,68 +638,72 @@ namespace System.Globalization
 
             internal static unsafe char ParseFormatSpecifier(ReadOnlySpan<char> format, out int digits)
             {
-                char c = default;
-                if (format.Length > 0)
+                fixed (char* formatPtr = &format.DangerousGetPinnableReference())
                 {
-                    // If the format begins with a symbol, see if it's a standard format
-                    // with or without a specified number of digits.
-                    c = format[0];
-                    if ((uint)(c - 'A') <= 'Z' - 'A' ||
-                        (uint)(c - 'a') <= 'z' - 'a')
+                    var formatSpan = new Span<char>(formatPtr, format.Length);
+                    char c = default;
+                    if (format.Length > 0)
                     {
-                        // Fast path for sole symbol, e.g. "D"
-                        if (format.Length == 1)
+                        // If the format begins with a symbol, see if it's a standard format
+                        // with or without a specified number of digits.
+                        c = formatSpan[0];
+                        if ((uint)(c - 'A') <= 'Z' - 'A' ||
+                            (uint)(c - 'a') <= 'z' - 'a')
                         {
-                            digits = -1;
-                            return c;
-                        }
-
-                        if (format.Length == 2)
-                        {
-                            // Fast path for symbol and single digit, e.g. "X4"
-                            int d = format[1] - '0';
-                            if ((uint)d < 10)
+                            // Fast path for sole symbol, e.g. "D"
+                            if (format.Length == 1)
                             {
-                                digits = d;
+                                digits = -1;
                                 return c;
                             }
-                        }
-                        else if (format.Length == 3)
-                        {
-                            // Fast path for symbol and double digit, e.g. "F12"
-                            int d1 = format[1] - '0', d2 = format[2] - '0';
-                            if ((uint)d1 < 10 && (uint)d2 < 10)
+
+                            if (format.Length == 2)
                             {
-                                digits = d1 * 10 + d2;
+                                // Fast path for symbol and single digit, e.g. "X4"
+                                int d = formatSpan[1] - '0';
+                                if ((uint)d < 10)
+                                {
+                                    digits = d;
+                                    return c;
+                                }
+                            }
+                            else if (format.Length == 3)
+                            {
+                                // Fast path for symbol and double digit, e.g. "F12"
+                                int d1 = formatSpan[1] - '0', d2 = formatSpan[2] - '0';
+                                if ((uint)d1 < 10 && (uint)d2 < 10)
+                                {
+                                    digits = d1 * 10 + d2;
+                                    return c;
+                                }
+                            }
+
+                            // Fallback for symbol and any length digits.  The digits value must be >= 0 && <= 99,
+                            // but it can begin with any number of 0s, and thus we may need to check more than two
+                            // digits.  Further, for compat, we need to stop when we hit a null char.
+                            int n = 0;
+                            int i = 1;
+                            while (i < format.Length && (((uint)formatSpan[i] - '0') < 10) && n < 10)
+                            {
+                                n = (n * 10) + formatSpan[i++] - '0';
+                            }
+
+                            // If we're at the end of the digits rather than having stopped because we hit something
+                            // other than a digit or overflowed, return the standard format info.
+                            if (i == format.Length || formatSpan[i] == '\0')
+                            {
+                                digits = n;
                                 return c;
                             }
-                        }
-
-                        // Fallback for symbol and any length digits.  The digits value must be >= 0 && <= 99,
-                        // but it can begin with any number of 0s, and thus we may need to check more than two
-                        // digits.  Further, for compat, we need to stop when we hit a null char.
-                        int n = 0;
-                        int i = 1;
-                        while (i < format.Length && (((uint)format[i] - '0') < 10) && n < 10)
-                        {
-                            n = (n * 10) + format[i++] - '0';
-                        }
-
-                        // If we're at the end of the digits rather than having stopped because we hit something
-                        // other than a digit or overflowed, return the standard format info.
-                        if (i == format.Length || format[i] == '\0')
-                        {
-                            digits = n;
-                            return c;
                         }
                     }
-                }
 
-                // Default empty format to be "G"; custom format is signified with '\0'.
-                digits = -1;
-                return format.Length == 0 || c == '\0' ? // For compat, treat '\0' as the end of the specifier, even if the specifier extends beyond it.
-                    'G' : 
-                    '\0';
+                    // Default empty format to be "G"; custom format is signified with '\0'.
+                    digits = -1;
+                    return format.Length == 0 || c == '\0' ? // For compat, treat '\0' as the end of the specifier, even if the specifier extends beyond it.
+                        'G' : 
+                        '\0';
+                }
             }
 
             internal static unsafe void NumberToString(ref ValueStringBuilder sb, ref NumberBuffer number, char format, int nMaxDigits, NumberFormatInfo info, bool isDecimal)
