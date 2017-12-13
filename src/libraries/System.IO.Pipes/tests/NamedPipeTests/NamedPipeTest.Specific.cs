@@ -605,5 +605,83 @@ namespace System.IO.Pipes.Tests
             }
         }
 
+        [Fact]
+        public void ClientConnect_Throws_Timeout_When_Pipe_Not_Found()
+        {
+            string pipeName = GetUniquePipeName();
+            using (NamedPipeClientStream client = new NamedPipeClientStream(pipeName))
+            {
+                Assert.Throws<TimeoutException>(() => client.Connect(91));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetCancellationTokens))]
+        public async void ClientConnectAsync_Throws_Timeout_When_Pipe_Not_Found(CancellationToken cancellationToken)
+        {
+            string pipeName = GetUniquePipeName();
+            using (NamedPipeClientStream client = new NamedPipeClientStream(pipeName))
+            {
+                Task waitingClient = client.ConnectAsync(92, cancellationToken);
+                await Assert.ThrowsAsync<TimeoutException>(() => { return waitingClient; });
+            }
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/corefx/pull/25877 yet to be ported to netfx")]
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix ignores MaxNumberOfServerInstances and second client also connects.
+        public void ClientConnect_Throws_Timeout_When_Pipe_Busy()
+        {
+            string pipeName = GetUniquePipeName();
+
+            using (NamedPipeServerStream server = new NamedPipeServerStream(pipeName))
+            using (NamedPipeClientStream firstClient = new NamedPipeClientStream(pipeName))
+            using (NamedPipeClientStream secondClient = new NamedPipeClientStream(pipeName))
+            {
+                const int timeout = 10_000;
+                Task[] clientAndServerTasks = new[]
+                    {
+                        firstClient.ConnectAsync(timeout),
+                        Task.Run(() => server.WaitForConnection())
+                    };
+
+                Assert.True(Task.WaitAll(clientAndServerTasks, timeout));
+
+                Assert.Throws<TimeoutException>(() => secondClient.Connect(93));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetCancellationTokens))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/corefx/pull/25877 yet to be ported to netfx")]
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix ignores MaxNumberOfServerInstances and second client also connects.
+        public async void ClientConnectAsync_With_Cancellation_Throws_Timeout_When_Pipe_Busy(CancellationToken cancellationToken)
+        {
+            string pipeName = GetUniquePipeName();
+
+            using (NamedPipeServerStream server = new NamedPipeServerStream(pipeName))
+            using (NamedPipeClientStream firstClient = new NamedPipeClientStream(pipeName))
+            using (NamedPipeClientStream secondClient = new NamedPipeClientStream(pipeName))
+            {
+                const int timeout = 10_000;
+                Task[] clientAndServerTasks = new[]
+                    {
+                        firstClient.ConnectAsync(timeout),
+                        Task.Run(() => server.WaitForConnection())
+                    };
+
+                Assert.True(Task.WaitAll(clientAndServerTasks, timeout));
+
+                Task waitingClient = secondClient.ConnectAsync(94, cancellationToken);
+                await Assert.ThrowsAsync<TimeoutException>(() => { return waitingClient; });
+            }
+        }
+
+        public static IEnumerable<object[]> GetCancellationTokens =>
+            new []
+            {
+                new object[] { CancellationToken.None },
+                new object[] { new CancellationTokenSource().Token },
+            };
     }
 }
