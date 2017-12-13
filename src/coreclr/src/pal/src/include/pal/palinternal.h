@@ -447,9 +447,13 @@ function_name() to call the system's implementation
 #undef labs
 #undef llabs
 #undef acos
+#undef acosh
 #undef asin
+#undef asinh
 #undef atan
+#undef atanh
 #undef atan2
+#undef cbrt
 #undef ceil
 #undef cos
 #undef cosh
@@ -467,9 +471,13 @@ function_name() to call the system's implementation
 #undef tan
 #undef tanh
 #undef acosf
+#undef acoshf
 #undef asinf
+#undef asinhf
 #undef atanf
+#undef atanhf
 #undef atan2f
+#undef cbrtf
 #undef ceilf
 #undef cosf
 #undef coshf

@@ -11068,6 +11068,9 @@ void cNodeIR(Compiler* comp, GenTree* tree)
             case CORINFO_INTRINSIC_Cos:
                 chars += printf("Cos");
                 break;
+            case CORINFO_INTRINSIC_Cbrt:
+                chars += printf("Cbrt");
+                break;
             case CORINFO_INTRINSIC_Sqrt:
                 chars += printf("Sqrt");
                 break;
@@ -11086,14 +11089,23 @@ void cNodeIR(Compiler* comp, GenTree* tree)
             case CORINFO_INTRINSIC_Asin:
                 chars += printf("Asin");
                 break;
+            case CORINFO_INTRINSIC_Asinh:
+                chars += printf("Asinh");
+                break;
             case CORINFO_INTRINSIC_Acos:
                 chars += printf("Acos");
+                break;
+            case CORINFO_INTRINSIC_Acosh:
+                chars += printf("Acosh");
                 break;
             case CORINFO_INTRINSIC_Atan:
                 chars += printf("Atan");
                 break;
             case CORINFO_INTRINSIC_Atan2:
                 chars += printf("Atan2");
+                break;
+            case CORINFO_INTRINSIC_Atanh:
+                chars += printf("Atanh");
                 break;
             case CORINFO_INTRINSIC_Log10:
                 chars += printf("Log10");
