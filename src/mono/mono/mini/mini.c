@@ -3944,12 +3944,6 @@ mini_class_has_reference_variant_generic_argument (MonoCompile *cfg, MonoClass *
 	return FALSE;
 }
 
-void*
-mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
-{
-	return mono_arch_instrument_epilog_full (cfg, func, p, enable_arguments, FALSE);
-}
-
 void
 mono_cfg_add_try_hole (MonoCompile *cfg, MonoExceptionClause *clause, guint8 *start, MonoBasicBlock *bb)
 {

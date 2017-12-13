@@ -1679,7 +1679,7 @@ enum {
 };
 
 void*
-mono_arch_instrument_epilog_full (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments, gboolean preserve_argument_registers)
+mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
 {
 	guchar *code = p;
 	int arg_size = 0, stack_usage = 0, save_mode = SAVE_NONE;

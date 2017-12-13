@@ -2661,26 +2661,6 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- mono_arch_instrument_mem_needs                    */
-/*                                                                  */
-/* Function	- Allow tracing to work with this interface (with   */
-/*		  an optional argument).       			    */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-void
-mono_arch_instrument_mem_needs (MonoMethod *method, int *stack, int *code)
-{
-	/* no stack room needed now (may be needed for FASTCALL-trace support) */
-	*stack = 0;
-	/* split prolog-epilog requirements? */
-	*code = 50; /* max bytes needed: check this number */
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
 /* Name		- mono_arch_instrument_prolog                       */
 /*                                                                  */
 /* Function	- Create an "instrumented" prolog.                  */
@@ -2734,7 +2714,7 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p,
 /*------------------------------------------------------------------*/
 
 void*
-mono_arch_instrument_epilog_full (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments, gboolean preserve_argument_registers)
+mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
 {
 	guchar 	   *code = p;
 	int   	   save_mode = SAVE_NONE,

@@ -2333,19 +2333,18 @@ void              mini_init_delegate (MonoDelegate *del);
 char*             mono_get_delegate_virtual_invoke_impl_name (gboolean load_imt_reg, int offset);
 gpointer          mono_get_delegate_virtual_invoke_impl  (MonoMethodSignature *sig, MonoMethod *method);
 
+void      mono_codegen                          (MonoCompile *cfg);
+void      mono_call_inst_add_outarg_reg         (MonoCompile *cfg, MonoCallInst *call, int vreg, int hreg, int bank) MONO_LLVM_INTERNAL;
+void      mono_call_inst_add_outarg_vt          (MonoCompile *cfg, MonoCallInst *call, MonoInst *outarg_vt);
+
 /* methods that must be provided by the arch-specific port */
 void      mono_arch_init                        (void);
 void      mono_arch_finish_init                 (void);
 void      mono_arch_cleanup                     (void);
 void      mono_arch_cpu_init                    (void);
 guint32   mono_arch_cpu_optimizations           (guint32 *exclude_mask);
-void      mono_arch_instrument_mem_needs        (MonoMethod *method, int *stack, int *code);
 void     *mono_arch_instrument_prolog           (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments);
 void     *mono_arch_instrument_epilog           (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments);
-void     *mono_arch_instrument_epilog_full     (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments, gboolean preserve_argument_registers);
-void      mono_codegen                          (MonoCompile *cfg);
-void      mono_call_inst_add_outarg_reg         (MonoCompile *cfg, MonoCallInst *call, int vreg, int hreg, int bank) MONO_LLVM_INTERNAL;
-void      mono_call_inst_add_outarg_vt          (MonoCompile *cfg, MonoCallInst *call, MonoInst *outarg_vt);
 const char *mono_arch_regname                   (int reg);
 const char *mono_arch_fregname                  (int reg);
 void      mono_arch_exceptions_init             (void);
@@ -2360,14 +2359,10 @@ guint8   *mono_arch_create_llvm_native_thunk     (MonoDomain *domain, guint8* ad
 gpointer  mono_arch_get_get_tls_tramp (void);
 GList    *mono_arch_get_allocatable_int_vars    (MonoCompile *cfg);
 GList    *mono_arch_get_global_int_regs         (MonoCompile *cfg);
-GList    *mono_arch_get_global_fp_regs          (MonoCompile *cfg);
-GList    *mono_arch_get_iregs_clobbered_by_call (MonoCallInst *call);
-GList    *mono_arch_get_fregs_clobbered_by_call (MonoCallInst *call);
 guint32   mono_arch_regalloc_cost               (MonoCompile *cfg, MonoMethodVar *vmv);
 void      mono_arch_patch_code                  (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gboolean run_cctors, MonoError *error);
 void      mono_arch_patch_code_new              (MonoCompile *cfg, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gpointer target);
 void      mono_arch_flush_icache                (guint8 *code, gint size);
-int       mono_arch_max_epilog_size             (MonoCompile *cfg);
 guint8   *mono_arch_emit_prolog                 (MonoCompile *cfg);
 void      mono_arch_emit_epilog                 (MonoCompile *cfg);
 void      mono_arch_emit_exceptions             (MonoCompile *cfg);

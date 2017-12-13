@@ -3777,7 +3777,7 @@ enum {
 };
 
 void*
-mono_arch_instrument_epilog_full (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments, gboolean preserve_argument_registers)
+mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
 {
 	guint32 *code = (guint32*)p;
 	int save_mode = SAVE_NONE;
