@@ -367,8 +367,8 @@ namespace System.Xml
 
         private async Task<int> ReadContentAsBase64_AsyncHelper(Task<bool> task, byte[] buffer, int index, int count)
         {
-            await task.ConfigureAwait(false);
-            if (!task.Result)
+            bool result = await task.ConfigureAwait(false);
+            if (!result)
             {
                 return 0;
             }
@@ -514,8 +514,8 @@ namespace System.Xml
 
         private async Task<int> ReadElementContentAsBase64Async_Helper(Task<bool> task, byte[] buffer, int index, int count)
         {
-            await task.ConfigureAwait(false);
-            if (!task.Result)
+            bool result = await task.ConfigureAwait(false);
+            if (!result)
             {
                 return 0;
             }
