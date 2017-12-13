@@ -38,7 +38,6 @@ DEF_TP(BOOL    ,"bool"    , TYP_INT,     TI_BYTE,  1,  1,  4,   1, 1, VTF_INT|VT
 DEF_TP(BYTE    ,"byte"    , TYP_INT,     TI_BYTE,  1,  1,  4,   1, 1, VTF_INT,        TYPE_REF_INT)
 DEF_TP(UBYTE   ,"ubyte"   , TYP_INT,     TI_BYTE,  1,  1,  4,   1, 1, VTF_INT|VTF_UNS,TYPE_REF_INT)
 
-DEF_TP(CHAR    ,"char"    , TYP_INT,     TI_SHORT, 2,  2,  4,   1, 2, VTF_INT|VTF_UNS,TYPE_REF_INT)
 DEF_TP(SHORT   ,"short"   , TYP_INT,     TI_SHORT, 2,  2,  4,   1, 2, VTF_INT,        TYPE_REF_INT)
 DEF_TP(USHORT  ,"ushort"  , TYP_INT,     TI_SHORT, 2,  2,  4,   1, 2, VTF_INT|VTF_UNS,TYPE_REF_INT)
 

@@ -2369,7 +2369,7 @@ void CodeGen::genCodeForTreeStackFP_Cast(GenTreePtr tree)
         case TYP_BOOL:
         case TYP_BYTE:
         case TYP_UBYTE:
-        case TYP_CHAR:
+        case TYP_USHORT:
         case TYP_SHORT:
         {
 
