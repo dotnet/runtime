@@ -88,8 +88,8 @@ cond_exc_nc: len:8
 cond_exc_ne_un: len:8
 cond_exc_no: len:8
 cond_exc_ov: len:8
-div_imm: dest:i src1:i src2:i len:24
-div_un_imm: dest:i src1:i src2:i len:24
+div_imm: dest:i src1:i len:24
+div_un_imm: dest:i src1:i len:24
 endfinally: len:8
 fcall: dest:g len:26 clob:c
 fcall_membase: dest:g src1:b len:14 clob:c
@@ -163,7 +163,7 @@ loadu2_membase: dest:i src1:b len:30
 loadu4_mem: dest:i len:8
 loadu4_membase: dest:i src1:b len:30
 localloc: dest:i src1:i len:106
-memory_barrier: len: 10
+memory_barrier: len:10
 move: dest:i src1:i len:4
 mul_imm: dest:i src1:i len:24
 nop: len:4
@@ -176,9 +176,9 @@ rethrow: src1:i len:26
 or_imm: dest:i src1:i len:24
 r4const: dest:f len:26
 r8const: dest:f len:24
-rem_imm: dest:i src1:i src2:i len:24
-rem_un_imm: dest:i src1:i src2:i len:24
-s390_bkchain: len: 8 dest:i src1:i
+rem_imm: dest:i src1:i len:24
+rem_un_imm: dest:i src1:i len:24
+s390_bkchain: len:8 dest:i src1:i
 s390_move: len:48 dest:b src1:b
 s390_setf4ret: dest:f src1:f len:4
 sbb: dest:i src1:i src2:i len:6
@@ -303,7 +303,7 @@ long_xor: dest:i src1:i src2:i len:8
 long_neg: dest:i src1:i len:6
 long_not: dest:i src1:i len:12
 long_rem: dest:i src1:i src2:i len:12
-long_rem_imm: dest:i src1:i src2:i len:12
+long_rem_imm: dest:i src1:i len:12
 long_rem_un: dest:i src1:i src2:i len:16
 long_shl: dest:i src1:i src2:i len:14
 long_shl_imm: dest:i src1:i len:14
@@ -320,7 +320,7 @@ long_conv_to_i2: dest:i src1:i len:12
 long_conv_to_i4: dest:i src1:i len:4
 long_conv_to_i8: dest:i src1:i len:4
 long_conv_to_i: dest:i src1:i len:4
-long_conv_to_ovf_i: dest:i src1:i src2:i len:44
+long_conv_to_ovf_i: dest:i src1:i len:44
 long_conv_to_ovf_i4_un: dest:i src1:i len:50
 long_conv_to_ovf_u4: dest:i src1:i len:48
 long_conv_to_ovf_u8_un: dest:i src1:i len:4
@@ -412,7 +412,7 @@ s390_crj: src1:i src2:i len:24
 s390_crj_un: src1:i src2:i len:24
 s390_cgrj: src1:i src2:i len:24
 s390_cgrj_un: src1:i src2:i len:24
-s390_cij: src1:i len:24
+s390_cij: len:24
 s390_cij_un: src1:i len:24
-s390_cgij: src1:i len:24
-s390_cgij_un: src1:i len:24
+s390_cgij: len:24
+s390_cgij_un: len:24
