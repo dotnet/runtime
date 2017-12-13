@@ -1916,6 +1916,29 @@ CorInfoType MethodContext::repGetTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE
     return result;
 }
 
+void MethodContext::recGetTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls, CorInfoType result)
+{
+    if (GetTypeForPrimitiveNumericClass == nullptr)
+        GetTypeForPrimitiveNumericClass = new LightWeightMap<DWORDLONG, DWORD>();
+
+    GetTypeForPrimitiveNumericClass->Add((DWORDLONG)cls, result);
+    DEBUG_REC(dmpGetTypeForPrimitiveNumericClass((DWORDLONG)cls, (DWORD)result));
+}
+void MethodContext::dmpGetTypeForPrimitiveNumericClass(DWORDLONG key, DWORD value)
+{
+    printf("GetTypeForPrimitiveNumericClass key cls-%016llX, value cit-%u(%s)", key, value, toString((CorInfoType)value));
+}
+CorInfoType MethodContext::repGetTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls)
+{
+    AssertCodeMsg(GetTypeForPrimitiveNumericClass != nullptr, EXCEPTIONCODE_MC,
+                  "Encountered an empty LWM while looking for %016llX", (DWORDLONG)cls);
+    AssertCodeMsg(GetTypeForPrimitiveNumericClass->GetIndex((DWORDLONG)cls) != -1, EXCEPTIONCODE_MC,
+                  "Didn't find %016llX", (DWORDLONG)cls);
+    CorInfoType result = (CorInfoType)GetTypeForPrimitiveNumericClass->Get((DWORDLONG)cls);
+    DEBUG_REP(dmpGetTypeForPrimitiveNumericClass((DWORDLONG)cls, (DWORD)result));
+    return result;
+}
+
 void MethodContext::recGetParentType(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result)
 {
     if (GetParentType == nullptr)

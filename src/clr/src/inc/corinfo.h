@@ -213,12 +213,13 @@ TODO: Talk about initializing strutures before use
     #define SELECTANY extern __declspec(selectany)
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* 01c3d216-a404-4290-8278-ac27a4793d31 */
-    0x01c3d216,
-    0xa404,
-    0x4290,
-    {0x82, 0x78, 0xac, 0x27, 0xa4, 0x79, 0x3d, 0x31}
+SELECTANY const GUID JITEEVersionIdentifier = { /* 19258069-1777-4691-87DF-DADF8F352875 */
+    0x19258069, 
+    0x1777, 
+    0x4691, 
+    { 0x87, 0xdf, 0xda, 0xdf, 0x8f, 0x35, 0x28, 0x75 } 
 };
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -2505,6 +2506,12 @@ public:
 
     // "System.Int32" ==> CORINFO_TYPE_INT..
     virtual CorInfoType getTypeForPrimitiveValueClass(
+            CORINFO_CLASS_HANDLE        cls
+            ) = 0;
+
+    // "System.Int32" ==> CORINFO_TYPE_INT..
+    // "System.UInt32" ==> CORINFO_TYPE_UINT..
+    virtual CorInfoType getTypeForPrimitiveNumericClass(
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 

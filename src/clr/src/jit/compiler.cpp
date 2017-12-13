@@ -2116,7 +2116,27 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     SIMDVector3Handle = nullptr;
     SIMDVector4Handle = nullptr;
     SIMDVectorHandle  = nullptr;
-#endif
+#if FEATURE_HW_INTRINSICS
+    Vector128FloatHandle  = nullptr;
+    Vector128DoubleHandle = nullptr;
+    Vector128IntHandle    = nullptr;
+    Vector128UShortHandle = nullptr;
+    Vector128UByteHandle  = nullptr;
+    Vector128ShortHandle  = nullptr;
+    Vector128ByteHandle   = nullptr;
+    Vector128LongHandle   = nullptr;
+    Vector128UIntHandle   = nullptr;
+    Vector256FloatHandle  = nullptr;
+    Vector256DoubleHandle = nullptr;
+    Vector256IntHandle    = nullptr;
+    Vector256UShortHandle = nullptr;
+    Vector256UByteHandle  = nullptr;
+    Vector256ShortHandle  = nullptr;
+    Vector256ByteHandle   = nullptr;
+    Vector256LongHandle   = nullptr;
+    Vector256UIntHandle   = nullptr;
+#endif // FEATURE_HW_INTRINSICS
+#endif // FEATURE_SIMD
 
     compUsesThrowHelper = false;
 }
