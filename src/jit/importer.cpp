@@ -240,7 +240,7 @@ bool Compiler::impILConsumesAddr(const BYTE* codeAddr, CORINFO_METHOD_HANDLE fnc
             var_types lclTyp = JITtype2varType(info.compCompHnd->getFieldType(resolvedToken.hField, &clsHnd));
 
             // Preserve 'small' int types
-            if (lclTyp > TYP_INT)
+            if (!varTypeIsSmall(lclTyp))
             {
                 lclTyp = genActualType(lclTyp);
             }
@@ -3552,7 +3552,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         case CORINFO_INTRINSIC_StringGetChar:
             op2 = impPopStack().val;
             op1 = impPopStack().val;
-            op1 = gtNewIndexRef(TYP_CHAR, op1, op2);
+            op1 = gtNewIndexRef(TYP_USHORT, op1, op2);
             op1->gtFlags |= GTF_INX_STRING_LAYOUT;
             retNode = op1;
             break;
@@ -6373,7 +6373,6 @@ GenTreePtr Compiler::impImportStaticReadOnlyField(void* fldAddr, var_types lclTy
             ival = *((short*)fldAddr);
             goto IVAL_COMMON;
 
-        case TYP_CHAR:
         case TYP_USHORT:
             ival = *((unsigned short*)fldAddr);
             goto IVAL_COMMON;
@@ -11208,7 +11207,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 lclTyp = TYP_UBYTE;
                 goto ARR_LD;
             case CEE_LDELEM_U2:
-                lclTyp = TYP_CHAR;
+                lclTyp = TYP_USHORT;
                 goto ARR_LD;
 
             ARR_LD:
@@ -12230,7 +12229,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 lclTyp = TYP_UBYTE;
                 goto CONV_OVF;
             case CEE_CONV_OVF_U2:
-                lclTyp = TYP_CHAR;
+                lclTyp = TYP_USHORT;
                 goto CONV_OVF;
             case CEE_CONV_OVF_U:
                 lclTyp = TYP_U_IMPL;
@@ -12262,7 +12261,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 lclTyp = TYP_UBYTE;
                 goto CONV_OVF_UN;
             case CEE_CONV_OVF_U2_UN:
-                lclTyp = TYP_CHAR;
+                lclTyp = TYP_USHORT;
                 goto CONV_OVF_UN;
             case CEE_CONV_OVF_U_UN:
                 lclTyp = TYP_U_IMPL;
@@ -12305,7 +12304,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 lclTyp = TYP_UBYTE;
                 goto CONV;
             case CEE_CONV_U2:
-                lclTyp = TYP_CHAR;
+                lclTyp = TYP_USHORT;
                 goto CONV;
 #if (REGSIZE_BYTES == 8)
             case CEE_CONV_U:
@@ -12419,7 +12418,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 mask  = 0x00FF;
                                 umask = 0x007F;
                                 break;
-                            case TYP_CHAR:
+                            case TYP_USHORT:
                             case TYP_SHORT:
                                 mask  = 0xFFFF;
                                 umask = 0x7FFF;
@@ -12754,7 +12753,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 lclTyp = TYP_UBYTE;
                 goto LDIND;
             case CEE_LDIND_U2:
-                lclTyp = TYP_CHAR;
+                lclTyp = TYP_USHORT;
                 goto LDIND;
             LDIND:
 
@@ -13654,7 +13653,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 /* Preserve 'small' int types */
-                if (lclTyp > TYP_INT)
+                if (!varTypeIsSmall(lclTyp))
                 {
                     lclTyp = genActualType(lclTyp);
                 }
@@ -13990,7 +13989,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 /* Preserve 'small' int types */
-                if (lclTyp > TYP_INT)
+                if (!varTypeIsSmall(lclTyp))
                 {
                     lclTyp = genActualType(lclTyp);
                 }

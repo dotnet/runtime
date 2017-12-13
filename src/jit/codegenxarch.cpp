@@ -6584,7 +6584,7 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
                 typeMax  = SHRT_MAX;
                 break;
 
-            case TYP_CHAR:
+            case TYP_USHORT:
                 typeMask = ssize_t((int)0xFFFF0000L);
                 break;
 

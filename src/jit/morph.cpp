@@ -12494,7 +12494,7 @@ DONE_MORPHING_CHILDREN:
                     // castType is larger or the same as op1's type
                     // then we can discard the cast.
 
-                    if (varTypeIsSmall(castType) && (castType >= op1->TypeGet()))
+                    if (varTypeIsSmall(castType) && (genTypeSize(castType) >= genTypeSize(op1->TypeGet())))
                     {
                         tree->gtOp.gtOp2 = op2 = op2->gtCast.CastOp();
                     }
@@ -14466,7 +14466,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
 
                 /* Make sure these are all ints and precision is not lost */
 
-                if (cast >= dstt && dstt <= TYP_INT && srct <= TYP_INT)
+                if (genTypeSize(cast) >= genTypeSize(dstt) && dstt <= TYP_INT && srct <= TYP_INT)
                 {
                     op2 = tree->gtOp2 = op2->gtCast.CastOp();
                 }
