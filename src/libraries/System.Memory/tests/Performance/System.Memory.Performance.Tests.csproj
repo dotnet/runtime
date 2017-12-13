@@ -10,6 +10,7 @@
   <ItemGroup>
     <Compile Include="Perf.Base64EncodeDecode.cs" />
     <Compile Include="Perf.Span.BinaryReadAndWrite.cs" />
+    <Compile Include="Perf.Span.BinarySearch.cs" />
     <Compile Include="Perf.Span.Clear.cs" />
     <Compile Include="Perf.Span.Fill.cs" />
     <Compile Include="Perf.Span.IndexOf.cs" />

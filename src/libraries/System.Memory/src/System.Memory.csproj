@@ -22,6 +22,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\MemoryExtensions.cs" />
+    <Compile Include="System\SpanHelpers.BinarySearch.cs" />
     <Compile Include="System\SpanHelpers.T.cs" />
     <Compile Include="System\SpanHelpers.byte.cs" />
     <Compile Include="System\ThrowHelper.cs" />
@@ -35,7 +36,6 @@
     <Compile Include="System\Buffers\Text\Base64Decoder.cs" />
     <Compile Include="System\Buffers\Text\Base64Encoder.cs" />
   </ItemGroup>
-
   <!-- Utf8 Formatter/Parser -->
   <ItemGroup>
     <Compile Include="System\Buffers\StandardFormat.cs" />
@@ -89,7 +89,6 @@
     <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpan.LittleG.cs" />
     <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpanSplitter.cs" />
   </ItemGroup>
-
   <!-- Double/Decimal format/parser logic copied (almost verbatim) over from CoreRT -->
   <ItemGroup>
     <Compile Include="System\Number\Decimal.DecCalc.cs" />
@@ -97,11 +96,9 @@
     <Compile Include="System\Number\Number.FormatAndParse.cs" />
     <Compile Include="System\Number\Number.NumberBuffer.cs" />
   </ItemGroup>
-
   <ItemGroup>
     <Compile Include="..\Common\src\System\MutableDecimal.cs" />
   </ItemGroup>
-
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="System\ReadOnlySpan.cs" />
     <Compile Include="System\Span.cs" />

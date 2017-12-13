@@ -59,6 +59,7 @@
   <ItemGroup>
     <Compile Include="ReadOnlySpan\AsBytes.cs" />
     <Compile Include="ReadOnlySpan\AsReadOnlySpan.cs" />
+    <Compile Include="ReadOnlySpan\BinarySearch.cs" />
     <Compile Include="ReadOnlySpan\CopyTo.cs" />
     <Compile Include="ReadOnlySpan\CtorArray.cs" />
     <Compile Include="ReadOnlySpan\CtorArrayIntInt.cs" />

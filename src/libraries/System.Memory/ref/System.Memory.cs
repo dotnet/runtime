@@ -5,6 +5,8 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Collections.Generic;
+
 namespace System
 {
     public readonly ref struct ReadOnlySpan<T>
@@ -156,6 +158,13 @@ namespace System
         public static bool Overlaps<T>(this Span<T> first, ReadOnlySpan<T> second, out int elementOffset) { throw null; }
         public static bool Overlaps<T>(this ReadOnlySpan<T> first, ReadOnlySpan<T> second) { throw null; }
         public static bool Overlaps<T>(this ReadOnlySpan<T> first, ReadOnlySpan<T> second, out int elementOffset) { throw null; }
+
+        public static int BinarySearch<T>(this ReadOnlySpan<T> span, IComparable<T> comparable) { throw null; }
+        public static int BinarySearch<T, TComparable>(this ReadOnlySpan<T> span, TComparable comparable) where TComparable : IComparable<T> { throw null; }
+        public static int BinarySearch<T, TComparer>(this ReadOnlySpan<T> span, T value, TComparer comparer) where TComparer : IComparer<T> { throw null; }
+        public static int BinarySearch<T>(this Span<T> span, IComparable<T> comparable) { throw null; }
+        public static int BinarySearch<T, TComparable>(this Span<T> span, TComparable comparable) where TComparable : IComparable<T> { throw null; }
+        public static int BinarySearch<T, TComparer>(this Span<T> span, T value, TComparer comparer) where TComparer : IComparer<T> { throw null; }
     }
 
     public readonly struct ReadOnlyMemory<T>

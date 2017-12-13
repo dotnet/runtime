@@ -102,6 +102,8 @@ namespace System
         text,
         obj,
         ownedMemory,
-        pointer
+        pointer,
+        comparable,
+        comparer
     }
 }
