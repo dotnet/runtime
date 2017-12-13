@@ -58,14 +58,15 @@ namespace System.Reflection.PortableExecutable.Tests
             BlobBuilder ilBuilder, 
             MethodDefinitionHandle entryPointHandle,
             Blob mvidFixup = default(Blob),
-            byte[] privateKeyOpt = null)
+            byte[] privateKeyOpt = null,
+            bool publicSigned = false)
         {
             var peBuilder = new ManagedPEBuilder(
                 entryPointHandle.IsNil ? PEHeaderBuilder.CreateLibraryHeader() : PEHeaderBuilder.CreateExecutableHeader(),
                 new MetadataRootBuilder(metadataBuilder),
                 ilBuilder,
                 entryPoint: entryPointHandle,
-                flags: CorFlags.ILOnly | (privateKeyOpt != null ? CorFlags.StrongNameSigned : 0),
+                flags: CorFlags.ILOnly | (privateKeyOpt != null || publicSigned ? CorFlags.StrongNameSigned : 0),
                 deterministicIdProvider: content => s_contentId);
 
             var peBlob = new BlobBuilder();
@@ -108,7 +109,11 @@ namespace System.Reflection.PortableExecutable.Tests
                 var ilBuilder = new BlobBuilder();
                 var metadataBuilder = new MetadataBuilder();
                 var entryPoint = BasicValidationEmit(metadataBuilder, ilBuilder);
-                WritePEImage(peStream, metadataBuilder, ilBuilder, entryPoint);
+                WritePEImage(peStream, metadataBuilder, ilBuilder, entryPoint, publicSigned: true);
+
+                peStream.Position = 0;
+                var actualChecksum = new PEHeaders(peStream).PEHeader.CheckSum;
+                Assert.Equal(0U, actualChecksum);
 
                 VerifyPE(peStream);
             }
@@ -123,6 +128,14 @@ namespace System.Reflection.PortableExecutable.Tests
                 var metadataBuilder = new MetadataBuilder();
                 var entryPoint = BasicValidationEmit(metadataBuilder, ilBuilder);
                 WritePEImage(peStream, metadataBuilder, ilBuilder, entryPoint, privateKeyOpt: Misc.KeyPair);
+
+                // The expected checksum can be determined by saving the PE stream to a file, 
+                // running "sn -R test.dll KeyPair.snk" and inspecting the resulting binary.
+                // The re-signed binary should be the same as the original one.
+                // See https://github.com/dotnet/corefx/issues/25829.
+                peStream.Position = 0;
+                var actualChecksum = new PEHeaders(peStream).PEHeader.CheckSum;
+                Assert.Equal(0x0000319cU, actualChecksum);
 
                 VerifyPE(peStream, expectedSignature: new byte[] 
                 {
