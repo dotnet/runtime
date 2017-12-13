@@ -13767,7 +13767,7 @@ GenTreePtr Compiler::gtFoldExprConst(GenTreePtr tree)
                                 i1 = itemp;
                                 goto CNS_INT;
 
-                            case TYP_CHAR:
+                            case TYP_USHORT:
                                 itemp = INT32(UINT16(i1));
                                 if (tree->gtOverflow())
                                 {
@@ -13892,7 +13892,7 @@ GenTreePtr Compiler::gtFoldExprConst(GenTreePtr tree)
                                 i1 = INT32(INT16(lval1));
                                 goto CHECK_INT_OVERFLOW;
 
-                            case TYP_CHAR:
+                            case TYP_USHORT:
                                 i1 = INT32(UINT16(lval1));
                                 goto CHECK_UINT_OVERFLOW;
 
@@ -14036,7 +14036,7 @@ GenTreePtr Compiler::gtFoldExprConst(GenTreePtr tree)
                                 i1 = INT32(INT16(d1));
                                 goto CNS_INT;
 
-                            case TYP_CHAR:
+                            case TYP_USHORT:
                                 i1 = INT32(UINT16(d1));
                                 goto CNS_INT;
 
