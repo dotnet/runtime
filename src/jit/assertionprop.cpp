@@ -1271,7 +1271,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTreePtr       op1,
                         case TYP_UBYTE:
                         case TYP_SHORT:
                         case TYP_USHORT:
-                        case TYP_CHAR:
 #ifdef _TARGET_64BIT_
                         case TYP_UINT:
                         case TYP_INT:
@@ -2236,7 +2235,6 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTreePtr tree, var_types toTyp
                 case TYP_UBYTE:
                 case TYP_SHORT:
                 case TYP_USHORT:
-                case TYP_CHAR:
                     if ((curAssertion->op2.u2.loBound < AssertionDsc::GetLowerBoundForIntegralType(toType)) ||
                         (curAssertion->op2.u2.hiBound > AssertionDsc::GetUpperBoundForIntegralType(toType)))
                     {

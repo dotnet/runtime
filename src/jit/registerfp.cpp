@@ -1248,7 +1248,7 @@ void CodeGen::genCodeForTreeCastToFloat(GenTreePtr tree, RegSet::RegisterPrefere
         case TYP_BOOL:
         case TYP_BYTE:
         case TYP_UBYTE:
-        case TYP_CHAR:
+        case TYP_USHORT:
         case TYP_SHORT:
             // load it into a register
             genCodeForTree(op1, 0);
