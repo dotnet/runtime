@@ -1640,6 +1640,15 @@ public:
         return OperIsSIMD(gtOper);
     }
 
+#if FEATURE_HW_INTRINSICS
+    inline bool OperIsSimdHWIntrinsic() const;
+#else
+    inline bool OperIsSimdHWIntrinsic() const
+    {
+        return false;
+    }
+#endif
+
     // This is here for cleaner GT_LONG #ifdefs.
     static bool OperIsLong(genTreeOps gtOper)
     {
@@ -4227,7 +4236,7 @@ struct GenTreeJitIntrinsic : public GenTreeOp
     {
     }
 
-    bool isSIMD()
+    bool isSIMD() const
     {
         return gtSIMDSize != 0;
     }
@@ -4291,6 +4300,17 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     }
 #endif
 };
+
+inline bool GenTree::OperIsSimdHWIntrinsic() const
+{
+    if (gtOper == GT_HWIntrinsic)
+    {
+        // We cannot use AsHWIntrinsic() as it is not declared const
+        const GenTreeHWIntrinsic* hwIntrinsic = reinterpret_cast<const GenTreeHWIntrinsic*>(this);
+        return hwIntrinsic->isSIMD();
+    }
+    return false;
+}
 #endif // FEATURE_HW_INTRINSICS
 
 /* gtIndex -- array access */
