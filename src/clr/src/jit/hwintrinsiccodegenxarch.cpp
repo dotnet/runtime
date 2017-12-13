@@ -149,7 +149,6 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
                 case TYP_UBYTE:
                     ins = INS_paddb;
                     break;
-                case TYP_CHAR:
                 case TYP_SHORT:
                 case TYP_USHORT:
                     ins = INS_paddw;
@@ -206,7 +205,7 @@ void CodeGen::genSSE42Intrinsic(GenTreeHWIntrinsic* node)
                 inst_RV_RV(INS_mov, targetReg, op1Reg, targetType, emitTypeSize(targetType));
             }
 
-            if (baseType == TYP_UBYTE || baseType == TYP_CHAR) // baseType is the type of the second argument
+            if (baseType == TYP_UBYTE || baseType == TYP_USHORT) // baseType is the type of the second argument
             {
                 assert(targetType == TYP_INT);
                 inst_RV_RV(INS_crc32, targetReg, op2Reg, baseType, emitTypeSize(baseType));
@@ -307,7 +306,6 @@ void CodeGen::genAVX2Intrinsic(GenTreeHWIntrinsic* node)
                 case TYP_UBYTE:
                     ins = INS_paddb;
                     break;
-                case TYP_CHAR:
                 case TYP_SHORT:
                 case TYP_USHORT:
                     ins = INS_paddw;
