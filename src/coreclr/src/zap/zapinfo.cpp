@@ -3106,6 +3106,11 @@ CorInfoType ZapInfo::getTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE cls)
     return m_pEEJitInfo->getTypeForPrimitiveValueClass(cls);
 }
 
+CorInfoType ZapInfo::getTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls)
+{
+    return m_pEEJitInfo->getTypeForPrimitiveNumericClass(cls);
+}
+
 BOOL ZapInfo::canCast(CORINFO_CLASS_HANDLE child,
                                 CORINFO_CLASS_HANDLE parent)
 {

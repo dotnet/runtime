@@ -17000,7 +17000,13 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
 #ifdef FEATURE_SIMD
             case GT_SIMD:
                 structHnd = gtGetStructHandleForSIMD(tree->gtType, tree->AsSIMD()->gtSIMDBaseType);
+                break;
 #endif // FEATURE_SIMD
+#if FEATURE_HW_INTRINSICS
+            case GT_HWIntrinsic:
+                structHnd = gtGetStructHandleForHWSIMD(tree->gtType, tree->AsHWIntrinsic()->gtSIMDBaseType);
+                break;
+#endif
                 break;
         }
     }
