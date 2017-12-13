@@ -12,7 +12,7 @@ namespace System.IO.Compression
         public static unsafe uint UpdateCrc32(uint crc32, byte[] buffer, int offset, int length)
         {
             Debug.Assert((buffer != null) && (offset >= 0) && (length >= 0) && (offset <= buffer.Length - length));
-            fixed (byte* bufferPtr = buffer)
+            fixed (byte* bufferPtr = &buffer[offset])
             {
                 return Interop.zlib.crc32(crc32, bufferPtr, length);
             }

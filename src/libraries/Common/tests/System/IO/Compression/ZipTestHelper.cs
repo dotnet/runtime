@@ -172,6 +172,10 @@ namespace System.IO.Compression.Tests
                         using (Stream entrystream = entry.Open())
                         {
                             entrystream.Read(buffer, 0, buffer.Length);
+#if netcoreapp
+                            uint zipcrc = entry.Crc32;
+                            Assert.Equal(CRC.CalculateCRC(buffer), zipcrc.ToString());
+#endif
 
                             if (file.Length != givenLength)
                             {
@@ -297,7 +301,7 @@ namespace System.IO.Compression.Tests
             }
         }
 
-        public static async Task CreateFromDir(string directory, Stream archiveStream, ZipArchiveMode mode, bool useSpansForWriting = false)
+        public static async Task CreateFromDir(string directory, Stream archiveStream, ZipArchiveMode mode, bool useSpansForWriting = false, bool writeInChunks = false)
         {
             var files = FileData.InPath(directory);
             using (ZipArchive archive = new ZipArchive(archiveStream, mode, true))
@@ -334,6 +338,14 @@ namespace System.IO.Compression.Tests
                                     while ((bytesRead = installStream.Read(new Span<byte>(buffer))) != 0)
                                     {
                                         entryStream.Write(new ReadOnlySpan<byte>(buffer, 0, bytesRead));
+                                    }
+                                }
+                                else if (writeInChunks)
+                                {
+                                    while ((bytesRead = installStream.Read(buffer, 0, buffer.Length)) != 0)
+                                    {
+                                        for (int k = 0; k < bytesRead; k += 5)
+                                            entryStream.Write(buffer, k, Math.Min(5, bytesRead - k));
                                     }
                                 }
                                 else
