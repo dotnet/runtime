@@ -30,6 +30,9 @@
     <Compile Include="$(CommonTestPath)\System\IO\DelegateStream.cs">
       <Link>Common\System\IO\DelegateStream.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\RemoteServerQuery.cs">
+      <Link>Common\System\Net\RemoteServerQuery.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Configuration.Certificates.cs">
       <Link>Common\System\Net\Configuration.Certificates.cs</Link>
     </Compile>
