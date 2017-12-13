@@ -256,209 +256,213 @@ namespace System.Numerics
         {
         }
 
-        public BigInteger(ReadOnlySpan<byte> value, bool isUnsigned=false, bool isBigEndian=false)
+        public unsafe BigInteger(ReadOnlySpan<byte> value, bool isUnsigned=false, bool isBigEndian=false)
         {
-            int byteCount = value.Length;
-
-            bool isNegative;
-            if (byteCount > 0)
+            fixed (byte* valuePtr = &value.DangerousGetPinnableReference())
             {
-                byte mostSignificantByte = isBigEndian ? value[0] : value[byteCount - 1];
-                isNegative = (mostSignificantByte & 0x80) != 0 && !isUnsigned;
+                var valueSpan = new Span<byte>(valuePtr, value.Length);
+                int byteCount = valueSpan.Length;
 
-                if (mostSignificantByte == 0)
+                bool isNegative;
+                if (byteCount > 0)
                 {
-                    // Try to conserve space as much as possible by checking for wasted leading byte[] entries 
+                    byte mostSignificantByte = isBigEndian ? valueSpan[0] : valueSpan[byteCount - 1];
+                    isNegative = (mostSignificantByte & 0x80) != 0 && !isUnsigned;
+
+                    if (mostSignificantByte == 0)
+                    {
+                        // Try to conserve space as much as possible by checking for wasted leading byte[] entries 
+                        if (isBigEndian)
+                        {
+                            int offset = 1;
+
+                            while (offset < byteCount && valueSpan[offset] == 0)
+                            {
+                                offset++;
+                            }
+
+                            valueSpan = valueSpan.Slice(offset);
+                            byteCount = valueSpan.Length;
+                        }
+                        else
+                        {
+                            byteCount -= 2;
+
+                            while (byteCount >= 0 && valueSpan[byteCount] == 0)
+                            {
+                                byteCount--;
+                            }
+
+                            byteCount++;
+                        }
+                    }
+                }
+                else
+                {
+                    isNegative = false;
+                }
+
+                if (byteCount == 0)
+                {
+                    // BigInteger.Zero
+                    _sign = 0;
+                    _bits = null;
+                    AssertValid();
+                    return;
+                }
+
+                if (byteCount <= 4)
+                {
+                    _sign = isNegative ? unchecked((int)0xffffffff) : 0;
+
                     if (isBigEndian)
                     {
-                        int offset = 1;
-
-                        while (offset < byteCount && value[offset] == 0)
+                        for (int i = 0; i < byteCount; i++)
                         {
-                            offset++;
+                            _sign = (_sign << 8) | valueSpan[i];
                         }
-
-                        value = value.Slice(offset);
-                        byteCount = value.Length;
                     }
                     else
                     {
-                        byteCount -= 2;
-
-                        while (byteCount >= 0 && value[byteCount] == 0)
+                        for (int i = byteCount - 1; i >= 0; i--)
                         {
-                            byteCount--;
+                            _sign = (_sign << 8) | valueSpan[i];
                         }
-
-                        byteCount++;
                     }
-                }
-            }
-            else
-            {
-                isNegative = false;
-            }
 
-            if (byteCount == 0)
-            {
-                // BigInteger.Zero
-                _sign = 0;
-                _bits = null;
-                AssertValid();
-                return;
-            }
-
-            if (byteCount <= 4)
-            {
-                _sign = isNegative ? unchecked((int)0xffffffff) : 0;
-
-                if (isBigEndian)
-                {
-                    for (int i = 0; i < byteCount; i++)
+                    _bits = null;
+                    if (_sign < 0 && !isNegative)
                     {
-                        _sign = (_sign << 8) | value[i];
+                        // Int32 overflow
+                        // Example: Int64 value 2362232011 (0xCB, 0xCC, 0xCC, 0x8C, 0x0)
+                        // can be naively packed into 4 bytes (due to the leading 0x0)
+                        // it overflows into the int32 sign bit
+                        _bits = new uint[1] { unchecked((uint)_sign) };
+                        _sign = +1;
+                    }
+                    if (_sign == int.MinValue)
+                    {
+                        this = s_bnMinInt;
                     }
                 }
                 else
                 {
-                    for (int i = byteCount - 1; i >= 0; i--)
+                    int unalignedBytes = byteCount % 4;
+                    int dwordCount = byteCount / 4 + (unalignedBytes == 0 ? 0 : 1);
+                    uint[] val = new uint[dwordCount];
+                    int byteCountMinus1 = byteCount - 1;
+
+                    // Copy all dwords, except don't do the last one if it's not a full four bytes
+                    int curDword, curByte;
+
+                    if (isBigEndian)
                     {
-                        _sign = (_sign << 8) | value[i];
-                    }
-                }
-
-                _bits = null;
-                if (_sign < 0 && !isNegative)
-                {
-                    // Int32 overflow
-                    // Example: Int64 value 2362232011 (0xCB, 0xCC, 0xCC, 0x8C, 0x0)
-                    // can be naively packed into 4 bytes (due to the leading 0x0)
-                    // it overflows into the int32 sign bit
-                    _bits = new uint[1] { unchecked((uint)_sign) };
-                    _sign = +1;
-                }
-                if (_sign == int.MinValue)
-                {
-                    this = s_bnMinInt;
-                }
-            }
-            else
-            {
-                int unalignedBytes = byteCount % 4;
-                int dwordCount = byteCount / 4 + (unalignedBytes == 0 ? 0 : 1);
-                uint[] val = new uint[dwordCount];
-                int byteCountMinus1 = byteCount - 1;
-
-                // Copy all dwords, except don't do the last one if it's not a full four bytes
-                int curDword, curByte;
-
-                if (isBigEndian)
-                {
-                    curByte = byteCount - sizeof(int);
-                    for (curDword = 0; curDword < dwordCount - (unalignedBytes == 0 ? 0 : 1); curDword++)
-                    {
-                        for (int byteInDword = 0; byteInDword < 4; byteInDword++)
+                        curByte = byteCount - sizeof(int);
+                        for (curDword = 0; curDword < dwordCount - (unalignedBytes == 0 ? 0 : 1); curDword++)
                         {
-                            byte curByteValue = value[curByte];
-                            val[curDword] = (val[curDword] << 8) | curByteValue;
-                            curByte++;
+                            for (int byteInDword = 0; byteInDword < 4; byteInDword++)
+                            {
+                                byte curByteValue = valueSpan[curByte];
+                                val[curDword] = (val[curDword] << 8) | curByteValue;
+                                curByte++;
+                            }
+
+                            curByte -= 8;
+                        }
+                    }
+                    else
+                    {
+                        curByte = sizeof(int) - 1;
+                        for (curDword = 0; curDword < dwordCount - (unalignedBytes == 0 ? 0 : 1); curDword++)
+                        {
+                            for (int byteInDword = 0; byteInDword < 4; byteInDword++)
+                            {
+                                byte curByteValue = valueSpan[curByte];
+                                val[curDword] = (val[curDword] << 8) | curByteValue;
+                                curByte--;
+                            }
+
+                            curByte += 8;
+                        }
+                    }
+
+                    // Copy the last dword specially if it's not aligned
+                    if (unalignedBytes != 0)
+                    {
+                        if (isNegative)
+                        {
+                            val[dwordCount - 1] = 0xffffffff;
                         }
 
-                        curByte -= 8;
-                    }
-                }
-                else
-                {
-                    curByte = sizeof(int) - 1;
-                    for (curDword = 0; curDword < dwordCount - (unalignedBytes == 0 ? 0 : 1); curDword++)
-                    {
-                        for (int byteInDword = 0; byteInDword < 4; byteInDword++)
+                        if (isBigEndian)
                         {
-                            byte curByteValue = value[curByte];
-                            val[curDword] = (val[curDword] << 8) | curByteValue;
-                            curByte--;
+                            for (curByte = 0; curByte < unalignedBytes; curByte++)
+                            {
+                                byte curByteValue = valueSpan[curByte];
+                                val[curDword] = (val[curDword] << 8) | curByteValue;
+                            }
                         }
-
-                        curByte += 8;
+                        else
+                        {
+                            for (curByte = byteCountMinus1; curByte >= byteCount - unalignedBytes; curByte--)
+                            {
+                                byte curByteValue = valueSpan[curByte];
+                                val[curDword] = (val[curDword] << 8) | curByteValue;
+                            }
+                        }
                     }
-                }
 
-                // Copy the last dword specially if it's not aligned
-                if (unalignedBytes != 0)
-                {
                     if (isNegative)
                     {
-                        val[dwordCount - 1] = 0xffffffff;
-                    }
+                        NumericsHelpers.DangerousMakeTwosComplement(val); // Mutates val
 
-                    if (isBigEndian)
-                    {
-                        for (curByte = 0; curByte < unalignedBytes; curByte++)
+                        // Pack _bits to remove any wasted space after the twos complement
+                        int len = val.Length - 1;
+                        while (len >= 0 && val[len] == 0) len--;
+                        len++;
+
+                        if (len == 1)
                         {
-                            byte curByteValue = value[curByte];
-                            val[curDword] = (val[curDword] << 8) | curByteValue;
-                        }
-                    }
-                    else
-                    {
-                        for (curByte = byteCountMinus1; curByte >= byteCount - unalignedBytes; curByte--)
-                        {
-                            byte curByteValue = value[curByte];
-                            val[curDword] = (val[curDword] << 8) | curByteValue;
-                        }
-                    }
-                }
-
-                if (isNegative)
-                {
-                    NumericsHelpers.DangerousMakeTwosComplement(val); // Mutates val
-
-                    // Pack _bits to remove any wasted space after the twos complement
-                    int len = val.Length - 1;
-                    while (len >= 0 && val[len] == 0) len--;
-                    len++;
-
-                    if (len == 1)
-                    {
-                        switch (val[0])
-                        {
-                            case 1: // abs(-1)
-                                this = s_bnMinusOneInt;
-                                return;
-
-                            case kuMaskHighBit: // abs(Int32.MinValue)
-                                this = s_bnMinInt;
-                                return;
-
-                            default:
-                                if (unchecked((int)val[0]) > 0)
-                                {
-                                    _sign = (-1) * ((int)val[0]);
-                                    _bits = null;
-                                    AssertValid();
+                            switch (val[0])
+                            {
+                                case 1: // abs(-1)
+                                    this = s_bnMinusOneInt;
                                     return;
-                                }
 
-                                break;
+                                case kuMaskHighBit: // abs(Int32.MinValue)
+                                    this = s_bnMinInt;
+                                    return;
+
+                                default:
+                                    if (unchecked((int)val[0]) > 0)
+                                    {
+                                        _sign = (-1) * ((int)val[0]);
+                                        _bits = null;
+                                        AssertValid();
+                                        return;
+                                    }
+
+                                    break;
+                            }
                         }
-                    }
 
-                    if (len != val.Length)
-                    {
-                        _sign = -1;
-                        _bits = new uint[len];
-                        Array.Copy(val, 0, _bits, 0, len);
+                        if (len != val.Length)
+                        {
+                            _sign = -1;
+                            _bits = new uint[len];
+                            Array.Copy(val, 0, _bits, 0, len);
+                        }
+                        else
+                        {
+                            _sign = -1;
+                            _bits = val;
+                        }
                     }
                     else
                     {
-                        _sign = -1;
+                        _sign = +1;
                         _bits = val;
                     }
-                }
-                else
-                {
-                    _sign = +1;
-                    _bits = val;
                 }
             }
             AssertValid();
