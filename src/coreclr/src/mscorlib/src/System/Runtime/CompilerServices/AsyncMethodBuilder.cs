@@ -20,6 +20,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Text;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.CompilerServices
 {

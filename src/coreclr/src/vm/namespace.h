@@ -33,6 +33,7 @@
 #define g_WinRTNS           g_InteropNS ".WindowsRuntime"
 #endif // FEATURE_COMINTEROP
 
+#define g_InternalCompilerServicesNS "Internal.Runtime.CompilerServices"
 #define g_CompilerServicesNS g_RuntimeNS ".CompilerServices"
 
 #define g_ConstrainedExecutionNS g_RuntimeNS ".ConstrainedExecution"

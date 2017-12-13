@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Diagnostics;
 using System.Reflection.Emit;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
