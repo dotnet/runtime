@@ -20,13 +20,25 @@ namespace System
         public static extern float Acos(float x);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float Acosh(float x);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Asin(float x);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float Asinh(float x);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Atan(float x);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Atan2(float y, float x);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float Atanh(float x);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float Cbrt(float x);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Ceiling(float x);
