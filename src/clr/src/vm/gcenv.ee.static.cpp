@@ -6,7 +6,6 @@
 #include "gcenv.h"
 #include "../gc/env/gcenv.ee.h"
 #include "threadsuspend.h"
-#include "nativeoverlapped.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"

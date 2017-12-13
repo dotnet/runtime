@@ -25,6 +25,9 @@
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
 #endif // FEATURE_COMINTEROP
+#ifndef FEATURE_REDHAWK
+#include "nativeoverlapped.h"
+#endif // FEATURE_REDHAWK
 #endif // BUILD_AS_STANDALONE
 
 HandleTableMap g_HandleTableMap;
@@ -274,23 +277,40 @@ void CALLBACK PinObject(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo, ui
     _ASSERTE(lp2);
     promote_func* callback = (promote_func*) lp2;
     callback(pRef, (ScanContext *)lp1, GC_CALL_PINNED);
-}
 
-void CALLBACK AsyncPinObject(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo, uintptr_t lp1, uintptr_t lp2)
-{
-    UNREFERENCED_PARAMETER(pExtraInfo);
+#ifndef FEATURE_REDHAWK
+    Object * pPinnedObj = *pRef;
 
-    LOG((LF_GC, LL_WARNING, LOG_HANDLE_OBJECT_CLASS("WARNING: ", pObjRef, "causes (async) pinning of ", *pObjRef)));
-
-    Object **pRef = (Object **)pObjRef;
-    _ASSERTE(lp2);
-    promote_func* callback = (promote_func*)lp2;
-    callback(pRef, (ScanContext *)lp2, GC_CALL_PINNED);
-    Object* pPinnedObj = *pRef;
-    if (!HndIsNullOrDestroyedHandle(pPinnedObj))
+    if (!HndIsNullOrDestroyedHandle(pPinnedObj) && pPinnedObj->GetGCSafeMethodTable() == g_pOverlappedDataClass)
     {
-        GCToEEInterface::WalkAsyncPinnedForPromotion(pPinnedObj, (ScanContext *)lp1, callback);
+        // reporting the pinned user objects
+        OverlappedDataObject *pOverlapped = (OverlappedDataObject *)pPinnedObj;
+        if (pOverlapped->m_userObject != NULL)
+        {
+            //callback(OBJECTREF_TO_UNCHECKED_OBJECTREF(pOverlapped->m_userObject), (ScanContext *)lp1, GC_CALL_PINNED);
+            if (pOverlapped->m_isArray)
+            {
+                pOverlapped->m_userObjectInternal = static_cast<void*>(OBJECTREFToObject(pOverlapped->m_userObject));
+                ArrayBase* pUserObject = (ArrayBase*)OBJECTREFToObject(pOverlapped->m_userObject);
+                Object **ppObj = (Object**)pUserObject->GetDataPtr(TRUE);
+                size_t num = pUserObject->GetNumComponents();
+                for (size_t i = 0; i < num; i ++)
+                {
+                    callback(ppObj + i, (ScanContext *)lp1, GC_CALL_PINNED);
+                }
+            }
+            else
+            {
+                callback(&OBJECTREF_TO_UNCHECKED_OBJECTREF(pOverlapped->m_userObject), (ScanContext *)lp1, GC_CALL_PINNED);
+            }
+        }
+
+        if (pOverlapped->GetAppDomainId() !=  DefaultADID && pOverlapped->GetAppDomainIndex().m_dwIndex == DefaultADID)
+        {
+            OverlappedDataObject::MarkCleanupNeededFromGC();
+        }
     }
+#endif // !FEATURE_REDHAWK
 }
 
 
@@ -404,12 +424,14 @@ void CALLBACK UpdatePointer(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo
  */
 void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo, uintptr_t lp1, uintptr_t lp2)
 {
+#ifndef FEATURE_REDHAWK
     CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
+#endif // FEATURE_REDHAWK
     UNREFERENCED_PARAMETER(pExtraInfo);
     handle_scan_fn fn = (handle_scan_fn)lp2;
 
@@ -1073,12 +1095,7 @@ void Ref_TracePinningRoots(uint32_t condemned, uint32_t maxgen, ScanContext* sc,
                         sc->pCurrentDomain = SystemDomain::GetAppDomainAtIndex(HndGetHandleTableADIndex(hTable));
                     }
 #endif //FEATURE_APPDOMAIN_RESOURCE_MONITORING
-
-                    // Pinned handles and async pinned handles are scanned in separate passes, since async pinned
-                    // handles may require a callback into the EE in order to fully trace an async pinned
-                    // object's object graph.
-                    HndScanHandlesForGC(hTable, PinObject, uintptr_t(sc), uintptr_t(fn), &types[0], 1, condemned, maxgen, flags);
-                    HndScanHandlesForGC(hTable, AsyncPinObject, uintptr_t(sc), uintptr_t(fn), &types[1], 1, condemned, maxgen, flags);
+                    HndScanHandlesForGC(hTable, PinObject, uintptr_t(sc), uintptr_t(fn), types, _countof(types), condemned, maxgen, flags);
                 }
             }
         walk = walk->pNext;
