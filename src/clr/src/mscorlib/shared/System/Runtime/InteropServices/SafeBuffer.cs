@@ -68,6 +68,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Internal.Runtime.CompilerServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Runtime.InteropServices
