@@ -253,6 +253,7 @@ namespace Mono.Linker.Steps {
 
 			Annotations.Mark (type);
 			Annotations.Push (type);
+			Annotations.AddDirectDependency (this, type);
 
 			if (type.IsNested) {
 				var parent = type;
@@ -410,6 +411,7 @@ namespace Mono.Linker.Steps {
 		void MarkMethod (MethodDefinition method)
 		{
 			Annotations.Mark (method);
+			Annotations.AddDirectDependency (this, method);
 			Annotations.SetAction (method, MethodAction.Parse);
 		}
 

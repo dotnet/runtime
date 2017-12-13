@@ -316,6 +316,17 @@ namespace Mono.Linker {
 			return slots;
 		}
 
+		public void AddDirectDependency (object b, object e)
+		{
+			if (writer == null)
+				return;
+
+			writer.WriteStartElement ("edge");
+			writer.WriteAttributeString ("b", TokenString (b));
+			writer.WriteAttributeString ("e", TokenString (e));
+			writer.WriteEndElement ();
+		}
+
 		public void AddDependency (object o)
 		{
 			if (writer == null)
