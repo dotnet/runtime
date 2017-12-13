@@ -2513,7 +2513,7 @@ sgen_ensure_free_space (size_t size, int generation)
  * LOCKING: Assumes the GC lock is held.
  */
 static void
-sgen_perform_collection_inner (size_t requested_size, int generation_to_collect, const char *reason, gboolean wait_to_finish, gboolean stw)
+sgen_perform_collection_inner (size_t requested_size, int generation_to_collect, const char *reason, gboolean forced_serial, gboolean stw)
 {
 	TV_DECLARE (gc_total_start);
 	TV_DECLARE (gc_total_end);
@@ -2522,12 +2522,12 @@ sgen_perform_collection_inner (size_t requested_size, int generation_to_collect,
 	const char *overflow_reason = NULL;
 	gboolean finish_concurrent = concurrent_collection_in_progress && (major_should_finish_concurrent_collection () || generation_to_collect == GENERATION_OLD);
 
-	binary_protocol_collection_requested (generation_to_collect, requested_size, wait_to_finish ? 1 : 0);
+	binary_protocol_collection_requested (generation_to_collect, requested_size, forced_serial ? 1 : 0);
 
 	SGEN_ASSERT (0, generation_to_collect == GENERATION_NURSERY || generation_to_collect == GENERATION_OLD, "What generation is this?");
 
 	if (stw)
-		sgen_stop_world (generation_to_collect, wait_to_finish || !major_collector.is_concurrent);
+		sgen_stop_world (generation_to_collect, forced_serial || !major_collector.is_concurrent);
 	else
 		SGEN_ASSERT (0, sgen_is_world_stopped (), "We can only collect if the world is stopped");
 		
@@ -2545,15 +2545,17 @@ sgen_perform_collection_inner (size_t requested_size, int generation_to_collect,
 			overflow_reason = "Minor overflow";
 		}
 	} else if (finish_concurrent) {
-		major_finish_concurrent_collection (wait_to_finish);
+		major_finish_concurrent_collection (forced_serial);
 		oldest_generation_collected = GENERATION_OLD;
+		if (forced_serial && generation_to_collect == GENERATION_OLD)
+			major_do_collection (reason, FALSE, TRUE);
 	} else {
 		SGEN_ASSERT (0, generation_to_collect == GENERATION_OLD, "We should have handled nursery collections above");
-		if (major_collector.is_concurrent && !wait_to_finish) {
+		if (major_collector.is_concurrent && !forced_serial) {
 			collect_nursery ("Concurrent start", FALSE, NULL);
 			major_start_concurrent_collection (reason);
 			oldest_generation_collected = GENERATION_NURSERY;
-		} else if (major_do_collection (reason, FALSE, wait_to_finish)) {
+		} else if (major_do_collection (reason, FALSE, forced_serial)) {
 			overflow_generation_to_collect = GENERATION_NURSERY;
 			overflow_reason = "Excessive pinning";
 		}
@@ -2570,7 +2572,7 @@ sgen_perform_collection_inner (size_t requested_size, int generation_to_collect,
 		if (overflow_generation_to_collect == GENERATION_NURSERY)
 			collect_nursery (overflow_reason, TRUE, NULL);
 		else
-			major_do_collection (overflow_reason, TRUE, wait_to_finish);
+			major_do_collection (overflow_reason, TRUE, forced_serial);
 
 		oldest_generation_collected = MAX (oldest_generation_collected, overflow_generation_to_collect);
 	}
@@ -2589,7 +2591,7 @@ sgen_perform_collection_inner (size_t requested_size, int generation_to_collect,
 	time_max = MAX (time_max, TV_ELAPSED (gc_total_start, gc_total_end));
 
 	if (stw)
-		sgen_restart_world (oldest_generation_collected, wait_to_finish || !major_collector.is_concurrent);
+		sgen_restart_world (oldest_generation_collected, forced_serial || !major_collector.is_concurrent);
 }
 
 #ifdef HOST_WASM
@@ -2613,11 +2615,11 @@ gc_pump_callback (void)
 #endif
 
 void
-sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason, gboolean wait_to_finish, gboolean stw)
+sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason, gboolean forced_serial, gboolean stw)
 {
 #ifdef HOST_WASM
 	g_assert (stw); //can't handle non-stw mode (IE, domain unload)
-	//we ignore wait_to_finish
+	//we ignore forced_serial
 
 	//There's a window for racing where we're executing other bg jobs before the GC, they trigger a GC request and it overrides this one.
 	//I belive this case to be benign as it will, in the worst case, upgrade a minor to a major collection.
@@ -2630,7 +2632,7 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 
 	degraded_mode = 1; //enable degraded mode so allocation can continue
 #else
-	sgen_perform_collection_inner (requested_size, generation_to_collect, reason, wait_to_finish, stw);
+	sgen_perform_collection_inner (requested_size, generation_to_collect, reason, forced_serial, stw);
 #endif
 }
 /*
