@@ -29,7 +29,7 @@ namespace System.Memory.Tests
         [InlineData(1000)]
         public void SpanBinarySearch_Int_MiddleIndex(int size)
         {
-            BenchmarkAndAssert(size, size / 2, size / 2);
+            BenchmarkAndAssert(size, (size - 1) / 2, (size - 1) / 2);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
@@ -80,7 +80,7 @@ namespace System.Memory.Tests
         [InlineData(1000)]
         public void SpanBinarySearch_String_MiddleIndex(int size)
         {
-            BenchmarkAndAssert(size, (size / 2).ToString(NumberFormat), size / 2);
+            BenchmarkAndAssert(size, ((size - 1) / 2).ToString(NumberFormat), (size - 1) / 2);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
