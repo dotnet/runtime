@@ -100,6 +100,10 @@ namespace System
         public static int LastIndexOf<T>(this Span<T> span, T value) where T : IEquatable<T> { throw null; }
         public static int LastIndexOf<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T> { throw null; }
 
+        public static int LastIndexOfAny<T>(this Span<T> span, T value0, T value1) where T : IEquatable<T> { throw null; }
+        public static int LastIndexOfAny<T>(this Span<T> span, T value0, T value1, T value2) where T : IEquatable<T> { throw null; }
+        public static int LastIndexOfAny<T>(this Span<T> span, ReadOnlySpan<T> values) where T : IEquatable<T> { throw null; }
+
         public static bool SequenceEqual<T>(this Span<T> first, ReadOnlySpan<T> second) where T : IEquatable<T> { throw null; }
 
         public static bool StartsWith<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T> { throw null; }
@@ -133,6 +137,10 @@ namespace System
 
         public static int LastIndexOf<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T> { throw null; }
         public static int LastIndexOf<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : IEquatable<T> { throw null; }
+
+        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1) where T : IEquatable<T> { throw null; }
+        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2) where T : IEquatable<T> { throw null; }
+        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values) where T : IEquatable<T> { throw null; }
 
         public static bool SequenceEqual<T>(this ReadOnlySpan<T> first, ReadOnlySpan<T> second) where T : IEquatable<T> { throw null; }
 
@@ -354,7 +362,7 @@ namespace System.Buffers
     {
         public const byte MaxPrecision = 99;
         public const byte NoPrecision = 255;
-        public StandardFormat(char symbol, byte precision= 255) => throw null;
+        public StandardFormat(char symbol, byte precision = 255) => throw null;
         public bool HasPrecision => throw null;
         public bool IsDefault => throw null;
         public byte Precision => throw null;
