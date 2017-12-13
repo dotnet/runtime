@@ -1441,6 +1441,10 @@ void EEJitManager::SetCpuInfo()
     }
 #endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
 
+#if defined(_TARGET_ARM64_) && defined(FEATURE_PAL)
+    PAL_GetJitCpuCapabilityFlags(&CPUCompileFlags);
+#endif
+
 #if defined(_TARGET_ARM64_)
     static ConfigDWORD fFeatureSIMD;
     if (fFeatureSIMD.val(CLRConfig::EXTERNAL_FeatureSIMD) != 0)
