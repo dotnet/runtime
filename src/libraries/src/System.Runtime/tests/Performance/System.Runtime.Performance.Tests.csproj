@@ -15,6 +15,7 @@
     <Compile Include="Perf.Double.cs" />
     <Compile Include="Perf.Enum.cs" />
     <Compile Include="Perf.Guid.cs" />
+    <Compile Include="Perf.HashCode.cs" />
     <Compile Include="Perf.Object.cs" />
     <Compile Include="Perf.String.cs" />
     <Compile Include="Perf.TimeSpan.cs" />
