@@ -264,7 +264,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
                 return Vector128DoubleHandle;
             case TYP_INT:
                 return Vector128IntHandle;
-            case TYP_CHAR:
             case TYP_USHORT:
                 return Vector128UShortHandle;
             case TYP_UBYTE:
@@ -293,7 +292,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
                 return Vector256DoubleHandle;
             case TYP_INT:
                 return Vector256IntHandle;
-            case TYP_CHAR:
             case TYP_USHORT:
                 return Vector256UShortHandle;
             case TYP_UBYTE:

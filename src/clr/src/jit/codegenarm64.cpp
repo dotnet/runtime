@@ -3749,7 +3749,7 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
     // NYI for unsupported base types
     if (simdNode->gtSIMDBaseType != TYP_INT && simdNode->gtSIMDBaseType != TYP_LONG &&
         simdNode->gtSIMDBaseType != TYP_FLOAT && simdNode->gtSIMDBaseType != TYP_DOUBLE &&
-        simdNode->gtSIMDBaseType != TYP_CHAR && simdNode->gtSIMDBaseType != TYP_UBYTE &&
+        simdNode->gtSIMDBaseType != TYP_USHORT && simdNode->gtSIMDBaseType != TYP_UBYTE &&
         simdNode->gtSIMDBaseType != TYP_SHORT && simdNode->gtSIMDBaseType != TYP_BYTE &&
         simdNode->gtSIMDBaseType != TYP_UINT && simdNode->gtSIMDBaseType != TYP_ULONG)
     {
@@ -3859,7 +3859,7 @@ insOpts CodeGen::genGetSimdInsOpt(bool is16B, var_types elementType)
         case TYP_INT:
             result = is16B ? INS_OPTS_4S : INS_OPTS_2S;
             break;
-        case TYP_CHAR:
+        case TYP_USHORT:
         case TYP_SHORT:
             result = is16B ? INS_OPTS_8H : INS_OPTS_4H;
             break;
@@ -4329,7 +4329,7 @@ void CodeGen::genSIMDIntrinsicNarrow(GenTreeSIMD* simdNode)
                 opt  = INS_OPTS_4H;
                 opt2 = INS_OPTS_8H;
                 break;
-            case TYP_CHAR:
+            case TYP_USHORT:
             case TYP_SHORT:
                 opt  = INS_OPTS_8B;
                 opt2 = INS_OPTS_16B;
