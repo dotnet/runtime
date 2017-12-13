@@ -102,15 +102,17 @@ static guint64 time_restart_world;
 
 /* LOCKING: assumes the GC lock is held */
 void
-sgen_client_stop_world (int generation)
+sgen_client_stop_world (int generation, gboolean serial_collection)
 {
 	TV_DECLARE (end_handshake);
 
 	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_PRE_STOP_WORLD, generation));
+	MONO_PROFILER_RAISE (gc_event2, (MONO_GC_EVENT_PRE_STOP_WORLD, generation, serial_collection));
 
 	acquire_gc_locks ();
 
 	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED, generation));
+	MONO_PROFILER_RAISE (gc_event2, (MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED, generation, serial_collection));
 
 	/* We start to scan after locks are taking, this ensures we won't be interrupted. */
 	sgen_process_togglerefs ();
@@ -126,6 +128,7 @@ sgen_client_stop_world (int generation)
 	SGEN_LOG (3, "world stopped");
 
 	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_POST_STOP_WORLD, generation));
+	MONO_PROFILER_RAISE (gc_event2, (MONO_GC_EVENT_POST_STOP_WORLD, generation, serial_collection));
 
 	TV_GETTIME (end_handshake);
 	time_stop_world += TV_ELAPSED (stop_world_time, end_handshake);
@@ -137,7 +140,7 @@ sgen_client_stop_world (int generation)
 
 /* LOCKING: assumes the GC lock is held */
 void
-sgen_client_restart_world (int generation, gint64 *stw_time)
+sgen_client_restart_world (int generation, gboolean serial_collection, gint64 *stw_time)
 {
 	TV_DECLARE (end_sw);
 	TV_DECLARE (start_handshake);
@@ -149,6 +152,7 @@ sgen_client_restart_world (int generation, gint64 *stw_time)
 		mono_sgen_gc_event_moves ();
 
 	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_PRE_START_WORLD, generation));
+	MONO_PROFILER_RAISE (gc_event2, (MONO_GC_EVENT_PRE_START_WORLD, generation, serial_collection));
 
 	FOREACH_THREAD (info) {
 		info->client_info.stack_start = NULL;
@@ -168,6 +172,7 @@ sgen_client_restart_world (int generation, gint64 *stw_time)
 	SGEN_LOG (2, "restarted (pause time: %d usec, max: %d)", (int)usec, (int)max_pause_usec);
 
 	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_POST_START_WORLD, generation));
+	MONO_PROFILER_RAISE (gc_event2, (MONO_GC_EVENT_POST_START_WORLD, generation, serial_collection));
 
 	/*
 	 * We must release the thread info suspend lock after doing
@@ -182,6 +187,7 @@ sgen_client_restart_world (int generation, gint64 *stw_time)
 	release_gc_locks ();
 
 	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_POST_START_WORLD_UNLOCKED, generation));
+	MONO_PROFILER_RAISE (gc_event2, (MONO_GC_EVENT_POST_START_WORLD_UNLOCKED, generation, serial_collection));
 
 	*stw_time = usec;
 }

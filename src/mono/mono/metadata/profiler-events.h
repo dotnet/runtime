@@ -83,6 +83,7 @@ MONO_PROFILER_EVENT_1(exception_throw, ExceptionThrow, MonoObject *, exception)
 MONO_PROFILER_EVENT_4(exception_clause, ExceptionClause, MonoMethod *, method, uint32_t, index, MonoExceptionEnum, type, MonoObject *, exception)
 
 MONO_PROFILER_EVENT_2(gc_event, GCEvent, MonoProfilerGCEvent, event, uint32_t, generation)
+MONO_PROFILER_EVENT_3(gc_event2, GCEvent2, MonoProfilerGCEvent, event, uint32_t, generation, mono_bool, is_serial)
 MONO_PROFILER_EVENT_1(gc_allocation, GCAllocation, MonoObject *, object)
 MONO_PROFILER_EVENT_2(gc_moves, GCMoves, MonoObject *const *, objects, uint64_t, count)
 MONO_PROFILER_EVENT_1(gc_resize, GCResize, uintptr_t, size)

@@ -869,7 +869,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 
 	binary_protocol_domain_unload_begin (domain);
 
-	sgen_stop_world (0);
+	sgen_stop_world (0, FALSE);
 
 	if (sgen_concurrent_collection_in_progress ())
 		sgen_perform_collection (0, GENERATION_OLD, "clear domain", TRUE, FALSE);
@@ -937,7 +937,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 		sgen_object_layout_dump (stdout);
 	}
 
-	sgen_restart_world (0);
+	sgen_restart_world (0, FALSE);
 
 	binary_protocol_domain_unload_end (domain);
 	binary_protocol_flush_buffers (FALSE);
@@ -3346,6 +3346,7 @@ sgen_client_binary_protocol_collection_begin (int minor_gc_count, int generation
 	MONO_GC_BEGIN (generation);
 
 	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_START, generation));
+	MONO_PROFILER_RAISE (gc_event2, (MONO_GC_EVENT_START, generation, generation == GENERATION_OLD && concurrent_collection_in_progress));
 
 	if (!pseudo_roots_registered) {
 		pseudo_roots_registered = TRUE;
@@ -3368,6 +3369,7 @@ sgen_client_binary_protocol_collection_end (int minor_gc_count, int generation, 
 	MONO_GC_END (generation);
 
 	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_END, generation));
+	MONO_PROFILER_RAISE (gc_event2, (MONO_GC_EVENT_END, generation, generation == GENERATION_OLD && concurrent_collection_in_progress));
 }
 
 #ifdef HOST_WASM

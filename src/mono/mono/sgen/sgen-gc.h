@@ -868,9 +868,9 @@ size_t sgen_gc_get_total_heap_allocation (void);
 
 /* STW */
 
-void sgen_stop_world (int generation)
+void sgen_stop_world (int generation, gboolean serial_collection)
 	MONO_PERMIT (need (sgen_gc_locked), use (sgen_stop_world), grant (sgen_world_stopped), revoke (sgen_stop_world));
-void sgen_restart_world (int generation)
+void sgen_restart_world (int generation, gboolean serial_collection)
 	MONO_PERMIT (need (sgen_gc_locked), use (sgen_world_stopped), revoke (sgen_world_stopped), grant (sgen_stop_world));
 gboolean sgen_is_world_stopped (void);
 

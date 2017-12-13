@@ -2143,6 +2143,11 @@ major_start_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason,
 {
 	SgenObjectOperations *object_ops_nopar, *object_ops_par = NULL;
 
+	if (concurrent) {
+		g_assert (major_collector.is_concurrent);
+		concurrent_collection_in_progress = TRUE;
+	}
+
 	binary_protocol_collection_begin (mono_atomic_load_i32 (&gc_stats.major_gc_count), GENERATION_OLD);
 
 	current_collection_generation = GENERATION_OLD;
@@ -2153,9 +2158,6 @@ major_start_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason,
 		sgen_cement_reset ();
 
 	if (concurrent) {
-		g_assert (major_collector.is_concurrent);
-		concurrent_collection_in_progress = TRUE;
-
 		object_ops_nopar = &major_collector.major_ops_concurrent_start;
 		if (major_collector.is_parallel)
 			object_ops_par = &major_collector.major_ops_conc_par_start;
@@ -2313,8 +2315,6 @@ major_finish_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason
 	sgen_workers_assert_gray_queue_is_empty (GENERATION_OLD);
 
 	SGEN_ASSERT (0, sgen_workers_all_done (), "Can't have workers working after major collection has finished");
-	if (concurrent_collection_in_progress)
-		concurrent_collection_in_progress = FALSE;
 
 	check_scan_starts ();
 
@@ -2330,6 +2330,9 @@ major_finish_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason
                         time_major_finish_gray_stack - finish_gray_start);
 
 	binary_protocol_collection_end (mono_atomic_load_i32 (&gc_stats.major_gc_count) - 1, GENERATION_OLD, counts.num_scanned_objects, counts.num_unique_scanned_objects);
+
+	if (concurrent_collection_in_progress)
+		concurrent_collection_in_progress = FALSE;
 }
 
 static gboolean
@@ -2524,7 +2527,7 @@ sgen_perform_collection_inner (size_t requested_size, int generation_to_collect,
 	SGEN_ASSERT (0, generation_to_collect == GENERATION_NURSERY || generation_to_collect == GENERATION_OLD, "What generation is this?");
 
 	if (stw)
-		sgen_stop_world (generation_to_collect);
+		sgen_stop_world (generation_to_collect, wait_to_finish || !major_collector.is_concurrent);
 	else
 		SGEN_ASSERT (0, sgen_is_world_stopped (), "We can only collect if the world is stopped");
 		
@@ -2586,7 +2589,7 @@ sgen_perform_collection_inner (size_t requested_size, int generation_to_collect,
 	time_max = MAX (time_max, TV_ELAPSED (gc_total_start, gc_total_end));
 
 	if (stw)
-		sgen_restart_world (oldest_generation_collected);
+		sgen_restart_world (oldest_generation_collected, wait_to_finish || !major_collector.is_concurrent);
 }
 
 #ifdef HOST_WASM
@@ -3785,7 +3788,7 @@ static gboolean world_is_stopped = FALSE;
 
 /* LOCKING: assumes the GC lock is held */
 void
-sgen_stop_world (int generation)
+sgen_stop_world (int generation, gboolean serial_collection)
 {
 	long long major_total = -1, major_marked = -1, los_total = -1, los_marked = -1;
 
@@ -3793,7 +3796,7 @@ sgen_stop_world (int generation)
 
 	binary_protocol_world_stopping (generation, sgen_timestamp (), (gpointer) (gsize) mono_native_thread_id_get ());
 
-	sgen_client_stop_world (generation);
+	sgen_client_stop_world (generation, serial_collection);
 
 	world_is_stopped = TRUE;
 
@@ -3804,7 +3807,7 @@ sgen_stop_world (int generation)
 
 /* LOCKING: assumes the GC lock is held */
 void
-sgen_restart_world (int generation)
+sgen_restart_world (int generation, gboolean serial_collection)
 {
 	long long major_total = -1, major_marked = -1, los_total = -1, los_marked = -1;
 	gint64 stw_time;
@@ -3817,7 +3820,7 @@ sgen_restart_world (int generation)
 
 	world_is_stopped = FALSE;
 
-	sgen_client_restart_world (generation, &stw_time);
+	sgen_client_restart_world (generation, serial_collection, &stw_time);
 
 	binary_protocol_world_restarted (generation, sgen_timestamp ());
 
@@ -3836,10 +3839,10 @@ sgen_is_world_stopped (void)
 void
 sgen_check_whole_heap_stw (void)
 {
-	sgen_stop_world (0);
+	sgen_stop_world (0, FALSE);
 	sgen_clear_nursery_fragments ();
 	sgen_check_whole_heap (TRUE);
-	sgen_restart_world (0);
+	sgen_restart_world (0, FALSE);
 }
 
 gint64

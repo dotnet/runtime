@@ -500,6 +500,7 @@ on_gc_notification (GC_EventType event)
 		break;
 	default:
 		MONO_PROFILER_RAISE (gc_event, (e, 0));
+		MONO_PROFILER_RAISE (gc_event2, (e, 0, TRUE));
 		break;
 	}
 
@@ -507,10 +508,12 @@ on_gc_notification (GC_EventType event)
 	case GC_EVENT_PRE_STOP_WORLD:
 		mono_thread_info_suspend_lock ();
 		MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED, 0));
+		MONO_PROFILER_RAISE (gc_event2, (MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED, 0, TRUE));
 		break;
 	case GC_EVENT_POST_START_WORLD:
 		mono_thread_info_suspend_unlock ();
 		MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_POST_START_WORLD_UNLOCKED, 0));
+		MONO_PROFILER_RAISE (gc_event2, (MONO_GC_EVENT_POST_START_WORLD_UNLOCKED, 0, TRUE));
 		break;
 	default:
 		break;

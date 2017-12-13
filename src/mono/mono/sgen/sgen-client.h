@@ -187,9 +187,9 @@ void sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gbool
  * Stop and restart the world, i.e., all threads that interact with the managed heap.  For
  * single-threaded programs this is a nop.
  */
-void sgen_client_stop_world (int generation)
+void sgen_client_stop_world (int generation, gboolean serial_collection)
     MONO_PERMIT (need (sgen_gc_locked));
-void sgen_client_restart_world (int generation, gint64 *stw_time)
+void sgen_client_restart_world (int generation, gboolean serial_collection, gint64 *stw_time)
     MONO_PERMIT (need (sgen_gc_locked));
 
 /*

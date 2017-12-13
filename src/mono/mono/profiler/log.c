@@ -1303,8 +1303,10 @@ process_heapshot (void)
 #define ALL_GC_EVENTS_MASK (PROFLOG_GC_EVENTS | PROFLOG_GC_MOVE_EVENTS | PROFLOG_GC_ROOT_EVENTS)
 
 static void
-gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation)
+gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation, gboolean is_serial)
 {
+	gboolean is_major = generation == mono_gc_max_generation ();
+
 	if (ENABLED (PROFLOG_GC_EVENTS)) {
 		ENTER_LOG (&gc_events_ctr, logbuffer,
 			EVENT_SIZE /* event */ +
@@ -1326,7 +1328,7 @@ gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation)
 			log_profiler.do_heap_walk = FALSE;
 			break;
 		case MONO_PROFILER_HEAPSHOT_MAJOR:
-			log_profiler.do_heap_walk = generation == mono_gc_max_generation ();
+			log_profiler.do_heap_walk = is_major;
 			break;
 		case MONO_PROFILER_HEAPSHOT_ON_DEMAND:
 			// Handled below.
@@ -1347,8 +1349,13 @@ gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation)
 		 * a shutdown heapshot. Either way, a manually triggered heapshot
 		 * overrides any decision we made in the switch above.
 		 */
-		if (mono_atomic_load_i32 (&log_profiler.heapshot_requested))
+		if (is_major && is_serial && mono_atomic_load_i32 (&log_profiler.heapshot_requested)) {
 			log_profiler.do_heap_walk = TRUE;
+		} else if (log_profiler.do_heap_walk && (!is_major || !is_serial)) {
+			/* Do a heap walk later, when we get invoked from the finalizer in serial mode */
+			trigger_heapshot ();
+			log_profiler.do_heap_walk = FALSE;
+		}
 
 		if (ENABLED (PROFLOG_GC_ROOT_EVENTS) &&
 		    (log_config.always_do_root_report || log_profiler.do_heap_walk))
@@ -1385,7 +1392,7 @@ gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation)
 
 		break;
 	case MONO_GC_EVENT_START:
-		if (generation == mono_gc_max_generation ())
+		if (is_major)
 			log_profiler.gc_count++;
 
 		break;
@@ -1393,6 +1400,7 @@ gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation)
 		mono_profiler_set_gc_roots_callback (log_profiler.handle, NULL);
 
 		if (log_profiler.do_heap_walk) {
+			g_assert (is_major && is_serial);
 			mono_gc_walk_heap (0, gc_reference, NULL);
 
 			ENTER_LOG (&heap_ends_ctr, logbuffer,
@@ -4789,7 +4797,7 @@ mono_profiler_init_log (const char *desc)
 	mono_profiler_set_runtime_shutdown_end_callback (handle, log_shutdown);
 	mono_profiler_set_runtime_initialized_callback (handle, runtime_initialized);
 
-	mono_profiler_set_gc_event_callback (handle, gc_event);
+	mono_profiler_set_gc_event2_callback (handle, gc_event);
 
 	mono_profiler_set_thread_started_callback (handle, thread_start);
 	mono_profiler_set_thread_exited_callback (handle, thread_end);
