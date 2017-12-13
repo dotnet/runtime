@@ -9053,43 +9053,7 @@ void AppDomain::HandleAsyncPinHandles()
     // 4. Then we can delete all AsyncPinHandle marked with READYTOCLEAN.
     IGCHandleStore *pBucketInDefault = SystemDomain::System()->DefaultDomain()->m_handleStore;
 
-    auto clearIfComplete = [](Object* object)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        assert(object != nullptr);
-        if (object->GetGCSafeMethodTable() != g_pOverlappedDataClass)
-        {
-            return;
-        }
-
-        OVERLAPPEDDATAREF overlapped = (OVERLAPPEDDATAREF)(ObjectToOBJECTREF((Object*)object));
-        if (overlapped->HasCompleted())
-        {
-            // IO has finished.  We don't need to pin the user buffer any longer.
-            overlapped->m_userObject = NULL;
-        }
-
-        BashMTForPinnedObject(ObjectToOBJECTREF(object));
-    };
-
-    auto setHandle = [](Object* object, OBJECTHANDLE handle)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        assert(object != nullptr);
-        assert(handle);
-
-        if (object->GetGCSafeMethodTable() != g_pOverlappedDataClass)
-        {
-            return;
-        }
-
-        OverlappedDataObject* overlapped = (OverlappedDataObject*)object;
-        overlapped->m_pinSelf = handle;
-    };
-
-    pBucket->RelocateAsyncPinnedHandles(pBucketInDefault, clearIfComplete, setHandle);
+    pBucket->RelocateAsyncPinnedHandles(pBucketInDefault);
 
     OverlappedDataObject::RequestCleanup();
 }
