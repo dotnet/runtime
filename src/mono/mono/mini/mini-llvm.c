@@ -8750,9 +8750,12 @@ emit_aot_file_info (MonoLLVMModule *module)
 		fields [tindex ++] = LLVMConstNull (eltype);
 		fields [tindex ++] = LLVMConstNull (eltype);
 	}
+	fields [tindex ++] = AddJitGlobal (module, eltype, "weak_field_indexes");
 
-	for (i = 0; i < MONO_AOT_FILE_INFO_NUM_SYMBOLS; ++i)
+	for (i = 0; i < MONO_AOT_FILE_INFO_NUM_SYMBOLS; ++i) {
+		g_assert (fields [2 + i]);
 		fields [2 + i] = LLVMConstBitCast (fields [2 + i], eltype);
+	}
 
 	/* Scalars */
 	fields [tindex ++] = LLVMConstInt (LLVMInt32Type (), info->plt_got_offset_base, FALSE);
