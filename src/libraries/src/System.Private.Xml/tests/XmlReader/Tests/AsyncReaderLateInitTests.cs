@@ -39,10 +39,10 @@ namespace System.Xml.Tests
             }
         }
 
-        [Fact]
-        public static void ReadAfterInitializationWithStreamOnAsyncReaderDoesNotThrow()
+        [Theory, InlineData(true), InlineData(false)]
+        public static void ReadAfterInitializationWithStreamOnAsyncReaderDoesNotThrow(bool async)
         {
-            using (XmlReader reader = XmlReader.Create(GetDummyXmlStream(), new XmlReaderSettings() { Async = true }))
+            using (XmlReader reader = XmlReader.Create(GetDummyXmlStream(), new XmlReaderSettings() { Async = async }))
             {
                 reader.Read();
             }
@@ -57,10 +57,10 @@ namespace System.Xml.Tests
             }
         }
 
-        [Fact]
-        public static void ReadAfterInitializationWithTextReaderOnAsyncReaderDoesNotThrow()
+        [Theory, InlineData(true), InlineData(false)]
+        public static void ReadAfterInitializationWithTextReaderOnAsyncReaderDoesNotThrow(bool async)
         {
-            using (XmlReader reader = XmlReader.Create(GetDummyXmlTextReader(), new XmlReaderSettings() { Async = true }))
+            using (XmlReader reader = XmlReader.Create(GetDummyXmlTextReader(), new XmlReaderSettings() { Async = async }))
             {
                 reader.Read();
             }
@@ -75,14 +75,19 @@ namespace System.Xml.Tests
             }
         }
 
-        [Fact]
+        [Fact, SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".Net Framework throws AggregateException")]
         public static void ReadAfterInitializationWithUriOnAsyncReaderTrows()
         {
             using (XmlReader reader = XmlReader.Create("http://test.test/test.html", new XmlReaderSettings() { Async = true }))
             {
-                AggregateException ae = Assert.Throws<System.AggregateException>(() => reader.Read());
-                Assert.Equal(typeof(System.Net.WebException), ae.InnerException.GetType());
+                Assert.Throws<System.Net.WebException>(() => reader.Read());
             }
+        }
+
+        [Fact]
+        public static void InitializationWithUriOnNonAsyncReaderTrows()
+        {
+            Assert.Throws<System.Net.WebException>(() => XmlReader.Create("http://test.test/test.html", new XmlReaderSettings() { Async = false }));
         }
     }
 }
