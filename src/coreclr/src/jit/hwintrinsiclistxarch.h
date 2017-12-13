@@ -14,9 +14,11 @@
 //                  Intrinsic ID                   Function name                ISA   
 //  SSE Intrinsics          
 HARDWARE_INTRINSIC(SSE_IsSupported,             "get_IsSupported",              SSE)
+HARDWARE_INTRINSIC(SSE_Add,                     "Add",                          SSE)
 
 //  SSE2 Intrinsics 
 HARDWARE_INTRINSIC(SSE2_IsSupported,            "get_IsSupported",              SSE2)
+HARDWARE_INTRINSIC(SSE2_Add,                    "Add",                          SSE2)
 
 //  SSE3 Intrinsics 
 HARDWARE_INTRINSIC(SSE3_IsSupported,            "get_IsSupported",              SSE3)
@@ -33,9 +35,11 @@ HARDWARE_INTRINSIC(SSE42_Crc32,                 "Crc32",                        
 
 //  AVX Intrinsics 
 HARDWARE_INTRINSIC(AVX_IsSupported,             "get_IsSupported",              AVX)
+HARDWARE_INTRINSIC(AVX_Add,                     "Add",                          AVX)
 
 //  AVX2 Intrinsics 
 HARDWARE_INTRINSIC(AVX2_IsSupported,            "get_IsSupported",              AVX2)
+HARDWARE_INTRINSIC(AVX2_Add,                    "Add",                          AVX2)
 
 //  AES Intrinsics 
 HARDWARE_INTRINSIC(AES_IsSupported,             "get_IsSupported",              AES)
