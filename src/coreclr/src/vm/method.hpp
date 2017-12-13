@@ -1010,7 +1010,11 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
+#ifdef FEATURE_DEFAULT_INTERFACES
         return (GetMethodTable()->IsInterface() && !IsStatic() && IsVirtual() && !IsAbstract());
+#else
+        return false;
+#endif // FEATURE_DEFAULT_INTERFACES
     }
 
     inline BOOL HasNonVtableSlot();

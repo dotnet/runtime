@@ -2871,16 +2871,16 @@ MethodTableBuilder::EnumerateClassMethods()
                 BuildMethodTableThrowException(BFA_NONVIRT_AB_METHOD);
             }
         }
-        else if(fIsClassInterface)		
-        {		
+        else if(fIsClassInterface)
+        {
             if (IsMdRTSpecialName(dwMemberAttrs))
-            {		
-                CONSISTENCY_CHECK(CheckPointer(strMethodName));		
-                if (strcmp(strMethodName, COR_CCTOR_METHOD_NAME))		
-                {		
-                    BuildMethodTableThrowException(BFA_NONAB_NONCCTOR_METHOD_ON_INT);		
-                }		
-            }		
+            {
+                CONSISTENCY_CHECK(CheckPointer(strMethodName));
+                if (strcmp(strMethodName, COR_CCTOR_METHOD_NAME))
+                {
+                    BuildMethodTableThrowException(BFA_NONAB_NONCCTOR_METHOD_ON_INT);
+                }
+            }
         }
 
         // Virtual / not virtual
@@ -10681,6 +10681,7 @@ BOOL MethodTableBuilder::HasDefaultInterfaceImplementation(MethodDesc *pDeclMD)
 {
     STANDARD_VM_CONTRACT;
 
+#ifdef FEATURE_DEFAULT_INTERFACES
     // If the interface method is already non-abstract, we are done
     if (pDeclMD->IsDefaultInterfaceMethod())
         return TRUE;
@@ -10710,6 +10711,7 @@ BOOL MethodTableBuilder::HasDefaultInterfaceImplementation(MethodDesc *pDeclMD)
             }
         }
     }
+#endif // FEATURE_DEFAULT_INTERFACES
 
     return FALSE;
 }
