@@ -10175,7 +10175,7 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
                 needsIndirection = false;
                 effectiveVal     = indirTree->Addr()->gtGetOp1();
             }
-            if (effectiveVal->OperIsSIMD())
+            if (effectiveVal->OperIsSIMD() || effectiveVal->OperIsSimdHWIntrinsic())
             {
                 needsIndirection = false;
             }
