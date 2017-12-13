@@ -351,6 +351,8 @@ if (WIN32)
 
   # Temporarily disable incremental link due to incremental linking CFG bug crashing crossgen. 
   # See https://github.com/dotnet/coreclr/issues/12592
+  # This has been fixed in VS 2017 Update 5 but we're keeping this around until everyone is off
+  # the versions that have the bug. The bug manifests itself as a bad crash.
   set(NO_INCREMENTAL_LINKER_FLAGS "/INCREMENTAL:NO")  
 
   # Debug build specific flags
