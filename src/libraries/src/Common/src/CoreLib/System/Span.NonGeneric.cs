@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using Internal.Runtime.CompilerServices;
 
 #if BIT64
 using nuint = System.UInt64;
