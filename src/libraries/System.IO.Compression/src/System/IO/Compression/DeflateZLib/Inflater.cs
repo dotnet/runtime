@@ -39,7 +39,7 @@ namespace System.IO.Compression
         /// <summary>
         /// Returns true if the end of the stream has been reached.
         /// </summary>
-        public bool Finished() => _finished && _zlibStream.AvailIn == 0 && _zlibStream.AvailOut == 0;
+        public bool Finished() => _finished;
 
         public unsafe bool Inflate(out byte b)
         {
