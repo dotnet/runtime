@@ -1833,6 +1833,12 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 			sgen_resize_nursery (FALSE);
 	}
 
+	/*
+	 * This is used by the profiler to report GC roots.
+	 * Invariants: Heap's finished, no more moves left, objects still pinned in nursery.
+	 */
+	sgen_client_collecting_minor_report_roots (&fin_ready_queue, &critical_fin_queue);
+
 	/* walk the pin_queue, build up the fragment list of free memory, unmark
 	 * pinned objects as we go, memzero() the empty fragments so they are ready for the
 	 * next allocations.
@@ -1859,10 +1865,6 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 	UnlockedAdd64 (&gc_stats.minor_gc_time, TV_ELAPSED (last_minor_collection_start_tv, last_minor_collection_end_tv));
 
 	sgen_debug_dump_heap ("minor", mono_atomic_load_i32 (&gc_stats.minor_gc_count) - 1, NULL);
-
-	// This is used by the profiler to report GC roots.
-	// Invariants: Heap's finished, no more moves left. Pin queue no longer in use, we can do whatever with it.
-	sgen_client_collecting_minor_report_roots (&fin_ready_queue, &critical_fin_queue);
 
 	/* prepare the pin queue for the next collection */
 	sgen_finish_pinning ();
@@ -2243,6 +2245,12 @@ major_finish_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason
 	reset_heap_boundaries ();
 	sgen_update_heap_boundaries ((mword)sgen_get_nursery_start (), (mword)sgen_get_nursery_end ());
 
+	/*
+	 * We collect the roots before unpinning objects in the nursery since we need to have
+	 * object liveness information for ephemeron root reporting.
+	 */
+	sgen_client_collecting_major_report_roots (&fin_ready_queue, &critical_fin_queue);
+
 	/* walk the pin_queue, build up the fragment list of free memory, unmark
 	 * pinned objects as we go, memzero() the empty fragments so they are ready for the
 	 * next allocations.
@@ -2254,8 +2262,6 @@ major_finish_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason
 
 	if (do_concurrent_checks && concurrent_collection_in_progress)
 		sgen_debug_check_nursery_is_clean ();
-
-	sgen_client_collecting_major_report_roots (&fin_ready_queue, &critical_fin_queue);
 
 	/* prepare the pin queue for the next collection */
 	sgen_finish_pinning ();

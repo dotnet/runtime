@@ -92,6 +92,10 @@ typedef enum {
 	 * The \c key parameter is a thread ID as a \c uintptr_t.
 	 */
 	MONO_ROOT_SOURCE_HANDLE = 14,
+	/**
+	 * Roots in the ephemeron arrays. This is a pseudo-root.
+	 */
+	MONO_ROOT_SOURCE_EPHEMERON = 15,
 } MonoGCRootSource;
 
 typedef enum {
