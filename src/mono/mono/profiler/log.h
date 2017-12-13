@@ -71,6 +71,8 @@
                removed type field from TYPE_SAMPLE_HIT
                removed MONO_GC_EVENT_{MARK,RECLAIM}_{START,END}
                reverted the root_type field back to uleb128
+               removed MONO_PROFILER_CODE_BUFFER_UNKNOWN (was never used)
+               renumbered the MonoProfilerCodeBufferType enum
  * version 15: reverted the type, unit, and variance fields back to uleb128
                added TYPE_HEAP_ROOT_{REGISTER,UNREGISTER}
                TYPE_HEAP_ROOT now has a different, saner format
