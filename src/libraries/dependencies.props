@@ -148,6 +148,16 @@
     </XmlUpdateStep>
     <XmlUpdateStep Include="CoreSetup">
       <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>MicrosoftNETCoreDotNetHostPackageVersion</ElementName>
+      <PackageId>Microsoft.NETCore.DotNetHost</PackageId>
+    </XmlUpdateStep>
+    <XmlUpdateStep Include="CoreSetup">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>MicrosoftNETCoreDotNetHostPolicyPackageVersion</ElementName>
+      <PackageId>Microsoft.NETCore.DotNetHostPolicy</PackageId>
+    </XmlUpdateStep>
+    <XmlUpdateStep Include="CoreSetup">
+      <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>MicrosoftNETCoreAppPackageVersion</ElementName>
       <PackageId>Microsoft.NETCore.App</PackageId>
     </XmlUpdateStep>
