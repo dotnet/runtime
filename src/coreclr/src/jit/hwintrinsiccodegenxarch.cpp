@@ -83,12 +83,90 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
 void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NYI("Implement SSE intrinsic code generation");
+    NamedIntrinsic intrinsicID = node->gtHWIntrinsicId;
+    GenTree*       op1         = node->gtGetOp1();
+    GenTree*       op2         = node->gtGetOp2();
+    regNumber      targetReg   = node->gtRegNum;
+    var_types      targetType  = node->TypeGet();
+    var_types      baseType    = node->gtSIMDBaseType;
+
+    regNumber op1Reg = op1->gtRegNum;
+    regNumber op2Reg = REG_NA;
+    emitter*  emit   = getEmitter();
+
+    genConsumeOperands(node);
+
+    switch (intrinsicID)
+    {
+        case NI_SSE_Add:
+            assert(baseType == TYP_FLOAT);
+            op2Reg = op2->gtRegNum;
+            emit->emitIns_SIMD_R_R_R(INS_addps, targetReg, op1Reg, op2Reg, TYP_SIMD16);
+            break;
+        default:
+            unreached();
+            break;
+    }
+    genProduceReg(node);
 }
 
 void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
 {
-    NYI("Implement SSE2 intrinsic code generation");
+    NamedIntrinsic intrinsicID = node->gtHWIntrinsicId;
+    GenTree*       op1         = node->gtGetOp1();
+    GenTree*       op2         = node->gtGetOp2();
+    regNumber      targetReg   = node->gtRegNum;
+    var_types      targetType  = node->TypeGet();
+    var_types      baseType    = node->gtSIMDBaseType;
+
+    regNumber op1Reg = op1->gtRegNum;
+    regNumber op2Reg = REG_NA;
+    emitter*  emit   = getEmitter();
+
+    genConsumeOperands(node);
+
+    switch (intrinsicID)
+    {
+        case NI_SSE2_Add:
+        {
+            op2Reg = op2->gtRegNum;
+
+            instruction ins;
+            switch (baseType)
+            {
+                case TYP_DOUBLE:
+                    ins = INS_addpd;
+                    break;
+                case TYP_INT:
+                case TYP_UINT:
+                    ins = INS_paddd;
+                    break;
+                case TYP_LONG:
+                case TYP_ULONG:
+                    ins = INS_paddq;
+                    break;
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                    ins = INS_paddb;
+                    break;
+                case TYP_CHAR:
+                case TYP_SHORT:
+                case TYP_USHORT:
+                    ins = INS_paddw;
+                    break;
+                default:
+                    unreached();
+                    break;
+            }
+
+            emit->emitIns_SIMD_R_R_R(ins, targetReg, op1Reg, op2Reg, TYP_SIMD16);
+            break;
+        }
+        default:
+            unreached();
+            break;
+    }
+    genProduceReg(node);
 }
 
 void CodeGen::genSSE3Intrinsic(GenTreeHWIntrinsic* node)
@@ -150,12 +228,103 @@ void CodeGen::genSSE42Intrinsic(GenTreeHWIntrinsic* node)
 
 void CodeGen::genAVXIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NYI("Implement AVX intrinsic code generation");
+    NamedIntrinsic intrinsicID = node->gtHWIntrinsicId;
+    GenTree*       op1         = node->gtGetOp1();
+    GenTree*       op2         = node->gtGetOp2();
+    regNumber      targetReg   = node->gtRegNum;
+    var_types      targetType  = node->TypeGet();
+    var_types      baseType    = node->gtSIMDBaseType;
+
+    regNumber op1Reg = op1->gtRegNum;
+    regNumber op2Reg = REG_NA;
+
+    genConsumeOperands(node);
+
+    emitter* emit = getEmitter();
+    switch (intrinsicID)
+    {
+        case NI_AVX_Add:
+        {
+            op2Reg = op2->gtRegNum;
+
+            instruction ins;
+            switch (baseType)
+            {
+                case TYP_DOUBLE:
+                    ins = INS_addpd;
+                    break;
+                case TYP_FLOAT:
+                    ins = INS_addps;
+                    break;
+                default:
+                    unreached();
+                    break;
+            }
+
+            emit->emitIns_R_R_R(ins, emitTypeSize(TYP_SIMD32), targetReg, op1Reg, op2Reg);
+            break;
+        }
+        default:
+            unreached();
+            break;
+    }
+    genProduceReg(node);
 }
 
 void CodeGen::genAVX2Intrinsic(GenTreeHWIntrinsic* node)
 {
-    NYI("Implement AVX2 intrinsic code generation");
+    NamedIntrinsic intrinsicID = node->gtHWIntrinsicId;
+    GenTree*       op1         = node->gtGetOp1();
+    GenTree*       op2         = node->gtGetOp2();
+    regNumber      targetReg   = node->gtRegNum;
+    var_types      targetType  = node->TypeGet();
+    var_types      baseType    = node->gtSIMDBaseType;
+
+    regNumber op1Reg = op1->gtRegNum;
+    regNumber op2Reg = REG_NA;
+
+    genConsumeOperands(node);
+
+    emitter* emit = getEmitter();
+    switch (intrinsicID)
+    {
+        case NI_AVX2_Add:
+        {
+            op2Reg = op2->gtRegNum;
+
+            instruction ins;
+            switch (baseType)
+            {
+                case TYP_INT:
+                case TYP_UINT:
+                    ins = INS_paddd;
+                    break;
+                case TYP_LONG:
+                case TYP_ULONG:
+                    ins = INS_paddq;
+                    break;
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                    ins = INS_paddb;
+                    break;
+                case TYP_CHAR:
+                case TYP_SHORT:
+                case TYP_USHORT:
+                    ins = INS_paddw;
+                    break;
+                default:
+                    unreached();
+                    break;
+            }
+
+            emit->emitIns_R_R_R(ins, emitTypeSize(TYP_SIMD32), targetReg, op1Reg, op2Reg);
+            break;
+        }
+        default:
+            unreached();
+            break;
+    }
+    genProduceReg(node);
 }
 
 void CodeGen::genAESIntrinsic(GenTreeHWIntrinsic* node)

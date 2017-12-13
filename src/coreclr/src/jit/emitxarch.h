@@ -423,6 +423,10 @@ void emitIns_R_AX(instruction ins, emitAttr attr, regNumber ireg, regNumber reg,
 
 void emitIns_AX_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, unsigned mul, int disp);
 
+#if FEATURE_HW_INTRINSICS
+void emitIns_SIMD_R_R_R(instruction ins, regNumber reg, regNumber reg1, regNumber reg2, var_types simdtype);
+#endif
+
 #if FEATURE_STACK_FP_X87
 void emitIns_F_F0(instruction ins, unsigned fpreg);
 
