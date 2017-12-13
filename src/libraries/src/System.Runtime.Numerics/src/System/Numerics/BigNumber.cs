@@ -469,7 +469,7 @@ namespace System.Numerics
         }
 
         // This function is consistent with VM\COMNumber.cpp!COMNumber::ParseFormatSpecifier
-        internal static char ParseFormatSpecifier(ReadOnlySpan<char> format, out int digits)
+        internal static unsafe char ParseFormatSpecifier(ReadOnlySpan<char> format, out int digits)
         {
             digits = -1;
             if (format.Length == 0)
@@ -477,27 +477,31 @@ namespace System.Numerics
                 return 'R';
             }
 
-            int i = 0;
-            char ch = format[i];
-            if (ch >= 'A' && ch <= 'Z' || ch >= 'a' && ch <= 'z')
+            fixed (char* formatPtr = &format.DangerousGetPinnableReference())
             {
-                i++;
-                int n = -1;
+                var formatSpan = new Span<char>(formatPtr, format.Length);
+                int i = 0;
+                char ch = formatSpan[i];
+                if (ch >= 'A' && ch <= 'Z' || ch >= 'a' && ch <= 'z')
+                {
+                    i++;
+                    int n = -1;
 
-                if (i < format.Length && format[i] >= '0' && format[i] <= '9')
-                {
-                    n = format[i++] - '0';
-                    while (i < format.Length && format[i] >= '0' && format[i] <= '9')
+                    if (i < format.Length && formatSpan[i] >= '0' && formatSpan[i] <= '9')
                     {
-                        n = n * 10 + (format[i++] - '0');
-                        if (n >= 10)
-                            break;
+                        n = formatSpan[i++] - '0';
+                        while (i < format.Length && formatSpan[i] >= '0' && formatSpan[i] <= '9')
+                        {
+                            n = n * 10 + (formatSpan[i++] - '0');
+                            if (n >= 10)
+                                break;
+                        }
                     }
-                }
-                if (i >= format.Length || format[i] == '\0')
-                {
-                    digits = n;
-                    return ch;
+                    if (i >= format.Length || formatSpan[i] == '\0')
+                    {
+                        digits = n;
+                        return ch;
+                    }
                 }
             }
             return (char)0; // Custom format
