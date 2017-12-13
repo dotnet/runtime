@@ -6,14 +6,10 @@
 // CGroup - Build configuration.
 // TestOuter - If true, runs outerloop, if false runs just innerloop
 
-def submittedHelixJson = null
-
 simpleDockerNode('microsoft/dotnet-buildtools-prereqs:alpine-3.6-3148f11-20171119021156') {
     stage ('Checkout source') {
         checkoutRepo()
     }
-
-    def logFolder = getLogFolder()
 
     stage ('Initialize tools') {
         // Init tools
