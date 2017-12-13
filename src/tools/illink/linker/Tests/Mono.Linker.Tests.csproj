@@ -10,7 +10,7 @@
     <StartupObject>
     </StartupObject>
     <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
-    <RootNamespace>Mono.Linker</RootNamespace>
+    <RootNamespace>Mono.Linker.Tests</RootNamespace>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
