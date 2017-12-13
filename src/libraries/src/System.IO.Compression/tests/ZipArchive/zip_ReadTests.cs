@@ -184,16 +184,5 @@ namespace System.IO.Compression.Tests
 
             s.Dispose();
         }
-
-        [Fact]
-        public static async Task Crc32Test()
-        {
-            ZipArchive archive1 = new ZipArchive(await StreamHelpers.CreateTempCopyStream(zfile("normal.zip")), ZipArchiveMode.Read);
-            ZipArchive archive2 = new ZipArchive(await StreamHelpers.CreateTempCopyStream(zfile("normal.zip")), ZipArchiveMode.Read);
-            ZipArchive archive3 = new ZipArchive(await StreamHelpers.CreateTempCopyStream(zfile("small.zip")), ZipArchiveMode.Read);
-
-            Assert.True(archive1.Entries[0].Crc32 == archive2.Entries[0].Crc32);
-            Assert.True(archive1.Entries[0].Crc32 != archive3.Entries[0].Crc32);
-        }
     }
 }
