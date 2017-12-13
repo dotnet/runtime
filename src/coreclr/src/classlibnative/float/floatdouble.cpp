@@ -60,6 +60,15 @@ FCIMPL1_V(double, COMDouble::Acos, double x)
     return (double)acos(x);
 FCIMPLEND
 
+/*=====================================Acosh====================================
+**
+==============================================================================*/
+FCIMPL1_V(double, COMDouble::Acosh, double x)
+    FCALL_CONTRACT;
+
+    return (double)acosh(x);
+FCIMPLEND
+
 /*=====================================Asin=====================================
 **
 ==============================================================================*/
@@ -67,6 +76,15 @@ FCIMPL1_V(double, COMDouble::Asin, double x)
     FCALL_CONTRACT;
 
     return (double)asin(x);
+FCIMPLEND
+
+/*=====================================Asinh====================================
+**
+==============================================================================*/
+FCIMPL1_V(double, COMDouble::Asinh, double x)
+    FCALL_CONTRACT;
+
+    return (double)asinh(x);
 FCIMPLEND
 
 /*=====================================Atan=====================================
@@ -78,6 +96,15 @@ FCIMPL1_V(double, COMDouble::Atan, double x)
     return (double)atan(x);
 FCIMPLEND
 
+/*=====================================Atanh====================================
+**
+==============================================================================*/
+FCIMPL1_V(double, COMDouble::Atanh, double x)
+    FCALL_CONTRACT;
+
+    return (double)atanh(x);
+FCIMPLEND
+
 /*=====================================Atan2====================================
 **
 ==============================================================================*/
@@ -85,6 +112,15 @@ FCIMPL2_VV(double, COMDouble::Atan2, double y, double x)
     FCALL_CONTRACT;
 
     return (double)atan2(y, x);
+FCIMPLEND
+
+/*====================================Cbrt======================================
+**
+==============================================================================*/
+FCIMPL1_V(double, COMDouble::Cbrt, double x)
+    FCALL_CONTRACT;
+
+    return (double)cbrt(x);
 FCIMPLEND
 
 /*====================================Ceil======================================

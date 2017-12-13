@@ -143,6 +143,25 @@ PALIMPORT double __cdecl PAL_acos(double x)
 
 /*++
 Function:
+    acosh
+
+See MSDN.
+--*/
+PALIMPORT double __cdecl PAL_acosh(double x)
+{
+    double ret;
+    PERF_ENTRY(acosh);
+    ENTRY("acosh (x=%f)\n", x);
+
+    ret = acosh(x);
+
+    LOGEXIT("acosh returns double %f\n", ret);
+    PERF_EXIT(acosh);
+    return ret;
+}
+
+/*++
+Function:
     asin
 
 See MSDN.
@@ -168,6 +187,25 @@ PALIMPORT double __cdecl PAL_asin(double x)
 
     LOGEXIT("asin returns double %f\n", ret);
     PERF_EXIT(asin);
+    return ret;
+}
+
+/*++
+Function:
+    asinh
+
+See MSDN.
+--*/
+PALIMPORT double __cdecl PAL_asinh(double x)
+{
+    double ret;
+    PERF_ENTRY(asinh);
+    ENTRY("asinh (x=%f)\n", x);
+
+    ret = asinh(x);
+
+    LOGEXIT("asinh returns double %f\n", ret);
+    PERF_EXIT(asinh);
     return ret;
 }
 
@@ -515,6 +553,25 @@ PALIMPORT float __cdecl PAL_acosf(float x)
 
 /*++
 Function:
+    acoshf
+
+See MSDN.
+--*/
+PALIMPORT float __cdecl PAL_acoshf(float x)
+{
+    float ret;
+    PERF_ENTRY(acoshf);
+    ENTRY("acoshf (x=%f)\n", x);
+
+    ret = acoshf(x);
+
+    LOGEXIT("acoshf returns float %f\n", ret);
+    PERF_EXIT(acoshf);
+    return ret;
+}
+
+/*++
+Function:
     asinf
 
 See MSDN.
@@ -542,6 +599,26 @@ PALIMPORT float __cdecl PAL_asinf(float x)
     PERF_EXIT(asinf);
     return ret;
 }
+
+/*++
+Function:
+    asinhf
+
+See MSDN.
+--*/
+PALIMPORT float __cdecl PAL_asinhf(float x)
+{
+    float ret;
+    PERF_ENTRY(asinhf);
+    ENTRY("asinhf (x=%f)\n", x);
+
+    ret = asinhf(x);
+
+    LOGEXIT("asinhf returns float %f\n", ret);
+    PERF_EXIT(asinhf);
+    return ret;
+}
+
 
 /*++
 Function:

@@ -27,15 +27,27 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Acos(double d);
-        
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern double Acosh(double d);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Asin(double d);
-        
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern double Asinh(double d);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Atan(double d);
-        
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Atan2(double y, double x);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern double Atanh(double d);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern double Cbrt(double d);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Ceiling(double a);
