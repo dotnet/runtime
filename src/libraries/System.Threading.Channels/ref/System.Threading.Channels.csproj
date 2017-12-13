@@ -9,8 +9,14 @@
   <ItemGroup>
     <Compile Include="System.Threading.Channels.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Reference Include="netstandard" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.3'">
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Threading.Tasks" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\System.Threading.Tasks.Extensions\ref\System.Threading.Tasks.Extensions.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
