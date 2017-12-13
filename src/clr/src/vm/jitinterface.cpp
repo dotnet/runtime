@@ -4503,6 +4503,49 @@ CorInfoType CEEInfo::getTypeForPrimitiveValueClass(
     return result;
 }
 
+/*********************************************************************/
+CorInfoType CEEInfo::getTypeForPrimitiveNumericClass(
+        CORINFO_CLASS_HANDLE clsHnd)
+{
+    CONTRACTL {
+        SO_TOLERANT;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CorInfoType result = CORINFO_TYPE_UNDEF;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    TypeHandle th(clsHnd);
+    _ASSERTE (!th.IsGenericVariable());
+
+    CorElementType ty = th.GetSignatureCorElementType();
+    switch (ty)
+    {
+        case ELEMENT_TYPE_I1:
+        case ELEMENT_TYPE_U1:
+        case ELEMENT_TYPE_I2:
+        case ELEMENT_TYPE_U2:
+        case ELEMENT_TYPE_I4:
+        case ELEMENT_TYPE_U4:
+        case ELEMENT_TYPE_I8:
+        case ELEMENT_TYPE_U8:
+        case ELEMENT_TYPE_R4:
+        case ELEMENT_TYPE_R8:
+            result = asCorInfoType(ty);
+            break;
+
+        default:
+            break;
+    }
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    return result;
+}
+
 
 void CEEInfo::getGSCookie(GSCookie * pCookieVal, GSCookie ** ppCookieVal)
 {
