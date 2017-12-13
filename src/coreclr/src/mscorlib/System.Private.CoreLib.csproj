@@ -121,7 +121,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeDependencyAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\jithelpers.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\Unsafe.cs" />
     <Compile Condition="'$(FeatureICastable)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastable.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ConditionalWeakTable.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AsyncMethodBuilder.cs" />
@@ -367,6 +366,7 @@
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Augments\EnvironmentAugments.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Augments\RuntimeThread.cs" />
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\CompilerServices\Unsafe.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Console.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Padding.cs" />
   </ItemGroup>

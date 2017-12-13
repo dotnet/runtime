@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Runtime.CompilerServices;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
 {
