@@ -5453,6 +5453,19 @@ unsigned int _mm_getcsr(void);
 PALIMPORT
 void _mm_setcsr(unsigned int i);
 
+/******************* PAL functions for CPU capability detection *******/
+
+#ifdef  __cplusplus
+
+class CORJIT_FLAGS;
+
+PALIMPORT
+VOID
+PALAPI
+PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags);
+
+#endif
+
 /******************* PAL side-by-side support  ************************/
 
 #ifdef FEATURE_PAL_SXS
