@@ -5977,7 +5977,6 @@ public:
                     return INT_MIN;
                 case TYP_BOOL:
                 case TYP_UBYTE:
-                case TYP_CHAR:
                 case TYP_USHORT:
                 case TYP_UINT:
                     return 0;
@@ -5999,7 +5998,6 @@ public:
                     return INT_MAX;
                 case TYP_UBYTE:
                     return UCHAR_MAX;
-                case TYP_CHAR:
                 case TYP_USHORT:
                     return USHRT_MAX;
                 case TYP_UINT:
@@ -7452,8 +7450,6 @@ private:
                 return SIMDDoubleHandle;
             case TYP_INT:
                 return SIMDIntHandle;
-            case TYP_CHAR:
-                return SIMDUShortHandle;
             case TYP_USHORT:
                 return SIMDUShortHandle;
             case TYP_UBYTE:

@@ -901,7 +901,6 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
         case TYP_BOOL:
         case TYP_BYTE:
         case TYP_UBYTE:
-        case TYP_CHAR:
         case TYP_SHORT:
         case TYP_USHORT:
         case TYP_INT:
@@ -948,7 +947,6 @@ ValueNum ValueNumStore::VNOneForType(var_types typ)
         case TYP_BOOL:
         case TYP_BYTE:
         case TYP_UBYTE:
-        case TYP_CHAR:
         case TYP_SHORT:
         case TYP_USHORT:
         case TYP_INT:
@@ -1982,7 +1980,6 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
                 case TYP_SHORT:
                     assert(typ == TYP_INT);
                     return VNForIntCon(INT16(arg0Val));
-                case TYP_CHAR:
                 case TYP_USHORT:
                     assert(typ == TYP_INT);
                     return VNForIntCon(UINT16(arg0Val));
@@ -2071,7 +2068,6 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
                         case TYP_SHORT:
                             assert(typ == TYP_INT);
                             return VNForIntCon(INT16(arg0Val));
-                        case TYP_CHAR:
                         case TYP_USHORT:
                             assert(typ == TYP_INT);
                             return VNForIntCon(UINT16(arg0Val));
@@ -2128,7 +2124,6 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
                 case TYP_SHORT:
                     assert(typ == TYP_INT);
                     return VNForIntCon(INT16(arg0Val));
-                case TYP_CHAR:
                 case TYP_USHORT:
                     assert(typ == TYP_INT);
                     return VNForIntCon(UINT16(arg0Val));
@@ -2170,7 +2165,6 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
                 case TYP_SHORT:
                     assert(typ == TYP_INT);
                     return VNForIntCon(INT16(arg0Val));
-                case TYP_CHAR:
                 case TYP_USHORT:
                     assert(typ == TYP_INT);
                     return VNForIntCon(UINT16(arg0Val));
@@ -3846,7 +3840,6 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
             case TYP_BOOL:
             case TYP_BYTE:
             case TYP_UBYTE:
-            case TYP_CHAR:
             case TYP_SHORT:
             case TYP_USHORT:
             case TYP_INT:
@@ -5196,7 +5189,7 @@ void Compiler::fgValueNumberTreeConst(GenTreePtr tree)
         case TYP_ULONG:
         case TYP_INT:
         case TYP_UINT:
-        case TYP_CHAR:
+        case TYP_USHORT:
         case TYP_SHORT:
         case TYP_BYTE:
         case TYP_UBYTE:

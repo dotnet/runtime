@@ -2980,7 +2980,7 @@ bool jitIterSmallOverflow(int iterAtExit, var_types incrType)
         case TYP_SHORT:
             type_MAX = SHRT_MAX;
             break;
-        case TYP_CHAR:
+        case TYP_USHORT:
             type_MAX = USHRT_MAX;
             break;
 
@@ -3021,7 +3021,7 @@ bool jitIterSmallUnderflow(int iterAtExit, var_types decrType)
         case TYP_UBYTE:
             type_MIN = 0;
             break;
-        case TYP_CHAR:
+        case TYP_USHORT:
             type_MIN = 0;
             break;
 
@@ -3094,7 +3094,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
         case TYP_SHORT:
             INIT_ITER_BY_TYPE(signed short);
             break;
-        case TYP_CHAR:
+        case TYP_USHORT:
             INIT_ITER_BY_TYPE(unsigned short);
             break;
 
@@ -5656,7 +5656,7 @@ bool Compiler::optNarrowTree(GenTreePtr tree, var_types srct, var_types dstt, Va
                     case TYP_SHORT:
                         lmask = 0x00007FFF;
                         break;
-                    case TYP_CHAR:
+                    case TYP_USHORT:
                         lmask = 0x0000FFFF;
                         break;
                     case TYP_INT:
@@ -5706,7 +5706,7 @@ bool Compiler::optNarrowTree(GenTreePtr tree, var_types srct, var_types dstt, Va
                     case TYP_SHORT:
                         imask = 0x00007FFF;
                         break;
-                    case TYP_CHAR:
+                    case TYP_USHORT:
                         imask = 0x0000FFFF;
                         break;
 #ifdef _TARGET_64BIT_

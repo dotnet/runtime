@@ -3999,7 +3999,7 @@ emitJumpKind CodeGen::genCondSetFlags(GenTreePtr cond)
                                 if (iVal & 0xffffff00)
                                     goto NO_TEST_FOR_AND;
                                 break;
-                            case TYP_CHAR:
+                            case TYP_USHORT:
                             case TYP_SHORT:
                                 if (iVal & 0xffff0000)
                                     goto NO_TEST_FOR_AND;
@@ -4317,7 +4317,7 @@ emitJumpKind CodeGen::genCondSetFlags(GenTreePtr cond)
                     if (ival != (signed short)ival)
                         smallOk = false;
                     break;
-                case TYP_CHAR:
+                case TYP_USHORT:
                     if (ival != (unsigned short)ival)
                         smallOk = false;
                     break;
@@ -6724,7 +6724,7 @@ void CodeGen::genCodeForTreeSmpBinArithLogOp(GenTreePtr tree, regMaskTP destReg,
                 andMask = 0x000000FF;
                 break;
             case TYP_SHORT:
-            case TYP_CHAR:
+            case TYP_USHORT:
                 andMask = 0x0000FFFF;
                 break;
             default:
@@ -6743,7 +6743,7 @@ void CodeGen::genCodeForTreeSmpBinArithLogOp(GenTreePtr tree, regMaskTP destReg,
             else // varTypeIsShort(typ)
             {
                 assert(varTypeIsShort(typ));
-                op1->gtType = TYP_CHAR;
+                op1->gtType = TYP_USHORT;
             }
 
             /* Generate the first operand into a scratch register */
@@ -10846,7 +10846,7 @@ void CodeGen::genCodeForNumericCast(GenTreePtr tree, regMaskTP destReg, regMaskT
         case TYP_BOOL:
         case TYP_BYTE:
         case TYP_SHORT:
-        case TYP_CHAR:
+        case TYP_USHORT:
         case TYP_UBYTE:
             break;
 
@@ -10992,7 +10992,7 @@ void CodeGen::genCodeForNumericCast(GenTreePtr tree, regMaskTP destReg, regMaskT
                 unsv     = true;
                 typeMask = ssize_t((int)0xFFFFFF00L);
                 break;
-            case TYP_CHAR:
+            case TYP_USHORT:
                 unsv     = true;
                 typeMask = ssize_t((int)0xFFFF0000L);
                 break;
@@ -11771,7 +11771,7 @@ void CodeGen::genCodeForTreeSmpOpAsg(GenTreePtr tree)
                             case TYP_SHORT:
                                 mask = 0x0000FFFF;
                                 break;
-                            case TYP_CHAR:
+                            case TYP_USHORT:
                                 mask = 0x0000FFFF;
                                 break;
                             default:
@@ -14673,7 +14673,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
                 {
                     case TYP_BOOL:
                     case TYP_BYTE:
-                    case TYP_CHAR:
+                    case TYP_USHORT:
                     case TYP_SHORT:
                     case TYP_INT:
                     case TYP_UBYTE:
@@ -15733,7 +15733,7 @@ size_t CodeGen::genPushArgList(GenTreeCall* call)
             case TYP_BOOL:
             case TYP_BYTE:
             case TYP_SHORT:
-            case TYP_CHAR:
+            case TYP_USHORT:
             case TYP_UBYTE:
 
                 /* Don't want to push a small value, make it a full word */

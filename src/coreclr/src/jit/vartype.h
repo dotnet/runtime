@@ -128,7 +128,6 @@ inline var_types varTypeUnsignedToSigned(var_types vt)
             case TYP_UBYTE:
                 return TYP_BYTE;
             case TYP_USHORT:
-            case TYP_CHAR:
                 return TYP_SHORT;
             case TYP_UINT:
                 return TYP_INT;
@@ -189,7 +188,7 @@ inline bool varTypeIsByte(T vt)
 template <class T>
 inline bool varTypeIsShort(T vt)
 {
-    return (TypeGet(vt) >= TYP_CHAR) && (TypeGet(vt) <= TYP_USHORT);
+    return (TypeGet(vt) == TYP_SHORT) || (TypeGet(vt) == TYP_USHORT);
 }
 
 template <class T>
