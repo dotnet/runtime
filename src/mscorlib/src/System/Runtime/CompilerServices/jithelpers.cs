@@ -14,6 +14,7 @@ using System.Runtime.Versioning;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.CompilerServices
 {

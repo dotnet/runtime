@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
 #if BIT64
@@ -10,7 +12,7 @@ using nuint = System.UInt64;
 using nuint = System.UInt32;
 #endif
 
-namespace System.Runtime.CompilerServices
+namespace Internal.Runtime.CompilerServices
 {
     //
     // Subsetted clone of System.Runtime.CompilerServices.Unsafe for internal runtime use.
@@ -18,16 +20,30 @@ namespace System.Runtime.CompilerServices
     // 
 
     /// <summary>
-    /// Contains generic, low-level functionality for manipulating pointers.
+    /// For internal use only. Contains generic, low-level functionality for manipulating pointers. 
     /// </summary>
-    internal static unsafe class Unsafe
+    public static unsafe class Unsafe
     {
         /// <summary>
         /// Returns a pointer to the given by-ref parameter.
         /// </summary>
+        [CLSCompliant(false)]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void* AsPointer<T>(ref T value)
+        {
+            // The body of this function will be replaced by the EE with unsafe code!!!
+            // See getILIntrinsicImplementationForUnsafe for how this happens.  
+            throw new InvalidOperationException();
+        }
+
+        /// <summary>
+        /// Reinterprets the given location as a reference to a value of type <typeparamref name="T"/>.
+        /// </summary>
+        [CLSCompliant(false)]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T AsRef<T>(void* source)
         {
             // The body of this function will be replaced by the EE with unsafe code!!!
             // See getILIntrinsicImplementationForUnsafe for how this happens.  
@@ -87,6 +103,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Adds an element offset to the given reference.
         /// </summary>
+        [CLSCompliant(false)]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void* Add<T>(void* source, int elementOffset)
@@ -98,8 +115,21 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
+        /// Determines the byte offset from origin to target from the given references.
+        /// </summary>
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IntPtr ByteOffset<T>(ref T origin, ref T target)
+        {
+            // The body of this function will be replaced by the EE with unsafe code!!!
+            // See getILIntrinsicImplementationForUnsafe for how this happens.
+            throw new InvalidOperationException();
+        }
+
+        /// <summary>
         /// Adds an element offset to the given reference.
         /// </summary>
+        [CLSCompliant(false)]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T AddByteOffset<T>(ref T source, nuint byteOffset)
@@ -125,6 +155,7 @@ namespace System.Runtime.CompilerServices
         /// Initializes a block of memory at the given location with a given initial value 
         /// without assuming architecture dependent alignment of the address.
         /// </summary>
+        [CLSCompliant(false)]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void InitBlockUnaligned(ref byte startAddress, byte value, uint byteCount)
@@ -134,6 +165,7 @@ namespace System.Runtime.CompilerServices
             throw new InvalidOperationException();
         }
 
+        [CLSCompliant(false)]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T ReadUnaligned<T>(void* source)
@@ -154,6 +186,7 @@ namespace System.Runtime.CompilerServices
             throw new InvalidOperationException();
         }
 
+        [CLSCompliant(false)]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteUnaligned<T>(void* destination, T value)
