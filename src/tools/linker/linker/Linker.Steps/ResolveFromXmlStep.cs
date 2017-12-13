@@ -95,7 +95,7 @@ namespace Mono.Linker.Steps {
 
 				if (!string.IsNullOrEmpty (_resourceName))
 					Context.Annotations.AddResourceToRemove (_resourceAssembly, _resourceName);
-			} catch (Exception ex) {
+			} catch (Exception ex) when (!(ex is XmlResolutionException)) {
 				throw new XmlResolutionException (string.Format ("Failed to process XML description: {0}", _xmlDocumentLocation), ex);
 			}
 		}
