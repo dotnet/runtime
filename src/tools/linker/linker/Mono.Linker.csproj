@@ -23,7 +23,7 @@
     <ProjectGuid>{DD28E2B1-057B-4B4D-A04D-B2EBD9E76E46}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Mono.Linker</RootNamespace>
+    <RootNamespace>Mono</RootNamespace>
     <AssemblyName Condition=" ! $(ILLinkBuild) ">monolinker</AssemblyName>
     <AssemblyName Condition=" $(ILLinkBuild) ">illink</AssemblyName>
     <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
@@ -59,41 +59,41 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Mono.Linker.Steps\BaseStep.cs" />
-    <Compile Include="Mono.Linker.Steps\BlacklistStep.cs" />
-    <Compile Include="Mono.Linker.Steps\CleanStep.cs" />
-    <Compile Include="Mono.Linker.Steps\RegenerateGuidStep.cs" />
-    <Compile Include="Mono.Linker.Steps\LoadI18nAssemblies.cs" />
-    <Compile Include="Mono.Linker\IXApiVisitor.cs" />
-    <Compile Include="Mono.Linker\I18nAssemblies.cs" />
-    <Compile Include="Mono.Linker.Steps\IStep.cs" />
-    <Compile Include="Mono.Linker.Steps\LoadReferencesStep.cs" />
-    <Compile Include="Mono.Linker.Steps\MarkStep.cs" />
-    <Compile Include="Mono.Linker.Steps\OutputStep.cs" />
-    <Compile Include="Mono.Linker.Steps\ResolveFromXApiStep.cs" />
-    <Compile Include="Mono.Linker.Steps\ResolveFromAssemblyStep.cs" />
-    <Compile Include="Mono.Linker.Steps\ResolveFromXmlStep.cs" />
-    <Compile Include="Mono.Linker.Steps\ResolveStep.cs" />
-    <Compile Include="Mono.Linker.Steps\SweepStep.cs" />
-    <Compile Include="Mono.Linker.Steps\AddBypassNGenStep.cs" />
-    <Compile Include="Mono.Linker\Annotations.cs" />
-    <Compile Include="Mono.Linker\AssemblyAction.cs" />
-    <Compile Include="Mono.Linker\AssemblyInfo.cs" />
-    <Compile Include="Mono.Linker\AssemblyResolver.cs" />
-    <Compile Include="Mono.Linker\DirectoryAssemblyResolver.cs" />
-    <Compile Include="Mono.Linker\Driver.cs" />
-    <Compile Include="Mono.Linker\LinkContext.cs" />
-    <Compile Include="Mono.Linker\LoadException.cs" />
-    <Compile Include="Mono.Linker\MarkException.cs" />
-    <Compile Include="Mono.Linker\MethodAction.cs" />
-    <Compile Include="Mono.Linker\MethodReferenceExtensions.cs" />
-    <Compile Include="Mono.Linker\Pipeline.cs" />
-    <Compile Include="Mono.Linker\TypePreserve.cs" />
-    <Compile Include="Mono.Linker\TypeReferenceExtensions.cs" />
-    <Compile Include="Mono.Linker\XApiReader.cs" />
-    <Compile Include="Mono.Linker.Steps\TypeMapStep.cs" />
-    <Compile Include="Mono.Linker\ILogger.cs" />
-    <Compile Include="Mono.Linker\ConsoleLogger.cs" />
+    <Compile Include="Linker.Steps\BaseStep.cs" />
+    <Compile Include="Linker.Steps\BlacklistStep.cs" />
+    <Compile Include="Linker.Steps\CleanStep.cs" />
+    <Compile Include="Linker.Steps\RegenerateGuidStep.cs" />
+    <Compile Include="Linker.Steps\LoadI18nAssemblies.cs" />
+    <Compile Include="Linker\IXApiVisitor.cs" />
+    <Compile Include="Linker\I18nAssemblies.cs" />
+    <Compile Include="Linker.Steps\IStep.cs" />
+    <Compile Include="Linker.Steps\LoadReferencesStep.cs" />
+    <Compile Include="Linker.Steps\MarkStep.cs" />
+    <Compile Include="Linker.Steps\OutputStep.cs" />
+    <Compile Include="Linker.Steps\ResolveFromXApiStep.cs" />
+    <Compile Include="Linker.Steps\ResolveFromAssemblyStep.cs" />
+    <Compile Include="Linker.Steps\ResolveFromXmlStep.cs" />
+    <Compile Include="Linker.Steps\ResolveStep.cs" />
+    <Compile Include="Linker.Steps\SweepStep.cs" />
+    <Compile Include="Linker.Steps\AddBypassNGenStep.cs" />
+    <Compile Include="Linker\Annotations.cs" />
+    <Compile Include="Linker\AssemblyAction.cs" />
+    <Compile Include="Linker\AssemblyInfo.cs" />
+    <Compile Include="Linker\AssemblyResolver.cs" />
+    <Compile Include="Linker\DirectoryAssemblyResolver.cs" />
+    <Compile Include="Linker\Driver.cs" />
+    <Compile Include="Linker\LinkContext.cs" />
+    <Compile Include="Linker\LoadException.cs" />
+    <Compile Include="Linker\MarkException.cs" />
+    <Compile Include="Linker\MethodAction.cs" />
+    <Compile Include="Linker\MethodReferenceExtensions.cs" />
+    <Compile Include="Linker\Pipeline.cs" />
+    <Compile Include="Linker\TypePreserve.cs" />
+    <Compile Include="Linker\TypeReferenceExtensions.cs" />
+    <Compile Include="Linker\XApiReader.cs" />
+    <Compile Include="Linker.Steps\TypeMapStep.cs" />
+    <Compile Include="Linker\ILogger.cs" />
+    <Compile Include="Linker\ConsoleLogger.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
