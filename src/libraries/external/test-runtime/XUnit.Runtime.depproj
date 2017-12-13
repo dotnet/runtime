@@ -69,7 +69,7 @@
       <Version>3.0.1</Version>
     </PackageReference>
     <PackageReference Include="System.IO.Compression.TestData">
-      <Version>1.0.5-prerelease</Version>
+      <Version>1.0.6-prerelease</Version>
     </PackageReference>
     <PackageReference Include="System.IO.Packaging.TestData">
       <Version>1.0.0-prerelease</Version>
