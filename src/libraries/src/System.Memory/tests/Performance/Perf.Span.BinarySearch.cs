@@ -10,6 +10,7 @@ namespace System.Memory.Tests
     public class Perf_Span_BinarySearch
     {
         private const int InnerCount = 100000;
+        private const string NumberFormat = "D9";
 
         [Benchmark(InnerIterationCount = InnerCount)]
         [InlineData(1)]
@@ -69,7 +70,7 @@ namespace System.Memory.Tests
         [InlineData(1000)]
         public void SpanBinarySearch_String_FirstIndex(int size)
         {
-            BenchmarkAndAssert(size, 0.ToString(), 0);
+            BenchmarkAndAssert(size, 0.ToString(NumberFormat), 0);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
@@ -79,7 +80,7 @@ namespace System.Memory.Tests
         [InlineData(1000)]
         public void SpanBinarySearch_String_MiddleIndex(int size)
         {
-            BenchmarkAndAssert(size, (size / 2).ToString(), size / 2);
+            BenchmarkAndAssert(size, (size / 2).ToString(NumberFormat), size / 2);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
@@ -89,7 +90,7 @@ namespace System.Memory.Tests
         [InlineData(1000)]
         public void SpanBinarySearch_String_LastIndex(int size)
         {
-            BenchmarkAndAssert(size, (size - 1).ToString(), size - 1);
+            BenchmarkAndAssert(size, (size - 1).ToString(NumberFormat), size - 1);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
@@ -99,7 +100,8 @@ namespace System.Memory.Tests
         [InlineData(1000)]
         public void SpanBinarySearch_String_NotFoundBefore(int size)
         {
-            BenchmarkAndAssert(size, (-1).ToString(), -1);
+            // "/" is just before zero in character table
+            BenchmarkAndAssert(size, "/", -1);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
@@ -109,7 +111,7 @@ namespace System.Memory.Tests
         [InlineData(1000)]
         public void SpanBinarySearch_String_NotFoundAfter(int size)
         {
-            BenchmarkAndAssert(size, (size).ToString(), ~size);
+            BenchmarkAndAssert(size, (size).ToString(NumberFormat), ~size);
         }
 
         private static void BenchmarkAndAssert(int size, int value, int expectedIndex)
@@ -139,7 +141,7 @@ namespace System.Memory.Tests
             Span<string> span = new string[size];
             for (int i = 0; i < span.Length; i++)
             {
-                span[i] = i.ToString();
+                span[i] = i.ToString(NumberFormat);
             }
 
             int index = 0;
