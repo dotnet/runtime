@@ -370,7 +370,6 @@ inline regMaskTP Compiler::genReturnRegForTree(GenTreePtr tree)
         RBM_ILLEGAL,   // TYP_UNDEF,
         RBM_NONE,      // TYP_VOID,
         RBM_INTRET,    // TYP_BOOL,
-        RBM_INTRET,    // TYP_CHAR,
         RBM_INTRET,    // TYP_BYTE,
         RBM_INTRET,    // TYP_UBYTE,
         RBM_INTRET,    // TYP_SHORT,
@@ -1131,7 +1130,7 @@ regMaskTP Compiler::rpPredictRegPick(var_types type, rpPredictReg predictReg, re
         case TYP_BYTE:
         case TYP_UBYTE:
         case TYP_SHORT:
-        case TYP_CHAR:
+        case TYP_USHORT:
         case TYP_INT:
         case TYP_UINT:
         case TYP_REF:

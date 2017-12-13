@@ -2799,8 +2799,8 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 }
                 else if (FitsIn<UINT16>(mask) && genTypeSize(andOp1) == 2)
                 {
-                    andOp1->gtType = TYP_CHAR;
-                    andOp2->gtType = TYP_CHAR;
+                    andOp1->gtType = TYP_USHORT;
+                    andOp2->gtType = TYP_USHORT;
                 }
             }
 #endif
@@ -5699,7 +5699,7 @@ void Lowering::getCastDescription(GenTreePtr treeNode, CastInfo* castInfo)
                 typeMax  = SHRT_MAX;
                 break;
 
-            case TYP_CHAR:
+            case TYP_USHORT:
                 typeMask = ssize_t((int)0xFFFF0000L);
                 break;
 
