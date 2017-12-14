@@ -2829,7 +2829,6 @@ namespace System.Xml.Xsl
         public abstract string Message { get; }
     }
     public delegate void XsltMessageEncounteredEventHandler(object sender, System.Xml.Xsl.XsltMessageEncounteredEventArgs e);
-    [System.ObsoleteAttribute("This class has been deprecated. Please use System.Xml.Xsl.XslCompiledTransform instead. http://go.microsoft.com/fwlink/?linkid=14202")]
     public sealed partial class XslTransform
     {
         public XslTransform() { }
