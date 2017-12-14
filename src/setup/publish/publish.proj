@@ -47,7 +47,7 @@
 
   <Target Name="ExcludeSymbolsPackagesFromPublishedVersions">
     <ItemGroup>
-      <PackagesToShip Include="$(PublishDirectory)*.nupkg" Exclude="$(PublishDirectory)*.symbols.nupkg" />
+      <PackagesToShip Include="$(DownloadDirectory)*.nupkg" Exclude="$(DownloadDirectory)*.symbols.nupkg" />
       <PackagesToShip Remove="%(PackagesToShip.Identity)" Condition="$([System.String]::Copy('%(PackagesToShip.Identity)').Contains('latest'))" />
       <ShippedNuGetPackage Include="@(PackagesToShip)" />
     </ItemGroup>
@@ -197,13 +197,8 @@
     <ItemGroup>
       <_CoreHostPackages Include="%(_BlobList.Identity)" Condition="'%(_BlobList.Extension)' == '.nupkg'" />
     </ItemGroup>
-
     <PropertyGroup>
       <DownloadDirectory Condition="'$(DownloadDirectory)' == ''">$(BinDir)PackageDownload/</DownloadDirectory>
-      <PublishDirectory Condition="'$(PublishDirectory)' == ''">$(BinDir)ForPublishing/</PublishDirectory>
-      <!-- if we're not signing packages, publish directly from the download directory, as we won't be
-	       copying them to the indexed directory -->
-      <PublishDirectory Condition="'$(WindowsSdkDir)' == '' OR '$(SignType)' != 'real'">$(DownloadDirectory)</PublishDirectory>
     </PropertyGroup>
     <MakeDir Directories="$(DownloadDirectory)"
              Condition="!Exists('$(DownloadDirectory)')" />
@@ -214,7 +209,7 @@
                            BlobNamePrefix="Runtime/$(SharedFrameworkNugetVersion)/"
                            DownloadDirectory="$(DownloadDirectory)" />
     <ItemGroup>
-      <_DownloadedPackages Include="@(_CoreHostPackages->'$(PublishDirectory)%(Filename)%(Extension)')" />
+      <_DownloadedPackages Include="@(_CoreHostPackages->'$(DownloadDirectory)%(Filename)%(Extension)')" />
       <_DownloadedSymbolsPackages Include="%(_DownloadedPackages.Identity)"
                                  Condition="$([System.String]::new('%(_DownloadedPackages.Identity)').EndsWith('.symbols.nupkg'))" />
       <_DownloadedStandardPackages Include="@(_DownloadedPackages)"
