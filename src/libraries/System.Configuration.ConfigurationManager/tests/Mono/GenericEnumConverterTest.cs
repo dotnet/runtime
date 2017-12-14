@@ -16,10 +16,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -102,12 +102,72 @@ namespace MonoTests.System.Configuration
         }
 
         [Fact]
+        public void ConvertFrom_InvalidString_WhiteSpaceAtTheBeginning()
+        {
+            GenericEnumConverter cv = new GenericEnumConverter(typeof(FooEnum));
+            object o = null;
+
+            AssertExtensions.Throws<ArgumentException>(null, () => o = cv.ConvertFrom(null, null, " Foo"));
+            Assert.Null(o);
+        }
+
+        [Fact]
+        public void ConvertFrom_InvalidString_WhiteSpaceAtTheEnd()
+        {
+            GenericEnumConverter cv = new GenericEnumConverter(typeof(FooEnum));
+            object o = null;
+
+            AssertExtensions.Throws<ArgumentException>(null, () => o = cv.ConvertFrom(null, null, "Foo "));
+            Assert.Null(o);
+        }
+
+        [Fact]
+        public void ConvertFrom_InvalidString_DigitAtTheBeginning()
+        {
+            GenericEnumConverter cv = new GenericEnumConverter(typeof(FooEnum));
+            object o = null;
+
+            AssertExtensions.Throws<ArgumentException>(null, () => o = cv.ConvertFrom(null, null, "1Foo"));
+            Assert.Null(o);
+        }
+
+        [Fact]
+        public void ConvertFrom_InvalidString_PlusSignAtTheBeginning()
+        {
+            GenericEnumConverter cv = new GenericEnumConverter(typeof(FooEnum));
+            object o = null;
+
+            AssertExtensions.Throws<ArgumentException>(null, () => o = cv.ConvertFrom(null, null, "+Foo"));
+            Assert.Null(o);
+        }
+
+        [Fact]
+        public void ConvertFrom_InvalidString_MinusSignAtTheBeginning()
+        {
+            GenericEnumConverter cv = new GenericEnumConverter(typeof(FooEnum));
+            object o = null;
+
+            AssertExtensions.Throws<ArgumentException>(null, () => o = cv.ConvertFrom(null, null, "-Foo"));
+            Assert.Null(o);
+        }
+
+        [Fact]
         public void ConvertFrom_Null()
         {
             GenericEnumConverter cv = new GenericEnumConverter(typeof(FooEnum));
             object o = null;
 
             AssertExtensions.Throws<ArgumentException>(null, () => o = cv.ConvertFrom(null, null, null));
+            Assert.Null(o);
+        }
+
+        [Fact]
+        public void ConvertFrom_EmptyString()
+        {
+            GenericEnumConverter cv = new GenericEnumConverter(typeof(FooEnum));
+            object o = null;
+
+            AssertExtensions.Throws<ArgumentException>(null, () => o = cv.ConvertFrom(null, null, string.Empty));
             Assert.Null(o);
         }
 
