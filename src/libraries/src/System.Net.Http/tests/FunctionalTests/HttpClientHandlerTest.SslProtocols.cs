@@ -124,7 +124,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public static readonly object [][] SupportedSSLVersionServers =
+        public static readonly object[][] SupportedSSLVersionServers =
         {
             new object[] {SslProtocols.Tls, Configuration.Http.TLSv10RemoteServer},
             new object[] {SslProtocols.Tls11, Configuration.Http.TLSv11RemoteServer},
@@ -205,7 +205,7 @@ namespace System.Net.Http.Functional.Tests
 
             using (HttpClient client = CreateHttpClient())
             {
-                await RemoteServerQuery.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url), remoteServerExceptionWrapper, url);
+                await Assert.ThrowsAsync<HttpRequestException>(() => RemoteServerQuery.Run(() => client.GetAsync(url), remoteServerExceptionWrapper, url));
             }
         }
 
@@ -213,7 +213,8 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SslDefaultsToTls12))]
         public async Task GetAsync_NoSpecifiedProtocol_DefaultsToTls12()
         {
-            if (!BackendSupportsSslConfiguration) return;
+            if (!BackendSupportsSslConfiguration)
+                return;
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (var client = new HttpClient(handler))
             {
@@ -242,7 +243,8 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_AllowedSSLVersionDiffersFromServer_ThrowsException(
             SslProtocols allowedProtocol, SslProtocols acceptedProtocol, Type exceptedServerException)
         {
-            if (!BackendSupportsSslConfiguration) return;
+            if (!BackendSupportsSslConfiguration)
+                return;
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (var client = new HttpClient(handler))
             {
