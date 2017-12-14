@@ -301,6 +301,8 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        /// <param name="useSpansForWriting">Tests the Span overloads of Write</param>
+        /// <param name="writeInChunks">Writes in chunks of 5 to test Write with a nonzero offset</param>
         public static async Task CreateFromDir(string directory, Stream archiveStream, ZipArchiveMode mode, bool useSpansForWriting = false, bool writeInChunks = false)
         {
             var files = FileData.InPath(directory);
