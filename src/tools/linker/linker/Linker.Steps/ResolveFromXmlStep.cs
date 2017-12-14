@@ -136,8 +136,7 @@ namespace Mono.Linker.Steps {
 
 		void MarkAndPreserveAll (TypeDefinition type)
 		{
-			Annotations.Mark (type);
-			Annotations.Push (type);
+			Annotations.MarkAndPush (type);
 			Annotations.SetPreserve (type, TypePreserve.All);
 
 			if (!type.HasNestedTypes) {
@@ -251,8 +250,7 @@ namespace Mono.Linker.Steps {
 				return;
 			}
 
-			Annotations.Mark (type);
-			Annotations.Push (type);
+			Annotations.MarkAndPush (type);
 			Annotations.AddDirectDependency (this, type);
 
 			if (type.IsNested) {
