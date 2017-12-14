@@ -1531,7 +1531,7 @@ void Compiler::lvaCanPromoteStructType(CORINFO_CLASS_HANDLE    typeHnd,
         // On ARM, we have a requirement on the struct alignment; see below.
         unsigned structAlignment =
             roundUp(info.compCompHnd->getClassAlignmentRequirement(typeHnd), TARGET_POINTER_SIZE);
-#endif // _TARGET_ARM
+#endif // _TARGET_ARM_
 
         bool isHole[MaxOffset]; // isHole[] is initialized to true for every valid offset in the struct and false for
                                 // the rest
