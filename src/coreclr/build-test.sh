@@ -3,29 +3,50 @@
 initHostDistroRid()
 {
     __HostDistroRid=""
+
+    # Some OS groups should default to use the portable packages
+    if [ "$__BuildOS" == "OSX" ]; then
+        __PortableBuild=1
+    fi
+
     if [ "$__HostOS" == "Linux" ]; then
-        if [ -e /etc/os-release ]; then
+        if [ -e /etc/redhat-release ]; then
+            local redhatRelease=$(</etc/redhat-release)
+            if [[ $redhatRelease == "CentOS release 6."* || $redhatRelease == "Red Hat Enterprise Linux Server release 6."* ]]; then
+                __HostDistroRid="rhel.6-$__HostArch"
+            else
+                __PortableBuild=1
+            fi
+        elif [ -e /etc/os-release ]; then
             source /etc/os-release
             if [[ $ID == "alpine" ]]; then
                 # remove the last version digit
                 VERSION_ID=${VERSION_ID%.*}
+            else
+                __PortableBuild=1
             fi
+
             __HostDistroRid="$ID.$VERSION_ID-$__HostArch"
-        elif [ -e /etc/redhat-release ]; then
-            local redhatRelease=$(</etc/redhat-release)
-            if [[ $redhatRelease == "CentOS release 6."* || $redhatRelease == "Red Hat Enterprise Linux Server release 6."* ]]; then
-               __HostDistroRid="rhel.6-$__HostArch"
-            fi
-        fi
-    fi
-    if [ "$__HostOS" == "FreeBSD" ]; then
+        fi        
+    elif [ "$__HostOS" == "FreeBSD" ]; then
         __freebsd_version=`sysctl -n kern.osrelease | cut -f1 -d'.'`
         __HostDistroRid="freebsd.$__freebsd_version-$__HostArch"
+    fi
+
+    # Portable builds target the base RID
+    if [ "$__PortableBuild" == 1 ]; then
+        if [ "$__BuildOS" == "OSX" ]; then
+            export __HostDistroRid="osx-$__BuildArch"
+        elif [ "$__BuildOS" == "Linux" ]; then
+            export __HostDistroRid="linux-$__BuildArch"
+        fi
     fi
 
     if [ "$__HostDistroRid" == "" ]; then
         echo "WARNING: Cannot determine runtime id for current distro."
     fi
+
+    echo "Setting __HostDistroRid to $__HostDistroRid"
 }
 
 initTargetDistroRid()
@@ -33,8 +54,13 @@ initTargetDistroRid()
     if [ $__CrossBuild == 1 ]; then
         if [ "$__BuildOS" == "Linux" ]; then
             if [ ! -e $ROOTFS_DIR/etc/os-release ]; then
-                echo "WARNING: Can not determine runtime id for current distro."
-                export __DistroRid=""
+                if [ -e $ROOTFS_DIR/android_platform ]; then
+                    source $ROOTFS_DIR/android_platform
+                    export __DistroRid="$RID"
+                else
+                    echo "WARNING: Cannot determine runtime id for current distro."
+                    export __DistroRid=""
+                fi
             else
                 source $ROOTFS_DIR/etc/os-release
                 export __DistroRid="$ID.$VERSION_ID-$__BuildArch"
@@ -44,24 +70,22 @@ initTargetDistroRid()
         export __DistroRid="$__HostDistroRid"
     fi
 
-    if [ "$__BuildOS" == "OSX" ]; then
-        __PortableBuild=1
+    if [ "$ID.$VERSION_ID" == "ubuntu.16.04" ]; then
+     export __DistroRid="ubuntu.14.04-$__BuildArch"
     fi
 
     # Portable builds target the base RID
     if [ "$__PortableBuild" == 1 ]; then
         if [ "$__BuildOS" == "Linux" ]; then
             export __DistroRid="linux-$__BuildArch"
+            export __RuntimeId="linux-$__BuildArch"
         elif [ "$__BuildOS" == "OSX" ]; then
             export __DistroRid="osx-$__BuildArch"
+            export __RuntimeId="osx-$__BuildArch"
         fi
     fi
 
-   if [ "$ID.$VERSION_ID" == "ubuntu.16.04" ]; then
-     export __DistroRid="ubuntu.14.04-$__BuildArch"
-   fi
-
-   echo "__DistroRid: " $__DistroRid
+    echo "__DistroRid: " $__DistroRid
 }
 
 isMSBuildOnNETCoreSupported()
@@ -89,6 +113,84 @@ isMSBuildOnNETCoreSupported()
     fi
 }
 
+generate_layout()
+{
+    __TestDir=$__ProjectDir/tests
+    __ProjectFilesDir=$__TestDir
+    __TestBinDir=$__TestWorkingDir
+
+    if [ $__RebuildTests -ne 0 ]; then
+        if [ -d "${__TestBinDir}" ]; then
+            echo "Removing tests build dir: ${__TestBinDir}"
+            rm -rf $__TestBinDir
+        fi
+    fi
+
+    __CMakeBinDir="${__TestBinDir}"
+
+    if [ -z "$__TestIntermediateDir" ]; then
+        __TestIntermediateDir="tests/obj/${__BuildOS}.${__BuildArch}.${__BuildType}"
+    fi
+
+    echo "__BuildOS: ${__BuildOS}"
+    echo "__BuildArch: ${__BuildArch}"
+    echo "__BuildType: ${__BuildType}"
+    echo "__TestIntermediateDir: ${__TestIntermediateDir}"
+
+    if [ ! -f "$__TestBinDir" ]; then
+        echo "Creating TestBinDir: ${__TestBinDir}"
+        mkdir -p $__TestBinDir
+    fi
+    if [ ! -f "$__LogsDir" ]; then
+        echo "Creating LogsDir: ${__LogsDir}"
+        mkdir -p $__LogsDir
+    fi
+
+    __BuildProperties="-p:OSGroup=${__BuildOS} -p:BuildOS=${__BuildOS} -p:BuildArch=${__BuildArch} -p:BuildType=${__BuildType}"
+
+    # =========================================================================================
+    # ===
+    # === Restore product binaries from packages
+    # ===
+    # =========================================================================================
+
+    build_Tests_internal "Restore_Packages" "${__ProjectDir}/tests/build.proj" " -BatchRestorePackages" "Restore product binaries (build tests)"
+
+    if [ -n "$__UpdateInvalidPackagesArg" ]; then
+        __up=-updateinvalidpackageversion
+    fi
+
+    echo "${__MsgPrefix}Creating test overlay..."
+
+    if [ -z "$xUnitTestBinBase" ]; then
+      xUnitTestBinBase=$__TestWorkingDir
+    fi
+
+    export CORE_ROOT=$xUnitTestBinBase/Tests/Core_Root
+
+    if [ -d "${CORE_ROOT}" ]; then
+      rm -rf $CORE_ROOT
+    fi
+
+    mkdir -p $CORE_ROOT
+
+    build_Tests_internal "Tests_Overlay_Managed" "${__ProjectDir}/tests/runtest.proj" "-testOverlay" "Creating test overlay"
+
+    chmod +x $__BinDir/corerun
+    chmod +x $__BinDir/crossgen
+
+    # Make sure to copy over the pulled down packages
+    cp -r $__BinDir/* $CORE_ROOT/ > /dev/null
+
+    # Work hardcoded path around
+    if [ ! -f "${__BuildToolsDir}/Microsoft.CSharp.Core.Targets" ]; then
+        ln -s "${__BuildToolsDir}/Microsoft.CSharp.Core.targets" "${__BuildToolsDir}/Microsoft.CSharp.Core.Targets"
+    fi
+    if [ ! -f "${__BuildToolsDir}/Microsoft.CSharp.targets" ]; then
+        ln -s "${__BuildToolsDir}/Microsoft.CSharp.Targets" "${__BuildToolsDir}/Microsoft.CSharp.targets"
+    fi
+}
+
 build_Tests()
 {
     __TestDir=$__ProjectDir/tests
@@ -108,10 +210,10 @@ build_Tests()
         __TestIntermediateDir="tests/obj/${__BuildOS}.${__BuildArch}.${__BuildType}"
     fi
 
-	echo "__BuildOS: ${__BuildOS}"
-	echo "__BuildArch: ${__BuildArch}"
-	echo "__BuildType: ${__BuildType}"
-	echo "__TestIntermediateDir: ${__TestIntermediateDir}"
+    echo "__BuildOS: ${__BuildOS}"
+    echo "__BuildArch: ${__BuildArch}"
+    echo "__BuildType: ${__BuildType}"
+    echo "__TestIntermediateDir: ${__TestIntermediateDir}"
 
     if [ ! -f "$__TestBinDir" ]; then
         echo "Creating TestBinDir: ${__TestBinDir}"
@@ -132,18 +234,8 @@ build_Tests()
 
     build_Tests_internal "Restore_Product" "${__ProjectDir}/tests/build.proj" " -BatchRestorePackages" "Restore product binaries (build tests)"
 
-    build_Tests_internal "Tests_GenerateRuntimeLayout" "${__ProjectDir}/tests/runtest.proj" "-BinPlaceRef -BinPlaceProduct -CopyCrossgenToProduct" "Restore product binaries (run tests)"
-
-    if [ -n "$__UpdateInvalidPackagesArg" ]; then
-        __up=-updateinvalidpackageversion
-    fi
-
-    # Work hardcoded path around
-    if [ ! -f "${__BuildToolsDir}/Microsoft.CSharp.Core.Targets" ]; then
-        ln -s "${__BuildToolsDir}/Microsoft.CSharp.Core.targets" "${__BuildToolsDir}/Microsoft.CSharp.Core.Targets"
-    fi
-    if [ ! -f "${__BuildToolsDir}/Microsoft.CSharp.targets" ]; then
-        ln -s "${__BuildToolsDir}/Microsoft.CSharp.Targets" "${__BuildToolsDir}/Microsoft.CSharp.targets"
+    if [ -n "$__BuildAgainstPackagesArg" ]; then
+        build_Tests_internal "Tests_GenerateRuntimeLayout" "${__ProjectDir}/tests/runtest.proj" "-BinPlaceRef -BinPlaceProduct -CopyCrossgenToProduct" "Restore product binaries (run tests)"
     fi
 
     echo "Starting the Managed Tests Build..."
@@ -152,7 +244,7 @@ build_Tests()
 
     if [ ! -f $__ManagedTestBuiltMarker ]; then
 
-	    build_Tests_internal "Tests_Managed" "$__ProjectDir/tests/build.proj" "$__up" "Managed tests build (build tests)"
+        build_Tests_internal "Tests_Managed" "$__ProjectDir/tests/build.proj" "$__up" "Managed tests build (build tests)"
 
         if [ $? -ne 0 ]; then
             echo "${__MsgPrefix}Error: build failed. Refer to the build log files for details (above)"
@@ -188,23 +280,13 @@ build_Tests()
         fi
     fi
 
+    if [ -n "$__UpdateInvalidPackagesArg" ]; then
+        __up=-updateinvalidpackageversion
+    fi
+
     echo "${__MsgPrefix}Creating test overlay..."
 
-    if [ -z "$XuintTestBinBase" ]; then
-      XuintTestBinBase=$__TestWorkingDir
-    fi
-
-    export CORE_ROOT=$XuintTestBinBase/Tests/Core_Root
-
-    if [ ! -f "${CORE_ROOT}" ]; then
-      mkdir -p $CORE_ROOT
-    else
-      rm -rf $CORE_ROOT/*
-    fi
-
-    cp -r $__BinDir/* $CORE_ROOT/ > /dev/null
-
-    build_Tests_internal "Tests_Overlay_Managed" "$__ProjectDir/tests/runtest.proj" "-testOverlay" "Creating test overlay"
+    generate_layout
 
     if [ $__ZipTests -ne 0 ]; then
         echo "${__MsgPrefix}ZIP tests packages..."
@@ -214,13 +296,13 @@ build_Tests()
 
 build_Tests_internal()
 {
-	subDirectoryName=$1
-	projectName=$2
-	extraBuildParameters=$3
-	stepName="$4"
+    subDirectoryName=$1
+    projectName=$2
+    extraBuildParameters=$3
+    stepName="$4"
 
-	# Set up directories and file names
-	__BuildLogRootName=$subDirectoryName
+    # Set up directories and file names
+    __BuildLogRootName=$subDirectoryName
     __BuildLog="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.log"
     __BuildWrn="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.wrn"
     __BuildErr="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.err"
@@ -262,8 +344,11 @@ usage()
     echo "crosscomponent - optional argument to build cross-architecture component,"
     echo "               - will use CAC_ROOTFS_DIR environment variable if set."
     echo "portableLinux - build for Portable Linux Distribution"
+    echo "portablebuild - Use portable build."
     echo "verbose - optional argument to enable verbose build output."
     echo "rebuild - if tests have already been built - rebuild them"
+    echo "generatelayoutonly - only pull down dependencies and build coreroot"
+    echo "buildagainstpackages - pull down and build using packages."
     echo "runtests - run tests after building them"
     echo "ziptests - zips CoreCLR tests & Core_Root for a Helix run"
     echo "bindir - output directory (defaults to $__ProjectRoot/bin)"
@@ -376,6 +461,7 @@ __ClangMajorVersion=0
 __ClangMinorVersion=0
 __NuGetPath="$__PackagesDir/NuGet.exe"
 __HostDistroRid=""
+__BuildAgainstPackagesArg=
 __DistroRid=""
 __cmakeargs=""
 __PortableLinux=0
@@ -385,8 +471,8 @@ __NativeTestIntermediatesDir=
 __RunTests=0
 __RebuildTests=0
 __BuildTestWrappers=0
+__GenerateLayoutOnly=
 CORE_ROOT=
-
 
 while :; do
     if [ $# -le 0 ]; then
@@ -438,6 +524,10 @@ while :; do
 
         cross)
             __CrossBuild=1
+            ;;
+
+        portableBuild)
+            __PortableBuild=1
             ;;
 
         portablelinux)
@@ -494,6 +584,14 @@ while :; do
             __ZipTests=1
             ;;
 
+        generatelayoutonly)
+            __GenerateLayoutOnly=1
+            ;;
+
+        buildagainstpackages)
+            __BuildAgainstPackagesArg=1
+            ;;
+
         bindir)
             if [ -n "$2" ]; then
                 __RootBinDir="$2"
@@ -527,7 +625,7 @@ __RunArgs="-BuildArch=$__BuildArch -BuildType=$__BuildType -BuildOS=$__BuildOS"
 # Configure environment if we are doing a verbose build
 if [ $__VerboseBuild == 1 ]; then
     export VERBOSE=1
-	__RunArgs="$__RunArgs -verbose"
+    __RunArgs="$__RunArgs -verbose"
 fi
 
 # Set default clang version
@@ -588,8 +686,9 @@ export __CMakeBinDir="$__BinDir"
 
 if [ ! -d "$__BinDir" ] || [ ! -d "$__BinDir/bin" ]; then
 
-    echo "Has not been found built CoreCLR instance"
-    echo "Please build it before tests using './build.sh $__BuildArch $__BuildType'"
+    echo "Cannot find build directory for the CoreCLR Product."
+    echo "Please make sure CoreCLR is built before building tests."
+    echo "Example use: './build.sh $__BuildArch $__BuildType'"
     exit 1
 fi
 
@@ -611,7 +710,11 @@ __sharedFxDir=$__BuildToolsDir/dotnetcli/shared/Microsoft.NETCore.App/$__CoreClr
 
 echo "Building Tests..."
 
-build_Tests
+if [ -z "$__GenerateLayoutOnly" ]; then
+    build_Tests
+else
+    generate_layout
+fi
 
 if [ $? -ne 0 ]; then
     echo "Failed to build tests"
@@ -638,6 +741,10 @@ else
     echo "    coreClrBinDir    = $__BinDir"
     echo "    coreFxBinDir     = $CORE_ROOT"
     echo "    testNativeBinDir = $__testNativeBinDir"
+    echo " -------------------------------------------------- "
+    echo " Example runtest.sh command"
+    echo ""
+    echo " ./tests/runtest.sh --coreOverlayDir=$CORE_ROOT --testNativeBinDir=$__testNativeBinDir --testRootDir=$__TestBinDir --copyNativeTestBin"
     echo " -------------------------------------------------- "
     echo "To run single test use the following command:"
     echo "    bash ${__TestBinDir}/__TEST_PATH__/__TEST_NAME__.sh -coreroot=${CORE_ROOT}"
