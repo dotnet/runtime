@@ -1544,7 +1544,7 @@ namespace System.Security.Cryptography.Asn1
             ArrayPool<byte>.Shared.Return(tmp);
         }
 
-        private static void Reverse(Span<byte> span)
+        internal static void Reverse(Span<byte> span)
         {
             int i = 0;
             int j = span.Length - 1;

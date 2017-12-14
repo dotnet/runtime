@@ -31,6 +31,9 @@
     <Compile Include="Asn1\Reader\ReadUtcTime.cs" />
     <Compile Include="Asn1\Reader\ReadUTF8String.cs" />
     <Compile Include="Asn1\Reader\ReaderStateTests.cs" />
+    <Compile Include="Asn1\Serializer\SimpleDeserialize.cs" />
+    <Compile Include="Asn1\Serializer\SimpleSerialize.cs" />
+    <Compile Include="Asn1\Serializer\X509DeserializeTests.cs" />
     <Compile Include="Asn1\Writer\Asn1WriterTests.cs" />
     <Compile Include="Asn1\Writer\ComprehensiveWriteTest.cs" />
     <Compile Include="Asn1\Writer\PushPopSequence.cs" />
@@ -58,6 +61,9 @@
     <Compile Include="OidCollectionTests.cs" />
     <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1V2.cs">
       <Link>Common\System\Security\Cryptography\Asn1V2.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1V2.Serializer.cs">
+      <Link>Common\System\Security\Cryptography\Asn1V2.Serializer.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\AsnReader.cs">
       <Link>Common\System\Security\Cryptography\AsnReader.cs</Link>
