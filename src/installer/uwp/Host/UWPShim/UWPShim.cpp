@@ -162,25 +162,23 @@ int __cdecl wmain()
     DWORD exitCode = -1;
     int argc;
     LPCWSTR* wszArglist = const_cast<LPCWSTR*>(SegmentCommandLine(GetCommandLineW(), &argc));
-    
-    if (argc < 2)
-    {
-        // Invalid number of arguments
-        return exitCode;
-    }
-    
+
     // This module is merely a shim to figure out what the actual EntryPoint assembly is and call the Host with 
     // that information. The EntryPoint would be found based on the following assumptions
     //
     // 1) Current module lives under the "CoreRuntime" subfolder of the AppX package installation folder.
     // 2) It has the same name as the EntryPoint assembly that will reside in the parent folder (i.e. the AppX package installation folder).
     
-    const wchar_t* pActivationModulePath = wszArglist[0];
+    wchar_t pActivationModulePath[MAX_PATH];
+    if (!GetModuleFileName(nullptr, pActivationModulePath, MAX_PATH))
+    {
+        return GetLastError();
+    }
 
     const wchar_t *pLastSlash = wcsrchr(pActivationModulePath, L'\\');
     if (pLastSlash == NULL)
     {
-        return exitCode;
+        TerminateProcess(GetCurrentProcess(), exitCode);
     }
     
     wchar_t entryPointAssemblyFileName[MAX_PATH];
@@ -190,6 +188,6 @@ int __cdecl wmain()
     
     auto success = ExecuteAssembly(entryPointAssemblyFileName, argc-1, &(wszArglist[1]), &exitCode);
 
-    return exitCode;
+    TerminateProcess(GetCurrentProcess(), exitCode);
 }
 
