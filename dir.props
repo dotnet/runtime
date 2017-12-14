@@ -52,6 +52,7 @@
       https://www.myget.org/F/nugetbuild/api/v3/index.json;
       https://api.nuget.org/v3/index.json;
       https://dotnet.myget.org/F/dotnet-corefxlab/api/v3/index.json;
+      $(RestoreSources);
     </RestoreSources>
   </PropertyGroup>
 
