@@ -74,7 +74,7 @@ namespace Mono.Linker {
 			writer.WriteStartDocument ();
 			writer.WriteStartElement ("dependencies");
 			writer.WriteStartAttribute ("version");
-			writer.WriteString ("1.1");
+			writer.WriteString ("1.2");
 			writer.WriteEndAttribute ();
 		}
 
@@ -119,7 +119,17 @@ namespace Mono.Linker {
 		public void Mark (IMetadataTokenProvider provider)
 		{
 			marked.Add (provider);
-			AddDependency (provider);
+			AddDependency (provider, true);
+		}
+
+		public void MarkAndPush (IMetadataTokenProvider provider)
+		{
+			Mark (provider);
+
+			if (writer == null)
+				return;
+
+			dependency_stack.Push (provider);
 		}
 
 		public bool IsMarked (IMetadataTokenProvider provider)
@@ -327,7 +337,7 @@ namespace Mono.Linker {
 			writer.WriteEndElement ();
 		}
 
-		public void AddDependency (object o)
+		public void AddDependency (object o, bool marked=false)
 		{
 			if (writer == null)
 				return;
@@ -336,6 +346,8 @@ namespace Mono.Linker {
 			if (pair.Key != pair.Value)
 			{
 				writer.WriteStartElement ("edge");
+				if (marked)
+					writer.WriteAttributeString ("mark", "1");
 				writer.WriteAttributeString ("b", TokenString (pair.Key));
 				writer.WriteAttributeString ("e", TokenString (pair.Value));
 				writer.WriteEndElement ();

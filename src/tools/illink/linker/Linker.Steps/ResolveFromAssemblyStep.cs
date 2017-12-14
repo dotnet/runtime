@@ -172,9 +172,7 @@ namespace Mono.Linker.Steps
 				return;
 			}
 
-			context.Annotations.Mark (type);
-
-			context.Annotations.Push (type);
+			context.Annotations.MarkAndPush (type);
 
 			if (type.HasFields)
 				MarkFields (context, type.Fields, rootVisibility);
