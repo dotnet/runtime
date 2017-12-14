@@ -209,9 +209,6 @@ if /i "%1" == "-ibcinstrument"       (set __IbcTuning=/Tuning&set processedArgs=
 if /i "%1" == "-toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-crossgenaltjit"      (set __CrossgenAltJit=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 
-REM Temporarily eat old -altjitcrossgen flag until CI system is updated.
-if /i "%1" == "-altjitcrossgen"      (set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-
 REM TODO these are deprecated remove them eventually
 REM don't add more, use the - syntax instead
 if /i "%1" == "freebsdmscorlib"     (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=FreeBSD&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
