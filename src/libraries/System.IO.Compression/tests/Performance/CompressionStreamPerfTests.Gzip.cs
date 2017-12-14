@@ -11,6 +11,6 @@ namespace System.IO.Compression
         public override Stream CreateStream(Stream stream, CompressionLevel level) => new GZipStream(stream, level);
         public override Stream CreateStream(Stream stream, CompressionLevel level, bool leaveOpen) => new GZipStream(stream, level, leaveOpen);
         public override Stream BaseStream(Stream stream) => ((GZipStream)stream).BaseStream;
-        protected override string CompressedTestFile(string uncompressedPath) => Path.Combine("GZTestData", Path.GetFileName(uncompressedPath) + ".gz");
+        protected override string CompressedTestFile(string uncompressedPath) => Path.Combine("GZipTestData", Path.GetFileName(uncompressedPath) + ".gz");
     }
 }
