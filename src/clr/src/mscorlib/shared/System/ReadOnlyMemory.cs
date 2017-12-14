@@ -216,7 +216,8 @@ namespace System
             {
                 if (_index < 0)
                 {
-                    memoryHandle = ((OwnedMemory<T>)_object).Pin((_index & RemoveOwnedFlagBitMask) * Unsafe.SizeOf<T>());
+                    memoryHandle = ((OwnedMemory<T>)_object).Pin();
+                    memoryHandle.AddOffset((_index & RemoveOwnedFlagBitMask) * Unsafe.SizeOf<T>());
                 }
                 else if (typeof(T) == typeof(char) && _object is string s)
                 {
