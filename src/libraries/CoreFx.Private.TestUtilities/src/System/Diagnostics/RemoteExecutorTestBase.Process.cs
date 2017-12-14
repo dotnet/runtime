@@ -55,8 +55,8 @@ namespace System.Diagnostics
             string passedArgs = pasteArguments ? PasteArguments.Paste(args, pasteFirstArgumentUsingArgV0Rules: false) : string.Join(" ", args);
             string testConsoleAppArgs = ExtraParameter + " " + metadataArgs + " " + passedArgs;
 
-            if (!File.Exists(TestConsoleApp))
-                throw new IOException("RemoteExecutorConsoleApp test app isn't present in the test runtime directory.");
+            if (!File.Exists(HostRunner))
+                throw new IOException($"{HostRunner} test app isn't present in the test runtime directory.");
 
             psi.FileName = HostRunner;
             psi.Arguments = testConsoleAppArgs;
