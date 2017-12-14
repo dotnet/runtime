@@ -2580,8 +2580,13 @@ namespace System.Linq.Expressions.Interpreter
                 // nullable value types with implicit (numeric) conversions which are allowed by Coalesce
                 // factory methods
 
-                Type nnLeftType = node.Left.Type.GetNonNullableType();
-                if (!TypeUtils.AreEquivalent(node.Type, nnLeftType))
+                Type typeToCompare = node.Left.Type;
+                if (!node.Type.IsNullableType())
+                {
+                    typeToCompare = typeToCompare.GetNonNullableType();
+                }
+
+                if (!TypeUtils.AreEquivalent(node.Type, typeToCompare))
                 {
                     hasImplicitConversion = true;
                     hasConversion = true;
@@ -2601,6 +2606,12 @@ namespace System.Linq.Expressions.Interpreter
                 // skip over conversion on RHS
                 end = _instructions.MakeLabel();
                 _instructions.EmitBranch(end);
+            }
+            else if (node.Right.Type.IsValueType && !TypeUtils.AreEquivalent(node.Type, node.Right.Type))
+            {
+                // The right hand side may need to be widened to either the left hand side's type
+                // if the right hand side is nullable, or the left hand side's underlying type otherwise
+                CompileConvertToType(node.Right.Type, node.Type, isChecked: true, isLiftedToNull: node.Type.IsNullableType());
             }
 
             _instructions.MarkLabel(leftNotNull);
