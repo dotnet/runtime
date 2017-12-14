@@ -21,6 +21,18 @@ namespace System.Buffers
             _handle = handle;
         }
 
+        internal void AddOffset(int offset)
+        {
+            if (_pointer == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.pointer);
+            }
+            else
+            {
+                _pointer = (void*)((byte*)_pointer + offset);
+            }
+        }
+
         [CLSCompliant(false)]
         public void* Pointer => _pointer;
 
