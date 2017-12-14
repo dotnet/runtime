@@ -366,7 +366,6 @@
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Augments\EnvironmentAugments.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Augments\RuntimeThread.cs" />
-    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\CompilerServices\Unsafe.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Console.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Padding.cs" />
   </ItemGroup>
