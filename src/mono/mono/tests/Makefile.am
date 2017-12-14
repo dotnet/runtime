@@ -610,13 +610,13 @@ TESTS_IL_SRC=			\
 	invalid_generic_instantiation.il \
 	bug-45841-fpstack-exceptions.il \
 	instance_tailrec.il	\
-	constrainedcall.il	\
-	diamondshape.il	\
-	genericmethods.il	\
-	methodimpl.il	\
-	sharedgenerics.il	\
-	simple.il	\
-	valuetypes.il
+	dim-constrainedcall.il	\
+	dim-diamondshape.il	\
+	dim-genericmethods.il	\
+	dim-methodimpl.il	\
+	dim-sharedgenerics.il	\
+	dim-simple.il	\
+	dim-valuetypes.il
 
 TESTS_GSHARED_SRC = \
 	generics-sharing.2.cs	\
@@ -957,14 +957,19 @@ LLVM = $(filter --llvm, $(MONO_ENV_OPTIONS))
 # appdomain-thread-abort.exe: https://bugzilla.xamarin.com/show_bug.cgi?id=47054
 # abort-try-holes.exe is flaky due to unwinding failure to the finally block when aborting
 # appdomain-marshalbyref-assemblyload.exe: https://bugzilla.xamarin.com/show_bug.cgi?id=49308
+# dim-*: https://github.com/mono/mono/pull/6252
 KNOWN_FAILING_TESTS = \
 	delegate-async-exception.exe	\
 	bug-348522.2.exe	\
 	bug-459094.exe \
 	delegate-invoke.exe \
 	bug-Xamarin-5278.exe \
+	appdomain-marshalbyref-assemblyload.exe	\
 	abort-try-holes.exe \
-	appdomain-marshalbyref-assemblyload.exe
+	dim-constrainedcall.exe	\
+	dim-diamondshape.exe	\
+	dim-methodimpl.exe	\
+	dim-simple.exe
 
 DISABLED_TESTS = \
 	$(KNOWN_FAILING_TESTS) \
