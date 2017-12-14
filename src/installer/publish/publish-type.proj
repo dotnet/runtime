@@ -48,11 +48,8 @@
     <!-- TODO: We should also think about pulling down the checksums or recomputing them -->
     <PropertyGroup>
       <DownloadDirectory Condition="'$(DownloadDirectory)' == ''">$(BinDir)PackageDownload/</DownloadDirectory>
-      <PublishDirectory Condition="'$(PublishDirectory)' == ''">$(BinDir)ForPublishing/</PublishDirectory>
-      <!-- if we're not signing packages, publish directly from the download directory, as we won't be
-	       copying them to the indexed directory -->
-      <PublishDirectory Condition="'$(WindowsSdkDir)' == '' OR '$(SignType)' != 'real'">$(DownloadDirectory)</PublishDirectory>
     </PropertyGroup>
+
     <MakeDir Directories="$(DownloadDirectory)" Condition="!Exists('$(DownloadDirectory)')" />
 
     <Message Text="Downloading files from $(AzureAccountName)/$(ContainerName)/$(BinariesRelativePath) into $(DownloadDirectory)" />
