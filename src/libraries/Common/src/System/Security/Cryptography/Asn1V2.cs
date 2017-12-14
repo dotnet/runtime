@@ -120,7 +120,7 @@ namespace System.Security.Cryptography.Asn1
                 universalTagNumber > UniversalTagNumber.RelativeObjectIdentifierIRI ||
                 universalTagNumber == ReservedIndex)
             {
-                throw new ArgumentOutOfRangeException(nameof(universalTagNumber), universalTagNumber, null);
+                throw new ArgumentOutOfRangeException(nameof(universalTagNumber));
             }
         }
 
@@ -129,7 +129,12 @@ namespace System.Security.Cryptography.Asn1
         {
             if (tagClass < TagClass.Universal || tagClass > TagClass.Private)
             {
-                throw new ArgumentOutOfRangeException(nameof(tagClass), tagClass, null);
+                throw new ArgumentOutOfRangeException(nameof(tagClass));
+            }
+
+            if (tagValue < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(tagValue));
             }
         }
 
