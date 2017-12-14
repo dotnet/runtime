@@ -6,19 +6,24 @@ CoreCLR tests
 
 **Building**
 
-Build CoreCLR on [Unix](https://github.com/dotnet/coreclr/blob/master/Documentation/building/linux-instructions.md), and CoreFX on [Unix](https://github.com/dotnet/corefx/blob/master/Documentation/building/unix-instructions.md).
+Build CoreCLR on [Unix](https://github.com/dotnet/coreclr/blob/master/Documentation/building/linux-instructions.md).
 
 **Building the Tests**
 
+DotNet is required to build the tests, this can be done on any platform then copied over if the arch or os does not support DotNet. If DotNet is not supported, [CoreFX](https://github.com/dotnet/corefx/blob/master/Documentation/building/unix-instructions.md) is also required to be built.
+
 To build the tests on Unix:
 
-> `./build-test.sh -rebuild`
-
-As of [#11860](https://github.com/dotnet/coreclr/pull/11860) building the tests on unix works; however, it will take significantly more time than building on Windows.
+> `./build-test.sh`
 
 To build on Windows:
 
-> `C:\coreclr>build-test.cmd -rebuild`
+> `C:\coreclr>build-test.cmd`
+
+Please note that this builds the Priority 0 tests. To build priority 1:
+
+> `build-test.sh -priority 1`
+
 
 **Building Individual Tests**
 
@@ -83,41 +88,54 @@ sudo apt-get install libunwind8:armhf libunwind8-dev:armhf libicu-dev:armhf libl
 **Running tests**
 
 The following instructions assume that on the Unix machine:
-- The CoreCLR repo is cloned at `~/coreclr`
-- The CoreFX repo is cloned at `~/corefx`
-- The Windows clone of the CoreCLR repo is mounted at `/media/coreclr`
+- The CoreCLR repo is cloned at `/mnt/coreclr`
 
-Tests currently need to be built on Windows and copied over to the Unix machine for testing. Copy the test build over to the Unix machine:
+If DotNet is unsupported
+- The CoreFX repo is cloned at `/mnt/corefx`
+- The other platform's clone of the CoreCLR repo is mounted at `/media/coreclr`
 
-> `cp --recursive /media/coreclr/bin/tests/Windows_NT.x64.Debug ~/test/`
+The following steps are different if DotNet is supported or not on your arch and os.
+
+**DotNet is supported**
+
+build-test.sh will have setup the Core_Root directory correctly after the test build. If this was either skipped or needs to be regenerated use:
+
+>`build-test.sh generatelayoutonly`
+
+To run the tests run with the --coreOverlayDir path
+
+> ```bash
+> ~/coreclr$ tests/runtest.sh
+>     --testRootDir=/mnt/coreclr/bin/tests/Linux.x64.Debug
+>     --testNativeBinDir=/mnt/coreclr/bin/obj/Linux.x64.Debug/tests
+>     --coreOverlayDir=/mnt/coreclr/bin/tests/Tests/Core_Root
+>     --copyNativeTestBin
+> ```
+
+**DotNet is not supported**
+
+Tests need to be built on another platform and copied over to the Unix machine for testing. Copy the test build over to the Unix machine:
+
+> `cp --recursive /media/coreclr/bin/tests/Windows_NT.x64.Debug /mnt/test/`
 
 See runtest.sh usage information:
 
-> `~/coreclr$ tests/runtest.sh --help`
+> `/mnt/coreclr$ tests/runtest.sh --help`
 
 Run tests (`Debug` may be replaced with `Release` or `Checked`, depending on which Configuration you've built):
 
 > ```bash
-> ~/coreclr$ tests/runtest.sh
->     --testRootDir=~/test/Windows_NT.x64.Debug
->     --testNativeBinDir=~/coreclr/bin/obj/Linux.x64.Debug/tests
->     --coreClrBinDir=~/coreclr/bin/Product/Linux.x64.Debug
->     --mscorlibDir=~/coreclr/bin/Product/Linux.x64.Debug
->     --coreFxBinDir=~/corefx/bin/runtime/netcoreapp-Linux-Debug-x64
+> /mnt/coreclr$ tests/runtest.sh
+>     --testRootDir=/mnt/test/Windows_NT.x64.Debug
+>     --testNativeBinDir=/mnt/coreclr/bin/obj/Linux.x64.Debug/tests
+>     --coreClrBinDir=/mnt/coreclr/bin/Product/Linux.x64.Debug
+>     --mscorlibDir=/mnt/coreclr/bin/Product/Linux.x64.Debug
+>     --coreFxBinDir=/mnt/corefx/bin/runtime/netcoreapp-Linux-Debug-x64
 > ```
 
 The method above will copy dependencies from the set of directories provided to create an 'overlay' directory.
-If you already have an overlay directory prepared with the dependencies you need, you can specify `--coreOverlayDir`
-instead of `--coreClrBinDir`, `--mscorlibDir`, `--coreFxBinDir`, and `--coreFxNativeBinDir`. It would look something like:
 
-
-> ```bash
-> ~/coreclr$ tests/runtest.sh
->     --testRootDir=~/test/Windows_NT.x64.Debug
->     --testNativeBinDir=~/coreclr/bin/obj/Linux.x64.Debug/tests
->     --coreOverlayDir=/path/to/directory/containing/overlay
-> ```
-
+**Results**
 
 Test results will go into:
 
