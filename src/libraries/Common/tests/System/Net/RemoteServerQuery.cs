@@ -14,13 +14,10 @@ namespace System.Net.Test.Common
         public RemoteServerException()
             : this(null, null) { }
 
-        public RemoteServerException(string server)
-            : this(server, null) { }
-
         public RemoteServerException(string server, Exception inner)
             : base(GetMessage(server), inner) { }
 
-        public static string GetMessage(string server)
+        private static string GetMessage(string server)
         {
             if (server == null)
                 return Description;
@@ -48,24 +45,17 @@ namespace System.Net.Test.Common
             }
         }
 
-        internal static async Task ThrowsAsync<T>(Func<Task> testCode, Func<Exception, bool> remoteExceptionWrapper, string serverName)
-            where T : Exception
+        internal static async Task Run(Func<Task> testCode, Func<Exception, bool> remoteExceptionWrapper, string serverName)
         {
             try
             {
                 await testCode();
-                Assert.Throws<T>(() => { });
             }
             catch (Exception actualException)
             {
                 if (remoteExceptionWrapper(actualException))
                 {
                     throw new RemoteServerException(serverName, actualException);
-                }
-
-                if (typeof(T).Equals(actualException.GetType()))
-                {
-                    return;
                 }
 
                 throw;
