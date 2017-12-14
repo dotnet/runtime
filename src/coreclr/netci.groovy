@@ -1408,7 +1408,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
     def lowerConfiguration = configuration.toLowerCase()
 
     def priority = '1'
-    if (scenario == 'default' && isPR == true) {
+    if ((scenario == 'default' && isPR == true) || (scenario == 'default' && isBuildOnly == true)) {
         priority = '0'
     }
 
@@ -1725,7 +1725,8 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         // only on supported OS platforms.
                         def bootstrapRid = Utilities.getBoostrapPublishRid(os)
                         def bootstrapRidEnv = bootstrapRid != null ? "__PUBLISH_RID=${bootstrapRid} " : ''
-                        buildCommands += "${bootstrapRidEnv}./build.sh verbose ${lowerConfiguration} ${architecture}" 
+
+                        buildCommands += "${bootstrapRidEnv}./build.sh verbose ${lowerConfiguration} ${architecture}"
                         buildCommands += "src/pal/tests/palsuite/runpaltests.sh \${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration} \${WORKSPACE}/bin/paltestout"
 
                         setTestJobTimeOut(newJob, isPR, architecture, scenario)
@@ -2289,9 +2290,18 @@ Constants.allScenarios.each { scenario ->
                         inputWindowsTestBuildArch = "x64"
                     }
 
-                    def inputWindowTestsBuildName = projectFolder + '/' +
+                    def inputWindowTestsBuildName = ""
+
+                    if (isJitStressScenario(scenario)) {
+                        inputWindowTestsBuildName = projectFolder + '/' +
+                        Utilities.getFullJobName(project, getJobName(configuration, inputWindowsTestBuildArch, 'windows_nt', testBuildScenario, false), isPR)
+                    } else {
+                        inputWindowTestsBuildName = projectFolder + '/' +
                         Utilities.getFullJobName(project, getJobName(configuration, inputWindowsTestBuildArch, 'windows_nt', testBuildScenario, true), isPR)
 
+                    }
+
+                     
                     // Enable Server GC for Ubuntu PR builds
                     def serverGCString = ''
                     if (os == 'Ubuntu' && isPR) {
@@ -2408,7 +2418,7 @@ Constants.allScenarios.each { scenario ->
                             // Set up the copies
 
                             // Coreclr build containing the tests and mscorlib
-
+                            // pri1 jobs still need to copy windows_nt built tests
                             if (windowsArmJob != true) {
                                 copyArtifacts(inputWindowTestsBuildName) {
                                     excludePatterns('**/testResults.xml', '**/*.ni.dll')
@@ -2419,6 +2429,8 @@ Constants.allScenarios.each { scenario ->
                             }
 
                             // Coreclr build we are trying to test
+                            //
+                            //  ** NOTE ** This will, correctly, overwrite over the CORE_ROOT from the windows test archive
 
                             copyArtifacts(inputCoreCLRBuildName) {
                                 excludePatterns('**/testResults.xml', '**/*.ni.dll')
@@ -2434,32 +2446,6 @@ Constants.allScenarios.each { scenario ->
                             // because we do not have a unified runner
                             if (windowsArmJob != true) {
                                 def corefxFolder = Utilities.getFolderName('dotnet/corefx') + '/' + Utilities.getFolderName(branch)
-
-                                // Corefx components.  We now have full stack builds on all distros we test here, so we can copy straight from CoreFX jobs.
-                                def osJobName
-                                if (os == 'Ubuntu') {
-                                    osJobName = 'ubuntu14.04'
-                                }
-                                else if (architecture == 'x86') {
-                                    if (os == 'Ubuntu') {
-                                        // Linux/x86 corefx jobs does not build managed yet
-                                        // Clone linux/arm corefx managed packages and overwrite linux/x86 native
-                                        osJobName = "linux_arm_cross"
-                                    }
-                                }
-                                else {
-                                    osJobName = os.toLowerCase()
-                                }
-                                copyArtifacts("${corefxFolder}/${osJobName}_release") {
-                                    includePatterns('bin/build.tar.gz')
-                                    buildSelector {
-                                        latestSuccessful(true)
-                                    }
-                                }
-
-                                shell("mkdir ./bin/CoreFxBinDir")
-                                // Unpack the corefx binaries
-                                shell("tar -xf ./bin/build.tar.gz -C ./bin/CoreFxBinDir")
 
                                 // HACK -- Arm64 does not have corefx jobs yet.
                                 // Clone corefx and build the native packages overwriting the x64 packages.
@@ -2482,7 +2468,10 @@ Constants.allScenarios.each { scenario ->
                                 }
 
                                 // Unzip the tests first.  Exit with 0
-                                shell("unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/Windows_NT.${architecture}.${configuration} || exit 0")
+                                shell("unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/${osGroup}.${architecture}.${configuration} || exit 0")
+                                shell("rm -r ./bin/tests/${osGroup}.${architecture}.${configuration}/Tests/Core_Root || exit 0")
+
+                                shell("./build-test.sh ${architecture} ${configuration} generatelayoutonly")
 
                                 // Execute the tests
                                 def runDocker = isNeedDocker(architecture, os, false)
@@ -2508,12 +2497,10 @@ Constants.allScenarios.each { scenario ->
                                 }
 
                                 shell("""${dockerCmd}./tests/runtest.sh \\
-                --testRootDir=\"\${WORKSPACE}/bin/tests/Windows_NT.${architecture}.${configuration}\" \\
+                --testRootDir=\"\${WORKSPACE}/bin/tests/${osGroup}.${architecture}.${configuration}\" \\
+                --coreOverlayDir=\"\${WORKSPACE}/bin/tests/${osGroup}.${architecture}.${configuration}/Tests/Core_Root\" \\
                 --testNativeBinDir=\"\${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
-                --coreClrBinDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
-                --mscorlibDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
-                --coreFxBinDir=\"\${WORKSPACE}/bin/CoreFxBinDir\" \\
-                --limitedDumpGeneration ${testEnvOpt} ${serverGCString} ${testOpts}""")
+                --copyNativeTestBin --limitedDumpGeneration ${testEnvOpt} ${serverGCString} ${testOpts}""")
 
                                 if (isGcReliabilityFramework(scenario)) {
                                     // runtest.sh doesn't actually execute the reliability framework - do it here.
@@ -2701,8 +2688,9 @@ Constants.allScenarios.each { scenario ->
                         // Do not create the flow job for RHEL jobs.
                         return
                     }
-
-                    if (windowsArmJob == true) {
+                    
+                    // For pri0 jobs we can build tests on unix
+                    if (windowsArmJob) {
                         // For Windows arm jobs there is no reason to build a parallel test job.
                         // The product build supports building and archiving the tests.
 
