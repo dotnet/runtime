@@ -15,10 +15,8 @@ namespace System.Net.NetworkInformation
         private static NetworkAddressChangedEventHandler s_addressChangedSubscribers;
         private static NetworkAvailabilityChangedEventHandler s_availabilityChangedSubscribers;
         private static volatile int s_socket = 0;
-        // Lock controlling access to delegate subscriptions and socket initialization.
-        private static readonly object s_subscriberLock = new object();
-        // Lock controlling access to availability-changed state and timer.
-        private static readonly object s_availabilityLock = new object();
+        // Lock controlling access to delegate subscriptions, socket initialization, availability-changed state and timer.
+        private static readonly object s_gate = new object();
         private static readonly Interop.Sys.NetworkChangeEvent s_networkChangeCallback = ProcessEvent;
 
         // The "leniency" window for NetworkAvailabilityChanged socket events.
@@ -39,7 +37,7 @@ namespace System.Net.NetworkInformation
         {
             add
             {
-                lock (s_subscriberLock)
+                lock (s_gate)
                 {
                     if (s_socket == 0)
                     {
@@ -51,7 +49,7 @@ namespace System.Net.NetworkInformation
             }
             remove
             {
-                lock (s_subscriberLock)
+                lock (s_gate)
                 {
                     if (s_addressChangedSubscribers == null && s_availabilityChangedSubscribers == null)
                     {
@@ -72,7 +70,7 @@ namespace System.Net.NetworkInformation
         {
             add
             {
-                lock (s_subscriberLock)
+                lock (s_gate)
                 {
                     if (s_socket == 0)
                     {
@@ -88,7 +86,7 @@ namespace System.Net.NetworkInformation
             }
             remove
             {
-                lock (s_subscriberLock)
+                lock (s_gate)
                 {
                     if (s_addressChangedSubscribers == null && s_availabilityChangedSubscribers == null)
                     {
@@ -103,6 +101,7 @@ namespace System.Net.NetworkInformation
                         {
                             s_availabilityTimer.Dispose();
                             s_availabilityTimer = null;
+                            s_availabilityHasChanged = false;
                         }
 
                         if (s_addressChangedSubscribers == null)
@@ -156,7 +155,7 @@ namespace System.Net.NetworkInformation
         {
             if (kind != Interop.Sys.NetworkChangeKind.None)
             {
-                lock (s_subscriberLock)
+                lock (s_gate)
                 {
                     if (socket == s_socket)
                     {
@@ -175,14 +174,16 @@ namespace System.Net.NetworkInformation
                     s_addressChangedSubscribers?.Invoke(null, EventArgs.Empty);
                     break;
                 case Interop.Sys.NetworkChangeKind.AvailabilityChanged:
-                    lock (s_availabilityLock)
+                    lock (s_gate)
                     {
-                        if (!s_availabilityHasChanged)
+                        if (s_availabilityTimer != null)
                         {
-                            s_availabilityTimer.Change(AvailabilityTimerWindowMilliseconds, -1);
+                            if (!s_availabilityHasChanged)
+                            {
+                                s_availabilityTimer.Change(AvailabilityTimerWindowMilliseconds, -1);
+                            }
+                            s_availabilityHasChanged = true;
                         }
-
-                        s_availabilityHasChanged = true;
                     }
                     break;
             }
@@ -191,7 +192,7 @@ namespace System.Net.NetworkInformation
         private static void OnAvailabilityTimerFired(object state)
         {
             bool changed;
-            lock (s_availabilityLock)
+            lock (s_gate)
             {
                 changed = s_availabilityHasChanged;
                 s_availabilityHasChanged = false;
