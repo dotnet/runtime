@@ -329,3 +329,11 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
 {
     return false;
 }
+
+void GCToEEInterface::WalkAsyncPinnedForPromotion(Object* object, ScanContext* sc, promote_func* callback)
+{
+}
+
+void GCToEEInterface::WalkAsyncPinned(Object* object, void* context, void (*callback)(Object*, Object*, void*))
+{
+}
