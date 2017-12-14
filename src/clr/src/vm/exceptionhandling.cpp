@@ -1837,7 +1837,7 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
                     pICFForUnwindTarget = pFrame;
                 }
             }
-#endif // defined(_TARGET_ARM)
+#endif // defined(_TARGET_ARM_)
 
             cfThisFrame.CheckGSCookies();
 

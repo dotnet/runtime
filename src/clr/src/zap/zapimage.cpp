@@ -537,7 +537,7 @@ void ZapImage::AllocateVirtualSections()
 
         //ILMetadata/Resources sections are reported as a statically known warm ranges for now.
         m_pILMetaDataSection = NewVirtualSection(pTextSection, IBCProfiledSection | HotColdSortedRange | ILMetadataSection, sizeof(DWORD));
-#endif  // _TARGET_ARM
+#endif  // _TARGET_ARM_
 
 #if defined(_TARGET_ARM_)
         if (!bigResourceSection) // for ARM, put the resource section at the end if it's very large - see comment above
