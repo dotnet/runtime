@@ -26,7 +26,8 @@
 
     <ItemGroup>
       <CMakeOutput Include="$(IntermediateOutputRootPath)uwphost\host\uwphost\$(ConfigurationGroup)\uwphost.dll" />
-      <CMakeOutput Include="$(IntermediateOutputRootPath)uwpshim\$(ConfigurationGroup)\uwpshim.exe" />
+      <CMakeOutput Include="$(IntermediateOutputRootPath)uwpshim\Windows\$(ConfigurationGroup)\uwpshim.exe" />
+      <CMakeOutput Include="$(IntermediateOutputRootPath)uwpshim\Console\$(ConfigurationGroup)\consoleuwpshim.exe" />
       <CMakeOutput Include="$(IntermediateOutputRootPath)uwphost\copywin32resources\$(ConfigurationGroup)\copywin32resources.exe" />
     </ItemGroup>
     
