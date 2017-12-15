@@ -3740,10 +3740,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             //     BoundsCheck(index, s->_length)
             //     s->_pointer + index * sizeof(T)
             //
-            // For ReadOnlySpan<T>
-            //   Comma
-            //     BoundsCheck(index, s->_length)
-            //     *(s->_pointer + index * sizeof(T))
+            // For ReadOnlySpan<T> -- same expansion, as it now returns a readonly ref
             //
             // Signature should show one class type parameter, which
             // we need to examine.
@@ -3796,16 +3793,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             // Prepare result
             var_types resultType = JITtype2varType(sig->retType);
-
-            if (isReadOnly)
-            {
-                result = gtNewOperNode(GT_IND, resultType, result);
-            }
-            else
-            {
-                assert(resultType == result->TypeGet());
-            }
-
+            assert(resultType == result->TypeGet());
             retNode = gtNewOperNode(GT_COMMA, resultType, boundsCheck, result);
 
             break;
