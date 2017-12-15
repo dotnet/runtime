@@ -139,6 +139,11 @@
     <PackageThirdPartyNoticesFile>$(ProjectDir)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
     <SyncInfoDirectory>$(BaseIntermediateOutputPath)</SyncInfoDirectory>
 
+    <!-- If true, indicates that this is not an officially supported release -->
+    <!-- It is important to flip this to false in official release branches -->
+    <!-- Keep it in sync with PRERELEASE in clrdefinitions.cmake -->
+    <IsPrerelease>true</IsPrerelease>
+
     <!-- This should be kept in sync with package details in src/.nuget/init/project.json -->
     <RuntimeIdGraphDefinitionVersion>1.0.2-beta-24224-02</RuntimeIdGraphDefinitionVersion>
     <RuntimeIdGraphDefinitionFile>$(PackagesDir)/microsoft.netcore.platforms/$(RuntimeIdGraphDefinitionVersion)/runtime.json</RuntimeIdGraphDefinitionFile>
