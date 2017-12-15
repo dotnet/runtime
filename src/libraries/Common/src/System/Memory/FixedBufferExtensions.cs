@@ -35,21 +35,17 @@ namespace System
             if (value == null || value.Length > span.Length)
                 return false;
 
-            fixed (char* spanPtr = &span.DangerousGetPinnableReference())
+            int i = 0;
+            for (; i < value.Length; i++)
             {
-                var readWriteSpan = new Span<char>(spanPtr, span.Length);
-                int i = 0;
-                for (; i < value.Length; i++)
-                {
-                    // Strings with embedded nulls can never match as the fixed buffer always null terminates.
-                    if (value[i] == '\0' || value[i] != readWriteSpan[i])
-                        return false;
-                }
-
-                // If we've maxed out the buffer or reached the
-                // null terminator, we're equal.
-                return i == span.Length || readWriteSpan[i] == '\0';
+                // Strings with embedded nulls can never match as the fixed buffer always null terminates.
+                if (value[i] == '\0' || value[i] != span[i])
+                    return false;
             }
+
+            // If we've maxed out the buffer or reached the
+            // null terminator, we're equal.
+            return i == span.Length || span[i] == '\0';
         }
     }
 }

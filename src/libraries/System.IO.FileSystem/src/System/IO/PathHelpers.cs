@@ -172,21 +172,17 @@ namespace System.IO
                 || (fileName.Length == 2 && fileName[1] != '.'));
         }
 
-        public static unsafe ReadOnlySpan<char> GetDirectoryNameNoChecks(ReadOnlySpan<char> path)
+        public static ReadOnlySpan<char> GetDirectoryNameNoChecks(ReadOnlySpan<char> path)
         {
             if (path.Length == 0)
                 return ReadOnlySpan<char>.Empty;
 
             int root = PathInternal.GetRootLength(path);
             int i = path.Length;
-            fixed (char* pathPtr = &path.DangerousGetPinnableReference())
+            if (i > root)
             {
-                var pathSpan = new Span<char>(pathPtr, path.Length);
-                if (i > root)
-                {
-                    while (i > root && !PathInternal.IsDirectorySeparator(pathSpan[--i])) ;
-                    return pathSpan.Slice(0, i);
-                }
+                while (i > root && !PathInternal.IsDirectorySeparator(path[--i])) ;
+                return path.Slice(0, i);
             }
 
             return ReadOnlySpan<char>.Empty;
