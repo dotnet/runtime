@@ -612,6 +612,8 @@
 #define IDS_IBC_MISSING_EXTERNAL_TYPE           0x1ac5
 #define IDS_IBC_MISSING_EXTERNAL_METHOD         0x1ac6
 #define IDS_EE_HWINTRINSIC_NGEN_DISALLOWED      0x1ac7
+#define IDS_CLASSLOAD_MI_FINAL_IMPL             0x1ac8
+#define IDS_CLASSLOAD_AMBIGUOUS_OVERRIDE        0x1ac9
 
 #define BFA_INVALID_FILE_TOKEN                  0x2000
 #define BFA_INVALID_TOKEN_TYPE                  0x2001

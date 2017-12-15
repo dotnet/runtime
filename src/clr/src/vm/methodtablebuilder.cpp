@@ -1639,19 +1639,28 @@ MethodTableBuilder::BuildMethodTableThrowing(
     // Allocate MethodDescs (expects methods placed methods)
     AllocAndInitMethodDescs();
 
-    //
-    // If we are a class, then there may be some unplaced vtable methods (which are by definition
-    // interface methods, otherwise they'd already have been placed).  Place as many unplaced methods
-    // as possible, in the order preferred by interfaces.  However, do not allow any duplicates - once
-    // a method has been placed, it cannot be placed again - if we are unable to neatly place an interface,
-    // create duplicate slots for it starting at dwCurrentDuplicateVtableSlot.  Fill out the interface
-    // map for all interfaces as they are placed.
-    //
-    // If we are an interface, then all methods are already placed.  Fill out the interface map for
-    // interfaces as they are placed.
-    //
-    if (!IsInterface())
+    if (IsInterface())
     {
+        //
+        // We need to process/place method impls for default interface method overrides.
+        // We won't build dispatch map for interfaces, though.
+        //
+        ProcessMethodImpls();
+        PlaceMethodImpls();
+    }
+    else
+    {
+        //
+        // If we are a class, then there may be some unplaced vtable methods (which are by definition
+        // interface methods, otherwise they'd already have been placed).  Place as many unplaced methods
+        // as possible, in the order preferred by interfaces.  However, do not allow any duplicates - once
+        // a method has been placed, it cannot be placed again - if we are unable to neatly place an interface,
+        // create duplicate slots for it starting at dwCurrentDuplicateVtableSlot.  Fill out the interface
+        // map for all interfaces as they are placed.
+        //
+        // If we are an interface, then all methods are already placed.  Fill out the interface map for
+        // interfaces as they are placed.
+        //
         ComputeInterfaceMapEquivalenceSet();
 
         PlaceInterfaceMethods();
@@ -2879,7 +2888,7 @@ MethodTableBuilder::EnumerateClassMethods()
         }
         else if(fIsClassInterface)
         {
-            if (IsMdRTSpecialName(dwMemberAttrs) || IsMdVirtual(dwMemberAttrs))
+            if (IsMdRTSpecialName(dwMemberAttrs))
             {
                 CONSISTENCY_CHECK(CheckPointer(strMethodName));
                 if (strcmp(strMethodName, COR_CCTOR_METHOD_NAME))
@@ -2906,8 +2915,9 @@ MethodTableBuilder::EnumerateClassMethods()
             }
         }
 
+#ifndef FEATURE_DEFAULT_INTERFACES
         // Some interface checks.
-        if (IsInterface())
+        if (fIsClassInterface)
         {
             if (IsMdVirtual(dwMemberAttrs))
             {
@@ -2925,6 +2935,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 }
             }
         }
+#endif
 
         // No synchronized methods in ValueTypes
         if(fIsClassValueType && IsMiSynchronized(dwImplFlags))
@@ -3148,7 +3159,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 type = METHOD_TYPE_NORMAL;
             }
             else if (bmtGenerics->GetNumGenericArgs() != 0 &&
-                    (bmtGenerics->fSharedByGenericInstantiations || (!bmtProp->fIsRedirectedInterface && !GetHalfBakedClass()->IsProjectedFromWinRT())))
+                (bmtGenerics->fSharedByGenericInstantiations || (!bmtProp->fIsRedirectedInterface && !GetHalfBakedClass()->IsProjectedFromWinRT())))
             {
                 // Methods in instantiated interfaces need nothing special - they are not visible from COM etc.
                 // mcComInterop is only useful for unshared instantiated WinRT interfaces. If the interface is
@@ -3160,7 +3171,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 // If the interface is a standard managed interface then allocate space for an FCall method desc.
                 type = METHOD_TYPE_FCALL;
             }
-            else
+            else if (IsMdAbstract(dwMemberAttrs))
             {
                 // If COM interop is supported then all other interface MDs may be
                 // accessed via COM interop. mcComInterop MDs have an additional
@@ -3168,10 +3179,12 @@ MethodTableBuilder::EnumerateClassMethods()
                 // allocated lazily when/if the MD actually gets used for interop.
                 type = METHOD_TYPE_COMINTEROP;
             }
-#else // !FEATURE_COMINTEROP
-            // This codepath is used by remoting
-            type = METHOD_TYPE_NORMAL;
+            else
 #endif // !FEATURE_COMINTEROP
+            {
+                // This codepath is used by remoting
+                type = METHOD_TYPE_NORMAL;
+            }
         }
         else
         {
@@ -4787,6 +4800,12 @@ VOID MethodTableBuilder::TestMethodImpl(
         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_FINAL_DECL);
     }
 
+    // Interface method body that has methodimpl should always be final
+    if (IsInterface() && !IsMdFinal(dwImplAttrs))
+    {
+        BuildMethodTableThrowException(IDS_CLASSLOAD_MI_FINAL_IMPL);
+    }
+
     // Since MethodImpl's do not affect the visibility of the Decl method, there's
     // no need to check.
 
@@ -5584,6 +5603,9 @@ MethodTableBuilder::ProcessMethodImpls()
 {
     STANDARD_VM_CONTRACT;
 
+    if (bmtMethod->dwNumberMethodImpls == 0)
+        return;
+
     HRESULT hr = S_OK;
 
     DeclaredMethodIterator it(*this);
@@ -5715,49 +5737,60 @@ MethodTableBuilder::ProcessMethodImpls()
                                     }
                                 }
 
-                                if (pDeclType == NULL)
+                                if (IsInterface())
                                 {
-                                    DWORD equivalenceSet = 0;
-
-                                    for (DWORD i = 0; i < bmtInterface->dwInterfaceMapSize; i++)
-                                    {
-                                        bmtRTType * pCurItf = bmtInterface->pInterfaceMap[i].GetInterfaceType();
-                                        // Type Equivalence is respected for this comparision as we just need to find an 
-                                        // equivalent interface, the particular interface is unimportant
-                                        if (MetaSig::CompareTypeDefsUnderSubstitutions(
-                                            pCurItf->GetMethodTable(),      pDeclMT,
-                                            &pCurItf->GetSubstitution(),    pDeclSubst,
-                                            NULL))
-                                        {
-                                            equivalenceSet = bmtInterface->pInterfaceMap[i].GetInterfaceEquivalenceSet();
-                                            pItfEntry = &bmtInterface->pInterfaceMap[i];
-                                            break;
-                                        }
-                                    }
-
-                                    if (equivalenceSet == 0)
+                                    if (pDeclType == NULL)
                                     {
                                         // Interface is not implemented by this type.
                                         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_NOTIMPLEMENTED, it.Token());
                                     }
-
-                                    // Interface is not implemented by this type exactly. We need to consider this MethodImpl on non exact interface matches,
-                                    // as the only match may be one of the non-exact matches
-                                    bmtMetaData->rgMethodImplTokens[m].fConsiderDuringInexactMethodImplProcessing = true;
-                                    bmtMetaData->rgMethodImplTokens[m].fThrowIfUnmatchedDuringInexactMethodImplProcessing = true;
-                                    bmtMetaData->rgMethodImplTokens[m].interfaceEquivalenceSet = equivalenceSet;
-                                    bmtMethod->dwNumberInexactMethodImplCandidates++;
-                                    continue; // Move on to other MethodImpls
                                 }
                                 else
                                 {
-                                    // This method impl may need to match other methods during inexact processing
-                                    if (pItfEntry->InEquivalenceSetWithMultipleEntries())
+                                    if (pDeclType == NULL)
                                     {
+                                        DWORD equivalenceSet = 0;
+
+                                        for (DWORD i = 0; i < bmtInterface->dwInterfaceMapSize; i++)
+                                        {
+                                            bmtRTType * pCurItf = bmtInterface->pInterfaceMap[i].GetInterfaceType();
+                                            // Type Equivalence is respected for this comparision as we just need to find an 
+                                            // equivalent interface, the particular interface is unimportant
+                                            if (MetaSig::CompareTypeDefsUnderSubstitutions(
+                                                pCurItf->GetMethodTable(), pDeclMT,
+                                                &pCurItf->GetSubstitution(), pDeclSubst,
+                                                NULL))
+                                            {
+                                                equivalenceSet = bmtInterface->pInterfaceMap[i].GetInterfaceEquivalenceSet();
+                                                pItfEntry = &bmtInterface->pInterfaceMap[i];
+                                                break;
+                                            }
+                                        }
+
+                                        if (equivalenceSet == 0)
+                                        {
+                                            // Interface is not implemented by this type.
+                                            BuildMethodTableThrowException(IDS_CLASSLOAD_MI_NOTIMPLEMENTED, it.Token());
+                                        }
+
+                                        // Interface is not implemented by this type exactly. We need to consider this MethodImpl on non exact interface matches,
+                                        // as the only match may be one of the non-exact matches
                                         bmtMetaData->rgMethodImplTokens[m].fConsiderDuringInexactMethodImplProcessing = true;
-                                        bmtMetaData->rgMethodImplTokens[m].fThrowIfUnmatchedDuringInexactMethodImplProcessing = false;
-                                        bmtMetaData->rgMethodImplTokens[m].interfaceEquivalenceSet = pItfEntry->GetInterfaceEquivalenceSet();
+                                        bmtMetaData->rgMethodImplTokens[m].fThrowIfUnmatchedDuringInexactMethodImplProcessing = true;
+                                        bmtMetaData->rgMethodImplTokens[m].interfaceEquivalenceSet = equivalenceSet;
                                         bmtMethod->dwNumberInexactMethodImplCandidates++;
+                                        continue; // Move on to other MethodImpls
+                                    }
+                                    else
+                                    {
+                                        // This method impl may need to match other methods during inexact processing
+                                        if (pItfEntry->InEquivalenceSetWithMultipleEntries())
+                                        {
+                                            bmtMetaData->rgMethodImplTokens[m].fConsiderDuringInexactMethodImplProcessing = true;
+                                            bmtMetaData->rgMethodImplTokens[m].fThrowIfUnmatchedDuringInexactMethodImplProcessing = false;
+                                            bmtMetaData->rgMethodImplTokens[m].interfaceEquivalenceSet = pItfEntry->GetInterfaceEquivalenceSet();
+                                            bmtMethod->dwNumberInexactMethodImplCandidates++;
+                                        }
                                     }
                                 }
 
@@ -5859,7 +5892,7 @@ MethodTableBuilder::ProcessMethodImpls()
                     {   // Method not found, throw.
                         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_DECLARATIONNOTFOUND, it.Token());
                     }
-
+                    
                     if (!IsMdVirtual(declMethod.GetDeclAttrs()))
                     {   // Make sure the decl is virtual
                         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_MUSTBEVIRTUAL, it.Token());
@@ -6164,9 +6197,12 @@ MethodTableBuilder::PlaceMethodImpls()
     }
 
     // Allocate some temporary storage. The number of overrides for a single method impl
-    // cannot be greater then the number of vtable slots.
-    DWORD * slots = new (&GetThread()->m_MarshalAlloc) DWORD[bmtVT->cVirtualSlots];
-    RelativePointer<MethodDesc *> * replaced = new (&GetThread()->m_MarshalAlloc) RelativePointer<MethodDesc*>[bmtVT->cVirtualSlots];
+    // cannot be greater then the number of vtable slots for classes. But for interfaces
+    // it might contain overrides for other interface methods.
+    DWORD dwMaxSlotSize = IsInterface() ? bmtMethod->dwNumberMethodImpls : bmtVT->cVirtualSlots;
+
+    DWORD * slots = new (&GetThread()->m_MarshalAlloc) DWORD[dwMaxSlotSize];
+    RelativePointer<MethodDesc *> * replaced = new (&GetThread()->m_MarshalAlloc) RelativePointer<MethodDesc*>[dwMaxSlotSize];
 
     DWORD iEntry = 0;
     bmtMDMethod * pCurImplMethod = bmtMethodImpl->GetImplementationMethod(iEntry);
@@ -6184,7 +6220,8 @@ MethodTableBuilder::PlaceMethodImpls()
         // (declaration is on this type) or a method desc.
         bmtMethodHandle hDeclMethod = bmtMethodImpl->GetDeclarationMethod(iEntry);
         if(hDeclMethod.IsMDMethod())
-        {   // The declaration is on the type being built
+        {   
+            // The declaration is on the type being built
             bmtMDMethod * pCurDeclMethod = hDeclMethod.AsMDMethod();
 
             mdToken mdef = pCurDeclMethod->GetMethodSignature().GetToken();
@@ -6193,42 +6230,73 @@ MethodTableBuilder::PlaceMethodImpls()
                 BuildMethodTableThrowException(IDS_CLASSLOAD_MI_MULTIPLEOVERRIDES, mdef);
             }
 
-            // Throws
-            PlaceLocalDeclaration(pCurDeclMethod,
-                                       pCurImplMethod,
-                                       slots,             // Adds override to the slot and replaced arrays.
-                                       replaced,
-                                       &slotIndex);       // Increments count
+            if (IsInterface())
+            {
+                // Throws
+                PlaceInterfaceDeclarationOnInterface(
+                    hDeclMethod,
+                    pCurImplMethod,
+                    slots,              // Adds override to the slot and replaced arrays.
+                    replaced,
+                    &slotIndex,
+                    dwMaxSlotSize);     // Increments count                
+            }
+            else
+            {
+                // Throws
+                PlaceLocalDeclarationOnClass(
+                    pCurDeclMethod,
+                    pCurImplMethod,
+                    slots,              // Adds override to the slot and replaced arrays.
+                    replaced,
+                    &slotIndex,
+                    dwMaxSlotSize);     // Increments count
+            }
         }
         else
         {
             bmtRTMethod * pCurDeclMethod = hDeclMethod.AsRTMethod();
 
-            // Do not use pDecl->IsInterface here as that asks the method table and the MT may not yet be set up.
-            if(pCurDeclMethod->GetOwningType()->IsInterface())
+            if (IsInterface())
             {
                 // Throws
-                PlaceInterfaceDeclaration(pCurDeclMethod,
-                                               pCurImplMethod,
-                                               slots,
-                                               replaced,
-                                               &slotIndex);     // Increments count
+                PlaceInterfaceDeclarationOnInterface(
+                    hDeclMethod,
+                    pCurImplMethod,
+                    slots,              // Adds override to the slot and replaced arrays.
+                    replaced,
+                    &slotIndex,
+                    dwMaxSlotSize);     // Increments count     
             }
             else
             {
-                // Throws
-                PlaceParentDeclaration(pCurDeclMethod,
-                                            pCurImplMethod,
-                                            slots,
-                                            replaced,
-                                            &slotIndex);        // Increments count
+                // Do not use pDecl->IsInterface here as that asks the method table and the MT may not yet be set up.
+                if (pCurDeclMethod->GetOwningType()->IsInterface())
+                {
+                    // Throws
+                    PlaceInterfaceDeclarationOnClass(
+                        pCurDeclMethod,
+                        pCurImplMethod);
+                }
+                else
+                {
+                    // Throws
+                    PlaceParentDeclarationOnClass(
+                        pCurDeclMethod,
+                        pCurImplMethod,
+                        slots,
+                        replaced,
+                        &slotIndex,
+                        dwMaxSlotSize);        // Increments count
+                }
             }
         }
 
         iEntry++;
 
         if(iEntry == bmtMethodImpl->pIndex)
-        {   // We hit the end of the list so dump the current data and leave
+        {
+            // We hit the end of the list so dump the current data and leave
             WriteMethodImplData(pCurImplMethod, slotIndex, slots, replaced);
             break;
         }
@@ -6237,7 +6305,8 @@ MethodTableBuilder::PlaceMethodImpls()
             bmtMDMethod * pNextImplMethod = bmtMethodImpl->GetImplementationMethod(iEntry);
 
             if (pNextImplMethod != pCurImplMethod)
-            {   // If we're moving on to a new body, dump the current data and reset the counter
+            {
+                // If we're moving on to a new body, dump the current data and reset the counter
                 WriteMethodImplData(pCurImplMethod, slotIndex, slots, replaced);
                 slotIndex = 0;
             }
@@ -6276,20 +6345,32 @@ MethodTableBuilder::WriteMethodImplData(
         // Set the size of the info the MethodImpl needs to keep track of.
         pImpl->SetSize(GetLoaderAllocator()->GetHighFrequencyHeap(), GetMemTracker(), cSlots);
 
-        // Gasp we do a bubble sort. Should change this to a qsort..
-        for (DWORD i = 0; i < cSlots; i++)
+        if (!IsInterface())
         {
-            for (DWORD j = i+1; j < cSlots; j++)
+            // If we are currently builting an interface, the slots here has no meaning and we can skip it
+            // Sort the two arrays in slot index order
+            // This is required in MethodImpl::FindSlotIndex and MethodImpl::Iterator as we'll be using 
+            // binary search later
+            for (DWORD i = 0; i < cSlots; i++)
             {
-                if (rgSlots[j] < rgSlots[i])
+                int min = i;
+                for (DWORD j = i + 1; j < cSlots; j++)
+                {
+                    if (rgSlots[j] < rgSlots[min])
+                    {
+                        min = j;
+                    }
+                }
+
+                if (min != i)
                 {
                     MethodDesc * mTmp = rgDeclMD[i].GetValue();
-                    rgDeclMD[i].SetValue(rgDeclMD[j].GetValue());
-                    rgDeclMD[j].SetValue(mTmp);
+                    rgDeclMD[i].SetValue(rgDeclMD[min].GetValue());
+                    rgDeclMD[min].SetValue(mTmp);
 
                     DWORD sTmp = rgSlots[i];
-                    rgSlots[i] = rgSlots[j];
-                    rgSlots[j] = sTmp;
+                    rgSlots[i] = rgSlots[min];
+                    rgSlots[min] = sTmp;
                 }
             }
         }
@@ -6303,12 +6384,13 @@ MethodTableBuilder::WriteMethodImplData(
 
 //*******************************************************************************
 VOID
-MethodTableBuilder::PlaceLocalDeclaration(
+MethodTableBuilder::PlaceLocalDeclarationOnClass(
     bmtMDMethod * pDecl, 
     bmtMDMethod * pImpl, 
     DWORD *       slots, 
     RelativePointer<MethodDesc *> * replaced,
-    DWORD *       pSlotIndex)
+    DWORD *       pSlotIndex,
+    DWORD         dwMaxSlotSize)
 {
     CONTRACTL
     {
@@ -6363,20 +6445,18 @@ MethodTableBuilder::PlaceLocalDeclaration(
         pImpl);
 
     // We implement this slot, record it
+    ASSERT(*pSlotIndex < dwMaxSlotSize);
     slots[*pSlotIndex] = pDecl->GetSlotIndex();
     replaced[*pSlotIndex].SetValue(pDecl->GetMethodDesc());
 
     // increment the counter
     (*pSlotIndex)++;
-} // MethodTableBuilder::PlaceLocalDeclaration
+} // MethodTableBuilder::PlaceLocalDeclarationOnClass
 
 //*******************************************************************************
-VOID MethodTableBuilder::PlaceInterfaceDeclaration(
+VOID MethodTableBuilder::PlaceInterfaceDeclarationOnClass(
     bmtRTMethod *     pDecl,
-    bmtMDMethod *     pImpl,
-    DWORD*            slots,
-    RelativePointer<MethodDesc *> *      replaced,
-    DWORD*            pSlotIndex)
+    bmtMDMethod *     pImpl)
 {
     CONTRACTL {
         STANDARD_VM_CHECK;
@@ -6472,16 +6552,60 @@ VOID MethodTableBuilder::PlaceInterfaceDeclaration(
         }
     }
 #endif //_DEBUG
-} // MethodTableBuilder::PlaceInterfaceDeclaration
+} // MethodTableBuilder::PlaceInterfaceDeclarationOnClass
+
+//*******************************************************************************
+VOID MethodTableBuilder::PlaceInterfaceDeclarationOnInterface(
+    bmtMethodHandle hDecl, 
+    bmtMDMethod   *pImpl, 
+    DWORD *       slots, 
+    RelativePointer<MethodDesc *> * replaced,
+    DWORD *       pSlotIndex,
+    DWORD         dwMaxSlotSize)
+{
+    CONTRACTL {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(pImpl));
+        PRECONDITION(IsInterface());
+        PRECONDITION(hDecl.GetMethodDesc()->IsInterface());
+    } CONTRACTL_END;
+
+    MethodDesc *  pDeclMD = hDecl.GetMethodDesc();
+
+    if (!bmtProp->fNoSanityChecks)
+    {
+        ///////////////////////////////
+        // Verify the signatures match
+
+        MethodImplCompareSignatures(
+            hDecl,
+            bmtMethodHandle(pImpl),
+            IDS_CLASSLOAD_CONSTRAINT_MISMATCH_ON_INTERFACE_METHOD_IMPL);
+
+        ///////////////////////////////
+        // Validate the method impl.
+
+        TestMethodImpl(hDecl, bmtMethodHandle(pImpl));
+    }
+
+    // We implement this slot, record it
+    ASSERT(*pSlotIndex < dwMaxSlotSize);
+    slots[*pSlotIndex] = hDecl.GetSlotIndex();
+    replaced[*pSlotIndex].SetValue(pDeclMD);
+
+    // increment the counter
+    (*pSlotIndex)++;
+} // MethodTableBuilder::PlaceInterfaceDeclarationOnInterface
 
 //*******************************************************************************
 VOID
-MethodTableBuilder::PlaceParentDeclaration(
+MethodTableBuilder::PlaceParentDeclarationOnClass(
     bmtRTMethod * pDecl, 
     bmtMDMethod * pImpl, 
     DWORD *       slots, 
     RelativePointer<MethodDesc *> * replaced,
-    DWORD *       pSlotIndex)
+    DWORD *       pSlotIndex,
+    DWORD         dwMaxSlotSize)
 {
     CONTRACTL {
         STANDARD_VM_CHECK;
@@ -6524,12 +6648,13 @@ MethodTableBuilder::PlaceParentDeclaration(
         pImpl);
 
     // We implement this slot, record it
+    ASSERT(*pSlotIndex < dwMaxSlotSize);
     slots[*pSlotIndex] = pDeclMD->GetSlot();
     replaced[*pSlotIndex].SetValue(pDeclMD);
 
     // increment the counter
     (*pSlotIndex)++;
-} // MethodTableBuilder::PlaceParentDeclaration
+} // MethodTableBuilder::PlaceParentDeclarationOnClass
 
 //*******************************************************************************
 // This will validate that all interface methods that were matched during
@@ -6563,8 +6688,8 @@ VOID MethodTableBuilder::ValidateInterfaceMethodConstraints()
             // If pTargetMT is null, this indicates that the target MethodDesc belongs
             // to the current type. Otherwise, the MethodDesc MUST be owned by a parent
             // of the type we're building.
-            BOOL              fTargetIsOwnedByParent = !pTargetMD->GetMethodTablePtr()->IsNull();
-
+            BOOL              fTargetIsOwnedByParent = !pTargetMD->GetMethodTablePtr()->IsNull();        
+            
             // If the method is owned by a parent, we need to use the parent's module,
             // and we must construct the substitution chain all the way up to the parent.
             const Substitution *pSubstTgt = NULL;
@@ -10565,6 +10690,47 @@ MethodTableBuilder::SetupMethodTable2(
 #pragma warning(pop)
 #endif
 
+// Returns true if there is at least one default implementation for this interface method
+// We don't care about conflicts at this stage in order to avoid impact type load performance
+BOOL MethodTableBuilder::HasDefaultInterfaceImplementation(MethodDesc *pDeclMD)
+{
+    STANDARD_VM_CONTRACT;
+
+#ifdef FEATURE_DEFAULT_INTERFACES
+    // If the interface method is already non-abstract, we are done
+    if (pDeclMD->IsDefaultInterfaceMethod())
+        return TRUE;
+
+    MethodTable *pDeclMT = pDeclMD->GetMethodTable();
+
+    // Otherwise, traverse the list of interfaces and see if there is at least one override 
+    bmtInterfaceInfo::MapIterator intIt = bmtInterface->IterateInterfaceMap();
+    for (; !intIt.AtEnd(); intIt.Next())
+    {
+        MethodTable *pIntfMT = intIt->GetInterfaceType()->GetMethodTable();
+        if (pIntfMT->GetClass()->ContainsMethodImpls() && pIntfMT->CanCastToInterface(pDeclMT))
+        {
+            MethodTable::MethodIterator methodIt(pIntfMT);
+            for (; methodIt.IsValid(); methodIt.Next())
+            {
+                MethodDesc *pMD = methodIt.GetMethodDesc();
+                if (pMD->IsMethodImpl())
+                {
+                    MethodImpl::Iterator it(pMD);
+                    while (it.IsValid())
+                    {
+                        if (it.GetMethodDesc() == pDeclMD)
+                            return TRUE;
+                    }
+                }
+            }
+        }
+    }
+#endif // FEATURE_DEFAULT_INTERFACES
+
+    return FALSE;
+}
+
 void MethodTableBuilder::VerifyVirtualMethodsImplemented(MethodTable::MethodData * hMTData)
 {
     STANDARD_VM_CONTRACT;
@@ -10640,7 +10806,9 @@ void MethodTableBuilder::VerifyVirtualMethodsImplemented(MethodTable::MethodData
                 if (it.GetTarget().IsNull())
                 {
                     MethodDesc *pMD = it.GetDeclMethodDesc();
-                    BuildMethodTableThrowException(IDS_CLASSLOAD_NOTIMPLEMENTED, pMD->GetNameOnNonArrayClass());
+
+                    if (!HasDefaultInterfaceImplementation(pMD))
+                        BuildMethodTableThrowException(IDS_CLASSLOAD_NOTIMPLEMENTED, pMD->GetNameOnNonArrayClass());
                 }
             }
         }
