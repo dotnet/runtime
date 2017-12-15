@@ -5142,6 +5142,23 @@ void emitter::emitIns_SIMD_R_R_S(instruction ins, regNumber reg, regNumber reg1,
         emitIns_R_S(ins, emitTypeSize(simdtype), reg, varx, offs);
     }
 }
+
+void emitter::emitIns_SIMD_R_R_R_I(
+    instruction ins, regNumber reg, regNumber reg1, regNumber reg2, int ival, var_types simdtype)
+{
+    if (UseVEXEncoding())
+    {
+        emitIns_R_R_R_I(ins, emitTypeSize(simdtype), reg, reg1, reg2, ival);
+    }
+    else
+    {
+        if (reg1 != reg)
+        {
+            emitIns_R_R(INS_movaps, emitTypeSize(simdtype), reg, reg1);
+        }
+        emitIns_R_R_I(ins, emitTypeSize(simdtype), reg, reg2, ival);
+    }
+}
 #endif
 
 /*****************************************************************************

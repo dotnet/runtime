@@ -455,6 +455,18 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
         case NI_SSE_Add:
         case NI_SSE_And:
         case NI_SSE_AndNot:
+        case NI_SSE_CompareEqual:
+        case NI_SSE_CompareGreaterThan:
+        case NI_SSE_CompareGreaterThanOrEqual:
+        case NI_SSE_CompareLessThan:
+        case NI_SSE_CompareLessThanOrEqual:
+        case NI_SSE_CompareNotEqual:
+        case NI_SSE_CompareNotGreaterThan:
+        case NI_SSE_CompareNotGreaterThanOrEqual:
+        case NI_SSE_CompareNotLessThan:
+        case NI_SSE_CompareNotLessThanOrEqual:
+        case NI_SSE_CompareOrdered:
+        case NI_SSE_CompareUnordered:
         case NI_SSE_Divide:
         case NI_SSE_Max:
         case NI_SSE_Min:

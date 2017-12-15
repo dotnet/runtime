@@ -226,6 +226,58 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             emit->emitIns_SIMD_R_R_R(INS_andnps, targetReg, op1Reg, op2Reg, TYP_SIMD16);
             break;
 
+        case NI_SSE_CompareEqual:
+            assert(baseType == TYP_FLOAT);
+            op2Reg = op2->gtRegNum;
+            emit->emitIns_SIMD_R_R_R_I(INS_cmpps, targetReg, op1Reg, op2Reg, 0, TYP_SIMD16);
+            break;
+
+        case NI_SSE_CompareGreaterThan:
+        case NI_SSE_CompareNotLessThanOrEqual:
+            assert(baseType == TYP_FLOAT);
+            op2Reg = op2->gtRegNum;
+            emit->emitIns_SIMD_R_R_R_I(INS_cmpps, targetReg, op1Reg, op2Reg, 6, TYP_SIMD16);
+            break;
+
+        case NI_SSE_CompareGreaterThanOrEqual:
+        case NI_SSE_CompareNotLessThan:
+            assert(baseType == TYP_FLOAT);
+            op2Reg = op2->gtRegNum;
+            emit->emitIns_SIMD_R_R_R_I(INS_cmpps, targetReg, op1Reg, op2Reg, 5, TYP_SIMD16);
+            break;
+
+        case NI_SSE_CompareLessThan:
+        case NI_SSE_CompareNotGreaterThanOrEqual:
+            assert(baseType == TYP_FLOAT);
+            op2Reg = op2->gtRegNum;
+            emit->emitIns_SIMD_R_R_R_I(INS_cmpps, targetReg, op1Reg, op2Reg, 1, TYP_SIMD16);
+            break;
+
+        case NI_SSE_CompareLessThanOrEqual:
+        case NI_SSE_CompareNotGreaterThan:
+            assert(baseType == TYP_FLOAT);
+            op2Reg = op2->gtRegNum;
+            emit->emitIns_SIMD_R_R_R_I(INS_cmpps, targetReg, op1Reg, op2Reg, 2, TYP_SIMD16);
+            break;
+
+        case NI_SSE_CompareNotEqual:
+            assert(baseType == TYP_FLOAT);
+            op2Reg = op2->gtRegNum;
+            emit->emitIns_SIMD_R_R_R_I(INS_cmpps, targetReg, op1Reg, op2Reg, 4, TYP_SIMD16);
+            break;
+
+        case NI_SSE_CompareOrdered:
+            assert(baseType == TYP_FLOAT);
+            op2Reg = op2->gtRegNum;
+            emit->emitIns_SIMD_R_R_R_I(INS_cmpps, targetReg, op1Reg, op2Reg, 7, TYP_SIMD16);
+            break;
+
+        case NI_SSE_CompareUnordered:
+            assert(baseType == TYP_FLOAT);
+            op2Reg = op2->gtRegNum;
+            emit->emitIns_SIMD_R_R_R_I(INS_cmpps, targetReg, op1Reg, op2Reg, 3, TYP_SIMD16);
+            break;
+
         case NI_SSE_Divide:
             assert(baseType == TYP_FLOAT);
             op2Reg = op2->gtRegNum;
