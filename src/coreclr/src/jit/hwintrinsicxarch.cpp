@@ -453,10 +453,24 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
     switch (intrinsic)
     {
         case NI_SSE_Add:
+        case NI_SSE_And:
+        case NI_SSE_AndNot:
+        case NI_SSE_Divide:
+        case NI_SSE_Max:
+        case NI_SSE_Min:
+        case NI_SSE_MoveHighToLow:
+        case NI_SSE_MoveLowToHigh:
+        case NI_SSE_Multiply:
+        case NI_SSE_Or:
+        case NI_SSE_Subtract:
+        case NI_SSE_UnpackHigh:
+        case NI_SSE_UnpackLow:
+        case NI_SSE_Xor:
             assert(sig->numArgs == 2);
+            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
             op2     = impSIMDPopStack(TYP_SIMD16);
             op1     = impSIMDPopStack(TYP_SIMD16);
-            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, NI_SSE_Add, TYP_FLOAT, 16);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, TYP_FLOAT, 16);
             break;
 
         default:
