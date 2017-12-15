@@ -2612,8 +2612,9 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
             }
         }
 
+#ifndef FEATURE_DEFAULT_INTERFACES
         // Some interface checks.
-        if (IsInterface())
+        if (fIsClassInterface)
         {
             if (IsMdVirtual(dwMemberAttrs))
             {
@@ -2621,7 +2622,7 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
                 {
                     BuildMethodTableThrowException(BFA_VIRTUAL_NONAB_INT_METHOD);
                 }
-            }
+            } 
             else
             {
                 // Instance field/method
@@ -2631,6 +2632,7 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
                 }
             }
         }
+#endif
 
         // No synchronized methods in ValueTypes
         if(fIsClassValueType && IsMiSynchronized(dwImplFlags))
@@ -2797,17 +2799,20 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
                 // If the interface is a standard managed interface then allocate space for an FCall method desc.
                 Classification = mcFCall;
             }
-            else
+            else if (IsMdAbstract(dwMemberAttrs))
             {
                 // If COM interop is supported then all other interface MDs may be
                 // accessed via COM interop <TODO> mcComInterop MDs are BIG -
                 // this is very often a waste of space </TODO>
+                // @DIM_TODO - What if default interface method is called through COM interop?
                 Classification = mcComInterop;
             }
-#else // !FEATURE_COMINTEROP
-            // This codepath is used by remoting
-            Classification = mcIL;
+            else
 #endif // !FEATURE_COMINTEROP
+            {
+                // This codepath is used by remoting and default interface methods
+                Classification = mcIL;
+            }
         }
         else
         {
