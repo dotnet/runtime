@@ -105,6 +105,7 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_minps:
         case INS_minsd:
         case INS_minss:
+        case INS_movhlps:
         case INS_movlhps:
         case INS_mulpd:
         case INS_mulps:
@@ -166,6 +167,8 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_subps:
         case INS_subsd:
         case INS_subss:
+        case INS_unpckhps:
+        case INS_unpcklps:
         case INS_vinsertf128:
         case INS_vinserti128:
         case INS_vperm2i128:
