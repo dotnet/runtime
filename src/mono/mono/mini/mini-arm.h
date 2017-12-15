@@ -223,6 +223,19 @@ typedef struct {
 	ArgInfo args [1];
 } CallInfo;
 
+#define PARAM_REGS 4
+#define FP_PARAM_REGS 8
+
+typedef struct {
+	/* General registers */
+	mgreg_t gregs [PARAM_REGS];
+	/* Floating registers */
+	float fregs [FP_PARAM_REGS * 2];
+	/* Stack usage, used for passing params on stack */
+	guint32 stack_size;
+	guint8 *stack;
+} CallContext;
+
 /* Structure used by the sequence points in AOTed code */
 typedef struct {
 	gpointer ss_trigger_page;
@@ -230,10 +243,6 @@ typedef struct {
 	gpointer ss_tramp_addr;
 	guint8* bp_addrs [MONO_ZERO_LEN_ARRAY];
 } SeqPointInfo;
-
-
-#define PARAM_REGS 4
-#define FP_PARAM_REGS 8
 
 typedef struct {
 	double fpregs [FP_PARAM_REGS];
@@ -351,6 +360,8 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_SDB_TRAMPOLINES 1
 #define MONO_ARCH_HAVE_PATCH_CODE_NEW 1
 #define MONO_ARCH_HAVE_OP_GENERIC_CLASS_INIT 1
+
+#define MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP 1
 
 #if defined(TARGET_WATCHOS) || (defined(__linux__) && !defined(TARGET_ANDROID))
 #define MONO_ARCH_DISABLE_HW_TRAPS 1

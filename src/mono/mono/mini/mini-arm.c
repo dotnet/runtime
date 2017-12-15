@@ -24,6 +24,8 @@
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/unlocked.h>
 
+#include "interp/interp.h"
+
 #include "mini-arm.h"
 #include "cpu-arm.h"
 #include "trace.h"
@@ -1609,6 +1611,115 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 
 	cinfo->stack_usage = stack_size;
 	return cinfo;
+}
+
+void
+mono_arch_set_native_call_context (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig)
+{
+	CallInfo *cinfo = get_call_info (NULL, sig);
+	MonoInterpCallbacks *interp_cb = mini_get_interp_callbacks ();
+
+	memset (ccontext, 0, sizeof (CallContext));
+
+	ccontext->stack_size = ALIGN_TO (cinfo->stack_usage, MONO_ARCH_FRAME_ALIGNMENT);
+	if (ccontext->stack_size)
+		ccontext->stack = calloc (1, ccontext->stack_size);
+
+	if (sig->ret->type != MONO_TYPE_VOID) {
+		if (cinfo->ret.storage == RegTypeStructByAddr) {
+			gpointer ret_storage = interp_cb->frame_arg_to_storage ((MonoInterpFrameHandle)frame, sig, -1);
+			ccontext->gregs [cinfo->ret.reg] = (mgreg_t)ret_storage;
+		}
+	}
+
+	for (int i = 0; i < sig->param_count + sig->hasthis; i++) {
+		ArgInfo *ainfo = &cinfo->args [i];
+		gpointer storage;
+		int storage_type = ainfo->storage;
+		int reg_storage = ainfo->reg;
+		switch (storage_type) {
+			case RegTypeIRegPair:
+			case RegTypeGeneral: {
+				storage = &ccontext->gregs [reg_storage];
+				break;
+			}
+			case RegTypeHFA:
+			case RegTypeFP: {
+				storage = &ccontext->fregs [reg_storage];
+				break;
+			}
+			case RegTypeBase: {
+				storage = ccontext->stack + ainfo->offset;
+				break;
+			}
+			case RegTypeStructByVal: {
+				storage = alloca (ainfo->struct_size);
+				memset (storage, 0, ainfo->struct_size);
+				break;
+			}
+			default:
+				g_error ("Arg storage type not yet supported");
+		}
+		interp_cb->frame_arg_to_data ((MonoInterpFrameHandle)frame, sig, i, storage);
+		if (storage_type == RegTypeStructByVal) {
+			if (ainfo->vtsize) {
+				int reg_size = ainfo->size * sizeof (mgreg_t);
+				memcpy (&ccontext->gregs [ainfo->reg], storage, reg_size);
+				memcpy (ccontext->stack + ainfo->offset, (mgreg_t*)storage + ainfo->size, ainfo->struct_size - reg_size);
+			} else {
+				memcpy (&ccontext->gregs [ainfo->reg], storage, ainfo->struct_size);
+			}
+		}
+	}
+
+	g_free (cinfo);
+}
+
+void
+mono_arch_get_native_call_context (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig)
+{
+	MonoInterpCallbacks *interp_cb = mini_get_interp_callbacks ();
+	CallInfo *cinfo;
+
+	/* No return value */
+	if (sig->ret->type == MONO_TYPE_VOID)
+		return;
+
+	cinfo = get_call_info (NULL, sig);
+
+	/* The return values were stored directly at address passed in reg */
+	if (cinfo->ret.storage == RegTypeStructByAddr)
+		goto done;
+
+	ArgInfo *ainfo = &cinfo->ret;
+	gpointer storage;
+	int storage_type = ainfo->storage;
+	int reg_storage = ainfo->reg;
+	switch (storage_type) {
+		case RegTypeIRegPair:
+		case RegTypeGeneral: {
+			storage = &ccontext->gregs [reg_storage];
+			break;
+		}
+		case RegTypeHFA:
+		case RegTypeFP: {
+			storage = &ccontext->fregs [reg_storage];
+			break;
+		}
+		case RegTypeStructByVal: {
+			storage = alloca (ainfo->struct_size);
+			g_assert (!ainfo->vtsize);
+			/* Reconstruct the value type */
+			memcpy (storage, &ccontext->gregs [reg_storage], ainfo->struct_size);
+			break;
+		}
+		default:
+			g_error ("Arg storage type not yet supported");
+	}
+	interp_cb->data_to_frame_arg ((MonoInterpFrameHandle)frame, sig, -1, storage);
+
+done:
+	g_free (cinfo);
 }
 
 
