@@ -141,7 +141,7 @@
     <Compile Include="System\Data\SqlClient\SqlInfoMessageEventHandler.cs" />
     <Compile Include="System\Data\SqlClient\SqlInternalConnection.cs" />
     <Compile Include="System\Data\SqlClient\SqlInternalConnectionTds.cs" />
-    <Compile Include="System\Data\SqlClient\sqlinternaltransaction.cs" />
+    <Compile Include="System\Data\SqlClient\SqlInternalTransaction.cs" />
     <Compile Include="System\Data\SqlClient\SqlMetadataFactory.cs" />
     <Compile Include="System\Data\SqlClient\SqlNotificationEventArgs.cs" />
     <Compile Include="System\Data\SqlClient\SqlNotificationInfo.cs" />
