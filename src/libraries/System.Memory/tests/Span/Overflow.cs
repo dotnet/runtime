@@ -4,6 +4,7 @@
 
 using Xunit;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.SpanTests
 {
@@ -46,10 +47,10 @@ namespace System.SpanTests
                         Assert.True(Unsafe.AreSame<Guid>(ref expected, ref span[bigIndex]));
 
                         Span<Guid> slice = span.Slice(bigIndex);
-                        Assert.True(Unsafe.AreSame<Guid>(ref expected, ref slice.DangerousGetPinnableReference()));
+                        Assert.True(Unsafe.AreSame<Guid>(ref expected, ref MemoryMarshal.GetReference(slice)));
 
                         slice = span.Slice(bigIndex, 1);
-                        Assert.True(Unsafe.AreSame<Guid>(ref expected, ref slice.DangerousGetPinnableReference()));
+                        Assert.True(Unsafe.AreSame<Guid>(ref expected, ref MemoryMarshal.GetReference(slice)));
                     }
                     finally
                     {
