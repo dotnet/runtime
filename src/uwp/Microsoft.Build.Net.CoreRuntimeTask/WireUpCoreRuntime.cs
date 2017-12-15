@@ -31,7 +31,8 @@ namespace Microsoft.Build.Net.CoreRuntimeTask
 
         private const string AppEntryPointDir = "entrypoint";
 
-        private const string UWPShimEXE = "UWPShim.exe";
+        private const string WindowsUWPShimEXE = "UWPShim.exe";
+        private const string ConsoleUWPShimEXE = "consoleUWPShim.exe";
 
         /// <summary> Gets or sets the path to the input AppxManifest file </summary>
         [Required]
@@ -145,25 +146,35 @@ namespace Microsoft.Build.Net.CoreRuntimeTask
             {
                 XDocument doc = XDocument.Load(sr, LoadOptions.None);
                 XNamespace ns = @"http://schemas.microsoft.com/appx/manifest/foundation/windows10";
-                string inprocServer = UWPShimEXE;
-                var uwpShimLocation = Path.Combine(new [] { 
+
+                string inprocServer = WindowsUWPShimEXE;
+                var windowsUwpShimLocation = Path.Combine(new [] {
                             CoreRuntimeSDKLocation,
                             "AppLocal",
-                            UWPShimEXE} );
+                            WindowsUWPShimEXE} );
 
-                IEnumerable<XAttribute> entryPointExecutables = Enumerable.Empty<XAttribute>();
+                var consoleUwpShimLocation = Path.Combine(new [] {
+                            CoreRuntimeSDKLocation,
+                            "AppLocal",
+                            ConsoleUWPShimEXE} );
+
                 if (isTargetRuntimeManaged)
                 {
                     // 1. For Managed apps, move <app.exe> to [AppEntryPointDir]\<app.exe> and copy UWPShim.exe to package root as <app.exe>
-                    entryPointExecutables = doc.Descendants(ns + "Applications").Descendants(ns + "Application").Where(x => x.Attribute("Executable") != null).Select(x => x.Attribute("Executable"));
+                    var entryPointExecutables = doc.
+                                                Descendants(ns + "Applications").
+                                                Descendants(ns + "Application").
+                                                Where(x => x.Attribute("Executable") != null).
+                                                Select(x => new { Executable = x.Attribute("Executable").Value,
+                                                                  ShimFileName = "console".Equals(x.Attribute("desktop4:Subsystem").Value, StringComparison.OrdinalIgnoreCase) ? consoleUwpShimLocation : windowsUwpShimLocation});
 
                     if (entryPointExecutables.Any())
                     {
                         // Set the inprocServer to the <app.exe>. From this point on that's our UWPShim.exe
                         // and since we will be copying uwpShim possibly several times with different names, yet they are all 
                         // uwpshim.exe, it's OK to grab the first one and use it as inprocserver entry
-                        inprocServer = entryPointExecutables.First().Value;
-                        if (entryPointExecutables.Any(x => x.Value.Contains(Path.DirectorySeparatorChar)))
+                        inprocServer = entryPointExecutables.First().Executable;
+                        if (entryPointExecutables.Any(x => x.Executable.Contains(Path.DirectorySeparatorChar)))
                         {
                             Log.LogError(Resources.Error_CustomEntryPointNotSupported);
                             return (int)ErrorCodes.NotSupported;
@@ -172,12 +183,12 @@ namespace Microsoft.Build.Net.CoreRuntimeTask
                         foreach (var entryPointExecutable in entryPointExecutables)
                         {
                             // Do not copy <app.exe> from original location, just modify TargetPath to [AppEntryPointDir]\<app.exe>
-                            ITaskItem currentManagedEntryPointExecutableTaskItem = AppxPackagePayload.Where(x => x.GetMetadata("TargetPath") == entryPointExecutable.Value).Single();
-                            currentManagedEntryPointExecutableTaskItem.SetMetadata("TargetPath", AppEntryPointDir + "\\" + entryPointExecutable.Value);
+                            ITaskItem currentManagedEntryPointExecutableTaskItem = AppxPackagePayload.Where(x => x.GetMetadata("TargetPath") == entryPointExecutable.Executable).Single();
+                            currentManagedEntryPointExecutableTaskItem.SetMetadata("TargetPath", AppEntryPointDir + "\\" + entryPointExecutable.Executable);
 
                             // Copy UWPShim
-                            var entryPointExecutableShim = Path.Combine(OutputPath, entryPointExecutable.Value);
-                            File.Copy(uwpShimLocation, entryPointExecutableShim, true);
+                            var entryPointExecutableShim = Path.Combine(OutputPath, entryPointExecutable.Executable);
+                            File.Copy(entryPointExecutable.ShimFileName, entryPointExecutableShim, true);
                             var copyResourcesReturncode = CopyWin32Resources(currentManagedEntryPointExecutableTaskItem.ItemSpec, entryPointExecutableShim);
                             if (copyResourcesReturncode != 0)
                             {
@@ -187,7 +198,7 @@ namespace Microsoft.Build.Net.CoreRuntimeTask
 
                             // Add UWPShim to appx package payload
                             ITaskItem entryPointExecutableShimTaskItem = new TaskItem(entryPointExecutableShim);
-                            entryPointExecutableShimTaskItem.SetMetadata("TargetPath", entryPointExecutable.Value);
+                            entryPointExecutableShimTaskItem.SetMetadata("TargetPath", entryPointExecutable.Executable);
                             currentManagedEntryPointExecutableTaskItem.CopyMetadataTo(entryPointExecutableShimTaskItem);
                             currentAppxPackagePayload.Add(entryPointExecutableShimTaskItem);
                         }
@@ -210,13 +221,13 @@ namespace Microsoft.Build.Net.CoreRuntimeTask
                 //
                 // 3. If #2 above is performed, inject UWPShim.exe into the output directory for unmanaged apps
                 //    which contain managed winmd and for managed background tasks (which do not contain entrypoint exe)
-                if (bHasManagedWinMD && inprocServer.Equals(UWPShimEXE))
+                if (bHasManagedWinMD && inprocServer.Equals(WindowsUWPShimEXE))
                 {
                     try 
                     {
                         // Copy UWPShim
                         string uwpDestination = Path.Combine(OutputPath, inprocServer);
-                        File.Copy(uwpShimLocation, uwpDestination, true);
+                        File.Copy(windowsUwpShimLocation, uwpDestination, true);
 
                         // Add UWPShim to appx package payload
                         TaskItem uwpShimTaskItem = new TaskItem(uwpDestination);
@@ -295,7 +306,6 @@ namespace Microsoft.Build.Net.CoreRuntimeTask
 
             return process.ExitCode;
         }
-        
     }
 }
 
