@@ -113,13 +113,12 @@ namespace System.IO
         private unsafe static string CombineNoChecksInternal(ReadOnlySpan<char> first, ReadOnlySpan<char> second)
         {
             Debug.Assert(first.Length > 0 && second.Length > 0, "should have dealt with empty paths");
+
+            bool hasSeparator = PathInternal.IsDirectorySeparator(first[first.Length - 1])
+                || PathInternal.IsDirectorySeparator(second[0]);
+
             fixed (char* f = &first.DangerousGetPinnableReference(), s = &second.DangerousGetPinnableReference())
             {
-                var firstSpan = new Span<char>(f, first.Length);
-                var secondSpan = new Span<char>(s, second.Length);
-                bool hasSeparator = PathInternal.IsDirectorySeparator(firstSpan[first.Length - 1])
-                    || PathInternal.IsDirectorySeparator(secondSpan[0]);
-                
                 return string.Create(
                     first.Length + second.Length + (hasSeparator ? 0 : 1),
                     (First: (IntPtr)f, FirstLength: first.Length, Second: (IntPtr)s, SecondLength: second.Length, HasSeparator: hasSeparator),
@@ -137,17 +136,14 @@ namespace System.IO
         private unsafe static string CombineNoChecksInternal(ReadOnlySpan<char> first, ReadOnlySpan<char> second, ReadOnlySpan<char> third)
         {
             Debug.Assert(first.Length > 0 && second.Length > 0 && third.Length > 0, "should have dealt with empty paths");
+
+            bool firstHasSeparator = PathInternal.IsDirectorySeparator(first[first.Length - 1])
+                || PathInternal.IsDirectorySeparator(second[0]);
+            bool thirdHasSeparator = PathInternal.IsDirectorySeparator(second[second.Length - 1])
+                || PathInternal.IsDirectorySeparator(third[0]);
+
             fixed (char* f = &first.DangerousGetPinnableReference(), s = &second.DangerousGetPinnableReference(), t = &third.DangerousGetPinnableReference())
             {
-                var firstSpan = new Span<char>(f, first.Length);
-                var secondSpan = new Span<char>(s, second.Length);
-                var thirdSpan = new Span<char>(t, third.Length);
-
-                bool firstHasSeparator = PathInternal.IsDirectorySeparator(firstSpan[first.Length - 1])
-                    || PathInternal.IsDirectorySeparator(secondSpan[0]);
-                bool thirdHasSeparator = PathInternal.IsDirectorySeparator(secondSpan[second.Length - 1])
-                    || PathInternal.IsDirectorySeparator(thirdSpan[0]);
-
                 return string.Create(
                     first.Length + second.Length + third.Length + (firstHasSeparator ? 0 : 1) + (thirdHasSeparator ? 0 : 1),
                     (First: (IntPtr)f, FirstLength: first.Length, Second: (IntPtr)s, SecondLength: second.Length,
@@ -171,13 +167,9 @@ namespace System.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool IsDotOrDotDot(ReadOnlySpan<char> fileName)
         {
-            fixed (char* fileNamePtr = &fileName.DangerousGetPinnableReference())
-            {
-                var fileNameSpan = new Span<char>(fileNamePtr, fileName.Length);
-                return !(fileName.Length > 2
-                    || fileNameSpan[0] != '.'
-                    || (fileName.Length == 2 && fileNameSpan[1] != '.'));
-            }
+            return !(fileName.Length > 2
+                || fileName[0] != '.'
+                || (fileName.Length == 2 && fileName[1] != '.'));
         }
 
         public static unsafe ReadOnlySpan<char> GetDirectoryNameNoChecks(ReadOnlySpan<char> path)
