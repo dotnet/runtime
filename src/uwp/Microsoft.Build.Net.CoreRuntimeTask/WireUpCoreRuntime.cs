@@ -166,7 +166,7 @@ namespace Microsoft.Build.Net.CoreRuntimeTask
                                                 Descendants(ns + "Application").
                                                 Where(x => x.Attribute("Executable") != null).
                                                 Select(x => new { Executable = x.Attribute("Executable").Value,
-                                                                  ShimFileName = "console".Equals(x.Attribute("desktop4:Subsystem").Value, StringComparison.OrdinalIgnoreCase) ? consoleUwpShimLocation : windowsUwpShimLocation});
+                                                                  ShimFileName = "console".Equals(x.Attribute("desktop4:Subsystem")?.Value, StringComparison.OrdinalIgnoreCase) ? consoleUwpShimLocation : windowsUwpShimLocation});
 
                     if (entryPointExecutables.Any())
                     {
