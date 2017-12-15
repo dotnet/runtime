@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using Xunit;
+using System.UnitTesting;
 
 namespace System
 {
@@ -35,17 +35,8 @@ namespace System
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
-            Assert.NotNull(ReferencesExpectedToBeCollected);
-            Assert.All(ReferencesExpectedToBeCollected, wr =>
-            {
-                Assert.True(wr.Target == null, "Object should have been collected.");
-            });
-
-            Assert.NotNull(ReferencesExpectedToBeCollected);
-            Assert.All(ReferencesExpectedToBeCollected, wr =>
-            {
-                Assert.True(wr.Target != null, "Object should be have NOT been collected.");
-            });
+            EqualityExtensions.IsTrueForAll(ReferencesExpectedToBeCollected, wr => wr.Target == null, "Object should have been collected.");
+            EqualityExtensions.IsTrueForAll(ReferencesNotExpectedToBeCollected, wr => wr.Target != null, "Object should be have NOT been collected.");
         }
     }
 }

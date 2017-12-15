@@ -13,6 +13,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Microsoft.Internal;
 using Microsoft.Internal.Collections;
 using IOPath = System.IO.Path;
@@ -735,17 +736,13 @@ namespace System.ComponentModel.Composition.Hosting
         private string[] GetFiles()
         {
             string[] files = Directory.GetFiles(_fullPath, _searchPattern);
-            return Array.ConvertAll<string, string>(files, (file) => file.ToUpperInvariant());
+            return Array.ConvertAll<string, string>(files, (file) => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? file.ToUpperInvariant() : file);
         }
 
         private static string GetFullPath(string path)
         {
-            if (!IOPath.IsPathRooted(path) && AppDomain.CurrentDomain.BaseDirectory != null)
-            {
-                path = IOPath.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
-            }
-
-            return IOPath.GetFullPath(path).ToUpperInvariant();
+            var fullPath = IOPath.GetFullPath(path);
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? fullPath.ToUpperInvariant() : fullPath;
         }
 
         private void Initialize(string path, string searchPattern)

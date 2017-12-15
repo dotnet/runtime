@@ -8,11 +8,7 @@ namespace System.ComponentModel.Composition.Diagnostics
 {
     internal static class CompositionTraceSource
     {
-#if FEATURE_TRACING
-        private static readonly TraceSourceTraceWriter Source = new TraceSourceTraceWriter();
-#else
         private static readonly DebuggerTraceWriter Source = new DebuggerTraceWriter();
-#endif
 
         public static bool CanWriteInformation
         {

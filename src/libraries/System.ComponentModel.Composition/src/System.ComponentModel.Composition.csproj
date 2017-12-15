@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{2D694AC8-A12F-4622-9405-74E20EC40C3A}</ProjectGuid>
     <AssemblyName>System.ComponentModel.Composition</AssemblyName>
-    <DefineConstants>$(DefineConstants);FEATURE_TRACING</DefineConstants>
     <!-- Workaround for issue buildtools #1784 -->
     <RunApiCompat>false</RunApiCompat>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard'">SR.PlatformNotSupported_ComponentModel_Composition</GeneratePlatformNotSupportedAssemblyMessage>
@@ -86,7 +85,6 @@
     <Compile Include="System\ComponentModel\Composition\Diagnostics\CompositionTraceId.cs" />
     <Compile Include="System\ComponentModel\Composition\Diagnostics\CompositionTraceSource.cs" />
     <Compile Include="System\ComponentModel\Composition\Diagnostics\SilverlightTraceWriter.cs" />
-    <Compile Include="System\ComponentModel\Composition\Diagnostics\TraceSourceTraceWriter.cs" />
     <Compile Include="System\ComponentModel\Composition\Diagnostics\TraceWriter.cs" />
     <Compile Include="System\ComponentModel\Composition\Hosting\AggregateCatalog.cs" />
     <Compile Include="System\ComponentModel\Composition\Hosting\AggregateExportProvider.cs" />
