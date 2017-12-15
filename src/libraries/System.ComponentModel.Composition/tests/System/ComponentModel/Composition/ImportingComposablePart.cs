@@ -104,8 +104,7 @@ namespace System.ComponentModel.Composition
 
         public override object GetExportedValue(ExportDefinition definition)
         {
-            Assert.False(true);
-            return null;
+            throw new NotImplementedException();
         }
 
         public override void SetImport(ImportDefinition definition, IEnumerable<Export> exports)

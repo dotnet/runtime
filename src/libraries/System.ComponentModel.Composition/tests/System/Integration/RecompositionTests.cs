@@ -542,6 +542,7 @@ namespace Tests.Integration
         {
 
         }
+
         [Export]
         [PartCreationPolicy(CreationPolicy.NonShared)]
         public class DisposablePart : Part, IDisposable
