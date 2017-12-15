@@ -135,9 +135,9 @@ class Constants {
                'jitdiff',
                'standalone_gc',
                'gc_reliability_framework',
-               'illink'] + r2rStressScenarios.keySet()
+               'illink']
 
-    def static allScenarios = basicScenarios + jitStressModeScenarios.keySet()
+    def static allScenarios = basicScenarios + r2rStressScenarios.keySet() + jitStressModeScenarios.keySet()
 
     // A set of scenarios that are valid for arm/arm64/armlb tests run on hardware. This is a map from valid scenario name
     // to Tests.lst file categories to exclude.
@@ -150,7 +150,7 @@ class Constants {
     def static validArmWindowsScenarios = [
                'default':                                [],
                // 'ilrt'
-               // 'r2r':                                    ["R2R_FAIL"],
+               'r2r':                                    ["R2R_FAIL"],
                // 'longgc'
                // 'formatting'
                // 'gcsimulator'
@@ -158,19 +158,19 @@ class Constants {
                // 'standalone_gc'
                // 'gc_reliability_framework'
                // 'illink'
-               // 'r2r_jitstress1'
-               // 'r2r_jitstress2'
-               // 'r2r_jitstressregs1'
-               // 'r2r_jitstressregs2'
-               // 'r2r_jitstressregs3'
-               // 'r2r_jitstressregs4'
-               // 'r2r_jitstressregs8'
-               // 'r2r_jitstressregs0x10'
-               // 'r2r_jitstressregs0x80'
-               // 'r2r_jitstressregs0x1000'
-               // 'r2r_jitminopts'
-               // 'r2r_jitforcerelocs'
-               // 'r2r_gcstress15'
+               'r2r_jitstress1':                         ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_jitstress2':                         ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_jitstressregs1':                     ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_jitstressregs2':                     ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_jitstressregs3':                     ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_jitstressregs4':                     ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_jitstressregs8':                     ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_jitstressregs0x10':                  ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_jitstressregs0x80':                  ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_jitstressregs0x1000':                ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_jitminopts':                         ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_jitforcerelocs':                     ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_gcstress15':                         ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
                'minopts':                                ["MINOPTS_FAIL", "MINOPTS_EXCLUDE"],
                'tieredcompilation':                      [],
                'forcerelocs':                            [],
@@ -458,10 +458,19 @@ def static getR2RDisplayName(def scenario) {
     return displayStr
 }
 
-// Generates the string for creating a file that sets environment variables
-// that makes it possible to run stress modes.  Writes the script to the file
-// specified by the stepScriptLocation parameter.
-def static genStressModeScriptStep(def os, def stressModeName, def stressModeVars, def stepScriptLocation) {
+//
+// Functions to create an environment script.
+//      envScriptCreate -- initialize the script (call first)
+//      envScriptFinalize -- finalize the script (call last)
+//      envScriptSetStressModeVariables -- set stress mode variables in the env script
+//      envScriptAppendExistingScript -- append an existing script to the generated script
+//
+// Each script returns a string of commands. Concatenate all the strings together before
+// adding them to the builds commands, to make sure they get executed as one Jenkins script.
+//
+
+// Initialize the environment setting script.
+def static envScriptCreate(def os, def stepScriptLocation) {
     def stepScript = ''
     if (os == 'Windows_NT') {
         // Timeout in ms, default is 10 minutes. For stress modes up this to 30 minutes.
@@ -470,12 +479,24 @@ def static genStressModeScriptStep(def os, def stressModeName, def stressModeVar
         def timeout = 1800000
         stepScript += "set __TestTimeout=${timeout}\r\n"
 
-        stepScript += "echo Creating TestEnv Script for ${stressModeName}\r\n"
+        stepScript += "echo Creating TestEnv script\r\n"
         stepScript += "if exist ${stepScriptLocation} del ${stepScriptLocation}\r\n"
 
         // Create at least an empty script.
         stepScript += "echo. > ${stepScriptLocation}\r\n"
+    }
+    else {
+        stepScript += "echo Creating environment setting script\n"
+        stepScript += "echo \\#\\!/usr/bin/env bash > ${stepScriptLocation}\n"
+    }
 
+    return stepScript
+}
+
+// Generates the string for setting stress mode variables.
+def static envScriptSetStressModeVariables(def os, def stressModeVars, def stepScriptLocation) {
+    def stepScript = ''
+    if (os == 'Windows_NT') {
         stressModeVars.each{ k, v ->
             // Write out what we are writing to the script file
             stepScript += "echo Setting ${k}=${v}\r\n"
@@ -484,31 +505,42 @@ def static genStressModeScriptStep(def os, def stressModeName, def stressModeVar
         }
     }
     else {
-        stepScript += "echo Setting variables for ${stressModeName}\n"
-        stepScript += "echo \\#\\!/usr/bin/env bash > ${stepScriptLocation}\n"
         stressModeVars.each{ k, v ->
             // Write out what we are writing to the script file
             stepScript += "echo Setting ${k}=${v}\n"
             // Write out the set itself to the script file`
             stepScript += "echo export ${k}=${v} >> ${stepScriptLocation}\n"
         }
-        stepScript += "chmod +x ${stepScriptLocation}\n"
     }
 
     return stepScript
 }
 
-// Append an existing script to a stress mode script already created by genStressModeScriptStep().
+// Append an existing script to an environment script.
 // Returns string of commands to do this.
-def static appendStressModeScriptStep(def os, def appendScript, def stepScriptLocation) {
+def static envScriptAppendExistingScript(def os, def appendScript, def stepScriptLocation) {
     assert (os == 'Windows_NT')
     def stepScript = ''
+
     stepScript += "echo Appending ${appendScript} to ${stepScriptLocation}\r\n"
     stepScript += "type ${appendScript} >> ${stepScriptLocation}\r\n"
 
-    // Display the resulting script. This is useful when looking at the output log file.
-    stepScript += "echo Display the total script ${stepScriptLocation}\r\n"
-    stepScript += "type ${stepScriptLocation}\r\n"
+    return stepScript
+}
+
+// Finalize an environment setting script.
+// Returns string of commands to do this.
+def static envScriptFinalize(def os, def stepScriptLocation) {
+    def stepScript = ''
+
+    if (os == 'Windows_NT') {
+        // Display the resulting script. This is useful when looking at the output log file.
+        stepScript += "echo Display the total script ${stepScriptLocation}\r\n"
+        stepScript += "type ${stepScriptLocation}\r\n"
+    }
+    else {
+        stepScript += "chmod +x ${stepScriptLocation}\n"
+    }
 
     return stepScript
 }
@@ -1479,46 +1511,6 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                             }
 
                             testOpts += ' runcrossgentests'
-
-                            if (scenario == 'r2r_jitstress1') {
-                                testOpts += ' jitstress 1'
-                            }
-                            else if (scenario == 'r2r_jitstress2') {
-                                testOpts += ' jitstress 2'
-                            }
-                            else if (scenario == 'r2r_jitstressregs1') {
-                                testOpts += ' jitstressregs 1'
-                            }
-                            else if (scenario == 'r2r_jitstressregs2') {
-                                testOpts += ' jitstressregs 2'
-                            }
-                            else if (scenario == 'r2r_jitstressregs3') {
-                                testOpts += ' jitstressregs 3'
-                            }
-                            else if (scenario == 'r2r_jitstressregs4') {
-                                testOpts += ' jitstressregs 4'
-                            }
-                            else if (scenario == 'r2r_jitstressregs8') {
-                                testOpts += ' jitstressregs 8'
-                            }
-                            else if (scenario == 'r2r_jitstressregs0x10') {
-                                testOpts += ' jitstressregs 0x10'
-                            }
-                            else if (scenario == 'r2r_jitstressregs0x80') {
-                                testOpts += ' jitstressregs 0x80'
-                            }
-                            else if (scenario == 'r2r_jitstressregs0x1000') {
-                                testOpts += ' jitstressregs 0x1000'
-                            }
-                            else if (scenario == 'r2r_jitminopts') {
-                                testOpts += ' jitminopts'
-                            }
-                            else if (scenario == 'r2r_jitforcerelocs') {
-                                testOpts += ' jitforcerelocs'
-                            }
-                            else if (scenario == 'r2r_gcstress15') {
-                                testOpts += ' gcstresslevel 0xF'
-                            }
                         }
                         else if (scenario == 'jitdiff') {
                             testOpts += ' jitdisasm crossgen'
@@ -1540,16 +1532,26 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         // value env pairs to a file at this point and then we'll pass that to runtest.cmd
 
                         def envScriptPath = ''
-                        if (isJitStressScenario(scenario)) {
+                        if (isJitStressScenario(scenario) || isR2RStressScenario(scenario)) {
                             def buildCommandsStr = ''
                             envScriptPath = "%WORKSPACE%\\SetStressModes.bat"
-                            buildCommandsStr += genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], envScriptPath)
+                            buildCommandsStr += envScriptCreate(os, envScriptPath)
+
+                            if (isJitStressScenario(scenario)) {
+                                buildCommandsStr += envScriptSetStressModeVariables(os, Constants.jitStressModeScenarios[scenario], envScriptPath)
+                            }
+                            else if (isR2RStressScenario(scenario)) {
+                                buildCommandsStr += envScriptSetStressModeVariables(os, Constants.r2rStressScenarios[scenario], envScriptPath)
+                            }
+
                             if (architecture == 'x86_arm_altjit') {
-                                buildCommandsStr += appendStressModeScriptStep(os, "%WORKSPACE%\\tests\\x86_arm_altjit.cmd", envScriptPath)
+                                buildCommandsStr += envScriptAppendExistingScript(os, "%WORKSPACE%\\tests\\x86_arm_altjit.cmd", envScriptPath)
                             }
                             else if (architecture == 'x64_arm64_altjit') {
-                                buildCommandsStr += appendStressModeScriptStep(os, "%WORKSPACE%\\tests\\x64_arm64_altjit.cmd", envScriptPath)
+                                buildCommandsStr += envScriptAppendExistingScript(os, "%WORKSPACE%\\tests\\x64_arm64_altjit.cmd", envScriptPath)
                             }
+
+                            envScriptFinalize(os, envScriptPath)
 
                             // Note that buildCommands is an array of individually executed commands; we want all the commands used to 
                             // create the SetStressModes.bat script to be executed together, hence we accumulate them as strings
@@ -1747,7 +1749,11 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         buildCommands += "./build.sh verbose ${lowerConfiguration} ${architecture}"
 
                         def scriptFileName = "\$WORKSPACE/set_stress_test_env.sh"
-                        buildCommands += genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], scriptFileName)
+
+                        def envScriptCmds = envScriptCreate(os, scriptFileName)
+                        envScriptCmds += envScriptSetStressModeVariables(os, Constants.jitStressModeScenarios[scenario], scriptFileName)
+                        envScriptCmds += envScriptFinalize(os, scriptFileName)
+                        buildCommands += envScriptCmds
 
                         // Build and text corefx
                         def workspaceRelativeFxRoot = "_/fx"
@@ -1929,10 +1935,6 @@ Constants.allScenarios.each { scenario ->
                     }
                     else if (isR2RScenario(scenario)) {
                         if (os != 'Windows_NT') {
-                            return
-                        }
-                        // R2R test runs are not implemented for arm/armlb/arm64.
-                        if (architecture == 'arm' || architecture == 'armlb' || architecture == 'arm64') {
                             return
                         }
                         // Stress scenarios only run with Checked builds, not Release (they would work with Debug, but be slow).
@@ -2487,8 +2489,10 @@ Constants.allScenarios.each { scenario ->
                                 def testEnvOpt = ""
                                 if (isJitStressScenario(scenario)) {
                                     def scriptFileName = "\$WORKSPACE/set_stress_test_env.sh"
-                                    def createScriptCmds = genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], scriptFileName)
-                                    shell("${createScriptCmds}")
+                                    def envScriptCmds = envScriptCreate(os, scriptFileName)
+                                    envScriptCmds += envScriptSetStressModeVariables(os, Constants.jitStressModeScenarios[scenario], scriptFileName)
+                                    envScriptCmds += envScriptFinalize(os, scriptFileName)
+                                    shell("${envScriptCmds}")
                                     testEnvOpt = "--test-env=" + scriptFileName
                                 }
 
@@ -2560,8 +2564,11 @@ Constants.allScenarios.each { scenario ->
                                     }
                                 }
 
-                                // TODO: do whatever is necessary to support enabling R2R testing. Environment variables,
-                                // crossgen the framework assemblies, etc.
+                                if (isR2RScenario(scenario)) {
+                                    addEnvVariable("RunCrossGen", "true")
+
+                                    // TODO: crossgen the framework assemblies
+                                }
 
                                 // Create the smarty command
                                 def smartyCommand = "C:\\Tools\\Smarty.exe /noecid /noie /workers 9 /inc EXPECTED_PASS "
