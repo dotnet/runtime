@@ -446,6 +446,7 @@ void emitIns_SIMD_R_R_C(
     instruction ins, regNumber reg, regNumber reg1, CORINFO_FIELD_HANDLE fldHnd, int offs, var_types simdtype);
 void emitIns_SIMD_R_R_R(instruction ins, regNumber reg, regNumber reg1, regNumber reg2, var_types simdtype);
 void emitIns_SIMD_R_R_S(instruction ins, regNumber reg, regNumber reg1, int varx, int offs, var_types simdtype);
+void emitIns_SIMD_R_R_R_I(instruction ins, regNumber reg, regNumber reg1, regNumber reg2, int ival, var_types simdtype);
 #endif
 
 #if FEATURE_STACK_FP_X87
