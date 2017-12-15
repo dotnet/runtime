@@ -1911,7 +1911,7 @@ namespace System
         [CLSCompliant(false)]
         public unsafe ReadOnlySpan(void* pointer, int length) { throw null; }
         public bool IsEmpty { get { throw null; } }
-        public T this[int index] { get { throw null; } }
+        public ref readonly T this[int index] { get { throw null; } }
         public int Length { get { throw null; } }
         public void CopyTo(Span<T> destination) { }
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
