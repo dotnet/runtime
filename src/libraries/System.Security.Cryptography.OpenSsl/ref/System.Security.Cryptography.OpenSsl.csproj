@@ -3,9 +3,12 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{8DEA82EF-2214-4295-8CC1-9FFB9B18838F}</ProjectGuid>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
-    <DefineConstants>$(DefineConstants);netcoreapp</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
+    <!-- We must pin the netstandard2.0 version to match what was shipped in netcoreapp2.0
+         If we decided to add more Apis to that version of the library we need to also start
+         producing the netcoreapp2.0 src library again instead of harvesting it.
+     -->
+    <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard'">4.1.0.0</AssemblyVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
