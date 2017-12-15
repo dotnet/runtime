@@ -165,18 +165,16 @@ namespace System
         /// <exception cref="System.IndexOutOfRangeException">
         /// Thrown when index less than 0 or index greater than or equal to Length
         /// </exception>
-#if PROJECTN
+
         public ref readonly T this[int index]
         {
+#if PROJECTN
             [BoundsChecking]
             get
             {
                 return ref Unsafe.Add(ref _pointer.Value, index);
             }
-        }
 #else
-        public T this[int index]
-        {
             [Intrinsic]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [NonVersionable]
@@ -184,10 +182,10 @@ namespace System
             {
                 if ((uint)index >= (uint)_length)
                     ThrowHelper.ThrowIndexOutOfRangeException();
-                return Unsafe.Add(ref _pointer.Value, index);
+                return ref Unsafe.Add(ref _pointer.Value, index);
             }
-        }
 #endif
+        }
 
         /// <summary>
         /// Copies the contents of this read-only span into destination span. If the source
