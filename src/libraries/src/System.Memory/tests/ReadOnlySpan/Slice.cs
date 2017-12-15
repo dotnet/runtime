@@ -4,6 +4,7 @@
 
 using Xunit;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.SpanTests
 {
@@ -15,7 +16,7 @@ namespace System.SpanTests
             int[] a = { 90, 91, 92, 93, 94, 95, 96, 97, 98, 99 };
             ReadOnlySpan<int> span = new ReadOnlySpan<int>(a).Slice(6);
             Assert.Equal(4, span.Length);
-            Assert.True(Unsafe.AreSame(ref a[6], ref span.DangerousGetPinnableReference()));
+            Assert.True(Unsafe.AreSame(ref a[6], ref Unsafe.AsRef(in MemoryMarshal.GetReference(span))));
         }
 
         [Fact]
@@ -24,7 +25,7 @@ namespace System.SpanTests
             int[] a = { 90, 91, 92, 93, 94, 95, 96, 97, 98, 99 };
             ReadOnlySpan<int> span = new ReadOnlySpan<int>(a).Slice(a.Length);
             Assert.Equal(0, span.Length);
-            Assert.True(Unsafe.AreSame(ref a[a.Length - 1], ref Unsafe.Subtract<int>(ref span.DangerousGetPinnableReference(), 1)));
+            Assert.True(Unsafe.AreSame(ref a[a.Length - 1], ref Unsafe.Subtract<int>(ref Unsafe.AsRef(in MemoryMarshal.GetReference(span)), 1)));
         }
 
         [Fact]
@@ -33,7 +34,7 @@ namespace System.SpanTests
             int[] a = { 90, 91, 92, 93, 94, 95, 96, 97, 98, 99 };
             ReadOnlySpan<int> span = new ReadOnlySpan<int>(a).Slice(3, 5);
             Assert.Equal(5, span.Length);
-            Assert.True(Unsafe.AreSame(ref a[3], ref span.DangerousGetPinnableReference()));
+            Assert.True(Unsafe.AreSame(ref a[3], ref Unsafe.AsRef(in MemoryMarshal.GetReference(span))));
         }
 
         [Fact]
@@ -42,7 +43,7 @@ namespace System.SpanTests
             int[] a = { 90, 91, 92, 93, 94, 95, 96, 97, 98, 99 };
             ReadOnlySpan<int> span = new ReadOnlySpan<int>(a).Slice(4, 6);
             Assert.Equal(6, span.Length);
-            Assert.True(Unsafe.AreSame(ref a[4], ref span.DangerousGetPinnableReference()));
+            Assert.True(Unsafe.AreSame(ref a[4], ref Unsafe.AsRef(in MemoryMarshal.GetReference(span))));
         }
 
         [Fact]
@@ -51,7 +52,7 @@ namespace System.SpanTests
             int[] a = { 90, 91, 92, 93, 94, 95, 96, 97, 98, 99 };
             ReadOnlySpan<int> span = new ReadOnlySpan<int>(a).Slice(a.Length, 0);
             Assert.Equal(0, span.Length);
-            Assert.True(Unsafe.AreSame(ref a[a.Length - 1], ref Unsafe.Subtract<int>(ref span.DangerousGetPinnableReference(), 1)));
+            Assert.True(Unsafe.AreSame(ref a[a.Length - 1], ref Unsafe.Subtract<int>(ref Unsafe.AsRef(in MemoryMarshal.GetReference(span)), 1)));
         }
 
         [Fact]

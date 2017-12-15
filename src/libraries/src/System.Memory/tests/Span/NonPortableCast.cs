@@ -4,6 +4,7 @@
 
 using Xunit;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.SpanTests
 {
@@ -16,7 +17,7 @@ namespace System.SpanTests
             Span<uint> span = new Span<uint>(a);
             Span<ushort> asUShort = span.NonPortableCast<uint, ushort>();
 
-            Assert.True(Unsafe.AreSame<ushort>(ref Unsafe.As<uint, ushort>(ref span.DangerousGetPinnableReference()), ref asUShort.DangerousGetPinnableReference()));
+            Assert.True(Unsafe.AreSame<ushort>(ref Unsafe.As<uint, ushort>(ref MemoryMarshal.GetReference(span)), ref MemoryMarshal.GetReference(asUShort)));
             asUShort.Validate<ushort>(0x2211, 0x4433, 0x6655, 0x8877);
         }
 
