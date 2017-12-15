@@ -81,7 +81,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
          * Does NOT include ()
          */
 
-        private void ErrAppendParamList(TypeArray @params, bool isVarargs, bool isParamArray)
+        private void ErrAppendParamList(TypeArray @params, bool isParamArray)
         {
             if (null == @params)
                 return;
@@ -100,16 +100,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
 
                 // parameter type name
                 ErrAppendType(@params[i], null);
-            }
-
-            if (isVarargs)
-            {
-                if (@params.Count != 0)
-                {
-                    ErrAppendString(", ");
-                }
-
-                ErrAppendString("...");
             }
         }
 
@@ -291,7 +281,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 // append argument types
                 ErrAppendChar('(');
 
-                ErrAppendParamList(GetTypeManager().SubstTypeArray(meth.Params, pctx), meth.isVarargs, meth.isParamArray);
+                ErrAppendParamList(GetTypeManager().SubstTypeArray(meth.Params, pctx), meth.isParamArray);
 
                 ErrAppendChar(')');
             }
@@ -300,7 +290,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         private void ErrAppendIndexer(IndexerSymbol indexer, SubstContext pctx)
         {
             ErrAppendString("this[");
-            ErrAppendParamList(GetTypeManager().SubstTypeArray(indexer.Params, pctx), false, indexer.isParamArray);
+            ErrAppendParamList(GetTypeManager().SubstTypeArray(indexer.Params, pctx), indexer.isParamArray);
             ErrAppendChar(']');
         }
         private void ErrAppendProperty(PropertySymbol prop, SubstContext pctx)
