@@ -4963,11 +4963,18 @@ GenTreePtr Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr f
         objClass           = argObj->gtClass;
         structSize         = info.compCompHnd->getClassSize(objClass);
 
-        // If we have a GT_OBJ of a GT_ADDR then we set argValue to the child node of the GT_ADDR
-        //
-        if (argObj->gtOp1->OperGet() == GT_ADDR)
+        // If we have a GT_OBJ of a GT_ADDR then we set argValue to the child node of the GT_ADDR.
+        GenTree* op1 = argObj->gtOp1;
+        if (op1->OperGet() == GT_ADDR)
         {
-            argValue = argObj->gtOp1->gtOp.gtOp1;
+            GenTree* underlyingTree = op1->gtOp.gtOp1;
+
+            // Only update to the same type.
+            if ((underlyingTree->TypeGet() == argValue->TypeGet()) &&
+                (objClass == gtGetStructHandleIfPresent(underlyingTree)))
+            {
+                argValue = underlyingTree;
+            }
         }
     }
     else if (arg->OperGet() == GT_LCL_VAR)
@@ -5341,6 +5348,19 @@ GenTreePtr Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr f
             GenTreeObj* argObj   = argValue->AsObj();
             GenTreePtr  baseAddr = argObj->gtOp1;
             var_types   addrType = baseAddr->TypeGet();
+
+            if (baseAddr->OperGet() == GT_ADDR)
+            {
+                GenTree* addrTaken = baseAddr->gtOp.gtOp1;
+                if (addrTaken->IsLocal())
+                {
+                    GenTreeLclVarCommon* varNode = addrTaken->AsLclVarCommon();
+                    unsigned             varNum  = varNode->gtLclNum;
+                    // We access non-struct type (for example, long) as a struct type.
+                    // Make sure lclVar lives on stack to make sure its fields are accessible by address.
+                    lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LocalField));
+                }
+            }
 
             // Create a new tree for 'arg'
             //    replace the existing LDOBJ(EXPR)
