@@ -24,8 +24,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private EventSymbol _evt;     // For event accessors, this is the EventSymbol.
 
         public bool isVirtual;              // Virtual member?
-        public bool isAbstract;             // Abstract method?
-        public bool isVarargs;              // has varargs
         public MemberInfo AssociatedMemberInfo;
 
         public TypeArray typeVars;          // All the type variables for a generic method, as declarations.

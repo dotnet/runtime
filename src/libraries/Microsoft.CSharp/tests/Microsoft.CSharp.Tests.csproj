@@ -22,6 +22,7 @@
     <Compile Include="RuntimeBinderInternalCompilerExceptionTests.cs" />
     <Compile Include="RuntimeBinderTests.cs" />
     <Compile Include="UserDefinedShortCircuitOperators.cs" />
+    <Compile Include="VarArgsTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
