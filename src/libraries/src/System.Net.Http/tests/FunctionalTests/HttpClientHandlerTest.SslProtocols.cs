@@ -5,6 +5,7 @@
 using System.IO;
 using System.Net.Security;
 using System.Net.Test.Common;
+using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Threading.Tasks;
 using Xunit;
@@ -123,7 +124,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public static readonly object [][] SupportedSSLVersionServers =
+        public static readonly object[][] SupportedSSLVersionServers =
         {
             new object[] {SslProtocols.Tls, Configuration.Http.TLSv10RemoteServer},
             new object[] {SslProtocols.Tls11, Configuration.Http.TLSv11RemoteServer},
@@ -155,10 +156,25 @@ namespace System.Net.Http.Functional.Tests
                 }
                 using (var client = new HttpClient(handler))
                 {
-                    (await client.GetAsync(url)).Dispose();
+                    (await RemoteServerQuery.Run(() => client.GetAsync(url), remoteServerExceptionWrapper, url)).Dispose();
                 }
             }
         }
+
+        public Func<Exception, bool> remoteServerExceptionWrapper = (exception) =>
+        {
+            Type exceptionType = exception.GetType();
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                // On linux, taskcanceledexception is thrown.
+                return exceptionType.Equals(typeof(TaskCanceledException));
+            }
+            else
+            {
+                // The internal exceptions return operation timed out.
+                return exceptionType.Equals(typeof(HttpRequestException)) && exception.InnerException.Message.Contains("timed out");
+            }
+        };
 
         public static readonly object[][] NotSupportedSSLVersionServers =
         {
@@ -189,7 +205,7 @@ namespace System.Net.Http.Functional.Tests
 
             using (HttpClient client = CreateHttpClient())
             {
-                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url));
+                await Assert.ThrowsAsync<HttpRequestException>(() => RemoteServerQuery.Run(() => client.GetAsync(url), remoteServerExceptionWrapper, url));
             }
         }
 
@@ -197,7 +213,8 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SslDefaultsToTls12))]
         public async Task GetAsync_NoSpecifiedProtocol_DefaultsToTls12()
         {
-            if (!BackendSupportsSslConfiguration) return;
+            if (!BackendSupportsSslConfiguration)
+                return;
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (var client = new HttpClient(handler))
             {
@@ -226,7 +243,8 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_AllowedSSLVersionDiffersFromServer_ThrowsException(
             SslProtocols allowedProtocol, SslProtocols acceptedProtocol, Type exceptedServerException)
         {
-            if (!BackendSupportsSslConfiguration) return;
+            if (!BackendSupportsSslConfiguration)
+                return;
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (var client = new HttpClient(handler))
             {
