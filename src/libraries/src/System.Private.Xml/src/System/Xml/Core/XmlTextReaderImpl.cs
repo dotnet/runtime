@@ -3212,20 +3212,16 @@ namespace System.Xml
             }
         }
 
-        private unsafe void EatPreamble()
+        private void EatPreamble()
         {
             ReadOnlySpan<byte> preamble = _ps.encoding.Preamble;
             int preambleLen = preamble.Length;
             int i;
-            fixed (byte* preamblePtr = &preamble.DangerousGetPinnableReference())
+            for (i = 0; i < preambleLen && i < _ps.bytesUsed; i++)
             {
-                var preambleSpan = new Span<byte>(preamblePtr, preambleLen);
-                for (i = 0; i < preambleLen && i < _ps.bytesUsed; i++)
+                if (_ps.bytes[i] != preamble[i])
                 {
-                    if (_ps.bytes[i] != preambleSpan[i])
-                    {
-                        break;
-                    }
+                    break;
                 }
             }
             if (i == preambleLen)
