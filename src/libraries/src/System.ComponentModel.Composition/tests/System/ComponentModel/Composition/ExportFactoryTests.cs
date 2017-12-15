@@ -392,6 +392,7 @@ namespace Tests.Integration
         }
 
         [Fact]
+        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void ExportFactory_SimpleDispose()
         {
             var catalog = new AssemblyCatalog(Assembly.GetExecutingAssembly());

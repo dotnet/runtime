@@ -173,6 +173,24 @@ namespace System
             else
                 return $"{message} {userMessage}";
         }
+        
+        /// <summary>
+        /// Tests whether the specified string contains the specified substring
+        /// and throws an exception if the substring does not occur within the
+        /// test string or if either string or substring is null.
+        /// </summary>
+        /// <param name="value">
+        /// The string that is expected to contain <paramref name="substring"/>.
+        /// </param>
+        /// <param name="substring">
+        /// The string expected to occur within <paramref name="value"/>.
+        /// </param>
+        public static void Contains(string value, string substring)
+        {
+            Assert.NotNull(value);
+            Assert.NotNull(substring);
+            Assert.Contains(substring, value, StringComparison.Ordinal);
+        }
 
         /// <summary>
         /// Validate that a given value is greater than another value.
