@@ -6,18 +6,13 @@
     <MinClientVersion>2.8.6</MinClientVersion>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Threading.Tasks.Extensions.csproj">
+    <ProjectReference Include="..\ref\System.Threading.Tasks.Extensions.csproj">
       <SupportedFramework>net45;netcore45;netcoreapp1.0;wpa81;wp8;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
+    <ProjectReference Include="..\src\System.Threading.Tasks.Extensions.csproj" />
 
-    <!-- Since UAP and .NETCoreApp are package based we still want to enable
-         OOBing libraries that happen to overlap with their framework package.
-         This avoids us having to lock the API in our NuGet packages just 
-         to match what shipped inbox: since we can provide a new library 
-         we can update it to add API without raising the netstandard version. -->
-    <ValidatePackageSuppression Include="TreatAsOutOfBox">
-      <Value>.NETCoreApp;UAP</Value>
-    </ValidatePackageSuppression>
+    <InboxOnTargetFramework Include="netcoreapp2.0" />
+    <InboxOnTargetFramework Include="$(UAPvNextTFM)" />
 
     <!-- this package is part of the implementation closure of NETStandard.Library
          therefore it cannot reference NETStandard.Library -->
