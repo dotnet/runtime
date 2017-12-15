@@ -1,5 +1,6 @@
 JIT/Directed/coverage/importer/ldelemnullarr2/
 JIT/Methodical/Coverage/b39946/
+JIT/Methodical/tailcall/_il_dbgtest_3b/
 JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b26863/b26863/
 JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b28037/b28037/
 JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b29068/b29068/
