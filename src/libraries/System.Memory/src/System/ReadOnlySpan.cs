@@ -307,6 +307,7 @@ namespace System
         public static ReadOnlySpan<T> Empty => default(ReadOnlySpan<T>);
 
         /// <summary>
+        /// This method is obsolete, use System.Runtime.InteropServices.MemoryMarshal.GetReference instead.
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to the location where the 0th element
         /// would have been stored. Such a reference can be used for pinning but must never be dereferenced.
         /// </summary>

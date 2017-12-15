@@ -118,6 +118,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="MemoryMarshal\AsMemory.cs" />
+    <Compile Include="MemoryMarshal\GetReference.cs" />
+    <Compile Include="MemoryMarshal\TryGetArray.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ReadOnlyMemory\CopyTo.cs" />

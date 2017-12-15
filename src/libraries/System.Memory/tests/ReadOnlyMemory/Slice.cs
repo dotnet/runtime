@@ -3,8 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using System.Runtime.CompilerServices;
 using System.Buffers;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.MemoryTests
 {
@@ -16,13 +17,13 @@ namespace System.MemoryTests
             int[] a = { 90, 91, 92, 93, 94, 95, 96, 97, 98, 99 };
             ReadOnlyMemory<int> memory = new ReadOnlyMemory<int>(a).Slice(6);
             Assert.Equal(4, memory.Length);
-            Assert.True(Unsafe.AreSame(ref a[6], ref memory.Span.DangerousGetPinnableReference()));
+            Assert.True(Unsafe.AreSame(ref a[6], ref Unsafe.AsRef(in MemoryMarshal.GetReference(memory.Span))));
 
             OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
             ReadOnlyMemory<int> memoryFromOwner = ((ReadOnlyMemory<int>)owner.Memory).Slice(6);
 
             Assert.Equal(4, memoryFromOwner.Length);
-            Assert.True(Unsafe.AreSame(ref a[6], ref memoryFromOwner.Span.DangerousGetPinnableReference()));
+            Assert.True(Unsafe.AreSame(ref a[6], ref Unsafe.AsRef(in MemoryMarshal.GetReference(memoryFromOwner.Span))));
         }
 
         [Fact]
@@ -31,13 +32,13 @@ namespace System.MemoryTests
             int[] a = { 90, 91, 92, 93, 94, 95, 96, 97, 98, 99 };
             ReadOnlyMemory<int> memory = new ReadOnlyMemory<int>(a).Slice(a.Length);
             Assert.Equal(0, memory.Length);
-            Assert.True(Unsafe.AreSame(ref a[a.Length - 1], ref Unsafe.Subtract(ref memory.Span.DangerousGetPinnableReference(), 1)));
+            Assert.True(Unsafe.AreSame(ref a[a.Length - 1], ref Unsafe.Subtract(ref Unsafe.AsRef(in MemoryMarshal.GetReference(memory.Span)), 1)));
 
             OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
             ReadOnlyMemory<int> memoryFromOwner = ((ReadOnlyMemory<int>)owner.Memory).Slice(a.Length);
 
             Assert.Equal(0, memoryFromOwner.Length);
-            Assert.True(Unsafe.AreSame(ref a[a.Length - 1], ref Unsafe.Subtract(ref memoryFromOwner.Span.DangerousGetPinnableReference(), 1)));
+            Assert.True(Unsafe.AreSame(ref a[a.Length - 1], ref Unsafe.Subtract(ref Unsafe.AsRef(in MemoryMarshal.GetReference(memoryFromOwner.Span)), 1)));
         }
 
         [Fact]
@@ -46,13 +47,13 @@ namespace System.MemoryTests
             int[] a = { 90, 91, 92, 93, 94, 95, 96, 97, 98, 99 };
             ReadOnlyMemory<int> memory = new ReadOnlyMemory<int>(a).Slice(3, 5);
             Assert.Equal(5, memory.Length);
-            Assert.True(Unsafe.AreSame(ref a[3], ref memory.Span.DangerousGetPinnableReference()));
+            Assert.True(Unsafe.AreSame(ref a[3], ref Unsafe.AsRef(in MemoryMarshal.GetReference(memory.Span))));
 
             OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
             ReadOnlyMemory<int> memoryFromOwner = ((ReadOnlyMemory<int>)owner.Memory).Slice(3, 5);
 
             Assert.Equal(5, memoryFromOwner.Length);
-            Assert.True(Unsafe.AreSame(ref a[3], ref memoryFromOwner.Span.DangerousGetPinnableReference()));
+            Assert.True(Unsafe.AreSame(ref a[3], ref Unsafe.AsRef(in MemoryMarshal.GetReference(memoryFromOwner.Span))));
         }
 
         [Fact]
@@ -61,13 +62,13 @@ namespace System.MemoryTests
             int[] a = { 90, 91, 92, 93, 94, 95, 96, 97, 98, 99 };
             ReadOnlyMemory<int> memory = new ReadOnlyMemory<int>(a).Slice(4, 6);
             Assert.Equal(6, memory.Length);
-            Assert.True(Unsafe.AreSame(ref a[4], ref memory.Span.DangerousGetPinnableReference()));
+            Assert.True(Unsafe.AreSame(ref a[4], ref Unsafe.AsRef(in MemoryMarshal.GetReference(memory.Span))));
 
             OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
             ReadOnlyMemory<int> memoryFromOwner = ((ReadOnlyMemory<int>)owner.Memory).Slice(4, 6);
 
             Assert.Equal(6, memoryFromOwner.Length);
-            Assert.True(Unsafe.AreSame(ref a[4], ref memoryFromOwner.Span.DangerousGetPinnableReference()));
+            Assert.True(Unsafe.AreSame(ref a[4], ref Unsafe.AsRef(in MemoryMarshal.GetReference(memoryFromOwner.Span))));
         }
 
         [Fact]
@@ -76,13 +77,13 @@ namespace System.MemoryTests
             int[] a = { 90, 91, 92, 93, 94, 95, 96, 97, 98, 99 };
             ReadOnlyMemory<int> memory = new ReadOnlyMemory<int>(a).Slice(a.Length, 0);
             Assert.Equal(0, memory.Length);
-            Assert.True(Unsafe.AreSame(ref a[a.Length - 1], ref Unsafe.Subtract(ref memory.Span.DangerousGetPinnableReference(), 1)));
+            Assert.True(Unsafe.AreSame(ref a[a.Length - 1], ref Unsafe.Subtract(ref Unsafe.AsRef(in MemoryMarshal.GetReference(memory.Span)), 1)));
 
             OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
             ReadOnlyMemory<int> memoryFromOwner = ((ReadOnlyMemory<int>)owner.Memory).Slice(a.Length, 0);
 
             Assert.Equal(0, memoryFromOwner.Length);
-            Assert.True(Unsafe.AreSame(ref a[a.Length - 1], ref Unsafe.Subtract(ref memoryFromOwner.Span.DangerousGetPinnableReference(), 1)));
+            Assert.True(Unsafe.AreSame(ref a[a.Length - 1], ref Unsafe.Subtract(ref Unsafe.AsRef(in MemoryMarshal.GetReference(memoryFromOwner.Span)), 1)));
         }
 
         [Fact]

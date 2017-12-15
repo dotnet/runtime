@@ -5,6 +5,7 @@
 using Xunit;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace System.MemoryTests
 {
@@ -127,7 +128,7 @@ namespace System.MemoryTests
         public static void AsReadOnlyMemory_TryGetArray_ReturnsFalse()
         {
             ReadOnlyMemory<char> m = "0123456789".AsReadOnlyMemory();
-            Assert.False(m.DangerousTryGetArray(out ArraySegment<char> array));
+            Assert.False(MemoryMarshal.TryGetArray(m, out ArraySegment<char> array));
             Assert.Null(array.Array);
             Assert.Equal(0, array.Offset);
             Assert.Equal(0, array.Count);

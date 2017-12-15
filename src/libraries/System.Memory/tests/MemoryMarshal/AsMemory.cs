@@ -81,7 +81,7 @@ namespace System.MemoryTests
             Assert.True(readOnlyMemory.Span == memory.Span);
 
             // TryGetArray
-            Assert.True(readOnlyMemory.DangerousTryGetArray(out ArraySegment<T> array1) == memory.TryGetArray(out ArraySegment<T> array2));
+            Assert.True(MemoryMarshal.TryGetArray(readOnlyMemory, out ArraySegment<T> array1) == memory.TryGetArray(out ArraySegment<T> array2));
             Assert.Same(array1.Array, array2.Array);
             Assert.Equal(array1.Offset, array2.Offset);
             Assert.Equal(array1.Count, array2.Count);
