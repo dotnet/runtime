@@ -5,6 +5,10 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
+#if !netstandard
+using Internal.Runtime.CompilerServices;
+#endif
+
 #if !netstandard11
 using System.Numerics;
 #endif

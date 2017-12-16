@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -374,7 +375,7 @@ namespace System.Net.Sockets
             if (saea != null)
             {
                 // We got a cached instance. Configure the buffer and initate the operation.
-                ConfigureBuffer(saea, Unsafe.As<ReadOnlyMemory<byte>,Memory<byte>>(ref buffer), socketFlags, wrapExceptionsInIOExceptions: fromNetworkStream);
+                ConfigureBuffer(saea, MemoryMarshal.AsMemory<byte>(buffer), socketFlags, wrapExceptionsInIOExceptions: fromNetworkStream);
                 return GetValueTaskForSendReceive(SendAsync(saea), saea, fromNetworkStream, isReceive: false);
             }
             else

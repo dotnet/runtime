@@ -4,6 +4,10 @@
 
 using System.Runtime.CompilerServices;
 
+#if !netstandard
+using Internal.Runtime.CompilerServices;
+#endif
+
 namespace System.Buffers.Text
 {
     public static partial class Base64

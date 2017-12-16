@@ -5,6 +5,10 @@
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
+#if !netstandard
+using Internal.Runtime.CompilerServices;
+#endif
+
 namespace System
 {
     internal static partial class SpanHelpers
