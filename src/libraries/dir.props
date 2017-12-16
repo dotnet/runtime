@@ -23,6 +23,11 @@
     <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
   </PropertyGroup>
 
+  <!-- Indicates this is not an officially supported release. Release branches should set this to false. -->
+  <PropertyGroup>
+    <IsPrerelease>true</IsPrerelease>
+  </PropertyGroup>
+
   <!-- Common repo directories -->
   <PropertyGroup>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
