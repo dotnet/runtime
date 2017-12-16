@@ -317,7 +317,6 @@ public:
     bool LegacyNullReferenceExceptionPolicy(void)   const {LIMITED_METHOD_CONTRACT;  return fLegacyNullReferenceExceptionPolicy; }
     bool LegacyUnhandledExceptionPolicy(void)       const {LIMITED_METHOD_CONTRACT;  return fLegacyUnhandledExceptionPolicy; }
 
-    bool LegacyApartmentInitPolicy(void)            const {LIMITED_METHOD_CONTRACT;  return fLegacyApartmentInitPolicy; }
     bool LegacyComHierarchyVisibility(void)         const {LIMITED_METHOD_CONTRACT;  return fLegacyComHierarchyVisibility; }
     bool LegacyComVTableLayout(void)                const {LIMITED_METHOD_CONTRACT;  return fLegacyComVTableLayout; }
     bool NewComVTableLayout(void)                   const {LIMITED_METHOD_CONTRACT;  return fNewComVTableLayout; }
@@ -867,7 +866,6 @@ private: //----------------------------------------------------------------
     bool fLegacyCorruptedStateExceptionsPolicy;
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
 
-    bool fLegacyApartmentInitPolicy;          // Old nondeterministic COM apartment initialization switch
     bool fLegacyComHierarchyVisibility;       // Old behavior allowing QIs for classes with invisible parents
     bool fLegacyComVTableLayout;              // Old behavior passing out IClassX interface for IUnknown and IDispatch.
     bool fNewComVTableLayout;                 // New behavior passing out Basic interface for IUnknown and IDispatch.

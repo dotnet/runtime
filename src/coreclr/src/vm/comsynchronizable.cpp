@@ -1109,13 +1109,10 @@ FCIMPL1(void, ThreadNative::StartupSetApartmentState, ThreadBaseObject* pThisUNS
     // Assert that the thread hasn't been started yet.
     _ASSERTE(Thread::TS_Unstarted & thread->GetSnapshotState());
 
-    if ((g_pConfig != NULL) && !g_pConfig->LegacyApartmentInitPolicy())
+    Thread::ApartmentState as = thread->GetExplicitApartment();
+    if (as == Thread::AS_Unknown)
     {
-        Thread::ApartmentState as = thread->GetExplicitApartment();
-        if (as == Thread::AS_Unknown)
-        {
-            thread->SetApartment(Thread::AS_InMTA, TRUE);
-        }
+        thread->SetApartment(Thread::AS_InMTA, TRUE);
     }
 
     HELPER_METHOD_FRAME_END();

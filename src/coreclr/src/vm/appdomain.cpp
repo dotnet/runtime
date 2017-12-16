@@ -3081,38 +3081,9 @@ Thread::ApartmentState SystemDomain::GetEntryPointThreadAptState(IMDInternalImpo
     return Thread::AS_Unknown;
 }
 
-void SystemDomain::SetThreadAptState (IMDInternalImport* pScope, Thread::ApartmentState state)
+void SystemDomain::SetThreadAptState (Thread::ApartmentState state)
 {
     STANDARD_VM_CONTRACT;
-
-    BOOL fIsLegacy = FALSE;
-
-    // Check for legacy behavior regarding COM Apartment state of the main thread.
-
-#define METAMODEL_MAJOR_VER_WITH_NEW_BEHAVIOR 2
-#define METAMODEL_MINOR_VER_WITH_NEW_BEHAVIOR 0
-
-    LPCSTR pVer;
-    IfFailThrow(pScope->GetVersionString(&pVer));
-    
-    // Does this look like a version?
-    if (pVer != NULL)
-    {
-        // Is it 'vN.' where N is a digit?
-        if ((pVer[0] == 'v' || pVer[0] == 'V') &&
-            IS_DIGIT(pVer[1]) &&
-            (pVer[2] == '.') )
-        {
-            // Looks like a version.  Is it lesser than v2.0 major version where we start using new behavior?
-            fIsLegacy = DIGIT_TO_INT(pVer[1]) < METAMODEL_MAJOR_VER_WITH_NEW_BEHAVIOR;
-        }
-    }
-
-    if (!fIsLegacy && g_pConfig != NULL)
-    {
-        fIsLegacy = g_pConfig->LegacyApartmentInitPolicy();
-    }
-
 
     Thread* pThread = GetThread();
     _ASSERTE(pThread);
@@ -3122,14 +3093,8 @@ void SystemDomain::SetThreadAptState (IMDInternalImport* pScope, Thread::Apartme
         Thread::ApartmentState pState = pThread->SetApartment(Thread::AS_InSTA, TRUE);
         _ASSERTE(pState == Thread::AS_InSTA);
     }
-    else if ((state == Thread::AS_InMTA) || (!fIsLegacy))
+    else if (state == Thread::AS_InMTA)
     {
-        // If either MTAThreadAttribute is specified or (if no attribute is specified and we are not
-        // running in legacy mode), then
-        // we will set the apartment state to MTA. The reason for this is to ensure the apartment
-        // state is consistent and reliably set. Without this, the apartment state for the main
-        // thread would be undefined and would actually be dependent on if the assembly was
-        // ngen'd, which other type were loaded, etc.
         Thread::ApartmentState pState = pThread->SetApartment(Thread::AS_InMTA, TRUE);
         _ASSERTE(pState == Thread::AS_InMTA);
     }
