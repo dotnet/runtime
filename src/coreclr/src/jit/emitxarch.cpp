@@ -3679,7 +3679,7 @@ void emitter::emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fld
     if (EA_IS_OFFSET(attr))
     {
         assert(ins == INS_push);
-        sz = 1 + sizeof(void*);
+        sz = 1 + TARGET_POINTER_SIZE;
 
         id = emitNewInstrDsp(EA_1BYTE, offs);
         id->idIns(ins);
@@ -3888,7 +3888,7 @@ void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO
         assert(ins == INS_mov && reg == REG_EAX);
 
         // Special case: "mov eax, [addr]" is smaller
-        sz = 1 + sizeof(void*);
+        sz = 1 + TARGET_POINTER_SIZE;
     }
     else
     {
@@ -3905,7 +3905,7 @@ void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO
         // instruction.
         if (ins == INS_mov && reg == REG_EAX)
         {
-            sz = 1 + sizeof(void*);
+            sz = 1 + TARGET_POINTER_SIZE;
             if (size == EA_2BYTE)
                 sz += 1;
         }
@@ -3979,7 +3979,7 @@ void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
     // the instruction.
     if (ins == INS_mov && reg == REG_EAX)
     {
-        sz = 1 + sizeof(void*);
+        sz = 1 + TARGET_POINTER_SIZE;
         if (size == EA_2BYTE)
             sz += 1;
     }
@@ -5291,7 +5291,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         //
         //
         //
-        if ((sizeof(void*) + // return address for call
+        if ((TARGET_POINTER_SIZE + // return address for call
              emitComp->genStackLevel +
              // Current stack level. This gets resetted on every
              // localloc and on the prolog (invariant is that
@@ -5301,7 +5301,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
              // we've consumed more than JIT_RESERVED_STACK bytes
              // of stack, which is what the prolog probe covers (in
              // addition to the EE requested size)
-             (emitComp->compHndBBtabCount * sizeof(void*))
+             (emitComp->compHndBBtabCount * TARGET_POINTER_SIZE)
              // Hidden slots for calling finallys
              ) >= JIT_RESERVED_STACK)
         {
@@ -5400,8 +5400,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
     }
 #endif
 
-    assert(argSize % sizeof(void*) == 0);
-    argCnt = (int)(argSize / (ssize_t)sizeof(void*)); // we need a signed-divide
+    assert(argSize % REGSIZE_BYTES == 0);
+    argCnt = (int)(argSize / (int)REGSIZE_BYTES); // we need a signed-divide
 
     /* Managed RetVal: emit sequence point for the call */
     if (emitComp->opts.compDbgInfo && ilOffset != BAD_IL_OFFSET)
@@ -6395,7 +6395,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
 
     if (jdsc && !noDetail)
     {
-        unsigned     cnt = (jdsc->dsSize - 1) / sizeof(void*);
+        unsigned     cnt = (jdsc->dsSize - 1) / TARGET_POINTER_SIZE;
         BasicBlock** bbp = (BasicBlock**)jdsc->dsCont;
 
 #ifdef _TARGET_AMD64_
@@ -8759,7 +8759,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         if (id->idIsDspReloc())
         {
-            emitRecordRelocation((void*)(dst - sizeof(void*)), target, IMAGE_REL_BASED_MOFFSET);
+            emitRecordRelocation((void*)(dst - TARGET_POINTER_SIZE), target, IMAGE_REL_BASED_MOFFSET);
         }
 
 #endif //_TARGET_X86_
@@ -11225,7 +11225,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 if (ins == INS_sub && id->idInsFmt() == IF_RRW_CNS && id->idReg1() == REG_ESP)
                 {
                     assert((size_t)emitGetInsSC(id) < 0x00000000FFFFFFFFLL);
-                    emitStackPushN(dst, (unsigned)(emitGetInsSC(id) / sizeof(void*)));
+                    emitStackPushN(dst, (unsigned)(emitGetInsSC(id) / TARGET_POINTER_SIZE));
                 }
                 break;
 
@@ -11235,7 +11235,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 {
                     assert((size_t)emitGetInsSC(id) < 0x00000000FFFFFFFFLL);
                     emitStackPop(dst, /*isCall*/ false, /*callInstrSize*/ 0,
-                                 (unsigned)(emitGetInsSC(id) / sizeof(void*)));
+                                 (unsigned)(emitGetInsSC(id) / TARGET_POINTER_SIZE));
                 }
                 break;
 

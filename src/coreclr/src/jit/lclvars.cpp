@@ -364,7 +364,7 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
 #endif // FEATURE_FASTTAILCALL
 
     // The total argument size must be aligned.
-    noway_assert((compArgSize % sizeof(void*)) == 0);
+    noway_assert((compArgSize % TARGET_POINTER_SIZE) == 0);
 
 #ifdef _TARGET_X86_
     /* We can not pass more than 2^16 dwords as arguments as the "ret"
@@ -2263,9 +2263,9 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
         varDsc->lvExactSize = info.compCompHnd->getClassSize(typeHnd);
 
         size_t lvSize = varDsc->lvSize();
-        assert((lvSize % sizeof(void*)) ==
-               0); // The struct needs to be a multiple of sizeof(void*) bytes for getClassGClayout() to be valid.
-        varDsc->lvGcLayout = (BYTE*)compGetMem((lvSize / sizeof(void*)) * sizeof(BYTE), CMK_LvaTable);
+        assert((lvSize % TARGET_POINTER_SIZE) ==
+               0); // The struct needs to be a multiple of TARGET_POINTER_SIZE bytes for getClassGClayout() to be valid.
+        varDsc->lvGcLayout = (BYTE*)compGetMem((lvSize / TARGET_POINTER_SIZE) * sizeof(BYTE), CMK_LvaTable);
         unsigned  numGCVars;
         var_types simdBaseType = TYP_UNKNOWN;
         varDsc->lvType         = impNormStructType(typeHnd, varDsc->lvGcLayout, &numGCVars, &simdBaseType);
@@ -4756,7 +4756,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
                     // We need to re-adjust the offsets of the parameters so they are EBP
                     // relative rather than stack/frame pointer relative
 
-                    varDsc->lvStkOffs += (2 * sizeof(void*)); // return address and pushed EBP
+                    varDsc->lvStkOffs += (2 * TARGET_POINTER_SIZE); // return address and pushed EBP
 
                     noway_assert(varDsc->lvStkOffs >= FIRST_ARG_STACK_OFFS);
                 }
@@ -4871,10 +4871,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     /* Update the argOffs to reflect arguments that are passed in registers */
 
     noway_assert(codeGen->intRegState.rsCalleeRegArgCount <= MAX_REG_ARG);
-    noway_assert(compArgSize >= codeGen->intRegState.rsCalleeRegArgCount * sizeof(void*));
+    noway_assert(compArgSize >= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES);
 
 #ifdef _TARGET_X86_
-    argOffs -= codeGen->intRegState.rsCalleeRegArgCount * sizeof(void*);
+    argOffs -= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES;
 #endif
 
 #ifndef LEGACY_BACKEND
@@ -4913,13 +4913,13 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     if (info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE)
     {
         noway_assert(lclNum == (unsigned)info.compTypeCtxtArg);
-        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, sizeof(void*),
+        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, REGSIZE_BYTES,
                                                    argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
     }
 
     if (info.compIsVarArgs)
     {
-        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, sizeof(void*),
+        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, REGSIZE_BYTES,
                                                    argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
     }
 
@@ -5018,13 +5018,13 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     if (info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE)
     {
         noway_assert(lclNum == (unsigned)info.compTypeCtxtArg);
-        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, sizeof(void*),
+        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, REGSIZE_BYTES,
                                                    argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
     }
 
     if (info.compIsVarArgs)
     {
-        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, sizeof(void*),
+        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, REGSIZE_BYTES,
                                                    argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
     }
 
@@ -5201,19 +5201,19 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
 
 #if !defined(_TARGET_ARMARCH_)
 #if DEBUG
-        // TODO: Remove this noway_assert and replace occurrences of sizeof(void *) with argSize
+        // TODO: Remove this noway_assert and replace occurrences of TARGET_POINTER_SIZE with argSize
         // Also investigate why we are incrementing argOffs for X86 as this seems incorrect
         //
-        noway_assert(argSize == sizeof(void*));
+        noway_assert(argSize == TARGET_POINTER_SIZE);
 #endif // DEBUG
 #endif
 
 #if defined(_TARGET_X86_)
-        argOffs += sizeof(void*);
+        argOffs += TARGET_POINTER_SIZE;
 #elif defined(_TARGET_AMD64_)
         // Register arguments on AMD64 also takes stack space. (in the backing store)
         varDsc->lvStkOffs = argOffs;
-        argOffs += sizeof(void*);
+        argOffs += TARGET_POINTER_SIZE;
 #elif defined(_TARGET_ARM64_)
 // Register arguments on ARM64 only take stack space when they have a frame home.
 #elif defined(_TARGET_ARM_)
@@ -5471,7 +5471,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
 #ifdef _TARGET_XARCH_
     // On x86/amd64, the return address has already been pushed by the call instruction in the caller.
-    stkOffs -= sizeof(void*); // return address;
+    stkOffs -= TARGET_POINTER_SIZE; // return address;
 
     // TODO-AMD64-CQ: for X64 eventually this should be pushed with all the other
     // calleeregs.  When you fix this, you'll also need to fix
@@ -6094,9 +6094,9 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     if (lvaOutgoingArgSpaceSize > 0)
     {
 #if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI) // No 4 slots for outgoing params on System V.
-        noway_assert(lvaOutgoingArgSpaceSize >= (4 * sizeof(void*)));
+        noway_assert(lvaOutgoingArgSpaceSize >= (4 * TARGET_POINTER_SIZE));
 #endif
-        noway_assert((lvaOutgoingArgSpaceSize % sizeof(void*)) == 0);
+        noway_assert((lvaOutgoingArgSpaceSize % TARGET_POINTER_SIZE) == 0);
 
         // Give it a value so we can avoid asserts in CHK builds.
         // Since this will always use an SP relative offset of zero
@@ -6125,7 +6125,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     pushedCount += 1; // pushed PC (return address)
 #endif
 
-    noway_assert(compLclFrameSize == (unsigned)-(stkOffs + (pushedCount * (int)sizeof(void*))));
+    noway_assert(compLclFrameSize == (unsigned)-(stkOffs + (pushedCount * (int)TARGET_POINTER_SIZE)));
 }
 
 int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, int stkOffs)
@@ -6328,11 +6328,11 @@ void Compiler::lvaAlignFrame()
     //
     bool lclFrameSizeAligned   = (compLclFrameSize % sizeof(double)) == 0;
     bool regPushedCountAligned = ((compCalleeRegsPushed + genCountBits(codeGen->regSet.rsMaskPreSpillRegs(true))) %
-                                  (sizeof(double) / sizeof(void*))) == 0;
+                                  (sizeof(double) / TARGET_POINTER_SIZE)) == 0;
 
     if (regPushedCountAligned != lclFrameSizeAligned)
     {
-        lvaIncrementFrameSize(sizeof(void*));
+        lvaIncrementFrameSize(TARGET_POINTER_SIZE);
     }
 
 #elif defined(_TARGET_X86_)
@@ -6345,7 +6345,7 @@ void Compiler::lvaAlignFrame()
         if (compLclFrameSize == 0)
         {
             // This can only happen with JitStress=1 or JitDoubleAlign=2
-            lvaIncrementFrameSize(sizeof(void*));
+            lvaIncrementFrameSize(TARGET_POINTER_SIZE);
         }
     }
 #endif

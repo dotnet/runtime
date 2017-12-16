@@ -2179,7 +2179,7 @@ unsigned Compiler::compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd)
     }
     else if (cit == CORINFO_TYPE_REFANY)
     {
-        sigSize = 2 * sizeof(void*);
+        sigSize = 2 * TARGET_POINTER_SIZE;
     }
     return sigSize;
 }
