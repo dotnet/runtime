@@ -5,7 +5,7 @@
 #define GCS EA_GCREF
 #define BRS EA_BYREF
 #define PS EA_PTRSIZE
-#define PST (sizeof(void*) / sizeof(int))
+#define PST (TARGET_POINTER_SIZE / sizeof(int))
 
 #ifdef _TARGET_64BIT_
 #define VTF_I32 0

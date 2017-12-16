@@ -515,7 +515,7 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* untrackedCount, UNALIGNED 
         }
         else if (varDsc->lvType == TYP_STRUCT && varDsc->lvOnFrame && (varDsc->lvExactSize >= TARGET_POINTER_SIZE))
         {
-            unsigned slots  = compiler->lvaLclSize(varNum) / sizeof(void*);
+            unsigned slots  = compiler->lvaLclSize(varNum) / TARGET_POINTER_SIZE;
             BYTE*    gcPtrs = compiler->lvaGetGcLayout(varNum);
 
             // walk each member of the array

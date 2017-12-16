@@ -743,7 +743,7 @@ public:
     bool lvStackAligned() const
     {
         assert(lvIsStructField);
-        return ((lvFldOffset % sizeof(void*)) == 0);
+        return ((lvFldOffset % TARGET_POINTER_SIZE) == 0);
     }
     bool lvNormalizeOnLoad() const
     {
