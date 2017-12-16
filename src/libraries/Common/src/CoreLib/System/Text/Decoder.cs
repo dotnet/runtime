@@ -5,6 +5,7 @@
 using System.Text;
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.Text
 {
@@ -133,7 +134,7 @@ namespace System.Text
 
         public virtual unsafe int GetCharCount(ReadOnlySpan<byte> bytes, bool flush)
         {
-            fixed (byte* bytesPtr = &bytes.DangerousGetPinnableReference())
+            fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
             {
                 return GetCharCount(bytesPtr, bytes.Length, flush);
             }
@@ -226,8 +227,8 @@ namespace System.Text
 
         public virtual unsafe int GetChars(ReadOnlySpan<byte> bytes, Span<char> chars, bool flush)
         {
-            fixed (byte* bytesPtr = &bytes.DangerousGetPinnableReference())
-            fixed (char* charsPtr = &chars.DangerousGetPinnableReference())
+            fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
+            fixed (char* charsPtr = &MemoryMarshal.GetReference(chars))
             {
                 return GetChars(bytesPtr, bytes.Length, charsPtr, chars.Length, flush);
             }
@@ -340,8 +341,8 @@ namespace System.Text
 
         public virtual unsafe void Convert(ReadOnlySpan<byte> bytes, Span<char> chars, bool flush, out int bytesUsed, out int charsUsed, out bool completed)
         {
-            fixed (byte* bytesPtr = &bytes.DangerousGetPinnableReference())
-            fixed (char* charsPtr = &chars.DangerousGetPinnableReference())
+            fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
+            fixed (char* charsPtr = &MemoryMarshal.GetReference(chars))
             {
                 Convert(bytesPtr, bytes.Length, charsPtr, chars.Length, flush, out bytesUsed, out charsUsed, out completed);
             }

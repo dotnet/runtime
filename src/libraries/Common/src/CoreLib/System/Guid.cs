@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+
 using Internal.Runtime.CompilerServices;
 
 namespace System
@@ -1361,7 +1362,7 @@ namespace System
 
             unsafe
             {
-                fixed (char* guidChars = &destination.DangerousGetPinnableReference())
+                fixed (char* guidChars = &MemoryMarshal.GetReference(destination))
                 {
                     char * p = guidChars;
 

@@ -4,6 +4,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -459,7 +460,7 @@ namespace System.IO
             VerifyOSHandlePosition();
 
             int bytesRead;
-            fixed (byte* bufPtr = &buffer.DangerousGetPinnableReference())
+            fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
             {
                 bytesRead = CheckFileCall(Interop.Sys.Read(_fileHandle, bufPtr, buffer.Length));
                 Debug.Assert(bytesRead <= buffer.Length);
@@ -612,7 +613,7 @@ namespace System.IO
         {
             VerifyOSHandlePosition();
 
-            fixed (byte* bufPtr = &source.DangerousGetPinnableReference())
+            fixed (byte* bufPtr = &MemoryMarshal.GetReference(source))
             {
                 int offset = 0;
                 int count = source.Length;

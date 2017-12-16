@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -855,7 +856,7 @@ namespace System
         private static unsafe void StringToNumber(ReadOnlySpan<char> str, NumberStyles options, ref NumberBuffer number, NumberFormatInfo info, bool parseDecimal)
         {
             Debug.Assert(info != null);
-            fixed (char* stringPointer = &str.DangerousGetPinnableReference())
+            fixed (char* stringPointer = &MemoryMarshal.GetReference(str))
             {
                 char* p = stringPointer;
                 if (!ParseNumber(ref p, options, ref number, info, parseDecimal)
@@ -869,7 +870,7 @@ namespace System
         internal static unsafe bool TryStringToNumber(ReadOnlySpan<char> str, NumberStyles options, ref NumberBuffer number, NumberFormatInfo numfmt, bool parseDecimal)
         {
             Debug.Assert(numfmt != null);
-            fixed (char* stringPointer = &str.DangerousGetPinnableReference())
+            fixed (char* stringPointer = &MemoryMarshal.GetReference(str))
             {
                 char* p = stringPointer;
                 if (!ParseNumber(ref p, options, ref number, numfmt, parseDecimal)
