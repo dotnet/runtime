@@ -5964,7 +5964,7 @@ GenTreePtr Compiler::fgMorphArrayIndex(GenTreePtr tree)
     noway_assert(elemTyp != TYP_STRUCT || elemStructType != nullptr);
 
 #ifdef FEATURE_SIMD
-    if (featureSIMD && varTypeIsStruct(elemTyp) && elemSize <= getSIMDVectorRegisterByteLength())
+    if (featureSIMD && varTypeIsStruct(elemTyp) && elemSize <= maxSIMDStructBytes())
     {
         // If this is a SIMD type, this is the point at which we lose the type information,
         // so we need to set the correct type on the GT_IND.
