@@ -4,6 +4,10 @@
 
 using System.Runtime.CompilerServices;
 
+#if !netstandard
+using Internal.Runtime.CompilerServices;
+#endif
+
 namespace System.Buffers.Binary
 {
     public static partial class BinaryPrimitives
