@@ -6828,6 +6828,9 @@ namespace System.Runtime.CompilerServices
     }
     public static class RuntimeFeature
     {
+#if FEATURE_DEFAULT_INTERFACES
+        public const string DefaultImplementationsOfInterfaces = nameof(DefaultImplementationsOfInterfaces); 
+#endif
         public static bool IsSupported(string feature) { throw null; }
     }
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
