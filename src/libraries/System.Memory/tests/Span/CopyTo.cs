@@ -242,8 +242,8 @@ namespace System.SpanTests
 
                         for (int count = 0; count < GuidCount; ++count)
                         {
-                            var guidfirst = Unsafe.Add(ref memoryFirst, count);
-                            var guidSecond = Unsafe.Add(ref memorySecond, count);
+                            Guid guidfirst = Unsafe.Add(ref memoryFirst, count);
+                            Guid guidSecond = Unsafe.Add(ref memorySecond, count);
                             Assert.Equal(guidfirst, guidSecond);
                         }
                     }

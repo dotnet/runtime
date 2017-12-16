@@ -375,7 +375,7 @@ namespace System.Buffers.Binary.Tests
 
             ReadOnlySpan<byte> readOnlySpanBE = new ReadOnlySpan<byte>(spanBE.ToArray());
 
-            var readStructAndReverse = ReadMachineEndian<TestHelpers.TestStructExplicit>(spanBE);
+            TestHelpers.TestStructExplicit readStructAndReverse = ReadMachineEndian<TestHelpers.TestStructExplicit>(spanBE);
             if (BitConverter.IsLittleEndian)
             {
                 readStructAndReverse.S0 = ReverseEndianness(readStructAndReverse.S0);
@@ -408,7 +408,7 @@ namespace System.Buffers.Binary.Tests
                 UL1 = ReadUInt64BigEndian(spanBE.Slice(48))
             };
 
-            var readStructAndReverseFromReadOnlySpan = ReadMachineEndian<TestHelpers.TestStructExplicit>(readOnlySpanBE);
+            TestHelpers.TestStructExplicit readStructAndReverseFromReadOnlySpan = ReadMachineEndian<TestHelpers.TestStructExplicit>(readOnlySpanBE);
             if (BitConverter.IsLittleEndian)
             {
                 readStructAndReverseFromReadOnlySpan.S0 = ReverseEndianness(readStructAndReverseFromReadOnlySpan.S0);
