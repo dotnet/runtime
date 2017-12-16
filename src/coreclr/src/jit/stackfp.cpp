@@ -2269,7 +2269,7 @@ void CodeGen::genCodeForTreeStackFP_SmpOp(GenTreePtr tree)
             FlatFPX87_MoveToTOS(&compCurFPState, op1->gtRegNum);
 
             static const instruction mathIns[] = {
-                INS_fsin, INS_fcos, INS_fsqrt, INS_fabs, INS_frndint,
+                INS_fsin, INS_fcos, INS_invalid, INS_fsqrt, INS_fabs, INS_frndint,
             };
 
             assert(mathIns[CORINFO_INTRINSIC_Sin] == INS_fsin);
