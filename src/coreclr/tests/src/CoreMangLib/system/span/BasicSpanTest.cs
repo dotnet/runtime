@@ -740,9 +740,9 @@ class My
     static void AssertEqualContent(string text, ReadOnlySpan<char> span)
     {
         AssertEqual(text.Length, span.Length);
-        /*for (int i = 0; i < text.Length; i++)
+        for (int i = 0; i < text.Length; i++)
         {
             AssertEqual(text[i], span[i]);
-        }*/
+        }
     }
 }

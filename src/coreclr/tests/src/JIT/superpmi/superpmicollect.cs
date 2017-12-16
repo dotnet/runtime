@@ -657,9 +657,6 @@ namespace SuperPMICollection
             string runProgramArguments = null;
             string tempPath = null;
 
-            // TEMPORARILY DISABLING - see issue #15089
-            return 100;
-
             // Parse arguments
             if (args.Length > 0)
             {
