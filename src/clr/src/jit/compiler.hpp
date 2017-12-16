@@ -2131,7 +2131,7 @@ inline void LclVarDsc::addPrefReg(regMaskTP regMask, Compiler* comp)
 
 #ifdef _TARGET_ARM_
     // Don't set a preferred register for a TYP_STRUCT that takes more than one register slot
-    if ((lvType == TYP_STRUCT) && (lvSize() > sizeof(void*)))
+    if ((lvType == TYP_STRUCT) && (lvSize() > REGSIZE_BYTES))
         return;
 #endif
 
