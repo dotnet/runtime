@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System
@@ -1558,7 +1559,7 @@ namespace System
                 scaleAdjust = 0;
                 src = section;
 
-                fixed (char* pFormat = &format.DangerousGetPinnableReference())
+                fixed (char* pFormat = &MemoryMarshal.GetReference(format))
                 {
                     while (src < format.Length && (ch = pFormat[src++]) != 0 && ch != ';')
                     {
@@ -1728,7 +1729,7 @@ namespace System
 
             bool decimalWritten = false;
 
-            fixed (char* pFormat = &format.DangerousGetPinnableReference())
+            fixed (char* pFormat = &MemoryMarshal.GetReference(format))
             {
                 char* cur = dig;
 
@@ -1948,7 +1949,7 @@ namespace System
                     int digitCount = 0;
                     int digLength = string.wcslen(dig);
                     int digStart = (digPos < digLength) ? digPos : digLength;
-                    fixed (char* spanPtr = &sb.AppendSpan(bufferSize).DangerousGetPinnableReference())
+                    fixed (char* spanPtr = &MemoryMarshal.GetReference(sb.AppendSpan(bufferSize)))
                     {
                         char* p = spanPtr + bufferSize - 1;
                         for (int i = digPos - 1; i >= 0; i--)
@@ -2188,7 +2189,7 @@ namespace System
             if (section == 0)
                 return 0;
 
-            fixed (char* pFormat = &format.DangerousGetPinnableReference())
+            fixed (char* pFormat = &MemoryMarshal.GetReference(format))
             {
                 src = 0;
                 for (;;)

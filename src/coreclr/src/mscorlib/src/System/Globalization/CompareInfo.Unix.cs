@@ -152,7 +152,7 @@ namespace System.Globalization
             Debug.Assert(string2 != null);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-            fixed (char* pString1 = &string1.DangerousGetPinnableReference())
+            fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
             fixed (char* pString2 = &string2.GetRawStringData())
             {
                 return Interop.GlobalizationInterop.CompareString(_sortHandle, pString1, string1.Length, pString2, string2.Length, options);
@@ -164,8 +164,8 @@ namespace System.Globalization
             Debug.Assert(!_invariantMode);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-            fixed (char* pString1 = &string1.DangerousGetPinnableReference())
-            fixed (char* pString2 = &string2.DangerousGetPinnableReference())
+            fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
+            fixed (char* pString2 = &MemoryMarshal.GetReference(string2))
             {
                 return Interop.GlobalizationInterop.CompareString(_sortHandle, pString1, string1.Length, pString2, string2.Length, options);
             }

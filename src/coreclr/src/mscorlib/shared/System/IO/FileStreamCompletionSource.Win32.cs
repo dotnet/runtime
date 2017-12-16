@@ -231,7 +231,7 @@ namespace System.IO
             internal MemoryFileStreamCompletionSource(FileStream stream, int numBufferedBytes, ReadOnlyMemory<byte> memory) :
                 base(stream, numBufferedBytes, bytes: null) // this type handles the pinning, so null is passed for bytes
             {
-                Debug.Assert(!memory.DangerousTryGetArray(out ArraySegment<byte> array), "The base should be used directly if we can get the array.");
+                Debug.Assert(!MemoryMarshal.TryGetArray(memory, out ArraySegment<byte> array), "The base should be used directly if we can get the array.");
                 _handle = memory.Retain(pin: true);
             }
 

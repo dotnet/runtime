@@ -128,7 +128,7 @@ namespace System.Globalization
             string localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
 
             fixed (char* pLocaleName = localeName)
-            fixed (char* pString1 = &string1.DangerousGetPinnableReference())
+            fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
             fixed (char* pString2 = &string2.GetRawStringData())
             {
                 int result = Interop.Kernel32.CompareStringEx(
@@ -160,8 +160,8 @@ namespace System.Globalization
             string localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
 
             fixed (char* pLocaleName = localeName)
-            fixed (char* pString1 = &string1.DangerousGetPinnableReference())
-            fixed (char* pString2 = &string2.DangerousGetPinnableReference())
+            fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
+            fixed (char* pString2 = &MemoryMarshal.GetReference(string2))
             {
                 int result = Interop.Kernel32.CompareStringEx(
                                     pLocaleName,
