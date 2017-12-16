@@ -375,13 +375,9 @@ namespace System.IO
             {
                 // For very short buffers and when we don't need to worry about running out of space
                 // in the char buffer, just copy the chars individually.
-                fixed (char* bufferPtr = &buffer.DangerousGetPinnableReference())
+                for (int i = 0; i < buffer.Length; i++)
                 {
-                    Span<char> bufferSpan = new Span<char>(bufferPtr, buffer.Length);
-                    for (int i = 0; i < buffer.Length; i++)
-                    {
-                        _charBuffer[_charPos++] = bufferSpan[i];
-                    }
+                    _charBuffer[_charPos++] = buffer[i];
                 }
             }
             else
