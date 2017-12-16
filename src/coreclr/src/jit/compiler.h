@@ -7702,7 +7702,7 @@ private:
     int getSIMDTypeAlignment(var_types simdType);
 
     // Get the number of bytes in a System.Numeric.Vector<T> for the current compilation.
-    // Note - cannot be used for System.Runtime.Intrinsic 
+    // Note - cannot be used for System.Runtime.Intrinsic
     unsigned getSIMDVectorRegisterByteLength()
     {
 #if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
