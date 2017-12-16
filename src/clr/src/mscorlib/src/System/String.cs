@@ -668,7 +668,7 @@ namespace System
             }
 
             string result = FastAllocateString(value.Length);
-            fixed (char* dest = &result._firstChar, src = &value.DangerousGetPinnableReference())
+            fixed (char* dest = &result._firstChar, src = &MemoryMarshal.GetReference(value))
             {
                 wstrcpy(dest, src, value.Length);
             }

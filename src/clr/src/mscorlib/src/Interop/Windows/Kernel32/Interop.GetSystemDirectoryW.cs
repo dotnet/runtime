@@ -14,7 +14,7 @@ internal static partial class Interop
 
         internal static unsafe int GetSystemDirectoryW(Span<char> buffer)
         {
-            fixed (char* bufferPtr = &buffer.DangerousGetPinnableReference())
+            fixed (char* bufferPtr = &MemoryMarshal.GetReference(buffer))
             {
                 return GetSystemDirectoryW(bufferPtr, buffer.Length);
             }

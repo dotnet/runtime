@@ -67,7 +67,7 @@ namespace Span
         [MethodImpl(MethodImplOptions.NoInlining)]
         static byte TestRef(Span<byte> data)
         {
-            ref byte p = ref data.DangerousGetPinnableReference();
+            ref byte p = ref MemoryMarshal.GetReference(data);
             int length = data.Length;
             byte x = 0;
 
@@ -102,7 +102,7 @@ namespace Span
         [MethodImpl(MethodImplOptions.NoInlining)]
         static unsafe byte TestFixed1(Span<byte> data)
         {
-            fixed (byte* pData = &data.DangerousGetPinnableReference())
+            fixed (byte* pData = &MemoryMarshal.GetReference(data))
             {
                 int length = data.Length;
                 byte x = 0;
@@ -140,7 +140,7 @@ namespace Span
         [MethodImpl(MethodImplOptions.NoInlining)]
         static unsafe byte TestFixed2(Span<byte> data)
         {
-            fixed (byte* pData = &data.DangerousGetPinnableReference())
+            fixed (byte* pData = &MemoryMarshal.GetReference(data))
             {
                 int length = data.Length;
                 byte x = 0;

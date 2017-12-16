@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Diagnostics.CodeAnalysis;
 
@@ -712,7 +713,7 @@ namespace System.Text
 
         public virtual unsafe int GetByteCount(ReadOnlySpan<char> chars)
         {
-            fixed (char* charsPtr = &chars.DangerousGetPinnableReference())
+            fixed (char* charsPtr = &MemoryMarshal.GetReference(chars))
             {
                 return GetByteCount(charsPtr, chars.Length);
             }
@@ -894,8 +895,8 @@ namespace System.Text
 
         public virtual unsafe int GetBytes(ReadOnlySpan<char> chars, Span<byte> bytes)
         {
-            fixed (char* charsPtr = &chars.DangerousGetPinnableReference())
-            fixed (byte* bytesPtr = &bytes.DangerousGetPinnableReference())
+            fixed (char* charsPtr = &MemoryMarshal.GetReference(chars))
+            fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
             {
                 return GetBytes(charsPtr, chars.Length, bytesPtr, bytes.Length);
             }
@@ -944,7 +945,7 @@ namespace System.Text
 
         public virtual unsafe int GetCharCount(ReadOnlySpan<byte> bytes)
         {
-            fixed (byte* bytesPtr = &bytes.DangerousGetPinnableReference())
+            fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
             {
                 return GetCharCount(bytesPtr, bytes.Length);
             }
@@ -1056,8 +1057,8 @@ namespace System.Text
 
         public virtual unsafe int GetChars(ReadOnlySpan<byte> bytes, Span<char> chars)
         {
-            fixed (byte* bytesPtr = &bytes.DangerousGetPinnableReference())
-            fixed (char* charsPtr = &chars.DangerousGetPinnableReference())
+            fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
+            fixed (char* charsPtr = &MemoryMarshal.GetReference(chars))
             {
                 return GetChars(bytesPtr, bytes.Length, charsPtr, chars.Length);
             }
@@ -1086,7 +1087,7 @@ namespace System.Text
 
         public unsafe string GetString(ReadOnlySpan<byte> bytes)
         {
-            fixed (byte* bytesPtr = &bytes.DangerousGetPinnableReference())
+            fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
             {
                 return GetString(bytesPtr, bytes.Length);
             }
