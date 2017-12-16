@@ -1069,7 +1069,7 @@ namespace System.IO
             Debug.Assert(_useAsyncIO, "WriteInternalCoreAsync doesn't work on synchronous file streams!");
 
             // Create and store async stream class library specific data in the async result
-            FileStreamCompletionSource completionSource = source.DangerousTryGetArray(out ArraySegment<byte> array) ?
+            FileStreamCompletionSource completionSource = MemoryMarshal.TryGetArray(source, out ArraySegment<byte> array) ?
                 new FileStreamCompletionSource(this, 0, array.Array) :
                 new MemoryFileStreamCompletionSource(this, 0, source);
             NativeOverlapped* intOverlapped = completionSource.Overlapped;
@@ -1188,7 +1188,7 @@ namespace System.IO
             int r;
             int numBytesRead = 0;
 
-            fixed (byte* p = &bytes.DangerousGetPinnableReference())
+            fixed (byte* p = &MemoryMarshal.GetReference(bytes))
             {
                 r = _useAsyncIO ?
                     Interop.Kernel32.ReadFile(handle, p, bytes.Length, IntPtr.Zero, overlapped) :
@@ -1215,7 +1215,7 @@ namespace System.IO
             int numBytesWritten = 0;
             int r;
 
-            fixed (byte* p = &buffer.DangerousGetPinnableReference())
+            fixed (byte* p = &MemoryMarshal.GetReference(buffer))
             {
                 r = _useAsyncIO ?
                     Interop.Kernel32.WriteFile(handle, p, buffer.Length, IntPtr.Zero, overlapped) :

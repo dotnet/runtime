@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -762,7 +763,7 @@ namespace System.IO
             {
                 // See corresponding comment in ReadAsync for why we don't just always use Write(ReadOnlySpan<byte>).
                 // Unlike ReadAsync, we could delegate to WriteAsync(byte[], ...) here, but we don't for consistency.
-                if (source.DangerousTryGetArray(out ArraySegment<byte> sourceArray))
+                if (MemoryMarshal.TryGetArray(source, out ArraySegment<byte> sourceArray))
                 {
                     Write(sourceArray.Array, sourceArray.Offset, sourceArray.Count);
                 }
