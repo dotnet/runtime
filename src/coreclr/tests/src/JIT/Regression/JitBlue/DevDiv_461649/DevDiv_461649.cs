@@ -24,8 +24,7 @@ namespace XSLTest
             string inputXml = "Input.xml";
             string inputXsl = "Transform.xsl";
 
-            // TEMPORARILY DISABLING - see issue #15089
-            return 100; //DotNetXslCompiledTransform(inputXml, inputXsl);
+            return DotNetXslCompiledTransform(inputXml, inputXsl);
         }
 
         private static int DotNetXslCompiledTransform(string inputXml, string inputXsl)

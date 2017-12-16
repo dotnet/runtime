@@ -1053,8 +1053,6 @@ namespace Span
 
         public static int Main(string[] args)
         {
-            // TEMPORARILY DISABLING - see issue #15089
-            return 100;
             // When we call into Invoke, it'll need to know this isn't xunit-perf running
             IsXunitInvocation = false;
 

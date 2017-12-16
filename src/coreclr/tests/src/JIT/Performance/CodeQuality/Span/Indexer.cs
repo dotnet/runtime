@@ -917,8 +917,6 @@ namespace Span
 
         public static int Main(string[] args)
         {
-            // TEMPORARILY DISABLING - see issue #15089
-            return 100;
             if (args.Length > 0)
             {
                 if (args[0].Equals("-bench"))
