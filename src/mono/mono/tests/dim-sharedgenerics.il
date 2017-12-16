@@ -205,7 +205,7 @@
     IL_0008:  ldc.i4.s   101
     IL_000a:  br.s       IL_000e
 
-    IL_000c:  ldc.i4.s   100
+    IL_000c:  ldc.i4.s   0
     IL_000e:  stloc.0
     IL_000f:  br.s       IL_0011
 
