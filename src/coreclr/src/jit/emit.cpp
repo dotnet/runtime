@@ -2129,7 +2129,7 @@ void emitter::emitSetFrameRangeGCRs(int offsLo, int offsHi)
 
     if (emitComp->verbose)
     {
-        unsigned count = (offsHi - offsLo) / sizeof(void*);
+        unsigned count = (offsHi - offsLo) / TARGET_POINTER_SIZE;
         printf("%u tracked GC refs are at stack offsets ", count);
 
         if (offsLo >= 0)
@@ -2164,13 +2164,13 @@ void emitter::emitSetFrameRangeGCRs(int offsLo, int offsHi)
 
 #endif // DEBUG
 
-    assert(((offsHi - offsLo) % sizeof(void*)) == 0);
-    assert((offsLo % sizeof(void*)) == 0);
-    assert((offsHi % sizeof(void*)) == 0);
+    assert(((offsHi - offsLo) % TARGET_POINTER_SIZE) == 0);
+    assert((offsLo % TARGET_POINTER_SIZE) == 0);
+    assert((offsHi % TARGET_POINTER_SIZE) == 0);
 
     emitGCrFrameOffsMin = offsLo;
     emitGCrFrameOffsMax = offsHi;
-    emitGCrFrameOffsCnt = (offsHi - offsLo) / sizeof(void*);
+    emitGCrFrameOffsCnt = (offsHi - offsLo) / TARGET_POINTER_SIZE;
 }
 
 /*****************************************************************************
@@ -2847,7 +2847,7 @@ void emitter::emitDispVarSet()
     int      of;
     bool     sp = false;
 
-    for (vn = 0, of = emitGCrFrameOffsMin; vn < emitGCrFrameOffsCnt; vn += 1, of += sizeof(void*))
+    for (vn = 0, of = emitGCrFrameOffsMin; vn < emitGCrFrameOffsCnt; vn += 1, of += TARGET_POINTER_SIZE)
     {
         if (emitGCrFrameLiveTab[vn])
         {
@@ -4528,7 +4528,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     UNATIVE_OFFSET roDataAlignmentDelta = 0;
     if (emitConsDsc.dsdOffs)
     {
-        UNATIVE_OFFSET roDataAlignment = sizeof(void*); // 8 Byte align by default.
+        UNATIVE_OFFSET roDataAlignment = TARGET_POINTER_SIZE; // 8 Byte align by default.
         roDataAlignmentDelta = (UNATIVE_OFFSET)ALIGN_UP(emitTotalHotCodeSize, roDataAlignment) - emitTotalHotCodeSize;
         assert((roDataAlignmentDelta == 0) || (roDataAlignmentDelta == 4));
     }
@@ -4925,7 +4925,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         varPtrDsc** dp;
 
         for (vn = 0, of = emitGCrFrameOffsMin, dp = emitGCrFrameLiveTab; vn < emitGCrFrameOffsCnt;
-             vn++, of += sizeof(void*), dp++)
+             vn++, of += TARGET_POINTER_SIZE, dp++)
         {
             if (*dp)
             {
@@ -5459,7 +5459,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
         {
             JITDUMP("  section %u, size %u, block absolute addr\n", secNum++, dscSize);
 
-            assert(dscSize && dscSize % sizeof(BasicBlock*) == 0);
+            assert(dscSize && dscSize % TARGET_POINTER_SIZE == 0);
             size_t numElems = dscSize / TARGET_POINTER_SIZE;
             BYTE** bDst     = (BYTE**)dst;
             for (unsigned i = 0; i < numElems; i++)
@@ -5548,14 +5548,14 @@ void emitter::emitGCvarLiveSet(int offs, GCtype gcType, BYTE* addr, ssize_t disp
 
     varPtrDsc* desc;
 
-    assert((abs(offs) % sizeof(ssize_t)) == 0);
+    assert((abs(offs) % TARGET_POINTER_SIZE) == 0);
     assert(needsGC(gcType));
 
     /* Compute the index into the GC frame table if the caller didn't do it */
 
     if (disp == -1)
     {
-        disp = (offs - emitGCrFrameOffsMin) / sizeof(void*);
+        disp = (offs - emitGCrFrameOffsMin) / TARGET_POINTER_SIZE;
     }
 
     assert((size_t)disp < emitGCrFrameOffsCnt);
@@ -5645,7 +5645,7 @@ void emitter::emitGCvarDeadSet(int offs, BYTE* addr, ssize_t disp)
 
     if (disp == -1)
     {
-        disp = (offs - emitGCrFrameOffsMin) / sizeof(void*);
+        disp = (offs - emitGCrFrameOffsMin) / TARGET_POINTER_SIZE;
     }
 
     assert((unsigned)disp < emitGCrFrameOffsCnt);
@@ -5898,7 +5898,7 @@ void emitter::emitRecordGCcall(BYTE* codePos, unsigned char callInstrSize)
 
             if (needsGC(gcType))
             {
-                call->cdArgTable[gcArgs] = i * sizeof(void*);
+                call->cdArgTable[gcArgs] = i * TARGET_POINTER_SIZE;
 
                 if (gcType == GCT_BYREF)
                 {
@@ -6144,7 +6144,7 @@ unsigned char emitter::emitOutputSizeT(BYTE* dst, ssize_t val)
     }
 #endif // DEBUG
 
-    return sizeof(size_t);
+    return TARGET_POINTER_SIZE;
 }
 
 //------------------------------------------------------------------------
@@ -6528,7 +6528,7 @@ void emitter::emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr)
 
             /* Compute the index into the GC frame table */
 
-            disp = (offs - emitGCrFrameOffsMin) / sizeof(void*);
+            disp = (offs - emitGCrFrameOffsMin) / TARGET_POINTER_SIZE;
             assert(disp < emitGCrFrameOffsCnt);
 
             /* If the variable is currently dead, mark it as live */
@@ -6559,7 +6559,7 @@ void emitter::emitGCvarDeadUpd(int offs, BYTE* addr)
 
         /* Compute the index into the GC frame table */
 
-        disp = (offs - emitGCrFrameOffsMin) / sizeof(void*);
+        disp = (offs - emitGCrFrameOffsMin) / TARGET_POINTER_SIZE;
         assert(disp < emitGCrFrameOffsCnt);
 
         /* If the variable is currently live, mark it as dead */

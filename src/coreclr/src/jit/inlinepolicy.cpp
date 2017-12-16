@@ -758,10 +758,8 @@ int DefaultPolicy::DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* meth
 
             callsiteSize += 10; // "lea     EAX, bword ptr [EBP-14H]"
 
-            // NB sizeof (void*) fails to convey intent when cross-jitting.
-
-            unsigned opsz  = (unsigned)(roundUp(comp->getClassSize(verType.GetClassHandle()), sizeof(void*)));
-            unsigned slots = opsz / sizeof(void*);
+            unsigned opsz  = (unsigned)(roundUp(comp->getClassSize(verType.GetClassHandle()), TARGET_POINTER_SIZE));
+            unsigned slots = opsz / TARGET_POINTER_SIZE;
 
             callsiteSize += slots * 20; // "push    gword ptr [EAX+offs]  "
         }
@@ -1578,7 +1576,7 @@ void DiscretionaryPolicy::MethodInfoObservations(CORINFO_METHOD_INFO* methodInfo
     const unsigned    argCount = args.numArgs;
     m_ArgCount                 = argCount;
 
-    const unsigned pointerSize = sizeof(void*);
+    const unsigned pointerSize = TARGET_POINTER_SIZE;
     unsigned       i           = 0;
 
     // Implicit arguments

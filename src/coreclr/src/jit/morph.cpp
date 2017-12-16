@@ -146,7 +146,7 @@ bool Compiler::fgMorphRelopToQmark(GenTreePtr tree)
 GenTreePtr Compiler::fgMorphCast(GenTreePtr tree)
 {
     noway_assert(tree->gtOper == GT_CAST);
-    noway_assert(genTypeSize(TYP_I_IMPL) == sizeof(void*));
+    noway_assert(genTypeSize(TYP_I_IMPL) == TARGET_POINTER_SIZE);
 
     /* The first sub-operand is the thing being cast */
 
@@ -204,7 +204,7 @@ GenTreePtr Compiler::fgMorphCast(GenTreePtr tree)
             tree->gtFlags &= ~GTF_UNSIGNED;
         }
 #else
-        if (dstSize < sizeof(void*))
+        if (dstSize < TARGET_POINTER_SIZE)
         {
             oper = gtNewCastNodeL(TYP_I_IMPL, oper, TYP_I_IMPL);
             oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
@@ -3957,7 +3957,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         }
                         else
                         {
-                            // If the valuetype size is not a multiple of sizeof(void*),
+                            // If the valuetype size is not a multiple of TARGET_POINTER_SIZE,
                             // we must copyblk to a temp before doing the obj to avoid
                             // the obj reading memory past the end of the valuetype
                             CLANG_FORMAT_COMMENT_ANCHOR;
@@ -6371,7 +6371,7 @@ GenTreePtr Compiler::fgMorphStackArgForVarArgs(unsigned lclNum, var_types varTyp
         // Create a node representing the local pointing to the base of the args
         GenTreePtr ptrArg =
             gtNewOperNode(GT_SUB, TYP_I_IMPL, gtNewLclvNode(lvaVarargsBaseOfStkArgs, TYP_I_IMPL),
-                          gtNewIconNode(varDsc->lvStkOffs - codeGen->intRegState.rsCalleeRegArgCount * sizeof(void*) +
+                          gtNewIconNode(varDsc->lvStkOffs - codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES +
                                         lclOffs));
 
         // Access the argument through the local
