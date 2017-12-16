@@ -24,8 +24,6 @@ internal class ScanProjectFiles
 
     private static int Main(string[] args)
     {
-        // TEMPORARILY DISABLING - see issue #15089
-        return 100;
         // If invoked w/o args, locate jit test project dir from
         // CORE_ROOT, and scan only.
         //
