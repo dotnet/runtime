@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices
 
         public static ref T GetReference<T>(Span<T> span) => ref span._pointer.Value;
 
-        public static ref readonly T GetReference<T>(ReadOnlySpan<T> span) => ref span._pointer.Value;
+        public static ref T GetReference<T>(ReadOnlySpan<T> span) => ref span._pointer.Value;
 
         public static bool TryGetArray<T>(ReadOnlyMemory<T> readOnlyMemory, out ArraySegment<T> arraySegment)
         {
