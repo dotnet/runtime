@@ -20,7 +20,7 @@ namespace System.Buffers.Binary.Tests
             Span<byte> spanBE = TestHelpers.GetSpanBE();
 
             var readStruct = new TestHelpers.TestStructExplicit();
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -55,7 +55,7 @@ namespace System.Buffers.Binary.Tests
             Span<byte> spanLE = TestHelpers.GetSpanLE();
 
             var readStruct = new TestHelpers.TestStructExplicit();
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -90,7 +90,7 @@ namespace System.Buffers.Binary.Tests
             Span<byte> spanBE = TestHelpers.GetSpanBE();
 
             var readStruct = new TestHelpers.TestStructExplicit();
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -124,7 +124,7 @@ namespace System.Buffers.Binary.Tests
             Span<byte> spanLE = TestHelpers.GetSpanLE();
 
             var readStruct = new TestHelpers.TestStructExplicit();
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -159,7 +159,7 @@ namespace System.Buffers.Binary.Tests
             byte[] arrayLE = spanLE.ToArray();
 
             var readStruct = new TestHelpers.TestStructExplicit();
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -194,7 +194,7 @@ namespace System.Buffers.Binary.Tests
             byte[] arrayBE = spanBE.ToArray();
 
             var readStruct = new TestHelpers.TestStructExplicit();
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -242,7 +242,7 @@ namespace System.Buffers.Binary.Tests
         {
             var myArray = new int[1000];
 
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -262,7 +262,7 @@ namespace System.Buffers.Binary.Tests
         {
             var myArray = new int[1000];
 
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {

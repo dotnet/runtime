@@ -31,10 +31,10 @@ namespace System.SpanTests
         [InlineData("/localhost:5000/PATH/PATH2/ HTTP/1.1", " %?", ' ', 27)]
         public static void LastIndexOfAnyStrings_Byte(string raw, string search, char expectResult, int expectIndex)
         {
-            var buffers = Encoding.UTF8.GetBytes(raw);
+            byte[] buffers = Encoding.UTF8.GetBytes(raw);
             var span = new ReadOnlySpan<byte>(buffers);
-            var searchFor = search.ToCharArray();
-            var searchForBytes = Encoding.UTF8.GetBytes(searchFor);
+            char[] searchFor = search.ToCharArray();
+            byte[] searchForBytes = Encoding.UTF8.GetBytes(searchFor);
 
             var index = -1;
             if (searchFor.Length == 1)

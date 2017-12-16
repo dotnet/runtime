@@ -22,7 +22,7 @@ namespace System.Buffers.Text.Tests
             Base64TestHelper.InitalizeBytes(source);
             Span<byte> destination = new byte[Base64.GetMaxEncodedToUtf8Length(numberOfBytes)];
 
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -47,7 +47,7 @@ namespace System.Buffers.Text.Tests
             Base64TestHelper.InitalizeBytes(source);
             Span<byte> destination = new byte[Base64.GetMaxEncodedToUtf8Length(numberOfBytes) - 1];
 
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -68,7 +68,7 @@ namespace System.Buffers.Text.Tests
             Base64TestHelper.InitalizeBytes(source.AsSpan());
             var destination = new char[Base64.GetMaxEncodedToUtf8Length(numberOfBytes)];
 
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -90,7 +90,7 @@ namespace System.Buffers.Text.Tests
             Span<byte> encoded = new byte[Base64.GetMaxEncodedToUtf8Length(numberOfBytes)];
             Base64.EncodeToUtf8(source, encoded, out _, out _);
 
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -118,7 +118,7 @@ namespace System.Buffers.Text.Tests
 
             source = source.Slice(0, source.Length - 1);
 
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -139,7 +139,7 @@ namespace System.Buffers.Text.Tests
             Base64TestHelper.InitalizeBytes(source);
             ReadOnlySpan<char> encoded = Convert.ToBase64String(source.ToArray()).ToCharArray();
 
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -164,7 +164,7 @@ namespace System.Buffers.Text.Tests
             Span<byte> backupSpan = decodedSpan.ToArray();
 
             int bytesWritten = 0;
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -193,7 +193,7 @@ namespace System.Buffers.Text.Tests
             Span<byte> backupSpan = decodedSpan.ToArray();
 
             int bytesWritten = 0;
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 backupSpan.CopyTo(decodedSpan);
                 using (iteration.StartMeasurement())
@@ -223,7 +223,7 @@ namespace System.Buffers.Text.Tests
             Span<byte> backupSpan = encodedSpan.ToArray();
 
             int bytesWritten = 0;
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -248,7 +248,7 @@ namespace System.Buffers.Text.Tests
             Span<byte> encodedSpan = new byte[length];
 
             int bytesWritten = 0;
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 Base64.EncodeToUtf8(source, encodedSpan, out _, out _);
                 using (iteration.StartMeasurement())

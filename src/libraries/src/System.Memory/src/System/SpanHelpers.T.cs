@@ -175,7 +175,7 @@ namespace System
             return -1;
         }
 
-        public static unsafe int LastIndexOf<T>(ref T searchSpace, T value, int length)
+        public static int LastIndexOf<T>(ref T searchSpace, T value, int length)
             where T : IEquatable<T>
         {
             Debug.Assert(length >= 0);
@@ -243,7 +243,7 @@ namespace System
             return length + 7;
         }
 
-        public static unsafe int LastIndexOfAny<T>(ref T searchSpace, T value0, T value1, int length)
+        public static int LastIndexOfAny<T>(ref T searchSpace, T value0, T value1, int length)
             where T : IEquatable<T>
         {
             Debug.Assert(length >= 0);
@@ -325,7 +325,7 @@ namespace System
             return length + 7;
         }
 
-        public static unsafe int LastIndexOfAny<T>(ref T searchSpace, T value0, T value1, T value2, int length)
+        public static int LastIndexOfAny<T>(ref T searchSpace, T value0, T value1, T value2, int length)
             where T : IEquatable<T>
         {
             Debug.Assert(length >= 0);
