@@ -7701,7 +7701,8 @@ private:
     // Get preferred alignment of SIMD type.
     int getSIMDTypeAlignment(var_types simdType);
 
-    // Get the number of bytes in a SIMD Vector for the current compilation.
+    // Get the number of bytes in a System.Numeric.Vector<T> for the current compilation.
+    // Note - cannot be used for System.Runtime.Intrinsic 
     unsigned getSIMDVectorRegisterByteLength()
     {
 #if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
@@ -7723,9 +7724,27 @@ private:
     }
 
     // The minimum and maximum possible number of bytes in a SIMD vector.
+
+    // maxSIMDStructBytes
+    // The minimum SIMD size supported by System.Numeric.Vectors or System.Runtime.Intrinsic
+    // SSE:  16-byte Vector<T> and Vector128<T>
+    // AVX:  32-byte Vector256<T> (Vector<T> is 16-byte)
+    // AVX2: 32-byte Vector<T> and Vector256<T>
     unsigned int maxSIMDStructBytes()
     {
+#if FEATURE_HW_INTRINSICS && defined(_TARGET_XARCH_)
+        if (compSupports(InstructionSet_AVX))
+        {
+            return YMM_REGSIZE_BYTES;
+        }
+        else
+        {
+            assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
+            return XMM_REGSIZE_BYTES;
+        }
+#else
         return getSIMDVectorRegisterByteLength();
+#endif
     }
     unsigned int minSIMDStructBytes()
     {
