@@ -14,6 +14,7 @@
 
 using System.Reflection;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
 namespace System.Globalization
@@ -555,8 +556,8 @@ namespace System.Globalization
             int length = Math.Min(strA.Length, strB.Length);
             int range = length;
 
-            fixed (char* ap = &strA.DangerousGetPinnableReference())
-            fixed (char* bp = &strB.DangerousGetPinnableReference())
+            fixed (char* ap = &MemoryMarshal.GetReference(strA))
+            fixed (char* bp = &MemoryMarshal.GetReference(strB))
             {
                 char* a = ap;
                 char* b = bp;

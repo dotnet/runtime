@@ -16,6 +16,7 @@
 
 using System;
 using System.Runtime;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Globalization;
 using System.Diagnostics;
@@ -424,7 +425,7 @@ namespace System.IO
                     unsafe
                     {
                         fixed (byte* pBytes = byteBuffer)
-                        fixed (char* pChars = &buffer.DangerousGetPinnableReference())
+                        fixed (char* pChars = &MemoryMarshal.GetReference(buffer))
                         {
                             charsRead = _decoder.GetChars(pBytes + position, numBytes, pChars + index, charsRemaining, flush: false);
                         }

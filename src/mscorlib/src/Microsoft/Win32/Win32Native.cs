@@ -688,7 +688,7 @@ namespace Microsoft.Win32
 
         internal static unsafe int GetEnvironmentVariable(string lpName, Span<char> lpValue)
         {
-            fixed (char* lpValuePtr = &lpValue.DangerousGetPinnableReference())
+            fixed (char* lpValuePtr = &MemoryMarshal.GetReference(lpValue))
             {
                 return GetEnvironmentVariable(lpName, lpValuePtr, lpValue.Length);
             }

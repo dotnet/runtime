@@ -2434,7 +2434,7 @@ namespace System
 
             unsafe
             {
-                fixed (byte* bytesPtr = &bytes.DangerousGetPinnableReference())
+                fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
                 fixed (char* charsPtr = result)
                 {
                     int charsWritten = ConvertToBase64Array(charsPtr, bytesPtr, 0, bytes.Length, insertLineBreaks);
@@ -2527,8 +2527,8 @@ namespace System
                 return false;
             }
 
-            fixed (char* outChars = &chars.DangerousGetPinnableReference())
-            fixed (byte* inData = &bytes.DangerousGetPinnableReference())
+            fixed (char* outChars = &MemoryMarshal.GetReference(chars))
+            fixed (byte* inData = &MemoryMarshal.GetReference(bytes))
             {
                 charsWritten = ConvertToBase64Array(outChars, inData, 0, bytes.Length, insertLineBreaks);
                 return true;
@@ -2676,7 +2676,7 @@ namespace System
                 chars = chars.Slice(0, chars.Length - 1);
             }
 
-            fixed (char* charsPtr = &chars.DangerousGetPinnableReference())
+            fixed (char* charsPtr = &MemoryMarshal.GetReference(chars))
             {
                 int resultLength = FromBase64_ComputeResultLength(charsPtr, chars.Length);
                 Debug.Assert(resultLength >= 0);
@@ -2686,7 +2686,7 @@ namespace System
                     return false;
                 }
 
-                fixed (byte* bytesPtr = &bytes.DangerousGetPinnableReference())
+                fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
                 {
                     bytesWritten = FromBase64_Decode(charsPtr, chars.Length, bytesPtr, bytes.Length);
                     return true;

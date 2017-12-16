@@ -696,7 +696,7 @@ namespace System.IO
 
         public virtual Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (source.DangerousTryGetArray(out ArraySegment<byte> array))
+            if (MemoryMarshal.TryGetArray(source, out ArraySegment<byte> array))
             {
                 return WriteAsync(array.Array, array.Offset, array.Count, cancellationToken);
             }
