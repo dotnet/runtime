@@ -3,7 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+
+#if !netstandard
+using Internal.Runtime.CompilerServices;
+#else
 using System.Runtime.CompilerServices;
+#endif
 
 namespace System
 {

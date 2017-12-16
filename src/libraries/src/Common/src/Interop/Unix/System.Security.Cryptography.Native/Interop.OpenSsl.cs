@@ -377,7 +377,7 @@ internal static partial class Interop
                         Span<byte> clientProto = clientList.Slice(1, length);
                         if (clientProto.SequenceEqual(protocolList[i].Protocol.Span))
                         {
-                            outp = (byte*)Unsafe.AsPointer(ref clientProto.DangerousGetPinnableReference());
+                            fixed (byte* p = &clientProto.DangerousGetPinnableReference()) outp = p;
                             outlen = length;
                             return Ssl.SSL_TLSEXT_ERR_OK;
                         }

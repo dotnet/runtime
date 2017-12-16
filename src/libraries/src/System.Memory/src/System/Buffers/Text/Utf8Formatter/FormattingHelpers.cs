@@ -5,6 +5,10 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
+#if !netstandard
+using Internal.Runtime.CompilerServices;
+#endif
+
 namespace System.Buffers.Text
 {
     // All the helper methods in this class assume that the by-ref is valid and that there is
