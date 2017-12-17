@@ -7182,21 +7182,17 @@ mono_string_to_utf16 (MonoString *s)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	char *as;
-
 	if (s == NULL)
 		return NULL;
 
-	as = (char *)g_malloc ((s->length * 2) + 2);
-	as [(s->length * 2)] = '\0';
-	as [(s->length * 2) + 1] = '\0';
-
-	if (!s->length) {
-		return (gunichar2 *)(as);
+	int const length = s->length;
+	mono_unichar2* const as = (mono_unichar2*)g_malloc ((length + 1) * sizeof (*as));
+	if (as) {
+		as [length] = 0;
+		if (length)
+			memcpy (as, mono_string_chars(s), length * sizeof (*as));
 	}
-	
-	memcpy (as, mono_string_chars(s), s->length * 2);
-	return (gunichar2 *)(as);
+	return as;
 }
 
 /**
