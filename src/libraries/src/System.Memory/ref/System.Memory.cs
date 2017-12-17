@@ -454,7 +454,7 @@ namespace System.Runtime.InteropServices
         public static Memory<T> AsMemory<T>(ReadOnlyMemory<T> readOnlyMemory) { throw null; }
 
         public static ref T GetReference<T>(Span<T> span) { throw null; }
-        public static ref readonly T GetReference<T>(ReadOnlySpan<T> span) { throw null; }
+        public static ref T GetReference<T>(ReadOnlySpan<T> span) { throw null; }
 
         public static bool TryGetArray<T>(ReadOnlyMemory<T> readOnlyMemory, out ArraySegment<T> arraySegment) { throw null; }
     }

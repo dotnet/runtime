@@ -41,7 +41,7 @@ namespace System.Runtime.InteropServices
         /// Returns a reference to the 0th element of the ReadOnlySpan. If the Span is empty, returns a reference to the location where the 0th element
         /// would have been stored. Such a reference can be used for pinning but must never be dereferenced.
         /// </summary>
-        public static ref readonly T GetReference<T>(ReadOnlySpan<T> span)
+        public static ref T GetReference<T>(ReadOnlySpan<T> span)
         {
             if (span.Pinnable == null)
                 unsafe { return ref Unsafe.AsRef<T>(span.ByteOffset.ToPointer()); }
