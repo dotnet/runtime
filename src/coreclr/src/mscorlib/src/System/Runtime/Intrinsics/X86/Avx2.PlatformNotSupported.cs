@@ -298,51 +298,51 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m256i _mm256_cvtepi8_epi16 (__m128i a)
         /// </summary>
-        public static Vector256<short> ConvertToVector256Short(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+        public static Vector256<short> ConvertToVector256Int16(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_cvtepu8_epi16 (__m128i a)
         /// </summary>
-        public static Vector256<ushort> ConvertToVector256UShort(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ushort> ConvertToVector256UInt16(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_cvtepi8_epi32 (__m128i a)
         /// </summary>
-        public static Vector256<int> ConvertToVector256Int(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+        public static Vector256<int> ConvertToVector256Int32(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_cvtepi16_epi32 (__m128i a)
         /// </summary>
-        public static Vector256<int> ConvertToVector256Int(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+        public static Vector256<int> ConvertToVector256Int32(Vector128<short> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_cvtepu8_epi32 (__m128i a)
         /// </summary>
-        public static Vector256<uint> ConvertToVector256UInt(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+        public static Vector256<uint> ConvertToVector256UInt32(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_cvtepu16_epi32 (__m128i a)
         /// </summary>
-        public static Vector256<uint> ConvertToVector256UInt(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+        public static Vector256<uint> ConvertToVector256UInt32(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_cvtepi8_epi64 (__m128i a)
         /// </summary>
-        public static Vector256<long> ConvertToVector256Long(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+        public static Vector256<long> ConvertToVector256Int64(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_cvtepi16_epi64 (__m128i a)
         /// </summary>
-        public static Vector256<long> ConvertToVector256Long(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+        public static Vector256<long> ConvertToVector256Int64(Vector128<short> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_cvtepi32_epi64 (__m128i a)
         /// </summary>
-        public static Vector256<long> ConvertToVector256Long(Vector128<int> value) { throw new PlatformNotSupportedException(); }
+        public static Vector256<long> ConvertToVector256Int64(Vector128<int> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_cvtepu8_epi64 (__m128i a)
         /// </summary>
-        public static Vector256<ulong> ConvertToVector256ULong(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ulong> ConvertToVector256UInt64(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_cvtepu16_epi64 (__m128i a)
         /// </summary>
-        public static Vector256<ulong> ConvertToVector256ULong(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ulong> ConvertToVector256UInt64(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_cvtepu32_epi64 (__m128i a)
         /// </summary>
-        public static Vector256<ulong> ConvertToVector256ULong(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ulong> ConvertToVector256UInt64(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm256_extracti128_si256 (__m256i a, const int imm8)
