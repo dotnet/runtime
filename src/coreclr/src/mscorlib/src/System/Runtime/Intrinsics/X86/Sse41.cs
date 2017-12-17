@@ -73,51 +73,51 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128i _mm_cvtepi8_epi16 (__m128i a)
         /// </summary>
-        public static Vector128<short> ConvertToShort(Vector128<sbyte> value) => ConvertToShort(value);
+        public static Vector128<short> ConvertToVector128Int16(Vector128<sbyte> value) => ConvertToVector128Int16(value);
         /// <summary>
         /// __m128i _mm_cvtepu8_epi16 (__m128i a)
         /// </summary>
-        public static Vector128<short> ConvertToShort(Vector128<byte> value) => ConvertToShort(value);
+        public static Vector128<short> ConvertToVector128Int16(Vector128<byte> value) => ConvertToVector128Int16(value);
         /// <summary>
         /// __m128i _mm_cvtepi8_epi32 (__m128i a)
         /// </summary>
-        public static Vector128<int> ConvertToInt(Vector128<sbyte> value) => ConvertToInt(value);
+        public static Vector128<int> ConvertToVector128Int32(Vector128<sbyte> value) => ConvertToVector128Int32(value);
         /// <summary>
         /// __m128i _mm_cvtepu8_epi32 (__m128i a)
         /// </summary>
-        public static Vector128<int> ConvertToInt(Vector128<byte> value) => ConvertToInt(value);
+        public static Vector128<int> ConvertToVector128Int32(Vector128<byte> value) => ConvertToVector128Int32(value);
         /// <summary>
         /// __m128i _mm_cvtepi16_epi32 (__m128i a)
         /// </summary>
-        public static Vector128<int> ConvertToInt(Vector128<short> value) => ConvertToInt(value);
+        public static Vector128<int> ConvertToVector128Int32(Vector128<short> value) => ConvertToVector128Int32(value);
         /// <summary>
         /// __m128i _mm_cvtepu16_epi32 (__m128i a)
         /// </summary>
-        public static Vector128<int> ConvertToInt(Vector128<ushort> value) => ConvertToInt(value);
+        public static Vector128<int> ConvertToVector128Int32(Vector128<ushort> value) => ConvertToVector128Int32(value);
         /// <summary>
         /// __m128i _mm_cvtepi8_epi64 (__m128i a)
         /// </summary>
-        public static Vector128<long> ConvertToLong(Vector128<sbyte> value) => ConvertToLong(value);
+        public static Vector128<long> ConvertToVector128Int64(Vector128<sbyte> value) => ConvertToVector128Int64(value);
         /// <summary>
         /// __m128i _mm_cvtepu8_epi64 (__m128i a)
         /// </summary>
-        public static Vector128<long> ConvertToLong(Vector128<byte> value) => ConvertToLong(value);
+        public static Vector128<long> ConvertToVector128Int64(Vector128<byte> value) => ConvertToVector128Int64(value);
         /// <summary>
         /// __m128i _mm_cvtepi16_epi64 (__m128i a)
         /// </summary>
-        public static Vector128<long> ConvertToLong(Vector128<short> value) => ConvertToLong(value);
+        public static Vector128<long> ConvertToVector128Int64(Vector128<short> value) => ConvertToVector128Int64(value);
         /// <summary>
         /// __m128i _mm_cvtepu16_epi64 (__m128i a)
         /// </summary>
-        public static Vector128<long> ConvertToLong(Vector128<ushort> value) => ConvertToLong(value);
+        public static Vector128<long> ConvertToVector128Int64(Vector128<ushort> value) => ConvertToVector128Int64(value);
         /// <summary>
         /// __m128i _mm_cvtepi32_epi64 (__m128i a)
         /// </summary>
-        public static Vector128<long> ConvertToLong(Vector128<int> value) => ConvertToLong(value);
+        public static Vector128<long> ConvertToVector128Int64(Vector128<int> value) => ConvertToVector128Int64(value);
         /// <summary>
         /// __m128i _mm_cvtepu32_epi64 (__m128i a)
         /// </summary>
-        public static Vector128<long> ConvertToLong(Vector128<uint> value) => ConvertToLong(value);
+        public static Vector128<long> ConvertToVector128Int64(Vector128<uint> value) => ConvertToVector128Int64(value);
 
         /// <summary>
         /// __m128 _mm_dp_ps (__m128 a, __m128 b, const int imm8)
@@ -131,10 +131,10 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// int _mm_extract_epi8 (__m128i a, const int imm8)
         /// </summary>
-        public static sbyte ExtractSbyte<T>(Vector128<T> value, byte index) where T : struct
+        public static sbyte ExtractSByte<T>(Vector128<T> value, byte index) where T : struct
         {
             ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
-            return ExtractSbyte<T>(value, index);
+            return ExtractSByte<T>(value, index);
         }
         /// <summary>
         /// int _mm_extract_epi8 (__m128i a, const int imm8)
@@ -148,46 +148,46 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// int _mm_extract_epi32 (__m128i a, const int imm8)
         /// </summary>
-        public static int ExtractInt<T>(Vector128<T> value, byte index) where T : struct
+        public static int ExtractInt32<T>(Vector128<T> value, byte index) where T : struct
         {
             ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
-            return ExtractInt<T>(value, index);
+            return ExtractInt32<T>(value, index);
         }
 
         /// <summary>
         /// int _mm_extract_epi32 (__m128i a, const int imm8)
         /// </summary>
-        public static uint ExtractUint<T>(Vector128<T> value, byte index) where T : struct
+        public static uint ExtractUInt32<T>(Vector128<T> value, byte index) where T : struct
         {
             ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
-            return ExtractUint<T>(value, index);
+            return ExtractUInt32<T>(value, index);
         }
 
         /// <summary>
         /// __int64 _mm_extract_epi64 (__m128i a, const int imm8)
         /// </summary>
-        public static long ExtractLong<T>(Vector128<T> value, byte index) where T : struct
+        public static long ExtractInt64<T>(Vector128<T> value, byte index) where T : struct
         {
             ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
-            return ExtractLong<T>(value, index);
+            return ExtractInt64<T>(value, index);
         }
 
         /// <summary>
         /// __int64 _mm_extract_epi64 (__m128i a, const int imm8)
         /// </summary>
-        public static ulong ExtractUlong<T>(Vector128<T> value, byte index) where T : struct
+        public static ulong ExtractUInt64<T>(Vector128<T> value, byte index) where T : struct
         {
             ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
-            return ExtractUlong<T>(value, index);
+            return ExtractUInt64<T>(value, index);
         }
 
         /// <summary>
         /// int _mm_extract_ps (__m128 a, const int imm8)
         /// </summary>
-        public static float ExtractFloat<T>(Vector128<T> value, byte index) where T : struct
+        public static float ExtractSingle<T>(Vector128<T> value, byte index) where T : struct
         {
             ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
-            return ExtractFloat<T>(value, index);
+            return ExtractSingle<T>(value, index);
         }
 
         /// <summary>
@@ -202,10 +202,10 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128i _mm_insert_epi8 (__m128i a, int i, const int imm8)
         /// </summary>
-        public static Vector128<T> InsertSbyte<T>(Vector128<T> value, sbyte data, byte index) where T : struct
+        public static Vector128<T> InsertSByte<T>(Vector128<T> value, sbyte data, byte index) where T : struct
         {
             ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
-            return InsertSbyte<T>(value, data, index);
+            return InsertSByte<T>(value, data, index);
         }
 
         /// <summary>
@@ -220,46 +220,46 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128i _mm_insert_epi32 (__m128i a, int i, const int imm8)
         /// </summary>
-        public static Vector128<T> InsertInt<T>(Vector128<T> value, int data, byte index) where T : struct
+        public static Vector128<T> InsertInt32<T>(Vector128<T> value, int data, byte index) where T : struct
         {
             ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
-            return InsertInt<T>(value, data, index);
+            return InsertInt32<T>(value, data, index);
         }
 
         /// <summary>
         /// __m128i _mm_insert_epi32 (__m128i a, int i, const int imm8)
         /// </summary>
-        public static Vector128<T> InsertUint<T>(Vector128<T> value, uint data, byte index) where T : struct
+        public static Vector128<T> InsertUInt32<T>(Vector128<T> value, uint data, byte index) where T : struct
         {
             ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
-            return InsertUint<T>(value, data, index);
+            return InsertUInt32<T>(value, data, index);
         }
 
         /// <summary>
         /// __m128i _mm_insert_epi64 (__m128i a, __int64 i, const int imm8)
         /// </summary>
-        public static Vector128<T> InsertLong<T>(Vector128<T> value, long data, byte index) where T : struct
+        public static Vector128<T> InsertInt64<T>(Vector128<T> value, long data, byte index) where T : struct
         {
             ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
-            return InsertLong<T>(value, data, index);
+            return InsertInt64<T>(value, data, index);
         }
 
         /// <summary>
         /// __m128i _mm_insert_epi64 (__m128i a, __int64 i, const int imm8)
         /// </summary>
-        public static Vector128<T> InsertUlong<T>(Vector128<T> value, ulong data, byte index) where T : struct
+        public static Vector128<T> InsertUInt64<T>(Vector128<T> value, ulong data, byte index) where T : struct
         {
             ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
-            return InsertUlong<T>(value, data, index);
+            return InsertUInt64<T>(value, data, index);
         }
 
         /// <summary>
         /// __m128 _mm_insert_ps (__m128 a, __m128 b, const int imm8)
         /// </summary>
-        public static Vector128<T> InsertFloat<T>(Vector128<T> value, float data, byte index) where T : struct
+        public static Vector128<T> InsertSingle<T>(Vector128<T> value, float data, byte index) where T : struct
         {
             ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
-            return InsertFloat<T>(value, data, index);
+            return InsertSingle<T>(value, data, index);
         }
 
         /// <summary>

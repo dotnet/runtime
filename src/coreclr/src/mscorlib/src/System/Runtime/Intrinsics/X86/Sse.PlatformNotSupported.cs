@@ -143,7 +143,7 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128 _mm_rsqrt_ps (__m128 a)
         /// </summary>
-        public static Vector128<float> ReciprocalSquareRoot(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> ReciprocalSqrt(Vector128<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm_set_ps (float e3, float e2, float e1, float e0)
