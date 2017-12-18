@@ -2550,8 +2550,8 @@ Constants.allScenarios.each { scenario ->
                                 }
 
                                 // If we are running a stress mode, we'll set those variables as well
-                                def stressValues = null
                                 if (isJitStressScenario(scenario) || isR2RStressScenario(scenario)) {
+                                    def stressValues = null
                                     if (isJitStressScenario(scenario)) {
                                         stressValues = Constants.jitStressModeScenarios[scenario]
                                     }
@@ -2565,9 +2565,34 @@ Constants.allScenarios.each { scenario ->
                                 }
 
                                 if (isR2RScenario(scenario)) {
-                                    addEnvVariable("RunCrossGen", "true")
+                                    // Crossgen the framework assemblies.
+                                    buildCommands += """
+for %%F in (%CORE_ROOT%\\*.dll) do call :PrecompileAssembly "%CORE_ROOT%" "%%F" %%~nxF
+goto skip_PrecompileAssembly
 
-                                    // TODO: crossgen the framework assemblies
+:PrecompileAssembly
+REM Skip mscorlib since it is already precompiled.
+if /I "%3" == "mscorlib.dll" exit /b 0
+if /I "%3" == "mscorlib.ni.dll" exit /b 0
+
+"%CORE_ROOT%\\crossgen.exe" /Platform_Assemblies_Paths "%CORE_ROOT%" "%2" >nul 2>nul
+if "%errorlevel%" == "-2146230517" (
+    echo %2 is not a managed assembly.
+) else if "%errorlevel%" == "-2146234344" (
+    echo %2 is not a managed assembly.
+) else if %errorlevel% neq 0 (
+    echo Unable to precompile %2
+) else (
+    echo Precompiled %2
+)
+exit /b 0
+
+:skip_PrecompileAssembly
+"""
+
+                                    // Set RunCrossGen variable to cause test wrappers to invoke their logic to run
+                                    // crossgen on tests before running them.
+                                    addEnvVariable("RunCrossGen", "true")
                                 }
 
                                 // Create the smarty command
