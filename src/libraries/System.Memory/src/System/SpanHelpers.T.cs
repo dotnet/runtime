@@ -63,10 +63,7 @@ namespace System
             for (int i = 0; i < valueLength; i++)
             {
                 var tempIndex = LastIndexOf(ref searchSpace, Unsafe.Add(ref value, i), searchSpaceLength);
-                if (tempIndex != -1)
-                {
-                    index = (index == -1 || index < tempIndex) ? tempIndex : index;
-                }
+                if (tempIndex > index) index = tempIndex;
             }
             return index;
         }
