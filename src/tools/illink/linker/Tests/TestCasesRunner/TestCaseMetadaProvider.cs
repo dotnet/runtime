@@ -39,6 +39,13 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				tclo.AssembliesAction.Add (new KeyValuePair<string, string> ((string)ca [0].Value, (string)ca [1].Value));
 			}
 
+			foreach (var additionalArgumentAttr in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerArgumentAttribute)))
+			{
+				var ca = additionalArgumentAttr.ConstructorArguments;
+				var values = ((CustomAttributeArgument [])ca [1].Value)?.Select (arg => arg.Value.ToString ()).ToArray ();
+				tclo.AdditionalArguments.Add (new KeyValuePair<string, string []> ((string)ca [0].Value, values));
+			}
+
 			return tclo;
 		}
 
