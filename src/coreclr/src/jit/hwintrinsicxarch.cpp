@@ -212,7 +212,8 @@ GenTree* Compiler::impX86HWIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HA
         {
             impPopStack();
         }
-        return gtNewMustThrowException(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, JITtype2varType(sig->retType));
+        return gtNewMustThrowException(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, JITtype2varType(sig->retType),
+                                       sig->retTypeClass);
     }
     switch (isa)
     {
@@ -425,7 +426,7 @@ GenTree* Compiler::impSSE42Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HA
 #ifdef _TARGET_X86_
             if (varTypeIsLong(callType))
             {
-                return gtNewMustThrowException(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, callType);
+                return gtNewMustThrowException(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, callType, sig->retTypeClass);
             }
 #endif
             argLst  = info.compCompHnd->getArgNext(argLst);                        // the second argument
@@ -565,7 +566,7 @@ GenTree* Compiler::impLZCNTIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HA
 #ifdef _TARGET_X86_
             if (varTypeIsLong(callType))
             {
-                return gtNewMustThrowException(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, callType);
+                return gtNewMustThrowException(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, callType, sig->retTypeClass);
             }
 #endif
             retNode = gtNewScalarHWIntrinsicNode(callType, op1, NI_LZCNT_LeadingZeroCount);
@@ -608,7 +609,7 @@ GenTree* Compiler::impPOPCNTIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_H
 #ifdef _TARGET_X86_
             if (varTypeIsLong(callType))
             {
-                return gtNewMustThrowException(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, callType);
+                return gtNewMustThrowException(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, callType, sig->retTypeClass);
             }
 #endif
             retNode = gtNewScalarHWIntrinsicNode(callType, op1, NI_POPCNT_PopCount);
