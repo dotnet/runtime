@@ -673,7 +673,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ikdasm-net_4_x", "mcs/tools
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "mono-symbolicate-net_4_x", "mcs/tools/mono-symbolicate/mono-symbolicate-net_4_x.csproj", "{63E373FB-CE4B-4F7B-A421-5CE8ED7BD851}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "linkeranalyzer-net_4_x", "mcs/tools/linker-analyzer/linkeranalyzer-net_4_x.csproj", "{D7789C48-C33A-4FE5-BD42-4DBAB2850796}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "illinkanalyzer-net_4_x", "mcs/tools/linker-analyzer/illinkanalyzer-net_4_x.csproj", "{D7789C48-C33A-4FE5-BD42-4DBAB2850796}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "mcs-net_4_x", "mcs/mcs/mcs-net_4_x.csproj", "{322A755A-ED38-4295-979D-E49EBAFA2852}"
 EndProject
