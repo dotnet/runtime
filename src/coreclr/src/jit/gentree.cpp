@@ -17858,15 +17858,23 @@ GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types      type,
 // Return Value
 //    pointer to the throw node
 //
-GenTree* Compiler::gtNewMustThrowException(unsigned helper, var_types type)
+GenTree* Compiler::gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd)
 {
     GenTreeCall* node = gtNewHelperCallNode(helper, TYP_VOID);
     node->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
     if (type != TYP_VOID)
     {
-        unsigned dummyTemp         = lvaGrabTemp(true DEBUGARG("dummy temp of must thrown exception"));
-        lvaTable[dummyTemp].lvType = type;
-        GenTree* dummyNode         = gtNewLclvNode(dummyTemp, type);
+        unsigned dummyTemp = lvaGrabTemp(true DEBUGARG("dummy temp of must thrown exception"));
+        if (type == TYP_STRUCT)
+        {
+            lvaSetStruct(dummyTemp, clsHnd, false);
+            type = lvaTable[dummyTemp].lvType; // struct type is normalized
+        }
+        else
+        {
+            lvaTable[dummyTemp].lvType = type;
+        }
+        GenTree* dummyNode = gtNewLclvNode(dummyTemp, type);
         return gtNewOperNode(GT_COMMA, type, node, dummyNode);
     }
     return node;
