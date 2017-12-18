@@ -11,6 +11,7 @@
     <Compile Include="BindingErrors.cs" />
     <Compile Include="ImplicitConversionTests.cs" />
     <Compile Include="CSharpArgumentInfoTests.cs" />
+    <Compile Include="DefaultParameterTests.cs" />
     <Compile Include="DelegateInDynamicTests.cs" />
     <Compile Include="EnumArithmeticTests.cs" />
     <Compile Include="IndexingTests.cs" />
