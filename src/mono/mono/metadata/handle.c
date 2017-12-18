@@ -68,7 +68,7 @@ Combine: MonoDefaults, GENERATE_GET_CLASS_WITH_CACHE, TYPED_HANDLE_DECL and frie
  * Note that the handle stack is scanned PRECISELY (see
  * sgen_client_scan_thread_data ()).  That means there should not be
  * stale objects scanned.  So when we manipulate the size of a chunk,
- * wemust ensure that the newly scannable slot is either null or
+ * we must ensure that the newly scannable slot is either null or
  * points to a valid value.
  */
 
