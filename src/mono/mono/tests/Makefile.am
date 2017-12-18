@@ -1016,21 +1016,10 @@ INTERP_DISABLED_TESTS = \
 	field-access.exe \
 	handleref.exe \
 	ldftn-access.exe \
-	marshal.exe \
-	marshal8.exe \
 	method-access.exe \
 	nullable_boxing.2.exe \
-	pinvoke-2.2.exe \
-	pinvoke-utf8.exe \
-	pinvoke.exe \
-	pinvoke11.exe \
 	pinvoke2.exe \
 	pinvoke3.exe \
-	pinvoke_ppcc.exe \
-	pinvoke_ppcd.exe \
-	pinvoke_ppcf.exe \
-	pinvoke_ppci.exe \
-	pinvoke_ppcs.exe \
 	safehandle.2.exe \
 	stackframes-async.2.exe \
 	static-constructor.exe \
@@ -1044,8 +1033,7 @@ INTERP_DISABLED_TESTS = \
 	weak-fields.exe \
 	vararg.exe \
 	vararg2.exe \
-	dim-valuetypes.exe	\
-	winx64structs.exe
+	dim-valuetypes.exe
 
 TESTS_CS=$(filter-out $(DISABLED_TESTS),$(TESTS_CS_SRC:.cs=.exe))
 TESTS_IL=$(filter-out $(DISABLED_TESTS),$(TESTS_IL_SRC:.il=.exe))
