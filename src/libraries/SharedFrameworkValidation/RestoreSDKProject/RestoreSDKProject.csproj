@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <RuntimeFrameworkVersion>$(_RuntimeFrameworkVersion)</RuntimeFrameworkVersion>
@@ -7,7 +6,9 @@
     <RuntimeIdentifier>$(_PackageRID)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
   </PropertyGroup>
-
+  <PropertyGroup>
+    <ProjectGuid>{8371FF08-5374-4584-970C-6DC5B25E8BF1}</ProjectGuid>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="$(CoreFxPackageVersion)" />
     <PackageReference Include="Microsoft.NETCore.Platforms" Version="2.0.0-$(CoreFxExpectedPrerelease)" />
@@ -57,10 +58,9 @@
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(CoreFxPackageVersion)" />
     <PackageReference Include="System.ValueTuple" Version="$(CoreFxPackageVersion)" />
   </ItemGroup>
-
   <Target Name="BinPlaceMetaPackageRef" BeforeTargets="CoreCompile">
     <Copy SourceFiles="%(ReferencePath.Identity)" DestinationFolder="$(_MetaPackageDestinationFolder)" />
   </Target>
-
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
 </Project>
-

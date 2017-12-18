@@ -4,11 +4,8 @@
   <PropertyGroup>
     <ProjectGuid>{6DC15D23-8213-4700-9815-AD8DEED1CE5F}</ProjectGuid>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <OutputPath>..\..\..\..\..\bin\AnyOS.AnyCPU.Debug\System.Xml.RW.CharCheckingReader.Tests\</OutputPath>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="CharReaderTests.cs" />
     <Compile Include="InheritedCases.cs" />
