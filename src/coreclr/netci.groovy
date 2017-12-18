@@ -2567,16 +2567,16 @@ Constants.allScenarios.each { scenario ->
                                 if (isR2RScenario(scenario)) {
                                     // Crossgen the framework assemblies.
                                     buildCommands += """
-for %%F in (%CORE_ROOT%\\*.dll) do call :PrecompileAssembly "%CORE_ROOT%" "%%F" %%~nxF
-goto skip_PrecompileAssembly
+@for %%F in (%CORE_ROOT%\\*.dll) do @call :PrecompileAssembly "%CORE_ROOT%" "%%F" %%~nxF
+@goto skip_PrecompileAssembly
 
 :PrecompileAssembly
-REM Skip mscorlib since it is already precompiled.
-if /I "%3" == "mscorlib.dll" exit /b 0
-if /I "%3" == "mscorlib.ni.dll" exit /b 0
+@REM Skip mscorlib since it is already precompiled.
+@if /I "%3" == "mscorlib.dll" exit /b 0
+@if /I "%3" == "mscorlib.ni.dll" exit /b 0
 
-"%CORE_ROOT%\\crossgen.exe" /Platform_Assemblies_Paths "%CORE_ROOT%" "%2" >nul 2>nul
-if "%errorlevel%" == "-2146230517" (
+"%CORE_ROOT%\\crossgen.exe" /Platform_Assemblies_Paths "%CORE_ROOT%" %2 >nul 2>nul
+@if "%errorlevel%" == "-2146230517" (
     echo %2 is not a managed assembly.
 ) else if "%errorlevel%" == "-2146234344" (
     echo %2 is not a managed assembly.
@@ -2585,7 +2585,7 @@ if "%errorlevel%" == "-2146230517" (
 ) else (
     echo Precompiled %2
 )
-exit /b 0
+@exit /b 0
 
 :skip_PrecompileAssembly
 """
