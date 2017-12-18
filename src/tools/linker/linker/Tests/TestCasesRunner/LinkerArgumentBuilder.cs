@@ -70,6 +70,15 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			_arguments.Add (arg);
 		}
 
+		public virtual void AddAdditionalArgument (string flag, string [] values)
+		{
+			Append (flag);
+			if (values != null) {
+				foreach (var val in values)
+					Append (val);
+			}
+		}
+
 		public virtual void ProcessOptions (TestCaseLinkerOptions options)
 		{
 			if (options.CoreAssembliesAction != null)
@@ -90,6 +99,11 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 			if (!string.IsNullOrEmpty (options.KeepTypeForwarderOnlyAssemblies))
 				AddKeepTypeForwarderOnlyAssemblies (options.KeepTypeForwarderOnlyAssemblies);
+
+			// Unity uses different argument format and needs to be able to translate to their format.  In order to make that easier
+			// we keep the information in flag + values format for as long as we can so that this information doesn't have to be parsed out of a single string
+			foreach (var additionalArgument in options.AdditionalArguments)
+				AddAdditionalArgument (additionalArgument.Key, additionalArgument.Value);
 		}
 	}
 }

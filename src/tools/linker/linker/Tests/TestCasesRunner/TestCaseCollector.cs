@@ -67,8 +67,30 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 					if (file.Parent.FileName == "Dependencies")
 						continue;
 
+					// Magic: Anything in a directory named Individual is expected to be ran by it's own [Test] rather than as part of [TestCaseSource]
+					if (file.Parent.FileName == "Individual")
+						continue;
+
 					yield return file;
 				}
+			}
+		}
+
+		public TestCase CreateIndividualCase (Type testCaseType)
+		{
+			_rootDirectory.DirectoryMustExist ();
+			_testCaseAssemblyPath.FileMustExist ();
+
+			var pathRelativeToAssembly = $"{testCaseType.FullName.Substring (testCaseType.Module.Name.Length - 3).Replace ('.', '/')}.cs";
+			var fullSourcePath = _rootDirectory.Combine (pathRelativeToAssembly).FileMustExist ();
+
+			using (var caseAssemblyDefinition = AssemblyDefinition.ReadAssembly (_testCaseAssemblyPath.ToString ()))
+			{
+				TestCase testCase;
+				if (!CreateCase (caseAssemblyDefinition, fullSourcePath, out testCase))
+					throw new ArgumentException ($"Could not create a test case for `{testCaseType}`.  Ensure the namespace matches it's location on disk");
+
+				return testCase;
 			}
 		}
 

@@ -90,15 +90,20 @@ namespace Mono.Linker.Tests.TestCases
 			return AllCases().Where(c => !allGroupedTestNames.Contains(c.ReconstructedFullTypeName)).Select(c => CreateNUnitTestCase(c, c.DisplayName));
 		}
 
-		static IEnumerable<TestCase> AllCases()
+		public static TestCaseCollector CreateCollector ()
 		{
 			string rootSourceDirectory;
 			string testCaseAssemblyPath;
-			GetDirectoryPaths(out rootSourceDirectory, out testCaseAssemblyPath);
-			return new TestCaseCollector(rootSourceDirectory, testCaseAssemblyPath)
-				.Collect()
-				.OrderBy(c => c.DisplayName)
-				.ToArray();
+			GetDirectoryPaths (out rootSourceDirectory, out testCaseAssemblyPath);
+			return new TestCaseCollector (rootSourceDirectory, testCaseAssemblyPath);
+		}
+
+		static IEnumerable<TestCase> AllCases ()
+		{
+			return CreateCollector ()
+				.Collect ()
+				.OrderBy (c => c.DisplayName)
+				.ToArray ();
 		}
 
 		static IEnumerable<TestCaseData> NUnitCasesByPrefix(string testNamePrefix)

@@ -69,6 +69,7 @@
     <Compile Include="Assertions\KeptAttributeAttribute.cs" />
     <Compile Include="Assertions\RemovedForwarderAttribute.cs" />
     <Compile Include="Metadata\SetupLinkerActionAttribute.cs" />
+    <Compile Include="Metadata\SetupLinkerArgumentAttribute.cs" />
     <Compile Include="Metadata\SetupLinkerCoreActionAttribute.cs" />
     <Compile Include="Metadata\SetupCompileResourceAttribute.cs" />
   </ItemGroup>

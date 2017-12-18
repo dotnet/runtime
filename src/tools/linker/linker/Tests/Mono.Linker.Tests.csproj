@@ -77,6 +77,7 @@
     <Compile Include="TestCasesRunner\SourceAndDestinationPair.cs" />
     <Compile Include="TestCasesRunner\SetupCompileInfo.cs" />
     <Compile Include="TestCasesRunner\PeVerifier.cs" />
+    <Compile Include="TestCases\IndividualTests.cs" />
     <Compile Include="TestCases\TestSuites.cs" />
     <Compile Include="TestCases\TestDatabase.cs" />
     <Compile Include="Tests\PreserveActionComparisonTests.cs" />
