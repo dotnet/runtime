@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <IncludePerformanceTests>true</IncludePerformanceTests>
-    <ProjectGuid>{16568C86-E97E-42C6-B683-65A1B5AF2EC8}</ProjectGuid>
+    <ProjectGuid>{F2B47C9D-477E-4EB2-B7F9-D7563FCED117}</ProjectGuid>
     <DisableTests Condition="'$(TargetGroup)' == 'uap' AND ('$(ArchGroup)' == 'arm' OR '$(ArchGroup)' == 'arm64')">true</DisableTests>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />

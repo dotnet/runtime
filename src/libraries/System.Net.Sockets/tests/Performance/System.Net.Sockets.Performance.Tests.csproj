@@ -3,11 +3,11 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <IncludePerformanceTests>true</IncludePerformanceTests>
-    <ProjectGuid>{16568C86-E97E-42C6-B683-65A1B5AF2EC8}</ProjectGuid>
+    <ProjectGuid>{981FC867-9071-444D-9388-BC5826609F76}</ProjectGuid>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
     <Compile Include="Perf.Socket.SendReceive.cs" />
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">

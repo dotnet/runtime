@@ -7,10 +7,8 @@
     <DefineConstants>$(DefineConstants);FEATURE_XML_XPATH_ID</DefineConstants>
     <RootNamespace>System.Xml.XPath.Tests</RootNamespace>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <PropertyGroup>
     <CommonPathXPath>$(CommonPath)\System\Xml\XPath</CommonPathXPath>
   </PropertyGroup>

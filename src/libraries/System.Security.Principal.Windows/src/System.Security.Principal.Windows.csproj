@@ -26,7 +26,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup Condition="($(TargetGroup.Contains('netcoreapp')) or '$(TargetGroup)' == 'uap') AND '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="($(TargetGroup.StartsWith('netcoreapp')) or '$(TargetGroup)' == 'uap') AND '$(TargetsWindows)' == 'true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeAccessTokenHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeSecurityHandles.cs" />
     <Compile Include="System\Security\Principal\IdentityNotMappedException.cs" />
@@ -186,7 +186,7 @@
       <Link>Common\Microsoft\Win32\SafeHandles\SafeLsaHandle.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="$(TargetGroup.Contains('netcoreapp')) AND '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="$(TargetGroup.StartsWith('netcoreapp')) AND '$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.CheckTokenMembership.cs">
       <Link>Common\Interop\Interop.CheckTokenMembership.cs</Link>
     </Compile>
