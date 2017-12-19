@@ -555,9 +555,12 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call, TreeNodeInfo* info)
 #ifdef _TARGET_ARM_
             // The `double` types have been transformed to `long` on armel,
             // while the actual long types have been decomposed.
+            // On ARM we may have bitcasts from DOUBLE to LONG.
             if (argNode->TypeGet() == TYP_LONG)
             {
-                info->srcCount += appendBinaryLocationInfoToList(argNode->AsOp());
+                assert(argNode->IsMultiRegNode());
+                info->srcCount += 2;
+                appendLocationInfoToList(argNode);
             }
             else
 #endif // _TARGET_ARM_

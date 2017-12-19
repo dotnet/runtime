@@ -3998,7 +3998,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
             {
                 // This is the 2nd or subsequent register defined by a multi-reg node.
                 // Connect them using 'relatedInterval'.
-                noway_assert((prevInterval != nullptr) && (prevInterval->relatedInterval == nullptr));
+                noway_assert(prevInterval != nullptr);
                 prevInterval->relatedInterval = interval;
                 prevInterval                  = interval;
                 prevInterval->isMultiReg      = true;
