@@ -3682,27 +3682,29 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			generating_code = 0;
 			break;
 		case CEE_LEAVE:
+		case CEE_LEAVE_S: {
+			int offset;
+
+			if (*td->ip == CEE_LEAVE)
+				offset = 5 + read32 (td->ip + 1);
+			else
+				offset = 2 + (gint8)td->ip [1];
+
 			td->sp = td->stack;
 			if (td->clause_indexes [in_offset] != -1) {
 				/* LEAVE instructions in catch clauses need to check for abort exceptions */
-				handle_branch (td, MINT_LEAVE_S_CHECK, MINT_LEAVE_CHECK, 5 + read32 (td->ip + 1));
+				handle_branch (td, MINT_LEAVE_S_CHECK, MINT_LEAVE_CHECK, offset);
 			} else {
-				handle_branch (td, MINT_LEAVE_S, MINT_LEAVE, 5 + read32 (td->ip + 1));
+				handle_branch (td, MINT_LEAVE_S, MINT_LEAVE, offset);
 			}
-			td->ip += 5;
+
+			if (*td->ip == CEE_LEAVE)
+				td->ip += 5;
+			else
+				td->ip += 2;
 			generating_code = 0;
 			break;
-		case CEE_LEAVE_S:
-			td->sp = td->stack;
-			if (td->clause_indexes [in_offset] != -1) {
-				/* LEAVE instructions in catch clauses need to check for abort exceptions */
-				handle_branch (td, MINT_LEAVE_S_CHECK, MINT_LEAVE_CHECK, 2 + (gint8)td->ip [1]);
-			} else {
-				handle_branch (td, MINT_LEAVE_S, MINT_LEAVE, 2 + (gint8)td->ip [1]);
-			}
-			td->ip += 2;
-			generating_code = 0;
-			break;
+		}
 		case MONO_CUSTOM_PREFIX:
 			++td->ip;
 		        switch (*td->ip) {
