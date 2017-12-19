@@ -521,5 +521,19 @@ namespace System.PrivateUri.Tests
             catch (FormatException)
             { }
         }
+
+        [Theory]
+        [InlineData("\u00E8")]
+        [InlineData("_\u00E8")]
+        [InlineData("_")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Requires fix shipping in .NET 4.7.2")]
+        public void Iri_FileUriUncFallback_DoesSupportUnicodeHost(string authority)
+        {
+            Uri fileTwoSlashes = new Uri("file://" + authority);
+            Uri fileFourSlashes = new Uri("file:////" + authority);
+
+            Assert.Equal(authority, fileTwoSlashes.Authority); // Two slashes must be followed by an authority
+            Assert.Equal(authority, fileFourSlashes.Authority); // More than three slashes looks like a UNC share
+        }
     }
 }
