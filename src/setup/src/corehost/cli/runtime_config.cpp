@@ -11,7 +11,7 @@
 runtime_config_t::runtime_config_t()
     : m_patch_roll_fwd(true)
     , m_prerelease_roll_fwd(false)
-    , m_roll_fwd_on_no_candidate_fx(0)
+    , m_roll_fwd_on_no_candidate_fx(roll_fwd_on_no_candidate_fx_option::minor)
     , m_portable(false)
     , m_valid(false)
 {
@@ -28,6 +28,16 @@ void runtime_config_t::parse(const pal::string_t& path, const pal::string_t& dev
         m_patch_roll_fwd = defaults->m_patch_roll_fwd;
         m_prerelease_roll_fwd = defaults->m_prerelease_roll_fwd;
         m_roll_fwd_on_no_candidate_fx = defaults->m_roll_fwd_on_no_candidate_fx;
+    }
+    else
+    {
+        // Since there is no previous config, this is the app's config, so default m_roll_fwd_on_no_candidate_fx from the env variable.
+        // The value will be overwritten during parsing if the setting exists in the config file.
+        pal::string_t env_no_candidate;
+        if (pal::getenv(_X("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX"), &env_no_candidate))
+        {
+            m_roll_fwd_on_no_candidate_fx = static_cast<roll_fwd_on_no_candidate_fx_option>(pal::xtoi(env_no_candidate.c_str()));
+        }
     }
 
     m_valid = ensure_parsed();
@@ -96,15 +106,7 @@ bool runtime_config_t::parse_opts(const json_value& opts)
     auto roll_fwd_on_no_candidate_fx = opts_obj.find(_X("rollForwardOnNoCandidateFx"));
     if (roll_fwd_on_no_candidate_fx != opts_obj.end())
     {
-        m_roll_fwd_on_no_candidate_fx = roll_fwd_on_no_candidate_fx->second.as_integer();
-    }
-    else
-    {
-        pal::string_t env_no_candidate;
-        if (pal::getenv(_X("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX"), &env_no_candidate))
-        {
-            m_roll_fwd_on_no_candidate_fx = pal::xtoi(env_no_candidate.c_str());
-        }
+        m_roll_fwd_on_no_candidate_fx = static_cast<roll_fwd_on_no_candidate_fx_option>(roll_fwd_on_no_candidate_fx->second.as_integer());
     }
 
     auto tfm = opts_obj.find(_X("tfm"));
@@ -249,13 +251,13 @@ bool runtime_config_t::get_prerelease_roll_fwd() const
     return m_prerelease_roll_fwd;
 }
 
-int runtime_config_t::get_roll_fwd_on_no_candidate_fx() const
+roll_fwd_on_no_candidate_fx_option runtime_config_t::get_roll_fwd_on_no_candidate_fx() const
 {
     assert(m_valid);
     return m_roll_fwd_on_no_candidate_fx;
 }
 
-void runtime_config_t::set_roll_fwd_on_no_candidate_fx(int value)
+void runtime_config_t::set_roll_fwd_on_no_candidate_fx(roll_fwd_on_no_candidate_fx_option value)
 {
     assert(m_valid);
     m_roll_fwd_on_no_candidate_fx = value;

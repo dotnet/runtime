@@ -11,6 +11,13 @@
 
 typedef web::json::value json_value;
 
+enum class roll_fwd_on_no_candidate_fx_option
+{
+    disabled = 0,
+    minor,
+    major_or_minor
+};
+
 class runtime_config_t
 {
 public:
@@ -26,8 +33,8 @@ public:
     const std::list<pal::string_t>& get_probe_paths() const;
     bool get_patch_roll_fwd() const;
     bool get_prerelease_roll_fwd() const;
-    int get_roll_fwd_on_no_candidate_fx() const;
-    void set_roll_fwd_on_no_candidate_fx(int value);
+    roll_fwd_on_no_candidate_fx_option get_roll_fwd_on_no_candidate_fx() const;
+    void set_roll_fwd_on_no_candidate_fx(roll_fwd_on_no_candidate_fx_option value);
     bool get_portable() const;
     bool parse_opts(const json_value& opts);
     void combine_properties(std::unordered_map<pal::string_t, pal::string_t>& combined_properties) const;
@@ -45,7 +52,7 @@ private:
     pal::string_t m_fx_ver;
     bool m_patch_roll_fwd;
     bool m_prerelease_roll_fwd;
-    int m_roll_fwd_on_no_candidate_fx;
+    roll_fwd_on_no_candidate_fx_option m_roll_fwd_on_no_candidate_fx;
 
     pal::string_t m_dev_path;
     pal::string_t m_path;
