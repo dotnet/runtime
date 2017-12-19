@@ -7,20 +7,26 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(IsPartialFacadeAssembly)' == 'true'">None</ResourcesSourceOutputDirectory>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_CryptographyPkcs</GeneratePlatformNotSupportedAssemblyMessage>
     <UsePackageTargetRuntimeDefaults Condition="'$(IsPartialFacadeAssembly)' != 'true'">true</UsePackageTargetRuntimeDefaults>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
   </PropertyGroup>
   <!-- Don't delete these clauses even if they look useless. They tell the VS IDE that "Windows_Debug", etc., are
        valid configuration for this project and stop it from trying to "fix up" the .sln file -->
   <!-- API types (platform independent) -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND ('$(TargetGroup)' != 'netstandard' OR '$(TargetsWindows)' == 'true')">
+  <PropertyGroup Condition="'$(TargetGroup)'=='netcoreapp'">
+    <DefineConstants>$(DefineConstants);netcoreapp</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="System\Security\Cryptography\CryptographicAttributeObject.cs" />
     <Compile Include="System\Security\Cryptography\CryptographicAttributeObjectCollection.cs" />
     <Compile Include="System\Security\Cryptography\CryptographicAttributeObjectEnumerator.cs" />
@@ -50,7 +56,7 @@
     <Compile Include="System\Security\Cryptography\Xml\X509IssuerSerial.cs" />
   </ItemGroup>
   <!-- Internal types (platform independent) -->
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND ('$(TargetGroup)' != 'netstandard' OR '$(TargetsWindows)' == 'true')">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="Internal\Cryptography\DecryptorPal.cs" />
     <Compile Include="Internal\Cryptography\KeyAgreeRecipientInfoPal.cs" />
     <Compile Include="Internal\Cryptography\KeyLengths.cs" />
@@ -82,6 +88,9 @@
   </ItemGroup>
   <!-- Interop types (platform: Windows) -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.CryptGetProvParam.cs">
+      <Link>Common\Interop\Windows\advapi32\Interop.CryptGetProvParam.cs</Link>
+    </Compile>
     <Compile Include="Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs" />
     <Compile Include="Interop\Windows\Crypt32\Interop.CERT_ID.cs" />
     <Compile Include="Interop\Windows\Crypt32\Interop.CERT_INFO.cs" />
@@ -164,13 +173,76 @@
       <Link>Common\Interop\Windows\NCrypt\Interop.NCryptFreeObject.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- Internal types (platform: Unix) -->
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true' AND '$(TargetGroup)' != 'netstandard'">
-    <Compile Include="Internal\Cryptography\Pal\Unix\PkcsPal.Unix.cs" />
+  <!-- Internal types (platform: AnyOS) -->
+  <ItemGroup Condition="'$(TargetsWindows)' != 'true' AND '$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="Internal\Cryptography\Pal\AnyOS\PkcsPal.AnyOS.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <Reference Include="mscorlib" />
     <Reference Include="System.Security" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Numerics" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Collections.Concurrent" />
+    <Reference Include="System.Security.Cryptography.Csp" />
+    <Reference Include="System.Security.Cryptography.Encoding" />
+    <Reference Include="System.Security.Cryptography.X509Certificates" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Contracts" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
+    <Reference Include="System.Security.Cryptography.Primitives" />
+    <Reference Include="System.Security.Cryptography.Algorithms" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.Text.Encoding.Extensions" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <Reference Include="System.Buffers" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Security.Cryptography.Cng" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1V2.cs">
+      <Link>Common\System\Security\Cryptography\Asn1V2.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1V2.Serializer.cs">
+      <Link>Common\System\Security\Cryptography\Asn1V2.Serializer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\AsnReader.cs">
+      <Link>Common\System\Security\Cryptography\AsnReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\AsnWriter.cs">
+      <Link>Common\System\Security\Cryptography\AsnWriter.cs</Link>
+    </Compile>
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\AlgorithmIdentifierAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\AttributeAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\CertificateChoiceAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\ContentInfoAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\EncapsulatedContentInfoAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\IssuerAndSerialNumberAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\PssParamsAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SignedDataAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SignerIdentifierAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SignerInfoAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.ECDsa.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.RSA.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\CmsSigner.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\SignedCms.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\SignedCms.CtorOverloads.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\SignerInfo.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\SignerInfoCollection.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\SignerInfoEnumerator.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.DSA.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -2,8 +2,10 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <BuildConfigurations>
-      netstandard-Windows_NT;
       netstandard;
+      netstandard-Windows_NT;
+      netcoreapp-Windows_NT;
+      netcoreapp;
       netfx-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>

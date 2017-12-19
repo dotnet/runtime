@@ -1294,6 +1294,23 @@ namespace System.Security.Cryptography.Asn1
             return _buffer.AsSpan().Slice(0, _offset).ToArray();
         }
 
+        public ReadOnlySpan<byte> EncodeAsSpan()
+        {
+            if ((_nestingStack?.Count ?? 0) != 0)
+            {
+                throw new InvalidOperationException(SR.Cryptography_AsnWriter_EncodeUnbalancedStack);
+            }
+
+            if (_offset == 0)
+            {
+                return ReadOnlySpan<byte>.Empty;
+            }
+
+            // If the stack is closed out then everything is a definite encoding (BER, DER) or a
+            // required indefinite encoding (CER). So we're correctly sized up, and ready to copy.
+            return new ReadOnlySpan<byte>(_buffer, 0, _offset);
+        }
+
         private void PushTag(Asn1Tag tag)
         {
             if (_nestingStack == null)

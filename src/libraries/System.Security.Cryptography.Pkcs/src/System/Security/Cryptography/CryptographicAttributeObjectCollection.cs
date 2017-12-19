@@ -72,6 +72,12 @@ namespace System.Security.Cryptography
             return indexOfNewItem;
         }
 
+        internal void AddWithoutMerge(CryptographicAttributeObject attribute)
+        {
+            Debug.Assert(attribute != null);
+            _list.Add(attribute);
+        }
+
         public void Remove(CryptographicAttributeObject attribute)
         {
             if (attribute == null)
