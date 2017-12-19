@@ -16022,7 +16022,7 @@ size_t CodeGen::genPushArgList(GenTreeCall* call)
                                 if (fieldVarDsc->lvStackAligned())
                                 {
                                     if (fieldVarDsc->lvExactSize != 2 * sizeof(unsigned) &&
-                                        fieldVarDsc->lvFldOffset + TARGET_POINTER_SIZE != bytesToBeCopied)
+                                        fieldVarDsc->lvFldOffset + (unsigned)TARGET_POINTER_SIZE != bytesToBeCopied)
                                     {
                                         // Might need 4-bytes paddings for fields other than LONG and DOUBLE.
                                         // Just push some junk (i.e EAX) on the stack.
