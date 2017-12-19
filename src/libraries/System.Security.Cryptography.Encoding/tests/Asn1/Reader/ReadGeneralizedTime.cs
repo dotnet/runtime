@@ -53,13 +53,13 @@ namespace System.Security.Cryptography.Tests.Asn1
         // yyyyMMddHHmmss+HHmm (20161106012345+0118)
         [InlineData(PublicEncodingRules.BER, "181332303136313130363031323334352B30313138", 2016, 11, 6, 1, 23, 45, 0, 1, 18)]
         // yyyyMMddHHmmss.secondFrac (20161106012345.6789) - Ambiguous time due to DST "fall back" in US & Canada
-        [InlineData(PublicEncodingRules.BER, "181332303136313130363031323334352E36373839", 2016, 11, 6, 1, 23, 45, 679, null, 0)]
+        [InlineData(PublicEncodingRules.BER, "181332303136313130363031323334352E36373839", 2016, 11, 6, 1, 23, 45, 678, null, 0)]
         // yyyyMMddHHmmss,secondFracZ (20161106012345,7654Z)
         [InlineData(PublicEncodingRules.BER, "181432303136313130363031323334352C373635345A", 2016, 11, 6, 1, 23, 45, 765, 0, 0)]
         // yyyyMMddHHmmss.secondFrac-HH (20161106012345.001-01)
         [InlineData(PublicEncodingRules.BER, "181532303136313130363031323334352E3030312D3031", 2016, 11, 6, 1, 23, 45, 1, -1, 0)]
         // yyyyMMddHHmmss,secondFrac+HHmm (20161106012345,0009+0118)
-        [InlineData(PublicEncodingRules.BER, "181832303136313130363031323334352C303030392B30313138", 2016, 11, 6, 1, 23, 45, 1, 1, 18)]
+        [InlineData(PublicEncodingRules.BER, "181832303136313130363031323334352C303030392B30313138", 2016, 11, 6, 1, 23, 45, 0, 1, 18)]
 
         // yyyyMMddHHmmssZ (20161106012345Z)
         [InlineData(PublicEncodingRules.CER, "180F32303136313130363031323334355A", 2016, 11, 6, 1, 23, 45, 0, 0, 0)]
@@ -208,6 +208,27 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.True(derReader.HasData, "derReader.HasData");
         }
 
+        [Theory]
+        [InlineData(PublicEncodingRules.BER, "2017121900.06861111087Z")]
+        [InlineData(PublicEncodingRules.BER, "201712190004.11666665167Z")]
+        [InlineData(PublicEncodingRules.BER, "201712190004.11666665167Z")]
+        [InlineData(PublicEncodingRules.BER, "20171219000406.9999991Z")]
+        [InlineData(PublicEncodingRules.CER, "20171219000406.9999991Z")]
+        [InlineData(PublicEncodingRules.DER, "20171219000406.9999991Z")]
+        public static void MaximumEffectivePrecision(PublicEncodingRules ruleSet, string dateAscii)
+        {
+            DateTimeOffset expectedTime = new DateTimeOffset(2017, 12, 19, 0, 4, 6, TimeSpan.Zero);
+            expectedTime += new TimeSpan(TimeSpan.TicksPerSecond - 9);
+
+            byte[] inputData = new byte[dateAscii.Length + 2];
+            inputData[0] = 0x18;
+            inputData[1] = (byte)dateAscii.Length;
+            Text.Encoding.ASCII.GetBytes(dateAscii, 0, dateAscii.Length, inputData, 2);
+
+            AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+            Assert.Equal(expectedTime, reader.GetGeneralizedTime());
+        }
+
         [Fact]
         public static void ExcessivelyPreciseFraction()
         {
@@ -218,6 +239,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.False(berReader.HasData, "berReader.HasData");
 
             DateTimeOffset expected = new DateTimeOffset(2017, 9, 21, 18, 0, 44, 444, TimeSpan.Zero);
+            expected += new TimeSpan(4440);
 
             Assert.Equal(expected, value);
         }
