@@ -133,7 +133,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.Equal(new byte[] { 0, 1, 254, 127, 255 }, atst.LittleUInts);
             Assert.Equal(new DateTimeOffset(1950, 1, 2, 12, 34, 56, TimeSpan.Zero), atst.UtcTime2049);
             Assert.Equal(new DateTimeOffset(2050, 1, 2, 12, 34, 56, TimeSpan.Zero), atst.UtcTime2099);
-            Assert.Equal(new DateTimeOffset(2016, 11, 6, 1, 23, 45, 765, TimeSpan.Zero), atst.GeneralizedTimeWithFractions);
+            Assert.Equal(new DateTimeOffset(2016, 11, 6, 1, 23, 45, TimeSpan.Zero) + new TimeSpan(7654000), atst.GeneralizedTimeWithFractions);
             Assert.Equal(new DateTimeOffset(2016, 11, 6, 1, 23, 45, TimeSpan.Zero), atst.GeneralizedTimeNoFractions);
             Assert.Equal(BigInteger.Parse("0102030405060708090A0B0C0D0E0F", NumberStyles.HexNumber), atst.BigInteger);
         }
