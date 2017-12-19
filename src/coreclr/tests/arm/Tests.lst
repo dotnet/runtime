@@ -29172,12 +29172,12 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[revcomp.cmd_3664]
-RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\revcomp\revcomp\revcomp.cmd
-WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\revcomp\revcomp
+[reverse-complement-1.cmd_3664]
+RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\reverse-complement\reverse-complement-1\reverse-complement-1.cmd
+WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\reverse-complement\reverse-complement-1
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [ConvertToUInt323.cmd_3665]
@@ -33164,12 +33164,12 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[pi-digits.cmd_4164]
-RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\pidigits\pi-digits\pi-digits.cmd
-WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\pidigits\pi-digits
+[pidigits-3.cmd_4164]
+RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\pidigits\pidigits-3\pidigits-3.cmd
+WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\pidigits\pidigits-3
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [TextReaderNull_PSC.cmd_4165]
@@ -33324,12 +33324,12 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[binarytrees3.cmd_4184]
-RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\binarytrees\binarytrees3\binarytrees3.cmd
-WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\binarytrees\binarytrees3
+[binarytrees-2.cmd_4184]
+RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\binarytrees\binarytrees-2\binarytrees-2.cmd
+WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\binarytrees\binarytrees-2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [b35354.cmd_4185]
@@ -40676,12 +40676,12 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
-[regexdna.cmd_5103]
-RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\regexdna\regexdna\regexdna.cmd
-WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\regexdna\regexdna
+[regex-redux-1.cmd_5103]
+RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\regex-redux\regex-redux-1\regex-redux-1.cmd
+WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\regex-redux\regex-redux-1
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [_il_relrefarg_box_f8.cmd_5104]
@@ -58180,12 +58180,12 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[binarytrees.cmd_7301]
-RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\binarytrees\binarytrees\binarytrees.cmd
-WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\binarytrees\binarytrees
+[binarytrees-5.cmd_7301]
+RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\binarytrees\binarytrees-5\binarytrees-5.cmd
+WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\binarytrees\binarytrees-5
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Generated686.cmd_7302]
@@ -62076,12 +62076,12 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[spectralnorm.cmd_7789]
-RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\spectralnorm\spectralnorm\spectralnorm.cmd
-WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\spectralnorm\spectralnorm
+[spectralnorm-1.cmd_7789]
+RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\spectralnorm\spectralnorm-1\spectralnorm-1.cmd
+WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\spectralnorm\spectralnorm-1
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [ArraySetValue1.cmd_7790]
@@ -80692,14 +80692,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[fastaredux.cmd_10129]
-RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\fastaredux\fastaredux\fastaredux.cmd
-WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\fastaredux\fastaredux
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL
-HostStyle=0
-
 [MathTan.cmd_10130]
 RelativePath=CoreMangLib\cti\system\math\MathTan\MathTan.cmd
 WorkingDir=CoreMangLib\cti\system\math\MathTan
@@ -87940,12 +87932,12 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[fasta.cmd_11039]
-RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\fasta\fasta\fasta.cmd
-WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\fasta\fasta
+[fasta-1.cmd_11039]
+RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\fasta\fasta-1\fasta-1.cmd
+WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\fasta\fasta-1
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [dev10_512868.cmd_11040]
@@ -88804,12 +88796,12 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[nbody.cmd_11148]
-RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\nbody\nbody\nbody.cmd
-WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\nbody\nbody
+[n-body-3.cmd_11148]
+RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\n-body\n-body-3\n-body-3.cmd
+WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\n-body\n-body-3
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [StringIConvertibleToChar.cmd_11149]
@@ -89732,12 +89724,12 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[k-nucleotide.cmd_11265]
-RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\k-nucleotide\k-nucleotide\k-nucleotide.cmd
-WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\k-nucleotide\k-nucleotide
+[k-nucleotide-1.cmd_11265]
+RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\k-nucleotide\k-nucleotide-1\k-nucleotide-1.cmd
+WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\k-nucleotide\k-nucleotide-1
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Generated1091.cmd_11266]
@@ -90660,12 +90652,12 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;NEW
 HostStyle=0
 
-[mandelbrot.cmd_11382]
-RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\mandelbrot\mandelbrot\mandelbrot.cmd
-WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\mandelbrot\mandelbrot
+[mandelbrot-2.cmd_11382]
+RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\mandelbrot\mandelbrot-2\mandelbrot-2.cmd
+WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\mandelbrot\mandelbrot-2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;NEW
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [GitHub_13404.cmd_11383]
@@ -90692,12 +90684,12 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1;NEW
 HostStyle=0
 
-[fannkuch-redux.cmd_11386]
-RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\fannkuch-redux\fannkuch-redux\fannkuch-redux.cmd
-WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\fannkuch-redux\fannkuch-redux
+[fannkuch-redux-2.cmd_11386]
+RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\fannkuch-redux\fannkuch-redux-2\fannkuch-redux-2.cmd
+WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\fannkuch-redux\fannkuch-redux-2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;NEW
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [GitHub_12949_4.cmd_11387]
@@ -90756,3 +90748,58 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1;NEW
 HostStyle=0
 
+[reverse-complement-6.cmd_11394]
+RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\reverse-complement\reverse-complement-6\reverse-complement-6.cmd
+WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\reverse-complement\reverse-complement-6
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_PASS
+HostStyle=0
+
+[spectralnorm-3.cmd_11395]
+RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\spectralnorm\spectralnorm-3\spectralnorm-3.cmd
+WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\spectralnorm\spectralnorm-3
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_PASS
+HostStyle=0
+
+[regex-redux-5.cmd_11396]
+RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\regex-redux\regex-redux-5\regex-redux-5.cmd
+WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\regex-redux\regex-redux-5
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_PASS
+HostStyle=0
+
+[mandelbrot-7.cmd_11397]
+RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\mandelbrot\mandelbrot-7\mandelbrot-7.cmd
+WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\mandelbrot\mandelbrot-7
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_PASS
+HostStyle=0
+
+[k-nucleotide-9.cmd_11398]
+RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\k-nucleotide\k-nucleotide-9\k-nucleotide-9.cmd
+WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\k-nucleotide\k-nucleotide-9
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_PASS
+HostStyle=0
+
+[fasta-2.cmd_11399]
+RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\fasta\fasta-2\fasta-2.cmd
+WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\fasta\fasta-2
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_PASS
+HostStyle=0
+
+[fannkuch-redux-5.cmd_11386]
+RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\fannkuch-redux\fannkuch-redux-5\fannkuch-redux-5.cmd
+WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\fannkuch-redux\fannkuch-redux-5
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_PASS
+HostStyle=0
