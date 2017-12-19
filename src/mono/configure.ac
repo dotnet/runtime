@@ -2673,8 +2673,10 @@ if test x$host_win32 = xno; then
 	dnl *********************************
 	dnl *** Checks for random         ***
 	dnl *********************************
-	AC_CHECK_HEADERS(sys/random.h)
-	AC_CHECK_FUNCS(getrandom getentropy)
+	if test x$host_darwin = xno; then
+		AC_CHECK_HEADERS(sys/random.h)
+		AC_CHECK_FUNCS(getrandom getentropy)
+	fi
 else
 	dnl *********************************
 	dnl *** Checks for Windows compilation ***
