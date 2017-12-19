@@ -506,6 +506,19 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
 }
 #endif // FEATURE_SIMD
 
+#ifdef FEATURE_HW_INTRINSICS
+//----------------------------------------------------------------------------------------------
+// Lowering::LowerHWIntrinsic: Perform containment analysis for a hardware intrinsic node.
+//
+//  Arguments:
+//     node - The hardware intrinsic node.
+//
+void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
+{
+    ContainCheckHWIntrinsic(node);
+}
+#endif // FEATURE_HW_INTRINSICS
+
 //------------------------------------------------------------------------
 // Containment analysis
 //------------------------------------------------------------------------
@@ -814,6 +827,28 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
     }
 }
 #endif // FEATURE_SIMD
+
+#ifdef FEATURE_HW_INTRINSICS
+//----------------------------------------------------------------------------------------------
+// ContainCheckHWIntrinsic: Perform containment analysis for a hardware intrinsic node.
+//
+//  Arguments:
+//     node - The hardware intrinsic node.
+//
+void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
+{
+    NamedIntrinsic intrinsicID = node->gtHWIntrinsicId;
+    GenTree*       op1         = node->gtOp.gtOp1;
+    GenTree*       op2         = node->gtOp.gtOp2;
+
+    switch (node->gtHWIntrinsicId)
+    {
+        default:
+            assert((intrinsicID > NI_HW_INTRINSIC_START) && (intrinsicID < NI_HW_INTRINSIC_END));
+            break;
+    }
+}
+#endif // FEATURE_HW_INTRINSICS
 
 #endif // _TARGET_ARMARCH_
 
