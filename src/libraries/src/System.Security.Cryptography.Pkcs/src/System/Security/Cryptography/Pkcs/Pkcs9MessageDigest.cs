@@ -4,7 +4,7 @@
 
 using System;
 using System.Diagnostics;
-
+using System.Security.Cryptography.Asn1;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography.Pkcs
@@ -18,6 +18,13 @@ namespace System.Security.Cryptography.Pkcs
         public Pkcs9MessageDigest() :
             base(Oid.FromOidValue(Oids.MessageDigest, OidGroup.ExtensionOrAttribute))
         {
+        }
+
+        internal Pkcs9MessageDigest(ReadOnlySpan<byte> signatureDigest)
+        {
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteOctetString(signatureDigest);
+            RawData = writer.Encode();
         }
 
         //
