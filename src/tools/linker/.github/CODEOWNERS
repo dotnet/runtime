@@ -1,0 +1,11 @@
+#
+# Reference: https://help.github.com/articles/about-codeowners
+#
+
+# the default owners for everything in the repo.
+* @marek-safar
+
+/analyzer @radekdoulik
+/corebuild @sbomer
+
+netci.groovy @sbomer
