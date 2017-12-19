@@ -192,7 +192,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             // Verify we have the expected runtime versions
             dotnet.Exec("--list-runtimes")
                 .WorkingDirectory(_currentWorkingDir)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
                 .WithUserProfile(_userDir)
                 .CaptureStdOut()
                 .Execute()
@@ -285,12 +284,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "10000.1.1", "10000.1.3");
 
             // Version: 9999.0.0
-            // 'Roll forward on no candidate fx' enabled through env var
+            // 'Roll forward on no candidate fx' enabled with value 2 (major+minor) through env var
             // exe: 10000.1.1, 10000.1.3
             // Expected: 10000.1.3 from exe
             dotnet.Exec(appDll)
                 .WorkingDirectory(_currentWorkingDir)
-                .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "1")
+                .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "2")
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdOut()
                 .CaptureStdErr()
@@ -304,12 +303,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.1");
 
             // Version: 9999.0.0
-            // 'Roll forward on no candidate fx' enabled through env var
+            // 'Roll forward on no candidate fx' enabled with value 2 (major+minor) through env var
             // exe: 9999.1.1, 10000.1.1, 10000.1.3
             // Expected: 9999.1.1 from exe
             dotnet.Exec(appDll)
                 .WorkingDirectory(_currentWorkingDir)
-                .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "1")
+                .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "2")
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdOut()
                 .CaptureStdErr()
@@ -322,7 +321,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             // Verify we have the expected runtime versions
             dotnet.Exec("--list-runtimes")
                 .WorkingDirectory(_currentWorkingDir)
-                .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "1")
                 .CaptureStdOut()
                 .Execute()
                 .Should()
@@ -334,7 +332,257 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .And
                 .HaveStdOutContaining("Microsoft.NETCore.App 10000.1.3");
 
-            DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "10000.1.1", "10000.1.3");
+            DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.1", "10000.1.1", "10000.1.3");
+        }
+
+        [Fact]
+        public void Roll_Forward_On_No_Candidate_Fx_Minor_And_Disabled()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            // Set desired version = 9999.0.0
+            string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
+            SetRuntimeConfigJson(runtimeConfig, "9999.0.0");
+
+            // Add some dummy versions in the exe
+            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "10000.1.1");
+
+            // Version: 9999.0.0
+            // 'Roll forward on no candidate fx' default value of 1 (minor)
+            // exe: 10000.1.1
+            // Expected: fail with no framework
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Fail()
+                .And
+                .HaveStdErrContaining("It was not possible to find any compatible framework version");
+
+            // Add a dummy version in the exe dir 
+            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.1");
+
+            // Version: 9999.0.0
+            // 'Roll forward on no candidate fx' default value of 1 (minor)
+            // exe: 9999.1.1, 10000.1.1
+            // Expected: 9999.1.1 from exe
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.1.1"));
+
+            // Version: 9999.0.0
+            // 'Roll forward on no candidate fx' disabled through env var
+            // exe: 9999.1.1, 10000.1.1
+            // Expected: fail with no framework
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "0")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Fail()
+                .And
+                .HaveStdErrContaining("It was not possible to find any compatible framework version");
+
+            // Verify we have the expected runtime versions
+            dotnet.Exec("--list-runtimes")
+                .WorkingDirectory(_currentWorkingDir)
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("Microsoft.NETCore.App 9999.1.1")
+                .And
+                .HaveStdOutContaining("Microsoft.NETCore.App 10000.1.1");
+
+            DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.1", "10000.1.1");
+        }
+
+        [Fact]
+        public void Roll_Forward_On_No_Candidate_Fx_Production_To_Preview()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            // Set desired version = 9999.0.0
+            string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
+            SetRuntimeConfigJson(runtimeConfig, "9999.0.0");
+
+            // Add preview version in the exe
+            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.1-dummy1");
+
+            // Version: 9999.0.0
+            // 'Roll forward on no candidate fx' default value of 1 (minor)
+            // exe: 9999.1.1-dummy1
+            // Expected: 9999.1.1-dummy1 since there is no production version
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.1.1-dummy1"));
+
+            // Add a production version with higher value
+            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.2.1");
+
+            // Version: 9999.0.0
+            // 'Roll forward on no candidate fx' default value of 1 (minor)
+            // exe: 9999.1.1-dummy1, 9999.2.1
+            // Expected: 9999.2.1 since we favor production over preview
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.2.1"));
+
+            // Add a preview version with same major.minor as production
+            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.2.1-dummy1");
+
+            // Version: 9999.0.0
+            // 'Roll forward on no candidate fx' default value of 1 (minor)
+            // exe: 9999.1.1-dummy1, 9999.2.1, 9999.2.1-dummy1
+            // Expected: 9999.2.1 since we favor production over preview
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.2.1"));
+
+            // Add a preview version with same major.minor as production but higher patch version
+            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.2.2-dummy1");
+
+            // Version: 9999.0.0
+            // 'Roll forward on no candidate fx' default value of 1 (minor)
+            // exe: 9999.1.1-dummy1, 9999.2.1, 9999.2.1-dummy1, 9999.2.2-dummy1
+            // Expected: 9999.2.1 since we favor production over preview
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.2.1"));
+
+            // Verify we have the expected runtime versions
+            dotnet.Exec("--list-runtimes")
+                .WorkingDirectory(_currentWorkingDir)
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("Microsoft.NETCore.App 9999.1.1-dummy1")
+                .And
+                .HaveStdOutContaining("Microsoft.NETCore.App 9999.2.1")
+                .And
+                .HaveStdOutContaining("Microsoft.NETCore.App 9999.2.1-dummy1")
+                .And
+                .HaveStdOutContaining("Microsoft.NETCore.App 9999.2.2-dummy1");
+
+            DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.1-dummy1", "9999.2.1", "9999.2.1-dummy1", "9999.2.2-dummy1");
+        }
+
+        [Fact]
+        public void Roll_Forward_On_No_Candidate_Fx_Preview_To_Production()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            // Set desired version = 9999.0.0-dummy1
+            string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
+            SetRuntimeConfigJson(runtimeConfig, "9999.0.0-dummy1");
+
+            // Add dummy versions in the exe
+            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0", "9999.0.1-dummy1");
+
+            // Version: 9999.0.0-dummy1
+            // exe: 9999.0.0, 9999.0.1-dummy1
+            // Expected: fail since we don't roll forward unless match on major.minor.patch and never roll forward to production
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Fail()
+                .And
+                .HaveStdErrContaining("It was not possible to find any compatible framework version");
+
+            // Add preview versions in the exe with name major.minor.patch
+            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0-dummy2", "9999.0.0-dummy3");
+
+            // Version: 9999.0.0-dummy1
+            // exe: 9999.0.0-dummy2, 9999.0.0-dummy3, 9999.0.0, 9999.0.1-dummy1
+            // Expected: 9999.0.0-dummy2
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.0-dummy2"));
+
+            // Verify we have the expected runtime versions
+            dotnet.Exec("--list-runtimes")
+                .WorkingDirectory(_currentWorkingDir)
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("9999.0.0-dummy2")
+                .And
+                .HaveStdOutContaining("9999.0.0-dummy3")
+                .And
+                .HaveStdOutContaining("9999.0.0")
+                .And
+                .HaveStdOutContaining("9999.0.1-dummy1");
+
+            DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0-dummy2", "9999.0.0-dummy3", "9999.0.0", "9999.0.1-dummy1");
         }
 
         [Fact]
@@ -354,12 +602,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9998.0.1", "9998.1.0", "9999.0.0", "9999.0.1", "9999.1.0");
 
             // Version: 9999.1.1
-            // 'Roll forward on no candidate fx' enabled through env var
             // exe: 9998.0.1, 9998.1.0, 9999.0.0, 9999.0.1, 9999.1.0
             // Expected: no compatible version
             dotnet.Exec(appDll)
                 .WorkingDirectory(_currentWorkingDir)
-                .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "1")
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdOut()
                 .CaptureStdErr()
@@ -372,7 +618,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             // Verify we have the expected runtime versions
             dotnet.Exec("--list-runtimes")
                 .WorkingDirectory(_currentWorkingDir)
-                .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "1")
                 .CaptureStdOut()
                 .Execute()
                 .Should()
@@ -452,7 +697,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             // Verify we have the expected runtime versions
             dotnet.Exec("--list-runtimes")
                 .WorkingDirectory(_currentWorkingDir)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
                 .WithUserProfile(_userDir)
                 .CaptureStdOut()
                 .Execute()
@@ -489,12 +733,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
             // Version: NetCoreApp 9999.0.0
             //          UberFramework 7777.0.0
+            // 'Roll forward on no candidate fx' disabled through env var
             // Exe: NetCoreApp 9999.1.0
             //      UberFramework 7777.0.0
             // Expected: no compatible version
             dotnet.Exec(appDll)
                 .WorkingDirectory(_currentWorkingDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
+                .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "0")
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -503,11 +749,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .And
                 .HaveStdErrContaining("It was not possible to find any compatible framework version");
 
-            // Enable rollForwardOnNoCandidateFx
+            // Enable rollForwardOnNoCandidateFx on app's config, which will be used as the default for Uber's config
             SetRuntimeConfigJson(runtimeConfig, "7777.0.0", rollFwdOnNoCandidateFx: 1, testConfigPropertyValue : null, useUberFramework: true);
 
             // Version: NetCoreApp 9999.0.0
             //          UberFramework 7777.0.0
+            //          'Roll forward on no candidate fx' enabled through config
             // Exe: NetCoreApp 9999.1.0
             //      UberFramework 7777.0.0
             // Expected: 9999.1.0
@@ -515,6 +762,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             dotnet.Exec(appDll)
                 .WorkingDirectory(_currentWorkingDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
+                .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "0")
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -532,6 +780,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
             // Version: NetCoreApp 9999.0.0
             //          UberFramework 7777.0.0
+            //          'Roll forward on no candidate fx' enabled through config
             // Exe: NetCoreApp 9999.1.0
             //      UberFramework 7777.0.0
             // Expected: 9999.1.0
@@ -539,6 +788,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             dotnet.Exec(appDll)
                 .WorkingDirectory(_currentWorkingDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
+                .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "0")
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()

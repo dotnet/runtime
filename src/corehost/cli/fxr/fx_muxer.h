@@ -36,7 +36,7 @@ private:
         const pal::string_t& specified_fx_version,
         const std::vector<pal::string_t>& probe_realpaths,
         pal::string_t* impl_dir);
-    static fx_ver_t resolve_framework_version(const std::vector<fx_ver_t>& version_list, const pal::string_t& fx_ver, const fx_ver_t& specified, const bool& patch_roll_fwd, const int& roll_fwd_on_no_candidate_fx);
+    static fx_ver_t resolve_framework_version(const std::vector<fx_ver_t>& version_list, const pal::string_t& fx_ver, const fx_ver_t& specified, bool patch_roll_fwd, roll_fwd_on_no_candidate_fx_option roll_fwd_on_no_candidate_fx);
     static fx_definition_t* resolve_fx(
         host_mode_t mode,
         const runtime_config_t& config,
