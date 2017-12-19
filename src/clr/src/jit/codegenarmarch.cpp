@@ -263,6 +263,12 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             break;
 #endif // FEATURE_SIMD
 
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWIntrinsic:
+            genHWIntrinsic(treeNode->AsHWIntrinsic());
+            break;
+#endif // FEATURE_HW_INTRINSICS
+
         case GT_EQ:
         case GT_NE:
         case GT_LT:

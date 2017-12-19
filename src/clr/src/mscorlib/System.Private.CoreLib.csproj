@@ -296,6 +296,12 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Sse42.PlatformNotSupported.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Ssse3.PlatformNotSupported.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(Platform)' == 'arm64'">
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\Arm\Arm64\Simd.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Platform)' != 'arm64'">
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\Arm\Arm64\Simd.PlatformNotSupported.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\AppContext\AppContext.cs" />
     <Compile Include="$(BclSourcesRoot)\System\AppContext\AppContextSwitches.cs" />

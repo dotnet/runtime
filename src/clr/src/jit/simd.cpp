@@ -482,12 +482,6 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
             JITDUMP("  Known type Vector128<ulong>\n");
         }
 #if defined(_TARGET_ARM64_)
-        else if (typeHnd == Vector64DoubleHandle)
-        {
-            simdBaseType = TYP_DOUBLE;
-            size         = Vector64SizeBytes;
-            JITDUMP("  Known type Vector64<double>\n");
-        }
         else if (typeHnd == Vector64IntHandle)
         {
             simdBaseType = TYP_INT;
@@ -523,18 +517,6 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
             simdBaseType = TYP_UBYTE;
             size         = Vector64SizeBytes;
             JITDUMP("  Known type Vector64<byte>\n");
-        }
-        else if (typeHnd == Vector64LongHandle)
-        {
-            simdBaseType = TYP_LONG;
-            size         = Vector64SizeBytes;
-            JITDUMP("  Known type Vector64<long>\n");
-        }
-        else if (typeHnd == Vector64ULongHandle)
-        {
-            simdBaseType = TYP_ULONG;
-            size         = Vector64SizeBytes;
-            JITDUMP("  Known type Vector64<ulong>\n");
         }
 #endif // defined(_TARGET_ARM64_)
 
@@ -686,11 +668,6 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                             simdBaseType        = TYP_FLOAT;
                             JITDUMP("  Found type Hardware Intrinsic SIMD Vector64<float>\n");
                             break;
-                        case CORINFO_TYPE_DOUBLE:
-                            Vector64DoubleHandle = typeHnd;
-                            simdBaseType         = TYP_DOUBLE;
-                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector64<double>\n");
-                            break;
                         case CORINFO_TYPE_INT:
                             Vector64IntHandle = typeHnd;
                             simdBaseType      = TYP_INT;
@@ -710,16 +687,6 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                             Vector64UShortHandle = typeHnd;
                             simdBaseType         = TYP_USHORT;
                             JITDUMP("  Found type Hardware Intrinsic SIMD Vector64<ushort>\n");
-                            break;
-                        case CORINFO_TYPE_LONG:
-                            Vector64LongHandle = typeHnd;
-                            simdBaseType       = TYP_LONG;
-                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector64<long>\n");
-                            break;
-                        case CORINFO_TYPE_ULONG:
-                            Vector64ULongHandle = typeHnd;
-                            simdBaseType        = TYP_ULONG;
-                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector64<ulong>\n");
                             break;
                         case CORINFO_TYPE_UBYTE:
                             Vector64UByteHandle = typeHnd;

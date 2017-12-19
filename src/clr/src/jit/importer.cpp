@@ -1,4 +1,3 @@
-
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
@@ -3402,6 +3401,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 return impX86HWIntrinsic(ni, method, sig, mustExpand);
             }
 #endif // _TARGET_XARCH_
+#ifdef _TARGET_ARM64_
+            if (ni > NI_HW_INTRINSIC_START && ni < NI_HW_INTRINSIC_END)
+            {
+                return impHWIntrinsic(ni, method, sig, mustExpand);
+            }
+#endif // _TARGET_XARCH_
 #endif // FEATURE_HW_INTRINSICS
         }
     }
@@ -4118,13 +4123,22 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         }
     }
 
-#if defined(FEATURE_HW_INTRINSICS) && defined(_TARGET_XARCH_)
+#ifdef FEATURE_HW_INTRINSICS
+#if defined(_TARGET_XARCH_)
     if ((namespaceName != nullptr) && strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0)
     {
         InstructionSet isa = lookupHWIntrinsicISA(className);
         result             = lookupHWIntrinsic(methodName, isa);
     }
-#endif // defined(FEATURE_HW_INTRINSICS) && defined(_TARGET_XARCH_)
+#elif defined(_TARGET_ARM64_)
+    if ((namespaceName != nullptr) && strcmp(namespaceName, "System.Runtime.Intrinsics.Arm.Arm64") == 0)
+    {
+        result = lookupHWIntrinsic(className, methodName);
+    }
+#else // !defined(_TARGET_XARCH_) && !defined(_TARGET_ARM64_)
+#error Unsupported platform
+#endif // !defined(_TARGET_XARCH_) && !defined(_TARGET_ARM64_)
+#endif // FEATURE_HW_INTRINSICS
     return result;
 }
 
@@ -8739,6 +8753,18 @@ REDO_RETURN_NODE:
             return op;
         }
     }
+#if defined(FEATURE_HW_INTRINSICS) && defined(_TARGET_ARM64_)
+    else if ((op->gtOper == GT_HWIntrinsic) && varTypeIsSIMD(op->gtType))
+    {
+        // TODO-ARM64-FIXME Implement ARM64 ABI for Short Vectors properly
+        // assert(op->gtType == info.compRetNativeType)
+        if (op->gtType != info.compRetNativeType)
+        {
+            // Insert a register move to keep target type of SIMD intrinsic intact
+            op = gtNewScalarHWIntrinsicNode(info.compRetNativeType, op, NI_ARM64_NONE_MOV);
+        }
+    }
+#endif
     else if (op->gtOper == GT_COMMA)
     {
         op->gtOp.gtOp2 = impFixupStructReturnType(op->gtOp.gtOp2, retClsHnd);
