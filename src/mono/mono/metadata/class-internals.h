@@ -1537,6 +1537,9 @@ mono_class_set_weak_bitmap (MonoClass *klass, int nbits, gsize *bits);
 gsize*
 mono_class_get_weak_bitmap (MonoClass *klass, int *nbits);
 
+MonoMethod *
+mono_class_get_method_from_name_checked (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error);
+
 /*Now that everything has been defined, let's include the inline functions */
 #include <mono/metadata/class-inlines.h>
 

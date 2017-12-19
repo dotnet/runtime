@@ -2139,7 +2139,7 @@ mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image,
 	for (mod = info->nested; mod; mod = mod->next)
 		g_string_append_printf (fullName, "+%s", (char*)mod->data);
 
-	assembly = mono_domain_try_type_resolve_checked ( mono_domain_get (), fullName->str, NULL, error);
+	assembly = mono_domain_try_type_resolve_name ( mono_domain_get (), fullName->str, error);
 	if (!is_ok (error)) {
 		g_string_free (fullName, TRUE);
 		return NULL;
@@ -2196,7 +2196,10 @@ MonoType*
 mono_reflection_type_from_name (char *name, MonoImage *image)
 {
 	MonoError error;
-	MonoType  *result = mono_reflection_type_from_name_checked (name, image, &error);
+	error_init (&error);
+
+	MonoType * const result = mono_reflection_type_from_name_checked (name, image, &error);
+
 	mono_error_cleanup (&error);
 	return result;
 }

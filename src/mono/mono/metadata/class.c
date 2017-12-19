@@ -9933,19 +9933,41 @@ find_method_in_metadata (MonoClass *klass, const char *name, int param_count, in
 MonoMethod *
 mono_class_get_method_from_name_flags (MonoClass *klass, const char *name, int param_count, int flags)
 {
+	MonoError error;
+	error_init (&error);
+
+	MonoMethod * const method = mono_class_get_method_from_name_checked (klass, name, param_count, flags, &error);
+
+	mono_error_cleanup (&error);
+	return method;
+}
+
+/**
+ * mono_class_get_method_from_name_checked:
+ * \param klass where to look for the method
+ * \param name_space name of the method
+ * \param param_count number of parameters. -1 for any number.
+ * \param flags flags which must be set in the method
+ * \param error
+ *
+ * Obtains a \c MonoMethod with a given name and number of parameters.
+ * It only works if there are no multiple signatures for any given method name.
+ */
+MonoMethod *
+mono_class_get_method_from_name_checked (MonoClass *klass, const char *name,
+	int param_count, int flags, MonoError *error)
+{
 	MonoMethod *res = NULL;
 	int i;
 
 	mono_class_init (klass);
 
 	if (mono_class_is_ginst (klass) && !klass->methods) {
-		res = mono_class_get_method_from_name_flags (mono_class_get_generic_class (klass)->container_class, name, param_count, flags);
-		if (res) {
-			MonoError error;
-			res = mono_class_inflate_generic_method_full_checked (res, klass, mono_class_get_context (klass), &error);
-			if (!mono_error_ok (&error))
-				mono_error_cleanup (&error); /*FIXME don't swallow the error */
-		}
+		res = mono_class_get_method_from_name_checked (mono_class_get_generic_class (klass)->container_class, name, param_count, flags, error);
+
+		if (res)
+			res = mono_class_inflate_generic_method_full_checked (res, klass, mono_class_get_context (klass), error);
+
 		return res;
 	}
 

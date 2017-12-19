@@ -4015,7 +4015,7 @@ ensure_complete_type (MonoClass *klass, MonoError *error)
 	if (image_is_dynamic (klass->image) && !klass->wastypebuilder && mono_class_has_ref_info (klass)) {
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)mono_class_get_ref_info_raw (klass); /* FIXME use handles */
 
-		mono_domain_try_type_resolve_checked (mono_domain_get (), NULL, (MonoObject*)tb, error);
+		mono_domain_try_type_resolve_typebuilder (mono_domain_get (), tb, error);
 		return_if_nok (error);
 
 		// Asserting here could break a lot of code
@@ -4112,7 +4112,7 @@ mono_reflection_resolve_object (MonoImage *image, MonoObject *obj, MonoClass **h
 			result = klass;
 		}
 		else {
-			mono_domain_try_type_resolve_checked (mono_domain_get (), NULL, (MonoObject*)tb, error);
+			mono_domain_try_type_resolve_typebuilder (mono_domain_get (), tb, error);
 			return_val_if_nok (error, NULL);
 			result = type->data.klass;
 			g_assert (result);
