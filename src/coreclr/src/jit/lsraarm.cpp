@@ -767,7 +767,6 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree, TreeNodeInfo* info)
             info->srcCount = 1;
             assert(info->dstCount == 1);
             LocationInfoListNode* locationInfo = getLocationInfo(tree->gtOp.gtOp1);
-            locationInfo->info.isTgtPref       = true;
             useList.Append(locationInfo);
             regNumber argReg  = tree->gtRegNum;
             regMaskTP argMask = genRegMask(argReg);
