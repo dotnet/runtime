@@ -500,29 +500,64 @@ bool fx_muxer_t::resolve_hostpolicy_dir(
 fx_ver_t fx_muxer_t::resolve_framework_version(const std::vector<fx_ver_t>& version_list,
     const pal::string_t& fx_ver,
     const fx_ver_t& specified,
-    const bool& patch_roll_fwd,
-    const int& roll_fwd_on_no_candidate_fx)
+    bool patch_roll_fwd,
+    roll_fwd_on_no_candidate_fx_option roll_fwd_on_no_candidate_fx)
 {
     trace::verbose(_X("Attempting FX roll forward starting from [%s]"), fx_ver.c_str());
 
     fx_ver_t most_compatible = specified;
     if (!specified.is_prerelease())
     {
-        if (roll_fwd_on_no_candidate_fx > 0)
+        if (roll_fwd_on_no_candidate_fx != roll_fwd_on_no_candidate_fx_option::disabled)
         {
-            trace::verbose(_X("'Roll forward on no candidate fx' enabled. Looking for the least production greater than or equal to [%s]"),
-                fx_ver.c_str());
             fx_ver_t next_lowest(-1, -1, -1);
+
+            // Look for the least production version
+            trace::verbose(_X("'Roll forward on no candidate fx' enabled with value [%d]. Looking for the least production greater than or equal to [%s]"),
+                roll_fwd_on_no_candidate_fx, fx_ver.c_str());
+
             for (const auto& ver : version_list)
             {
                 if (!ver.is_prerelease() && ver >= specified)
                 {
+                    if (roll_fwd_on_no_candidate_fx == roll_fwd_on_no_candidate_fx_option::minor)
+                    {
+                        // We only want to roll forward on minor
+                        if (ver.get_major() != specified.get_major())
+                        {
+                            continue;
+                        }
+                    }
                     next_lowest = (next_lowest == fx_ver_t(-1, -1, -1)) ? ver : std::min(next_lowest, ver);
                 }
             }
+
             if (next_lowest == fx_ver_t(-1, -1, -1))
             {
-                trace::verbose(_X("No production greater than or equal to [%s] found."), fx_ver.c_str());
+                // Look for the least preview version
+                trace::verbose(_X("No production greater than or equal to [%s] found. Looking for the least preview greater than [%s]"),
+                    fx_ver.c_str(), fx_ver.c_str());
+
+                for (const auto& ver : version_list)
+                {
+                    if (ver.is_prerelease() && ver >= specified)
+                    {
+                        if (roll_fwd_on_no_candidate_fx == roll_fwd_on_no_candidate_fx_option::minor)
+                        {
+                            // We only want to roll forward on minor
+                            if (ver.get_major() != specified.get_major())
+                            {
+                                continue;
+                            }
+                        }
+                        next_lowest = (next_lowest == fx_ver_t(-1, -1, -1)) ? ver : std::min(next_lowest, ver);
+                    }
+                }
+            }
+
+            if (next_lowest == fx_ver_t(-1, -1, -1))
+            {
+                trace::verbose(_X("No preview greater than or equal to [%s] found."), fx_ver.c_str());
             }
             else
             {
@@ -530,6 +565,7 @@ fx_ver_t fx_muxer_t::resolve_framework_version(const std::vector<fx_ver_t>& vers
                 most_compatible = next_lowest;
             }
         }
+
         if (patch_roll_fwd)
         {
             trace::verbose(_X("Applying patch roll forward from [%s]"), most_compatible.as_str().c_str());
@@ -537,11 +573,11 @@ fx_ver_t fx_muxer_t::resolve_framework_version(const std::vector<fx_ver_t>& vers
             {
                 trace::verbose(_X("Inspecting version... [%s]"), ver.as_str().c_str());
 
-                if (!ver.is_prerelease() && //  only prod. prevents roll forward to prerelease.
+                if (most_compatible.is_prerelease() == ver.is_prerelease() && // prevent production from rolling forward to preview on patch
                     ver.get_major() == most_compatible.get_major() &&
                     ver.get_minor() == most_compatible.get_minor())
                 {
-                    // Pick the greatest production that differs only in patch.
+                    // Pick the greatest that differs only in patch.
                     most_compatible = std::max(ver, most_compatible);
                 }
             }
@@ -609,12 +645,20 @@ fx_definition_t* fx_muxer_t::resolve_fx(
     std::vector<pal::string_t> global_dirs;
     bool multilevel_lookup = multilevel_lookup_enabled();
 
-    hive_dir.push_back(own_dir);
+    // own_dir contains DIR_SEPARATOR appended that we need to remove.
+    pal::string_t own_dir_temp = own_dir;
+    remove_trailing_dir_seperator(&own_dir_temp);
+
+    hive_dir.push_back(own_dir_temp);
     if (multilevel_lookup && pal::get_global_dotnet_dirs(&global_dirs))
     {
         for (pal::string_t dir : global_dirs)
         {
-            hive_dir.push_back(dir);
+            // Avoid duplicate of own_dir_temp
+            if (dir != own_dir_temp)
+            {
+                hive_dir.push_back(dir);
+            }
         }
     }
 
@@ -636,7 +680,7 @@ fx_definition_t* fx_muxer_t::resolve_fx(
             if (!specified.is_prerelease())
             {
                 // If production and no roll forward use given version.
-                do_roll_forward = (config.get_patch_roll_fwd()) || (config.get_roll_fwd_on_no_candidate_fx() > 0);
+                do_roll_forward = (config.get_patch_roll_fwd()) || (config.get_roll_fwd_on_no_candidate_fx() != roll_fwd_on_no_candidate_fx_option::disabled);
             }
             else
             {
@@ -682,11 +726,14 @@ fx_definition_t* fx_muxer_t::resolve_fx(
 
             if (pal::directory_exists(fx_dir))
             {
-                //Continue to search for a better match if available
-                std::vector<fx_ver_t> version_list;
-                version_list.push_back(resolved_ver);
-                version_list.push_back(selected_ver);
-                resolved_ver = resolve_framework_version(version_list, fx_ver, specified, config.get_patch_roll_fwd(), config.get_roll_fwd_on_no_candidate_fx());
+                if (selected_ver != fx_ver_t(-1, -1, -1))
+                {
+                    // Compare the previous hive_dir selection with the current hive_dir to see which one is the better match
+                    std::vector<fx_ver_t> version_list;
+                    version_list.push_back(resolved_ver);
+                    version_list.push_back(selected_ver);
+                    resolved_ver = resolve_framework_version(version_list, fx_ver, specified, config.get_patch_roll_fwd(), config.get_roll_fwd_on_no_candidate_fx());
+                }
 
                 if (resolved_ver != selected_ver)
                 {
@@ -1250,15 +1297,15 @@ int fx_muxer_t::read_config_and_execute(
 
     auto config = app->get_runtime_config();
 
-    // 'Roll forward on no candidate fx' is disabled by default. It can be enabled through:
-    // 1. Command line argument (--roll-forward-on-no-candidate-fx)
-    // 2. Runtimeconfig json file ('rollForwardOnNoCandidateFx' property)
-    // 3. DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX env var
+    // 'Roll forward on no candidate fx' is set to 1 (roll_fwd_on_no_candidate_fx_option::minor) by default. It can be changed through:
+    // 1. Command line argument (--roll-forward-on-no-candidate-fx). Only defaults the app's config.
+    // 2. Runtimeconfig json file ('rollForwardOnNoCandidateFx' property), which is used as a default for lower level frameworks if they don't specify a value.
+    // 3. DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX env var. Only defaults the app's config.
     // The conflicts will be resolved by following the priority rank described above (from 1 to 3).
     // The env var condition is verified in the config file processing
     if (!roll_fwd_on_no_candidate_fx.empty())
     {
-        config.set_roll_fwd_on_no_candidate_fx(pal::xtoi(roll_fwd_on_no_candidate_fx.c_str()));
+        config.set_roll_fwd_on_no_candidate_fx(static_cast<roll_fwd_on_no_candidate_fx_option>(pal::xtoi(roll_fwd_on_no_candidate_fx.c_str())));
     }
 
     // Determine additional deps
