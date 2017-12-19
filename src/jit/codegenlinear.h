@@ -114,8 +114,9 @@ void genPutArgStkSIMD12(GenTree* treeNode);
 #endif // _TARGET_X86_
 #endif // FEATURE_SIMD
 
-#if defined(FEATURE_HW_INTRINSICS) && defined(_TARGET_XARCH_)
+#ifdef FEATURE_HW_INTRINSICS
 void genHWIntrinsic(GenTreeHWIntrinsic* node);
+#if defined(_TARGET_XARCH_)
 void genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins);
 void genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins);
 void genSSEIntrinsic(GenTreeHWIntrinsic* node);
@@ -133,7 +134,18 @@ void genFMAIntrinsic(GenTreeHWIntrinsic* node);
 void genLZCNTIntrinsic(GenTreeHWIntrinsic* node);
 void genPCLMULQDQIntrinsic(GenTreeHWIntrinsic* node);
 void genPOPCNTIntrinsic(GenTreeHWIntrinsic* node);
-#endif // defined(FEATURE_HW_INTRINSICS) && defined(_TARGET_XARCH_)
+#endif // defined(_TARGET_XARCH_)
+#if defined(_TARGET_ARM64_)
+instruction getOpForHWIntrinsic(GenTreeHWIntrinsic* node, var_types instrType);
+void genHWIntrinsicUnaryOp(GenTreeHWIntrinsic* node);
+void genHWIntrinsicCrcOp(GenTreeHWIntrinsic* node);
+void genHWIntrinsicSimdBinaryOp(GenTreeHWIntrinsic* node);
+void genHWIntrinsicSimdExtractOp(GenTreeHWIntrinsic* node);
+void genHWIntrinsicSimdInsertOp(GenTreeHWIntrinsic* node);
+void genHWIntrinsicSimdSelectOp(GenTreeHWIntrinsic* node);
+void genHWIntrinsicSimdUnaryOp(GenTreeHWIntrinsic* node);
+#endif // defined(_TARGET_XARCH_)
+#endif // FEATURE_HW_INTRINSICS
 
 #if !defined(_TARGET_64BIT_)
 
