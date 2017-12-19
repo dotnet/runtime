@@ -51,6 +51,10 @@ namespace Mono.Linker.Steps {
 			get { return _context.Annotations; }
 		}
 
+		public Tracer Tracer {
+			get { return _context.Tracer; }
+		}
+
 		private MarkingHelpers MarkingHelpers => _context.MarkingHelpers;
 
 		public MarkStep ()
@@ -79,14 +83,14 @@ namespace Mono.Linker.Steps {
 
 		protected virtual void InitializeAssembly (AssemblyDefinition assembly)
 		{
-			Annotations.Push (assembly);
+			Tracer.Push (assembly);
 			try {
 				MarkAssembly (assembly);
 
 				foreach (TypeDefinition type in assembly.MainModule.Types)
 					InitializeType (type);
 			} finally {
-				Annotations.Pop ();
+				Tracer.Pop ();
 			}
 		}
 
@@ -159,11 +163,11 @@ namespace Mono.Linker.Steps {
 					}
 					if (!Annotations.IsMarked (type))
 						continue;
-					Annotations.Push (type);
+					Tracer.Push (type);
 					try {
 						MarkingHelpers.MarkExportedType (exported, assembly.MainModule);
 					} finally {
-						Annotations.Pop ();
+						Tracer.Pop ();
 					}
 				}
 			}
@@ -182,13 +186,13 @@ namespace Mono.Linker.Steps {
 		{
 			while (!QueueIsEmpty ()) {
 				MethodDefinition method = _methods.Dequeue ();
-				Annotations.Push (method);
+				Tracer.Push (method);
 				try {
 					ProcessMethod (method);
 				} catch (Exception e) {
 					throw new MarkException (string.Format ("Error processing method: '{0}' in assembly: '{1}'", method.FullName, method.Module.Name), e, method);
 				} finally {
-					Annotations.Pop ();
+					Tracer.Pop ();
 				}
 			}
 		}
@@ -206,9 +210,9 @@ namespace Mono.Linker.Steps {
 		void ProcessVirtualMethods ()
 		{
 			foreach (MethodDefinition method in _virtual_methods) {
-				Annotations.Push (method);
+				Tracer.Push (method);
 				ProcessVirtualMethod (method);
-				Annotations.Pop ();
+				Tracer.Pop ();
 			}
 		}
 
@@ -254,12 +258,12 @@ namespace Mono.Linker.Steps {
 			if (!provider.HasCustomAttributes)
 				return;
 
-			Annotations.Push (provider);
+			Tracer.Push (provider);
 			try {
 				foreach (CustomAttribute ca in provider.CustomAttributes)
 					MarkCustomAttribute (ca);
 			} finally {
-				Annotations.Pop ();
+				Tracer.Pop ();
 			}
 		}
 
@@ -274,7 +278,7 @@ namespace Mono.Linker.Steps {
 
 		protected virtual void MarkCustomAttribute (CustomAttribute ca)
 		{
-			Annotations.Push ((object)ca.AttributeType ?? (object)ca);
+			Tracer.Push ((object)ca.AttributeType ?? (object)ca);
 			try {
 				MarkMethod (ca.Constructor);
 
@@ -291,7 +295,7 @@ namespace Mono.Linker.Steps {
 				MarkCustomAttributeProperties (ca, type);
 				MarkCustomAttributeFields (ca, type);
 			} finally {
-				Annotations.Pop ();
+				Tracer.Pop ();
 			}
 		}
 
@@ -357,12 +361,12 @@ namespace Mono.Linker.Steps {
 		protected void MarkCustomAttributeProperty (CustomAttributeNamedArgument namedArgument, TypeDefinition attribute)
 		{
 			PropertyDefinition property = GetProperty (attribute, namedArgument.Name);
-			Annotations.Push (property);
+			Tracer.Push (property);
 			if (property != null)
 				MarkMethod (property.SetMethod);
 
 			MarkIfType (namedArgument.Argument);
-			Annotations.Pop ();
+			Tracer.Pop ();
 		}
 
 		PropertyDefinition GetProperty (TypeDefinition type, string propertyname)
@@ -617,7 +621,7 @@ namespace Mono.Linker.Steps {
 			if (CheckProcessed (type))
 				return null;
 
-			Annotations.Push (type);
+			Tracer.Push (type);
 
 			MarkScope (type.Scope);
 			MarkType (type.BaseType);
@@ -658,7 +662,7 @@ namespace Mono.Linker.Steps {
 
 			DoAdditionalTypeProcessing (type);
 
-			Annotations.Pop ();
+			Tracer.Pop ();
 
 			Annotations.Mark (type);
 
@@ -925,10 +929,10 @@ namespace Mono.Linker.Steps {
 				if (property.Name != property_name)
 					continue;
 
-				Annotations.Push (property);
+				Tracer.Push (property);
 				MarkMethod (property.GetMethod);
 				MarkMethod (property.SetMethod);
-				Annotations.Pop ();
+				Tracer.Pop ();
 			}
 		}
 
@@ -1272,7 +1276,7 @@ namespace Mono.Linker.Steps {
 			if (reference.DeclaringType is ArrayType)
 				return null;
 
-			Annotations.Push (reference);
+			Tracer.Push (reference);
 			if (reference.DeclaringType is GenericInstanceType)
 				MarkType (reference.DeclaringType);
 
@@ -1292,9 +1296,9 @@ namespace Mono.Linker.Steps {
 
 				EnqueueMethod (method);
 			} finally {
-				Annotations.Pop ();
+				Tracer.Pop ();
 			}
-			Annotations.AddDependency (method);
+			Tracer.AddDependency (method);
 
 			return method;
 		}
@@ -1333,7 +1337,7 @@ namespace Mono.Linker.Steps {
 			if (CheckProcessed (method))
 				return;
 
-			Annotations.Push (method);
+			Tracer.Push (method);
 			MarkType (method.DeclaringType);
 			MarkCustomAttributes (method);
 			MarkSecurityDeclarations (method);
@@ -1381,7 +1385,7 @@ namespace Mono.Linker.Steps {
 			Annotations.Mark (method);
 
 			ApplyPreserveMethods (method);
-			Annotations.Pop ();
+			Tracer.Pop ();
 		}
 
 		// Allow subclassers to mark additional things when marking a method

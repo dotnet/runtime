@@ -34,6 +34,10 @@ using Mono.Cecil.Cil;
 
 namespace Mono.Linker {
 
+	public interface IAnnotationStoreFactory {
+		AnnotationStore Create (Tracer tracer);
+	}
+
 	public class LinkContext : IDisposable {
 
 		Pipeline _pipeline;
@@ -129,6 +133,8 @@ namespace Mono.Linker {
 
 		public MarkingHelpers MarkingHelpers { get; private set; }
 
+		public Tracer Tracer { get; private set; } = new Tracer ();
+
 		public LinkContext (Pipeline pipeline)
 			: this (pipeline, new AssemblyResolver ())
 		{
@@ -138,20 +144,19 @@ namespace Mono.Linker {
 			: this(pipeline, resolver, new ReaderParameters
 			{
 				AssemblyResolver = resolver
-			},
-			new AnnotationStore ())
+			})
 		{
 		}
 
-		public LinkContext (Pipeline pipeline, AssemblyResolver resolver, ReaderParameters readerParameters, AnnotationStore annotations)
+		public LinkContext (Pipeline pipeline, AssemblyResolver resolver, ReaderParameters readerParameters, IAnnotationStoreFactory storeFactory = null)
 		{
 			_pipeline = pipeline;
 			_resolver = resolver;
 			_actions = new Dictionary<string, AssemblyAction> ();
 			_parameters = new Dictionary<string, string> ();
-			_annotations = annotations;
 			_readerParameters = readerParameters;
 			MarkingHelpers = CreateMarkingHelpers ();
+			_annotations = storeFactory != null ? storeFactory.Create (Tracer) : new AnnotationStore (Tracer);
 		}
 
 		public TypeDefinition GetType (string fullName)

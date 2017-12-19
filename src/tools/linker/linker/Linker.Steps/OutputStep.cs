@@ -71,7 +71,7 @@ namespace Mono.Linker.Steps {
 		protected override void Process ()
 		{
 			CheckOutputDirectory ();
-			Annotations.SaveDependencies ();
+			Tracer.Finish ();
 		}
 
 		void CheckOutputDirectory ()
@@ -117,11 +117,11 @@ namespace Mono.Linker.Steps {
 			case AssemblyAction.Save:
 			case AssemblyAction.Link:
 			case AssemblyAction.AddBypassNGen:
-				Context.Annotations.AddDependency (assembly);
+				Context.Tracer.AddDependency (assembly);
 				WriteAssembly (assembly, directory);
 				break;
 			case AssemblyAction.Copy:
-				Context.Annotations.AddDependency (assembly);
+				Context.Tracer.AddDependency (assembly);
 				CloseSymbols (assembly);
 				CopyAssembly (GetOriginalAssemblyFileInfo (assembly), directory, Context.LinkSymbols);
 				break;
