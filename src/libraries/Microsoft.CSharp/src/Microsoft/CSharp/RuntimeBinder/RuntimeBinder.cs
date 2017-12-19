@@ -1010,7 +1010,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             ArgInfos argInfo = new ArgInfos
             {
-                carg = ExpressionBinder.CountArguments(arguments, out _)
+                carg = ExpressionBinder.CountArguments(arguments)
             };
             _binder.FillInArgInfoFromArgList(argInfo, arguments);
 
