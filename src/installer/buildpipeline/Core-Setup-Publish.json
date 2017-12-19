@@ -489,7 +489,7 @@
       "value": "$(Build.SourcesDirectory)\\tools"
     },
     "PB_SymbolServerPath": {
-      "value": "https://mikemvsts.artifacts.visualstudio.com/DefaultCollection"
+      "value": "https://microsoftpublicsymbolsppe.artifacts.visualstudio.com/DefaultCollection"
     },
     "PB_SymbolServerPAT": {
       "value": null,
