@@ -32,6 +32,8 @@ namespace System.Security.Cryptography.Pkcs.Tests
         public const string DocumentDescription = "1.3.6.1.4.1.311.88.2.2";
         public const string MessageDigest = "1.2.840.113549.1.9.4";
         public const string DocumentName = "1.3.6.1.4.1.311.88.2.1";
+        public const string CounterSigner = "1.2.840.113549.1.9.6";
+
 
         // Key wrap algorithms
         public const string CmsRc2Wrap = "1.2.840.113549.1.9.16.3.7";
@@ -46,6 +48,14 @@ namespace System.Security.Cryptography.Pkcs.Tests
         public const string Pkcs7Encrypted = "1.2.840.113549.1.7.6";
 
         // X509 extensions
+        public const string SubjectKeyIdentifier = "2.5.29.14";
         public const string BasicConstraints2 = "2.5.29.19";
+
+        // Hash algorithms
+        public const string Md5 = "1.2.840.113549.2.5";
+        public const string Sha1 = "1.3.14.3.2.26";
+        public const string Sha256 = "2.16.840.1.101.3.4.2.1";
+        public const string Sha384 = "2.16.840.1.101.3.4.2.2";
+        public const string Sha512 = "2.16.840.1.101.3.4.2.3";
     }
 }

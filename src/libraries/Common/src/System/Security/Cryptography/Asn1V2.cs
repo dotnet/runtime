@@ -398,7 +398,11 @@ namespace System.Security.Cryptography.Asn1
             return GetByteCount(s.AsReadOnlySpan());
         }
 
-        private int GetByteCount(ReadOnlySpan<char> chars)
+        public
+#if netcoreapp
+            override
+#endif
+        int GetByteCount(ReadOnlySpan<char> chars)
         {
             return GetBytes(chars, Span<byte>.Empty, write: false);
         }
@@ -429,7 +433,11 @@ namespace System.Security.Cryptography.Asn1
             return GetCharCount(new ReadOnlySpan<byte>(bytes, count));
         }
 
-        private int GetCharCount(ReadOnlySpan<byte> bytes)
+        public
+#if netcoreapp
+            override
+#endif
+        int GetCharCount(ReadOnlySpan<byte> bytes)
         {
             return GetChars(bytes, Span<char>.Empty, write: false);
         }
