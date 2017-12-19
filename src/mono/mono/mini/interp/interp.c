@@ -2414,6 +2414,12 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 		do_transform_method (frame, context);
 		if (frame->ex)
 			THROW_EX (frame->ex, NULL);
+		if (*mono_thread_interruption_request_flag ()) {
+			MonoException *exc = mono_thread_interruption_checkpoint ();
+			if (exc)
+				THROW_EX (exc, NULL);
+		}
+
 	}
 
 	rtm = frame->imethod;
