@@ -95,6 +95,7 @@
     <Compile Include="Linker.Steps\TypeMapStep.cs" />
     <Compile Include="Linker\ILogger.cs" />
     <Compile Include="Linker\ConsoleLogger.cs" />
+    <Compile Include="Linker\Tracer.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

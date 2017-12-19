@@ -123,9 +123,9 @@ namespace Mono.Linker {
 		{
 			while (_steps.Count > 0) {
 				IStep step = _steps [0];
-				context.Annotations.Push (step);
+				context.Tracer.Push (step);
 				step.Process (context);
-				context.Annotations.Pop ();
+				context.Tracer.Pop ();
 				_steps.Remove (step);
 			}
 		}

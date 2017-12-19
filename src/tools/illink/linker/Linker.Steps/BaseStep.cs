@@ -42,6 +42,10 @@ namespace Mono.Linker.Steps {
 			get { return _context.Annotations; }
 		}
 
+		public Tracer Tracer {
+			get { return _context.Tracer; }
+		}
+
 		public MarkingHelpers MarkingHelpers => _context.MarkingHelpers;
 
 		public void Process (LinkContext context)

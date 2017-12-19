@@ -28,8 +28,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.IO.Compression;
 
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -37,6 +35,8 @@ using Mono.Cecil.Cil;
 namespace Mono.Linker {
 
 	public class AnnotationStore {
+
+		readonly Tracer tracer;
 
 		readonly Dictionary<AssemblyDefinition, AssemblyAction> assembly_actions = new Dictionary<AssemblyDefinition, AssemblyAction> ();
 		readonly Dictionary<MethodDefinition, MethodAction> method_actions = new Dictionary<MethodDefinition, MethodAction> ();
@@ -52,30 +52,22 @@ namespace Mono.Linker {
 		readonly Dictionary<object, Dictionary<IMetadataTokenProvider, object>> custom_annotations = new Dictionary<object, Dictionary<IMetadataTokenProvider, object>> ();
 		readonly Dictionary<AssemblyDefinition, HashSet<string>> resources_to_remove = new Dictionary<AssemblyDefinition, HashSet<string>> ();
 
-		Stack<object> dependency_stack;
-		System.Xml.XmlWriter writer;
-		GZipStream zipStream;
-
-		public void PrepareDependenciesDump ()
+		public AnnotationStore (Tracer tracer)
 		{
-			PrepareDependenciesDump ("linker-dependencies.xml.gz");
+			this.tracer = tracer;
 		}
 
+		[Obsolete ("Use Tracer in LinkContext directly")]
+		public void PrepareDependenciesDump ()
+		{
+			tracer.Start ();
+		}
+
+		[Obsolete ("Use Tracer in LinkContext directly")]
 		public void PrepareDependenciesDump (string filename)
 		{
-			dependency_stack = new Stack<object> ();
-			System.Xml.XmlWriterSettings settings = new System.Xml.XmlWriterSettings();
-			settings.Indent = true;
-			settings.IndentChars = "\t";
-			var depsFile = File.OpenWrite (filename);
-			zipStream = new GZipStream (depsFile, CompressionMode.Compress);
-
-			writer = System.Xml.XmlWriter.Create (zipStream, settings);
-			writer.WriteStartDocument ();
-			writer.WriteStartElement ("dependencies");
-			writer.WriteStartAttribute ("version");
-			writer.WriteString ("1.2");
-			writer.WriteEndAttribute ();
+			tracer.DependenciesFileName = filename;
+			tracer.Start ();
 		}
 
 		public ICollection<AssemblyDefinition> GetAssemblies ()
@@ -119,17 +111,13 @@ namespace Mono.Linker {
 		public void Mark (IMetadataTokenProvider provider)
 		{
 			marked.Add (provider);
-			AddDependency (provider, true);
+			tracer.AddDependency (provider, true);
 		}
 
 		public void MarkAndPush (IMetadataTokenProvider provider)
 		{
 			Mark (provider);
-
-			if (writer == null)
-				return;
-
-			dependency_stack.Push (provider);
+			tracer.Push (provider, false); 
 		}
 
 		public bool IsMarked (IMetadataTokenProvider provider)
@@ -324,104 +312,6 @@ namespace Mono.Linker {
 			slots = new Dictionary<IMetadataTokenProvider, object> ();
 			custom_annotations.Add (key, slots);
 			return slots;
-		}
-
-		public void AddDirectDependency (object b, object e)
-		{
-			if (writer == null)
-				return;
-
-			writer.WriteStartElement ("edge");
-			writer.WriteAttributeString ("b", TokenString (b));
-			writer.WriteAttributeString ("e", TokenString (e));
-			writer.WriteEndElement ();
-		}
-
-		public void AddDependency (object o, bool marked=false)
-		{
-			if (writer == null)
-				return;
-
-			KeyValuePair<object, object> pair = new KeyValuePair<object, object> (dependency_stack.Count > 0 ? dependency_stack.Peek () : null, o);
-			if (pair.Key != pair.Value)
-			{
-				writer.WriteStartElement ("edge");
-				if (marked)
-					writer.WriteAttributeString ("mark", "1");
-				writer.WriteAttributeString ("b", TokenString (pair.Key));
-				writer.WriteAttributeString ("e", TokenString (pair.Value));
-				writer.WriteEndElement ();
-			}
-		}
-
-		public void Push (object o)
-		{
-			if (writer == null)
-				return;
-
-			if (dependency_stack.Count > 0)
-				AddDependency (o);
-			dependency_stack.Push (o);
-		}
-
-		public void Pop ()
-		{
-			if (writer == null)
-				return;
-
-			dependency_stack.Pop ();
-		}
-
-		static bool IsAssemblyBound (TypeDefinition td)
-		{
-			do {
-				if (td.IsNestedPrivate || td.IsNestedAssembly || td.IsNestedFamilyAndAssembly)
-					return true;
-
-				td = td.DeclaringType;
-			} while (td != null);
-
-			return false;
-		}
-
-		string TokenString (object o)
-		{
-			if (o == null)
-				return "N:null";
-
-			if (o is TypeReference t) {
-				bool addAssembly = true;
-				var td = t as TypeDefinition ?? t.Resolve ();
-
-				if (td != null) {
-					addAssembly = td.IsNotPublic || IsAssemblyBound (td);
-					t = td;
-				}
-
-				var addition = addAssembly ? $":{t.Module}" : "";
-
-				return $"{(o as IMetadataTokenProvider).MetadataToken.TokenType}:{o}{addition}";
-			}
-
-			if (o is IMetadataTokenProvider)
-				return (o as IMetadataTokenProvider).MetadataToken.TokenType + ":" + o;
-
-			return "Other:" + o;
-		}
-
-		public void SaveDependencies ()
-		{
-			if (writer == null)
-				return;
-
-			writer.WriteEndElement ();
-			writer.WriteEndDocument ();
-			writer.Flush ();
-			writer.Dispose ();
-			zipStream.Dispose ();
-			writer = null;
-			zipStream = null;
-			dependency_stack = null;
 		}
 	}
 }
