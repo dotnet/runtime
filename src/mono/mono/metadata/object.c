@@ -878,9 +878,8 @@ compute_class_non_ref_bitmap (MonoClass *klass, gsize *bitmap, int size, int off
 	int max_size;
 
 	max_size = class->instance_size / sizeof (gpointer);
-	if (max_size >= size) {
+	if (max_size >= size)
 		bitmap = g_malloc0 (sizeof (gsize) * ((max_size) + 1));
-	}
 
 	for (p = class; p != NULL; p = p->parent) {
 		gpointer iter = NULL;
@@ -6324,11 +6323,10 @@ mono_string_new_checked (MonoDomain *domain, const char *text, MonoError *error)
 	
 	ut = g_utf8_to_utf16 (text, l, NULL, &items_written, &eg_error);
 	
-	if (!eg_error) {
+	if (!eg_error)
 		o = mono_string_new_utf16_checked (domain, ut, items_written, error);
-	} else {
+	else
 		mono_error_set_execution_engine (error, "String conversion error: %s", eg_error->message);
-	}
 	
 	g_free (ut);
     
