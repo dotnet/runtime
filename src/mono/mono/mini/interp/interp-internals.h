@@ -137,8 +137,6 @@ struct _InterpFrame {
 typedef struct {
 	MonoDomain *original_domain;
 	InterpFrame *current_frame;
-	unsigned char search_for_handler;
-
 	/* Resume state for resuming execution in mixed mode */
 	gboolean       has_resume_state;
 	/* Frame to resume execution at */

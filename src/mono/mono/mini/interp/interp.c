@@ -1178,10 +1178,8 @@ ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr
 
 	if (*mono_thread_interruption_request_flag ()) {
 		MonoException *exc = mono_thread_interruption_checkpoint ();
-		if (exc) {
-			frame->ex = exc;
-			context->search_for_handler = 1;
-		}
+		if (exc)
+			interp_throw (context, exc, frame, NULL, FALSE);
 	}
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
@@ -2377,7 +2375,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 	const unsigned short *endfinally_ip = NULL;
 	const unsigned short *ip = NULL;
 	register stackval *sp;
-	InterpMethod *rtm;
+	InterpMethod *rtm = NULL;
 #if DEBUG_INTERP
 	gint tracing = global_tracing;
 	unsigned char *vtalloc;
@@ -2414,12 +2412,8 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 #endif
 
 		do_transform_method (frame, context);
-		if (frame->ex) {
-			context->search_for_handler = 1;
-			rtm = NULL;
-			ip = NULL;
-			goto exit_frame;
-		}
+		if (frame->ex)
+			THROW_EX (frame->ex, NULL);
 	}
 
 	rtm = frame->imethod;
@@ -3653,10 +3647,8 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 					mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 					if (*mono_thread_interruption_request_flag ()) {
 						MonoException *exc = mono_thread_interruption_checkpoint ();
-						if (exc) {
-							frame->ex = exc;
-							context->search_for_handler = 1;
-						}
+						if (exc)
+							THROW_EX (exc, ip);
 					}
 					sp->data.p = o;
 #ifndef DISABLE_REMOTING
