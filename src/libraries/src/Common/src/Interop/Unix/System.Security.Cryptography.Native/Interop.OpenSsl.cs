@@ -94,9 +94,6 @@ internal static partial class Interop
                 if (sslAuthenticationOptions.IsServer && sslAuthenticationOptions.RemoteCertRequired)
                 {
                     Ssl.SslCtxSetVerify(innerContext, s_verifyClientCertificate);
-
-                    //update the client CA list 
-                    UpdateCAListFromRootStore(innerContext);
                 }
 
                 GCHandle alpnHandle = default;
@@ -400,59 +397,6 @@ internal static partial class Interop
             protocolHandle.Target = null;
 
             return Ssl.SSL_TLSEXT_ERR_NOACK;
-        }
-
-        private static void UpdateCAListFromRootStore(SafeSslContextHandle context)
-        {
-            using (SafeX509NameStackHandle nameStack = Crypto.NewX509NameStack())
-            {
-                //maintaining the HashSet of Certificate's issuer name to keep track of duplicates 
-                HashSet<string> issuerNameHashSet = new HashSet<string>();
-
-                //Enumerate Certificates from LocalMachine and CurrentUser root store 
-                AddX509Names(nameStack, StoreLocation.LocalMachine, issuerNameHashSet);
-                AddX509Names(nameStack, StoreLocation.CurrentUser, issuerNameHashSet);
-
-                Ssl.SslCtxSetClientCAList(context, nameStack);
-
-                // The handle ownership has been transferred into the CTX.
-                nameStack.SetHandleAsInvalid();
-            }
-
-        }
-
-        private static void AddX509Names(SafeX509NameStackHandle nameStack, StoreLocation storeLocation, HashSet<string> issuerNameHashSet)
-        {
-            using (var store = new X509Store(StoreName.Root, storeLocation))
-            {
-                store.Open(OpenFlags.ReadOnly);
-
-                foreach (var certificate in store.Certificates)
-                {
-                    //Check if issuer name is already present
-                    //Avoiding duplicate names
-                    if (!issuerNameHashSet.Add(certificate.Issuer))
-                    {
-                        continue;
-                    }
-
-                    using (SafeX509Handle certHandle = Crypto.X509UpRef(certificate.Handle))
-                    {
-                        using (SafeX509NameHandle nameHandle = Crypto.DuplicateX509Name(Crypto.X509GetIssuerName(certHandle)))
-                        {
-                            if (Crypto.PushX509NameStackField(nameStack, nameHandle))
-                            {
-                                // The handle ownership has been transferred into the STACK_OF(X509_NAME).
-                                nameHandle.SetHandleAsInvalid();
-                            }
-                            else
-                            {
-                                throw new CryptographicException(SR.net_ssl_x509Name_push_failed_error);
-                            }
-                        }
-                    }
-                }
-            }
         }
 
         private static int BioRead(SafeBioHandle bio, byte[] buffer, int count)

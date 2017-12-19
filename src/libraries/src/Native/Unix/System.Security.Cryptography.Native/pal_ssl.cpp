@@ -513,10 +513,6 @@ extern "C" int32_t CryptoNative_SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPoli
     return SSL_CTX_set_cipher_list(ctx, cipherString);
 }
 
-extern "C" void CryptoNative_SslCtxSetClientCAList(SSL_CTX* ctx, X509NameStack* list)
-{
-    SSL_CTX_set_client_CA_list(ctx, list);
-}
 
 extern "C" void CryptoNative_SslCtxSetClientCertCallback(SSL_CTX* ctx, SslClientCertCallback callback)
 {
