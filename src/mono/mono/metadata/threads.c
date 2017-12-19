@@ -655,6 +655,7 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach, gboolean
 	MonoThreadInfo *info;
 	MonoInternalThread *internal;
 	MonoDomain *domain, *root_domain;
+	guint32 gchandle;
 
 	g_assert (thread);
 
@@ -688,19 +689,19 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach, gboolean
 	mono_thread_push_appdomain_ref (domain);
 	if (!mono_domain_set (domain, force_domain)) {
 		mono_thread_pop_appdomain_ref ();
-		return FALSE;
+		goto fail;
 	}
 
 	mono_threads_lock ();
 
-	if (threads_starting_up)
-		mono_g_hash_table_remove (threads_starting_up, thread);
-
 	if (shutting_down && !force_attach) {
 		mono_threads_unlock ();
 		mono_thread_pop_appdomain_ref ();
-		return FALSE;
+		goto fail;
 	}
+
+	if (threads_starting_up)
+		mono_g_hash_table_remove (threads_starting_up, thread);
 
 	if (!threads) {
 		threads = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_THREADING, NULL, "Thread Table");
@@ -736,14 +737,34 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach, gboolean
 	THREAD_DEBUG (g_message ("%s: Attached thread ID %"G_GSIZE_FORMAT" (handle %p)", __func__, internal->tid, internal->handle));
 
 	return TRUE;
+
+fail:
+	mono_threads_lock ();
+	if (threads_starting_up)
+		mono_g_hash_table_remove (threads_starting_up, thread);
+	mono_threads_unlock ();
+
+	if (!mono_thread_info_try_get_internal_thread_gchandle (info, &gchandle))
+		g_error ("%s: failed to get gchandle, info %p", __func__, info);
+
+	mono_gchandle_free (gchandle);
+
+	mono_thread_info_unset_internal_thread_gchandle (info);
+
+	SET_CURRENT_OBJECT(NULL);
+
+	return FALSE;
 }
 
 static void
 mono_thread_detach_internal (MonoInternalThread *thread)
 {
 	MonoThreadInfo *info;
+	MonoInternalThread *value;
 	gboolean removed;
 	guint32 gchandle;
+
+	g_assert (mono_thread_internal_is_current (thread));
 
 	g_assert (thread != NULL);
 	SET_CURRENT_OBJECT (thread);
@@ -756,7 +777,7 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	MONO_PROFILER_RAISE (thread_stopping, (thread->tid));
 
 #ifndef HOST_WIN32
-	mono_w32mutex_abandon ();
+	mono_w32mutex_abandon (thread);
 #endif
 
 	if (thread->abort_state_handle) {
@@ -807,20 +828,19 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 
 	mono_threads_lock ();
 
-	if (!threads) {
-		removed = FALSE;
-	} else if (mono_g_hash_table_lookup (threads, (gpointer)thread->tid) != thread) {
-		/* We have to check whether the thread object for the
-		 * tid is still the same in the table because the
-		 * thread might have been destroyed and the tid reused
-		 * in the meantime, in which case the tid would be in
-		 * the table, but with another thread object.
-		 */
-		removed = FALSE;
-	} else {
-		mono_g_hash_table_remove (threads, (gpointer)thread->tid);
-		removed = TRUE;
+	g_assert (threads);
+
+	if (!mono_g_hash_table_lookup_extended (threads, (gpointer)thread->tid, NULL, (gpointer*) &value)) {
+		g_error ("%s: thread %p (tid: %p) should not have been removed yet from threads", __func__, thread, thread->tid);
+	} else if (thread != value) {
+		/* We have to check whether the thread object for the tid is still the same in the table because the
+		 * thread might have been destroyed and the tid reused in the meantime, in which case the tid would be in
+		 * the table, but with another thread object. */
+		g_error ("%s: thread %p (tid: %p) do not match with value %p (tid: %p)", __func__, thread, thread->tid, value, value->tid);
 	}
+
+	removed = mono_g_hash_table_remove (threads, (gpointer)thread->tid);
+	g_assert (removed);
 
 	mono_threads_unlock ();
 
@@ -838,17 +858,6 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	 * thread's object.
 	 */
 
-	/* if the thread is not in the hash it has been removed already */
-	if (!removed) {
-		mono_domain_unset ();
-		mono_memory_barrier ();
-
-		if (mono_thread_cleanup_fn)
-			mono_thread_cleanup_fn (thread_get_tid (thread));
-
-		goto done;
-	}
-
 	mono_release_type_locks (thread);
 
 	MONO_PROFILER_RAISE (thread_stopped, (thread->tid));
@@ -862,8 +871,7 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	mono_domain_unset ();
 	mono_memory_barrier ();
 
-	if (thread == mono_thread_internal_current ())
-		mono_thread_pop_appdomain_ref ();
+	mono_thread_pop_appdomain_ref ();
 
 	mono_free_static_data (thread->static_data);
 	thread->static_data = NULL;
@@ -885,7 +893,9 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 		thread->thread_pinning_ref = NULL;
 	}
 
-done:
+	/* There is no more any guarantee that `thread` is alive */
+	mono_memory_barrier ();
+
 	SET_CURRENT_OBJECT (NULL);
 	mono_domain_unset ();
 
@@ -1275,8 +1285,11 @@ mono_thread_create_checked (MonoDomain *domain, gpointer func, gpointer arg, Mon
 	return (NULL != mono_thread_create_internal (domain, func, arg, MONO_THREAD_CREATE_FLAGS_NONE, error));
 }
 
-static MonoThread *
-mono_thread_attach_full (MonoDomain *domain, gboolean force_attach)
+/**
+ * mono_thread_attach:
+ */
+MonoThread *
+mono_thread_attach (MonoDomain *domain)
 {
 	MonoInternalThread *internal;
 	MonoThread *thread;
@@ -1299,7 +1312,7 @@ mono_thread_attach_full (MonoDomain *domain, gboolean force_attach)
 
 	thread = create_thread_object (domain, internal);
 
-	if (!mono_thread_attach_internal (thread, force_attach, TRUE)) {
+	if (!mono_thread_attach_internal (thread, FALSE, TRUE)) {
 		/* Mono is shutting down, so just wait for the end */
 		for (;;)
 			mono_thread_info_sleep (10000, NULL);
@@ -1313,15 +1326,6 @@ mono_thread_attach_full (MonoDomain *domain, gboolean force_attach)
 	fire_attach_profiler_events (tid);
 
 	return thread;
-}
-
-/**
- * mono_thread_attach:
- */
-MonoThread *
-mono_thread_attach (MonoDomain *domain)
-{
-	return mono_thread_attach_full (domain, FALSE);
 }
 
 /**
@@ -3107,7 +3111,7 @@ mono_thread_cleanup (void)
 	 * thread exits, but if it's not running in a subthread it
 	 * won't exit in time.
 	 */
-	mono_w32mutex_abandon ();
+	mono_w32mutex_abandon (mono_thread_internal_current ());
 #endif
 
 #if 0
@@ -5264,7 +5268,7 @@ mono_threads_attach_coop (MonoDomain *domain, gpointer *dummy)
 		external = !(info = mono_thread_info_current_unchecked ()) || !mono_thread_info_is_live (info);
 
 	if (!mono_thread_internal_current ()) {
-		mono_thread_attach_full (domain, FALSE);
+		mono_thread_attach (domain);
 
 		// #678164
 		mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);

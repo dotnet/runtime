@@ -469,14 +469,9 @@ cleanup:
 }
 
 void
-mono_w32mutex_abandon (void)
+mono_w32mutex_abandon (MonoInternalThread *internal)
 {
-	MonoInternalThread *internal;
-
-	g_assert (mono_thread_internal_current_is_attached ());
-
-	internal = mono_thread_internal_current ();
-	g_assert (internal);
+	g_assert (mono_thread_internal_is_current (internal));
 
 	if (!internal->owned_mutexes)
 		return;

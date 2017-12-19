@@ -281,8 +281,10 @@ mono_g_hash_table_lookup_extended (MonoGHashTable *hash, gconstpointer key, gpoi
 	slot = mono_g_hash_table_find_slot (hash, key);
 
 	if (hash->keys [slot]) {
-		*orig_key = hash->keys [slot];
-		*value = hash->values [slot];
+		if (orig_key)
+			*orig_key = hash->keys [slot];
+		if (value)
+			*value = hash->values [slot];
 		return TRUE;
 	}
 
