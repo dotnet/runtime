@@ -2576,11 +2576,25 @@ void NotifyGdb::OnMethodPrepared(MethodDesc* methodDescPtr)
     }
 #endif
 
+    // remove '.ni.dll' or '.ni.exe' suffix from wszModuleFile
+    LPWSTR pNIExt = const_cast<LPWSTR>(wcsstr(wszModuleFile, W(".ni.exe"))); // where '.ni.exe' start at 
+    if (!pNIExt)
+    {
+      pNIExt = const_cast<LPWSTR>(wcsstr(wszModuleFile, W(".ni.dll"))); // where '.ni.dll' start at 
+    }
+
+    if (pNIExt)
+    {
+      wcscpy(pNIExt, W(".dll"));
+    }
+
     if (isListedModule(wszModuleFile))
     {
         bool bEmitted = EmitDebugInfo(elfBuilder, methodDescPtr, pCode, codeSize);
         bNotify = bNotify || bEmitted;
     }
+
+
 #ifdef FEATURE_GDBJIT_SYMTAB
     else
     {
