@@ -113,6 +113,11 @@ namespace Mono.Linker {
 							continue;
 						}
 
+						if (token == "--reduced-tracing") {
+							context.EnableReducedTracing = bool.Parse (GetParam ());
+							continue;
+						}
+
 						switch (token [2]) {
 						case 'v':
 							Version ();
@@ -328,6 +333,7 @@ namespace Mono.Linker {
 			Console.WriteLine ("   --skip-unresolved   Ignore unresolved types and methods (true or false)");
 			Console.WriteLine ("   --dependencies-file Specify the dependencies file path, if unset the default path is used: <output directory>/linker-dependencies.xml.gz");
 			Console.WriteLine ("   --dump-dependencies Dump dependencies for the linker analyzer tool");
+			Console.WriteLine ("   --reduced-tracing   Reduces dependency output related to assemblies that will not be modified");
 			Console.WriteLine ("   -out                Specify the output directory, default to `output'");
 			Console.WriteLine ("   -c                  Action on the core assemblies, skip, copy, copyused, addbypassngen, addbypassngenused or link, default to skip");
 			Console.WriteLine ("   -u                  Action on the user assemblies, skip, copy, copyused, addbypassngen, addbypassngenused or link, default to link");

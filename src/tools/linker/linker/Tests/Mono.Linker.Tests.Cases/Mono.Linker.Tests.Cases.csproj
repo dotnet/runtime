@@ -79,6 +79,9 @@
     <Compile Include="TestFramework\VerifyDefineAttributeBehavior.cs" />
     <None Include="TypeForwarding\Dependencies\ForwarderLibrary.cs" />
     <Compile Include="TestFramework\VerifyResourceInAssemblyAttributesBehavior.cs" />
+    <Compile Include="Tracing\Individual\CanDumpDependenciesToUncompressedXml.cs" />
+    <Compile Include="Tracing\Individual\CanEnableDependenciesDump.cs" />
+    <Compile Include="Tracing\Individual\CanEnableReducedTracing.cs" />
     <Compile Include="TypeForwarding\Dependencies\ImplementationLibrary.cs" />
     <Compile Include="TypeForwarding\Dependencies\LibraryUsingForwarder.cs" />
     <Compile Include="TypeForwarding\Dependencies\ReferenceImplementationLibrary.cs" />

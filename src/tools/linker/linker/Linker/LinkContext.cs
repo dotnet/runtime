@@ -107,6 +107,8 @@ namespace Mono.Linker {
 			set { _ignoreUnresolved = value; }
 		}
 
+		public bool EnableReducedTracing { get; set; }
+
 		public System.Collections.IDictionary Actions {
 			get { return _actions; }
 		}

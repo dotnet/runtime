@@ -29,20 +29,22 @@
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
-
+using System.Xml;
 using Mono.Cecil;
+using Mono.Linker.Steps;
 
 namespace Mono.Linker
 {
 	public class Tracer {
+		public const string DefaultDependenciesFileName = "linker-dependencies.xml.gz";
 
-		public string DependenciesFileName { get; set; } = "linker-dependencies.xml.gz";
+		public string DependenciesFileName { get; set; } = DefaultDependenciesFileName;
 
 		protected readonly LinkContext context;
 
 		Stack<object> dependency_stack;
 		System.Xml.XmlWriter writer;
-		GZipStream zipStream;
+		Stream stream;
 
 		public Tracer (LinkContext context) => this.context = context;
 
@@ -53,10 +55,19 @@ namespace Mono.Linker
 				Indent = true,
 				IndentChars = "\t"
 			};
-			var depsFile = File.OpenWrite (DependenciesFileName);
-			zipStream = new GZipStream (depsFile, CompressionMode.Compress);
 
-			writer = System.Xml.XmlWriter.Create (zipStream, settings);
+			if (string.IsNullOrEmpty (Path.GetDirectoryName (DependenciesFileName)) && !string.IsNullOrEmpty (context.OutputDirectory)) {
+				DependenciesFileName = Path.Combine (context.OutputDirectory, DependenciesFileName);
+			}
+
+			var depsFile = File.OpenWrite (DependenciesFileName);
+
+			if (Path.GetExtension (DependenciesFileName) == ".xml")
+				stream = depsFile;
+			else
+				stream = new GZipStream (depsFile, CompressionMode.Compress);
+
+			writer = System.Xml.XmlWriter.Create (stream, settings);
 			writer.WriteStartDocument ();
 			writer.WriteStartElement ("dependencies");
 			writer.WriteStartAttribute ("version");
@@ -73,9 +84,9 @@ namespace Mono.Linker
 			writer.WriteEndDocument ();
 			writer.Flush ();
 			writer.Dispose ();
-			zipStream.Dispose ();
+			stream.Dispose ();
 			writer = null;
-			zipStream = null;
+			stream = null;
 			dependency_stack = null;
 		}
 
@@ -152,6 +163,18 @@ namespace Mono.Linker
 				return;
 
 			KeyValuePair<object, object> pair = new KeyValuePair<object, object> (dependency_stack.Count > 0 ? dependency_stack.Peek () : null, o);
+
+			if (!ShouldRecord (pair.Key) && !ShouldRecord (pair.Value))
+				return;
+
+			// This is a hack to work around a quirk of MarkStep that results in outputting ~6k edges even with the above ShouldRecord checks.
+			// What happens is that due to the method queueing in MarkStep, the dependency chain is broken in many cases.  And in these cases
+			// we end up adding an edge for MarkStep -> <queued Method>
+			// This isn't particularly useful information since it's incomplete, but it's especially not useful in ReducedTracing mode when there is one of these for
+			// every class library method that was queued.
+			if (context.EnableReducedTracing && pair.Key is MarkStep && !ShouldRecord (pair.Value))
+				return;
+
 			if (pair.Key != pair.Value) {
 				writer.WriteStartElement ("edge");
 				if (marked)
@@ -160,6 +183,63 @@ namespace Mono.Linker
 				writer.WriteAttributeString ("e", TokenString (pair.Value));
 				writer.WriteEndElement ();
 			}
+		}
+
+		bool WillAssemblyBeModified (AssemblyDefinition assembly)
+		{
+			switch (context.Annotations.GetAction (assembly)) {
+				case AssemblyAction.Link:
+				case AssemblyAction.AddBypassNGen:
+				case AssemblyAction.AddBypassNGenUsed:
+					return true;
+				default:
+					return false;
+			}
+		}
+
+		bool ShouldRecord (object o)
+		{
+			if (!context.EnableReducedTracing)
+				return true;
+
+			if (o is TypeDefinition t)
+				return WillAssemblyBeModified (t.Module.Assembly);
+
+			if (o is IMemberDefinition m)
+				return WillAssemblyBeModified (m.DeclaringType.Module.Assembly);
+
+			if (o is TypeReference typeRef) {
+				var resolved = typeRef.Resolve ();
+
+				// Err on the side of caution if we can't resolve
+				if (resolved == null)
+					return true;
+
+				return WillAssemblyBeModified (resolved.Module.Assembly);
+			}
+
+			if (o is MemberReference mRef) {
+				var resolved = mRef.Resolve ();
+
+				// Err on the side of caution if we can't resolve
+				if (resolved == null)
+					return true;
+
+				return WillAssemblyBeModified (resolved.DeclaringType.Module.Assembly);
+			}
+
+			if (o is ModuleDefinition module)
+				return WillAssemblyBeModified (module.Assembly);
+
+			if (o is AssemblyDefinition assembly)
+				return WillAssemblyBeModified (assembly);
+
+			if (o is ParameterDefinition parameter) {
+				if (parameter.Method is MethodDefinition parameterMethodDefinition)
+					return WillAssemblyBeModified (parameterMethodDefinition.DeclaringType.Module.Assembly);
+			}
+
+			return true;
 		}
 	}
 }
