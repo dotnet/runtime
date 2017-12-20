@@ -125,7 +125,7 @@
     <None Include="..\Scripts\Unix\kdc.conf.opensuse">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <Compile Include="NegotiateStreamTestForUnix.cs" />
+    <Compile Include="NegotiateStreamTest.Linux.cs" />
     <Compile Include="UnixGssFakeNegotiateStream.cs" />
     <Compile Include="UnixGssFakeStreamFramer.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
