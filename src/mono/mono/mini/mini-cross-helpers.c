@@ -10,9 +10,7 @@
 
 #include "mini.h"
 #include "mini-runtime.h"
-#ifndef DISABLE_INTERPRETER
 #include "interp/interp.h"
-#endif
 #include "tasklets.h"
 #include <mono/metadata/abi-details.h>
 
