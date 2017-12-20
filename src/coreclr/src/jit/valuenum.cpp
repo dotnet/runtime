@@ -918,7 +918,6 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
         case TYP_DOUBLE:
             return VNForDoubleCon(0.0);
         case TYP_REF:
-        case TYP_ARRAY:
             return VNForNull();
         case TYP_BYREF:
             return VNForByrefCon(0);
@@ -3909,7 +3908,6 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                 printf("DblCns[%f]", ConstantValue<double>(vn));
                 break;
             case TYP_REF:
-            case TYP_ARRAY:
                 if (vn == VNForNull())
                 {
                     printf("null");

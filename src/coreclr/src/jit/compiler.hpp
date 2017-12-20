@@ -551,7 +551,6 @@ inline bool genTypeCanRepresentValue(var_types type, TValue value)
             return FitsIn<INT64>(value);
         case TYP_REF:
         case TYP_BYREF:
-        case TYP_ARRAY:
             return FitsIn<UINT_PTR>(value);
         default:
             return false;
@@ -606,7 +605,6 @@ inline var_types genActualType(var_types type)
     /* Spot check to make certain the table is in synch with the enum */
 
     assert(genActualTypes[TYP_DOUBLE] == TYP_DOUBLE);
-    assert(genActualTypes[TYP_FNC] == TYP_FNC);
     assert(genActualTypes[TYP_REF] == TYP_REF);
 
     assert((unsigned)type < sizeof(genActualTypes));

@@ -2341,7 +2341,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     {
         assert(!varTypeIsStruct(call));
 
-        if (call->gtType == TYP_REF || call->gtType == TYP_ARRAY)
+        if (call->gtType == TYP_REF)
         {
             retSize = EA_GCREF;
         }
