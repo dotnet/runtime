@@ -980,7 +980,6 @@ INTERP_DISABLED_TESTS = \
 	$(COOP_DISABLED_TESTS) \
 	$(if $(CI),$(CI_DISABLED_TESTS)) \
 	$(if $(CI_PR),$(CI_PR_DISABLED_TESTS)) \
-	abort-cctor.exe \
 	appdomain-unload.exe \
 	array_load_exception.exe \
 	async-exc-compilation.exe \
@@ -1002,7 +1001,6 @@ INTERP_DISABLED_TESTS = \
 	even-odd.exe \
 	exception18.exe \
 	field-access.exe \
-	finally_block_ending_in_dead_bb.exe \
 	handleref.exe \
 	ldftn-access.exe \
 	marshal.exe \

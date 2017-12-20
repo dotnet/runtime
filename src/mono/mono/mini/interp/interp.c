@@ -4527,6 +4527,15 @@ array_constructed:
 				THROW_EX (mono_get_exception_overflow (), ip);
 			BINOP_CAST(l, -, guint64);
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_START_ABORT_PROT)
+			mono_threads_begin_abort_protected_block ();
+			ip ++;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_END_ABORT_PROT)
+			/* FIXME We miss it if exception is thrown in finally clause */
+			mono_threads_end_abort_protected_block ();
+			ip ++;
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ENDFINALLY)
 			ip ++;
 			int clause_index = *ip;

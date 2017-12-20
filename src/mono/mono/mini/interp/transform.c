@@ -1815,6 +1815,16 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 		if (sym_seq_points)
 			bb_exit = td->offset_to_bb [td->ip - header->code];
 
+		if (is_bb_start [in_offset]) {
+			int index = td->clause_indexes [in_offset];
+			if (index != -1) {
+				MonoExceptionClause *clause = &header->clauses [index];
+				if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY &&
+						in_offset == clause->handler_offset)
+					ADD_CODE (td, MINT_START_ABORT_PROT);
+			}
+		}
+
 		switch (*td->ip) {
 		case CEE_NOP: 
 			/* lose it */
@@ -3674,13 +3684,17 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			binary_arith_op(td, MINT_SUB_OVF_UN_I4);
 			++td->ip;
 			break;
-		case CEE_ENDFINALLY:
+		case CEE_ENDFINALLY: {
 			g_assert (td->clause_indexes [in_offset] != -1);
+			MonoExceptionClause *clause = &header->clauses [td->clause_indexes [in_offset]];
+			if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY)
+				ADD_CODE (td, MINT_END_ABORT_PROT);
 			td->sp = td->stack;
 			SIMPLE_OP (td, MINT_ENDFINALLY);
 			ADD_CODE (td, td->clause_indexes [in_offset]);
 			generating_code = 0;
 			break;
+		}
 		case CEE_LEAVE:
 		case CEE_LEAVE_S: {
 			int offset;
