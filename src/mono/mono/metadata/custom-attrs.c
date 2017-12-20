@@ -2238,7 +2238,11 @@ init_weak_fields_inner (MonoImage *image, GHashTable *indexes)
 				const char *nspace = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]);
 
 				if (!strcmp (nspace, "System") && !strcmp (name, "WeakAttribute")) {
-					MonoClass *klass = mono_class_from_typeref (image, MONO_TOKEN_TYPE_REF | nindex);
+					MonoClass *klass = mono_class_from_typeref_checked (image, MONO_TOKEN_TYPE_REF | nindex, &error);
+					if (!is_ok (&error)) {
+						mono_error_cleanup (&error);
+						return;
+					}
 					g_assert (!strcmp (klass->name, "WeakAttribute"));
 					/* Allow a testing dll as well since some profiles don't have WeakAttribute */
 					if (klass && (klass->image == mono_get_corlib () || strstr (klass->image->name, "Mono.Runtime.Testing"))) {
