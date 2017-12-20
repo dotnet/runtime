@@ -34,8 +34,10 @@ using Mono.Cecil.Cil;
 
 namespace Mono.Linker {
 
-	public interface IAnnotationStoreFactory {
-		AnnotationStore Create (Tracer tracer);
+	public class UnintializedContextFactory {
+		virtual public AnnotationStore CreateAnnotationStore (LinkContext context) => new AnnotationStore (context);
+		virtual public MarkingHelpers CreateMarkingHelpers (LinkContext context) => new MarkingHelpers (context);
+		virtual public Tracer CreateTracer (LinkContext context) => new Tracer (context);
 	}
 
 	public class LinkContext : IDisposable {
@@ -133,7 +135,7 @@ namespace Mono.Linker {
 
 		public MarkingHelpers MarkingHelpers { get; private set; }
 
-		public Tracer Tracer { get; private set; } = new Tracer ();
+		public Tracer Tracer { get; private set; }
 
 		public LinkContext (Pipeline pipeline)
 			: this (pipeline, new AssemblyResolver ())
@@ -144,19 +146,24 @@ namespace Mono.Linker {
 			: this(pipeline, resolver, new ReaderParameters
 			{
 				AssemblyResolver = resolver
-			})
+			}, new UnintializedContextFactory ())
 		{
 		}
 
-		public LinkContext (Pipeline pipeline, AssemblyResolver resolver, ReaderParameters readerParameters, IAnnotationStoreFactory storeFactory = null)
+		public LinkContext (Pipeline pipeline, AssemblyResolver resolver, ReaderParameters readerParameters, UnintializedContextFactory factory)
 		{
 			_pipeline = pipeline;
 			_resolver = resolver;
 			_actions = new Dictionary<string, AssemblyAction> ();
 			_parameters = new Dictionary<string, string> ();
 			_readerParameters = readerParameters;
-			MarkingHelpers = CreateMarkingHelpers ();
-			_annotations = storeFactory != null ? storeFactory.Create (Tracer) : new AnnotationStore (Tracer);
+
+			if (factory == null)
+				throw new ArgumentNullException (nameof (factory));
+
+			_annotations = factory.CreateAnnotationStore (this);
+			MarkingHelpers = factory.CreateMarkingHelpers (this);
+			Tracer = factory.CreateTracer (this);
 		}
 
 		public TypeDefinition GetType (string fullName)
@@ -334,11 +341,6 @@ namespace Mono.Linker {
 		{
 			if (LogInternalExceptions && Logger != null)
 				Logger.LogMessage (importance, message, values);
-		}
-
-		protected virtual MarkingHelpers CreateMarkingHelpers ()
-		{
-			return new MarkingHelpers (this);
 		}
 	}
 }
