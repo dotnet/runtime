@@ -1412,33 +1412,32 @@ public:
     }
 #endif // FEATURE_FIXED_OUT_ARGS
 
+#if defined(UNIX_X86_ABI)
     void ComputeStackAlignment(unsigned curStackLevelInBytes)
     {
-#if defined(UNIX_X86_ABI)
         padStkAlign = AlignmentPad(curStackLevelInBytes, STACK_ALIGN);
-#endif // defined(UNIX_X86_ABI)
     }
 
-    void SetStkSizeBytes(unsigned newStkSizeBytes)
-    {
-#if defined(UNIX_X86_ABI)
-        stkSizeBytes = newStkSizeBytes;
-#endif // defined(UNIX_X86_ABI)
-    }
-
-#if defined(UNIX_X86_ABI)
     unsigned GetStkAlign()
     {
         return padStkAlign;
     }
+
+    void SetStkSizeBytes(unsigned newStkSizeBytes)
+    {
+        stkSizeBytes = newStkSizeBytes;
+    }
+
     unsigned GetStkSizeBytes() const
     {
         return stkSizeBytes;
     }
+
     bool IsStkAlignmentDone() const
     {
         return alignmentDone;
     }
+
     void SetStkAlignmentDone()
     {
         alignmentDone = true;
