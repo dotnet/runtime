@@ -81,6 +81,7 @@ namespace Mono.Linker {
 			using (LinkContext context = GetDefaultContext (p)) {
 				I18nAssemblies assemblies = I18nAssemblies.All;
 				var custom_steps = new List<string> ();
+				bool dumpDependencies = false;
 
 				bool resolver = false;
 				while (HaveMoreTokens ()) {
@@ -101,11 +102,14 @@ namespace Mono.Linker {
 							continue;
 						}
 
-						if (token == "--dump-dependencies")
+						if (token == "--dependencies-file")
 						{
-							var prepareDependenciesDump = context.Annotations.GetType ().GetMethod ("PrepareDependenciesDump", new Type [] { });
-							if (prepareDependenciesDump != null)
-								prepareDependenciesDump.Invoke (context.Annotations, null);
+							context.Tracer.DependenciesFileName = GetParam ();
+							continue;
+						}
+
+						if (token == "--dump-dependencies") {
+							dumpDependencies = true;
 							continue;
 						}
 
@@ -194,6 +198,9 @@ namespace Mono.Linker {
 
 				if (!resolver)
 					Usage ("No resolver was created (use -x, -a or -i)");
+
+				if (dumpDependencies)
+					context.Tracer.Start ();
 
 				foreach (string custom_step in custom_steps)
 					AddCustomStep (p, custom_step);
@@ -319,6 +326,7 @@ namespace Mono.Linker {
 			Console.WriteLine ("   --about             About the {0}", _linker);
 			Console.WriteLine ("   --version           Print the version number of the {0}", _linker);
 			Console.WriteLine ("   --skip-unresolved   Ignore unresolved types and methods (true or false)");
+			Console.WriteLine ("   --dependencies-file Specify the dependencies file path, if unset the default path is used: <output directory>/linker-dependencies.xml.gz");
 			Console.WriteLine ("   --dump-dependencies Dump dependencies for the linker analyzer tool");
 			Console.WriteLine ("   -out                Specify the output directory, default to `output'");
 			Console.WriteLine ("   -c                  Action on the core assemblies, skip, copy, copyused, addbypassngen, addbypassngenused or link, default to skip");
