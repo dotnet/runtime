@@ -38,6 +38,9 @@ public:
                                 // that this bit should not be assumed to be valid
                                 // at all points during compilation: it is currently
                                 // only computed during target-dependent lowering.
+
+            RegOptional = 0x04, // Set on a node if it produces a value, but does not
+                                // require a register (i.e. it can be used from memory).
         };
     };
 
@@ -325,6 +328,21 @@ inline void GenTree::ClearUnusedValue()
 inline bool GenTree::IsUnusedValue() const
 {
     return (gtLIRFlags & LIR::Flags::UnusedValue) != 0;
+}
+
+inline void GenTree::SetRegOptional()
+{
+    gtLIRFlags |= LIR::Flags::RegOptional;
+}
+
+inline void GenTree::ClearRegOptional()
+{
+    gtLIRFlags &= ~LIR::Flags::RegOptional;
+}
+
+inline bool GenTree::IsRegOptional() const
+{
+    return (gtLIRFlags & LIR::Flags::RegOptional) != 0;
 }
 
 #endif // _LIR_H_
