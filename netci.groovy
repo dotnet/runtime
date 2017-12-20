@@ -477,12 +477,6 @@ def static getR2RDisplayName(def scenario) {
 def static envScriptCreate(def os, def stepScriptLocation) {
     def stepScript = ''
     if (os == 'Windows_NT') {
-        // Timeout in ms, default is 10 minutes. For stress modes up this to 30 minutes.
-        // BUG?: it seems this is ignored, as this script will be run in an environment where
-        //       environment variables will be discarded before this is used.
-        def timeout = 1800000
-        stepScript += "set __TestTimeout=${timeout}\r\n"
-
         stepScript += "echo Creating TestEnv script\r\n"
         stepScript += "if exist ${stepScriptLocation} del ${stepScriptLocation}\r\n"
 
@@ -1539,6 +1533,16 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         }
                         else if (scenario == 'illink') {
                             testOpts += " link %WORKSPACE%\\linker\\linker\\bin\\netcore_Release\\netcoreapp2.0\\win10-${arch}\\publish\\illink.exe"
+                        }
+
+                        // Default per-test timeout is 10 minutes. For stress modes and Debug scenarios, increase this
+                        // to 30 minutes (30 * 60 * 1000 = 180000). The "timeout" argument to runtest.cmd sets this, by
+                        // taking a timeout value in milliseconds. (Note that it sets the __TestTimeout environment variable,
+                        // which is read by the xunit harness.)
+                        if (isJitStressScenario(scenario) || isR2RStressScenario(scenario) || (lowerConfiguration == 'debug'))
+                        {
+                            def timeout = 1800000
+                            testOpts += " timeout ${timeout}"
                         }
 
                         // If we are running a stress mode, we should write out the set of key
