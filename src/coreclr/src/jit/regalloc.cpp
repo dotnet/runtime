@@ -382,12 +382,9 @@ inline regMaskTP Compiler::genReturnRegForTree(GenTreePtr tree)
         RBM_DOUBLERET, // TYP_DOUBLE,
         RBM_INTRET,    // TYP_REF,
         RBM_INTRET,    // TYP_BYREF,
-        RBM_INTRET,    // TYP_ARRAY,
         RBM_ILLEGAL,   // TYP_STRUCT,
         RBM_ILLEGAL,   // TYP_BLK,
         RBM_ILLEGAL,   // TYP_LCLBLK,
-        RBM_ILLEGAL,   // TYP_PTR,
-        RBM_ILLEGAL,   // TYP_FNC,
         RBM_ILLEGAL,   // TYP_UNKNOWN,
     };
 
