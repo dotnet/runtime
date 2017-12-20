@@ -38,9 +38,13 @@ namespace Mono.Linker
 
 		public string DependenciesFileName { get; set; } = "linker-dependencies.xml.gz";
 
+		protected readonly LinkContext context;
+
 		Stack<object> dependency_stack;
 		System.Xml.XmlWriter writer;
 		GZipStream zipStream;
+
+		public Tracer (LinkContext context) => this.context = context;
 
 		public void Start ()
 		{

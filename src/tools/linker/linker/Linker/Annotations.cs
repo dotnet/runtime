@@ -36,7 +36,7 @@ namespace Mono.Linker {
 
 	public class AnnotationStore {
 
-		readonly Tracer tracer;
+		protected readonly LinkContext context;
 
 		readonly Dictionary<AssemblyDefinition, AssemblyAction> assembly_actions = new Dictionary<AssemblyDefinition, AssemblyAction> ();
 		readonly Dictionary<MethodDefinition, MethodAction> method_actions = new Dictionary<MethodDefinition, MethodAction> ();
@@ -52,22 +52,25 @@ namespace Mono.Linker {
 		readonly Dictionary<object, Dictionary<IMetadataTokenProvider, object>> custom_annotations = new Dictionary<object, Dictionary<IMetadataTokenProvider, object>> ();
 		readonly Dictionary<AssemblyDefinition, HashSet<string>> resources_to_remove = new Dictionary<AssemblyDefinition, HashSet<string>> ();
 
-		public AnnotationStore (Tracer tracer)
-		{
-			this.tracer = tracer;
+		public AnnotationStore (LinkContext context) => this.context = context;
+
+		protected Tracer Tracer {
+			get {
+				return context.Tracer;
+			}
 		}
 
 		[Obsolete ("Use Tracer in LinkContext directly")]
 		public void PrepareDependenciesDump ()
 		{
-			tracer.Start ();
+			Tracer.Start ();
 		}
 
 		[Obsolete ("Use Tracer in LinkContext directly")]
 		public void PrepareDependenciesDump (string filename)
 		{
-			tracer.DependenciesFileName = filename;
-			tracer.Start ();
+			Tracer.DependenciesFileName = filename;
+			Tracer.Start ();
 		}
 
 		public ICollection<AssemblyDefinition> GetAssemblies ()
@@ -111,13 +114,13 @@ namespace Mono.Linker {
 		public void Mark (IMetadataTokenProvider provider)
 		{
 			marked.Add (provider);
-			tracer.AddDependency (provider, true);
+			Tracer.AddDependency (provider, true);
 		}
 
 		public void MarkAndPush (IMetadataTokenProvider provider)
 		{
 			Mark (provider);
-			tracer.Push (provider, false); 
+			Tracer.Push (provider, false);
 		}
 
 		public bool IsMarked (IMetadataTokenProvider provider)
