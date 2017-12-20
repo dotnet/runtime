@@ -263,11 +263,7 @@ namespace System.Collections.Generic
             int count = _count;
             if (count > 0)
             {
-                int[] buckets = _buckets;
-                for (int i = 0; i < buckets.Length; i++)
-                {
-                    buckets[i] = -1;
-                }
+                Array.Clear(_buckets, 0, _buckets.Length);
 
                 _count = 0;
                 _freeList = -1;
@@ -374,7 +370,8 @@ namespace System.Collections.Generic
                 if (comparer == null)
                 {
                     int hashCode = key.GetHashCode() & 0x7FFFFFFF;
-                    i = buckets[hashCode % buckets.Length];
+                    // Value in _buckets is 1-based
+                    i = buckets[hashCode % buckets.Length] - 1;
                     do
                     {
                         // Should be a while loop https://github.com/dotnet/coreclr/issues/15476
@@ -390,7 +387,8 @@ namespace System.Collections.Generic
                 else
                 {
                     int hashCode = comparer.GetHashCode(key) & 0x7FFFFFFF;
-                    i = buckets[hashCode % buckets.Length];
+                    // Value in _buckets is 1-based
+                    i = buckets[hashCode % buckets.Length] - 1;
                     do
                     {
                         // Should be a while loop https://github.com/dotnet/coreclr/issues/15476
@@ -412,14 +410,9 @@ namespace System.Collections.Generic
         private int Initialize(int capacity)
         {
             int size = HashHelpers.GetPrime(capacity);
-            int[] buckets = new int[size];
-            for (int i = 0; i < buckets.Length; i++)
-            {
-                buckets[i] = -1;
-            }
 
             _freeList = -1;
-            _buckets = buckets;
+            _buckets = new int[size];
             _entries = new Entry[size];
 
             return size;
@@ -444,7 +437,8 @@ namespace System.Collections.Generic
 
             int collisionCount = 0;
             ref int bucket = ref _buckets[hashCode % _buckets.Length];
-            int i = bucket;
+            // Value in _buckets is 1-based
+            int i = bucket - 1;
 
             if (comparer == null)
             {
@@ -544,10 +538,12 @@ namespace System.Collections.Generic
                 _freeList = entry.next;
             }
             entry.hashCode = hashCode;
-            entry.next = targetBucket;
+            // Value in _buckets is 1-based
+            entry.next = targetBucket - 1;
             entry.key = key;
             entry.value = value;
-            targetBucket = index;
+            // Value in _buckets is 1-based
+            targetBucket = index + 1;
             _version++;
 
             // Value types never rehash
@@ -620,10 +616,6 @@ namespace System.Collections.Generic
             Debug.Assert(newSize >= _entries.Length);
 
             int[] buckets = new int[newSize];
-            for (int i = 0; i < buckets.Length; i++)
-            {
-                buckets[i] = -1;
-            }
             Entry[] entries = new Entry[newSize];
 
             int count = _count;
@@ -633,7 +625,7 @@ namespace System.Collections.Generic
             {
                 for (int i = 0; i < count; i++)
                 {
-                    if (entries[i].hashCode != -1)
+                    if (entries[i].hashCode >= 0)
                     {
                         Debug.Assert(_comparer == null);
                         entries[i].hashCode = (entries[i].key.GetHashCode() & 0x7FFFFFFF);
@@ -646,8 +638,10 @@ namespace System.Collections.Generic
                 if (entries[i].hashCode >= 0)
                 {
                     int bucket = entries[i].hashCode % newSize;
-                    entries[i].next = buckets[bucket];
-                    buckets[bucket] = i;
+                    // Value in _buckets is 1-based
+                    entries[i].next = buckets[bucket] - 1;
+                    // Value in _buckets is 1-based
+                    buckets[bucket] = i + 1;
                 }
             }
 
@@ -670,7 +664,8 @@ namespace System.Collections.Generic
                 int hashCode = (_comparer?.GetHashCode(key) ?? key.GetHashCode()) & 0x7FFFFFFF;
                 int bucket = hashCode % _buckets.Length;
                 int last = -1;
-                int i = _buckets[bucket];
+                // Value in _buckets is 1-based
+                int i = _buckets[bucket] - 1;
                 while (i >= 0)
                 {
                     ref Entry entry = ref _entries[i];
@@ -679,7 +674,8 @@ namespace System.Collections.Generic
                     {
                         if (last < 0)
                         {
-                            _buckets[bucket] = entry.next;
+                            // Value in _buckets is 1-based
+                            _buckets[bucket] = entry.next + 1;
                         }
                         else
                         {
@@ -724,7 +720,8 @@ namespace System.Collections.Generic
                 int hashCode = (_comparer?.GetHashCode(key) ?? key.GetHashCode()) & 0x7FFFFFFF;
                 int bucket = hashCode % _buckets.Length;
                 int last = -1;
-                int i = _buckets[bucket];
+                // Value in _buckets is 1-based
+                int i = _buckets[bucket] - 1;
                 while (i >= 0)
                 {
                     ref Entry entry = ref _entries[i];
@@ -733,7 +730,8 @@ namespace System.Collections.Generic
                     {
                         if (last < 0)
                         {
-                            _buckets[bucket] = entry.next;
+                            // Value in _buckets is 1-based
+                            _buckets[bucket] = entry.next + 1;
                         }
                         else
                         {
@@ -930,8 +928,10 @@ namespace System.Collections.Generic
                     ref Entry entry = ref entries[count];
                     entry = oldEntries[i];
                     int bucket = hashCode % newSize;
-                    entry.next = buckets[bucket];
-                    buckets[bucket] = count;
+                    // Value in _buckets is 1-based
+                    entry.next = buckets[bucket] - 1;
+                    // Value in _buckets is 1-based
+                    buckets[bucket] = count + 1;
                     count++;
                 }
             }
