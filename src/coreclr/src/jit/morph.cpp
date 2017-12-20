@@ -4498,7 +4498,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
     }
 
     assert(fgPtrArgCntCur >= genPtrArgCntSav);
+#if defined(UNIX_X86_ABI)
     call->fgArgInfo->SetStkSizeBytes((fgPtrArgCntCur - genPtrArgCntSav) * TARGET_POINTER_SIZE);
+#endif // UNIX_X86_ABI
 
     /* The call will pop all the arguments we pushed */
 
@@ -5889,31 +5891,31 @@ BasicBlock* Compiler::fgSetRngChkTargetInner(SpecialCodeKind kind, bool delay, u
     {
         delay = false;
 
-#ifdef _TARGET_X86_
+#if !FEATURE_FIXED_OUT_ARGS
         // we need to initialize this field
         if (fgGlobalMorph && (stkDepth != nullptr))
         {
             *stkDepth = fgPtrArgCntCur;
         }
-#endif // _TARGET_X86_
+#endif // !FEATURE_FIXED_OUT_ARGS
     }
 
     if (!opts.compDbgCode)
     {
         if (delay || compIsForInlining())
         {
-#ifdef _TARGET_X86_
+#if !FEATURE_FIXED_OUT_ARGS
             // We delay this until after loop-oriented range check analysis. For now we merely store the current stack
             // level in the tree node.
             if (stkDepth != nullptr)
             {
                 *stkDepth = fgPtrArgCntCur;
             }
-#endif // _TARGET_X86_
+#endif // !FEATURE_FIXED_OUT_ARGS
         }
         else
         {
-#ifdef _TARGET_X86_
+#if !FEATURE_FIXED_OUT_ARGS
             // fgPtrArgCntCur is only valid for global morph or if we walk full stmt.
             noway_assert(fgGlobalMorph || (stkDepth != nullptr));
             const unsigned theStkDepth = fgGlobalMorph ? fgPtrArgCntCur : *stkDepth;
