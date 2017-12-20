@@ -29,6 +29,8 @@ msbuild.log
 
 # add back architecture directories ignored in 'Build results'
 !tests/x86
+!src/mscorlib/src/System/Runtime/Intrinsics/X86
+!tests/src/JIT/HardwareIntrinsics/X86
 
 # Visual Studio 2015
 .vs/
