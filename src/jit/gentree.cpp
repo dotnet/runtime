@@ -764,6 +764,61 @@ bool GenTree::gtHasReg() const
     return hasReg;
 }
 
+//-----------------------------------------------------------------------------
+// GetRegisterDstCount: Get the number of registers defined by the node.
+//
+// Arguments:
+//    None
+//
+// Return Value:
+//    The number of registers that this node defines.
+//
+// Notes:
+//    This should not be called on a contained node.
+//    This does not look at the actual register assignments, if any, and so
+//    is valid after Lowering.
+//
+int GenTree::GetRegisterDstCount() const
+{
+    assert(!isContained());
+    if (!IsMultiRegNode())
+    {
+        return (IsValue()) ? 1 : 0;
+    }
+    else if (IsMultiRegCall())
+    {
+        // temporarily cast away const-ness as AsCall() method is not declared const
+        GenTree* temp = const_cast<GenTree*>(this);
+        return temp->AsCall()->GetReturnTypeDesc()->GetReturnRegCount();
+    }
+    else if (IsCopyOrReloadOfMultiRegCall())
+    {
+        // A multi-reg copy or reload, will have valid regs for only those
+        // positions that need to be copied or reloaded.  Hence we need
+        // to consider only those registers for computing reg mask.
+
+        GenTree*             tree         = const_cast<GenTree*>(this);
+        GenTreeCopyOrReload* copyOrReload = tree->AsCopyOrReload();
+        GenTreeCall*         call         = copyOrReload->gtGetOp1()->AsCall();
+        return call->GetReturnTypeDesc()->GetReturnRegCount();
+    }
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+    else if (OperIsPutArgSplit())
+    {
+        return (const_cast<GenTree*>(this))->AsPutArgSplit()->gtNumRegs;
+    }
+    // A PUTARG_REG could be a MultiRegOp on ARM since we could move a double register to two int registers,
+    // either for all double parameters w/SoftFP or for varargs).
+    else
+    {
+        assert(OperIsMultiRegOp());
+        return (TypeGet() == TYP_LONG) ? 2 : 1;
+    }
+#endif // !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+    assert(!"Unexpected multi-reg node");
+    return 0;
+}
+
 //---------------------------------------------------------------
 // gtGetRegMask: Get the reg mask of the node.
 //
@@ -16063,19 +16118,6 @@ bool Compiler::gtComplexityExceeds(GenTreePtr* tree, unsigned limit)
     {
         return false;
     }
-}
-
-// -------------------------------------------------------------------------
-// IsRegOptional: Returns true if this gentree node is marked by lowering to
-// indicate that codegen can still generate code even if it wasn't allocated
-// a register.
-bool GenTree::IsRegOptional() const
-{
-#ifdef LEGACY_BACKEND
-    return false;
-#else
-    return gtLsraInfo.regOptional;
-#endif
 }
 
 bool GenTree::IsPhiNode()
