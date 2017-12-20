@@ -39,25 +39,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //    - Setting the appropriate candidates for a store of a multi-reg call return value.
 //    - Handling of contained immediates.
 //
-void LinearScan::TreeNodeInfoInitStoreLoc(GenTreeLclVarCommon* storeLoc)
+void LinearScan::TreeNodeInfoInitStoreLoc(GenTreeLclVarCommon* storeLoc, TreeNodeInfo* info)
 {
-    TreeNodeInfo* info = &(storeLoc->gtLsraInfo);
-    GenTree*      op1  = storeLoc->gtGetOp1();
+    GenTree* op1 = storeLoc->gtGetOp1();
 
     assert(info->dstCount == 0);
-#ifdef _TARGET_ARM_
-    if (varTypeIsLong(op1))
-    {
-        info->srcCount = 2;
-        assert(!op1->OperIs(GT_LONG) || op1->isContained());
-    }
-    else
-#endif // _TARGET_ARM_
-        if (op1->isContained())
-    {
-        info->srcCount = 0;
-    }
-    else if (op1->IsMultiRegCall())
+    if (op1->IsMultiRegCall())
     {
         // This is the case of var = call where call is returning
         // a value in multiple return registers.
@@ -67,15 +54,35 @@ void LinearScan::TreeNodeInfoInitStoreLoc(GenTreeLclVarCommon* storeLoc)
         // srcCount = number of registers in which the value is returned by call
         GenTreeCall*    call        = op1->AsCall();
         ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
-        info->srcCount              = retTypeDesc->GetReturnRegCount();
+        unsigned        regCount    = retTypeDesc->GetReturnRegCount();
+        info->srcCount              = regCount;
 
         // Call node srcCandidates = Bitwise-OR(allregs(GetReturnRegType(i))) for all i=0..RetRegCount-1
-        regMaskTP srcCandidates = allMultiRegCallNodeRegs(call);
-        op1->gtLsraInfo.setSrcCandidates(this, srcCandidates);
+        regMaskTP             srcCandidates = allMultiRegCallNodeRegs(call);
+        LocationInfoListNode* locInfo       = getLocationInfo(op1);
+        locInfo->info.setSrcCandidates(this, srcCandidates);
+        useList.Append(locInfo);
+    }
+#ifdef _TARGET_ARM_
+    else if (varTypeIsLong(op1))
+    {
+        // The only possible operands for a GT_STORE_LCL_VAR are a multireg call node, which we have
+        // handled above, or a GT_LONG node.
+        assert(!op1->OperIs(GT_LONG) || op1->isContained());
+        info->srcCount = 2;
+        // TODO: Currently, GetOperandInfo always returns 1 for any non-contained node.
+        // Consider enhancing it to handle multi-reg nodes.
+        (void)GetOperandInfo(op1);
+    }
+#endif // _TARGET_ARM_
+    else if (op1->isContained())
+    {
+        info->srcCount = 0;
     }
     else
     {
         info->srcCount = 1;
+        appendLocationInfoToList(op1);
     }
 
 #ifdef FEATURE_SIMD
@@ -99,39 +106,30 @@ void LinearScan::TreeNodeInfoInitStoreLoc(GenTreeLclVarCommon* storeLoc)
 // Return Value:
 //    None.
 //
-void LinearScan::TreeNodeInfoInitCmp(GenTreePtr tree)
+void LinearScan::TreeNodeInfoInitCmp(GenTreePtr tree, TreeNodeInfo* info)
 {
-    TreeNodeInfo* info = &(tree->gtLsraInfo);
+    info->srcCount = appendBinaryLocationInfoToList(tree->AsOp());
 
     assert((info->dstCount == 1) || (tree->TypeGet() == TYP_VOID));
     info->srcCount = tree->gtOp.gtOp2->isContained() ? 1 : 2;
 }
 
-void LinearScan::TreeNodeInfoInitGCWriteBarrier(GenTree* tree)
+void LinearScan::TreeNodeInfoInitGCWriteBarrier(GenTree* tree, TreeNodeInfo* info)
 {
-    GenTreePtr dst  = tree;
-    GenTreePtr addr = tree->gtOp.gtOp1;
-    GenTreePtr src  = tree->gtOp.gtOp2;
+    GenTreePtr            dst      = tree;
+    GenTreePtr            addr     = tree->gtOp.gtOp1;
+    GenTreePtr            src      = tree->gtOp.gtOp2;
+    LocationInfoListNode* addrInfo = getLocationInfo(addr);
+    LocationInfoListNode* srcInfo  = getLocationInfo(src);
 
-    if (addr->OperGet() == GT_LEA)
-    {
-        // In the case where we are doing a helper assignment, if the dst
-        // is an indir through an lea, we need to actually instantiate the
-        // lea in a register
-        GenTreeAddrMode* lea = addr->AsAddrMode();
-
-        short leaSrcCount = 0;
-        if (lea->Base() != nullptr)
-        {
-            leaSrcCount++;
-        }
-        if (lea->Index() != nullptr)
-        {
-            leaSrcCount++;
-        }
-        lea->gtLsraInfo.srcCount = leaSrcCount;
-        lea->gtLsraInfo.dstCount = 1;
-    }
+    // In the case where we are doing a helper assignment, even if the dst
+    // is an indir through an lea, we need to actually instantiate the
+    // lea in a register
+    assert(!addr->isContained() && !src->isContained());
+    useList.Append(addrInfo);
+    useList.Append(srcInfo);
+    info->srcCount = 2;
+    assert(info->dstCount == 0);
 
 #if NOGC_WRITE_BARRIERS
     NYI_ARM("NOGC_WRITE_BARRIERS");
@@ -141,21 +139,21 @@ void LinearScan::TreeNodeInfoInitGCWriteBarrier(GenTree* tree)
     // the 'addr' goes into x14 (REG_WRITE_BARRIER_DST_BYREF)
     // the 'src'  goes into x15 (REG_WRITE_BARRIER)
     //
-    addr->gtLsraInfo.setSrcCandidates(this, RBM_WRITE_BARRIER_DST_BYREF);
-    src->gtLsraInfo.setSrcCandidates(this, RBM_WRITE_BARRIER);
+    addrInfo->info.setSrcCandidates(this, RBM_WRITE_BARRIER_DST_BYREF);
+    srcInfo->info.setSrcCandidates(this, RBM_WRITE_BARRIER);
 #else
     // For the standard JIT Helper calls
     // op1 goes into REG_ARG_0 and
     // op2 goes into REG_ARG_1
     //
-    addr->gtLsraInfo.setSrcCandidates(this, RBM_ARG_0);
-    src->gtLsraInfo.setSrcCandidates(this, RBM_ARG_1);
+    addrInfo->info.setSrcCandidates(this, RBM_ARG_0);
+    srcInfo->info.setSrcCandidates(this, RBM_ARG_1);
 #endif // NOGC_WRITE_BARRIERS
 
     // Both src and dst must reside in a register, which they should since we haven't set
     // either of them as contained.
-    assert(addr->gtLsraInfo.dstCount == 1);
-    assert(src->gtLsraInfo.dstCount == 1);
+    assert(addrInfo->info.dstCount == 1);
+    assert(srcInfo->info.dstCount == 1);
 }
 
 //------------------------------------------------------------------------
@@ -165,7 +163,7 @@ void LinearScan::TreeNodeInfoInitGCWriteBarrier(GenTree* tree)
 // Arguments:
 //    indirTree - GT_IND, GT_STOREIND or block gentree node
 //
-void LinearScan::TreeNodeInfoInitIndir(GenTreeIndir* indirTree)
+void LinearScan::TreeNodeInfoInitIndir(GenTreeIndir* indirTree, TreeNodeInfo* info)
 {
     // If this is the rhs of a block copy (i.e. non-enregisterable struct),
     // it has no register requirements.
@@ -174,9 +172,8 @@ void LinearScan::TreeNodeInfoInitIndir(GenTreeIndir* indirTree)
         return;
     }
 
-    TreeNodeInfo* info    = &(indirTree->gtLsraInfo);
-    bool          isStore = (indirTree->gtOper == GT_STOREIND);
-    info->srcCount        = GetIndirSourceCount(indirTree);
+    bool isStore   = (indirTree->gtOper == GT_STOREIND);
+    info->srcCount = GetIndirInfo(indirTree);
 
     GenTree* addr  = indirTree->Addr();
     GenTree* index = nullptr;
@@ -250,40 +247,47 @@ void LinearScan::TreeNodeInfoInitIndir(GenTreeIndir* indirTree)
 // Return Value:
 //    None.
 //
-void LinearScan::TreeNodeInfoInitShiftRotate(GenTree* tree)
+int LinearScan::TreeNodeInfoInitShiftRotate(GenTree* tree, TreeNodeInfo* info)
 {
-    TreeNodeInfo* info = &(tree->gtLsraInfo);
-
+    GenTreePtr source  = tree->gtOp.gtOp1;
     GenTreePtr shiftBy = tree->gtOp.gtOp2;
-    info->srcCount     = shiftBy->isContained() ? 1 : 2;
-    info->dstCount     = 1;
+    assert(info->dstCount == 1);
+    if (!shiftBy->isContained())
+    {
+        appendLocationInfoToList(shiftBy);
+        info->srcCount = 1;
+    }
 
 #ifdef _TARGET_ARM_
 
     // The first operand of a GT_LSH_HI and GT_RSH_LO oper is a GT_LONG so that
     // we can have a three operand form. Increment the srcCount.
-    GenTreePtr source = tree->gtOp.gtOp1;
     if (tree->OperGet() == GT_LSH_HI || tree->OperGet() == GT_RSH_LO)
     {
         assert((source->OperGet() == GT_LONG) && source->isContained());
-        info->srcCount++;
+        info->srcCount += 2;
 
+        LocationInfoListNode* sourceLoInfo = getLocationInfo(source->gtOp.gtOp1);
+        useList.Append(sourceLoInfo);
+        LocationInfoListNode* sourceHiInfo = getLocationInfo(source->gtOp.gtOp2);
+        useList.Append(sourceHiInfo);
         if (tree->OperGet() == GT_LSH_HI)
         {
-            GenTreePtr sourceLo              = source->gtOp.gtOp1;
-            sourceLo->gtLsraInfo.isDelayFree = true;
+            sourceLoInfo->info.isDelayFree = true;
         }
         else
         {
-            GenTreePtr sourceHi              = source->gtOp.gtOp2;
-            sourceHi->gtLsraInfo.isDelayFree = true;
+            sourceHiInfo->info.isDelayFree = true;
         }
-
-        source->gtLsraInfo.hasDelayFreeSrc = true;
-        info->hasDelayFreeSrc              = true;
+        info->hasDelayFreeSrc = true;
     }
-
+    else
 #endif // _TARGET_ARM_
+    {
+        appendLocationInfoToList(source);
+        info->srcCount++;
+    }
+    return info->srcCount;
 }
 
 //------------------------------------------------------------------------
@@ -299,12 +303,12 @@ void LinearScan::TreeNodeInfoInitShiftRotate(GenTree* tree)
 // Return Value:
 //    None.
 //
-void LinearScan::TreeNodeInfoInitPutArgReg(GenTreeUnOp* node)
+void LinearScan::TreeNodeInfoInitPutArgReg(GenTreeUnOp* node, TreeNodeInfo* info)
 {
     assert(node != nullptr);
     assert(node->OperIsPutArgReg());
-    node->gtLsraInfo.srcCount = 1;
-    regNumber argReg          = node->gtRegNum;
+    info->srcCount   = 1;
+    regNumber argReg = node->gtRegNum;
     assert(argReg != REG_NA);
 
     // Set the register requirements for the node.
@@ -315,19 +319,21 @@ void LinearScan::TreeNodeInfoInitPutArgReg(GenTreeUnOp* node)
     // The actual `long` types must have been transformed as a field list with two fields.
     if (node->TypeGet() == TYP_LONG)
     {
-        node->gtLsraInfo.srcCount++;
-        node->gtLsraInfo.dstCount = node->gtLsraInfo.srcCount;
+        info->srcCount++;
+        info->dstCount = info->srcCount;
         assert(genRegArgNext(argReg) == REG_NEXT(argReg));
         argMask |= genRegMask(REG_NEXT(argReg));
     }
 #endif // _TARGET_ARM_
-
-    node->gtLsraInfo.setDstCandidates(this, argMask);
-    node->gtLsraInfo.setSrcCandidates(this, argMask);
+    info->setDstCandidates(this, argMask);
+    info->setSrcCandidates(this, argMask);
 
     // To avoid redundant moves, have the argument operand computed in the
     // register in which the argument is passed to the call.
-    node->gtOp.gtOp1->gtLsraInfo.setSrcCandidates(this, getUseCandidates(node));
+    LocationInfoListNode* op1Info = getLocationInfo(node->gtOp.gtOp1);
+    op1Info->info.setSrcCandidates(this, info->getSrcCandidates(this));
+    op1Info->info.isDelayFree = true;
+    useList.Append(op1Info);
 }
 
 //------------------------------------------------------------------------
@@ -346,7 +352,7 @@ void LinearScan::TreeNodeInfoInitPutArgReg(GenTreeUnOp* node)
 //    Since the integer register is not associated with the arg node, we will reserve it as
 //    an internal register on the call so that it is not used during the evaluation of the call node
 //    (e.g. for the target).
-void LinearScan::HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs)
+void LinearScan::HandleFloatVarArgs(GenTreeCall* call, TreeNodeInfo* info, GenTree* argNode, bool* callHasFloatRegArgs)
 {
 #if FEATURE_VARARG
     if (call->IsVarargs() && varTypeIsFloating(argNode))
@@ -355,8 +361,8 @@ void LinearScan::HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* c
 
         regNumber argReg    = argNode->gtRegNum;
         regNumber targetReg = compiler->getCallArgIntRegister(argReg);
-        call->gtLsraInfo.setInternalIntCount(call->gtLsraInfo.internalIntCount + 1);
-        call->gtLsraInfo.addInternalCandidates(this, genRegMask(targetReg));
+        info->setInternalIntCount(info->internalIntCount + 1);
+        info->addInternalCandidates(this, genRegMask(targetReg));
     }
 #endif // FEATURE_VARARG
 }
@@ -370,9 +376,8 @@ void LinearScan::HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* c
 // Return Value:
 //    None.
 //
-void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call)
+void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call, TreeNodeInfo* info)
 {
-    TreeNodeInfo*   info              = &(call->gtLsraInfo);
     bool            hasMultiRegRetVal = false;
     ReturnTypeDesc* retTypeDesc       = nullptr;
 
@@ -396,7 +401,8 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call)
         info->dstCount = 0;
     }
 
-    GenTree* ctrlExpr = call->gtControlExpr;
+    GenTree*              ctrlExpr     = call->gtControlExpr;
+    LocationInfoListNode* ctrlExprInfo = nullptr;
     if (call->gtCallType == CT_INDIRECT)
     {
         // either gtControlExpr != null or gtCallAddr != null.
@@ -409,10 +415,10 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call)
     // set reg requirements on call target represented as control sequence.
     if (ctrlExpr != nullptr)
     {
+        ctrlExprInfo = getLocationInfo(ctrlExpr);
+
         // we should never see a gtControlExpr whose type is void.
         assert(ctrlExpr->TypeGet() != TYP_VOID);
-
-        info->srcCount++;
 
         // In case of fast tail implemented as jmp, make sure that gtControlExpr is
         // computed into a register.
@@ -420,7 +426,7 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call)
         {
             // Fast tail call - make sure that call target is always computed in R12(ARM32)/IP0(ARM64)
             // so that epilog sequence can generate "br xip0/r12" to achieve fast tail call.
-            ctrlExpr->gtLsraInfo.setSrcCandidates(this, RBM_FASTTAILCALL_TARGET);
+            ctrlExprInfo->info.setSrcCandidates(this, RBM_FASTTAILCALL_TARGET);
         }
     }
 #ifdef _TARGET_ARM_
@@ -492,8 +498,8 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call)
                 // have been decomposed.
                 if (putArgChild->TypeGet() == TYP_LONG)
                 {
-                    argNode->gtLsraInfo.srcCount = 2;
-                    expectedSlots                = 2;
+                    useList.GetTreeNodeInfo(argNode).srcCount = 2;
+                    expectedSlots                             = 2;
                 }
                 else if (putArgChild->TypeGet() == TYP_DOUBLE)
                 {
@@ -515,6 +521,7 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call)
             for (GenTreeFieldList* entry = argNode->AsFieldList(); entry != nullptr; entry = entry->Rest())
             {
                 info->srcCount++;
+                appendLocationInfoToList(entry->Current());
 #ifdef DEBUG
                 assert(entry->Current()->OperIs(GT_PUTARG_REG));
                 assert(entry->Current()->gtRegNum == argReg);
@@ -534,25 +541,33 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call)
 #ifdef _TARGET_ARM_
         else if (argNode->OperGet() == GT_PUTARG_SPLIT)
         {
-            fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, argNode);
-            info->srcCount += argNode->AsPutArgSplit()->gtNumRegs;
+            unsigned regCount = argNode->AsPutArgSplit()->gtNumRegs;
+            assert(regCount == curArgTabEntry->numRegs);
+            info->srcCount += regCount;
+            appendLocationInfoToList(argNode);
         }
 #endif
         else
         {
             assert(argNode->OperIs(GT_PUTARG_REG));
             assert(argNode->gtRegNum == argReg);
-            HandleFloatVarArgs(call, argNode, &callHasFloatRegArgs);
-            info->srcCount++;
-
+            HandleFloatVarArgs(call, info, argNode, &callHasFloatRegArgs);
 #ifdef _TARGET_ARM_
-            // The `double` types have been transformed to `long` on arm,
+            // The `double` types have been transformed to `long` on armel,
             // while the actual long types have been decomposed.
+            // On ARM we may have bitcasts from DOUBLE to LONG.
             if (argNode->TypeGet() == TYP_LONG)
             {
+                assert(argNode->IsMultiRegNode());
+                info->srcCount += 2;
+                appendLocationInfoToList(argNode);
+            }
+            else
+#endif // _TARGET_ARM_
+            {
+                appendLocationInfoToList(argNode);
                 info->srcCount++;
             }
-#endif // _TARGET_ARM_
         }
     }
 
@@ -575,21 +590,18 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call)
             fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, arg);
             assert(curArgTabEntry);
 #endif
+#ifdef _TARGET_ARM_
+            // PUTARG_SPLIT nodes must be in the gtCallLateArgs list, since they
+            // define registers used by the call.
+            assert(arg->OperGet() != GT_PUTARG_SPLIT);
+#endif
             if (arg->gtOper == GT_PUTARG_STK)
             {
                 assert(curArgTabEntry->regNum == REG_STK);
             }
-#ifdef _TARGET_ARM_
-            else if (arg->OperGet() == GT_PUTARG_SPLIT)
-            {
-                assert(arg->AsPutArgSplit()->gtNumRegs == curArgTabEntry->numRegs);
-                info->srcCount += arg->gtLsraInfo.dstCount;
-            }
-#endif
             else
             {
-                TreeNodeInfo* argInfo = &(arg->gtLsraInfo);
-                assert((argInfo->dstCount == 0) || (argInfo->isLocalDefUse));
+                assert(!arg->IsValue() || arg->IsUnusedValue());
             }
         }
         args = args->gtOp.gtOp2;
@@ -597,14 +609,20 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call)
 
     // If it is a fast tail call, it is already preferenced to use IP0.
     // Therefore, no need set src candidates on call tgt again.
-    if (call->IsVarargs() && callHasFloatRegArgs && !call->IsFastTailCall() && (ctrlExpr != nullptr))
+    if (call->IsVarargs() && callHasFloatRegArgs && !call->IsFastTailCall() && (ctrlExprInfo != nullptr))
     {
         NYI_ARM("float reg varargs");
 
         // Don't assign the call target to any of the argument registers because
         // we will use them to also pass floating point arguments as required
         // by Arm64 ABI.
-        ctrlExpr->gtLsraInfo.setSrcCandidates(this, allRegs(TYP_INT) & ~(RBM_ARG_REGS));
+        ctrlExprInfo->info.setSrcCandidates(this, allRegs(TYP_INT) & ~(RBM_ARG_REGS));
+    }
+
+    if (ctrlExprInfo != nullptr)
+    {
+        useList.Append(ctrlExprInfo);
+        info->srcCount++;
     }
 
 #ifdef _TARGET_ARM_
@@ -629,14 +647,14 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call)
 // Notes:
 //    Set the child node(s) to be contained when we have a multireg arg
 //
-void LinearScan::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode)
+void LinearScan::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode, TreeNodeInfo* info)
 {
     assert(argNode->gtOper == GT_PUTARG_STK);
 
     GenTreePtr putArgChild = argNode->gtOp.gtOp1;
 
-    argNode->gtLsraInfo.srcCount = 0;
-    argNode->gtLsraInfo.dstCount = 0;
+    info->srcCount = 0;
+    info->dstCount = 0;
 
     // Do we have a TYP_STRUCT argument (or a GT_FIELD_LIST), if so it must be a multireg pass-by-value struct
     if ((putArgChild->TypeGet() == TYP_STRUCT) || (putArgChild->OperGet() == GT_FIELD_LIST))
@@ -649,54 +667,51 @@ void LinearScan::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode)
             // We consume all of the items in the GT_FIELD_LIST
             for (GenTreeFieldList* current = putArgChild->AsFieldList(); current != nullptr; current = current->Rest())
             {
-                argNode->gtLsraInfo.srcCount++;
+                appendLocationInfoToList(current->Current());
+                info->srcCount++;
             }
         }
         else
         {
 #ifdef _TARGET_ARM64_
             // We could use a ldp/stp sequence so we need two internal registers
-            argNode->gtLsraInfo.internalIntCount = 2;
+            info->internalIntCount = 2;
 #else  // _TARGET_ARM_
             // We could use a ldr/str sequence so we need a internal register
-            argNode->gtLsraInfo.internalIntCount = 1;
+            info->internalIntCount = 1;
 #endif // _TARGET_ARM_
 
             if (putArgChild->OperGet() == GT_OBJ)
             {
+                assert(putArgChild->isContained());
                 GenTreePtr objChild = putArgChild->gtOp.gtOp1;
                 if (objChild->OperGet() == GT_LCL_VAR_ADDR)
                 {
                     // We will generate all of the code for the GT_PUTARG_STK, the GT_OBJ and the GT_LCL_VAR_ADDR
-                    // as one contained operation
+                    // as one contained operation, and there are no source registers.
                     //
                     assert(objChild->isContained());
                 }
+                else
+                {
+                    // We will generate all of the code for the GT_PUTARG_STK and its child node
+                    // as one contained operation
+                    //
+                    appendLocationInfoToList(objChild);
+                    info->srcCount = 1;
+                }
             }
-
-            // We will generate all of the code for the GT_PUTARG_STK and its child node
-            // as one contained operation
-            //
-            argNode->gtLsraInfo.srcCount = putArgChild->gtLsraInfo.srcCount;
-            assert(putArgChild->isContained());
+            else
+            {
+                // No source registers.
+                putArgChild->OperIs(GT_LCL_VAR);
+            }
         }
     }
     else
     {
         assert(!putArgChild->isContained());
-#if defined(_TARGET_ARM_)
-        // The `double` types have been transformed to `long` on armel,
-        // while the actual long types have been decomposed.
-        const bool isDouble = (putArgChild->TypeGet() == TYP_LONG);
-        if (isDouble)
-        {
-            argNode->gtLsraInfo.srcCount = 2;
-        }
-        else
-#endif // defined(_TARGET_ARM_)
-        {
-            argNode->gtLsraInfo.srcCount = 1;
-        }
+        info->srcCount = GetOperandInfo(putArgChild);
     }
 }
 
@@ -713,14 +728,14 @@ void LinearScan::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode)
 // Notes:
 //    Set the child node(s) to be contained
 //
-void LinearScan::TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* argNode)
+void LinearScan::TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* argNode, TreeNodeInfo* info)
 {
     assert(argNode->gtOper == GT_PUTARG_SPLIT);
 
     GenTreePtr putArgChild = argNode->gtOp.gtOp1;
 
     // Registers for split argument corresponds to source
-    argNode->gtLsraInfo.dstCount = argNode->gtNumRegs;
+    info->dstCount = argNode->gtNumRegs;
 
     regNumber argReg  = argNode->gtRegNum;
     regMaskTP argMask = RBM_NONE;
@@ -728,8 +743,8 @@ void LinearScan::TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* argNode)
     {
         argMask |= genRegMask((regNumber)((unsigned)argReg + i));
     }
-    argNode->gtLsraInfo.setDstCandidates(this, argMask);
-    argNode->gtLsraInfo.setSrcCandidates(this, argMask);
+    info->setDstCandidates(this, argMask);
+    info->setSrcCandidates(this, argMask);
 
     if (putArgChild->OperGet() == GT_FIELD_LIST)
     {
@@ -747,19 +762,21 @@ void LinearScan::TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* argNode)
         {
             GenTreePtr node = fieldListPtr->gtGetOp1();
             assert(!node->isContained());
-            unsigned  currentRegCount = node->gtLsraInfo.dstCount;
-            regMaskTP sourceMask      = RBM_NONE;
+            LocationInfoListNode* nodeInfo        = getLocationInfo(node);
+            unsigned              currentRegCount = nodeInfo->info.dstCount;
+            regMaskTP             sourceMask      = RBM_NONE;
             if (sourceRegCount < argNode->gtNumRegs)
             {
                 for (unsigned regIndex = 0; regIndex < currentRegCount; regIndex++)
                 {
                     sourceMask |= genRegMask((regNumber)((unsigned)argReg + sourceRegCount + regIndex));
                 }
-                node->gtLsraInfo.setSrcCandidates(this, sourceMask);
+                nodeInfo->info.setSrcCandidates(this, sourceMask);
             }
             sourceRegCount += currentRegCount;
+            useList.Append(nodeInfo);
         }
-        argNode->gtLsraInfo.srcCount = sourceRegCount;
+        info->srcCount += sourceRegCount;
         assert(putArgChild->isContained());
     }
     else
@@ -768,9 +785,9 @@ void LinearScan::TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* argNode)
         assert(putArgChild->OperGet() == GT_OBJ);
 
         // We can use a ldr/str sequence so we need an internal register
-        argNode->gtLsraInfo.internalIntCount = 1;
-        regMaskTP internalMask               = RBM_ALLINT & ~argMask;
-        argNode->gtLsraInfo.setInternalCandidates(this, internalMask);
+        info->internalIntCount = 1;
+        regMaskTP internalMask = RBM_ALLINT & ~argMask;
+        info->setInternalCandidates(this, internalMask);
 
         GenTreePtr objChild = putArgChild->gtOp.gtOp1;
         if (objChild->OperGet() == GT_LCL_VAR_ADDR)
@@ -782,7 +799,7 @@ void LinearScan::TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* argNode)
         }
         else
         {
-            argNode->gtLsraInfo.srcCount = GetIndirSourceCount(putArgChild->AsIndir());
+            info->srcCount = GetIndirInfo(putArgChild->AsIndir());
         }
         assert(putArgChild->isContained());
     }
@@ -798,18 +815,33 @@ void LinearScan::TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* argNode)
 // Return Value:
 //    None.
 //
-void LinearScan::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
+void LinearScan::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode, TreeNodeInfo* info)
 {
     GenTree* dstAddr = blkNode->Addr();
     unsigned size    = blkNode->gtBlkSize;
     GenTree* source  = blkNode->Data();
 
+    LocationInfoListNode* dstAddrInfo = nullptr;
+    LocationInfoListNode* sourceInfo  = nullptr;
+    LocationInfoListNode* sizeInfo    = nullptr;
+
     // Sources are dest address and initVal or source.
     // We may require an additional source or temp register for the size.
-    blkNode->gtLsraInfo.srcCount = GetOperandSourceCount(dstAddr);
-    assert(blkNode->gtLsraInfo.dstCount == 0);
+    if (!dstAddr->isContained())
+    {
+        info->srcCount++;
+        dstAddrInfo = getLocationInfo(dstAddr);
+    }
+    assert(info->dstCount == 0);
     GenTreePtr srcAddrOrFill = nullptr;
     bool       isInitBlk     = blkNode->OperIsInitBlkOp();
+
+    regMaskTP dstAddrRegMask = RBM_NONE;
+    regMaskTP sourceRegMask  = RBM_NONE;
+    regMaskTP blkSizeRegMask = RBM_NONE;
+
+    short     internalIntCount      = 0;
+    regMaskTP internalIntCandidates = RBM_NONE;
 
     if (isInitBlk)
     {
@@ -820,6 +852,11 @@ void LinearScan::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
             initVal = initVal->gtGetOp1();
         }
         srcAddrOrFill = initVal;
+        if (!initVal->isContained())
+        {
+            info->srcCount++;
+            sourceInfo = getLocationInfo(initVal);
+        }
 
         if (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll)
         {
@@ -828,33 +865,15 @@ void LinearScan::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
             // code sequences to improve CQ.
             // For reference see the code in lsraxarch.cpp.
             NYI_ARM("initblk loop unrolling is currently not implemented.");
-            if (!initVal->isContained())
-            {
-                blkNode->gtLsraInfo.srcCount++;
-            }
         }
         else
         {
             assert(blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindHelper);
-            // The helper follows the regular ABI.
-            dstAddr->gtLsraInfo.setSrcCandidates(this, RBM_ARG_0);
             assert(!initVal->isContained());
-            blkNode->gtLsraInfo.srcCount++;
-            initVal->gtLsraInfo.setSrcCandidates(this, RBM_ARG_1);
-            if (size != 0)
-            {
-                // Reserve a temp register for the block size argument.
-                blkNode->gtLsraInfo.setInternalCandidates(this, RBM_ARG_2);
-                blkNode->gtLsraInfo.internalIntCount = 1;
-            }
-            else
-            {
-                // The block size argument is a third argument to GT_STORE_DYN_BLK
-                noway_assert(blkNode->gtOper == GT_STORE_DYN_BLK);
-                blkNode->gtLsraInfo.setSrcCount(3);
-                GenTree* sizeNode = blkNode->AsDynBlk()->gtDynamicSize;
-                sizeNode->gtLsraInfo.setSrcCandidates(this, RBM_ARG_2);
-            }
+            // The helper follows the regular ABI.
+            dstAddrRegMask = RBM_ARG_0;
+            sourceRegMask  = RBM_ARG_1;
+            blkSizeRegMask = RBM_ARG_2;
         }
     }
     else
@@ -863,43 +882,42 @@ void LinearScan::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
         // Sources are src and dest and size if not constant.
         if (source->gtOper == GT_IND)
         {
-            srcAddrOrFill = blkNode->Data()->gtGetOp1();
+            assert(source->isContained());
+            srcAddrOrFill = source->gtGetOp1();
+            sourceInfo    = getLocationInfo(srcAddrOrFill);
+            info->srcCount++;
         }
         if (blkNode->OperGet() == GT_STORE_OBJ)
         {
             // CopyObj
             // We don't need to materialize the struct size but we still need
             // a temporary register to perform the sequence of loads and stores.
-            blkNode->gtLsraInfo.internalIntCount = 1;
+            internalIntCount = 1;
 
             if (size >= 2 * REGSIZE_BYTES)
             {
                 // We will use ldp/stp to reduce code size and improve performance
                 // so we need to reserve an extra internal register
-                blkNode->gtLsraInfo.internalIntCount++;
+                internalIntCount++;
             }
 
             // We can't use the special Write Barrier registers, so exclude them from the mask
-            regMaskTP internalIntCandidates = RBM_ALLINT & ~(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF);
-            blkNode->gtLsraInfo.setInternalCandidates(this, internalIntCandidates);
+            internalIntCandidates = RBM_ALLINT & ~(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF);
 
             // If we have a dest address we want it in RBM_WRITE_BARRIER_DST_BYREF.
-            dstAddr->gtLsraInfo.setSrcCandidates(this, RBM_WRITE_BARRIER_DST_BYREF);
+            dstAddrRegMask = RBM_WRITE_BARRIER_DST_BYREF;
 
             // If we have a source address we want it in REG_WRITE_BARRIER_SRC_BYREF.
             // Otherwise, if it is a local, codegen will put its address in REG_WRITE_BARRIER_SRC_BYREF,
             // which is killed by a StoreObj (and thus needn't be reserved).
             if (srcAddrOrFill != nullptr)
             {
-                srcAddrOrFill->gtLsraInfo.setSrcCandidates(this, RBM_WRITE_BARRIER_SRC_BYREF);
+                sourceRegMask = RBM_WRITE_BARRIER_SRC_BYREF;
             }
         }
         else
         {
             // CopyBlk
-            short     internalIntCount      = 0;
-            regMaskTP internalIntCandidates = RBM_NONE;
-
             if (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll)
             {
                 // In case of a CpBlk with a constant size and less than CPBLK_UNROLL_LIMIT size
@@ -921,67 +939,73 @@ void LinearScan::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
             else
             {
                 assert(blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindHelper);
-                dstAddr->gtLsraInfo.setSrcCandidates(this, RBM_ARG_0);
+                dstAddrRegMask = RBM_ARG_0;
                 // The srcAddr goes in arg1.
                 if (srcAddrOrFill != nullptr)
                 {
-                    srcAddrOrFill->gtLsraInfo.setSrcCandidates(this, RBM_ARG_1);
+                    sourceRegMask = RBM_ARG_1;
                 }
-                if (size != 0)
-                {
-                    // Reserve a temp register for the block size argument.
-                    internalIntCandidates |= RBM_ARG_2;
-                    internalIntCount++;
-                }
-                else
-                {
-                    // The block size argument is a third argument to GT_STORE_DYN_BLK
-                    assert(blkNode->gtOper == GT_STORE_DYN_BLK);
-                    blkNode->gtLsraInfo.srcCount++;
-                    GenTree* blockSize = blkNode->AsDynBlk()->gtDynamicSize;
-                    blockSize->gtLsraInfo.setSrcCandidates(this, RBM_ARG_2);
-                }
-            }
-            if (internalIntCount != 0)
-            {
-                blkNode->gtLsraInfo.internalIntCount = internalIntCount;
-                blkNode->gtLsraInfo.setInternalCandidates(this, internalIntCandidates);
+                blkSizeRegMask = RBM_ARG_2;
             }
         }
-        blkNode->gtLsraInfo.srcCount += GetOperandSourceCount(source);
     }
-}
-
-//------------------------------------------------------------------------
-// GetOperandSourceCount: Get the source registers for an operand that might be contained.
-//
-// Arguments:
-//    node      - The node of interest
-//
-// Return Value:
-//    The number of source registers used by the *parent* of this node.
-//
-int LinearScan::GetOperandSourceCount(GenTree* node)
-{
-    if (!node->isContained())
+    if (dstAddrInfo != nullptr)
     {
-        return 1;
+        if (dstAddrRegMask != RBM_NONE)
+        {
+            dstAddrInfo->info.setSrcCandidates(this, dstAddrRegMask);
+        }
+        useList.Append(dstAddrInfo);
     }
-
-#if !defined(_TARGET_64BIT_)
-    if (node->OperIs(GT_LONG))
+    if (sourceRegMask != RBM_NONE)
     {
-        return 2;
+        if (sourceInfo != nullptr)
+        {
+            sourceInfo->info.setSrcCandidates(this, sourceRegMask);
+        }
+        else
+        {
+            // This is a local source; we'll use a temp register for its address.
+            internalIntCandidates |= sourceRegMask;
+            internalIntCount++;
+        }
     }
-#endif // !defined(_TARGET_64BIT_)
-
-    if (node->OperIsIndir())
+    if (sourceInfo != nullptr)
     {
-        const unsigned srcCount = GetIndirSourceCount(node->AsIndir());
-        return srcCount;
+        useList.Add(sourceInfo, blkNode->IsReverseOp());
     }
 
-    return 0;
+    if (blkNode->OperIs(GT_STORE_DYN_BLK))
+    {
+        // The block size argument is a third argument to GT_STORE_DYN_BLK
+        info->srcCount++;
+
+        GenTree* blockSize = blkNode->AsDynBlk()->gtDynamicSize;
+        sizeInfo           = getLocationInfo(blockSize);
+        useList.Add(sizeInfo, blkNode->AsDynBlk()->gtEvalSizeFirst);
+    }
+
+    if (blkSizeRegMask != RBM_NONE)
+    {
+        if (size != 0)
+        {
+            // Reserve a temp register for the block size argument.
+            internalIntCandidates |= blkSizeRegMask;
+            internalIntCount++;
+        }
+        else
+        {
+            // The block size argument is a third argument to GT_STORE_DYN_BLK
+            assert((blkNode->gtOper == GT_STORE_DYN_BLK) && (sizeInfo != nullptr));
+            info->setSrcCount(3);
+            sizeInfo->info.setSrcCandidates(this, blkSizeRegMask);
+        }
+    }
+    if (internalIntCount != 0)
+    {
+        info->internalIntCount = internalIntCount;
+        info->setInternalCandidates(this, internalIntCandidates);
+    }
 }
 
 #endif // _TARGET_ARMARCH_
