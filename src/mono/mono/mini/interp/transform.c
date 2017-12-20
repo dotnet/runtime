@@ -2699,6 +2699,11 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			csignature = mono_method_signature (m);
 			klass = m->klass;
 
+			if (!mono_class_init (klass)) {
+				mono_error_set_for_class_failure (error, klass);
+				return_if_nok (error);
+			}
+
 			td->sp -= csignature->param_count;
 			if (mono_class_is_magic_int (klass) || mono_class_is_magic_float (klass)) {
 				ADD_CODE (td, MINT_NEWOBJ_MAGIC);
