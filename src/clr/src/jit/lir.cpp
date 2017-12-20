@@ -1763,3 +1763,10 @@ void LIR::InsertBeforeTerminator(BasicBlock* block, LIR::Range&& range)
 
     blockRange.InsertBefore(insertionPoint, std::move(range));
 }
+
+#ifdef DEBUG
+void GenTree::dumpLIRFlags()
+{
+    JITDUMP("[%c%c]", IsUnusedValue() ? 'U' : '-', IsRegOptional() ? 'O' : '-');
+}
+#endif

@@ -472,8 +472,6 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
             head->gtSeqNum = fieldList->gtSeqNum;
 #endif // DEBUG
 
-            head->gtLsraInfo = fieldList->gtLsraInfo;
-
             BlockRange().InsertAfter(fieldList, head);
             BlockRange().Remove(fieldList);
 
@@ -515,7 +513,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
                     LclVarDsc* varDsc = &(comp->lvaTable[fieldNode->AsLclVarCommon()->gtLclNum]);
                     if (!varDsc->lvDoNotEnregister)
                     {
-                        SetRegOptional(fieldNode);
+                        fieldNode->SetRegOptional();
                     }
                     else
                     {
@@ -533,7 +531,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
                     // than spilling, but this situation is not all that common, as most cases of promoted
                     // structs do not have a large number of fields, and of those most are lclVars or
                     // copy-propagated constants.
-                    SetRegOptional(fieldNode);
+                    fieldNode->SetRegOptional();
                 }
             }
 
@@ -1655,12 +1653,12 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
             // Has a contained immediate operand.
             // Only 'other' operand can be marked as reg optional.
             assert(other != nullptr);
-            SetRegOptional(other);
+            other->SetRegOptional();
         }
         else if (hasImpliedFirstOperand)
         {
             // Only op2 can be marke as reg optional.
-            SetRegOptional(op2);
+            op2->SetRegOptional();
         }
         else
         {
@@ -1779,7 +1777,7 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
             {
                 // Mark castOp as reg optional to indicate codegen
                 // can still generate code if it is on stack.
-                SetRegOptional(castOp);
+                castOp->SetRegOptional();
             }
         }
     }
@@ -1854,7 +1852,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
         {
             // SSE2 allows only otherOp to be a memory-op. Since otherOp is not
             // contained, we can mark it reg-optional.
-            SetRegOptional(otherOp);
+            otherOp->SetRegOptional();
         }
 
         return;
@@ -1875,7 +1873,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
             }
             else
             {
-                SetRegOptional(op1);
+                op1->SetRegOptional();
             }
         }
     }
@@ -1894,14 +1892,14 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
         }
         else if (op1->IsCnsIntOrI())
         {
-            SetRegOptional(op2);
+            op2->SetRegOptional();
         }
         else
         {
             // One of op1 or op2 could be marked as reg optional
             // to indicate that codegen can still generate code
             // if one of them is on stack.
-            SetRegOptional(PreferredRegOptionalOperand(cmp));
+            PreferredRegOptionalOperand(cmp)->SetRegOptional();
         }
     }
 }
@@ -2142,7 +2140,7 @@ void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
         else
         {
             // We can mark 'other' as reg optional, since it is not contained.
-            SetRegOptional(other);
+            other->SetRegOptional();
         }
     }
 }
@@ -2167,7 +2165,7 @@ void Lowering::ContainCheckIntrinsic(GenTreeOp* node)
         {
             // Mark the operand as reg optional since codegen can still
             // generate code if op1 is on stack.
-            SetRegOptional(op1);
+            op1->SetRegOptional();
         }
     }
 }
