@@ -4216,7 +4216,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		switch (ins->opcode) {
 		case OP_MEMORY_BARRIER:
-			if (v6_supported) {
+			if (v7_supported) {
+				ARM_DMB (code, ARM_DMB_SY);
+			} else if (v6_supported) {
 				ARM_MOV_REG_IMM8 (code, ARMREG_R0, 0);
 				ARM_MCR (code, 15, 0, ARMREG_R0, 7, 10, 5);
 			}
