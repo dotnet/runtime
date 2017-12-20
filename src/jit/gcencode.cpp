@@ -44,7 +44,6 @@ ReturnKind GCInfo::getReturnKind()
     switch (compiler->info.compRetType)
     {
         case TYP_REF:
-        case TYP_ARRAY:
             return RT_Object;
         case TYP_BYREF:
             return RT_ByRef;
@@ -55,9 +54,6 @@ ReturnKind GCInfo::getReturnKind()
 
             switch (retType)
             {
-                case TYP_ARRAY:
-                    _ASSERTE(false && "TYP_ARRAY unexpected from getReturnTypeForStruct()");
-                // fall through
                 case TYP_REF:
                     return RT_Object;
 
