@@ -1245,7 +1245,6 @@ custom_get_instance (SharedCategory *cat, SharedCounter *scounter, char* name)
 	inst = (SharedInstance*) shared_data_reserve_room (size, FTYPE_INSTANCE);
 	if (!inst) {
 		perfctr_unlock ();
-		g_free (name);
 		return NULL;
 	}
 	inst->category_offset = (char*)cat - (char*)shared_area;
