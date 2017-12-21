@@ -206,7 +206,9 @@ CONFIG_INTEGER(EnableLZCNT, W("EnableLZCNT"), 1)         // Enable AES
 CONFIG_INTEGER(EnablePCLMULQDQ, W("EnablePCLMULQDQ"), 1) // Enable PCLMULQDQ
 CONFIG_INTEGER(EnablePOPCNT, W("EnablePOPCNT"), 1)       // Enable POPCNT
 #endif                                                   // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
-#endif                                                   // defined(DEBUG)
+CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // Enable testing not-yet-implemented
+                                                                           // intrinsic classes
+#endif                                                                     // defined(DEBUG)
 
 #ifdef FEATURE_ENABLE_NO_RANGE_CHECKS
 CONFIG_INTEGER(JitNoRangeChks, W("JitNoRngChks"), 0) // If 1, don't generate range checks
