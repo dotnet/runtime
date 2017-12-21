@@ -20,8 +20,8 @@ EventPipeEventInstance::EventPipeEventInstance(
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
+        NOTHROW;
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -102,8 +102,8 @@ void EventPipeEventInstance::FastSerialize(FastSerializer *pSerializer, StreamLa
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
+        NOTHROW;
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
