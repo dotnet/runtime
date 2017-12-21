@@ -114,7 +114,6 @@ namespace System.Net.Security.Tests
         }
     }
 
-    [PlatformSpecific(TestPlatforms.Linux)]
     [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
     public class NegotiateStreamTest : IDisposable, IClassFixture<KDCSetup>
     {
@@ -325,7 +324,7 @@ namespace System.Net.Security.Tests
 
         [Fact, OuterLoop]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public void NegotiateStream_EchoServer_ClientWriteRead_Successive_Async_Success()
+        public async Task NegotiateStream_EchoServer_ClientWriteRead_Successive_Async_Success()
         {
             if (!_isKrbAvailable)
             {
@@ -351,8 +350,8 @@ namespace System.Net.Security.Tests
                     client.AuthenticateAsClientAsync(credential, target),
                     server.AuthenticateAsServerAsync()
                 };
-                bool finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
-                Assert.True(finished, "Handshake completed in the allotted time");
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(auth);
 
                 Task serverTask = server.PollMessageAsync(2);
                 Task[] msgTasks = new Task[] {
@@ -362,8 +361,9 @@ namespace System.Net.Security.Tests
                    ReadAllAsync(client, secondRecvBuffer, 0, secondRecvBuffer.Length)).Unwrap(),
                  serverTask
                 };
-                finished = Task.WaitAll(msgTasks, TestConfiguration.PassingTestTimeoutMilliseconds);
-                Assert.True(finished, "Messages sent and received in the allotted time");
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(msgTasks);
+
                 Assert.True(_firstMessage.SequenceEqual(firstRecvBuffer), "The first message received is as expected");
                 Assert.True(_secondMessage.SequenceEqual(secondRecvBuffer), "The second message received is as expected");
             }
