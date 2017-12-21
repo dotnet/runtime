@@ -27,6 +27,7 @@ mono_class_get_full        (MonoImage *image, uint32_t type_token, MonoGenericCo
 MONO_API mono_bool
 mono_class_init            (MonoClass *klass);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoVTable *
 mono_class_vtable          (MonoDomain *domain, MonoClass *klass);
 

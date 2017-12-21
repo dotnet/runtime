@@ -8750,7 +8750,9 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			if (!found)
 				return ERR_INVALID_FIELDID;
 
-			vtable = mono_class_vtable (domain, f->parent);
+			vtable = mono_class_vtable_full (domain, f->parent, &error);
+			if (!is_ok (&error))
+				return ERR_INVALID_FIELDID;
 			val = (guint8 *)g_malloc (mono_class_instance_size (mono_class_from_mono_type (f->type)));
 			mono_field_static_get_value_for_thread (thread ? thread : mono_thread_internal_current (), vtable, f, val, &error);
 			if (!is_ok (&error))
@@ -8792,7 +8794,9 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 
 			// FIXME: Check for literal/const
 
-			vtable = mono_class_vtable (domain, f->parent);
+			vtable = mono_class_vtable_full (domain, f->parent, &error);
+			if (!is_ok (&error))
+				return ERR_INVALID_FIELDID;
 			val = (guint8 *)g_malloc (mono_class_instance_size (mono_class_from_mono_type (f->type)));
 			err = decode_value (f->type, domain, val, p, &p, end);
 			if (err != ERR_NONE) {
@@ -8930,7 +8934,9 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		break;
 	}
 	case CMD_TYPE_IS_INITIALIZED: {
-		MonoVTable *vtable = mono_class_vtable (domain, klass);
+		MonoVTable *vtable = mono_class_vtable_full (domain, klass, &error);
+		if (!is_ok (&error))
+			return ERR_LOADER_ERROR;
 
 		if (vtable)
 			buffer_add_int (buf, (vtable->initialized || vtable->init_failed) ? 1 : 0);
@@ -10012,7 +10018,11 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 					return ERR_INVALID_FIELDID;
 
 				g_assert (f->type->attrs & FIELD_ATTRIBUTE_STATIC);
-				vtable = mono_class_vtable (obj->vtable->domain, f->parent);
+				vtable = mono_class_vtable_full (obj->vtable->domain, f->parent, &error);
+				if (!is_ok (&error)) {
+					mono_error_cleanup (&error);
+					return ERR_INVALID_OBJECT;
+				}
 				val = (guint8 *)g_malloc (mono_class_instance_size (mono_class_from_mono_type (f->type)));
 				mono_field_static_get_value_checked (vtable, f, val, &error);
 				if (!is_ok (&error)) {
@@ -10069,7 +10079,11 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 					return ERR_INVALID_FIELDID;
 
 				g_assert (f->type->attrs & FIELD_ATTRIBUTE_STATIC);
-				vtable = mono_class_vtable (obj->vtable->domain, f->parent);
+				vtable = mono_class_vtable_full (obj->vtable->domain, f->parent, &error);
+				if (!is_ok (&error)) {
+					mono_error_cleanup (&error);
+					return ERR_INVALID_FIELDID;
+				}
 
 				val = (guint8 *)g_malloc (mono_class_instance_size (mono_class_from_mono_type (f->type)));
 				err = decode_value (f->type, obj->vtable->domain, val, p, &p, end);

@@ -275,7 +275,9 @@ interp_get_remoting_invoke (gpointer imethod, MonoError *error)
 
 	g_assert (mono_use_interpreter);
 
-	return mono_interp_get_imethod (mono_domain_get (), mono_marshal_get_remoting_invoke (imethod_cast->method), error);
+	MonoMethod *remoting_invoke_method = mono_marshal_get_remoting_invoke (imethod_cast->method, error);
+	return_val_if_nok (error, NULL);
+	return mono_interp_get_imethod (mono_domain_get (), remoting_invoke_method, error);
 }
 #endif
 
@@ -360,7 +362,9 @@ get_virtual_method (InterpMethod *imethod, MonoObject *obj)
 
 #ifndef DISABLE_REMOTING
 	if (mono_object_is_transparent_proxy (obj)) {
-		ret = mono_interp_get_imethod (domain, mono_marshal_get_remoting_invoke_with_check (m), &error);
+		MonoMethod *remoting_invoke_method = mono_marshal_get_remoting_invoke_with_check (m, &error);
+		mono_error_assert_ok (&error);
+		ret = mono_interp_get_imethod (domain, remoting_invoke_method, &error);
 		mono_error_assert_ok (&error);
 		return ret;
 	}
@@ -3661,7 +3665,9 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 					sp->data.p = o;
 #ifndef DISABLE_REMOTING
 					if (mono_object_is_transparent_proxy (o)) {
-						child_frame.imethod = mono_interp_get_imethod (rtm->domain, mono_marshal_get_remoting_invoke_with_check (child_frame.imethod->method), &error);
+						MonoMethod *remoting_invoke_method = mono_marshal_get_remoting_invoke_with_check (child_frame.imethod->method, &error);
+						mono_error_assert_ok (&error);
+						child_frame.imethod = mono_interp_get_imethod (rtm->domain, remoting_invoke_method, &error);
 						mono_error_assert_ok (&error);
 					}
 #endif

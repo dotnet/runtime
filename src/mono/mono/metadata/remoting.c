@@ -476,7 +476,7 @@ mono_remoting_update_exception (MonoException *exc)
  * mono_marshal_get_remoting_invoke:
  */
 MonoMethod *
-mono_marshal_get_remoting_invoke (MonoMethod *method)
+mono_marshal_get_remoting_invoke (MonoMethod *method, MonoError *error)
 {
 	MonoMethodSignature *sig;
 	MonoMethodBuilder *mb;
@@ -485,6 +485,7 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 	WrapperInfo *info;
 
 	g_assert (method);
+	error_init (error);
 
 	if (method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE || method->wrapper_type == MONO_WRAPPER_XDOMAIN_INVOKE)
 		return method;
@@ -492,8 +493,8 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 	/* this seems to be the best plase to put this, as all remoting invokes seem to get filtered through here */
 #ifndef DISABLE_COM
 	if (mono_class_is_com_object (method->klass) || method->klass == mono_class_try_get_com_object_class ()) {
-		MonoVTable *vtable = mono_class_vtable (mono_domain_get (), method->klass);
-		g_assert (vtable); /*FIXME do proper error handling*/
+		MonoVTable *vtable = mono_class_vtable_full (mono_domain_get (), method->klass, error);
+		return_val_if_nok (error, NULL);
 
 		if (!mono_vtable_is_remote (vtable)) {
 			return mono_cominterop_get_invoke (method);
@@ -956,7 +957,7 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
  * Generates a fast remoting wrapper for cross app domain calls.
  */
 MonoMethod *
-mono_marshal_get_xappdomain_invoke (MonoMethod *method)
+mono_marshal_get_xappdomain_invoke (MonoMethod *method, MonoError *error)
 {
 	MonoMethodSignature *sig;
 	MonoMethodBuilder *mb;
@@ -973,6 +974,7 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 	WrapperInfo *info;
 
 	g_assert (method);
+	error_init (error);
 	
 	if (method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE || method->wrapper_type == MONO_WRAPPER_XDOMAIN_INVOKE)
 		return method;
@@ -984,7 +986,7 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 	mono_remoting_marshal_init ();
 
 	if (!mono_marshal_supports_fast_xdomain (method))
-		return mono_marshal_get_remoting_invoke (method);
+		return mono_marshal_get_remoting_invoke (method, error);
 	
 	if ((res = mono_marshal_remoting_find_in_cache (method, MONO_WRAPPER_XDOMAIN_INVOKE)))
 		return res;
@@ -1077,7 +1079,12 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 	for (i = 0; i < sig->param_count; i++)
 		mono_mb_emit_ldarg (mb, i + 1);
 	
-	mono_mb_emit_managed_call (mb, mono_marshal_get_remoting_invoke (method), NULL);
+	MonoMethod * remoting_invoke_method = mono_marshal_get_remoting_invoke (method, error);
+	if (!is_ok (error)) {
+		mono_mb_free (mb);
+		return NULL;
+	}
+	mono_mb_emit_managed_call (mb, remoting_invoke_method, NULL);
 	mono_mb_emit_byte (mb, CEE_RET);
 	mono_mb_patch_short_branch (mb, pos_dispatch);
 
@@ -1286,10 +1293,11 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
  * mono_marshal_get_remoting_invoke_for_target:
  */
 MonoMethod *
-mono_marshal_get_remoting_invoke_for_target (MonoMethod *method, MonoRemotingTarget target_type)
+mono_marshal_get_remoting_invoke_for_target (MonoMethod *method, MonoRemotingTarget target_type, MonoError *error)
 {
+	error_init (error);
 	if (target_type == MONO_REMOTING_TARGET_APPDOMAIN) {
-		return mono_marshal_get_xappdomain_invoke (method);
+		return mono_marshal_get_xappdomain_invoke (method, error);
 	} else if (target_type == MONO_REMOTING_TARGET_COMINTEROP) {
 #ifndef DISABLE_COM
 		return mono_cominterop_get_invoke (method);
@@ -1297,7 +1305,7 @@ mono_marshal_get_remoting_invoke_for_target (MonoMethod *method, MonoRemotingTar
 		g_assert_not_reached ();
 #endif
 	} else {
-		return mono_marshal_get_remoting_invoke (method);
+		return mono_marshal_get_remoting_invoke (method, error);
 	}
 	/* Not erached */
 	return NULL;
@@ -1309,9 +1317,10 @@ mono_marshal_load_remoting_wrapper (MonoRealProxy *rp, MonoMethod *method)
 	MonoError error;
 	MonoMethod *marshal_method = NULL;
 	if (rp->target_domain_id != -1)
-		marshal_method = mono_marshal_get_xappdomain_invoke (method);
+		marshal_method = mono_marshal_get_xappdomain_invoke (method, &error);
 	else
-		marshal_method = mono_marshal_get_remoting_invoke (method);
+		marshal_method = mono_marshal_get_remoting_invoke (method, &error);
+	mono_error_assert_ok (&error);
 	gpointer compiled_ptr = mono_compile_method_checked (marshal_method, &error);
 	mono_error_assert_ok (&error);
 	return compiled_ptr;
@@ -1321,7 +1330,7 @@ mono_marshal_load_remoting_wrapper (MonoRealProxy *rp, MonoMethod *method)
  * mono_marshal_get_remoting_invoke_with_check:
  */
 MonoMethod *
-mono_marshal_get_remoting_invoke_with_check (MonoMethod *method)
+mono_marshal_get_remoting_invoke_with_check (MonoMethod *method, MonoError *error)
 {
 	MonoMethodSignature *sig;
 	MonoMethodBuilder *mb;
@@ -1330,6 +1339,7 @@ mono_marshal_get_remoting_invoke_with_check (MonoMethod *method)
 	int i, pos, pos_rem;
 
 	g_assert (method);
+	error_init (error);
 
 	if (method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)
 		return method;
@@ -1356,14 +1366,22 @@ mono_marshal_get_remoting_invoke_with_check (MonoMethod *method)
 		pos_rem = mono_mb_emit_xdomain_check (mb, CEE_BEQ);
 		
 		/* wrapper for cross app domain calls */
-		native = mono_marshal_get_xappdomain_invoke (method);
+		native = mono_marshal_get_xappdomain_invoke (method, error);
+		if (!is_ok (error)) {
+			mono_mb_free (mb);
+			return NULL;
+		}
 		mono_mb_emit_managed_call (mb, native, mono_method_signature (native));
 		mono_mb_emit_byte (mb, CEE_RET);
 		
 		mono_mb_patch_branch (mb, pos_rem);
 	}
 	/* wrapper for normal remote calls */
-	native = mono_marshal_get_remoting_invoke (method);
+	native = mono_marshal_get_remoting_invoke (method, error);
+	if (!is_ok (error)) {
+		mono_mb_free (mb);
+		return NULL;
+	}
 	mono_mb_emit_managed_call (mb, native, mono_method_signature (native));
 	mono_mb_emit_byte (mb, CEE_RET);
 

@@ -904,8 +904,10 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			mono_class_init (m->klass);
 			if (mono_aot_only)
 				ref->method = m;
-			else
-				ref->method = mono_marshal_get_remoting_invoke_with_check (m);
+			else {
+				ref->method = mono_marshal_get_remoting_invoke_with_check (m, error);
+				return_val_if_nok (error, FALSE);
+			}
 			break;
 		}
 		case MONO_WRAPPER_PROXY_ISINST: {
@@ -4369,10 +4371,19 @@ init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, M
 		jinfo = mono_aot_find_jit_info (domain, amodule->assembly->image, code);
 
 	gboolean inited_ok = TRUE;
-	if (init_class)
-		inited_ok = mono_runtime_class_init_full (mono_class_vtable (domain, init_class), error);
-	else if (from_plt && klass_to_run_ctor && !mono_class_is_gtd (klass_to_run_ctor))
-		inited_ok = mono_runtime_class_init_full (mono_class_vtable (domain, klass_to_run_ctor), error);
+	if (init_class) {
+		MonoVTable *vt = mono_class_vtable_full (domain, init_class, error);
+		if (!is_ok (error))
+			inited_ok = FALSE;
+		else
+			inited_ok = mono_runtime_class_init_full (vt, error);
+	} else if (from_plt && klass_to_run_ctor && !mono_class_is_gtd (klass_to_run_ctor)) {
+		MonoVTable *vt = mono_class_vtable_full (domain, klass_to_run_ctor, error);
+		if (!is_ok (error))
+			inited_ok = FALSE;
+		else
+			inited_ok = mono_runtime_class_init_full (vt, error);
+	}
 	if (!inited_ok)
 		return FALSE;
 

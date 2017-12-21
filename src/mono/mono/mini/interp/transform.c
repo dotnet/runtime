@@ -1059,7 +1059,9 @@ no_intrinsic:
 		(target_method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 && 
 		(target_method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) == 0 &&
 		!(target_method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING)) {
-		int called_inited = mono_class_vtable (domain, target_method->klass)->initialized;
+		MonoVTable *vt = mono_class_vtable_full (domain, target_method->klass, error);
+		return_if_nok (error);
+		int called_inited = vt->initialized;
 
 		if (/*mono_metadata_signature_equal (method->signature, target_method->signature) */ method == target_method && *(td->ip + 5) == CEE_RET) {
 			int offset;
@@ -4447,11 +4449,18 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Int
 				m = mono_get_method_checked (image, read32 (ip + 1), NULL, generic_context, &error);
 				if (!is_ok (&error)) {
 					g_free (is_bb_start);
+					mono_metadata_free_mh (header);
 					return mono_error_convert_to_exception (&error);
 				}
 				mono_class_init (m->klass);
-				if (!mono_class_is_interface (m->klass))
-					mono_class_vtable (domain, m->klass);
+				if (!mono_class_is_interface (m->klass)) {
+					mono_class_vtable_full (domain, m->klass, &error);
+					if (!is_ok (&error)) {
+						g_free (is_bb_start);
+						mono_metadata_free_mh (header);
+						return mono_error_convert_to_exception (&error);
+					}
+				}
 			}
 			ip += 5;
 			break;
