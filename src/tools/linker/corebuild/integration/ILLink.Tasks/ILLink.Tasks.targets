@@ -293,20 +293,29 @@
        be part of the build step or pack step, OR pack could be made
        to work on the publish output. -->
   <Target Name="_ComputeLinkerRootAssemblies"
-          DependsOnTargets="_ComputeManagedResolvedAssembliesToPublish;_ComputePlatformLibraries">
+          DependsOnTargets="_ComputeManagedResolvedAssembliesToPublish;_ComputePlatformLibraries;_CheckSystemPrivateCorelibEmbeddedRoots">
     <!-- By default, roots are everything minus the framework
-         assemblies (except for System.Private.CoreLib, which we
-         always root for now). This doesn't include the intermediate
+         assemblies. This doesn't include the intermediate
          assembly, because we root it separately using an xml file,
-         which lets us explicitly root everything. -->
+         which lets us explicitly root everything. 
+         System.Private.CoreLib is rooted unless it has an embedded
+         xml descriptor file. -->
     <ItemGroup>
       <_LinkerRootAssemblies Include="@(_ManagedResolvedAssembliesToPublish->'%(Filename)')" />
       <_LinkerRootAssemblies Remove="@(PlatformLibraries->'%(Filename)')" />
-      <_LinkerRootAssemblies Include="System.Private.CoreLib" />
+      <_LinkerRootAssemblies Remove="System.Private.CoreLib" Condition=" '$(_SPCHasEmbeddedRootDescriptor)' == 'true' "/>
       <LinkerRootAssemblies Include="@(_LinkerRootAssemblies)" />
     </ItemGroup>
   </Target>
 
+    
+  <UsingTask TaskName="CheckEmbeddedRootDescriptor" AssemblyFile="$(LinkTaskDllPath)" />
+  <Target Name="_CheckSystemPrivateCorelibEmbeddedRoots"
+          DependsOnTargets="_ComputeManagedAssembliesToLink">
+    <CheckEmbeddedRootDescriptor AssemblyPath="@(_ManagedAssembliesToLink->WithMetadataValue('Filename', 'System.Private.CoreLib'))">
+      <Output TaskParameter="HasEmbeddedRootDescriptor" PropertyName="_SPCHasEmbeddedRootDescriptor" />
+    </CheckEmbeddedRootDescriptor>
+  </Target>
 
   <!-- Platform libraries are the managed runtime assets needed by the
        "platform", currently Microsoft.NETCore.App. -->
