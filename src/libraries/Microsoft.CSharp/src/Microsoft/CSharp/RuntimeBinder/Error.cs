@@ -36,11 +36,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         internal static Exception BindStaticRequiresType(string paramName) =>
             new ArgumentException(SR.TypeArgumentRequiredForStaticCall, paramName);
 
-        internal static Exception BindBinaryAssignmentFailedNullReference()
-        {
-            return new RuntimeBinderException(SR.BindBinaryAssignmentFailedNullReference);
-        }
-
         internal static Exception NullReferenceOnMemberException()
         {
             return new RuntimeBinderException(SR.NullReferenceOnMemberException);

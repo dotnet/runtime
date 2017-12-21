@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 
 namespace Microsoft.CSharp.RuntimeBinder
 {
@@ -15,6 +16,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         public ArgumentObject(object value, CSharpArgumentInfo info, Type type)
         {
+            Debug.Assert(type != null);
             Value = value;
             Info = info;
             Type = type;
