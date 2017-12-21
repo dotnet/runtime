@@ -3026,6 +3026,7 @@ protected:
     NamedIntrinsic lookupHWIntrinsic(const char* methodName, InstructionSet isa);
     InstructionSet isaOfHWIntrinsic(NamedIntrinsic intrinsic);
     bool isIntrinsicAnIsSupportedPropertyGetter(NamedIntrinsic intrinsic);
+    bool isFullyImplmentedISAClass(InstructionSet isa);
 #ifdef _TARGET_XARCH_
     GenTree* impX86HWIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
     GenTree* impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
@@ -3043,6 +3044,8 @@ protected:
     GenTree* impLZCNTIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
     GenTree* impPCLMULQDQIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
     GenTree* impPOPCNTIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    bool compSupportsHWIntrinsic(InstructionSet isa);
+    bool isScalarISA(InstructionSet isa);
 #endif // _TARGET_XARCH_
 #endif // FEATURE_HW_INTRINSICS
     GenTreePtr impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
