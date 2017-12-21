@@ -4,8 +4,8 @@ if (WIN32)
     list(APPEND CLR_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
 
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ENTRY:CoreDllMain")
-
-    # Incremental linking results in the linker inserting extra padding and routing function calls via thunks that can break the
+    
+    # Incremental linking results in the linker inserting extra padding and routing function calls via thunks that can break the 
     # invariants (e.g. size of region between Jit_PatchedCodeLast-Jit_PatchCodeStart needs to fit in a page).
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /INCREMENTAL:NO")
 
@@ -14,7 +14,7 @@ if (WIN32)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DELAYLOAD:api-ms-win-core-winrt-roparameterizediid-l1-1-0.dll")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DELAYLOAD:api-ms-win-ro-typeresolution-l1-1-0.dll")
-
+    
     # No library groups for Win32
     set(START_LIBRARY_GROUP)
     set(END_LIBRARY_GROUP)
@@ -30,14 +30,14 @@ else()
         # of the utilcode will be used instead of the standard library delete operator.
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Xlinker -Bsymbolic-functions")
 
-        # The following linked options can be inserted into the linker libraries list to
+        # The following linked options can be inserted into the linker libraries list to 
         # ensure proper resolving of circular references between a subset of the libraries.
         set(START_LIBRARY_GROUP -Wl,--start-group)
         set(END_LIBRARY_GROUP -Wl,--end-group)
 
         # These options are used to force every object to be included even if it's unused.
         set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
-        set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
+        set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive) 
 
         set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
     endif(CMAKE_SYSTEM_NAME STREQUAL Linux OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD OR CMAKE_SYSTEM_NAME STREQUAL NetBSD)
@@ -74,7 +74,7 @@ if(FEATURE_MERGE_JIT_AND_ENGINE)
 endif(FEATURE_MERGE_JIT_AND_ENGINE)
 
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
-# order dependent and changing the order can result in undefined symbols in the shared
+# order dependent and changing the order can result in undefined symbols in the shared 
 # library.
 set(CORECLR_LIBRARIES
     utilcode
@@ -119,34 +119,28 @@ if(WIN32)
     )
 else()
     list(APPEND CORECLR_LIBRARIES
-        ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available
+        ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available  
         coreclrpal
-        ${END_WHOLE_ARCHIVE}
+        tracepointprovider
+        ${END_WHOLE_ARCHIVE} 
         mscorrc_debug
         palrt
     )
 endif(WIN32)
 
-if(FEATURE_PERFTRACING)
+if(CLR_CMAKE_PLATFORM_UNIX AND FEATURE_EVENT_TRACE)
+    list(APPEND CORECLR_LIBRARIES
+        eventprovider
+  )
+endif(CLR_CMAKE_PLATFORM_UNIX AND FEATURE_EVENT_TRACE)
+
+if(CLR_CMAKE_PLATFORM_LINUX)
     list(APPEND CORECLR_LIBRARIES
         eventpipe
-    )
-endif(FEATURE_PERFTRACING)
+  )
+endif(CLR_CMAKE_PLATFORM_LINUX)
 
-if(FEATURE_EVENT_TRACE)
-    if(CLR_CMAKE_PLATFORM_UNIX)
-        list(APPEND CORECLR_LIBRARIES
-            eventprovider # On Windows this library contains only macros
-        )
-    endif(CLR_CMAKE_PLATFORM_UNIX)
-    if(CLR_CMAKE_PLATFORM_LINUX)
-        list(APPEND CORECLR_LIBRARIES
-            tracepointprovider
-        )
-    endif(CLR_CMAKE_PLATFORM_LINUX)
-endif(FEATURE_EVENT_TRACE)
-
-target_link_libraries(coreclr ${CORECLR_LIBRARIES})
+target_link_libraries(coreclr ${CORECLR_LIBRARIES}) 
 
 if(WIN32)
     # Add dac table & debug resource to coreclr

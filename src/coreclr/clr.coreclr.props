@@ -3,8 +3,6 @@
     <FeatureEventTrace>true</FeatureEventTrace>
     <FeatureICastable>true</FeatureICastable>
     <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
-    <FeatureManagedEtw>true</FeatureManagedEtw>
-    <FeaturePerfTracing>true</FeaturePerfTracing>
 
     <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
   </PropertyGroup>
@@ -23,6 +21,7 @@
   <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
     <FeatureArrayStubAsIL Condition="'$(TargetArch)' != 'i386'">true</FeatureArrayStubAsIL>
     <FeatureMulticastStubAsIL Condition="'$(TargetArch)' != 'i386'">true</FeatureMulticastStubAsIL>
+    <FeatureManagedEtw>true</FeatureManagedEtw>
     <FeatureStubsAsIL Condition="'$(TargetArch)' == 'arm64'">true</FeatureStubsAsIL>
     <FeatureUseLcid>true</FeatureUseLcid>
     <FeatureCominterop>true</FeatureCominterop>
@@ -32,5 +31,10 @@
     <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
     <FeatureAppX>true</FeatureAppX>
     <FeatureWin32Registry>true</FeatureWin32Registry>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetsLinux)' == 'true'">
+    <FeatureManagedEtw>true</FeatureManagedEtw>
+    <FeaturePerfTracing>true</FeaturePerfTracing>
   </PropertyGroup>
 </Project>

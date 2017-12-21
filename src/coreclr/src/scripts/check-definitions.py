@@ -33,17 +33,18 @@ debug = 0
 # For the native part, return the sorted definition array.
 def loadDefinitionFile(filename):
     result = []
-
     try:
-        with open(filename, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if line:
-                    result.append(line)
-    except IOError:
-        # If cmake was not used, this script won't work, and that's ok
+        f = open(filename, 'r')
+    except:
         sys.exit(0)
+    # if cmake was not used (because of skipnative or systems that do not use cmake), this script won't work.
 
+    for line in f:
+        theLine = line.rstrip("\r\n").strip()
+        if (len(theLine) > 0):
+            result.append(theLine)
+
+    f.close()
     result = sorted(result)
     return result
 
@@ -107,10 +108,9 @@ def getDiff(arrNative, arrManaged):
 
 
 def printPotentiallyCritical(arrDefinitions, referencedFilename, arrIgnore):
-    content = None
-    with open(referencedFilename, 'r') as f:
-        content = f.read()
-
+    f = open(referencedFilename, 'r')
+    content = f.read()
+    f.close()
     for keyword in arrDefinitions:
         skip = 0
 
