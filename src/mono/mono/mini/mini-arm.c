@@ -4217,7 +4217,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		switch (ins->opcode) {
 		case OP_MEMORY_BARRIER:
 			if (v7_supported) {
-				ARM_DMB (code, ARM_DMB_SY);
+				ARM_DMB (code, ARM_DMB_ISH);
 			} else if (v6_supported) {
 				ARM_MOV_REG_IMM8 (code, ARMREG_R0, 0);
 				ARM_MCR (code, 15, 0, ARMREG_R0, 7, 10, 5);
@@ -4252,7 +4252,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			switch (ins->opcode) {
 			case OP_ATOMIC_EXCHANGE_I4:
 				buf [0] = code;
-				ARM_DMB (code, ARM_DMB_SY);
+				ARM_DMB (code, ARM_DMB_ISH);
 				ARM_LDREX_REG (code, ARMREG_LR, ins->sreg1);
 				ARM_STREX_REG (code, tmpreg, ins->sreg2, ins->sreg1);
 				ARM_CMP_REG_IMM (code, tmpreg, 0, 0);
@@ -4261,7 +4261,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				arm_patch (buf [1], buf [0]);
 				break;
 			case OP_ATOMIC_CAS_I4:
-				ARM_DMB (code, ARM_DMB_SY);
+				ARM_DMB (code, ARM_DMB_ISH);
 				buf [0] = code;
 				ARM_LDREX_REG (code, ARMREG_LR, ins->sreg1);
 				ARM_CMP_REG_REG (code, ARMREG_LR, ins->sreg3);
@@ -4276,7 +4276,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			case OP_ATOMIC_ADD_I4:
 				buf [0] = code;
-				ARM_DMB (code, ARM_DMB_SY);
+				ARM_DMB (code, ARM_DMB_ISH);
 				ARM_LDREX_REG (code, ARMREG_LR, ins->sreg1);
 				ARM_ADD_REG_REG (code, ARMREG_LR, ARMREG_LR, ins->sreg2);
 				ARM_STREX_REG (code, tmpreg, ARMREG_LR, ins->sreg1);
@@ -4289,7 +4289,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				g_assert_not_reached ();
 			}
 
-			ARM_DMB (code, ARM_DMB_SY);
+			ARM_DMB (code, ARM_DMB_ISH);
 			if (tmpreg != ins->dreg)
 				ARM_LDR_IMM (code, tmpreg, cfg->frame_reg, cfg->arch.atomic_tmp_offset);
 			ARM_MOV_REG_REG (code, ins->dreg, ARMREG_LR);
@@ -4304,7 +4304,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ATOMIC_LOAD_R4:
 		case OP_ATOMIC_LOAD_R8: {
 			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
-				ARM_DMB (code, ARM_DMB_SY);
+				ARM_DMB (code, ARM_DMB_ISH);
 
 			code = mono_arm_emit_load_imm (code, ARMREG_LR, ins->inst_offset);
 
@@ -4344,7 +4344,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 
 			if (ins->backend.memory_barrier_kind != MONO_MEMORY_BARRIER_NONE)
-				ARM_DMB (code, ARM_DMB_SY);
+				ARM_DMB (code, ARM_DMB_ISH);
 			break;
 		}
 		case OP_ATOMIC_STORE_I1:
@@ -4356,7 +4356,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ATOMIC_STORE_R4:
 		case OP_ATOMIC_STORE_R8: {
 			if (ins->backend.memory_barrier_kind != MONO_MEMORY_BARRIER_NONE)
-				ARM_DMB (code, ARM_DMB_SY);
+				ARM_DMB (code, ARM_DMB_ISH);
 
 			code = mono_arm_emit_load_imm (code, ARMREG_LR, ins->inst_offset);
 
@@ -4392,7 +4392,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 
 			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
-				ARM_DMB (code, ARM_DMB_SY);
+				ARM_DMB (code, ARM_DMB_ISH);
 			break;
 		}
 		case OP_BIGMUL:

@@ -1110,6 +1110,7 @@ typedef union {
 /* ARMv7 */
 
 typedef enum {
+	ARM_DMB_ISH = 0xb,
 	ARM_DMB_SY = 0xf,
 } ArmDmbFlags;
 
