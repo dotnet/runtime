@@ -150,8 +150,7 @@ namespace System.Drawing.Tests
                 }
             }
         }
-
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_NullStream_ThrowsArgumentNullException()
         {
