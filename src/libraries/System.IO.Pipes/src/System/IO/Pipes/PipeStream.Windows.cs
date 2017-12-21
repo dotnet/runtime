@@ -343,7 +343,7 @@ namespace System.IO.Pipes
             int r = 0;
             int numBytesRead = 0;
 
-            fixed (byte* p = &buffer.DangerousGetPinnableReference())
+            fixed (byte* p = &MemoryMarshal.GetReference(buffer))
             {
                 r = _isAsync ?
                     Interop.Kernel32.ReadFile(handle, p, buffer.Length, IntPtr.Zero, overlapped) :
@@ -381,7 +381,7 @@ namespace System.IO.Pipes
             int r = 0;
             int numBytesWritten = 0;
 
-            fixed (byte* p = &buffer.DangerousGetPinnableReference())
+            fixed (byte* p = &MemoryMarshal.GetReference(buffer))
             {
                 r = _isAsync ?
                     Interop.Kernel32.WriteFile(handle, p, buffer.Length, IntPtr.Zero, overlapped) :

@@ -20,7 +20,7 @@ internal static partial class Interop
         internal extern static int EvpDigestReset(SafeEvpMdCtxHandle ctx, IntPtr type);
 
         internal static int EvpDigestUpdate(SafeEvpMdCtxHandle ctx, ReadOnlySpan<byte> d, int cnt) =>
-            EvpDigestUpdate(ctx, ref d.DangerousGetPinnableReference(), cnt);
+            EvpDigestUpdate(ctx, ref MemoryMarshal.GetReference(d), cnt);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestUpdate")]
         private extern static int EvpDigestUpdate(SafeEvpMdCtxHandle ctx, ref byte d, int cnt);

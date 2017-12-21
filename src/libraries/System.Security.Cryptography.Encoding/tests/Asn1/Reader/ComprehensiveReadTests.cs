@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using Test.Cryptography;
 using Xunit;
@@ -190,7 +191,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.Equal(valueTag, actualTag);
 
             AssertRefSame(
-                ref valueSpan.DangerousGetPinnableReference(),
+                ref MemoryMarshal.GetReference(valueSpan),
                 ref bytes[offset],
                 $"{label} is at bytes[{offset}]");
 
@@ -207,7 +208,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
         private static void AssertRefSame(ReadOnlyMemory<byte> a, ref byte b, string msg)
         {
-            AssertRefSame(ref a.Span.DangerousGetPinnableReference(), ref b, msg);
+            AssertRefSame(ref MemoryMarshal.GetReference(a.Span), ref b, msg);
         }
 
         private static void AssertRefSame(ref byte a, ref byte b, string msg)

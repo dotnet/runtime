@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 
@@ -45,7 +46,7 @@ namespace System.Net.Security.Tests
             SslApplicationProtocol byteProtocol = new SslApplicationProtocol(expected);
 
             ArraySegment<byte> arraySegment;
-            Assert.True(byteProtocol.Protocol.DangerousTryGetArray(out arraySegment));
+            Assert.True(MemoryMarshal.TryGetArray(byteProtocol.Protocol, out arraySegment));
             Assert.Equal(expected, arraySegment.Array);
             Assert.NotSame(expected, arraySegment.Array);
         }

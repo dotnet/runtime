@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using Test.Cryptography;
 using Xunit;
@@ -223,7 +224,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
                 Assert.True(
                     Unsafe.AreSame(
-                        ref contents.Span.DangerousGetPinnableReference(),
+                        ref MemoryMarshal.GetReference(contents.Span),
                         ref inputData[2]));
             }
             else

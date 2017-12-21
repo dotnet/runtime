@@ -429,7 +429,7 @@ namespace System.Net.WebSockets
                         IntPtr pinnedBufferPtr;
                         unsafe
                         {
-                            fixed (byte* p = &pinnedBuffer.Span.DangerousGetPinnableReference())
+                            fixed (byte* p = &MemoryMarshal.GetReference(pinnedBuffer.Span))
                             {
                                 pinnedBufferPtr = (IntPtr)p;
                             }

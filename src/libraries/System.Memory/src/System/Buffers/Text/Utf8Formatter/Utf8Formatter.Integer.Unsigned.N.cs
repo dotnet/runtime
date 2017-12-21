@@ -8,6 +8,8 @@ using Internal.Runtime.CompilerServices;
 using System.Runtime.CompilerServices;
 #endif
 
+using System.Runtime.InteropServices;
+
 namespace System.Buffers.Text
 {
     /// <summary>
@@ -46,7 +48,7 @@ namespace System.Buffers.Text
                 return false;
             }
 
-            ref byte utf8Bytes = ref buffer.DangerousGetPinnableReference();
+            ref byte utf8Bytes = ref MemoryMarshal.GetReference(buffer);
 
             // Write the last group
             Unsafe.Add(ref utf8Bytes, idx++) = Utf8Constants.Separator;

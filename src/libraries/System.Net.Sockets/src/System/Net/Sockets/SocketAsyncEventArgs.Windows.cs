@@ -271,7 +271,7 @@ namespace System.Net.Sockets
             NativeOverlapped* overlapped = AllocateNativeOverlapped();
             try
             {
-                fixed (byte* bufferPtr = &_buffer.Span.DangerousGetPinnableReference())
+                fixed (byte* bufferPtr = &MemoryMarshal.GetReference(_buffer.Span))
                 {
                     Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.None, $"Expected None, got {_singleBufferHandleState}");
                     _singleBufferHandleState = SingleBufferHandleState.InProcess;
@@ -350,7 +350,7 @@ namespace System.Net.Sockets
             NativeOverlapped* overlapped = AllocateNativeOverlapped();
             try
             {
-                fixed (byte* bufferPtr = &_buffer.Span.DangerousGetPinnableReference())
+                fixed (byte* bufferPtr = &MemoryMarshal.GetReference(_buffer.Span))
                 {
                     Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.None);
                     _singleBufferHandleState = SingleBufferHandleState.InProcess;
@@ -558,7 +558,7 @@ namespace System.Net.Sockets
             NativeOverlapped* overlapped = AllocateNativeOverlapped();
             try
             {
-                fixed (byte* bufferPtr = &_buffer.Span.DangerousGetPinnableReference())
+                fixed (byte* bufferPtr = &MemoryMarshal.GetReference(_buffer.Span))
                 {
                     Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.None);
                     _singleBufferHandleState = SingleBufferHandleState.InProcess;
@@ -739,7 +739,7 @@ namespace System.Net.Sockets
             NativeOverlapped* overlapped = AllocateNativeOverlapped();
             try
             {
-                fixed (byte* bufferPtr = &_buffer.Span.DangerousGetPinnableReference())
+                fixed (byte* bufferPtr = &MemoryMarshal.GetReference(_buffer.Span))
                 {
                     Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.None);
                     _singleBufferHandleState = SingleBufferHandleState.InProcess;

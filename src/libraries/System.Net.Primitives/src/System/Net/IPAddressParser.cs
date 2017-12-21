@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.Net
@@ -53,7 +54,7 @@ namespace System.Net
                 return false;
             }
 
-            fixed (char* formattedPtr = &formatted.DangerousGetPinnableReference())
+            fixed (char* formattedPtr = &MemoryMarshal.GetReference(formatted))
             {
                 charsWritten = IPv4AddressToStringHelper(address, formattedPtr);
             }
@@ -160,7 +161,7 @@ namespace System.Net
             int end = ipSpan.Length;
             long tmpAddr;
 
-            fixed (char* ipStringPtr = &ipSpan.DangerousGetPinnableReference())
+            fixed (char* ipStringPtr = &MemoryMarshal.GetReference(ipSpan))
             {
                 tmpAddr = IPv4AddressHelper.ParseNonCanonical(ipStringPtr, 0, ref end, notImplicitFile: true);
             }
@@ -192,7 +193,7 @@ namespace System.Net
             int end = ipSpan.Length;
 
             bool isValid = false;
-            fixed (char* ipStringPtr = &ipSpan.DangerousGetPinnableReference())
+            fixed (char* ipStringPtr = &MemoryMarshal.GetReference(ipSpan))
             {
                 isValid = IPv6AddressHelper.IsValidStrict(ipStringPtr, 0, ref end);
             }
