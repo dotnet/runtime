@@ -5284,7 +5284,7 @@ public:
     bool GetGCModeOnSuspension()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_gcModeOnSuspension;
+        return m_gcModeOnSuspension != 0;
     }
 
     void SaveGCModeOnSuspension()
