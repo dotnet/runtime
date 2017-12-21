@@ -606,14 +606,14 @@ mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name	    - mono_arch_get_enter_icall_trampoline.                 */
+/* Name	    - mono_arch_get_interp_to_native_trampoline.            */
 /*                                                                  */
 /* Function - 							    */
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
 gpointer
-mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
+mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 {
 	g_assert_not_reached ();
 	return NULL;

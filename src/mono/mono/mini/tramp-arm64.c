@@ -612,12 +612,12 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 }
 
 /*
- * mono_arch_get_enter_icall_trampoline:
+ * mono_arch_get_interp_to_native_trampoline:
  *
  *   See tramp-amd64.c for documentation.
  */
 gpointer
-mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
+mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 {
 #ifndef DISABLE_INTERPRETER
 	guint8 *start = NULL, *code;
@@ -712,7 +712,7 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
 
 	if (info)
-		*info = mono_tramp_info_create ("enter_icall_trampoline", start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create ("interp_to_native_trampoline", start, code - start, ji, unwind_ops);
 
 	return start;
 #else
@@ -773,7 +773,7 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 }
 
 gpointer
-mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
+mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 {
 	g_assert_not_reached ();
 	return NULL;
