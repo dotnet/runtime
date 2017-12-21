@@ -40,9 +40,9 @@ class Constants {
                'master']
 
     // Innerloop build OS's
-    // The Windows_NT_BuildOnly OS is a way to speed up the Non-NT builds temporarily by avoiding
+    // The Windows_NT_BuildOnly OS is a way to speed up the Non-Windows builds by avoiding
     // test execution in the build flow runs.  It generates the exact same build
-    // as Windows_NT but without the tests.
+    // as Windows_NT but without running the tests.
     def static osList = [
                'Ubuntu',
                'Debian8.4',
@@ -280,7 +280,7 @@ def static setMachineAffinity(def job, def os, def architecture, def options = n
     //       |-> os == "Windows_NT" && architecture == "arm" || architecture == "armlb" && options['use_arm64_build_machine'] == false
     //
     // Arm64 (Build) -> latest-arm64
-    //       |-> os == "Windows_NT" && architecture == "arm64" && options['use_arm64_build_machine'] == false
+    //       |-> os == "Windows_NT" && architecture == "arm64" && options['use_arm64_build_machine'] == true
     // Arm64 (Test)  -> arm64-windows_nt
     //       |-> os == "Windows_NT" && architecture == "arm64" && options['use_arm64_build_machine'] == false
     //
@@ -301,7 +301,7 @@ def static setMachineAffinity(def job, def os, def architecture, def options = n
     // This has to be a arm arch
     assert architecture in armArches
     if (os == "Windows_NT") {
-        // Arm(64) windows jobs share the same machines for now
+        // Arm(64) Windows jobs share the same machines for now
         def isBuild = options['use_arm64_build_machine'] == true
 
         if (isBuild == true) {
@@ -390,38 +390,42 @@ def static isArmWindowsScenario(def scenario) {
     return Constants.validArmWindowsScenarios.containsKey(scenario)
 }
 
-def static setTestJobTimeOut(newJob, isPR, architecture, configuration, scenario) {
+def static setJobTimeout(newJob, isPR, architecture, configuration, scenario, isBuildOnly) {
     // 2 hours (120 minutes) is the default timeout
     def timeout = 120
 
-    if (isGCStressRelatedTesting(scenario)) {
-        timeout = 4320
-    }
-    else if (isCoreFxScenario(scenario)) {
-        timeout = 360
-    }
-    else if (isJitStressScenario(scenario)) {
-        timeout = 240
-    }
-    else if (isR2RBaselineScenario(scenario)) {
-        timeout = 240
-    }
-    else if (isLongGc(scenario)) {
-        timeout = 1440
-    }
-    else if (isJitDiff(scenario)) {
-        timeout = 240
-    }
-    else if (isGcReliabilityFramework(scenario)) {
-        timeout = 1440
-    }
-    else if (architecture == 'arm' || architecture == 'armlb' || architecture == 'arm64') {
-        timeout = 240
-    }
-    else if (!(scenario == 'default' && isPR == true)) {
+    if (!(scenario == 'default' && isPR == true)) {
         // Pri-1 test builds take a long time. Default PR jobs are Pri-0; everything else is Pri-1
         // (see calculateBuildCommands()). So up the Pri-1 build jobs timeout.
         timeout = 240
+    }
+
+    if (!isBuildOnly) {
+        // Note that these can only increase, never decrease, the Pri-1 timeout possibly set above.
+        if (isGCStressRelatedTesting(scenario)) {
+            timeout = 4320
+        }
+        else if (isCoreFxScenario(scenario)) {
+            timeout = 360
+        }
+        else if (isJitStressScenario(scenario)) {
+            timeout = 240
+        }
+        else if (isR2RBaselineScenario(scenario)) {
+            timeout = 240
+        }
+        else if (isLongGc(scenario)) {
+            timeout = 1440
+        }
+        else if (isJitDiff(scenario)) {
+            timeout = 240
+        }
+        else if (isGcReliabilityFramework(scenario)) {
+            timeout = 1440
+        }
+        else if (architecture == 'arm' || architecture == 'armlb' || architecture == 'arm64') {
+            timeout = 240
+        }
     }
 
     if (configuration == 'Debug') {
@@ -1464,6 +1468,8 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
         priority = '0'
     }
 
+    setJobTimeout(newJob, isPR, architecture, configuration, scenario, isBuildOnly)
+
     def enableCorefxTesting = isCoreFxScenario(scenario)
 
     // Calculate the build steps, archival, and xunit results
@@ -1606,8 +1612,6 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 
                             buildCommands += "python -u %WORKSPACE%\\tests\\scripts\\run-corefx-tests.py -arch ${arch} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${branch} -env_script ${envScriptPath}"
 
-                            setTestJobTimeOut(newJob, isPR, architecture, configuration, scenario)
-
                             // Archive and process (only) the test results
                             Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
                             Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
@@ -1655,7 +1659,6 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 
                         if (!isBuildOnly) {
                             Utilities.addXUnitDotNETResults(newJob, 'bin/**/TestRun*.xml', true)
-                            setTestJobTimeOut(newJob, isPR, architecture, configuration, scenario)
                         }
                     }
                     break
@@ -1665,8 +1668,6 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 
                     def machineAffinityOptions = ['use_arm64_build_machine' : true]
                     setMachineAffinity(newJob, os, architecture, machineAffinityOptions)
-
-                    setTestJobTimeOut(newJob, isPR, architecture, configuration, scenario)
 
                     def buildArchitecture = 'arm'
 
@@ -1696,8 +1697,6 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     def machineAffinityOptions = ['use_arm64_build_machine' : true]
                     setMachineAffinity(newJob, os, architecture, machineAffinityOptions)
                    
-                    setTestJobTimeOut(newJob, isPR, architecture, configuration, scenario)
-
                     // Hack: build pri1 tests for arm/armlb/arm64 build job, until we have separate pri0 and pri1 builds for the flow job to use.
                     priority = '1'
 
@@ -1761,8 +1760,6 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         buildCommands += "${bootstrapRidEnv}./build.sh verbose ${lowerConfiguration} ${architecture}"
                         buildCommands += "src/pal/tests/palsuite/runpaltests.sh \${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration} \${WORKSPACE}/bin/paltestout"
 
-                        setTestJobTimeOut(newJob, isPR, architecture, configuration, scenario)
-
                         // Basic archiving of the build
                         Utilities.addArchival(newJob, "bin/Product/**,bin/obj/*/tests/**/*.dylib,bin/obj/*/tests/**/*.so", "bin/Product/**/.nuget/**")
                         // And pal tests
@@ -1791,8 +1788,6 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 
                         buildCommands += "python -u \$WORKSPACE/tests/scripts/run-corefx-tests.py -arch ${architecture} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${branch} -env_script ${scriptFileName}"
 
-                        setTestJobTimeOut(newJob, isPR, architecture, configuration, scenario)
-
                         // Archive and process (only) the test results
                         Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
                         Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
@@ -1808,7 +1803,6 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         buildCommands += "mkdir ./bin/Product/Linux.arm64.${configuration}/corefxNative"
                         buildCommands += "cp fx/bin/Linux.arm64.Release/native/* ./bin/Product/Linux.arm64.${configuration}/corefxNative"
 
-                        setTestJobTimeOut(newJob, isPR, architecture, configuration, scenario)
                         // Basic archiving of the build
                         Utilities.addArchival(newJob, "bin/Product/**,bin/obj/*/tests/**/*.dylib,bin/obj/*/tests/**/*.so", "bin/Product/**/.nuget/**")
                     }
@@ -2114,19 +2108,15 @@ Constants.allScenarios.each { scenario ->
                                 if ( architecture == 'arm' && ( os == 'Ubuntu' || os == 'Ubuntu16.04' || os == 'Tizen')) {
                                     // Cross build for ubuntu-arm, ubuntu16.04-arm and tizen-armel
                                     // Define the Windows Tests and Corefx build job names
-                                    def WindowTestsName = projectFolder + '/' +
-                                                          Utilities.getFullJobName(project,
-                                                                                   getJobName(lowerConfiguration,
-                                                                                              'x64' ,
-                                                                                              'windows_nt',
-                                                                                              'default',
-                                                                                              true),
-                                                                                   false)
+                                    def WindowsTestsName = projectFolder + '/' +
+                                                           Utilities.getFullJobName(project,
+                                                                                    getJobName(lowerConfiguration, 'x64' , 'windows_nt', 'default', true),
+                                                                                    false)
                                     def corefxFolder = Utilities.getFolderName('dotnet/corefx') + '/' +
                                                        Utilities.getFolderName(branch)
 
                                     // Copy the Windows test binaries and the Corefx build binaries
-                                    copyArtifacts(WindowTestsName) {
+                                    copyArtifacts(WindowsTestsName) {
                                         includePatterns('bin/tests/tests.zip')
                                         buildSelector {
                                             latestSuccessful(true)
@@ -2322,14 +2312,14 @@ Constants.allScenarios.each { scenario ->
                         inputWindowsTestBuildArch = "x64"
                     }
 
-                    def inputWindowTestsBuildName = ""
+                    def inputWindowsTestsBuildName = ""
 
                     if (isJitStressScenario(scenario)) {
-                        inputWindowTestsBuildName = projectFolder + '/' +
-                        Utilities.getFullJobName(project, getJobName(configuration, inputWindowsTestBuildArch, 'windows_nt', testBuildScenario, false), isPR)
+                        inputWindowsTestsBuildName = projectFolder + '/' +
+                            Utilities.getFullJobName(project, getJobName(configuration, inputWindowsTestBuildArch, 'windows_nt', testBuildScenario, false), isPR)
                     } else {
-                        inputWindowTestsBuildName = projectFolder + '/' +
-                        Utilities.getFullJobName(project, getJobName(configuration, inputWindowsTestBuildArch, 'windows_nt', testBuildScenario, true), isPR)
+                        inputWindowsTestsBuildName = projectFolder + '/' +
+                            Utilities.getFullJobName(project, getJobName(configuration, inputWindowsTestBuildArch, 'windows_nt', testBuildScenario, true), isPR)
 
                     }
 
@@ -2452,7 +2442,7 @@ Constants.allScenarios.each { scenario ->
                             // Coreclr build containing the tests and mscorlib
                             // pri1 jobs still need to copy windows_nt built tests
                             if (windowsArmJob != true) {
-                                copyArtifacts(inputWindowTestsBuildName) {
+                                copyArtifacts(inputWindowsTestsBuildName) {
                                     excludePatterns('**/testResults.xml', '**/*.ni.dll')
                                     buildSelector {
                                         buildNumber('${CORECLR_WINDOWS_BUILD}')
@@ -2721,7 +2711,7 @@ Constants.allScenarios.each { scenario ->
                     setMachineAffinity(newJob, os, architecture, affinityOptions)
                     Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
-                    setTestJobTimeOut(newJob, isPR, architecture, configuration, scenario)
+                    setJobTimeout(newJob, isPR, architecture, configuration, scenario, false)
 
                     if (windowsArmJob != true) {
                         Utilities.addXUnitDotNETResults(newJob, '**/coreclrtests.xml')
@@ -2742,7 +2732,7 @@ Constants.allScenarios.each { scenario ->
                     def fullTestJobName = projectFolder + '/' + newJob.name
                     // Add a reference to the input jobs for report purposes
                     JobReport.Report.addReference(inputCoreCLRBuildName)
-                    JobReport.Report.addReference(inputWindowTestsBuildName)
+                    JobReport.Report.addReference(inputWindowsTestsBuildName)
                     JobReport.Report.addReference(fullTestJobName)
                     def newFlowJob = null
 
@@ -2771,7 +2761,7 @@ build(params + [CORECLR_BUILD: coreclrBuildJob.build.number], '${fullTestJobName
 // Build the input jobs in parallel
 parallel (
 { coreclrBuildJob = build(params, '${inputCoreCLRBuildName}') },
-{ windowsBuildJob = build(params, '${inputWindowTestsBuildName}') }
+{ windowsBuildJob = build(params, '${inputWindowsTestsBuildName}') }
 )
 
 // And then build the test build
