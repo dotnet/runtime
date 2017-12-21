@@ -1460,7 +1460,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
     def lowerConfiguration = configuration.toLowerCase()
 
     def priority = '1'
-    if ((scenario == 'default' && isPR == true) || (scenario == 'default' && isBuildOnly == true)) {
+    if (scenario == 'default' && isPR == true) {
         priority = '0'
     }
 
