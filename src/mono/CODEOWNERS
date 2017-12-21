@@ -58,7 +58,7 @@
 /mcs/errors @marek-safar
 /mcs/ilasm @marek-safar
 /mcs/jay @marek-safar
-/mcs/mcs @marek-safar
+/mcs/mcs @marek-safar @lewurm
 /mcs/tests @marek-safar
 /mcs/tools @marek-safar @akoeplinger
 
@@ -83,13 +83,18 @@
 /mono/mini/*exceptions* @lewurm
 /mono/mini/*ppc* @lewurm
 /mono/mini/*type-check* @lewurm
-/mono/mini/interp/* @lewurm
+/mono/mini/interp/* @lewurm @BrzVlad
 /mono/mini/*profiler* @alexrp
 /mono/mini/debugger-agent.c @DavidKarlas
 
 /mono/profiler @alexrp @kumpera
 
-/mono/sgen @brzvlad @kumpera
+/mono/sdks @luhenry
+/mono/sdks/android @luhenry @jonpryor
+/mono/sdks/ios @vargaz @rolfbjarne
+/mono/sdks/wasm @kumpera @lrz
+
+/mono/sgen @BrzVlad @kumpera
 
 /mono/utils @kumpera @vargaz
 /mono/utils/atomic* @alexrp
