@@ -73,9 +73,6 @@
   <data name="BindInvokeFailedNonDelegate" xml:space="preserve">
     <value>Cannot invoke a non-delegate type</value>
   </data>
-  <data name="BindBinaryAssignmentFailedNullReference" xml:space="preserve">
-    <value>Cannot perform member assignment on a null reference</value>
-  </data>
   <data name="NullReferenceOnMemberException" xml:space="preserve">
     <value>Cannot perform runtime binding on a null reference</value>
   </data>
