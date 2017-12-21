@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.Net
@@ -119,7 +120,7 @@ namespace System.Net
             uint localScope;
             Interop.Error err;
             fixed (byte* rawAddress = buffer)
-            fixed (byte* ipAddress = &address.DangerousGetPinnableReference())
+            fixed (byte* ipAddress = &MemoryMarshal.GetReference(address))
             {
                 err = Interop.Sys.GetIPv6Address(rawAddress, buffer.Length, ipAddress, address.Length, &localScope);
             }
@@ -147,7 +148,7 @@ namespace System.Net
 
         public static unsafe void SetIPv6Address(byte[] buffer, Span<byte> address, uint scope)
         {
-            fixed (byte* rawInput = &address.DangerousGetPinnableReference())
+            fixed (byte* rawInput = &MemoryMarshal.GetReference(address))
             {
                 SetIPv6Address(buffer, rawInput, address.Length, scope);
             }

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+
 namespace System
 {
     internal static class FixedBufferExtensions
@@ -11,7 +13,7 @@ namespace System
         /// </summary>
         internal unsafe static string GetStringFromFixedBuffer(this ReadOnlySpan<char> span)
         {
-            fixed (char* c = &span.DangerousGetPinnableReference())
+            fixed (char* c = &MemoryMarshal.GetReference(span))
             {
                 return new string(c, 0, span.GetFixedBufferStringLength());
             }

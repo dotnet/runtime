@@ -6,6 +6,7 @@ using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Net.Sockets
@@ -1302,7 +1303,7 @@ namespace System.Net.Sockets
                 return errorCode;
             }
 
-            fixed (byte* bufferPtr = &buffer.DangerousGetPinnableReference())
+            fixed (byte* bufferPtr = &MemoryMarshal.GetReference(buffer))
             {
                 var operation = new BufferPtrReceiveOperation(this)
                 {
@@ -1564,7 +1565,7 @@ namespace System.Net.Sockets
                 return errorCode;
             }
 
-            fixed (byte* bufferPtr = &buffer.DangerousGetPinnableReference())
+            fixed (byte* bufferPtr = &MemoryMarshal.GetReference(buffer))
             {
                 var operation = new BufferPtrSendOperation(this)
                 {

@@ -403,7 +403,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             Assert.Equal("0.0", data.Id);
             Assert.Equal(5, data.Data.Length);
-            Assert.True(Unsafe.AreSame(ref data.Data.Span.DangerousGetPinnableReference(), ref inputData[5]));
+            Assert.True(Unsafe.AreSame(ref MemoryMarshal.GetReference(data.Data.Span), ref inputData[5]));
 
             // Change [Constructed] SEQUENCE to [Constructed] Context-Specific 0.
             inputData[5] = 0xA0;

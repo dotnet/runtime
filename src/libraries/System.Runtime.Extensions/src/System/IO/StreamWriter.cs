@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -394,7 +395,7 @@ namespace System.IO
                     throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
                 }
 
-                fixed (char* bufferPtr = &buffer.DangerousGetPinnableReference())
+                fixed (char* bufferPtr = &MemoryMarshal.GetReference(buffer))
                 fixed (char* dstPtr = &charBuffer[0])
                 {
                     char* srcPtr = bufferPtr;

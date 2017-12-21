@@ -4,9 +4,9 @@
 
 using Xunit;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using static System.TestHelpers;
-using System.Runtime.InteropServices;
 
 namespace System.SpanTests
 {

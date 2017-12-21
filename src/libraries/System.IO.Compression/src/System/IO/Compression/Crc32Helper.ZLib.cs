@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.IO.Compression
 {
@@ -20,7 +21,7 @@ namespace System.IO.Compression
 
         public static unsafe uint UpdateCrc32(uint crc32, ReadOnlySpan<byte> buffer)
         {
-            fixed (byte* bufferPtr = &buffer.DangerousGetPinnableReference())
+            fixed (byte* bufferPtr = &MemoryMarshal.GetReference(buffer))
             {
                 return Interop.zlib.crc32(crc32, bufferPtr, buffer.Length);
             }

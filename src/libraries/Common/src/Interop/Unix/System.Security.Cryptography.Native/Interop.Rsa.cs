@@ -31,7 +31,7 @@ internal static partial class Interop
             Span<byte> to,
             SafeRsaHandle rsa,
             RsaPadding padding) =>
-            RsaPublicEncrypt(flen, ref from.DangerousGetPinnableReference(), ref to.DangerousGetPinnableReference(), rsa, padding);
+            RsaPublicEncrypt(flen, ref MemoryMarshal.GetReference(from), ref MemoryMarshal.GetReference(to), rsa, padding);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaPublicEncrypt")]
         private extern static int RsaPublicEncrypt(
@@ -47,7 +47,7 @@ internal static partial class Interop
             Span<byte> to,
             SafeRsaHandle rsa,
             RsaPadding padding) =>
-            RsaPrivateDecrypt(flen, ref from.DangerousGetPinnableReference(), ref to.DangerousGetPinnableReference(), rsa, padding);
+            RsaPrivateDecrypt(flen, ref MemoryMarshal.GetReference(from), ref MemoryMarshal.GetReference(to), rsa, padding);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaPrivateDecrypt")]
         private extern static int RsaPrivateDecrypt(
@@ -64,14 +64,14 @@ internal static partial class Interop
         internal static extern int RsaGenerateKeyEx(SafeRsaHandle rsa, int bits, SafeBignumHandle e);
 
         internal static bool RsaSign(int type, ReadOnlySpan<byte> m, int m_len, Span<byte> sigret, out int siglen, SafeRsaHandle rsa) =>
-            RsaSign(type, ref m.DangerousGetPinnableReference(), m_len, ref sigret.DangerousGetPinnableReference(), out siglen, rsa);
+            RsaSign(type, ref MemoryMarshal.GetReference(m), m_len, ref MemoryMarshal.GetReference(sigret), out siglen, rsa);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaSign")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool RsaSign(int type, ref byte m, int m_len, ref byte sigret, out int siglen, SafeRsaHandle rsa);
 
         internal static bool RsaVerify(int type, ReadOnlySpan<byte> m, int m_len, ReadOnlySpan<byte> sigbuf, int siglen, SafeRsaHandle rsa) =>
-            RsaVerify(type, ref m.DangerousGetPinnableReference(), m_len, ref sigbuf.DangerousGetPinnableReference(), siglen, rsa);
+            RsaVerify(type, ref MemoryMarshal.GetReference(m), m_len, ref MemoryMarshal.GetReference(sigbuf), siglen, rsa);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaVerify")]
         [return: MarshalAs(UnmanagedType.Bool)]
