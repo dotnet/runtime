@@ -31,6 +31,9 @@ class EventPipeProvider
     friend class SampleProfiler;
 
 private:
+    // The GUID of the provider.
+    GUID m_providerID;
+
     // The name of the provider.
     SString m_providerName;
 

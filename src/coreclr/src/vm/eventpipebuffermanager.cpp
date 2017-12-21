@@ -37,7 +37,7 @@ EventPipeBufferManager::~EventPipeBufferManager()
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_TRIGGERS;
         MODE_ANY;
     }
@@ -80,7 +80,7 @@ EventPipeBuffer* EventPipeBufferManager::AllocateBufferForThread(Thread *pThread
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(pThread != NULL);
@@ -97,19 +97,8 @@ EventPipeBuffer* EventPipeBufferManager::AllocateBufferForThread(Thread *pThread
     EventPipeBufferList *pThreadBufferList = pThread->GetEventPipeBufferList();
     if(pThreadBufferList == NULL)
     {
-        pThreadBufferList = new (nothrow) EventPipeBufferList(this);
-        if (pThreadBufferList == NULL)
-        {
-            return NULL;
-        }
-
-        SListElem<EventPipeBufferList*> *pElem = new (nothrow) SListElem<EventPipeBufferList*>(pThreadBufferList);
-        if (pElem == NULL)
-        {
-            return NULL;
-        }
-
-        m_pPerThreadBufferList->InsertTail(pElem);
+        pThreadBufferList = new EventPipeBufferList(this);
+        m_pPerThreadBufferList->InsertTail(new SListElem<EventPipeBufferList*>(pThreadBufferList));
         pThread->SetEventPipeBufferList(pThreadBufferList);
         allocateNewBuffer = true;
     }
@@ -192,24 +181,7 @@ EventPipeBuffer* EventPipeBufferManager::AllocateBufferForThread(Thread *pThread
             bufferSize = requestSize;
         }
 
-        // EX_TRY is used here as opposed to new (nothrow) because
-        // the constructor also allocates a private buffer, which
-        // could throw, and cannot be easily checked
-        EX_TRY
-        {
-            pNewBuffer = new EventPipeBuffer(bufferSize);
-        }
-        EX_CATCH
-        {
-            pNewBuffer = NULL;
-        }
-        EX_END_CATCH(SwallowAllExceptions);
-
-        if (pNewBuffer == NULL)
-        {
-            return NULL;
-        }
-
+        pNewBuffer = new EventPipeBuffer(bufferSize);
         m_sizeOfAllBuffers += bufferSize;
 #ifdef _DEBUG
         m_numBuffersAllocated++;
@@ -230,7 +202,7 @@ EventPipeBufferList* EventPipeBufferManager::FindThreadToStealFrom()
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(m_lock.OwnedByCurrentThread());
@@ -390,7 +362,7 @@ void EventPipeBufferManager::WriteAllBuffersToFile(EventPipeFile *pFile, LARGE_I
 {
     CONTRACTL
     {
-        THROWS;
+        NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(pFile != NULL);

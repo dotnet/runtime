@@ -239,14 +239,10 @@ add_library(coreclrpal
   ${PLATFORM_SOURCES}
 )
 
-# This builds in functionality to load LTTng tracepoints at runtime
-# Needed when using LTTng to support event tracing on Linux
-if(CLR_CMAKE_PLATFORM_LINUX)
-    add_library(tracepointprovider
-      STATIC
-      misc/tracepointprovider.cpp
-    )
-endif(CLR_CMAKE_PLATFORM_LINUX)
+add_library(tracepointprovider
+  STATIC
+  misc/tracepointprovider.cpp
+)
 
 if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   find_library(COREFOUNDATION CoreFoundation)
@@ -380,7 +376,7 @@ endif(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
 add_subdirectory(examples)
 
 if(FEATURE_EVENT_TRACE)
-  add_subdirectory(${GENERATED_EVENTING_DIR}/eventprovider ${CMAKE_CURRENT_BINARY_DIR}/eventprovider)
+    add_subdirectory($ENV{__IntermediatesDir}/Generated/eventprovider ${CMAKE_CURRENT_BINARY_DIR}/eventprovider)
 endif(FEATURE_EVENT_TRACE)
 
 # Install the static PAL library for VS

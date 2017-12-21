@@ -96,10 +96,6 @@
 #include "eventpipe.h"
 #endif //defined(FEATURE_EVENTSOURCE_XPLAT)
 
-#ifdef FEATURE_PERFTRACING
-#include "eventpipe.h"
-#endif //FEATURE_PERFTRACING
-
 #endif // CROSSGEN_MSCORLIB
 
 
