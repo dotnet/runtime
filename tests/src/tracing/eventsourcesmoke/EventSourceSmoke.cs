@@ -1,6 +1,8 @@
 using System;
+using System.Threading.Tasks;
 using System.IO;
 using System.Diagnostics.Tracing;
+
 using Tracing.Tests.Common;
 
 namespace Tracing.Tests

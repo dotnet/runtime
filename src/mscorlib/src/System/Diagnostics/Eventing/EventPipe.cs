@@ -15,12 +15,12 @@ namespace System.Diagnostics.Tracing
         [MarshalAs(UnmanagedType.LPWStr)]
         private string m_providerName;
         private UInt64 m_keywords;
-        private UInt32 m_loggingLevel;
+        private uint m_loggingLevel;
 
         internal EventPipeProviderConfiguration(
             string providerName,
             UInt64 keywords,
-            UInt32 loggingLevel)
+            uint loggingLevel)
         {
             if(string.IsNullOrEmpty(providerName))
             {
@@ -45,7 +45,7 @@ namespace System.Diagnostics.Tracing
             get { return m_keywords; }
         }
 
-        internal UInt32 LoggingLevel
+        internal uint LoggingLevel
         {
             get { return m_loggingLevel; }
         }
@@ -54,13 +54,13 @@ namespace System.Diagnostics.Tracing
     internal sealed class EventPipeConfiguration
     {
         private string m_outputFile;
-        private UInt32 m_circularBufferSizeInMB;
+        private uint m_circularBufferSizeInMB;
         private List<EventPipeProviderConfiguration> m_providers;
         private TimeSpan m_minTimeBetweenSamples = TimeSpan.FromMilliseconds(1);
 
         internal EventPipeConfiguration(
             string outputFile,
-            UInt32 circularBufferSizeInMB)
+            uint circularBufferSizeInMB)
         {
             if(string.IsNullOrEmpty(outputFile))
             {
@@ -80,7 +80,7 @@ namespace System.Diagnostics.Tracing
             get { return m_outputFile; }
         }
 
-        internal UInt32 CircularBufferSizeInMB
+        internal uint CircularBufferSizeInMB
         {
             get { return m_circularBufferSizeInMB; }
         }
@@ -90,13 +90,13 @@ namespace System.Diagnostics.Tracing
             get { return m_providers.ToArray(); }
         }
 
-        internal Int64 ProfilerSamplingRateInNanoseconds
+        internal long ProfilerSamplingRateInNanoseconds
         {
             // 100 nanoseconds == 1 tick.
             get { return m_minTimeBetweenSamples.Ticks * 100; }
         }
 
-        internal void EnableProvider(string providerName, UInt64 keywords, UInt32 loggingLevel)
+        internal void EnableProvider(string providerName, UInt64 keywords, uint loggingLevel)
         {
             m_providers.Add(new EventPipeProviderConfiguration(
                 providerName,
@@ -124,11 +124,6 @@ namespace System.Diagnostics.Tracing
                 throw new ArgumentNullException(nameof(configuration));
             }
 
-            if(configuration.Providers == null)
-            {
-                throw new ArgumentNullException(nameof(configuration.Providers));
-            }
-
             EventPipeProviderConfiguration[] providers = configuration.Providers;
 
             EventPipeInternal.Enable(
@@ -151,7 +146,7 @@ namespace System.Diagnostics.Tracing
         // These PInvokes are used by the configuration APIs to interact with EventPipe.
         //
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        internal static extern void Enable(string outputFile, UInt32 circularBufferSizeInMB, Int64 profilerSamplingRateInNanoseconds, EventPipeProviderConfiguration[] providers, Int32 numProviders);
+        internal static extern void Enable(string outputFile, uint circularBufferSizeInMB, long profilerSamplingRateInNanoseconds, EventPipeProviderConfiguration[] providers, int numProviders);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern void Disable();
@@ -163,15 +158,15 @@ namespace System.Diagnostics.Tracing
         internal static extern IntPtr CreateProvider(string providerName, UnsafeNativeMethods.ManifestEtw.EtwEnableCallback callbackFunc);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        internal static extern unsafe IntPtr DefineEvent(IntPtr provHandle, UInt32 eventID, Int64 keywords, UInt32 eventVersion, UInt32 level, void *pMetadata, UInt32 metadataLength);
+        internal static extern unsafe IntPtr DefineEvent(IntPtr provHandle, uint eventID, Int64 keywords, uint eventVersion, uint level, void *pMetadata, uint metadataLength);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern void DeleteProvider(IntPtr provHandle);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        internal static extern unsafe void WriteEvent(IntPtr eventHandle, UInt32 eventID, void* pData, UInt32 length, Guid* activityId, Guid* relatedActivityId);
+        internal static extern unsafe void WriteEvent(IntPtr eventHandle, uint eventID, void* pData, uint length, Guid* activityId, Guid* relatedActivityId);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        internal static extern unsafe void WriteEventData(IntPtr eventHandle, UInt32 eventID, EventProvider.EventData** pEventData, UInt32 dataCount, Guid* activityId, Guid* relatedActivityId);
+        internal static extern unsafe void WriteEventData(IntPtr eventHandle, uint eventID, EventProvider.EventData** pEventData, uint dataCount, Guid* activityId, Guid* relatedActivityId);
     }
 }

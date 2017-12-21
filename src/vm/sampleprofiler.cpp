@@ -11,13 +11,6 @@
 
 #ifdef FEATURE_PERFTRACING
 
-#ifndef FEATURE_PAL
-#include <mmsystem.h>
-#endif //FEATURE_PAL
-
-// To avoid counting zeros in conversions
-#define MILLION * 1000000
-
 Volatile<BOOL> SampleProfiler::s_profilingEnabled = false;
 Thread* SampleProfiler::s_pSamplingThread = NULL;
 const WCHAR* SampleProfiler::s_providerName = W("Microsoft-DotNETCore-SampleProfiler");
@@ -26,16 +19,7 @@ EventPipeEvent* SampleProfiler::s_pThreadTimeEvent = NULL;
 BYTE* SampleProfiler::s_pPayloadExternal = NULL;
 BYTE* SampleProfiler::s_pPayloadManaged = NULL;
 CLREventStatic SampleProfiler::s_threadShutdownEvent;
-unsigned long SampleProfiler::s_samplingRateInNs = 1 MILLION; // 1ms
-bool SampleProfiler::s_timePeriodIsSet = FALSE;
-
-#ifndef FEATURE_PAL
-PVOID SampleProfiler::s_timeBeginPeriodFn = NULL;
-PVOID SampleProfiler::s_timeEndPeriodFn = NULL;
-HINSTANCE SampleProfiler::s_hMultimediaLib = NULL;
-
-typedef MMRESULT (WINAPI *TimePeriodFnPtr) (UINT uPeriod);
-#endif //FEATURE_PAL
+long SampleProfiler::s_samplingRateInNs = 1000000; // 1ms
 
 void SampleProfiler::Enable()
 {
@@ -49,8 +33,6 @@ void SampleProfiler::Enable()
         PRECONDITION(EventPipe::GetLock()->OwnedByCurrentThread());
     }
     CONTRACTL_END;
-    
-    LoadDependencies();
 
     if(s_pEventPipeProvider == NULL)
     {
@@ -90,10 +72,6 @@ void SampleProfiler::Enable()
     {
         _ASSERT(!"Unable to create sample profiler thread.");
     }
-
-    s_threadShutdownEvent.CreateManualEvent(FALSE);
-
-    SetTimeGranularity();
 }
 
 void SampleProfiler::Disable()
@@ -123,32 +101,12 @@ void SampleProfiler::Disable()
 
     // Wait for the sampling thread to clean itself up.
     s_threadShutdownEvent.Wait(0, FALSE /* bAlertable */);
-
-    if(s_timePeriodIsSet)
-    {
-        ResetTimeGranularity();
-    }
-    UnloadDependencies();
 }
 
-void SampleProfiler::SetSamplingRate(unsigned long nanoseconds)
+void SampleProfiler::SetSamplingRate(long nanoseconds)
 {
     LIMITED_METHOD_CONTRACT;
-
-    // If the time period setting was modified by us,
-    // make sure to change it back before changing our period
-    // and losing track of what we set it to
-    if(s_timePeriodIsSet)
-    {
-        ResetTimeGranularity();
-    }
-
     s_samplingRateInNs = nanoseconds;
-
-    if(!s_timePeriodIsSet)
-    {
-        SetTimeGranularity();
-    }
 }
 
 DWORD WINAPI SampleProfiler::ThreadProc(void *args)
@@ -174,7 +132,7 @@ DWORD WINAPI SampleProfiler::ThreadProc(void *args)
             if(ThreadSuspend::SysIsSuspendInProgress() || (ThreadSuspend::GetSuspensionThread() != 0))
             {
                 // Skip the current sample.
-                PlatformSleep(s_samplingRateInNs);
+                PAL_nanosleep(s_samplingRateInNs);
                 continue;
             }
 
@@ -188,7 +146,7 @@ DWORD WINAPI SampleProfiler::ThreadProc(void *args)
             ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
 
             // Wait until it's time to sample again.
-            PlatformSleep(s_samplingRateInNs);
+            PAL_nanosleep(s_samplingRateInNs);
         }
     }
 
@@ -198,7 +156,7 @@ DWORD WINAPI SampleProfiler::ThreadProc(void *args)
 
     // Signal Disable() that the thread has been destroyed.
     s_threadShutdownEvent.Set();
-
+ 
     return S_OK;
 }
 
@@ -241,117 +199,6 @@ void SampleProfiler::WalkManagedThreads()
         // Reset the GC mode.
         pTargetThread->ClearGCModeOnSuspension();
     }
-}
-
-void SampleProfiler::PlatformSleep(unsigned long nanoseconds)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-#ifdef FEATURE_PAL
-    PAL_nanosleep(nanoseconds);
-#else //FEATURE_PAL
-    ClrSleepEx(s_samplingRateInNs / 1 MILLION, FALSE);
-#endif //FEATURE_PAL
-}
-
-void SampleProfiler::SetTimeGranularity()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-#ifndef FEATURE_PAL
-    // Attempt to set the systems minimum timer period to the sampling rate
-    // If the sampling rate is lower than the current system setting (16ms by default),
-    // this will cause the OS to wake more often for scheduling descsion, allowing us to take samples
-    // Note that is effects a system-wide setting and when set low will increase the amount of time
-    // the OS is on-CPU, decreasing overall system performance and increasing power consumption
-    if(s_timeBeginPeriodFn != NULL)
-    {
-        if(((TimePeriodFnPtr) s_timeBeginPeriodFn)(s_samplingRateInNs / 1 MILLION) == TIMERR_NOERROR)
-        {
-            s_timePeriodIsSet = TRUE;
-        }
-    }
-#endif //FEATURE_PAL
-}
-
-void SampleProfiler::ResetTimeGranularity()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-#ifndef FEATURE_PAL
-    // End the modifications we had to the timer period in Enable
-    if(s_timeEndPeriodFn != NULL)
-    {
-        if(((TimePeriodFnPtr) s_timeEndPeriodFn)(s_samplingRateInNs / 1 MILLION) == TIMERR_NOERROR)
-        {
-            s_timePeriodIsSet = FALSE;
-        }
-    }
-#endif //FEATURE_PAL
-}
-
-bool SampleProfiler::LoadDependencies()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-#ifndef FEATURE_PAL
-    s_hMultimediaLib = WszLoadLibrary(W("winmm.dll"));
-
-    if (s_hMultimediaLib != NULL)
-    {
-        s_timeBeginPeriodFn = (PVOID) GetProcAddress(s_hMultimediaLib, "timeBeginPeriod");
-        s_timeEndPeriodFn = (PVOID) GetProcAddress(s_hMultimediaLib, "timeEndPeriod");
-    }
-
-    return s_hMultimediaLib != NULL && s_timeBeginPeriodFn != NULL && s_timeEndPeriodFn != NULL;
-#else
-    return FALSE;
-#endif //FEATURE_PAL
-}
-
-void SampleProfiler::UnloadDependencies()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-#ifndef FEATURE_PAL
-    if (s_hMultimediaLib != NULL)
-    {
-        FreeLibrary(s_hMultimediaLib);
-        s_hMultimediaLib = NULL;
-        s_timeBeginPeriodFn = NULL;
-        s_timeEndPeriodFn = NULL;
-    }
-#endif //FEATURE_PAL
 }
 
 #endif // FEATURE_PERFTRACING

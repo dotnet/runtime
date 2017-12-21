@@ -20,7 +20,6 @@ EventPipeConfiguration::EventPipeConfiguration()
     m_rundownEnabled = false;
     m_circularBufferSizeInBytes = 1024 * 1024 * 1000; // Default to 1000MB.
     m_pEnabledProviderList = NULL;
-    m_pConfigProvider = NULL;
     m_pProviderList = new SList<SListElem<EventPipeProvider*>>();
 }
 
@@ -28,7 +27,7 @@ EventPipeConfiguration::~EventPipeConfiguration()
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_TRIGGERS;
         MODE_ANY;
     }
@@ -36,15 +35,8 @@ EventPipeConfiguration::~EventPipeConfiguration()
 
     if(m_pConfigProvider != NULL)
     {
-        // This unregisters the provider, which takes a
-        // HOST_BREAKABLE lock
-        EX_TRY
-        {
-          DeleteProvider(m_pConfigProvider);
-          m_pConfigProvider = NULL;
-        }
-        EX_CATCH { }
-        EX_END_CATCH(SwallowAllExceptions);
+        delete(m_pConfigProvider);
+        m_pConfigProvider = NULL;
     }
 
     if(m_pEnabledProviderList != NULL)
@@ -55,28 +47,19 @@ EventPipeConfiguration::~EventPipeConfiguration()
 
     if(m_pProviderList != NULL)
     {
-        // We swallow exceptions here because the HOST_BREAKABLE
-        // lock may throw and this destructor gets called in throw
-        // intolerant places. If that happens the provider list will leak
-        EX_TRY
+        // Take the lock before manipulating the provider list.
+        CrstHolder _crst(EventPipe::GetLock());
+
+        SListElem<EventPipeProvider*> *pElem = m_pProviderList->GetHead();
+        while(pElem != NULL)
         {
-            // Take the lock before manipulating the list.
-            CrstHolder _crst(EventPipe::GetLock());
-
-            SListElem<EventPipeProvider*> *pElem = m_pProviderList->GetHead();
-            while(pElem != NULL)
-            {
-                // We don't delete provider itself because it can be in-use
-                SListElem<EventPipeProvider*> *pCurElem = pElem;
-                pElem = m_pProviderList->GetNext(pElem);
-                delete(pCurElem);
-            }
-
-            delete(m_pProviderList);
+            // We don't delete provider itself because it can be in-use
+            SListElem<EventPipeProvider*> *pCurElem = pElem;
+            pElem = m_pProviderList->GetNext(pElem);
+            delete(pCurElem);
         }
-        EX_CATCH { }
-        EX_END_CATCH(SwallowAllExceptions);
 
+        delete(m_pProviderList);
         m_pProviderList = NULL;
     }
 }
@@ -127,7 +110,7 @@ void EventPipeConfiguration::DeleteProvider(EventPipeProvider *pProvider)
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(pProvider != NULL);
     }
@@ -194,7 +177,7 @@ bool EventPipeConfiguration::UnregisterProvider(EventPipeProvider &provider)
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -288,7 +271,7 @@ size_t EventPipeConfiguration::GetCircularBufferSize() const
 void EventPipeConfiguration::SetCircularBufferSize(size_t circularBufferSize)
 {
     LIMITED_METHOD_CONTRACT;
-
+    
     if(!m_enabled)
     {
         m_circularBufferSizeInBytes = circularBufferSize;
@@ -501,7 +484,9 @@ void EventPipeConfiguration::DeleteDeferredProviders()
             pElem = m_pProviderList->GetNext(pElem);
             if(pProvider->GetDeleteDeferred())
             {
-                DeleteProvider(pProvider);
+                // The act of deleting the provider unregisters it,
+                // removes it from the list, and deletes the list element
+                delete(pProvider);
             }
         }
     }
@@ -540,7 +525,7 @@ EventPipeEnabledProviderList::EventPipeEnabledProviderList(
     }
 
     m_pProviders = new EventPipeEnabledProvider[m_numProviders];
-    for(unsigned int i=0; i<m_numProviders; i++)
+    for(int i=0; i<m_numProviders; i++)
     {
         m_pProviders[i].Set(
             pConfigs[i].GetProviderName(),
@@ -553,7 +538,7 @@ EventPipeEnabledProviderList::~EventPipeEnabledProviderList()
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
     }
@@ -597,7 +582,7 @@ EventPipeEnabledProvider* EventPipeEnabledProviderList::GetEnabledProvider(
     LPCWSTR providerName = providerNameStr.GetUnicode();
 
     EventPipeEnabledProvider *pEnabledProvider = NULL;
-    for(unsigned int i=0; i<m_numProviders; i++)
+    for(int i=0; i<m_numProviders; i++)
     {
         EventPipeEnabledProvider *pCandidate = &m_pProviders[i];
         if(pCandidate != NULL)
@@ -624,7 +609,7 @@ EventPipeEnabledProvider::~EventPipeEnabledProvider()
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
     }
@@ -655,7 +640,7 @@ void EventPipeEnabledProvider::Set(LPCWSTR providerName, UINT64 keywords, EventP
 
     if(providerName != NULL)
     {
-        size_t bufSize = wcslen(providerName) + 1;
+        unsigned int bufSize = wcslen(providerName) + 1;
         m_pProviderName = new WCHAR[bufSize];
         wcscpy_s(m_pProviderName, bufSize, providerName);
     }

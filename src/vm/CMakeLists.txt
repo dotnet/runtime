@@ -1,7 +1,7 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 # Needed due to the cmunged files being in the binary folders, the set(CMAKE_INCLUDE_CURRENT_DIR ON) is not enough
-include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}) 
 include_directories(${ARCH_SOURCES_DIR})
 
 add_definitions(-DUNICODE)
@@ -9,7 +9,7 @@ add_definitions(-D_UNICODE)
 
 
 if(CMAKE_CONFIGURATION_TYPES) # multi-configuration generator?
-  foreach (Config DEBUG CHECKED)
+  foreach (Config DEBUG CHECKED)  
     set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:${Config}>:WRITE_BARRIER_CHECK=1>)
   endforeach (Config)
 else()
@@ -291,7 +291,7 @@ set(VM_SOURCES_DAC_AND_WKS_WIN32
     winrttypenameconverter.cpp
 )
 
-list(APPEND VM_SOURCES_WKS
+list(APPEND VM_SOURCES_WKS 
     ${VM_SOURCES_DAC_AND_WKS_WIN32}
     # These should not be included for Linux
     appxutil.cpp
@@ -313,17 +313,17 @@ list(APPEND VM_SOURCES_WKS
     extensibleclassfactory.cpp
     mngstdinterfaces.cpp
     notifyexternals.cpp
-    olecontexthelpers.cpp
+    olecontexthelpers.cpp    
     rcwrefcache.cpp
     rtlfunctions.cpp
     runtimecallablewrapper.cpp
     stacksampler.cpp
     stdinterfaces.cpp
     stdinterfaces_wrapper.cpp
-    winrthelpers.cpp
+    winrthelpers.cpp    
 )
 
-list(APPEND VM_SOURCES_DAC
+list(APPEND VM_SOURCES_DAC 
     ${VM_SOURCES_DAC_AND_WKS_WIN32}
     # These should not be included for Linux
     clrprivbinderwinrt.cpp
@@ -423,7 +423,7 @@ else(WIN32)
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
         )
     endif()
-
+    
 endif(WIN32)
 
 
@@ -434,7 +434,7 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/gmsamd64.cpp
         ${ARCH_SOURCES_DIR}/stublinkeramd64.cpp
     )
-
+    
     set(VM_SOURCES_WKS_ARCH
         ${ARCH_SOURCES_DIR}/jithelpersamd64.cpp
         ${ARCH_SOURCES_DIR}/jitinterfaceamd64.cpp
@@ -452,7 +452,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_I386)
         ${ARCH_SOURCES_DIR}/gmsx86.cpp
         ${ARCH_SOURCES_DIR}/stublinkerx86.cpp
     )
-
+    
     set(VM_SOURCES_WKS_ARCH
         ${ARCH_SOURCES_DIR}/jitinterfacex86.cpp
         ${ARCH_SOURCES_DIR}/profiler.cpp
@@ -465,7 +465,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM)
         ${ARCH_SOURCES_DIR}/stubs.cpp
         ${ARCH_SOURCES_DIR}/armsinglestepper.cpp
     )
-
+    
     set(VM_SOURCES_WKS_ARCH
         ${ARCH_SOURCES_DIR}/jithelpersarm.cpp
         ${ARCH_SOURCES_DIR}/profiler.cpp
@@ -492,7 +492,7 @@ set(VM_SOURCES_DAC_ARCH
     exceptionhandling.cpp
 )
 
-list(APPEND VM_SOURCES_WKS
+list(APPEND VM_SOURCES_WKS 
     ${VM_SOURCES_WKS_ARCH}
     ${VM_SOURCES_DAC_AND_WKS_ARCH}
 )
@@ -519,6 +519,6 @@ convert_to_absolute_path(VM_SOURCES_DAC ${VM_SOURCES_DAC})
 add_subdirectory(dac)
 add_subdirectory(wks)
 
-if(FEATURE_PERFTRACING)
-    add_subdirectory(${GENERATED_EVENTING_DIR}/eventpipe ${CMAKE_CURRENT_BINARY_DIR}/eventpipe)
-endif(FEATURE_PERFTRACING)
+if(CLR_CMAKE_PLATFORM_LINUX)
+    add_subdirectory($ENV{__IntermediatesDir}/Generated/eventpipe ${CMAKE_CURRENT_BINARY_DIR}/eventpipe)
+endif(CLR_CMAKE_PLATFORM_LINUX)

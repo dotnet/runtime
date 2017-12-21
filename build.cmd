@@ -28,7 +28,7 @@ set __ThisScriptDir="%~dp0"
 if defined VisualStudioVersion (
     if not defined __VSVersion echo %__MsgPrefix%Detected Visual Studio %VisualStudioVersion% developer command ^prompt environment
     goto :Run
-)
+) 
 
 echo %__MsgPrefix%Searching ^for Visual Studio 2017 or 2015 installation
 set _VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
@@ -294,16 +294,6 @@ if %__EnforcePgo%==1 (
     )
 )
 
-REM Determine if this is a cross-arch build
-
-if /i "%__BuildArch%"=="arm64" (
-    set __DoCrossArchBuild=1
-    )
-
-if /i "%__BuildArch%"=="arm" (
-    set __DoCrossArchBuild=1
-    )
-
 :: Set the remaining variables based upon the determined build configuration
 set "__BinDir=%__RootBinDir%\Product\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__IntermediatesDir=%__RootBinDir%\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
@@ -389,38 +379,6 @@ for /f "tokens=*" %%s in ('%DotNetCli% msbuild "%OptDataProjectFilePath%" /t:Dum
 for /f "tokens=*" %%s in ('%DotNetCli% msbuild "%OptDataProjectFilePath%" /t:DumpIbcDataPackageVersion /nologo') do @(
     set __IbcOptDataVersion=%%s
 )
-
-REM =========================================================================================
-REM ===
-REM === Generate source files for eventing
-REM ===
-REM =========================================================================================
-
-REM Find python and set it to the variable PYTHON
-echo import sys; print sys.executable | (python2.7 || python2 || py -2 || python) > %TEMP%\pythonlocation.txt 2> NUL
-set /p PYTHON=<%TEMP%\pythonlocation.txt
-if NOT DEFINED PYTHON (
-    echo %__MsgPrefix%Error: Could not find a python 2.7 installation
-    exit /b 1
-)
-
-if /i "%__DoCrossArchBuild%"=="1" (
-    set __IntermediatesIncDir=%__CrossCompIntermediatesDir%\src\inc
-    set __IntermediatesEventingDir=%__CrossCompIntermediatesDir%\eventing
-) else (
-    set __IntermediatesIncDir=%__IntermediatesDir%\src\inc
-    set __IntermediatesEventingDir=%__IntermediatesDir%\eventing
-)
-
-echo Laying out dynamically generated files consumed by the build system
-echo Laying out dynamically generated Event test files and etmdummy stub functions
-%PYTHON% -B -Wall  %__SourceDir%\scripts\genEventing.py --inc %__IntermediatesIncDir% --dummy %__IntermediatesIncDir%\etmdummy.h --man %__SourceDir%\vm\ClrEtwAll.man --nonextern || exit /b 1
-
-echo Laying out dynamically generated EventPipe Implementation
-%PYTHON% -B -Wall %__SourceDir%\scripts\genEventPipe.py --man %__SourceDir%\vm\ClrEtwAll.man --intermediate %__IntermediatesEventingDir%\eventpipe --nonextern || exit /b 1
-
-echo Laying out ETW event logging interface
-%PYTHON% -B -Wall %__SourceDir%\scripts\genEtwProvider.py --man %__SourceDir%\vm\ClrEtwAll.man --intermediate %__IntermediatesIncDir% --exc %__SourceDir%\vm\ClrEtwAllMeta.lst || exit /b 1
 
 REM =========================================================================================
 REM ===
@@ -517,6 +475,14 @@ REM ===
 REM === Build Cross-Architecture Native Components (if applicable)
 REM ===
 REM =========================================================================================
+
+if /i "%__BuildArch%"=="arm64" (
+    set __DoCrossArchBuild=1
+    )
+
+if /i "%__BuildArch%"=="arm" (
+    set __DoCrossArchBuild=1
+    )
 
 if /i "%__DoCrossArchBuild%"=="1" (
     REM Scope environment changes start {
