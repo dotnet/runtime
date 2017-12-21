@@ -40,14 +40,6 @@ EventPipeEvent::EventPipeEvent(EventPipeProvider &provider, INT64 keywords, unsi
 
 EventPipeEvent::~EventPipeEvent()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
     if (m_pMetadata != NULL)
     {
         delete[] m_pMetadata;

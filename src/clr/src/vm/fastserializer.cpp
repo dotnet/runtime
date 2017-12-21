@@ -40,7 +40,7 @@ FastSerializer::~FastSerializer()
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_TRIGGERS;
         MODE_ANY;
     }
@@ -98,7 +98,7 @@ void FastSerializer::WriteBuffer(BYTE *pBuffer, unsigned int length)
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_PREEMPTIVE;
         PRECONDITION(pBuffer != NULL);
         PRECONDITION(length > 0);
@@ -263,7 +263,7 @@ void FastSerializer::WriteFileHeader()
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_TRIGGERS;
         MODE_ANY;
     }
@@ -278,7 +278,7 @@ void FastSerializer::WriteString(const char *strContents, unsigned int length)
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
     }
@@ -295,7 +295,7 @@ StreamLabel FastSerializer::WriteForwardReferenceTable()
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
     }
@@ -317,7 +317,7 @@ void FastSerializer::WriteTrailer(StreamLabel forwardReferencesTableStart)
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
     }
