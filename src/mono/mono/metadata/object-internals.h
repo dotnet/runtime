@@ -85,7 +85,7 @@
 			tmp_klass; })
 /* eclass should be a run-time constant */
 #define mono_array_new_cached(domain, eclass, size, error) ({	\
-	MonoVTable *__vtable = mono_class_vtable_full ((domain), mono_array_class_get_cached ((eclass), 1), (error)); \
+	MonoVTable *__vtable = mono_class_vtable_checked ((domain), mono_array_class_get_cached ((eclass), 1), (error)); \
 	MonoArray *__arr = NULL;					\
 	if (is_ok ((error)))						\
 		__arr = mono_array_new_specific_checked (__vtable, (size), (error)); \

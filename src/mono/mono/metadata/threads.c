@@ -503,7 +503,7 @@ get_current_thread_ptr_for_domain (MonoDomain *domain, MonoInternalThread *threa
 	}
 
 	MonoError thread_vt_error;
-	mono_class_vtable_full (domain, mono_defaults.thread_class, &thread_vt_error);
+	mono_class_vtable_checked (domain, mono_defaults.thread_class, &thread_vt_error);
 	mono_error_assert_ok (&thread_vt_error);
 	mono_domain_lock (domain);
 	offset = GPOINTER_TO_UINT (g_hash_table_lookup (domain->special_static_fields, current_thread_field));
@@ -531,7 +531,7 @@ create_thread_object (MonoDomain *domain, MonoInternalThread *internal)
 	MonoVTable *vtable;
 	MonoError error;
 
-	vtable = mono_class_vtable_full (domain, mono_defaults.thread_class, &error);
+	vtable = mono_class_vtable_checked (domain, mono_defaults.thread_class, &error);
 	mono_error_assert_ok (&error);
 
 	thread = (MonoThread*)mono_object_new_mature (vtable, &error);
@@ -550,7 +550,7 @@ create_internal_thread_object (void)
 	MonoInternalThread *thread;
 	MonoVTable *vt;
 
-	vt = mono_class_vtable_full (mono_get_root_domain (), mono_defaults.internal_thread_class, &error);
+	vt = mono_class_vtable_checked (mono_get_root_domain (), mono_defaults.internal_thread_class, &error);
 	mono_error_assert_ok (&error);
 	thread = (MonoInternalThread*) mono_object_new_mature (vt, &error);
 	/* only possible failure mode is OOM, from which we don't exect to recover */

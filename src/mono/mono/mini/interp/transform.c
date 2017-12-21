@@ -1059,7 +1059,7 @@ no_intrinsic:
 		(target_method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 && 
 		(target_method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) == 0 &&
 		!(target_method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING)) {
-		MonoVTable *vt = mono_class_vtable_full (domain, target_method->klass, error);
+		MonoVTable *vt = mono_class_vtable_checked (domain, target_method->klass, error);
 		return_if_nok (error);
 		int called_inited = vt->initialized;
 
@@ -4311,7 +4311,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Int
 	}
 
 	// g_printerr ("TRANSFORM(0x%016lx): begin %s::%s\n", mono_thread_current (), method->klass->name, method->name);
-	method_class_vt = mono_class_vtable_full (domain, imethod->method->klass, &error);
+	method_class_vt = mono_class_vtable_checked (domain, imethod->method->klass, &error);
 	if (!is_ok (&error))
 		return mono_error_convert_to_exception (&error);
 
@@ -4454,7 +4454,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Int
 				}
 				mono_class_init (m->klass);
 				if (!mono_class_is_interface (m->klass)) {
-					mono_class_vtable_full (domain, m->klass, &error);
+					mono_class_vtable_checked (domain, m->klass, &error);
 					if (!is_ok (&error)) {
 						g_free (is_bb_start);
 						mono_metadata_free_mh (header);

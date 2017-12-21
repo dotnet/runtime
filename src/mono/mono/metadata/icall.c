@@ -979,7 +979,7 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor (Mo
 	if (mono_class_is_gtd (klass))
 		return;
 
-	vtable = mono_class_vtable_full (mono_domain_get (), klass, &error);
+	vtable = mono_class_vtable_checked (mono_domain_get (), klass, &error);
 	if (!is_ok (&error)) {
 		mono_error_set_pending_exception (&error);
 		return;
@@ -1003,7 +1003,7 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunModuleConstructor (M
 			return;
 		}
 		/*It's fine to raise the exception here*/
-		MonoVTable * vtable = mono_class_vtable_full (mono_domain_get (), module_klass, &error);
+		MonoVTable * vtable = mono_class_vtable_checked (mono_domain_get (), module_klass, &error);
 		if (!is_ok (&error)) {
 			mono_error_set_pending_exception (&error);
 			return;
@@ -2071,7 +2071,7 @@ ves_icall_MonoField_SetValueInternal (MonoReflectionFieldHandle field, MonoObjec
 		  (!isref && v == NULL && value_gchandle == 0));
 
 	if (type->attrs & FIELD_ATTRIBUTE_STATIC) {
-		MonoVTable *vtable = mono_class_vtable_full (MONO_HANDLE_DOMAIN (field), cf->parent, error);
+		MonoVTable *vtable = mono_class_vtable_checked (MONO_HANDLE_DOMAIN (field), cf->parent, error);
 		goto_if_nok (error, leave);
 
 		if (!vtable->initialized) {
@@ -3229,7 +3229,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this_arg, Mo
 	}
 
 	if (!(m->flags & METHOD_ATTRIBUTE_STATIC)) {
-		if (!mono_class_vtable_full (mono_object_domain (method), m->klass, &error)) {
+		if (!mono_class_vtable_checked (mono_object_domain (method), m->klass, &error)) {
 			mono_error_cleanup (&error); /* FIXME does this make sense? */
 			mono_gc_wbarrier_generic_store (exc, (MonoObject*) mono_class_get_exception_for_failure (m->klass));
 			return NULL;
@@ -7035,7 +7035,7 @@ ves_icall_System_Runtime_Activation_ActivationServices_EnableProxyActivation (Mo
 	error_init (error);
 
 	MonoClass *klass = mono_class_from_mono_type (MONO_HANDLE_GETVAL (type, type));
-	MonoVTable *vtable = mono_class_vtable_full (mono_domain_get (), klass, error);
+	MonoVTable *vtable = mono_class_vtable_checked (mono_domain_get (), klass, error);
 	return_if_nok (error);
 
 	mono_vtable_set_is_remote (vtable, enable);
@@ -7071,7 +7071,7 @@ ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClas
 		g_assert (klass->rank == 1);
 		return MONO_HANDLE_CAST (MonoObject, mono_array_new_handle (domain, klass->element_class, 0, error));
 	} else {
-		MonoVTable *vtable = mono_class_vtable_full (domain, klass, error);
+		MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
 		return_val_if_nok (error, NULL_HANDLE);
 
 		/* Bypass remoting object creation check */

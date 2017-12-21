@@ -378,7 +378,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 				return FALSE;
 			}
 				
-			module_vtable = mono_class_vtable_full (vtable->domain, module_klass, error);
+			module_vtable = mono_class_vtable_checked (vtable->domain, module_klass, error);
 			if (!module_vtable)
 				return FALSE;
 			if (!mono_runtime_class_init_full (module_vtable, error))
@@ -1792,13 +1792,13 @@ MonoVTable *
 mono_class_vtable (MonoDomain *domain, MonoClass *klass)
 {
 	MonoError error;
-	MonoVTable* vtable = mono_class_vtable_full (domain, klass, &error);
+	MonoVTable* vtable = mono_class_vtable_checked (domain, klass, &error);
 	mono_error_cleanup (&error);
 	return vtable;
 }
 
 /**
- * mono_class_vtable_full:
+ * mono_class_vtable_checked:
  * \param domain the application domain
  * \param class the class to initialize
  * \param error set on failure.
@@ -1806,7 +1806,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *klass)
  * they contain the domain specific static class data.
  */
 MonoVTable *
-mono_class_vtable_full (MonoDomain *domain, MonoClass *klass, MonoError *error)
+mono_class_vtable_checked (MonoDomain *domain, MonoClass *klass, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -2212,7 +2212,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 	/* make sure the parent is initialized */
 	/*FIXME shouldn't this fail the current type?*/
 	if (klass->parent)
-		mono_class_vtable_full (domain, klass->parent, error);
+		mono_class_vtable_checked (domain, klass->parent, error);
 
 	MONO_PROFILER_RAISE (vtable_loaded, (vt));
 
@@ -2270,7 +2270,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 
 	error_init (error);
 
-	vt = mono_class_vtable_full (domain, klass, error);
+	vt = mono_class_vtable_checked (domain, klass, error);
 	if (!is_ok (error))
 		return NULL;
 	max_interface_id = vt->max_interface_id;
@@ -2722,7 +2722,7 @@ mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mon
 #ifndef DISABLE_COM
 		gboolean target_is_com = FALSE;
 		if (mono_class_is_com_object (klass) || (mono_class_get_com_object_class () && klass == mono_class_get_com_object_class ())) {
-			MonoVTable *klass_vtable = mono_class_vtable_full (mono_domain_get (), klass, error);
+			MonoVTable *klass_vtable = mono_class_vtable_checked (mono_domain_get (), klass, error);
 			goto_if_nok (error, leave);
 			if (!mono_vtable_is_remote (klass_vtable))
 				target_is_com = TRUE;
@@ -3469,7 +3469,7 @@ mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, 
 		is_static = TRUE;
 
 		if (!is_literal) {
-			vtable = mono_class_vtable_full (domain, field->parent, error);
+			vtable = mono_class_vtable_checked (domain, field->parent, error);
 			return_val_if_nok (error, NULL);
 
 			if (!vtable->initialized) {
@@ -5355,7 +5355,7 @@ mono_object_new_checked (MonoDomain *domain, MonoClass *klass, MonoError *error)
 
 	MonoVTable *vtable;
 
-	vtable = mono_class_vtable_full (domain, klass, error);
+	vtable = mono_class_vtable_checked (domain, klass, error);
 	if (!is_ok (error))
 		return NULL;
 
@@ -5378,7 +5378,7 @@ mono_object_new_pinned (MonoDomain *domain, MonoClass *klass, MonoError *error)
 
 	error_init (error);
 
-	vtable = mono_class_vtable_full (domain, klass, error);
+	vtable = mono_class_vtable_checked (domain, klass, error);
 	return_val_if_nok (error, NULL);
 
 	MonoObject *o = (MonoObject *)mono_gc_alloc_pinned_obj (vtable, mono_class_instance_size (klass));
@@ -5922,7 +5922,7 @@ mono_array_new_full_checked (MonoDomain *domain, MonoClass *array_class, uintptr
 	 * Following three lines almost taken from mono_object_new ():
 	 * they need to be kept in sync.
 	 */
-	vtable = mono_class_vtable_full (domain, array_class, error);
+	vtable = mono_class_vtable_checked (domain, array_class, error);
 	return_val_if_nok (error, NULL);
 
 	if (bounds_size)
@@ -5987,7 +5987,7 @@ mono_array_new_checked (MonoDomain *domain, MonoClass *eclass, uintptr_t n, Mono
 	ac = mono_array_class_get (eclass, 1);
 	g_assert (ac);
 
-	MonoVTable *vtable = mono_class_vtable_full (domain, ac, error);
+	MonoVTable *vtable = mono_class_vtable_checked (domain, ac, error);
 	return_val_if_nok (error, NULL);
 
 	return mono_array_new_specific_checked (vtable, n, error);
@@ -6228,7 +6228,7 @@ mono_string_new_size_checked (MonoDomain *domain, gint32 len, MonoError *error)
 	size = (G_STRUCT_OFFSET (MonoString, chars) + (((size_t)len + 1) * 2));
 	g_assert (size > 0);
 
-	vtable = mono_class_vtable_full (domain, mono_defaults.string_class, error);
+	vtable = mono_class_vtable_checked (domain, mono_defaults.string_class, error);
 	return_val_if_nok (error, NULL);
 
 	s = (MonoString *)mono_gc_alloc_string (vtable, size, len);
@@ -6426,7 +6426,7 @@ mono_value_box_checked (MonoDomain *domain, MonoClass *klass, gpointer value, Mo
 	if (mono_class_is_nullable (klass))
 		return mono_nullable_box ((guint8 *)value, klass, error);
 
-	vtable = mono_class_vtable_full (domain, klass, error);
+	vtable = mono_class_vtable_checked (domain, klass, error);
 	return_val_if_nok (error, NULL);
 
 	size = mono_class_instance_size (klass);
@@ -7764,7 +7764,7 @@ mono_message_invoke (MonoObject *target, MonoMethodMessage *msg,
 		object_array_klass = klass;
 	}
 
-	MonoVTable *vt = mono_class_vtable_full (domain, object_array_klass, error);
+	MonoVTable *vt = mono_class_vtable_checked (domain, object_array_klass, error);
 	return_val_if_nok (error, NULL);
 	arr = mono_array_new_specific_checked (vt, outarg_count, error);
 	return_val_if_nok (error, NULL);

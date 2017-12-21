@@ -1528,7 +1528,7 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 					} else {
 						MonoClass *array_class = mono_array_class_get (ins->inst_newa_class, 1);
 						MonoError vt_error;
-						MonoVTable *vtable = mono_class_vtable_full (cfg->domain, array_class, &vt_error);
+						MonoVTable *vtable = mono_class_vtable_checked (cfg->domain, array_class, &vt_error);
 						MonoMethod *managed_alloc = mono_gc_get_managed_array_allocator (array_class);
 
 						mono_error_assert_ok (&vt_error); /*This shall not fail since we check for this condition on OP_NEWARR creation*/

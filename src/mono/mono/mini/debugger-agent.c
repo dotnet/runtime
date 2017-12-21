@@ -8750,7 +8750,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			if (!found)
 				return ERR_INVALID_FIELDID;
 
-			vtable = mono_class_vtable_full (domain, f->parent, &error);
+			vtable = mono_class_vtable_checked (domain, f->parent, &error);
 			if (!is_ok (&error))
 				return ERR_INVALID_FIELDID;
 			val = (guint8 *)g_malloc (mono_class_instance_size (mono_class_from_mono_type (f->type)));
@@ -8794,7 +8794,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 
 			// FIXME: Check for literal/const
 
-			vtable = mono_class_vtable_full (domain, f->parent, &error);
+			vtable = mono_class_vtable_checked (domain, f->parent, &error);
 			if (!is_ok (&error))
 				return ERR_INVALID_FIELDID;
 			val = (guint8 *)g_malloc (mono_class_instance_size (mono_class_from_mono_type (f->type)));
@@ -8934,7 +8934,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		break;
 	}
 	case CMD_TYPE_IS_INITIALIZED: {
-		MonoVTable *vtable = mono_class_vtable_full (domain, klass, &error);
+		MonoVTable *vtable = mono_class_vtable_checked (domain, klass, &error);
 		if (!is_ok (&error))
 			return ERR_LOADER_ERROR;
 
@@ -10018,7 +10018,7 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 					return ERR_INVALID_FIELDID;
 
 				g_assert (f->type->attrs & FIELD_ATTRIBUTE_STATIC);
-				vtable = mono_class_vtable_full (obj->vtable->domain, f->parent, &error);
+				vtable = mono_class_vtable_checked (obj->vtable->domain, f->parent, &error);
 				if (!is_ok (&error)) {
 					mono_error_cleanup (&error);
 					return ERR_INVALID_OBJECT;
@@ -10079,7 +10079,7 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 					return ERR_INVALID_FIELDID;
 
 				g_assert (f->type->attrs & FIELD_ATTRIBUTE_STATIC);
-				vtable = mono_class_vtable_full (obj->vtable->domain, f->parent, &error);
+				vtable = mono_class_vtable_checked (obj->vtable->domain, f->parent, &error);
 				if (!is_ok (&error)) {
 					mono_error_cleanup (&error);
 					return ERR_INVALID_FIELDID;

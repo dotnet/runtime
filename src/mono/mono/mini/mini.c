@@ -4319,7 +4319,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	if (!mono_error_ok (error))
 		return NULL;
 
-	vtable = mono_class_vtable_full (target_domain, method->klass, error);
+	vtable = mono_class_vtable_checked (target_domain, method->klass, error);
 	return_val_if_nok (error, NULL);
 
 	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {

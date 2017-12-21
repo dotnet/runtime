@@ -890,7 +890,7 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 
 	switch (info_type) {
 	case MONO_RGCTX_INFO_STATIC_DATA: {
-		MonoVTable *vtable = mono_class_vtable_full (domain, klass, error);
+		MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
 		return_val_if_nok (error, NULL);
 		return mono_vtable_get_static_field_data (vtable);
 	}
@@ -899,7 +899,7 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 	case MONO_RGCTX_INFO_ELEMENT_KLASS:
 		return klass->element_class;
 	case MONO_RGCTX_INFO_VTABLE: {
-		MonoVTable *vtable = mono_class_vtable_full (domain, klass, error);
+		MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
 		return_val_if_nok (error, NULL);
 		return vtable;
 	}
@@ -1899,7 +1899,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		g_assert (method->method.method.is_inflated);
 		g_assert (method->context.method_inst);
 
-		vtable = mono_class_vtable_full (domain, method->method.method.klass, error);
+		vtable = mono_class_vtable_checked (domain, method->method.method.klass, error);
 		return_val_if_nok (error, NULL);
 
 		return mono_method_lookup_rgctx (vtable, method->context.method_inst);
@@ -3354,7 +3354,7 @@ gpointer
 mini_method_get_rgctx (MonoMethod *m)
 {
 	MonoError error;
-	MonoVTable *vt = mono_class_vtable_full (mono_domain_get (), m->klass, &error);
+	MonoVTable *vt = mono_class_vtable_checked (mono_domain_get (), m->klass, &error);
 	mono_error_assert_ok (&error);
 	if (mini_method_get_context (m)->method_inst) {
 		return mono_method_lookup_rgctx (vt, mini_method_get_context (m)->method_inst);
