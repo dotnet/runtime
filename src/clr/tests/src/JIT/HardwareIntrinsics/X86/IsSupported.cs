@@ -13,46 +13,6 @@ namespace IntelHardwareIntrinsicTest
         static int Main(string[] args)
         {
             bool result = true;
-            if (Avx2.IsSupported)
-            {
-                if (Avx.IsSupported)
-                {
-                    if (!Sse42.IsSupported)
-                    {
-                        result = false;
-                    }
-
-                    if (Sse41.IsSupported)
-                    {
-                        if (Ssse3.IsSupported)
-                        {
-                            if (Sse3.IsSupported)
-                            {
-                                if (Sse2.IsSupported && Sse.IsSupported)
-                                {
-                                    result = result && true;
-                                }
-                                else
-                                {
-                                    result = false;
-                                }
-                            }
-                            else
-                            {
-                                result = false;
-                            }
-                        }
-                        else
-                        {
-                            result = false;
-                        }
-                    }
-                    else
-                    {
-                        result = false;
-                    }
-                }
-            }
 
             if (Sse.IsSupported)
             {
@@ -63,27 +23,6 @@ namespace IntelHardwareIntrinsicTest
                 }
 
                 if (Vector<byte>.Count == 16 && Vector.IsHardwareAccelerated && !Sse2.IsSupported)
-                {
-                    result = false;
-                }
-            }
-            else
-            {
-                // Non-X86 platforms
-                if (Sse2.IsSupported  ||
-                    Sse3.IsSupported  ||
-                    Ssse3.IsSupported ||
-                    Sse41.IsSupported ||
-                    Sse42.IsSupported ||
-                    Avx.IsSupported   ||
-                    Avx2.IsSupported  ||
-                    Aes.IsSupported   ||
-                    Bmi1.IsSupported  ||
-                    Bmi2.IsSupported  ||
-                    Fma.IsSupported   ||
-                    Lzcnt.IsSupported ||
-                    Popcnt.IsSupported||
-                    Pclmulqdq.IsSupported)
                 {
                     result = false;
                 }
