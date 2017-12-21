@@ -133,6 +133,7 @@
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
+    <Reference Include="Microsoft.Win32.Primitives" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
