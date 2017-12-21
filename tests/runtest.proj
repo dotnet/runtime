@@ -12,7 +12,6 @@
 
   <ItemGroup>
     <DisabledTestDir Include="Common" />
-    <DisabledTestDir Include="tracing" />
     <_SkipTestDir Include="@(DisabledTestDir)" />
   </ItemGroup>
 
