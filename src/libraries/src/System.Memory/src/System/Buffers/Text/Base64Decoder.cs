@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 #if !netstandard
 using Internal.Runtime.CompilerServices;
@@ -31,8 +32,8 @@ namespace System.Buffers.Text
         /// </summary> 
         public static OperationStatus DecodeFromUtf8(ReadOnlySpan<byte> utf8, Span<byte> bytes, out int consumed, out int written, bool isFinalBlock = true)
         {
-            ref byte srcBytes = ref utf8.DangerousGetPinnableReference();
-            ref byte destBytes = ref bytes.DangerousGetPinnableReference();
+            ref byte srcBytes = ref MemoryMarshal.GetReference(utf8);
+            ref byte destBytes = ref MemoryMarshal.GetReference(bytes);
 
             int srcLength = utf8.Length & ~0x3;  // only decode input up to the closest multiple of 4.
             int destLength = bytes.Length;
@@ -211,7 +212,7 @@ namespace System.Buffers.Text
             if (bufferLength == 0)
                 goto DoneExit;
 
-            ref byte bufferBytes = ref buffer.DangerousGetPinnableReference();
+            ref byte bufferBytes = ref MemoryMarshal.GetReference(buffer);
 
             ref sbyte decodingMap = ref s_decodingMap[0];
 

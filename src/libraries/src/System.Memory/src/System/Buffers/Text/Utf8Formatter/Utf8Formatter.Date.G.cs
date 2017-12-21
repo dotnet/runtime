@@ -8,6 +8,8 @@ using Internal.Runtime.CompilerServices;
 using System.Runtime.CompilerServices;
 #endif
 
+using System.Runtime.InteropServices;
+
 namespace System.Buffers.Text
 {
     public static partial class Utf8Formatter
@@ -41,7 +43,7 @@ namespace System.Buffers.Text
                 return false;
             }
 
-            ref byte utf8Bytes = ref buffer.DangerousGetPinnableReference();
+            ref byte utf8Bytes = ref MemoryMarshal.GetReference(buffer);
 
             FormattingHelpers.WriteDigits(value.Month, 2, ref utf8Bytes, 0);
             Unsafe.Add(ref utf8Bytes, 2) = Utf8Constants.Slash;

@@ -389,7 +389,7 @@ namespace System.Net.Sockets
         /// <summary>Implements Task-returning SendAsync on top of Begin/EndSend.</summary>
         private Task<int> SendAsyncApm(ReadOnlyMemory<byte> buffer, SocketFlags socketFlags)
         {
-            if (buffer.DangerousTryGetArray(out ArraySegment<byte> bufferArray))
+            if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> bufferArray))
             {
                 var tcs = new TaskCompletionSource<int>(this);
                 BeginSend(bufferArray.Array, bufferArray.Offset, bufferArray.Count, socketFlags, iar =>

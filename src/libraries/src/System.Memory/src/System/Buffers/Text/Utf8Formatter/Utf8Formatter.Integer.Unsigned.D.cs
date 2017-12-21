@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+
 namespace System.Buffers.Text
 {
     /// <summary>
@@ -32,7 +34,7 @@ namespace System.Buffers.Text
                 return false;
             }
 
-            ref byte utf8Bytes = ref buffer.DangerousGetPinnableReference();
+            ref byte utf8Bytes = ref MemoryMarshal.GetReference(buffer);
             FormattingHelpers.WriteDigits(lastDigit, 1, ref utf8Bytes, bytesWritten);
             bytesWritten += 1;
             return true;

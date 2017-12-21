@@ -70,7 +70,7 @@ namespace System.IO.Compression
             if (destination.Length == 0)
                 return 0;
 
-            fixed (byte* bufPtr = &destination.DangerousGetPinnableReference())
+            fixed (byte* bufPtr = &MemoryMarshal.GetReference(destination))
             {
                 return InflateVerified(bufPtr, destination.Length);
             }

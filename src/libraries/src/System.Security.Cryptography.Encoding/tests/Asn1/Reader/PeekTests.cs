@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using Test.Cryptography;
 using Xunit;
@@ -172,7 +173,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             AsnReader reader = new AsnReader(dataBytes, AsnEncodingRules.BER);
             ReadOnlyMemory<byte> contents = reader.PeekContentBytes();
             Assert.Equal(expectedLength, contents.Length);
-            Assert.True(Unsafe.AreSame(ref dataBytes[2], ref contents.Span.DangerousGetPinnableReference()));
+            Assert.True(Unsafe.AreSame(ref dataBytes[2], ref MemoryMarshal.GetReference(contents.Span)));
         }
 
         [Theory]
@@ -207,7 +208,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             AsnReader reader = new AsnReader(dataBytes, AsnEncodingRules.BER);
             ReadOnlyMemory<byte> contents = reader.PeekEncodedValue();
             Assert.Equal(expectedLength, contents.Length);
-            Assert.True(Unsafe.AreSame(ref dataBytes[0], ref contents.Span.DangerousGetPinnableReference()));
+            Assert.True(Unsafe.AreSame(ref dataBytes[0], ref MemoryMarshal.GetReference(contents.Span)));
         }
     }
 }

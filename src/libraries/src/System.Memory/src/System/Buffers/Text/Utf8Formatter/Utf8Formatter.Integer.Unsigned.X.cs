@@ -8,6 +8,8 @@ using Internal.Runtime.CompilerServices;
 using System.Runtime.CompilerServices;
 #endif
 
+using System.Runtime.InteropServices;
+
 namespace System.Buffers.Text
 {
     /// <summary>
@@ -52,7 +54,7 @@ namespace System.Buffers.Text
             }
 
             string hexTable = useLower ? HexTableLower : HexTableUpper;
-            ref byte utf8Bytes = ref buffer.DangerousGetPinnableReference();
+            ref byte utf8Bytes = ref MemoryMarshal.GetReference(buffer);
             int idx = bytesWritten;
 
             for (v = value; digits-- > 0; v >>= 4)

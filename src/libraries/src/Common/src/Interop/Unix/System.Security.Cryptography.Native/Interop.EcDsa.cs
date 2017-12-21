@@ -11,14 +11,14 @@ internal static partial class Interop
     internal static partial class Crypto
     {
         internal static bool EcDsaSign(ReadOnlySpan<byte> dgst, int dlen, Span<byte> sig, [In, Out] ref int siglen, SafeEcKeyHandle ecKey) =>
-            EcDsaSign(ref dgst.DangerousGetPinnableReference(), dlen, ref sig.DangerousGetPinnableReference(), ref siglen, ecKey);
+            EcDsaSign(ref MemoryMarshal.GetReference(dgst), dlen, ref MemoryMarshal.GetReference(sig), ref siglen, ecKey);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcDsaSign")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool EcDsaSign(ref byte dgst, int dlen, ref byte sig, [In, Out] ref int siglen, SafeEcKeyHandle ecKey);
 
         internal static unsafe int EcDsaVerify(ReadOnlySpan<byte> dgst, int dgst_len, ReadOnlySpan<byte> sigbuf, int sig_len, SafeEcKeyHandle ecKey) =>
-            EcDsaVerify(ref dgst.DangerousGetPinnableReference(), dgst_len, ref sigbuf.DangerousGetPinnableReference(), sig_len, ecKey);
+            EcDsaVerify(ref MemoryMarshal.GetReference(dgst), dgst_len, ref MemoryMarshal.GetReference(sigbuf), sig_len, ecKey);
 
         /*-
          * returns

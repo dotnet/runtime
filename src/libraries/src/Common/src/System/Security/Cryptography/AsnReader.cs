@@ -1930,8 +1930,8 @@ namespace System.Security.Cryptography.Asn1
                 return true;
             }
 
-            fixed (byte* bytePtr = &source.DangerousGetPinnableReference())
-            fixed (char* charPtr = &destination.DangerousGetPinnableReference())
+            fixed (byte* bytePtr = &MemoryMarshal.GetReference(source))
+            fixed (char* charPtr = &MemoryMarshal.GetReference(destination))
             {
                 try
                 {
@@ -1981,7 +1981,7 @@ namespace System.Security.Cryptography.Asn1
                 {
                     unsafe
                     {
-                        fixed (byte* bytePtr = &contents.DangerousGetPinnableReference())
+                        fixed (byte* bytePtr = &MemoryMarshal.GetReference(contents))
                         {
                             try
                             {

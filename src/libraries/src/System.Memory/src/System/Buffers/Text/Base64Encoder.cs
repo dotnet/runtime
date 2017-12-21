@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 #if !netstandard
 using Internal.Runtime.CompilerServices;
@@ -32,8 +33,8 @@ namespace System.Buffers.Text
         /// </summary> 
         public static OperationStatus EncodeToUtf8(ReadOnlySpan<byte> bytes, Span<byte> utf8, out int consumed, out int written, bool isFinalBlock = true)
         {
-            ref byte srcBytes = ref bytes.DangerousGetPinnableReference();
-            ref byte destBytes = ref utf8.DangerousGetPinnableReference();
+            ref byte srcBytes = ref MemoryMarshal.GetReference(bytes);
+            ref byte destBytes = ref MemoryMarshal.GetReference(utf8);
 
             int srcLength = bytes.Length;
             int destLength = utf8.Length;
@@ -141,7 +142,7 @@ namespace System.Buffers.Text
             int result = 0;
 
             ref byte encodingMap = ref s_encodingMap[0];
-            ref byte bufferBytes = ref buffer.DangerousGetPinnableReference();
+            ref byte bufferBytes = ref MemoryMarshal.GetReference(buffer);
 
             // encode last pack to avoid conditional in the main loop
             if (leftover != 0)

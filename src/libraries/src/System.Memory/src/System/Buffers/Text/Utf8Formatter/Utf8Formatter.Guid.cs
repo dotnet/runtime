@@ -8,6 +8,8 @@ using Internal.Runtime.CompilerServices;
 using System.Runtime.CompilerServices;
 #endif
 
+using System.Runtime.InteropServices;
+
 namespace System.Buffers.Text
 {
     public static partial class Utf8Formatter
@@ -86,7 +88,7 @@ namespace System.Buffers.Text
                 return false;
             }
 
-            ref byte utf8Bytes = ref buffer.DangerousGetPinnableReference();
+            ref byte utf8Bytes = ref MemoryMarshal.GetReference(buffer);
             byte* bytes = (byte*)&value;
             int idx = 0;
 

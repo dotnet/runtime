@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace System.Net.Http
@@ -14,7 +15,7 @@ namespace System.Net.Http
         public ReadOnlyMemoryContent(ReadOnlyMemory<byte> content)
         {
             _content = content;
-            if (content.DangerousTryGetArray(out ArraySegment<byte> array))
+            if (MemoryMarshal.TryGetArray(content, out ArraySegment<byte> array))
             {
                 // If we have an array, allow HttpClient to take optimized paths by just
                 // giving it the array content to use as its already buffered data.
