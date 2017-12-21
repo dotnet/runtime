@@ -126,8 +126,6 @@ namespace System.Drawing
                 GdipDrawImageRectI_ptr = FunctionWrapper.Load<GdipDrawImageRectI_delegate>(s_gdipModule, "GdipDrawImageRectI", LibraryName);
                 GdipGetRenderingOrigin_ptr = FunctionWrapper.Load<GdipGetRenderingOrigin_delegate>(s_gdipModule, "GdipGetRenderingOrigin", LibraryName);
                 GdipSetRenderingOrigin_ptr = FunctionWrapper.Load<GdipSetRenderingOrigin_delegate>(s_gdipModule, "GdipSetRenderingOrigin", LibraryName);
-                GdipCloneBitmapArea_ptr = FunctionWrapper.Load<GdipCloneBitmapArea_delegate>(s_gdipModule, "GdipCloneBitmapArea", LibraryName);
-                GdipCloneBitmapAreaI_ptr = FunctionWrapper.Load<GdipCloneBitmapAreaI_delegate>(s_gdipModule, "GdipCloneBitmapAreaI", LibraryName);
                 GdipGraphicsClear_ptr = FunctionWrapper.Load<GdipGraphicsClear_delegate>(s_gdipModule, "GdipGraphicsClear", LibraryName);
                 GdipDrawClosedCurve_ptr = FunctionWrapper.Load<GdipDrawClosedCurve_delegate>(s_gdipModule, "GdipDrawClosedCurve", LibraryName);
                 GdipDrawClosedCurveI_ptr = FunctionWrapper.Load<GdipDrawClosedCurveI_delegate>(s_gdipModule, "GdipDrawClosedCurveI", LibraryName);
@@ -175,13 +173,6 @@ namespace System.Drawing
                 GdipCreateFromHWND_ptr = FunctionWrapper.Load<GdipCreateFromHWND_delegate>(s_gdipModule, "GdipCreateFromHWND", LibraryName);
                 GdipMeasureString_ptr = FunctionWrapper.Load<GdipMeasureString_delegate>(s_gdipModule, "GdipMeasureString", LibraryName);
                 GdipMeasureCharacterRanges_ptr = FunctionWrapper.Load<GdipMeasureCharacterRanges_delegate>(s_gdipModule, "GdipMeasureCharacterRanges", LibraryName);
-                GdipCreateBitmapFromScan0_ptr = FunctionWrapper.Load<GdipCreateBitmapFromScan0_delegate>(s_gdipModule, "GdipCreateBitmapFromScan0", LibraryName);
-                GdipCreateBitmapFromGraphics_ptr = FunctionWrapper.Load<GdipCreateBitmapFromGraphics_delegate>(s_gdipModule, "GdipCreateBitmapFromGraphics", LibraryName);
-                GdipBitmapLockBits_ptr = FunctionWrapper.Load<GdipBitmapLockBits_delegate>(s_gdipModule, "GdipBitmapLockBits", LibraryName);
-                GdipBitmapSetResolution_ptr = FunctionWrapper.Load<GdipBitmapSetResolution_delegate>(s_gdipModule, "GdipBitmapSetResolution", LibraryName);
-                GdipBitmapUnlockBits_ptr = FunctionWrapper.Load<GdipBitmapUnlockBits_delegate>(s_gdipModule, "GdipBitmapUnlockBits", LibraryName);
-                GdipBitmapGetPixel_ptr = FunctionWrapper.Load<GdipBitmapGetPixel_delegate>(s_gdipModule, "GdipBitmapGetPixel", LibraryName);
-                GdipBitmapSetPixel_ptr = FunctionWrapper.Load<GdipBitmapSetPixel_delegate>(s_gdipModule, "GdipBitmapSetPixel", LibraryName);
                 GdipLoadImageFromFile_ptr = FunctionWrapper.Load<GdipLoadImageFromFile_delegate>(s_gdipModule, "GdipLoadImageFromFile", LibraryName);
                 GdipCloneImage_ptr = FunctionWrapper.Load<GdipCloneImage_delegate>(s_gdipModule, "GdipCloneImage", LibraryName);
                 GdipLoadImageFromFileICM_ptr = FunctionWrapper.Load<GdipLoadImageFromFileICM_delegate>(s_gdipModule, "GdipLoadImageFromFileICM", LibraryName);
@@ -231,12 +222,6 @@ namespace System.Drawing
                 GdipDrawImageRect_ptr = FunctionWrapper.Load<GdipDrawImageRect_delegate>(s_gdipModule, "GdipDrawImageRect", LibraryName);
                 GdipDrawImagePointRect_ptr = FunctionWrapper.Load<GdipDrawImagePointRect_delegate>(s_gdipModule, "GdipDrawImagePointRect", LibraryName);
                 GdipDrawImagePointRectI_ptr = FunctionWrapper.Load<GdipDrawImagePointRectI_delegate>(s_gdipModule, "GdipDrawImagePointRectI", LibraryName);
-                GdipCreateHBITMAPFromBitmap_ptr = FunctionWrapper.Load<GdipCreateHBITMAPFromBitmap_delegate>(s_gdipModule, "GdipCreateHBITMAPFromBitmap", LibraryName);
-                GdipCreateBitmapFromFile_ptr = FunctionWrapper.Load<GdipCreateBitmapFromFile_delegate>(s_gdipModule, "GdipCreateBitmapFromFile", LibraryName);
-                GdipCreateBitmapFromFileICM_ptr = FunctionWrapper.Load<GdipCreateBitmapFromFileICM_delegate>(s_gdipModule, "GdipCreateBitmapFromFileICM", LibraryName);
-                GdipCreateHICONFromBitmap_ptr = FunctionWrapper.Load<GdipCreateHICONFromBitmap_delegate>(s_gdipModule, "GdipCreateHICONFromBitmap", LibraryName);
-                GdipCreateBitmapFromHICON_ptr = FunctionWrapper.Load<GdipCreateBitmapFromHICON_delegate>(s_gdipModule, "GdipCreateBitmapFromHICON", LibraryName);
-                GdipCreateBitmapFromResource_ptr = FunctionWrapper.Load<GdipCreateBitmapFromResource_delegate>(s_gdipModule, "GdipCreateBitmapFromResource", LibraryName);
                 GdipCreatePath_ptr = FunctionWrapper.Load<GdipCreatePath_delegate>(s_gdipModule, "GdipCreatePath", LibraryName);
                 GdipCreatePath2_ptr = FunctionWrapper.Load<GdipCreatePath2_delegate>(s_gdipModule, "GdipCreatePath2", LibraryName);
                 GdipCreatePath2I_ptr = FunctionWrapper.Load<GdipCreatePath2I_delegate>(s_gdipModule, "GdipCreatePath2I", LibraryName);
@@ -519,14 +504,6 @@ namespace System.Drawing
             private static FunctionWrapper<GdipSetRenderingOrigin_delegate> GdipSetRenderingOrigin_ptr;
             internal static int GdipSetRenderingOrigin(IntPtr graphics, int x, int y) => GdipSetRenderingOrigin_ptr.Delegate(graphics, x, y);
 
-            private delegate int GdipCloneBitmapArea_delegate(float x, float y, float width, float height, PixelFormat format, IntPtr original, out IntPtr bitmap);
-            private static FunctionWrapper<GdipCloneBitmapArea_delegate> GdipCloneBitmapArea_ptr;
-            internal static int GdipCloneBitmapArea(float x, float y, float width, float height, PixelFormat format, IntPtr original, out IntPtr bitmap) => GdipCloneBitmapArea_ptr.Delegate(x, y, width, height, format, original, out bitmap);
-
-            private delegate int GdipCloneBitmapAreaI_delegate(int x, int y, int width, int height, PixelFormat format, IntPtr original, out IntPtr bitmap);
-            private static FunctionWrapper<GdipCloneBitmapAreaI_delegate> GdipCloneBitmapAreaI_ptr;
-            internal static int GdipCloneBitmapAreaI(int x, int y, int width, int height, PixelFormat format, IntPtr original, out IntPtr bitmap) => GdipCloneBitmapAreaI_ptr.Delegate(x, y, width, height, format, original, out bitmap);
-
             private delegate int GdipGraphicsClear_delegate(IntPtr graphics, int argb);
             private static FunctionWrapper<GdipGraphicsClear_delegate> GdipGraphicsClear_ptr;
             internal static int GdipGraphicsClear(IntPtr graphics, int argb) => GdipGraphicsClear_ptr.Delegate(graphics, argb);
@@ -715,34 +692,6 @@ namespace System.Drawing
             private static FunctionWrapper<GdipMeasureCharacterRanges_delegate> GdipMeasureCharacterRanges_ptr;
             internal static int GdipMeasureCharacterRanges(IntPtr graphics, string str, int length, IntPtr font, ref RectangleF layoutRect, IntPtr stringFormat, int regcount, out IntPtr regions) => GdipMeasureCharacterRanges_ptr.Delegate(graphics, str, length, font, ref layoutRect, stringFormat, regcount, out regions);
 
-            private delegate int GdipCreateBitmapFromScan0_delegate(int width, int height, int stride, PixelFormat format, IntPtr scan0, out IntPtr bmp);
-            private static FunctionWrapper<GdipCreateBitmapFromScan0_delegate> GdipCreateBitmapFromScan0_ptr;
-            internal static int GdipCreateBitmapFromScan0(int width, int height, int stride, PixelFormat format, IntPtr scan0, out IntPtr bmp) => GdipCreateBitmapFromScan0_ptr.Delegate(width, height, stride, format, scan0, out bmp);
-
-            private delegate int GdipCreateBitmapFromGraphics_delegate(int width, int height, IntPtr target, out IntPtr bitmap);
-            private static FunctionWrapper<GdipCreateBitmapFromGraphics_delegate> GdipCreateBitmapFromGraphics_ptr;
-            internal static int GdipCreateBitmapFromGraphics(int width, int height, IntPtr target, out IntPtr bitmap) => GdipCreateBitmapFromGraphics_ptr.Delegate(width, height, target, out bitmap);
-
-            private delegate int GdipBitmapLockBits_delegate(IntPtr bmp, ref Rectangle rc, ImageLockMode flags, PixelFormat format, [In] [Out] BitmapData bmpData);
-            private static FunctionWrapper<GdipBitmapLockBits_delegate> GdipBitmapLockBits_ptr;
-            internal static int GdipBitmapLockBits(IntPtr bmp, ref Rectangle rc, ImageLockMode flags, PixelFormat format, [In] [Out] BitmapData bmpData) => GdipBitmapLockBits_ptr.Delegate(bmp, ref rc, flags, format, bmpData);
-
-            private delegate int GdipBitmapSetResolution_delegate(IntPtr bmp, float xdpi, float ydpi);
-            private static FunctionWrapper<GdipBitmapSetResolution_delegate> GdipBitmapSetResolution_ptr;
-            internal static int GdipBitmapSetResolution(IntPtr bmp, float xdpi, float ydpi) => GdipBitmapSetResolution_ptr.Delegate(bmp, xdpi, ydpi);
-
-            private delegate int GdipBitmapUnlockBits_delegate(IntPtr bmp, [In] [Out] BitmapData bmpData);
-            private static FunctionWrapper<GdipBitmapUnlockBits_delegate> GdipBitmapUnlockBits_ptr;
-            internal static int GdipBitmapUnlockBits(IntPtr bmp, [In] [Out] BitmapData bmpData) => GdipBitmapUnlockBits_ptr.Delegate(bmp, bmpData);
-
-            private delegate int GdipBitmapGetPixel_delegate(IntPtr bmp, int x, int y, out int argb);
-            private static FunctionWrapper<GdipBitmapGetPixel_delegate> GdipBitmapGetPixel_ptr;
-            internal static int GdipBitmapGetPixel(IntPtr bmp, int x, int y, out int argb) => GdipBitmapGetPixel_ptr.Delegate(bmp, x, y, out argb);
-
-            private delegate int GdipBitmapSetPixel_delegate(IntPtr bmp, int x, int y, int argb);
-            private static FunctionWrapper<GdipBitmapSetPixel_delegate> GdipBitmapSetPixel_ptr;
-            internal static int GdipBitmapSetPixel(IntPtr bmp, int x, int y, int argb) => GdipBitmapSetPixel_ptr.Delegate(bmp, x, y, argb);
-
             private delegate int GdipLoadImageFromFile_delegate([MarshalAs(UnmanagedType.LPWStr)]string filename, out IntPtr image);
             private static FunctionWrapper<GdipLoadImageFromFile_delegate> GdipLoadImageFromFile_ptr;
             internal static int GdipLoadImageFromFile(string filename, out IntPtr image) => GdipLoadImageFromFile_ptr.Delegate(filename, out image);
@@ -754,10 +703,6 @@ namespace System.Drawing
             private delegate int GdipLoadImageFromFileICM_delegate([MarshalAs(UnmanagedType.LPWStr)]string filename, out IntPtr image);
             private static FunctionWrapper<GdipLoadImageFromFileICM_delegate> GdipLoadImageFromFileICM_ptr;
             internal static int GdipLoadImageFromFileICM(string filename, out IntPtr image) => GdipLoadImageFromFileICM_ptr.Delegate(filename, out image);
-
-            private delegate int GdipCreateBitmapFromHBITMAP_delegate(IntPtr hBitMap, IntPtr gdiPalette, out IntPtr image);
-            private static FunctionWrapper<GdipCreateBitmapFromHBITMAP_delegate> GdipCreateBitmapFromHBITMAP_ptr;
-            internal static int GdipCreateBitmapFromHBITMAP(IntPtr hBitMap, IntPtr gdiPalette, out IntPtr image) => GdipCreateBitmapFromHBITMAP_ptr.Delegate(hBitMap, gdiPalette, out image);
 
             private delegate int GdipDisposeImage_delegate(IntPtr image);
             private static FunctionWrapper<GdipDisposeImage_delegate> GdipDisposeImage_ptr;
@@ -939,30 +884,6 @@ namespace System.Drawing
             private delegate int GdipDrawImagePointRectI_delegate(IntPtr graphics, IntPtr image, int x, int y, int srcx, int srcy, int srcwidth, int srcheight, GraphicsUnit srcUnit);
             private static FunctionWrapper<GdipDrawImagePointRectI_delegate> GdipDrawImagePointRectI_ptr;
             internal static int GdipDrawImagePointRectI(IntPtr graphics, IntPtr image, int x, int y, int srcx, int srcy, int srcwidth, int srcheight, GraphicsUnit srcUnit) => GdipDrawImagePointRectI_ptr.Delegate(graphics, image, x, y, srcx, srcy, srcwidth, srcheight, srcUnit);
-
-            private delegate int GdipCreateHBITMAPFromBitmap_delegate(IntPtr bmp, out IntPtr HandleBmp, int clrbackground);
-            private static FunctionWrapper<GdipCreateHBITMAPFromBitmap_delegate> GdipCreateHBITMAPFromBitmap_ptr;
-            internal static int GdipCreateHBITMAPFromBitmap(IntPtr bmp, out IntPtr HandleBmp, int clrbackground) => GdipCreateHBITMAPFromBitmap_ptr.Delegate(bmp, out HandleBmp, clrbackground);
-
-            private delegate int GdipCreateBitmapFromFile_delegate([MarshalAs(UnmanagedType.LPWStr)]string filename, out IntPtr bitmap);
-            private static FunctionWrapper<GdipCreateBitmapFromFile_delegate> GdipCreateBitmapFromFile_ptr;
-            internal static int GdipCreateBitmapFromFile(string filename, out IntPtr bitmap) => GdipCreateBitmapFromFile_ptr.Delegate(filename, out bitmap);
-
-            private delegate int GdipCreateBitmapFromFileICM_delegate([MarshalAs(UnmanagedType.LPWStr)]string filename, out IntPtr bitmap);
-            private static FunctionWrapper<GdipCreateBitmapFromFileICM_delegate> GdipCreateBitmapFromFileICM_ptr;
-            internal static int GdipCreateBitmapFromFileICM(string filename, out IntPtr bitmap) => GdipCreateBitmapFromFileICM_ptr.Delegate(filename, out bitmap);
-
-            private delegate int GdipCreateHICONFromBitmap_delegate(IntPtr bmp, out IntPtr HandleIcon);
-            private static FunctionWrapper<GdipCreateHICONFromBitmap_delegate> GdipCreateHICONFromBitmap_ptr;
-            internal static int GdipCreateHICONFromBitmap(IntPtr bmp, out IntPtr HandleIcon) => GdipCreateHICONFromBitmap_ptr.Delegate(bmp, out HandleIcon);
-
-            private delegate int GdipCreateBitmapFromHICON_delegate(IntPtr hicon, out IntPtr bitmap);
-            private static FunctionWrapper<GdipCreateBitmapFromHICON_delegate> GdipCreateBitmapFromHICON_ptr;
-            internal static int GdipCreateBitmapFromHICON(IntPtr hicon, out IntPtr bitmap) => GdipCreateBitmapFromHICON_ptr.Delegate(hicon, out bitmap);
-
-            private delegate int GdipCreateBitmapFromResource_delegate(IntPtr hInstance, [MarshalAs(UnmanagedType.LPWStr)]string lpBitmapName, out IntPtr bitmap);
-            private static FunctionWrapper<GdipCreateBitmapFromResource_delegate> GdipCreateBitmapFromResource_ptr;
-            internal static int GdipCreateBitmapFromResource(IntPtr hInstance, string lpBitmapName, out IntPtr bitmap) => GdipCreateBitmapFromResource_ptr.Delegate(hInstance, lpBitmapName, out bitmap);
 
             private delegate int GdipCreatePath_delegate(FillMode brushMode, out IntPtr path);
             private static FunctionWrapper<GdipCreatePath_delegate> GdipCreatePath_ptr;

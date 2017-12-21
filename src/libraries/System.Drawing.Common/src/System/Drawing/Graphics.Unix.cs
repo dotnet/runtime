@@ -622,7 +622,7 @@ namespace System.Drawing
             if (image == null)
                 throw new ArgumentNullException("image");
 
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRect(nativeObject, image.NativeObject, rect.X, rect.Y, rect.Width, rect.Height);
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRect(nativeObject, image.nativeImage, rect.X, rect.Y, rect.Width, rect.Height);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -631,7 +631,7 @@ namespace System.Drawing
             if (image == null)
                 throw new ArgumentNullException("image");
 
-            int status = SafeNativeMethods.Gdip.GdipDrawImage(nativeObject, image.NativeObject, point.X, point.Y);
+            int status = SafeNativeMethods.Gdip.GdipDrawImage(nativeObject, image.nativeImage, point.X, point.Y);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -642,7 +642,7 @@ namespace System.Drawing
             if (destPoints == null)
                 throw new ArgumentNullException("destPoints");
 
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsI(nativeObject, image.NativeObject, destPoints, destPoints.Length);
+            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsI(nativeObject, image.nativeImage, destPoints, destPoints.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -666,7 +666,7 @@ namespace System.Drawing
                 throw new ArgumentNullException("image");
             if (destPoints == null)
                 throw new ArgumentNullException("destPoints");
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePoints(nativeObject, image.NativeObject, destPoints, destPoints.Length);
+            int status = SafeNativeMethods.Gdip.GdipDrawImagePoints(nativeObject, image.nativeImage, destPoints, destPoints.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -674,7 +674,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException("image");
-            int status = SafeNativeMethods.Gdip.GdipDrawImageI(nativeObject, image.NativeObject, x, y);
+            int status = SafeNativeMethods.Gdip.GdipDrawImageI(nativeObject, image.nativeImage, x, y);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -682,7 +682,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException("image");
-            int status = SafeNativeMethods.Gdip.GdipDrawImage(nativeObject, image.NativeObject, x, y);
+            int status = SafeNativeMethods.Gdip.GdipDrawImage(nativeObject, image.nativeImage, x, y);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -690,7 +690,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException("image");
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRectI(nativeObject, image.NativeObject,
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRectI(nativeObject, image.nativeImage,
                 destRect.X, destRect.Y, destRect.Width, destRect.Height,
                 srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height,
                 srcUnit, IntPtr.Zero, null, IntPtr.Zero);
@@ -701,7 +701,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException("image");
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRect(nativeObject, image.NativeObject,
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRect(nativeObject, image.nativeImage,
                 destRect.X, destRect.Y, destRect.Width, destRect.Height,
                 srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height,
                 srcUnit, IntPtr.Zero, null, IntPtr.Zero);
@@ -715,7 +715,7 @@ namespace System.Drawing
             if (destPoints == null)
                 throw new ArgumentNullException("destPoints");
 
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRectI(nativeObject, image.NativeObject,
+            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRectI(nativeObject, image.nativeImage,
                 destPoints, destPoints.Length, srcRect.X, srcRect.Y,
                 srcRect.Width, srcRect.Height, srcUnit, IntPtr.Zero,
                 null, IntPtr.Zero);
@@ -729,7 +729,7 @@ namespace System.Drawing
             if (destPoints == null)
                 throw new ArgumentNullException("destPoints");
 
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRect(nativeObject, image.NativeObject,
+            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRect(nativeObject, image.nativeImage,
                 destPoints, destPoints.Length, srcRect.X, srcRect.Y,
                 srcRect.Width, srcRect.Height, srcUnit, IntPtr.Zero,
                 null, IntPtr.Zero);
@@ -743,7 +743,7 @@ namespace System.Drawing
                 throw new ArgumentNullException("image");
             if (destPoints == null)
                 throw new ArgumentNullException("destPoints");
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRectI(nativeObject, image.NativeObject,
+            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRectI(nativeObject, image.nativeImage,
                 destPoints, destPoints.Length, srcRect.X, srcRect.Y,
                 srcRect.Width, srcRect.Height, srcUnit,
                 imageAttr != null ? imageAttr.nativeImageAttributes : IntPtr.Zero, null, IntPtr.Zero);
@@ -754,7 +754,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException("image");
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRect(nativeObject, image.NativeObject, x, y,
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRect(nativeObject, image.nativeImage, x, y,
                            width, height);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
@@ -766,7 +766,7 @@ namespace System.Drawing
                 throw new ArgumentNullException("image");
             if (destPoints == null)
                 throw new ArgumentNullException("destPoints");
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRect(nativeObject, image.NativeObject,
+            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRect(nativeObject, image.nativeImage,
                 destPoints, destPoints.Length, srcRect.X, srcRect.Y,
                 srcRect.Width, srcRect.Height, srcUnit,
                 imageAttr != null ? imageAttr.nativeImageAttributes : IntPtr.Zero, null, IntPtr.Zero);
@@ -777,7 +777,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException("image");
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointRectI(nativeObject, image.NativeObject, x, y, srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height, srcUnit);
+            int status = SafeNativeMethods.Gdip.GdipDrawImagePointRectI(nativeObject, image.nativeImage, x, y, srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height, srcUnit);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -785,7 +785,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException("image");
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRectI(nativeObject, image.nativeObject, x, y, width, height);
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRectI(nativeObject, image.nativeImage, x, y, width, height);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -793,7 +793,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException("image");
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointRect(nativeObject, image.nativeObject, x, y, srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height, srcUnit);
+            int status = SafeNativeMethods.Gdip.GdipDrawImagePointRect(nativeObject, image.nativeImage, x, y, srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height, srcUnit);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -803,7 +803,7 @@ namespace System.Drawing
                 throw new ArgumentNullException("image");
             if (destPoints == null)
                 throw new ArgumentNullException("destPoints");
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRect(nativeObject, image.NativeObject,
+            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRect(nativeObject, image.nativeImage,
                 destPoints, destPoints.Length, srcRect.X, srcRect.Y,
                 srcRect.Width, srcRect.Height, srcUnit,
                 imageAttr != null ? imageAttr.nativeImageAttributes : IntPtr.Zero, callback, IntPtr.Zero);
@@ -817,7 +817,7 @@ namespace System.Drawing
             if (destPoints == null)
                 throw new ArgumentNullException("destPoints");
 
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRectI(nativeObject, image.NativeObject,
+            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRectI(nativeObject, image.nativeImage,
                 destPoints, destPoints.Length, srcRect.X, srcRect.Y,
                 srcRect.Width, srcRect.Height, srcUnit,
                 imageAttr != null ? imageAttr.nativeImageAttributes : IntPtr.Zero, callback, IntPtr.Zero);
@@ -831,7 +831,7 @@ namespace System.Drawing
             if (destPoints == null)
                 throw new ArgumentNullException("destPoints");
 
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRectI(nativeObject, image.NativeObject,
+            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRectI(nativeObject, image.nativeImage,
                 destPoints, destPoints.Length, srcRect.X, srcRect.Y,
                 srcRect.Width, srcRect.Height, srcUnit,
                 imageAttr != null ? imageAttr.nativeImageAttributes : IntPtr.Zero, callback, (IntPtr)callbackData);
@@ -842,7 +842,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException("image");
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRect(nativeObject, image.NativeObject,
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRect(nativeObject, image.nativeImage,
                                 destRect.X, destRect.Y, destRect.Width, destRect.Height,
                                srcX, srcY, srcWidth, srcHeight, srcUnit, IntPtr.Zero,
                                null, IntPtr.Zero);
@@ -851,7 +851,7 @@ namespace System.Drawing
 
         public void DrawImage(Image image, PointF[] destPoints, RectangleF srcRect, GraphicsUnit srcUnit, ImageAttributes imageAttr, DrawImageAbort callback, int callbackData)
         {
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRect(nativeObject, image.NativeObject,
+            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRect(nativeObject, image.nativeImage,
                 destPoints, destPoints.Length, srcRect.X, srcRect.Y,
                 srcRect.Width, srcRect.Height, srcUnit,
                 imageAttr != null ? imageAttr.nativeImageAttributes : IntPtr.Zero, callback, (IntPtr)callbackData);
@@ -862,7 +862,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException("image");
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRectI(nativeObject, image.NativeObject,
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRectI(nativeObject, image.nativeImage,
                                 destRect.X, destRect.Y, destRect.Width, destRect.Height,
                                srcX, srcY, srcWidth, srcHeight, srcUnit, IntPtr.Zero,
                                null, IntPtr.Zero);
@@ -873,7 +873,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException("image");
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRect(nativeObject, image.NativeObject,
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRect(nativeObject, image.nativeImage,
                                 destRect.X, destRect.Y, destRect.Width, destRect.Height,
                                srcX, srcY, srcWidth, srcHeight, srcUnit,
                 imageAttrs != null ? imageAttrs.nativeImageAttributes : IntPtr.Zero, null, IntPtr.Zero);
@@ -884,7 +884,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException("image");
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRectI(nativeObject, image.NativeObject,
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRectI(nativeObject, image.nativeImage,
                                         destRect.X, destRect.Y, destRect.Width,
                     destRect.Height, srcX, srcY, srcWidth, srcHeight,
                     srcUnit, imageAttr != null ? imageAttr.nativeImageAttributes : IntPtr.Zero, null, IntPtr.Zero);
@@ -895,7 +895,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException("image");
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRectI(nativeObject, image.NativeObject,
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRectI(nativeObject, image.nativeImage,
                                         destRect.X, destRect.Y, destRect.Width,
                     destRect.Height, srcX, srcY, srcWidth, srcHeight,
                     srcUnit, imageAttr != null ? imageAttr.nativeImageAttributes : IntPtr.Zero, callback,
@@ -907,7 +907,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException("image");
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRect(nativeObject, image.NativeObject,
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRect(nativeObject, image.nativeImage,
                                         destRect.X, destRect.Y, destRect.Width,
                     destRect.Height, srcX, srcY, srcWidth, srcHeight,
                     srcUnit, imageAttrs != null ? imageAttrs.nativeImageAttributes : IntPtr.Zero,
@@ -919,7 +919,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException("image");
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRect(nativeObject, image.NativeObject,
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRect(nativeObject, image.nativeImage,
                 destRect.X, destRect.Y, destRect.Width, destRect.Height,
                 srcX, srcY, srcWidth, srcHeight, srcUnit,
                 imageAttrs != null ? imageAttrs.nativeImageAttributes : IntPtr.Zero, callback, callbackData);
@@ -930,7 +930,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException("image");
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRect(nativeObject, image.NativeObject,
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRect(nativeObject, image.nativeImage,
                                destRect.X, destRect.Y, destRect.Width, destRect.Height,
                 srcX, srcY, srcWidth, srcHeight, srcUnit,
                 imageAttrs != null ? imageAttrs.nativeImageAttributes : IntPtr.Zero, callback, callbackData);
@@ -1733,7 +1733,7 @@ namespace System.Drawing
             if ((image.PixelFormat & PixelFormat.Indexed) != 0)
                 throw new ArgumentException("Cannot create Graphics from an indexed bitmap.", nameof(image));            
 
-            int status = SafeNativeMethods.Gdip.GdipGetImageGraphicsContext(image.nativeObject, out graphics);
+            int status = SafeNativeMethods.Gdip.GdipGetImageGraphicsContext(image.nativeImage, out graphics);
             SafeNativeMethods.Gdip.CheckStatus(status);
             Graphics result = new Graphics(graphics);
 
