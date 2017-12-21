@@ -675,7 +675,11 @@ namespace System.Net
 
                     if (cookie == null)
                     {
-                        break;
+                        if (parser.EndofHeader())
+                        {
+                            break;
+                        }
+                        continue;
                     }
 
                     // Parser marks invalid cookies this way
