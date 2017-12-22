@@ -2997,6 +2997,7 @@ void StackTraceArray::Append(StackTraceElement const * begin, StackTraceElement 
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
+        PRECONDITION(IsProtectedByGCFrame((OBJECTREF*)this));
     }
     CONTRACTL_END;
 
@@ -3021,6 +3022,7 @@ void StackTraceArray::AppendSkipLast(StackTraceElement const * begin, StackTrace
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
+        PRECONDITION(IsProtectedByGCFrame((OBJECTREF*)this));
     }
     CONTRACTL_END;
 
@@ -3048,8 +3050,9 @@ void StackTraceArray::AppendSkipLast(StackTraceElement const * begin, StackTrace
     else
     {
         // slow path: create a copy and append
-        StackTraceArray copy(*this);
+        StackTraceArray copy;
         GCPROTECT_BEGIN(copy);
+            copy.CopyFrom(*this);
             copy.SetSize(copy.Size() - 1);
             copy.Append(begin, end);
             this->Swap(copy);
@@ -3091,6 +3094,7 @@ void StackTraceArray::Grow(size_t grow_size)
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         INJECT_FAULT(ThrowOutOfMemory(););
+        PRECONDITION(IsProtectedByGCFrame((OBJECTREF*)this));
     }
     CONTRACTL_END;
 
@@ -3132,37 +3136,17 @@ void StackTraceArray::EnsureThreadAffinity()
     {
         // object is being changed by a thread different from the one which created it
         // make a copy of the array to prevent a race condition when two different threads try to change it
-        StackTraceArray copy(*this);
-        this->Swap(copy);
+        StackTraceArray copy;
+        GCPROTECT_BEGIN(copy);
+            copy.CopyFrom(*this);
+            this->Swap(copy);
+        GCPROTECT_END();
     }
 }
 
 #ifdef _MSC_VER
 #pragma warning(disable: 4267) 
 #endif
-
-StackTraceArray::StackTraceArray(StackTraceArray const & rhs)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(ThrowOutOfMemory(););
-    }
-    CONTRACTL_END;
-
-    m_array = (I1ARRAYREF) AllocatePrimitiveArray(ELEMENT_TYPE_I1, static_cast<DWORD>(rhs.Capacity()));
-
-    GCPROTECT_BEGIN(m_array);
-        Volatile<size_t> size = rhs.Size();
-        memcpyNoGCRefs(GetRaw(), rhs.GetRaw(), size * sizeof(StackTraceElement) + sizeof(ArrayHeader));
-
-        SetSize(size);  // set size to the exact value which was used when we copied the data
-                        // another thread might have changed it at the time of copying
-        SetObjectThread();  // affinitize the newly created array with the current thread
-    GCPROTECT_END();
-}
 
 // Deep copies the stack trace array
 void StackTraceArray::CopyFrom(StackTraceArray const & src)
@@ -3173,19 +3157,19 @@ void StackTraceArray::CopyFrom(StackTraceArray const & src)
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         INJECT_FAULT(ThrowOutOfMemory(););
+        PRECONDITION(IsProtectedByGCFrame((OBJECTREF*)this));
+        PRECONDITION(IsProtectedByGCFrame((OBJECTREF*)&src));
     }
     CONTRACTL_END;
 
     m_array = (I1ARRAYREF) AllocatePrimitiveArray(ELEMENT_TYPE_I1, static_cast<DWORD>(src.Capacity()));
 
-    GCPROTECT_BEGIN(m_array);
     Volatile<size_t> size = src.Size();
     memcpyNoGCRefs(GetRaw(), src.GetRaw(), size * sizeof(StackTraceElement) + sizeof(ArrayHeader));
 
     SetSize(size);  // set size to the exact value which was used when we copied the data
                     // another thread might have changed it at the time of copying
     SetObjectThread();  // affinitize the newly created array with the current thread
-    GCPROTECT_END();
 }
 
 #ifdef _MSC_VER
