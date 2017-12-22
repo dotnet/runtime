@@ -2771,7 +2771,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 {
 	MonoMethod *m;
 	MonoMethodWrapper *wrapperm;
-	MonoMarshalSpec **specs;
+	MonoMarshalSpec **specs = NULL;
 	MonoReflectionMethodAux *method_aux;
 	MonoImage *image;
 	gboolean dynamic;
@@ -2803,7 +2803,8 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	m->slot = -1;
 	m->flags = rmb->attrs;
 	m->iflags = rmb->iattrs;
-	m->name = mono_string_to_utf8_image_ignore (image, rmb->name);
+	m->name = string_to_utf8_image_raw (image, rmb->name, error);
+	goto_if_nok (error, fail);
 	m->klass = klass;
 	m->signature = sig;
 	m->sre_method = TRUE;
@@ -2831,9 +2832,8 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		if (image_is_dynamic (klass->image))
 			g_hash_table_insert (((MonoDynamicImage*)klass->image)->method_aux_hash, m, method_aux);
 
-		mono_loader_unlock ();
+		goto leave;
 
-		return m;
 	} else if (!(m->flags & METHOD_ATTRIBUTE_ABSTRACT) &&
 			   !(m->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
 		MonoMethodHeader *header;
@@ -3012,7 +3012,6 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	}
 
 	/* Parameter marshalling */
-	specs = NULL;
 	if (rmb->pinfo)		
 		for (i = 0; i < mono_array_length (rmb->pinfo); ++i) {
 			MonoReflectionParamBuilder *pb;
@@ -3022,12 +3021,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 						specs = image_g_new0 (image, MonoMarshalSpec*, sig->param_count + 1);
 					specs [pb->position] = 
 						mono_marshal_spec_from_builder (image, klass->image->assembly, pb->marshal_info, error);
-					if (!is_ok (error)) {
-						mono_loader_unlock ();
-						image_g_free (image, specs);
-						/* FIXME: if image is NULL, this leaks all the other stuff we alloc'd in this function */
-						return NULL;
-					}
+					goto_if_nok (error, fail);
 				}
 			}
 		}
@@ -3040,9 +3034,15 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	if (image_is_dynamic (klass->image) && method_aux)
 		g_hash_table_insert (((MonoDynamicImage*)klass->image)->method_aux_hash, m, method_aux);
 
+leave:
 	mono_loader_unlock ();
-
+	if (!m) // FIXME: This leaks if image is not NULL.
+		image_g_free (image, specs);
 	return m;
+
+fail:
+	 m = NULL;
+	 goto leave;
 }	
 
 static MonoMethod*

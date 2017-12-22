@@ -1782,12 +1782,6 @@ mono_object_try_to_string (MonoObject *obj, MonoObject **exc, MonoError *error);
 char *
 mono_string_to_utf8_ignore (MonoString *s);
 
-char *
-mono_string_to_utf8_image_ignore (MonoImage *image, MonoString *s);
-
-char *
-mono_string_to_utf8_mp_ignore (MonoMemPool *mp, MonoString *s);
-
 gboolean
 mono_monitor_is_il_fastpath_wrapper (MonoMethod *method);
 

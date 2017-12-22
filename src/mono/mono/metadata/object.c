@@ -63,7 +63,7 @@ static void
 free_main_args (void);
 
 static char *
-mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, gboolean ignore_error, MonoError *error);
+mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, MonoError *error);
 
 static void
 array_full_copy_unchecked_size (MonoArray *src, MonoArray *dest, MonoClass *klass, uintptr_t size);
@@ -7154,33 +7154,6 @@ mono_string_to_utf8_ignore (MonoString *s)
 }
 
 /**
- * mono_string_to_utf8_image_ignore:
- * \param s a \c System.String
- * Same as \c mono_string_to_utf8_ignore, but allocate the string from the image mempool.
- */
-char *
-mono_string_to_utf8_image_ignore (MonoImage *image, MonoString *s)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	return mono_string_to_utf8_internal (NULL, image, s, TRUE, NULL);
-}
-
-/**
- * mono_string_to_utf8_mp_ignore:
- * \param s a \c System.String
- * Same as \c mono_string_to_utf8_ignore, but allocate the string from a mempool.
- */
-char *
-mono_string_to_utf8_mp_ignore (MonoMemPool *mp, MonoString *s)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	return mono_string_to_utf8_internal (mp, NULL, s, TRUE, NULL);
-}
-
-
-/**
  * mono_string_to_utf16:
  * \param s a \c MonoString
  * \returns a null-terminated array of the UTF-16 chars
@@ -7326,7 +7299,7 @@ mono_string_from_utf32_checked (mono_unichar4 *data, MonoError *error)
 }
 
 static char *
-mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, gboolean ignore_error, MonoError *error)
+mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -7334,13 +7307,9 @@ mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, 
 	char *mp_s;
 	int len;
 
-	if (ignore_error) {
-		r = mono_string_to_utf8_ignore (s);
-	} else {
-		r = mono_string_to_utf8_checked (s, error);
-		if (!mono_error_ok (error))
-			return NULL;
-	}
+	r = mono_string_to_utf8_checked (s, error);
+	if (!mono_error_ok (error))
+		return NULL;
 
 	if (!mp && !image)
 		return r;
@@ -7368,7 +7337,7 @@ mono_string_to_utf8_image (MonoImage *image, MonoStringHandle s, MonoError *erro
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	return mono_string_to_utf8_internal (NULL, image, MONO_HANDLE_RAW (s), FALSE, error); /* FIXME pin the string */
+	return mono_string_to_utf8_internal (NULL, image, MONO_HANDLE_RAW (s), error); /* FIXME pin the string */
 }
 
 /**
@@ -7381,7 +7350,7 @@ mono_string_to_utf8_mp (MonoMemPool *mp, MonoString *s, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	return mono_string_to_utf8_internal (mp, NULL, s, FALSE, error);
+	return mono_string_to_utf8_internal (mp, NULL, s, error);
 }
 
 
