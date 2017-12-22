@@ -275,6 +275,7 @@ class Views {
 
 // MergeJobView: include all jobs that execute when a PR change is merged.
 Views.MergeJobView = listView('Merge') {
+    recurse()
     columns {
         status()
         weather()
@@ -288,6 +289,7 @@ Views.MergeJobView = listView('Merge') {
 
 // PeriodicJobView: include all jobs that execute on a schedule
 Views.PeriodicJobView = listView('Periodic') {
+    recurse()
     columns {
         status()
         weather()
@@ -302,6 +304,7 @@ Views.PeriodicJobView = listView('Periodic') {
 // Create a view for non-PR jobs for each architecture.
 Constants.architectureList.each { architecture ->
     Views.ArchitectureViews[architecture] = listView(architecture) {
+        recurse()
         columns {
             status()
             weather()
@@ -321,6 +324,7 @@ Constants.osList.each { os ->
         return
     }
     Views.OSViews[os] = listView(os) {
+        recurse()
         columns {
             status()
             weather()
