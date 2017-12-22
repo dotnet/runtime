@@ -111,6 +111,7 @@
     <Compile Include="FindNativeDeps.cs" />
     <Compile Include="ComputeRemovedAssemblies.cs" />
     <Compile Include="CheckEmbeddedRootDescriptor.cs" />
+    <Compile Include="SetAssemblyActions.cs" />
   </ItemGroup>
 
   <!-- TODO: Uncomment this once we can avoid hard-coding this in a
