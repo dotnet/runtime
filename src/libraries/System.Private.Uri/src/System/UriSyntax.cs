@@ -110,6 +110,16 @@ namespace System
             }
         }
 
+        internal static bool DontKeepUnicodeBidiFormattingCharacters
+        {
+            // In .NET Framework this would test against an AppContextSwitch. Since this is a potentially
+            // breaking change, we'll leave in the system used to disable it.
+            get
+            {
+                return false;
+            }
+        }
+
         static UriParser()
         {
             s_table = new LowLevelDictionary<string, UriParser>(c_InitialTableSize);

@@ -289,7 +289,7 @@ namespace System
                     {
                         if (CheckIriUnicodeRange(ch, component == UriComponents.Query))
                         {
-                            if (!UriHelper.IsBidiControlCharacter(ch))
+                            if (!UriHelper.IsBidiControlCharacter(ch) || !UriParser.DontKeepUnicodeBidiFormattingCharacters)
                             {
                                 // copy it
                                 Debug.Assert(dest.Length > destOffset, "Destination length exceeded destination offset.");
