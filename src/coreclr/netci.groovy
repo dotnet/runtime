@@ -266,8 +266,15 @@ class Constants {
 // those are required, don't add them (which simplifies the view pages, as well).
 // **************************************************************
 
+class Views {
+    def static MergeJobView = null
+    def static PeriodicJobView = null
+    def static ArchitectureViews = [:]
+    def static OSViews = [:]
+}
+
 // MergeJobView: include all jobs that execute when a PR change is merged.
-def static MergeJobView = listView('Merge') {
+Views.MergeJobView = listView('Merge') {
     columns {
         status()
         weather()
@@ -280,7 +287,7 @@ def static MergeJobView = listView('Merge') {
 }
 
 // PeriodicJobView: include all jobs that execute on a schedule
-def static PeriodicJobView = listView('Periodic') {
+Views.PeriodicJobView = listView('Periodic') {
     columns {
         status()
         weather()
@@ -293,9 +300,8 @@ def static PeriodicJobView = listView('Periodic') {
 }
 
 // Create a view for non-PR jobs for each architecture.
-def static ArchitectureViews = [:]
 Constants.architectureList.each { architecture ->
-    ArchitectureViews[architecture] = listView(architecture) {
+    Views.ArchitectureViews[architecture] = listView(architecture) {
         columns {
             status()
             weather()
@@ -309,13 +315,12 @@ Constants.architectureList.each { architecture ->
 }
 
 // Create a view for non-PR jobs for each OS.
-def static OSViews = [:]
 Constants.osList.each { os ->
     // Don't create one for the special 'Windows_NT_BuildOnly'
     if (os == 'Windows_NT_BuildOnly') {
         return
     }
-    OSViews[os] = listView(os) {
+    Views.OSViews[os] = listView(os) {
         columns {
             status()
             weather()
@@ -329,7 +334,7 @@ Constants.osList.each { os ->
 }
 
 def static addToMergeView(def job) {
-    MergeJobView.with {
+    Views.MergeJobView.with {
         jobs {
             name(job.name)
         }
@@ -337,7 +342,7 @@ def static addToMergeView(def job) {
 }
 
 def static addToPeriodicView(def job) {
-    PeriodicJobView.with {
+    Views.PeriodicJobView.with {
         jobs {
             name(job.name)
         }
@@ -351,14 +356,14 @@ def static addToViews(def job, def isPR, def architecture, def os) {
     }
 
     // Add to architecture view.
-    ArchitectureViews[architecture].with {
+    Views.ArchitectureViews[architecture].with {
         jobs {
             name(job.name)
         }
     }
 
     // Add to OS view.
-    OSViews[os].with {
+    Views.OSViews[os].with {
         jobs {
             name(job.name)
         }
