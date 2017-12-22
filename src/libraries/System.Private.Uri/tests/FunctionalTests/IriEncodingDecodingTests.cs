@@ -19,7 +19,11 @@ namespace System.PrivateUri.Tests
             { "%2D%5F%2E%7E", @"-_.~" }, // Encoded RFC 3986 Unreserved Marks.
             { "%2F%3F%3A%40%23%5B%5D", "%2F%3F%3A%40%23%5B%5D" }, // Encoded RFC 3986 Gen Delims.
             { @";&=+$,!'()*", @";&=+$,!'()*" }, // RFC 3986 Sub Delims.
-            { "%3B%26%3D%2B%24%2C%21%27%28%29%2A", "%3B%26%3D%2B%24%2C%21%27%28%29%2A" } // Encoded RFC3986 Sub Delims.
+            { "%3B%26%3D%2B%24%2C%21%27%28%29%2A", "%3B%26%3D%2B%24%2C%21%27%28%29%2A" }, // Encoded RFC3986 Sub Delims.
+            { "%E2%80%8F%E2%80%8E%E2%80%AA%E2%80%AB%E2%80%AC%E2%80%AD%E2%80%AE",
+                "%E2%80%8F%E2%80%8E%E2%80%AA%E2%80%AB%E2%80%AC%E2%80%AD%E2%80%AE" }, // Encoded Unicode Bidi Control Characters.
+            { "\u200E\u200F\u202A\u202B\u202C\u202D\u202E",
+                "%E2%80%8E%E2%80%8F%E2%80%AA%E2%80%AB%E2%80%AC%E2%80%AD%E2%80%AE" }, // Unencoded Unicode Bidi Control Characters
         };
 
         [Fact]

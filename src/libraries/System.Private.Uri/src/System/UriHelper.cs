@@ -569,7 +569,7 @@ namespace System
                                         EscapeAsciiChar((char)encodedBytes[l], dest, ref destOffset);
                                     }
                                 }
-                                else if (!UriHelper.IsBidiControlCharacter(unescapedCharsPtr[j]))
+                                else if (!UriHelper.IsBidiControlCharacter(unescapedCharsPtr[j]) || !UriParser.DontKeepUnicodeBidiFormattingCharacters)
                                 {
                                     //copy chars
                                     Debug.Assert(dest.Length > destOffset, "Destination length exceeded destination offset.");

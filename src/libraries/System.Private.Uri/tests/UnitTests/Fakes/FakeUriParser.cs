@@ -13,5 +13,13 @@ namespace System
                 return false;
             }
         }
+
+        internal static bool DontKeepUnicodeBidiFormattingCharacters
+        {
+            get
+            {
+                return false;
+            }
+        }
     }
 }
