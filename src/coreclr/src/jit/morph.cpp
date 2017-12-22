@@ -1475,12 +1475,14 @@ void fgArgInfo::SplitArg(unsigned argNum, unsigned numRegs, unsigned numSlots)
         assert(curArgTabEntry->isSplit == true);
         assert(curArgTabEntry->numRegs == numRegs);
         assert(curArgTabEntry->numSlots == numSlots);
+        assert(hasStackArgs == true);
     }
     else
     {
         curArgTabEntry->isSplit  = true;
         curArgTabEntry->numRegs  = numRegs;
         curArgTabEntry->numSlots = numSlots;
+        hasStackArgs             = true;
     }
     nextSlotNum += numSlots;
 }
