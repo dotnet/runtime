@@ -21,7 +21,8 @@ namespace System.Net.Http.Functional.Tests
             new object[] { HttpMethod.Delete },
             new object[] { HttpMethod.Head },
             new object[] { HttpMethod.Options },
-            new object[] { HttpMethod.Trace }
+            new object[] { HttpMethod.Trace },
+            new object[] { HttpMethod.Patch }
         };
 
         public static IEnumerable<object[]> StaticHttpMethods { get { return s_staticHttpMethods; } }
@@ -36,6 +37,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal("HEAD", HttpMethod.Head.Method);
             Assert.Equal("OPTIONS", HttpMethod.Options.Method);
             Assert.Equal("TRACE", HttpMethod.Trace.Method);
+            Assert.Equal("PATCH", HttpMethod.Patch.Method);
         }
 
         [Fact]
