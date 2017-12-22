@@ -3110,15 +3110,9 @@ public:
     void CopyFrom(StackTraceArray const & src);
     
 private:
-    StackTraceArray(StackTraceArray const & rhs);
+    StackTraceArray(StackTraceArray const & rhs) = delete;
 
-    StackTraceArray & operator=(StackTraceArray const & rhs)
-    {
-        WRAPPER_NO_CONTRACT;
-        StackTraceArray copy(rhs);
-        this->Swap(copy);
-        return *this;
-    }
+    StackTraceArray & operator=(StackTraceArray const & rhs) = delete;
 
     void Grow(size_t size);
     void EnsureThreadAffinity();
