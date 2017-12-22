@@ -13,10 +13,16 @@ MCS_NO_LIB = $(MCS_NO_UNSAFE) -unsafe
 
 MCS = $(MCS_NO_LIB)
 
+if LOADED_LLVM
+LLVMMONOF=
+else
+LLVMMONOF=$(LLVM_LIBS) $(LLVM_LDFLAGS)
+endif
+
 
 test_cflags = $(AM_CFLAGS) $(SGEN_DEFINES)
 test_ldadd = libtestlib.la \
-	$(LIBGC_LIBS) $(GLIB_LIBS) -lm $(LIBICONV)
+	$(LIBGC_LIBS) $(GLIB_LIBS) -lm $(LIBICONV) $(LLVMMONOF)
 if HOST_DARWIN
 test_ldflags = -framework CoreFoundation -framework Foundation
 endif
