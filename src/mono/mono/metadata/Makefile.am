@@ -221,6 +221,7 @@ common_sources = \
 	number-ms.c		\
 	number-ms.h		\
 	object.c	\
+	object-forward.h	\
 	object-internals.h	\
 	opcodes.c		\
 	property-bag.h	\
