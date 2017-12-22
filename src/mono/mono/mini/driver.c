@@ -1824,6 +1824,20 @@ mono_main (int argc, char* argv[])
 
 	if (g_hasenv ("MONO_NO_SMP"))
 		mono_set_use_smp (FALSE);
+
+#ifdef MONO_JEMALLOC_ENABLED
+
+	gboolean use_jemalloc = FALSE;
+#ifdef MONO_JEMALLOC_DEFAULT
+	use_jemalloc = TRUE;
+#endif
+	if (!use_jemalloc)
+		use_jemalloc = g_hasenv ("MONO_USE_JEMALLOC");
+
+	if (use_jemalloc)
+		mono_init_jemalloc ();
+
+#endif
 	
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);

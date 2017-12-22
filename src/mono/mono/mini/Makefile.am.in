@@ -67,6 +67,7 @@ AM_CFLAGS = \
 	-I$(top_srcdir) 	\
 	$(GLIB_CFLAGS)		\
 	$(LLVM_CFLAGS)		\
+	$(JEMALLOC_CFLAGS)	\
 	$(PLATFORM_CFLAGS) $(ARCH_CFLAGS) $(SHARED_CFLAGS)
 
 AM_CXXFLAGS = $(LLVM_CXXFLAGS) $(GLIB_CFLAGS)
@@ -634,6 +635,11 @@ if HOST_DARWIN
 os_sources = $(darwin_sources) $(posix_sources)
 #monobin_platform_ldflags=-sectcreate __TEXT __info_plist $(top_srcdir)/mono/mini/Info.plist -framework CoreFoundation -framework Foundation
 monobin_platform_ldflags=-framework CoreFoundation -framework Foundation
+endif
+
+if MONO_JEMALLOC_ENABLED
+libmonoldflags += $(JEMALLOC_LDFLAGS)
+mono_CFLAGS += $(JEMALLOC_CFLAGS)
 endif
 
 libmini_la_SOURCES = $(common_sources) $(llvm_sources) $(llvm_runtime_sources) $(interp_sources) $(arch_sources) $(os_sources)

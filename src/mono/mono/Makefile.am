@@ -34,7 +34,7 @@ monotouch-do-clean:
 	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$target); \
     done;
 else
-SUBDIRS = $(btls_dirs) eglib arch utils cil metadata $(sgen_dirs) mini dis tests unit-tests benchmark profiler
+SUBDIRS = $(btls_dirs) eglib arch utils cil metadata $(sgen_dirs) mini dis tests unit-tests benchmark profiler 
 endif
 endif
-DIST_SUBDIRS = btls eglib arch utils cil metadata $(sgen_dirs) mini dis tests unit-tests benchmark profiler
+DIST_SUBDIRS = btls eglib arch utils cil metadata $(sgen_dirs) mini dis tests unit-tests benchmark profiler 

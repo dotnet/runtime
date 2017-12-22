@@ -100,7 +100,7 @@ extra_runtime_ldflags=""
 # Hack for WASM
 # Current autotools (v1.15) doesn't have a triplet we can use for wasm so the kludge we do is to
 # work around it by using a feature flag instead
-AC_ARG_ENABLE(wasm,[  --enable-wasm	Hack to set the current runtime to target wasm], enable_wasm=$enableval)
+AC_ARG_ENABLE(wasm,[  --enable-wasm    Hack to set the current runtime to target wasm], enable_wasm=$enableval)
 
 # Thread configuration inspired by sleepycat's db
 AC_MSG_CHECKING([host platform characteristics])
@@ -912,6 +912,51 @@ if test $csc_compiler = default; then
    fi
 fi
 AC_MSG_RESULT($csc_compiler)
+
+AC_ARG_WITH(jemalloc,             [  --with-jemalloc=yes,no               If jemalloc is enabled (defaults to no)],                                     [], [with_jemalloc=no])
+AC_ARG_WITH(jemalloc-always,      [  --with-jemalloc_always=yes,no        If jemalloc is enabled and always used (defaults to yes)],                    [], [with_jemalloc_always=no])
+AC_ARG_WITH(jemalloc-assert,      [  --with-jemalloc_assert=yes,no        If jemalloc performs runtime checks for memory correctness (defaults to no)], [], [with_jemalloc_assert=no])
+
+
+if test x$target_win32 = xyes; then
+with_jemalloc=no
+with_jemalloc_assert=no
+with_jemalloc_always=no
+fi
+
+AM_CONDITIONAL(MONO_JEMALLOC_ASSERT, [test "x$with_jemalloc_assert" = "xyes"])
+if test "x$with_jemalloc_assert" = "xyes"; then
+JEMALLOC_CFLAGS+=" -DMONO_JEMALLOC_ASSERT"
+AC_DEFINE(MONO_JEMALLOC_ASSERT, 1, [Make jemalloc assert for mono])
+AC_SUBST(MONO_JEMALLOC_ASSERT, 1)
+fi
+
+AM_CONDITIONAL(MONO_JEMALLOC_DEFAULT, [test "x$with_jemalloc_always" = "xyes"])
+if test "x$with_jemalloc_always" = "xyes"; then
+with_jemalloc=yes
+JEMALLOC_CFLAGS+=" -DMONO_JEMALLOC_DEFAULT"
+AC_DEFINE(MONO_JEMALLOC_DEFAULT, 1, [Make jemalloc default for mono])
+AC_SUBST(MONO_JEMALLOC_DEFAULT, 1)
+fi
+
+AM_CONDITIONAL(MONO_JEMALLOC_ENABLED, [test "x$with_jemalloc" = "xyes"])
+if test "x$with_jemalloc" = "xyes"; then
+JEMALLOC_LDFLAGS="-L`pwd`/mono/utils/jemalloc/jemalloc/lib -ljemalloc_pic"
+JEMALLOC_CFLAGS+=" -DMONO_JEMALLOC_ENABLED -I `pwd`/mono/utils/jemalloc/jemalloc/include"
+JEMALLOC_AUTOCONF_FLAGS=" --build=$target --host=$host"
+
+if test "x$target_mach" = "xyes"; then
+	JEMALLOC_CPPFLAGS=" -stdlib=libc++ "
+fi
+
+AC_DEFINE(MONO_JEMALLOC_ENABLED, 1, [Enable jemalloc usage for mono])
+AC_SUBST(MONO_JEMALLOC_ENABLED, 1)
+
+AC_SUBST(JEMALLOC_CFLAGS)
+AC_SUBST(JEMALLOC_CPPFLAGS)
+AC_SUBST(JEMALLOC_LDFLAGS)
+AC_SUBST(JEMALLOC_AUTOCONF_FLAGS)
+fi
 
 #
 # Set the build profiles and options before things which use them
@@ -4696,6 +4741,7 @@ scripts/mono-find-requires
 mono/Makefile
 mono/btls/Makefile
 mono/utils/Makefile
+mono/utils/jemalloc/Makefile
 mono/metadata/Makefile
 mono/dis/Makefile
 mono/cil/Makefile
@@ -4935,6 +4981,7 @@ echo "
 	libgdiplus:      $libgdiplus_msg
 	zlib:            $zlib_msg
 	BTLS:            $enable_btls$btls_platform_string
+	jemalloc:        $with_jemalloc (always use: $with_jemalloc_always)
 	$disabled
 "
 if test x$with_static_mono = xno -a "x$host_win32" != "xyes"; then
