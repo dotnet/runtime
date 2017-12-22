@@ -267,7 +267,7 @@ class Constants {
 // **************************************************************
 
 // MergeJobView: include all jobs that execute when a PR change is merged.
-def MergeJobView = listView('Merge') {
+def static MergeJobView = listView('Merge') {
     columns {
         status()
         weather()
@@ -280,7 +280,7 @@ def MergeJobView = listView('Merge') {
 }
 
 // PeriodicJobView: include all jobs that execute on a schedule
-def PeriodicJobView = listView('Periodic') {
+def static PeriodicJobView = listView('Periodic') {
     columns {
         status()
         weather()
@@ -293,7 +293,7 @@ def PeriodicJobView = listView('Periodic') {
 }
 
 // Create a view for non-PR jobs for each architecture.
-def ArchitectureViews = [:]
+def static ArchitectureViews = [:]
 Constants.architectureList.each { architecture ->
     ArchitectureViews[architecture] = listView(architecture) {
         columns {
@@ -309,7 +309,7 @@ Constants.architectureList.each { architecture ->
 }
 
 // Create a view for non-PR jobs for each OS.
-def OSViews = [:]
+def static OSViews = [:]
 Constants.osList.each { os ->
     // Don't create one for the special 'Windows_NT_BuildOnly'
     if (os == 'Windows_NT_BuildOnly') {
