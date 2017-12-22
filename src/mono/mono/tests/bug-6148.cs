@@ -33,8 +33,15 @@ struct ExplicitPack
 		public int A4;
 }
 
+[StructLayout(LayoutKind.Explicit, Size = 12)]
+struct ExplicitSize
+{
+	[FieldOffset(0)]
+    private long Data1;
 
-
+	[FieldOffset(8)]
+    private int Data3;
+}
 
 public class Program {
 	public static unsafe int Main(string[] args)
@@ -44,6 +51,9 @@ public class Program {
 
 		if (sizeof(ExplicitPack) != 18)
 			return 2;
+
+		if (sizeof (ExplicitSize) != 12)
+			return 3;
 		return 0;
 	}
 }

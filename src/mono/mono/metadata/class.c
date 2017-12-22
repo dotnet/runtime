@@ -1646,7 +1646,7 @@ mono_class_setup_fields (MonoClass *klass)
 
 	if (!mono_class_has_failure (klass)) {
 		mono_loader_lock ();
-		mono_class_layout_fields (klass, instance_size, packing_size, FALSE);
+		mono_class_layout_fields (klass, instance_size, packing_size, real_size, FALSE);
 		mono_loader_unlock ();
 	}
 
@@ -1764,7 +1764,7 @@ type_has_references (MonoClass *klass, MonoType *ftype)
  * LOCKING: Acquires the loader lock
  */
 void
-mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_size, gboolean sre)
+mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_size, int explicit_size, gboolean sre)
 {
 	int i;
 	const int top = mono_class_get_field_count (klass);
@@ -2079,9 +2079,11 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		}
 
 		instance_size = MAX (real_size, instance_size);
-		if (instance_size & (min_align - 1)) {
-			instance_size += min_align - 1;
-			instance_size &= ~(min_align - 1);
+		if (!((layout == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) && explicit_size)) {
+			if (instance_size & (min_align - 1)) {
+				instance_size += min_align - 1;
+				instance_size &= ~(min_align - 1);
+			}
 		}
 		break;
 	}

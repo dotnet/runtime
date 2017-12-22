@@ -3494,9 +3494,8 @@ typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 		}
 	}
 
-	if (!mono_class_has_failure (klass)) {
-		mono_class_layout_fields (klass, instance_size, packing_size, TRUE);
-	}
+	if (!mono_class_has_failure (klass))
+		mono_class_layout_fields (klass, instance_size, packing_size, tb->class_size, TRUE);
 }
 
 static void
