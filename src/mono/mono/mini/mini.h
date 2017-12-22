@@ -2134,7 +2134,6 @@ gpointer  mono_jit_find_compiled_method     (MonoDomain *domain, MonoMethod *met
 gpointer  mono_jit_compile_method           (MonoMethod *method, MonoError *error);
 gpointer  mono_jit_compile_method_jit_only  (MonoMethod *method, MonoError *error);
 gpointer  mono_jit_compile_method_inner     (MonoMethod *method, MonoDomain *target_domain, int opt, MonoError *error);
-MonoInst* mono_create_tls_get               (MonoCompile *cfg, MonoTlsKey key);
 GList    *mono_varlist_insert_sorted        (MonoCompile *cfg, GList *list, MonoMethodVar *mv, int sort_type);
 GList    *mono_varlist_sort                 (MonoCompile *cfg, GList *list, int sort_type);
 void      mono_analyze_liveness             (MonoCompile *cfg);

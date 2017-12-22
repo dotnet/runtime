@@ -57,6 +57,7 @@ storage_name (ArgStorage st)
 	}
 }
 
+#ifdef DEBUG_AMD64_GSHAREDVT
 static char *
 arg_info_desc (ArgInfo *info)
 {
@@ -72,6 +73,7 @@ arg_info_desc (ArgInfo *info)
 
 	return g_string_free (str, FALSE);
 }
+#endif
 
 static inline void
 add_to_map (GPtrArray *map, int src, int dst)
