@@ -3031,6 +3031,8 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
     return false;
 }
 
+#if !FEATURE_FIXED_OUT_ARGS
+
 /*****************************************************************************
  *
  *  Return the stackLevel of the inserted block that throws exception
@@ -3063,6 +3065,8 @@ inline unsigned Compiler::fgThrowHlpBlkStkLevel(BasicBlock* block)
 
     return 0;
 }
+
+#endif // !FEATURE_FIXED_OUT_ARGS
 
 /*
     Small inline function to change a given block to a throw block.
