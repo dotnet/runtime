@@ -16,6 +16,10 @@
     <LinkDuringPublish Condition=" '$(LinkDuringPublish)' != 'true' ">false</LinkDuringPublish>
     <ShowLinkerSizeComparison Condition=" '$(ShowLinkerSizeComparison)' == '' ">false</ShowLinkerSizeComparison>
     <LinkerDumpDependencies Condition=" '$(LinkerDumpDependencies)' == '' ">false</LinkerDumpDependencies>
+    <UsedApplicationAssemblyAction Condition=" '$(UsedApplicationAssemblyAction)' == '' ">Copy</UsedApplicationAssemblyAction>
+    <UnusedApplicationAssemblyAction Condition=" '$(UnusedApplicationAssemblyAction)' == '' ">Delete</UnusedApplicationAssemblyAction>
+    <UsedPlatformAssemblyAction Condition=" '$(UsedPlatformAssemblyAction)' == '' ">Link</UsedPlatformAssemblyAction>
+    <UnusedPlatformAssemblyAction Condition=" '$(UnusedPlatformAssemblyAction)' == '' ">Delete</UnusedPlatformAssemblyAction>
   </PropertyGroup>
 
   <!-- This depends on LinkDuringPublish, so it needs to be imported
@@ -170,14 +174,41 @@
                            Condition="Exists('%(Identity)') And '$(_DebugSymbolsProduced)' == 'true' " />
     </ItemGroup>
   </Target>
-  
+
+  <UsingTask TaskName="SetAssemblyActions" AssemblyFile="$(LinkTaskDllPath)" />
+  <Target Name="_SetAssemblyActions"
+          DependsOnTargets="_ComputeManagedAssembliesToLink;_ComputePlatformLibraries">
+
+      <ItemGroup>
+          <_PlatformAssembliesToLink Include="@(PlatformLibraries->'%(Filename)')" />
+          <_PlatformAssembliesToLink Include="System.Private.CoreLib" />
+          <_ApplicationAssembliesToLink Include="@(_ManagedAssembliesToLink->'%(Filename)')" />
+          <_ApplicationAssembliesToLink Remove="@(_PlatformAssembliesToLink)" />
+      </ItemGroup>
+
+      <SetAssemblyActions AssemblyPaths="@(_ManagedAssembliesToLink)"
+                          ApplicationAssemblyNames="@(_ApplicationAssembliesToLink)"
+                          PlatformAssemblyNames="@(_PlatformAssembliesToLink)"
+                          UsedApplicationAssemblyAction="$(UsedApplicationAssemblyAction)"
+                          UnusedApplicationAssemblyAction="$(UnusedApplicationAssemblyAction)"
+                          UsedPlatformAssemblyAction="$(UsedPlatformAssemblyAction)"
+                          UnusedPlatformAssemblyAction="$(UnusedPlatformAssemblyAction)">
+        <Output TaskParameter="AssemblyPathsWithActions" ItemName="_ManagedAssembliesToLinkWithActions" />
+      </SetAssemblyActions>
+
+      <ItemGroup>
+          <_ManagedAssembliesToLink Remove="@(_ManagedAssembliesToLink)" />
+          <_ManagedAssembliesToLink Include="@(_ManagedAssembliesToLinkWithActions)" />
+      </ItemGroup>
+  </Target>
+    
   <!-- This calls the linker. Inputs are the managed assemblies to
        link, and root specifications. The semaphore enables msbuild to
        skip linking during an incremental build, when the semaphore is
        up to date with respect to _ManagedAssembliesToLink. -->
   <UsingTask TaskName="ILLink" AssemblyFile="$(LinkTaskDllPath)" />
   <Target Name="ILLink"
-          DependsOnTargets="_ComputeManagedAssembliesToLink;_ComputeLinkerRootAssemblies;_ComputeLinkerRootDescriptors"
+          DependsOnTargets="_ComputeManagedAssembliesToLink;_ComputeLinkerRootAssemblies;_ComputeLinkerRootDescriptors;_SetAssemblyActions"
           Inputs="@(_ManagedAssembliesToLink);@(LinkerRootDescriptors);$(MSBuildAllProjects)"
           Outputs="$(_LinkSemaphore)">
     <!-- These extra arguments have been hard-coded for now, as this
@@ -185,7 +216,7 @@
          the future we will want to generate these depending on the
          scenario in which the linker is invoked. -->
     <PropertyGroup>
-      <ExtraLinkerArgs Condition=" '$(ExtraLinkerArgs)' == '' ">-t -c link -l none -b true</ExtraLinkerArgs>
+      <ExtraLinkerArgs Condition=" '$(ExtraLinkerArgs)' == '' ">-t -l none -b true</ExtraLinkerArgs>
     </PropertyGroup>
     <ILLink AssemblyPaths="@(_ManagedAssembliesToLink)"
             RootAssemblyNames="@(LinkerRootAssemblies)"
@@ -229,7 +260,6 @@
     </FindNativeDeps>
 
   </Target>
-
 
   <!-- Computes the managed assemblies that are input to the
        linker. Includes managed assemblies from

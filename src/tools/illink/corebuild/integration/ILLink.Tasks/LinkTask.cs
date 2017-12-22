@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
@@ -19,7 +18,7 @@ namespace ILLink.Tasks
 		///   resolved.
 		/// </summary>
 		[Required]
-		public ITaskItem[] AssemblyPaths { get; set; }
+		public ITaskItem [] AssemblyPaths { get; set; }
 
 		/// <summary>
 		///   The names of the assemblies to root. This should contain
@@ -32,7 +31,7 @@ namespace ILLink.Tasks
 		///   files, or pass extra arguments for illink.
 		/// </summary>
 		[Required]
-		public ITaskItem[] RootAssemblyNames { get; set; }
+		public ITaskItem [] RootAssemblyNames { get; set; }
 
 		/// <summary>
 		///   The directory in which to place linked assemblies.
@@ -45,7 +44,7 @@ namespace ILLink.Tasks
 		///   roots at a granular level. See the mono/linker
 		///   documentation for details about the format.
 		/// </summary>
-		public ITaskItem[] RootDescriptorFiles { get; set; }
+		public ITaskItem [] RootDescriptorFiles { get; set; }
 
 		/// <summary>
 		///   Extra arguments to pass to illink, delimited by spaces.
@@ -57,51 +56,62 @@ namespace ILLink.Tasks
 		/// </summary>
 		public bool DumpDependencies { get; set; }
 
-		public override bool Execute()
+		public override bool Execute ()
 		{
-			string[] args = GenerateCommandLineCommands();
-			var argsString = String.Join(" ", args);
-			Log.LogMessageFromText($"illink {argsString}", MessageImportance.Normal);
-			int ret = Mono.Linker.Driver.Main(args);
+			string [] args = GenerateCommandLineCommands ();
+			var argsString = String.Join (" ", args);
+			Log.LogMessageFromText ($"illink {argsString}", MessageImportance.Normal);
+			int ret = Mono.Linker.Driver.Main (args);
 			return ret == 0;
 		}
 
-		private string[] GenerateCommandLineCommands()
+		string [] GenerateCommandLineCommands ()
 		{
-			var args = new List<string>();
+			var args = new List<string> ();
 
 			if (RootDescriptorFiles != null) {
 				foreach (var rootFile in RootDescriptorFiles) {
-					args.Add("-x");
-					args.Add(rootFile.ItemSpec);
+					args.Add ("-x");
+					args.Add (rootFile.ItemSpec);
 				}
 			}
 
 			foreach (var assemblyItem in RootAssemblyNames) {
-				args.Add("-a");
-				args.Add(assemblyItem.ItemSpec);
+				args.Add ("-a");
+				args.Add (assemblyItem.ItemSpec);
 			}
 
-			var assemblyDirs = AssemblyPaths.Select(p => Path.GetDirectoryName(p.ItemSpec))
-				.GroupBy(d => d).Select(ds => ds.First());
-			foreach (var dir in assemblyDirs) {
-				args.Add("-d");
-				args.Add(dir);
+			HashSet<string> directories = new HashSet<string> ();
+			foreach (var assembly in AssemblyPaths) {
+				var assemblyPath = assembly.ItemSpec;
+				var dir = Path.GetDirectoryName (assemblyPath);
+				if (!directories.Contains (dir)) {
+					directories.Add (dir);
+					args.Add ("-d");
+					args.Add (dir);
+				}
+
+				string action = assembly.GetMetadata ("action");
+				if ((action != null) && (action.Length > 0)) {
+					args.Add ("-p");
+					args.Add (action);
+					args.Add (Path.GetFileNameWithoutExtension (assemblyPath));
+				}
 			}
 
 			if (OutputDirectory != null) {
-				args.Add("-out");
-				args.Add(OutputDirectory.ItemSpec);
+				args.Add ("-out");
+				args.Add (OutputDirectory.ItemSpec);
 			}
 
 			if (ExtraArgs != null) {
-				args.AddRange(ExtraArgs.Split(' '));
+				args.AddRange (ExtraArgs.Split (' '));
 			}
 
 			if (DumpDependencies)
 				args.Add ("--dump-dependencies");
 
-			return args.ToArray();
+			return args.ToArray ();
 		}
 
 	}
