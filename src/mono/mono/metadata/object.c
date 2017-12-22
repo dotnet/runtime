@@ -6333,8 +6333,10 @@ mono_string_new_checked (MonoDomain *domain, const char *text, MonoError *error)
 	
 	if (!eg_error)
 		o = mono_string_new_utf16_checked (domain, ut, items_written, error);
-	else
+	else {
 		mono_error_set_execution_engine (error, "String conversion error: %s", eg_error->message);
+		g_error_free (eg_error);
+	}
 	
 	g_free (ut);
     
