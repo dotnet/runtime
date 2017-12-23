@@ -57,7 +57,7 @@ internal static partial class Interop
 
             unsafe
             {
-                fixed (byte* bytePtr = &pbData.DangerousGetPinnableReference())
+                fixed (byte* bytePtr = &MemoryMarshal.GetReference(pbData))
                 {
                     return CryptGetProvParam(safeProvHandle, dwParam, (IntPtr)bytePtr, ref dwDataLen, 0);
                 }

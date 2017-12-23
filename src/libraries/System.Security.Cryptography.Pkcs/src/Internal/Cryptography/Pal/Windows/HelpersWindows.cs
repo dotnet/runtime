@@ -440,7 +440,7 @@ namespace Internal.Cryptography.Pal.Windows
 
             unsafe
             {
-                fixed (byte* asciiPtr = &buf.DangerousGetPinnableReference())
+                fixed (byte* asciiPtr = &MemoryMarshal.GetReference(buf))
                 {
                     return Marshal.PtrToStringAnsi((IntPtr)asciiPtr, len);
                 }
