@@ -118,7 +118,7 @@ namespace System.IO
             bool hasSeparator = PathInternal.IsDirectorySeparator(first[first.Length - 1])
                 || PathInternal.IsDirectorySeparator(second[0]);
 
-            fixed (char* f = &first.DangerousGetPinnableReference(), s = &second.DangerousGetPinnableReference())
+            fixed (char* f = &MemoryMarshal.GetReference(first), s = &MemoryMarshal.GetReference(second))
             {
                 return string.Create(
                     first.Length + second.Length + (hasSeparator ? 0 : 1),
@@ -143,7 +143,7 @@ namespace System.IO
             bool thirdHasSeparator = PathInternal.IsDirectorySeparator(second[second.Length - 1])
                 || PathInternal.IsDirectorySeparator(third[0]);
 
-            fixed (char* f = &first.DangerousGetPinnableReference(), s = &second.DangerousGetPinnableReference(), t = &third.DangerousGetPinnableReference())
+            fixed (char* f = &MemoryMarshal.GetReference(first), s = &MemoryMarshal.GetReference(second), t = &MemoryMarshal.GetReference(third))
             {
                 return string.Create(
                     first.Length + second.Length + third.Length + (firstHasSeparator ? 0 : 1) + (thirdHasSeparator ? 0 : 1),
