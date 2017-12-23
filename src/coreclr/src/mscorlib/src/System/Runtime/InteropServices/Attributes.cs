@@ -161,17 +161,6 @@ namespace System.Runtime.InteropServices
         }
     }
 
-    [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Interface | AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Struct | AttributeTargets.Delegate, Inherited = false)]
-    public sealed class GuidAttribute : Attribute
-    {
-        internal String _val;
-        public GuidAttribute(String guid)
-        {
-            _val = guid;
-        }
-        public String Value { get { return _val; } }
-    }
-
     [AttributeUsage(AttributeTargets.Interface, Inherited = false)]
     public sealed class CoClassAttribute : Attribute
     {

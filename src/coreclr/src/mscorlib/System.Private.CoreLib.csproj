@@ -148,7 +148,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CriticalHandle.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\GcHandle.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\GCHandleCookieTable.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\HandleRef.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ICustomMarshaler.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\InvalidOleVariantTypeException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Marshal.cs" />
