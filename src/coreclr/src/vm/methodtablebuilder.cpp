@@ -1484,20 +1484,25 @@ MethodTableBuilder::BuildMethodTableThrowing(
         }
     }
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_) 
-    // All the funtions in System.Runtime.Intrinsics.X86 are hardware intrinsics.
-    // We specially treat them here to reduce the disk footprint of mscorlib.
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
     if (GetModule()->IsSystem() && !bmtGenerics->HasInstantiation())
     {
-        LPCUTF8 x86className;
-        LPCUTF8 x86nameSpace;
-        HRESULT hr = GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetTypeDefToken(), &x86className, &x86nameSpace);
+        LPCUTF8 className;
+        LPCUTF8 nameSpace;
+        HRESULT hr = GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetTypeDefToken(), &className, &nameSpace);
     
-        if (hr == S_OK && strcmp(x86nameSpace, "System.Runtime.Intrinsics.X86") == 0)
+#if defined(_TARGET_ARM64_)
+        // All the funtions in System.Runtime.Intrinsics.Arm.Arm64 are hardware intrinsics.
+        if (hr == S_OK && strcmp(nameSpace, "System.Runtime.Intrinsics.Arm.Arm64") == 0)
+#else
+        // All the funtions in System.Runtime.Intrinsics.X86 are hardware intrinsics.
+        if (hr == S_OK && strcmp(nameSpace, "System.Runtime.Intrinsics.X86") == 0)
+#endif
         {
             if (IsCompilationProcess())
             {
                 // Disable AOT compiling for managed implementation of hardware intrinsics in mscorlib.
+                // We specially treat them here to ensure correct ISA features are set during compilation
                 COMPlusThrow(kTypeLoadException, IDS_EE_HWINTRINSIC_NGEN_DISALLOWED);
             }
             bmtProp->fIsHardwareIntrinsic = true;
