@@ -35,8 +35,6 @@
       <_projectWithConfiguration Include="@(_projectBuildConfigurations->'%(OriginalItemSpec)')" />
     </ItemGroup>
 
-      <Message Importance="High" Text="@@@ @(_projectBuildConfigurations) - %(Identity) - %(AdditionalProperties)" />
-
     <ItemGroup>
       <Project Remove="@(Project)" />
       <Project Include="@(_projectWithConfiguration)" />
