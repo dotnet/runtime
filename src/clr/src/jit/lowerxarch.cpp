@@ -2337,6 +2337,18 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_SSE_Shuffle:
+        {
+            assert(op1->OperIsList());
+            GenTree* op3 = op1->AsArgList()->Rest()->Rest()->Current();
+
+            if (op3->IsCnsIntOrI())
+            {
+                MakeSrcContained(node, op3);
+            }
+            break;
+        }
+
         default:
             assert((intrinsicID > NI_HW_INTRINSIC_START) && (intrinsicID < NI_HW_INTRINSIC_END));
             break;
