@@ -320,6 +320,24 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             emit->emitIns_SIMD_R_R_R(INS_orps, targetReg, op1Reg, op2Reg, TYP_SIMD16);
             break;
 
+        case NI_SSE_Reciprocal:
+            assert(baseType == TYP_FLOAT);
+            assert(op2 == nullptr);
+            emit->emitIns_SIMD_R_R(INS_rcpps, targetReg, op1Reg, TYP_SIMD16);
+            break;
+
+        case NI_SSE_ReciprocalSqrt:
+            assert(baseType == TYP_FLOAT);
+            assert(op2 == nullptr);
+            emit->emitIns_SIMD_R_R(INS_rsqrtps, targetReg, op1Reg, TYP_SIMD16);
+            break;
+
+        case NI_SSE_Sqrt:
+            assert(baseType == TYP_FLOAT);
+            assert(op2 == nullptr);
+            emit->emitIns_SIMD_R_R(INS_sqrtps, targetReg, op1Reg, TYP_SIMD16);
+            break;
+
         case NI_SSE_Subtract:
             assert(baseType == TYP_FLOAT);
             op2Reg = op2->gtRegNum;
