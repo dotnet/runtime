@@ -23,7 +23,6 @@
     <Compile Include="Span\CtorArrayIntInt.cs" />
     <Compile Include="Span\CtorPointerInt.cs" />
     <Compile Include="Span\DangerousCreate.cs" />
-    <Compile Include="Span\DangerousGetPinnableReference.cs" />
     <Compile Include="Span\Empty.cs" />
     <Compile Include="Span\EndsWith.byte.cs" />
     <Compile Include="Span\EndsWith.T.cs" />
@@ -65,7 +64,6 @@
     <Compile Include="ReadOnlySpan\CtorArrayIntInt.cs" />
     <Compile Include="ReadOnlySpan\CtorPointerInt.cs" />
     <Compile Include="ReadOnlySpan\DangerousCreate.cs" />
-    <Compile Include="ReadOnlySpan\DangerousGetPinnableReference.cs" />
     <Compile Include="ReadOnlySpan\Empty.cs" />
     <Compile Include="ReadOnlySpan\EndsWith.byte.cs" />
     <Compile Include="ReadOnlySpan\EndsWith.T.cs" />
@@ -125,7 +123,6 @@
     <Compile Include="ReadOnlyMemory\CopyTo.cs" />
     <Compile Include="ReadOnlyMemory\CtorArray.cs" />
     <Compile Include="ReadOnlyMemory\CtorArrayIntInt.cs" />
-    <Compile Include="ReadOnlyMemory\DangerousTryGetArray.cs" />
     <Compile Include="ReadOnlyMemory\Empty.cs" />
     <Compile Include="ReadOnlyMemory\Equality.cs" />
     <Compile Include="ReadOnlyMemory\GetHashCode.cs" />
