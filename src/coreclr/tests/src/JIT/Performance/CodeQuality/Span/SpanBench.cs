@@ -515,38 +515,38 @@ namespace Span
         }
         #endregion
 
-        #region TestSpanDangerousGetPinnableReference<T>
+        #region TestMemoryMarshalGetReference<T>
         [Benchmark(InnerIterationCount = BaseIterations)]
         [InlineData(100)]
-        public static void TestSpanDangerousGetPinnableReferenceByte(int length)
+        public static void TestMemoryMarshalGetReferenceByte(int length)
         {
-            InvokeTestSpanDangerousGetPinnableReference<byte>(length);
+            InvokeTestMemoryMarshalGetReference<byte>(length);
         }
 
         [Benchmark(InnerIterationCount = BaseIterations)]
         [InlineData(100)]
-        public static void TestSpanDangerousGetPinnableReferenceString(int length)
+        public static void TestMemoryMarshalGetReferenceString(int length)
         {
-            InvokeTestSpanDangerousGetPinnableReference<string>(length);
+            InvokeTestMemoryMarshalGetReference<string>(length);
         }
 
-        static void InvokeTestSpanDangerousGetPinnableReference<T>(int length)
+        static void InvokeTestMemoryMarshalGetReference<T>(int length)
         {
             var array = new T[length];
 
-            Invoke((int innerIterationCount) => TestSpanDangerousGetPinnableReference<T>(array, innerIterationCount),
-                "TestSpanDangerousGetPinnableReference<{0}>({1})", typeof(T).Name, length);
+            Invoke((int innerIterationCount) => TestMemoryMarshalGetReference<T>(array, innerIterationCount),
+                "TestMemoryMarshalGetReference<{0}>({1})", typeof(T).Name, length);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static void TestSpanDangerousGetPinnableReference<T>(T[] array, int iterationCount)
+        static void TestMemoryMarshalGetReference<T>(T[] array, int iterationCount)
         {
             var sink = Sink<T>.Instance;
             var span = new Span<T>(array);
 
             for (int i = 0; i < iterationCount; i++)
             {
-                ref T temp = ref span.DangerousGetPinnableReference();
+                ref T temp = ref MemoryMarshal.GetReference(span);
                 sink.Data = temp;
             }
         }
