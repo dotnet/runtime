@@ -2534,6 +2534,7 @@ void LinearScan::TreeNodeInfoInitHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, 
             info->srcCount += GetOperandInfo(op1);
         }
     }
+
     if (op2 != nullptr)
     {
         info->srcCount += GetOperandInfo(op2);
@@ -2541,6 +2542,26 @@ void LinearScan::TreeNodeInfoInitHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, 
 
     switch (intrinsicID)
     {
+        case NI_SSE_Shuffle:
+        {
+            assert(op1->OperIsList());
+            GenTree* op3 = op1->AsArgList()->Rest()->Rest()->Current();
+
+            if (!op3->isContainedIntOrIImmed())
+            {
+                assert(!op3->IsCnsIntOrI());
+
+                // We need two extra reg when op3 isn't a constant so
+                // the offset into the jump table for the fallback path
+                // can be computed.
+
+                info->internalIntCount = 2;
+                info->setInternalCandidates(this, allRegs(TYP_INT));
+                break;
+            }
+            break;
+        }
+
 #ifdef _TARGET_X86_
         case NI_SSE42_Crc32:
         {

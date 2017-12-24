@@ -353,6 +353,95 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             emit->emitIns_SIMD_R_R_R(INS_xorps, targetReg, targetReg, targetReg, TYP_SIMD16);
             break;
 
+        case NI_SSE_Shuffle:
+        {
+            GenTreeArgList* argList;
+
+            // Shuffle takes 3 operands, so op1 should be an arg list with two
+            // additional node in the chain.
+            assert(baseType == TYP_FLOAT);
+            assert(op1->OperIsList());
+            assert(op1->AsArgList()->Rest() != nullptr);
+            assert(op1->AsArgList()->Rest()->Rest() != nullptr);
+            assert(op1->AsArgList()->Rest()->Rest()->Rest() == nullptr);
+            assert(op2 == nullptr);
+
+            argList = op1->AsArgList();
+            op1     = argList->Current();
+            op1Reg  = op1->gtRegNum;
+            genConsumeRegs(op1);
+
+            argList = argList->Rest();
+            op2     = argList->Current();
+            op2Reg  = op2->gtRegNum;
+            genConsumeRegs(op2);
+
+            argList = argList->Rest();
+            op3     = argList->Current();
+            genConsumeRegs(op3);
+
+            if (op3->IsCnsIntOrI())
+            {
+                ssize_t ival = op3->AsIntConCommon()->IconValue();
+                emit->emitIns_SIMD_R_R_R_I(INS_shufps, targetReg, op1Reg, op2Reg, (int)ival, TYP_SIMD16);
+            }
+            else
+            {
+                // We emit a fallback case for the scenario when op3 is not a constant. This should normally
+                // happen when the intrinsic is called indirectly, such as via Reflection. However, it can
+                // also occur if the consumer calls it directly and just doesn't pass a constant value.
+
+                const unsigned jmpCount = 256;
+                BasicBlock*    jmpTable[jmpCount];
+
+                unsigned jmpTableBase = emit->emitBBTableDataGenBeg(jmpCount, true);
+                unsigned jmpTableOffs = 0;
+
+                // Emit the jump table
+
+                JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", Compiler::s_compMethodsCount, jmpTableBase);
+
+                for (unsigned i = 0; i < jmpCount; i++)
+                {
+                    jmpTable[i] = genCreateTempLabel();
+                    JITDUMP("            DD      L_M%03u_BB%02u\n", Compiler::s_compMethodsCount, jmpTable[i]->bbNum);
+                    emit->emitDataGenData(i, jmpTable[i]);
+                }
+
+                emit->emitDataGenEnd();
+
+                // Compute and jump to the appropriate offset in the switch table
+
+                regNumber baseReg = node->ExtractTempReg();   // the start of the switch table
+                regNumber offsReg = node->GetSingleTempReg(); // the offset into the switch table
+
+                emit->emitIns_R_C(INS_lea, emitTypeSize(TYP_I_IMPL), offsReg, compiler->eeFindJitDataOffs(jmpTableBase),
+                                  0);
+
+                emit->emitIns_R_ARX(INS_mov, EA_4BYTE, offsReg, offsReg, op3->gtRegNum, 4, 0);
+                emit->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, compiler->fgFirstBB, baseReg);
+                emit->emitIns_R_R(INS_add, EA_PTRSIZE, offsReg, baseReg);
+                emit->emitIns_R(INS_i_jmp, emitTypeSize(TYP_I_IMPL), offsReg);
+
+                // Emit the switch table entries
+
+                BasicBlock* switchTableBeg = genCreateTempLabel();
+                BasicBlock* switchTableEnd = genCreateTempLabel();
+
+                genDefineTempLabel(switchTableBeg);
+
+                for (unsigned i = 0; i < jmpCount; i++)
+                {
+                    genDefineTempLabel(jmpTable[i]);
+                    emit->emitIns_SIMD_R_R_R_I(INS_shufps, targetReg, op1Reg, op2Reg, i, TYP_SIMD16);
+                    emit->emitIns_J(INS_jmp, switchTableEnd);
+                }
+
+                genDefineTempLabel(switchTableEnd);
+            }
+            break;
+        }
+
         case NI_SSE_Sqrt:
             assert(baseType == TYP_FLOAT);
             assert(op2 == nullptr);
