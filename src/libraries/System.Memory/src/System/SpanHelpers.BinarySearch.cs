@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 #if !netstandard
 using Internal.Runtime.CompilerServices;
@@ -21,7 +22,7 @@ namespace System
             if (comparable == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparable);
             // TODO: Make `ref readonly`/`in` when Unsafe.Add(ReadOnly) supports it
-            return BinarySearch(ref span.DangerousGetPinnableReference(), span.Length, comparable);
+            return BinarySearch(ref MemoryMarshal.GetReference(span), span.Length, comparable);
         }
 
         // TODO: Make spanStart `ref readonly`/`in` when Unsafe.Add(ReadOnly) supports it
