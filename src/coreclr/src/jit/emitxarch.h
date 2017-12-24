@@ -441,6 +441,7 @@ void emitIns_R_AX(instruction ins, emitAttr attr, regNumber ireg, regNumber reg,
 void emitIns_AX_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, unsigned mul, int disp);
 
 #if FEATURE_HW_INTRINSICS
+void emitIns_SIMD_R_R(instruction ins, regNumber reg, regNumber reg1, var_types simdtype);
 void emitIns_SIMD_R_R_A(instruction ins, regNumber reg, regNumber reg1, GenTreeIndir* indir, var_types simdtype);
 void emitIns_SIMD_R_R_C(
     instruction ins, regNumber reg, regNumber reg1, CORINFO_FIELD_HANDLE fldHnd, int offs, var_types simdtype);

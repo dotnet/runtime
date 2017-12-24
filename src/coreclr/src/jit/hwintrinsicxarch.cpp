@@ -485,6 +485,15 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
             retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, TYP_FLOAT, 16);
             break;
 
+        case NI_SSE_Reciprocal:
+        case NI_SSE_ReciprocalSqrt:
+        case NI_SSE_Sqrt:
+            assert(sig->numArgs == 1);
+            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
+            op1     = impSIMDPopStack(TYP_SIMD16);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, intrinsic, TYP_FLOAT, 16);
+            break;
+
         default:
             JITDUMP("Not implemented hardware intrinsic");
             break;
