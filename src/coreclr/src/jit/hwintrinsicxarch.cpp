@@ -468,10 +468,34 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
             GenTree* left    = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op4, op3, NI_SSE_UnpackLow, TYP_FLOAT, 16);
             GenTree* right   = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_UnpackLow, TYP_FLOAT, 16);
             GenTree* control = gtNewIconNode(68, TYP_UBYTE);
-            
+
             retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, left, right, control, NI_SSE_Shuffle, TYP_FLOAT, 16);
             break;
         }
+
+        case NI_SSE_Shuffle:
+            assert(sig->numArgs == 3);
+            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
+
+            op3 = impStackTop().val;
+
+            if (op3->IsCnsIntOrI() || mustExpand)
+            {
+                impPopStack(); // Pop the value we peeked at
+                op2     = impSIMDPopStack(TYP_SIMD16);
+                op1     = impSIMDPopStack(TYP_SIMD16);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, intrinsic, TYP_FLOAT, 16);
+            }
+            else
+            {
+                // When op3 is not a constant and we are not being forced to expand, we need to
+                // return nullptr so a GT_CALL to the intrinsic method is emitted instead. The
+                // intrinsic method is recursive and will be forced to expand, at which point
+                // we emit some less efficient fallback code.
+
+                return nullptr;
+            }
+            break;
 
         case NI_SSE_Add:
         case NI_SSE_And:

@@ -17925,6 +17925,18 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
                                                        GenTree*       op1,
                                                        GenTree*       op2,
                                                        GenTree*       op3,
+                                                       NamedIntrinsic hwIntrinsicID,
+                                                       var_types      baseType,
+                                                       unsigned       size)
+{
+    return new (this, GT_HWIntrinsic)
+        GenTreeHWIntrinsic(type, gtNewArgList(op1, op2, op3), hwIntrinsicID, baseType, size);
+}
+
+GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
+                                                       GenTree*       op1,
+                                                       GenTree*       op2,
+                                                       GenTree*       op3,
                                                        GenTree*       op4,
                                                        NamedIntrinsic hwIntrinsicID,
                                                        var_types      baseType,
