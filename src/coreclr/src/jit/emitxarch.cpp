@@ -196,8 +196,12 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
         case INS_movlpd:
         case INS_movlps:
         case INS_movss:
+        case INS_rcpps:
+        case INS_rcpss:
         case INS_roundsd:
         case INS_roundss:
+        case INS_rsqrtps:
+        case INS_rsqrtss:
         case INS_sqrtsd:
         case INS_sqrtss:
             return IsAVXInstruction(ins);
@@ -5077,6 +5081,11 @@ void emitter::emitIns_AX_R(instruction ins, emitAttr attr, regNumber ireg, regNu
 }
 
 #if FEATURE_HW_INTRINSICS
+void emitter::emitIns_SIMD_R_R(instruction ins, regNumber reg, regNumber reg1, var_types simdtype)
+{
+    emitIns_R_R(ins, emitTypeSize(simdtype), reg, reg1);
+}
+
 void emitter::emitIns_SIMD_R_R_A(
     instruction ins, regNumber reg, regNumber reg1, GenTreeIndir* indir, var_types simdtype)
 {

@@ -252,6 +252,12 @@ INST3( orps,   "orps",   0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKFLT(0x56))    /
 INST3( orpd,   "orpd",   0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKDBL(0x56))    // Or packed doubles
 INST3( haddpd, "haddpd", 0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKDBL(0x7C))    // Horizontal add packed doubles
 
+// SSE 2 approx arith
+INST3( rcpps,   "rcpps",   0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKFLT(0x53))    // Reciprocal of packed singles
+INST3( rcpss,   "rcpss",   0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, SSEFLT(0x53))    // Reciprocal of scalar single
+INST3( rsqrtps, "rsqrtps", 0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKFLT(0x52))    // Reciprocal Sqrt of packed singles
+INST3( rsqrtss, "rsqrtss", 0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, SSEFLT(0x52))    // Reciprocal Sqrt of scalar single
+
 // SSE2 conversions
 INST3( cvtpi2ps,  "cvtpi2ps",   0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKFLT(0x2A))   // cvt packed DWORDs to singles
 INST3( cvtsi2ss,  "cvtsi2ss",   0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, SSEFLT(0x2A))   // cvt DWORD to scalar single
