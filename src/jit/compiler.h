@@ -2057,10 +2057,22 @@ public:
 #endif
 
 #if FEATURE_HW_INTRINSICS
+    GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(var_types      type,
+                                                 NamedIntrinsic hwIntrinsicID,
+                                                 var_types      baseType,
+                                                 unsigned       size);
     GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(
         var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size);
     GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(
         var_types type, GenTree* op1, GenTree* op2, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size);
+    GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(var_types      type,
+                                                 GenTree*       op1,
+                                                 GenTree*       op2,
+                                                 GenTree*       op3,
+                                                 GenTree*       op4,
+                                                 NamedIntrinsic hwIntrinsicID,
+                                                 var_types      baseType,
+                                                 unsigned       size);
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID);
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types      type,
                                                    GenTree*       op1,
@@ -2088,6 +2100,7 @@ public:
     GenTreeArgList* gtNewArgList(GenTreePtr op);
     GenTreeArgList* gtNewArgList(GenTreePtr op1, GenTreePtr op2);
     GenTreeArgList* gtNewArgList(GenTreePtr op1, GenTreePtr op2, GenTreePtr op3);
+    GenTreeArgList* gtNewArgList(GenTreePtr op1, GenTreePtr op2, GenTreePtr op3, GenTreePtr op4);
 
     static fgArgTabEntryPtr gtArgEntryByArgNum(GenTreeCall* call, unsigned argNum);
     static fgArgTabEntryPtr gtArgEntryByNode(GenTreeCall* call, GenTreePtr node);
