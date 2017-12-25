@@ -193,16 +193,24 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
     NamedIntrinsic intrinsicID = node->gtHWIntrinsicId;
     GenTree*       op1         = node->gtGetOp1();
     GenTree*       op2         = node->gtGetOp2();
+    GenTree*       op3         = nullptr;
+    GenTree*       op4         = nullptr;
     regNumber      targetReg   = node->gtRegNum;
     var_types      targetType  = node->TypeGet();
     var_types      baseType    = node->gtSIMDBaseType;
     instruction    ins         = INS_invalid;
 
-    regNumber op1Reg = op1->gtRegNum;
+    regNumber op1Reg = REG_NA;
     regNumber op2Reg = REG_NA;
+    regNumber op3Reg = REG_NA;
+    regNumber op4Reg = REG_NA;
     emitter*  emit   = getEmitter();
 
-    genConsumeOperands(node);
+    if ((op1 != nullptr) && !op1->OperIsList())
+    {
+        op1Reg = op1->gtRegNum;
+        genConsumeOperands(node);
+    }
 
     switch (intrinsicID)
     {
@@ -330,6 +338,19 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             assert(baseType == TYP_FLOAT);
             assert(op2 == nullptr);
             emit->emitIns_SIMD_R_R(INS_rsqrtps, targetReg, op1Reg, TYP_SIMD16);
+            break;
+
+        case NI_SSE_SetAllVector128:
+            assert(baseType == TYP_FLOAT);
+            assert(op2 == nullptr);
+            emit->emitIns_SIMD_R_R_R_I(INS_shufps, targetReg, op1Reg, op1Reg, 0, TYP_SIMD16);
+            break;
+
+        case NI_SSE_SetZeroVector128:
+            assert(baseType == TYP_FLOAT);
+            assert(op1 == nullptr);
+            assert(op2 == nullptr);
+            emit->emitIns_SIMD_R_R_R(INS_xorps, targetReg, targetReg, targetReg, TYP_SIMD16);
             break;
 
         case NI_SSE_Sqrt:
