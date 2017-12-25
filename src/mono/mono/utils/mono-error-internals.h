@@ -63,7 +63,7 @@ struct _MonoErrorBoxed {
 void
 mono_error_assert_ok_pos (MonoError *error, const char* filename, int lineno) MONO_LLVM_INTERNAL;
 
-#define mono_error_assert_ok(e) mono_error_assert_ok_pos (e, __FILE__, __LINE__);
+#define mono_error_assert_ok(e) mono_error_assert_ok_pos (e, __FILE__, __LINE__)
 
 void
 mono_error_dup_strings (MonoError *error, gboolean dup_strings);

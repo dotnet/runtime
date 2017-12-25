@@ -6295,7 +6295,15 @@ mono_string_new (MonoDomain *domain, const char *text)
 	MonoError error;
 	MonoString *res = NULL;
 	res = mono_string_new_checked (domain, text, &error);
-	mono_error_assert_ok (&error);
+	if (!is_ok (&error)) {
+		/* Mono API compatability: assert on Out of Memory errors,
+		 * return NULL otherwise (most likely an invalid UTF-8 byte
+		 * sequence). */
+		if (mono_error_get_error_code (&error) == MONO_ERROR_OUT_OF_MEMORY)
+			mono_error_assert_ok (&error);
+		else
+			mono_error_cleanup (&error);
+	}
 	return res;
 }
 
