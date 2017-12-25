@@ -335,6 +335,12 @@ page_faults (void)
 	return mono_process_get_data (GINT_TO_POINTER (mono_process_current_pid ()), MONO_PROCESS_FAULTS);
 }
 
+static gint64
+paged_bytes (void)
+{
+	return mono_process_get_data (GINT_TO_POINTER (mono_process_current_pid ()), MONO_PROCESS_PAGED_BYTES);
+}
+
 
 // If cpu_load gets inlined on Windows then cpu_load_1min, cpu_load_5min and cpu_load_15min can be folded into a single function and that will
 // cause a failure when registering counters since the same function address will be used by all three functions. Preventing this method from being inlined
@@ -408,6 +414,7 @@ initialize_system_counters (void)
 	register_internal ("Working Set", SYSCOUNTER_BYTES, (gpointer) &working_set, sizeof (gint64));
 	register_internal ("Private Bytes", SYSCOUNTER_BYTES, (gpointer) &private_bytes, sizeof (gint64));
 	register_internal ("Virtual Bytes", SYSCOUNTER_BYTES, (gpointer) &virtual_bytes, sizeof (gint64));
+	register_internal ("Page File Bytes", SYSCOUNTER_BYTES, (gpointer) &paged_bytes, sizeof (gint64));
 	register_internal ("Page Faults", SYSCOUNTER_COUNT, (gpointer) &page_faults, sizeof (gint64));
 	register_internal ("CPU Load Average - 1min", SYSCOUNTER_LOAD, (gpointer) &cpu_load_1min, sizeof (double));
 	register_internal ("CPU Load Average - 5min", SYSCOUNTER_LOAD, (gpointer) &cpu_load_5min, sizeof (double));
