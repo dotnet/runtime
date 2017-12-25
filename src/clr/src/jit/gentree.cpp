@@ -5671,6 +5671,16 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
             return TryGetUseBinOp(def, use);
 #endif // FEATURE_SIMD
 
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWIntrinsic:
+            if ((this->AsHWIntrinsic()->gtOp1 != nullptr) && this->AsHWIntrinsic()->gtOp1->OperIsList())
+            {
+                return this->AsHWIntrinsic()->gtOp1->TryGetUseList(def, use);
+            }
+
+            return TryGetUseBinOp(def, use);
+#endif // FEATURE_HW_INTRINSICS
+
         // Special nodes
         case GT_CMPXCHG:
         {
@@ -6786,6 +6796,16 @@ GenTreeArgList* Compiler::gtNewArgList(GenTreePtr arg1, GenTreePtr arg2)
 GenTreeArgList* Compiler::gtNewArgList(GenTreePtr arg1, GenTreePtr arg2, GenTreePtr arg3)
 {
     return new (this, GT_LIST) GenTreeArgList(arg1, gtNewArgList(arg2, arg3));
+}
+
+/*****************************************************************************
+ *
+ *  Create a list out of the three values.
+ */
+
+GenTreeArgList* Compiler::gtNewArgList(GenTreePtr arg1, GenTreePtr arg2, GenTreePtr arg3, GenTreePtr arg4)
+{
+    return new (this, GT_LIST) GenTreeArgList(arg1, gtNewArgList(arg2, arg3, arg4));
 }
 
 /*****************************************************************************
@@ -9210,6 +9230,24 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             }
             return;
 #endif // FEATURE_SIMD
+
+#if FEATURE_HW_INTRINSICS
+        case GT_HWIntrinsic:
+            if (m_node->AsHWIntrinsic()->gtOp1 == nullptr)
+            {
+                assert(m_node->NullOp1Legal());
+                m_state = -1;
+            }
+            else if (m_node->AsHWIntrinsic()->gtOp1->OperIsList())
+            {
+                SetEntryStateForList(m_node->AsHWIntrinsic()->gtOp1);
+            }
+            else
+            {
+                SetEntryStateForBinOp();
+            }
+            return;
+#endif // FEATURE_HW_INTRINSICS
 
         // LEA, which may have no first operand
         case GT_LEA:
@@ -17863,6 +17901,14 @@ bool GenTree::isCommutativeSIMDIntrinsic()
 #endif // FEATURE_SIMD
 
 #if FEATURE_HW_INTRINSICS
+GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
+                                                       NamedIntrinsic hwIntrinsicID,
+                                                       var_types      baseType,
+                                                       unsigned       size)
+{
+    return new (this, GT_HWIntrinsic) GenTreeHWIntrinsic(type, hwIntrinsicID, baseType, size);
+}
+
 GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(
     var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
 {
@@ -17873,6 +17919,19 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(
     var_types type, GenTree* op1, GenTree* op2, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
 {
     return new (this, GT_HWIntrinsic) GenTreeHWIntrinsic(type, op1, op2, hwIntrinsicID, baseType, size);
+}
+
+GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
+                                                       GenTree*       op1,
+                                                       GenTree*       op2,
+                                                       GenTree*       op3,
+                                                       GenTree*       op4,
+                                                       NamedIntrinsic hwIntrinsicID,
+                                                       var_types      baseType,
+                                                       unsigned       size)
+{
+    return new (this, GT_HWIntrinsic)
+        GenTreeHWIntrinsic(type, gtNewArgList(op1, op2, op3, op4), hwIntrinsicID, baseType, size);
 }
 
 GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID)

@@ -450,8 +450,29 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
     GenTree* retNode = nullptr;
     GenTree* op1     = nullptr;
     GenTree* op2     = nullptr;
+    GenTree* op3     = nullptr;
+    GenTree* op4     = nullptr;
+
     switch (intrinsic)
     {
+        case NI_SSE_SetVector128:
+        {
+            assert(sig->numArgs == 4);
+            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
+
+            op4 = impPopStack().val;
+            op3 = impPopStack().val;
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            GenTree* left    = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op4, op3, NI_SSE_UnpackLow, TYP_FLOAT, 16);
+            GenTree* right   = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_UnpackLow, TYP_FLOAT, 16);
+            GenTree* control = gtNewIconNode(68, TYP_UBYTE);
+            
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, left, right, control, NI_SSE_Shuffle, TYP_FLOAT, 16);
+            break;
+        }
+
         case NI_SSE_Add:
         case NI_SSE_And:
         case NI_SSE_AndNot:
@@ -485,6 +506,13 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
             retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, TYP_FLOAT, 16);
             break;
 
+        case NI_SSE_SetAllVector128:
+            assert(sig->numArgs == 1);
+            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
+            op1     = impPopStack().val;
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, intrinsic, TYP_FLOAT, 16);
+            break;
+
         case NI_SSE_Reciprocal:
         case NI_SSE_ReciprocalSqrt:
         case NI_SSE_Sqrt:
@@ -492,6 +520,12 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
             assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
             op1     = impSIMDPopStack(TYP_SIMD16);
             retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, intrinsic, TYP_FLOAT, 16);
+            break;
+
+        case NI_SSE_SetZeroVector128:
+            assert(sig->numArgs == 0);
+            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, intrinsic, TYP_FLOAT, 16);
             break;
 
         default:
