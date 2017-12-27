@@ -1,16 +1,21 @@
-using System.IO;
-using System.Reflection;
-using System.Collections.Generic;
+using System;
 using Microsoft.Xunit.Performance.Api;
 
 public class PerfHarness
 {
-    public static void Main(string[] args)
+    public static int Main(string[] args)
     {
-        string assemblyName = args[0];
-        using (XunitPerformanceHarness harness = new XunitPerformanceHarness(args))
+        try
         {
-            harness.RunBenchmarks(assemblyName);
+            using (XunitPerformanceHarness harness = new XunitPerformanceHarness(args))
+                harness.RunBenchmarks(assemblyFileName: args[0]);
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("[ERROR] Benchmark execution failed.");
+            Console.WriteLine($"  {ex.ToString()}");
+            return 1;
         }
     }
 }
