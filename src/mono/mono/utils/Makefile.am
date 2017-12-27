@@ -277,7 +277,8 @@ libmonoutilsinclude_HEADERS = 	\
 
 EXTRA_DIST = mono-embed.h mono-embed.c
 
+DIST_SUBDIRS = jemalloc
+
 if MONO_JEMALLOC_ENABLED
 SUBDIRS = jemalloc
-DIST_SUBDIRS = jemalloc
 endif
