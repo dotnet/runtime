@@ -31,8 +31,7 @@ ShimProxyCallback::ShimProxyCallback(ShimProcess * pShim)
 // Implement IUnknown
 ULONG ShimProxyCallback::AddRef()
 {
-    InterlockedIncrement(&m_cRef);
-    return m_cRef;
+    return InterlockedIncrement(&m_cRef);
 }
 ULONG ShimProxyCallback::Release()
 {
