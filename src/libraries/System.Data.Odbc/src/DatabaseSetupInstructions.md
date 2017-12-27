@@ -23,34 +23,45 @@ Get the tag name from https://hub.docker.com/r/microsoft/dotnet-buildtools-prere
 - `docker exec -it _id /bin/sh`
 
 ## Notes on commands used in Linux 14.04
-- not supported. Minimum required unixODBC version should be 2.3.1 but is lower
+- Not supported. The minimum required unixODBC version should be 2.3.1, but is not available on Ubuntu 14.04.
 
 ## Notes on commands used in Linux 16.04
-- `sudo nano /etc/odbcinst.ini`
+- `wget "ftp://ftp.unixodbc.org/pub/unixODBC/unixODBC-2.3.4.tar.gz"` download and install unixODBC
+- `gunzip unixODBC-2.3.4.tar.gz`
+- `tar xvf unixODBC-2.3.4.tar`
+- `cd unixODBC-2.3.4/`
+- `./configure`
+- `make`
+- `sudo make install`
+- `cd ..`
+- `wget "http://www.ch-werner.de/sqliteodbc/sqliteodbc-0.9995.tar.gz"` download and install SQLite ODBC Driver
+- `gunzip sqliteodbc-0.9995.tar.gz`
+- `tar xvf sqliteodbc-0.9995.tar`
+- `cd sqliteodbc-0.9995/`
+- `./configure`
+- `make`
+- `sudo make install`
 - `sudo nano /usr/local/etc/odbcinst.ini`
-- `ls /usr/lib/x86_64-linux-gnu/odbc/`
-- `ls -a /usr/local/lib`
-- `sudo nano /usr/local/etc/odbc.ini`
-- `PATH=$PATH:/usr/lib/x86_64-linux-gnu-odbc/`
-- `cd ~/dl/unixODBC*/`
-- `./configure`
-- `make`
-- `sudo make install`
-- `sudo nano /usr/local/etc/odbc.ini` notes on onenote
-- `sudo nano /usr/local/etc/odbcinst.ini' notes on onenote
-- `ls -a /usr/local/lib`
-- `cd ../sqliteodbc-*/`
-- `./configure`
-- `sudo apt-get update`
-- `sudo apt-get install sqlite3`
-- `./configure`
-- `bundle install` bundle install may not be necessary
-- `sudo apt-get install sqlite3`
-- `sudo apt-get install libsqlite3-dev` unixodbc-dev, unixodbc-bin, and unixodbc may not be required
-- `make`
-- `make install`
-- `sudo make install`
-- `ls -a /usr/local/lib`
+
+```
+[ODBC Drivers]
+SQLite3 ODBC Driver=Installed
+
+[SQLite3 ODBC Driver]
+Description=SQLite3 ODBC Driver
+Driver=/usr/local/lib/libsqlite3odbc.so
+Setup=/usr/local/lib/libsqlite3odbc.so
+```
+
+- `sudo nano /etc/odbcinst.ini`
+
+```
+[SQLite3 ODBC Driver]
+Description=SQLite ODBC Driver
+Driver=/usr/local/lib/libsqlite3odbc.so
+Setup=/usr/local/lib/libsqlite3odbc.so
+Threading=4
+```
 
 ## Notes on commands used in Mac 
 - `gunzip unixODBC-2.3.4.tar.gz` download unixodbc
@@ -63,7 +74,7 @@ Get the tag name from https://hub.docker.com/r/microsoft/dotnet-buildtools-prere
 - `sudo nano /etc/odbcinst.ini`
 
 ```
- [SQLite3]
+ [SQLite3 ODBC Driver]
  Description=SQLite ODBC Driver
  Driver=/usr/local/lib/libsqlite3odbc.so
  Setup=/usr/local/lib/libsqlite3odbc.so
@@ -76,17 +87,11 @@ Get the tag name from https://hub.docker.com/r/microsoft/dotnet-buildtools-prere
 ```
  [ODBC Drivers]
  SQLite3 ODBC Driver=Installed
- SQLite=Installed
+
  [SQLite3 ODBC Driver]
  Driver=/usr/local/lib/libsqlite3odbc.dylib
  Setup=/usr/local/lib/libsqlite3odbc.dylib
- [SQLite3]
- Driver=/usr/local/lib/libsqlite3odbc.dylib
- Setup=/usr/local/lib/libsqlite3odbc.dylib
 ```
-
-- `ls -a /usr/local/lib/.`
-- `sudo nano /usr/local/etc/odbc/odbc.ini`
 
 ## Notes on commands used in Windows7-10, 64 bit machine
 - odbc32.dll already available, just needs to install sqlite64.exe
