@@ -1527,10 +1527,11 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 						dest->dreg = ins->dreg;
 					} else {
 						MonoClass *array_class = mono_array_class_get (ins->inst_newa_class, 1);
-						MonoVTable *vtable = mono_class_vtable (cfg->domain, array_class);
+						MonoError vt_error;
+						MonoVTable *vtable = mono_class_vtable_checked (cfg->domain, array_class, &vt_error);
 						MonoMethod *managed_alloc = mono_gc_get_managed_array_allocator (array_class);
 
-						g_assert (vtable); /*This shall not fail since we check for this condition on OP_NEWARR creation*/
+						mono_error_assert_ok (&vt_error); /*This shall not fail since we check for this condition on OP_NEWARR creation*/
 						NEW_VTABLECONST (cfg, iargs [0], vtable);
 						MONO_ADD_INS (cfg->cbb, iargs [0]);
 						MONO_INST_NEW (cfg, iargs [1], OP_MOVE);

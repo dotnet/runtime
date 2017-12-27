@@ -2418,9 +2418,11 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 	call = mono_emit_call_args (cfg, sig, args, FALSE, virtual_, tail, rgctx_arg ? TRUE : FALSE, need_unbox_trampoline, method);
 
 #ifndef DISABLE_REMOTING
-	if (might_be_remote)
-		call->method = mono_marshal_get_remoting_invoke_with_check (method);
-	else
+	if (might_be_remote) {
+		MonoError error;
+		call->method = mono_marshal_get_remoting_invoke_with_check (method, &error);
+		mono_error_assert_ok (&error);
+	} else
 #endif
 		call->method = method;
 	call->inst.flags |= MONO_INST_HAS_METHOD;
@@ -2471,11 +2473,13 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 			 */
 #ifndef DISABLE_REMOTING
 			if (mono_class_is_marshalbyref (method->klass) || method->klass == mono_defaults.object_class) {
+				MonoError error;
 				/* 
 				 * The check above ensures method is not gshared, this is needed since
 				 * gshared methods can't have wrappers.
 				 */
-				method = call->method = mono_marshal_get_remoting_invoke_with_check (method);
+				method = call->method = mono_marshal_get_remoting_invoke_with_check (method, &error);
+				mono_error_assert_ok (&error);
 			}
 #endif
 
@@ -3270,10 +3274,12 @@ emit_class_init (MonoCompile *cfg, MonoClass *klass)
 		vtable_arg = mini_emit_get_rgctx_klass (cfg, context_used,
 										   klass, MONO_RGCTX_INFO_VTABLE);
 	} else {
-		MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
-
-		if (!vtable)
+		MonoVTable *vtable = mono_class_vtable_checked (cfg->domain, klass, &cfg->error);
+		if (!is_ok (&cfg->error)) {
+			mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 			return;
+		}
+
 		EMIT_NEW_VTABLECONST (cfg, vtable_arg, vtable);
 	}
 
@@ -3409,15 +3415,19 @@ mini_emit_check_array_type (MonoCompile *cfg, MonoInst *obj, MonoClass *array_cl
 			int vt_reg;
 			MonoVTable *vtable;
 
-			if (!(vtable = mono_class_vtable (cfg->domain, array_class)))
+			if (!(vtable = mono_class_vtable_checked (cfg->domain, array_class, &cfg->error))) {
+				mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 				return;
+			}
 			vt_reg = alloc_preg (cfg);
 			MONO_EMIT_NEW_VTABLECONST (cfg, vt_reg, vtable);
 			MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, vtable_reg, vt_reg);
 		} else {
 			MonoVTable *vtable;
-			if (!(vtable = mono_class_vtable (cfg->domain, array_class)))
+			if (!(vtable = mono_class_vtable_checked (cfg->domain, array_class, &cfg->error))) {
+				mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 				return;
+			}
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, vtable_reg, vtable);
 		}
 	}
@@ -3460,9 +3470,9 @@ handle_unbox_nullable (MonoCompile* cfg, MonoInst* val, MonoClass* klass, int co
 		g_assert (!pass_mrgctx);
 
 		if (pass_vtable) {
-			MonoVTable *vtable = mono_class_vtable (cfg->domain, method->klass);
+			MonoVTable *vtable = mono_class_vtable_checked (cfg->domain, method->klass, &cfg->error);
 
-			g_assert (vtable);
+			mono_error_assert_ok (&cfg->error);
 			EMIT_NEW_VTABLECONST (cfg, rgctx_arg, vtable);
 		}
 
@@ -3658,16 +3668,14 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box, int context_
 		EMIT_NEW_ICONST (cfg, iargs [0], mono_metadata_token_index (klass->type_token));
 		alloc_ftn = mono_helper_newobj_mscorlib;
 	} else {
-		MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
-		MonoMethod *managed_alloc = NULL;
+		MonoVTable *vtable = mono_class_vtable_checked (cfg->domain, klass, &cfg->error);
 
-		if (!vtable) {
-			mono_cfg_set_exception (cfg, MONO_EXCEPTION_TYPE_LOAD);
-			cfg->exception_ptr = klass;
+		if (!is_ok (&cfg->error)) {
+			mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 			return NULL;
 		}
 
-		managed_alloc = mono_gc_get_managed_allocator (klass, for_box, TRUE);
+		MonoMethod *managed_alloc = mono_gc_get_managed_allocator (klass, for_box, TRUE);
 
 		if (managed_alloc) {
 			int size = mono_class_instance_size (klass);
@@ -3718,9 +3726,9 @@ handle_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_used)
 			g_assert (!pass_mrgctx);
 
 			if (pass_vtable) {
-				MonoVTable *vtable = mono_class_vtable (cfg->domain, method->klass);
+				MonoVTable *vtable = mono_class_vtable_checked (cfg->domain, method->klass, &cfg->error);
 
-				g_assert (vtable);
+				mono_error_assert_ok (&cfg->error);
 				EMIT_NEW_VTABLECONST (cfg, rgctx_arg, vtable);
 			}
 
@@ -4197,11 +4205,13 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 		/* The AggressiveInlining hint is a good excuse to force that cctor to run. */
 		if (method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING) {
 			if (method->klass->has_cctor) {
-				vtable = mono_class_vtable (cfg->domain, method->klass);
-				if (!vtable)
+				MonoError error;
+				vtable = mono_class_vtable_checked (cfg->domain, method->klass, &error);
+				if (!is_ok (&error)) {
+					mono_error_cleanup (&error);
 					return FALSE;
+				}
 				if (!cfg->compile_aot) {
-					MonoError error;
 					if (!mono_runtime_class_init_full (vtable, &error)) {
 						mono_error_cleanup (&error);
 						return FALSE;
@@ -4210,31 +4220,36 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 			}
 		} else if (mono_class_is_before_field_init (method->klass)) {
 			if (cfg->run_cctors && method->klass->has_cctor) {
+				MonoError error;
 				/*FIXME it would easier and lazier to just use mono_class_try_get_vtable */
 				if (!method->klass->runtime_info)
 					/* No vtable created yet */
 					return FALSE;
-				vtable = mono_class_vtable (cfg->domain, method->klass);
-				if (!vtable)
+				vtable = mono_class_vtable_checked (cfg->domain, method->klass, &error);
+				if (!is_ok (&error)) {
+					mono_error_cleanup (&error);
 					return FALSE;
+				}
 				/* This makes so that inline cannot trigger */
 				/* .cctors: too many apps depend on them */
 				/* running with a specific order... */
 				if (! vtable->initialized)
 					return FALSE;
-				MonoError error;
 				if (!mono_runtime_class_init_full (vtable, &error)) {
 					mono_error_cleanup (&error);
 					return FALSE;
 				}
 			}
 		} else if (mono_class_needs_cctor_run (method->klass, NULL)) {
+			MonoError error;
 			if (!method->klass->runtime_info)
 				/* No vtable created yet */
 				return FALSE;
-			vtable = mono_class_vtable (cfg->domain, method->klass);
-			if (!vtable)
+			vtable = mono_class_vtable_checked (cfg->domain, method->klass, &error);
+			if (!is_ok (&error)) {
+				mono_error_cleanup (&error);
 				return FALSE;
+			}
 			if (!vtable->initialized)
 				return FALSE;
 		}
@@ -5772,10 +5787,10 @@ mini_redirect_call (MonoCompile *cfg, MonoMethod *method,
 		/* managed string allocation support */
 		if (strcmp (method->name, "InternalAllocateStr") == 0 && !(cfg->opt & MONO_OPT_SHARED)) {
 			MonoInst *iargs [2];
-			MonoVTable *vtable = mono_class_vtable (cfg->domain, method->klass);
+			MonoVTable *vtable = mono_class_vtable_checked (cfg->domain, method->klass, &cfg->error);
 			MonoMethod *managed_alloc = NULL;
 
-			g_assert (vtable); /*Should not fail since it System.String*/
+			mono_error_assert_ok (&cfg->error); /*Should not fail since it System.String*/
 #ifndef MONO_CROSS_COMPILE
 			managed_alloc = mono_gc_get_managed_allocator (method->klass, FALSE, FALSE);
 #endif
@@ -7018,7 +7033,8 @@ handle_ctor_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 	if (cmethod->klass->valuetype && mono_class_generic_sharing_enabled (cmethod->klass) &&
 					mono_method_is_generic_sharable (cmethod, TRUE)) {
 		if (cmethod->is_inflated && mono_method_get_context (cmethod)->method_inst) {
-			mono_class_vtable (cfg->domain, cmethod->klass);
+			mono_class_vtable_checked (cfg->domain, cmethod->klass, &cfg->error);
+			CHECK_CFG_ERROR;
 			CHECK_TYPELOAD (cmethod->klass);
 
 			vtable_arg = emit_get_rgctx_method (cfg, context_used,
@@ -7028,8 +7044,8 @@ handle_ctor_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 				vtable_arg = mini_emit_get_rgctx_klass (cfg, context_used,
 												   cmethod->klass, MONO_RGCTX_INFO_VTABLE);
 			} else {
-				MonoVTable *vtable = mono_class_vtable (cfg->domain, cmethod->klass);
-
+				MonoVTable *vtable = mono_class_vtable_checked (cfg->domain, cmethod->klass, &cfg->error);
+				CHECK_CFG_ERROR;
 				CHECK_TYPELOAD (cmethod->klass);
 				EMIT_NEW_VTABLECONST (cfg, vtable_arg, vtable);
 			}
@@ -7093,6 +7109,7 @@ handle_ctor_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 										  callvirt_this_arg, NULL, vtable_arg);
 	}
  exception_exit:
+ mono_error_exit:
 	return;
 }
 
@@ -8622,7 +8639,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (context_used) {
 					vtable_arg = mini_emit_get_rgctx_klass (cfg, context_used, cmethod->klass, MONO_RGCTX_INFO_VTABLE);
 				} else {
-					MonoVTable *vtable = mono_class_vtable (cfg->domain, cmethod->klass);
+					MonoVTable *vtable = mono_class_vtable_checked (cfg->domain, cmethod->klass, &cfg->error);
+					CHECK_CFG_ERROR;
 
 					CHECK_TYPELOAD (cmethod->klass);
 					EMIT_NEW_VTABLECONST (cfg, vtable_arg, vtable);
@@ -9966,7 +9984,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MonoVTable *vtable = NULL;
 
 					if (!cfg->compile_aot)
-						vtable = mono_class_vtable (cfg->domain, cmethod->klass);
+						vtable = mono_class_vtable_checked (cfg->domain, cmethod->klass, &cfg->error);
+					CHECK_CFG_ERROR;
 					CHECK_TYPELOAD (cmethod->klass);
 
 					/*
@@ -10550,7 +10569,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 * to be called here.
 			 */
 			if (!context_used && !(cfg->opt & MONO_OPT_SHARED)) {
-				mono_class_vtable (cfg->domain, klass);
+				mono_class_vtable_checked (cfg->domain, klass, &cfg->error);
+				CHECK_CFG_ERROR;
 				CHECK_TYPELOAD (klass);
 			}
 			mono_domain_lock (cfg->domain);
@@ -10667,7 +10687,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoVTable *vtable = NULL;
 
 				if (!cfg->compile_aot)
-					vtable = mono_class_vtable (cfg->domain, klass);
+					vtable = mono_class_vtable_checked (cfg->domain, klass, &cfg->error);
+				CHECK_CFG_ERROR;
 				CHECK_TYPELOAD (klass);
 
 				if (!addr) {
@@ -10729,7 +10750,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				gpointer addr = NULL;
 
 				if (!context_used) {
-					vtable = mono_class_vtable (cfg->domain, klass);
+					vtable = mono_class_vtable_checked (cfg->domain, klass, &cfg->error);
+					CHECK_CFG_ERROR;
 					CHECK_TYPELOAD (klass);
 				}
 				if ((ftype->attrs & FIELD_ATTRIBUTE_INIT_ONLY) && (((addr = mono_aot_readonly_field_override (field)) != NULL) ||
@@ -10905,7 +10927,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				} else {
 					/* Decompose later since it is needed by abcrem */
 					MonoClass *array_type = mono_array_class_get (klass, 1);
-					mono_class_vtable (cfg->domain, array_type);
+					mono_class_vtable_checked (cfg->domain, array_type, &cfg->error);
+					CHECK_CFG_ERROR;
 					CHECK_TYPELOAD (array_type);
 
 					MONO_INST_NEW (cfg, ins, OP_NEWARR);

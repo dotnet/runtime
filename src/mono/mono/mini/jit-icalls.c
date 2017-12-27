@@ -877,7 +877,7 @@ mono_class_static_field_address (MonoDomain *domain, MonoClassField *field)
 
 	mono_class_init (field->parent);
 
-	vtable = mono_class_vtable_full (domain, field->parent, &error);
+	vtable = mono_class_vtable_checked (domain, field->parent, &error);
 	if (!is_ok (&error)) {
 		mono_error_set_pending_exception (&error);
 		return NULL;

@@ -1434,8 +1434,8 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = GUINT_TO_POINTER ((guint32)(-((patch_info->data.klass->interface_id + 1) * SIZEOF_VOID_P)));
 		break;
 	case MONO_PATCH_INFO_VTABLE:
-		target = mono_class_vtable (domain, patch_info->data.klass);
-		g_assert (target);
+		target = mono_class_vtable_checked (domain, patch_info->data.klass, error);
+		mono_error_assert_ok (error);
 		break;
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE: {
 		MonoDelegateClassMethodPair *del_tramp = patch_info->data.del_tramp;
@@ -1447,7 +1447,8 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	}
 	case MONO_PATCH_INFO_SFLDA: {
-		MonoVTable *vtable = mono_class_vtable (domain, patch_info->data.field->parent);
+		MonoVTable *vtable = mono_class_vtable_checked (domain, patch_info->data.field->parent, error);
+		mono_error_assert_ok (error);
 
 		if (mono_class_field_is_special_static (patch_info->data.field)) {
 			gpointer addr = NULL;
@@ -1460,7 +1461,6 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 			return addr;
 		}
 
-		g_assert (vtable);
 		if (!vtable->initialized && !mono_class_is_before_field_init (vtable->klass) && (method && mono_class_needs_cctor_run (vtable->klass, method)))
 			/* Done by the generated code */
 			;
@@ -1556,8 +1556,8 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = mono_thread_interruption_request_flag ();
 		break;
 	case MONO_PATCH_INFO_METHOD_RGCTX: {
-		MonoVTable *vtable = mono_class_vtable (domain, patch_info->data.method->klass);
-		g_assert (vtable);
+		MonoVTable *vtable = mono_class_vtable_checked (domain, patch_info->data.method->klass, error);
+		mono_error_assert_ok (error);
 
 		target = mono_method_lookup_rgctx (vtable, mini_method_get_context (patch_info->data.method)->method_inst);
 		break;
@@ -2053,7 +2053,7 @@ lookup_start:
 			MonoVTable *vtable;
 
 			mono_atomic_inc_i32 (&mono_jit_stats.methods_lookups);
-			vtable = mono_class_vtable_full (domain, method->klass, error);
+			vtable = mono_class_vtable_checked (domain, method->klass, error);
 			if (!is_ok (error))
 				return NULL;
 			g_assert (vtable);
@@ -2098,8 +2098,8 @@ lookup_start:
 			 * called by init_method ().
 			 */
 			if (!mono_llvm_only) {
-				vtable = mono_class_vtable (domain, method->klass);
-				g_assert (vtable);
+				vtable = mono_class_vtable_checked (domain, method->klass, error);
+				mono_error_assert_ok (error);
 				if (!mono_runtime_class_init_full (vtable, error))
 					return NULL;
 			}
@@ -2409,7 +2409,7 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 		info->sig = mono_method_signature (method);
 
 	invoke = mono_marshal_get_runtime_invoke (method, FALSE);
-	info->vtable = mono_class_vtable_full (domain, method->klass, error);
+	info->vtable = mono_class_vtable_checked (domain, method->klass, error);
 	if (!mono_error_ok (error))
 		return NULL;
 	g_assert (info->vtable);
@@ -3189,9 +3189,10 @@ mono_jit_create_remoting_trampoline (MonoDomain *domain, MonoMethod *method, Mon
 
 	if ((method->flags & METHOD_ATTRIBUTE_ABSTRACT) ||
 	    (mono_method_signature (method)->hasthis && (mono_class_is_marshalbyref (method->klass) || method->klass == mono_defaults.object_class)))
-		nm = mono_marshal_get_remoting_invoke_for_target (method, target);
+		nm = mono_marshal_get_remoting_invoke_for_target (method, target, error);
 	else
 		nm = method;
+	return_val_if_nok (error, NULL);
 	addr = (guint8 *)mono_compile_method_checked (nm, error);
 	return_val_if_nok (error, NULL);
 	return mono_get_addr_from_ftnptr (addr);
@@ -4581,7 +4582,8 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 		}
 #ifndef DISABLE_REMOTING
 		if (mono_class_is_marshalbyref (method->klass) && mono_method_signature (method)->hasthis) {
-			invoke = mono_marshal_get_remoting_invoke_with_check (method);
+			invoke = mono_marshal_get_remoting_invoke_with_check (method, &error);
+			mono_error_assert_ok (&error);
 			mono_compile_method_checked (invoke, &error);
 			mono_error_assert_ok (&error);
 		}

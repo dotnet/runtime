@@ -890,11 +890,8 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 
 	switch (info_type) {
 	case MONO_RGCTX_INFO_STATIC_DATA: {
-		MonoVTable *vtable = mono_class_vtable (domain, klass);
-		if (!vtable) {
-			mono_error_set_for_class_failure (error, klass);
-			return NULL;
-		}
+		MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
+		return_val_if_nok (error, NULL);
 		return mono_vtable_get_static_field_data (vtable);
 	}
 	case MONO_RGCTX_INFO_KLASS:
@@ -902,11 +899,8 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 	case MONO_RGCTX_INFO_ELEMENT_KLASS:
 		return klass->element_class;
 	case MONO_RGCTX_INFO_VTABLE: {
-		MonoVTable *vtable = mono_class_vtable (domain, klass);
-		if (!vtable) {
-			mono_error_set_for_class_failure (error, klass);
-			return NULL;
-		}
+		MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
+		return_val_if_nok (error, NULL);
 		return vtable;
 	}
 	case MONO_RGCTX_INFO_CAST_CACHE: {
@@ -1879,8 +1873,11 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 			return GUINT_TO_POINTER (MONO_GSHAREDVT_BOX_TYPE_VTYPE);
 	}
 #ifndef DISABLE_REMOTING
-	case MONO_RGCTX_INFO_REMOTING_INVOKE_WITH_CHECK:
-		return mono_compile_method_checked (mono_marshal_get_remoting_invoke_with_check ((MonoMethod *)data), error);
+	case MONO_RGCTX_INFO_REMOTING_INVOKE_WITH_CHECK: {
+		MonoMethod *remoting_invoke_method = mono_marshal_get_remoting_invoke_with_check ((MonoMethod *)data, error);
+		return_val_if_nok (error, NULL);
+		return mono_compile_method_checked (remoting_invoke_method, error);
+	}
 #endif
 	case MONO_RGCTX_INFO_METHOD_DELEGATE_CODE:
 		return mono_domain_alloc0 (domain, sizeof (gpointer));
@@ -1902,11 +1899,8 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		g_assert (method->method.method.is_inflated);
 		g_assert (method->context.method_inst);
 
-		vtable = mono_class_vtable (domain, method->method.method.klass);
-		if (!vtable) {
-			mono_error_set_for_class_failure (error, method->method.method.klass);
-			return NULL;
-		}
+		vtable = mono_class_vtable_checked (domain, method->method.method.klass, error);
+		return_val_if_nok (error, NULL);
 
 		return mono_method_lookup_rgctx (vtable, method->context.method_inst);
 	}
@@ -3359,10 +3353,13 @@ mini_type_is_reference (MonoType *type)
 gpointer
 mini_method_get_rgctx (MonoMethod *m)
 {
-	if (mini_method_get_context (m)->method_inst)
-		return mono_method_lookup_rgctx (mono_class_vtable (mono_domain_get (), m->klass), mini_method_get_context (m)->method_inst);
-	else
-		return mono_class_vtable (mono_domain_get (), m->klass);
+	MonoError error;
+	MonoVTable *vt = mono_class_vtable_checked (mono_domain_get (), m->klass, &error);
+	mono_error_assert_ok (&error);
+	if (mini_method_get_context (m)->method_inst) {
+		return mono_method_lookup_rgctx (vt, mini_method_get_context (m)->method_inst);
+	} else
+		return vt;
 }
 
 /*

@@ -4319,12 +4319,8 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	if (!mono_error_ok (error))
 		return NULL;
 
-	vtable = mono_class_vtable (target_domain, method->klass);
-	if (!vtable) {
-		g_assert (mono_class_has_failure (method->klass));
-		mono_error_set_for_class_failure (error, method->klass);
-		return NULL;
-	}
+	vtable = mono_class_vtable_checked (target_domain, method->klass, error);
+	return_val_if_nok (error, NULL);
 
 	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
 		if (mono_marshal_method_from_wrapper (method)) {

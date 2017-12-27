@@ -961,7 +961,11 @@ mono_generic_virtual_remoting_trampoline (mgreg_t *regs, guint8 *code, MonoMetho
 		context.method_inst = ((MonoMethodInflated*)imt_method)->context.method_inst;
 	m = mono_class_inflate_generic_method_checked (declaring, &context, &error);
 	g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */;
-	m = mono_marshal_get_remoting_invoke_with_check (m);
+	m = mono_marshal_get_remoting_invoke_with_check (m, &error);
+	if (!is_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return NULL;
+	}
 
 	addr = mono_jit_compile_method (m, &error);
 	if (!mono_error_ok (&error)) {
@@ -1130,11 +1134,16 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tr
 #ifndef DISABLE_REMOTING
 		if (delegate->target && mono_object_is_transparent_proxy (delegate->target)) {
 			is_remote = TRUE;
+			error_init (&err);
 #ifndef DISABLE_COM
 			if (((MonoTransparentProxy *)delegate->target)->remote_class->proxy_class != mono_class_get_com_object_class () &&
 			   !mono_class_is_com_object (((MonoTransparentProxy *)delegate->target)->remote_class->proxy_class))
 #endif
-				method = mono_marshal_get_remoting_invoke (method);
+				method = mono_marshal_get_remoting_invoke (method, &err);
+			if (!is_ok (&err)) {
+				mono_error_set_pending_exception (&err);
+				return NULL;
+			}
 		}
 #endif
 		if (!is_remote) {

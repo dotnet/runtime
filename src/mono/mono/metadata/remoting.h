@@ -19,16 +19,16 @@ void mono_remoting_init (void);
 #ifndef DISABLE_REMOTING
 
 MonoMethod *
-mono_marshal_get_remoting_invoke (MonoMethod *method);
+mono_marshal_get_remoting_invoke (MonoMethod *method, MonoError *error);
 
 MonoMethod *
-mono_marshal_get_xappdomain_invoke (MonoMethod *method);
+mono_marshal_get_xappdomain_invoke (MonoMethod *method, MonoError *error);
 
 MonoMethod *
-mono_marshal_get_remoting_invoke_for_target (MonoMethod *method, MonoRemotingTarget target_type);
+mono_marshal_get_remoting_invoke_for_target (MonoMethod *method, MonoRemotingTarget target_type, MonoError *error);
 
 MonoMethod *
-mono_marshal_get_remoting_invoke_with_check (MonoMethod *method);
+mono_marshal_get_remoting_invoke_with_check (MonoMethod *method, MonoError *error);
 
 MonoMethod *
 mono_marshal_get_stfld_wrapper (MonoType *type);
