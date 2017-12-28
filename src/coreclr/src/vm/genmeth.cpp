@@ -120,6 +120,10 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
     {
         pMD->SetSynchronized();
     }
+    if (pTemplateMD->IsJitIntrinsic())
+    {
+        pMD->SetIsJitIntrinsic();
+    }
 
     pMD->SetMemberDef(token);
     pMD->SetSlot(pTemplateMD->GetSlot());
