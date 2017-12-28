@@ -20,7 +20,7 @@ namespace System
         internal static DateTime ParseExact(ReadOnlySpan<char> s, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, DateTimeStyles style)
         {
             DateTimeResult result = new DateTimeResult();       // The buffer to store the parsing result.
-            result.Init();
+            result.Init(s);
             if (TryParseExact(s, format, dtfi, style, ref result))
             {
                 return result.parsedDate;
@@ -35,7 +35,7 @@ namespace System
         {
             DateTimeResult result = new DateTimeResult();       // The buffer to store the parsing result.
             offset = TimeSpan.Zero;
-            result.Init();
+            result.Init(s);
             result.flags |= ParseFlags.CaptureOffset;
             if (TryParseExact(s, format, dtfi, style, ref result))
             {
@@ -52,7 +52,7 @@ namespace System
         {
             result = DateTime.MinValue;
             DateTimeResult resultData = new DateTimeResult();       // The buffer to store the parsing result.
-            resultData.Init();
+            resultData.Init(s);
             if (TryParseExact(s, format, dtfi, style, ref resultData))
             {
                 result = resultData.parsedDate;
@@ -66,7 +66,7 @@ namespace System
             result = DateTime.MinValue;
             offset = TimeSpan.Zero;
             DateTimeResult resultData = new DateTimeResult();       // The buffer to store the parsing result.
-            resultData.Init();
+            resultData.Init(s);
             resultData.flags |= ParseFlags.CaptureOffset;
             if (TryParseExact(s, format, dtfi, style, ref resultData))
             {
@@ -81,13 +81,13 @@ namespace System
         {
             if (s.Length == 0)
             {
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetFailure(ParseFailureKind.FormatWithParameter, nameof(SR.Format_BadDateTime));
                 return false;
             }
 
             if (format.Length == 0)
             {
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadFormatSpecifier), null);
+                result.SetBadFormatSpecifierFailure();
                 return false;
             }
 
@@ -100,7 +100,7 @@ namespace System
                                                 DateTimeFormatInfo dtfi, DateTimeStyles style)
         {
             DateTimeResult result = new DateTimeResult();       // The buffer to store the parsing result.
-            result.Init();
+            result.Init(s);
             if (TryParseExactMultiple(s, formats, dtfi, style, ref result))
             {
                 return result.parsedDate;
@@ -117,7 +117,7 @@ namespace System
         {
             DateTimeResult result = new DateTimeResult();       // The buffer to store the parsing result.
             offset = TimeSpan.Zero;
-            result.Init();
+            result.Init(s);
             result.flags |= ParseFlags.CaptureOffset;
             if (TryParseExactMultiple(s, formats, dtfi, style, ref result))
             {
@@ -136,7 +136,7 @@ namespace System
             result = DateTime.MinValue;
             offset = TimeSpan.Zero;
             DateTimeResult resultData = new DateTimeResult();       // The buffer to store the parsing result.
-            resultData.Init();
+            resultData.Init(s);
             resultData.flags |= ParseFlags.CaptureOffset;
             if (TryParseExactMultiple(s, formats, dtfi, style, ref resultData))
             {
@@ -153,7 +153,7 @@ namespace System
         {
             result = DateTime.MinValue;
             DateTimeResult resultData = new DateTimeResult();       // The buffer to store the parsing result.
-            resultData.Init();
+            resultData.Init(s);
             if (TryParseExactMultiple(s, formats, dtfi, style, ref resultData))
             {
                 result = resultData.parsedDate;
@@ -173,13 +173,13 @@ namespace System
 
             if (s.Length == 0)
             {
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetFailure(ParseFailureKind.FormatWithParameter, nameof(SR.Format_BadDateTime));
                 return false;
             }
 
             if (formats.Length == 0)
             {
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadFormatSpecifier), null);
+                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_NoFormatSpecifier));
                 return false;
             }
 
@@ -193,13 +193,13 @@ namespace System
             {
                 if (formats[i] == null || formats[i].Length == 0)
                 {
-                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadFormatSpecifier), null);
+                    result.SetBadFormatSpecifierFailure();
                     return false;
                 }
                 // Create a new result each time to ensure the runs are independent. Carry through
                 // flags from the caller and return the result.
                 DateTimeResult innerResult = new DateTimeResult();       // The buffer to store the parsing result.
-                innerResult.Init();
+                innerResult.Init(s);
                 innerResult.flags = result.flags;
                 if (TryParseExact(s, formats[i], dtfi, style, ref innerResult))
                 {
@@ -208,7 +208,7 @@ namespace System
                     return (true);
                 }
             }
-            result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+            result.SetBadDateTimeFailure();
             return (false);
         }
 
@@ -584,13 +584,13 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     if ((result.flags & ParseFlags.TimeZoneUsed) != 0)
                     {
                         // Should not have two timezone offsets.
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         return false;
                     }
                     result.flags |= ParseFlags.TimeZoneUsed;
                     if (!ParseTimeZone(ref str, ref result.timeZoneOffset))
                     {
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         return false;
                     }
                 }
@@ -628,7 +628,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 case TokenType.YearNumberToken:
                     if (raw.numCount == 3 || tokenValue == -1)
                     {
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         LexTraceExit("0010", dps);
                         return false;
                     }
@@ -695,7 +695,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                                     }
                                     else
                                     {
-                                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                                        result.SetBadDateTimeFailure();
                                         LexTraceExit("0030 (TM.AM/TM.PM Happened more than 1x)", dps);
                                     }
                                     break;
@@ -708,7 +708,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                                 case TokenType.SEP_Time:
                                     if (!raw.hasSameDateAndTimeSeparators)
                                     {
-                                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                                        result.SetBadDateTimeFailure();
                                         LexTraceExit("0040 (Invalid separator after number)", dps);
                                         return false;
                                     }
@@ -746,7 +746,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                                     break;
                                 default:
                                     // Invalid separator after number number.
-                                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                                    result.SetBadDateTimeFailure();
                                     LexTraceExit("0040 (Invalid separator after number)", dps);
                                     return false;
                             }
@@ -756,7 +756,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                             LexTraceExit("0050 (success)", dps);
                             return true;
                         }
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         LexTraceExit("0060", dps);
                         return false;
                     }
@@ -779,7 +779,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                                 // Fix AM/PM parsing case, e.g. "1/10 5 AM"
                                 if (dps == DS.D_NN)
                                 {
-                                    if (!ProcessTerminaltState(DS.DX_NN, ref result, ref styles, ref raw, dtfi))
+                                    if (!ProcessTerminalState(DS.DX_NN, ref str, ref result, ref styles, ref raw, dtfi))
                                     {
                                         return false;
                                     }
@@ -789,7 +789,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                             }
                             else
                             {
-                                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                                result.SetBadDateTimeFailure();
                                 break;
                             }
                             if (dps == DS.T_NNt || dps == DS.T_Nt)
@@ -842,9 +842,9 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                             {
                                 dtok.num = dtfi.Calendar.ToFourDigitYear(tokenValue);
                             }
-                            catch (ArgumentOutOfRangeException e)
+                            catch (ArgumentOutOfRangeException)
                             {
-                                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), e);
+                                result.SetBadDateTimeFailure();
                                 LexTraceExit("0075 (Calendar.ToFourDigitYear failed)", dps);
                                 return false;
                             }
@@ -868,7 +868,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                             break;
                         default:
                             // Invalid separator after number number.
-                            result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                            result.SetBadDateTimeFailure();
                             LexTraceExit("0080", dps);
                             return false;
                     }
@@ -906,7 +906,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                                     goto default;
                                 default:
                                     // Invalid separator after number number.
-                                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                                    result.SetBadDateTimeFailure();
                                     LexTraceExit("0090", dps);
                                     return false;
                             }
@@ -914,7 +914,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                         else
                         {
                             // Invalid separator after number number.
-                            result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                            result.SetBadDateTimeFailure();
                             LexTraceExit("0100", dps);
                             return false;
                         }
@@ -955,7 +955,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                                 break;
                             default:
                                 // Invalid separator after number number.
-                                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                                result.SetBadDateTimeFailure();
                                 LexTraceExit("0110", dps);
                                 return false;
                         }
@@ -972,7 +972,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     }
                     else
                     {
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         LexTraceExit("0120 (DayOfWeek seen more than 1x)", dps);
                         return false;
                     }
@@ -997,7 +997,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                             case TokenType.SEP_Time:
                                 if (!raw.hasSameDateAndTimeSeparators)
                                 {
-                                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                                    result.SetBadDateTimeFailure();
                                     LexTraceExit("0130 (Invalid separator after month name)", dps);
                                     return false;
                                 }
@@ -1023,7 +1023,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                                 break;
                             default:
                                 //Invalid separator after month name
-                                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                                result.SetBadDateTimeFailure();
                                 LexTraceExit("0130 (Invalid separator after month name)", dps);
                                 return false;
                         }
@@ -1031,7 +1031,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     }
                     else
                     {
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         LexTraceExit("0140 (MonthToken seen more than 1x)", dps);
                         return false;
                     }
@@ -1044,7 +1044,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     }
                     else
                     {
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         LexTraceExit("0150 (EraToken seen when result.era already set)", dps);
                         return false;
                     }
@@ -1060,7 +1060,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     }
                     else
                     {
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         LexTraceExit("0160 (JapaneseEraToken seen when result.era already set)", dps);
                         return false;
                     }
@@ -1075,7 +1075,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     }
                     else
                     {
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         LexTraceExit("0170 (TEraToken seen when result.era already set)", dps);
                         return false;
                     }
@@ -1089,7 +1089,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     if ((result.flags & ParseFlags.TimeZoneUsed) != 0)
                     {
                         // Should not have two timezone offsets.
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         LexTraceExit("0180 (seen GMT or Z more than 1x)", dps);
                         return false;
                     }
@@ -1113,7 +1113,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     }
                     else
                     {
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         LexTraceExit("0190 (AM/PM timeMark already set)", dps);
                         return false;
                     }
@@ -1121,7 +1121,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 case TokenType.UnknownToken:
                     if (Char.IsLetter(str.m_current))
                     {
-                        result.SetFailure(ParseFailureKind.FormatWithParameter, nameof(SR.Format_UnknowDateTimeWord), str.Index);
+                        result.SetFailure(ParseFailureKind.FormatWithOriginalDateTimeAndParameter, nameof(SR.Format_UnknownDateTimeWord), str.Index);
                         LexTraceExit("0200", dps);
                         return (false);
                     }
@@ -1151,7 +1151,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                         return true;
                     }
 
-                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                    result.SetBadDateTimeFailure();
                     LexTraceExit("0240", dps);
                     return false;
             }
@@ -1544,7 +1544,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
                 // Multiple dates in the input string
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 return false;
             }
 
@@ -1577,7 +1577,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     return true;
                 }
             }
-            result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+            result.SetBadDateTimeFailure();
             return false;
         }
 
@@ -1587,7 +1587,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
                 // Multiple dates in the input string
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 return false;
             }
 
@@ -1635,7 +1635,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     return true;
                 }
             }
-            result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+            result.SetBadDateTimeFailure();
             return false;
         }
 
@@ -1644,7 +1644,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
                 // Multiple dates in the input string
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 return false;
             }
 
@@ -1679,7 +1679,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     int year;
                     if (!TryAdjustYear(ref result, raw.GetNumber(0), out year) || !SetDateYMD(ref result, year, raw.month, 1))
                     {
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         return false;
                     }
                     return true;
@@ -1689,7 +1689,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             GetDefaultYear(ref result, ref styles);
             if (!SetDateYMD(ref result, result.Year, raw.month, raw.GetNumber(0)))
             {
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 return false;
             }
             return true;
@@ -1718,7 +1718,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     return true;
                 }
             }
-            result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+            result.SetBadDateTimeFailure();
             return false;
         }
 
@@ -1727,7 +1727,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
                 // Multiple dates in the input string
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 return false;
             }
 
@@ -1762,7 +1762,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     int year;
                     if (!TryAdjustYear(ref result, raw.GetNumber(0), out year) || !SetDateYMD(ref result, year, raw.month, 1))
                     {
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         return false;
                     }
                     return true;
@@ -1772,7 +1772,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             GetDefaultYear(ref result, ref styles);
             if (!SetDateYMD(ref result, result.Year, raw.month, raw.GetNumber(0)))
             {
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 return false;
             }
             return true;
@@ -1783,7 +1783,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
                 // Multiple dates in the input string
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 return false;
             }
 
@@ -1844,7 +1844,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 }
             }
 
-            result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+            result.SetBadDateTimeFailure();
             return false;
         }
 
@@ -1853,7 +1853,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
                 // Multiple dates in the input string
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 return false;
             }
 
@@ -1879,7 +1879,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     return true; // Year + MD
                 }
             }
-            result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+            result.SetBadDateTimeFailure();
             return false;
         }
 
@@ -1888,7 +1888,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
                 // Multiple dates in the input string
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 return false;
             }
 
@@ -1918,17 +1918,17 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     return true; // DM + Year
                 }
             }
-            result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+            result.SetBadDateTimeFailure();
             return false;
         }
 
 
-        private static Boolean GetDayOfYMN(ref DateTimeResult result, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        private static Boolean GetDayOfYMN(ref DateTimeResult result, ref DateTimeRawInfo raw)
         {
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
                 // Multiple dates in the input string
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 return false;
             }
 
@@ -1937,16 +1937,16 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 result.flags |= ParseFlags.HaveDate;
                 return true;
             }
-            result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+            result.SetBadDateTimeFailure();
             return false;
         }
 
-        private static Boolean GetDayOfYN(ref DateTimeResult result, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        private static Boolean GetDayOfYN(ref DateTimeResult result, ref DateTimeRawInfo raw)
         {
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
                 // Multiple dates in the input string
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 return false;
             }
 
@@ -1955,16 +1955,16 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 result.flags |= ParseFlags.HaveDate;
                 return true;
             }
-            result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+            result.SetBadDateTimeFailure();
             return false;
         }
 
-        private static Boolean GetDayOfYM(ref DateTimeResult result, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        private static Boolean GetDayOfYM(ref DateTimeResult result, ref DateTimeRawInfo raw)
         {
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
                 // Multiple dates in the input string
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 return false;
             }
 
@@ -1973,7 +1973,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 result.flags |= ParseFlags.HaveDate;
                 return true;
             }
-            result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+            result.SetBadDateTimeFailure();
             return false;
         }
 
@@ -2031,12 +2031,12 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             return true;
         }
 
-        private static Boolean GetTimeOfN(DateTimeFormatInfo dtfi, ref DateTimeResult result, ref DateTimeRawInfo raw)
+        private static Boolean GetTimeOfN(ref DateTimeResult result, ref DateTimeRawInfo raw)
         {
             if ((result.flags & ParseFlags.HaveTime) != 0)
             {
                 // Multiple times in the input string
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 return false;
             }
             //
@@ -2044,7 +2044,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             //
             if (raw.timeMark == TM.NotSet)
             {
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 return false;
             }
             result.Hour = raw.GetNumber(0);
@@ -2052,13 +2052,13 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             return true;
         }
 
-        private static Boolean GetTimeOfNN(DateTimeFormatInfo dtfi, ref DateTimeResult result, ref DateTimeRawInfo raw)
+        private static Boolean GetTimeOfNN(ref DateTimeResult result, ref DateTimeRawInfo raw)
         {
             Debug.Assert(raw.numCount >= 2, "raw.numCount >= 2");
             if ((result.flags & ParseFlags.HaveTime) != 0)
             {
                 // Multiple times in the input string
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 return false;
             }
 
@@ -2068,12 +2068,12 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             return true;
         }
 
-        private static Boolean GetTimeOfNNN(DateTimeFormatInfo dtfi, ref DateTimeResult result, ref DateTimeRawInfo raw)
+        private static Boolean GetTimeOfNNN(ref DateTimeResult result, ref DateTimeRawInfo raw)
         {
             if ((result.flags & ParseFlags.HaveTime) != 0)
             {
                 // Multiple times in the input string
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 return false;
             }
             Debug.Assert(raw.numCount >= 3, "raw.numCount >= 3");
@@ -2091,7 +2091,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         {
             if (raw.numCount != 1 || result.Day != -1)
             {
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 return false;
             }
             result.Day = raw.GetNumber(0);
@@ -2103,19 +2103,19 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             if (result.Month == -1)
             {
                 //Should have a month suffix
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 return false;
             }
             if (result.Year != -1)
             {
                 // Aleady has a year suffix
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 return false;
             }
             if (!TryAdjustYear(ref result, raw.GetNumber(0), out result.Year))
             {
                 // the year value is out of range
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 return false;
             }
             result.Day = 1;
@@ -2165,7 +2165,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     }
                 }
             }
-            result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+            result.SetBadDateTimeFailure();
             return false;
         }
 
@@ -2236,7 +2236,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         //
         ////////////////////////////////////////////////////////////////////////
 
-        internal static Boolean ProcessHebrewTerminalState(DS dps, ref DateTimeResult result, ref DateTimeStyles styles, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        internal static Boolean ProcessHebrewTerminalState(DS dps, ref __DTString str, ref DateTimeResult result, ref DateTimeStyles styles, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             // The following are accepted terminal state for Hebrew date.
             switch (dps)
@@ -2246,7 +2246,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     raw.year = raw.GetNumber(1);
                     if (!dtfi.YearMonthAdjustment(ref raw.year, ref raw.month, true))
                     {
-                        result.SetFailure(ParseFailureKind.FormatBadDateTimeCalendar, nameof(SR.Format_BadDateTimeCalendar), null);
+                        result.SetFailure(ParseFailureKind.FormatBadDateTimeCalendar, nameof(SR.Format_BadDateTimeCalendar));
                         return false;
                     }
                     if (!GetDayOfMNN(ref result, ref raw, dtfi))
@@ -2258,10 +2258,10 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     // Deal with the default long/short date format when the year number is NOT ambigous (i.e. year >= 100).
                     if (!dtfi.YearMonthAdjustment(ref raw.year, ref raw.month, true))
                     {
-                        result.SetFailure(ParseFailureKind.FormatBadDateTimeCalendar, nameof(SR.Format_BadDateTimeCalendar), null);
+                        result.SetFailure(ParseFailureKind.FormatBadDateTimeCalendar, nameof(SR.Format_BadDateTimeCalendar));
                         return false;
                     }
-                    if (!GetDayOfYMN(ref result, ref raw, dtfi))
+                    if (!GetDayOfYMN(ref result, ref raw))
                     {
                         return false;
                     }
@@ -2279,7 +2279,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     }
                     if (!dtfi.YearMonthAdjustment(ref result.Year, ref raw.month, true))
                     {
-                        result.SetFailure(ParseFailureKind.FormatBadDateTimeCalendar, nameof(SR.Format_BadDateTimeCalendar), null);
+                        result.SetFailure(ParseFailureKind.FormatBadDateTimeCalendar, nameof(SR.Format_BadDateTimeCalendar));
                         return false;
                     }
                     break;
@@ -2289,7 +2289,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     GetDefaultYear(ref result, ref styles);
                     if (!dtfi.YearMonthAdjustment(ref result.Year, ref raw.month, true))
                     {
-                        result.SetFailure(ParseFailureKind.FormatBadDateTimeCalendar, nameof(SR.Format_BadDateTimeCalendar), null);
+                        result.SetFailure(ParseFailureKind.FormatBadDateTimeCalendar, nameof(SR.Format_BadDateTimeCalendar));
                         return false;
                     }
                     if (!GetHebrewDayOfNM(ref result, ref raw, dtfi))
@@ -2301,35 +2301,35 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     // Deal with Year/Month pattern.
                     if (!dtfi.YearMonthAdjustment(ref raw.year, ref raw.month, true))
                     {
-                        result.SetFailure(ParseFailureKind.FormatBadDateTimeCalendar, nameof(SR.Format_BadDateTimeCalendar), null);
+                        result.SetFailure(ParseFailureKind.FormatBadDateTimeCalendar, nameof(SR.Format_BadDateTimeCalendar));
                         return false;
                     }
-                    if (!GetDayOfYM(ref result, ref raw, dtfi))
+                    if (!GetDayOfYM(ref result, ref raw))
                     {
                         return false;
                     }
                     break;
                 case DS.TX_N:
                     // Deal hour + AM/PM
-                    if (!GetTimeOfN(dtfi, ref result, ref raw))
+                    if (!GetTimeOfN(ref result, ref raw))
                     {
                         return false;
                     }
                     break;
                 case DS.TX_NN:
-                    if (!GetTimeOfNN(dtfi, ref result, ref raw))
+                    if (!GetTimeOfNN(ref result, ref raw))
                     {
                         return false;
                     }
                     break;
                 case DS.TX_NNN:
-                    if (!GetTimeOfNNN(dtfi, ref result, ref raw))
+                    if (!GetTimeOfNNN(ref result, ref raw))
                     {
                         return false;
                     }
                     break;
                 default:
-                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                    result.SetBadDateTimeFailure();
                     return false;
             }
             if (dps > DS.ERROR)
@@ -2346,7 +2346,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         // A terminal state has been reached, call the appropriate function to fill in the parsing result.
         // Return true if the state is a terminal state.
         //
-        internal static Boolean ProcessTerminaltState(DS dps, ref DateTimeResult result, ref DateTimeStyles styles, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        internal static Boolean ProcessTerminalState(DS dps, ref __DTString str, ref DateTimeResult result, ref DateTimeStyles styles, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             bool passed = true;
             switch (dps)
@@ -2377,22 +2377,22 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     passed = GetDayOfNNY(ref result, ref raw, dtfi);
                     break;
                 case DS.DX_YMN:
-                    passed = GetDayOfYMN(ref result, ref raw, dtfi);
+                    passed = GetDayOfYMN(ref result, ref raw);
                     break;
                 case DS.DX_YN:
-                    passed = GetDayOfYN(ref result, ref raw, dtfi);
+                    passed = GetDayOfYN(ref result, ref raw);
                     break;
                 case DS.DX_YM:
-                    passed = GetDayOfYM(ref result, ref raw, dtfi);
+                    passed = GetDayOfYM(ref result, ref raw);
                     break;
                 case DS.TX_N:
-                    passed = GetTimeOfN(dtfi, ref result, ref raw);
+                    passed = GetTimeOfN(ref result, ref raw);
                     break;
                 case DS.TX_NN:
-                    passed = GetTimeOfNN(dtfi, ref result, ref raw);
+                    passed = GetTimeOfNN(ref result, ref raw);
                     break;
                 case DS.TX_NNN:
-                    passed = GetTimeOfNNN(dtfi, ref result, ref raw);
+                    passed = GetTimeOfNNN(ref result, ref raw);
                     break;
                 case DS.TX_TS:
                     // The result has got the correct value. Nothing to do.
@@ -2428,7 +2428,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         internal static DateTime Parse(ReadOnlySpan<char> s, DateTimeFormatInfo dtfi, DateTimeStyles styles)
         {
             DateTimeResult result = new DateTimeResult();       // The buffer to store the parsing result.
-            result.Init();
+            result.Init(s);
             if (TryParse(s, dtfi, styles, ref result))
             {
                 return result.parsedDate;
@@ -2442,7 +2442,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         internal static DateTime Parse(ReadOnlySpan<char> s, DateTimeFormatInfo dtfi, DateTimeStyles styles, out TimeSpan offset)
         {
             DateTimeResult result = new DateTimeResult();       // The buffer to store the parsing result.
-            result.Init();
+            result.Init(s);
             result.flags |= ParseFlags.CaptureOffset;
             if (TryParse(s, dtfi, styles, ref result))
             {
@@ -2460,7 +2460,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         {
             result = DateTime.MinValue;
             DateTimeResult resultData = new DateTimeResult();       // The buffer to store the parsing result.
-            resultData.Init();
+            resultData.Init(s);
             if (TryParse(s, dtfi, styles, ref resultData))
             {
                 result = resultData.parsedDate;
@@ -2474,7 +2474,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             result = DateTime.MinValue;
             offset = TimeSpan.Zero;
             DateTimeResult parseResult = new DateTimeResult();       // The buffer to store the parsing result.
-            parseResult.Init();
+            parseResult.Init(s);
             parseResult.flags |= ParseFlags.CaptureOffset;
             if (TryParse(s, dtfi, styles, ref parseResult))
             {
@@ -2493,7 +2493,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         {
             if (s.Length == 0)
             {
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetFailure(ParseFailureKind.FormatWithParameter, nameof(SR.Format_BadDateTime));
                 return false;
             }
 
@@ -2562,7 +2562,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     {
                         if (!ProcessDateTimeSuffix(ref result, ref raw, ref dtok))
                         {
-                            result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                            result.SetBadDateTimeFailure();
                             TPTraceExit("0010", dps);
                             return false;
                         }
@@ -2581,7 +2581,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                         }
                         else
                         {
-                            result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                            result.SetBadDateTimeFailure();
                             TPTraceExit("0030", dps);
                             return false;
                         }
@@ -2626,7 +2626,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
 
                     if (dps == DS.ERROR)
                     {
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         TPTraceExit("0040 (invalid state transition)", dps);
                         return false;
                     }
@@ -2634,7 +2634,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     {
                         if ((dtfi.FormatFlags & DateTimeFormatFlags.UseHebrewRule) != 0)
                         {
-                            if (!ProcessHebrewTerminalState(dps, ref result, ref styles, ref raw, dtfi))
+                            if (!ProcessHebrewTerminalState(dps, ref str, ref result, ref styles, ref raw, dtfi))
                             {
                                 TPTraceExit("0050 (ProcessHebrewTerminalState)", dps);
                                 return false;
@@ -2642,7 +2642,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                         }
                         else
                         {
-                            if (!ProcessTerminaltState(dps, ref result, ref styles, ref raw, dtfi))
+                            if (!ProcessTerminalState(dps, ref str, ref result, ref styles, ref raw, dtfi))
                             {
                                 TPTraceExit("0060 (ProcessTerminaltState)", dps);
                                 return false;
@@ -2662,7 +2662,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
 
             if (!reachTerminalState)
             {
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 TPTraceExit("0070 (did not reach terminal state)", dps);
                 return false;
             }
@@ -2670,7 +2670,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             AdjustTimeMark(dtfi, ref raw);
             if (!AdjustHour(ref result.Hour, raw.timeMark))
             {
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 TPTraceExit("0080 (AdjustHour)", dps);
                 return false;
             }
@@ -2691,7 +2691,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             if (!result.calendar.TryToDateTime(result.Year, result.Month, result.Day,
                     result.Hour, result.Minute, result.Second, 0, result.era, out time))
             {
-                result.SetFailure(ParseFailureKind.FormatBadDateTimeCalendar, nameof(SR.Format_BadDateTimeCalendar), null);
+                result.SetFailure(ParseFailureKind.FormatBadDateTimeCalendar, nameof(SR.Format_BadDateTimeCalendar));
                 TPTraceExit("0100 (result.calendar.TryToDateTime)", dps);
                 return false;
             }
@@ -2711,7 +2711,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 //
                 if (raw.dayOfWeek != (int)result.calendar.GetDayOfWeek(time))
                 {
-                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDayOfWeek), null);
+                    result.SetFailure(ParseFailureKind.FormatWithOriginalDateTime, nameof(SR.Format_BadDayOfWeek));
                     TPTraceExit("0110 (dayOfWeek check)", dps);
                     return false;
                 }
@@ -2719,7 +2719,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
 
             result.parsedDate = time;
 
-            if (!DetermineTimeZoneAdjustments(ref result, styles, bTimeOnly))
+            if (!DetermineTimeZoneAdjustments(ref str, ref result, styles, bTimeOnly))
             {
                 TPTraceExit("0120 (DetermineTimeZoneAdjustments)", dps);
                 return false;
@@ -2730,13 +2730,13 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
 
 
         // Handles time zone adjustments and sets DateTimeKind values as required by the styles
-        private static Boolean DetermineTimeZoneAdjustments(ref DateTimeResult result, DateTimeStyles styles, Boolean bTimeOnly)
+        private static Boolean DetermineTimeZoneAdjustments(ref __DTString str, ref DateTimeResult result, DateTimeStyles styles, Boolean bTimeOnly)
         {
             if ((result.flags & ParseFlags.CaptureOffset) != 0)
             {
                 // This is a DateTimeOffset parse, so the offset will actually be captured directly, and 
                 // no adjustment is required in most cases
-                return DateTimeOffsetTimeZonePostProcessing(ref result, styles);
+                return DateTimeOffsetTimeZonePostProcessing(ref str, ref result, styles);
             }
             else
             {
@@ -2745,7 +2745,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 // the DateTime offset must be within +- 14:00 hours.
                 if (offsetTicks < DateTimeOffset.MinOffset || offsetTicks > DateTimeOffset.MaxOffset)
                 {
-                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_OffsetOutOfRange), null);
+                    result.SetFailure(ParseFailureKind.FormatWithOriginalDateTime, nameof(SR.Format_OffsetOutOfRange));
                     return false;
                 }
             }
@@ -2808,7 +2808,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         }
 
         // Apply validation and adjustments specific to DateTimeOffset
-        private static Boolean DateTimeOffsetTimeZonePostProcessing(ref DateTimeResult result, DateTimeStyles styles)
+        private static Boolean DateTimeOffsetTimeZonePostProcessing(ref __DTString str, ref DateTimeResult result, DateTimeStyles styles)
         {
             // For DateTimeOffset, default to the Utc or Local offset when an offset was not specified by 
             // the input string.
@@ -2836,14 +2836,14 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             // of a DateTime instance.            
             if (utcTicks < DateTime.MinTicks || utcTicks > DateTime.MaxTicks)
             {
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_UTCOutOfRange), null);
+                result.SetFailure(ParseFailureKind.FormatWithOriginalDateTime, nameof(SR.Format_UTCOutOfRange));
                 return false;
             }
 
             // the offset must be within +- 14:00 hours.
             if (offsetTicks < DateTimeOffset.MinOffset || offsetTicks > DateTimeOffset.MaxOffset)
             {
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_OffsetOutOfRange), null);
+                result.SetFailure(ParseFailureKind.FormatWithOriginalDateTime, nameof(SR.Format_OffsetOutOfRange));
                 return false;
             }
 
@@ -2886,7 +2886,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
 
             if (resultTicks < DateTime.MinTicks || resultTicks > DateTime.MaxTicks)
             {
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_DateOutOfRange), null);
+                result.SetFailure(ParseFailureKind.FormatWithOriginalDateTime, nameof(SR.Format_DateOutOfRange));
                 return false;
             }
             result.parsedDate = new DateTime(resultTicks, DateTimeKind.Utc);
@@ -2943,7 +2943,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             if (resultTicks < DateTime.MinTicks || resultTicks > DateTime.MaxTicks)
             {
                 result.parsedDate = DateTime.MinValue;
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_DateOutOfRange), null);
+                result.SetFailure(ParseFailureKind.FormatWithOriginalDateTime, nameof(SR.Format_DateOutOfRange));
                 return false;
             }
             result.parsedDate = new DateTime(resultTicks, DateTimeKind.Local, isAmbiguousLocalDst);
@@ -2967,19 +2967,19 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             str.SkipWhiteSpaces();
             if (!ParseDigits(ref str, 2, out hour))
             {
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 return false;
             }
             str.SkipWhiteSpaces();
             if (!str.Match(':'))
             {
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 return false;
             }
             str.SkipWhiteSpaces();
             if (!ParseDigits(ref str, 2, out minute))
             {
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 return false;
             }
             str.SkipWhiteSpaces();
@@ -2988,14 +2988,14 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 str.SkipWhiteSpaces();
                 if (!ParseDigits(ref str, 2, out second))
                 {
-                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                    result.SetBadDateTimeFailure();
                     return false;
                 }
                 if (str.Match('.'))
                 {
                     if (!ParseFraction(ref str, out partSecond))
                     {
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         return false;
                     }
                     str.Index--;
@@ -3010,7 +3010,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     result.flags |= ParseFlags.TimeZoneUsed;
                     if (!ParseTimeZone(ref str, ref result.timeZoneOffset))
                     {
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         return false;
                     }
                 }
@@ -3029,7 +3029,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 {
                     if (!VerifyValidPunctuation(ref str))
                     {
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         return false;
                     }
                     str.SkipWhiteSpaces();
@@ -3038,14 +3038,14 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 {
                     if (!VerifyValidPunctuation(ref str))
                     {
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         return false;
                     }
                 }
                 if (str.GetNext())
                 {
                     // If this is true, there were non-white space characters remaining in the DateTime
-                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                    result.SetBadDateTimeFailure();
                     return false;
                 }
             }
@@ -3055,13 +3055,13 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             if (!calendar.TryToDateTime(raw.year, raw.GetNumber(0), raw.GetNumber(1),
                     hour, minute, second, 0, result.era, out time))
             {
-                result.SetFailure(ParseFailureKind.FormatBadDateTimeCalendar, nameof(SR.Format_BadDateTimeCalendar), null);
+                result.SetFailure(ParseFailureKind.FormatBadDateTimeCalendar, nameof(SR.Format_BadDateTimeCalendar));
                 return false;
             }
 
             time = time.AddTicks((long)Math.Round(partSecond * Calendar.TicksPerSecond));
             result.parsedDate = time;
-            if (!DetermineTimeZoneAdjustments(ref result, styles, false))
+            if (!DetermineTimeZoneAdjustments(ref str, ref result, styles, false))
             {
                 return false;
             }
@@ -3686,7 +3686,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 if (((result.Month != -1) || (result.Day != -1))
                     && ((result.Year == -1 || ((result.flags & ParseFlags.YearDefault) != 0)) && (result.flags & ParseFlags.TimeZoneUsed) != 0))
                 {
-                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_MissingIncompleteDate), null);
+                    result.SetFailure(ParseFailureKind.FormatWithOriginalDateTime, nameof(SR.Format_MissingIncompleteDate));
                     return false;
                 }
             }
@@ -3869,7 +3869,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     }
                     if (!parseResult)
                     {
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         return (false);
                     }
                     if (!CheckNewValue(ref result.Year, tempYear, ch, ref result))
@@ -3886,7 +3886,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                             if (!parseInfo.fCustomNumberParser ||
                                 !parseInfo.parseNumberDelegate(ref str, tokenLen, out tempMonth))
                             {
-                                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                                result.SetBadDateTimeFailure();
                                 return (false);
                             }
                         }
@@ -3897,7 +3897,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                         {
                             if (!MatchAbbreviatedMonthName(ref str, dtfi, ref tempMonth))
                             {
-                                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                                result.SetBadDateTimeFailure();
                                 return (false);
                             }
                         }
@@ -3905,7 +3905,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                         {
                             if (!MatchMonthName(ref str, dtfi, ref tempMonth))
                             {
-                                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                                result.SetBadDateTimeFailure();
                                 return (false);
                             }
                         }
@@ -3928,7 +3928,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                             if (!parseInfo.fCustomNumberParser ||
                                 !parseInfo.parseNumberDelegate(ref str, tokenLen, out tempDay))
                             {
-                                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                                result.SetBadDateTimeFailure();
                                 return (false);
                             }
                         }
@@ -3944,7 +3944,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                             // "ddd"
                             if (!MatchAbbreviatedDayName(ref str, dtfi, ref tempDayOfWeek))
                             {
-                                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                                result.SetBadDateTimeFailure();
                                 return (false);
                             }
                         }
@@ -3953,7 +3953,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                             // "dddd*"
                             if (!MatchDayName(ref str, dtfi, ref tempDayOfWeek))
                             {
-                                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                                result.SetBadDateTimeFailure();
                                 return (false);
                             }
                         }
@@ -3968,7 +3968,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     // Put the era value in result.era.
                     if (!MatchEraName(ref str, dtfi, ref result.era))
                     {
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         return (false);
                     }
                     break;
@@ -3977,7 +3977,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     tokenLen = format.GetRepeatCount();
                     if (!ParseDigits(ref str, (tokenLen < 2 ? 1 : 2), out tempHour))
                     {
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         return (false);
                     }
                     if (!CheckNewValue(ref result.Hour, tempHour, ch, ref result))
@@ -3989,7 +3989,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     tokenLen = format.GetRepeatCount();
                     if (!ParseDigits(ref str, (tokenLen < 2 ? 1 : 2), out tempHour))
                     {
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         return (false);
                     }
                     if (!CheckNewValue(ref result.Hour, tempHour, ch, ref result))
@@ -4001,7 +4001,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     tokenLen = format.GetRepeatCount();
                     if (!ParseDigits(ref str, (tokenLen < 2 ? 1 : 2), out tempMinute))
                     {
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         return (false);
                     }
                     if (!CheckNewValue(ref result.Minute, tempMinute, ch, ref result))
@@ -4013,7 +4013,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     tokenLen = format.GetRepeatCount();
                     if (!ParseDigits(ref str, (tokenLen < 2 ? 1 : 2), out tempSecond))
                     {
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         return (false);
                     }
                     if (!CheckNewValue(ref result.Second, tempSecond, ch, ref result))
@@ -4030,7 +4030,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                         {
                             if (ch == 'f')
                             {
-                                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                                result.SetBadDateTimeFailure();
                                 return (false);
                             }
                         }
@@ -4049,7 +4049,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     }
                     else
                     {
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         return (false);
                     }
                     break;
@@ -4060,7 +4060,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     {
                         if (!MatchAbbreviatedTimeMark(ref str, dtfi, ref tempTimeMark))
                         {
-                            result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                            result.SetBadDateTimeFailure();
                             return (false);
                         }
                     }
@@ -4068,7 +4068,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     {
                         if (!MatchTimeMark(ref str, dtfi, ref tempTimeMark))
                         {
-                            result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                            result.SetBadDateTimeFailure();
                             return (false);
                         }
                     }
@@ -4093,7 +4093,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                         TimeSpan tempTimeZoneOffset = new TimeSpan(0);
                         if (!ParseTimeZoneOffset(ref str, tokenLen, ref tempTimeZoneOffset))
                         {
-                            result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                            result.SetBadDateTimeFailure();
                             return (false);
                         }
                         if ((result.flags & ParseFlags.TimeZoneUsed) != 0 && tempTimeZoneOffset != result.timeZoneOffset)
@@ -4123,7 +4123,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     str.Index++;
                     if (!GetTimeZoneName(ref str))
                     {
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         return false;
                     }
                     str.Index--;
@@ -4148,7 +4148,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                         TimeSpan tempTimeZoneOffset = new TimeSpan(0);
                         if (!ParseTimeZoneOffset(ref str, 3, ref tempTimeZoneOffset))
                         {
-                            result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                            result.SetBadDateTimeFailure();
                             return (false);
                         }
                         if ((result.flags & ParseFlags.TimeZoneUsed) != 0 && tempTimeZoneOffset != result.timeZoneOffset)
@@ -4168,7 +4168,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                         !str.Match(dtfi.TimeSeparator))
                     {
                         // A time separator is expected.
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         return false;
                     }
                     break;
@@ -4179,7 +4179,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                         !str.Match(dtfi.DateSeparator))
                     {
                         // A date separator is expected.
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         return false;
                     }
                     break;
@@ -4209,7 +4209,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                         else if (!str.Match(quotedStr[i]))
                         {
                             // Can not find the matching quoted string.
-                            result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                            result.SetBadDateTimeFailure();
                             return false;
                         }
                     }
@@ -4240,7 +4240,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     // Make sure the next character is not a '%' again.
                     if (format.Index >= format.Value.Length - 1 || format.Value[format.Index + 1] == '%')
                     {
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadFormatSpecifier), null);
+                        result.SetBadFormatSpecifierFailure(format.Value);
                         return false;
                     }
                     break;
@@ -4253,13 +4253,13 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                         if (!str.Match(format.GetChar()))
                         {
                             // Can not find a match for the escaped character.
-                            result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                            result.SetBadDateTimeFailure();
                             return false;
                         }
                     }
                     else
                     {
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadFormatSpecifier), null);
+                        result.SetBadFormatSpecifierFailure(format.Value);
                         return false;
                     }
                     break;
@@ -4276,7 +4276,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                                 break;
                             }
                         }
-                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                        result.SetBadDateTimeFailure();
                         return false;
                     }
                     break;
@@ -4311,7 +4311,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                                         }
                                     }
                                 }
-                                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                                result.SetBadDateTimeFailure();
                                 return false;
                             }
                             // Found a macth.
@@ -4328,14 +4328,14 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                             result.timeZoneOffset = TimeSpan.Zero;
                             if (!str.Match(GMTName))
                             {
-                                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                                result.SetBadDateTimeFailure();
                                 return false;
                             }
                         }
                         else if (!str.Match(ch))
                         {
                             // ch is expected.
-                            result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                            result.SetBadDateTimeFailure();
                             return false;
                         }
                     }
@@ -4443,7 +4443,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 if (((result.flags & ParseFlags.CaptureOffset) != 0) && formatParam[0] == 'U')
                 {
                     // The 'U' format is not allowed for DateTimeOffset
-                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadFormatSpecifier), null);
+                    result.SetBadFormatSpecifierFailure(formatParam);
                     return false;
                 }
                 formatParam = ExpandPredefinedFormat(formatParam, ref dtfi, ref parseInfo, ref result);
@@ -4500,7 +4500,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             if (str.Index < str.Value.Length - 1)
             {
                 // There are still remaining character in str.
-                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                result.SetBadDateTimeFailure();
                 return false;
             }
 
@@ -4509,16 +4509,16 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 // A two digit year value is expected. Check if the parsed year value is valid.
                 if (result.Year >= 100)
                 {
-                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                    result.SetBadDateTimeFailure();
                     return false;
                 }
                 try
                 {
                     result.Year = parseInfo.calendar.ToFourDigitYear(result.Year);
                 }
-                catch (ArgumentOutOfRangeException e)
+                catch (ArgumentOutOfRangeException)
                 {
-                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), e);
+                    result.SetBadDateTimeFailure();
                     return false;
                 }
             }
@@ -4537,7 +4537,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 if (result.Hour > 12)
                 {
                     // AM/PM is used, but the value for HH is too big.
-                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                    result.SetBadDateTimeFailure();
                     return false;
                 }
                 if (parseInfo.timeMark == TM.AM)
@@ -4561,7 +4561,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 if ((parseInfo.timeMark == TM.AM && result.Hour >= 12)
                     || (parseInfo.timeMark == TM.PM && result.Hour < 12))
                 {
-                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDateTime), null);
+                    result.SetBadDateTimeFailure();
                     return false;
                 }
             }
@@ -4578,14 +4578,14 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             {
                 if (!dtfi.YearMonthAdjustment(ref result.Year, ref result.Month, ((result.flags & ParseFlags.ParsedMonthName) != 0)))
                 {
-                    result.SetFailure(ParseFailureKind.FormatBadDateTimeCalendar, nameof(SR.Format_BadDateTimeCalendar), null);
+                    result.SetFailure(ParseFailureKind.FormatBadDateTimeCalendar, nameof(SR.Format_BadDateTimeCalendar));
                     return false;
                 }
             }
             if (!parseInfo.calendar.TryToDateTime(result.Year, result.Month, result.Day,
                     result.Hour, result.Minute, result.Second, 0, result.era, out result.parsedDate))
             {
-                result.SetFailure(ParseFailureKind.FormatBadDateTimeCalendar, nameof(SR.Format_BadDateTimeCalendar), null);
+                result.SetFailure(ParseFailureKind.FormatBadDateTimeCalendar, nameof(SR.Format_BadDateTimeCalendar));
                 return false;
             }
             if (result.fraction > 0)
@@ -4605,13 +4605,13 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 //
                 if (parseInfo.dayOfWeek != (int)parseInfo.calendar.GetDayOfWeek(result.parsedDate))
                 {
-                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_BadDayOfWeek), null);
+                    result.SetFailure(ParseFailureKind.FormatWithOriginalDateTime, nameof(SR.Format_BadDayOfWeek));
                     return false;
                 }
             }
 
 
-            if (!DetermineTimeZoneAdjustments(ref result, styles, bTimeOnly))
+            if (!DetermineTimeZoneAdjustments(ref str, ref result, styles, bTimeOnly))
             {
                 return false;
             }
@@ -4629,9 +4629,15 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 case ParseFailureKind.FormatWithParameter:
                     return new FormatException(SR.Format(SR.GetResourceString(result.failureMessageID), result.failureMessageFormatArgument));
                 case ParseFailureKind.FormatBadDateTimeCalendar:
-                    return new FormatException(SR.Format(SR.GetResourceString(result.failureMessageID), result.calendar));
+                    return new FormatException(SR.Format(SR.GetResourceString(result.failureMessageID), new string(result.originalDateTimeString), result.calendar));
+                case ParseFailureKind.FormatWithOriginalDateTime:
+                    return new FormatException(SR.Format(SR.GetResourceString(result.failureMessageID), new string(result.originalDateTimeString)));
+                case ParseFailureKind.FormatWithFormatSpecifier:
+                    return new FormatException(SR.Format(SR.GetResourceString(result.failureMessageID), new string(result.failedFormatSpecifier)));
+                case ParseFailureKind.FormatWithOriginalDateTimeAndParameter:
+                    return new FormatException(SR.Format(SR.GetResourceString(result.failureMessageID), new string(result.originalDateTimeString), result.failureMessageFormatArgument));
                 default:
-                    Debug.Fail("Unkown DateTimeParseFailure: " + result);
+                    Debug.Fail("Unknown DateTimeParseFailure: " + result.failure.ToString());
                     return null;
             }
         }
@@ -5464,7 +5470,10 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         ArgumentNull = 1,
         Format = 2,
         FormatWithParameter = 3,
-        FormatBadDateTimeCalendar = 4,  // FormatException when ArgumentOutOfRange is thrown by a Calendar.TryToDateTime().
+        FormatWithOriginalDateTime = 4,
+        FormatWithFormatSpecifier = 5,
+        FormatWithOriginalDateTimeAndParameter = 6,
+        FormatBadDateTimeCalendar = 7,  // FormatException when ArgumentOutOfRange is thrown by a Calendar.TryToDateTime().
     };
 
     [Flags]
@@ -5492,7 +5501,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
     // used to construct a DateTime instance.
     //
     internal
-    struct DateTimeResult
+    ref struct DateTimeResult
     {
         internal int Year;
         internal int Month;
@@ -5519,9 +5528,12 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         internal string failureMessageID;
         internal object failureMessageFormatArgument;
         internal string failureArgumentName;
+        internal ReadOnlySpan<char> originalDateTimeString;
+        internal ReadOnlySpan<char> failedFormatSpecifier;
 
-        internal void Init()
+        internal void Init(ReadOnlySpan<char> originalDateTimeString)
         {
+            this.originalDateTimeString = originalDateTimeString;
             Year = -1;
             Month = -1;
             Day = -1;
@@ -5535,6 +5547,33 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             Month = month;
             Day = day;
         }
+
+        internal void SetBadFormatSpecifierFailure()
+        {
+            SetBadFormatSpecifierFailure(ReadOnlySpan<char>.Empty);
+        }
+
+        internal void SetBadFormatSpecifierFailure(ReadOnlySpan<char> failedFormatSpecifier)
+        {
+            this.failure = ParseFailureKind.FormatWithFormatSpecifier;
+            this.failureMessageID = nameof(SR.Format_BadFormatSpecifier);
+            this.failedFormatSpecifier = failedFormatSpecifier;
+        }
+
+        internal void SetBadDateTimeFailure()
+        {
+            this.failure = ParseFailureKind.FormatWithOriginalDateTime;
+            this.failureMessageID = nameof(SR.Format_BadDateTime);
+            this.failureMessageFormatArgument = null;
+        }
+
+        internal void SetFailure(ParseFailureKind failure, string failureMessageID)
+        {
+            this.failure = failure;
+            this.failureMessageID = failureMessageID;
+            this.failureMessageFormatArgument = null;
+        }
+
         internal void SetFailure(ParseFailureKind failure, string failureMessageID, object failureMessageFormatArgument)
         {
             this.failure = failure;
