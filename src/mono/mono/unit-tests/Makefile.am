@@ -13,10 +13,16 @@ MCS_NO_LIB = $(MCS_NO_UNSAFE) -unsafe
 
 MCS = $(MCS_NO_LIB)
 
+if LOADED_LLVM
+LLVMMONOF=
+else
+LLVMMONOF=$(LLVM_LIBS) $(LLVM_LDFLAGS)
+endif
+
 
 test_cflags = $(AM_CFLAGS) $(SGEN_DEFINES)
 test_ldadd = libtestlib.la \
-	$(LIBGC_LIBS) $(GLIB_LIBS) -lm $(LIBICONV)
+	$(LIBGC_LIBS) $(GLIB_LIBS) -lm $(LIBICONV) $(LLVMMONOF)
 if HOST_DARWIN
 test_ldflags = -framework CoreFoundation -framework Foundation
 endif
@@ -68,11 +74,16 @@ test_mono_callspec_LDADD = $(test_ldadd) ../mini/libmini.la $(sgen_libs)
 test_mono_callspec_LDFLAGS = $(test_ldflags)
 test_mono_callspec_DEPENDENCIES = callspec.exe
 
+test_mono_string_SOURCES = test-mono-string.c
+test_mono_string_CFLAGS = $(test-cflags)
+test_mono_string_LDADD = $(test_ldadd) ../mini/libmini.la $(sgen_libs)
+test_mono_string_LDFLAGS = $(test_ldflags)
+
 check_PROGRAMS = test-sgen-qsort test-memfuncs test-mono-linked-list-set test-conc-hashtable test-mono-handle	\
-		 test-mono-callspec
+		 test-mono-callspec test-mono-string
 
 TESTS = test-sgen-qsort test-memfuncs test-mono-linked-list-set test-conc-hashtable test-mono-handle \
-	test-mono-callspec
+	test-mono-callspec test-mono-string
 
 AM_TESTS_ENVIRONMENT = export MONO_PATH=$(mcs_topdir)/class/lib/build;
 
