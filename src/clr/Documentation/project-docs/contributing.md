@@ -112,7 +112,7 @@ The following file header is the used for .NET Core. Please use it for new files
 ```
 
 - See [class.cpp](../../src/vm/class.cpp) for an example of the header in a C++ file.
-- See [List.cs](../../src/mscorlib/src/System/Collections/Generic/List.cs) for an example of the header in a C# file.
+- See [Comparer.cs](../../src/mscorlib/src/System/Collections/Generic/Comparer.cs) for an example of the header in a C# file.
 
 Contributing Ports
 ------------------
