@@ -23,6 +23,27 @@ extern const char* getHWIntrinsicName(NamedIntrinsic intrinsic)
     return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].intrinsicName;
 }
 
+static const bool isNumericType(var_types type)
+{
+    switch (type)
+    {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        case TYP_SHORT:
+        case TYP_USHORT:
+        case TYP_INT:
+        case TYP_UINT:
+        case TYP_LONG:
+        case TYP_ULONG:
+        case TYP_FLOAT:
+        case TYP_DOUBLE:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
 //------------------------------------------------------------------------
 // lookupHWIntrinsicISA: map class name to InstructionSet value
 //
@@ -474,6 +495,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_SSE_Shuffle:
+        {
             assert(sig->numArgs == 3);
             assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
 
@@ -496,6 +518,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
                 return nullptr;
             }
             break;
+        }
 
         case NI_SSE_Add:
         case NI_SSE_And:
@@ -529,6 +552,24 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
             op1     = impSIMDPopStack(TYP_SIMD16);
             retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, TYP_FLOAT, 16);
             break;
+
+        case NI_SSE_StaticCast:
+        {
+            assert(sig->numArgs == 1);
+            var_types tgtType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            var_types srcType = getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args));
+
+            if (isNumericType(tgtType) && isNumericType(srcType))
+            {
+                op1     = impSIMDPopStack(TYP_SIMD16);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, intrinsic, tgtType, 16);
+            }
+            else
+            {
+                return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
+            }
+            break;
+        }
 
         case NI_SSE_SetAllVector128:
             assert(sig->numArgs == 1);

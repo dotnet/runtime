@@ -448,6 +448,14 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             emit->emitIns_SIMD_R_R(INS_sqrtps, targetReg, op1Reg, TYP_SIMD16);
             break;
 
+        case NI_SSE_StaticCast:
+            assert(op2 == nullptr);
+            if (op1Reg != targetReg)
+            {
+                emit->emitIns_SIMD_R_R(INS_movaps, targetReg, op1Reg, TYP_SIMD16);
+            }
+            break;
+
         case NI_SSE_Subtract:
             assert(baseType == TYP_FLOAT);
             op2Reg = op2->gtRegNum;
