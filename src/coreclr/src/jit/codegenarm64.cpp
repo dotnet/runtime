@@ -1540,7 +1540,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
 
 // Generate code for ADD, SUB, MUL, DIV, UDIV, AND, OR and XOR
 // This method is expected to have called genConsumeOperands() before calling it.
-void CodeGen::genCodeForBinary(GenTree* treeNode)
+void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 {
     const genTreeOps oper       = treeNode->OperGet();
     regNumber        targetReg  = treeNode->gtRegNum;

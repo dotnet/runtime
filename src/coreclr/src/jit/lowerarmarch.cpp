@@ -674,6 +674,19 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
 }
 
 //------------------------------------------------------------------------
+// ContainCheckDivOrMod: determine which operands of a div/mod should be contained.
+//
+// Arguments:
+//    node - the node we care about
+//
+void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
+{
+    assert(node->OperIs(GT_DIV, GT_UDIV));
+
+    // ARM doesn't have a div instruction with an immediate operand
+}
+
+//------------------------------------------------------------------------
 // ContainCheckShiftRotate: Determine whether a mul op's operands should be contained.
 //
 // Arguments:

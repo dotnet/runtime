@@ -1821,12 +1821,6 @@ instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
             return type == TYP_DOUBLE ? INS_mulsd : INS_mulss;
         case GT_DIV:
             return type == TYP_DOUBLE ? INS_divsd : INS_divss;
-        case GT_AND:
-            return type == TYP_DOUBLE ? INS_andpd : INS_andps;
-        case GT_OR:
-            return type == TYP_DOUBLE ? INS_orpd : INS_orps;
-        case GT_XOR:
-            return type == TYP_DOUBLE ? INS_xorpd : INS_xorps;
         default:
             unreached();
     }
