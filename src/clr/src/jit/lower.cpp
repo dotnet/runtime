@@ -5631,61 +5631,6 @@ void Lowering::ContainCheckNode(GenTree* node)
 }
 
 //------------------------------------------------------------------------
-// ContainCheckDivOrMod: determine which operands of a div/mod should be contained.
-//
-// Arguments:
-//    node - pointer to the GT_UDIV/GT_UMOD node
-//
-void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
-{
-    assert(node->OperIs(GT_DIV, GT_MOD, GT_UDIV, GT_UMOD));
-
-#ifdef _TARGET_XARCH_
-    GenTree* dividend = node->gtGetOp1();
-    GenTree* divisor  = node->gtGetOp2();
-
-    if (varTypeIsFloating(node->TypeGet()))
-    {
-        // No implicit conversions at this stage as the expectation is that
-        // everything is made explicit by adding casts.
-        assert(dividend->TypeGet() == divisor->TypeGet());
-
-        if (IsContainableMemoryOp(divisor) || divisor->IsCnsNonZeroFltOrDbl())
-        {
-            MakeSrcContained(node, divisor);
-        }
-        else
-        {
-            // If there are no containable operands, we can make an operand reg optional.
-            // SSE2 allows only divisor to be a memory-op.
-            divisor->SetRegOptional();
-        }
-        return;
-    }
-    bool divisorCanBeRegOptional = true;
-#ifdef _TARGET_X86_
-    if (dividend->OperGet() == GT_LONG)
-    {
-        divisorCanBeRegOptional = false;
-        MakeSrcContained(node, dividend);
-    }
-#endif
-
-    // divisor can be an r/m, but the memory indirection must be of the same size as the divide
-    if (IsContainableMemoryOp(divisor) && (divisor->TypeGet() == node->TypeGet()))
-    {
-        MakeSrcContained(node, divisor);
-    }
-    else if (divisorCanBeRegOptional)
-    {
-        // If there are no containable operands, we can make an operand reg optional.
-        // Div instruction allows only divisor to be a memory op.
-        divisor->SetRegOptional();
-    }
-#endif // _TARGET_XARCH_
-}
-
-//------------------------------------------------------------------------
 // ContainCheckReturnTrap: determine whether the source of a RETURNTRAP should be contained.
 //
 // Arguments:
