@@ -2312,16 +2312,19 @@
     <value>Could not determine the order of year, month, and date from '{0}'.</value>
   </data>
   <data name="Format_BadDateTime" xml:space="preserve">
-    <value>String was not recognized as a valid DateTime.</value>
+    <value>String '{0}' was not recognized as a valid DateTime.</value>
   </data>
   <data name="Format_BadDateTimeCalendar" xml:space="preserve">
-    <value>The DateTime represented by the string is not supported in calendar {0}.</value>
+    <value>The DateTime represented by the string '{0}' is not supported in calendar '{1}'.</value>
   </data>
   <data name="Format_BadDayOfWeek" xml:space="preserve">
-    <value>String was not recognized as a valid DateTime because the day of week was incorrect.</value>
+    <value>String '{0}' was not recognized as a valid DateTime because the day of week was incorrect.</value>
   </data>
   <data name="Format_BadFormatSpecifier" xml:space="preserve">
-    <value>Format specifier was invalid.</value>
+    <value>Format specifier '{0}' was invalid.</value>
+  </data>
+  <data name="Format_NoFormatSpecifier" xml:space="preserve">
+    <value>No format specifiers were provided.</value>
   </data>
   <data name="Format_BadQuote" xml:space="preserve">
     <value>Cannot find a matching quote character for the character '{0}'.</value>
@@ -2330,7 +2333,7 @@
     <value>String was not recognized as a valid TimeSpan.</value>
   </data>
   <data name="Format_DateOutOfRange" xml:space="preserve">
-    <value>The DateTime represented by the string is out of range.</value>
+    <value>The DateTime represented by the string '{0}' is out of range.</value>
   </data>
   <data name="Format_EmptyInputString" xml:space="preserve">
     <value>Input string was either empty or contained only whitespace.</value>
@@ -2378,7 +2381,7 @@
     <value>Input string was not in a correct format.</value>
   </data>
   <data name="Format_MissingIncompleteDate" xml:space="preserve">
-    <value>There must be at least a partial date with a year present in the input.</value>
+    <value>There must be at least a partial date with a year present in the input string '{0}'.</value>
   </data>
   <data name="Format_NeedSingleChar" xml:space="preserve">
     <value>String must be exactly one character long.</value>
@@ -2387,7 +2390,7 @@
     <value>Could not find any recognizable digits.</value>
   </data>
   <data name="Format_OffsetOutOfRange" xml:space="preserve">
-    <value>The time zone offset must be within plus or minus 14 hours.</value>
+    <value>The time zone offset of string '{0}' must be within plus or minus 14 hours.</value>
   </data>
   <data name="Format_RepeatDateTimePattern" xml:space="preserve">
     <value>DateTime pattern '{0}' appears more than once with different values.</value>
@@ -2395,11 +2398,11 @@
   <data name="Format_StringZeroLength" xml:space="preserve">
     <value>String cannot have zero length.</value>
   </data>
-  <data name="Format_UnknowDateTimeWord" xml:space="preserve">
-    <value>The string was not recognized as a valid DateTime. There is an unknown word starting at index {0}.</value>
+  <data name="Format_UnknownDateTimeWord" xml:space="preserve">
+    <value>The string '{0}' was not recognized as a valid DateTime. There is an unknown word starting at index '{1}'.</value>
   </data>
   <data name="Format_UTCOutOfRange" xml:space="preserve">
-    <value>The UTC representation of the date falls outside the year range 1-9999.</value>
+    <value>The UTC representation of the date '{0}' falls outside the year range 1-9999.</value>
   </data>
   <data name="Globalization_cp_1200" xml:space="preserve">
     <value>Unicode</value>
