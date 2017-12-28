@@ -105,7 +105,7 @@ Applications can enable the invariant mode by setting the config switch System.G
     "runtimeOptions": {
         "configProperties": {
             "System.Globalization.Invariant": true
-        },
+        }
     }
 }
 ```
