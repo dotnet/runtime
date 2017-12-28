@@ -36,7 +36,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(stringIntRange, "2");
             yield return new TestCase(stringIntRange, 3);
             yield return new TestCase(stringIntRange, "3");
-            
+
             RangeAttribute stringDoubleRange = new RangeAttribute(typeof(double), (1.0).ToString("F1"), (3.0).ToString("F1"));
             yield return new TestCase(stringDoubleRange, null);
             yield return new TestCase(stringDoubleRange, string.Empty);
@@ -91,8 +91,8 @@ namespace System.ComponentModel.DataAnnotations.Tests
         public static void Validate_CantConvertValueToTargetType_ThrowsException(Type type, string minimum, string maximum)
         {
             var attribute = new RangeAttribute(type, minimum, maximum);
-            Assert.Throws<Exception>(() => attribute.Validate("abc", new ValidationContext(new object())));
-            Assert.Throws<Exception>(() => attribute.IsValid("abc"));
+            AssertExtensions.Throws<ArgumentException, Exception>(() => attribute.Validate("abc", new ValidationContext(new object())));
+            AssertExtensions.Throws<ArgumentException, Exception>(() => attribute.IsValid("abc"));
         }
 
         [Fact]
@@ -168,7 +168,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         public static void Validate_MinimumOrMaximumCantBeConvertedToIntegralType_ThrowsException(Type type, string minimum, string maximum)
         {
             RangeAttribute attribute = new RangeAttribute(type, minimum, maximum);
-            Assert.Throws<Exception>(() => attribute.Validate("Any", new ValidationContext(new object())));
+            AssertExtensions.Throws<ArgumentException, Exception>(() => attribute.Validate("Any", new ValidationContext(new object())));
         }
 
         [Theory]

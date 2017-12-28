@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Reflection;
 using Xunit;
 
 namespace System.ComponentModel.Tests
@@ -104,7 +105,7 @@ namespace System.ComponentModel.Tests
             var properties = TypeDescriptor.GetProperties(component.GetType());
             PropertyDescriptor propertyDescriptor = properties.Find(nameof(component.PropertyWhichThrows), false);
 
-            Assert.ThrowsAny<Exception>(() => propertyDescriptor.GetValue(component));
+            Assert.Throws<TargetInvocationException>(() => propertyDescriptor.GetValue(component));
         }
 
         [Fact]

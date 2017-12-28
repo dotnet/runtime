@@ -128,7 +128,7 @@ namespace System.Drawing
             }
             catch (Exception e)
             {
-                throw new Exception(SR.Format(SR.ConvertInvalidPrimitive, text, typeof(int).Name), e);
+                throw new ArgumentException(SR.Format(SR.ConvertInvalidPrimitive, text, typeof(int).Name), e);
             }
         }
 
