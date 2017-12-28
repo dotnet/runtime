@@ -5735,7 +5735,7 @@ void MethodContext::dmpGetClassNameFromMetadata(DLD key, DD value)
 {
     unsigned char* className     = (unsigned char*)GetClassNameFromMetadata->GetBuffer(value.A);
     unsigned char* namespaceName = (unsigned char*)GetClassNameFromMetadata->GetBuffer(value.B);
-    printf("GetClassNameFromMetadata key - classNonNull-%u namespaceNonNull-%u, value "
+    printf("GetClassNameFromMetadata key - classNonNull-%llu namespaceNonNull-%u, value "
            "class-'%s', namespace-'%s'",
            key.A, key.B, className, namespaceName);
     GetClassNameFromMetadata->Unlock();
@@ -5786,7 +5786,7 @@ void MethodContext::recGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, CO
 
 void MethodContext::dmpGetTypeInstantiationArgument(DWORDLONG key, DWORDLONG value)
 {
-    printf("GetTypeInstantiationArgument key - classNonNull-%u, value NonNull-%u", key, value);
+    printf("GetTypeInstantiationArgument key - classNonNull-%llu, value NonNull-%llu", key, value);
     GetTypeInstantiationArgument->Unlock();
 }
 
