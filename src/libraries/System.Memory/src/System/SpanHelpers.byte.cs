@@ -63,7 +63,7 @@ namespace System
             int index = -1;
             for (int i = 0; i < valueLength; i++)
             {
-                var tempIndex = IndexOf(ref searchSpace, Unsafe.Add(ref value, i), searchSpaceLength);
+                var tempIndex = IndexOf(ref searchSpace, Unsafe.Add(ref value, i), index < 0 ? searchSpaceLength : index);
                 if ((uint)tempIndex < (uint)index) index = tempIndex;
             }
             return index;
