@@ -422,10 +422,22 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             emit->emitIns_SIMD_R_R(INS_rcpps, targetReg, op1Reg, TYP_SIMD16);
             break;
 
+        case NI_SSE_ReciprocalScalar:
+            assert(baseType == TYP_FLOAT);
+            assert(op2 == nullptr);
+            emit->emitIns_SIMD_R_R_R(INS_rcpss, targetReg, op1Reg, op1Reg, TYP_SIMD16);
+            break;
+
         case NI_SSE_ReciprocalSqrt:
             assert(baseType == TYP_FLOAT);
             assert(op2 == nullptr);
             emit->emitIns_SIMD_R_R(INS_rsqrtps, targetReg, op1Reg, TYP_SIMD16);
+            break;
+
+        case NI_SSE_ReciprocalSqrtScalar:
+            assert(baseType == TYP_FLOAT);
+            assert(op2 == nullptr);
+            emit->emitIns_SIMD_R_R_R(INS_rsqrtss, targetReg, op1Reg, op1Reg, TYP_SIMD16);
             break;
 
         case NI_SSE_SetAllVector128:
@@ -534,6 +546,12 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             assert(baseType == TYP_FLOAT);
             assert(op2 == nullptr);
             emit->emitIns_SIMD_R_R(INS_sqrtps, targetReg, op1Reg, TYP_SIMD16);
+            break;
+
+        case NI_SSE_SqrtScalar:
+            assert(baseType == TYP_FLOAT);
+            assert(op2 == nullptr);
+            emit->emitIns_SIMD_R_R_R(INS_sqrtss, targetReg, op1Reg, op1Reg, TYP_SIMD16);
             break;
 
         case NI_SSE_StaticCast:
