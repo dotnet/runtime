@@ -62,6 +62,15 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<double> Ceiling(Vector128<double> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m128d _mm_ceil_sd (__m128d a)
+        /// </summary>
+        public static Vector128<double> CeilingScalar(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128 _mm_ceil_ss (__m128 a)
+        /// </summary>
+        public static Vector128<float> CeilingScalar(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m128i _mm_cmpeq_epi64 (__m128i a, __m128i b)
         /// </summary>
         public static Vector128<long> CompareEqual(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
@@ -170,6 +179,15 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128d _mm_floor_pd (__m128d a)
         /// </summary>
         public static Vector128<double> Floor(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128d _mm_floor_sd (__m128d a)
+        /// </summary>
+        public static Vector128<double> FloorScalar(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128 _mm_floor_ss (__m128 a)
+        /// </summary>
+        public static Vector128<float> FloorScalar(Vector128<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm_insert_epi8 (__m128i a, int i, const int imm8)
@@ -308,6 +326,50 @@ namespace System.Runtime.Intrinsics.X86
         /// _MM_FROUND_CUR_DIRECTION
         /// </summary>
         public static Vector128<double> RoundCurrentDirection(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// _MM_FROUND_CUR_DIRECTION
+        /// </summary>
+        public static Vector128<double> RoundCurrentDirectionScalar(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_round_sd (__m128d a, int rounding)
+        /// _MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC
+        /// </summary>
+        public static Vector128<double> RoundToNearestIntegerScalar(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// _MM_FROUND_TO_NEG_INF |_MM_FROUND_NO_EXC
+        /// </summary>
+        public static Vector128<double> RoundToNegativeInfinityScalar(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// _MM_FROUND_TO_POS_INF |_MM_FROUND_NO_EXC
+        /// </summary>
+        public static Vector128<double> RoundToPositiveInfinityScalar(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC
+        /// </summary>
+        public static Vector128<double> RoundToZeroScalar(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// _MM_FROUND_CUR_DIRECTION
+        /// </summary>
+        public static Vector128<float> RoundCurrentDirectionScalar(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128 _mm_round_ss (__m128 a, int rounding)
+        /// _MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC
+        /// </summary>
+        public static Vector128<float> RoundToNearestIntegerScalar(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// _MM_FROUND_TO_NEG_INF |_MM_FROUND_NO_EXC
+        /// </summary>
+        public static Vector128<float> RoundToNegativeInfinityScalar(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// _MM_FROUND_TO_POS_INF |_MM_FROUND_NO_EXC
+        /// </summary>
+        public static Vector128<float> RoundToPositiveInfinityScalar(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC
+        /// </summary>
+        public static Vector128<float> RoundToZeroScalar(Vector128<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm_stream_load_si128 (const __m128i* mem_addr)
