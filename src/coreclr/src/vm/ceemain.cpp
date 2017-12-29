@@ -2037,8 +2037,6 @@ BOOL IsThreadInSTA()
 }
 #endif
 
-BOOL g_fWeOwnProcess = FALSE;
-
 static LONG s_ActiveShutdownThreadCount = 0;
 
 // ---------------------------------------------------------------------------
@@ -2074,15 +2072,8 @@ DWORD WINAPI EEShutDownProcForSTAThread(LPVOID lpParameter)
     {
         action = eRudeExitProcess;
     }
-    UINT exitCode;
-    if (g_fWeOwnProcess)
-    {
-        exitCode = GetLatchedExitCode();
-    }
-    else
-    {
-        exitCode = HOST_E_EXITPROCESS_TIMEOUT;
-    }
+
+    UINT exitCode = GetLatchedExitCode();
     EEPolicy::HandleExitProcessFromEscalation(action, exitCode);
 
     return 0;
@@ -2176,7 +2167,7 @@ void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading)
     }
 
 #ifdef FEATURE_COMINTEROP
-    if (!fIsDllUnloading && IsThreadInSTA())
+    if (!fIsDllUnloading && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_FinalizeOnShutdown) && IsThreadInSTA())
     {
         // #STAShutDown
         // 

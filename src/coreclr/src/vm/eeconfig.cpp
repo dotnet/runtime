@@ -223,7 +223,6 @@ HRESULT EEConfig::Init()
 
     fLegacyNullReferenceExceptionPolicy = false;
     fLegacyUnhandledExceptionPolicy = false;
-    fLegacyApartmentInitPolicy = false;
     fLegacyComHierarchyVisibility = false;
     fLegacyComVTableLayout = false;
     fNewComVTableLayout = false;
