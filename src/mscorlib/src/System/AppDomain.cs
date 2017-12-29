@@ -511,58 +511,29 @@ namespace System
         // This method is called by the VM.
         private RuntimeAssembly OnResourceResolveEvent(RuntimeAssembly assembly, String resourceName)
         {
-            ResolveEventHandler eventHandler = _ResourceResolve;
-            if (eventHandler == null)
-                return null;
-
-            Delegate[] ds = eventHandler.GetInvocationList();
-            int len = ds.Length;
-            for (int i = 0; i < len; i++)
-            {
-                Assembly asm = ((ResolveEventHandler)ds[i])(this, new ResolveEventArgs(resourceName, assembly));
-                RuntimeAssembly ret = GetRuntimeAssembly(asm);
-                if (ret != null)
-                    return ret;
-            }
-
-            return null;
+            return InvokeResolveEvent(_ResourceResolve, assembly, resourceName);
         }
 
         // This method is called by the VM
         private RuntimeAssembly OnTypeResolveEvent(RuntimeAssembly assembly, String typeName)
         {
-            ResolveEventHandler eventHandler = _TypeResolve;
-            if (eventHandler == null)
-                return null;
-
-            Delegate[] ds = eventHandler.GetInvocationList();
-            int len = ds.Length;
-            for (int i = 0; i < len; i++)
-            {
-                Assembly asm = ((ResolveEventHandler)ds[i])(this, new ResolveEventArgs(typeName, assembly));
-                RuntimeAssembly ret = GetRuntimeAssembly(asm);
-                if (ret != null)
-                    return ret;
-            }
-
-            return null;
+            return InvokeResolveEvent(_TypeResolve, assembly, typeName);
         }
 
         // This method is called by the VM.
         private RuntimeAssembly OnAssemblyResolveEvent(RuntimeAssembly assembly, String assemblyFullName)
         {
-            ResolveEventHandler eventHandler = _AssemblyResolve;
+            return InvokeResolveEvent(_AssemblyResolve, assembly, assemblyFullName);
+        }
 
+        private RuntimeAssembly InvokeResolveEvent(ResolveEventHandler eventHandler, RuntimeAssembly assembly, string name)
+        {
             if (eventHandler == null)
-            {
                 return null;
-            }
 
-            Delegate[] ds = eventHandler.GetInvocationList();
-            int len = ds.Length;
-            for (int i = 0; i < len; i++)
+            foreach (ResolveEventHandler handler in eventHandler.GetInvocationList())
             {
-                Assembly asm = ((ResolveEventHandler)ds[i])(this, new ResolveEventArgs(assemblyFullName, assembly));
+                Assembly asm = handler(this, new ResolveEventArgs(name, assembly));
                 RuntimeAssembly ret = GetRuntimeAssembly(asm);
                 if (ret != null)
                     return ret;
