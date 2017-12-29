@@ -296,6 +296,19 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<long> CompareGreaterThan(Vector256<long> left, Vector256<long> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// double _mm256_cvtsd_f64 (__m256d a)
+        /// </summary>
+        public static double ConvertToDouble(Vector256<double> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int _mm256_cvtsi256_si32 (__m256i a)
+        /// </summary>
+        public static int ConvertToInt32(Vector256<int> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int _mm256_cvtsi256_si32 (__m256i a)
+        /// </summary>
+        public static uint ConvertToUInt32(Vector256<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m256i _mm256_cvtepi8_epi16 (__m128i a)
         /// </summary>
         public static Vector256<short> ConvertToVector256Int16(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
