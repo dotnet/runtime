@@ -43,8 +43,7 @@ namespace System.Reflection
                     if (ContainsGenericParameters ||
                          ReturnType.IsByRef ||
                          (declaringType != null && declaringType.ContainsGenericParameters) ||
-                         ((CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs) ||
-                         ((Attributes & MethodAttributes.RequireSecObject) == MethodAttributes.RequireSecObject))
+                         ((CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs))
                     {
                         // We don't need other flags if this method cannot be invoked
                         invocationFlags = INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE;
