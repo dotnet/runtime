@@ -65,11 +65,12 @@ _add_library(System.Globalization.Native_Static
     ${NATIVEGLOBALIZATION_SOURCES}
 )
 
-# Remove the _Static postfix from the static library name
-set_target_properties(System.Globalization.Native_Static PROPERTIES OUTPUT_NAME System.Globalization.Native)
-
 # Disable the "lib" prefix.
 set_target_properties(System.Globalization.Native PROPERTIES PREFIX "")
+
+# Disable the "lib" prefix and override default name
+set_target_properties(System.Globalization.Native_Static PROPERTIES PREFIX "")
+set_target_properties(System.Globalization.Native_Static PROPERTIES OUTPUT_NAME System.Globalization.Native)
 
 if(NOT CLR_CMAKE_PLATFORM_DARWIN)
     if (NOT CMAKE_SYSTEM_NAME STREQUAL FreeBSD AND NOT CMAKE_SYSTEM_NAME STREQUAL NetBSD)
