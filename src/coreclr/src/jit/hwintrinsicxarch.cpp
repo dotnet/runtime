@@ -521,6 +521,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_SSE_Add:
+        case NI_SSE_AddScalar:
         case NI_SSE_And:
         case NI_SSE_AndNot:
         case NI_SSE_CompareEqual:
@@ -536,13 +537,19 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
         case NI_SSE_CompareOrdered:
         case NI_SSE_CompareUnordered:
         case NI_SSE_Divide:
+        case NI_SSE_DivideScalar:
         case NI_SSE_Max:
+        case NI_SSE_MaxScalar:
         case NI_SSE_Min:
+        case NI_SSE_MinScalar:
         case NI_SSE_MoveHighToLow:
         case NI_SSE_MoveLowToHigh:
+        case NI_SSE_MoveScalar:
         case NI_SSE_Multiply:
+        case NI_SSE_MultiplyScalar:
         case NI_SSE_Or:
         case NI_SSE_Subtract:
+        case NI_SSE_SubtractScalar:
         case NI_SSE_UnpackHigh:
         case NI_SSE_UnpackLow:
         case NI_SSE_Xor:
