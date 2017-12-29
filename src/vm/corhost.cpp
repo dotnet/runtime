@@ -108,8 +108,6 @@ typedef DPTR(CONNID)   PTR_CONNID;
 
 // *** ICorRuntimeHost methods ***
 
-extern BOOL g_fWeOwnProcess;
-
 CorHost2::CorHost2()
 {
     LIMITED_METHOD_CONTRACT;
@@ -195,18 +193,7 @@ STDMETHODIMP CorHost2::Start()
             // So, if you want to do that, just make sure you are the first host to load the
             // specific version of CLR in memory AND start it.
             m_fFirstToLoadCLR = TRUE;
-            if (FastInterlockIncrement(&m_RefCount) != 1)
-            {
-            }
-            else
-            {
-                if (g_fWeOwnProcess)
-                {
-                    // Runtime is started by a managed exe.  Bump the ref-count, so that
-                    // matching Start/Stop does not stop runtime.
-                    FastInterlockIncrement(&m_RefCount);
-                }
-            }
+            FastInterlockIncrement(&m_RefCount);
         }
     }
 
