@@ -9,8 +9,8 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>d8769e7ed2cc04ab535484b4dabf131e44d4eb87</CoreFxCurrentRef>
-    <CoreClrCurrentRef>d8769e7ed2cc04ab535484b4dabf131e44d4eb87</CoreClrCurrentRef>
+    <CoreFxCurrentRef>8d1a11916f6ea79860320bf593bf7f2c16aa099e</CoreFxCurrentRef>
+    <CoreClrCurrentRef>8d1a11916f6ea79860320bf593bf7f2c16aa099e</CoreClrCurrentRef>
     <CoreSetupCurrentRef>d8769e7ed2cc04ab535484b4dabf131e44d4eb87</CoreSetupCurrentRef>
     <ExternalCurrentRef>96dc7805f5df4a70a55783964ce69dcd91bfca80</ExternalCurrentRef>
     <ProjectNTfsCurrentRef>8ce8e2c73baaef57f0336ef50e9dabfb391c0abb</ProjectNTfsCurrentRef>
@@ -31,9 +31,9 @@
 
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>preview1-26029-01</CoreFxExpectedPrerelease>
-    <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview1-26029-01</MicrosoftNETCorePlatformsPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-26029-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <CoreFxExpectedPrerelease>preview1-26029-02</CoreFxExpectedPrerelease>
+    <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview1-26029-02</MicrosoftNETCorePlatformsPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview1-26029-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <ProjectNTfsExpectedPrerelease>beta-26028-00</ProjectNTfsExpectedPrerelease>
     <ProjectNTfsTestILCExpectedPrerelease>beta-26028-00</ProjectNTfsTestILCExpectedPrerelease>
     <ProjectNTfsTestILCPackageVersion>1.0.0-beta-26028-00</ProjectNTfsTestILCPackageVersion>
