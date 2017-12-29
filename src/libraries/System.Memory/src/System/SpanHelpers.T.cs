@@ -302,9 +302,13 @@ namespace System
             int index = -1;
             for (int i = 0; i < valueLength && index != 0; i++)
             {
-                var tempIndex = IndexOf(ref searchSpace, Unsafe.Add(ref value, i), index < 0 ? searchSpaceLength : index);
+                var tempIndex = IndexOf(ref searchSpace, Unsafe.Add(ref value, i), searchSpaceLength);
                 if ((uint)tempIndex < (uint)index)
+                {
                     index = tempIndex;
+                    // Reduce space for search, cause we don't care if we find the search value after the index of a previously found value
+                    searchSpaceLength = tempIndex;
+                }
             }
             return index;
         }
