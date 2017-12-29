@@ -598,8 +598,11 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
             break;
 
         case NI_SSE_Reciprocal:
+        case NI_SSE_ReciprocalScalar:
         case NI_SSE_ReciprocalSqrt:
+        case NI_SSE_ReciprocalSqrtScalar:
         case NI_SSE_Sqrt:
+        case NI_SSE_SqrtScalar:
             assert(sig->numArgs == 1);
             assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
             op1     = impSIMDPopStack(TYP_SIMD16);
