@@ -222,6 +222,12 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_SSE_AddScalar:
+            assert(baseType == TYP_FLOAT);
+            op2Reg = op2->gtRegNum;
+            emit->emitIns_SIMD_R_R_R(INS_addss, targetReg, op1Reg, op2Reg, TYP_SIMD16);
+            break;
+
         case NI_SSE_And:
             assert(baseType == TYP_FLOAT);
             op2Reg = op2->gtRegNum;
@@ -292,16 +298,34 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             emit->emitIns_SIMD_R_R_R(INS_divps, targetReg, op1Reg, op2Reg, TYP_SIMD16);
             break;
 
+        case NI_SSE_DivideScalar:
+            assert(baseType == TYP_FLOAT);
+            op2Reg = op2->gtRegNum;
+            emit->emitIns_SIMD_R_R_R(INS_divss, targetReg, op1Reg, op2Reg, TYP_SIMD16);
+            break;
+
         case NI_SSE_Max:
             assert(baseType == TYP_FLOAT);
             op2Reg = op2->gtRegNum;
             emit->emitIns_SIMD_R_R_R(INS_maxps, targetReg, op1Reg, op2Reg, TYP_SIMD16);
             break;
 
+        case NI_SSE_MaxScalar:
+            assert(baseType == TYP_FLOAT);
+            op2Reg = op2->gtRegNum;
+            emit->emitIns_SIMD_R_R_R(INS_maxss, targetReg, op1Reg, op2Reg, TYP_SIMD16);
+            break;
+
         case NI_SSE_Min:
             assert(baseType == TYP_FLOAT);
             op2Reg = op2->gtRegNum;
             emit->emitIns_SIMD_R_R_R(INS_minps, targetReg, op1Reg, op2Reg, TYP_SIMD16);
+            break;
+
+        case NI_SSE_MinScalar:
+            assert(baseType == TYP_FLOAT);
+            op2Reg = op2->gtRegNum;
+            emit->emitIns_SIMD_R_R_R(INS_minss, targetReg, op1Reg, op2Reg, TYP_SIMD16);
             break;
 
         case NI_SSE_MoveHighToLow:
@@ -316,10 +340,22 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             emit->emitIns_SIMD_R_R_R(INS_movlhps, targetReg, op1Reg, op2Reg, TYP_SIMD16);
             break;
 
+        case NI_SSE_MoveScalar:
+            assert(baseType == TYP_FLOAT);
+            op2Reg = op2->gtRegNum;
+            emit->emitIns_SIMD_R_R_R(INS_movss, targetReg, op1Reg, op2Reg, TYP_SIMD16);
+            break;
+
         case NI_SSE_Multiply:
             assert(baseType == TYP_FLOAT);
             op2Reg = op2->gtRegNum;
             emit->emitIns_SIMD_R_R_R(INS_mulps, targetReg, op1Reg, op2Reg, TYP_SIMD16);
+            break;
+
+        case NI_SSE_MultiplyScalar:
+            assert(baseType == TYP_FLOAT);
+            op2Reg = op2->gtRegNum;
+            emit->emitIns_SIMD_R_R_R(INS_mulss, targetReg, op1Reg, op2Reg, TYP_SIMD16);
             break;
 
         case NI_SSE_Or:
@@ -460,6 +496,12 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             assert(baseType == TYP_FLOAT);
             op2Reg = op2->gtRegNum;
             emit->emitIns_SIMD_R_R_R(INS_subps, targetReg, op1Reg, op2Reg, TYP_SIMD16);
+            break;
+
+        case NI_SSE_SubtractScalar:
+            assert(baseType == TYP_FLOAT);
+            op2Reg = op2->gtRegNum;
+            emit->emitIns_SIMD_R_R_R(INS_subss, targetReg, op1Reg, op2Reg, TYP_SIMD16);
             break;
 
         case NI_SSE_UnpackHigh:
