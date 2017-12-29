@@ -1980,6 +1980,13 @@ namespace SerializationTypes
     }
 
     [XmlType(TypeName = "MyXmlType")]
+    public class TypeWithQNameArrayAsXmlAttributeInvalidDefaultValue
+    {
+        [DefaultValue("DefaultValue")]
+        public XmlQualifiedName XmlAttributeForms;
+    }
+
+    [XmlType(TypeName = "MyXmlType")]
     public class TypeWithQNameArrayAsXmlAttribute
     {
         [XmlAttribute(Form = XmlSchemaForm.Qualified)]

@@ -3593,7 +3593,7 @@ namespace System.Xml
                 ThrowInvalidChar(_ps.chars, _ps.charsUsed, _ps.charPos + offset);
             }
             //should never hit here
-            throw new Exception();
+            throw new XmlException(SR.Xml_InternalError);            
         }
 
         private async Task<ValueTuple<int, int, int, bool>> ParseTextAsync_ReadData(int outOrChars, char[] chars, int pos, int rcount, int rpos, int orChars, char c)

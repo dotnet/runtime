@@ -1936,6 +1936,20 @@ public static partial class XmlSerializerTests
         Assert.False(xmp.CheckSpecified);
     }
 
+    [Fact]       
+    public static void XmlSchemaExporter_ExportMembersMapping_NotSupportedDefaultValue()
+    {
+        XmlReflectionImporter importer = new XmlReflectionImporter("http://www.contoso.com/");
+        XmlReflectionMember[] members = new XmlReflectionMember[1];
+        XmlReflectionMember member = members[0] = new XmlReflectionMember();
+        member.MemberType = typeof(TypeWithQNameArrayAsXmlAttributeInvalidDefaultValue);
+        XmlMembersMapping mappings = importer.ImportMembersMapping("root", "", members, true);
+        XmlMemberMapping xmp = mappings[0];
+        XmlSchemas schema = new XmlSchemas();
+        XmlSchemaExporter exporter = new XmlSchemaExporter(schema);
+        AssertExtensions.Throws<XmlException,Exception>(() => exporter.ExportMembersMapping(mappings));
+    }
+
     [Fact]
     public static void XmlSerializerVersionAttributeTest()
     {
