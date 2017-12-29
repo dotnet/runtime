@@ -77,7 +77,7 @@ namespace System.Xml.Serialization
                     return FromXmlNmTokens((string)value);
                 }
             }
-            throw new Exception(SR.Format(SR.XmlUnsupportedDefaultType, type.FullName));
+            throw new XmlException(SR.Format(SR.XmlUnsupportedDefaultType, type.FullName));
         }
 
         internal static string FromDate(DateTime value)
@@ -243,7 +243,7 @@ namespace System.Xml.Serialization
             {
                 return ToXmlNmTokens(value);
             }
-            throw new Exception(SR.Format(SR.XmlUnsupportedDefaultValue, formatter));
+            throw new XmlException(SR.Format(SR.XmlUnsupportedDefaultValue, formatter));
             //            Debug.WriteLineIf(CompModSwitches.XmlSerialization.TraceVerbose, "XmlSerialization::Unhandled default value " + value + " formatter " + formatter);
             //            return DBNull.Value;
         }
