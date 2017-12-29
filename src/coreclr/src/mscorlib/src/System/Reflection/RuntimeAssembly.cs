@@ -676,11 +676,9 @@ namespace System.Reflection
             if (moduleResolve == null)
                 return null;
 
-            Delegate[] ds = moduleResolve.GetInvocationList();
-            int len = ds.Length;
-            for (int i = 0; i < len; i++)
+            foreach (ModuleResolveEventHandler handler in moduleResolve.GetInvocationList())
             {
-                RuntimeModule ret = (RuntimeModule)((ModuleResolveEventHandler)ds[i])(this, new ResolveEventArgs(moduleName, this));
+                RuntimeModule ret = (RuntimeModule)handler(this, new ResolveEventArgs(moduleName, this));
                 if (ret != null)
                     return ret;
             }

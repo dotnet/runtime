@@ -24,13 +24,11 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             EventHandler<DesignerNamespaceResolveEventArgs> eventHandler = DesignerNamespaceResolve;
             if (eventHandler != null)
             {
-                Delegate[] ds = eventHandler.GetInvocationList();
-                int len = ds.Length;
-                for (int i = 0; i < len; i++)
+                foreach (EventHandler<DesignerNamespaceResolveEventArgs> handler in eventHandler.GetInvocationList())
                 {
                     DesignerNamespaceResolveEventArgs eventArgs = new DesignerNamespaceResolveEventArgs(namespaceName);
 
-                    ((EventHandler<DesignerNamespaceResolveEventArgs>)ds[i])(appDomain, eventArgs);
+                    handler(appDomain, eventArgs);
 
                     Collection<string> assemblyFilesCollection = eventArgs.ResolvedAssemblyFiles;
                     if (assemblyFilesCollection.Count > 0)

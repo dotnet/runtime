@@ -193,10 +193,9 @@ namespace System.Runtime.Loader
             if (assemblyResolveHandler != null)
             {
                 // Loop through the event subscribers and return the first non-null Assembly instance
-                Delegate[] arrSubscribers = assemblyResolveHandler.GetInvocationList();
-                for (int i = 0; i < arrSubscribers.Length; i++)
+                foreach (Func<AssemblyLoadContext, AssemblyName, Assembly> handler in assemblyResolveHandler.GetInvocationList())
                 {
-                    resolvedAssembly = ((Func<AssemblyLoadContext, AssemblyName, Assembly>)arrSubscribers[i])(this, assemblyName);
+                    resolvedAssembly = handler(this, assemblyName);
                     if (resolvedAssembly != null)
                     {
                         break;
