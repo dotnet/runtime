@@ -8,8 +8,8 @@ namespace System.Runtime.InteropServices
     {
         // ! Do not add or rearrange fields as the EE depends on this layout.
         //------------------------------------------------------------------
-        internal object _wrapper;
-        internal IntPtr _handle;
+        private object _wrapper;
+        private IntPtr _handle;
         //------------------------------------------------------------------
 
         public HandleRef(object wrapper, IntPtr handle)
