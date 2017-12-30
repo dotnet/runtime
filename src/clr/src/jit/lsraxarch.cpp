@@ -2542,6 +2542,14 @@ void LinearScan::TreeNodeInfoInitHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, 
 
     switch (intrinsicID)
     {
+        case NI_SSE_CompareEqualOrderedScalar:
+        case NI_SSE_CompareEqualUnorderedScalar:
+        case NI_SSE_CompareNotEqualOrderedScalar:
+        case NI_SSE_CompareNotEqualUnorderedScalar:
+            info->internalIntCount = 1;
+            info->setInternalCandidates(this, allRegs(TYP_INT));
+            break;
+
         case NI_SSE_Shuffle:
         {
             assert(op1->OperIsList());
