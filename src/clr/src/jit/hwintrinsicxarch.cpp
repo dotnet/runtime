@@ -572,6 +572,30 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
             retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, TYP_FLOAT, 16);
             break;
 
+        case NI_SSE_ConvertToVector128SingleScalar:
+        {
+            assert(sig->numArgs == 2);
+            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
+
+#ifdef _TARGET_X86_
+            CORINFO_CLASS_HANDLE argClass;
+
+            CORINFO_ARG_LIST_HANDLE argLst = info.compCompHnd->getArgNext(sig->args);
+            CorInfoType             corType =
+                strip(info.compCompHnd->getArgType(sig, argLst, &argClass)); // type of the second argument
+
+            if (varTypeIsLong(JITtype2varType(corType)))
+            {
+                return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
+            }
+#endif // _TARGET_X86_
+
+            op2     = impPopStack().val;
+            op1     = impSIMDPopStack(TYP_SIMD16);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, TYP_FLOAT, 16);
+            break;
+        }
+
         case NI_SSE_StaticCast:
         {
             assert(sig->numArgs == 1);
@@ -608,6 +632,29 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
             op1     = impSIMDPopStack(TYP_SIMD16);
             retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, intrinsic, TYP_FLOAT, 16);
             break;
+
+        case NI_SSE_ConvertToInt32:
+        case NI_SSE_ConvertToInt32WithTruncation:
+        case NI_SSE_ConvertToInt64:
+        case NI_SSE_ConvertToInt64WithTruncation:
+        case NI_SSE_ConvertToSingle:
+        {
+            assert(sig->numArgs == 1);
+            assert(getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args)) == TYP_FLOAT);
+            var_types callType = JITtype2varType(sig->retType);
+
+#ifdef _TARGET_X86_
+            if (varTypeIsLong(callType))
+            {
+                assert(intrinsic == NI_SSE_ConvertToInt64 || intrinsic == NI_SSE_ConvertToInt64WithTruncation);
+                return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
+            }
+#endif // _TARGET_X86_
+
+            op1     = impSIMDPopStack(TYP_SIMD16);
+            retNode = gtNewSimdHWIntrinsicNode(callType, op1, intrinsic, TYP_FLOAT, 16);
+            break;
+        }
 
         case NI_SSE_SetZeroVector128:
             assert(sig->numArgs == 0);
