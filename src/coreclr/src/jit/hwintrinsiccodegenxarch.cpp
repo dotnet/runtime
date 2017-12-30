@@ -344,6 +344,34 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             emit->emitIns_SIMD_R_R_R_I(INS_cmpss, targetReg, op1Reg, op2Reg, 3, TYP_SIMD16);
             break;
 
+        case NI_SSE_ConvertToInt32:
+        case NI_SSE_ConvertToInt64:
+            assert(baseType == TYP_FLOAT);
+            assert(op2 == nullptr);
+            emit->emitIns_SIMD_R_R(INS_cvtss2si, targetReg, op1Reg, TYP_SIMD16);
+            break;
+
+        case NI_SSE_ConvertToInt32WithTruncation:
+        case NI_SSE_ConvertToInt64WithTruncation:
+            assert(baseType == TYP_FLOAT);
+            assert(op2 == nullptr);
+            emit->emitIns_SIMD_R_R(INS_cvttss2si, targetReg, op1Reg, TYP_SIMD16);
+            break;
+
+        case NI_SSE_ConvertToSingle:
+            assert(op2 == nullptr);
+            if (op1Reg != targetReg)
+            {
+                emit->emitIns_SIMD_R_R(INS_movss, targetReg, op1Reg, TYP_SIMD16);
+            }
+            break;
+
+        case NI_SSE_ConvertToVector128SingleScalar:
+            assert(baseType == TYP_FLOAT);
+            op2Reg = op2->gtRegNum;
+            emit->emitIns_SIMD_R_R_R(INS_cvtsi2ss, targetReg, op1Reg, op2Reg, TYP_SIMD16);
+            break;
+
         case NI_SSE_Divide:
             assert(baseType == TYP_FLOAT);
             op2Reg = op2->gtRegNum;
