@@ -2562,13 +2562,12 @@ void LinearScan::TreeNodeInfoInitHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, 
             break;
         }
 
+        case NI_SSE_ConvertToSingle:
         case NI_SSE_StaticCast:
-        {
             assert(info->srcCount == 1);
             assert(info->dstCount == 1);
             useList.Last()->info.isTgtPref = true;
             break;
-        }
 
 #ifdef _TARGET_X86_
         case NI_SSE42_Crc32:
