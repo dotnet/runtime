@@ -40,7 +40,6 @@ namespace System
     {
         public static bool IsReflectionEmitSupported;
         public static bool ClientWebSocketPartialMessagesSupported { get { throw null; } }
-        public static System.PlatformDetection.Range[] FrameworkRanges { get { throw null; } }
         public static bool HasWindowsShell { get { throw null; } }
         public static bool IsArmProcess { get { throw null; } }
         public static bool IsCentos6 { get { throw null; } }
@@ -54,6 +53,9 @@ namespace System
         public static bool IsNetBSD { get { throw null; } }
         public static bool IsFreeBSD { get { throw null; } }
         public static bool IsNetCore { get { throw null; } }
+        public static bool IsNetfx462OrNewer { get { throw null; } }
+        public static bool IsNetfx470OrNewer { get { throw null; } }
+        public static bool IsNetfx471OrNewer { get { throw null; } }
         public static bool IsNetNative { get { throw null; } }
         public static bool IsNonZeroLowerBoundArraySupported { get { throw null; } }
         public static bool IsNotArmProcess { get { throw null; } }
@@ -102,19 +104,7 @@ namespace System
         public static System.Version OSXVersion { get { throw null; } }
         public static int WindowsVersion { get { throw null; } }
         public static string GetDistroVersionString() { throw null; }
-        public static bool IsNetfx462OrNewer() { throw null; }
-        public static bool IsNetfx470OrNewer() { throw null; }
-        public static bool IsNetfx471OrNewer() { throw null; }
         public static bool TargetsNetFx452OrLower { get { throw null; } }
-
-        public partial class Range
-        {
-            public Range(System.Version start, System.Version finish, System.Version frameworkVersion) { }
-            public System.Version Finish { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
-            public System.Version FrameworkVersion { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
-            public System.Version Start { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
-            public bool IsInRange(System.Version version) { throw null; }
-        }
     }
     public static partial class TheoryExtensions
     {
