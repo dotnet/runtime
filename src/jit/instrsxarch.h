@@ -282,6 +282,8 @@ INST3( cvttpd2dq, "cvttpd2dq",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKDBL(0xE6
 INST3( cvtdq2pd,  "cvtdq2pd",   0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, SSEFLT(0xE6))   // cvt packed DWORDs to doubles
 
 // SSE2 comparison instructions
+INST3( comiss,    "comiss",     0, IUM_RD, 0, 0, BAD_CODE, BAD_CODE, PCKFLT(0x2F))    // ordered compare singles
+INST3( comisd,    "comisd",     0, IUM_RD, 0, 0, BAD_CODE, BAD_CODE, PCKDBL(0x2F))    // ordered compare doubles
 INST3( ucomiss,   "ucomiss",    0, IUM_RD, 0, 0, BAD_CODE, BAD_CODE, PCKFLT(0x2E))    // unordered compare singles
 INST3( ucomisd,   "ucomisd",    0, IUM_RD, 0, 0, BAD_CODE, BAD_CODE, PCKDBL(0x2E))    // unordered compare doubles
 
