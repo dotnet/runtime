@@ -102,33 +102,5 @@ namespace System
         // System.Security.Cryptography.Xml.XmlDsigXsltTransform.GetOutput() relies on XslCompiledTransform which relies
         // heavily on Reflection.Emit
         public static bool IsXmlDsigXsltTransformSupported => !PlatformDetection.IsUap;
-
-        public static Range[] FrameworkRanges => new Range[]{
-          new Range(new Version(4, 7, 2500, 0), null, new Version(4, 7, 1)),
-          new Range(new Version(4, 6, 2000, 0), new Version(4, 7, 2090, 0), new Version(4, 7, 0)),
-          new Range(new Version(4, 6, 1500, 0), new Version(4, 6, 1999, 0), new Version(4, 6, 2)),
-          new Range(new Version(4, 6, 1000, 0), new Version(4, 6, 1499, 0), new Version(4, 6, 1)),
-          new Range(new Version(4, 6, 55, 0), new Version(4, 6, 999, 0), new Version(4, 6, 0)),
-          new Range(new Version(4, 0, 30319, 0), new Version(4, 0, 52313, 36313), new Version(4, 5, 2))
-        };
-
-        public class Range
-        {
-            public Version Start { get; private set; }
-            public Version Finish { get; private set; }
-            public Version FrameworkVersion { get; private set; }
-
-            public Range(Version start, Version finish, Version frameworkVersion)
-            {
-                Start = start;
-                Finish = finish;
-                FrameworkVersion = frameworkVersion;
-            }
-
-            public bool IsInRange(Version version)
-            {
-                return version >= Start && (Finish == null || version <= Finish);
-            }
-        }
     }
 }
