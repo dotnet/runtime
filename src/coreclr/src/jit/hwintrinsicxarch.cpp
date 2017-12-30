@@ -572,6 +572,26 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
             retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, TYP_FLOAT, 16);
             break;
 
+        case NI_SSE_CompareEqualOrderedScalar:
+        case NI_SSE_CompareEqualUnorderedScalar:
+        case NI_SSE_CompareGreaterThanOrderedScalar:
+        case NI_SSE_CompareGreaterThanUnorderedScalar:
+        case NI_SSE_CompareGreaterThanOrEqualOrderedScalar:
+        case NI_SSE_CompareGreaterThanOrEqualUnorderedScalar:
+        case NI_SSE_CompareLessThanOrderedScalar:
+        case NI_SSE_CompareLessThanUnorderedScalar:
+        case NI_SSE_CompareLessThanOrEqualOrderedScalar:
+        case NI_SSE_CompareLessThanOrEqualUnorderedScalar:
+        case NI_SSE_CompareNotEqualOrderedScalar:
+        case NI_SSE_CompareNotEqualUnorderedScalar:
+            assert(sig->numArgs == 2);
+            assert(JITtype2varType(sig->retType) == TYP_BOOL);
+            assert(getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args)) == TYP_FLOAT);
+            op2     = impSIMDPopStack(TYP_SIMD16);
+            op1     = impSIMDPopStack(TYP_SIMD16);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_BOOL, op1, op2, intrinsic, TYP_FLOAT, 16);
+            break;
+
         case NI_SSE_ConvertToVector128SingleScalar:
         {
             assert(sig->numArgs == 2);
