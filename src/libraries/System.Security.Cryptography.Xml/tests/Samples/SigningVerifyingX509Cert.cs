@@ -20,7 +20,7 @@ namespace System.Security.Cryptography.Xml.Tests
 <test>some text node</test>
 </example>";
         
-        private static bool SupportsNewRsaTypes => !PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer();
+        private static bool SupportsNewRsaTypes => !PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer;
 
         private static void SignXml(XmlDocument doc, AsymmetricAlgorithm key)
         {
