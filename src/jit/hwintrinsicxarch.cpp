@@ -635,6 +635,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_SSE_SetAllVector128:
+        case NI_SSE_SetScalar:
             assert(sig->numArgs == 1);
             assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
             op1     = impPopStack().val;

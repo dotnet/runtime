@@ -602,6 +602,21 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             emit->emitIns_SIMD_R_R_R_I(INS_shufps, targetReg, op1Reg, op1Reg, 0, TYP_SIMD16);
             break;
 
+        case NI_SSE_SetScalar:
+            assert(baseType == TYP_FLOAT);
+            assert(op2 == nullptr);
+
+            if (op1Reg == targetReg)
+            {
+                regNumber tmpReg = node->GetSingleTempReg();
+                emit->emitIns_SIMD_R_R(INS_movaps, tmpReg, op1Reg, TYP_SIMD16);
+                op1Reg = tmpReg;
+            }
+
+            emit->emitIns_SIMD_R_R_R(INS_xorps, targetReg, targetReg, targetReg, TYP_SIMD16);
+            emit->emitIns_SIMD_R_R_R(INS_movss, targetReg, targetReg, op1Reg, TYP_SIMD16);
+            break;
+
         case NI_SSE_SetZeroVector128:
             assert(baseType == TYP_FLOAT);
             assert(op1 == nullptr);
