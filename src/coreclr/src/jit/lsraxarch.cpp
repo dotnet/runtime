@@ -2550,6 +2550,12 @@ void LinearScan::TreeNodeInfoInitHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, 
             info->setInternalCandidates(this, allRegs(TYP_INT));
             break;
 
+        case NI_SSE_SetScalar:
+            // Need an internal register to stitch together all the values into a single vector in a SIMD reg.
+            info->internalFloatCount = 1;
+            info->setInternalCandidates(this, allSIMDRegs());
+            break;
+
         case NI_SSE_Shuffle:
         {
             assert(op1->OperIsList());
