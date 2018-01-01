@@ -999,6 +999,7 @@ namespace System
                     // small optimization,
                     // if we have not done any replacements,
                     // we will return the original string
+                    StringBuilderCache.Release(result);
                     return this;
                 }
                 else
