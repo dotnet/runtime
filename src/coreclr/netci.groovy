@@ -136,7 +136,7 @@ class Constants {
                'longgc',
                'formatting',
                'gcsimulator',
-               'jitdiff',
+               // 'jitdiff', // jitdiff is currently disabled, until someone spends the effort to make it fully work
                'standalone_gc',
                'gc_reliability_framework',
                'illink']
