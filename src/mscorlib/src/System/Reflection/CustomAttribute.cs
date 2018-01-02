@@ -1644,7 +1644,7 @@ namespace System.Reflection
                     #endregion
                 }
 
-                if (!blobStart.Equals(blobEnd))
+                if (blobStart != blobEnd)
                     throw new CustomAttributeFormatException();
 
                 attributes[cAttributes++] = attribute;
