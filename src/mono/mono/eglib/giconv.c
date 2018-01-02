@@ -254,8 +254,16 @@ g_iconv (GIConv cd, gchar **inbytes, gsize *inbytesleft,
  * Unicode encoders and decoders
  */
 
+static FORCE_INLINE (uint32_t)
+read_uint32_endian (unsigned char *inptr, unsigned endian)
+{
+	if (endian == G_LITTLE_ENDIAN)
+		return (inptr[3] << 24) | (inptr[2] << 16) | (inptr[1] << 8) | inptr[0];
+	return (inptr[0] << 24) | (inptr[1] << 16) | (inptr[2] << 8) | inptr[3];
+}
+
 static int
-decode_utf32be (char *inbuf, size_t inleft, gunichar *outchar)
+decode_utf32_endian (char *inbuf, size_t inleft, gunichar *outchar, unsigned endian)
 {
 	unsigned char *inptr = (unsigned char *) inbuf;
 	gunichar c;
@@ -265,7 +273,7 @@ decode_utf32be (char *inbuf, size_t inleft, gunichar *outchar)
 		return -1;
 	}
 	
-	c = (inptr[0] << 24) | (inptr[1] << 16) | (inptr[2] << 8) | inptr[3];
+	c = read_uint32_endian (inptr, endian);
 	
 	if (c >= 0xd800 && c < 0xe000) {
 		errno = EILSEQ;
@@ -281,29 +289,15 @@ decode_utf32be (char *inbuf, size_t inleft, gunichar *outchar)
 }
 
 static int
+decode_utf32be (char *inbuf, size_t inleft, gunichar *outchar)
+{
+	return decode_utf32_endian (inbuf, inleft, outchar, G_BIG_ENDIAN);
+}
+
+static int
 decode_utf32le (char *inbuf, size_t inleft, gunichar *outchar)
 {
-	unsigned char *inptr = (unsigned char *) inbuf;
-	gunichar c;
-	
-	if (inleft < 4) {
-		errno = EINVAL;
-		return -1;
-	}
-	
-	c = (inptr[3] << 24) | (inptr[2] << 16) | (inptr[1] << 8) | inptr[0];
-	
-	if (c >= 0xd800 && c < 0xe000) {
-		errno = EILSEQ;
-		return -1;
-	} else if (c >= 0x110000) {
-		errno = EILSEQ;
-		return -1;
-	}
-	
-	*outchar = c;
-	
-	return 4;
+	return decode_utf32_endian (inbuf, inleft, outchar, G_LITTLE_ENDIAN);
 }
 
 static int
@@ -342,8 +336,16 @@ encode_utf32le (gunichar c, char *outbuf, size_t outleft)
 	return 4;
 }
 
-static int
-decode_utf16be (char *inbuf, size_t inleft, gunichar *outchar)
+static FORCE_INLINE (uint16_t)
+read_uint16_endian (unsigned char *inptr, unsigned endian)
+{
+	if (endian == G_LITTLE_ENDIAN)
+		return (inptr[1] << 8) | inptr[0];
+	return (inptr[0] << 8) | inptr[1];
+}
+
+static FORCE_INLINE (int)
+decode_utf16_endian (char *inbuf, size_t inleft, gunichar *outchar, unsigned endian)
 {
 	unsigned char *inptr = (unsigned char *) inbuf;
 	gunichar2 c;
@@ -354,7 +356,7 @@ decode_utf16be (char *inbuf, size_t inleft, gunichar *outchar)
 		return -1;
 	}
 	
-	u = (inptr[0] << 8) | inptr[1];
+	u = read_uint16_endian (inptr, endian);
 	
 	if (u < 0xd800) {
 		/* 0x0000 -> 0xd7ff */
@@ -367,7 +369,7 @@ decode_utf16be (char *inbuf, size_t inleft, gunichar *outchar)
 			return -2;
 		}
 		
-		c = (inptr[2] << 8) | inptr[3];
+		c = read_uint16_endian (inptr + 2, endian);
 		
 		if (c < 0xdc00 || c > 0xdfff) {
 			errno = EILSEQ;
@@ -390,124 +392,71 @@ decode_utf16be (char *inbuf, size_t inleft, gunichar *outchar)
 }
 
 static int
+decode_utf16be (char *inbuf, size_t inleft, gunichar *outchar)
+{
+	return decode_utf16_endian (inbuf, inleft, outchar, G_BIG_ENDIAN);
+}
+
+static int
 decode_utf16le (char *inbuf, size_t inleft, gunichar *outchar)
 {
-	unsigned char *inptr = (unsigned char *) inbuf;
-	gunichar2 c;
-	gunichar u;
-	
-	if (inleft < 2) {
-		errno = EINVAL;
-		return -1;
+	return decode_utf16_endian (inbuf, inleft, outchar, G_LITTLE_ENDIAN);
+}
+
+static FORCE_INLINE (void)
+write_uint16_endian (unsigned char *outptr, uint16_t c, unsigned endian)
+{
+	if (endian == G_LITTLE_ENDIAN) {
+		outptr[0] = c & 0xff;
+		outptr[1] = (c >> 8) & 0xff;
+		return;
 	}
+	outptr[0] = (c >> 8) & 0xff;
+	outptr[1] = c & 0xff;
+}
+
+static FORCE_INLINE (int)
+encode_utf16_endian (gunichar c, char *outbuf, size_t outleft, unsigned endian)
+{
+	unsigned char *outptr = (unsigned char *) outbuf;
+	gunichar2 ch;
+	gunichar c2;
 	
-	u = (inptr[1] << 8) | inptr[0];
-	
-	if (u < 0xd800) {
-		/* 0x0000 -> 0xd7ff */
-		*outchar = u;
+	if (c < 0x10000) {
+		if (outleft < 2) {
+			errno = E2BIG;
+			return -1;
+		}
+		
+		write_uint16_endian (outptr, c, endian);
 		return 2;
-	} else if (u < 0xdc00) {
-		/* 0xd800 -> 0xdbff */
-		if (inleft < 4) {
-			errno = EINVAL;
-			return -2;
-		}
-		
-		c = (inptr[3] << 8) | inptr[2];
-		
-		if (c < 0xdc00 || c > 0xdfff) {
-			errno = EILSEQ;
-			return -2;
-		}
-		
-		u = ((u - 0xd800) << 10) + (c - 0xdc00) + 0x0010000UL;
-		*outchar = u;
-		
-		return 4;
-	} else if (u < 0xe000) {
-		/* 0xdc00 -> 0xdfff */
-		errno = EILSEQ;
-		return -1;
 	} else {
-		/* 0xe000 -> 0xffff */
-		*outchar = u;
-		return 2;
+		if (outleft < 4) {
+			errno = E2BIG;
+			return -1;
+		}
+		
+		c2 = c - 0x10000;
+		
+		ch = (gunichar2) ((c2 >> 10) + 0xd800);
+		write_uint16_endian (outptr, ch, endian);
+
+		ch = (gunichar2) ((c2 & 0x3ff) + 0xdc00);
+		write_uint16_endian (outptr + 2, ch, endian);		
+		return 4;
 	}
 }
 
 static int
 encode_utf16be (gunichar c, char *outbuf, size_t outleft)
 {
-	unsigned char *outptr = (unsigned char *) outbuf;
-	gunichar2 ch;
-	gunichar c2;
-	
-	if (c < 0x10000) {
-		if (outleft < 2) {
-			errno = E2BIG;
-			return -1;
-		}
-		
-		outptr[0] = (c >> 8) & 0xff;
-		outptr[1] = c & 0xff;
-		
-		return 2;
-	} else {
-		if (outleft < 4) {
-			errno = E2BIG;
-			return -1;
-		}
-		
-		c2 = c - 0x10000;
-		
-		ch = (gunichar2) ((c2 >> 10) + 0xd800);
-		outptr[0] = (ch >> 8) & 0xff;
-		outptr[1] = ch & 0xff;
-		
-		ch = (gunichar2) ((c2 & 0x3ff) + 0xdc00);
-		outptr[2] = (ch >> 8) & 0xff;
-		outptr[3] = ch & 0xff;
-		
-		return 4;
-	}
+	return encode_utf16_endian (c, outbuf, outleft, G_BIG_ENDIAN);
 }
 
 static int
 encode_utf16le (gunichar c, char *outbuf, size_t outleft)
 {
-	unsigned char *outptr = (unsigned char *) outbuf;
-	gunichar2 ch;
-	gunichar c2;
-	
-	if (c < 0x10000) {
-		if (outleft < 2) {
-			errno = E2BIG;
-			return -1;
-		}
-		
-		outptr[0] = c & 0xff;
-		outptr[1] = (c >> 8) & 0xff;
-		
-		return 2;
-	} else {
-		if (outleft < 4) {
-			errno = E2BIG;
-			return -1;
-		}
-		
-		c2 = c - 0x10000;
-		
-		ch = (gunichar2) ((c2 >> 10) + 0xd800);
-		outptr[0] = ch & 0xff;
-		outptr[1] = (ch >> 8) & 0xff;
-		
-		ch = (gunichar2) ((c2 & 0x3ff) + 0xdc00);
-		outptr[2] = ch & 0xff;
-		outptr[3] = (ch >> 8) & 0xff;
-		
-		return 4;
-	}
+	return encode_utf16_endian (c, outbuf, outleft, G_LITTLE_ENDIAN);
 }
 
 static FORCE_INLINE (int)
