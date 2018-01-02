@@ -416,11 +416,9 @@ namespace System.Resources
 
             lock (localResourceSets)
             {
-                IDictionaryEnumerator setEnum = localResourceSets.GetEnumerator();
-
-                while (setEnum.MoveNext())
+                foreach ((_, ResourceSet resourceSet) in localResourceSets)
                 {
-                    ((ResourceSet)setEnum.Value).Close();
+                    resourceSet.Close();
                 }
             }
         }
