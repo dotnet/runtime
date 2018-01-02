@@ -225,6 +225,7 @@ static const AssemblyVersionMap framework_assemblies [] = {
 	FACADE_ASSEMBLY ("System.Net.WebHeaderCollection"),
 	FACADE_ASSEMBLY ("System.Net.WebSockets"),
 	FACADE_ASSEMBLY ("System.Net.WebSockets.Client"),
+	{"System.Numerics", 3},
 	{"System.Numerics.Vectors", 3},
 	FACADE_ASSEMBLY ("System.ObjectModel"),
 	FACADE_ASSEMBLY ("System.Reflection"),
