@@ -235,6 +235,43 @@ public:
     //     from the useList being constructed. Note that, if the user knows the order of the operands,
     //     it is expected that they should just retrieve them directly.
 
+    LocationInfoListNode* removeListNode(GenTree* node)
+    {
+        LocationInfoListNode* prevListNode = nullptr;
+        for (LocationInfoListNode *listNode = Begin(), *end = End(); listNode != end; listNode = listNode->Next())
+        {
+            if (listNode->treeNode == node)
+            {
+                LocationInfoListNode* nextNode = listNode->Next();
+                if (prevListNode == nullptr)
+                {
+                    m_head = nextNode;
+                }
+                else
+                {
+                    prevListNode->m_next = nextNode;
+                }
+                if (nextNode == nullptr)
+                {
+                    m_tail = prevListNode;
+                }
+                listNode->m_next = nullptr;
+                return listNode;
+            }
+            prevListNode = listNode;
+        }
+        assert(!"GetTreeNodeInfo didn't find the node");
+        unreached();
+    }
+
+    //------------------------------------------------------------------------
+    // GetTreeNodeInfo - retrieve the TreeNodeInfo for the given node
+    //
+    // Notes:
+    //     The TreeNodeInfoInit methods use this helper to retrieve the TreeNodeInfo for child nodes
+    //     from the useList being constructed. Note that, if the user knows the order of the operands,
+    //     it is expected that they should just retrieve them directly.
+
     TreeNodeInfo& GetTreeNodeInfo(GenTree* node)
     {
         for (LocationInfoListNode *listNode = Begin(), *end = End(); listNode != end; listNode = listNode->Next())
@@ -843,7 +880,7 @@ private:
     }
 
     // Dump support
-    void dumpOperandToLocationInfoMap();
+    void dumpDefList();
     void lsraDumpIntervals(const char* msg);
     void dumpRefPositions(const char* msg);
     void dumpVarRefPositions(const char* msg);
@@ -1445,30 +1482,28 @@ private:
     // TreeNodeInfo methods
     //-----------------------------------------------------------------------
 
-    // The operandToLocationInfoMap is used for the transient TreeNodeInfo that is computed by
+    // The defList is used for the transient TreeNodeInfo that is computed by
     // the TreeNodeInfoInit methods, and used in building RefPositions.
-    typedef SmallHashTable<GenTree*, LocationInfoListNode*, 32> OperandToLocationInfoMap;
-    OperandToLocationInfoMap* operandToLocationInfoMap;
+    // When Def RefPositions are built for a node, their NodeInfo is placed
+    // in the defList. As the consuming node is handled, it moves the NodeInfo
+    // into an ordered useList corresponding to the uses for that node.
+    LocationInfoList defList;
     // The useList is constructed for each node by the TreeNodeInfoInit methods.
     // It contains the TreeNodeInfo for its operands, in their order of use.
     LocationInfoList useList;
 
-    // Get the LocationInfoListNode for the given node, and put it into the useList.
+    // Remove the LocationInfoListNode for the given node from the defList, and put it into the useList.
     // The node must not be contained, and must have been processed by buildRefPositionsForNode().
     void appendLocationInfoToList(GenTree* node)
     {
-        LocationInfoListNode* locationInfo;
-        bool                  found = operandToLocationInfoMap->TryRemove(node, &locationInfo);
-        assert(found);
+        LocationInfoListNode* locationInfo = defList.removeListNode(node);
         useList.Append(locationInfo);
     }
     // Get the LocationInfoListNodes for the given node, and return it, but don't put it into the useList.
     // The node must not be contained, and must have been processed by buildRefPositionsForNode().
     LocationInfoListNode* getLocationInfo(GenTree* node)
     {
-        LocationInfoListNode* locationInfo;
-        bool                  found = operandToLocationInfoMap->TryRemove(node, &locationInfo);
-        assert(found);
+        LocationInfoListNode* locationInfo = defList.removeListNode(node);
         return locationInfo;
     }
     //------------------------------------------------------------------------
@@ -1483,7 +1518,7 @@ private:
     //
     // Notes:
     //    The operands must already have been processed by buildRefPositionsForNode, and their
-    //    LocationInfoListNodes placed in the operandToLocationInfoMap.
+    //    LocationInfoListNodes placed in the defList.
     //
     int appendBinaryLocationInfoToList(GenTreeOp* node)
     {
