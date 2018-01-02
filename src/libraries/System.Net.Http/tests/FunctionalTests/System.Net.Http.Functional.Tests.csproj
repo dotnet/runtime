@@ -113,6 +113,8 @@
     <Compile Include="ManagedHandlerTest.cs" />
     <Compile Include="HttpClientHandlerTest.AcceptAllCerts.cs" />
     <Compile Include="ReadOnlyMemoryContentTest.cs" />
+    <Compile Include="HttpClientTest.netcoreapp.cs" />
+    <Compile Include="HttpMethodTest.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="$(CommonTestPath)\System\IO\StreamSpanExtensions.netstandard.cs">

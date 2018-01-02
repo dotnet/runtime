@@ -12,7 +12,7 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public class HttpClientTest : HttpClientTestBase
+    public partial class HttpClientTest : HttpClientTestBase
     {
         [Fact]
         public void Dispose_MultipleTimes_Success()
@@ -257,7 +257,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public async Task GetPutPostDeletePatchAsync_Canceled_Throws()
+        public async Task GetPutPostDeleteAsync_Canceled_Throws()
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
             {
@@ -269,7 +269,6 @@ namespace System.Net.Http.Functional.Tests
                 Task t3 = client.PostAsync(CreateFakeUri(), content, cts.Token);
                 Task t4 = client.PutAsync(CreateFakeUri(), content, cts.Token);
                 Task t5 = client.DeleteAsync(CreateFakeUri(), cts.Token);
-                Task t6 = client.PatchAsync(CreateFakeUri(), content, cts.Token);
 
                 cts.Cancel();
 
@@ -278,12 +277,11 @@ namespace System.Net.Http.Functional.Tests
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t3);
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t4);
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t5);
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t6);
             }
         }
 
         [Fact]
-        public async Task GetPutPostDeletePatchAsync_Success()
+        public async Task GetPutPostDeleteAsync_Success()
         {
             Action<HttpResponseMessage> verify = message => { using (message) Assert.Equal(HttpStatusCode.OK, message.StatusCode); };
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage()))))
@@ -301,9 +299,6 @@ namespace System.Net.Http.Functional.Tests
 
                 verify(await client.DeleteAsync(CreateFakeUri()));
                 verify(await client.DeleteAsync(CreateFakeUri(), CancellationToken.None));
-
-                verify(await client.PatchAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])));
-                verify(await client.PatchAsync(CreateFakeUri(), new ByteArrayContent(new byte[1]), CancellationToken.None));
             }
         }
 
@@ -374,7 +369,6 @@ namespace System.Net.Http.Functional.Tests
             Assert.Throws<ObjectDisposedException>(() => { client.GetByteArrayAsync(CreateFakeUri()); });
             Assert.Throws<ObjectDisposedException>(() => { client.GetStreamAsync(CreateFakeUri()); });
             Assert.Throws<ObjectDisposedException>(() => { client.GetStringAsync(CreateFakeUri()); });
-            Assert.Throws<ObjectDisposedException>(() => { client.PatchAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])); });
             Assert.Throws<ObjectDisposedException>(() => { client.PostAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])); });
             Assert.Throws<ObjectDisposedException>(() => { client.PutAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])); });
             Assert.Throws<ObjectDisposedException>(() => { client.SendAsync(new HttpRequestMessage(HttpMethod.Get, CreateFakeUri())); });
