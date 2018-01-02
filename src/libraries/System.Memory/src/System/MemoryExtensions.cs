@@ -824,14 +824,8 @@ namespace System
         /// no larger element, the bitwise complement of <see cref="Span{T}.Length"/>.
         /// </returns>
         /// <exception cref="T:System.ArgumentNullException">
-        ///     <paramref name = "value" /> is <see langword="null"/> .
+        ///     <paramref name = "comparer" /> is <see langword="null"/> .
         /// </exception>
-        // TODO: Do we accept a null comparer and then revert to T as IComparable if possible??
-        //   T:System.ArgumentException:
-        //     comparer is null, and value is of a type that is not compatible with the elements
-        //     of array.
-        //   T:System.InvalidOperationException:
-        //     comparer is null, and T does not implement the System.IComparable`1 generic interface
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int BinarySearch<T, TComparer>(
             this Span<T> span, T value, TComparer comparer)
@@ -904,7 +898,7 @@ namespace System
         /// no larger element, the bitwise complement of <see cref="ReadOnlySpan{T}.Length"/>.
         /// </returns>
         /// <exception cref="T:System.ArgumentNullException">
-        ///     <paramref name = "value" /> is <see langword="null"/> .
+        ///     <paramref name = "comparer" /> is <see langword="null"/> .
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int BinarySearch<T, TComparer>(
@@ -913,12 +907,7 @@ namespace System
         {
             if (comparer == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparer);
-            // TODO: Do we accept a null comparer and then revert to T as IComparable if possible??
-            //   T:System.ArgumentException:
-            //     comparer is null, and value is of a type that is not compatible with the elements
-            //     of array.
-            //   T:System.InvalidOperationException:
-            //     comparer is null, and T does not implement the System.IComparable`1 generic interface
+
             var comparable = new SpanHelpers.ComparerComparable<T, TComparer>(
                 value, comparer);
             return BinarySearch(span, comparable);

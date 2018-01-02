@@ -17,9 +17,112 @@ namespace System.Memory.Tests
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
+        public void ArrayBinarySearch_Int_FirstIndex(int size)
+        {
+            BenchmarkAndAssertArray(size, 0, 0);
+        }
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public void ArrayBinarySearch_Int_MiddleIndex(int size)
+        {
+            BenchmarkAndAssertArray(size, (size - 1) / 2, (size - 1) / 2);
+        }
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public void ArrayBinarySearch_Int_LastIndex(int size)
+        {
+            BenchmarkAndAssertArray(size, size - 1, size - 1);
+        }
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public void ArrayBinarySearch_Int_NotFoundBefore(int size)
+        {
+            BenchmarkAndAssertArray(size, -1, -1);
+        }
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public void ArrayBinarySearch_Int_NotFoundAfter(int size)
+        {
+            BenchmarkAndAssertArray(size, size, ~size);
+        }
+
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public void ArrayBinarySearch_String_FirstIndex(int size)
+        {
+            BenchmarkAndAssertArray(size, 0.ToString(NumberFormat), 0);
+        }
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public void ArrayBinarySearch_String_MiddleIndex(int size)
+        {
+            BenchmarkAndAssertArray(size, ((size - 1) / 2).ToString(NumberFormat), (size - 1) / 2);
+        }
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public void ArrayBinarySearch_String_LastIndex(int size)
+        {
+            BenchmarkAndAssertArray(size, (size - 1).ToString(NumberFormat), size - 1);
+        }
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public void ArrayBinarySearch_String_NotFoundBefore(int size)
+        {
+            // "/" is just before zero in character table
+            BenchmarkAndAssertArray(size, "/", -1);
+        }
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public void ArrayBinarySearch_String_NotFoundAfter(int size)
+        {
+            BenchmarkAndAssertArray(size, (size).ToString(NumberFormat), ~size);
+        }
+
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
         public void SpanBinarySearch_Int_FirstIndex(int size)
         {
-            BenchmarkAndAssert(size, 0, 0);
+            BenchmarkAndAssertSpan(size, 0, 0);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
@@ -29,7 +132,7 @@ namespace System.Memory.Tests
         [InlineData(1000)]
         public void SpanBinarySearch_Int_MiddleIndex(int size)
         {
-            BenchmarkAndAssert(size, (size - 1) / 2, (size - 1) / 2);
+            BenchmarkAndAssertSpan(size, (size - 1) / 2, (size - 1) / 2);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
@@ -39,7 +142,7 @@ namespace System.Memory.Tests
         [InlineData(1000)]
         public void SpanBinarySearch_Int_LastIndex(int size)
         {
-            BenchmarkAndAssert(size, size - 1, size - 1);
+            BenchmarkAndAssertSpan(size, size - 1, size - 1);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
@@ -49,7 +152,7 @@ namespace System.Memory.Tests
         [InlineData(1000)]
         public void SpanBinarySearch_Int_NotFoundBefore(int size)
         {
-            BenchmarkAndAssert(size, -1, -1);
+            BenchmarkAndAssertSpan(size, -1, -1);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
@@ -59,7 +162,7 @@ namespace System.Memory.Tests
         [InlineData(1000)]
         public void SpanBinarySearch_Int_NotFoundAfter(int size)
         {
-            BenchmarkAndAssert(size, size, ~size);
+            BenchmarkAndAssertSpan(size, size, ~size);
         }
 
 
@@ -70,7 +173,7 @@ namespace System.Memory.Tests
         [InlineData(1000)]
         public void SpanBinarySearch_String_FirstIndex(int size)
         {
-            BenchmarkAndAssert(size, 0.ToString(NumberFormat), 0);
+            BenchmarkAndAssertSpan(size, 0.ToString(NumberFormat), 0);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
@@ -80,7 +183,7 @@ namespace System.Memory.Tests
         [InlineData(1000)]
         public void SpanBinarySearch_String_MiddleIndex(int size)
         {
-            BenchmarkAndAssert(size, ((size - 1) / 2).ToString(NumberFormat), (size - 1) / 2);
+            BenchmarkAndAssertSpan(size, ((size - 1) / 2).ToString(NumberFormat), (size - 1) / 2);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
@@ -90,7 +193,7 @@ namespace System.Memory.Tests
         [InlineData(1000)]
         public void SpanBinarySearch_String_LastIndex(int size)
         {
-            BenchmarkAndAssert(size, (size - 1).ToString(NumberFormat), size - 1);
+            BenchmarkAndAssertSpan(size, (size - 1).ToString(NumberFormat), size - 1);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
@@ -101,7 +204,7 @@ namespace System.Memory.Tests
         public void SpanBinarySearch_String_NotFoundBefore(int size)
         {
             // "/" is just before zero in character table
-            BenchmarkAndAssert(size, "/", -1);
+            BenchmarkAndAssertSpan(size, "/", -1);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
@@ -111,15 +214,26 @@ namespace System.Memory.Tests
         [InlineData(1000)]
         public void SpanBinarySearch_String_NotFoundAfter(int size)
         {
-            BenchmarkAndAssert(size, (size).ToString(NumberFormat), ~size);
+            BenchmarkAndAssertSpan(size, (size).ToString(NumberFormat), ~size);
         }
 
-        private static void BenchmarkAndAssert(int size, int value, int expectedIndex)
+        private static void BenchmarkAndAssertArray(int size, int value, int expectedIndex)
         {
-            Span<int> span = new int[size];
-            for (int i = 0; i < span.Length; i++)
+            BenchmarkAndAssertArray(size, i => i, value, expectedIndex);
+        }
+
+        private static void BenchmarkAndAssertArray(int size, string value, int expectedIndex)
+        {
+            BenchmarkAndAssertArray(size, i => i.ToString(NumberFormat), value, expectedIndex);
+        }
+
+        private static void BenchmarkAndAssertArray<T>(int size, Func<int, T> toValue, T value, int expectedIndex)
+            where T : IComparable<T>
+        {
+            var array = new T[size];
+            for (int i = 0; i < array.Length; i++)
             {
-                span[i] = i;
+                array[i] = toValue(i);
             }
 
             int index = 0;
@@ -129,19 +243,30 @@ namespace System.Memory.Tests
                 {
                     for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                     {
-                        index |= span.BinarySearch(value);
+                        index |= Array.BinarySearch(array, value);
                     }
                 }
             }
             Assert.Equal(expectedIndex, index);
         }
 
-        private static void BenchmarkAndAssert(int size, string value, int expectedIndex)
+        private static void BenchmarkAndAssertSpan(int size, int value, int expectedIndex)
         {
-            Span<string> span = new string[size];
+            BenchmarkAndAssertSpan(size, i => i, value, expectedIndex);
+        }
+
+        private static void BenchmarkAndAssertSpan(int size, string value, int expectedIndex)
+        {
+            BenchmarkAndAssertSpan(size, i => i.ToString(NumberFormat), value, expectedIndex);
+        }
+
+        private static void BenchmarkAndAssertSpan<T>(int size, Func<int, T> toValue, T value, int expectedIndex)
+            where T : IComparable<T>
+        {
+            Span<T> span = new T[size];
             for (int i = 0; i < span.Length; i++)
             {
-                span[i] = i.ToString(NumberFormat);
+                span[i] = toValue(i);
             }
 
             int index = 0;
