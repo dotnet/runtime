@@ -1162,40 +1162,75 @@ ves_icall_System_ValueType_Equals (MonoObject *this_obj, MonoObject *that, MonoA
 			continue;
 		if (mono_field_is_deleted (field))
 			continue;
+		guint8 *this_field = (guint8 *) this_obj + field->offset;
+		guint8 *that_field = (guint8 *) that + field->offset;
+
+#define UNALIGNED_COMPARE(type) \
+			do { \
+				type left, right; \
+				memcpy (&left, this_field, sizeof (type)); \
+				memcpy (&right, that_field, sizeof (type)); \
+				if (left != right) \
+					return FALSE; \
+			} while (0);
+
 		/* FIXME: Add more types */
 		switch (field->type->type) {
 		case MONO_TYPE_U1:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_BOOLEAN:
-			if (*((guint8*)this_obj + field->offset) != *((guint8*)that + field->offset))
+			if (*this_field != *that_field)
 				return FALSE;
 			break;
 		case MONO_TYPE_U2:
 		case MONO_TYPE_I2:
 		case MONO_TYPE_CHAR:
-			if (*(gint16*)((guint8*)this_obj + field->offset) != *(gint16*)((guint8*)that + field->offset))
+#ifdef NO_UNALIGNED_ACCESS
+			if (G_UNLIKELY ((intptr_t) this_field & 1 || (intptr_t) that_field & 1)) {
+				UNALIGNED_COMPARE (gint16);
+			} else
+#endif
+			if (*(gint16 *) this_field != *(gint16 *) that_field)
 				return FALSE;
 			break;
 		case MONO_TYPE_U4:
 		case MONO_TYPE_I4:
-			if (*(gint32*)((guint8*)this_obj + field->offset) != *(gint32*)((guint8*)that + field->offset))
+#ifdef NO_UNALIGNED_ACCESS
+			if (G_UNLIKELY ((intptr_t) this_field & 3 || (intptr_t) that_field & 3)) {
+				UNALIGNED_COMPARE (gint32);
+			} else
+#endif
+			if (*(gint32 *) this_field != *(gint32 *) that_field)
 				return FALSE;
 			break;
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
-			if (*(gint64*)((guint8*)this_obj + field->offset) != *(gint64*)((guint8*)that + field->offset))
+#ifdef NO_UNALIGNED_ACCESS
+			if (G_UNLIKELY ((intptr_t) this_field & 7 || (intptr_t) that_field & 7)) {
+				UNALIGNED_COMPARE (gint64);
+			} else
+#endif
+			if (*(gint64 *) this_field != *(gint64 *) that_field)
 				return FALSE;
 			break;
 		case MONO_TYPE_R4:
-			if (*(float*)((guint8*)this_obj + field->offset) != *(float*)((guint8*)that + field->offset))
+#ifdef NO_UNALIGNED_ACCESS
+			if (G_UNLIKELY ((intptr_t) this_field & 3 || (intptr_t) that_field & 3)) {
+				UNALIGNED_COMPARE (float);
+			} else
+#endif
+			if (*(float *) this_field != *(float *) that_field)
 				return FALSE;
 			break;
 		case MONO_TYPE_R8:
-			if (*(double*)((guint8*)this_obj + field->offset) != *(double*)((guint8*)that + field->offset))
+#ifdef NO_UNALIGNED_ACCESS
+			if (G_UNLIKELY ((intptr_t) this_field & 7 || (intptr_t) that_field & 7)) {
+				UNALIGNED_COMPARE (double);
+			} else
+#endif
+			if (*(double *) this_field != *(double *) that_field)
 				return FALSE;
 			break;
-
-
 		case MONO_TYPE_STRING: {
 			MonoString *s1, *s2;
 			guint32 s1len, s2len;
@@ -1230,6 +1265,8 @@ ves_icall_System_ValueType_Equals (MonoObject *this_obj, MonoObject *that, MonoA
 			}
 			values [count++] = o;
 		}
+
+#undef UNALIGNED_CHECK
 
 		if (klass->enumtype)
 			/* enums only have one non-static field */
