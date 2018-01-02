@@ -38,7 +38,7 @@ EventPipeJsonFile::~EventPipeJsonFile()
 {
     CONTRACTL
     {
-        THROWS;
+        NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
     }
@@ -59,14 +59,26 @@ EventPipeJsonFile::~EventPipeJsonFile()
 
 void EventPipeJsonFile::WriteEvent(EventPipeEventInstance &instance)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END; 
 
     instance.SerializeToJsonFile(this);
 }
 
 void EventPipeJsonFile::WriteEvent(LARGE_INTEGER timeStamp, DWORD threadID, SString &message, StackContents &stackContents)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END; 
 
     if(m_pFileStream == NULL || m_writeErrorEncountered)
     {
@@ -98,7 +110,7 @@ void EventPipeJsonFile::Write(SString &str)
 {
     CONTRACTL
     {
-        THROWS;
+        NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
     }
@@ -106,19 +118,35 @@ void EventPipeJsonFile::Write(SString &str)
 
     StackScratchBuffer scratch;
     const char * charStr = str.GetANSI(scratch);
-    ULONG inCount = str.GetCount();
-    ULONG outCount;
-    m_pFileStream->Write(charStr, inCount, &outCount);
 
-    if(inCount != outCount)
+    EX_TRY
+    {
+        ULONG inCount = str.GetCount();
+        ULONG outCount;
+
+        m_pFileStream->Write(charStr, inCount, &outCount);
+
+        if(inCount != outCount)
+        {
+            m_writeErrorEncountered = true;
+        }
+    }
+    EX_CATCH
     {
         m_writeErrorEncountered = true;
     }
+    EX_END_CATCH(SwallowAllExceptions);
 }
 
 void EventPipeJsonFile::FormatCallStack(StackContents &stackContents, SString &resultStr)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END; 
 
     StackScratchBuffer scratch;
     SString frameStr;

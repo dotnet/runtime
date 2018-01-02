@@ -31,4 +31,7 @@ add_subdirectory(miscellaneous)
 add_subdirectory(pal_specific)
 add_subdirectory(samples)
 add_subdirectory(threading)
-add_subdirectory($ENV{__IntermediatesDir}/Generated/eventprovider/tests ${CMAKE_CURRENT_BINARY_DIR}/eventprovider )
+
+if(FEATURE_EVENT_TRACE)
+  add_subdirectory(${GENERATED_EVENTING_DIR}/eventprovider/tests ${CMAKE_CURRENT_BINARY_DIR}/eventprovider)
+endif(FEATURE_EVENT_TRACE)

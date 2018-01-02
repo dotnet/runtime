@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#include "common.h"
 #include "clrtypes.h"
 #include "safemath.h"
-#include "common.h"
 #include "eventpipe.h"
 #include "eventpipebuffermanager.h"
 #include "eventpipeconfiguration.h"
@@ -33,11 +33,8 @@ EventPipeJsonFile* EventPipe::s_pJsonFile = NULL;
 #ifdef FEATURE_PAL
 // This function is auto-generated from /src/scripts/genEventPipe.py
 extern "C" void InitProvidersAndEvents();
-#endif
-
-#ifdef FEATURE_PAL
-// This function is auto-generated from /src/scripts/genEventPipe.py
-extern "C" void InitProvidersAndEvents();
+#else
+void InitProvidersAndEvents();
 #endif
 
 EventPipeEventPayload::EventPipeEventPayload(BYTE *pData, unsigned int length)
@@ -97,7 +94,7 @@ EventPipeEventPayload::~EventPipeEventPayload()
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -114,7 +111,7 @@ void EventPipeEventPayload::Flatten()
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -168,7 +165,7 @@ BYTE* EventPipeEventPayload::GetFlatData()
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -193,11 +190,9 @@ void EventPipe::Initialize()
 
     s_pBufferManager = new EventPipeBufferManager();
 
-#ifdef FEATURE_PAL
     // This calls into auto-generated code to initialize the runtime providers
     // and events so that the EventPipe configuration lock isn't taken at runtime
     InitProvidersAndEvents();
-#endif
 }
 
 void EventPipe::EnableOnStartup()
@@ -227,13 +222,19 @@ void EventPipe::Shutdown()
 {
     CONTRACTL
     {
-        THROWS;
+        NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
 
-    Disable();
+    // We are shutting down, so if diasabling EventPipe throws, we need to move along anyway
+    EX_TRY
+    {
+        Disable();
+    }
+    EX_CATCH { }
+    EX_END_CATCH(SwallowAllExceptions);
 
     if(s_pConfig != NULL)
     {
@@ -262,7 +263,13 @@ void EventPipe::Enable(
     CONTRACTL_END;
 
     // If tracing is not initialized or is already enabled, bail here.
-    if(!s_tracingInitialized || s_pConfig->Enabled())
+    if(!s_tracingInitialized || s_pConfig == NULL || s_pConfig->Enabled())
+    {
+        return;
+    }
+
+    // If the state or aurguments are invalid, bail
+    if(pProviders == NULL || numProviders <= 0)
     {
         return;
     }
@@ -312,7 +319,7 @@ void EventPipe::Disable()
     // Take the lock before disabling tracing.
     CrstHolder _crst(GetLock());
 
-    if(s_pConfig->Enabled())
+    if(s_pConfig != NULL && s_pConfig->Enabled())
     {
         // Disable the profiler.
         SampleProfiler::Disable();
@@ -468,7 +475,6 @@ void EventPipe::WriteEventInternal(EventPipeEvent &event, EventPipeEventPayload 
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(s_pBufferManager != NULL);
     }
     CONTRACTL_END;
 
@@ -483,6 +489,12 @@ void EventPipe::WriteEventInternal(EventPipeEvent &event, EventPipeEventPayload 
     if(pThread == NULL)
     {
         // We can't write an event without the thread object.
+        return;
+    }
+
+    if(s_pConfig == NULL)
+    {
+        // We can't procede without a configuration
         return;
     }
 
@@ -501,6 +513,10 @@ void EventPipe::WriteEventInternal(EventPipeEvent &event, EventPipeEventPayload 
         {
             // Write synchronously to the file.
             // We're under lock and blocking the disabling thread.
+            // This copy occurs here (rather than at file write) because
+            // A) The FastSerializer API would need to change if we waited
+            // B) It is unclear there is a benefit to multiple file write calls
+            //    as opposed a a buffer copy here
             EventPipeEventInstance instance(
                 event,
                 pThread->GetOSThreadId(),
@@ -511,12 +527,22 @@ void EventPipe::WriteEventInternal(EventPipeEvent &event, EventPipeEventPayload 
 
             if(s_pFile != NULL)
             {
-                s_pFile->WriteEvent(instance);
+                // EventPipeFile::WriteEvent needs to allocate a metadata event
+                // and can therefore throw. In this context we will silently
+                // fail rather than disrupt the caller
+                EX_TRY
+                {
+                    s_pFile->WriteEvent(instance);
+                }
+                EX_CATCH { }
+                EX_END_CATCH(SwallowAllExceptions);
             }
         }
     }
 
-#ifdef _DEBUG
+// This section requires a call to GCX_PREEMP which violates the GC_NOTRIGGER contract
+// It should only be enabled when debugging this specific component and contracts are off
+#ifdef DEBUG_JSON_EVENT_FILE
     {
         GCX_PREEMP();
 
@@ -537,7 +563,7 @@ void EventPipe::WriteEventInternal(EventPipeEvent &event, EventPipeEventPayload 
             {
                 s_pSyncFile->WriteEvent(instance);
             }
- 
+
             // Write to the EventPipeJsonFile if it exists.
             if(s_pJsonFile != NULL)
             {
@@ -545,7 +571,7 @@ void EventPipe::WriteEventInternal(EventPipeEvent &event, EventPipeEventPayload 
             }
         }
     }
-#endif // _DEBUG
+#endif // DEBUG_JSON_EVENT_FILE
 }
 
 void EventPipe::WriteSampleProfileEvent(Thread *pSamplingThread, EventPipeEvent *pEvent, Thread *pTargetThread, StackContents &stackContents, BYTE *pData, unsigned int length)
@@ -641,7 +667,7 @@ StackWalkAction EventPipe::StackWalkCallback(CrawlFrame *pCf, StackContents *pDa
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
+        MODE_ANY;
         PRECONDITION(pCf != NULL);
         PRECONDITION(pData != NULL);
     }
@@ -686,15 +712,15 @@ CrstStatic* EventPipe::GetLock()
 
 void QCALLTYPE EventPipeInternal::Enable(
         __in_z LPCWSTR outputFile,
-        unsigned int circularBufferSizeInMB,
-        long profilerSamplingRateInNanoseconds,
+        UINT32 circularBufferSizeInMB,
+        INT64 profilerSamplingRateInNanoseconds,
         EventPipeProviderConfiguration *pProviders,
-        int numProviders)
+        INT32 numProviders)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
-    SampleProfiler::SetSamplingRate(profilerSamplingRateInNanoseconds);
+    SampleProfiler::SetSamplingRate((unsigned long)profilerSamplingRateInNanoseconds);
     EventPipe::Enable(outputFile, circularBufferSizeInMB, pProviders, numProviders);
     END_QCALL;
 }
@@ -727,12 +753,12 @@ INT_PTR QCALLTYPE EventPipeInternal::CreateProvider(
 
 INT_PTR QCALLTYPE EventPipeInternal::DefineEvent(
     INT_PTR provHandle,
-    unsigned int eventID,
+    UINT32 eventID,
     __int64 keywords,
-    unsigned int eventVersion,
-    unsigned int level,
+    UINT32 eventVersion,
+    UINT32 level,
     void *pMetadata,
-    unsigned int metadataLength)
+    UINT32 metadataLength)
 {
     QCALL_CONTRACT;
 
@@ -768,9 +794,9 @@ void QCALLTYPE EventPipeInternal::DeleteProvider(
 
 void QCALLTYPE EventPipeInternal::WriteEvent(
     INT_PTR eventHandle,
-    unsigned int eventID,
+    UINT32 eventID,
     void *pData,
-    unsigned int length,
+    UINT32 length,
     LPCGUID pActivityId,
     LPCGUID pRelatedActivityId)
 {
@@ -786,9 +812,9 @@ void QCALLTYPE EventPipeInternal::WriteEvent(
 
 void QCALLTYPE EventPipeInternal::WriteEventData(
     INT_PTR eventHandle,
-    unsigned int eventID,
+    UINT32 eventID,
     EventData **pEventData,
-    unsigned int eventDataCount,
+    UINT32 eventDataCount,
     LPCGUID pActivityId,
     LPCGUID pRelatedActivityId)
 {

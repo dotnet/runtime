@@ -24,6 +24,7 @@ EventPipeProvider::EventPipeProvider(EventPipeConfiguration *pConfig, const SStr
 
     m_providerName = providerName;
     m_enabled = false;
+    m_deleteDeferred = false;
     m_keywords = 0;
     m_providerLevel = EventPipeEventLevel::Critical;
     m_pEventList = new SList<SListElem<EventPipeEvent*>>();
@@ -36,8 +37,8 @@ EventPipeProvider::~EventPipeProvider()
 {
     CONTRACTL
     {
-        THROWS;
-        GC_NOTRIGGER;
+        NOTHROW;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -45,21 +46,30 @@ EventPipeProvider::~EventPipeProvider()
     // Free all of the events.
     if(m_pEventList != NULL)
     {
-        // Take the lock before manipulating the list.
-        CrstHolder _crst(EventPipe::GetLock());
-
-        SListElem<EventPipeEvent*> *pElem = m_pEventList->GetHead();
-        while(pElem != NULL)
+        // We swallow exceptions here because the HOST_BREAKABLE
+        // lock may throw and this destructor gets called in throw
+        // intolerant places. If that happens the event list will leak
+        EX_TRY
         {
-            EventPipeEvent *pEvent = pElem->GetValue();
-            delete pEvent;
+            // Take the lock before manipulating the list.
+            CrstHolder _crst(EventPipe::GetLock());
 
-            SListElem<EventPipeEvent*> *pCurElem = pElem;
-            pElem = m_pEventList->GetNext(pElem);
-            delete pCurElem;
+            SListElem<EventPipeEvent*> *pElem = m_pEventList->GetHead();
+            while(pElem != NULL)
+            {
+                EventPipeEvent *pEvent = pElem->GetValue();
+                delete pEvent;
+
+                SListElem<EventPipeEvent*> *pCurElem = pElem;
+                pElem = m_pEventList->GetNext(pElem);
+                delete pCurElem;
+            }
+
+            delete m_pEventList;
         }
+        EX_CATCH { }
+        EX_END_CATCH(SwallowAllExceptions);
 
-        delete m_pEventList;
         m_pEventList = NULL;
     }
 }

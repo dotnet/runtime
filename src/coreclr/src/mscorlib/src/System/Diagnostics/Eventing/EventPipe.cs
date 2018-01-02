@@ -14,12 +14,12 @@ namespace System.Diagnostics.Tracing
     {
         [MarshalAs(UnmanagedType.LPWStr)]
         private string m_providerName;
-        private UInt64 m_keywords;
+        private ulong m_keywords;
         private uint m_loggingLevel;
 
         internal EventPipeProviderConfiguration(
             string providerName,
-            UInt64 keywords,
+            ulong keywords,
             uint loggingLevel)
         {
             if(string.IsNullOrEmpty(providerName))
@@ -40,7 +40,7 @@ namespace System.Diagnostics.Tracing
             get { return m_providerName; }
         }
 
-        internal UInt64 Keywords
+        internal ulong Keywords
         {
             get { return m_keywords; }
         }
@@ -96,7 +96,7 @@ namespace System.Diagnostics.Tracing
             get { return m_minTimeBetweenSamples.Ticks * 100; }
         }
 
-        internal void EnableProvider(string providerName, UInt64 keywords, uint loggingLevel)
+        internal void EnableProvider(string providerName, ulong keywords, uint loggingLevel)
         {
             m_providers.Add(new EventPipeProviderConfiguration(
                 providerName,
@@ -122,6 +122,11 @@ namespace System.Diagnostics.Tracing
             if(configuration == null)
             {
                 throw new ArgumentNullException(nameof(configuration));
+            }
+
+            if(configuration.Providers == null)
+            {
+                throw new ArgumentNullException(nameof(configuration.Providers));
             }
 
             EventPipeProviderConfiguration[] providers = configuration.Providers;
@@ -158,7 +163,7 @@ namespace System.Diagnostics.Tracing
         internal static extern IntPtr CreateProvider(string providerName, UnsafeNativeMethods.ManifestEtw.EtwEnableCallback callbackFunc);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        internal static extern unsafe IntPtr DefineEvent(IntPtr provHandle, uint eventID, Int64 keywords, uint eventVersion, uint level, void *pMetadata, uint metadataLength);
+        internal static extern unsafe IntPtr DefineEvent(IntPtr provHandle, uint eventID, long keywords, uint eventVersion, uint level, void *pMetadata, uint metadataLength);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern void DeleteProvider(IntPtr provHandle);
