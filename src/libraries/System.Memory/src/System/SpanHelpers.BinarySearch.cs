@@ -21,11 +21,10 @@ namespace System
         {
             if (comparable == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparable);
-            // TODO: Make `ref readonly`/`in` when Unsafe.Add(ReadOnly) supports it
+
             return BinarySearch(ref MemoryMarshal.GetReference(span), span.Length, comparable);
         }
 
-        // TODO: Make spanStart `ref readonly`/`in` when Unsafe.Add(ReadOnly) supports it
         internal static int BinarySearch<T, TComparable>(
             ref T spanStart, int length, TComparable comparable) 
             where TComparable : IComparable<T>
@@ -43,7 +42,6 @@ namespace System
                 //       `int i = lo + ((hi - lo) >> 1);`
                 int i = (int)(((uint)hi + (uint)lo) >> 1);
 
-                // TODO: We probably need to add `ref readonly`/`in` methods e.g. `AddReadOnly` to unsafe
                 int c = comparable.CompareTo(Unsafe.Add(ref spanStart, i));
                 if (c == 0)
                 {

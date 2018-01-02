@@ -98,7 +98,6 @@ namespace System.SpanTests
             Assert.Throws<ArgumentNullException>(() => new ReadOnlySpan<int>(new int[] { }).BinarySearch<int, IComparable<int>>(null));
         }
 
-        // TODO: Revise whether this should actually throw
         [Fact]
         public static void BinarySearch_NullComparerThrows()
         {
