@@ -6,8 +6,10 @@
 #define __EVENTPIPE_H__
 
 #ifdef FEATURE_PERFTRACING
+#include "common.h"
 
 class CrstStatic;
+class CrawlFrame;
 class EventPipeConfiguration;
 class EventPipeEvent;
 class EventPipeFile;
@@ -58,7 +60,7 @@ public:
 
     // If a buffer was allocated internally, delete it
     ~EventPipeEventPayload();
-    
+
     // Copy the data (whether flat or array of objects) into a flat buffer at pDst
     // Assumes that pDst points to an appropriatly sized buffer
     void CopyData(BYTE *pDst);
@@ -259,7 +261,7 @@ class EventPipe
 
         // Write out a sample profile event.
         static void WriteSampleProfileEvent(Thread *pSamplingThread, EventPipeEvent *pEvent, Thread *pTargetThread, StackContents &stackContents, BYTE *pData = NULL, unsigned int length = 0);
-        
+
         // Get the managed call stack for the current thread.
         static bool WalkManagedStackForCurrentThread(StackContents &stackContents);
 
@@ -301,7 +303,7 @@ private:
 
     LPCWSTR m_pProviderName;
     UINT64 m_keywords;
-    unsigned int m_loggingLevel;
+    UINT32 m_loggingLevel;
 
 public:
 
@@ -316,7 +318,7 @@ public:
     EventPipeProviderConfiguration(
         LPCWSTR pProviderName,
         UINT64 keywords,
-        unsigned int loggingLevel)
+        UINT32 loggingLevel)
     {
         LIMITED_METHOD_CONTRACT;
         m_pProviderName = pProviderName;
@@ -336,7 +338,7 @@ public:
         return m_keywords;
     }
 
-    unsigned int GetLevel() const
+    UINT32 GetLevel() const
     {
         LIMITED_METHOD_CONTRACT;
         return m_loggingLevel;
@@ -350,10 +352,10 @@ public:
 
     static void QCALLTYPE Enable(
         __in_z LPCWSTR outputFile,
-        unsigned int circularBufferSizeInMB,
-        long profilerSamplingRateInNanoseconds,
+        UINT32 circularBufferSizeInMB,
+        INT64 profilerSamplingRateInNanoseconds,
         EventPipeProviderConfiguration *pProviders,
-        int numProviders);
+        INT32 numProviders);
 
     static void QCALLTYPE Disable();
 
@@ -363,28 +365,28 @@ public:
 
     static INT_PTR QCALLTYPE DefineEvent(
         INT_PTR provHandle,
-        unsigned int eventID,
+        UINT32 eventID,
         __int64 keywords,
-        unsigned int eventVersion,
-        unsigned int level,
+        UINT32 eventVersion,
+        UINT32 level,
         void *pMetadata,
-        unsigned int metadataLength);
+        UINT32 metadataLength);
 
     static void QCALLTYPE DeleteProvider(
         INT_PTR provHandle);
 
     static void QCALLTYPE WriteEvent(
         INT_PTR eventHandle,
-        unsigned int eventID,
+        UINT32 eventID,
         void *pData,
-        unsigned int length,
+        UINT32 length,
         LPCGUID pActivityId, LPCGUID pRelatedActivityId);
 
     static void QCALLTYPE WriteEventData(
         INT_PTR eventHandle,
-        unsigned int eventID,
+        UINT32 eventID,
         EventData **pEventData,
-        unsigned int eventDataCount,
+        UINT32 eventDataCount,
         LPCGUID pActivityId, LPCGUID pRelatedActivityId);
 };
 
