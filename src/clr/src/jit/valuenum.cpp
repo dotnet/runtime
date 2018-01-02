@@ -7046,6 +7046,13 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                     tree->gtVNPair.SetBoth(ValueNumStore::NoVN);
                     break;
 
+                case GT_BOX:
+                    // BOX doesn't do anything at this point, the actual object allocation
+                    // and initialization happens separately (and not numbering BOX correctly
+                    // prevents seeing allocation related assertions through it)
+                    tree->gtVNPair = tree->gtGetOp1()->gtVNPair;
+                    break;
+
                 default:
                     // The default action is to give the node a new, unique VN.
                     tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
