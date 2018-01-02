@@ -262,6 +262,12 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 #endif //
 
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWIntrinsic:
+            LowerHWIntrinsic(node->AsHWIntrinsic());
+            break;
+#endif // FEATURE_HW_INTRINSICS
+
         case GT_LCL_VAR:
             WidenSIMD12IfNecessary(node->AsLclVarCommon());
             break;
@@ -5857,6 +5863,11 @@ void Lowering::ContainCheckNode(GenTree* node)
             ContainCheckSIMD(node->AsSIMD());
             break;
 #endif // FEATURE_SIMD
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWIntrinsic:
+            ContainCheckHWIntrinsic(node->AsHWIntrinsic());
+            break;
+#endif // FEATURE_HW_INTRINSICS
         default:
             break;
     }
