@@ -3488,7 +3488,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 #ifdef DEBUG
     if (VERBOSE)
     {
-        dumpOperandToLocationInfoMap();
+        dumpDefList();
         compiler->gtDispTree(tree, nullptr, nullptr, true);
     }
 #endif // DEBUG
@@ -3583,8 +3583,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
                 assert(produce != 0);
 
                 locationInfo->interval = getIntervalForLocalVar(varIndex);
-                bool added             = operandToLocationInfoMap->AddOrUpdate(tree, locationInfo);
-                assert(added);
+                defList.Append(locationInfo);
             }
             return;
         }
@@ -3991,8 +3990,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
             {
                 locationInfo->interval = interval;
                 prevInterval           = interval;
-                bool added             = operandToLocationInfoMap->AddOrUpdate(tree, locationInfo);
-                assert(added);
+                defList.Append(locationInfo);
             }
             else
             {
@@ -4505,8 +4503,6 @@ void LinearScan::buildIntervals()
     }
 
     LocationInfoListNodePool listNodePool(compiler, 8);
-    OperandToLocationInfoMap theOperandToLocationInfoMap(compiler);
-    operandToLocationInfoMap = &theOperandToLocationInfoMap;
 
     BasicBlock* predBlock = nullptr;
     BasicBlock* prevBlock = nullptr;
@@ -4627,7 +4623,7 @@ void LinearScan::buildIntervals()
 
         // Note: the visited set is cleared in LinearScan::doLinearScan()
         markBlockVisited(block);
-        assert(operandToLocationInfoMap->Count() == 0);
+        assert(defList.IsEmpty());
 
         if (enregisterLocalVars)
         {
@@ -11418,17 +11414,15 @@ void TreeNodeInfo::dump(LinearScan* lsra)
     printf(">");
 }
 
-void LinearScan::dumpOperandToLocationInfoMap()
+void LinearScan::dumpDefList()
 {
-    JITDUMP("OperandToLocationInfoMap: { ");
+    JITDUMP("DefList: { ");
     bool first = true;
-    for (auto kvp : *operandToLocationInfoMap)
+    for (LocationInfoListNode *listNode = defList.Begin(), *end = defList.End(); listNode != end;
+         listNode = listNode->Next())
     {
-        GenTree*              node = kvp.Key();
-        LocationInfoListNode* def  = kvp.Value();
-
+        GenTree* node = listNode->treeNode;
         JITDUMP("%sN%03u.t%d. %s", first ? "" : "; ", node->gtSeqNum, node->gtTreeID, GenTree::OpName(node->OperGet()));
-
         first = false;
     }
     JITDUMP(" }\n");
