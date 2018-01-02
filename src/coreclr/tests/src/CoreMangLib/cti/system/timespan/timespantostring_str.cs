@@ -22,8 +22,8 @@ public class TimeSpanTest
             if ((args.Length > 0) && args[0].ToLower() == "true") 
                 verbose = true;
 
-            Logging.WriteLine("CurrentCulture:  " + Utilities.CurrentCulture.Name);
-            Logging.WriteLine("CurrentUICulture:  " + Utilities.CurrentCulture.Name);
+            Logging.WriteLine("CurrentCulture:  " + TestLibrary.Utilities.CurrentCulture.Name);
+            Logging.WriteLine("CurrentUICulture:  " + TestLibrary.Utilities.CurrentCulture.Name);
 
             RunTests();
         }
@@ -50,7 +50,7 @@ public class TimeSpanTest
         // The current implementation uses the same character as the default NumberDecimalSeparator
         // for a culture, but this is an implementation detail and could change.  No user overrides
         // are respected.
-        String GDecimalSeparator = Utilities.CurrentCulture.NumberFormat.NumberDecimalSeparator;
+        String GDecimalSeparator = TestLibrary.Utilities.CurrentCulture.NumberFormat.NumberDecimalSeparator;
         // Standard formats
         foreach (TimeSpan ts in Support.InterestingTimeSpans)
         {
@@ -169,7 +169,7 @@ public class TimeSpanTest
 
 
         // Vary current culture
-        Utilities.CurrentCulture = CultureInfo.InvariantCulture;
+        TestLibrary.Utilities.CurrentCulture = CultureInfo.InvariantCulture;
         foreach (TimeSpan ts in Support.InterestingTimeSpans)
         {
             String defaultFormat = Support.CFormat(ts);
@@ -183,7 +183,7 @@ public class TimeSpanTest
             VerifyToString(ts, "G", Support.GFormat(ts, "."));
         }
 
-        Utilities.CurrentCulture = new CultureInfo("en-US");
+        TestLibrary.Utilities.CurrentCulture = new CultureInfo("en-US");
         foreach (TimeSpan ts in Support.InterestingTimeSpans)
         {
             String defaultFormat = Support.CFormat(ts);
@@ -197,7 +197,7 @@ public class TimeSpanTest
             VerifyToString(ts, "G", Support.GFormat(ts, "."));
         }
 
-        Utilities.CurrentCulture = new CultureInfo("de-DE");
+        TestLibrary.Utilities.CurrentCulture = new CultureInfo("de-DE");
         foreach (TimeSpan ts in Support.InterestingTimeSpans)
         {
             String defaultFormat = Support.CFormat(ts);

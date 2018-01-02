@@ -35,7 +35,7 @@ EventPipeBuffer::~EventPipeBuffer()
 {
     CONTRACTL
     {
-        THROWS;
+        NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
     }
@@ -52,7 +52,7 @@ bool EventPipeBuffer::WriteEvent(Thread *pThread, EventPipeEvent &event, EventPi
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(pThread != NULL);
     }
@@ -143,7 +143,7 @@ EventPipeEventInstance* EventPipeBuffer::GetNext(EventPipeEventInstance *pEvent,
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
