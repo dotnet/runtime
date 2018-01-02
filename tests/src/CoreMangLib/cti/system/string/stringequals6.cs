@@ -127,10 +127,10 @@ public class StringEquals
 
         try
         {
-            CultureInfo oldCi = Utilities.CurrentCulture;
-            Utilities.CurrentCulture = new CultureInfo("hu-HU");
+            CultureInfo oldCi = TestLibrary.Utilities.CurrentCulture;
+            TestLibrary.Utilities.CurrentCulture = new CultureInfo("hu-HU");
             retVal &= TestStrings("dzsdzs", "ddzs");
-            Utilities.CurrentCulture = oldCi;
+            TestLibrary.Utilities.CurrentCulture = oldCi;
 
             retVal &= TestStrings("\u00C0nimal", "A\u0300nimal");
 
@@ -207,7 +207,7 @@ public class StringEquals
         StringBuilder output = new StringBuilder();
         for (int i = 0; i < str.Length; i++)
         {
-            output.Append(Utilities.ByteArrayToString(BitConverter.GetBytes(str[i])));
+            output.Append(TestLibrary.Utilities.ByteArrayToString(BitConverter.GetBytes(str[i])));
             if (i != (str.Length - 1)) output.Append(", ");
         }
         return output.ToString();

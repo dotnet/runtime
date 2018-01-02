@@ -318,10 +318,10 @@ class EncodingGetBytes1
         try
         {
             byte[] bytes = enc.GetBytes(str);
-            if (!Utilities.CompareBytes(bytes, expected))
+            if (!TestLibrary.Utilities.CompareBytes(bytes, expected))
             {
                 result = false;
-                TestFramework.LogError("001", "Error in " + id + ", unexpected comparison result. Actual bytes " + Utilities.ByteArrayToString(bytes) + ", Expected: " + Utilities.ByteArrayToString(expected));
+                TestFramework.LogError("001", "Error in " + id + ", unexpected comparison result. Actual bytes " + TestLibrary.Utilities.ByteArrayToString(bytes) + ", Expected: " + TestLibrary.Utilities.ByteArrayToString(expected));
             }
         }
         catch (Exception exc)
@@ -340,7 +340,7 @@ class EncodingGetBytes1
         {
             byte[] bytes = enc.GetBytes(str);
             result = false;
-            TestFramework.LogError("005", "Error in " + id + ", Expected exception not thrown. Actual bytes " + Utilities.ByteArrayToString(bytes) + ", Expected exception type: " + excType.ToString());
+            TestFramework.LogError("005", "Error in " + id + ", Expected exception not thrown. Actual bytes " + TestLibrary.Utilities.ByteArrayToString(bytes) + ", Expected exception type: " + excType.ToString());
         }
         catch (Exception exc)
         {
@@ -360,10 +360,10 @@ class EncodingGetBytes1
         try
         {
             byte[] bytes = enc.GetBytes(chars);
-            if (!Utilities.CompareBytes(bytes, expected))
+            if (!TestLibrary.Utilities.CompareBytes(bytes, expected))
             {
                 result = false;
-                TestFramework.LogError("003", "Error in " + id + ", unexpected comparison result. Actual bytes " + Utilities.ByteArrayToString(bytes) + ", Expected: " + Utilities.ByteArrayToString(expected));
+                TestFramework.LogError("003", "Error in " + id + ", unexpected comparison result. Actual bytes " + TestLibrary.Utilities.ByteArrayToString(bytes) + ", Expected: " + TestLibrary.Utilities.ByteArrayToString(expected));
             }
         }
         catch (Exception exc)
@@ -382,7 +382,7 @@ class EncodingGetBytes1
         {
             byte[] bytes = enc.GetBytes(str);
             result = false;
-            TestFramework.LogError("007", "Error in " + id + ", Expected exception not thrown. Actual bytes " + Utilities.ByteArrayToString(bytes) + ", Expected exception type: " + excType.ToString());
+            TestFramework.LogError("007", "Error in " + id + ", Expected exception not thrown. Actual bytes " + TestLibrary.Utilities.ByteArrayToString(bytes) + ", Expected exception type: " + excType.ToString());
         }
         catch (Exception exc)
         {
@@ -403,7 +403,7 @@ class EncodingGetBytes1
         {
             byte[] bytes = enc.GetBytes(str, index, count);
             result = false;
-            TestFramework.LogError("009", "Error in " + id + ", Expected exception not thrown. Actual bytes " + Utilities.ByteArrayToString(bytes) + ", Expected exception type: " + excType.ToString());
+            TestFramework.LogError("009", "Error in " + id + ", Expected exception not thrown. Actual bytes " + TestLibrary.Utilities.ByteArrayToString(bytes) + ", Expected exception type: " + excType.ToString());
         }
         catch (Exception exc)
         {
@@ -424,7 +424,7 @@ class EncodingGetBytes1
         {
             int output = enc.GetBytes(str, index, count, bytes, bIndex);
             result = false;
-            TestFramework.LogError("011", "Error in " + id + ", Expected exception not thrown. Actual bytes " + Utilities.ByteArrayToString(bytes) + ", Expected exception type: " + excType.ToString());
+            TestFramework.LogError("011", "Error in " + id + ", Expected exception not thrown. Actual bytes " + TestLibrary.Utilities.ByteArrayToString(bytes) + ", Expected exception type: " + excType.ToString());
         }
         catch (Exception exc)
         {
@@ -445,7 +445,7 @@ class EncodingGetBytes1
         {
             int output = enc.GetBytes(str, index, count, bytes, bIndex);
             result = false;
-            TestFramework.LogError("013", "Error in " + id + ", Expected exception not thrown. Actual bytes " + Utilities.ByteArrayToString(bytes) + ", Expected exception type: " + excType.ToString());
+            TestFramework.LogError("013", "Error in " + id + ", Expected exception not thrown. Actual bytes " + TestLibrary.Utilities.ByteArrayToString(bytes) + ", Expected exception type: " + excType.ToString());
         }
         catch (Exception exc)
         {

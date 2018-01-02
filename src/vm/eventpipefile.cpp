@@ -62,7 +62,7 @@ EventPipeFile::~EventPipeFile()
 {
     CONTRACTL
     {
-        THROWS;
+        NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
     }
@@ -87,7 +87,7 @@ void EventPipeFile::WriteEvent(EventPipeEventInstance &instance)
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -126,8 +126,8 @@ StreamLabel EventPipeFile::GetMetadataLabel(EventPipeEvent &event)
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
+        NOTHROW;
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -147,7 +147,7 @@ void EventPipeFile::SaveMetadataLabel(EventPipeEvent &event, StreamLabel label)
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(label > 0);
     }

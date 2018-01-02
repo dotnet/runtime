@@ -81,10 +81,10 @@ public class ConvertFromBase64String
         try
         {
             byte[] output = Convert.FromBase64String(input);
-            if (!Utilities.CompareBytes(output, expected))
+            if (!TestLibrary.Utilities.CompareBytes(output, expected))
             {
             	TestFramework.LogInformation("Input string: " + input);
-                TestFramework.LogError("001", "Conversion not correct. Expect: " + Utilities.ByteArrayToString(expected) + ", Actual: " + Utilities.ByteArrayToString(output));
+                TestFramework.LogError("001", "Conversion not correct. Expect: " + TestLibrary.Utilities.ByteArrayToString(expected) + ", Actual: " + TestLibrary.Utilities.ByteArrayToString(output));
                 retVal = false;
             }
         }

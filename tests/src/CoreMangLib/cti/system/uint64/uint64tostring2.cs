@@ -23,7 +23,7 @@ public class UInt64ToString1
         retVal = PosTest5() && retVal;
 
         TestLibrary.TestFramework.LogInformation("[Negative]");
-        if (Utilities.IsWindows)
+        if (TestLibrary.Utilities.IsWindows)
         {
       //      retVal = NegTest1() && retVal;	// Disabled until neutral cultures are available
         }
