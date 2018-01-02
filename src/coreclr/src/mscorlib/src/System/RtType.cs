@@ -2441,12 +2441,7 @@ namespace System
         #region Private\Internal Members
         internal override bool CacheEquals(object o)
         {
-            RuntimeType m = o as RuntimeType;
-
-            if (m == null)
-                return false;
-
-            return m.m_handle.Equals(m_handle);
+            return (o is RuntimeType t) && (t.m_handle == m_handle);
         }
 
         private RuntimeTypeCache Cache
