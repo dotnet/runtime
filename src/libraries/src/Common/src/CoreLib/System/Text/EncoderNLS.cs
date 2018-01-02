@@ -4,6 +4,7 @@
 
 using System.Text;
 using System;
+using System.Runtime.InteropServices;
 
 namespace System.Text
 {
@@ -63,13 +64,9 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(chars),
                       SR.ArgumentOutOfRange_IndexCountBuffer);
 
-            // Avoid empty input problem
-            if (chars.Length == 0)
-                chars = new char[1];
-
             // Just call the pointer version
             int result = -1;
-            fixed (char* pChars = &chars[0])
+            fixed (char* pChars = &MemoryMarshal.GetReference((Span<char>)chars))
             {
                 result = GetByteCount(pChars + index, count, flush);
             }
@@ -112,16 +109,11 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(byteIndex),
                      SR.ArgumentOutOfRange_Index);
 
-            if (chars.Length == 0)
-                chars = new char[1];
-
             int byteCount = bytes.Length - byteIndex;
-            if (bytes.Length == 0)
-                bytes = new byte[1];
 
             // Just call pointer version
-            fixed (char* pChars = &chars[0])
-            fixed (byte* pBytes = &bytes[0])
+            fixed (char* pChars = &MemoryMarshal.GetReference((Span<char>)chars))
+            fixed (byte* pBytes = &MemoryMarshal.GetReference((Span<byte>)bytes))
 
                 // Remember that charCount is # to decode, not size of array.
                 return GetBytes(pChars + charIndex, charCount,
@@ -171,17 +163,10 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(bytes),
                       SR.ArgumentOutOfRange_IndexCountBuffer);
 
-
-            // Avoid empty input problem
-            if (chars.Length == 0)
-                chars = new char[1];
-            if (bytes.Length == 0)
-                bytes = new byte[1];
-
             // Just call the pointer version (can't do this for non-msft encoders)
-            fixed (char* pChars = &chars[0])
+            fixed (char* pChars = &MemoryMarshal.GetReference((Span<char>)chars))
             {
-                fixed (byte* pBytes = &bytes[0])
+                fixed (byte* pBytes = &MemoryMarshal.GetReference((Span<byte>)bytes))
                 {
                     Convert(pChars + charIndex, charCount, pBytes + byteIndex, byteCount, flush,
                         out charsUsed, out bytesUsed, out completed);
