@@ -11,20 +11,27 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public class HttpMethodTest
+    public partial class HttpMethodTest
     {
-        private static readonly object[][] s_staticHttpMethods =
-        {
-            new object[] { HttpMethod.Get },
-            new object[] { HttpMethod.Put },
-            new object[] { HttpMethod.Post },
-            new object[] { HttpMethod.Delete },
-            new object[] { HttpMethod.Head },
-            new object[] { HttpMethod.Options },
-            new object[] { HttpMethod.Trace }
-        };
+        public static IEnumerable<object[]> StaticHttpMethods { get;  }
 
-        public static IEnumerable<object[]> StaticHttpMethods { get { return s_staticHttpMethods; } }
+        static HttpMethodTest()
+        {
+            List<object[]> staticHttpMethods = new List<object[]>
+            {
+                new object[] { HttpMethod.Get },
+                new object[] { HttpMethod.Put },
+                new object[] { HttpMethod.Post },
+                new object[] { HttpMethod.Delete },
+                new object[] { HttpMethod.Head },
+                new object[] { HttpMethod.Options },
+                new object[] { HttpMethod.Trace }
+            };
+            AddStaticHttpMethods(staticHttpMethods);
+            StaticHttpMethods = staticHttpMethods;
+        }
+
+        static partial void AddStaticHttpMethods(List<object[]> staticHttpMethods); 
 
         [Fact]
         public void StaticProperties_VerifyValues_PropertyNameMatchesHttpMethodName()
