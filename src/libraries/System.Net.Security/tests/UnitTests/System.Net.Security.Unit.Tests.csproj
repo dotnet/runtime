@@ -24,7 +24,9 @@
     <Compile Include="SslApplicationProtocolTests.cs" />
     <Compile Include="SslAuthenticationOptionsTests.cs" />
     <Compile Include="SslStreamAllowedProtocolsTest.cs" />
+    <Compile Include="System\Security\Authentication\AuthenticationExceptionTest.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ExtendedProtectionPolicyTest.cs" />
+    <Compile Include="System\Security\Authentication\InvalidCredentialExceptionTest.cs" />
     <Compile Include="TlsAlertsMatchWindowsInterop.cs" />
     <!-- Fakes -->
     <Compile Include="Fakes\FakeSslState.cs" />
