@@ -120,6 +120,9 @@ private:
 #ifdef FEATURE_SIMD
     void ContainCheckSIMD(GenTreeSIMD* simdNode);
 #endif // FEATURE_SIMD
+#ifdef FEATURE_HW_INTRINSICS
+    void ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node);
+#endif // FEATURE_HW_INTRINSICS
 
 #ifdef DEBUG
     static void CheckCallArg(GenTree* arg);
@@ -306,6 +309,9 @@ private:
 #ifdef FEATURE_SIMD
     void LowerSIMD(GenTreeSIMD* simdNode);
 #endif // FEATURE_SIMD
+#ifdef FEATURE_HW_INTRINSICS
+    void LowerHWIntrinsic(GenTreeHWIntrinsic* node);
+#endif // FEATURE_HW_INTRINSICS
 
     // Utility functions
     void MorphBlkIntoHelperCall(GenTreePtr pTree, GenTreePtr treeStmt);
