@@ -347,9 +347,8 @@ namespace System.Security.AccessControl
                     case AccessControlModification.RemoveAll:
                         result = _securityDescriptor.DiscretionaryAcl.RemoveAccess(AccessControlType.Allow, sid, -1, InheritanceFlags.ContainerInherit, 0, ObjectAceFlags.None, Guid.Empty, Guid.Empty);
                         if (result == false)
-                        {
-                            Debug.Assert(false, "Invalid operation");
-                            throw new Exception();
+                        {                            
+                            throw new InvalidOperationException(SR.InvalidOperation_RemoveFail);
                         }
 
                         break;
@@ -393,9 +392,8 @@ nameof(modification),
                     case AccessControlModification.RemoveAll:
                         result = _securityDescriptor.DiscretionaryAcl.RemoveAccess(AccessControlType.Deny, sid, -1, InheritanceFlags.ContainerInherit, 0, ObjectAceFlags.None, Guid.Empty, Guid.Empty);
                         if (result == false)
-                        {
-                            Debug.Assert(false, "Invalid operation");
-                            throw new Exception();
+                        {                            
+                            throw new InvalidOperationException(SR.InvalidOperation_RemoveFail);
                         }
 
                         break;
@@ -412,9 +410,8 @@ nameof(modification),
                 }
             }
             else
-            {
-                Debug.Assert(false, "rule.AccessControlType unrecognized");
-                throw new Exception();
+            {                
+                throw new ArgumentException(SR.Format(SR.TypeUnrecognized_AccessControl, rule.AccessControlType));
             }
 
             modified = result;
@@ -488,9 +485,8 @@ nameof(modification),
                 case AccessControlModification.RemoveAll:
                     result = _securityDescriptor.SystemAcl.RemoveAudit(AuditFlags.Failure | AuditFlags.Success, sid, -1, InheritanceFlags.ContainerInherit, 0, ObjectAceFlags.None, Guid.Empty, Guid.Empty);
                     if (result == false)
-                    {
-                        Debug.Assert(false, "Invalid operation");
-                        throw new Exception();
+                    {                        
+                        throw new InvalidOperationException(SR.InvalidOperation_RemoveFail);
                     }
 
                     break;
