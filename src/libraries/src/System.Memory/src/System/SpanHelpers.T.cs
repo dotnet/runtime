@@ -300,7 +300,7 @@ namespace System
                 return 0;  // A zero-length sequence is always treated as "found" at the start of the search space.
 
             int index = -1;
-            for (int i = 0; i < valueLength && index != 0; i++)
+            for (int i = 0; i < valueLength; i++)
             {
                 var tempIndex = IndexOf(ref searchSpace, Unsafe.Add(ref value, i), searchSpaceLength);
                 if ((uint)tempIndex < (uint)index)
@@ -308,6 +308,8 @@ namespace System
                     index = tempIndex;
                     // Reduce space for search, cause we don't care if we find the search value after the index of a previously found value
                     searchSpaceLength = tempIndex;
+
+                    if (index == 0) break;
                 }
             }
             return index;
