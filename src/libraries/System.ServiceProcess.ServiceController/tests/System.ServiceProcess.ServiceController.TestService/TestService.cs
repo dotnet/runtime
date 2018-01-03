@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System;
 using System.Collections;
 using System.IO;
+using System.Reflection;
 using System.Threading;
 using System.Text;
 using System.Runtime.InteropServices;
@@ -29,6 +30,11 @@ namespace System.ServiceProcess.Tests
             this.CanHandleSessionChangeEvent = false;
             this.CanHandlePowerEvent = false;
         }
+
+        public static string GetLogPath(string serviceName)
+        {
+            return Assembly.GetEntryAssembly().Location + "." + serviceName + ".log";
+        }        
 
         protected override void OnContinue()
         {
@@ -76,26 +82,11 @@ namespace System.ServiceProcess.Tests
         {
             WriteLog(nameof(OnStop));
             base.OnStop();
-
-            if (_log != null)
-            {
-                _log.Dispose();
-                _log = null;
-            }
         }
-
-        private StreamWriter _log;
 
         private void WriteLog(string msg)
         {
-            if (_log == null)
-            {
-                string path = System.Reflection.Assembly.GetEntryAssembly().Location + "." + ServiceName + ".log";
-                _log = new StreamWriter(path);
-                _log.AutoFlush = true;
-;            }
-
-            _log.WriteLine(msg);
+             File.AppendAllText(GetLogPath(ServiceName), msg + Environment.NewLine);
         }
     }
 }
