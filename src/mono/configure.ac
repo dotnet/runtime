@@ -2,7 +2,7 @@
 #AC_PREREQ([2.62])
 
 AC_INIT(mono, [5.11.0],
-        [http://bugzilla.xamarin.com/enter_bug.cgi?classification=Mono])
+        [https://github.com/mono/mono/issues/new])
 
 AC_CONFIG_SRCDIR([README.md])
 AC_CONFIG_MACRO_DIR([m4])
