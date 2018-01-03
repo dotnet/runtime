@@ -9,6 +9,7 @@
                                     $(PackageTargetRid.StartsWith('debian'))">true</IsDebianBasedDistro>
     <BuildDebPackage Condition="'$(IsDebianBasedDistro)' == true and '$(TargetArchitecture)' == 'x64'">true</BuildDebPackage>
     <DebianConfigJsonName>debian_config.json</DebianConfigJsonName>
+    <BuildRuntimeDebs>true</BuildRuntimeDebs>
   </PropertyGroup>
 
   <Target Name="InitializeDotnetDebTool">
@@ -41,8 +42,12 @@
                             BuildDebs;"
           Condition="'$(BuildDebPackage)'=='true'" />
 
+  <Target Name="GenerateRuntimeDebs" 
+          DependsOnTargets="GenerateSharedHostDeb;GenerateHostFxrDeb;GenerateSharedFrameworkDeb"
+          Condition="''$(BuildRuntimeDebs)' == 'true'" />
+
   <Target Name="BuildDebs"
-          DependsOnTargets="InitializeDotnetDebTool;GenerateSharedHostDeb;GenerateHostFxrDeb;GenerateSharedFrameworkDeb;GenerateRuntimeDependenciesDeb"
+          DependsOnTargets="InitializeDotnetDebTool;GenerateRuntimeDebs;GenerateRuntimeDependenciesDeb"
           Condition="'$(BuildDebPackage)'=='true' and '$(DebuildPresent)' == 'true'" />
 
   <Target Name="GenerateSharedHostDeb">
@@ -89,6 +94,12 @@
     <ItemGroup>
       <SharedHostTokenValue Include="%SHARED_HOST_BRAND_NAME%">
         <ReplacementString>$(SharedHostBrandName)</ReplacementString>
+      </SharedHostTokenValue>
+     <SharedHostTokenValue Include="%RUNTIME_DEPS_DEBIAN_PACKAGE_NAME%">
+        <ReplacementString>$(RuntimeDependenciesDebPkgName)</ReplacementString>
+      </SharedHostTokenValue>
+      <SharedHostTokenValue Include="%RUNTIME_DEPS_VERSION%">
+        <ReplacementString>$(RuntimeDepsDebVersion)</ReplacementString>
       </SharedHostTokenValue>
     </ItemGroup>
 
@@ -191,7 +202,7 @@
 
   </Target>
 
-  <Target Name="GenerateSharedFrameworkDeb" DependsOnTargets="GetLibIcuPackageName">
+  <Target Name="GenerateSharedFrameworkDeb">
   
     <PropertyGroup>
       <DebPackageName>$(SharedFxDebPkgName)</DebPackageName>
@@ -199,7 +210,6 @@
       <InputRoot>$(SharedFrameworkPublishRoot)</InputRoot>
       <DebFile>$(SharedFrameworkInstallerFile)</DebFile>
       <ConfigJsonName>dotnet-sharedframework-debian_config.json</ConfigJsonName>
-      <ConfigJsonName  Condition="$(PackageTargetRid.StartsWith('debian.9'))">dotnet-sharedframework-debian9_config.json</ConfigJsonName>
       <ConfigJsonFile>$(debPackaginfConfigPath)$(ConfigJsonName)</ConfigJsonFile>
       <debIntermediatesDir>$(PackagesIntermediateDir)$(DebPackageName)/$(DebPackageVersion)</debIntermediatesDir>
     </PropertyGroup>
@@ -247,10 +257,6 @@
       <SharedFrameworkTokenValue Include="%SHARED_FRAMEWORK_BRAND_NAME%">
         <ReplacementString>$(SharedFrameworkBrandName)</ReplacementString>
       </SharedFrameworkTokenValue>
-      <SharedFrameworkTokenValue Include="%LIBICU_PACKAGE_NAME%">
-        <ReplacementString>$(LibIcuPackageName)</ReplacementString>
-      </SharedFrameworkTokenValue>
-
     </ItemGroup>
 
     <ReplaceFileContents InputFile="$(ConfigJsonFile)"
@@ -276,12 +282,12 @@
 
   </Target>
   
-  <Target Name="GenerateRuntimeDependenciesDeb" DependsOnTargets="GetLibIcuPackageName">
+  <Target Name="GenerateRuntimeDependenciesDeb">
     <PropertyGroup>
       <DebPackageName>$(RuntimeDependenciesDebPkgName)</DebPackageName>
       <DebPackageVersion>$(SharedFrameworkNugetVersion)</DebPackageVersion>
       <DebFile>$(DotnetRuntimeDependenciesPackageInstallerFile)</DebFile>
-      <ConfigJsonName>dotnet-runtime-deps-debian_config.json</ConfigJsonName>
+      <ConfigJsonName>dotnet-runtime-deps-debian_config_$(OutputRid).json</ConfigJsonName>
       <ConfigJsonFile>$(debPackaginfConfigPath)$(ConfigJsonName)</ConfigJsonFile>
       <debIntermediatesDir>$(PackagesIntermediateDir)$(DebPackageName)/$(DebPackageVersion)</debIntermediatesDir>
     </PropertyGroup>
@@ -294,14 +300,11 @@
       <debLayoutDocs>$(debLayoutDirectory)docs</debLayoutDocs>
     </PropertyGroup>
 
+    <!-- Error out if the configuration file doesn't exist -->
+    <Error Condition="!Exists('$(ConfigJsonFile)')" Text="Config file does not exist : '$(ConfigJsonFile)'" />
+
     <RemoveDir Condition="Exists('$(debIntermediatesDir)')" Directories="$(debIntermediatesDir)" />
     <MakeDir Directories="$(debIntermediatesDir)" />
-
-    <!-- Compute LIBSSL Version -->
-    <Exec Command="apt-cache search --names-only '^libssl[.0-9]+$' | cut -d' ' -f1" 
-          ConsoleToMSBuild="true"> 
-       <Output TaskParameter="ConsoleOutput" PropertyName="LibSSLPackageName" /> 
-    </Exec> 
 
     <!-- Create empty debian layout -->
     <RemoveDir Condition="Exists('$(debLayoutDirectory)')" Directories="$(debLayoutDirectory)" />
@@ -317,15 +320,8 @@
         <ReplacementString>$(RuntimeDependenciesDebPkgName)</ReplacementString>
       </SharedFrameworkTokenValue>
       <SharedFrameworkTokenValue Include="%RUNTIME_DEPS_VERSION%">
-        <ReplacementString>$(SharedFrameworkNugetVersion)</ReplacementString>
+        <ReplacementString>$(RuntimeDepsDebVersion)</ReplacementString>
       </SharedFrameworkTokenValue>
-      <SharedFrameworkTokenValue Include="%LIBSSL_PACKAGE_NAME%">
-        <ReplacementString>$(LibSSLPackageName)</ReplacementString>
-      </SharedFrameworkTokenValue>
-      <SharedFrameworkTokenValue Include="%LIBICU_PACKAGE_NAME%"> 
-        <ReplacementString>$(LibIcuPackageName)</ReplacementString> 
-      </SharedFrameworkTokenValue> 
-
     </ItemGroup>
 
     <ReplaceFileContents InputFile="$(ConfigJsonFile)"
@@ -370,11 +366,4 @@
              Importance="High" />
   </Target>
 
-  <!-- Compute LibIcu Package Name -->
-  <Target Name="GetLibIcuPackageName">
-    <Exec Command="apt-cache search --names-only '^libicu[0-9]+$' | cut -d' ' -f1" 
-          ConsoleToMSBuild="true"> 
-       <Output TaskParameter="ConsoleOutput" PropertyName="LibIcuPackageName" /> 
-    </Exec>
-  </Target>
 </Project>
