@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    public class ProcessStreamReadTests : ProcessTestBase
+    public partial class ProcessStreamReadTests : ProcessTestBase
     {
         [Fact]
         public void TestSyncErrorStream()

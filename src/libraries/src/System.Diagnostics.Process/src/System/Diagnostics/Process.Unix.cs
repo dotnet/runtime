@@ -317,7 +317,7 @@ namespace System.Diagnostics
             {
                 Debug.Assert(stdinFd >= 0);
                 _standardInput = new StreamWriter(OpenStream(stdinFd, FileAccess.Write),
-                    s_utf8NoBom, StreamBufferSize) { AutoFlush = true };
+                    startInfo.StandardInputEncoding ?? s_utf8NoBom, StreamBufferSize) { AutoFlush = true };
             }
             if (startInfo.RedirectStandardOutput)
             {
