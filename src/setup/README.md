@@ -51,6 +51,7 @@ Daily Builds
 |   **Fedora 23 (x64)**      |   N/A   |   N/A   |   [![][fedora-23-badge-1.1.X]][fedora-23-version-1.1.X]<br>[tar.gz][fedora-23-targz-1.1.X]   |   [![][fedora-23-badge-preview]][fedora-23-version-preview]<br>[tar.gz][fedora-23-targz-preview]   |
 |   **Fedora 24 (x64)**      |   N/A   |   N/A   |   [![][fedora-24-badge-1.1.X]][fedora-24-version-1.1.X]<br>[tar.gz][fedora-24-targz-1.1.X]   |   N/A   |
 |   **OpenSUSE 42.1 (x64)**  |  [![][OpenSUSE-42-badge-master]][OpenSUSE-42-version-master]<br>[Host][OpenSUSE-42-host-master] ([Checksum][OpenSUSE-42-host-checksum-master])<br>[Host FX Resolver][OpenSUSE-42-hostfxr-master] ([Checksum][OpenSUSE-42-hostfxr-checksum-master])<br>[Shared Framework][OpenSUSE-42-sharedfx-master] ([Checksum][OpenSUSE-42-sharedfx-checksum-master])<br>   |   N/A   |   [![][opensuse-42.1-badge-1.1.X]][opensuse-42.1-version-1.1.X]<br>[tar.gz][opensuse-42.1-targz-1.1.X]   |   N/A   |
+|   **RHEL 6**  |   [![][rhel-6-badge-master]][rhel-6-version-master]<br>[tar.gz][rhel-6-targz-master]   |   [![][rhel-6-badge-2.0.X]][rhel-6-version-2.0.X]<br>[tar.gz][rhel-6-targz-2.0.X]   |   N/A   |   N/A   |
 
 *Note: Our .deb packages are put together slightly differently than the other OS specific installers. Instead of combining everything, we have separate component packages that depend on each other. If you're installing these directly from the .deb files (via dpkg or similar), then you'll need to install them in the order presented above.*
 
@@ -406,6 +407,14 @@ Daily Builds
 [opensuse-42.1-badge-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/sharedfx_openSUSE_42_1_x64_Release_version_badge.svg
 [opensuse-42.1-version-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/dnvm/latest.sharedfx.opensuse.42.1.x64.version
 [opensuse-42.1-targz-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/dotnet-opensuse.42.1-x64.latest.tar.gz
+
+[rhel-6-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_rhel.6-x64_Release_version_badge.svg
+[rhel-6-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
+[rhel-6-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-rhel.6-x64.tar.gz
+
+[rhel-6-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_rhel.6-x64_Release_version_badge.svg
+[rhel-6-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.rhel.6.x64.version
+[rhel-6-targz-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-latest-rhel.6-x64.tar.gz
 
 # Debian daily feed
 
