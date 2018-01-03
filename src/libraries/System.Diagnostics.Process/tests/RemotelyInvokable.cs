@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -108,6 +109,22 @@ namespace System.Diagnostics.Tests
         {
             string line = Console.ReadLine();
             Console.WriteLine(line == null ? "NULL" : "NOT_NULL");
+            return SuccessExitCode;
+        }
+
+        public static int ReadLineWithCustomEncodingWriteLineWithUtf8(string inputEncoding)
+        {
+            string line;
+            using (var inputReader = new StreamReader(Console.OpenStandardInput(), Encoding.GetEncoding(inputEncoding)))
+            {
+                line = inputReader.ReadLine();
+            }
+
+            using (var outputWriter = new StreamWriter(Console.OpenStandardOutput(), Encoding.UTF8))
+            {
+                outputWriter.WriteLine(line);
+            }
+
             return SuccessExitCode;
         }
 
