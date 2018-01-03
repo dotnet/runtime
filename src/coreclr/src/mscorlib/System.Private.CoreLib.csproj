@@ -254,6 +254,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\CLRIKeyValuePairImpl.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\Vector64.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\Vector128.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\Vector256.cs" />
   </ItemGroup>
