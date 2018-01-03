@@ -394,31 +394,18 @@ void* SignalHandlerLoop(void* arg)
             // be picked up by the previously registered handler.  In the most common case,
             // this will be the default handler, causing the process to be torn down.
             // It could also be a custom handle registered by other code before us.
-            // In the rare case where the signal is set to be ignored, though, we don't
-            // want to do that, as we know our process will simply remain running yet our
-            // handlers will never end up being invoked again. (It's possible that can
-            // happen as well in the custom case, but we can't detect that or handle it well,
-            // at which point we'll just stop responding to the relevant signal here if the
-            // process does remain alive. We only unregister from the relevant handler, though,
-            // so the handler(s) for the other signal(s) will still remain registered.)
 
             if (signalCode == SIGINT)
             {
-                if (reinterpret_cast<void*>(g_origSigIntHandler.sa_sigaction) != reinterpret_cast<void*>(SIG_IGN))
-                {
-                    UninitializeConsole();
-                    sigaction(SIGINT, &g_origSigIntHandler, NULL);
-                    kill(getpid(), SIGINT);
-                }
+                UninitializeConsole();
+                sigaction(SIGINT, &g_origSigIntHandler, NULL);
+                kill(getpid(), SIGINT);
             } 
             else if (signalCode == SIGQUIT)
             {
-                if (reinterpret_cast<void*>(g_origSigQuitHandler.sa_sigaction) != reinterpret_cast<void*>(SIG_IGN))
-                {
-                    UninitializeConsole();
-                    sigaction(SIGQUIT, &g_origSigQuitHandler, NULL);
-                    kill(getpid(), SIGQUIT);
-                }
+                UninitializeConsole();
+                sigaction(SIGQUIT, &g_origSigQuitHandler, NULL);
+                kill(getpid(), SIGQUIT);
             }
 
         }
@@ -478,11 +465,23 @@ static bool InitializeSignalHandling()
     int rv;
 
     // Hook up signal handlers for use with ctrl-C / ctrl-Break handling
+    // We don't handle ignored signals. If we'd setup a handler, our child processes
+    // would reset to the default on exec causing them to terminate on these signals.
     newAction.sa_sigaction = &TransferSignalToHandlerLoop;
-    rv = sigaction(SIGINT, &newAction, &g_origSigIntHandler);
+    rv = sigaction(SIGINT, NULL, &g_origSigIntHandler);
     assert(rv == 0);
-    rv = sigaction(SIGQUIT, &newAction, &g_origSigQuitHandler);
+    if (reinterpret_cast<void*>(g_origSigIntHandler.sa_sigaction) != reinterpret_cast<void*>(SIG_IGN))
+    {
+        rv = sigaction(SIGINT, &newAction, NULL);
+        assert(rv == 0);
+    }
+    rv = sigaction(SIGQUIT, NULL, &g_origSigQuitHandler);
     assert(rv == 0);
+    if (reinterpret_cast<void*>(g_origSigQuitHandler.sa_sigaction) != reinterpret_cast<void*>(SIG_IGN))
+    {
+        rv = sigaction(SIGQUIT, &newAction, NULL);
+        assert(rv == 0);
+    }
 
     // Hook up signal handlers for use with signals that require us to reinitialize the terminal
     newAction.sa_sigaction = &HandleSignalForReinitialize;
