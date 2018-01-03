@@ -32,85 +32,80 @@ namespace System.Net.Sockets
 
     internal sealed class SocketAsyncContext
     {
-        // TODO: https://github.com/dotnet/corefx/issues/25439
-        // Caching has been commented out, due to it causing null reference exceptions.
-        // We need to figure out why and re-enable it by uncommenting out / fixing
-        // the code below.
-
         // Cached operation instances for operations commonly repeated on the same socket instance,
         // e.g. async accepts, sends/receives with single and multiple buffers.  More can be
         // added in the future if necessary, at the expense of extra fields here.  With a larger
         // refactoring, these could also potentially be moved to SocketAsyncEventArgs, which
         // would be more invasive but which would allow them to be reused across socket instances
         // and also eliminate the interlocked necessary to rent the instances.
-        //private AcceptOperation _cachedAcceptOperation;
-        //private BufferMemoryReceiveOperation _cachedBufferMemoryReceiveOperation;
-        //private BufferListReceiveOperation _cachedBufferListReceiveOperation;
-        //private BufferMemorySendOperation _cachedBufferMemorySendOperation;
-        //private BufferListSendOperation _cachedBufferListSendOperation;
+        private AcceptOperation _cachedAcceptOperation;
+        private BufferMemoryReceiveOperation _cachedBufferMemoryReceiveOperation;
+        private BufferListReceiveOperation _cachedBufferListReceiveOperation;
+        private BufferMemorySendOperation _cachedBufferMemorySendOperation;
+        private BufferListSendOperation _cachedBufferListSendOperation;
 
         private void ReturnOperation(AcceptOperation operation)
         {
-            //operation.Reset();
-            //operation.Callback = null;
-            //operation.SocketAddress = null;
-            //Volatile.Write(ref _cachedAcceptOperation, operation); // benign race condition
+            operation.Reset();
+            operation.Callback = null;
+            operation.SocketAddress = null;
+            Volatile.Write(ref _cachedAcceptOperation, operation); // benign race condition
         }
 
         private void ReturnOperation(BufferMemoryReceiveOperation operation)
         {
-            //operation.Reset();
-            //operation.Buffer = default;
-            //operation.Callback = null;
-            //operation.SocketAddress = null;
-            //Volatile.Write(ref _cachedBufferMemoryReceiveOperation, operation); // benign race condition
+            operation.Reset();
+            operation.Buffer = default;
+            operation.Callback = null;
+            operation.SocketAddress = null;
+            Volatile.Write(ref _cachedBufferMemoryReceiveOperation, operation); // benign race condition
         }
 
         private void ReturnOperation(BufferListReceiveOperation operation)
         {
-            //operation.Reset();
-            //operation.Buffers = null;
-            //operation.Callback = null;
-            //operation.SocketAddress = null;
-            //Volatile.Write(ref _cachedBufferListReceiveOperation, operation); // benign race condition
+            operation.Reset();
+            operation.Buffers = null;
+            operation.Callback = null;
+            operation.SocketAddress = null;
+            Volatile.Write(ref _cachedBufferListReceiveOperation, operation); // benign race condition
         }
 
         private void ReturnOperation(BufferMemorySendOperation operation)
         {
-            //operation.Reset();
-            //operation.Buffer = default;
-            //operation.Callback = null;
-            //operation.SocketAddress = null;
-            //Volatile.Write(ref _cachedBufferMemorySendOperation, operation); // benign race condition
+            operation.Reset();
+            operation.Buffer = default;
+            operation.Callback = null;
+            operation.SocketAddress = null;
+            Volatile.Write(ref _cachedBufferMemorySendOperation, operation); // benign race condition
         }
 
         private void ReturnOperation(BufferListSendOperation operation)
         {
-            //operation.Reset();
-            //operation.Buffers = null;
-            //operation.Callback = null;
-            //operation.SocketAddress = null;
-            //Volatile.Write(ref _cachedBufferListSendOperation, operation); // benign race condition
+            operation.Reset();
+            operation.Buffers = null;
+            operation.Callback = null;
+            operation.SocketAddress = null;
+            Volatile.Write(ref _cachedBufferListSendOperation, operation); // benign race condition
         }
 
         private AcceptOperation RentAcceptOperation() =>
-            //Interlocked.Exchange(ref _cachedAcceptOperation, null) ??
+            Interlocked.Exchange(ref _cachedAcceptOperation, null) ??
             new AcceptOperation(this);
 
         private BufferMemoryReceiveOperation RentBufferMemoryReceiveOperation() =>
-            //Interlocked.Exchange(ref _cachedBufferMemoryReceiveOperation, null) ??
+            Interlocked.Exchange(ref _cachedBufferMemoryReceiveOperation, null) ??
             new BufferMemoryReceiveOperation(this);
 
         private BufferListReceiveOperation RentBufferListReceiveOperation() =>
-            //Interlocked.Exchange(ref _cachedBufferListReceiveOperation, null) ??
+            Interlocked.Exchange(ref _cachedBufferListReceiveOperation, null) ??
             new BufferListReceiveOperation(this);
 
         private BufferMemorySendOperation RentBufferMemorySendOperation() =>
-            //Interlocked.Exchange(ref _cachedBufferMemorySendOperation, null) ??
+            Interlocked.Exchange(ref _cachedBufferMemorySendOperation, null) ??
             new BufferMemorySendOperation(this);
 
         private BufferListSendOperation RentBufferListSendOperation() =>
-            //Interlocked.Exchange(ref _cachedBufferListSendOperation, null) ??
+            Interlocked.Exchange(ref _cachedBufferListSendOperation, null) ??
             new BufferListSendOperation(this);
 
         private abstract class AsyncOperation
