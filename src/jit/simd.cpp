@@ -351,6 +351,7 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
 #if FEATURE_HW_INTRINSICS
     else if (isIntrinsicType(typeHnd))
     {
+        const size_t Vector64SizeBytes  = 64 / 8;
         const size_t Vector128SizeBytes = 128 / 8;
         const size_t Vector256SizeBytes = 256 / 8;
 
@@ -480,6 +481,62 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
             size         = Vector128SizeBytes;
             JITDUMP("  Known type Vector128<ulong>\n");
         }
+#if defined(_TARGET_ARM64_)
+        else if (typeHnd == Vector64DoubleHandle)
+        {
+            simdBaseType = TYP_DOUBLE;
+            size         = Vector64SizeBytes;
+            JITDUMP("  Known type Vector64<double>\n");
+        }
+        else if (typeHnd == Vector64IntHandle)
+        {
+            simdBaseType = TYP_INT;
+            size         = Vector64SizeBytes;
+            JITDUMP("  Known type Vector64<int>\n");
+        }
+        else if (typeHnd == Vector64UIntHandle)
+        {
+            simdBaseType = TYP_UINT;
+            size         = Vector64SizeBytes;
+            JITDUMP("  Known type Vector64<uint>\n");
+        }
+        else if (typeHnd == Vector64ShortHandle)
+        {
+            simdBaseType = TYP_SHORT;
+            size         = Vector64SizeBytes;
+            JITDUMP("  Known type Vector64<short>\n");
+        }
+        else if (typeHnd == Vector64UShortHandle)
+        {
+            simdBaseType = TYP_USHORT;
+            size         = Vector64SizeBytes;
+            JITDUMP("  Known type Vector64<ushort>\n");
+        }
+        else if (typeHnd == Vector64ByteHandle)
+        {
+            simdBaseType = TYP_BYTE;
+            size         = Vector64SizeBytes;
+            JITDUMP("  Known type Vector64<sbyte>\n");
+        }
+        else if (typeHnd == Vector64UByteHandle)
+        {
+            simdBaseType = TYP_UBYTE;
+            size         = Vector64SizeBytes;
+            JITDUMP("  Known type Vector64<byte>\n");
+        }
+        else if (typeHnd == Vector64LongHandle)
+        {
+            simdBaseType = TYP_LONG;
+            size         = Vector64SizeBytes;
+            JITDUMP("  Known type Vector64<long>\n");
+        }
+        else if (typeHnd == Vector64ULongHandle)
+        {
+            simdBaseType = TYP_ULONG;
+            size         = Vector64SizeBytes;
+            JITDUMP("  Known type Vector64<ulong>\n");
+        }
+#endif // defined(_TARGET_ARM64_)
 
         // slow path search
         if (simdBaseType == TYP_UNKNOWN)
@@ -618,6 +675,68 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                             JITDUMP("  Unknown Hardware Intrinsic SIMD Type Vector128<T>\n");
                     }
                 }
+#if defined(_TARGET_ARM64_)
+                else if (strcmp(className, "Vector64`1") == 0)
+                {
+                    size = Vector64SizeBytes;
+                    switch (type)
+                    {
+                        case CORINFO_TYPE_FLOAT:
+                            Vector64FloatHandle = typeHnd;
+                            simdBaseType        = TYP_FLOAT;
+                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector64<float>\n");
+                            break;
+                        case CORINFO_TYPE_DOUBLE:
+                            Vector64DoubleHandle = typeHnd;
+                            simdBaseType         = TYP_DOUBLE;
+                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector64<double>\n");
+                            break;
+                        case CORINFO_TYPE_INT:
+                            Vector64IntHandle = typeHnd;
+                            simdBaseType      = TYP_INT;
+                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector64<int>\n");
+                            break;
+                        case CORINFO_TYPE_UINT:
+                            Vector64UIntHandle = typeHnd;
+                            simdBaseType       = TYP_UINT;
+                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector64<uint>\n");
+                            break;
+                        case CORINFO_TYPE_SHORT:
+                            Vector64ShortHandle = typeHnd;
+                            simdBaseType        = TYP_SHORT;
+                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector64<short>\n");
+                            break;
+                        case CORINFO_TYPE_USHORT:
+                            Vector64UShortHandle = typeHnd;
+                            simdBaseType         = TYP_USHORT;
+                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector64<ushort>\n");
+                            break;
+                        case CORINFO_TYPE_LONG:
+                            Vector64LongHandle = typeHnd;
+                            simdBaseType       = TYP_LONG;
+                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector64<long>\n");
+                            break;
+                        case CORINFO_TYPE_ULONG:
+                            Vector64ULongHandle = typeHnd;
+                            simdBaseType        = TYP_ULONG;
+                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector64<ulong>\n");
+                            break;
+                        case CORINFO_TYPE_UBYTE:
+                            Vector64UByteHandle = typeHnd;
+                            simdBaseType        = TYP_UBYTE;
+                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector64<byte>\n");
+                            break;
+                        case CORINFO_TYPE_BYTE:
+                            Vector64ByteHandle = typeHnd;
+                            simdBaseType       = TYP_BYTE;
+                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector64<sbyte>\n");
+                            break;
+
+                        default:
+                            JITDUMP("  Unknown Hardware Intrinsic SIMD Type Vector64<T>\n");
+                    }
+                }
+#endif // defined(_TARGET_ARM64_)
             }
         }
 
