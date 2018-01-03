@@ -9,6 +9,8 @@
 // (C) 2005, 2006 John Luke
 //
 
+using System.IO;
+using System.Reflection;
 using System.Text;
 using Xunit;
 
@@ -141,6 +143,60 @@ namespace System.Net.Mail.Tests
             msg.SubjectEncoding = null;
             msg.Subject = "test\u3067\u3059";
             Assert.Equal(Encoding.UTF8.CodePage, msg.SubjectEncoding.CodePage);
+        }
+        
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Requires fix shipping in .NET 4.7.2")]
+        public void SentSpecialLengthMailAttachment_Base64Decode_Success()
+        {
+            // The special length follows pattern: (3N - 1) * 0x4400 + 1
+            // This length will trigger WriteState.Padding = 2 & count = 1 (byte to write)
+            // The smallest number to match the pattern is 34817.
+            int specialLength = 34817;
+            
+            string stringLength34817 = new string('A', specialLength - 1) + 'Z';
+            byte[] toBytes = Encoding.ASCII.GetBytes(stringLength34817);
+
+            using (var tempFile = TempFile.Create(toBytes))
+            {
+                var message = new MailMessage("sender@test.com", "user1@pop.local", "testSubject", "testBody");
+                message.Attachments.Add(new Attachment(tempFile.Path));
+                string decodedAttachment = DecodeSentMailMessage(message);
+                
+                // Make sure last byte is not encoded twice.
+                Assert.Equal(specialLength, decodedAttachment.Length);
+                Assert.Equal("AAAAAAAAAAAAAAAAZ", decodedAttachment.Substring(34800));
+            }
+        }
+        
+        private static string DecodeSentMailMessage(MailMessage mail)
+        {
+            // Create a MIME message that would be sent using System.Net.Mail.
+            var stream = new MemoryStream();
+            var mailWriterType = mail.GetType().Assembly.GetType("System.Net.Mail.MailWriter");
+            var mailWriter = Activator.CreateInstance(
+                                type: mailWriterType,
+                                bindingAttr: BindingFlags.Instance | BindingFlags.NonPublic,
+                                binder: null,
+                                args: new object[] { stream },
+                                culture: null,
+                                activationAttributes: null);
+            
+            // Send the message.
+            mail.GetType().InvokeMember(
+                                name: "Send",
+                                invokeAttr: BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.InvokeMethod,
+                                binder: null,
+                                target: mail,
+                                args: new object[] { mailWriter, true, true });
+
+            // Decode contents.
+            string result = Encoding.UTF8.GetString(stream.ToArray());
+            string encodedAttachment = result.Split(new[] { "attachment" }, StringSplitOptions.None)[1].Trim().Split('-')[0].Trim();
+            byte[] data = Convert.FromBase64String(encodedAttachment);
+            string decodedString = Encoding.UTF8.GetString(data);
+
+            return decodedString;
         }
     }
 }
