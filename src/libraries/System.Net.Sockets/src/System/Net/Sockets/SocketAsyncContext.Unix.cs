@@ -32,12 +32,6 @@ namespace System.Net.Sockets
 
     internal sealed class SocketAsyncContext
     {
-        // TODO: Remove and resolve
-        // TODO: https://github.com/dotnet/corefx/issues/25439
-        // Caching has been commented out, due to it causing null reference exceptions.
-        // We need to figure out why and re-enable it by uncommenting out / fixing
-        // the code below.
-
         // Cached operation instances for operations commonly repeated on the same socket instance,
         // e.g. async accepts, sends/receives with single and multiple buffers.  More can be
         // added in the future if necessary, at the expense of extra fields here.  With a larger
