@@ -29,19 +29,12 @@ namespace System.IO
         {
             Debug.Assert(array != null, "Array can't be null");
 
-            int len = array.Length;
-            // Handle 0 length byte arrays specially.
-            if (len == 0)
-            {
-                array = new byte[1];
-                len = 0;
-            }
-
             _array = array;
             _pinningHandle = GCHandle.Alloc(array, GCHandleType.Pinned);
             // Now the byte[] is pinned for the lifetime of this instance.
             // But I also need to get a pointer to that block of memory...
-            fixed (byte* ptr = &_array[0])
+            int len = array.Length;
+            fixed (byte* ptr = &MemoryMarshal.GetReference((Span<byte>)array))
                 Initialize(ptr, len, len, FileAccess.Read);
         }
 
