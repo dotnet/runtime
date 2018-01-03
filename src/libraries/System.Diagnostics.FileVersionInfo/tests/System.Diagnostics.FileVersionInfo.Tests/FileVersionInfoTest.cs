@@ -107,13 +107,18 @@ namespace System.Diagnostics.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFX throws ArgumentException in this case")]
         public void FileVersionInfo_RelativePath_CorrectFilePath()
         {
-            using (new FileStream("kernelbase.dll", FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 0x1000, FileOptions.DeleteOnClose))
+            try
             {
+                File.WriteAllText("kernelbase.dll", "bogus kernelbase.dll");
                 FileVersionInfo fvi = FileVersionInfo.GetVersionInfo("kernelbase.dll");
-                //File name should be the full path to the local kernelbase.dll, not the relative path or the path to the system .dll
+                // File name should be the full path to the local kernelbase.dll, not the relative path or the path to the system .dll
                 Assert.Equal(Path.GetFullPath("kernelbase.dll"), fvi.FileName);
-                //FileDescription should be null in the local kernelbase.dll
+                // FileDescription should be null in the local kernelbase.dll
                 Assert.Equal(null, fvi.FileDescription);
+            }
+            finally
+            {
+                File.Delete("kernelbase.dll");
             }
         }
 
