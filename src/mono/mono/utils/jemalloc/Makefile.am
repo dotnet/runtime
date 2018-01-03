@@ -34,7 +34,7 @@ ASSERT_OPT=--enable-debug
 endif
 
 jemalloc:
-	make reset-jemalloc
+	$(MAKE) reset-jemalloc
 
 # Set a prefix to enable access to allocation functions with a prefix, ie so mono_jemalloc isn't named malloc by default
 # Disable zone allocator, otherwise malloc uses jemalloc for things it's not set for
@@ -42,7 +42,7 @@ jemalloc:
 jemalloc/lib/libjemalloc.a: jemalloc Makefile
 	cd jemalloc && autoconf && ./configure --with-jemalloc-prefix=mono_je --prefix=`pwd` $(ASSERT_OPT) $(JEMALLOC_AUTOCONF_FLAGS) --disable-zone-allocator EXTRA_CFLAGS="-I $(top_srcdir) $(GLIB_CFLAGS) $(CFLAGS) $(PLATFORM_CFLAGS) $(ARCH_CFLAGS) $(SHARED_CFLAGS) " CC="$(CC)" CXX="$(CXX)" CPPFLAGS="$(CPPFLAGS) $(JEMALLOC_CPPFLAGS) " CXXFLAGS="$(CXXFLAGS)" LDFLAGS="$(LDFLAGS)"
 
-	cd jemalloc && make build_lib_static 
+	cd jemalloc && $(MAKE) build_lib_static 
 
 all-local: jemalloc/lib/libjemalloc.a
 
