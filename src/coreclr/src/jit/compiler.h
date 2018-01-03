@@ -7411,6 +7411,7 @@ private:
     CORINFO_CLASS_HANDLE Vector128LongHandle;
     CORINFO_CLASS_HANDLE Vector128UIntHandle;
     CORINFO_CLASS_HANDLE Vector128ULongHandle;
+#if defined(_TARGET_XARCH_)
     CORINFO_CLASS_HANDLE Vector256FloatHandle;
     CORINFO_CLASS_HANDLE Vector256DoubleHandle;
     CORINFO_CLASS_HANDLE Vector256IntHandle;
@@ -7421,7 +7422,8 @@ private:
     CORINFO_CLASS_HANDLE Vector256LongHandle;
     CORINFO_CLASS_HANDLE Vector256UIntHandle;
     CORINFO_CLASS_HANDLE Vector256ULongHandle;
-#endif
+#endif // defined(_TARGET_XARCH_)
+#endif // FEATURE_HW_INTRINSICS
 
     // Get the handle for a SIMD type.
     CORINFO_CLASS_HANDLE gtGetStructHandleForSIMD(var_types simdType, var_types simdBaseType)
