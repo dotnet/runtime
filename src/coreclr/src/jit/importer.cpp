@@ -10755,7 +10755,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if ((lvaTable[lclNum].lvAddrExposed || lvaTable[lclNum].lvHasLdAddrOp || lvaTable[lclNum].lvPinned) &&
                     (verCurrentState.esStackDepth > 0))
                 {
-                    impSpillSideEffects(false, (unsigned)CHECK_SPILL_ALL DEBUGARG("Local could be aliased or is pinned"));
+                    impSpillSideEffects(false,
+                                        (unsigned)CHECK_SPILL_ALL DEBUGARG("Local could be aliased or is pinned"));
                 }
 
                 /* Spill any refs to the local from the stack */
