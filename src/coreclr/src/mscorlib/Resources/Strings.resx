@@ -3284,7 +3284,7 @@
     <value>The specified arrays must have the same number of dimensions.</value>
   </data>
   <data name="ReflectionTypeLoad_LoadFailed" xml:space="preserve">
-    <value>Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.</value>
+    <value>Unable to load one or more of the requested types.</value>
   </data>
   <data name="Remoting_AppDomainUnloaded_ThreadUnwound" xml:space="preserve">
     <value>The application domain in which the thread was running has been unloaded.</value>
