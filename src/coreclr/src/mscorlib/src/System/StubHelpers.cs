@@ -46,7 +46,7 @@ namespace System.StubHelpers
 
         static internal char ConvertToManaged(byte nativeChar)
         {
-            byte[] bytes = new byte[1] { nativeChar };
+            Span<byte> bytes = new Span<byte>(ref nativeChar, 1);
             string str = Encoding.Default.GetString(bytes);
             return str[0];
         }
