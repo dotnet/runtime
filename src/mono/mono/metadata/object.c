@@ -65,6 +65,9 @@ free_main_args (void);
 static char *
 mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, MonoError *error);
 
+static char *
+mono_string_to_utf8_mp	(MonoMemPool *mp, MonoString *s, MonoError *error);
+
 static void
 array_full_copy_unchecked_size (MonoArray *src, MonoArray *dest, MonoClass *klass, uintptr_t size);
 
