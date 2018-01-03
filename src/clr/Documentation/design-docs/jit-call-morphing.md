@@ -123,8 +123,10 @@ Evaluating Args into new LclVar temps and the creation of the LateArgs
 -----------------
 
 After calling `SortArgs()`, the `EvalArgsToTemps()` method is called to create
-the temp assignments and to populate the LateArgs list. Arguments that are
-marked with `needTmp == true`.
+the temp assignments and to populate the LateArgs list.
+
+Arguments that are marked with `needTmp == true`.
+-----------------
 
 1. We create an assignment using `gtNewTempAssign`. This assignment replaces
 the original argument in the `gtCallArgs` list.  After we create the assignment
