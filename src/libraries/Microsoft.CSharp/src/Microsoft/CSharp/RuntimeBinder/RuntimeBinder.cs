@@ -634,8 +634,6 @@ namespace Microsoft.CSharp.RuntimeBinder
             // as well so that overload resolution can find them.
             if (callingType.IsWindowsRuntimeType())
             {
-                TypeArray collectioniFaces = callingType.GetWinRTCollectionIfacesAll(SymbolLoader);
-
                 foreach (AggregateType t in callingType.GetWinRTCollectionIfacesAll(SymbolLoader).Items)
                 {
                     if (_symbolTable.AggregateContainsMethod(t.GetOwningAggregate(), Name, mask) && distinctCallingTypes.Add(t))
@@ -731,7 +729,6 @@ namespace Microsoft.CSharp.RuntimeBinder
             // For a field, simply create the EXPRFIELD and our caller takes care of the rest.
 
             FieldSymbol fieldSymbol = swt.Field();
-            CType returnType = fieldSymbol.GetType();
             AggregateType fieldType = swt.GetType();
             FieldWithType fwt = new FieldWithType(fieldSymbol, fieldType);
 
