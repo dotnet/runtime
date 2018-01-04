@@ -384,8 +384,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             TypeArray argumentTypes = LoadTypeArrayFromSignature(signature, ref index, classTyVars);
             Debug.Assert(argumentTypes != null);
 
-            TypeArray standardMethodTyVars = GetTypeManager().GetStdMethTyVarArray(cMethodTyVars);
-
             MethodSymbol ret = LookupMethodWhileLoading(type, cMethodTyVars, methodName, methodAccess, isStatic, isVirtual, returnType, argumentTypes);
 
             if (ret == null)

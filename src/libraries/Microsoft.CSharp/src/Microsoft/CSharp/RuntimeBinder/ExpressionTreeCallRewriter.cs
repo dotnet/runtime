@@ -1139,7 +1139,6 @@ namespace Microsoft.CSharp.RuntimeBinder
             PropertySymbol propSym = propinfo.Property.Prop();
 
             TypeArray genericInstanceParams = _typeManager.SubstTypeArray(propSym.Params, aggType, null);
-            CType genericInstanceReturn = _typeManager.SubstType(propSym.RetType, aggType, null);
 
             Type type = aggType.AssociatedSystemType;
             PropertyInfo propertyInfo = propSym.AssociatedPropertyInfo;
