@@ -10208,7 +10208,7 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
         if (lclNode != nullptr)
         {
             LclVarDsc* varDsc = &(lvaTable[lclNode->gtLclNum]);
-            if (varTypeIsStruct(varDsc) && (varDsc->lvExactSize == blockWidth))
+            if (varTypeIsStruct(varDsc) && (varDsc->lvType == asgType))
             {
 #ifndef LEGACY_BACKEND
                 effectiveVal     = lclNode;
