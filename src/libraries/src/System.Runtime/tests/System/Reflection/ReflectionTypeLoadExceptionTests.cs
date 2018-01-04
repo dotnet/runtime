@@ -12,31 +12,25 @@ namespace System.Reflection.Tests
         [Fact]
         public static void NullExceptionsNoNullPointerException()
         {
-            try
-            {
-                Type[] typo = new Type[1];
-                Exception[] excepto = new Exception[1];
-                throw new ReflectionTypeLoadException(typo, excepto, "Null elements in Exceptions array");
-            }
-            catch (ReflectionTypeLoadException e)
-            {
-                Assert.NotNull(e.ToString());
-                Assert.NotNull(e.Message);
-            }
+            Type[] types = new Type[1];
+            Exception[] exceptions = new Exception[1];
+            ReflectionTypeLoadException rtle = new ReflectionTypeLoadException(types, exceptions, "Null elements in Exceptions array");
+            Assert.NotNull(rtle.ToString());
+            Assert.NotNull(rtle.Message);
+            Assert.Equal(rtle.LoaderExceptions.Length, 1);
+            Assert.Equal(rtle.LoaderExceptions[0], null);
+            Assert.Equal(rtle.Types.Length, 1);
+            Assert.Equal(rtle.Types[0], null);
         }
 
         [Fact]
         public static void NullArgumentsNoNullPointerException()
         {
-            try
-            {
-                throw new ReflectionTypeLoadException(null, null, "Null arguments");
-            }
-            catch (ReflectionTypeLoadException e)
-            {
-                Assert.NotNull(e.ToString());
-                Assert.NotNull(e.Message);
-            }
+            ReflectionTypeLoadException rtle = new ReflectionTypeLoadException(null, null, "Null arguments");
+            Assert.NotNull(rtle.ToString());
+            Assert.NotNull(rtle.Message);
+            Assert.Equal(rtle.LoaderExceptions, null);
+            Assert.Equal(rtle.Types, null);
         }
     }
 }
