@@ -483,6 +483,9 @@ namespace System.Buffers.Text.Tests
                 yield return "1.79769313486233E+308";   //Just over Double.MaxValue
                 yield return "-1.79769313486232E+308";  //Double.MinValue
                 yield return "-1.79769313486233E+308";  //Just under Double.MinValue
+
+                // Ensures that the NumberBuffer capacity is consistent with Desktop's.
+                yield return ".2222222222222222222222222222500000000000000000001";
             }
         }
 
