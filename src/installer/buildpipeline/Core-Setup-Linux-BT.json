@@ -856,6 +856,16 @@
     "PB_AdditionalMSBuildArguments": {
       "value": ""
     },
+    "CLI_NUGET_FEED_URL": {
+      "value": "https:%2F%2Fdotnet.myget.org/F/cli-deps/api/v2/package"
+    },
+    "CLI_NUGET_SYMBOLS_FEED_URL": {
+      "value": "https:%2F%2Fdotnet.myget.org/F/cli-deps/symbols/api/v2/package"
+    },
+    "CliNuGetApiKey": {
+      "value": null,
+      "isSecret": true
+    },
     "DistroSpecificMSBuildArguments": {
       "value": "/flp:v=diag /p:TargetArchitecture=$(PB_TargetArchitecture) /p:PortableBuild=false /p:ConfigurationGroup=$(BuildConfiguration) /p:OSGroup=Linux /p:OfficialBuildId=$(OfficialBuildId)"
     },
