@@ -17,7 +17,6 @@ namespace System.Reflection.Tests
                 Type[] typo = new Type[1];
                 Exception[] excepto = new Exception[1];
                 throw new ReflectionTypeLoadException(typo, excepto, "Null elements in Exceptions array");
-
             }
             catch (ReflectionTypeLoadException e)
             {
