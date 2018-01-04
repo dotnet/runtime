@@ -44,7 +44,7 @@ namespace System.Reflection
         {
             get
             {
-                if (LoaderExceptions.Length == 0)
+                if (LoaderExceptions == null || LoaderExceptions.Length == 0)
                 {
                     return base.Message;
                 }
@@ -53,7 +53,10 @@ namespace System.Reflection
                 text.AppendLine(base.Message);
                 foreach (Exception e in LoaderExceptions)
                 {
-                    text.AppendLine(e.Message);
+                    if (e != null)
+                    {
+                        text.AppendLine(e.Message);
+                    }
                 }
                 return text.ToString();
             }
@@ -63,10 +66,15 @@ namespace System.Reflection
         {
             StringBuilder text = new StringBuilder();
             text.AppendLine(base.ToString());
-
-            foreach (Exception e in LoaderExceptions)
+            if (LoaderExceptions != null)
             {
-                text.AppendLine(e.ToString());
+                foreach (Exception e in LoaderExceptions)
+                {
+                    if (e != null)
+                    {
+                        text.AppendLine(e.ToString());
+                    }
+                }
             }
 
             return text.ToString();
