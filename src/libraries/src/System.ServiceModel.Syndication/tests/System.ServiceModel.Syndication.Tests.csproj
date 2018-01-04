@@ -14,11 +14,6 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="$(MsBuildThisFileDirectory)netcoreapp\**\*.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
-    <ReferenceFromRuntime Include="System.ServiceModel.Syndication">
-      <Private>true</Private>
-    </ReferenceFromRuntime>
-  </ItemGroup>
   <ItemGroup>
     <Content Include="$(MsBuildThisFileDirectory)\TestFeeds\**\*.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

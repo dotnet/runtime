@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.Text;
+using System.Xml;
 
 namespace System.ServiceModel.Syndication
 {
@@ -11,40 +12,34 @@ namespace System.ServiceModel.Syndication
     {
         private const string Rfc3339DateTimeFormat = "yyyy-MM-ddTHH:mm:ssK";
 
-        public static DateTimeOffset DefaultRss20DateTimeParser(string dateTimeString, string localName, string ns)
+        public static bool DefaultRss20DateTimeParser(ParseDateTimeArgs parseDateTimeArgs, out DateTimeOffset dateTimeOffset)
         {
-            DateTimeOffset dto;
+            string dateTimeString = parseDateTimeArgs.DateTimeString;
 
             // First check if DateTimeOffset default parsing can parse the date
-            if (DateTimeOffset.TryParse(dateTimeString, out dto))
+            if (DateTimeOffset.TryParse(dateTimeString, out dateTimeOffset))
             {
-                return dto;
+                return true;
             }
 
             // RSS specifies RFC822
-            if (Rfc822DateTimeParser(dateTimeString, out dto))
+            if (Rfc822DateTimeParser(dateTimeString, out dateTimeOffset))
             {
-                return dto;
+                return true;
             }
 
             // Event though RCS3339 is for Atom, someone might be using this for RSS
-            if (Rfc3339DateTimeParser(dateTimeString, out dto))
+            if (Rfc3339DateTimeParser(dateTimeString, out dateTimeOffset))
             {
-                return dto;
+                return true;
             }
 
-            // Unable to parse - using a default date;
-            throw new FormatException(SR.ErrorParsingDateTime);
+            return false;
         }
 
-        public static DateTimeOffset DefaultAtom10DateTimeParser(string dateTimeString, string localName, string ns)
+        public static bool DefaultAtom10DateTimeParser(ParseDateTimeArgs parseDateTimeArgs, out DateTimeOffset dateTimeOffset)
         {
-            if (Rfc3339DateTimeParser(dateTimeString, out DateTimeOffset dto))
-            {
-                return dto;
-            }
-
-            throw new FormatException(SR.ErrorParsingDateTime);
+            return Rfc3339DateTimeParser(parseDateTimeArgs.DateTimeString, out dateTimeOffset);
         }
 
         private static bool Rfc3339DateTimeParser(string dateTimeString, out DateTimeOffset dto)

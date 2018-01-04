@@ -138,6 +138,9 @@
   <data name="ErrorParsingItem" xml:space="preserve">
     <value>An error was encountered when parsing the item's XML. Refer to the inner exception for more details.</value>
   </data>
+  <data name="ErrorParsingUri" xml:space="preserve">
+    <value>An error was encountered when parsing a Uri value in the XML.</value>
+  </data>
   <data name="ExtensionNameNotSpecified" xml:space="preserve">
     <value>The name of the extension element must be specified.</value>
   </data>

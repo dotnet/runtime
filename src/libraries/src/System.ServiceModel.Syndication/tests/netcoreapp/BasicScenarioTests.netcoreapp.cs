@@ -25,7 +25,11 @@ namespace System.ServiceModel.Syndication.Tests
             using (XmlReader reader = XmlReader.Create(@"RssSpecCustomParser.xml"))
             {
                 var formatter = new Rss20FeedFormatter();
-                formatter.DateTimeParser = (value, localName, ns) => dto;
+                formatter.DateTimeParser = (ParseDateTimeArgs parseDateTimeArgs, out DateTimeOffset dateTimeOffset) =>
+                {
+                    dateTimeOffset = dto;
+                    return true;
+                };
                 formatter.ReadFrom(reader);
                 feed = formatter.Feed;
             }
@@ -45,7 +49,11 @@ namespace System.ServiceModel.Syndication.Tests
             {
                 var formatter = new Rss20FeedFormatter
                 {
-                    UriParser = (value, kind, localName, ns) => new Uri($"http://value-{value}-kind-{kind}-localName-{localName}-ns-{ns}-end")
+                    UriParser = (ParseUriArgs parseUriArgs, out Uri uri) =>
+                    {
+                        uri = new Uri($"http://value-{parseUriArgs.UriString}-kind-{parseUriArgs.UriKind}-localName-{parseUriArgs.ElemntQualifiedName.Name}-ns-{parseUriArgs.ElemntQualifiedName.Namespace}-end");
+                        return true;
+                    }
                 };
                 formatter.ReadFrom(reader);
                 feed = formatter.Feed;
@@ -76,7 +84,11 @@ namespace System.ServiceModel.Syndication.Tests
             {
                 var formatter = new Atom10FeedFormatter
                 {
-                    DateTimeParser = (value, localName, ns) => dto
+                    DateTimeParser = (ParseDateTimeArgs parseDateTimeArgs, out DateTimeOffset dateTimeOffset) =>
+                    {
+                        dateTimeOffset = dto;
+                        return true;
+                    }
                 };
                 formatter.ReadFrom(reader);
                 feed = formatter.Feed;
@@ -101,7 +113,11 @@ namespace System.ServiceModel.Syndication.Tests
             {
                 var formatter = new Atom10FeedFormatter
                 {
-                    UriParser = (value, kind, localName, ns) => new Uri($"http://value-{value}-kind-{kind}-localName-{localName}-ns-{ns}-end")
+                    UriParser = (ParseUriArgs parseUriArgs, out Uri uri) =>
+                    {
+                        uri = new Uri($"http://value-{parseUriArgs.UriString}-kind-{parseUriArgs.UriKind}-localName-{parseUriArgs.ElemntQualifiedName.Name}-ns-{parseUriArgs.ElemntQualifiedName.Namespace}-end");
+                        return true;
+                    }
                 };
                 formatter.ReadFrom(reader);
                 feed = formatter.Feed;
