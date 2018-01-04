@@ -841,6 +841,7 @@ void Compiler::raAssignVars()
                  varNum++)
             {
                 noway_assert(lvaTable[varNum].lvRefCnt == 0);
+                lvaTable[varNum].lvIsStructField = false;
             }
         }
         else
