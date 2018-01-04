@@ -91,9 +91,9 @@ namespace System
         public static int IndexOf<T>(this Span<T> span, T value) where T : IEquatable<T> { throw null; }
         public static int IndexOf<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T> { throw null; }
 
-        public static int IndexOfAny(this Span<byte> span, byte value0, byte value1) { throw null; }
-        public static int IndexOfAny(this Span<byte> span, byte value0, byte value1, byte value2) { throw null; }
-        public static int IndexOfAny(this Span<byte> span, ReadOnlySpan<byte> values) { throw null; }
+        public static int IndexOfAny<T>(this Span<T> span, T value0, T value1) where T : IEquatable<T> { throw null; }
+        public static int IndexOfAny<T>(this Span<T> span, T value0, T value1, T value2) where T : IEquatable<T> { throw null; }
+        public static int IndexOfAny<T>(this Span<T> span, ReadOnlySpan<T> values) where T : IEquatable<T> { throw null; }
 
         public static int LastIndexOf<T>(this Span<T> span, T value) where T : IEquatable<T> { throw null; }
         public static int LastIndexOf<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T> { throw null; }
@@ -129,9 +129,9 @@ namespace System
         public static int IndexOf<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T> { throw null; }
         public static int IndexOf<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : IEquatable<T> { throw null; }
 
-        public static int IndexOfAny(this ReadOnlySpan<byte> span, byte value0, byte value1) { throw null; }
-        public static int IndexOfAny(this ReadOnlySpan<byte> span, byte value0, byte value1, byte value2) { throw null; }
-        public static int IndexOfAny(this ReadOnlySpan<byte> span, ReadOnlySpan<byte> values) { throw null; }
+        public static int IndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1) where T : IEquatable<T> { throw null; }
+        public static int IndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2) where T : IEquatable<T> { throw null; }
+        public static int IndexOfAny<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values) where T : IEquatable<T> { throw null; }
 
         public static int LastIndexOf<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T> { throw null; }
         public static int LastIndexOf<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : IEquatable<T> { throw null; }

@@ -49,25 +49,7 @@ namespace System
             }
             return -1;
         }
-
-        public static int LastIndexOfAny<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength)
-            where T : IEquatable<T>
-        {
-            Debug.Assert(searchSpaceLength >= 0);
-            Debug.Assert(valueLength >= 0);
-
-            if (valueLength == 0)
-                return 0;  // A zero-length sequence is always treated as "found" at the start of the search space.
-
-            int index = -1;
-            for (int i = 0; i < valueLength; i++)
-            {
-                var tempIndex = LastIndexOf(ref searchSpace, Unsafe.Add(ref value, i), searchSpaceLength);
-                if (tempIndex > index) index = tempIndex;
-            }
-            return index;
-        }
-
+        
         public static unsafe int IndexOf<T>(ref T searchSpace, T value, int length)
             where T : IEquatable<T>
         {
@@ -142,8 +124,199 @@ namespace System
             return (int)(byte*)(index + 7);
         }
 
+        public static int IndexOfAny<T>(ref T searchSpace, T value0, T value1, int length)
+            where T : IEquatable<T>
+        {
+            Debug.Assert(length >= 0);
+
+            T lookUp;
+            int index = 0;
+            while ((length - index) >= 8)
+            {
+                lookUp = Unsafe.Add(ref searchSpace, index);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                    goto Found;
+                lookUp = Unsafe.Add(ref searchSpace, index + 1);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                    goto Found1;
+                lookUp = Unsafe.Add(ref searchSpace, index + 2);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                    goto Found2;
+                lookUp = Unsafe.Add(ref searchSpace, index + 3);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                    goto Found3;
+                lookUp = Unsafe.Add(ref searchSpace, index + 4);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                    goto Found4;
+                lookUp = Unsafe.Add(ref searchSpace, index + 5);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                    goto Found5;
+                lookUp = Unsafe.Add(ref searchSpace, index + 6);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                    goto Found6;
+                lookUp = Unsafe.Add(ref searchSpace, index + 7);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                    goto Found7;
+
+                index += 8;
+            }
+
+            if ((length - index) >= 4)
+            {
+                lookUp = Unsafe.Add(ref searchSpace, index);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                    goto Found;
+                lookUp = Unsafe.Add(ref searchSpace, index + 1);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                    goto Found1;
+                lookUp = Unsafe.Add(ref searchSpace, index + 2);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                    goto Found2;
+                lookUp = Unsafe.Add(ref searchSpace, index + 3);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                    goto Found3;
+
+                index += 4;
+            }
+
+            while (index < length)
+            {
+                lookUp = Unsafe.Add(ref searchSpace, index);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                    goto Found;
+
+                index++;
+            }
+            return -1;
+
+            Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+            return index;
+            Found1:
+            return index + 1;
+            Found2:
+            return index + 2;
+            Found3:
+            return index + 3;
+            Found4:
+            return index + 4;
+            Found5:
+            return index + 5;
+            Found6:
+            return index + 6;
+            Found7:
+            return index + 7;
+        }
+
+        public static int IndexOfAny<T>(ref T searchSpace, T value0, T value1, T value2, int length)
+            where T : IEquatable<T>
+        {
+            Debug.Assert(length >= 0);
+
+            T lookUp;
+            int index = 0;
+            while ((length - index) >= 8)
+            {
+                lookUp = Unsafe.Add(ref searchSpace, index);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                    goto Found;
+                lookUp = Unsafe.Add(ref searchSpace, index + 1);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                    goto Found1;
+                lookUp = Unsafe.Add(ref searchSpace, index + 2);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                    goto Found2;
+                lookUp = Unsafe.Add(ref searchSpace, index + 3);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                    goto Found3;
+                lookUp = Unsafe.Add(ref searchSpace, index + 4);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                    goto Found4;
+                lookUp = Unsafe.Add(ref searchSpace, index + 5);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                    goto Found5;
+                lookUp = Unsafe.Add(ref searchSpace, index + 6);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                    goto Found6;
+                lookUp = Unsafe.Add(ref searchSpace, index + 7);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                    goto Found7;
+
+                index += 8;
+            }
+
+            if ((length - index) >= 4)
+            {
+                lookUp = Unsafe.Add(ref searchSpace, index);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                    goto Found;
+                lookUp = Unsafe.Add(ref searchSpace, index + 1);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                    goto Found1;
+                lookUp = Unsafe.Add(ref searchSpace, index + 2);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                    goto Found2;
+                lookUp = Unsafe.Add(ref searchSpace, index + 3);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                    goto Found3;
+
+                index += 4;
+            }
+
+            while (index < length)
+            {
+                lookUp = Unsafe.Add(ref searchSpace, index);
+                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                    goto Found;
+
+                index++;
+            }
+            return -1;
+
+            Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+            return index;
+            Found1:
+            return index + 1;
+            Found2:
+            return index + 2;
+            Found3:
+            return index + 3;
+            Found4:
+            return index + 4;
+            Found5:
+            return index + 5;
+            Found6:
+            return index + 6;
+            Found7:
+            return index + 7;
+        }
+
+        public static int IndexOfAny<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength)
+            where T : IEquatable<T>
+        {
+            Debug.Assert(searchSpaceLength >= 0);
+            Debug.Assert(valueLength >= 0);
+
+            if (valueLength == 0)
+                return 0;  // A zero-length sequence is always treated as "found" at the start of the search space.
+
+            int index = -1;
+            for (int i = 0; i < valueLength; i++)
+            {
+                var tempIndex = IndexOf(ref searchSpace, Unsafe.Add(ref value, i), searchSpaceLength);
+                if ((uint)tempIndex < (uint)index)
+                {
+                    index = tempIndex;
+                    // Reduce space for search, cause we don't care if we find the search value after the index of a previously found value
+                    searchSpaceLength = tempIndex;
+
+                    if (index == 0) break;
+                }
+            }
+            return index;
+        }
+
         public static int LastIndexOf<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength)
-    where T : IEquatable<T>
+            where T : IEquatable<T>
         {
             Debug.Assert(searchSpaceLength >= 0);
             Debug.Assert(valueLength >= 0);
@@ -407,6 +580,24 @@ namespace System
             return length + 6;
         Found7:
             return length + 7;
+        }
+
+        public static int LastIndexOfAny<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength)
+            where T : IEquatable<T>
+        {
+            Debug.Assert(searchSpaceLength >= 0);
+            Debug.Assert(valueLength >= 0);
+
+            if (valueLength == 0)
+                return 0;  // A zero-length sequence is always treated as "found" at the start of the search space.
+
+            int index = -1;
+            for (int i = 0; i < valueLength; i++)
+            {
+                var tempIndex = LastIndexOf(ref searchSpace, Unsafe.Add(ref value, i), searchSpaceLength);
+                if (tempIndex > index) index = tempIndex;
+            }
+            return index;
         }
 
         public static bool SequenceEqual<T>(ref T first, ref T second, int length)
