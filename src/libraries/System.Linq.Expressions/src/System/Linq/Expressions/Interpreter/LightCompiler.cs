@@ -1038,13 +1038,35 @@ namespace System.Linq.Expressions.Interpreter
             {
                 BranchLabel end = _instructions.MakeLabel();
                 BranchLabel loadDefault = _instructions.MakeLabel();
+                MethodInfo method = node.Method;
+                ParameterInfo[] parameters = method.GetParametersCached();
+                Debug.Assert(parameters.Length == 1);
+                ParameterInfo parameter = parameters[0];
+                Expression operand = node.Operand;
+                Type operandType = operand.Type;
+                LocalDefinition opTemp = _locals.DefineLocal(Expression.Parameter(operandType), _instructions.Count);
+                ByRefUpdater updater = null;
+                Type parameterType = parameter.ParameterType;
+                if (parameterType.IsByRef)
+                {
+                    if (node.IsLifted)
+                    {
+                        Compile(node.Operand);
+                    }
+                    else
+                    {
+                        updater = CompileAddress(node.Operand, 0);
+                        parameterType = parameterType.GetElementType();
+                    }
+                }
+                else
+                {
+                    Compile(node.Operand);
+                }
 
-                LocalDefinition opTemp = _locals.DefineLocal(Expression.Parameter(node.Operand.Type), _instructions.Count);
-                Compile(node.Operand);
                 _instructions.EmitStoreLocal(opTemp.Index);
 
-                if (!node.Operand.Type.IsValueType ||
-                    (node.Operand.Type.IsNullableType() && node.IsLiftedToNull))
+                if (!operandType.IsValueType || operandType.IsNullableType() && node.IsLiftedToNull)
                 {
                     _instructions.EmitLoadLocal(opTemp.Index);
                     _instructions.EmitLoad(null, typeof(object));
@@ -1053,13 +1075,20 @@ namespace System.Linq.Expressions.Interpreter
                 }
 
                 _instructions.EmitLoadLocal(opTemp.Index);
-                if (node.Operand.Type.IsNullableType() &&
-                    node.Method.GetParametersCached()[0].ParameterType.Equals(node.Operand.Type.GetNonNullableType()))
+                if (operandType.IsNullableType() && parameterType.Equals(operandType.GetNonNullableType()))
                 {
                     _instructions.Emit(NullableMethodCallInstruction.CreateGetValue());
                 }
 
-                _instructions.EmitCall(node.Method);
+                if (updater == null)
+                {
+                    _instructions.EmitCall(method);
+                }
+                else
+                {
+                    _instructions.EmitByRefCall(method, parameters, new[] {updater});
+                    updater.UndefineTemps(_instructions, _locals);
+                }
 
                 _instructions.EmitBranch(end, hasResult: false, hasValue: true);
 
