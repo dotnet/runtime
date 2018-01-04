@@ -10,7 +10,6 @@
   <PropertyGroup>
     <PackagesPatternDir Condition="'$(PackagesPatternDir)' == ''">$(PackagesBinDir)</PackagesPatternDir>
     <PackagesPattern Condition="'$(PackagesPattern)' == ''">$(PackagesPatternDir)pkg\*.nupkg</PackagesPattern>
-    <TransportPackagesPattern Condition="'$(TransportPackagesPattern)' == ''">$(PackagesPatternDir)pkg\transport.*.nupkg</TransportPackagesPattern>
     <TestNativeBinariesPattern Condition="'$(TestNativeBinariesPattern)' == ''">$(OutputPath)\bin\**</TestNativeBinariesPattern>
     <SymbolsPackagesPattern Condition="'$(SymbolPackagesPattern)' == ''">$(PackagesPatternDir)symbolpkg\*.nupkg</SymbolsPackagesPattern>
     <PublishFlatContainer Condition="'$(PublishFlatContainer)' == ''">true</PublishFlatContainer>
@@ -30,10 +29,9 @@
     </PropertyGroup>
     <ItemGroup>
       <ItemsToPush Remove="*.nupkg" />
-      <ItemsToPush Include="$(TransportPackagesPattern)">
+      <ItemsToPush Include="$(PackagesPattern)" Exclude="$(SymbolsPackagesPattern)">
         <ManifestArtifactData>NonShipping=true</ManifestArtifactData>
       </ItemsToPush>
-      <ItemsToPush Include="$(PackagesPattern)" Exclude="@(ItemsToPush);$(SymbolsPackagesPattern)" />
       <ItemsToPush>
         <RelativeBlobPath>$(RelativePathWithSlash)$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\' ,'/'))</RelativeBlobPath>
       </ItemsToPush>
