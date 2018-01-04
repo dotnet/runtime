@@ -433,6 +433,9 @@
     },
     "PACKAGEVERSIONPROPSURL": {
       "value": "$(PB_PackageVersionPropsUrl)"
+    },
+    "PB_AssetRootUrl": {
+      "value": ""
     }
   },
   "demands": [
