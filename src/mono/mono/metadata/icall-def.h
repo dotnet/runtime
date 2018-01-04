@@ -9,7 +9,7 @@
  * typeid must be a C symbol name unique to the type, don't worry about namespace
  * 	pollution, since it will be automatically prefixed to avoid it.
  * typename is a C string containing the full name of the type
- * first_icall_id s the symbol ID of the first internal call of the declared
+ * first_icall_id is the symbol ID of the first internal call of the declared
  * 	type (see below)
  *
  * The list of internal calls of the methods of a type must follow the
@@ -18,7 +18,7 @@
  * 	ICALL(icallid, methodname, cfuncptr)
  *
  * icallid must be a C symbol, unique for each icall defined in this file and
- * tipically equal to the typeid + '_' + a sequential number.
+ * typically equal to the typeid + '_' + a sequential number.
  * methodname is a C string defining the method name and the optional signature
  * (the signature is required only when several internal calls in the type
  * have the same name)
@@ -994,6 +994,7 @@ ICALL(THREADP_5, "InitializeVMTp", ves_icall_System_Threading_ThreadPool_Initial
 ICALL(THREADP_6, "IsThreadPoolHosted", ves_icall_System_Threading_ThreadPool_IsThreadPoolHosted)
 ICALL(THREADP_7, "NotifyWorkItemComplete", ves_icall_System_Threading_ThreadPool_NotifyWorkItemComplete)
 ICALL(THREADP_8, "NotifyWorkItemProgressNative", ves_icall_System_Threading_ThreadPool_NotifyWorkItemProgressNative)
+ICALL(THREADP_8m, "NotifyWorkItemQueued", ves_icall_System_Threading_ThreadPool_NotifyWorkItemQueued)
 ICALL(THREADP_9, "PostQueuedCompletionStatus", ves_icall_System_Threading_ThreadPool_PostQueuedCompletionStatus)
 ICALL(THREADP_11, "ReportThreadStatus", ves_icall_System_Threading_ThreadPool_ReportThreadStatus)
 ICALL(THREADP_12, "RequestWorkerThread", ves_icall_System_Threading_ThreadPool_RequestWorkerThread)

@@ -993,10 +993,10 @@ mono_mem_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounterSample 
 		sample->rawValue = 0;
 		return TRUE;
 	case COUNTER_MEM_PHYS_TOTAL:
-		sample->rawValue = mono_determine_physical_ram_size ();;
+		sample->rawValue = mono_determine_physical_ram_size ();
 		return TRUE;
 	case COUNTER_MEM_PHYS_AVAILABLE:
-		sample->rawValue = mono_determine_physical_ram_available_size ();;
+		sample->rawValue = mono_determine_physical_ram_available_size ();
 		return TRUE;
 	}
 	return FALSE;

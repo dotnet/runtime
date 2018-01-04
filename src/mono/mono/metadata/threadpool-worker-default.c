@@ -566,6 +566,10 @@ worker_try_create (void)
 		return FALSE;
 	}
 
+#ifndef DISABLE_PERFCOUNTERS
+	mono_atomic_inc_i32 (&mono_perfcounters->threadpool_threads);
+#endif
+
 	worker.worker_creation_current_count += 1;
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] try create worker, created %p, now = %d count = %d",

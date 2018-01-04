@@ -737,6 +737,14 @@ ves_icall_System_Threading_ThreadPool_NotifyWorkItemProgressNative (void)
 }
 
 void
+ves_icall_System_Threading_ThreadPool_NotifyWorkItemQueued (void)
+{
+#ifndef DISABLE_PERFCOUNTERS
+	mono_atomic_inc_i64 (&mono_perfcounters->threadpool_workitems);
+#endif
+}
+
+void
 ves_icall_System_Threading_ThreadPool_ReportThreadStatus (MonoBoolean is_working)
 {
 	// TODO

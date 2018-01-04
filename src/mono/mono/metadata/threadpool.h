@@ -46,6 +46,8 @@ ves_icall_System_Threading_ThreadPool_NotifyWorkItemComplete (void);
 void
 ves_icall_System_Threading_ThreadPool_NotifyWorkItemProgressNative (void);
 void
+ves_icall_System_Threading_ThreadPool_NotifyWorkItemQueued (void);
+void
 ves_icall_System_Threading_ThreadPool_ReportThreadStatus (MonoBoolean is_working);
 MonoBoolean
 ves_icall_System_Threading_ThreadPool_RequestWorkerThread (void);
