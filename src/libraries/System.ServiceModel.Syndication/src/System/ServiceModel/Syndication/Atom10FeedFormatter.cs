@@ -71,7 +71,7 @@ namespace System.ServiceModel.Syndication
             _feedType = feedToWrite.GetType();
         }
 
-        internal override Func<string, string, string, DateTimeOffset> GetDefaultDateTimeParser()
+        internal override TryParseDateTime GetDefaultDateTimeParser()
         {
             return DateTimeHelper.DefaultAtom10DateTimeParser;
         }
@@ -309,7 +309,7 @@ namespace System.ServiceModel.Syndication
             }
             else if (reader.IsStartElement(Atom10Constants.LogoTag, Atom10Constants.Atom10Namespace))
             {
-                result.ImageUrl = UriParser(reader.ReadElementString(), UriKind.RelativeOrAbsolute, Atom10Constants.LogoTag, Atom10Constants.Atom10Namespace);
+                result.ImageUrl = UriFromString(reader.ReadElementString(), UriKind.RelativeOrAbsolute, Atom10Constants.LogoTag, Atom10Constants.Atom10Namespace, reader);
             }
             else if (reader.IsStartElement(Atom10Constants.RightsTag, Atom10Constants.Atom10Namespace))
             {
@@ -728,7 +728,7 @@ namespace System.ServiceModel.Syndication
 
             if (!string.IsNullOrEmpty(src))
             {
-                result = new UrlSyndicationContent(UriParser(src, UriKind.RelativeOrAbsolute, Atom10Constants.ContentTag, Atom10Constants.Atom10Namespace), type);
+                result = new UrlSyndicationContent(UriFromString(src, UriKind.RelativeOrAbsolute, Atom10Constants.ContentTag, Atom10Constants.Atom10Namespace, reader), type);
                 bool isEmpty = reader.IsEmptyElement;
                 if (reader.HasAttributes)
                 {
@@ -1081,7 +1081,7 @@ namespace System.ServiceModel.Syndication
             link.MediaType = mediaType;
             link.RelationshipType = relationship;
             link.Title = title;
-            link.Uri = (val != null) ? UriParser(val, UriKind.RelativeOrAbsolute, Atom10Constants.LinkTag, Atom10Constants.Atom10Namespace) : null;
+            link.Uri = (val != null) ? UriFromString(val, UriKind.RelativeOrAbsolute, Atom10Constants.LinkTag, Atom10Constants.Atom10Namespace, reader) : null;
         }
 
         private SyndicationLink ReadLinkFrom(XmlReader reader, SyndicationFeed feed)

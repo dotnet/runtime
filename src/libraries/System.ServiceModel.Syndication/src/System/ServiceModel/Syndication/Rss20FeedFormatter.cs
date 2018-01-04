@@ -78,7 +78,7 @@ namespace System.ServiceModel.Syndication
             _feedType = feedToWrite.GetType();
         }
 
-        internal override Func<string, string, string, DateTimeOffset> GetDefaultDateTimeParser()
+        internal override TryParseDateTime GetDefaultDateTimeParser()
         {
             return DateTimeHelper.DefaultRss20DateTimeParser;
         }
@@ -275,7 +275,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        private SyndicationLink ReadAlternateLink(XmlReader reader, Uri baseUri)
+        internal static SyndicationLink ReadAlternateLink(XmlReader reader, Uri baseUri, TryParseUri uriParser, bool preserveAttributeExtensions)
         {
             SyndicationLink link = new SyndicationLink();
             link.BaseUri = baseUri;
@@ -302,8 +302,16 @@ namespace System.ServiceModel.Syndication
                 }
             }
 
-            string uri = reader.ReadElementString();
-            link.Uri = UriParser(uri, UriKind.RelativeOrAbsolute, Rss20Constants.LinkTag, Rss20Constants.Rss20Namespace);
+            string uriString = reader.ReadElementString();
+            var elemntQualifiedName = new XmlQualifiedName(Rss20Constants.LinkTag, Rss20Constants.Rss20Namespace);
+            var parseUriArgs = new ParseUriArgs()
+            {
+                UriString = uriString,
+                UriKind = UriKind.RelativeOrAbsolute,
+                ElemntQualifiedName = elemntQualifiedName
+            };
+            uriParser(parseUriArgs, out Uri uri);
+            link.Uri = uri;
             return link;
         }
 
@@ -494,7 +502,7 @@ namespace System.ServiceModel.Syndication
                                         string val = reader.Value;
                                         if (name == Rss20Constants.UrlTag && ns == Rss20Constants.Rss20Namespace)
                                         {
-                                            feed.Links.Add(SyndicationLink.CreateSelfLink(UriParser(val, UriKind.RelativeOrAbsolute, Rss20Constants.UrlTag, Rss20Constants.Rss20Namespace)));
+                                            feed.Links.Add(SyndicationLink.CreateSelfLink(UriFromString(val, UriKind.RelativeOrAbsolute, Rss20Constants.UrlTag, Rss20Constants.Rss20Namespace, reader)));
                                         }
                                         else if (!FeedUtils.IsXmlns(name, ns))
                                         {
@@ -547,7 +555,7 @@ namespace System.ServiceModel.Syndication
                     reader.ReadEndElement(); // item
                     if (!readAlternateLink && fallbackAlternateLink != null)
                     {
-                        result.Links.Add(SyndicationLink.CreateAlternateLink(UriParser(fallbackAlternateLink, UriKind.RelativeOrAbsolute, fallbackAlternateLinkLocalName, fallbackAlternateLinkNamespace)));
+                        result.Links.Add(SyndicationLink.CreateAlternateLink(UriFromString(fallbackAlternateLink, UriKind.RelativeOrAbsolute, fallbackAlternateLinkLocalName, fallbackAlternateLinkNamespace, reader)));
                         readAlternateLink = true;
                     }
 
@@ -593,7 +601,7 @@ namespace System.ServiceModel.Syndication
                     string val = reader.Value;
                     if (name == Rss20Constants.UrlTag && ns == Rss20Constants.Rss20Namespace)
                     {
-                        link.Uri = UriParser(val, UriKind.RelativeOrAbsolute, Rss20Constants.EnclosureTag, Rss20Constants.Rss20Namespace);
+                        link.Uri = UriFromString(val, UriKind.RelativeOrAbsolute, Rss20Constants.EnclosureTag, Rss20Constants.Rss20Namespace, reader);
                     }
                     else if (name == Rss20Constants.TypeTag && ns == Rss20Constants.Rss20Namespace)
                     {
@@ -737,7 +745,7 @@ namespace System.ServiceModel.Syndication
 
                 if (!string.IsNullOrEmpty(baseUri))
                 {
-                    result.BaseUri = UriParser(baseUri, UriKind.RelativeOrAbsolute, baseUriLocalName, baseUriNamespace);
+                    result.BaseUri = UriFromString(baseUri, UriKind.RelativeOrAbsolute, baseUriLocalName, baseUriNamespace, reader);
                 }
 
                 bool areAllItemsRead = true;
@@ -811,7 +819,7 @@ namespace System.ServiceModel.Syndication
                             {
                                 if (reader.IsStartElement(Rss20Constants.UrlTag, Rss20Constants.Rss20Namespace))
                                 {
-                                    result.ImageUrl = UriParser(reader.ReadElementString(), UriKind.RelativeOrAbsolute, Rss20Constants.UrlTag, Rss20Constants.Rss20Namespace);
+                                    result.ImageUrl = UriFromString(reader.ReadElementString(), UriKind.RelativeOrAbsolute, Rss20Constants.UrlTag, Rss20Constants.Rss20Namespace, reader);
                                 }
                                 else
                                 {
