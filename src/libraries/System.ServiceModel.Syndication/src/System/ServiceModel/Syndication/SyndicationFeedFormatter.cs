@@ -11,6 +11,9 @@ namespace System.ServiceModel.Syndication
     using System.Xml;
     using DiagnosticUtility = System.ServiceModel.DiagnosticUtility;
 
+    public delegate bool TryParseDateTime(ParseDateTimeArgs parseDateTimeArgs, out DateTimeOffset dateTimeOffset);
+    public delegate bool TryParseUri(ParseUriArgs parseUriArgs, out Uri uri);
+
     [DataContract]
     public abstract class SyndicationFeedFormatter
     {
@@ -40,19 +43,19 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public Func<string, UriKind, string, string, Uri> UriParser { get; set; } = DefaultUriParser;
+        public TryParseUri UriParser { get; set; } = DefaultUriParser;
 
         // Different DateTimeParsers are needed for Atom and Rss so can't set inline
-        public Func<string, string, string, DateTimeOffset> DateTimeParser { get; set; }
+        public TryParseDateTime DateTimeParser { get; set; }
 
-        internal virtual Func<string, string, string, DateTimeOffset> GetDefaultDateTimeParser()
+        internal virtual TryParseDateTime GetDefaultDateTimeParser()
         {
             return NotImplementedDateTimeParser;
         }
 
-        private DateTimeOffset NotImplementedDateTimeParser(string dtoString, string localName, string ns)
+        private bool NotImplementedDateTimeParser(ParseDateTimeArgs parseDateTimeArgs, out DateTimeOffset dateTimeOffset)
         {
-            throw new NotImplementedException();
+            return false;
         }
 
         public abstract string Version
@@ -391,22 +394,64 @@ namespace System.ServiceModel.Syndication
             _feed = feed;
         }
 
+        internal Uri UriFromString(string uriString, UriKind uriKind, string localName, string namespaceURI, XmlReader reader)
+        {
+            Uri uri = null;
+            var elemntQualifiedName = new XmlQualifiedName(localName, namespaceURI);
+            var parseUriArgs = new ParseUriArgs() { UriString = uriString, UriKind = uriKind, ElemntQualifiedName = elemntQualifiedName };
+            object[] args = new object[] { parseUriArgs, uri };            
+            try
+            {
+                foreach (Delegate uriParser in UriParser.GetInvocationList())
+                {
+                    if ((bool)uriParser.Method.Invoke(uriParser.Target, args))
+                    {
+                        uri = (Uri)args[args.Length - 1];
+                        return uri;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
+                    new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingUri), e));
+            }
+
+            DefaultUriParser(parseUriArgs, out uri);
+            return uri;
+        }
+
         internal DateTimeOffset DateFromString(string dateTimeString, XmlReader reader)
         {
             try
             {
-                return DateTimeParser(dateTimeString, reader.LocalName, reader.NamespaceURI);
+                DateTimeOffset dateTimeOffset;
+                var elemntQualifiedName = new XmlQualifiedName(reader.LocalName, reader.NamespaceURI);
+                var parseDateTimeArgs = new ParseDateTimeArgs() { DateTimeString = dateTimeString, ElemntQualifiedName = elemntQualifiedName };
+                object[] args = new object[] { parseDateTimeArgs, dateTimeOffset };
+                foreach (Delegate dateTimeParser in DateTimeParser.GetInvocationList())
+                {
+                    if ((bool)dateTimeParser.Method.Invoke(dateTimeParser.Target, args))
+                    {
+                        dateTimeOffset = (DateTimeOffset)args[args.Length - 1];
+                        return dateTimeOffset;
+                    }
+                }
             }
-            catch (FormatException e)
+            catch (Exception e)
             {
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
                     new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingDateTime), e));
             }
+
+            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
+                    new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingDateTime)));
         }
 
-        private static Uri DefaultUriParser(string value, UriKind kind, string localName, string ns)
+        internal static bool DefaultUriParser(ParseUriArgs parseUriArgs, out Uri uri)
         {
-            return new Uri(value, kind);
+            uri = new Uri(parseUriArgs.UriString, parseUriArgs.UriKind);
+            return true;
         }
 
         internal static void CloseBuffer(XmlBuffer buffer, XmlDictionaryWriter extWriter)
