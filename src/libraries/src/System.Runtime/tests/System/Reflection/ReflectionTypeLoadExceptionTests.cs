@@ -12,40 +12,31 @@ namespace System.Reflection.Tests
         [Fact]
         public static void NullExceptionsNoNullPointerException()
         {
-            bool foundRtleException = false;
             try
             {
-                Type[] Typo = new Type[1];
-                Exception[] Excepto = new Exception[1];
-                throw new ReflectionTypeLoadException(Typo, Excepto, "Null elements in Exceptions array");
+                Type[] typo = new Type[1];
+                Exception[] Excepto = new exception[1];
+                throw new ReflectionTypeLoadException(typo, excepto, "Null elements in Exceptions array");
 
             }
-            catch (ReflectionTypeLoadException)
+            catch (ReflectionTypeLoadException e)
             {
-                foundRtleException = true;
-            }
-            finally
-            {
-                Assert.True(foundRtleException);
+                Assert.NotNull(e.ToString());
+                Assert.NotNull(e.Message);
             }
         }
 
         [Fact]
         public static void NullArgumentsNoNullPointerException()
         {
-            bool foundRtleException = false;
             try
             {
                 throw new ReflectionTypeLoadException(null, null, "Null arguments");
-
             }
-            catch (ReflectionTypeLoadException)
+            catch (ReflectionTypeLoadException e)
             {
-                foundRtleException = true;
-            }
-            finally
-            {
-                Assert.True(foundRtleException);
+                Assert.NotNull(e.ToString());
+                Assert.NotNull(e.Message);
             }
         }
     }
