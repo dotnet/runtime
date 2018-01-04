@@ -10749,13 +10749,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 op2 = gtNewLclvNode(lclNum, lclTyp, opcodeOffs + sz + 1);
 
-                /* If the local is aliased, we need to spill calls and
+                /* If the local is aliased or pinned, we need to spill calls and
                    indirections from the stack. */
 
-                if ((lvaTable[lclNum].lvAddrExposed || lvaTable[lclNum].lvHasLdAddrOp) &&
-                    verCurrentState.esStackDepth > 0)
+                if ((lvaTable[lclNum].lvAddrExposed || lvaTable[lclNum].lvHasLdAddrOp || lvaTable[lclNum].lvPinned) &&
+                    (verCurrentState.esStackDepth > 0))
                 {
-                    impSpillSideEffects(false, (unsigned)CHECK_SPILL_ALL DEBUGARG("Local could be aliased"));
+                    impSpillSideEffects(false,
+                                        (unsigned)CHECK_SPILL_ALL DEBUGARG("Local could be aliased or is pinned"));
                 }
 
                 /* Spill any refs to the local from the stack */
