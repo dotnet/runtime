@@ -60,6 +60,7 @@
     <Compile Include="System\Management\InteropClasses\WMIInterop.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="Microsoft.Win32.Registry" />
     <Reference Include="System.CodeDom" />
     <Reference Include="System.Security.Permissions" />
