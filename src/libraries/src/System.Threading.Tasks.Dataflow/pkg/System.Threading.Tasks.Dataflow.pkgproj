@@ -12,12 +12,20 @@
 
     <!-- Since UAP and .NETCoreApp are package based we still want to enable
          OOBing libraries that happen to overlap with their framework package.
-         This avoids us having to lock the API in our NuGet packages just 
-         to match what shipped inbox: since we can provide a new library 
+         This avoids us having to lock the API in our NuGet packages just
+         to match what shipped inbox: since we can provide a new library
          we can update it to add API without raising the netstandard version. -->
     <ValidatePackageSuppression Include="TreatAsOutOfBox">
       <Value>.NETCoreApp;UAP</Value>
     </ValidatePackageSuppression>
+
+    <!--
+      Include empty dependency group for net45 and higher to avoid unncessary package dependencies
+      because all the dependencies are known to be inbox already.
+    -->
+    <Dependency Include="_._">
+      <TargetFramework>net45</TargetFramework>
+    </Dependency>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
