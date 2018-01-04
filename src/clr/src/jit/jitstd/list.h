@@ -177,6 +177,8 @@ public:
 
     reference back();
     const_reference back() const;
+    iterator backPosition();
+    const_iterator backPosition() const;
 
     iterator begin();
     const_iterator begin() const;
@@ -364,6 +366,18 @@ template <typename T, typename Allocator>
 typename list<T, Allocator>::const_reference list<T, Allocator>::back() const
 {
     return m_pTail->m_value;
+}
+
+template <typename T, typename Allocator>
+typename list<T, Allocator>::iterator list<T, Allocator>::backPosition()
+{
+    return iterator(m_pTail);
+}
+
+template <typename T, typename Allocator>
+typename list<T, Allocator>::const_iterator list<T, Allocator>::backPosition() const
+{
+    return const_iterator(m_pTail);
 }
 
 template <typename T, typename Allocator>
