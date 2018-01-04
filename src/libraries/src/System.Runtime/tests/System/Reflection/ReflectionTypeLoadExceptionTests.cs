@@ -24,7 +24,10 @@ namespace System.Reflection.Tests
             {
                 foundRtleException = true;
             }
-            Assert.True(foundRtleException);
+            finally
+            {
+                Assert.True(foundRtleException);
+            }
         }
 
         [Fact]
@@ -40,7 +43,10 @@ namespace System.Reflection.Tests
             {
                 foundRtleException = true;
             }
-            Assert.True(foundRtleException);
+            finally
+            {
+                Assert.True(foundRtleException);
+            }
         }
     }
 }
