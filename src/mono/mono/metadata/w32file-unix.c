@@ -3491,10 +3491,35 @@ mono_w32file_get_attributes_ex (const gunichar2 *name, MonoIOStat *stat)
 	/* fill stat block */
 
 	stat->attributes = _wapi_stat_to_file_attributes (utf8_name, &buf, &linkbuf);
-	stat->creation_time = (((guint64) (buf.st_mtime < buf.st_ctime ? buf.st_mtime : buf.st_ctime)) * 10 * 1000 * 1000) + 116444736000000000ULL;
-	stat->last_access_time = (((guint64) (buf.st_atime)) * 10 * 1000 * 1000) + 116444736000000000ULL;
-	stat->last_write_time = (((guint64) (buf.st_mtime)) * 10 * 1000 * 1000) + 116444736000000000ULL;
 	stat->length = (stat->attributes & FILE_ATTRIBUTE_DIRECTORY) ? 0 : buf.st_size;
+
+// Multiply seconds by this
+#define SECMULT (1000*1000*10ULL)
+
+// Constants to convert Unix times to the API expected by .NET and Windows
+#define CONVERT_BASE  116444736000000000ULL
+
+#if HAVE_STRUCT_STAT_ST_ATIMESPEC
+	if (buf.st_mtimespec.tv_sec < buf.st_ctimespec.tv_sec || (buf.st_mtimespec.tv_sec == buf.st_ctimespec.tv_sec && buf.st_mtimespec.tv_nsec < buf.st_ctimespec.tv_nsec))
+		stat->creation_time = buf.st_mtimespec.tv_sec * SECMULT + (buf.st_mtimespec.tv_nsec / 100) + CONVERT_BASE;
+	else
+		stat->creation_time = buf.st_ctimespec.tv_sec * SECMULT + (buf.st_ctimespec.tv_nsec / 100) + CONVERT_BASE;
+
+	stat->last_access_time = buf.st_atimespec.tv_sec * SECMULT + (buf.st_atimespec.tv_nsec / 100) + CONVERT_BASE;
+	stat->last_write_time = buf.st_mtimespec.tv_sec * SECMULT + (buf.st_mtimespec.tv_nsec / 100) + CONVERT_BASE;
+#elif HAVE_STRUCT_STAT_ST_ATIM
+	if (buf.st_mtime < buf.st_ctime || (buf.st_mtime == buf.st_ctime && buf.st_mtim.tv_nsec < buf.st_ctim.tv_nsec))
+		stat->creation_time = buf.st_mtime * SECMULT + (buf.st_mtim.tv_nsec / 100) + CONVERT_BASE;
+	else
+		stat->creation_time = buf.st_ctime * SECMULT + (buf.st_ctim.tv_nsec / 100) + CONVERT_BASE;
+
+	stat->last_access_time = buf.st_atime * SECMULT + (buf.st_atim.tv_nsec / 100) + CONVERT_BASE;
+	stat->last_write_time = buf.st_mtime * SECMULT + (buf.st_mtim.tv_nsec / 100) + CONVERT_BASE;
+#else
+	stat->creation_time = (((guint64) (buf.st_mtime < buf.st_ctime ? buf.st_mtime : buf.st_ctime)) * 10 * 1000 * 1000) + CONVERT_BASE;
+	stat->last_access_time = (((guint64) (buf.st_atime)) * SECMULT) + CONVERT_BASE;
+	stat->last_write_time = (((guint64) (buf.st_mtime)) * SECMULT) + CONVERT_BASE;
+#endif
 
 	g_free (utf8_name);
 	return TRUE;
