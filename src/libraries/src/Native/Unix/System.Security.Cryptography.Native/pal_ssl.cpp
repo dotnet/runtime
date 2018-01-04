@@ -44,6 +44,28 @@ extern "C" SSL_CTX* CryptoNative_SslCtxCreate(SSL_METHOD* method)
     return ctx;
 }
 
+/*
+Openssl supports setting ecdh curves by default from version 1.1.0.
+For lower versions, this is the recommended approach.
+Returns 1 on success, 0 on failure.
+*/
+static long TrySetECDHNamedCurve(SSL_CTX* ctx)
+{
+	long result = 0;
+#ifdef SSL_CTX_set_ecdh_auto
+	result = SSL_CTX_set_ecdh_auto(ctx, 1);
+#else
+	EC_KEY *ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
+	if (ecdh != nullptr)
+	{
+		result = SSL_CTX_set_tmp_ecdh(ctx, ecdh);
+		EC_KEY_free(ecdh);
+	}
+#endif
+
+	return result;
+}
+
 extern "C" void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
 {
     // protocols may be 0, meaning system default, in which case let OpenSSL do what OpenSSL wants.
@@ -85,6 +107,7 @@ extern "C" void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols proto
 #endif
 
     SSL_CTX_set_options(ctx, protocolOptions);
+    TrySetECDHNamedCurve(ctx);
 }
 
 extern "C" SSL* CryptoNative_SslCreate(SSL_CTX* ctx)
@@ -588,3 +611,4 @@ extern "C" int32_t CryptoNative_SslSetTlsExtHostName(SSL* ssl, const uint8_t* na
 {
     return static_cast<int32_t>(SSL_set_tlsext_host_name(ssl, name));
 }
+
