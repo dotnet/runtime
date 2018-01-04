@@ -52,16 +52,16 @@ public:
 
     #endif // !defined(_TARGET_X86_)
 
+        CORJIT_FLAG_UNUSED6                 = 13,
+
     #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
 
-        CORJIT_FLAG_USE_SSE3_4              = 13,
         CORJIT_FLAG_USE_AVX                 = 14,
         CORJIT_FLAG_USE_AVX2                = 15,
         CORJIT_FLAG_USE_AVX_512             = 16,
 
     #else // !defined(_TARGET_X86_) && !defined(_TARGET_AMD64_)
 
-        CORJIT_FLAG_UNUSED6                 = 13,
         CORJIT_FLAG_UNUSED7                 = 14,
         CORJIT_FLAG_UNUSED8                 = 15,
         CORJIT_FLAG_UNUSED9                 = 16,

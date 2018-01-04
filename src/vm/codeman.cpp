@@ -1328,11 +1328,6 @@ void EEJitManager::SetCpuInfo()
         //    SSSE3 - ECX bit 9    (buffer[9]  & 0x02)
         //    SSE4.2 - ECX bit 20  (buffer[10] & 0x10)
         //    POPCNT - ECX bit 23  (buffer[10] & 0x80)
-        // CORJIT_FLAG_USE_SSE3_4 if the following feature bits are set (input EAX of 1)
-        //    SSE3 - ECX bit 0     (buffer[8]  & 0x01)
-        //    SSSE3 - ECX bit 9    (buffer[9]  & 0x02)
-        //    SSE4.1 - ECX bit 19  (buffer[10] & 0x08)
-        //    SSE4.2 - ECX bit 20  (buffer[10] & 0x10)
         // CORJIT_FLAG_USE_AVX if the following feature bits are set (input EAX of 1), and xmmYmmStateSupport returns 1:
         //    OSXSAVE - ECX bit 27 (buffer[11] & 0x08)
         //    AVX - ECX bit 28     (buffer[11] & 0x10)
@@ -1371,12 +1366,6 @@ void EEJitManager::SetCpuInfo()
                         {
                             CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_POPCNT);
                         }
-                    }
-
-                    if (((buffer[10] & 0x08) != 0) &&       // SSE4.1
-                        ((buffer[10] & 0x10) != 0))         // SSE4.2
-                    {
-                        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE3_4);
                     }
                 }
             }
