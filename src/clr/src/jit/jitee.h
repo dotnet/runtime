@@ -39,16 +39,16 @@ public:
 
     #endif // !defined(_TARGET_X86_)
 
+        JIT_FLAG_UNUSED6                 = 13,
+
     #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
 
-        JIT_FLAG_USE_SSE3_4              = 13,
         JIT_FLAG_USE_AVX                 = 14,
         JIT_FLAG_USE_AVX2                = 15,
         JIT_FLAG_USE_AVX_512             = 16,
 
     #else // !defined(_TARGET_X86_) && !defined(_TARGET_AMD64_)
 
-        JIT_FLAG_UNUSED6                 = 13,
         JIT_FLAG_UNUSED7                 = 14,
         JIT_FLAG_UNUSED8                 = 15,
         JIT_FLAG_UNUSED9                 = 16,
@@ -248,7 +248,6 @@ public:
 
 #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
 
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE3_4, JIT_FLAG_USE_SSE3_4);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX, JIT_FLAG_USE_AVX);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX2, JIT_FLAG_USE_AVX2);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX_512, JIT_FLAG_USE_AVX_512);
