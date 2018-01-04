@@ -44,7 +44,7 @@
 
   <Target Name="GenerateRuntimeDebs" 
           DependsOnTargets="GenerateSharedHostDeb;GenerateHostFxrDeb;GenerateSharedFrameworkDeb"
-          Condition="''$(BuildRuntimeDebs)' == 'true'" />
+          Condition="'$(BuildRuntimeDebs)' == 'true'" />
 
   <Target Name="BuildDebs"
           DependsOnTargets="InitializeDotnetDebTool;GenerateRuntimeDebs;GenerateRuntimeDependenciesDeb"
