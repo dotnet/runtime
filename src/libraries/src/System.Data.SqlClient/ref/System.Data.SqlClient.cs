@@ -402,6 +402,9 @@ namespace System.Data.SqlClient
         protected override System.Threading.Tasks.Task<System.Data.Common.DbDataReader> ExecuteDbDataReaderAsync(System.Data.CommandBehavior behavior, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override int ExecuteNonQuery() { throw null; }
         public override System.Threading.Tasks.Task<int> ExecuteNonQueryAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public IAsyncResult BeginExecuteNonQuery() { throw null; }
+        public IAsyncResult BeginExecuteNonQuery(AsyncCallback callback, object stateObject) { throw null; }
+        public int EndExecuteNonQuery(IAsyncResult asyncResult) { throw null; }
         public new System.Data.SqlClient.SqlDataReader ExecuteReader() { throw null; }
         public new System.Data.SqlClient.SqlDataReader ExecuteReader(System.Data.CommandBehavior behavior) { throw null; }
         public new System.Threading.Tasks.Task<System.Data.SqlClient.SqlDataReader> ExecuteReaderAsync() { throw null; }
