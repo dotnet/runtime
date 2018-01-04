@@ -20,7 +20,7 @@ namespace ILLink.Tests
 		// Revision can also be a branch name. We generally
 		// want to ensure that we are able to link the latest
 		// MusicStore from the dev branch.
-		private static string gitRevision = "86ac48203060598e60722a5f6a96112af22d069b";
+		private static string gitRevision = "536f89ac6178246e58125401480b0a3b6406efe8";
 
 		// The version of Microsoft.NETCore.App that
 		// musicstore will run on (and deploy with, for
