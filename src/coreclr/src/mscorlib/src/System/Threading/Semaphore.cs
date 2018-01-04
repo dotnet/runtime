@@ -94,7 +94,7 @@ namespace System.Threading
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
 #else
                 if (name.Length > Path.MaxPath)
-                    throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Path.MaxPath), nameof(name));
+                    throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, name, Path.MaxPath), nameof(name));
 #endif
             }
 
@@ -136,7 +136,7 @@ namespace System.Threading
             if (name.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
             if (name.Length > Path.MaxPath)
-                throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Path.MaxPath), nameof(name));
+                throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, name, Path.MaxPath), nameof(name));
 
             //Pass false to OpenSemaphore to prevent inheritedHandles
             SafeWaitHandle myHandle = Win32Native.OpenSemaphore(AccessRights, false, name);
