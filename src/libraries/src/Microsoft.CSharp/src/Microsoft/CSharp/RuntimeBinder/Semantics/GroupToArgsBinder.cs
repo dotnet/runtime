@@ -37,7 +37,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private MethodOrPropertySymbol _pCurrentSym;
             private TypeArray _pCurrentTypeArgs;
             private TypeArray _pCurrentParameters;
-            private TypeArray _pBestParameters;
             private int _nArgBest;
             // end of current namespaces extension method list
             private readonly GroupToArgsBinderResult _results;
@@ -73,7 +72,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 _pCurrentSym = null;
                 _pCurrentTypeArgs = null;
                 _pCurrentParameters = null;
-                _pBestParameters = null;
                 _nArgBest = -1;
                 _results = new GroupToArgsBinderResult();
                 _methList = new List<CandidateFunctionMember>();
@@ -997,7 +995,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                                 if (!_results.GetBestResult())
                                 {
                                     _results.GetBestResult().Set(_pCurrentSym, _pCurrentType, _pCurrentTypeArgs);
-                                    _pBestParameters = _pCurrentParameters;
                                 }
                             }
                             else if (ivar == _nArgBest && _pArguments.types[ivar] != var)
@@ -1015,7 +1012,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                                     if (!_results.GetBestResult())
                                     {
                                         _results.GetBestResult().Set(_pCurrentSym, _pCurrentType, _pCurrentTypeArgs);
-                                        _pBestParameters = _pCurrentParameters;
                                     }
                                 }
                             }

@@ -692,7 +692,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 PredefinedType ptSrc = aggSrc.GetPredefType();
                 PredefinedType ptDest = _typeDest.getPredefType();
                 ConvKind convertKind;
-                bool fConstShrinkCast = false;
 
                 Debug.Assert((int)ptSrc < NUM_SIMPLE_TYPES && (int)ptDest < NUM_SIMPLE_TYPES);
 
@@ -712,7 +711,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     // Special case (CLR 6.1.6): if integral constant is in range, the conversion is a legal implicit conversion.
                     convertKind = ConvKind.Implicit;
-                    fConstShrinkCast = _needsExprDest && (GetConvKind(ptSrc, ptDest) != ConvKind.Implicit);
                 }
                 else if (ptSrc == ptDest)
                 {
