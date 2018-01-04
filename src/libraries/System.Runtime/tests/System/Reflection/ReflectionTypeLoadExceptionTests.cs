@@ -3,11 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime.CompilerServices;
 using Xunit;
-
-[assembly: TypeForwardedTo(typeof(string))]
-[assembly: TypeForwardedTo(typeof(TypeInForwardedAssembly))]
 
 namespace System.Reflection.Tests
 {
