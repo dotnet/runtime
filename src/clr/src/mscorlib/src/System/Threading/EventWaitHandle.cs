@@ -52,7 +52,7 @@ namespace System.Threading
 #else
                 if (System.IO.Path.MaxPath < name.Length)
                 {
-                    throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Path.MaxPath), nameof(name));
+                    throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, name, Path.MaxPath), nameof(name));
                 }
 #endif
             }
@@ -100,7 +100,7 @@ namespace System.Threading
 #else
                 if (System.IO.Path.MaxPath < name.Length)
                 {
-                    throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Path.MaxPath), nameof(name));
+                    throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, name, Path.MaxPath), nameof(name));
                 }
 #endif
             }
@@ -186,7 +186,7 @@ namespace System.Threading
 
             if (null != name && System.IO.Path.MaxPath < name.Length)
             {
-                throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Path.MaxPath), nameof(name));
+                throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, name, Path.MaxPath), nameof(name));
             }
 
 
