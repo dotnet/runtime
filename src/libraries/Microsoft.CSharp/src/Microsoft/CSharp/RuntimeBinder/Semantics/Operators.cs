@@ -1251,6 +1251,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return BindLiftedStandardUnop(ek, flags, pArgument, uofs);
             }
 
+            if (pArgument.isCONSTANT_OK())
+            {
+                // Wrap the constant in an identity cast, to force the later casts to not be optimised out.
+                // The ExpressionTreeRewriter will remove this again.
+                pArgument = ExprFactory.CreateCast(pArgument.Type, pArgument);
+            }
+
             // Try the conversion - if it fails, do a cast without user defined casts.
             Expr arg = tryConvert(pArgument, uofs.GetType());
             if (arg == null)

@@ -13,7 +13,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
 {
     public class NullableEnumUnaryOperationTest
     {
-        public enum Int8Enum
+        public enum Int8Enum : byte
         {
             A,
             B,
@@ -31,7 +31,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             E
         }
 
-        public enum UInt32Enum
+        public enum UInt32Enum : uint
         {
             A,
             B,
