@@ -9505,8 +9505,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			MONO_ADD_INS (cfg->cbb, ins);
 
-			if (cfg->gen_write_barriers && *ip == CEE_STIND_REF && method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER && !MONO_INS_IS_PCONST_NULL (sp [1]))
-				mini_emit_write_barrier (cfg, sp [0], sp [1]);
+			if (*ip == CEE_STIND_REF) {
+				/* stind.ref must only be used with object references. */
+				if (sp [1]->type != STACK_OBJ)
+					UNVERIFIED;
+				if (cfg->gen_write_barriers && method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER && !MONO_INS_IS_PCONST_NULL (sp [1]))
+					mini_emit_write_barrier (cfg, sp [0], sp [1]);
+			}
 
 			inline_costs += 1;
 			++ip;

@@ -6245,7 +6245,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_byte (mb, CEE_LDC_I4_0);
-			mono_mb_emit_byte (mb, CEE_STIND_REF);
+			mono_mb_emit_byte (mb, CEE_STIND_I);
 			pos2 = mono_mb_emit_branch (mb, CEE_BR);
 
 			mono_mb_patch_branch (mb, pos);			
@@ -6622,7 +6622,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 				/* Null terminate */
 				mono_mb_emit_ldloc (mb, dest_ptr);
 				mono_mb_emit_byte (mb, CEE_LDC_I4_0);
-				mono_mb_emit_byte (mb, CEE_STIND_REF);
+				mono_mb_emit_byte (mb, CEE_STIND_I);
 			}
 
 			mono_mb_patch_branch (mb, label1);
