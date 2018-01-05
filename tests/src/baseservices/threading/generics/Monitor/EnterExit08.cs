@@ -50,7 +50,7 @@ struct Gen<T>
 			if(myHelper.Error == true || myHelper2.Error == true)
 				break;
 		}
-		Test.Eval(!(myHelper.Error && myHelper2.Error));
+		Test.Eval(!(myHelper.Error || myHelper2.Error));
 	}
 	
 }
