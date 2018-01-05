@@ -886,6 +886,34 @@ g_ascii_strcasecmp (const gchar *s1, const gchar *s2)
 	return (*sp1) - (*sp2);
 }
 
+gboolean
+g_utf16_ascii_equal (const gunichar2 *utf16, size_t ulen, const char *ascii, size_t alen)
+{
+	size_t i;
+	if (ulen != alen)
+		return FALSE;
+	for (i = 0; i < ulen; ++i) {
+		if (utf16[i] != ascii[i])
+			return FALSE;
+	}
+	return TRUE;
+}
+
+gboolean
+g_utf16_asciiz_equal (const gunichar2 *utf16, const char *ascii)
+// z for zero means null terminated
+{
+	while (1)
+	{
+		char a = *ascii++;
+		gunichar2 u = *utf16++;
+		if (a != u)
+			return FALSE;
+		if (a == 0)
+			return TRUE;
+	}
+}
+
 gchar *
 g_strdelimit (gchar *string, const gchar *delimiters, gchar new_delimiter)
 {

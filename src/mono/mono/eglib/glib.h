@@ -245,6 +245,8 @@ gint    g_ascii_xdigit_value (gchar c);
 #define g_ascii_isalpha(c)   (isalpha (c) != 0)
 #define g_ascii_isprint(c)   (isprint (c) != 0)
 #define g_ascii_isxdigit(c)  (isxdigit (c) != 0)
+gboolean g_utf16_ascii_equal (const gunichar2 *utf16, size_t ulen, const char *ascii, size_t alen);
+gboolean g_utf16_asciiz_equal (const gunichar2 *utf16, const char *ascii);
 
 /* FIXME: g_strcasecmp supports utf8 unicode stuff */
 #ifdef _MSC_VER
