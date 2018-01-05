@@ -1016,15 +1016,12 @@ INTERP_DISABLED_TESTS = \
 	exception18.exe \
 	field-access.exe \
 	handleref.exe \
-	ldftn-access.exe \
-	method-access.exe \
 	nullable_boxing.2.exe \
 	pinvoke2.exe \
 	pinvoke3.exe \
 	safehandle.2.exe \
 	stackframes-async.2.exe \
 	static-constructor.exe \
-	test-type-ctor.exe \
 	thread6.exe \
 	threadpool-exceptions2.exe \
 	threadpool-exceptions4.exe \

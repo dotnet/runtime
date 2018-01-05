@@ -733,6 +733,16 @@ fill_in_trace (MonoException *exception, InterpFrame *frame)
 		THROW_EX ((child_frame).ex, (ip)); \
 	} while (0)
 
+#define EXCEPTION_CHECKPOINT	\
+	do {										\
+		if (*mono_thread_interruption_request_flag ()) {			\
+			MonoException *exc = mono_thread_interruption_checkpoint ();	\
+			if (exc)							\
+				THROW_EX (exc, ip);					\
+		}									\
+	} while (0)
+
+
 static MonoObject*
 ves_array_create (InterpFrame *frame, MonoDomain *domain, MonoClass *klass, MonoMethodSignature *sig, stackval *values)
 {
@@ -2897,20 +2907,12 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			goto exit_frame;
 		MINT_IN_CASE(MINT_BR_S)
 			/* Checkpoint to be able to handle aborts */
-			if (*mono_thread_interruption_request_flag ()) {
-				MonoException *exc = mono_thread_interruption_checkpoint ();
-				if (exc)
-					THROW_EX (exc, ip);
-			}
+			EXCEPTION_CHECKPOINT;
 			ip += (short) *(ip + 1);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BR)
 			/* Checkpoint to be able to handle aborts */
-			if (*mono_thread_interruption_request_flag ()) {
-				MonoException *exc = mono_thread_interruption_checkpoint ();
-				if (exc)
-					THROW_EX (exc, ip);
-			}
+			EXCEPTION_CHECKPOINT;
 			ip += (gint32) READ32(ip + 1);
 			MINT_IN_BREAK;
 #define ZEROP_S(datamem, op) \
@@ -3651,13 +3653,12 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 				}
 			} else {
 				if (newobj_class != mono_defaults.string_class) {
+					MonoVTable *vtable = mono_class_vtable_checked (rtm->domain, newobj_class, &error);
+					if (!mono_error_ok (&error) || !mono_runtime_class_init_full (vtable, &error))
+						THROW_EX (mono_error_convert_to_exception (&error), ip);
 					o = mono_object_new_checked (rtm->domain, newobj_class, &error);
 					mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-					if (*mono_thread_interruption_request_flag ()) {
-						MonoException *exc = mono_thread_interruption_checkpoint ();
-						if (exc)
-							THROW_EX (exc, ip);
-					}
+					EXCEPTION_CHECKPOINT;
 					sp->data.p = o;
 #ifndef DISABLE_REMOTING
 					if (mono_object_is_transparent_proxy (o)) {
@@ -3959,6 +3960,7 @@ array_constructed:
 		MINT_IN_CASE(MINT_LDSFLDA) {
 			MonoClassField *field = rtm->data_items[*(guint16 *)(ip + 1)];
 			sp->data.p = mono_class_static_field_address (rtm->domain, field);
+			EXCEPTION_CHECKPOINT;
 			ip += 2;
 			++sp;
 			MINT_IN_BREAK;
@@ -3966,6 +3968,7 @@ array_constructed:
 		MINT_IN_CASE(MINT_LDSFLD) {
 			MonoClassField *field = rtm->data_items [* (guint16 *)(ip + 1)];
 			gpointer addr = mono_class_static_field_address (rtm->domain, field);
+			EXCEPTION_CHECKPOINT;
 			stackval_from_data (field->type, sp, addr, FALSE);
 			ip += 2;
 			++sp;
@@ -3974,6 +3977,7 @@ array_constructed:
 		MINT_IN_CASE(MINT_LDSFLD_VT) {
 			MonoClassField *field = rtm->data_items [* (guint16 *)(ip + 1)];
 			gpointer addr = mono_class_static_field_address (rtm->domain, field);
+			EXCEPTION_CHECKPOINT;
 			int size = READ32 (ip + 2);
 			ip += 4;
 
@@ -3986,6 +3990,7 @@ array_constructed:
 		MINT_IN_CASE(MINT_STSFLD) {
 			MonoClassField *field = rtm->data_items [* (guint16 *)(ip + 1)];
 			gpointer addr = mono_class_static_field_address (rtm->domain, field);
+			EXCEPTION_CHECKPOINT;
 			ip += 2;
 			--sp;
 			stackval_to_data (field->type, sp, addr, FALSE);
@@ -3994,6 +3999,7 @@ array_constructed:
 		MINT_IN_CASE(MINT_STSFLD_VT) {
 			MonoClassField *field = rtm->data_items [* (guint16 *)(ip + 1)];
 			gpointer addr = mono_class_static_field_address (rtm->domain, field);
+			EXCEPTION_CHECKPOINT;
 			MonoClass *klass = mono_class_from_mono_type (field->type);
 			i32 = mono_class_value_size (klass, NULL);
 			ip += 2;
@@ -4622,11 +4628,7 @@ array_constructed:
 		MINT_IN_CASE(MINT_ICALL_PII_P)
 		MINT_IN_CASE(MINT_ICALL_PPII_V)
 			sp = do_icall (context, *ip, sp, rtm->data_items [*(guint16 *)(ip + 1)]);
-			if (*mono_thread_interruption_request_flag ()) {
-				MonoException *exc = mono_thread_interruption_checkpoint ();
-				if (exc)
-					THROW_EX (exc, ip);
-			}
+			EXCEPTION_CHECKPOINT;
 			if (context->has_resume_state) {
 				if (frame == context->handler_frame)
 					SET_RESUME_STATE (context);
