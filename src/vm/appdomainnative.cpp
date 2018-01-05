@@ -232,26 +232,6 @@ INT32 QCALLTYPE AppDomainNative::GetAppXFlags()
 
 #endif // FEATURE_APPX
 
-FCIMPL1(Object*, AppDomainNative::GetFriendlyName, AppDomainBaseObject* refThisUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    STRINGREF    str     = NULL;
-    APPDOMAINREF refThis = (APPDOMAINREF) refThisUNSAFE;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refThis);
-
-    AppDomain* pApp = ValidateArg(refThis);
-
-    LPCWSTR wstr = pApp->GetFriendlyName();
-    if (wstr)
-        str = StringObject::NewString(wstr);   
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(str);
-}
-FCIMPLEND
-
 FCIMPL2(Object*, AppDomainNative::GetAssemblies, AppDomainBaseObject* refThisUNSAFE, CLR_BOOL forIntrospection);
 {
     FCALL_CONTRACT;
@@ -436,24 +416,6 @@ FCIMPL1(Object*, AppDomainNative::GetDynamicDir, AppDomainBaseObject* refThisUNS
 
     STRINGREF    str        = NULL;
     return OBJECTREFToObject(str);
-}
-FCIMPLEND
-
-
-FCIMPL1(FC_BOOL_RET, AppDomainNative::IsUnloadingForcedFinalize, AppDomainBaseObject* refThisUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    BOOL retVal = FALSE;
-    APPDOMAINREF refThis = (APPDOMAINREF) refThisUNSAFE;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refThis);
-
-    AppDomain* pApp = ValidateArg((APPDOMAINREF)refThis);
-    retVal = pApp->IsFinalized();
-
-    HELPER_METHOD_FRAME_END();
-    FC_RETURN_BOOL(retVal);
 }
 FCIMPLEND
 

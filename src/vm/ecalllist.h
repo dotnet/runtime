@@ -459,12 +459,10 @@ FCFuncEnd()
 
 FCFuncStart(gAppDomainFuncs)
     FCFuncElement("IsStringInterned", AppDomainNative::IsStringInterned)
-    FCFuncElement("IsUnloadingForcedFinalize", AppDomainNative::IsUnloadingForcedFinalize)
 
 #ifdef FEATURE_APPX
     QCFuncElement("nGetAppXFlags", AppDomainNative::GetAppXFlags)
 #endif
-    FCFuncElement("nGetFriendlyName", AppDomainNative::GetFriendlyName)
     FCFuncElement("nSetupFriendlyName", AppDomainNative::SetupFriendlyName)
     FCFuncElement("nGetAssemblies", AppDomainNative::GetAssemblies)
     FCFuncElement("nCreateContext", AppDomainNative::CreateContext)

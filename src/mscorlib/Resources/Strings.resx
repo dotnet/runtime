@@ -2968,9 +2968,6 @@
   <data name="NotSupported_CollectibleDelegateMarshal" xml:space="preserve">
     <value>Delegate marshaling for types within collectible assemblies is not supported.</value>
   </data>
-  <data name="NotSupported_Constructor" xml:space="preserve">
-    <value>Object cannot be created through this constructor.</value>
-  </data>
   <data name="NotSupported_CreateInstanceWithTypeBuilder" xml:space="preserve">
     <value>CreateInstance cannot be used with an object of type TypeBuilder.</value>
   </data>
