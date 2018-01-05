@@ -1172,7 +1172,7 @@ ves_icall_System_ValueType_Equals (MonoObject *this_obj, MonoObject *that, MonoA
 				memcpy (&right, that_field, sizeof (type)); \
 				if (left != right) \
 					return FALSE; \
-			} while (0);
+			} while (0)
 
 		/* FIXME: Add more types */
 		switch (field->type->type) {
@@ -1186,9 +1186,9 @@ ves_icall_System_ValueType_Equals (MonoObject *this_obj, MonoObject *that, MonoA
 		case MONO_TYPE_I2:
 		case MONO_TYPE_CHAR:
 #ifdef NO_UNALIGNED_ACCESS
-			if (G_UNLIKELY ((intptr_t) this_field & 1 || (intptr_t) that_field & 1)) {
+			if (G_UNLIKELY ((intptr_t) this_field & 1 || (intptr_t) that_field & 1))
 				UNALIGNED_COMPARE (gint16);
-			} else
+			else
 #endif
 			if (*(gint16 *) this_field != *(gint16 *) that_field)
 				return FALSE;
@@ -1196,9 +1196,9 @@ ves_icall_System_ValueType_Equals (MonoObject *this_obj, MonoObject *that, MonoA
 		case MONO_TYPE_U4:
 		case MONO_TYPE_I4:
 #ifdef NO_UNALIGNED_ACCESS
-			if (G_UNLIKELY ((intptr_t) this_field & 3 || (intptr_t) that_field & 3)) {
+			if (G_UNLIKELY ((intptr_t) this_field & 3 || (intptr_t) that_field & 3))
 				UNALIGNED_COMPARE (gint32);
-			} else
+			else
 #endif
 			if (*(gint32 *) this_field != *(gint32 *) that_field)
 				return FALSE;
@@ -1206,27 +1206,27 @@ ves_icall_System_ValueType_Equals (MonoObject *this_obj, MonoObject *that, MonoA
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
 #ifdef NO_UNALIGNED_ACCESS
-			if (G_UNLIKELY ((intptr_t) this_field & 7 || (intptr_t) that_field & 7)) {
+			if (G_UNLIKELY ((intptr_t) this_field & 7 || (intptr_t) that_field & 7))
 				UNALIGNED_COMPARE (gint64);
-			} else
+			else
 #endif
 			if (*(gint64 *) this_field != *(gint64 *) that_field)
 				return FALSE;
 			break;
 		case MONO_TYPE_R4:
 #ifdef NO_UNALIGNED_ACCESS
-			if (G_UNLIKELY ((intptr_t) this_field & 3 || (intptr_t) that_field & 3)) {
+			if (G_UNLIKELY ((intptr_t) this_field & 3 || (intptr_t) that_field & 3))
 				UNALIGNED_COMPARE (float);
-			} else
+			else
 #endif
 			if (*(float *) this_field != *(float *) that_field)
 				return FALSE;
 			break;
 		case MONO_TYPE_R8:
 #ifdef NO_UNALIGNED_ACCESS
-			if (G_UNLIKELY ((intptr_t) this_field & 7 || (intptr_t) that_field & 7)) {
+			if (G_UNLIKELY ((intptr_t) this_field & 7 || (intptr_t) that_field & 7))
 				UNALIGNED_COMPARE (double);
-			} else
+			else
 #endif
 			if (*(double *) this_field != *(double *) that_field)
 				return FALSE;
@@ -1266,7 +1266,7 @@ ves_icall_System_ValueType_Equals (MonoObject *this_obj, MonoObject *that, MonoA
 			values [count++] = o;
 		}
 
-#undef UNALIGNED_CHECK
+#undef UNALIGNED_COMPARE
 
 		if (klass->enumtype)
 			/* enums only have one non-static field */
