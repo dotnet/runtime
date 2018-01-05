@@ -4,7 +4,9 @@ The .NET Core project started with the codebase from the desktop CoreCLR/Silverl
 
 ## Platform test coverage
 
-Windows and Linux x86/x64 have been covered. Arm32 is in progress at this time, OSX coming soon (please let us know if you have a pressing issue)
+- Windows on x86/x64/arm32
+- Linux on x86/x64/arm32
+- OSX 
 
 ## Known issues
 
@@ -15,6 +17,10 @@ The implementation of this API was making some questionable assumptions about Wi
 ### Profiler does not disable Concurrent GC
 
 See github issue [#13153](https://github.com/dotnet/coreclr/issues/13153) for more details.
+
+### ReJIT on ARM
+
+ReJIT feature is only available on x86/x64 for now. 
 
 ### Any issues we missed?
 
