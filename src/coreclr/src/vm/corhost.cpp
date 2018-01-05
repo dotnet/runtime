@@ -650,10 +650,6 @@ HRESULT CorHost2::_CreateAppDomain(
     if (dwFlags & APPDOMAIN_FORCE_TRIVIAL_WAIT_OPERATIONS)
         pDomain->SetForceTrivialWaitOperations();
 
-        
-#ifdef PROFILING_SUPPORTED
-    EX_TRY
-#endif    
     {
         GCX_COOP();
     
@@ -710,28 +706,6 @@ HRESULT CorHost2::_CreateAppDomain(
 
         m_fAppDomainCreated = TRUE;
     }
-#ifdef PROFILING_SUPPORTED
-    EX_HOOK
-    {
-        // Need the first assembly loaded in to get any data on an app domain.
-        {
-            BEGIN_PIN_PROFILER(CORProfilerTrackAppDomainLoads());
-            GCX_PREEMP();
-            g_profControlBlock.pProfInterface->AppDomainCreationFinished((AppDomainID)(AppDomain*) pDomain, GET_EXCEPTION()->GetHR());
-            END_PIN_PROFILER();
-        }
-    }
-    EX_END_HOOK;
-
-    // Need the first assembly loaded in to get any data on an app domain.
-    {
-        BEGIN_PIN_PROFILER(CORProfilerTrackAppDomainLoads());
-        GCX_PREEMP();
-        g_profControlBlock.pProfInterface->AppDomainCreationFinished((AppDomainID)(AppDomain*) pDomain, S_OK);
-        END_PIN_PROFILER();
-    }        
-#endif // PROFILING_SUPPORTED
-
     // DoneCreating releases ownership of AppDomain.  After this call, there should be no access to pDomain.
     pDomain.DoneCreating();
 
