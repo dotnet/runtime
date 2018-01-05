@@ -453,12 +453,12 @@ namespace System
 
             for (int i = 0; i < m_innerExceptions.Count; i++)
             {
-                text.Append(Environment.NewLine);
+                text.AppendLine();
                 text.Append("---> ");
-                text.Append(string.Format(CultureInfo.InvariantCulture, SR.AggregateException_InnerException, i));
+                text.AppendFormat(CultureInfo.InvariantCulture, SR.AggregateException_InnerException, i);
                 text.Append(m_innerExceptions[i].ToString());
                 text.Append("<---");
-                text.Append(Environment.NewLine);
+                text.AppendLine();
             }
 
             return text.ToString();
