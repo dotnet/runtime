@@ -373,7 +373,7 @@ namespace System.Collections.Generic
             return -1;
         }
 
-        private void Initialize(int capacity)
+        private int Initialize(int capacity)
         {
             int size = HashHelpers.GetPrime(capacity);
             int[] buckets = new int[size];
@@ -385,6 +385,8 @@ namespace System.Collections.Generic
             _freeList = -1;
             _buckets = buckets;
             _entries = new Entry[size];
+
+            return size;
         }
 
         private bool TryInsert(TKey key, TValue value, InsertionBehavior behavior)
@@ -757,6 +759,22 @@ namespace System.Collections.Generic
         IEnumerator IEnumerable.GetEnumerator()
         {
             return new Enumerator(this, Enumerator.KeyValuePair);
+        }
+
+        /// <summary>
+        /// Ensures that the dictionary can hold up to 'capacity' entries without any further expansion of its backing storage
+        /// </summary>
+        public int EnsureCapacity(int capacity)
+        {
+            if (capacity < 0)
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
+            if (_entries != null && _entries.Length >= capacity)
+                return _entries.Length;
+            if (_buckets == null)
+                return Initialize(capacity);
+            int newSize = HashHelpers.GetPrime(capacity);
+            Resize(newSize, forceNewHashCodes: false);
+            return newSize;
         }
 
         bool ICollection.IsSynchronized
