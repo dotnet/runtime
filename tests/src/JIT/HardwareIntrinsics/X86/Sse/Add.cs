@@ -40,9 +40,22 @@ namespace IntelHardwareIntrinsicTest
                         Console.WriteLine();
                         testResult = Fail;
                     }
+
+                    vf3 = (Vector128<float>)typeof(Sse).GetMethod(nameof(Sse.Add), new Type[] { vf1.GetType(), vf2.GetType() }).Invoke(null, new object[] { vf1, vf2 });
+                    Unsafe.Write(floatTable.outArrayPtr, vf3);
+
+                    if (!floatTable.CheckResult((x, y, z) => x + y == z))
+                    {
+                        Console.WriteLine("SSE Add failed via reflection on float:");
+                        foreach (var item in floatTable.outArray)
+                        {
+                            Console.Write(item + ", ");
+                        }
+                        Console.WriteLine();
+                        testResult = Fail;
+                    }
                 }
             }
-
 
             return testResult;
         }
