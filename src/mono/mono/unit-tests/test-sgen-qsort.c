@@ -8,8 +8,8 @@
 
 #include "config.h"
 
-#include <sgen/sgen-gc.h>
-#include <sgen/sgen-qsort.h>
+#include <mono/sgen/sgen-gc.h>
+#include <mono/sgen/sgen-qsort.h>
 
 #include <stdlib.h>
 #include <string.h>

@@ -41,8 +41,8 @@
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/runtime.h>
-#include <metadata/threads.h>
-#include <metadata/profiler-private.h>
+#include <mono/metadata/threads.h>
+#include <mono/metadata/profiler-private.h>
 #include <mono/metadata/coree.h>
 
 static MonoJitInfoFindInAot jit_info_find_in_aot_func = NULL;

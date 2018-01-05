@@ -45,8 +45,8 @@
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/w32process.h>
 #include <mono/metadata/w32file.h>
-#include <metadata/threads.h>
-#include <metadata/profiler-private.h>
+#include <mono/metadata/threads.h>
+#include <mono/metadata/profiler-private.h>
 #include <mono/metadata/coree.h>
 
 //#define DEBUG_DOMAIN_UNLOAD 1
