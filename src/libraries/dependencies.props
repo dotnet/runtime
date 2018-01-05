@@ -46,7 +46,7 @@
     <RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeNativeSystemDataSqlClientSniPackageVersion>
 
     <AppXRunnerVersion>1.0.3-prerelease-00921-01</AppXRunnerVersion>
-    <XunitPerfAnalysisPackageVersion>1.0.0-beta-build0007</XunitPerfAnalysisPackageVersion>
+    <XunitPerfAnalysisPackageVersion>1.0.0-beta-build0015</XunitPerfAnalysisPackageVersion>
     <TraceEventPackageVersion>1.0.3-alpha-experimental</TraceEventPackageVersion>
     <XunitNetcoreExtensionsVersion>2.1.0-prerelease-02403-01</XunitNetcoreExtensionsVersion>
   </PropertyGroup>
