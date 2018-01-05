@@ -1,1 +1,2 @@
 TypeCannotChangeClassification : Type 'System.TypedReference' is a 'ref struct' in the implementation but is a 'struct' in the contract.
+TypeCannotChangeClassification : Type 'System.Runtime.CompilerServices.YieldAwaitable.YieldAwaiter' is marked as readonly in the contract so it must also be marked readonly in the implementation.

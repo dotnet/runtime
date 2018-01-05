@@ -6547,7 +6547,9 @@ namespace System.Runtime.CompilerServices
     }
     public static partial class RuntimeFeature
     {
+#if FEATURE_DEFAULT_INTERFACES
         public const string DefaultImplementationsOfInterfaces = "DefaultImplementationsOfInterfaces";
+#endif
         public static bool IsSupported(string feature) { throw null; }
     }
     public static partial class RuntimeHelpers
