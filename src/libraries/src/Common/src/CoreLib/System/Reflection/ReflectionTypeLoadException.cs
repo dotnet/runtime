@@ -27,7 +27,7 @@ namespace System.Reflection
             HResult = HResults.COR_E_REFLECTIONTYPELOAD;
         }
 
-        private ReflectionTypeLoadException(SerializationInfo info, StreamingContext context) 
+        private ReflectionTypeLoadException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
             LoaderExceptions = (Exception[])(info.GetValue("Exceptions", typeof(Exception[])));
@@ -40,48 +40,34 @@ namespace System.Reflection
             info.AddValue("Exceptions", LoaderExceptions, typeof(Exception[]));
         }
 
-        public override string Message
-        {
-            get
-            {
-                if (LoaderExceptions == null || LoaderExceptions.Length == 0)
-                {
-                    return base.Message;
-                }
-
-                StringBuilder text = new StringBuilder();
-                text.AppendLine(base.Message);
-                foreach (Exception e in LoaderExceptions)
-                {
-                    if (e != null)
-                    {
-                        text.AppendLine(e.Message);
-                    }
-                }
-                return text.ToString();
-            }
-        }
-
-        public override string ToString()
-        {
-            StringBuilder text = new StringBuilder();
-            text.AppendLine(base.ToString());
-            if (LoaderExceptions != null)
-            {
-                foreach (Exception e in LoaderExceptions)
-                {
-                    if (e != null)
-                    {
-                        text.AppendLine(e.ToString());
-                    }
-                }
-            }
-
-            return text.ToString();
-        }
-
         public Type[] Types { get; }
 
         public Exception[] LoaderExceptions { get; }
+
+        public override string Message => CreateString(isMessage: true);
+
+        public override string ToString() => CreateString(isMessage: false);
+
+        private string CreateString(bool isMessage)
+        {
+            string baseValue = isMessage ? base.Message : base.ToString();
+
+            Exception[] exceptions = LoaderExceptions;
+            if (exceptions == null || exceptions.Length == 0)
+            {
+                return baseValue;
+            }
+
+            var text = new StringBuilder(baseValue);
+            foreach (Exception e in exceptions)
+            {
+                if (e != null)
+                {
+                    text.AppendLine();
+                    text.Append(isMessage ? e.Message : e.ToString());
+                }
+            }
+            return text.ToString();
+        }
     }
 }
