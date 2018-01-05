@@ -20,6 +20,8 @@
     <UnusedApplicationAssemblyAction Condition=" '$(UnusedApplicationAssemblyAction)' == '' ">Delete</UnusedApplicationAssemblyAction>
     <UsedPlatformAssemblyAction Condition=" '$(UsedPlatformAssemblyAction)' == '' ">Link</UsedPlatformAssemblyAction>
     <UnusedPlatformAssemblyAction Condition=" '$(UnusedPlatformAssemblyAction)' == '' ">Delete</UnusedPlatformAssemblyAction>
+    <RootAllApplicationAssemblies Condition=" '$(RootAllApplicationAssemblies)' == '' ">true</RootAllApplicationAssemblies>
+    <RootAllApplicationAssemblies Condition=" '$(RootAllApplicationAssemblies)' != 'true' ">false</RootAllApplicationAssemblies>
   </PropertyGroup>
 
   <!-- This depends on LinkDuringPublish, so it needs to be imported
@@ -328,21 +330,29 @@
        to work on the publish output. -->
   <Target Name="_ComputeLinkerRootAssemblies"
           DependsOnTargets="_ComputeManagedResolvedAssembliesToPublish;_ComputePlatformLibraries;_CheckSystemPrivateCorelibEmbeddedRoots">
-    <!-- By default, roots are everything minus the framework
-         assemblies. This doesn't include the intermediate
-         assembly, because we root it separately using an xml file,
-         which lets us explicitly root everything. 
+    <!-- If RootAllApplicationAssemblies is true, roots are everything minus the framework
+         assemblies. This doesn't include the intermediate assembly,
+         because we root it separately using an xml file,
+         which lets us explicitly root everything.
+
+         If RootAllApplicationAssemblies is false, only intermediate assembly's Main method is rooted.
+
          System.Private.CoreLib is rooted unless it has an embedded
          xml descriptor file. -->
-    <ItemGroup>
+
+    <ItemGroup Condition=" '$(RootAllApplicationAssemblies)' == 'true' ">
       <_LinkerRootAssemblies Include="@(_ManagedResolvedAssembliesToPublish->'%(Filename)')" />
       <_LinkerRootAssemblies Remove="@(PlatformLibraries->'%(Filename)')" />
       <_LinkerRootAssemblies Remove="System.Private.CoreLib" Condition=" '$(_SPCHasEmbeddedRootDescriptor)' == 'true' "/>
       <LinkerRootAssemblies Include="@(_LinkerRootAssemblies)" />
     </ItemGroup>
+
+    <ItemGroup Condition=" '$(RootAllApplicationAssemblies)' == 'false' ">
+      <LinkerRootAssemblies Include="@(IntermediateAssembly)" />
+      <LinkerRootAssemblies Include="System.Private.CoreLib" Condition=" '$(_SPCHasEmbeddedRootDescriptor)' == 'false' "/>
+    </ItemGroup>
   </Target>
 
-    
   <UsingTask TaskName="CheckEmbeddedRootDescriptor" AssemblyFile="$(LinkTaskDllPath)" />
   <Target Name="_CheckSystemPrivateCorelibEmbeddedRoots"
           DependsOnTargets="_ComputeManagedAssembliesToLink">
@@ -370,7 +380,8 @@
        dynamically include the generated descriptor files for the
        intermediate assembly. -->
   <Target Name="_ComputeLinkerRootDescriptors"
-          DependsOnTargets="_GenerateIntermediateRootDescriptor">
+          DependsOnTargets="_GenerateIntermediateRootDescriptor"
+          Condition=" '$(RootAllApplicationAssemblies)' == 'true' ">
     <ItemGroup>
       <LinkerRootDescriptors Include="$(_IntermediateRootDescriptorPath)" />
     </ItemGroup>
@@ -382,7 +393,8 @@
   <UsingTask TaskName="CreateRootDescriptorFile" AssemblyFile="$(LinkTaskDllPath)" />
   <Target Name="_GenerateIntermediateRootDescriptor"
           Inputs="@(IntermediateAssembly)"
-          Outputs="$(_IntermediateRootDescriptorPath)">
+          Outputs="$(_IntermediateRootDescriptorPath)"
+          Condition=" '$(RootAllApplicationAssemblies)' == 'true' ">
     <CreateRootDescriptorFile AssemblyNames="@(IntermediateAssembly->'%(Filename)')"
                               RootDescriptorFilePath="$(_IntermediateRootDescriptorPath)" />
   </Target>
