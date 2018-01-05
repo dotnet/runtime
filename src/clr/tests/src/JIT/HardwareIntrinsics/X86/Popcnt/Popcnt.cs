@@ -4,6 +4,7 @@
 //
 
 using System;
+using System.Reflection;
 using System.Runtime.Intrinsics.X86;
 
 namespace IntelHardwareIntrinsicTest
@@ -27,11 +28,22 @@ namespace IntelHardwareIntrinsicTest
                     Console.WriteLine("Intrinsic Popcnt.PopCount is called on non-supported hardware");
                     Console.WriteLine("Popcnt.IsSupported " + Popcnt.IsSupported);
                     Console.WriteLine("Environment.Is64BitProcess " + Environment.Is64BitProcess);
-                    return Fail;
+                    testResult = Fail;
                 }
                 catch (PlatformNotSupportedException)
                 {
-                    testResult = Pass;
+                }
+
+                try
+                {
+                    resl = Convert.ToInt64(typeof(Popcnt).GetMethod(nameof(Popcnt.PopCount), new Type[] { sl.GetType() }).Invoke(null, new object[] { sl }));
+                    Console.WriteLine("Intrinsic Popcnt.PopCount is called via reflection on non-supported hardware");
+                    Console.WriteLine("Popcnt.IsSupported " + Popcnt.IsSupported);
+                    Console.WriteLine("Environment.Is64BitProcess " + Environment.Is64BitProcess);
+                    testResult = Fail;
+                }
+                catch (TargetInvocationException e) when (e.InnerException is PlatformNotSupportedException)
+                {
                 }
             }
 
@@ -43,10 +55,19 @@ namespace IntelHardwareIntrinsicTest
                     for (int i = 0; i < longPopcntTable.Length; i++)
                     {
                         sl = longPopcntTable[i].s;
+
                         resl = Popcnt.PopCount(sl);
                         if (resl != longPopcntTable[i].res)
                         {
                             Console.WriteLine("{0}: Inputs: 0x{1,16:x} Expected: 0x{3,16:x} actual: 0x{4,16:x}",
+                                i, sl, longPopcntTable[i].res, resl);
+                            testResult = Fail;
+                        }
+
+                        resl = Convert.ToInt64(typeof(Popcnt).GetMethod(nameof(Popcnt.PopCount), new Type[] { sl.GetType() }).Invoke(null, new object[] { sl }));
+                        if (resl != longPopcntTable[i].res)
+                        {
+                            Console.WriteLine("{0}: Inputs: 0x{1,16:x} Expected: 0x{3,16:x} actual: 0x{4,16:x} - Reflection",
                                 i, sl, longPopcntTable[i].res, resl);
                             testResult = Fail;
                         }
@@ -58,10 +79,19 @@ namespace IntelHardwareIntrinsicTest
                 for (int i = 0; i < intPopcntTable.Length; i++)
                 {
                     si = intPopcntTable[i].s;
+
                     resi = Popcnt.PopCount(si);
                     if (resi != intPopcntTable[i].res)
                     {
                         Console.WriteLine("{0}: Inputs: 0x{1,16:x} Expected: 0x{3,16:x} actual: 0x{4,16:x}",
+                            i, si, intPopcntTable[i].res, resi);
+                        testResult = Fail;
+                    }
+
+                    resi = Convert.ToInt32(typeof(Popcnt).GetMethod(nameof(Popcnt.PopCount), new Type[] { si.GetType() }).Invoke(null, new object[] { si }));
+                    if (resi != intPopcntTable[i].res)
+                    {
+                        Console.WriteLine("{0}: Inputs: 0x{1,16:x} Expected: 0x{3,16:x} actual: 0x{4,16:x} - Reflection",
                             i, si, intPopcntTable[i].res, resi);
                         testResult = Fail;
                     }
