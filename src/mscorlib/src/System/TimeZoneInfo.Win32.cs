@@ -348,7 +348,7 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(id));
             }
-            else if (id.Length == 0 || id.Length > MaxKeyLength || id.Contains("\0"))
+            else if (id.Length == 0 || id.Length > MaxKeyLength || id.Contains('\0'))
             {
                 throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingData, id));
             }
