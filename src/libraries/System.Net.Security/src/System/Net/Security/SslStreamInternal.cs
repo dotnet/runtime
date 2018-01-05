@@ -212,7 +212,10 @@ namespace System.Net.Security
                 if (_decryptedBytesCount != 0)
                 {
                     copyBytes = CopyDecryptedData(buffer);
+
+                    _sslState.FinishRead(null);
                     _nestedRead = 0;
+
                     return copyBytes;
                 }
 
@@ -285,13 +288,19 @@ namespace System.Net.Security
                         throw new IOException(SR.net_io_decrypt, message.GetException());
                     }
                 }
-                catch (Exception e) when (!(e is IOException))
+                catch (Exception e)
                 {
+                    _sslState.FinishRead(null);
+
+                    if (e is IOException)
+                    {
+                        throw;
+                    }
+
                     throw new IOException(SR.net_io_read, e);
                 }
                 finally
                 {
-                    _sslState.FinishRead(null);
                     _nestedRead = 0;
                 }
             }

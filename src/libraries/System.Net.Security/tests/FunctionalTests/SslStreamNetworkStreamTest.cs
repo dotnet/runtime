@@ -6,6 +6,8 @@ using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -73,6 +75,40 @@ namespace System.Net.Security.Tests
             }
 
             listener.Stop();
+        }
+
+        [Fact]
+        [OuterLoop] // Test hits external azure server.
+        public async Task SslStream_NetworkStream_Renegotiation_Succeeds()
+        {
+            Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            await s.ConnectAsync(Configuration.Security.TlsRenegotiationServer, 443);
+            using (NetworkStream ns = new NetworkStream(s))
+            using (SslStream ssl = new SslStream(ns, true))
+            {
+                X509CertificateCollection certBundle = new X509CertificateCollection();
+                certBundle.Add(Configuration.Certificates.GetClientCertificate());
+
+                // Perform handshake to establish secure connection.
+                await ssl.AuthenticateAsClientAsync(Configuration.Security.TlsRenegotiationServer, certBundle, SslProtocols.Tls12, false);
+                Assert.True(ssl.IsAuthenticated);
+                Assert.True(ssl.IsEncrypted);
+
+                // Issue request that triggers regotiation from server.
+                byte[] message = Encoding.UTF8.GetBytes("GET /EchoClientCertificate.ashx HTTP/1.1\r\nHost: corefx-net-tls.azurewebsites.net\r\n\r\n");
+                await ssl.WriteAsync(message, 0, message.Length);
+
+                // Initiate Read operation, that results in starting renegotiation as per server response to the above request.
+                int bytesRead = await ssl.ReadAsync(message, 0, message.Length);
+
+                // SslStream.ReadAsync should return -1 bytes, indicating renegotiation operation is in progress.
+                Assert.Equal(-1, bytesRead);
+
+                // Do another Read, to get the HTTP response from the server, after successful renegotiation.
+                bytesRead = await ssl.ReadAsync(message, 0, message.Length);
+                Assert.True(bytesRead > 0);
+                Assert.Contains("HTTP/1.1 200 OK", Encoding.UTF8.GetString(message));
+            }
         }
 
         private static bool ValidateServerCertificate(
