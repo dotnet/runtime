@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using Xunit;
 
 namespace System.Reflection.Tests
@@ -17,10 +16,10 @@ namespace System.Reflection.Tests
             ReflectionTypeLoadException rtle = new ReflectionTypeLoadException(types, exceptions, "Null elements in Exceptions array");
             Assert.NotNull(rtle.ToString());
             Assert.NotNull(rtle.Message);
-            Assert.Equal(rtle.LoaderExceptions.Length, 1);
-            Assert.Equal(rtle.LoaderExceptions[0], null);
-            Assert.Equal(rtle.Types.Length, 1);
-            Assert.Equal(rtle.Types[0], null);
+            Assert.Equal(1, rtle.LoaderExceptions.Length);
+            Assert.Null(rtle.LoaderExceptions[0]);
+            Assert.Equal(1, rtle.Types.Length);
+            Assert.Null(rtle.Types[0]);
         }
 
         [Fact]
@@ -29,8 +28,8 @@ namespace System.Reflection.Tests
             ReflectionTypeLoadException rtle = new ReflectionTypeLoadException(null, null, "Null arguments");
             Assert.NotNull(rtle.ToString());
             Assert.NotNull(rtle.Message);
-            Assert.Equal(rtle.LoaderExceptions, null);
-            Assert.Equal(rtle.Types, null);
+            Assert.Null(rtle.LoaderExceptions);
+            Assert.Null(rtle.Types);
         }
     }
 }
