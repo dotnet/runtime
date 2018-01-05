@@ -6449,20 +6449,13 @@ CorInfoHelpFunc CEEInfo::getBoxHelper(CORINFO_CLASS_HANDLE clsHnd)
     }
     else 
     {
-        // Dev10 718281 - This has been functionally broken fora very long time (at least 2.0).
-        // The recent addition of the check for stack pointers has caused it to now AV instead
-        // of gracefully failing with an InvalidOperationException. Since nobody has noticed
-        // it being broken, we are choosing not to invest to fix it, and instead explicitly
-        // breaking it and failing early and consistently.
         if(VMClsHnd.IsTypeDesc())
-        {
             COMPlusThrow(kInvalidOperationException,W("InvalidOperation_TypeCannotBeBoxed"));
-        }
 
         // we shouldn't allow boxing of types that contains stack pointers
         // csc and vbc already disallow it.
         if (VMClsHnd.AsMethodTable()->IsByRefLike())
-            COMPlusThrow(kInvalidProgramException);
+            COMPlusThrow(kInvalidProgramException,W("NotSupported_ByRefLike"));
 
         result = CORINFO_HELP_BOX;
     }
