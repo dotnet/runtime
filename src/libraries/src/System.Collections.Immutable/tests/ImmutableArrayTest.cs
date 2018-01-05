@@ -2188,6 +2188,29 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(array, items);
         }
 
+        [Fact]
+        public void ItemRef()
+        {
+            var array = new[] { 1, 2, 3 }.ToImmutableArray();
+
+            ref readonly var safeRef = ref array.ItemRef(1);
+            ref var unsafeRef = ref Unsafe.AsRef(safeRef);
+
+            Assert.Equal(2, array.ItemRef(1));
+
+            unsafeRef = 4;
+
+            Assert.Equal(4, array.ItemRef(1));
+        }
+
+        [Fact]
+        public void ItemRef_OutOfBounds()
+        {
+            var array = new[] { 1, 2, 3 }.ToImmutableArray();
+
+            Assert.Throws<IndexOutOfRangeException>(() => array.ItemRef(5));
+        }
+
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)
         {
             return ImmutableArray.Create(contents);

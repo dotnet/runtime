@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Collections.Immutable.Tests
@@ -272,6 +273,32 @@ namespace System.Collections.Immutable.Tests
             Type proxyType = DebuggerAttributes.GetProxyType(ImmutableStack.Create<string>("1", "2", "3"));
             TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance(proxyType, (object)null));
             Assert.IsType<ArgumentNullException>(tie.InnerException);
+        }
+
+        [Fact]
+        public void PeekRef()
+        {
+            var stack = ImmutableStack<int>.Empty
+                .Push(1)
+                .Push(2)
+                .Push(3);
+
+            ref readonly var safeRef = ref stack.PeekRef();
+            ref var unsafeRef = ref Unsafe.AsRef(safeRef);
+
+            Assert.Equal(3, stack.PeekRef());
+
+            unsafeRef = 4;
+
+            Assert.Equal(4, stack.PeekRef());
+        }
+
+        [Fact]
+        public void PeekRef_Empty()
+        {
+            var stack = ImmutableStack<int>.Empty;
+
+            Assert.Throws<InvalidOperationException>(() => stack.PeekRef());
         }
 
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)
