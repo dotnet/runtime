@@ -90,7 +90,7 @@ namespace System.Net.Security.Tests
                 certBundle.Add(Configuration.Certificates.GetClientCertificate());
 
                 // Perform handshake to establish secure connection.
-                await ssl.AuthenticateAsClientAsync(Configuration.Security.TlsRenegotiationServer, certBundle, false);
+                await ssl.AuthenticateAsClientAsync(Configuration.Security.TlsRenegotiationServer, certBundle, SslProtocols.Tls12, false);
                 Assert.True(ssl.IsAuthenticated);
                 Assert.True(ssl.IsEncrypted);
 
