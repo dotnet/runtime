@@ -2875,8 +2875,6 @@ private:
 
     VOID CheckForSpecialTypes();
 
-    VOID SetContextfulOrByRef();
-
 #ifdef FEATURE_READYTORUN
 
     VOID CheckLayoutDependsOnOtherModules(MethodTable * pDependencyMT);
