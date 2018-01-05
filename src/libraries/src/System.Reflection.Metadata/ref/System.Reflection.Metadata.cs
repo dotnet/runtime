@@ -667,6 +667,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct EventAccessors
     {
         public System.Reflection.Metadata.MethodDefinitionHandle Adder { get { throw null; } }
+        public System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.MethodDefinitionHandle> Others { get { throw null; } }
         public System.Reflection.Metadata.MethodDefinitionHandle Raiser { get { throw null; } }
         public System.Reflection.Metadata.MethodDefinitionHandle Remover { get { throw null; } }
     }
@@ -1893,6 +1894,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.GuidHandle GenerationId { get { throw null; } }
         public System.Reflection.Metadata.GuidHandle Mvid { get { throw null; } }
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
+        public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public readonly partial struct ModuleDefinitionHandle : System.IEquatable<System.Reflection.Metadata.ModuleDefinitionHandle>
@@ -2039,6 +2041,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct PropertyAccessors
     {
         public System.Reflection.Metadata.MethodDefinitionHandle Getter { get { throw null; } }
+        public System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.MethodDefinitionHandle> Others { get { throw null; } }
         public System.Reflection.Metadata.MethodDefinitionHandle Setter { get { throw null; } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -3174,7 +3177,7 @@ namespace System.Reflection.PortableExecutable
         public System.Reflection.Metadata.BlobContentId Serialize(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         protected abstract System.Reflection.Metadata.BlobBuilder SerializeSection(string name, System.Reflection.PortableExecutable.SectionLocation location);
         [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-        protected partial struct Section
+        protected readonly partial struct Section
         {
             public readonly System.Reflection.PortableExecutable.SectionCharacteristics Characteristics;
             public readonly string Name;
