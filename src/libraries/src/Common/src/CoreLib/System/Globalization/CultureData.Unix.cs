@@ -33,7 +33,7 @@ namespace System.Globalization
             string realNameBuffer = _sRealName;
 
             // Basic validation
-            if (realNameBuffer.Contains("@"))
+            if (realNameBuffer.Contains('@'))
             {
                 return false; // don't allow ICU variants to come in directly
             }
@@ -43,7 +43,7 @@ namespace System.Globalization
             if (index > 0)
             {
                 if (index >= (realNameBuffer.Length - 1) // must have characters after _
-                    || realNameBuffer.Substring(index + 1).Contains("_")) // only one _ allowed
+                    || realNameBuffer.Substring(index + 1).Contains('_')) // only one _ allowed
                 {
                     return false; // fail
                 }
