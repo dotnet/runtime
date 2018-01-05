@@ -4329,7 +4329,7 @@ mono_interp_transform_init (void)
 MonoException *
 mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, InterpFrame *frame)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	int i, align, size, offset;
 	MonoMethod *method = imethod->method;
 	MonoImage *image = method->klass->image;

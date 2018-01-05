@@ -593,7 +593,7 @@ mono_error_set_not_verifiable (MonoError *oerror, MonoMethod *method, const char
 static MonoString*
 string_new_cleanup (MonoDomain *domain, const char *text)
 {
-	MonoError ignored_err;
+	ERROR_DECL (ignored_err);
 	MonoString *result = mono_string_new_checked (domain, text, &ignored_err);
 	mono_error_cleanup (&ignored_err);
 	return result;
@@ -831,7 +831,7 @@ The error object is cleant after.
 MonoException*
 mono_error_convert_to_exception (MonoError *target_error)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoException *ex;
 
 	/* Mempool stored error shouldn't be cleaned up */
@@ -842,7 +842,7 @@ mono_error_convert_to_exception (MonoError *target_error)
 
 	ex = mono_error_prepare_exception (target_error, &error);
 	if (!mono_error_ok (&error)) {
-		MonoError second_chance;
+		ERROR_DECL (second_chance);
 		/*Try to produce the exception for the second error. FIXME maybe we should log about the original one*/
 		ex = mono_error_prepare_exception (&error, &second_chance);
 

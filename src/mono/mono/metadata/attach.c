@@ -267,7 +267,7 @@ mono_attach_cleanup (void)
 static int
 mono_attach_load_agent (MonoDomain *domain, char *agent, char *args, MonoObject **exc)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoAssembly *agent_assembly;
 	MonoImage *image;
 	MonoMethod *method;
@@ -483,7 +483,7 @@ transport_send (int fd, guint8 *data, int len)
 static void
 transport_start_receive (void)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoInternalThread *internal;
 
 	transport_connect ();
@@ -501,7 +501,7 @@ transport_start_receive (void)
 static gsize WINAPI
 receiver_thread (void *arg)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	int res, content_len;
 	guint8 buffer [256];
 	guint8 *p, *p_end;

@@ -674,7 +674,7 @@ mono_dynimage_encode_fieldref_signature (MonoDynamicImage *assembly, MonoImage *
 	if (type->num_mods) {
 		for (i = 0; i < type->num_mods; ++i) {
 			if (field_image) {
-				MonoError error;
+				ERROR_DECL (error);
 				MonoClass *klass = mono_class_get_checked (field_image, type->modifiers [i].token, &error);
 				g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 

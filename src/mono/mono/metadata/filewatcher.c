@@ -111,7 +111,7 @@ ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
 					       gint *code,
 					       gint *reqnum)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	FAMEvent ev;
 
 	if (FAMNextEvent (conn, &ev) == 1) {
@@ -155,7 +155,7 @@ ves_icall_System_IO_InotifyWatcher_GetInotifyInstance ()
 int
 ves_icall_System_IO_InotifyWatcher_AddWatch (int fd, MonoString *name, gint32 mask)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	char *str, *path;
 	int retval;
 

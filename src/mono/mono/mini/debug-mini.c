@@ -121,7 +121,7 @@ static void
 mono_debug_add_vg_method (MonoMethod *method, MonoDebugMethodJitInfo *jit)
 {
 #ifdef VALGRIND_ADD_LINE_INFO
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMethodHeader *header;
 	MonoDebugMethodInfo *minfo;
 	int i;
@@ -530,7 +530,7 @@ deserialize_variable (MonoDebugVarInfo *var, guint8 *p, guint8 **endbuf)
 static MonoDebugMethodJitInfo *
 deserialize_debug_info (MonoMethod *method, guint8 *code_start, guint8 *buf, guint32 buf_len)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMethodHeader *header;
 	gint32 offset, native_offset, prev_offset, prev_native_offset;
 	MonoDebugMethodJitInfo *jit;

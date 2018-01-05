@@ -286,7 +286,7 @@ try_invoke_perform_wait_callback (MonoObject** exc, MonoError *error)
 static void
 worker_callback (void)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	ThreadPoolDomain *tpdomain, *previous_tpdomain;
 	ThreadPoolCounter counter;
 	MonoInternalThread *thread;
@@ -748,7 +748,7 @@ void
 ves_icall_System_Threading_ThreadPool_ReportThreadStatus (MonoBoolean is_working)
 {
 	// TODO
-	MonoError error;
+	ERROR_DECL (error);
 	mono_error_set_not_implemented (&error, "");
 	mono_error_set_pending_exception (&error);
 }
@@ -809,7 +809,7 @@ MonoBoolean G_GNUC_UNUSED
 ves_icall_System_Threading_ThreadPool_PostQueuedCompletionStatus (MonoNativeOverlapped *native_overlapped)
 {
 	/* This copy the behavior of the current Mono implementation */
-	MonoError error;
+	ERROR_DECL (error);
 	mono_error_set_not_implemented (&error, "");
 	mono_error_set_pending_exception (&error);
 	return FALSE;

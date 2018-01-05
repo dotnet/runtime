@@ -358,7 +358,7 @@ method_encode_code (MonoDynamicImage *assembly, ReflectionMethodBuilder *mb, Mon
 	} else {
 		code = mb->code;
 		if (code == NULL){
-			MonoError inner_error;
+			ERROR_DECL (inner_error);
 			char *name = mono_string_to_utf8_checked (mb->name, &inner_error);
 			if (!is_ok (&inner_error)) {
 				name = g_strdup ("");
@@ -1293,7 +1293,7 @@ mono_image_fill_export_table_from_module (MonoDomain *domain, MonoReflectionModu
 	t = &image->tables [MONO_TABLE_TYPEDEF];
 
 	for (i = 0; i < t->rows; ++i) {
-		MonoError error;
+		ERROR_DECL (error);
 		MonoClass *klass = mono_class_get_checked (image, mono_metadata_make_token (MONO_TABLE_TYPEDEF, i + 1), &error);
 		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 
@@ -1344,7 +1344,7 @@ add_exported_type (MonoReflectionAssemblyBuilder *assemblyb, MonoDynamicImage *a
 static void
 mono_image_fill_export_table_from_type_forwarders (MonoReflectionAssemblyBuilder *assemblyb, MonoDynamicImage *assembly)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoClass *klass;
 	int i;
 
@@ -1423,7 +1423,7 @@ compare_nested (const void *a, const void *b)
 static int
 compare_genericparam (const void *a, const void *b)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	const GenericParamTableEntry **a_entry = (const GenericParamTableEntry **) a;
 	const GenericParamTableEntry **b_entry = (const GenericParamTableEntry **) b;
 

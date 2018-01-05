@@ -237,7 +237,7 @@ static void
 ves_real_abort (int line, MonoMethod *mh,
 		const unsigned short *ip, stackval *stack, stackval *sp)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMethodHeader *header = mono_method_get_header_checked (mh, &error);
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	g_printerr ("Execution aborted in method: %s::%s\n", mh->klass->name, mh->name);
@@ -358,7 +358,7 @@ get_virtual_method (InterpMethod *imethod, MonoObject *obj)
 	MonoMethod *m = imethod->method;
 	MonoDomain *domain = imethod->domain;
 	InterpMethod *ret = NULL;
-	MonoError error;
+	ERROR_DECL (error);
 
 #ifndef DISABLE_REMOTING
 	if (mono_object_is_transparent_proxy (obj)) {
@@ -702,7 +702,7 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, gco
 static void
 fill_in_trace (MonoException *exception, InterpFrame *frame)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	char *stack_trace = dump_frame (frame);
 	MonoDomain *domain = frame->imethod->domain;
 	(exception)->stack_trace = mono_string_new_checked (domain, stack_trace, &error);
@@ -749,7 +749,7 @@ ves_array_create (InterpFrame *frame, MonoDomain *domain, MonoClass *klass, Mono
 	uintptr_t *lengths;
 	intptr_t *lower_bounds;
 	MonoObject *obj;
-	MonoError error;
+	ERROR_DECL (error);
 	int i;
 
 	lengths = alloca (sizeof (uintptr_t) * klass->rank * 2);
@@ -820,7 +820,7 @@ ves_array_set (InterpFrame *frame)
 		return;
 
 	if (sp [ac->rank].data.p && !mono_object_class (o)->element_class->valuetype) {
-		MonoError error;
+		ERROR_DECL (error);
 		MonoObject *isinst = mono_object_isinst_checked (sp [ac->rank].data.p, mono_object_class (o)->element_class, &error);
 		mono_error_cleanup (&error);
 		if (!isinst) {
@@ -1228,7 +1228,7 @@ ves_imethod (InterpFrame *frame, ThreadContext *context)
 	const char *name = method->name;
 	MonoObject *obj = (MonoObject*) frame->stack_args->data.p;
 	MonoObject *isinst_obj;
-	MonoError error;
+	ERROR_DECL (error);
 
 	mono_class_init (method->klass);
 
@@ -1368,7 +1368,7 @@ dump_frame (InterpFrame *inv)
 	GString *str = g_string_new ("");
 	int i;
 	char *args;
-	MonoError error;
+	ERROR_DECL (error);
 
 	for (i = 0; inv; inv = inv->parent) {
 		if (inv->imethod != NULL) {
@@ -1423,7 +1423,7 @@ get_trace_ips (MonoDomain *domain, InterpFrame *top)
 	int i;
 	MonoArray *res;
 	InterpFrame *inv;
-	MonoError error;
+	ERROR_DECL (error);
 
 	for (i = 0, inv = top; inv; inv = inv->parent)
 		if (inv->imethod != NULL)
@@ -1890,7 +1890,7 @@ do_jit_call (stackval *sp, unsigned char *vt_sp, ThreadContext *context, InterpF
 	 */
 	if (!rmethod->jit_wrapper) {
 		MonoMethod *method = rmethod->method;
-		MonoError error;
+		ERROR_DECL (error);
 
 		sig = mono_method_signature (method);
 		g_assert (sig);
@@ -2397,7 +2397,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 	int i32;
 	unsigned char *vt_sp;
 	unsigned char *locals;
-	MonoError error;
+	ERROR_DECL (error);
 	MonoObject *o = NULL;
 	MonoClass *c;
 #if USE_COMPUTED_GOTO

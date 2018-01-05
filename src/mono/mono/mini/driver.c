@@ -373,7 +373,7 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 	if (mini_stats_fd)
 		fprintf (mini_stats_fd, "[");
 	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
-		MonoError error;
+		ERROR_DECL (error);
 		MonoMethod *method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, &error);
 		if (!method) {
 			mono_error_cleanup (&error); /* FIXME don't swallow the error */
@@ -392,7 +392,7 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 				if (verbose >= 2)
 					g_print ("Running '%s' ...\n", method->name);
 #ifdef MONO_USE_AOT_COMPILER
-				MonoError error;
+				ERROR_DECL (error);
 				func = (TestMethod)mono_aot_get_method_checked (mono_get_root_domain (), method, &error);
 				mono_error_cleanup (&error);
 				if (!func)
@@ -472,7 +472,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 
 	/* load the metadata */
 	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
-		MonoError error;
+		ERROR_DECL (error);
 		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, &error);
 		if (!method) {
 			mono_error_cleanup (&error);
@@ -581,7 +581,7 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 	g_timer_start (timer);
 	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
 		MonoObject *exc = NULL;
-		MonoError error;
+		ERROR_DECL (error);
 		MonoMethod *method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, &error);
 		if (!method) {
 			mono_error_cleanup (&error); /* FIXME don't swallow the error */
@@ -636,7 +636,7 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 			}
 		}
 		if (strncmp (method->name, "test_", 5) == 0 && filter) {
-			MonoError interp_error;
+			ERROR_DECL (interp_error);
 			MonoObject *exc = NULL;
 
 			result_obj = mini_get_interp_callbacks ()->runtime_invoke (method, NULL, NULL, &exc, &interp_error);
@@ -686,7 +686,7 @@ interp_regression (MonoImage *image, int verbose, int *total_run)
 
 	/* load the metadata */
 	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
-		MonoError error;
+		ERROR_DECL (error);
 		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, &error);
 		if (!method) {
 			mono_error_cleanup (&error);
@@ -1014,7 +1014,7 @@ small_id_thread_func (gpointer arg)
 static void
 jit_info_table_test (MonoDomain *domain)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	int i;
 
 	g_print ("testing jit_info_table\n");
@@ -1078,7 +1078,7 @@ compile_all_methods_thread_main_inner (CompileAllThreadArgs *args)
 	int i, count = 0, fail_count = 0;
 
 	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
-		MonoError error;
+		ERROR_DECL (error);
 		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
 		MonoMethodSignature *sig;
 
@@ -1139,7 +1139,7 @@ compile_all_methods_thread_main (CompileAllThreadArgs *args)
 static void
 compile_all_methods (MonoAssembly *ass, int verbose, guint32 opts, guint32 recompilation_times)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	CompileAllThreadArgs args;
 
 	args.ass = ass;
@@ -1167,7 +1167,7 @@ compile_all_methods (MonoAssembly *ass, int verbose, guint32 opts, guint32 recom
 int 
 mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoImage *image = mono_assembly_get_image (assembly);
 	MonoMethod *method;
 	guint32 entry = mono_image_get_entry_point (image);
@@ -1283,7 +1283,7 @@ static void main_thread_handler (gpointer user_data)
 static int
 load_agent (MonoDomain *domain, char *desc)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	char* col = strchr (desc, ':');	
 	char *agent, *args;
 	MonoAssembly *agent_assembly;

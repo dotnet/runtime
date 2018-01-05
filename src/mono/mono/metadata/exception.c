@@ -68,7 +68,7 @@ MonoException *
 mono_exception_from_name_domain (MonoDomain *domain, MonoImage *image, 
 				 const char* name_space, const char *name)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoClass *klass;
 	MonoObject *o;
 	MonoDomain *caller_domain = mono_domain_get ();
@@ -102,7 +102,7 @@ mono_exception_from_name_domain (MonoDomain *domain, MonoImage *image,
 MonoException *
 mono_exception_from_token (MonoImage *image, guint32 token)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoClass *klass;
 	MonoObject *o;
 
@@ -179,7 +179,7 @@ MonoException *
 mono_exception_from_name_two_strings (MonoImage *image, const char *name_space,
 				      const char *name, MonoString *a1, MonoString *a2)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoException *ret;
 
 	ret = mono_exception_from_name_two_strings_checked (image, name_space, name, a1, a2, &error);
@@ -230,7 +230,7 @@ MonoException *
 mono_exception_from_name_msg (MonoImage *image, const char *name_space,
 			      const char *name, const char *msg)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoException *ex;
 
 	ex = mono_exception_from_name (image, name_space, name);
@@ -254,7 +254,7 @@ MonoException *
 mono_exception_from_token_two_strings (MonoImage *image, guint32 token,
 									   MonoString *a1, MonoString *a2)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoException *ret;
 	ret = mono_exception_from_token_two_strings_checked (image, token, a1, a2, &error);
 	mono_error_cleanup (&error);
@@ -434,7 +434,7 @@ mono_get_exception_array_type_mismatch ()
 MonoException *
 mono_get_exception_type_load (MonoString *class_name, char *assembly_name)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoString *s = NULL;
 	if (assembly_name) {
 		s = mono_string_new_checked (mono_domain_get (), assembly_name, &error);
@@ -479,7 +479,7 @@ mono_get_exception_not_supported (const char *msg)
 MonoException *
 mono_get_exception_missing_method (const char *class_name, const char *member_name)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoString *s1 = mono_string_new_checked (mono_domain_get (), class_name, &error);
 	mono_error_assert_ok (&error);
 	MonoString *s2 = mono_string_new_checked (mono_domain_get (), member_name, &error);
@@ -500,7 +500,7 @@ mono_get_exception_missing_method (const char *class_name, const char *member_na
 MonoException *
 mono_get_exception_missing_field (const char *class_name, const char *member_name)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoString *s1 = mono_string_new_checked (mono_domain_get (), class_name, &error);
 	mono_error_assert_ok (&error);
 	MonoString *s2 = mono_string_new_checked (mono_domain_get (), member_name, &error);
@@ -526,7 +526,7 @@ mono_get_exception_argument_null (const char *arg)
 		mono_get_corlib (), "System", "ArgumentNullException");
 
 	if (arg) {
-		MonoError error;
+		ERROR_DECL (error);
 		MonoArgumentException *argex = (MonoArgumentException *)ex;
 		MonoString *arg_str = mono_string_new_checked (mono_object_get_domain ((MonoObject*)ex), arg, &error);
 		mono_error_assert_ok (&error);
@@ -550,7 +550,7 @@ mono_get_exception_argument (const char *arg, const char *msg)
 		mono_get_corlib (), "System", "ArgumentException", msg);
 
 	if (arg) {
-		MonoError error;
+		ERROR_DECL (error);
 		MonoArgumentException *argex = (MonoArgumentException *)ex;
 		MonoString *arg_str = mono_string_new_checked (mono_object_get_domain ((MonoObject*)ex), arg, &error);
 		mono_error_assert_ok (&error);
@@ -574,7 +574,7 @@ mono_get_exception_argument_out_of_range (const char *arg)
 		mono_get_corlib (), "System", "ArgumentOutOfRangeException");
 
 	if (arg) {
-		MonoError error;
+		ERROR_DECL (error);
 		MonoArgumentException *argex = (MonoArgumentException *)ex;
 		MonoString *arg_str = mono_string_new_checked (mono_object_get_domain ((MonoObject*)ex), arg, &error);
 		mono_error_assert_ok (&error);
@@ -616,7 +616,7 @@ mono_get_exception_io (const char *msg)
 MonoException *
 mono_get_exception_file_not_found (MonoString *fname)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoException *ret = mono_exception_from_name_two_strings_checked (
 		mono_get_corlib (), "System.IO", "FileNotFoundException", fname, fname, &error);
 	mono_error_assert_ok (&error);
@@ -632,7 +632,7 @@ mono_get_exception_file_not_found (MonoString *fname)
 MonoException *
 mono_get_exception_file_not_found2 (const char *msg, MonoString *fname)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoString *s = NULL;
 	if (msg) {
 		s = mono_string_new_checked (mono_domain_get (), msg, &error);
@@ -654,7 +654,7 @@ mono_get_exception_file_not_found2 (const char *msg, MonoString *fname)
 MonoException *
 mono_get_exception_type_initialization (const gchar *type_name, MonoException *inner)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoException *ret = mono_get_exception_type_initialization_checked (type_name, inner, &error);
 	if (!is_ok (&error)) {
 		mono_error_cleanup (&error);
@@ -757,7 +757,7 @@ mono_get_exception_bad_image_format (const char *msg)
 MonoException *
 mono_get_exception_bad_image_format2 (const char *msg, MonoString *fname)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoString *s = NULL;
 
 	if (msg) {
@@ -843,7 +843,7 @@ MonoException *
 mono_get_exception_reflection_type_load (MonoArray *types_raw, MonoArray *exceptions_raw)
 {
 	HANDLE_FUNCTION_ENTER ();
-	MonoError error;
+	ERROR_DECL (error);
 	MONO_HANDLE_DCL (MonoArray, types);
 	MONO_HANDLE_DCL (MonoArray, exceptions);
 	MonoExceptionHandle ret = mono_get_exception_reflection_type_load_checked (types, exceptions, &error);
@@ -903,7 +903,7 @@ mono_get_exception_reflection_type_load_checked (MonoArrayHandle types, MonoArra
 MonoException *
 mono_get_exception_runtime_wrapped (MonoObject *wrapped_exception)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoException *ret = mono_get_exception_runtime_wrapped_checked (wrapped_exception, &error);
 	if (!is_ok (&error)) {
 		mono_error_cleanup (&error);
@@ -1084,7 +1084,7 @@ mono_invoke_unhandled_exception_hook (MonoObject *exc)
 	if (unhandled_exception_hook) {
 		unhandled_exception_hook (exc, unhandled_exception_hook_data);
 	} else {
-		MonoError inner_error;
+		ERROR_DECL (inner_error);
 		MonoObject *other = NULL;
 		MonoString *str = mono_object_try_to_string (exc, &other, &inner_error);
 		char *msg = NULL;

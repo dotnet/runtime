@@ -329,7 +329,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoStringHand
 MonoArray*
 ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoArray *array = NULL;
 	MonoDomain *domain = mono_domain_get ();
 
@@ -609,14 +609,14 @@ static MonoImage *system_security_assembly = NULL;
 void
 ves_icall_System_Security_SecureString_DecryptInternal (MonoArray *data, MonoObject *scope)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	invoke_protected_memory_method (data, scope, FALSE, &error);
 	mono_error_set_pending_exception (&error);
 }
 void
 ves_icall_System_Security_SecureString_EncryptInternal (MonoArray* data, MonoObject *scope)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	invoke_protected_memory_method (data, scope, TRUE, &error);
 	mono_error_set_pending_exception (&error);
 }

@@ -1569,7 +1569,7 @@ else { \
 static guint32*
 emit_call (MonoCompile *cfg, guint32 *code, guint32 patch_type, gconstpointer data)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	gpointer target;
 
 	/* FIXME: This only works if the target method is already compiled */

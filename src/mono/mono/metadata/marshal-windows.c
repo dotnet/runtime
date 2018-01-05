@@ -57,7 +57,7 @@ mono_marshal_realloc_co_task_mem (gpointer ptr, size_t size)
 gpointer
 ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (MonoString *string)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	char* tres, *ret;
 	size_t len;
 	tres = mono_string_to_utf8_checked (string, &error);

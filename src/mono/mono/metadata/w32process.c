@@ -428,7 +428,7 @@ cleanup:
 void
 ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoObject *this_obj, MonoString *filename)
 {
-	MonoError error;
+	ERROR_DECL (error);
 
 	stash_system_image (mono_object_class (this_obj)->image);
 
@@ -562,7 +562,7 @@ process_get_module (MonoAssembly *assembly, MonoClass *proc_class, MonoError *er
 MonoArray *
 ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, HANDLE process)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoArray *temp_arr = NULL;
 	MonoArray *arr;
 	HMODULE mods[1024];
@@ -636,7 +636,7 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, 
 MonoString *
 ves_icall_System_Diagnostics_Process_ProcessName_internal (HANDLE process)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoString *string;
 	gunichar2 name[MAX_PATH];
 	guint32 len;

@@ -23,7 +23,7 @@
 
 extern MonoBoolean ves_icall_System_Net_NetworkInformation_MacOsIPInterfaceProperties_ParseRouteInfo_internal(MonoString *iface, MonoArray **gw_addr_list)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	size_t needed;
 	in_addr_t in;
 	int mib[6];

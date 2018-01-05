@@ -168,7 +168,7 @@ coop_cond_timedwait_alertable (MonoCoopCond *cond, MonoCoopMutex *mutex, guint32
 void
 mono_gc_run_finalize (void *obj, void *data)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoObject *exc = NULL;
 	MonoObject *o;
 #ifndef HAVE_SGEN_GC
@@ -869,7 +869,7 @@ mono_runtime_do_background_work (void)
 static gsize WINAPI
 finalizer_thread (gpointer unused)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	gboolean wait = TRUE;
 
 	MonoString *finalizer = mono_string_new_checked (mono_get_root_domain (), "Finalizer", &error);
@@ -928,7 +928,7 @@ static
 void
 mono_gc_init_finalizer_thread (void)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	gc_thread = mono_thread_create_internal (mono_domain_get (), finalizer_thread, NULL, MONO_THREAD_CREATE_FLAGS_NONE, &error);
 	mono_error_assert_ok (&error);
 }

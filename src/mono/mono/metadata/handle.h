@@ -180,7 +180,7 @@ Icall macros
 */
 #define SETUP_ICALL_COMMON	\
 	do { \
-		MonoError error;	\
+		ERROR_DECL (error);	\
 		MonoThreadInfo *__info = mono_thread_info_current ();	\
 		error_init (&error);	\
 

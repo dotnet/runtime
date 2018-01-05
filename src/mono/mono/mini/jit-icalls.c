@@ -35,7 +35,7 @@ void*
 mono_ldftn (MonoMethod *method)
 {
 	gpointer addr;
-	MonoError error;
+	ERROR_DECL (error);
 
 	if (mono_llvm_only) {
 		// FIXME: No error handling
@@ -63,7 +63,7 @@ mono_ldftn (MonoMethod *method)
 static void*
 ldvirtfn_internal (MonoObject *obj, MonoMethod *method, gboolean gshared)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMethod *res;
 
 	if (obj == NULL) {
@@ -109,7 +109,7 @@ mono_ldvirtfn_gshared (MonoObject *obj, MonoMethod *method)
 void
 mono_helper_stelem_ref_check (MonoArray *array, MonoObject *val)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	if (!array) {
 		mono_set_pending_exception (mono_get_exception_null_reference ());
 		return;
@@ -674,7 +674,7 @@ mono_fload_r4_arg (double val)
 MonoArray *
 mono_array_new_va (MonoMethod *cm, ...)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoArray *arr;
 	MonoDomain *domain = mono_domain_get ();
 	va_list ap;
@@ -723,7 +723,7 @@ mono_array_new_va (MonoMethod *cm, ...)
 MonoArray *
 mono_array_new_1 (MonoMethod *cm, guint32 length)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoArray *arr;
 	MonoDomain *domain = mono_domain_get ();
 	uintptr_t lengths [1];
@@ -758,7 +758,7 @@ mono_array_new_1 (MonoMethod *cm, guint32 length)
 MonoArray *
 mono_array_new_2 (MonoMethod *cm, guint32 length1, guint32 length2)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoArray *arr;
 	MonoDomain *domain = mono_domain_get ();
 	uintptr_t lengths [2];
@@ -794,7 +794,7 @@ mono_array_new_2 (MonoMethod *cm, guint32 length1, guint32 length2)
 MonoArray *
 mono_array_new_3 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 length3)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoArray *arr;
 	MonoDomain *domain = mono_domain_get ();
 	uintptr_t lengths [3];
@@ -831,7 +831,7 @@ mono_array_new_3 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 leng
 MonoArray *
 mono_array_new_4 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 length3, guint32 length4)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoArray *arr;
 	MonoDomain *domain = mono_domain_get ();
 	uintptr_t lengths [4];
@@ -869,7 +869,7 @@ mono_array_new_4 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 leng
 gpointer
 mono_class_static_field_address (MonoDomain *domain, MonoClassField *field)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoVTable *vtable;
 	gpointer addr;
 	
@@ -907,7 +907,7 @@ mono_class_static_field_address (MonoDomain *domain, MonoClassField *field)
 gpointer
 mono_ldtoken_wrapper (MonoImage *image, int token, MonoGenericContext *context)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoClass *handle_class;
 	gpointer res;
 
@@ -1095,7 +1095,7 @@ mono_lconv_to_r8_un (guint64 a)
 gpointer
 mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointer *this_arg)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMethod *vmethod;
 	gpointer addr;
 	MonoGenericContext *context = mono_method_get_context (method);
@@ -1129,7 +1129,7 @@ mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointe
 MonoString*
 ves_icall_mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoString *result = mono_ldstr_checked (domain, image, idx, &error);
 	mono_error_set_pending_exception (&error);
 	return result;
@@ -1138,7 +1138,7 @@ ves_icall_mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 MonoString*
 mono_helper_ldstr (MonoImage *image, guint32 idx)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoString *result = mono_ldstr_checked (mono_domain_get (), image, idx, &error);
 	mono_error_set_pending_exception (&error);
 	return result;
@@ -1147,7 +1147,7 @@ mono_helper_ldstr (MonoImage *image, guint32 idx)
 MonoString*
 mono_helper_ldstr_mscorlib (guint32 idx)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoString *result = mono_ldstr_checked (mono_domain_get (), mono_defaults.corlib, idx, &error);
 	mono_error_set_pending_exception (&error);
 	return result;
@@ -1156,7 +1156,7 @@ mono_helper_ldstr_mscorlib (guint32 idx)
 MonoObject*
 mono_helper_newobj_mscorlib (guint32 idx)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoClass *klass = mono_class_get_checked (mono_defaults.corlib, MONO_TOKEN_TYPE_DEF | idx, &error);
 
 	if (!mono_error_ok (&error)) {
@@ -1189,7 +1189,7 @@ mono_create_corlib_exception_0 (guint32 token)
 MonoException *
 mono_create_corlib_exception_1 (guint32 token, MonoString *arg)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoException *ret = mono_exception_from_token_two_strings_checked (
 		mono_defaults.corlib, token, arg, NULL, &error);
 	mono_error_set_pending_exception (&error);
@@ -1199,7 +1199,7 @@ mono_create_corlib_exception_1 (guint32 token, MonoString *arg)
 MonoException *
 mono_create_corlib_exception_2 (guint32 token, MonoString *arg1, MonoString *arg2)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoException *ret = mono_exception_from_token_two_strings_checked (
 		mono_defaults.corlib, token, arg1, arg2, &error);
 	mono_error_set_pending_exception (&error);
@@ -1209,7 +1209,7 @@ mono_create_corlib_exception_2 (guint32 token, MonoString *arg1, MonoString *arg
 MonoObject*
 mono_object_castclass_unbox (MonoObject *obj, MonoClass *klass)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoJitTlsData *jit_tls = NULL;
 	MonoClass *oklass;
 
@@ -1243,7 +1243,7 @@ mono_object_castclass_unbox (MonoObject *obj, MonoClass *klass)
 MonoObject*
 mono_object_castclass_with_cache (MonoObject *obj, MonoClass *klass, gpointer *cache)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoJitTlsData *jit_tls = NULL;
 	gpointer cached_vtable, obj_vtable;
 
@@ -1282,7 +1282,7 @@ mono_object_castclass_with_cache (MonoObject *obj, MonoClass *klass, gpointer *c
 MonoObject*
 mono_object_isinst_with_cache (MonoObject *obj, MonoClass *klass, gpointer *cache)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	size_t cached_vtable, obj_vtable;
 
 	if (!obj)
@@ -1310,7 +1310,7 @@ mono_object_isinst_with_cache (MonoObject *obj, MonoClass *klass, gpointer *cach
 gpointer
 mono_get_native_calli_wrapper (MonoImage *image, MonoMethodSignature *sig, gpointer func)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMarshalSpec **mspecs;
 	MonoMethodPInvoke piinfo;
 	MonoMethod *m;
@@ -1403,7 +1403,7 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 MonoObject*
 mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, gboolean deref_arg, gpointer *args)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoObject *o;
 	MonoMethod *m;
 	gpointer this_arg;
@@ -1450,7 +1450,7 @@ void
 ves_icall_runtime_class_init (MonoVTable *vtable)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
-	MonoError error;
+	ERROR_DECL (error);
 
 	mono_runtime_class_init_full (vtable, &error);
 	mono_error_set_pending_exception (&error);
@@ -1460,7 +1460,7 @@ ves_icall_runtime_class_init (MonoVTable *vtable)
 void
 mono_generic_class_init (MonoVTable *vtable)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	mono_runtime_class_init_full (vtable, &error);
 	mono_error_set_pending_exception (&error);
 }
@@ -1469,7 +1469,7 @@ void
 ves_icall_mono_delegate_ctor (MonoObject *this_obj_raw, MonoObject *target_raw, gpointer addr)
 {
 	HANDLE_FUNCTION_ENTER ();
-	MonoError error;
+	ERROR_DECL (error);
 	MONO_HANDLE_DCL (MonoObject, this_obj);
 	MONO_HANDLE_DCL (MonoObject, target);
 	mono_delegate_ctor (this_obj, target, addr, &error);
@@ -1480,7 +1480,7 @@ ves_icall_mono_delegate_ctor (MonoObject *this_obj_raw, MonoObject *target_raw, 
 gpointer
 mono_fill_class_rgctx (MonoVTable *vtable, int index)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	gpointer res;
 
 	res = mono_class_fill_runtime_generic_context (vtable, index, &error);
@@ -1494,7 +1494,7 @@ mono_fill_class_rgctx (MonoVTable *vtable, int index)
 gpointer
 mono_fill_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, int index)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	gpointer res;
 
 	res = mono_method_fill_runtime_generic_context (mrgctx, index, &error);
@@ -1565,7 +1565,7 @@ resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, 
 gpointer
 mono_resolve_iface_call_gsharedvt (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, gpointer *out_arg)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	gpointer res = resolve_iface_call (this_obj, imt_slot, imt_method, out_arg, TRUE, &error);
 	if (!is_ok (&error)) {
 		MonoException *ex = mono_error_convert_to_exception (&error);
@@ -1675,7 +1675,7 @@ mono_resolve_vcall_gsharedvt (MonoObject *this_obj, int slot, MonoMethod *imt_me
 {
 	g_assert (this_obj);
 
-	MonoError error;
+	ERROR_DECL (error);
 	gpointer result = resolve_vcall (this_obj->vtable, slot, imt_method, out_arg, TRUE, &error);
 	if (!is_ok (&error)) {
 		MonoException *ex = mono_error_convert_to_exception (&error);
@@ -1696,7 +1696,7 @@ mono_resolve_generic_virtual_call (MonoVTable *vt, int slot, MonoMethod *generic
 	MonoMethod *m;
 	gpointer addr, compiled_method;
 	gboolean need_unbox_tramp = FALSE;
-	MonoError error;
+	ERROR_DECL (error);
 	MonoGenericContext context = { NULL, NULL };
 	MonoMethod *declaring;
 	gpointer arg = NULL;
@@ -1753,7 +1753,7 @@ mono_resolve_generic_virtual_call (MonoVTable *vt, int slot, MonoMethod *generic
 MonoFtnDesc*
 mono_resolve_generic_virtual_iface_call (MonoVTable *vt, int imt_slot, MonoMethod *generic_virtual)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMethod *m, *variant_iface;
 	gpointer addr, aot_addr, compiled_method;
 	gboolean need_unbox_tramp = FALSE;
@@ -1804,7 +1804,7 @@ mono_resolve_generic_virtual_iface_call (MonoVTable *vt, int imt_slot, MonoMetho
 gpointer
 mono_init_vtable_slot (MonoVTable *vtable, int slot)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	gpointer arg = NULL;
 	gpointer addr;
 	gpointer *ftnptr;
@@ -1831,7 +1831,7 @@ mono_init_vtable_slot (MonoVTable *vtable, int slot)
 void
 mono_llvmonly_init_delegate (MonoDelegate *del)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoFtnDesc *ftndesc = *(MonoFtnDesc**)del->method_code;
 
 	/*
@@ -1864,7 +1864,7 @@ mono_llvmonly_init_delegate (MonoDelegate *del)
 void
 mono_llvmonly_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMethod *method)
 {
-	MonoError error;
+	ERROR_DECL (error);
 
 	g_assert (target);
 
@@ -1893,7 +1893,7 @@ mono_get_assembly_object (MonoImage *image)
 MonoObject*
 mono_get_method_object (MonoMethod *method)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoObject * result;
 	result = (MonoObject*)mono_method_get_object_checked (mono_domain_get (), method, method->klass, &error);
 	mono_error_set_pending_exception (&error);
@@ -1913,7 +1913,7 @@ mono_throw_method_access (MonoMethod *caller, MonoMethod *callee)
 {
 	char *caller_name = mono_method_get_reflection_name (caller);
 	char *callee_name = mono_method_get_reflection_name (callee);
-	MonoError error;
+	ERROR_DECL (error);
 
 	error_init (&error);
 	mono_error_set_generic_error (&error, "System", "MethodAccessException", "Method `%s' is inaccessible from method `%s'", callee_name, caller_name);

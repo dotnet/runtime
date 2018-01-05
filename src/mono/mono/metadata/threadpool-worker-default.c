@@ -204,7 +204,7 @@ rand_create (void)
 static guint32
 rand_next (gpointer *handle, guint32 min, guint32 max)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	guint32 val;
 	mono_rand_try_get_uint32 (handle, &val, min, max, &error);
 	// FIXME handle error
@@ -508,7 +508,7 @@ worker_thread (gpointer unused)
 static gboolean
 worker_try_create (void)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoInternalThread *thread;
 	gint64 current_ticks;
 	gint32 now;
@@ -766,7 +766,7 @@ monitor_thread (gpointer unused)
 static void
 monitor_ensure_running (void)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	for (;;) {
 		switch (worker.monitor_status) {
 		case MONITOR_STATUS_REQUESTED:

@@ -847,7 +847,7 @@ void ves_icall_System_IO_MonoIO_Unlock (HANDLE handle, gint64 position,
 gint64
 mono_filesize_from_path (MonoString *string)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	struct stat buf;
 	gint64 res;
 	char *path = mono_string_to_utf8_checked (string, &error);

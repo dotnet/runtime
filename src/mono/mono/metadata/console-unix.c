@@ -220,7 +220,7 @@ static void
 do_console_cancel_event (void)
 {
 	static MonoMethod *System_Console_DoConsoleCancelEventBackground_method = ((gpointer)-1);
-	MonoError error;
+	ERROR_DECL (error);
 
 	if (mono_defaults.console_class == NULL)
 		return;
@@ -417,7 +417,7 @@ set_control_chars (MonoArray *control_chars, const guchar *cc)
 MonoBoolean
 ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardown, MonoArray **control_chars, int **size)
 {
-	MonoError error;
+	ERROR_DECL (error);
 
 	int dims;
 

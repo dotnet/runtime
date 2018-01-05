@@ -167,7 +167,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 static void
 throw_exception (MonoObject *exc, gpointer sp, gpointer ip, gboolean rethrow)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoContext ctx;
 	static void (*restore_context) (MonoContext *);
 	gpointer *window;

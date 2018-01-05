@@ -2328,7 +2328,7 @@ ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStart
 MonoArray *
 ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoArray *procs;
 	gpointer *pidarray;
 	int i, count;

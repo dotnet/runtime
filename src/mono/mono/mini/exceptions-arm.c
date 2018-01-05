@@ -144,7 +144,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 void
 mono_arm_throw_exception (MonoObject *exc, mgreg_t pc, mgreg_t sp, mgreg_t *int_regs, gdouble *fp_regs)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoContext ctx;
 	gboolean rethrow = sp & 1;
 

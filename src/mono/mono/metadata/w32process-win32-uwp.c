@@ -29,7 +29,7 @@ mono_process_win_enum_processes (DWORD *pids, DWORD count, DWORD *needed)
 HANDLE
 ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid)
 {
-	MonoError mono_error;
+	ERROR_DECL (mono_error);
 	error_init (&mono_error);
 
 	g_unsupported_api ("OpenProcess");
@@ -69,7 +69,7 @@ process_add_module (HANDLE process, HMODULE mod, gunichar2 *filename, gunichar2 
 MonoArray *
 ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, HANDLE process)
 {
-	MonoError mono_error;
+	ERROR_DECL (mono_error);
 	error_init (&mono_error);
 
 	g_unsupported_api ("EnumProcessModules, GetModuleBaseName, GetModuleFileNameEx");
@@ -85,7 +85,7 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, 
 MonoBoolean
 ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStartInfo *proc_start_info, MonoW32ProcessInfo *process_info)
 {
-	MonoError mono_error;
+	ERROR_DECL (mono_error);
 	error_init (&mono_error);
 
 	g_unsupported_api ("ShellExecuteEx");
@@ -102,7 +102,7 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 MonoString *
 ves_icall_System_Diagnostics_Process_ProcessName_internal (HANDLE process)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoString *string;
 	gunichar2 name[MAX_PATH];
 	guint32 len;
@@ -133,7 +133,7 @@ gboolean
 mono_process_create_process (MonoW32ProcessInfo *mono_process_info, MonoString *cmd, guint32 creation_flags,
 	gunichar2 *env_vars, gunichar2 *dir, STARTUPINFO *start_info, PROCESS_INFORMATION *process_info)
 {
-	MonoError	mono_error;
+	ERROR_DECL (mono_error);
 	gchar		*api_name = "";
 
 	if (mono_process_info->username) {
@@ -157,7 +157,7 @@ mono_process_create_process (MonoW32ProcessInfo *mono_process_info, MonoString *
 MonoBoolean
 mono_icall_get_process_working_set_size (gpointer handle, gsize *min, gsize *max)
 {
-	MonoError mono_error;
+	ERROR_DECL (mono_error);
 	error_init (&mono_error);
 
 	g_unsupported_api ("GetProcessWorkingSetSize");
@@ -173,7 +173,7 @@ mono_icall_get_process_working_set_size (gpointer handle, gsize *min, gsize *max
 MonoBoolean
 mono_icall_set_process_working_set_size (gpointer handle, gsize min, gsize max)
 {
-	MonoError mono_error;
+	ERROR_DECL (mono_error);
 	error_init (&mono_error);
 
 	g_unsupported_api ("SetProcessWorkingSetSize");
@@ -189,7 +189,7 @@ mono_icall_set_process_working_set_size (gpointer handle, gsize min, gsize max)
 gint32
 mono_icall_get_priority_class (gpointer handle)
 {
-	MonoError mono_error;
+	ERROR_DECL (mono_error);
 	error_init (&mono_error);
 
 	g_unsupported_api ("GetPriorityClass");
@@ -205,7 +205,7 @@ mono_icall_get_priority_class (gpointer handle)
 MonoBoolean
 mono_icall_set_priority_class (gpointer handle, gint32 priorityClass)
 {
-	MonoError mono_error;
+	ERROR_DECL (mono_error);
 	error_init (&mono_error);
 
 	g_unsupported_api ("SetPriorityClass");

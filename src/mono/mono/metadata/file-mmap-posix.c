@@ -381,7 +381,7 @@ done:
 void *
 mono_mmap_open_file (MonoString *path, int mode, MonoString *mapName, gint64 *capacity, int access, int options, int *ioerror)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MmapHandle *handle = NULL;
 	g_assert (path || mapName);
 
@@ -429,7 +429,7 @@ mono_mmap_open_file (MonoString *path, int mode, MonoString *mapName, gint64 *ca
 void *
 mono_mmap_open_handle (void *input_fd, MonoString *mapName, gint64 *capacity, int access, int options, int *ioerror)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MmapHandle *handle;
 	if (!mapName) {
 		handle = (MmapHandle *)open_file_map (NULL, GPOINTER_TO_INT (input_fd), FILE_MODE_OPEN, capacity, access, options, ioerror);

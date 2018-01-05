@@ -300,7 +300,7 @@ mono_object_isinst_icall (MonoObject *obj, MonoClass *klass)
 			return obj;
 	}
 
-	MonoError error;
+	ERROR_DECL (error);
 	MonoObject *result = mono_object_isinst_checked (obj, klass, &error);
 	mono_error_set_pending_exception (&error);
 	return result;
@@ -309,7 +309,7 @@ mono_object_isinst_icall (MonoObject *obj, MonoClass *klass)
 static MonoString*
 ves_icall_mono_string_from_utf16 (gunichar2 *data)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoString *result = mono_string_from_utf16_checked (data, &error);
 	mono_error_set_pending_exception (&error);
 	return result;
@@ -318,7 +318,7 @@ ves_icall_mono_string_from_utf16 (gunichar2 *data)
 static char*
 ves_icall_mono_string_to_utf8 (MonoString *str)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	char *result = mono_string_to_utf8_checked (str, &error);
 	mono_error_set_pending_exception (&error);
 	return result;
@@ -328,7 +328,7 @@ static MonoString*
 ves_icall_string_new_wrapper (const char *text)
 {
 	if (text) {
-		MonoError error;
+		ERROR_DECL (error);
 		MonoString *res = mono_string_new_checked (mono_domain_get (), text, &error);
 		mono_error_set_pending_exception (&error);
 		return res;
@@ -440,7 +440,7 @@ gpointer
 mono_delegate_to_ftnptr (MonoDelegate *delegate_raw)
 {
 	HANDLE_FUNCTION_ENTER ();
-	MonoError error;
+	ERROR_DECL (error);
 	MONO_HANDLE_DCL (MonoDelegate, delegate);
 	gpointer result = mono_delegate_handle_to_ftnptr (delegate, &error);
 	mono_error_set_pending_exception (&error);
@@ -579,7 +579,7 @@ mono_marshal_use_aot_wrappers (gboolean use)
 static void
 parse_unmanaged_function_pointer_attr (MonoClass *klass, MonoMethodPInvoke *piinfo)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoCustomAttrInfo *cinfo;
 	MonoReflectionUnmanagedFunctionPointerAttribute *attr;
 
@@ -615,7 +615,7 @@ MonoDelegate*
 mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 {
 	HANDLE_FUNCTION_ENTER ();
-	MonoError error;
+	ERROR_DECL (error);
 	MonoDelegateHandle result = mono_ftnptr_to_delegate_handle (klass, ftn, &error);
 	mono_error_set_pending_exception (&error);
 	HANDLE_FUNCTION_RETURN_OBJ (result);
@@ -736,7 +736,7 @@ mono_delegate_free_ftnptr (MonoDelegate *delegate)
 static MonoString *
 mono_string_from_byvalstr (const char *data, int max_len)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoDomain *domain = mono_domain_get ();
 	int len = 0;
 
@@ -755,7 +755,7 @@ mono_string_from_byvalstr (const char *data, int max_len)
 static MonoString *
 mono_string_from_byvalwstr (gunichar2 *data, int max_len)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoString *res = NULL;
 	MonoDomain *domain = mono_domain_get ();
 	int len = 0;
@@ -792,7 +792,7 @@ mono_array_to_lparray (MonoArray *array)
 
 	int i = 0;
 	MonoClass *klass;
-	MonoError error;
+	ERROR_DECL (error);
 #endif
 
 	if (!array)
@@ -929,7 +929,7 @@ mono_string_builder_new (int starting_string_length)
 	static MonoMethod *sb_ctor;
 	static void *args [1];
 
-	MonoError error;
+	ERROR_DECL (error);
 	int initial_len = starting_string_length;
 
 	if (initial_len < 0)
@@ -1059,7 +1059,7 @@ mono_string_utf16_to_builder (MonoStringBuilder *sb, gunichar2 *text)
 gchar*
 mono_string_builder_to_utf8 (MonoStringBuilder *sb)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	GError *gerror = NULL;
 	glong byte_count;
 	if (!sb)
@@ -1110,7 +1110,7 @@ mono_string_builder_to_utf8 (MonoStringBuilder *sb)
 gunichar2*
 mono_string_builder_to_utf16 (MonoStringBuilder *sb)
 {
-	MonoError error;
+	ERROR_DECL (error);
 
 	if (!sb)
 		return NULL;
@@ -1158,7 +1158,7 @@ mono_string_builder_to_utf16 (MonoStringBuilder *sb)
 static gpointer
 mono_string_to_utf8str (MonoString *s)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	char *result = mono_string_to_utf8_checked (s, &error);
 	mono_error_set_pending_exception (&error);
 	return result;
@@ -1184,7 +1184,7 @@ mono_string_to_ansibstr (MonoString *string_obj)
 void
 mono_string_to_byvalstr (gpointer dst, MonoString *src, int size)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	char *s;
 	int len;
 
@@ -1239,7 +1239,7 @@ mono_string_to_byvalwstr (gpointer dst, MonoString *src, int size)
 static MonoString*
 mono_string_new_len_wrapper (const char *text, guint length)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoString *result = mono_string_new_len_checked (mono_domain_get (), text, length, &error);
 	mono_error_set_pending_exception (&error);
 	return result;
@@ -2015,7 +2015,7 @@ offset_of_first_nonstatic_field (MonoClass *klass)
 static gboolean
 get_fixed_buffer_attr (MonoClassField *field, MonoType **out_etype, int *out_len)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoCustomAttrInfo *cinfo;
 	MonoCustomAttrEntry *attr;
 	int aindex;
@@ -2462,7 +2462,7 @@ mono_marshal_emit_thread_force_interrupt_checkpoint (MonoMethodBuilder *mb)
 static MonoAsyncResult *
 mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMulticastDelegate *mcast_delegate;
 	MonoClass *klass;
 	MonoMethod *method;
@@ -2878,7 +2878,7 @@ mono_marshal_method_from_wrapper (MonoMethod *wrapper)
 	case MONO_WRAPPER_XDOMAIN_INVOKE:
 		m = info->d.remoting.method;
 		if (wrapper->is_inflated) {
-			MonoError error;
+			ERROR_DECL (error);
 			MonoMethod *result;
 			/*
 			 * A method cannot be inflated and a wrapper at the same time, so the wrapper info
@@ -2892,7 +2892,7 @@ mono_marshal_method_from_wrapper (MonoMethod *wrapper)
 	case MONO_WRAPPER_SYNCHRONIZED:
 		m = info->d.synchronized.method;
 		if (wrapper->is_inflated) {
-			MonoError error;
+			ERROR_DECL (error);
 			MonoMethod *result;
 			result = mono_class_inflate_generic_method_checked (m, mono_method_get_context (wrapper), &error);
 			g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
@@ -2970,7 +2970,7 @@ mono_wrapper_info_create (MonoMethodBuilder *mb, WrapperSubtype subtype)
 static MonoClass*
 get_wrapper_target_class (MonoImage *image)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoClass *klass;
 
 	/*
@@ -3031,7 +3031,7 @@ check_generic_wrapper_cache (GHashTable *cache, MonoMethod *orig_method, gpointe
 	 */
 	def = mono_marshal_find_in_cache (cache, def_key);
 	if (def) {
-		MonoError error;
+		ERROR_DECL (error);
 		inst = mono_class_inflate_generic_method_checked (def, ctx, &error);
 		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 		/* Cache it */
@@ -3051,7 +3051,7 @@ check_generic_wrapper_cache (GHashTable *cache, MonoMethod *orig_method, gpointe
 static MonoMethod*
 cache_generic_wrapper (GHashTable *cache, MonoMethod *orig_method, MonoMethod *def, MonoGenericContext *ctx, gpointer key)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMethod *inst, *res;
 
 	/*
@@ -3073,7 +3073,7 @@ cache_generic_wrapper (GHashTable *cache, MonoMethod *orig_method, MonoMethod *d
 static MonoMethod*
 check_generic_delegate_wrapper_cache (GHashTable *cache, MonoMethod *orig_method, MonoMethod *def_method, MonoGenericContext *ctx)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMethod *res;
 	MonoMethod *inst, *def;
 
@@ -3109,7 +3109,7 @@ check_generic_delegate_wrapper_cache (GHashTable *cache, MonoMethod *orig_method
 static MonoMethod*
 cache_generic_delegate_wrapper (GHashTable *cache, MonoMethod *orig_method, MonoMethod *def, MonoGenericContext *ctx)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMethod *inst, *res;
 	WrapperInfo *ginfo, *info;
 
@@ -3219,7 +3219,7 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 static MonoObject *
 mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoDomain *domain = mono_domain_get ();
 	MonoAsyncResult *ares;
 	MonoMethod *method = NULL;
@@ -3295,7 +3295,7 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 
 	if (exc) {
 		if (((MonoException*)exc)->stack_trace) {
-			MonoError inner_error;
+			ERROR_DECL (inner_error);
 			char *strace = mono_string_to_utf8_checked (((MonoException*)exc)->stack_trace, &inner_error);
 			if (is_ok (&inner_error)) {
 				char  *tmp;
@@ -3535,7 +3535,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	if (callvirt) {
 		subtype = WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL;
 		if (target_method->is_inflated) {
-			MonoError error;
+			ERROR_DECL (error);
 			MonoType *target_type;
 
 			g_assert (method->signature->hasthis);
@@ -3784,7 +3784,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	if (!ctx) {
 		mono_mb_emit_op (mb, CEE_CALLVIRT, method);
 	} else {
-		MonoError error;
+		ERROR_DECL (error);
 		mono_mb_emit_op (mb, CEE_CALLVIRT, mono_class_inflate_generic_method_checked (method, &container->context, &error));
 		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 	}
@@ -4021,7 +4021,7 @@ emit_invoke_call (MonoMethodBuilder *mb, MonoMethod *method,
 
 	/* to make it work with our special string constructors */
 	if (!string_dummy) {
-		MonoError error;
+		ERROR_DECL (error);
 		MONO_GC_REGISTER_ROOT_SINGLE (string_dummy, MONO_ROOT_SOURCE_MARSHAL, NULL, "Marshal Dummy String");
 		string_dummy = mono_string_new_checked (mono_get_root_domain (), "dummy", &error);
 		mono_error_assert_ok (&error);
@@ -4792,7 +4792,7 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 		*conv_arg_type = &mono_defaults.int_class->byval_arg;
 	return conv_arg;
 #else
-	MonoError error;
+	ERROR_DECL (error);
 	MonoType *mtype;
 	MonoClass *mklass;
 	static MonoClass *ICustomMarshaler = NULL;
@@ -8854,7 +8854,7 @@ mono_marshal_set_callconv_from_modopt (MonoMethod *method, MonoMethodSignature *
 	/* Why is this a modopt ? */
 	if (sig->ret && sig->ret->num_mods) {
 		for (i = 0; i < sig->ret->num_mods; ++i) {
-			MonoError error;
+			ERROR_DECL (error);
 			MonoClass *cmod_class = mono_class_get_checked (method->klass->image, sig->ret->modifiers [i].token, &error);
 			g_assert (mono_error_ok (&error));
 			if ((cmod_class->image == mono_defaults.corlib) && !strcmp (cmod_class->name_space, "System.Runtime.CompilerServices")) {
@@ -8967,7 +8967,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 			gint32 call_conv;
 			gint32 charset = 0;
 			MonoBoolean set_last_error = 0;
-			MonoError error;
+			ERROR_DECL (error);
 
 			mono_reflection_create_custom_attr_data_args (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, &typed_args, &named_args, &arginfo, &error);
 			g_assert (mono_error_ok (&error));
@@ -9044,7 +9044,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 gpointer
 mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMethod *method;
 	MonoMethodSignature *sig;
 	MonoMethodBuilder *mb;
@@ -9260,7 +9260,7 @@ mono_marshal_get_castclass_with_cache (void)
 static MonoObject *
 mono_marshal_isinst_with_cache (MonoObject *obj, MonoClass *klass, uintptr_t *cache)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoObject *isinst = mono_object_isinst_checked (obj, klass, &error);
 	if (mono_error_set_pending_exception (&error))
 		return NULL;
@@ -9529,7 +9529,7 @@ mono_marshal_get_synchronized_inner_wrapper (MonoMethod *method)
 	res = mono_mb_create (mb, sig, 0, info);
 	mono_mb_free (mb);
 	if (ctx) {
-		MonoError error;
+		ERROR_DECL (error);
 		res = mono_class_inflate_generic_method_checked (res, ctx, &error);
 		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 	}
@@ -9683,7 +9683,7 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 		mono_mb_emit_ldarg (mb, i + (sig->hasthis == TRUE));
 
 	if (ctx) {
-		MonoError error;
+		ERROR_DECL (error);
 		mono_mb_emit_managed_call (mb, mono_class_inflate_generic_method_checked (method, &container->context, &error), NULL);
 		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 	} else {
@@ -10811,7 +10811,7 @@ mono_marshal_get_array_accessor_wrapper (MonoMethod *method)
 		mono_mb_emit_ldarg (mb, i + (sig->hasthis == TRUE));
 
 	if (ctx) {
-		MonoError error;
+		ERROR_DECL (error);
 		mono_mb_emit_managed_call (mb, mono_class_inflate_generic_method_checked (method, &container->context, &error), NULL);
 		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 	} else {
@@ -10870,7 +10870,7 @@ mono_marshal_alloc (gsize size, MonoError *error)
 static void*
 ves_icall_marshal_alloc (gsize size)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	void *ret = mono_marshal_alloc (size, &error);
 	if (!mono_error_ok (&error)) {
 		mono_error_set_pending_exception (&error);
@@ -10927,7 +10927,7 @@ mono_marshal_string_to_utf16_copy (MonoString *s)
 	if (s == NULL) {
 		return NULL;
 	} else {
-		MonoError error;
+		ERROR_DECL (error);
 		gunichar2 *res = (gunichar2 *)mono_marshal_alloc ((mono_string_length (s) * 2) + 2, &error);
 		if (!mono_error_ok (&error)) {
 			mono_error_set_pending_exception (&error);
@@ -11051,7 +11051,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi (char *ptr, Mon
 MonoString *
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi_len (char *ptr, gint32 len)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoString *result = NULL;
 	error_init (&error);
 	if (ptr == NULL)
@@ -11065,7 +11065,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi_len (char *ptr,
 MonoString *
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni (guint16 *ptr)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoString *res = NULL;
 	MonoDomain *domain = mono_domain_get (); 
 	int len = 0;
@@ -11088,7 +11088,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni (guint16 *ptr)
 MonoString *
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni_len (guint16 *ptr, gint32 len)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoString *res = NULL;
 	MonoDomain *domain = mono_domain_get (); 
 
@@ -11148,7 +11148,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionTypeHandl
 void
 ves_icall_System_Runtime_InteropServices_Marshal_StructureToPtr (MonoObject *obj, gpointer dst, MonoBoolean delete_old)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMethod *method;
 	gpointer pa [3];
 
@@ -11186,7 +11186,7 @@ void
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure (gpointer src, MonoObject *dst)
 {
 	MonoType *t;
-	MonoError error;
+	ERROR_DECL (error);
 
 	MONO_CHECK_ARG_NULL (src,);
 	MONO_CHECK_ARG_NULL (dst,);
@@ -11213,7 +11213,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure (gpointer src, M
 MonoObject *
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type (gpointer src, MonoReflectionType *type)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoClass *klass;
 	MonoDomain *domain = mono_domain_get (); 
 	MonoObject *res;
@@ -11303,7 +11303,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionTypeHan
 gpointer
 ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (MonoString *string)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	char *ret = mono_string_to_utf8_checked (string, &error);
 	mono_error_set_pending_exception (&error);
 	return ret;
@@ -11939,7 +11939,7 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, guint32 *align,
 gpointer
 mono_marshal_asany (MonoObject *o, MonoMarshalNative string_encoding, int param_attrs)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoType *t;
 	MonoClass *klass;
 
@@ -12027,7 +12027,7 @@ mono_marshal_asany (MonoObject *o, MonoMarshalNative string_encoding, int param_
 void
 mono_marshal_free_asany (MonoObject *o, gpointer ptr, MonoMarshalNative string_encoding, int param_attrs)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoType *t;
 	MonoClass *klass;
 

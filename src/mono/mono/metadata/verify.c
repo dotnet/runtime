@@ -553,7 +553,7 @@ mono_type_is_valid_type_in_context (MonoType *type, MonoGenericContext *context)
 static MonoType*
 verifier_inflate_type (VerifyContext *ctx, MonoType *type, MonoGenericContext *context)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoType *result;
 
 	result = mono_class_inflate_generic_type_checked (type, context, &error);
@@ -570,7 +570,7 @@ is only need to be done by the runtime before realizing the type.
 static gboolean
 is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *context, MonoGenericInst *ginst)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	int i;
 
 	if (ginst->type_argc != gc->type_argc)
@@ -943,7 +943,7 @@ mono_method_is_valid_in_context (VerifyContext *ctx, MonoMethod *method)
 	
 static MonoClassField*
 verifier_load_field (VerifyContext *ctx, int token, MonoClass **out_klass, const char *opcode) {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoClassField *field;
 	MonoClass *klass = NULL;
 
@@ -987,7 +987,7 @@ verifier_load_method (VerifyContext *ctx, int token, const char *opcode) {
 	if (ctx->method->wrapper_type != MONO_WRAPPER_NONE) {
 		method = (MonoMethod *)mono_method_get_wrapper_data (ctx->method, (guint32)token);
 	} else {
-		MonoError error;
+		ERROR_DECL (error);
 		if (!IS_METHOD_DEF_OR_REF_OR_SPEC (token) || !token_bounds_check (ctx->image, token)) {
 			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid method token 0x%08x for %s at 0x%04x", token, opcode, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
 			return NULL;
@@ -1016,7 +1016,7 @@ verifier_load_type (VerifyContext *ctx, int token, const char *opcode) {
 		MonoClass *klass = (MonoClass *)mono_method_get_wrapper_data (ctx->method, (guint32)token);
 		type = klass ? &klass->byval_arg : NULL;
 	} else {
-		MonoError error;
+		ERROR_DECL (error);
 		if (!IS_TYPE_DEF_OR_REF_OR_SPEC (token) || !token_bounds_check (ctx->image, token)) {
 			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid type token 0x%08x at 0x%04x", token, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
 			return NULL;
@@ -2091,7 +2091,7 @@ handle_enum:
 static void
 init_stack_with_value_at_exception_boundary (VerifyContext *ctx, ILCodeDesc *code, MonoClass *klass)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoType *type = mono_class_inflate_generic_type_checked (&klass->byval_arg, ctx->generic_context, &error);
 
 	if (!mono_error_ok (&error)) {
@@ -2192,7 +2192,7 @@ verifier_class_is_assignable_from (MonoClass *target, MonoClass *candidate)
 				if (verifier_inflate_and_check_compat (target, get_ireadonlycollection_class (), candidate->element_class))
 					return TRUE;
 			} else {
-				MonoError error;
+				ERROR_DECL (error);
 				int i;
 				while (candidate && candidate != mono_defaults.object_class) {
 					mono_class_setup_interfaces (candidate, &error);
@@ -3211,7 +3211,7 @@ do_ret (VerifyContext *ctx)
 static void
 do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual_)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	int param_count, i;
 	MonoMethodSignature *sig;
 	ILStackDesc *value;
@@ -3699,7 +3699,7 @@ do_conversion (VerifyContext *ctx, int kind)
 static void
 do_load_token (VerifyContext *ctx, int token) 
 {
-	MonoError error;
+	ERROR_DECL (error);
 	gpointer handle;
 	MonoClass *handle_class;
 	if (!check_overflow (ctx))
@@ -4641,7 +4641,7 @@ do_ckfinite (VerifyContext *ctx)
 static void
 merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, gboolean start, gboolean external) 
 {
-	MonoError error;
+	ERROR_DECL (error);
 	int i, j;
 	stack_init (ctx, to);
 
@@ -4918,7 +4918,7 @@ mono_opcode_is_prefix (int op)
 GSList*
 mono_method_verify (MonoMethod *method, int level)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	const unsigned char *ip, *code_start;
 	const unsigned char *end;
 	MonoSimpleBasicBlock *bb = NULL, *original_bb = NULL;

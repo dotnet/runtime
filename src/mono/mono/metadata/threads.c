@@ -502,7 +502,7 @@ get_current_thread_ptr_for_domain (MonoDomain *domain, MonoInternalThread *threa
 		g_assert (current_thread_field);
 	}
 
-	MonoError thread_vt_error;
+	ERROR_DECL (thread_vt_error);
 	mono_class_vtable_checked (domain, mono_defaults.thread_class, &thread_vt_error);
 	mono_error_assert_ok (&thread_vt_error);
 	mono_domain_lock (domain);
@@ -529,7 +529,7 @@ create_thread_object (MonoDomain *domain, MonoInternalThread *internal)
 {
 	MonoThread *thread;
 	MonoVTable *vtable;
-	MonoError error;
+	ERROR_DECL (error);
 
 	vtable = mono_class_vtable_checked (domain, mono_defaults.thread_class, &error);
 	mono_error_assert_ok (&error);
@@ -546,7 +546,7 @@ create_thread_object (MonoDomain *domain, MonoInternalThread *internal)
 static MonoInternalThread*
 create_internal_thread_object (void)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoInternalThread *thread;
 	MonoVTable *vt;
 
@@ -954,7 +954,7 @@ fire_attach_profiler_events (MonoNativeThreadId tid)
 
 static guint32 WINAPI start_wrapper_internal(StartInfo *start_info, gsize *stack_ptr)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoThreadStart start_func;
 	void *start_func_arg;
 	gsize tid;
@@ -1277,7 +1277,7 @@ mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, Mo
 void
 mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	if (!mono_thread_create_checked (domain, func, arg, &error))
 		mono_error_cleanup (&error);
 }
@@ -1417,7 +1417,7 @@ HANDLE
 ves_icall_System_Threading_Thread_Thread_internal (MonoThread *this_obj,
 												   MonoObject *start)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoInternalThread *internal;
 	gboolean res;
 
@@ -1620,7 +1620,7 @@ mono_thread_get_managed_id (MonoThread *thread)
 MonoString* 
 ves_icall_System_Threading_Thread_GetName_internal (MonoInternalThread *this_obj)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoString* str;
 
 	error_init (&error);
@@ -1688,7 +1688,7 @@ mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, g
 void 
 ves_icall_System_Threading_Thread_SetName_internal (MonoInternalThread *this_obj, MonoString *name)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	mono_thread_set_name_internal (this_obj, name, TRUE, FALSE, &error);
 	mono_error_set_pending_exception (&error);
 }
@@ -1754,7 +1754,7 @@ byte_array_to_domain (MonoArray *arr, MonoDomain *domain, MonoError *error)
 MonoArray*
 ves_icall_System_Threading_Thread_ByteArrayToRootDomain (MonoArray *arr)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoArray *result = byte_array_to_domain (arr, mono_get_root_domain (), &error);
 	mono_error_set_pending_exception (&error);
 	return result;
@@ -1763,7 +1763,7 @@ ves_icall_System_Threading_Thread_ByteArrayToRootDomain (MonoArray *arr)
 MonoArray*
 ves_icall_System_Threading_Thread_ByteArrayToCurrentDomain (MonoArray *arr)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoArray *result = byte_array_to_domain (arr, mono_domain_get (), &error);
 	mono_error_set_pending_exception (&error);
 	return result;
@@ -1862,7 +1862,7 @@ ves_icall_System_Threading_Thread_Join_internal (MonoThread *this_obj, int ms)
 	MonoThreadHandle *handle = thread->handle;
 	MonoInternalThread *cur_thread = mono_thread_internal_current ();
 	gboolean ret;
-	MonoError error;
+	ERROR_DECL (error);
 
 	if (mono_thread_current_check_pending_interrupt ())
 		return FALSE;
@@ -2389,7 +2389,7 @@ ves_icall_System_Threading_Thread_Abort (MonoInternalThread *thread, MonoObject 
 		return;
 
 	if (thread == mono_thread_internal_current ()) {
-		MonoError error;
+		ERROR_DECL (error);
 		self_abort_internal (&error);
 		mono_error_set_pending_exception (&error);
 	} else {
@@ -2469,7 +2469,7 @@ mono_thread_internal_reset_abort (MonoInternalThread *thread)
 MonoObject*
 ves_icall_System_Threading_Thread_GetAbortExceptionState (MonoThread *this_obj)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoInternalThread *thread = this_obj->internal_thread;
 	MonoObject *state, *deserialized = NULL;
 	MonoDomain *domain;
@@ -2636,7 +2636,7 @@ mono_thread_stop (MonoThread *thread)
 		return;
 
 	if (internal == mono_thread_internal_current ()) {
-		MonoError error;
+		ERROR_DECL (error);
 		self_abort_internal (&error);
 		/*
 		This function is part of the embeding API and has no way to return the exception
@@ -4014,7 +4014,7 @@ mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
 void
 mono_thread_self_abort (void)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	self_abort_internal (&error);
 	mono_error_set_pending_exception (&error);
 }
@@ -5235,7 +5235,7 @@ mono_thread_internal_unhandled_exception (MonoObject* exc)
 void
 ves_icall_System_Threading_Thread_GetStackTraces (MonoArray **out_threads, MonoArray **out_stack_traces)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	mono_threads_get_thread_dump (out_threads, out_stack_traces, &error);
 	mono_error_set_pending_exception (&error);
 }

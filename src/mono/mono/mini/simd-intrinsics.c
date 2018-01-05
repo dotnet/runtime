@@ -2038,7 +2038,7 @@ static void
 assert_handled (MonoCompile *cfg, MonoMethod *method)
 {
 	MonoCustomAttrInfo *cattr;
-	MonoError error;
+	ERROR_DECL (error);
 
 	if (cfg->verbose_level > 1) {
 		cattr = mono_custom_attrs_from_method_checked (method, &error);

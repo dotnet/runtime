@@ -247,7 +247,7 @@ filter_jobs_for_domain (gpointer key, gpointer value, gpointer user_data)
 static void
 wait_callback (gint fd, gint events, gpointer user_data)
 {
-	MonoError error;
+	ERROR_DECL (error);
 
 	if (mono_runtime_is_shutting_down ())
 		return;
@@ -316,7 +316,7 @@ selector_thread_interrupt (gpointer unused)
 static gsize WINAPI
 selector_thread (gpointer data)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoGHashTable *states;
 
 	MonoString *thread_name = mono_string_new_checked (mono_get_root_domain (), "Thread Pool I/O Selector", &error);
@@ -568,7 +568,7 @@ initialize (void)
 
 	io_selector_running = TRUE;
 
-	MonoError error;
+	ERROR_DECL (error);
 	if (!mono_thread_create_internal (mono_get_root_domain (), selector_thread, NULL, MONO_THREAD_CREATE_FLAGS_THREADPOOL | MONO_THREAD_CREATE_FLAGS_SMALL_STACK, &error))
 		g_error ("initialize: mono_thread_create_internal () failed due to %s", mono_error_get_message (&error));
 

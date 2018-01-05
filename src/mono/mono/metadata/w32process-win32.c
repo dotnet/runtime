@@ -240,7 +240,7 @@ process_get_shell_arguments (MonoW32ProcessStartInfo *proc_start_info, MonoStrin
 {
 	gchar		*spath = NULL;
 	gchar		*new_cmd, *cmd_utf8;
-	MonoError	mono_error;
+	ERROR_DECL (mono_error);
 
 	*cmd = proc_start_info->arguments;
 
@@ -358,7 +358,7 @@ mono_process_win_enum_processes (DWORD *pids, DWORD count, DWORD *needed)
 MonoArray *
 ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoArray *procs;
 	gboolean ret;
 	DWORD needed;

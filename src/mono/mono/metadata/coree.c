@@ -145,7 +145,7 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 __int32 STDMETHODCALLTYPE _CorExeMain(void)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoDomain* domain;
 	MonoAssembly* assembly;
 	MonoImage* image;

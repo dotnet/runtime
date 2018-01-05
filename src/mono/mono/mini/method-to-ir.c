@@ -1582,7 +1582,7 @@ mini_emit_runtime_constant (MonoCompile *cfg, MonoJumpInfoType patch_type, gpoin
 	} else {
 		MonoJumpInfo ji;
 		gpointer target;
-		MonoError error;
+		ERROR_DECL (error);
 
 		ji.type = patch_type;
 		ji.data.target = data;
@@ -2419,7 +2419,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 
 #ifndef DISABLE_REMOTING
 	if (might_be_remote) {
-		MonoError error;
+		ERROR_DECL (error);
 		call->method = mono_marshal_get_remoting_invoke_with_check (method, &error);
 		mono_error_assert_ok (&error);
 	} else
@@ -2473,7 +2473,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 			 */
 #ifndef DISABLE_REMOTING
 			if (mono_class_is_marshalbyref (method->klass) || method->klass == mono_defaults.object_class) {
-				MonoError error;
+				ERROR_DECL (error);
 				/* 
 				 * The check above ensures method is not gshared, this is needed since
 				 * gshared methods can't have wrappers.
@@ -4205,7 +4205,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 		/* The AggressiveInlining hint is a good excuse to force that cctor to run. */
 		if (method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING) {
 			if (method->klass->has_cctor) {
-				MonoError error;
+				ERROR_DECL (error);
 				vtable = mono_class_vtable_checked (cfg->domain, method->klass, &error);
 				if (!is_ok (&error)) {
 					mono_error_cleanup (&error);
@@ -4220,7 +4220,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 			}
 		} else if (mono_class_is_before_field_init (method->klass)) {
 			if (cfg->run_cctors && method->klass->has_cctor) {
-				MonoError error;
+				ERROR_DECL (error);
 				/*FIXME it would easier and lazier to just use mono_class_try_get_vtable */
 				if (!method->klass->runtime_info)
 					/* No vtable created yet */
@@ -4241,7 +4241,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 				}
 			}
 		} else if (mono_class_needs_cctor_run (method->klass, NULL)) {
-			MonoError error;
+			ERROR_DECL (error);
 			if (!method->klass->runtime_info)
 				/* No vtable created yet */
 				return FALSE;
@@ -5993,7 +5993,7 @@ static int
 inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **sp,
 	       guchar *ip, guint real_offset, gboolean inline_always)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoInst *ins, *rvar = NULL;
 	MonoMethodHeader *cheader;
 	MonoBasicBlock *ebblock, *sbblock;
@@ -6356,7 +6356,7 @@ mini_get_method_allow_open (MonoMethod *m, guint32 token, MonoClass *klass, Mono
 static inline MonoMethod *
 mini_get_method (MonoCompile *cfg, MonoMethod *m, guint32 token, MonoClass *klass, MonoGenericContext *context)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMethod *method = mini_get_method_allow_open (m, token, klass, context, cfg ? &cfg->error : &error);
 
 	if (method && cfg && !cfg->gshared && mono_class_is_open_constructed_type (&method->klass->byval_arg)) {
@@ -6461,7 +6461,7 @@ initialize_array_data (MonoMethod *method, gboolean aot, unsigned char *ip, Mono
 	 * call void class [mscorlib]System.Runtime.CompilerServices.RuntimeHelpers::InitializeArray(class [mscorlib]System.Array, valuetype [mscorlib]System.RuntimeFieldHandle)
 	 */
 	if (ip [0] == CEE_DUP && ip [1] == CEE_LDTOKEN && ip [5] == 0x4 && ip [6] == CEE_CALL) {
-		MonoError error;
+		ERROR_DECL (error);
 		guint32 token = read32 (ip + 7);
 		guint32 field_token = read32 (ip + 2);
 		guint32 field_index = field_token & 0xffffff;
@@ -6532,7 +6532,7 @@ initialize_array_data (MonoMethod *method, gboolean aot, unsigned char *ip, Mono
 static void
 set_exception_type_from_invalid_il (MonoCompile *cfg, MonoMethod *method, unsigned char *ip)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	char *method_fname = mono_method_full_name (method, TRUE);
 	char *method_code;
 	MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
@@ -6914,7 +6914,7 @@ is_exception_class (MonoClass *klass)
 static gboolean
 is_jit_optimizer_disabled (MonoMethod *m)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoAssembly *ass = m->klass->image->assembly;
 	MonoCustomAttrInfo* attrs;
 	MonoClass *klass;
@@ -7173,7 +7173,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		   MonoInst *return_var, MonoInst **inline_args, 
 		   guint inline_offset, gboolean is_virtual_call)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoInst *ins, **sp, **stack_start;
 	MonoBasicBlock *tblock = NULL;
 	MonoBasicBlock *init_localsbb = NULL, *init_localsbb2 = NULL;

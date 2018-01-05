@@ -54,7 +54,7 @@ mono_runtime_is_shutting_down (void)
 static void
 fire_process_exit_event (MonoDomain *domain, gpointer user_data)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoClassField *field;
 	gpointer pa [2];
 	MonoObject *delegate, *exc;

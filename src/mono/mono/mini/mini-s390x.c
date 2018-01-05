@@ -825,7 +825,7 @@ cvtMonoType(MonoTypeEnum t)
 static void
 decodeParmString (MonoString *s)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	char *str = mono_string_to_utf8_checked(s, &error);
 	if (is_ok (&error))  {
 		fprintf (trFd, "[STRING:%p:%s], ", s, str);
@@ -2609,7 +2609,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 
 		mono_call_inst_add_outarg_reg (cfg, call, dreg, ainfo->reg, TRUE);
 	} else {
-		MonoError error;
+		ERROR_DECL (error);
 		MonoMethodHeader *header;
 		int srcReg;
 

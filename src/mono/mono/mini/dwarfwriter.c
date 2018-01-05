@@ -1299,7 +1299,7 @@ static const guint8 *token_handler_ip;
 static char*
 token_handler (MonoDisHelper *dh, MonoMethod *method, guint32 token)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	char *res, *desc;
 	MonoMethod *cmethod;
 	MonoClass *klass;
@@ -1327,7 +1327,7 @@ token_handler (MonoDisHelper *dh, MonoMethod *method, guint32 token)
 		if (method->wrapper_type) {
 			cmethod = (MonoMethod *)data;
 		} else {
-			MonoError error;
+			ERROR_DECL (error);
 			cmethod = mono_get_method_checked (method->klass->image, token, NULL, NULL, &error);
 			if (!cmethod)
 				g_error ("Could not load method due to %s", mono_error_get_message (&error)); /* FIXME don't swallow the error */
@@ -1377,7 +1377,7 @@ token_handler (MonoDisHelper *dh, MonoMethod *method, guint32 token)
 static char*
 disasm_ins (MonoMethod *method, const guchar *ip, const guint8 **endip)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	char *dis;
 	MonoDisHelper dh;
 	MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
@@ -1496,7 +1496,7 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 					   guint8 *code, guint32 code_size,
 					   MonoDebugMethodJitInfo *debug_info)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	guint32 prev_line = 0;
 	guint32 prev_native_offset = 0;
 	int i, file_index, il_offset, prev_il_offset;
@@ -1755,7 +1755,7 @@ void
 mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod *method, char *start_symbol, char *end_symbol, char *linkage_name,
 							   guint8 *code, guint32 code_size, MonoInst **args, MonoInst **locals, GSList *unwind_info, MonoDebugMethodJitInfo *debug_info)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	char *name;
 	MonoMethodSignature *sig;
 	MonoMethodHeader *header;

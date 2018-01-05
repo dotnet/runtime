@@ -152,7 +152,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoStringHand
 MonoArray*
 ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoArray *array = NULL;
 	MonoDomain *domain = mono_domain_get ();
 

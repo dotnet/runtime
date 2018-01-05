@@ -607,7 +607,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError
 static MonoClassField*
 decode_field_info (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoClass *klass = decode_klass_ref (module, buf, &buf, &error);
 	guint32 token;
 	guint8 *p = buf;
@@ -762,7 +762,7 @@ fail:
 static MonoMethodSignature*
 decode_signature_with_target (MonoAotModule *module, MonoMethodSignature *target, guint8 *buf, guint8 **endbuf)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMethodSignature *sig;
 	guint32 flags;
 	int i, gen_param_count = 0, param_count, call_conv;
@@ -1883,7 +1883,7 @@ init_amodule_got (MonoAotModule *amodule)
 	MonoMemPool *mp;
 	MonoJumpInfo *patches;
 	guint32 got_offsets [128];
-	MonoError error;
+	ERROR_DECL (error);
 	int i, npatches;
 
 	/* These can't be initialized in load_aot_module () */
@@ -2320,7 +2320,7 @@ if (container_assm_name && !container_amodule) {
 	 */
 	if (do_load_image) {
 		for (i = 0; i < amodule->image_table_len; ++i) {
-			MonoError error;
+			ERROR_DECL (error);
 			load_image (amodule, i, &error);
 			mono_error_cleanup (&error); /* FIXME don't swallow the error */
 		}
@@ -2407,7 +2407,7 @@ mono_aot_cleanup (void)
 static gboolean
 decode_cached_class_info (MonoAotModule *module, MonoCachedClassInfo *info, guint8 *buf, guint8 **endbuf)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	guint32 flags;
 	MethodRef ref;
 	gboolean res;
@@ -2466,7 +2466,7 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 	MethodRef ref;
 	gboolean res;
 	gpointer addr;
-	MonoError inner_error;
+	ERROR_DECL (inner_error);
 
 	error_init (error);
 
@@ -2596,7 +2596,7 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 			name_space2 = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
 
 			if (!strcmp (name, name2) && !strcmp (name_space, name_space2)) {
-				MonoError error;
+				ERROR_DECL (error);
 				amodule_unlock (amodule);
 				*klass = mono_class_get_checked (image, token, &error);
 				if (!mono_error_ok (&error))
@@ -2930,7 +2930,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 							 MonoMethod *method, guint8* ex_info,
 							 guint8 *code, guint32 code_len)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	int i, buf_len, num_clauses, len;
 	MonoJitInfo *jinfo;
 	MonoJitInfoFlags flags = JIT_INFO_NONE;
@@ -3341,7 +3341,7 @@ msort_method_addresses (gpointer *array, int *indexes, int len)
 MonoJitInfo *
 mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	int pos, left, right, code_len;
 	int method_index, table_len;
 	guint32 token;
@@ -3501,7 +3501,7 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 					/* Happens when a random address is passed in which matches a not-yey called wrapper encoded using its name */
 					return NULL;
 			} else {
-				MonoError error;
+				ERROR_DECL (error);
 				token = mono_metadata_make_token (MONO_TABLE_METHOD, method_index + 1);
 				method = mono_get_method_checked (image, token, NULL, NULL, &error);
 				if (!method)
@@ -3559,7 +3559,7 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 static gboolean
 decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guint8 *buf, guint8 **endbuf)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	guint8 *p = buf;
 	gpointer *table;
 	MonoImage *image;
@@ -3588,7 +3588,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 			if (ref.method) {
 				ji->data.method = ref.method;
 			}else {
-				MonoError error;
+				ERROR_DECL (error);
 				ji->data.method = mono_get_method_checked (ref.image, ref.token, NULL, NULL, &error);
 				if (!ji->data.method)
 					g_error ("AOT Runtime could not load method due to %s", mono_error_get_message (&error)); /* FIXME don't swallow the error */
@@ -4105,7 +4105,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 static guint32
 find_aot_method_in_amodule (MonoAotModule *code_amodule, MonoMethod *method, guint32 hash_full)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	guint32 table_size, entry_size, hash;
 	guint32 *table, *entry;
 	guint32 index;
@@ -4400,7 +4400,7 @@ static void
 init_llvmonly_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, MonoClass *init_class, MonoGenericContext *context)
 {
 	gboolean res;
-	MonoError error;
+	ERROR_DECL (error);
 
 	res = init_method (amodule, method_index, method, init_class, context, &error);
 	if (!is_ok (&error)) {
@@ -4495,7 +4495,7 @@ mono_aot_get_method_checked (MonoDomain *domain, MonoMethod *method, MonoError *
 	MonoAotModule *amodule = (MonoAotModule *)klass->image->aot_module;
 	guint8 *code;
 	gboolean cache_result = FALSE;
-	MonoError inner_error;
+	ERROR_DECL (inner_error);
 
 	error_init (error);
 
@@ -5154,7 +5154,7 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 
 		for (pindex = 0; pindex < n_patches; ++pindex) {
 			MonoJumpInfo *ji = &patches [pindex];
-			MonoError error;
+			ERROR_DECL (error);
 			gpointer target;
 
 			if (amodule->got [got_slots [pindex]])

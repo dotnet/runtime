@@ -1451,7 +1451,7 @@ mono_metadata_parse_array_internal (MonoImage *m, MonoGenericContainer *containe
 MonoArrayType *
 mono_metadata_parse_array (MonoImage *m, const char *ptr, const char **rptr)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoArrayType *ret = mono_metadata_parse_array_internal (m, NULL, FALSE, ptr, rptr, &error);
 	mono_error_cleanup (&error);
 
@@ -1856,7 +1856,7 @@ MonoType*
 mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs,
 			  const char *ptr, const char **rptr)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoType * type = mono_metadata_parse_type_internal (m, NULL, opt_attrs, FALSE, ptr, rptr, &error);
 	mono_error_cleanup (&error);
 	return type;
@@ -1938,7 +1938,7 @@ mono_metadata_get_param_attrs (MonoImage *m, int def, int param_count)
 MonoMethodSignature*
 mono_metadata_parse_signature (MonoImage *image, guint32 token)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMethodSignature *ret;
 	ret = mono_metadata_parse_signature_checked (image, token, &error);
 	mono_error_cleanup (&error);
@@ -2237,7 +2237,7 @@ mono_metadata_parse_method_signature (MonoImage *m, int def, const char *ptr, co
 	 * Use mono_metadata_parse_method_signature_full instead.
 	 * It's ok to asser on failure as we no longer use it.
 	 */
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMethodSignature *ret;
 	ret = mono_metadata_parse_method_signature_full (m, NULL, def, ptr, rptr, &error);
 	g_assert (mono_error_ok (&error));
@@ -4089,7 +4089,7 @@ fail:
 MonoMethodHeader *
 mono_metadata_parse_mh (MonoImage *m, const char *ptr)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMethodHeader *header = mono_metadata_parse_mh_full (m, NULL, ptr, &error);
 	mono_error_cleanup (&error);
 	return header;
@@ -4227,7 +4227,7 @@ mono_method_header_get_clauses (MonoMethodHeader *header, MonoMethod *method, gp
 MonoType *
 mono_metadata_parse_field_type (MonoImage *m, short field_flags, const char *ptr, const char **rptr)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoType * type = mono_metadata_parse_type_internal (m, NULL, field_flags, FALSE, ptr, rptr, &error);
 	mono_error_cleanup (&error);
 	return type;
@@ -4246,7 +4246,7 @@ mono_metadata_parse_field_type (MonoImage *m, short field_flags, const char *ptr
 MonoType *
 mono_metadata_parse_param (MonoImage *m, const char *ptr, const char **rptr)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoType * type = mono_metadata_parse_type_internal (m, NULL, 0, FALSE, ptr, rptr, &error);
 	mono_error_cleanup (&error);
 	return type;
@@ -4579,7 +4579,7 @@ mono_metadata_interfaces_from_typedef_full (MonoImage *meta, guint32 index, Mono
 MonoClass**
 mono_metadata_interfaces_from_typedef (MonoImage *meta, guint32 index, guint *count)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoClass **interfaces = NULL;
 	gboolean rv;
 
@@ -5844,7 +5844,7 @@ mono_metadata_implmap_from_method (MonoImage *meta, guint32 method_idx)
 MonoType *
 mono_type_create_from_typespec (MonoImage *image, guint32 type_spec)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoType *type = mono_type_create_from_typespec_checked (image, type_spec, &error);
 	if (!type)
 		 g_error ("Could not create typespec %x due to %s", type_spec, mono_error_get_message (&error));

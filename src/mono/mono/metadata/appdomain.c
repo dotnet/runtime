@@ -174,7 +174,7 @@ mono_runtime_get_no_exec (void)
 static void
 create_domain_objects (MonoDomain *domain)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoDomain *old_domain = mono_domain_get ();
 	MonoString *arg;
 	MonoVTable *string_vt;
@@ -252,7 +252,7 @@ create_domain_objects (MonoDomain *domain)
 void
 mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb, MonoThreadAttachCB attach_cb)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	mono_runtime_init_checked (domain, start_cb, attach_cb, &error);
 	mono_error_cleanup (&error);
 }
@@ -337,7 +337,7 @@ mono_context_set_default_context (MonoDomain *domain)
 static int
 mono_get_corlib_version (void)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoClass *klass;
 	MonoClassField *field;
 	MonoObject *value;
@@ -384,7 +384,7 @@ mono_check_corlib_version (void)
 void
 mono_context_init (MonoDomain *domain)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	mono_context_init_checked (domain, &error);
 	mono_error_cleanup (&error);
 }
@@ -468,7 +468,7 @@ MonoDomain *
 mono_domain_create_appdomain (char *friendly_name, char *configuration_file)
 {
 	HANDLE_FUNCTION_ENTER ();
-	MonoError error;
+	ERROR_DECL (error);
 	MonoDomain *domain = mono_domain_create_appdomain_checked (friendly_name, configuration_file, &error);
 	mono_error_cleanup (&error);
 	HANDLE_FUNCTION_RETURN_VAL (domain);
@@ -525,7 +525,7 @@ void
 mono_domain_set_config (MonoDomain *domain, const char *base_dir, const char *config_file_name)
 {
 	HANDLE_FUNCTION_ENTER ();
-	MonoError error;
+	ERROR_DECL (error);
 	mono_domain_set_config_checked (domain, base_dir, config_file_name, &error);
 	mono_error_cleanup (&error);
 	HANDLE_FUNCTION_RETURN ();
@@ -722,7 +722,7 @@ mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *typebu
 	g_assert (domain);
 	g_assert (name || typebuilder);
 
-	MonoError error;
+	ERROR_DECL (error);
 	error_init (&error);
 
 	MonoReflectionAssembly * const ret = name
@@ -1063,7 +1063,7 @@ mono_parser = {
 void
 mono_domain_set_options_from_config (MonoDomain *domain)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	gchar *config_file_name = NULL, *text = NULL, *config_file_path = NULL;
 	gsize len;
 	GMarkupParseContext *context;
@@ -1241,7 +1241,7 @@ MonoAssembly *
 mono_domain_assembly_postload_search (MonoAssemblyName *aname, MonoAssembly *requesting,
 									  gboolean refonly)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoAssembly *assembly;
 	MonoDomain *domain = mono_domain_get ();
 	char *aname_str;
@@ -1306,7 +1306,7 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 	HANDLE_FUNCTION_ENTER ();
 	static MonoClassField *assembly_load_field;
 	static MonoMethod *assembly_load_method;
-	MonoError error;
+	ERROR_DECL (error);
 	MonoDomain *domain = mono_domain_get ();
 	MonoClass *klass;
 	gpointer load_value;
@@ -1359,7 +1359,7 @@ leave:
 static void
 set_domain_search_path (MonoDomain *domain)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoAppDomainSetup *setup;
 	gchar **tmp;
 	gchar *search_path = NULL;
@@ -1762,7 +1762,7 @@ shadow_copy_create_ini (const char *shadow, const char *filename)
 gboolean
 mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoAppDomainSetup *setup;
 	gchar *all_dirs;
 	gchar **dir_ptr;
@@ -1836,7 +1836,7 @@ FIXME bubble up the error instead of raising it here
 char *
 mono_make_shadow_copy (const char *filename, MonoError *oerror)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	gchar *sibling_source, *sibling_target;
 	gint sibling_source_len, sibling_target_len;
 	guint16 *orig, *dest;
@@ -2589,7 +2589,7 @@ deregister_reflection_info_roots (MonoDomain *domain)
 static gsize WINAPI
 unload_thread_main (void *arg)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	unload_data *data = (unload_data*)arg;
 	MonoDomain *domain = data->domain;
 	MonoInternalThread *internal;
@@ -2723,7 +2723,7 @@ guarded_wait (MonoThreadHandle *thread_handle, guint32 timeout, gboolean alertab
 void
 mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoThreadHandle *thread_handle;
 	MonoAppDomainState prev_state;
 	MonoMethod *method;

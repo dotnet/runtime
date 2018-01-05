@@ -233,7 +233,7 @@ mono_remoting_marshal_init (void)
 static MonoReflectionType *
 type_from_handle (MonoType *handle)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoReflectionType *ret;
 	MonoDomain *domain = mono_domain_get (); 
 	MonoClass *klass = mono_class_from_mono_type (handle);
@@ -373,7 +373,7 @@ mono_remoting_mb_create_and_cache (MonoMethod *key, MonoMethodBuilder *mb,
 static MonoObject *
 mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMethodMessage *msg;
 	MonoTransparentProxy *this_obj;
 	MonoObject *res, *exc;
@@ -555,7 +555,7 @@ mono_marshal_get_remoting_invoke (MonoMethod *method, MonoError *error)
 static void
 mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	if (src == NULL || dst == NULL) return;
 	
 	g_assert (mono_object_class (src) == mono_object_class (dst));
@@ -640,7 +640,7 @@ mono_marshal_emit_switch_domain (MonoMethodBuilder *mb)
 gpointer
 mono_compile_method_icall (MonoMethod *method)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	gpointer result = mono_compile_method_checked (method, &error);
 	mono_error_set_pending_exception (&error);
 	return result;
@@ -1314,7 +1314,7 @@ mono_marshal_get_remoting_invoke_for_target (MonoMethod *method, MonoRemotingTar
 G_GNUC_UNUSED static gpointer
 mono_marshal_load_remoting_wrapper (MonoRealProxy *rp, MonoMethod *method)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMethod *marshal_method = NULL;
 	if (rp->target_domain_id != -1)
 		marshal_method = mono_marshal_get_xappdomain_invoke (method, &error);
@@ -2099,7 +2099,7 @@ mono_marshal_xdomain_copy_value (MonoObject* val_raw, MonoError *error)
 MonoObject *
 ves_icall_mono_marshal_xdomain_copy_value (MonoObject *val)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoObject *result = mono_marshal_xdomain_copy_value (val, &error);
 	mono_error_set_pending_exception (&error);
 	return result;

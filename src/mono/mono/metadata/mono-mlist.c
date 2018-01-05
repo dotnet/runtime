@@ -45,7 +45,7 @@ static MonoVTable *monolist_item_vtable = NULL;
 MonoMList*
 mono_mlist_alloc (MonoObject *data)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMList *result = mono_mlist_alloc_checked (data, &error);
 	mono_error_cleanup (&error);
 	return result;
@@ -171,7 +171,7 @@ mono_mlist_last (MonoMList* list)
 MonoMList*
 mono_mlist_prepend (MonoMList* list, MonoObject *data)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMList *result = mono_mlist_prepend_checked (list, data, &error);
 	mono_error_cleanup (&error);
 	return result;
@@ -209,7 +209,7 @@ mono_mlist_prepend_checked (MonoMList* list, MonoObject *data, MonoError *error)
 MonoMList*
 mono_mlist_append (MonoMList* list, MonoObject *data)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMList *result = mono_mlist_append_checked (list, data, &error);
 	mono_error_cleanup (&error);
 	return result;

@@ -376,7 +376,7 @@ mono_arch_exceptions_init (void)
 void
 mono_arm_throw_exception (gpointer arg, mgreg_t pc, mgreg_t *int_regs, gdouble *fp_regs, gboolean corlib, gboolean rethrow)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoContext ctx;
 	MonoObject *exc = NULL;
 	guint32 ex_token_index, ex_token;

@@ -510,7 +510,7 @@ mono_class_get_method_generic (MonoClass *klass, MonoMethod *method)
 	}
 
 	if (method != declaring) {
-		MonoError error;
+		ERROR_DECL (error);
 		MonoGenericContext context;
 
 		context.class_inst = NULL;
@@ -528,7 +528,7 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 {
 	gpointer data = oti->data;
 	MonoRgctxInfoType info_type = oti->info_type;
-	MonoError error;
+	ERROR_DECL (error);
 
 	g_assert (data);
 
@@ -585,7 +585,7 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 			inflated_method = mono_method_search_in_array_class (inflated_class,
 				method->name, method->signature);
 		} else {
-			MonoError error;
+			ERROR_DECL (error);
 			inflated_method = mono_class_inflate_generic_method_checked (method, context, &error);
 			g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 		}
@@ -651,7 +651,7 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 			inflated_method = mono_method_search_in_array_class (inflated_class,
 				method->name, method->signature);
 		} else {
-			MonoError error;
+			ERROR_DECL (error);
 			inflated_method = mono_class_inflate_generic_method_checked (method, context, &error);
 			g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 		}
@@ -670,7 +670,7 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 
 	case MONO_RGCTX_INFO_CLASS_FIELD:
 	case MONO_RGCTX_INFO_FIELD_OFFSET: {
-		MonoError error;
+		ERROR_DECL (error);
 		MonoClassField *field = (MonoClassField *)data;
 		MonoType *inflated_type = mono_class_inflate_generic_type_checked (&field->parent->byval_arg, context, &error);
 		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
@@ -690,7 +690,7 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 	case MONO_RGCTX_INFO_SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI: {
 		MonoMethodSignature *sig = (MonoMethodSignature *)data;
 		MonoMethodSignature *isig;
-		MonoError error;
+		ERROR_DECL (error);
 
 		isig = mono_inflate_generic_signature (sig, context, &error);
 		g_assert (mono_error_ok (&error));
@@ -702,7 +702,7 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 		MonoJumpInfoVirtMethod *res;
 		MonoType *t;
 		MonoDomain *domain = mono_domain_get ();
-		MonoError error;
+		ERROR_DECL (error);
 
 		// FIXME: Temporary
 		res = (MonoJumpInfoVirtMethod *)mono_domain_alloc0 (domain, sizeof (MonoJumpInfoVirtMethod));
@@ -1124,7 +1124,7 @@ get_wrapper_shared_type (MonoType *t)
 		return &mono_defaults.object_class->byval_arg;
 		//return &mono_defaults.int_class->byval_arg;
 	case MONO_TYPE_GENERICINST: {
-		MonoError error;
+		ERROR_DECL (error);
 		MonoClass *klass;
 		MonoGenericContext ctx;
 		MonoGenericContext *orig_ctx;
@@ -1618,7 +1618,7 @@ mini_get_gsharedvt_out_sig_wrapper_signature (gboolean has_this, gboolean has_re
 gpointer
 mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, gint32 vcall_offset, gboolean calli)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	gpointer res, info;
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitDomainInfo *domain_info;
@@ -2848,7 +2848,7 @@ is_async_state_machine_class (MonoClass *klass)
 static G_GNUC_UNUSED gboolean
 is_async_method (MonoMethod *method)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoCustomAttrInfo *cattr;
 	MonoMethodSignature *sig;
 	gboolean res = FALSE;
@@ -3353,7 +3353,7 @@ mini_type_is_reference (MonoType *type)
 gpointer
 mini_method_get_rgctx (MonoMethod *m)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoVTable *vt = mono_class_vtable_checked (mono_domain_get (), m->klass, &error);
 	mono_error_assert_ok (&error);
 	if (mini_method_get_context (m)->method_inst) {
@@ -3519,7 +3519,7 @@ get_shared_type (MonoType *t, MonoType *type)
 	MonoTypeEnum ttype;
 
 	if (!type->byref && type->type == MONO_TYPE_GENERICINST && MONO_TYPE_ISSTRUCT (type)) {
-		MonoError error;
+		ERROR_DECL (error);
 		MonoGenericClass *gclass = type->data.generic_class;
 		MonoGenericContext context;
 		MonoClass *k;
@@ -3602,7 +3602,7 @@ get_shared_inst (MonoGenericInst *inst, MonoGenericInst *shared_inst, MonoGeneri
 MonoMethod*
 mini_get_shared_method_full (MonoMethod *method, gboolean all_vt, gboolean is_gsharedvt)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoGenericContext shared_context;
 	MonoMethod *declaring_method, *res;
 	gboolean partial = FALSE;

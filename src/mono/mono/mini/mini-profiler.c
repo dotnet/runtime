@@ -236,7 +236,7 @@ mini_profiler_context_get_argument (MonoProfilerCallContext *ctx, guint32 pos)
 gpointer
 mini_profiler_context_get_local (MonoProfilerCallContext *ctx, guint32 pos)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMethodHeader *header = mono_method_get_header_checked (ctx->method, &error);
 	mono_error_assert_ok (&error); // Must be a valid method at this point.
 

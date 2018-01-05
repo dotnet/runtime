@@ -600,7 +600,7 @@ mono_debug_count (void)
 gconstpointer
 mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	char *name;
 	MonoMethod *wrapper;
 	gconstpointer trampoline;
@@ -1739,7 +1739,7 @@ lookup_method (MonoDomain *domain, MonoMethod *method)
 MonoClass*
 mini_get_class (MonoMethod *method, guint32 token, MonoGenericContext *context)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoClass *klass;
 
 	if (method->wrapper_type != MONO_WRAPPER_NONE) {
@@ -3799,7 +3799,7 @@ mini_get_interp_callbacks (void)
 MonoDomain *
 mini_init (const char *filename, const char *runtime_version)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoDomain *domain;
 	MonoRuntimeCallbacks callbacks;
 	MonoThreadInfoRuntimeCallbacks ticallbacks;
@@ -4552,7 +4552,7 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 		printf ("PRECOMPILE: %s.\n", mono_image_get_filename (image));
 
 	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
-		MonoError error;
+		ERROR_DECL (error);
 
 		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, &error);
 		if (!method) {

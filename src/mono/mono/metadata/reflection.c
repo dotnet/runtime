@@ -218,7 +218,7 @@ MonoReflectionAssembly*
 mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly)
 {
 	HANDLE_FUNCTION_ENTER ();
-	MonoError error;
+	ERROR_DECL (error);
 	MonoReflectionAssemblyHandle result = mono_assembly_get_object_handle (domain, assembly, &error);
 	mono_error_cleanup (&error); /* FIXME new API that doesn't swallow the error */
 	HANDLE_FUNCTION_RETURN_OBJ (result);
@@ -255,7 +255,7 @@ MonoReflectionModule*
 mono_module_get_object   (MonoDomain *domain, MonoImage *image)
 {
 	HANDLE_FUNCTION_ENTER ();
-	MonoError error;
+	ERROR_DECL (error);
 	MonoReflectionModuleHandle result = mono_module_get_object_handle (domain, image, &error);
 	mono_error_cleanup (&error);
 	HANDLE_FUNCTION_RETURN_OBJ (result);
@@ -319,7 +319,7 @@ MonoReflectionModule*
 mono_module_file_get_object (MonoDomain *domain, MonoImage *image, int table_index)
 {
 	HANDLE_FUNCTION_ENTER ();
-	MonoError error;
+	ERROR_DECL (error);
 	MonoReflectionModuleHandle result = mono_module_file_get_object_handle (domain, image, table_index, &error);
 	mono_error_cleanup (&error);
 	HANDLE_FUNCTION_RETURN_OBJ (result);
@@ -425,7 +425,7 @@ mono_type_normalize (MonoType *type)
 MonoReflectionType*
 mono_type_get_object (MonoDomain *domain, MonoType *type)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoReflectionType *ret = mono_type_get_object_checked (domain, type, &error);
 	mono_error_cleanup (&error);
 
@@ -563,7 +563,7 @@ MonoReflectionMethod*
 mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refclass)
 {
 	HANDLE_FUNCTION_ENTER ();
-	MonoError error;
+	ERROR_DECL (error);
 	MonoReflectionMethodHandle ret = mono_method_get_object_handle (domain, method, refclass, &error);
 	mono_error_cleanup (&error);
 	HANDLE_FUNCTION_RETURN_OBJ (ret);
@@ -677,7 +677,7 @@ MonoReflectionField*
 mono_field_get_object (MonoDomain *domain, MonoClass *klass, MonoClassField *field)
 {
 	HANDLE_FUNCTION_ENTER ();
-	MonoError error;
+	ERROR_DECL (error);
 	MonoReflectionFieldHandle result = mono_field_get_object_handle (domain, klass, field, &error);
 	mono_error_cleanup (&error);
 	HANDLE_FUNCTION_RETURN_OBJ (result);
@@ -757,7 +757,7 @@ MonoReflectionProperty*
 mono_property_get_object (MonoDomain *domain, MonoClass *klass, MonoProperty *property)
 {
 	HANDLE_FUNCTION_ENTER ();
-	MonoError error;
+	ERROR_DECL (error);
 	MonoReflectionPropertyHandle result = mono_property_get_object_handle (domain, klass, property, &error);
 	mono_error_cleanup (&error);
 	HANDLE_FUNCTION_RETURN_OBJ (result);
@@ -822,7 +822,7 @@ MonoReflectionEvent*
 mono_event_get_object (MonoDomain *domain, MonoClass *klass, MonoEvent *event)
 {
 	HANDLE_FUNCTION_ENTER ();
-	MonoError error;
+	ERROR_DECL (error);
 	MonoReflectionEventHandle result = mono_event_get_object_handle (domain, klass, event, &error);
 	mono_error_cleanup (&error);
 	HANDLE_FUNCTION_RETURN_OBJ (result);
@@ -871,7 +871,7 @@ mono_event_get_object_handle (MonoDomain *domain, MonoClass *klass, MonoEvent *e
 static MonoObjectHandle
 mono_get_reflection_missing_object (MonoDomain *domain)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	static MonoClassField *missing_value_field = NULL;
 	
 	if (!missing_value_field) {
@@ -1099,7 +1099,7 @@ MonoArray*
 mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 {
 	HANDLE_FUNCTION_ENTER ();
-	MonoError error;
+	ERROR_DECL (error);
 	MonoArrayHandle result = mono_param_get_objects_internal (domain, method, NULL, &error);
 	mono_error_assert_ok (&error);
 	HANDLE_FUNCTION_RETURN_OBJ (result);
@@ -1165,7 +1165,7 @@ MonoReflectionMethodBody*
 mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 {
 	HANDLE_FUNCTION_ENTER ();
-	MonoError error;
+	ERROR_DECL (error);
 	MonoReflectionMethodBodyHandle result = mono_method_body_get_object_handle (domain, method, &error);
 	mono_error_cleanup (&error);
 	HANDLE_FUNCTION_RETURN_OBJ (result);
@@ -1289,7 +1289,7 @@ MonoObject *
 mono_get_dbnull_object (MonoDomain *domain)
 {
 	HANDLE_FUNCTION_ENTER ();
-	MonoError error;
+	ERROR_DECL (error);
 	MonoObjectHandle obj = get_dbnull_object (domain, &error);
 	mono_error_assert_ok (&error);
 	HANDLE_FUNCTION_RETURN_OBJ (obj);
@@ -1786,7 +1786,7 @@ mono_identifier_unescape_info (MonoTypeNameParse *info)
 int
 mono_reflection_parse_type (char *name, MonoTypeNameParse *info)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	gboolean result = mono_reflection_parse_type_checked (name, info, &error);
 	mono_error_cleanup (&error);
 	return result ? 1 : 0;
@@ -2010,7 +2010,7 @@ leave:
  */
 MonoType*
 mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve) {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoType *result = mono_reflection_get_type_with_rootimage (image, image, info, ignorecase, type_resolve, &error);
 	mono_error_cleanup (&error);
 	return result;
@@ -2195,7 +2195,7 @@ mono_reflection_free_type_info (MonoTypeNameParse *info)
 MonoType*
 mono_reflection_type_from_name (char *name, MonoImage *image)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	error_init (&error);
 
 	MonoType * const result = mono_reflection_type_from_name_checked (name, image, &error);
@@ -2225,7 +2225,7 @@ mono_reflection_type_from_name_checked (char *name, MonoImage *image, MonoError 
 	tmp = g_strdup (name);
 	
 	/*g_print ("requested type %s\n", str);*/
-	MonoError parse_error;
+	ERROR_DECL (parse_error);
 	if (!mono_reflection_parse_type_checked (tmp, &info, &parse_error)) {
 		mono_error_cleanup (&parse_error);
 		goto leave;
@@ -2247,7 +2247,7 @@ mono_reflection_get_token (MonoObject *obj_raw)
 {
 	HANDLE_FUNCTION_ENTER ();
 	MONO_HANDLE_DCL (MonoObject, obj);
-	MonoError error;
+	ERROR_DECL (error);
 	guint32 result = mono_reflection_get_token_checked (obj, &error);
 	mono_error_assert_ok (&error);
 	HANDLE_FUNCTION_RETURN_VAL (result);
@@ -2962,7 +2962,7 @@ mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass, Mono
 	params [0] = mono_type_get_object_checked (mono_domain_get (), &oklass->byval_arg, error);
 	return_val_if_nok (error, FALSE);
 
-	MonoError inner_error;
+	ERROR_DECL (inner_error);
 	res = mono_runtime_try_invoke (method, mono_class_get_ref_info_raw (klass), params, &exc, &inner_error); /* FIXME use handles */
 
 	if (exc || !is_ok (&inner_error)) {
@@ -2982,7 +2982,7 @@ mono_reflection_type_get_type (MonoReflectionType *reftype)
 {
 	g_assert (reftype);
 
-	MonoError error;
+	ERROR_DECL (error);
 	MonoType *result = mono_reflection_type_get_handle (reftype, &error);
 	mono_error_assert_ok (&error);
 	return result;

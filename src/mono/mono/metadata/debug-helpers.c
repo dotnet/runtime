@@ -631,7 +631,7 @@ mono_method_desc_search_in_image (MonoMethodDesc *desc, MonoImage *image)
 	mono_image_get_table_info (image, MONO_TABLE_TYPEDEF);
 	methods = mono_image_get_table_info (image, MONO_TABLE_METHOD);
 	for (i = 0; i < mono_table_info_get_rows (methods); ++i) {
-		MonoError error;
+		ERROR_DECL (error);
 		guint32 token = mono_metadata_decode_row_col (methods, i, MONO_METHOD_NAME);
 		const char *n = mono_metadata_string_heap (image, token);
 
@@ -651,7 +651,7 @@ mono_method_desc_search_in_image (MonoMethodDesc *desc, MonoImage *image)
 static const unsigned char*
 dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned char *ip, const unsigned char *end)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
 	const MonoOpcode *opcode;
 	guint32 label, token;
@@ -895,7 +895,7 @@ mono_method_get_name_full (MonoMethod *method, gboolean signature, gboolean ret,
 	char wrapper [64];
 	char *klass_desc;
 	char *inst_desc = NULL;
-	MonoError error;
+	ERROR_DECL (error);
 
 	const char *class_method_separator = ":";
 	const char *method_sig_space = " ";
@@ -1035,7 +1035,7 @@ print_name_space (MonoClass *klass)
 void
 mono_object_describe (MonoObject *obj)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoClass* klass;
 	const char* sep;
 	if (!obj) {
@@ -1214,7 +1214,7 @@ mono_value_describe_fields (MonoClass* klass, const char* addr)
 void
 mono_class_describe_statics (MonoClass* klass)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoClassField *field;
 	MonoClass *p;
 	const char *field_ptr;
@@ -1255,7 +1255,7 @@ mono_class_describe_statics (MonoClass* klass)
 void
 mono_method_print_code (MonoMethod *method)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	char *code;
 	MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
 	if (!header) {

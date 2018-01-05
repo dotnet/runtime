@@ -1783,7 +1783,7 @@ is_valid_ser_string (VerifyContext *ctx, const char **_ptr, const char *end)
 static MonoClass*
 get_enum_by_encoded_name (VerifyContext *ctx, const char **_ptr, const char *end)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoType *type;
 	MonoClass *klass;
 	const char *str_start = NULL;
@@ -1955,7 +1955,7 @@ handle_enum:
 static gboolean
 is_valid_cattr_content (VerifyContext *ctx, MonoMethod *ctor, const char *ptr, guint32 size)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	unsigned prolog = 0;
 	const char *end;
 	MonoMethodSignature *sig;
@@ -2405,7 +2405,7 @@ static void
 verify_typeref_table (VerifyContext *ctx)
 {
 	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_TYPEREF];
-	MonoError error;
+	ERROR_DECL (error);
 	guint32 i;
 
 	for (i = 0; i < table->rows; ++i) {
@@ -2944,7 +2944,7 @@ verify_cattr_table (VerifyContext *ctx)
 static void
 verify_cattr_table_full (VerifyContext *ctx)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_CUSTOMATTRIBUTE];
 	MonoMethod *ctor;
 	const char *ptr;

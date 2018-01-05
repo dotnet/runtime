@@ -765,7 +765,7 @@ mono_image_load_module_checked (MonoImage *image, int idx, MonoError *error)
 MonoImage*
 mono_image_load_module (MonoImage *image, int idx)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoImage *result = mono_image_load_module_checked (image, idx, &error);
 	mono_error_assert_ok (&error);
 	return result;
@@ -2499,7 +2499,7 @@ done:
 MonoImage*
 mono_image_load_file_for_image (MonoImage *image, int fileidx)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoImage *result = mono_image_load_file_for_image_checked (image, fileidx, &error);
 	mono_error_assert_ok (&error);
 	return result;
