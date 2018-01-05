@@ -422,7 +422,6 @@ public class MutexWaitOne2
     public bool NegTest2()
     {
         bool retVal = true;
-        Thread thread = null;
 
         TestLibrary.TestFramework.BeginScenario("NegTest2: ObjectDisposedException should be thrown if current instance has already been disposed");
 
@@ -430,10 +429,10 @@ public class MutexWaitOne2
         {
             m_Mutex = new Mutex();
 
-            thread = new Thread(new ThreadStart(DisposeMutex));
+            var thread = new Thread(new ThreadStart(DisposeMutex));
+            thread.IsBackground = true;
             thread.Start();
-            Thread.Sleep(c_DEFAULT_SLEEP_TIME / 5); // To avoid race
-            Thread.Sleep(c_DEFAULT_SLEEP_TIME);
+            thread.Join();
             m_Mutex.WaitOne(Timeout.Infinite);
 
             TestLibrary.TestFramework.LogError("103", "ObjectDisposedException is not thrown if current instance has already been disposed");
@@ -450,11 +449,6 @@ public class MutexWaitOne2
         }
         finally
         {
-            if (null != thread)
-            {
-                thread.Join();
-            }
-
             if (null != m_Mutex)
             {
                 ((IDisposable)m_Mutex).Dispose();
@@ -558,7 +552,6 @@ public class MutexWaitOne2
 
     private void DisposeMutex()
     {
-        Thread.Sleep(c_DEFAULT_SLEEP_TIME);
         ((IDisposable)m_Mutex).Dispose();
     }
 
