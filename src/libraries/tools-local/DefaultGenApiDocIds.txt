@@ -26,6 +26,7 @@ T:System.Runtime.InteropServices.ComDefaultInterfaceAttribute
 T:System.Runtime.InteropServices.ComVisibleAttribute
 T:System.Runtime.InteropServices.GuidAttribute
 T:System.Runtime.InteropServices.InterfaceTypeAttribute
+T:System.Runtime.InteropServices.StructLayoutAttribute
 T:System.Runtime.Serialization.KnownTypeAttribute
 T:System.Security.Permissions.EnvironmentPermissionAttribute
 T:System.Security.Permissions.FileIOPermissionAttribute
