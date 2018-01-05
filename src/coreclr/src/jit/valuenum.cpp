@@ -95,7 +95,13 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator* alloc)
     ChunkNum cn = m_chunks.Push(specialConstChunk);
     assert(cn == 0);
 
-    m_mapSelectBudget = JitConfig.JitVNMapSelBudget();
+    m_mapSelectBudget = (int)JitConfig.JitVNMapSelBudget(); // We cast the unsigned DWORD to a signed int.
+
+    // This value must be non-negative and non-zero, reset the value to DEFAULT_MAP_SELECT_BUDGET if it isn't.
+    if (m_mapSelectBudget <= 0)
+    {
+        m_mapSelectBudget = DEFAULT_MAP_SELECT_BUDGET;
+    }
 }
 
 // static.
@@ -1326,9 +1332,13 @@ ValueNum ValueNumStore::VNForMapStore(var_types typ, ValueNum arg0VN, ValueNum a
 
 ValueNum ValueNumStore::VNForMapSelect(ValueNumKind vnk, var_types typ, ValueNum arg0VN, ValueNum arg1VN)
 {
-    unsigned budget          = m_mapSelectBudget;
+    int      budget          = m_mapSelectBudget;
     bool     usedRecursiveVN = false;
     ValueNum result          = VNForMapSelectWork(vnk, typ, arg0VN, arg1VN, &budget, &usedRecursiveVN);
+
+    // The remaining budget should always be between [0..m_mapSelectBudget]
+    assert((budget >= 0) && (budget <= m_mapSelectBudget));
+
 #ifdef DEBUG
     if (m_pComp->verbose)
     {
@@ -1362,7 +1372,7 @@ ValueNum ValueNumStore::VNForMapSelect(ValueNumKind vnk, var_types typ, ValueNum
 //    (liberal/conservative) to read from the SSA def referenced in the phi argument.
 
 ValueNum ValueNumStore::VNForMapSelectWork(
-    ValueNumKind vnk, var_types typ, ValueNum arg0VN, ValueNum arg1VN, unsigned* pBudget, bool* pUsedRecursiveVN)
+    ValueNumKind vnk, var_types typ, ValueNum arg0VN, ValueNum arg1VN, int* pBudget, bool* pUsedRecursiveVN)
 {
 TailCall:
     // This label allows us to directly implement a tail call by setting up the arguments, and doing a goto to here.
@@ -1393,7 +1403,7 @@ TailCall:
     {
 
         // Give up if we've run out of budget.
-        if (--(*pBudget) == 0)
+        if (--(*pBudget) <= 0)
         {
             // We have to use 'nullptr' for the basic block here, because subsequent expressions
             // in different blocks may find this result in the VNFunc2Map -- other expressions in
@@ -1491,6 +1501,16 @@ TailCall:
                         ValueNum argRest = phiFuncApp.m_args[1];
                         ValueNum sameSelResult =
                             VNForMapSelectWork(vnk, typ, phiArgVN, arg1VN, pBudget, pUsedRecursiveVN);
+
+                        // It is possible that we just now exceeded our budget, if so we need to force an early exit
+                        // and stop calling VNForMapSelectWork
+                        if (*pBudget <= 0)
+                        {
+                            // We don't have any budget remaining to verify that all phiArgs are the same
+                            // so setup the default failure case now.
+                            allSame = false;
+                        }
+
                         while (allSame && argRest != ValueNumStore::NoVN)
                         {
                             ValueNum  cur = argRest;
@@ -6914,6 +6934,7 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                         ValueNumPair op1VNP;
                         ValueNumPair op1VNPx = ValueNumStore::VNPForEmptyExcSet();
                         vnStore->VNPUnpackExc(tree->gtOp.gtOp1->gtVNPair, &op1VNP, &op1VNPx);
+
                         tree->gtVNPair =
                             vnStore->VNPWithExc(vnStore->VNPairForFunc(tree->TypeGet(),
                                                                        GetVNFuncForOper(oper, (tree->gtFlags &
