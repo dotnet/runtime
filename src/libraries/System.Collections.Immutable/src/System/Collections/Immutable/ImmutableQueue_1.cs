@@ -141,6 +141,23 @@ namespace System.Collections.Immutable
             return _forwards.Peek();
         }
 
+#if FEATURE_ITEMREFAPI
+        /// <summary>
+        /// Gets a read-only reference to the element at the front of the queue.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">Thrown when the queue is empty.</exception>
+        [Pure]
+        public ref readonly T PeekRef()
+        {
+            if (this.IsEmpty)
+            {
+                throw new InvalidOperationException(SR.InvalidEmptyOperation);
+            }
+
+            return ref _forwards.PeekRef();
+        }
+#endif
+
         /// <summary>
         /// Adds an element to the back of the queue.
         /// </summary>

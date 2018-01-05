@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Collections.Immutable.Tests
@@ -724,6 +725,35 @@ namespace System.Collections.Immutable.Tests
             Type proxyType = DebuggerAttributes.GetProxyType(ImmutableArray.CreateBuilder<string>(4));
             TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance(proxyType, (object)null));
             Assert.IsType<ArgumentNullException>(tie.InnerException);
+        }
+
+        [Fact]
+        public void ItemRef()
+        {
+            var builder = new ImmutableArray<int>.Builder();
+            builder.Add(1);
+            builder.Add(2);
+            builder.Add(3);
+
+            ref readonly var safeRef = ref builder.ItemRef(1);
+            ref var unsafeRef = ref Unsafe.AsRef(safeRef);
+
+            Assert.Equal(2, builder.ItemRef(1));
+
+            unsafeRef = 4;
+
+            Assert.Equal(4, builder.ItemRef(1));
+        }
+
+        [Fact]
+        public void ItemRef_OutOfBounds()
+        {
+            var builder = new ImmutableArray<int>.Builder();
+            builder.Add(1);
+            builder.Add(2);
+            builder.Add(3);
+
+            Assert.Throws<IndexOutOfRangeException>(() => builder.ItemRef(5));
         }
 
         private static ImmutableArray<T>.Builder CreateBuilderWithCount<T>(int count)

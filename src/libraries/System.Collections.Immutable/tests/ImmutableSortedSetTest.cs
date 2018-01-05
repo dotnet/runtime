@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Collections.Immutable.Tests
@@ -405,6 +406,29 @@ namespace System.Collections.Immutable.Tests
 
             var actualSet = set.SymmetricExcept(otherCollection);
             CollectionAssertAreEquivalent(expectedSet.ToList(), actualSet.ToList());
+        }
+
+        [Fact]
+        public void ItemRef()
+        {
+            var array = new[] { 1, 2, 3 }.ToImmutableSortedSet();
+
+            ref readonly var safeRef = ref array.ItemRef(1);
+            ref var unsafeRef = ref Unsafe.AsRef(safeRef);
+
+            Assert.Equal(2, array.ItemRef(1));
+
+            unsafeRef = 4;
+
+            Assert.Equal(4, array.ItemRef(1));
+        }
+
+        [Fact]
+        public void ItemRef_OutOfBounds()
+        {
+            var array = new[] { 1, 2, 3 }.ToImmutableSortedSet();
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => array.ItemRef(5));
         }
 
         protected override IImmutableSet<T> Empty<T>()
