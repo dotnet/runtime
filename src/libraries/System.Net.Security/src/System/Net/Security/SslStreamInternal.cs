@@ -273,7 +273,14 @@ namespace System.Net.Security
                             NetEventSource.Info(null, $"***Processing an error Status = {message.Status}");
                         if (message.Renegotiate)
                         {
-                            _sslState.ReplyOnReAuthentication(extraBuffer);
+                            if (_sslState._sslAuthenticationOptions.AllowRenegotiation)
+                            {
+                                _sslState.ReplyOnReAuthentication(extraBuffer);
+                            }
+                            else
+                            {
+                                _sslState.FinishRead(null);
+                            }
 
                             // Loop on read.
                             return -1;
