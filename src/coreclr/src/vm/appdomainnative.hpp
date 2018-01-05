@@ -24,7 +24,6 @@ public:
     static FCDECL2(void, SetupFriendlyName, AppDomainBaseObject* refThisUNSAFE, StringObject* strFriendlyNameUNSAFE);
 
     static FCDECL4(Object*, CreateDynamicAssembly, AppDomainBaseObject* refThisUNSAFE, AssemblyNameBaseObject* assemblyNameUNSAFE, StackCrawlMark* stackMark, INT32 access);
-    static FCDECL1(Object*, GetFriendlyName, AppDomainBaseObject* refThisUNSAFE);
     static FCDECL2(Object*, GetAssemblies, AppDomainBaseObject* refThisUNSAFE, CLR_BOOL fForIntrospection); 
     static FCDECL2(Object*, GetOrInternString, AppDomainBaseObject* refThisUNSAFE, StringObject* pStringUNSAFE);
     static FCDECL1(void, CreateContext, AppDomainBaseObject *refThisUNSAFE);
@@ -38,7 +37,6 @@ public:
     static FCDECL1(void, ForceToSharedDomain, Object* pObjectUNSAFE);
     static FCDECL1(LPVOID,  GetFusionContext, AppDomainBaseObject* refThis);
     static FCDECL2(Object*, IsStringInterned, AppDomainBaseObject* refThis, StringObject* pString);
-    static FCDECL1(FC_BOOL_RET, IsUnloadingForcedFinalize, AppDomainBaseObject* refThis);
     static FCDECL3(void,    UpdateContextProperty, LPVOID fusionContext, StringObject* key, Object* value);
     static FCDECL2(StringObject*, nApplyPolicy, AppDomainBaseObject* refThisUNSAFE, AssemblyNameBaseObject* assemblyNameUNSAFE);
     static FCDECL2(FC_BOOL_RET, IsFrameworkAssembly, AppDomainBaseObject* refThisUNSAFE, AssemblyNameBaseObject* refAssemblyNameUNSAFE);
