@@ -390,7 +390,7 @@ namespace System
                 symlinkPath = Path.Combine(tzFilePath, symlinkPath);
 
                 string timeZoneDirectory = GetTimeZoneDirectory();
-                if (symlinkPath.StartsWith(timeZoneDirectory))
+                if (symlinkPath.StartsWith(timeZoneDirectory, StringComparison.Ordinal))
                 {
                     id = symlinkPath.Substring(timeZoneDirectory.Length);
                 }
@@ -426,7 +426,7 @@ namespace System
                             id = filePath;
 
                             // strip off the root time zone directory
-                            if (id.StartsWith(timeZoneDirectory))
+                            if (id.StartsWith(timeZoneDirectory, StringComparison.Ordinal))
                             {
                                 id = id.Substring(timeZoneDirectory.Length);
                             }
