@@ -43,6 +43,10 @@ struct _MonoErrorBoxed {
 	MonoImage *image;
 };
 
+// Initial version for easier to read history.
+#define ERROR_DECL(name) \
+	MonoError name
+
 #define error_init(error) do {	\
 	((MonoErrorInternal*)(error))->error_code = MONO_ERROR_NONE;	\
 	((MonoErrorInternal*)(error))->flags = 0;	\
