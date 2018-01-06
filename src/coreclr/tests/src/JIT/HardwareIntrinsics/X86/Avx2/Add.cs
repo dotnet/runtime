@@ -37,41 +37,6 @@ namespace IntelHardwareIntrinsicTest
                     var vi3 = Avx2.Add(vi1, vi2);
                     Unsafe.Write(intTable.outArrayPtr, vi3);
 
-                    var vl1 = Unsafe.Read<Vector256<long>>(longTable.inArray1Ptr);
-                    var vl2 = Unsafe.Read<Vector256<long>>(longTable.inArray2Ptr);
-                    var vl3 = Avx2.Add(vl1, vl2);
-                    Unsafe.Write(longTable.outArrayPtr, vl3);
-
-                    var vui1 = Unsafe.Read<Vector256<uint>>(uintTable.inArray1Ptr);
-                    var vui2 = Unsafe.Read<Vector256<uint>>(uintTable.inArray2Ptr);
-                    var vui3 = Avx2.Add(vui1, vui2);
-                    Unsafe.Write(uintTable.outArrayPtr, vui3);
-
-                    var vul1 = Unsafe.Read<Vector256<ulong>>(ulongTable.inArray1Ptr);
-                    var vul2 = Unsafe.Read<Vector256<ulong>>(ulongTable.inArray2Ptr);
-                    var vul3 = Avx2.Add(vul1, vul2);
-                    Unsafe.Write(ulongTable.outArrayPtr, vul3);
-
-                    var vs1 = Unsafe.Read<Vector256<short>>(shortTable.inArray1Ptr);
-                    var vs2 = Unsafe.Read<Vector256<short>>(shortTable.inArray2Ptr);
-                    var vs3 = Avx2.Add(vs1, vs2);
-                    Unsafe.Write(shortTable.outArrayPtr, vs3);
-
-                    var vus1 = Unsafe.Read<Vector256<ushort>>(ushortTable.inArray1Ptr);
-                    var vus2 = Unsafe.Read<Vector256<ushort>>(ushortTable.inArray2Ptr);
-                    var vus3 = Avx2.Add(vus1, vus2);
-                    Unsafe.Write(ushortTable.outArrayPtr, vus3);
-
-                    var vsb1 = Unsafe.Read<Vector256<sbyte>>(sbyteTable.inArray1Ptr);
-                    var vsb2 = Unsafe.Read<Vector256<sbyte>>(sbyteTable.inArray2Ptr);
-                    var vsb3 = Avx2.Add(vsb1, vsb2);
-                    Unsafe.Write(sbyteTable.outArrayPtr, vsb3);
-
-                    var vb1 = Unsafe.Read<Vector256<byte>>(byteTable.inArray1Ptr);
-                    var vb2 = Unsafe.Read<Vector256<byte>>(byteTable.inArray2Ptr);
-                    var vb3 = Avx2.Add(vb1, vb2);
-                    Unsafe.Write(byteTable.outArrayPtr, vb3);
-
                     if (!intTable.CheckResult((x, y, z) => x + y == z))
                     {
                         Console.WriteLine("AVX2 Add failed on int:");
@@ -82,6 +47,25 @@ namespace IntelHardwareIntrinsicTest
                         Console.WriteLine();
                         testResult = Fail;
                     }
+
+                    vi3 = (Vector256<int>)typeof(Avx2).GetMethod(nameof(Avx2.Add), new Type[] { vi1.GetType(), vi2.GetType() }).Invoke(null, new object[] { vi1, vi2 });
+                    Unsafe.Write(intTable.outArrayPtr, vi3);
+
+                    if (!intTable.CheckResult((x, y, z) => x + y == z))
+                    {
+                        Console.WriteLine("AVX2 Add failed via reflection on int:");
+                        foreach (var item in intTable.outArray)
+                        {
+                            Console.Write(item + ", ");
+                        }
+                        Console.WriteLine();
+                        testResult = Fail;
+                    }
+
+                    var vl1 = Unsafe.Read<Vector256<long>>(longTable.inArray1Ptr);
+                    var vl2 = Unsafe.Read<Vector256<long>>(longTable.inArray2Ptr);
+                    var vl3 = Avx2.Add(vl1, vl2);
+                    Unsafe.Write(longTable.outArrayPtr, vl3);
 
                     if (!longTable.CheckResult((x, y, z) => x + y == z))
                     {
@@ -94,6 +78,25 @@ namespace IntelHardwareIntrinsicTest
                         testResult = Fail;
                     }
 
+                    vl3 = (Vector256<long>)typeof(Avx2).GetMethod(nameof(Avx2.Add), new Type[] { vl1.GetType(), vl2.GetType() }).Invoke(null, new object[] { vl1, vl2 });
+                    Unsafe.Write(longTable.outArrayPtr, vl3);
+
+                    if (!longTable.CheckResult((x, y, z) => x + y == z))
+                    {
+                        Console.WriteLine("AVX2 Add failed via reflection on long:");
+                        foreach (var item in longTable.outArray)
+                        {
+                            Console.Write(item + ", ");
+                        }
+                        Console.WriteLine();
+                        testResult = Fail;
+                    }
+
+                    var vui1 = Unsafe.Read<Vector256<uint>>(uintTable.inArray1Ptr);
+                    var vui2 = Unsafe.Read<Vector256<uint>>(uintTable.inArray2Ptr);
+                    var vui3 = Avx2.Add(vui1, vui2);
+                    Unsafe.Write(uintTable.outArrayPtr, vui3);
+
                     if (!uintTable.CheckResult((x, y, z) => x + y == z))
                     {
                         Console.WriteLine("AVX2 Add failed on uint:");
@@ -104,6 +107,25 @@ namespace IntelHardwareIntrinsicTest
                         Console.WriteLine();
                         testResult = Fail;
                     }
+
+                    vui3 = (Vector256<uint>)typeof(Avx2).GetMethod(nameof(Avx2.Add), new Type[] { vui1.GetType(), vui2.GetType() }).Invoke(null, new object[] { vui1, vui2 });
+                    Unsafe.Write(uintTable.outArrayPtr, vui3);
+
+                    if (!uintTable.CheckResult((x, y, z) => x + y == z))
+                    {
+                        Console.WriteLine("AVX2 Add failed via reflection on uint:");
+                        foreach (var item in uintTable.outArray)
+                        {
+                            Console.Write(item + ", ");
+                        }
+                        Console.WriteLine();
+                        testResult = Fail;
+                    }
+
+                    var vul1 = Unsafe.Read<Vector256<ulong>>(ulongTable.inArray1Ptr);
+                    var vul2 = Unsafe.Read<Vector256<ulong>>(ulongTable.inArray2Ptr);
+                    var vul3 = Avx2.Add(vul1, vul2);
+                    Unsafe.Write(ulongTable.outArrayPtr, vul3);
 
                     if (!ulongTable.CheckResult((x, y, z) => x + y == z))
                     {
@@ -116,6 +138,25 @@ namespace IntelHardwareIntrinsicTest
                         testResult = Fail;
                     }
 
+                    vul3 = (Vector256<ulong>)typeof(Avx2).GetMethod(nameof(Avx2.Add), new Type[] { vul1.GetType(), vul2.GetType() }).Invoke(null, new object[] { vul1, vul2 });
+                    Unsafe.Write(ulongTable.outArrayPtr, vul3);
+
+                    if (!ulongTable.CheckResult((x, y, z) => x + y == z))
+                    {
+                        Console.WriteLine("AVX2 Add failed via reflection on ulong:");
+                        foreach (var item in ulongTable.outArray)
+                        {
+                            Console.Write(item + ", ");
+                        }
+                        Console.WriteLine();
+                        testResult = Fail;
+                    }
+
+                    var vs1 = Unsafe.Read<Vector256<short>>(shortTable.inArray1Ptr);
+                    var vs2 = Unsafe.Read<Vector256<short>>(shortTable.inArray2Ptr);
+                    var vs3 = Avx2.Add(vs1, vs2);
+                    Unsafe.Write(shortTable.outArrayPtr, vs3);
+
                     if (!shortTable.CheckResult((x, y, z) => x + y == z))
                     {
                         Console.WriteLine("AVX2 Add failed on short:");
@@ -126,6 +167,25 @@ namespace IntelHardwareIntrinsicTest
                         Console.WriteLine();
                         testResult = Fail;
                     }
+
+                    vs3 = (Vector256<short>)typeof(Avx2).GetMethod(nameof(Avx2.Add), new Type[] { vs1.GetType(), vs2.GetType() }).Invoke(null, new object[] { vs1, vs2 });
+                    Unsafe.Write(shortTable.outArrayPtr, vs3);
+
+                    if (!shortTable.CheckResult((x, y, z) => x + y == z))
+                    {
+                        Console.WriteLine("AVX2 Add failed via reflection on short:");
+                        foreach (var item in shortTable.outArray)
+                        {
+                            Console.Write(item + ", ");
+                        }
+                        Console.WriteLine();
+                        testResult = Fail;
+                    }
+
+                    var vus1 = Unsafe.Read<Vector256<ushort>>(ushortTable.inArray1Ptr);
+                    var vus2 = Unsafe.Read<Vector256<ushort>>(ushortTable.inArray2Ptr);
+                    var vus3 = Avx2.Add(vus1, vus2);
+                    Unsafe.Write(ushortTable.outArrayPtr, vus3);
 
                     if (!ushortTable.CheckResult((x, y, z) => x + y == z))
                     {
@@ -138,6 +198,25 @@ namespace IntelHardwareIntrinsicTest
                         testResult = Fail;
                     }
 
+                    vus3 = (Vector256<ushort>)typeof(Avx2).GetMethod(nameof(Avx2.Add), new Type[] { vus1.GetType(), vus2.GetType() }).Invoke(null, new object[] { vus1, vus2 });
+                    Unsafe.Write(ushortTable.outArrayPtr, vus3);
+
+                    if (!ushortTable.CheckResult((x, y, z) => x + y == z))
+                    {
+                        Console.WriteLine("AVX2 Add failed via reflection on ushort:");
+                        foreach (var item in ushortTable.outArray)
+                        {
+                            Console.Write(item + ", ");
+                        }
+                        Console.WriteLine();
+                        testResult = Fail;
+                    }
+
+                    var vsb1 = Unsafe.Read<Vector256<sbyte>>(sbyteTable.inArray1Ptr);
+                    var vsb2 = Unsafe.Read<Vector256<sbyte>>(sbyteTable.inArray2Ptr);
+                    var vsb3 = Avx2.Add(vsb1, vsb2);
+                    Unsafe.Write(sbyteTable.outArrayPtr, vsb3);
+
                     if (!sbyteTable.CheckResult((x, y, z) => x + y == z))
                     {
                         Console.WriteLine("AVX2 Add failed on sbyte:");
@@ -149,6 +228,25 @@ namespace IntelHardwareIntrinsicTest
                         testResult = Fail;
                     }
 
+                    vsb3 = (Vector256<sbyte>)typeof(Avx2).GetMethod(nameof(Avx2.Add), new Type[] { vsb1.GetType(), vsb2.GetType() }).Invoke(null, new object[] { vsb1, vsb2 });
+                    Unsafe.Write(sbyteTable.outArrayPtr, vsb3);
+
+                    if (!sbyteTable.CheckResult((x, y, z) => x + y == z))
+                    {
+                        Console.WriteLine("AVX2 Add failed via reflection on sbyte:");
+                        foreach (var item in sbyteTable.outArray)
+                        {
+                            Console.Write(item + ", ");
+                        }
+                        Console.WriteLine();
+                        testResult = Fail;
+                    }
+
+                    var vb1 = Unsafe.Read<Vector256<byte>>(byteTable.inArray1Ptr);
+                    var vb2 = Unsafe.Read<Vector256<byte>>(byteTable.inArray2Ptr);
+                    var vb3 = Avx2.Add(vb1, vb2);
+                    Unsafe.Write(byteTable.outArrayPtr, vb3);
+
                     if (!byteTable.CheckResult((x, y, z) => x + y == z))
                     {
                         Console.WriteLine("AVX2 Add failed on byte:");
@@ -159,8 +257,21 @@ namespace IntelHardwareIntrinsicTest
                         Console.WriteLine();
                         testResult = Fail;
                     }
-                }
 
+                    vb3 = (Vector256<byte>)typeof(Avx2).GetMethod(nameof(Avx2.Add), new Type[] { vb1.GetType(), vb2.GetType() }).Invoke(null, new object[] { vb1, vb2 });
+                    Unsafe.Write(byteTable.outArrayPtr, vb3);
+
+                    if (!byteTable.CheckResult((x, y, z) => x + y == z))
+                    {
+                        Console.WriteLine("AVX2 Add failed via reflection on byte:");
+                        foreach (var item in byteTable.outArray)
+                        {
+                            Console.Write(item + ", ");
+                        }
+                        Console.WriteLine();
+                        testResult = Fail;
+                    }
+                }
             }
 
             return testResult;
