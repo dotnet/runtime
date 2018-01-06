@@ -22077,22 +22077,8 @@ void Compiler::fgNoteNonInlineCandidate(GenTreeStmt* stmt, GenTreeCall* call)
         currentObservation = priorObservation;
     }
 
-    // Would like to just call noteFatal here, since this
-    // observation blocked candidacy, but policy comes into play
-    // here too.  Also note there's no need to re-report these
-    // failures, since we reported them during the initial
-    // candidate scan.
-    InlineImpact impact = InlGetImpact(currentObservation);
-
-    if (impact == InlineImpact::FATAL)
-    {
-        inlineResult.NoteFatal(currentObservation);
-    }
-    else
-    {
-        inlineResult.Note(currentObservation);
-    }
-
+    // Propagate the prior failure observation to this result.
+    inlineResult.NotePriorFailure(currentObservation);
     inlineResult.SetReported();
 
     if (call->gtCallType == CT_USER_FUNC)
