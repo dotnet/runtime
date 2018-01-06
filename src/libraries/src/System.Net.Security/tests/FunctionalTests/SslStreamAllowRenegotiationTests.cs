@@ -57,7 +57,7 @@ namespace System.Net.Security.Tests
 
                 // Do another Read, to get the HTTP response from the server, after successful renegotiation.
                 bytesRead = await ssl.ReadAsync(message, 0, message.Length);
-                Assert.Equal(84, bytesRead);
+                Assert.InRange(bytesRead, 1, message.Length);
                 Assert.Contains("HTTP/1.1 200 OK", Encoding.UTF8.GetString(message));
             }
         }
