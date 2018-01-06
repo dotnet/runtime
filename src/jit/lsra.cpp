@@ -863,9 +863,6 @@ RefPosition* LinearScan::newRefPosition(
 //     mask            -  Set of valid registers for this RefPosition
 //     multiRegIdx     -  register position if this RefPosition corresponds to a
 //                        multi-reg call node.
-//     minRegCount     -  Minimum number registers that needs to be ensured while
-//                        constraining candidates for this ref position under
-//                        LSRA stress. This is a DEBUG only arg.
 //
 // Return Value:
 //     a new RefPosition
@@ -875,8 +872,7 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
                                         RefType      theRefType,
                                         GenTree*     theTreeNode,
                                         regMaskTP    mask,
-                                        unsigned     multiRegIdx /* = 0 */
-                                        DEBUGARG(unsigned minRegCandidateCount /* = 1 */))
+                                        unsigned     multiRegIdx /* = 0 */)
 {
 #ifdef DEBUG
     if (theInterval != nullptr && regType(theInterval->registerType) == FloatRegisterType)
@@ -932,10 +928,6 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
 
     newRP->setMultiRegIdx(multiRegIdx);
     newRP->setAllocateIfProfitable(false);
-
-#ifdef DEBUG
-    newRP->minRegCandidateCount = minRegCandidateCount;
-#endif // DEBUG
 
     associateRefPosWithInterval(newRP);
 
@@ -2678,9 +2670,11 @@ void LinearScan::checkLastUses(BasicBlock* block)
 
     VARSET_TP computedLive(VarSetOps::MakeCopy(compiler, block->bbLiveOut));
 
-    bool foundDiff          = false;
-    auto currentRefPosition = refPositions.rbegin();
-    while (currentRefPosition->refType != RefTypeBB)
+    bool                       foundDiff       = false;
+    RefPositionReverseIterator reverseIterator = refPositions.rbegin();
+    RefPosition*               currentRefPosition;
+    for (currentRefPosition = &reverseIterator; currentRefPosition->refType != RefTypeBB;
+         reverseIterator++, currentRefPosition = &reverseIterator)
     {
         // We should never see ParamDefs or ZeroInits within a basic block.
         assert(currentRefPosition->refType != RefTypeParamDef && currentRefPosition->refType != RefTypeZeroInit);
@@ -2738,8 +2732,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
             }
         }
 
-        assert(currentRefPosition != refPositions.rend());
-        ++currentRefPosition;
+        assert(reverseIterator != refPositions.rend());
     }
 
     VARSET_TP liveInNotComputedLive(VarSetOps::Diff(compiler, block->bbLiveIn, computedLive));
@@ -2831,14 +2824,6 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
         case GT_UDIV:
             if (!varTypeIsFloating(tree->TypeGet()))
             {
-                // RDX needs to be killed early, because it must not be used as a source register
-                // (unlike most cases, where the kill happens AFTER the uses).  So for this kill,
-                // we add the RefPosition at the tree loc (where the uses are located) instead of the
-                // usual kill location which is the same as the defs at tree loc+1.
-                // Note that we don't have to add interference for the live vars, because that
-                // will be done below, and is not sensitive to the precise location.
-                assert(currentLoc != 0);
-                addRefsForPhysRegMask(RBM_RDX, currentLoc, RefTypeKill, true);
                 // Both RAX and RDX are killed by the operation
                 killMask = RBM_RAX | RBM_RDX;
             }
@@ -3090,16 +3075,12 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
 //     regType               -   Register type
 //     currentLoc            -   Location of the temp Def position
 //     regMask               -   register mask of candidates for temp
-//     minRegCandidateCount  -   Minimum registers to be ensured in candidate
-//                               set under LSRA stress mode.  This is a
-//                               DEBUG only arg.
-RefPosition* LinearScan::defineNewInternalTemp(GenTree*     tree,
-                                               RegisterType regType,
-                                               regMaskTP regMask DEBUGARG(unsigned minRegCandidateCount))
+//
+RefPosition* LinearScan::defineNewInternalTemp(GenTree* tree, RegisterType regType, regMaskTP regMask)
 {
     Interval* current   = newInterval(regType);
     current->isInternal = true;
-    return newRefPosition(current, currentLoc, RefTypeDef, tree, regMask, 0 DEBUG_ARG(minRegCandidateCount));
+    return newRefPosition(current, currentLoc, RefTypeDef, tree, regMask, 0);
 }
 
 //------------------------------------------------------------------------
@@ -3110,16 +3091,10 @@ RefPosition* LinearScan::defineNewInternalTemp(GenTree*     tree,
 //   tree                  -   Gentree node that needs internal registers
 //   temps                 -   in-out array which is populated with ref positions
 //                             created for Def of internal registers
-//   minRegCandidateCount  -   Minimum registers to be ensured in candidate
-//                             set of ref positions under LSRA stress.  This is
-//                             a DEBUG only arg.
 //
 // Returns:
-//   The total number of Def positions created for internal registers of tree node.
-int LinearScan::buildInternalRegisterDefsForNode(GenTree*      tree,
-                                                 TreeNodeInfo* info,
-                                                 RefPosition*  temps[] // populates
-                                                 DEBUGARG(unsigned minRegCandidateCount))
+//   The total number of Def positions created for internal registers of tree no.
+int LinearScan::buildInternalRegisterDefsForNode(GenTree* tree, TreeNodeInfo* info, RefPosition* temps[])
 {
     int       count;
     int       internalIntCount = info->internalIntCount;
@@ -3143,15 +3118,14 @@ int LinearScan::buildInternalRegisterDefsForNode(GenTree*      tree,
             internalIntCands = genFindLowestBit(internalIntCands);
             internalCands &= ~internalIntCands;
         }
-        temps[count] = defineNewInternalTemp(tree, IntRegisterType, internalIntCands DEBUG_ARG(minRegCandidateCount));
+        temps[count] = defineNewInternalTemp(tree, IntRegisterType, internalIntCands);
     }
 
     int internalFloatCount = info->internalFloatCount;
     for (int i = 0; i < internalFloatCount; i++)
     {
         regMaskTP internalFPCands = (internalCands & internalFloatRegCandidates());
-        temps[count++] =
-            defineNewInternalTemp(tree, FloatRegisterType, internalFPCands DEBUG_ARG(minRegCandidateCount));
+        temps[count++]            = defineNewInternalTemp(tree, FloatRegisterType, internalFPCands);
     }
 
     assert(count < MaxInternalRegisters);
@@ -3168,16 +3142,10 @@ int LinearScan::buildInternalRegisterDefsForNode(GenTree*      tree,
 //   defs                  -   int array containing Def positions of internal
 //                             registers.
 //   total                 -   Total number of Def positions in 'defs' array.
-//   minRegCandidateCount  -   Minimum registers to be ensured in candidate
-//                             set of ref positions under LSRA stress.  This is
-//                             a DEBUG only arg.
 //
 // Returns:
 //   Void.
-void LinearScan::buildInternalRegisterUsesForNode(GenTree*      tree,
-                                                  TreeNodeInfo* info,
-                                                  RefPosition*  defs[],
-                                                  int total DEBUGARG(unsigned minRegCandidateCount))
+void LinearScan::buildInternalRegisterUsesForNode(GenTree* tree, TreeNodeInfo* info, RefPosition* defs[], int total)
 {
     assert(total < MaxInternalRegisters);
 
@@ -3194,8 +3162,7 @@ void LinearScan::buildInternalRegisterUsesForNode(GenTree*      tree,
         }
         else
         {
-            RefPosition* newest = newRefPosition(defs[i]->getInterval(), currentLoc, RefTypeUse, tree, mask,
-                                                 0 DEBUG_ARG(minRegCandidateCount));
+            RefPosition* newest = newRefPosition(defs[i]->getInterval(), currentLoc, RefTypeUse, tree, mask, 0);
 
             if (info->isInternalRegDelayFree)
             {
@@ -3755,17 +3722,16 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
     RefPosition* internalRefs[MaxInternalRegisters];
 
 #ifdef DEBUG
-    // Number of registers required for tree node is the sum of
-    // consume + produce + internalCount.  This is the minimum
-    // set of registers that needs to be ensured in candidate
-    // set of ref positions created.
-    unsigned minRegCount = consume + produce + info->internalIntCount + info->internalFloatCount;
+    // If we are constraining the registers for allocation, we will modify all the RefPositions
+    // we've built for this node after we've created them. In order to do that, we'll remember
+    // the last RefPosition prior to those created for this node.
+    RefPositionIterator refPositionMark = refPositions.backPosition();
 #endif // DEBUG
 
     // Make intervals for all the 'internal' register requirements for this node,
     // where internal means additional registers required temporarily.
     // Create a RefTypeDef RefPosition for each such interval.
-    int internalCount = buildInternalRegisterDefsForNode(tree, info, internalRefs DEBUG_ARG(minRegCount));
+    int internalCount = buildInternalRegisterDefsForNode(tree, info, internalRefs);
 
     // Make use RefPositions for all used values.
     int consumed = 0;
@@ -3788,37 +3754,6 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 
         const bool delayRegFree = (hasDelayFreeSrc && useNodeInfo.isDelayFree);
 
-#ifdef DEBUG
-        // If delayRegFree, then Use will interfere with the destination of
-        // the consuming node.  Therefore, we also need add the kill set of
-        // consuming node to minRegCount.
-        //
-        // For example consider the following IR on x86, where v01 and v02
-        // are method args coming in ecx and edx respectively.
-        //   GT_DIV(v01, v02)
-        //
-        // For GT_DIV minRegCount will be 3 without adding kill set
-        // of GT_DIV node.
-        //
-        // Assume further JitStressRegs=2, which would constrain
-        // candidates to callee trashable regs { eax, ecx, edx } on
-        // use positions of v01 and v02.  LSRA allocates ecx for v01.
-        // Use position of v02 cannot be allocated a regs since it
-        // is marked delay-reg free and {eax,edx} are getting killed
-        // before the def of GT_DIV.  For this reason, minRegCount
-        // for Use position of v02 also needs to take into account
-        // of kill set of its consuming node.
-        unsigned minRegCountForUsePos = minRegCount;
-        if (delayRegFree && (lsraStressMask != 0))
-        {
-            regMaskTP killMask = getKillSetForNode(tree);
-            if (killMask != RBM_NONE)
-            {
-                minRegCountForUsePos += genCountBits(killMask);
-            }
-        }
-#endif // DEBUG
-
         regMaskTP candidates = useNodeInfo.getSrcCandidates(this);
 #ifdef _TARGET_ARM_
         regMaskTP allCandidates = candidates;
@@ -3835,8 +3770,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 
         // For non-localVar uses we record nothing, as nothing needs to be written back to the tree.
         GenTree* const refPosNode = srcInterval->isLocalVar ? useNode : nullptr;
-        RefPosition*   pos        = newRefPosition(srcInterval, currentLoc, RefTypeUse, refPosNode, candidates,
-                                          0 DEBUG_ARG(minRegCountForUsePos));
+        RefPosition*   pos        = newRefPosition(srcInterval, currentLoc, RefTypeUse, refPosNode, candidates, 0);
         if (delayRegFree)
         {
             pos->delayRegFree = true;
@@ -3862,8 +3796,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
                 allCandidates &= ~candidates;
             }
 #endif // _TARGET_ARM_
-            RefPosition* pos = newRefPosition(srcInterval, currentLoc, RefTypeUse, refPosNode, candidates,
-                                              idx DEBUG_ARG(minRegCountForUsePos));
+            RefPosition* pos = newRefPosition(srcInterval, currentLoc, RefTypeUse, refPosNode, candidates, idx);
             consumed++;
         }
     }
@@ -3874,7 +3807,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
         listNodePool.ReturnNodes(useList);
     }
 
-    buildInternalRegisterUsesForNode(tree, info, internalRefs, internalCount DEBUG_ARG(minRegCount));
+    buildInternalRegisterUsesForNode(tree, info, internalRefs, internalCount);
 
     RegisterType registerType  = getDefType(tree);
     regMaskTP    candidates    = info->getDstCandidates(this);
@@ -4004,8 +3937,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
             }
         }
 
-        RefPosition* pos = newRefPosition(interval, defLocation, defRefType, defNode, currCandidates,
-                                          (unsigned)i DEBUG_ARG(minRegCount));
+        RefPosition* pos = newRefPosition(interval, defLocation, defRefType, defNode, currCandidates, (unsigned)i);
         if (info->isLocalDefUse)
         {
             // This must be an unused value, OR it is a special node for which we allocate
@@ -4027,6 +3959,47 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
     }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
+#ifdef DEBUG
+    // If we are constraining registers, modify all the RefPositions we've just built to specify the
+    // minimum reg count required.
+    if (getStressLimitRegs() != LSRA_LIMIT_NONE)
+    {
+        // The number of registers required for a tree node is the sum of
+        // consume + produce + internalCount.  This is the minimum
+        // set of registers that needs to be ensured in candidate
+        // set of ref positions created.
+        unsigned minRegCount = consume + produce + info->internalIntCount + info->internalFloatCount;
+
+        for (refPositionMark++; refPositionMark != refPositions.end(); refPositionMark++)
+        {
+            RefPosition* newRefPosition    = &(*refPositionMark);
+            unsigned     minRegCountForRef = minRegCount;
+            if (RefTypeIsUse(newRefPosition->refType) && newRefPosition->delayRegFree)
+            {
+                // If delayRegFree, then Use will interfere with the destination of the consuming node.
+                // Therefore, we also need add the kill set of the consuming node to minRegCount.
+                //
+                // For example consider the following IR on x86, where v01 and v02
+                // are method args coming in ecx and edx respectively.
+                //   GT_DIV(v01, v02)
+                //
+                // For GT_DIV, the minRegCount will be 3 without adding kill set of GT_DIV node.
+                //
+                // Assume further JitStressRegs=2, which would constrain candidates to callee trashable
+                // regs { eax, ecx, edx } on use positions of v01 and v02.  LSRA allocates ecx for v01.
+                // The use position of v02 cannot be allocated a reg since it is marked delay-reg free and
+                // {eax,edx} are getting killed before the def of GT_DIV.  For this reason, minRegCount for
+                // the use position of v02 also needs to take into account the kill set of its consuming node.
+                regMaskTP killMask = getKillSetForNode(tree);
+                if (killMask != RBM_NONE)
+                {
+                    minRegCountForRef += genCountBits(killMask);
+                }
+            }
+            newRefPosition->minRegCandidateCount = minRegCountForRef;
+        }
+    }
+#endif // DEBUG
     JITDUMP("\n");
 }
 
@@ -7458,7 +7431,7 @@ void LinearScan::dumpRefPositions(const char* str)
     printf("------------\n");
     printf("REFPOSITIONS %s: \n", str);
     printf("------------\n");
-    for (auto& refPos : refPositions)
+    for (RefPosition& refPos : refPositions)
     {
         refPos.dump();
     }
@@ -7569,7 +7542,7 @@ void LinearScan::allocateRegisters()
     DBEXEC(VERBOSE, lsraDumpIntervals("before allocateRegisters"));
 
     // at start, nothing is active except for register args
-    for (auto& interval : intervals)
+    for (Interval& interval : intervals)
     {
         Interval* currentInterval          = &interval;
         currentInterval->recentRefPosition = nullptr;
@@ -7620,9 +7593,9 @@ void LinearScan::allocateRegisters()
 
     bool handledBlockEnd = false;
 
-    for (auto& refPosition : refPositions)
+    for (RefPosition& refPositionIterator : refPositions)
     {
-        RefPosition* currentRefPosition = &refPosition;
+        RefPosition* currentRefPosition = &refPositionIterator;
 
 #ifdef DEBUG
         // Set the activeRefPosition to null until we're done with any boundary handling.
@@ -8310,7 +8283,7 @@ void LinearScan::allocateRegisters()
         // provide a Reset function (!) - we'll probably replace this so don't bother
         // adding it
 
-        for (auto& interval : intervals)
+        for (Interval& interval : intervals)
         {
             if (interval.isActive)
             {
@@ -9107,13 +9080,15 @@ void LinearScan::resolveRegisters()
     }
 
     // handle incoming arguments and special temps
-    auto currentRefPosition = refPositions.begin();
+    RefPositionIterator refPosIterator     = refPositions.begin();
+    RefPosition*        currentRefPosition = &refPosIterator;
 
     if (enregisterLocalVars)
     {
         VarToRegMap entryVarToRegMap = inVarToRegMaps[compiler->fgFirstBB->bbNum];
-        while (currentRefPosition != refPositions.end() &&
-               (currentRefPosition->refType == RefTypeParamDef || currentRefPosition->refType == RefTypeZeroInit))
+        for (; refPosIterator != refPositions.end() &&
+               (currentRefPosition->refType == RefTypeParamDef || currentRefPosition->refType == RefTypeZeroInit);
+             ++refPosIterator, currentRefPosition = &refPosIterator)
         {
             Interval* interval = currentRefPosition->getInterval();
             assert(interval != nullptr && interval->isLocalVar);
@@ -9131,13 +9106,12 @@ void LinearScan::resolveRegisters()
                 interval->isActive = false;
             }
             setVarReg(entryVarToRegMap, varIndex, reg);
-            ++currentRefPosition;
         }
     }
     else
     {
-        assert(currentRefPosition == refPositions.end() ||
-               (currentRefPosition->refType != RefTypeParamDef && currentRefPosition->refType != RefTypeZeroInit));
+        assert(refPosIterator == refPositions.end() ||
+               (refPosIterator->refType != RefTypeParamDef && refPosIterator->refType != RefTypeZeroInit));
     }
 
     BasicBlock* insertionBlock = compiler->fgFirstBB;
@@ -9160,8 +9134,8 @@ void LinearScan::resolveRegisters()
             }
 
             // Handle the DummyDefs, updating the incoming var location.
-            for (; currentRefPosition != refPositions.end() && currentRefPosition->refType == RefTypeDummyDef;
-                 ++currentRefPosition)
+            for (; refPosIterator != refPositions.end() && currentRefPosition->refType == RefTypeDummyDef;
+                 ++refPosIterator, currentRefPosition = &refPosIterator)
             {
                 assert(currentRefPosition->isIntervalRef());
                 // Don't mark dummy defs as reload
@@ -9182,14 +9156,15 @@ void LinearScan::resolveRegisters()
         }
 
         // The next RefPosition should be for the block.  Move past it.
-        assert(currentRefPosition != refPositions.end());
+        assert(refPosIterator != refPositions.end());
         assert(currentRefPosition->refType == RefTypeBB);
-        ++currentRefPosition;
+        ++refPosIterator;
+        currentRefPosition = &refPosIterator;
 
         // Handle the RefPositions for the block
-        for (; currentRefPosition != refPositions.end() && currentRefPosition->refType != RefTypeBB &&
+        for (; refPosIterator != refPositions.end() && currentRefPosition->refType != RefTypeBB &&
                currentRefPosition->refType != RefTypeDummyDef;
-             ++currentRefPosition)
+             ++refPosIterator, currentRefPosition = &refPosIterator)
         {
             currentLocation = currentRefPosition->nodeLocation;
 
@@ -11218,6 +11193,8 @@ void RefPosition::dump()
     printf("regmask=");
     dumpRegMask(registerAssignment);
 
+    printf(" minReg=%d", minRegCandidateCount);
+
     if (this->lastUse)
     {
         printf(" last");
@@ -11431,7 +11408,7 @@ void LinearScan::dumpDefList()
 void LinearScan::lsraDumpIntervals(const char* msg)
 {
     printf("\nLinear scan intervals %s:\n", msg);
-    for (auto& interval : intervals)
+    for (Interval& interval : intervals)
     {
         // only dump something if it has references
         // if (interval->firstRefPosition)
@@ -11646,7 +11623,8 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
     // currentRefPosition is not used for LSRA_DUMP_PRE
     // We keep separate iterators for defs, so that we can print them
     // on the lhs of the dump
-    auto currentRefPosition = refPositions.begin();
+    RefPositionIterator refPosIterator     = refPositions.begin();
+    RefPosition*        currentRefPosition = &refPosIterator;
 
     switch (mode)
     {
@@ -11667,8 +11645,8 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
     if (mode != LSRA_DUMP_PRE)
     {
         printf("Incoming Parameters: ");
-        for (; currentRefPosition != refPositions.end() && currentRefPosition->refType != RefTypeBB;
-             ++currentRefPosition)
+        for (; refPosIterator != refPositions.end() && currentRefPosition->refType != RefTypeBB;
+             ++refPosIterator, currentRefPosition = &refPosIterator)
         {
             Interval* interval = currentRefPosition->getInterval();
             assert(interval != nullptr && interval->isLocalVar);
@@ -11709,10 +11687,10 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
         {
             bool printedBlockHeader = false;
             // We should find the boundary RefPositions in the order of exposed uses, dummy defs, and the blocks
-            for (; currentRefPosition != refPositions.end() &&
+            for (; refPosIterator != refPositions.end() &&
                    (currentRefPosition->refType == RefTypeExpUse || currentRefPosition->refType == RefTypeDummyDef ||
                     (currentRefPosition->refType == RefTypeBB && !printedBlockHeader));
-                 ++currentRefPosition)
+                 ++refPosIterator, currentRefPosition = &refPosIterator)
             {
                 Interval* interval = nullptr;
                 if (currentRefPosition->isIntervalRef())
@@ -11795,12 +11773,12 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                 // and combining the fixed regs with their associated def or use
                 bool         killPrinted        = false;
                 RefPosition* lastFixedRegRefPos = nullptr;
-                for (; currentRefPosition != refPositions.end() &&
+                for (; refPosIterator != refPositions.end() &&
                        (currentRefPosition->refType == RefTypeUse || currentRefPosition->refType == RefTypeFixedReg ||
                         currentRefPosition->refType == RefTypeKill || currentRefPosition->refType == RefTypeDef) &&
                        (currentRefPosition->nodeLocation == tree->gtSeqNum ||
                         currentRefPosition->nodeLocation == tree->gtSeqNum + 1);
-                     ++currentRefPosition)
+                     ++refPosIterator, currentRefPosition = &refPosIterator)
                 {
                     Interval* interval = nullptr;
                     if (currentRefPosition->isIntervalRef())
@@ -12466,7 +12444,7 @@ void LinearScan::verifyFinalAllocation()
         physRegRecord->assignedInterval = nullptr;
     }
 
-    for (auto& interval : intervals)
+    for (Interval& interval : intervals)
     {
         interval.assignedReg = nullptr;
         interval.physReg     = REG_NA;
@@ -12479,7 +12457,7 @@ void LinearScan::verifyFinalAllocation()
     regMaskTP    regsToFree                  = RBM_NONE;
     regMaskTP    delayRegsToFree             = RBM_NONE;
     LsraLocation currentLocation             = MinLocation;
-    for (auto& refPosition : refPositions)
+    for (RefPosition& refPosition : refPositions)
     {
         RefPosition* currentRefPosition = &refPosition;
         Interval*    interval           = nullptr;
