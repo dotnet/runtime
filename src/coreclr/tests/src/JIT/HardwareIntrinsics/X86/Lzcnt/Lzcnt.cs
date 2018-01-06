@@ -4,6 +4,7 @@
 //
 
 using System;
+using System.Reflection;
 using System.Runtime.Intrinsics.X86;
 
 namespace IntelHardwareIntrinsicTest
@@ -26,11 +27,22 @@ namespace IntelHardwareIntrinsicTest
                     Console.WriteLine("Intrinsic Lzcnt.LeadingZeroCount is called on non-supported hardware.");
                     Console.WriteLine("Lzcnt.IsSupported " + Lzcnt.IsSupported);
                     Console.WriteLine("Environment.Is64BitProcess " + Environment.Is64BitProcess);
-                    return Fail;
+                    testResult = Fail;
                 }
                 catch (PlatformNotSupportedException)
                 {
-                    testResult = Pass;
+                }
+
+                try
+                {
+                    resl = Convert.ToUInt64(typeof(Lzcnt).GetMethod(nameof(Lzcnt.LeadingZeroCount), new Type[] { sl.GetType() }).Invoke(null, new object[] { sl }));
+                    Console.WriteLine("Intrinsic Lzcnt.LeadingZeroCount is called via reflection on non-supported hardware.");
+                    Console.WriteLine("Lzcnt.IsSupported " + Lzcnt.IsSupported);
+                    Console.WriteLine("Environment.Is64BitProcess " + Environment.Is64BitProcess);
+                    testResult = Fail;
+                }
+                catch (TargetInvocationException e) when (e.InnerException is PlatformNotSupportedException)
+                {
                 }
             }
 
@@ -42,10 +54,19 @@ namespace IntelHardwareIntrinsicTest
                     for (int i = 0; i < longLzcntTable.Length; i++)
                     {
                         sl = longLzcntTable[i].s;
+
                         resl = Lzcnt.LeadingZeroCount(sl);
                         if (resl != longLzcntTable[i].res)
                         {
                             Console.WriteLine("{0}: Inputs: 0x{1,16:x} Expected: 0x{3,16:x} actual: 0x{4,16:x}",
+                                i, sl, longLzcntTable[i].res, resl);
+                            testResult = Fail;
+                        }
+                        
+                        resl = Convert.ToUInt64(typeof(Lzcnt).GetMethod(nameof(Lzcnt.LeadingZeroCount), new Type[] { sl.GetType() }).Invoke(null, new object[] { sl }));
+                        if (resl != longLzcntTable[i].res)
+                        {
+                            Console.WriteLine("{0}: Inputs: 0x{1,16:x} Expected: 0x{3,16:x} actual: 0x{4,16:x} - Reflection",
                                 i, sl, longLzcntTable[i].res, resl);
                             testResult = Fail;
                         }
@@ -56,10 +77,19 @@ namespace IntelHardwareIntrinsicTest
                 for (int i = 0; i < intLzcntTable.Length; i++)
                 {
                     si = intLzcntTable[i].s;
+
                     resi = Lzcnt.LeadingZeroCount(si);
                     if (resi != intLzcntTable[i].res)
                     {
                         Console.WriteLine("{0}: Inputs: 0x{1,16:x} Expected: 0x{3,16:x} actual: 0x{4,16:x}",
+                            i, si, intLzcntTable[i].res, resi);
+                        testResult = Fail;
+                    }
+
+                    resl = Convert.ToUInt64(typeof(Lzcnt).GetMethod(nameof(Lzcnt.LeadingZeroCount), new Type[] { si.GetType() }).Invoke(null, new object[] { si }));
+                    if (resi != intLzcntTable[i].res)
+                    {
+                        Console.WriteLine("{0}: Inputs: 0x{1,16:x} Expected: 0x{3,16:x} actual: 0x{4,16:x} - Reflection",
                             i, si, intLzcntTable[i].res, resi);
                         testResult = Fail;
                     }
