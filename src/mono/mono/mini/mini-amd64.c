@@ -39,9 +39,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/unlocked.h>
 
-#ifndef DISABLE_INTERPRETER
 #include "interp/interp.h"
-#endif
 
 #include "trace.h"
 #include "ir-emit.h"
