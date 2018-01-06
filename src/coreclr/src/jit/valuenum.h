@@ -225,9 +225,12 @@ private:
     unsigned m_numMapSels;
 #endif
 
+// This is the constant value used for the default value of m_mapSelectBudget
+#define DEFAULT_MAP_SELECT_BUDGET 100 // used by JitVNMapSelBudget
+
     // This is the maximum number of MapSelect terms that can be "considered" as part of evaluation of a top-level
     // MapSelect application.
-    unsigned m_mapSelectBudget;
+    int m_mapSelectBudget;
 
 public:
     // Initializes any static variables of ValueNumStore.
@@ -406,7 +409,7 @@ public:
 
     // A method that does the work for VNForMapSelect and may call itself recursively.
     ValueNum VNForMapSelectWork(
-        ValueNumKind vnk, var_types typ, ValueNum op1VN, ValueNum op2VN, unsigned* pBudget, bool* pUsedRecursiveVN);
+        ValueNumKind vnk, var_types typ, ValueNum op1VN, ValueNum op2VN, int* pBudget, bool* pUsedRecursiveVN);
 
     // A specialized version of VNForFunc that is used for VNF_MapStore and provides some logging when verbose is set
     ValueNum VNForMapStore(var_types typ, ValueNum arg0VN, ValueNum arg1VN, ValueNum arg2VN);
