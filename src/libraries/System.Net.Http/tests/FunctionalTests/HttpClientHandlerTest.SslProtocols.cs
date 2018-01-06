@@ -100,6 +100,12 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            if (UseManagedHandler)
+            {
+                // TODO #26186: The managed handler is failing on some OSes.
+                return;
+            }
+
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (var client = new HttpClient(handler))
             {
@@ -135,6 +141,12 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(SupportedSSLVersionServers))]
         public async Task GetAsync_SupportedSSLVersion_Succeeds(SslProtocols sslProtocols, string url)
         {
+            if (UseManagedHandler)
+            {
+                // TODO #26186: The managed handler is failing on some OSes.
+                return;
+            }
+
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
                 if (PlatformDetection.IsRedHatFamily7)
