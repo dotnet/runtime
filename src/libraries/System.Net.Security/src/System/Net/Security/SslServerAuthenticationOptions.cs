@@ -16,7 +16,7 @@ namespace System.Net.Security
 
         internal RemoteCertValidationCallback _certValidationDelegate;
 
-        public bool AllowRenegotiation { get; set; }
+        public bool DisableRenegotiation { get; set; }
 
         public bool ClientCertificateRequired { get; set; }
 

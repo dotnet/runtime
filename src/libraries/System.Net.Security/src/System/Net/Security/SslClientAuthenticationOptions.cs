@@ -18,7 +18,7 @@ namespace System.Net.Security
         internal RemoteCertValidationCallback _certValidationDelegate;
         internal LocalCertSelectionCallback _certSelectionDelegate;
 
-        public bool AllowRenegotiation { get; set; }
+        public bool DisableRenegotiation { get; set; }
 
         public LocalCertificateSelectionCallback LocalCertificateSelectionCallback { get; set; }
 

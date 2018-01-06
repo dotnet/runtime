@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Security.Authentication;
@@ -20,7 +21,7 @@ namespace System.Net.Security.Tests
     { 
         [Fact]
         [OuterLoop] // Test hits external azure server.
-        public async Task SslStream_AllowRenegotiation_True_Succeeds()
+        public async Task SslStream_DisableRenegotiation_False_Succeeds()
         {
             Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             await s.ConnectAsync(Configuration.Security.TlsRenegotiationServer, 443);
@@ -36,7 +37,7 @@ namespace System.Net.Security.Tests
                     ClientCertificates = certBundle,
                     EnabledSslProtocols = SslProtocols.Tls12,
                     CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
-                    AllowRenegotiation = true
+                    DisableRenegotiation = false
                 };
 
                 // Perform handshake to establish secure connection.
@@ -62,9 +63,8 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [Trait("category", "mytest")]
         [OuterLoop] // Test hits external azure server.
-        public async Task SslStream_AllowRenegotiation_False_Succeeds()
+        public async Task SslStream_DisableRenegotiation_True_Succeeds()
         {
             Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             await s.ConnectAsync(Configuration.Security.TlsRenegotiationServer, 443);
@@ -80,7 +80,7 @@ namespace System.Net.Security.Tests
                     ClientCertificates = certBundle,
                     EnabledSslProtocols = SslProtocols.Tls12,
                     CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
-                    AllowRenegotiation = false
+                    DisableRenegotiation = true
                 };
 
                 // Perform handshake to establish secure connection.
@@ -93,15 +93,8 @@ namespace System.Net.Security.Tests
                 await ssl.WriteAsync(message, 0, message.Length);
 
                 // Initiate Read operation, that results in starting renegotiation as per server response to the above request.
-                int bytesRead = await ssl.ReadAsync(message, 0, message.Length);
-
-                // SslStream.ReadAsync should return -1 bytes, indicating renegotiation operation is in progress.
-                Assert.Equal(-1, bytesRead);
-
-                // Do another Read, to get the HTTP response from the server, after successful renegotiation.
-                bytesRead = await ssl.ReadAsync(message, 0, message.Length);
-                Assert.Equal(84, bytesRead);
-                Assert.Contains("HTTP/1.1 200 OK", Encoding.UTF8.GetString(message));
+                // This will throw IOException, since renegotiation is disabled on client side.
+                await Assert.ThrowsAsync<IOException>(() => ssl.ReadAsync(message, 0, message.Length));
             }
         }
     }
