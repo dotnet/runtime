@@ -2125,34 +2125,50 @@ DWORD ZapIndirectHelperThunk::SaveWorker(ZapWriter * pZapWriter)
         // push r4
         *(WORD *)(p + 0) = 0xB410;
         p += 2;
-    }
-    else
-    if (IsLazyHelper())
-    {
-        // mov r1, [helper]
-        MovRegImm(p, 1);
+
+        // mov r4, [helper]
+        MovRegImm(p, 4);
         if (pImage != NULL)
-            pImage->WriteReloc(buffer, (int) (p - buffer), pImage->GetImportTable()->GetHelperImport(READYTORUN_HELPER_Module), 0, IMAGE_REL_BASED_THUMB_MOV32);
+            pImage->WriteReloc(buffer, (int)(p - buffer), pImage->GetImportTable()->GetHelperImport(GetReadyToRunHelper()), 0, IMAGE_REL_BASED_THUMB_MOV32);
         p += 8;
 
-        // ldr r1, [r1]
-        *(WORD *)p = 0x6809;
+        // ldr r4, [r4]
+        *(WORD *)p = 0x6824;
+        p += 2;
+
+        // bx r4
+        *(WORD *)p = 0x4720;
         p += 2;
     }
+    else
+    {
+        if (IsLazyHelper())
+        {
+            // mov r1, [helper]
+            MovRegImm(p, 1);
+            if (pImage != NULL)
+                pImage->WriteReloc(buffer, (int) (p - buffer), pImage->GetImportTable()->GetHelperImport(READYTORUN_HELPER_Module), 0, IMAGE_REL_BASED_THUMB_MOV32);
+            p += 8;
 
-    // mov r4, [helper]
-    MovRegImm(p, 4);
-    if (pImage != NULL)
-        pImage->WriteReloc(buffer, (int) (p - buffer), pImage->GetImportTable()->GetHelperImport(GetReadyToRunHelper()), 0, IMAGE_REL_BASED_THUMB_MOV32);
-    p += 8;
+            // ldr r1, [r1]
+            *(WORD *)p = 0x6809;
+            p += 2;
+        }
 
-    // ldr r4, [r4]
-    *(WORD *)p = 0x6824;
-    p += 2;
+        // mov r12, [helper]
+        MovRegImm(p, 12);
+        if (pImage != NULL)
+            pImage->WriteReloc(buffer, (int) (p - buffer), pImage->GetImportTable()->GetHelperImport(GetReadyToRunHelper()), 0, IMAGE_REL_BASED_THUMB_MOV32);
+        p += 8;
 
-    // bx r4
-    *(WORD *)p = 0x4720;
-    p += 2;
+        // ldr r12, [r12]
+        *(DWORD *)p = 0xC000F8DC;
+        p += 4;
+
+        // bx r12
+        *(WORD *)p = 0x4760;
+        p += 2;
+    }
 #elif defined(_TARGET_ARM64_)
     if (IsDelayLoadHelper())
     {
