@@ -49,11 +49,15 @@ enum {
 };
 
 /*Keep in sync with MonoErrorInternal*/
-typedef struct _MonoError {
-	unsigned short error_code;
-    unsigned short hidden_0; /*DON'T TOUCH */
-
-	void *hidden_1 [12]; /*DON'T TOUCH */
+typedef union _MonoError {
+	// Merge two uint16 into one uint32 so it can be initialized
+	// with one instruction instead of two.
+	uint32_t init;
+	struct {
+		uint16_t error_code;
+		uint16_t private_flags; /*DON'T TOUCH */
+		void *hidden_1 [12]; /*DON'T TOUCH */
+	};
 } MonoError;
 
 /* Mempool-allocated MonoError.*/

@@ -47,10 +47,7 @@ struct _MonoErrorBoxed {
 #define ERROR_DECL(name) \
 	MonoError name
 
-#define error_init(error) do {	\
-	((MonoErrorInternal*)(error))->error_code = MONO_ERROR_NONE;	\
-	((MonoErrorInternal*)(error))->flags = 0;	\
-} while (0);
+#define error_init(error) ((void)((error)->init = 0))
 
 #define is_ok(error) ((error)->error_code == MONO_ERROR_NONE)
 

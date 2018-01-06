@@ -6278,7 +6278,7 @@ mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod 
 	guint32 cols [MONO_METHODIMPL_SIZE];
 	MonoMethod **result;
 	
-	error_init (error)
+	error_init (error);
 
 	*overrides = NULL;
 	if (num_overrides)
