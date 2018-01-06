@@ -353,7 +353,7 @@ BOOL IsCurrentModuleFileNameInAutoExclusionList()
 
     HKEYHolder hKeyHolder;
 
-    // Look for "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug\\AutoExclusionList"
+    // Look for "HKLM\\SOFTWARE\\Microsoft\\.NETCore\\JITDebugging\\AutoExclusionList"
     DWORD ret = WszRegOpenKeyEx(HKEY_LOCAL_MACHINE, kUnmanagedDebuggerAutoExclusionListKey, 0, KEY_READ, &hKeyHolder);
 
     if (ret != ERROR_SUCCESS)
@@ -484,15 +484,15 @@ HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, 
 
     HKEYHolder hKeyHolder;
 
-    // Look for "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug"
+    // Look for "HKLM\\SOFTWARE\\Microsoft\\.NETCore\\JITDebugging"
     DWORD ret = WszRegOpenKeyEx(HKEY_LOCAL_MACHINE, kUnmanagedDebuggerKey, 0, KEY_READ, &hKeyHolder);
 
     if (ret != ERROR_SUCCESS)
-    {   // Wow, there's not even an AeDebug hive, so no native debugger, no auto.
+    {   // Wow, there's not even an JITDebugging hive, so no native debugger, no auto.
         return S_OK;
     }
 
-    // Look in AeDebug key for "Debugger"; get the size of any value stored there.
+    // Look in JITDebugging key for "Debugger"; get the size of any value stored there.
     DWORD valueType, valueSize = 0;
     ret = WszRegQueryValueEx(hKeyHolder, kUnmanagedDebuggerValue, 0, &valueType, 0, &valueSize);   
 
@@ -547,7 +547,7 @@ HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, 
             }
             else
             {
-                // Look in AeDebug key for "Auto"; get the size of any value stored there.
+                // Look in JITDebugging key for "Auto"; get the size of any value stored there.
                 ret = WszRegQueryValueEx(hKeyHolder, kUnmanagedDebuggerAutoValue, 0, &valueType, 0, &valueSize);
                 if ((ret == ERROR_SUCCESS) && (valueType == REG_SZ) && (valueSize / sizeof(WCHAR) < MAX_LONGPATH))
                 {   
