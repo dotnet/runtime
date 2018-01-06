@@ -3378,6 +3378,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     bool              mustExpand  = false;
     bool              isSpecial   = false;
     CorInfoIntrinsics intrinsicID = CORINFO_INTRINSIC_Illegal;
+    NamedIntrinsic    ni          = NI_Illegal;
 
     if ((methodFlags & CORINFO_FLG_INTRINSIC) != 0)
     {
@@ -3388,6 +3389,20 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     {
         // The recursive calls to Jit intrinsics are must-expand by convention.
         mustExpand = mustExpand || gtIsRecursiveCall(method);
+
+        if (intrinsicID == CORINFO_INTRINSIC_Illegal)
+        {
+            ni = lookupNamedIntrinsic(method);
+
+#if FEATURE_HW_INTRINSICS
+#ifdef _TARGET_XARCH_
+            if (ni > NI_HW_INTRINSIC_START && ni < NI_HW_INTRINSIC_END)
+            {
+                return impX86HWIntrinsic(ni, method, sig);
+            }
+#endif // _TARGET_XARCH_
+#endif // FEATURE_HW_INTRINSICS
+        }
     }
 
     *pIntrinsicID = intrinsicID;
@@ -3875,16 +3890,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     }
 
     // Look for new-style jit intrinsics by name
-    if ((intrinsicID == CORINFO_INTRINSIC_Illegal) && ((methodFlags & CORINFO_FLG_JIT_INTRINSIC) != 0))
+    if (ni != NI_Illegal)
     {
         assert(retNode == nullptr);
-        const NamedIntrinsic ni = lookupNamedIntrinsic(method);
-#if FEATURE_HW_INTRINSICS && defined(_TARGET_XARCH_)
-        if (ni > NI_HW_INTRINSIC_START && ni < NI_HW_INTRINSIC_END)
-        {
-            return impX86HWIntrinsic(ni, method, sig);
-        }
-#endif // FEATURE_HW_INTRINSICS
         switch (ni)
         {
             case NI_System_Enum_HasFlag:
