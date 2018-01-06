@@ -197,7 +197,7 @@ namespace System.Net.Security
                 throw new ArgumentOutOfRangeException(nameof(count), SR.net_offset_plus_count);
             }
         }
-               
+
         private async ValueTask<int> ReadAsyncInternal<TReadAdapter>(TReadAdapter adapter, Memory<byte> buffer)
             where TReadAdapter : ISslReadAdapter
         {
@@ -229,7 +229,7 @@ namespace System.Net.Security
 
                     ResetReadBuffer();
                     int readBytes = await FillBufferAsync(adapter, SecureChannel.ReadHeaderSize).ConfigureAwait(false);
-                    if(readBytes == 0)
+                    if (readBytes == 0)
                     {
                         return 0;
                     }
@@ -271,16 +271,15 @@ namespace System.Net.Security
                         ProtocolToken message = new ProtocolToken(null, status);
                         if (NetEventSource.IsEnabled)
                             NetEventSource.Info(null, $"***Processing an error Status = {message.Status}");
+
                         if (message.Renegotiate)
                         {
-                            if (_sslState._sslAuthenticationOptions.AllowRenegotiation)
+                            if (_sslState._sslAuthenticationOptions.DisableRenegotiation)
                             {
-                                _sslState.ReplyOnReAuthentication(extraBuffer);
+                                throw new IOException(SR.net_ssl_io_renego);
                             }
-                            else
-                            {
-                                _sslState.FinishRead(null);
-                            }
+
+                            _sslState.ReplyOnReAuthentication(extraBuffer);
 
                             // Loop on read.
                             return -1;
