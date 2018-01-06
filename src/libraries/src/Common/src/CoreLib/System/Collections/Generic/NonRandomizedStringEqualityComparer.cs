@@ -11,10 +11,10 @@ namespace System.Collections.Generic
     // keeps the performance not affected till we hit collision threshold and then we switch to the comparer which is using 
     // randomized string hashing.
     [Serializable] // Required for compatibility with .NET Core 2.0 as we exposed the NonRandomizedStringEqualityComparer inside the serialization blob
-#if CORECLR
-    internal
-#else
+#if CORERT
     public
+#else
+    internal
 #endif
     sealed class NonRandomizedStringEqualityComparer : EqualityComparer<string>, ISerializable
     {
