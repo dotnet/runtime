@@ -117,6 +117,10 @@ namespace System.Runtime.CompilerServices
 
             private static Action OutputCorrelationEtwEvent(Action continuation)
             {
+#if CORERT
+                // TODO
+                return continuation;
+#else
                 int continuationId = Task.NewId();
                 Task currentTask = Task.InternalCurrent;
                 // fire the correlation ETW event
@@ -141,7 +145,8 @@ namespace System.Runtime.CompilerServices
                         EventSource.SetCurrentThreadActivityId(prevActivityId);
 
                     etwLog.TaskWaitContinuationComplete(((Task<int>)continuationIdTask).Result);
-                }, Task.FromResult(continuationId)); // pass the ID in a task to avoid a closure
+                }, Task.FromResult(continuationId)); // pass the ID in a task to avoid a closure\
+#endif
             }
 
             /// <summary>WaitCallback that invokes the Action supplied as object state.</summary>

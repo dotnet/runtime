@@ -125,7 +125,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ConditionalWeakTable.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AsyncMethodBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TaskAwaiter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\YieldAwaitable.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Reliability\CriticalFinalizerObject.cs" />
@@ -135,7 +134,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\GcSettings.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Collections\Comparer.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\CompatibleComparer.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\EmptyReadOnlyDictionaryInternal.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Hashtable.cs" />
