@@ -104,6 +104,27 @@ void LegalPolicy::NoteFatal(InlineObservation obs)
     assert(InlDecisionIsFailure(m_Decision));
 }
 
+#if defined(DEBUG) || defined(INLINE_DATA)
+
+//------------------------------------------------------------------------
+// NotePriorFailure: record reason for earlier inline failure
+//
+// Arguments:
+//    obs      - the current obsevation
+//
+// Notes:
+//    Used to "resurrect" failure observations from the early inline
+//    screen when building the inline context tree. Only used during
+//    debug modes.
+
+void LegalPolicy::NotePriorFailure(InlineObservation obs)
+{
+    NoteInternal(obs);
+    assert(InlDecisionIsFailure(m_Decision));
+}
+
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+
 //------------------------------------------------------------------------
 // NoteInternal: helper for handling an observation
 //
