@@ -274,7 +274,7 @@ namespace System.Globalization
         }
 
         // Context for EnumCalendarInfoExEx callback.
-        private class EnumData
+        private struct EnumData
         {
             public string userOverride;
             public List<string> strings;
@@ -427,7 +427,7 @@ namespace System.Globalization
         //
         // struct to help our calendar data enumaration callback
         //
-        private class EnumCalendarsData
+        private struct EnumCalendarsData
         {
             public int userOverride;   // user override value (if found)
             public List<int> calendars;      // list of calendars found so far
