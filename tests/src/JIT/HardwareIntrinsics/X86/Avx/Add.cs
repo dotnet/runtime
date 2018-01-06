@@ -30,11 +30,6 @@ namespace IntelHardwareIntrinsicTest
                     var vf3 = Avx.Add(vf1, vf2);
                     Unsafe.Write(floatTable.outArrayPtr, vf3);
 
-                    var vd1 = Unsafe.Read<Vector256<double>>(doubleTable.inArray1Ptr);
-                    var vd2 = Unsafe.Read<Vector256<double>>(doubleTable.inArray2Ptr);
-                    var vd3 = Avx.Add(vd1, vd2);
-                    Unsafe.Write(doubleTable.outArrayPtr, vd3);
-
                     if (!floatTable.CheckResult((x, y, z) => x + y == z))
                     {
                         Console.WriteLine("AVX Add failed on float:");
@@ -46,9 +41,42 @@ namespace IntelHardwareIntrinsicTest
                         testResult = Fail;
                     }
 
+                    vf3 = (Vector256<float>)typeof(Avx).GetMethod(nameof(Avx.Add), new Type[] { vf1.GetType(), vf2.GetType() }).Invoke(null, new object[] { vf1, vf2 });
+                    Unsafe.Write(floatTable.outArrayPtr, vf3);
+
+                    if (!floatTable.CheckResult((x, y, z) => x + y == z))
+                    {
+                        Console.WriteLine("AVX Add failed via reflection on float:");
+                        foreach (var item in floatTable.outArray)
+                        {
+                            Console.Write(item + ", ");
+                        }
+                        Console.WriteLine();
+                        testResult = Fail;
+                    }
+
+                    var vd1 = Unsafe.Read<Vector256<double>>(doubleTable.inArray1Ptr);
+                    var vd2 = Unsafe.Read<Vector256<double>>(doubleTable.inArray2Ptr);
+                    var vd3 = Avx.Add(vd1, vd2);
+                    Unsafe.Write(doubleTable.outArrayPtr, vd3);
+
                     if (!doubleTable.CheckResult((x, y, z) => x + y == z))
                     {
                         Console.WriteLine("AVX Add failed on double:");
+                        foreach (var item in doubleTable.outArray)
+                        {
+                            Console.Write(item + ", ");
+                        }
+                        Console.WriteLine();
+                        testResult = Fail;
+                    }
+
+                    vd3 = (Vector256<double>)typeof(Avx).GetMethod(nameof(Avx.Add), new Type[] { vd1.GetType(), vd2.GetType() }).Invoke(null, new object[] { vd1, vd2 });
+                    Unsafe.Write(doubleTable.outArrayPtr, vd3);
+
+                    if (!doubleTable.CheckResult((x, y, z) => x + y == z))
+                    {
+                        Console.WriteLine("AVX Add failed via reflection on double:");
                         foreach (var item in doubleTable.outArray)
                         {
                             Console.Write(item + ", ");

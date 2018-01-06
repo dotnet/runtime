@@ -4,6 +4,7 @@
 //
 
 using System;
+using System.Reflection;
 using System.Runtime.Intrinsics.X86;
 
 namespace IntelHardwareIntrinsicTest
@@ -26,11 +27,22 @@ namespace IntelHardwareIntrinsicTest
                     Console.WriteLine("Intrinsic Sse42.Crc32 is called on non-supported hardware.");
                     Console.WriteLine("Sse42.IsSupported " + Sse42.IsSupported);
                     Console.WriteLine("Environment.Is64BitProcess " + Environment.Is64BitProcess);
-                    return Fail;
+                    testResult = Fail;
                 }
                 catch (PlatformNotSupportedException)
                 {
-                    testResult = Pass;
+                }
+
+                try
+                {
+                    resl = Convert.ToUInt64(typeof(Sse42).GetMethod(nameof(Sse42.Crc32), new Type[] { s1l.GetType(), s2l.GetType() }).Invoke(null, new object[] { s1l, s2l }));
+                    Console.WriteLine("Intrinsic Sse42.Crc32 is called via reflection on non-supported hardware.");
+                    Console.WriteLine("Sse42.IsSupported " + Sse42.IsSupported);
+                    Console.WriteLine("Environment.Is64BitProcess " + Environment.Is64BitProcess);
+                    testResult = Fail;
+                }
+                catch (TargetInvocationException e) when (e.InnerException is PlatformNotSupportedException)
+                {
                 }
             }
 
@@ -43,10 +55,19 @@ namespace IntelHardwareIntrinsicTest
                     {
                         s1l = longCrcTable[i].s1;
                         s2l = longCrcTable[i].s2;
+
                         resl = Sse42.Crc32(s1l, s2l);
                         if (resl != longCrcTable[i].res)
                         {
                             Console.WriteLine("{0}: Inputs: 0x{1,16:x}, 0x{2,16:x} Expected: 0x{3,16:x} actual: 0x{4,16:x}",
+                                i, s1l, s2l, longCrcTable[i].res, resl);
+                            testResult = Fail;
+                        }
+
+                        resl = Convert.ToUInt64(typeof(Sse42).GetMethod(nameof(Sse42.Crc32), new Type[] { s1l.GetType(), s2l.GetType() }).Invoke(null, new object[] { s1l, s2l }));
+                        if (resl != longCrcTable[i].res)
+                        {
+                            Console.WriteLine("{0}: Inputs: 0x{1,16:x}, 0x{2,16:x} Expected: 0x{3,16:x} actual: 0x{4,16:x} - Reflection",
                                 i, s1l, s2l, longCrcTable[i].res, resl);
                             testResult = Fail;
                         }
@@ -58,10 +79,19 @@ namespace IntelHardwareIntrinsicTest
                 {
                     s1i = intCrcTable[i].s1;
                     s2i = intCrcTable[i].s2;
+
                     resi = Sse42.Crc32(s1i, s2i);
                     if (resi != intCrcTable[i].res)
                     {
                         Console.WriteLine("{0}: Inputs: 0x{1,8:x}, 0x{2,8:x} Expected: 0x{3,8:x} actual: 0x{4,8:x}",
+                            i, s1i, s2i, intCrcTable[i].res, resi);
+                        testResult = Fail;
+                    }
+
+                    resi = Convert.ToUInt32(typeof(Sse42).GetMethod(nameof(Sse42.Crc32), new Type[] { s1i.GetType(), s2i.GetType() }).Invoke(null, new object[] { s1i, s2i }));
+                    if (resi != intCrcTable[i].res)
+                    {
+                        Console.WriteLine("{0}: Inputs: 0x{1,8:x}, 0x{2,8:x} Expected: 0x{3,8:x} actual: 0x{4,8:x} - Reflection",
                             i, s1i, s2i, intCrcTable[i].res, resi);
                         testResult = Fail;
                     }
@@ -72,10 +102,19 @@ namespace IntelHardwareIntrinsicTest
                 {
                     s1i = shortCrcTable[i].s1;
                     s2s = shortCrcTable[i].s2;
+
                     resi = Sse42.Crc32(s1i, s2s);
                     if (resi != shortCrcTable[i].res)
                     {
                         Console.WriteLine("{0}: Inputs: 0x{1,8:x}, 0x{2,8:x} Expected: 0x{3,8:x} actual: 0x{4,8:x}",
+                            i, s1i, s2s, shortCrcTable[i].res, resi);
+                        testResult = Fail;
+                    }
+
+                    resi = Convert.ToUInt32(typeof(Sse42).GetMethod(nameof(Sse42.Crc32), new Type[] { s1i.GetType(), s2s.GetType() }).Invoke(null, new object[] { s1i, s2s }));
+                    if (resi != shortCrcTable[i].res)
+                    {
+                        Console.WriteLine("{0}: Inputs: 0x{1,8:x}, 0x{2,8:x} Expected: 0x{3,8:x} actual: 0x{4,8:x} - Reflection",
                             i, s1i, s2s, shortCrcTable[i].res, resi);
                         testResult = Fail;
                     }
@@ -86,7 +125,16 @@ namespace IntelHardwareIntrinsicTest
                 {
                     s1i = byteCrcTable[i].s1;
                     s2b = byteCrcTable[i].s2;
+
                     resi = Sse42.Crc32(s1i, s2b);
+                    if (resi != byteCrcTable[i].res)
+                    {
+                        Console.WriteLine("{0}: Inputs: 0x{1,8:x}, 0x{2,8:x} Expected: 0x{3,8:x} actual: 0x{4,8:x}",
+                            i, s1i, s2b, byteCrcTable[i].res, resi);
+                        testResult = Fail;
+                    }
+
+                    resi = Convert.ToUInt32(typeof(Sse42).GetMethod(nameof(Sse42.Crc32), new Type[] { s1i.GetType(), s2b.GetType() }).Invoke(null, new object[] { s1i, s2b }));
                     if (resi != byteCrcTable[i].res)
                     {
                         Console.WriteLine("{0}: Inputs: 0x{1,8:x}, 0x{2,8:x} Expected: 0x{3,8:x} actual: 0x{4,8:x}",
