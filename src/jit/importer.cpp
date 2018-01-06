@@ -3398,7 +3398,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 #ifdef _TARGET_XARCH_
             if (ni > NI_HW_INTRINSIC_START && ni < NI_HW_INTRINSIC_END)
             {
-                return impX86HWIntrinsic(ni, method, sig);
+                return impX86HWIntrinsic(ni, method, sig, mustExpand);
             }
 #endif // _TARGET_XARCH_
 #endif // FEATURE_HW_INTRINSICS
