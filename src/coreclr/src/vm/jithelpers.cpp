@@ -456,7 +456,7 @@ HCIMPLEND
 HCIMPL2_VV(UINT64, JIT_LLsh, UINT64 num, int shift)
 {
     FCALL_CONTRACT;
-    return num << shift;
+    return num << (shift & 0x3F);
 }
 HCIMPLEND
 
