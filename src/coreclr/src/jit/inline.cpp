@@ -1260,6 +1260,8 @@ InlineContext* InlineStrategy::NewFailure(GenTreeStmt* stmt, InlineResult* inlin
     failedContext->m_Callee      = inlineResult->GetCallee();
     failedContext->m_Success     = false;
 
+    assert(InlIsValidObservation(failedContext->m_Observation));
+
 #if defined(DEBUG) || defined(INLINE_DATA)
 
     // Update offset with more accurate info

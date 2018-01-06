@@ -56,6 +56,13 @@ public:
     // Handle an observation that must cause inlining to fail.
     void NoteFatal(InlineObservation obs) override;
 
+#if defined(DEBUG) || defined(INLINE_DATA)
+
+    // Record observation for prior failure
+    void NotePriorFailure(InlineObservation obs) override;
+
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+
 protected:
     // Helper methods
     void NoteInternal(InlineObservation obs);
