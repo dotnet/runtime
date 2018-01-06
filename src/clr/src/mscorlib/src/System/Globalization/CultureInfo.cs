@@ -734,27 +734,11 @@ namespace System.Globalization
                 {
                     // Since CompareInfo's don't have any overrideable properties, get the CompareInfo from
                     // the Non-Overridden CultureInfo so that we only create one CompareInfo per culture
-                    CompareInfo temp = UseUserOverride
+                    this.compareInfo = UseUserOverride
                                         ? GetCultureInfo(this._name).CompareInfo
                                         : new CompareInfo(this);
-                    if (OkayToCacheClassWithCompatibilityBehavior)
-                    {
-                        this.compareInfo = temp;
-                    }
-                    else
-                    {
-                        return temp;
-                    }
                 }
                 return (compareInfo);
-            }
-        }
-
-        private static bool OkayToCacheClassWithCompatibilityBehavior
-        {
-            get
-            {
-                return true;
             }
         }
 
@@ -774,15 +758,7 @@ namespace System.Globalization
                     // Make a new textInfo
                     TextInfo tempTextInfo = new TextInfo(_cultureData);
                     tempTextInfo.SetReadOnlyState(_isReadOnly);
-
-                    if (OkayToCacheClassWithCompatibilityBehavior)
-                    {
-                        textInfo = tempTextInfo;
-                    }
-                    else
-                    {
-                        return tempTextInfo;
-                    }
+                    textInfo = tempTextInfo;
                 }
                 return (textInfo);
             }
