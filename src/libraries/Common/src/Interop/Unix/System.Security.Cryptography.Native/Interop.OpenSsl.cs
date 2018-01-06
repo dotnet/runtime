@@ -177,19 +177,17 @@ internal static partial class Interop
         {
             sendBuf = null;
             sendCount = 0;
-            int retVal;
+            
             if ((recvBuf != null) && (recvCount > 0))
             {
-                retVal = BioWrite(context.InputBio, recvBuf, recvOffset, recvCount);
-                if(retVal <= 0)
+                if (BioWrite(context.InputBio, recvBuf, recvOffset, recvCount) <= 0)
                 {
                     // Make sure we clear out the error that is stored in the queue
-                    Crypto.ErrGetError();
+                    throw Crypto.CreateOpenSslCryptographicException();
                 }
             }
 
-            retVal = Ssl.SslDoHandshake(context);
-
+            int retVal = Ssl.SslDoHandshake(context);
             if (retVal != 1)
             {
                 Exception innerError;
@@ -202,7 +200,6 @@ internal static partial class Interop
             }
 
             sendCount = Crypto.BioCtrlPending(context.OutputBio);
-
             if (sendCount > 0)
             {
                 sendBuf = new byte[sendCount];
