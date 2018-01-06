@@ -4,9 +4,9 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Globalization
 {
@@ -109,9 +109,10 @@ namespace System.Globalization
         {
             datePatterns = null;
 
-            CallbackContext callbackContext = new CallbackContext();
+            EnumCalendarsData callbackContext = new EnumCalendarsData();
+            callbackContext.Results = new List<string>();
             callbackContext.DisallowDuplicates = true;
-            bool result = EnumCalendarInfo(localeName, calendarId, dataType, callbackContext);
+            bool result = EnumCalendarInfo(localeName, calendarId, dataType, ref callbackContext);
             if (result)
             {
                 List<string> datePatternsList = callbackContext.Results;
@@ -244,8 +245,9 @@ namespace System.Globalization
         {
             monthNames = null;
 
-            CallbackContext callbackContext = new CallbackContext();
-            bool result = EnumCalendarInfo(localeName, calendarId, dataType, callbackContext);
+            EnumCalendarsData callbackContext = new EnumCalendarsData();
+            callbackContext.Results = new List<string>();
+            bool result = EnumCalendarInfo(localeName, calendarId, dataType, ref callbackContext);
             if (result)
             {
                 // the month-name arrays are expected to have 13 elements.  If ICU only returns 12, add an
@@ -280,8 +282,9 @@ namespace System.Globalization
         {
             calendarData = null;
 
-            CallbackContext callbackContext = new CallbackContext();
-            bool result = EnumCalendarInfo(localeName, calendarId, dataType, callbackContext);
+            EnumCalendarsData callbackContext = new EnumCalendarsData();
+            callbackContext.Results = new List<string>();
+            bool result = EnumCalendarInfo(localeName, calendarId, dataType, ref callbackContext);
             if (result)
             {
                 calendarData = callbackContext.Results.ToArray();
@@ -290,24 +293,16 @@ namespace System.Globalization
             return result;
         }
 
-        private static bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, CallbackContext callbackContext)
+        private static unsafe bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, ref EnumCalendarsData callbackContext)
         {
-            GCHandle context = GCHandle.Alloc(callbackContext);
-            try
-            {
-                return Interop.GlobalizationInterop.EnumCalendarInfo(EnumCalendarInfoCallback, localeName, calendarId, dataType, (IntPtr)context);
-            }
-            finally
-            {
-                context.Free();
-            }
+            return Interop.GlobalizationInterop.EnumCalendarInfo(EnumCalendarInfoCallback, localeName, calendarId, dataType, (IntPtr)Unsafe.AsPointer(ref callbackContext));
         }
 
-        private static void EnumCalendarInfoCallback(string calendarString, IntPtr context)
+        private static unsafe void EnumCalendarInfoCallback(string calendarString, IntPtr context)
         {
             try
             {
-                CallbackContext callbackContext = (CallbackContext)((GCHandle)context).Target;
+                ref EnumCalendarsData callbackContext = ref Unsafe.As<byte, EnumCalendarsData>(ref *(byte*)context);
 
                 if (callbackContext.DisallowDuplicates)
                 {
@@ -331,17 +326,10 @@ namespace System.Globalization
             }
         }
 
-        private class CallbackContext
+        private struct EnumCalendarsData
         {
-            private List<string> _results = new List<string>();
-
-            public CallbackContext()
-            {
-            }
-
-            public List<string> Results { get { return _results; } }
-
-            public bool DisallowDuplicates { get; set; }
+            public List<string> Results;
+            public bool DisallowDuplicates;
         }
     }
 }
