@@ -101,7 +101,7 @@ namespace System.Net.Security
     public delegate bool RemoteCertificateValidationCallback(object sender, System.Security.Cryptography.X509Certificates.X509Certificate certificate, System.Security.Cryptography.X509Certificates.X509Chain chain, System.Net.Security.SslPolicyErrors sslPolicyErrors);
     public class SslServerAuthenticationOptions
     {
-        public bool AllowRenegotiation { get { throw null;  } set { } }
+        public bool DisableRenegotiation { get { throw null;  } set { } }
         public X509Certificate ServerCertificate { get { throw null;  } set { } }
         public bool ClientCertificateRequired { get { throw null;  } set { } }
         public SslProtocols EnabledSslProtocols { get { throw null;  } set { } }
@@ -112,7 +112,7 @@ namespace System.Net.Security
     }
     public partial class SslClientAuthenticationOptions
     {
-        public bool AllowRenegotiation { get { throw null;  } set { } }
+        public bool DisableRenegotiation { get { throw null;  } set { } }
         public string TargetHost { get { throw null; } set { } }
         public X509CertificateCollection ClientCertificates { get { throw null; } set { } }
         public LocalCertificateSelectionCallback LocalCertificateSelectionCallback { get { throw null; } set { } }
