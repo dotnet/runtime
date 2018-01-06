@@ -219,9 +219,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\DevDiv_255294\DevDiv_255294\DevDiv_255294.cmd">
             <Issue>11469, The test causes OutOfMemory exception in crossgen mode.</Issue> 
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\GitHub_15291\GitHub_15291\GitHub_15291.cmd">
-            <Issue>15566</Issue> 
-        </ExcludeList>
     </ItemGroup>
 
     <!-- The following are ARM32 failures -->
