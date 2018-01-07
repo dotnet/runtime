@@ -6550,7 +6550,7 @@ set_exception_type_from_invalid_il (MonoCompile *cfg, MonoMethod *method, unsign
 	cfg->headers_to_free = g_slist_prepend_mempool (cfg->mempool, cfg->headers_to_free, header);
 }
 
-static guint32
+guint32
 mono_type_to_stloc_coerce (MonoType *type)
 {
 	if (type->byref)

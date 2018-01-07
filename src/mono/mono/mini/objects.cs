@@ -1829,6 +1829,19 @@ ncells ) {
 
 		return 0;
 	}
+
+	static void decode (out sbyte v) {
+		byte tmp = 134;
+		v = (sbyte)tmp;
+	}
+
+	// gh #6414
+	public static int test_0_alias_analysis_sign_extend () {
+	  sbyte t;
+	  decode (out t);
+
+	  return t == -122 ? 0 : 1;
+	}
 }
 
 #if __MOBILE__

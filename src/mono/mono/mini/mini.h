@@ -2118,6 +2118,7 @@ int       mono_op_imm_to_op                 (int opcode);
 int       mono_load_membase_to_load_mem     (int opcode);
 guint     mono_type_to_load_membase         (MonoCompile *cfg, MonoType *type);
 guint     mono_type_to_store_membase        (MonoCompile *cfg, MonoType *type);
+guint32   mono_type_to_stloc_coerce         (MonoType *type);
 guint     mini_type_to_stind                (MonoCompile* cfg, MonoType *type);
 MonoJitInfo* mini_lookup_method             (MonoDomain *domain, MonoMethod *method, MonoMethod *shared);
 guint32   mono_reverse_branch_op            (guint32 opcode);
