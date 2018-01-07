@@ -266,6 +266,50 @@ bool Compiler::compSupportsHWIntrinsic(InstructionSet isa)
 }
 
 //------------------------------------------------------------------------
+// impUnsupportedHWIntrinsic: returns a node for an unsupported HWIntrinsic
+//
+// Arguments:
+//    helper     - JIT helper ID for the exception to be thrown
+//    method     - method handle of the intrinsic function.
+//    sig        - signature of the intrinsic call
+//    mustExpand - true if the intrinsic must return a GenTree*; otherwise, false
+//
+// Return Value:
+//    a gtNewMustThrowException if mustExpand is true; otherwise, nullptr
+//
+GenTree* Compiler::impUnsupportedHWIntrinsic(unsigned              helper,
+                                             CORINFO_METHOD_HANDLE method,
+                                             CORINFO_SIG_INFO*     sig,
+                                             bool                  mustExpand)
+{
+    // We've hit some error case and may need to return a node for the given error.
+    //
+    // When `mustExpand=false`, we are attempting to inline the intrinsic directly into another method. In this
+    // scenario, we need to return `nullptr` so that a GT_CALL to the intrinsic is emitted instead. This is to
+    // ensure that everything continues to behave correctly when optimizations are enabled (e.g. things like the
+    // inliner may expect the node we return to have a certain signature, and the `MustThrowException` node won't
+    // match that).
+    //
+    // When `mustExpand=true`, we are in a GT_CALL to the intrinsic and are attempting to JIT it. This will generally
+    // be in response to an indirect call (e.g. done via reflection) or in response to an earlier attempt returning
+    // `nullptr` (under `mustExpand=false`). In that scenario, we are safe to return the `MustThrowException` node.
+
+    if (mustExpand)
+    {
+        for (unsigned i = 0; i < sig->numArgs; i++)
+        {
+            impPopStack();
+        }
+
+        return gtNewMustThrowException(helper, JITtype2varType(sig->retType), sig->retTypeClass);
+    }
+    else
+    {
+        return nullptr;
+    }
+}
+
+//------------------------------------------------------------------------
 // impX86HWIntrinsic: dispatch hardware intrinsics to their own implementation
 // function
 //
@@ -277,7 +321,10 @@ bool Compiler::compSupportsHWIntrinsic(InstructionSet isa)
 // Return Value:
 //    the expanded intrinsic.
 //
-GenTree* Compiler::impX86HWIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
+GenTree* Compiler::impX86HWIntrinsic(NamedIntrinsic        intrinsic,
+                                     CORINFO_METHOD_HANDLE method,
+                                     CORINFO_SIG_INFO*     sig,
+                                     bool                  mustExpand)
 {
     InstructionSet isa = isaOfHWIntrinsic(intrinsic);
 
@@ -292,47 +339,42 @@ GenTree* Compiler::impX86HWIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HA
     }
     else if (!issupported)
     {
-        for (unsigned i = 0; i < sig->numArgs; i++)
-        {
-            impPopStack();
-        }
-        return gtNewMustThrowException(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, JITtype2varType(sig->retType),
-                                       sig->retTypeClass);
+        return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
     }
 
     switch (isa)
     {
         case InstructionSet_SSE:
-            return impSSEIntrinsic(intrinsic, method, sig);
+            return impSSEIntrinsic(intrinsic, method, sig, mustExpand);
         case InstructionSet_SSE2:
-            return impSSE2Intrinsic(intrinsic, method, sig);
+            return impSSE2Intrinsic(intrinsic, method, sig, mustExpand);
         case InstructionSet_SSE3:
-            return impSSE3Intrinsic(intrinsic, method, sig);
+            return impSSE3Intrinsic(intrinsic, method, sig, mustExpand);
         case InstructionSet_SSSE3:
-            return impSSSE3Intrinsic(intrinsic, method, sig);
+            return impSSSE3Intrinsic(intrinsic, method, sig, mustExpand);
         case InstructionSet_SSE41:
-            return impSSE41Intrinsic(intrinsic, method, sig);
+            return impSSE41Intrinsic(intrinsic, method, sig, mustExpand);
         case InstructionSet_SSE42:
-            return impSSE42Intrinsic(intrinsic, method, sig);
+            return impSSE42Intrinsic(intrinsic, method, sig, mustExpand);
         case InstructionSet_AVX:
-            return impAVXIntrinsic(intrinsic, method, sig);
+            return impAVXIntrinsic(intrinsic, method, sig, mustExpand);
         case InstructionSet_AVX2:
-            return impAVX2Intrinsic(intrinsic, method, sig);
+            return impAVX2Intrinsic(intrinsic, method, sig, mustExpand);
 
         case InstructionSet_AES:
-            return impAESIntrinsic(intrinsic, method, sig);
+            return impAESIntrinsic(intrinsic, method, sig, mustExpand);
         case InstructionSet_BMI1:
-            return impBMI1Intrinsic(intrinsic, method, sig);
+            return impBMI1Intrinsic(intrinsic, method, sig, mustExpand);
         case InstructionSet_BMI2:
-            return impBMI2Intrinsic(intrinsic, method, sig);
+            return impBMI2Intrinsic(intrinsic, method, sig, mustExpand);
         case InstructionSet_FMA:
-            return impFMAIntrinsic(intrinsic, method, sig);
+            return impFMAIntrinsic(intrinsic, method, sig, mustExpand);
         case InstructionSet_LZCNT:
-            return impLZCNTIntrinsic(intrinsic, method, sig);
+            return impLZCNTIntrinsic(intrinsic, method, sig, mustExpand);
         case InstructionSet_PCLMULQDQ:
-            return impPCLMULQDQIntrinsic(intrinsic, method, sig);
+            return impPCLMULQDQIntrinsic(intrinsic, method, sig, mustExpand);
         case InstructionSet_POPCNT:
-            return impPOPCNTIntrinsic(intrinsic, method, sig);
+            return impPOPCNTIntrinsic(intrinsic, method, sig, mustExpand);
         default:
             return nullptr;
     }
@@ -400,7 +442,10 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
     return NO_CLASS_HANDLE;
 }
 
-GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
+GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
+                                   CORINFO_METHOD_HANDLE method,
+                                   CORINFO_SIG_INFO*     sig,
+                                   bool                  mustExpand)
 {
     GenTree* retNode = nullptr;
     GenTree* op1     = nullptr;
@@ -421,7 +466,10 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
     return retNode;
 }
 
-GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
+GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic        intrinsic,
+                                    CORINFO_METHOD_HANDLE method,
+                                    CORINFO_SIG_INFO*     sig,
+                                    bool                  mustExpand)
 {
     GenTree*  retNode  = nullptr;
     GenTree*  op1      = nullptr;
@@ -444,22 +492,34 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
     return retNode;
 }
 
-GenTree* Compiler::impSSE3Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
+GenTree* Compiler::impSSE3Intrinsic(NamedIntrinsic        intrinsic,
+                                    CORINFO_METHOD_HANDLE method,
+                                    CORINFO_SIG_INFO*     sig,
+                                    bool                  mustExpand)
 {
     return nullptr;
 }
 
-GenTree* Compiler::impSSSE3Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
+GenTree* Compiler::impSSSE3Intrinsic(NamedIntrinsic        intrinsic,
+                                     CORINFO_METHOD_HANDLE method,
+                                     CORINFO_SIG_INFO*     sig,
+                                     bool                  mustExpand)
 {
     return nullptr;
 }
 
-GenTree* Compiler::impSSE41Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
+GenTree* Compiler::impSSE41Intrinsic(NamedIntrinsic        intrinsic,
+                                     CORINFO_METHOD_HANDLE method,
+                                     CORINFO_SIG_INFO*     sig,
+                                     bool                  mustExpand)
 {
     return nullptr;
 }
 
-GenTree* Compiler::impSSE42Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
+GenTree* Compiler::impSSE42Intrinsic(NamedIntrinsic        intrinsic,
+                                     CORINFO_METHOD_HANDLE method,
+                                     CORINFO_SIG_INFO*     sig,
+                                     bool                  mustExpand)
 {
     GenTree*  retNode  = nullptr;
     GenTree*  op1      = nullptr;
@@ -473,14 +533,17 @@ GenTree* Compiler::impSSE42Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HA
     {
         case NI_SSE42_Crc32:
             assert(sig->numArgs == 2);
-            op2 = impPopStack().val;
-            op1 = impPopStack().val;
+
 #ifdef _TARGET_X86_
             if (varTypeIsLong(callType))
             {
-                return gtNewMustThrowException(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, callType, sig->retTypeClass);
+                return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
             }
 #endif
+
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
             argLst  = info.compCompHnd->getArgNext(argLst);                        // the second argument
             corType = strip(info.compCompHnd->getArgType(sig, argLst, &argClass)); // type of the second argument
 
@@ -498,7 +561,10 @@ GenTree* Compiler::impSSE42Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HA
     return retNode;
 }
 
-GenTree* Compiler::impAVXIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
+GenTree* Compiler::impAVXIntrinsic(NamedIntrinsic        intrinsic,
+                                   CORINFO_METHOD_HANDLE method,
+                                   CORINFO_SIG_INFO*     sig,
+                                   bool                  mustExpand)
 {
     GenTree*  retNode  = nullptr;
     GenTree*  op1      = nullptr;
@@ -521,7 +587,10 @@ GenTree* Compiler::impAVXIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
     return retNode;
 }
 
-GenTree* Compiler::impAVX2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
+GenTree* Compiler::impAVX2Intrinsic(NamedIntrinsic        intrinsic,
+                                    CORINFO_METHOD_HANDLE method,
+                                    CORINFO_SIG_INFO*     sig,
+                                    bool                  mustExpand)
 {
     GenTree*  retNode  = nullptr;
     GenTree*  op1      = nullptr;
@@ -544,57 +613,80 @@ GenTree* Compiler::impAVX2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
     return retNode;
 }
 
-GenTree* Compiler::impAESIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
+GenTree* Compiler::impAESIntrinsic(NamedIntrinsic        intrinsic,
+                                   CORINFO_METHOD_HANDLE method,
+                                   CORINFO_SIG_INFO*     sig,
+                                   bool                  mustExpand)
 {
     return nullptr;
 }
 
-GenTree* Compiler::impBMI1Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
+GenTree* Compiler::impBMI1Intrinsic(NamedIntrinsic        intrinsic,
+                                    CORINFO_METHOD_HANDLE method,
+                                    CORINFO_SIG_INFO*     sig,
+                                    bool                  mustExpand)
 {
     return nullptr;
 }
 
-GenTree* Compiler::impBMI2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
+GenTree* Compiler::impBMI2Intrinsic(NamedIntrinsic        intrinsic,
+                                    CORINFO_METHOD_HANDLE method,
+                                    CORINFO_SIG_INFO*     sig,
+                                    bool                  mustExpand)
 {
     return nullptr;
 }
 
-GenTree* Compiler::impFMAIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
+GenTree* Compiler::impFMAIntrinsic(NamedIntrinsic        intrinsic,
+                                   CORINFO_METHOD_HANDLE method,
+                                   CORINFO_SIG_INFO*     sig,
+                                   bool                  mustExpand)
 {
     return nullptr;
 }
 
-GenTree* Compiler::impLZCNTIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
+GenTree* Compiler::impLZCNTIntrinsic(NamedIntrinsic        intrinsic,
+                                     CORINFO_METHOD_HANDLE method,
+                                     CORINFO_SIG_INFO*     sig,
+                                     bool                  mustExpand)
 {
     assert(sig->numArgs == 1);
-    GenTree*  op       = impPopStack().val;
     var_types callType = JITtype2varType(sig->retType);
+
 #ifdef _TARGET_X86_
     if (varTypeIsLong(callType))
     {
-        return gtNewMustThrowException(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, callType, sig->retTypeClass);
+        return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
     }
 #endif
-    return gtNewScalarHWIntrinsicNode(callType, op, NI_LZCNT_LeadingZeroCount);
+
+    return gtNewScalarHWIntrinsicNode(callType, impPopStack().val, NI_LZCNT_LeadingZeroCount);
 }
 
-GenTree* Compiler::impPCLMULQDQIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
+GenTree* Compiler::impPCLMULQDQIntrinsic(NamedIntrinsic        intrinsic,
+                                         CORINFO_METHOD_HANDLE method,
+                                         CORINFO_SIG_INFO*     sig,
+                                         bool                  mustExpand)
 {
     return nullptr;
 }
 
-GenTree* Compiler::impPOPCNTIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
+GenTree* Compiler::impPOPCNTIntrinsic(NamedIntrinsic        intrinsic,
+                                      CORINFO_METHOD_HANDLE method,
+                                      CORINFO_SIG_INFO*     sig,
+                                      bool                  mustExpand)
 {
     assert(sig->numArgs == 1);
-    GenTree*  op       = impPopStack().val;
     var_types callType = JITtype2varType(sig->retType);
+
 #ifdef _TARGET_X86_
     if (varTypeIsLong(callType))
     {
-        return gtNewMustThrowException(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, callType, sig->retTypeClass);
+        return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
     }
 #endif
-    return gtNewScalarHWIntrinsicNode(callType, op, NI_POPCNT_PopCount);
+
+    return gtNewScalarHWIntrinsicNode(callType, impPopStack().val, NI_POPCNT_PopCount);
 }
 
 #endif // FEATURE_HW_INTRINSICS
