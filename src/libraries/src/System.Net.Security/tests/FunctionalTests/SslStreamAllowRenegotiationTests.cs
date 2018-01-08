@@ -21,7 +21,7 @@ namespace System.Net.Security.Tests
     { 
         [Fact]
         [OuterLoop] // Test hits external azure server.
-        public async Task SslStream_DisableRenegotiation_False_Succeeds()
+        public async Task SslStream_AllowRenegotiation_True_Succeeds()
         {
             Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             await s.ConnectAsync(Configuration.Security.TlsRenegotiationServer, 443);
@@ -37,7 +37,7 @@ namespace System.Net.Security.Tests
                     ClientCertificates = certBundle,
                     EnabledSslProtocols = SslProtocols.Tls12,
                     CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
-                    DisableRenegotiation = false
+                    AllowRenegotiation = true
                 };
 
                 // Perform handshake to establish secure connection.
@@ -64,7 +64,7 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [OuterLoop] // Test hits external azure server.
-        public async Task SslStream_DisableRenegotiation_True_Succeeds()
+        public async Task SslStream_AllowRenegotiation_False_Succeeds()
         {
             Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             await s.ConnectAsync(Configuration.Security.TlsRenegotiationServer, 443);
@@ -80,7 +80,7 @@ namespace System.Net.Security.Tests
                     ClientCertificates = certBundle,
                     EnabledSslProtocols = SslProtocols.Tls12,
                     CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
-                    DisableRenegotiation = true
+                    AllowRenegotiation = false
                 };
 
                 // Perform handshake to establish secure connection.
