@@ -3475,6 +3475,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 				arm_lslw (code, dreg, sreg1, imm);
 			break;
+		case OP_SHL_IMM:
 		case OP_LSHL_IMM:
 			if (imm == 0)
 				arm_movx (code, dreg, sreg1);
@@ -3515,9 +3516,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ZEXT_I4:
 			/* Clean out the upper word */
 			arm_movw (code, dreg, sreg1);
-			break;
-		case OP_SHL_IMM:
-			arm_lslx (code, dreg, sreg1, imm);
 			break;
 
 			/* MULTIPLY/DIVISION */
