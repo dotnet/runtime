@@ -562,7 +562,9 @@ struct InlineInfo
 
     InlineResult* inlineResult;
 
-    GenTreePtr retExpr; // The return expression of the inlined candidate.
+    GenTreePtr           retExpr; // The return expression of the inlined candidate.
+    CORINFO_CLASS_HANDLE retExprClassHnd;
+    bool                 retExprClassHndIsExact;
 
     CORINFO_CONTEXT_HANDLE tokenLookupContextHandle; // The context handle that will be passed to
                                                      // impTokenLookupContextHandle in Inlinee's Compiler.

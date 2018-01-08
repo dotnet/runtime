@@ -4573,6 +4573,17 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
             /* Filter out unimported BBs */
 
             fgRemoveEmptyBlocks();
+
+            // Update type of return spill temp if we have gathered better info
+            // when importing the inlinee.
+            if (fgNeedReturnSpillTemp())
+            {
+                CORINFO_CLASS_HANDLE retExprClassHnd = impInlineInfo->retExprClassHnd;
+                if (retExprClassHnd != nullptr)
+                {
+                    lvaUpdateClass(lvaInlineeReturnSpillTemp, retExprClassHnd, impInlineInfo->retExprClassHndIsExact);
+                }
+            }
         }
 
         EndPhase(PHASE_POST_IMPORT);
