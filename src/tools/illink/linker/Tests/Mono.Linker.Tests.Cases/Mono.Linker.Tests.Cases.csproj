@@ -37,6 +37,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Attributes\AttributeOnAssemblyIsKept.cs" />
     <Compile Include="Attributes\AttributeOnPreservedTypeWithTypeUsedInConstructorIsKept.cs" />
     <Compile Include="Attributes\AttributeOnPreservedTypeWithTypeUsedInDifferentNamespaceIsKept.cs" />
     <Compile Include="Attributes\AttributeOnPreservedTypeWithTypeUsedInFieldIsKept.cs" />

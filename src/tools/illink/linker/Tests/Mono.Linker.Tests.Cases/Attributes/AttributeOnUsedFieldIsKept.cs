@@ -11,7 +11,9 @@ namespace Mono.Linker.Tests.Cases.Attributes {
 		[KeptMember (".ctor()")]
 		class A {
 			[Kept]
-			[Foo] public int field;
+			[KeptAttributeAttribute (typeof (FooAttribute))]
+			[Foo]
+			public int field;
 		}
 
 		[Kept]

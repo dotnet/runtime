@@ -13,6 +13,7 @@ namespace Mono.Linker.Tests.Cases.Attributes {
 		class A {
 			[Kept]
 			[KeptBackingField]
+			[KeptAttributeAttribute (typeof (FooAttribute))]
 			[Foo]
 			public int Field { get; set; }
 		}

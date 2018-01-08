@@ -3,6 +3,7 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Attributes {
 	[Foo (Val = 1)]
+	[KeptAttributeAttribute (typeof (FooAttribute))]
 	class AttributeOnPreservedTypeWithUsedSetter {
 		public static void Main ()
 		{
