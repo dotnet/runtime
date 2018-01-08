@@ -262,7 +262,7 @@
         "solution": "$(PB_SourcesDirectory)\\publish\\publish-type.proj",
         "platform": "$(PB_TargetArchitecture)",
         "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "/p:Configuration=$(BuildConfiguration) $(PB_CommonMSBuildArgs) /p:PublishType=$(PB_PublishType) /p:SignType=$(PB_SignType) /p:AzureAccountName=$(PB_AzureAccountName) /p:ContainerName=$(PB_ContainerName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:PublishBlobFeedUrl=$(PB_PublishBlobFeedUrl) /p:PublishBlobFeedKey=$(PB_PublishBlobFeedKey) /p:OfficialPublish=true /p:GitHubUser=$(PB_GitHubUser) /p:GitHubEmail=$(PB_GitHubEmail) /p:GitHubAuthToken=$(GITHUB_PASSWORD) /p:VersionsRepoOwner=$(PB_VersionsRepoOwner) /p:VersionsRepo=$(PB_VersionsRepo) /p:VersionsRepoPath=build-info/dotnet/$(PB_RepoName)/$(SourceBranch) /p:DotNetToolDir=$(DotNetToolDir) /flp:v=detailed;LogFile=$(PB_SourcesDirectory)\\publish-blob.log",
+        "msbuildArguments": "/p:Configuration=$(BuildConfiguration) $(PB_CommonMSBuildArgs) $(PB_BuildOutputManifestArguments) /p:PublishType=$(PB_PublishType) /p:SignType=$(PB_SignType) /p:AzureAccountName=$(PB_AzureAccountName) /p:ContainerName=$(PB_ContainerName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:PublishBlobFeedUrl=$(PB_PublishBlobFeedUrl) /p:PublishBlobFeedKey=$(PB_PublishBlobFeedKey) /p:OfficialPublish=true /p:GitHubUser=$(PB_GitHubUser) /p:GitHubEmail=$(PB_GitHubEmail) /p:GitHubAuthToken=$(GITHUB_PASSWORD) /p:VersionsRepoOwner=$(PB_VersionsRepoOwner) /p:VersionsRepo=$(PB_VersionsRepo) /p:VersionsRepoPath=build-info/dotnet/$(PB_RepoName)/$(SourceBranch) /p:DotNetToolDir=$(DotNetToolDir) /flp:v=detailed;LogFile=$(PB_SourcesDirectory)\\publish-blob.log",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
@@ -497,6 +497,9 @@
     },
     "PB_SymbolExpirationInDays": {
       "value": ""
+    },
+    "PB_BuildOutputManifestArguments": {
+      "value": "/p:ManifestBuildId=$(OfficialBuildId) /p:ManifestBranch=$(SourceBranch) /p:ManifestCommit=$(SourceVersion)"
     }
   },
   "demands": [
