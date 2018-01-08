@@ -1449,7 +1449,7 @@ gc_resize (MonoProfiler *profiler, uintptr_t new_size)
 	);
 
 	emit_event (logbuffer, TYPE_GC_RESIZE | TYPE_GC);
-	emit_value (logbuffer, new_size);
+	emit_uvalue (logbuffer, new_size);
 
 	EXIT_LOG;
 }
