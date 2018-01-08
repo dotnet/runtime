@@ -1701,10 +1701,12 @@ ves_icall_System_Threading_Thread_SetName_internal (MonoInternalThread *this_obj
  * @return: The priority of the given thread.
  */
 int
-ves_icall_System_Threading_Thread_GetPriority (MonoThread *this_obj)
+ves_icall_System_Threading_Thread_GetPriority (MonoThreadObjectHandle this_obj, MonoError *error)
 {
 	gint32 priority;
-	MonoInternalThread *internal = this_obj->internal_thread;
+
+	// InternalThreads are always pinned.
+	MonoInternalThread *internal = MONO_HANDLE_GETVAL(this_obj, internal_thread);
 
 	LOCK_THREAD (internal);
 	priority = internal->priority;
@@ -1721,9 +1723,10 @@ ves_icall_System_Threading_Thread_GetPriority (MonoThread *this_obj)
  * Sets the priority of the given thread.
  */
 void
-ves_icall_System_Threading_Thread_SetPriority (MonoThread *this_obj, int priority)
+ves_icall_System_Threading_Thread_SetPriority (MonoThreadObjectHandle this_obj, int priority, MonoError *error)
 {
-	MonoInternalThread *internal = this_obj->internal_thread;
+	// InternalThreads are always pinned.
+	MonoInternalThread *internal = MONO_HANDLE_GETVAL(this_obj, internal_thread);
 
 	LOCK_THREAD (internal);
 	internal->priority = priority;
