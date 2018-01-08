@@ -725,6 +725,7 @@ INTERP_PLATFORM_DISABLED_TESTS= \
 	delegate-exit.exe \
 	delegate1.exe \
 	delegate3.exe \
+	thunks.exe \
 	finalizer-exception.exe \
 	monitor-abort.exe
 endif
@@ -1026,7 +1027,6 @@ INTERP_DISABLED_TESTS = \
 	threadpool-exceptions2.exe \
 	threadpool-exceptions4.exe \
 	threadpool-exceptions5.exe \
-	thunks.exe \
 	typeload-unaligned.exe \
 	weak-fields.exe \
 	vararg.exe \

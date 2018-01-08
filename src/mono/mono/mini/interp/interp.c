@@ -1647,44 +1647,6 @@ interp_entry (InterpEntryData *data)
 		}
 		type = rmethod->param_types [i];
 		switch (type->type) {
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I1:
-			args [a_index].data.i = *(MonoBoolean*)params [i];
-			break;
-		case MONO_TYPE_U2:
-		case MONO_TYPE_I2:
-			args [a_index].data.i = *(gint16*)params [i];
-			break;
-		case MONO_TYPE_U:
-#if SIZEOF_VOID_P == 4
-			args [a_index].data.p = GINT_TO_POINTER (*(guint32*)params [i]);
-#else
-			args [a_index].data.p = GINT_TO_POINTER (*(guint64*)params [i]);
-#endif
-			break;
-		case MONO_TYPE_I:
-#if SIZEOF_VOID_P == 4
-			args [a_index].data.p = GINT_TO_POINTER (*(gint32*)params [i]);
-#else
-			args [a_index].data.p = GINT_TO_POINTER (*(gint64*)params [i]);
-#endif
-			break;
-		case MONO_TYPE_U4:
-			args [a_index].data.i = *(guint32*)params [i];
-			break;
-		case MONO_TYPE_I4:
-			args [a_index].data.i = *(gint32*)params [i];
-			break;
-		case MONO_TYPE_U8:
-			args [a_index].data.l = *(guint64*)params [i];
-			break;
-		case MONO_TYPE_I8:
-			args [a_index].data.l = *(gint64*)params [i];
-			break;
-		case MONO_TYPE_PTR:
-		case MONO_TYPE_OBJECT:
-			args [a_index].data.p = *(MonoObject**)params [i];
-			break;
 		case MONO_TYPE_VALUETYPE:
 			args [a_index].data.p = params [i];
 			break;
@@ -1695,8 +1657,7 @@ interp_entry (InterpEntryData *data)
 				args [a_index].data.vt = params [i];
 			break;
 		default:
-			printf ("%s\n", mono_type_full_name (sig->params [i]));
-			NOT_IMPLEMENTED;
+			stackval_from_data (type, &args [a_index], params [i], FALSE);
 			break;
 		}
 	}
@@ -1729,44 +1690,6 @@ interp_entry (InterpEntryData *data)
 	switch (type->type) {
 	case MONO_TYPE_VOID:
 		break;
-	case MONO_TYPE_I1:
-		*(gint8*)data->res = frame.retval->data.i;
-		break;
-	case MONO_TYPE_U1:
-		*(guint8*)data->res = frame.retval->data.i;
-		break;
-	case MONO_TYPE_I2:
-		*(gint16*)data->res = frame.retval->data.i;
-		break;
-	case MONO_TYPE_U2:
-		*(guint16*)data->res = frame.retval->data.i;
-		break;
-	case MONO_TYPE_I4:
-		*(gint32*)data->res = frame.retval->data.i;
-		break;
-	case MONO_TYPE_U4:
-		*(guint64*)data->res = frame.retval->data.i;
-		break;
-	case MONO_TYPE_I8:
-		*(gint64*)data->res = frame.retval->data.i;
-		break;
-	case MONO_TYPE_U8:
-		*(guint64*)data->res = frame.retval->data.i;
-		break;
-	case MONO_TYPE_I:
-#if SIZEOF_VOID_P == 8
-		*(gint64*)data->res = (gint64)frame.retval->data.p;
-#else
-		*(gint32*)data->res = (gint32)frame.retval->data.p;
-#endif
-		break;
-	case MONO_TYPE_U:
-#if SIZEOF_VOID_P == 8
-		*(guint64*)data->res = (guint64)frame.retval->data.p;
-#else
-		*(guint32*)data->res = (guint32)frame.retval->data.p;
-#endif
-		break;
 	case MONO_TYPE_OBJECT:
 		/* No need for a write barrier */
 		*(MonoObject**)data->res = (MonoObject*)frame.retval->data.p;
@@ -1782,8 +1705,7 @@ interp_entry (InterpEntryData *data)
 		/* Already set before the call */
 		break;
 	default:
-		printf ("%s\n", mono_type_full_name (sig->ret));
-		NOT_IMPLEMENTED;
+		stackval_to_data (type, frame.retval, data->res, FALSE);
 		break;
 	}
 }
