@@ -2515,6 +2515,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 		}
 		MINT_IN_CASE(MINT_JMP) {
 			InterpMethod *new_method = rtm->data_items [* (guint16 *)(ip + 1)];
+			gboolean realloc_frame = new_method->alloca_size > rtm->alloca_size;
 
 			if (frame->imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_TAIL_CALL)
 				MONO_PROFILER_RAISE (method_tail_call, (frame->imethod->method, new_method->method));
@@ -2526,16 +2527,27 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 					goto exit_frame;
 			}
 			ip += 2;
-			if (new_method->alloca_size > rtm->alloca_size)
-				g_error ("MINT_JMP to method which needs more stack space (%d > %d)", new_method->alloca_size, rtm->alloca_size); 
 			rtm = frame->imethod = new_method;
+			/*
+			 * We allocate the stack frame from scratch and store the arguments in the
+			 * locals again since it's possible for the caller stack frame to be smaller
+			 * than the callee stack frame (at the interp level)
+			 */
+			if (realloc_frame) {
+				frame->args = alloca (rtm->alloca_size);
+				memset (frame->args, 0, rtm->alloca_size);
+				sp = frame->stack = (stackval *) ((char *) frame->args + rtm->args_size);
+			}
 			vt_sp = (unsigned char *) sp + rtm->stack_size;
 #if DEBUG_INTERP
 			vtalloc = vt_sp;
 #endif
 			locals = vt_sp + rtm->vt_stack_size;
 			frame->locals = locals;
-			ip = rtm->new_body_start; /* bypass storing input args from callers frame */
+			if (realloc_frame)
+				ip = rtm->code;
+			else
+				ip = rtm->new_body_start; /* bypass storing input args from callers frame */
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALLI) {
