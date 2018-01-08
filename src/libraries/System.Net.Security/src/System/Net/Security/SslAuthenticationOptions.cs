@@ -14,7 +14,7 @@ namespace System.Net.Security
         internal SslAuthenticationOptions(SslClientAuthenticationOptions sslClientAuthenticationOptions)
         {
             // Common options.
-            DisableRenegotiation = sslClientAuthenticationOptions.DisableRenegotiation;
+            AllowRenegotiation = sslClientAuthenticationOptions.AllowRenegotiation;
             ApplicationProtocols = sslClientAuthenticationOptions.ApplicationProtocols;
             CertValidationDelegate = sslClientAuthenticationOptions._certValidationDelegate;
             CheckCertName = true;
@@ -35,7 +35,7 @@ namespace System.Net.Security
         internal SslAuthenticationOptions(SslServerAuthenticationOptions sslServerAuthenticationOptions)
         {
             // Common options.
-            DisableRenegotiation = sslServerAuthenticationOptions.DisableRenegotiation;
+            AllowRenegotiation = sslServerAuthenticationOptions.AllowRenegotiation;
             ApplicationProtocols = sslServerAuthenticationOptions.ApplicationProtocols;
             CertValidationDelegate = sslServerAuthenticationOptions._certValidationDelegate;
             CheckCertName = false;
@@ -51,7 +51,7 @@ namespace System.Net.Security
             ServerCertificate = sslServerAuthenticationOptions.ServerCertificate;
         }
 
-        internal bool DisableRenegotiation { get; set; }
+        internal bool AllowRenegotiation { get; set; }
         internal string TargetHost { get; set; }
         internal X509CertificateCollection ClientCertificates { get; set; }
         internal List<SslApplicationProtocol> ApplicationProtocols { get; }

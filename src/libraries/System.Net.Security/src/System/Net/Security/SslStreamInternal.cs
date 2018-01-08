@@ -274,7 +274,7 @@ namespace System.Net.Security
 
                         if (message.Renegotiate)
                         {
-                            if (_sslState._sslAuthenticationOptions.DisableRenegotiation)
+                            if (!_sslState._sslAuthenticationOptions.AllowRenegotiation)
                             {
                                 throw new IOException(SR.net_ssl_io_renego);
                             }
