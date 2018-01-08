@@ -555,7 +555,7 @@ TESTS_IL_SRC=			\
 	locallocTest.il		\
 	initblkTest.il		\
 	qt-instance.il		\
-	vararg.il		\
+	vararg3.il		\
 	bug-29859.il		\
 	bug-78549.il		\
 	static-fields-nonconst.il	\
@@ -1038,6 +1038,7 @@ INTERP_DISABLED_TESTS = \
 	weak-fields.exe \
 	vararg.exe \
 	vararg2.exe \
+	vararg3.exe \
 	dim-valuetypes.exe
 
 TESTS_CS=$(filter-out $(DISABLED_TESTS),$(TESTS_CS_SRC:.cs=.exe))
