@@ -2,12 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Xunit.Performance;
 using Xunit;
 
@@ -15,26 +10,35 @@ namespace System.IO.Compression
 {
     public abstract class CompressionStreamPerfTestBase : CompressionStreamTestBase
     {
-        public static IEnumerable<object[]> CanterburyCorpus()
+        public static IEnumerable<object[]> CanterburyCorpus_WithCompressionLevel()
         {
             foreach (CompressionLevel compressionLevel in Enum.GetValues(typeof(CompressionLevel)))
             {
-                foreach (int innerIterations in new int[] { 1, 10 })
+                foreach (object[] canterburyWithoutLevel in CanterburyCorpus())
                 {
-                    foreach (var fileName in UncompressedTestFiles())
-                    {
-                        yield return new object[] { innerIterations, fileName[0], compressionLevel };
-                    }
+                    yield return new object[] { canterburyWithoutLevel[0], canterburyWithoutLevel[1], compressionLevel };
                 }
             }
         }
+
+        public static IEnumerable<object[]> CanterburyCorpus()
+        {
+            foreach (int innerIterations in new int[] { 1, 10 })
+            {
+                foreach (var fileName in UncompressedTestFiles())
+                {
+                    yield return new object[] { innerIterations, fileName[0] };
+                }
+            }
+        }
+
 
         /// <summary>
         /// Benchmark tests to measure the performance of individually compressing each file in the
         /// Canterbury Corpus
         /// </summary>
         [Benchmark]
-        [MemberData(nameof(CanterburyCorpus))]
+        [MemberData(nameof(CanterburyCorpus_WithCompressionLevel))]
         public void Compress_Canterbury(int innerIterations, string uncompressedFileName, CompressionLevel compressLevel)
         {
             byte[] bytes = File.ReadAllBytes(uncompressedFileName);
@@ -61,7 +65,7 @@ namespace System.IO.Compression
         /// </summary>
         [Benchmark]
         [MemberData(nameof(CanterburyCorpus))]
-        public void Decompress_Canterbury(int innerIterations, string uncompressedFilePath, CompressionLevel compressLevel)
+        public void Decompress_Canterbury(int innerIterations, string uncompressedFilePath)
         {
             string compressedFilePath = CompressedTestFile(uncompressedFilePath);
             byte[] outputRead = new byte[new FileInfo(uncompressedFilePath).Length];
