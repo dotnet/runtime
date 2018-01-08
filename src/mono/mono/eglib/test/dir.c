@@ -29,7 +29,7 @@ test_dir ()
 	if (dir != NULL)
 		return FAILED ("2 Should be an error");
 
-	error = NULL;
+	gerror = NULL;
 	dir = g_dir_open (".ljasdslakjd", 9, &gerror);
 	if (dir != NULL)
 		return FAILED ("3 opendir should fail");
