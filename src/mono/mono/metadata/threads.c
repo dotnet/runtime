@@ -1407,10 +1407,10 @@ ves_icall_System_Threading_Thread_ConstructInternalThread (MonoThread *this_obj)
 	mono_atomic_cas_ptr ((volatile gpointer *)&this_obj->internal_thread, internal, NULL);
 }
 
-MonoThread *
-ves_icall_System_Threading_Thread_GetCurrentThread (void)
+MonoThreadObjectHandle
+ves_icall_System_Threading_Thread_GetCurrentThread (MonoError *error)
 {
-	return mono_thread_current ();
+	return MONO_HANDLE_NEW (MonoThreadObject, mono_thread_current ());
 }
 
 HANDLE
