@@ -259,7 +259,7 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128 _mm_loadu_ps (float const* mem_address)
         /// </summary>
-        public static unsafe Vector128<float> Load(float* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<float> LoadVector128(float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm_load_ss (float const* mem_address)
@@ -269,7 +269,17 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128 _mm_load_ps (float const* mem_address)
         /// </summary>
-        public static unsafe Vector128<float> LoadAligned(float* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<float> LoadAlignedVector128(float* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128 _mm_loadh_pi (__m128 a, __m64 const* mem_addr)
+        /// </summary>
+        public static unsafe Vector128<float> LoadHigh(Vector128<float> value, float* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128 _mm_loadh_pi (__m128 a, __m64 const* mem_addr)
+        /// </summary>
+        public static unsafe Vector128<float> LoadLow(Vector128<float> value, float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm_max_ps (__m128 a,  __m128 b)
@@ -305,6 +315,11 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128 _mm_movelh_ps (__m128 a,  __m128 b)
         /// </summary>
         public static Vector128<float> MoveLowToHigh(Vector128<float> left,  Vector128<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int _mm_movemask_ps (__m128 a)
+        /// </summary>
+        public static int MoveMask(Vector128<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm_mul_ps (__m128 a, __m128 b)
@@ -344,7 +359,7 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128 _mm_set_ps (float e3, float e2, float e1, float e0)
         /// </summary>
-        public static Vector128<float> Set(float e3, float e2, float e1, float e0) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> SetVector128(float e3, float e2, float e1, float e0) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm_set_ss (float a)
@@ -354,12 +369,12 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128 _mm_set1_ps (float a)
         /// </summary>
-        public static Vector128<float> Set1(float value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> SetAllVector128(float value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128d _mm_setzero_ps (void)
         /// </summary>
-        public static Vector128<float> SetZero() { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> SetZeroVector128() { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm_castpd_ps (__m128d a)
@@ -406,6 +421,16 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static unsafe void StoreScalar(float* address, Vector128<float> source) { throw new PlatformNotSupportedException(); }
 
+        /// <summary>
+        /// void _mm_storeh_pi (__m64* mem_addr, __m128 a)
+        /// </summary>
+        public static unsafe void StoreHigh(float* address, Vector128<float> source) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void _mm_storel_pi (__m64* mem_addr, __m128 a)
+        /// </summary>
+        public static unsafe void StoreLow(float* address, Vector128<float> source) { throw new PlatformNotSupportedException(); }
+        
         /// <summary>
         /// __m128d _mm_sub_ps (__m128d a, __m128d b)
         /// </summary>
