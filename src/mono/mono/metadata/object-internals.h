@@ -1477,7 +1477,11 @@ typedef struct {
 static inline MonoInternalThread*
 mono_internal_thread_handle_ptr (MonoInternalThreadHandle h)
 {
-	return MONO_HANDLE_RAW (h); /* Safe */
+	/* The SUPPRESS here prevents a Centrinel warning due to merely seeing this
+	 * function definition.  Callees will still get a warning unless we
+	 * attach a suppress attribute to the declaration.
+	 */
+	return MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (h));
 }
 
 gboolean          mono_image_create_pefile (MonoReflectionModuleBuilder *module, gpointer file, MonoError *error);
