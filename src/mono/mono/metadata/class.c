@@ -995,7 +995,12 @@ fail:
 MonoMethod *
 mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *context)
 {
-	return mono_class_inflate_generic_method_full (method, NULL, context);
+	ERROR_DECL (error);
+	error_init (&error);
+	MonoMethod *res = mono_class_inflate_generic_method_full_checked (method, NULL, context, &error);
+	if (!is_ok (&error))
+		g_error ("Could not inflate generic method due to %s", mono_error_get_message (&error));
+	return res;
 }
 
 MonoMethod *
@@ -1005,27 +1010,12 @@ mono_class_inflate_generic_method_checked (MonoMethod *method, MonoGenericContex
 }
 
 /**
- * mono_class_inflate_generic_method_full:
- *
+ * mono_class_inflate_generic_method_full_checked:
  * Instantiate method \p method with the generic context \p context.
+ * On failure returns NULL and sets \p error.
+ *
  * BEWARE: All non-trivial fields are invalid, including klass, signature, and header.
  *         Use mono_method_signature() and mono_method_get_header() to get the correct values.
- */
-MonoMethod*
-mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hint, MonoGenericContext *context)
-{
-	ERROR_DECL (error);
-	MonoMethod *res = mono_class_inflate_generic_method_full_checked (method, klass_hint, context, &error);
-	if (!mono_error_ok (&error))
-		/*FIXME do proper error handling - on this case, kill this function. */
-		g_error ("Could not inflate generic method due to %s", mono_error_get_message (&error)); 
-
-	return res;
-}
-
-/**
- * mono_class_inflate_generic_method_full_checked:
- * Same as mono_class_inflate_generic_method_full but return failure using \p error.
  */
 MonoMethod*
 mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *klass_hint, MonoGenericContext *context, MonoError *error)
@@ -2491,14 +2481,20 @@ mono_class_get_method_by_index (MonoClass *klass, int index)
 	}
 }	
 
-/*
+/**
  * mono_class_get_inflated_method:
+ * \param klass an inflated class
+ * \param method a method of \p klass's generic definition
+ * \param error set on error
  *
- *   Given an inflated class CLASS and a method METHOD which should be a method of
- * CLASS's generic definition, return the inflated method corresponding to METHOD.
+ * Given an inflated class \p klass and a method \p method which should be a
+ * method of \p klass's generic definition, return the inflated method
+ * corresponding to \p method.
+ *
+ * On failure sets \p error and returns NULL.
  */
 MonoMethod*
-mono_class_get_inflated_method (MonoClass *klass, MonoMethod *method)
+mono_class_get_inflated_method (MonoClass *klass, MonoMethod *method, MonoError *error)
 {
 	MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
 	int i, mcount;
@@ -2506,23 +2502,27 @@ mono_class_get_inflated_method (MonoClass *klass, MonoMethod *method)
 	g_assert (method->klass == gklass);
 
 	mono_class_setup_methods (gklass);
-	g_assert (!mono_class_has_failure (gklass)); /*FIXME do proper error handling*/
+	if (mono_class_has_failure (gklass)) {
+		mono_error_set_for_class_failure (error, gklass);
+		return NULL;
+	}
 
 	mcount = mono_class_get_method_count (gklass);
 	for (i = 0; i < mcount; ++i) {
 		if (gklass->methods [i] == method) {
+			MonoMethod *inflated_method = NULL;
 			if (klass->methods) {
-				return klass->methods [i];
+				inflated_method = klass->methods[i];
 			} else {
-				ERROR_DECL (error);
-				MonoMethod *result = mono_class_inflate_generic_method_full_checked (gklass->methods [i], klass, mono_class_get_context (klass), &error);
-				g_assert (mono_error_ok (&error)); /* FIXME don't swallow this error */
-				return result;
+				inflated_method = mono_class_inflate_generic_method_full_checked (gklass->methods [i], klass, mono_class_get_context (klass), error);
+				return_val_if_nok (error, NULL);
 			}
+			g_assert (inflated_method);
+			return inflated_method;
 		}
 	}
 
-	return NULL;
+	g_assert_not_reached ();
 }	
 
 /*
@@ -7418,7 +7418,7 @@ mono_class_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *c
 	if (klass && context && mono_metadata_token_table (type_token) == MONO_TABLE_TYPESPEC)
 		klass = mono_class_inflate_generic_class_checked (klass, context, &error);
 
-	g_assert (mono_error_ok (&error)); /* FIXME deprecate this function and forbit the runtime from using it. */
+	mono_error_assert_ok (&error);
 	return klass;
 }
 
@@ -7557,7 +7557,11 @@ mono_type_get_checked (MonoImage *image, guint32 type_token, MonoGenericContext 
 MonoClass *
 mono_class_get (MonoImage *image, guint32 type_token)
 {
-	return mono_class_get_full (image, type_token, NULL);
+	MonoError error;
+	error_init (&error);
+	MonoClass *result = mono_class_get_checked (image, type_token, &error);
+	mono_error_assert_ok (&error);
+	return result;
 }
 
 /**
@@ -8658,8 +8662,14 @@ mono_class_get_cctor (MonoClass *klass)
 	if (!klass->has_cctor)
 		return NULL;
 
-	if (mono_class_is_ginst (klass) && !klass->methods)
-		return mono_class_get_inflated_method (klass, mono_class_get_cctor (mono_class_get_generic_class (klass)->container_class));
+	if (mono_class_is_ginst (klass) && !klass->methods) {
+		ERROR_DECL (error);
+		error_init (&error);
+		MonoMethod *result = mono_class_get_inflated_method (klass, mono_class_get_cctor (mono_class_get_generic_class (klass)->container_class), &error);
+		if (!is_ok (&error))
+			g_error ("Could not lookup inflated class cctor due to %s", mono_error_get_message (&error)); /* FIXME do proper error handling */
+		return result;
+	}
 
 	if (mono_class_get_cached_class_info (klass, &cached_info)) {
 		ERROR_DECL (error);
@@ -8810,7 +8820,7 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class,
 {
 	ERROR_DECL (error);
 	gpointer res = mono_ldtoken_checked (image, token, handle_class, context, &error);
-	g_assert (mono_error_ok (&error));
+	mono_error_assert_ok (&error);
 	return res;
 }
 

@@ -1360,8 +1360,10 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 			vt_slot += iface_offset;
 		}
 		m = klass->vtable [vt_slot];
-		if (cmethod->is_inflated)
-			m = mono_class_inflate_generic_method (m, mono_method_get_context (cmethod));
+		if (cmethod->is_inflated) {
+			m = mono_class_inflate_generic_method_full_checked (m, NULL, mono_method_get_context (cmethod), error);
+			return_val_if_nok (error, NULL);
+		}
 	}
 
 	if (klass->valuetype && (m->klass == mono_defaults.object_class || m->klass == mono_defaults.enum_class->parent || m->klass == mono_defaults.enum_class)) {

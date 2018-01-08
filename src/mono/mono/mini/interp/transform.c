@@ -4161,7 +4161,8 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 				td->ip += 5;
 				if (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC && !image_is_dynamic (method->klass->image) && !generic_context) {
 					int align;
-					MonoType *type = mono_type_create_from_typespec (image, token);
+					MonoType *type = mono_type_create_from_typespec_checked (image, token, error);
+					return_if_nok (error);
 					size = mono_type_size (type, &align);
 				} else {
 					int align;

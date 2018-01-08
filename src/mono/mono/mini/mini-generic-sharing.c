@@ -468,6 +468,7 @@ mono_method_get_declaring_generic_method (MonoMethod *method)
  * mono_class_get_method_generic:
  * @klass: a class
  * @method: a method
+ * @error: set on error
  *
  * Given a class and a generic method, which has to be of an
  * instantiation of the same class that klass is an instantiation of,
@@ -477,9 +478,11 @@ mono_method_get_declaring_generic_method (MonoMethod *method)
  * method is Gen<object>.work<int>
  *
  * returns: Gen<string>.work<int>
+ *
+ * On error sets @error and returns NULL.
  */
 MonoMethod*
-mono_class_get_method_generic (MonoClass *klass, MonoMethod *method)
+mono_class_get_method_generic (MonoClass *klass, MonoMethod *method, MonoError *error)
 {
 	MonoMethod *declaring, *m;
 	int i;
@@ -490,8 +493,10 @@ mono_class_get_method_generic (MonoClass *klass, MonoMethod *method)
 		declaring = method;
 
 	m = NULL;
-	if (mono_class_is_ginst (klass))
-		m = mono_class_get_inflated_method (klass, declaring);
+	if (mono_class_is_ginst (klass)) {
+		m = mono_class_get_inflated_method (klass, declaring, error);
+		return_val_if_nok (error, NULL);
+	}
 
 	if (!m) {
 		mono_class_setup_methods (klass);
@@ -510,14 +515,13 @@ mono_class_get_method_generic (MonoClass *klass, MonoMethod *method)
 	}
 
 	if (method != declaring) {
-		ERROR_DECL (error);
 		MonoGenericContext context;
 
 		context.class_inst = NULL;
 		context.method_inst = mono_method_get_context (method)->method_inst;
 
-		m = mono_class_inflate_generic_method_checked (m, &context, &error);
-		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+		m = mono_class_inflate_generic_method_checked (m, &context, error);
+		return_val_if_nok (error, NULL);
 	}
 
 	return m;

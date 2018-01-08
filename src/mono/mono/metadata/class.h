@@ -18,9 +18,11 @@ typedef struct _MonoClassField MonoClassField;
 typedef struct _MonoProperty MonoProperty;
 typedef struct _MonoEvent MonoEvent;
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoClass *
 mono_class_get             (MonoImage *image, uint32_t type_token);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoClass *
 mono_class_get_full        (MonoImage *image, uint32_t type_token, MonoGenericContext *context);
 
@@ -54,12 +56,15 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, mo
 MONO_RT_EXTERNAL_ONLY MONO_API MonoType*
 mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context) /* MONO_DEPRECATED */;
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoMethod*
 mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *context);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoMethod *
 mono_get_inflated_method (MonoMethod *method);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoClassField*
 mono_field_from_token      (MonoImage *image, uint32_t token, MonoClass **retklass, MonoGenericContext *context);
 
@@ -118,6 +123,7 @@ mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc,
 MONO_API mono_bool
 mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API void*
 mono_ldtoken               (MonoImage *image, uint32_t token, MonoClass **retclass, MonoGenericContext *context);
 

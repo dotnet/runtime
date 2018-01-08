@@ -29,7 +29,7 @@ static char *
 get_token_comment (const char *prefix, guint32 token);
 
 static MonoGenericContainer *
-get_memberref_container (MonoImage *m, guint32 mrp_token, MonoGenericContainer *container);
+get_memberref_container (MonoImage *m, guint32 mrp_token, MonoGenericContainer *container, MonoError *error);
 
 static char *
 get_memberref_parent (MonoImage *m, guint32 mrp_token, MonoGenericContainer *container);
@@ -1747,6 +1747,8 @@ char *
 get_fieldref_signature (MonoImage *m, int idx, MonoGenericContainer *container)
 {
 	guint32 cols [MONO_MEMBERREF_SIZE];
+	ERROR_DECL (error);
+	error_init (&error);
 	MonoGenericContainer *new_container;
 	char *type, *esname;
         char *sig;
@@ -1755,7 +1757,8 @@ get_fieldref_signature (MonoImage *m, int idx, MonoGenericContainer *container)
         mono_metadata_decode_row (&m->tables [MONO_TABLE_MEMBERREF],
 				  idx - 1, cols, MONO_MEMBERREF_SIZE);
 
-	new_container = get_memberref_container (m, cols [MONO_MEMBERREF_CLASS], container);
+	new_container = get_memberref_container (m, cols [MONO_MEMBERREF_CLASS], container, &error);
+	mono_error_assert_ok (&error);
         sig = get_field_signature (m, cols [MONO_MEMBERREF_SIGNATURE], new_container);
 
 	type = get_memberref_parent (m, cols [MONO_MEMBERREF_CLASS], container);
@@ -1853,8 +1856,20 @@ get_field (MonoImage *m, guint32 token, MonoGenericContainer *container)
 	return res;
 }
 
+/**
+ * get_memberref_container:
+ * \param m The \c MonoImage
+ * \param mrp_token a \c MemberRefParent token in \p m
+ * \param container the parent generic container
+ * \param error set on error
+ *
+ * \returns the generic container given a MemberRefParent token, or \c NULL if
+ * the \c MemberRefParent is not a generic type.
+ *
+ * On error returns NULL and sets \p error.
+ */
 static MonoGenericContainer *
-get_memberref_container (MonoImage *m, guint32 mrp_token, MonoGenericContainer *container)
+get_memberref_container (MonoImage *m, guint32 mrp_token, MonoGenericContainer *container, MonoError *error)
 {
 	MonoClass *klass;
 
@@ -1872,7 +1887,8 @@ get_memberref_container (MonoImage *m, guint32 mrp_token, MonoGenericContainer *
 		return NULL;
 		
 	case 4: /* TypeSpec */
-		klass = mono_class_get_full (m, MONO_TOKEN_TYPE_SPEC | idx, (MonoGenericContext *) container);
+		klass = mono_class_get_and_inflate_typespec_checked (m, MONO_TOKEN_TYPE_SPEC | idx, &container->context, error);
+		return_val_if_nok (error, NULL);
 		g_assert (klass);
 		return mono_class_is_ginst (klass) ? mono_class_get_generic_container (mono_class_get_generic_class (klass)->container_class) : NULL;
 	}

@@ -267,7 +267,7 @@ mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass, Mo
 {
 	ERROR_DECL (error);
 	MonoClassField *res = mono_field_from_token_checked (image, token, retklass, context, &error);
-	g_assert (mono_error_ok (&error));
+	mono_error_assert_ok (&error);
 	return res;
 }
 

@@ -942,7 +942,7 @@ MonoMethod*
 mono_class_get_method_by_index (MonoClass *klass, int index);
 
 MonoMethod*
-mono_class_get_inflated_method (MonoClass *klass, MonoMethod *method);
+mono_class_get_inflated_method (MonoClass *klass, MonoMethod *method, MonoError *error);
 
 MonoMethod*
 mono_class_get_vtable_entry (MonoClass *klass, int offset);
@@ -1025,9 +1025,6 @@ mono_generic_class_get_class (MonoGenericClass *gclass);
 
 void
 mono_method_set_generic_container (MonoMethod *method, MonoGenericContainer* container);
-
-MonoMethod*
-mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hint, MonoGenericContext *context);
 
 MonoMethod*
 mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *klass_hint, MonoGenericContext *context, MonoError *error);
@@ -1308,9 +1305,6 @@ mono_type_get_checked        (MonoImage *image, guint32 type_token, MonoGenericC
 
 gboolean
 mono_generic_class_is_generic_type_definition (MonoGenericClass *gklass);
-
-MonoMethod*
-mono_class_get_method_generic (MonoClass *klass, MonoMethod *method);
 
 MonoType*
 mono_type_get_basic_type_from_generic (MonoType *type);

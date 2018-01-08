@@ -688,7 +688,8 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *
 			actual_method = mono_class_inflate_generic_method_checked (declaring, &context, error);
 			mono_error_assert_ok (error);
 		} else {
-			actual_method = mono_class_get_method_generic (klass, m);
+			actual_method = mono_class_get_method_generic (klass, m, error);
+			mono_error_assert_ok (error);
 		}
 
 		g_assert (klass);

@@ -2678,6 +2678,9 @@ mini_class_is_generic_sharable (MonoClass *klass);
 gboolean
 mini_generic_inst_is_sharable (MonoGenericInst *inst, gboolean allow_type_vars, gboolean allow_partial);
 
+MonoMethod*
+mono_class_get_method_generic (MonoClass *klass, MonoMethod *method, MonoError *error);
+
 gboolean
 mono_is_partially_sharable_inst (MonoGenericInst *inst);
 
