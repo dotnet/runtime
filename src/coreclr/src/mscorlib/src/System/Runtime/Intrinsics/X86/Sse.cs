@@ -259,7 +259,7 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128 _mm_loadu_ps (float const* mem_address)
         /// </summary>
-        public static unsafe Vector128<float> Load(float* address) => Load(address);
+        public static unsafe Vector128<float> LoadVector128(float* address) => LoadVector128(address);
 
         /// <summary>
         /// __m128 _mm_load_ss (float const* mem_address)
@@ -269,7 +269,17 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128 _mm_load_ps (float const* mem_address)
         /// </summary>
-        public static unsafe Vector128<float> LoadAligned(float* address) => LoadAligned(address);
+        public static unsafe Vector128<float> LoadAlignedVector128(float* address) => LoadAlignedVector128(address);
+
+        /// <summary>
+        /// __m128 _mm_loadh_pi (__m128 a, __m64 const* mem_addr)
+        /// </summary>
+        public static unsafe Vector128<float> LoadHigh(Vector128<float> value, float* address) => LoadHigh(value, address);
+
+        /// <summary>
+        /// __m128 _mm_loadl_pi (__m128 a, __m64 const* mem_addr)
+        /// </summary>
+        public static unsafe Vector128<float> LoadLow(Vector128<float> value, float* address) => LoadLow(value, address);
 
         /// <summary>
         /// __m128 _mm_max_ps (__m128 a,  __m128 b)
@@ -305,6 +315,11 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128 _mm_movelh_ps (__m128 a,  __m128 b)
         /// </summary>
         public static Vector128<float> MoveLowToHigh(Vector128<float> left, Vector128<float> right) => MoveLowToHigh(left, right);
+
+        /// <summary>
+        /// int _mm_movemask_ps (__m128 a)
+        /// </summary>
+        public static int MoveMask(Vector128<float> value) => MoveMask(value);
 
         /// <summary>
         /// __m128 _mm_mul_ps (__m128 a, __m128 b)
@@ -344,7 +359,7 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128 _mm_set_ps (float e3, float e2, float e1, float e0)
         /// </summary>
-        public static Vector128<float> Set(float e3, float e2, float e1, float e0) => Set(e3, e2, e1, e0);
+        public static Vector128<float> SetVector128(float e3, float e2, float e1, float e0) => SetVector128(e3, e2, e1, e0);
 
         /// <summary>
         /// __m128 _mm_set_ss (float a)
@@ -354,12 +369,12 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128 _mm_set1_ps (float a)
         /// </summary>
-        public static Vector128<float> Set1(float value) => Set1(value);
+        public static Vector128<float> SetAllVector128(float value) => SetAllVector128(value);
 
         /// <summary>
         /// __m128d _mm_setzero_ps (void)
         /// </summary>
-        public static Vector128<float> SetZero() => SetZero();
+        public static Vector128<float> SetZeroVector128() => SetZeroVector128();
 
         /// <summary>
         /// __m128 _mm_castpd_ps (__m128d a)
@@ -410,6 +425,16 @@ namespace System.Runtime.Intrinsics.X86
         /// void _mm_store_ss (float* mem_addr, __m128 a)
         /// </summary>
         public static unsafe void StoreScalar(float* address, Vector128<float> source) => StoreScalar(address, source);
+
+        /// <summary>
+        /// void _mm_storeh_pi (__m64* mem_addr, __m128 a)
+        /// </summary>
+        public static unsafe void StoreHigh(float* address, Vector128<float> source) => StoreHigh(address, source);
+
+        /// <summary>
+        /// void _mm_storel_pi (__m64* mem_addr, __m128 a)
+        /// </summary>
+        public static unsafe void StoreLow(float* address, Vector128<float> source) => StoreLow(address, source);
 
         /// <summary>
         /// __m128d _mm_sub_ps (__m128d a, __m128d b)

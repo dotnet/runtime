@@ -140,37 +140,32 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// int _mm_extract_epi8 (__m128i a, const int imm8)
         /// </summary>
-        public static sbyte ExtractSByte<T>(Vector128<T> value, byte index) where T : struct { throw new PlatformNotSupportedException(); }
+        public static sbyte Extract(Vector128<sbyte> value, byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// int _mm_extract_epi8 (__m128i a, const int imm8)
         /// </summary>
-        public static byte ExtractByte<T>(Vector128<T> value, byte index) where T : struct { throw new PlatformNotSupportedException(); }
-
+        public static byte Extract(Vector128<byte> value, byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// int _mm_extract_epi32 (__m128i a, const int imm8)
         /// </summary>
-        public static int ExtractInt32<T>(Vector128<T> value, byte index) where T : struct { throw new PlatformNotSupportedException(); }
-
+        public static int Extract(Vector128<int> value, byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// int _mm_extract_epi32 (__m128i a, const int imm8)
         /// </summary>
-        public static uint ExtractUInt32<T>(Vector128<T> value, byte index) where T : struct { throw new PlatformNotSupportedException(); }
-
+        public static uint Extract(Vector128<uint> value, byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __int64 _mm_extract_epi64 (__m128i a, const int imm8)
         /// </summary>
-        public static long ExtractInt64<T>(Vector128<T> value, byte index) where T : struct { throw new PlatformNotSupportedException(); }
-
+        public static long Extract(Vector128<long> value, byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __int64 _mm_extract_epi64 (__m128i a, const int imm8)
         /// </summary>
-        public static ulong ExtractUInt64<T>(Vector128<T> value, byte index) where T : struct { throw new PlatformNotSupportedException(); }
+        public static ulong Extract(Vector128<ulong> value, byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int _mm_extract_ps (__m128 a, const int imm8)
         /// </summary>
-        public static float ExtractSingle<T>(Vector128<T> value, byte index) where T : struct { throw new PlatformNotSupportedException(); }
-
+        public static float Extract(Vector128<float> value, byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128 _mm_floor_ps (__m128 a)
         /// </summary>
@@ -192,37 +187,31 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128i _mm_insert_epi8 (__m128i a, int i, const int imm8)
         /// </summary>
-        public static Vector128<T> InsertSByte<T>(Vector128<T> value, sbyte data, byte index) where T : struct { throw new PlatformNotSupportedException(); }
-
+        public static Vector128<sbyte> Insert(Vector128<sbyte> value, sbyte data, byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_insert_epi8 (__m128i a, int i, const int imm8)
         /// </summary>
-        public static Vector128<T> InsertByte<T>(Vector128<T> value, byte data, byte index) where T : struct { throw new PlatformNotSupportedException(); }
-
+        public static Vector128<byte> Insert(Vector128<byte> value, byte data, byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_insert_epi32 (__m128i a, int i, const int imm8)
         /// </summary>
-        public static Vector128<T> InsertInt32<T>(Vector128<T> value, int data, byte index) where T : struct { throw new PlatformNotSupportedException(); }
-
+        public static Vector128<int> Insert(Vector128<int> value, int data, byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_insert_epi32 (__m128i a, int i, const int imm8)
         /// </summary>
-        public static Vector128<T> InsertUInt32<T>(Vector128<T> value, uint data, byte index) where T : struct { throw new PlatformNotSupportedException(); }
-
+        public static Vector128<uint> Insert(Vector128<uint> value, uint data, byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_insert_epi64 (__m128i a, __int64 i, const int imm8)
         /// </summary>
-        public static Vector128<T> InsertInt64<T>(Vector128<T> value, long data, byte index) where T : struct { throw new PlatformNotSupportedException(); }
-
+        public static Vector128<long> Insert(Vector128<long> value, long data, byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_insert_epi64 (__m128i a, __int64 i, const int imm8)
         /// </summary>
-        public static Vector128<T> InsertUInt64<T>(Vector128<T> value, ulong data, byte index) where T : struct { throw new PlatformNotSupportedException(); }
-
+        public static Vector128<ulong> Insert(Vector128<ulong> value, ulong data, byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128 _mm_insert_ps (__m128 a, __m128 b, const int imm8)
         /// </summary>
-        public static Vector128<T> InsertSingle<T>(Vector128<T> value, float data, byte index) where T : struct { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> Insert(Vector128<float> value, float data, byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm_max_epi8 (__m128i a, __m128i b)
@@ -427,7 +416,7 @@ namespace System.Runtime.Intrinsics.X86
         public static bool TestAllZeros(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
         public static bool TestAllZeros(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
         public static bool TestAllZeros(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
-        
+
         /// <summary>
         /// int _mm_testc_si128 (__m128i a, __m128i b)
         /// </summary>
@@ -451,7 +440,7 @@ namespace System.Runtime.Intrinsics.X86
         public static bool TestMixOnesZeros(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
         public static bool TestMixOnesZeros(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
         public static bool TestMixOnesZeros(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
-        
+
         /// <summary>
         /// int _mm_testnzc_si128 (__m128i a, __m128i b)
         /// </summary>
