@@ -45,19 +45,19 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128d _mm_loaddup_pd (double const* mem_addr)
         /// </summary>
-        public static unsafe Vector128<double> LoadAndDuplicate(double* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<double> LoadAndDuplicateToVector128(double* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm_lddqu_si128 (__m128i const* mem_addr)
         /// </summary>
-        public static unsafe Vector128<sbyte> LoadDqu(sbyte* address) { throw new PlatformNotSupportedException(); }
-        public static unsafe Vector128<byte> LoadDqu(byte* address) { throw new PlatformNotSupportedException(); }
-        public static unsafe Vector128<short> LoadDqu(short* address) { throw new PlatformNotSupportedException(); }
-        public static unsafe Vector128<ushort> LoadDqu(ushort* address) { throw new PlatformNotSupportedException(); }
-        public static unsafe Vector128<int> LoadDqu(int* address) { throw new PlatformNotSupportedException(); }
-        public static unsafe Vector128<uint> LoadDqu(uint* address) { throw new PlatformNotSupportedException(); }
-        public static unsafe Vector128<long> LoadDqu(long* address) { throw new PlatformNotSupportedException(); }
-        public static unsafe Vector128<ulong> LoadDqu(ulong* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<sbyte> LoadDquVector128(sbyte* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<byte> LoadDquVector128(byte* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<short> LoadDquVector128(short* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<ushort> LoadDquVector128(ushort* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<int> LoadDquVector128(int* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<uint> LoadDquVector128(uint* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<long> LoadDquVector128(long* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<ulong> LoadDquVector128(ulong* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128d _mm_movedup_pd (__m128d a)
