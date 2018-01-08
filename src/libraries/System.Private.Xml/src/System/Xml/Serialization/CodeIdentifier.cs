@@ -10,21 +10,13 @@ using System.Globalization;
 using System.Diagnostics;
 using System.Reflection;
 
-#if XMLSERIALIZERGENERATOR
-namespace Microsoft.XmlSerializer.Generator
-#else
 namespace System.Xml.Serialization
-#endif
 {
     ///<internalonly/>
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
-#if XMLSERIALIZERGENERATOR
-    internal class CodeIdentifier
-#else
     public class CodeIdentifier
-#endif
     {
         internal const int MaxIdentifierLength = 511;
 

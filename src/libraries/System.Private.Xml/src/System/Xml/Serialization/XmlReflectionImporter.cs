@@ -2,11 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if XMLSERIALIZERGENERATOR
-namespace Microsoft.XmlSerializer.Generator
-#else
 namespace System.Xml.Serialization
-#endif
 {
     using System.Reflection;
     using System;
@@ -26,11 +22,7 @@ namespace System.Xml.Serialization
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
-#if XMLSERIALIZERGENERATOR
-    internal class XmlReflectionImporter
-#else
     public class XmlReflectionImporter
-#endif
     {
         private TypeScope _typeScope;
         private XmlAttributeOverrides _attributeOverrides;
@@ -41,9 +33,7 @@ namespace System.Xml.Serialization
         private NameTable _xsdAttributes;   // xmlattributetname + xmlns -> AttributeAccessor
         private Hashtable _specials;   // type -> SpecialMapping
         private Hashtable _anonymous = new Hashtable();   // type -> AnonymousMapping
-#if !XMLSERIALIZERGENERATOR
         private NameTable _serializables;  // type name --> new SerializableMapping
-#endif
         private StructMapping _root;
         private string _defaultNs;
         private ModelScope _modelScope;
@@ -522,7 +512,6 @@ namespace System.Xml.Serialization
                     XmlQualifiedName qname = serializableMapping.XsiType;
                     if (qname != null && !qname.IsEmpty)
                     {
-#if !XMLSERIALIZERGENERATOR
                         if (_serializables == null)
                             _serializables = new NameTable();
                         SerializableMapping existingMapping = (SerializableMapping)_serializables[qname];
@@ -547,7 +536,6 @@ namespace System.Xml.Serialization
                             _serializables[qname] = serializableMapping;
                         }
 
-#endif
                         serializableMapping.TypeName = qname.Name;
                         serializableMapping.Namespace = qname.Namespace;
                     }
@@ -575,7 +563,6 @@ namespace System.Xml.Serialization
             return mapping;
         }
 
-#if !XMLSERIALIZERGENERATOR
         internal void SetBase(SerializableMapping mapping, XmlQualifiedName baseQname)
         {
             if (baseQname.IsEmpty) return;
@@ -604,7 +591,6 @@ namespace System.Xml.Serialization
             }
             mapping.SetBaseMapping((SerializableMapping)_serializables[baseQname]);
         }
-#endif
 
         private static string GetContextName(ImportContext context)
         {
@@ -2340,11 +2326,7 @@ namespace System.Xml.Serialization
         internal RecursionLimiter()
         {
             _depth = 0;
-#if XMLSERIALIZERGENERATOR
-            _maxDepth = int.MaxValue;
-#else
             _maxDepth = DiagnosticsSwitches.NonRecursiveTypeLoading.Enabled ? 1 : int.MaxValue;
-#endif
         }
 
         internal bool IsExceededLimit { get { return _depth > _maxDepth; } }
