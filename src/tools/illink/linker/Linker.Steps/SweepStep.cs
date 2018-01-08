@@ -68,7 +68,7 @@ namespace Mono.Linker.Steps {
 					// or they can point to nothing which will break later (e.g. when re-loading for stripping IL)
 					// reference: https://bugzilla.xamarin.com/show_bug.cgi?id=36577
 					if (assembly.MainModule.HasExportedTypes)
-						SweepCollection (assembly.MainModule.ExportedTypes);
+						SweepCollectionNonAttributable (assembly.MainModule.ExportedTypes);
 				}
 			}
 		}
@@ -123,6 +123,7 @@ namespace Mono.Linker.Steps {
 				assembly.MainModule.Types.Add (type);
 
 			SweepResources (assembly);
+			SweepCustomAttributes (assembly);
 		}
 
 		bool IsMarkedAssembly (AssemblyDefinition assembly)
@@ -275,6 +276,12 @@ namespace Mono.Linker.Steps {
 
 			if (type.HasInterfaces)
 				SweepInterfaces (type);
+
+			if (type.HasCustomAttributes)
+				SweepCustomAttributes (type);
+
+			if (type.HasProperties)
+				SweepCustomAttributeCollection (type.Properties);
 		}
 
 		protected void SweepNestedTypes (TypeDefinition type)
@@ -299,6 +306,23 @@ namespace Mono.Linker.Steps {
 				InterfaceRemoved (type, iface);
 				type.Interfaces.RemoveAt (i);
 			}
+		}
+
+		protected void SweepCustomAttributes (ICustomAttributeProvider provider)
+		{
+			for (int i = provider.CustomAttributes.Count - 1; i >= 0; i--) {
+				var attribute = provider.CustomAttributes [i];
+				if (!Annotations.IsMarked (attribute)) {
+					CustomAttributeUsageRemoved (provider, attribute);
+					provider.CustomAttributes.RemoveAt (i);
+				}
+			}
+		}
+
+		protected void SweepCustomAttributeCollection<T> (Collection<T> providers) where T : ICustomAttributeProvider
+		{
+			foreach (var provider in providers)
+				SweepCustomAttributes (provider);
 		}
 
 		void SweepMethods (Collection<MethodDefinition> methods)
@@ -353,7 +377,18 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		protected void SweepCollection<T> (IList<T> list) where T : IMetadataTokenProvider
+		protected void SweepCollection<T> (IList<T> list) where T : ICustomAttributeProvider
+		{
+			for (int i = 0; i < list.Count; i++)
+				if (ShouldRemove (list [i])) {
+					ElementRemoved (list [i]);
+					list.RemoveAt (i--);
+				} else {
+					SweepCustomAttributes (list [i]);
+				}
+		}
+
+		protected void SweepCollectionNonAttributable<T> (IList<T> list) where T : IMetadataTokenProvider
 		{
 			for (int i = 0; i < list.Count; i++)
 				if (ShouldRemove (list [i])) {
@@ -390,6 +425,10 @@ namespace Mono.Linker.Steps {
 		}
 
 		protected virtual void InterfaceRemoved (TypeDefinition type, InterfaceImplementation iface)
+		{
+		}
+
+		protected virtual void CustomAttributeUsageRemoved (ICustomAttributeProvider provider, CustomAttribute attribute)
 		{
 		}
 	}
