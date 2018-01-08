@@ -504,73 +504,57 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// int _mm_extract_epi16 (__m128i a,  int immediate)
         /// </summary>
-        public static short ExtractInt16<T>(Vector128<T> value, byte index) where T : struct
-        {
-            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
-            return ExtractInt16<T>(value, index);
-        }
+        public static short Extract(Vector128<short> value, byte index) => Extract(value, index);
         /// <summary>
         /// int _mm_extract_epi16 (__m128i a,  int immediate)
         /// </summary>
-        public static ushort ExtractUInt16<T>(Vector128<T> value, byte index) where T : struct
-        {
-            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
-            return ExtractUInt16<T>(value, index);
-        }
+        public static ushort Extract(Vector128<ushort> value, byte index) => Extract(value, index);
         
         /// <summary>
         /// __m128i _mm_insert_epi16 (__m128i a,  int i, int immediate)
         /// </summary>
-        public static Vector128<T> InsertInt16<T>(Vector128<T> value, short data, byte index) where T : struct
-        {
-            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
-            return InsertInt16<T>(value, data, index);
-        }
+        public static Vector128<short> Insert(Vector128<short> value, short data, byte index) => Insert(value, data, index);
         /// <summary>
         /// __m128i _mm_insert_epi16 (__m128i a,  int i, int immediate)
         /// </summary>
-        public static Vector128<T> InsertUInt16<T>(Vector128<T> value, ushort data, byte index) where T : struct
-        {
-            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
-            return InsertUInt16<T>(value, data, index);
-        }
+        public static Vector128<ushort> Insert(Vector128<ushort> value, ushort data, byte index) => Insert(value, data, index);
         
         /// <summary>
         /// __m128i _mm_loadu_si128 (__m128i const* mem_address)
         /// </summary>
-        public static unsafe Vector128<sbyte> Load(sbyte* address) => Load(address);
+        public static unsafe Vector128<sbyte> LoadVector128(sbyte* address) => LoadVector128(address);
         /// <summary>
         /// __m128i _mm_loadu_si128 (__m128i const* mem_address)
         /// </summary>
-        public static unsafe Vector128<byte> Load(byte* address) => Load(address);
+        public static unsafe Vector128<byte> LoadVector128(byte* address) => LoadVector128(address);
         /// <summary>
         /// __m128i _mm_loadu_si128 (__m128i const* mem_address)
         /// </summary>
-        public static unsafe Vector128<short> Load(short* address) => Load(address);
+        public static unsafe Vector128<short> LoadVector128(short* address) => LoadVector128(address);
         /// <summary>
         /// __m128i _mm_loadu_si128 (__m128i const* mem_address)
         /// </summary>
-        public static unsafe Vector128<ushort> Load(ushort* address) => Load(address);
+        public static unsafe Vector128<ushort> LoadVector128(ushort* address) => LoadVector128(address);
         /// <summary>
         /// __m128i _mm_loadu_si128 (__m128i const* mem_address)
         /// </summary>
-        public static unsafe Vector128<int> Load(int* address) => Load(address);
+        public static unsafe Vector128<int> LoadVector128(int* address) => LoadVector128(address);
         /// <summary>
         /// __m128i _mm_loadu_si128 (__m128i const* mem_address)
         /// </summary>
-        public static unsafe Vector128<uint> Load(uint* address) => Load(address);
+        public static unsafe Vector128<uint> LoadVector128(uint* address) => LoadVector128(address);
         /// <summary>
         /// __m128i _mm_loadu_si128 (__m128i const* mem_address)
         /// </summary>
-        public static unsafe Vector128<long> Load(long* address) => Load(address);
+        public static unsafe Vector128<long> LoadVector128(long* address) => LoadVector128(address);
         /// <summary>
         /// __m128i _mm_loadu_si128 (__m128i const* mem_address)
         /// </summary>
-        public static unsafe Vector128<ulong> Load(ulong* address) => Load(address);
+        public static unsafe Vector128<ulong> LoadVector128(ulong* address) => LoadVector128(address);
         /// <summary>
         /// __m128d _mm_loadu_pd (double const* mem_address)
         /// </summary>
-        public static unsafe Vector128<double> Load(double* address) => Load(address);
+        public static unsafe Vector128<double> LoadVector128(double* address) => LoadVector128(address);
 
         /// <summary>
         /// __m128d _mm_load_sd (double const* mem_address)
@@ -580,40 +564,83 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128i _mm_load_si128 (__m128i const* mem_address)
         /// </summary>
-        public static unsafe Vector128<sbyte> LoadAligned(sbyte* address) => LoadAligned(address);
+        public static unsafe Vector128<sbyte> LoadAlignedVector128(sbyte* address) => LoadAlignedVector128(address);
         /// <summary>
         /// __m128i _mm_load_si128 (__m128i const* mem_address)
         /// </summary>
-        public static unsafe Vector128<byte> LoadAligned(byte* address) => LoadAligned(address);
+        public static unsafe Vector128<byte> LoadAlignedVector128(byte* address) => LoadAlignedVector128(address);
         /// <summary>
         /// __m128i _mm_load_si128 (__m128i const* mem_address)
         /// </summary>
-        public static unsafe Vector128<short> LoadAligned(short* address) => LoadAligned(address);
+        public static unsafe Vector128<short> LoadAlignedVector128(short* address) => LoadAlignedVector128(address);
         /// <summary>
         /// __m128i _mm_load_si128 (__m128i const* mem_address)
         /// </summary>
-        public static unsafe Vector128<ushort> LoadAligned(ushort* address) => LoadAligned(address);
+        public static unsafe Vector128<ushort> LoadAlignedVector128(ushort* address) => LoadAlignedVector128(address);
         /// <summary>
         /// __m128i _mm_load_si128 (__m128i const* mem_address)
         /// </summary>
-        public static unsafe Vector128<int> LoadAligned(int* address) => LoadAligned(address);
+        public static unsafe Vector128<int> LoadAlignedVector128(int* address) => LoadAlignedVector128(address);
         /// <summary>
         /// __m128i _mm_load_si128 (__m128i const* mem_address)
         /// </summary>
-        public static unsafe Vector128<uint> LoadAligned(uint* address) => LoadAligned(address);
+        public static unsafe Vector128<uint> LoadAlignedVector128(uint* address) => LoadAlignedVector128(address);
         /// <summary>
         /// __m128i _mm_load_si128 (__m128i const* mem_address)
         /// </summary>
-        public static unsafe Vector128<long> LoadAligned(long* address) => LoadAligned(address);
+        public static unsafe Vector128<long> LoadAlignedVector128(long* address) => LoadAlignedVector128(address);
         /// <summary>
         /// __m128i _mm_load_si128 (__m128i const* mem_address)
         /// </summary>
-        public static unsafe Vector128<ulong> LoadAligned(ulong* address) => LoadAligned(address);
+        public static unsafe Vector128<ulong> LoadAlignedVector128(ulong* address) => LoadAlignedVector128(address);
         /// <summary>
         /// __m128d _mm_load_pd (double const* mem_address)
         /// </summary>
-        public static unsafe Vector128<double> LoadAligned(double* address) => LoadAligned(address);
+        public static unsafe Vector128<double> LoadAlignedVector128(double* address) => LoadAlignedVector128(address);
 
+        /// <summary>
+        /// __m128d _mm_loadh_pd (__m128d a, double const* mem_addr)
+        /// </summary>
+        public static unsafe Vector128<double> LoadHigh(Vector128<double> value, double* address) => LoadHigh(value, address);
+
+        /// <summary>
+        /// __m128d _mm_loadl_pd (__m128d a, double const* mem_addr)
+        /// </summary>
+        public static unsafe Vector128<double> LoadLow(Vector128<double> value, double* address) => LoadLow(value, address);
+
+        /// <summary>
+        /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr)
+        /// </summary>
+        public static unsafe Vector128<sbyte> LoadScalar(sbyte* address) => LoadScalar(address);
+        /// <summary>
+        /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr)
+        /// </summary>
+        public static unsafe Vector128<byte> LoadScalar(byte* address) => LoadScalar(address);
+        /// <summary>
+        /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr)
+        /// </summary>
+        public static unsafe Vector128<short> LoadScalar(short* address) => LoadScalar(address);
+        /// <summary>
+        /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr)
+        /// </summary>
+        public static unsafe Vector128<ushort> LoadScalar(ushort* address) => LoadScalar(address);
+        /// <summary>
+        /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr)
+        /// </summary>
+        public static unsafe Vector128<int> LoadScalar(int* address) => LoadScalar(address);
+        /// <summary>
+        /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr)
+        /// </summary>
+        public static unsafe Vector128<uint> LoadScalar(uint* address) => LoadScalar(address);
+        /// <summary>
+        /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr)
+        /// </summary>
+        public static unsafe Vector128<long> LoadScalar(long* address) => LoadScalar(address);
+        /// <summary>
+        /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr)
+        /// </summary>
+        public static unsafe Vector128<ulong> LoadScalar(ulong* address) => LoadScalar(address);
+        
         /// <summary>
         /// void _mm_maskmoveu_si128 (__m128i a,  __m128i mask, char* mem_address)
         /// </summary>
@@ -760,39 +787,39 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// ___m128i _mm_set_epi8 (char e15, char e14, char e13, char e12, char e11, char e10, char e9, char e8, char e7, char e6, char e5, char e4, char e3, char e2, char e1, char e0)
         /// </summary>
-        public static Vector128<sbyte> Set(sbyte e15, sbyte e14, sbyte e13, sbyte e12, sbyte e11, sbyte e10, sbyte e9, sbyte e8, sbyte e7, sbyte e6, sbyte e5, sbyte e4, sbyte e3, sbyte e2, sbyte e1, sbyte e0)  => Set(e15, e14, e13, e12, e11, e10, e9, e8, e7, e6, e5, e4, e3, e2, e1, e0);
+        public static Vector128<sbyte> SetVector128(sbyte e15, sbyte e14, sbyte e13, sbyte e12, sbyte e11, sbyte e10, sbyte e9, sbyte e8, sbyte e7, sbyte e6, sbyte e5, sbyte e4, sbyte e3, sbyte e2, sbyte e1, sbyte e0)  => SetVector128(e15, e14, e13, e12, e11, e10, e9, e8, e7, e6, e5, e4, e3, e2, e1, e0);
         /// <summary>
         /// ___m128i _mm_set_epi8 (char e15, char e14, char e13, char e12, char e11, char e10, char e9, char e8, char e7, char e6, char e5, char e4, char e3, char e2, char e1, char e0)
         /// </summary>
-        public static Vector128<byte> Set(byte e15, byte e14, byte e13, byte e12, byte e11, byte e10, byte e9, byte e8, byte e7, byte e6, byte e5, byte e4, byte e3, byte e2, byte e1, byte e0)  => Set(e15, e14, e13, e12, e11, e10, e9, e8, e7, e6, e5, e4, e3, e2, e1, e0);
+        public static Vector128<byte> SetVector128(byte e15, byte e14, byte e13, byte e12, byte e11, byte e10, byte e9, byte e8, byte e7, byte e6, byte e5, byte e4, byte e3, byte e2, byte e1, byte e0)  => SetVector128(e15, e14, e13, e12, e11, e10, e9, e8, e7, e6, e5, e4, e3, e2, e1, e0);
         /// <summary>
         /// __m128i _mm_set_epi16 (short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0)
         /// </summary>
-        public static Vector128<short> Set(short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0) => Set(e7, e6, e5, e4, e3, e2, e1, e0);
+        public static Vector128<short> SetVector128(short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0) => SetVector128(e7, e6, e5, e4, e3, e2, e1, e0);
         /// <summary>
         /// __m128i _mm_set_epi16 (short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0)
         /// </summary>
-        public static Vector128<ushort> Set(ushort e7, ushort e6, ushort e5, ushort e4, ushort e3, ushort e2, ushort e1, ushort e0) => Set(e7, e6, e5, e4, e3, e2, e1, e0);
+        public static Vector128<ushort> SetVector128(ushort e7, ushort e6, ushort e5, ushort e4, ushort e3, ushort e2, ushort e1, ushort e0) => SetVector128(e7, e6, e5, e4, e3, e2, e1, e0);
         /// <summary>
         /// __m128i _mm_set_epi32 (int e3, int e2, int e1, int e0)
         /// </summary>
-        public static Vector128<int> Set(int e3, int e2, int e1, int e0) => Set(e3, e2, e1, e0);
+        public static Vector128<int> SetVector128(int e3, int e2, int e1, int e0) => SetVector128(e3, e2, e1, e0);
         /// <summary>
         /// __m128i _mm_set_epi32 (int e3, int e2, int e1, int e0)
         /// </summary>
-        public static Vector128<uint> Set(uint e3, uint e2, uint e1, uint e0) => Set(e3, e2, e1, e0);
+        public static Vector128<uint> SetVector128(uint e3, uint e2, uint e1, uint e0) => SetVector128(e3, e2, e1, e0);
         /// <summary>
         /// __m128i _mm_set_epi64x (__int64 e1, __int64 e0)
         /// </summary>
-        public static Vector128<long> Set(long e1, long e0) => Set(e1, e0);
+        public static Vector128<long> SetVector128(long e1, long e0) => SetVector128(e1, e0);
         /// <summary>
         /// __m128i _mm_set_epi64x (__int64 e1, __int64 e0)
         /// </summary>
-        public static Vector128<ulong> Set(ulong e1, ulong e0) => Set(e1, e0);
+        public static Vector128<ulong> SetVector128(ulong e1, ulong e0) => SetVector128(e1, e0);
         /// <summary>
         /// __m128d _mm_set_pd (double e1, double e0)
         /// </summary>
-        public static Vector128<double> Set(double e1, double e0) => Set(e1, e0);
+        public static Vector128<double> SetVector128(double e1, double e0) => SetVector128(e1, e0);
 
         /// <summary>
         /// __m128d _mm_set_sd (double a)
@@ -802,48 +829,48 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128i _mm_set1_epi8 (char a)
         /// </summary>
-        public static Vector128<byte> Set1(byte value) => Set1(value);
+        public static Vector128<byte> SetAllVector128(byte value) => SetAllVector128(value);
         /// <summary>
         /// __m128i _mm_set1_epi8 (char a)
         /// </summary>
-        public static Vector128<sbyte> Set1(sbyte value) => Set1(value);
+        public static Vector128<sbyte> SetAllVector128(sbyte value) => SetAllVector128(value);
         /// <summary>
         /// __m128i _mm_set1_epi16 (short a)
         /// </summary>
-        public static Vector128<short> Set1(short value) => Set1(value);
+        public static Vector128<short> SetAllVector128(short value) => SetAllVector128(value);
         /// <summary>
         /// __m128i _mm_set1_epi16 (short a)
         /// </summary>
-        public static Vector128<ushort> Set1(ushort value) => Set1(value);
+        public static Vector128<ushort> SetAllVector128(ushort value) => SetAllVector128(value);
         /// <summary>
         /// __m128i _mm_set1_epi32 (int a)
         /// </summary>
-        public static Vector128<int> Set1(int value) => Set1(value);
+        public static Vector128<int> SetAllVector128(int value) => SetAllVector128(value);
         /// <summary>
         /// __m128i _mm_set1_epi32 (int a)
         /// </summary>
-        public static Vector128<uint> Set1(uint value) => Set1(value);
+        public static Vector128<uint> SetAllVector128(uint value) => SetAllVector128(value);
         /// <summary>
         /// __m128i _mm_set1_epi64x (long long a)
         /// </summary>
-        public static Vector128<long> Set1(long value) => Set1(value);
+        public static Vector128<long> SetAllVector128(long value) => SetAllVector128(value);
         /// <summary>
         /// __m128i _mm_set1_epi64x (long long a)
         /// </summary>
-        public static Vector128<ulong> Set1(ulong value) => Set1(value);
+        public static Vector128<ulong> SetAllVector128(ulong value) => SetAllVector128(value);
         /// <summary>
         /// __m128d _mm_set1_pd (double a)
         /// </summary>
-        public static Vector128<double> Set1(double value) => Set1(value);
+        public static Vector128<double> SetAllVector128(double value) => SetAllVector128(value);
 
         /// <summary>
         /// __m128i _mm_setzero_si128 ()
         /// __m128d _mm_setzero_pd (void)
         /// </summary>
-        public static Vector128<T> SetZero<T>() where T : struct
+        public static Vector128<T> SetZeroVector128<T>() where T : struct
         {
             ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
-            return SetZero<T>();
+            return SetZeroVector128<T>();
         }
 
         /// <summary>
@@ -881,6 +908,31 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128i _mm_shufflelo_epi16 (__m128i a,  int control)
         /// </summary>
         public static Vector128<ushort> ShuffleLow(Vector128<ushort> value, byte control) => ShuffleLow(value, control);
+
+        /// <summary>
+        /// __m128i _mm_sll_epi16 (__m128i a, __m128i count)
+        /// </summary>
+        public static Vector128<short> ShiftLeftLogical(Vector128<short> value, Vector128<short> count) => ShiftLeftLogical(value, count);
+        /// <summary>
+        /// __m128i _mm_sll_epi16 (__m128i a,  __m128i count)
+        /// </summary>
+        public static Vector128<ushort> ShiftLeftLogical(Vector128<ushort> value, Vector128<ushort> count) => ShiftLeftLogical(value, count);
+        /// <summary>
+        /// __m128i _mm_sll_epi32 (__m128i a, __m128i count)
+        /// </summary>
+        public static Vector128<int> ShiftLeftLogical(Vector128<int> value, Vector128<int> count) => ShiftLeftLogical(value, count);
+        /// <summary>
+        /// __m128i _mm_sll_epi32 (__m128i a, __m128i count)
+        /// </summary>
+        public static Vector128<uint> ShiftLeftLogical(Vector128<uint> value, Vector128<uint> count) => ShiftLeftLogical(value, count);
+        /// <summary>
+        /// __m128i _mm_sll_epi64 (__m128i a, __m128i count)
+        /// </summary>
+        public static Vector128<long> ShiftLeftLogical(Vector128<long> value, Vector128<long> count) => ShiftLeftLogical(value, count);
+        /// <summary>
+        /// __m128i _mm_sll_epi64 (__m128i a, __m128i count)
+        /// </summary>
+        public static Vector128<ulong> ShiftLeftLogical(Vector128<ulong> value, Vector128<ulong> count) => ShiftLeftLogical(value, count);
         
         /// <summary>
         /// __m128i _mm_slli_epi16 (__m128i a,  int immediate)
@@ -939,7 +991,16 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128i _mm_bslli_si128 (__m128i a, int imm8)
         /// </summary>
         public static Vector128<ulong> ShiftLeftLogical128BitLane(Vector128<ulong> value, byte numBytes) => ShiftLeftLogical128BitLane(value, numBytes);
-        
+
+        /// <summary>
+        /// __m128i _mm_sra_epi16 (__m128i a, __m128i count)
+        /// </summary>
+        public static Vector128<short> ShiftRightArithmetic(Vector128<short> value, Vector128<short> count) => ShiftRightArithmetic(value, count);
+        /// <summary>
+        /// __m128i _mm_sra_epi32 (__m128i a, __m128i count)
+        /// </summary>
+        public static Vector128<int> ShiftRightArithmetic(Vector128<int> value, Vector128<int> count) => ShiftRightArithmetic(value, count);
+
         /// <summary>
         /// __m128i _mm_srai_epi16 (__m128i a,  int immediate)
         /// </summary>
@@ -948,7 +1009,32 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128i _mm_srai_epi32 (__m128i a,  int immediate)
         /// </summary>
         public static Vector128<int> ShiftRightArithmetic(Vector128<int> value, byte count) => ShiftRightArithmetic(value, count);
-        
+
+        /// <summary>
+        /// __m128i _mm_srl_epi16 (__m128i a, __m128i count)
+        /// </summary>
+        public static Vector128<short> ShiftRightLogical(Vector128<short> value, Vector128<short> count) => ShiftRightLogical(value, count);
+        /// <summary>
+        /// __m128i _mm_srl_epi16 (__m128i a, __m128i count)
+        /// </summary>
+        public static Vector128<ushort> ShiftRightLogical(Vector128<ushort> value, Vector128<ushort> count) => ShiftRightLogical(value, count);
+        /// <summary>
+        /// __m128i _mm_srl_epi32 (__m128i a, __m128i count)
+        /// </summary>
+        public static Vector128<int> ShiftRightLogical(Vector128<int> value, Vector128<int> count) => ShiftRightLogical(value, count);
+        /// <summary>
+        /// __m128i _mm_srl_epi32 (__m128i a, __m128i count)
+        /// </summary>
+        public static Vector128<uint> ShiftRightLogical(Vector128<uint> value, Vector128<uint> count) => ShiftRightLogical(value, count);
+        /// <summary>
+        /// __m128i _mm_srl_epi64 (__m128i a, __m128i count)
+        /// </summary>
+        public static Vector128<long> ShiftRightLogical(Vector128<long> value, Vector128<long> count) => ShiftRightLogical(value, count);
+        /// <summary>
+        /// __m128i _mm_srl_epi64 (__m128i a, __m128i count)
+        /// </summary>
+        public static Vector128<ulong> ShiftRightLogical(Vector128<ulong> value, Vector128<ulong> count) => ShiftRightLogical(value, count);
+
         /// <summary>
         /// __m128i _mm_srli_epi16 (__m128i a,  int immediate)
         /// </summary>
