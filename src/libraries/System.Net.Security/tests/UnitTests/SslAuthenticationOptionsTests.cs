@@ -17,14 +17,14 @@ namespace System.Net.Security.Tests
         [Fact]
         public void AllowRenegotiation_Get_Set_Succeeds()
         {
-            Assert.False(_clientOptions.DisableRenegotiation);
-            Assert.False(_serverOptions.DisableRenegotiation);
+            Assert.True(_clientOptions.AllowRenegotiation);
+            Assert.True(_serverOptions.AllowRenegotiation);
 
-            _clientOptions.DisableRenegotiation = true;
-            _serverOptions.DisableRenegotiation = true;
+            _clientOptions.AllowRenegotiation = true;
+            _serverOptions.AllowRenegotiation = true;
 
-            Assert.True(_clientOptions.DisableRenegotiation);
-            Assert.True(_serverOptions.DisableRenegotiation);
+            Assert.True(_clientOptions.AllowRenegotiation);
+            Assert.True(_serverOptions.AllowRenegotiation);
         }
 
         [Fact]
