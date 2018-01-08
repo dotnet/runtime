@@ -8,6 +8,7 @@
 #ifdef USE_BSD_BACKEND
 
 #include <errno.h>
+#include <signal.h>
 #include <sys/proc.h>
 #include <sys/sysctl.h>
 #if !defined(__OpenBSD__)
