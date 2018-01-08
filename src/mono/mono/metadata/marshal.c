@@ -869,18 +869,18 @@ mono_byvalarray_to_array (MonoArray *arr, gpointer native_arr, MonoClass *elclas
 	g_assert (arr->obj.vtable->klass->element_class == mono_defaults.char_class);
 
 	if (elclass == mono_defaults.byte_class) {
-		GError *error = NULL;
+		GError *gerror = NULL;
 		guint16 *ut;
 		glong items_written;
 
-		ut = g_utf8_to_utf16 ((const gchar *)native_arr, elnum, NULL, &items_written, &error);
+		ut = g_utf8_to_utf16 ((const gchar *)native_arr, elnum, NULL, &items_written, &gerror);
 
-		if (!error) {
+		if (!gerror) {
 			memcpy (mono_array_addr (arr, guint16, 0), ut, items_written * sizeof (guint16));
 			g_free (ut);
 		}
 		else
-			g_error_free (error);
+			g_error_free (gerror);
 	}
 	else
 		g_assert_not_reached ();
@@ -900,12 +900,12 @@ mono_array_to_byvalarray (gpointer native_arr, MonoArray *arr, MonoClass *elclas
 
 	if (elclass == mono_defaults.byte_class) {
 		char *as;
-		GError *error = NULL;
+		GError *gerror = NULL;
 
-		as = g_utf16_to_utf8 (mono_array_addr (arr, gunichar2, 0), mono_array_length (arr), NULL, NULL, &error);
-		if (error) {
-			mono_set_pending_exception (mono_get_exception_argument ("string", error->message));
-			g_error_free (error);
+		as = g_utf16_to_utf8 (mono_array_addr (arr, gunichar2, 0), mono_array_length (arr), NULL, NULL, &gerror);
+		if (gerror) {
+			mono_set_pending_exception (mono_get_exception_argument ("string", gerror->message));
+			g_error_free (gerror);
 			return;
 		}
 

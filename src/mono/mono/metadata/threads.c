@@ -3627,7 +3627,7 @@ dump_thread (MonoInternalThread *thread, ThreadDumpUserData *ud)
 {
 	GString* text = g_string_new (0);
 	char *name;
-	GError *error = NULL;
+	GError *gerror = NULL;
 	int i;
 
 	ud->thread = thread;
@@ -3644,8 +3644,8 @@ dump_thread (MonoInternalThread *thread, ThreadDumpUserData *ud)
 	 * Do all the non async-safe work outside of get_thread_dump.
 	 */
 	if (thread->name) {
-		name = g_utf16_to_utf8 (thread->name, thread->name_len, NULL, NULL, &error);
-		g_assert (!error);
+		name = g_utf16_to_utf8 (thread->name, thread->name_len, NULL, NULL, &gerror);
+		g_assert (!gerror);
 		g_string_append_printf (text, "\n\"%s\"", name);
 		g_free (name);
 	}

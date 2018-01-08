@@ -987,7 +987,7 @@ start_element (GMarkupParseContext *context,
 	       const gchar        **attribute_names,
 	       const gchar        **attribute_values,
 	       gpointer             user_data,
-	       GError             **error)
+	       GError             **gerror)
 {
 	RuntimeConfig *runtime_config = (RuntimeConfig *)user_data;
 	
@@ -1030,7 +1030,7 @@ static void
 end_element (GMarkupParseContext *context,
 	     const gchar         *element_name,
 	     gpointer             user_data,
-	     GError             **error)
+	     GError             **gerror)
 {
 	RuntimeConfig *runtime_config = (RuntimeConfig *)user_data;
 	if (strcmp (element_name, "runtime") == 0)
@@ -1040,14 +1040,14 @@ end_element (GMarkupParseContext *context,
 }
 
 static void
-parse_error   (GMarkupParseContext *context, GError *error, gpointer user_data)
+parse_error   (GMarkupParseContext *context, GError *gerror, gpointer user_data)
 {
 	RuntimeConfig *state = (RuntimeConfig *)user_data;
 	const gchar *msg;
 	const gchar *filename;
 
 	filename = state && state->filename ? (gchar *) state->filename : "<unknown>";
-	msg = error && error->message ? error->message : "";
+	msg = gerror && gerror->message ? gerror->message : "";
 	g_warning ("Error parsing %s: %s", filename, msg);
 }
 

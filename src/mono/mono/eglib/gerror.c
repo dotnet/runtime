@@ -62,21 +62,21 @@ g_error_vnew (gpointer domain, gint code, const char *format, va_list ap)
 }
 
 void
-g_clear_error (GError **error)
+g_clear_error (GError **gerror)
 {
-	if (error && *error) {
-		g_error_free (*error);
-		*error = NULL;
+	if (gerror && *gerror) {
+		g_error_free (*gerror);
+		*gerror = NULL;
 	}
 }
 
 void
-g_error_free (GError *error)
+g_error_free (GError *gerror)
 {
-	g_return_if_fail (error != NULL);
+	g_return_if_fail (gerror != NULL);
 	
-	g_free (error->message);
-	g_free (error);
+	g_free (gerror->message);
+	g_free (gerror);
 }
 
 void

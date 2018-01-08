@@ -11,16 +11,16 @@ markup_test (const char *s)
 {
 	GMarkupParser *parser = g_new0 (GMarkupParser, 1);
 	GMarkupParseContext *context;
-	GError *error = NULL;
+	GError *gerror = NULL;
 	
 	context = g_markup_parse_context_new (parser, 0, 0, 0);
 
-	g_markup_parse_context_parse (context, s, strlen (s), &error);
+	g_markup_parse_context_parse (context, s, strlen (s), &gerror);
 	g_markup_parse_context_free (context);
 
-	if (error != NULL){
-		char *msg = g_strdup (error->message);
-		g_error_free (error);
+	if (gerror != NULL){
+		char *msg = g_strdup (gerror->message);
+		g_error_free (gerror);
 
 		g_free (parser);
 		return msg;
@@ -83,7 +83,7 @@ start_element (GMarkupParseContext *context,
 	       const gchar        **attribute_names,
 	       const gchar        **attribute_values,
 	       gpointer             user_data,
-	       GError             **error)
+	       GError             **gerror)
 {
         AppConfigInfo* app_config = (AppConfigInfo*) user_data;
 
@@ -111,7 +111,7 @@ static void
 end_element   (GMarkupParseContext *context,
 	       const gchar         *element_name,
 	       gpointer             user_data,
-	       GError             **error)
+	       GError             **gerror)
 {
         AppConfigInfo* app_config = (AppConfigInfo*) user_data;
 	
@@ -231,4 +231,3 @@ static Test markup_tests [] = {
 };
 
 DEFINE_TEST_GROUP_INIT(markup_tests_init, markup_tests)
-

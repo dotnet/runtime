@@ -6,7 +6,7 @@
 RESULT
 test_shell_argv1 ()
 {
-	GError *error;
+	GError *gerror;
 	gint argc;
 	gchar **argv;
 	gboolean ret;
@@ -50,8 +50,8 @@ test_shell_argv1 ()
 	g_strfreev (argv);
 	argv = NULL;
 	argc = 0;
-	error = NULL;
-	ret = g_shell_parse_argv ("hola      'bola'", &argc, &argv, &error);
+	gerror = NULL;
+	ret = g_shell_parse_argv ("hola      'bola'", &argc, &argv, &gerror);
 	if (!ret)
 		return FAILED ("11. It should return TRUE");
 	if (argc != 2)
@@ -60,15 +60,15 @@ test_shell_argv1 ()
 		return FAILED ("13. argv[0] was %s", argv [0]);
 	if (strcmp (argv [1], "bola"))
 		return FAILED ("14. argv[1] was %s", argv [1]);
-	if (error != NULL)
+	if (gerror != NULL)
 		return FAILED ("15. error is not null");
 
 
 	g_strfreev (argv);
 	argv = NULL;
 	argc = 0;
-	error = NULL;
-	ret = g_shell_parse_argv ("hola    ''  'bola'", &argc, &argv, &error);
+	gerror = NULL;
+	ret = g_shell_parse_argv ("hola    ''  'bola'", &argc, &argv, &gerror);
 	if (!ret)
 		return FAILED ("16. It should return TRUE");
 	if (argc != 3)
@@ -79,14 +79,14 @@ test_shell_argv1 ()
 		return FAILED ("19. argv[2] was %s", argv [1]);
 	if (strcmp (argv [2], "bola"))
 		return FAILED ("19. argv[2] was %s", argv [2]);
-	if (error != NULL)
+	if (gerror != NULL)
 		return FAILED ("20. error is not null");
 
 	g_strfreev (argv);
 	argv = NULL;
 	argc = 0;
-	error = NULL;
-	ret = g_shell_parse_argv ("hola'' bola", &argc, &argv, &error);
+	gerror = NULL;
+	ret = g_shell_parse_argv ("hola'' bola", &argc, &argv, &gerror);
 	if (!ret)
 		return FAILED ("21. It should return TRUE");
 	if (argc != 2)
@@ -95,7 +95,7 @@ test_shell_argv1 ()
 		return FAILED ("23. argv[0] was %s", argv [0]);
 	if (strcmp (argv [1], "bola"))
 		return FAILED ("24. argv[2] was %s", argv [1]);
-	if (error != NULL)
+	if (gerror != NULL)
 		return FAILED ("25. error is not null");
 	
 	return OK;
@@ -104,15 +104,15 @@ test_shell_argv1 ()
 RESULT
 test_shell_argv2 ()
 {
-	GError *error;
+	GError *gerror;
 	gint argc;
 	gchar **argv;
 	gboolean ret;
 
 	argv = NULL;
 	argc = 0;
-	error = NULL;
-	ret = g_shell_parse_argv ("hola      \"bola\"", &argc, &argv, &error);
+	gerror = NULL;
+	ret = g_shell_parse_argv ("hola      \"bola\"", &argc, &argv, &gerror);
 	if (!ret)
 		return FAILED ("1. It should return TRUE");
 	if (argc != 2)
@@ -121,14 +121,14 @@ test_shell_argv2 ()
 		return FAILED ("3. argv[0] was %s", argv [0]);
 	if (strcmp (argv [1], "bola"))
 		return FAILED ("4. argv[1] was %s", argv [1]);
-	if (error != NULL)
+	if (gerror != NULL)
 		return FAILED ("5. error is not null");
 
 	g_strfreev (argv);
 	argv = NULL;
 	argc = 0;
-	error = NULL;
-	ret = g_shell_parse_argv ("hola    \"\"  \"bola \"", &argc, &argv, &error);
+	gerror = NULL;
+	ret = g_shell_parse_argv ("hola    \"\"  \"bola \"", &argc, &argv, &gerror);
 	if (!ret)
 		return FAILED ("6. It should return TRUE");
 	if (argc != 3)
@@ -139,14 +139,14 @@ test_shell_argv2 ()
 		return FAILED ("9. argv[2] was %s", argv [1]);
 	if (strcmp (argv [2], "bola "))
 		return FAILED ("10. argv[2] was %s", argv [2]);
-	if (error != NULL)
+	if (gerror != NULL)
 		return FAILED ("11. error is not null");
 
 	g_strfreev (argv);
 	argv = NULL;
 	argc = 0;
-	error = NULL;
-	ret = g_shell_parse_argv ("hola\n\t    \"\t\"  \"bola \"", &argc, &argv, &error);
+	gerror = NULL;
+	ret = g_shell_parse_argv ("hola\n\t    \"\t\"  \"bola \"", &argc, &argv, &gerror);
 	if (!ret)
 		return FAILED ("10. It should return TRUE");
 	if (argc != 3)
@@ -157,14 +157,14 @@ test_shell_argv2 ()
 		return FAILED ("13. argv[2] was %s", argv [1]);
 	if (strcmp (argv [2], "bola "))
 		return FAILED ("14. argv[2] was %s", argv [2]);
-	if (error != NULL)
+	if (gerror != NULL)
 		return FAILED ("15. error is not null");
 
 	g_strfreev (argv);
 	argv = NULL;
 	argc = 0;
-	error = NULL;
-	ret = g_shell_parse_argv ("hola\n\t  \\\n  \"\t\"  \"bola \"", &argc, &argv, &error);
+	gerror = NULL;
+	ret = g_shell_parse_argv ("hola\n\t  \\\n  \"\t\"  \"bola \"", &argc, &argv, &gerror);
 	if (!ret)
 		return FAILED ("16. It should return TRUE");
 	if (argc != 3)
@@ -175,7 +175,7 @@ test_shell_argv2 ()
 		return FAILED ("19. argv[2] was %s", argv [1]);
 	if (strcmp (argv [2], "bola "))
 		return FAILED ("20. argv[2] was %s", argv [2]);
-	if (error != NULL)
+	if (gerror != NULL)
 		return FAILED ("21. error is not null");
 
 	g_strfreev (argv);
@@ -185,28 +185,28 @@ test_shell_argv2 ()
 RESULT
 test_shell_argv3 ()
 {
-	GError *error;
+	GError *gerror;
 	gint argc;
 	gchar **argv;
 	gboolean ret;
 
 	argv = NULL;
 	argc = 0;
-	error = NULL;
-	ret = g_shell_parse_argv ("hola      \"bola", &argc, &argv, &error);
+	gerror = NULL;
+	ret = g_shell_parse_argv ("hola      \"bola", &argc, &argv, &gerror);
 	if (ret)
 		return FAILED ("1. It should return FALSE");
 	if (argc != 0)
 		return FAILED ("2. argc was %d expected 0", argc);
 	if (argv != NULL)
 		return FAILED ("3. argv[0] was %s", argv [0]);
-	if (error == NULL)
+	if (gerror == NULL)
 		return FAILED ("4. error is null");
 
 	/* Text ended before matching quote was found for ". (The text was 'hola      "bola') */
-	g_error_free (error);
-	error = NULL;
-	ret = g_shell_parse_argv ("hola      \\\"bola", &argc, &argv, &error);
+	g_error_free (gerror);
+	gerror = NULL;
+	ret = g_shell_parse_argv ("hola      \\\"bola", &argc, &argv, &gerror);
 	if (!ret)
 		return FAILED ("5. It should return TRUE");
 	if (argc != 2)
@@ -215,22 +215,22 @@ test_shell_argv3 ()
 		return FAILED ("18. argv[0] was %s", argv [0]);
 	if (strcmp (argv [1], "\"bola"))
 		return FAILED ("18. argv[1] was %s", argv [1]);
-	if (error != NULL)
+	if (gerror != NULL)
 		return FAILED ("8. error is not null");
 
 	g_strfreev (argv);
 	argv = NULL;
 	argc = 0;
-	ret = g_shell_parse_argv ("hola      \"\n\\'bola\"", &argc, &argv, &error);
+	ret = g_shell_parse_argv ("hola      \"\n\\'bola\"", &argc, &argv, &gerror);
 	if (!ret)
-		return FAILED ("9. It should return TRUE. %s", error->message);
+		return FAILED ("9. It should return TRUE. %s", gerror->message);
 	if (argc != 2)
 		return FAILED ("10. argc was %d expected 2", argc);
 	if (strcmp (argv [0], "hola"))
 		return FAILED ("11. argv[0] was %s", argv [0]);
 	if (strcmp (argv [1], "\n\\'bola"))
 		return FAILED ("12. argv[1] was %s", argv [1]);
-	if (error != NULL)
+	if (gerror != NULL)
 		return FAILED ("13. error is not null");
 
 	g_strfreev (argv);
@@ -243,7 +243,7 @@ test_shell_argv3 ()
 RESULT
 test_shell_argv4 ()
 {
-	GError *error;
+	GError *gerror;
 	gint argc;
 	gchar **argv;
 	gboolean ret;
@@ -251,15 +251,15 @@ test_shell_argv4 ()
 
 	argv = NULL;
 	argc = 0;
-	error = NULL;
-	ret = g_shell_parse_argv (str, &argc, &argv, &error);
+	gerror = NULL;
+	ret = g_shell_parse_argv (str, &argc, &argv, &gerror);
 	if (!ret)
 		return FAILED ("1. It should return TRUE");
 	if (argc != 3)
 		return FAILED ("2. argc was %d expected 3", argc);
 	if (argv == NULL)
 		return FAILED ("3. argv[0] was NULL");
-	if (error != NULL)
+	if (gerror != NULL)
 		return FAILED ("4. error was set");
 
 	if (strcmp (argv [0], "/usr/bin/gnome-terminal"))
@@ -276,7 +276,7 @@ test_shell_argv4 ()
 RESULT
 test_shell_argv5 ()
 {
-	GError *error;
+	GError *gerror;
 	gint argc;
 	gchar **argv;
 	gboolean ret;
@@ -284,15 +284,15 @@ test_shell_argv5 ()
 
 	argv = NULL;
 	argc = 0;
-	error = NULL;
-	ret = g_shell_parse_argv (str, &argc, &argv, &error);
+	gerror = NULL;
+	ret = g_shell_parse_argv (str, &argc, &argv, &gerror);
 	if (!ret)
 		return FAILED ("1. It should return TRUE");
 	if (argc != 2)
 		return FAILED ("2. argc was %d expected 2", argc);
 	if (argv == NULL)
 		return FAILED ("3. argv[0] was NULL");
-	if (error != NULL)
+	if (gerror != NULL)
 		return FAILED ("4. error was set");
 
 	if (strcmp (argv [0], "echo"))

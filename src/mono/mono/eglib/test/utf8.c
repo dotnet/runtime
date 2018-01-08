@@ -40,18 +40,18 @@ gchar_to_gunichar2 (gunichar2 ret[], const gchar *src)
 RESULT
 compare_utf16_to_utf8_explicit (const gchar *expected, const gunichar2 *utf16, glong len_in, glong len_out, glong size_spec)
 {
-	GError *error;
+	GError *gerror;
 	gchar* ret;
 	RESULT result;
 	glong in_read, out_read;
 
 	result = NULL;
 
-	error = NULL;
-	ret = g_utf16_to_utf8 (utf16, size_spec, &in_read, &out_read, &error);
-	if (error) {
-		result = FAILED ("The error is %d %s\n", (error)->code, (error)->message);
-		g_error_free (error);
+	gerror = NULL;
+	ret = g_utf16_to_utf8 (utf16, size_spec, &in_read, &out_read, &gerror);
+	if (gerror) {
+		result = FAILED ("The error is %d %s\n", gerror->code, gerror->message);
+		g_error_free (gerror);
 		if (ret)
 			g_free (ret);
 		return result;
@@ -146,22 +146,22 @@ compare_strings_utf16_RESULT (const gunichar2 *expected, const gunichar2 *actual
 RESULT
 compare_utf8_to_utf16_explicit (const gunichar2 *expected, const gchar *utf8, glong len_in, glong len_out, glong size_spec, gboolean include_nuls)
 {
-	GError *error;
+	GError *gerror;
 	gunichar2* ret;
 	RESULT result;
 	glong in_read, out_read;
 
 	result = NULL;
 
-	error = NULL;
+	gerror = NULL;
 	if (include_nuls)
-		ret = eg_utf8_to_utf16_with_nuls (utf8, size_spec, &in_read, &out_read, &error);
+		ret = eg_utf8_to_utf16_with_nuls (utf8, size_spec, &in_read, &out_read, &gerror);
 	else
-		ret = g_utf8_to_utf16 (utf8, size_spec, &in_read, &out_read, &error);
+		ret = g_utf8_to_utf16 (utf8, size_spec, &in_read, &out_read, &gerror);
 
-	if (error) {
-		result = FAILED ("The error is %d %s\n", (error)->code, (error)->message);
-		g_error_free (error);
+	if (gerror) {
+		result = FAILED ("The error is %d %s\n", gerror->code, gerror->message);
+		g_error_free (gerror);
 		if (ret)
 			g_free (ret);
 		return result;
@@ -210,13 +210,13 @@ test_utf8_seq ()
 	const gchar *src = "\xE5\xB9\xB4\x27";
 	glong in_read, out_read;
 	//gunichar2 expected [6];
-	GError *error = NULL;
+	GError *gerror = NULL;
 	gunichar2 *dst;
 
 	//printf ("got: %s\n", src);
-	dst = g_utf8_to_utf16 (src, (glong)strlen (src), &in_read, &out_read, &error);
-	if (error != NULL){
-		return error->message;
+	dst = g_utf8_to_utf16 (src, (glong)strlen (src), &in_read, &out_read, &gerror);
+	if (gerror != NULL){
+		return gerror->message;
 	}
 
 	if (in_read != 4) {

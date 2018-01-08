@@ -131,27 +131,27 @@ static void start_element (GMarkupParseContext *context,
 			   const gchar        **attribute_names,
 			   const gchar        **attribute_values,
 			   gpointer             user_data,
-			   GError             **error);
+			   GError             **gerror);
 
 static void end_element   (GMarkupParseContext *context,
                            const gchar         *element_name,
 			   gpointer             user_data,
-			   GError             **error);
+			   GError             **gerror);
 
 static void parse_text    (GMarkupParseContext *context,
                            const gchar         *text,
 			   gsize                text_len,
 			   gpointer             user_data,
-			   GError             **error);
+			   GError             **gerror);
 
 static void passthrough   (GMarkupParseContext *context,
                            const gchar         *text,
 			   gsize                text_len,
 			   gpointer             user_data,
-			   GError             **error);
+			   GError             **gerror);
 
 static void parse_error   (GMarkupParseContext *context,
-                           GError              *error,
+                           GError              *gerror,
 			   gpointer             user_data);
 
 static const GMarkupParser 
@@ -199,7 +199,7 @@ static void start_element (GMarkupParseContext *context,
 			   const gchar        **attribute_names,
 			   const gchar        **attribute_values,
 			   gpointer             user_data,
-			   GError             **error)
+			   GError             **gerror)
 {
 	ParseState *state = (ParseState *)user_data;
 	if (!state->current) {
@@ -214,7 +214,7 @@ static void start_element (GMarkupParseContext *context,
 static void end_element   (GMarkupParseContext *context,
                            const gchar         *element_name,
 			   gpointer             user_data,
-			   GError             **error)
+			   GError             **gerror)
 {
 	ParseState *state = (ParseState *)user_data;
 	if (state->current) {
@@ -233,7 +233,7 @@ static void parse_text    (GMarkupParseContext *context,
                            const gchar         *text,
 			   gsize                text_len,
 			   gpointer             user_data,
-			   GError             **error)
+			   GError             **gerror)
 {
 	ParseState *state = (ParseState *)user_data;
 	if (state->current && state->current->text)
@@ -244,13 +244,13 @@ static void passthrough   (GMarkupParseContext *context,
                            const gchar         *text,
 			   gsize                text_len,
 			   gpointer             user_data,
-			   GError             **error)
+			   GError             **gerror)
 {
 	/* do nothing */
 }
 
 static void parse_error   (GMarkupParseContext *context,
-                           GError              *error,
+                           GError              *gerror,
 			   gpointer             user_data)
 {
 	ParseState *state = (ParseState *)user_data;
@@ -258,7 +258,7 @@ static void parse_error   (GMarkupParseContext *context,
 	const gchar *filename;
 
 	filename = state && state->user_data ? (gchar *) state->user_data : "<unknown>";
-	msg = error && error->message ? error->message : "";
+	msg = gerror && gerror->message ? gerror->message : "";
 	g_warning ("Error parsing %s: %s", filename, msg);
 }
 

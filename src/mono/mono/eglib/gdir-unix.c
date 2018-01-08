@@ -42,20 +42,20 @@ struct _GDir {
 };
 
 GDir *
-g_dir_open (const gchar *path, guint flags, GError **error)
+g_dir_open (const gchar *path, guint flags, GError **gerror)
 {
 	GDir *dir;
 
 	g_return_val_if_fail (path != NULL, NULL);
-	g_return_val_if_fail (error == NULL || *error == NULL, NULL);
+	g_return_val_if_fail (gerror == NULL || *gerror == NULL, NULL);
 
 	(void) flags; /* this is not used */
 	dir = g_new (GDir, 1);
 	dir->dir = opendir (path);
 	if (dir->dir == NULL) {
-		if (error) {
+		if (gerror) {
 			gint err = errno;
-			*error = g_error_new (G_LOG_DOMAIN, g_file_error_from_errno (err), strerror (err));
+			*gerror = g_error_new (G_LOG_DOMAIN, g_file_error_from_errno (err), strerror (err));
 		}
 		g_free (dir);
 		return NULL;

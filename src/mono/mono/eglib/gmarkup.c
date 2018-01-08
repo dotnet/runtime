@@ -43,7 +43,7 @@
 #include <ctype.h>
 #include <glib.h>
 
-#define set_error(msg, ...) do { if (error != NULL) *error = g_error_new (GINT_TO_POINTER (1), 1, msg, __VA_ARGS__); } while (0);
+#define set_error(msg, ...) do { if (gerror != NULL) *gerror = g_error_new (GINT_TO_POINTER (1), 1, msg, __VA_ARGS__); } while (0);
 
 typedef enum {
 	START,
@@ -136,7 +136,7 @@ skip_space (const char *p, const char *end)
 }
 
 static const char *
-parse_value (const char *p, const char *end, char **value, GError **error)
+parse_value (const char *p, const char *end, char **value, GError **gerror)
 {
 	const char *start;
 	int l;
@@ -181,7 +181,7 @@ parse_name (const char *p, const char *end, char **value)
 }
 
 static const char *
-parse_attributes (const char *p, const char *end, char ***names, char ***values, GError **error, int *full_stop, int state)
+parse_attributes (const char *p, const char *end, char ***names, char ***values, GError **gerror, int *full_stop, int state)
 {
 	int nnames = 0;
 
@@ -226,7 +226,7 @@ parse_attributes (const char *p, const char *end, char ***names, char ***values,
 				return end;
 			}
 
-			p = parse_value (p, end, &value, error);
+			p = parse_value (p, end, &value, gerror);
 			if (p == end){
 				g_free (name);
 				return p;
@@ -261,7 +261,7 @@ destroy_parse_state (GMarkupParseContext *context)
 gboolean
 g_markup_parse_context_parse (GMarkupParseContext *context,
 			      const gchar *text, gssize text_len,
-			      GError **error)
+			      GError **gerror)
 {
 	const char *p,  *end;
 	
@@ -328,14 +328,14 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 				set_error ("%s", "Unfinished element");
 				goto fail;
 			}
-			p = parse_attributes (p, end, &names, &values, error, &full_stop, context->state);
+			p = parse_attributes (p, end, &names, &values, gerror, &full_stop, context->state);
 			if (p == end){
 				if (names != NULL) {
 					g_strfreev (names);
 					g_strfreev (values);
 				}
 				/* Only set the error if parse_attributes did not */
-				if (error != NULL && *error == NULL)
+				if (gerror != NULL && *gerror == NULL)
 					set_error ("%s", "Unfinished sequence");
 				goto fail;
 			}
@@ -351,22 +351,22 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 					context->parser.start_element (context, ename,
 								       (const gchar **) names,
 								       (const gchar **) values,
-								       context->user_data, error);
+								       context->user_data, gerror);
 
 			if (names != NULL){
 				g_strfreev (names);
 				g_strfreev (values);
 			}
 
-			if (error != NULL && *error != NULL){
+			if (gerror != NULL && *gerror != NULL){
 				g_free (ename);
 				goto fail;
 			}
 			
 			if (full_stop){
 				if (context->parser.end_element != NULL &&  context->state == START_ELEMENT){
-					context->parser.end_element (context, ename, context->user_data, error);
-					if (error != NULL && *error != NULL){
+					context->parser.end_element (context, ename, context->user_data, gerror);
+					if (gerror != NULL && *gerror != NULL){
 						g_free (ename);
 						goto fail;
 					}
@@ -406,8 +406,8 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 		case FLUSH_TEXT:
 			if (context->parser.text != NULL && context->text != NULL){
 				context->parser.text (context, context->text->str, context->text->len,
-						      context->user_data, error);
-				if (error != NULL && *error != NULL)
+						      context->user_data, gerror);
+				if (gerror != NULL && *gerror != NULL)
 					goto fail;
 			}
 			
@@ -430,8 +430,8 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 			
 			text = current->data;
 			if (context->parser.end_element != NULL){
-				context->parser.end_element (context, text, context->user_data, error);
-				if (error != NULL && *error != NULL){
+				context->parser.end_element (context, text, context->user_data, gerror);
+				if (gerror != NULL && *gerror != NULL){
 					g_free (text);
 					goto fail;
 				}
@@ -453,15 +453,15 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 
 	return TRUE;
  fail:
-	if (context->parser.error && error != NULL && *error)
-		context->parser.error (context, *error, context->user_data);
+	if (context->parser.error && gerror != NULL && *gerror)
+		context->parser.error (context, *gerror, context->user_data);
 	
 	destroy_parse_state (context);
 	return FALSE;
 }
 
 gboolean
-g_markup_parse_context_end_parse (GMarkupParseContext *context, GError **error)
+g_markup_parse_context_end_parse (GMarkupParseContext *context, GError **gerror)
 {
 	g_return_val_if_fail (context != NULL, FALSE);
 

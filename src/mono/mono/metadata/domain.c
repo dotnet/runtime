@@ -1729,7 +1729,7 @@ static void start_element (GMarkupParseContext *context,
 			   const gchar        **attribute_names,
 			   const gchar        **attribute_values,
 			   gpointer             user_data,
-			   GError             **error)
+			   GError             **gerror)
 {
 	AppConfigInfo* app_config = (AppConfigInfo*) user_data;
 	
@@ -1756,7 +1756,7 @@ static void start_element (GMarkupParseContext *context,
 static void end_element   (GMarkupParseContext *context,
                            const gchar         *element_name,
 			   gpointer             user_data,
-			   GError             **error)
+			   GError             **gerror)
 {
 	AppConfigInfo* app_config = (AppConfigInfo*) user_data;
 	

@@ -188,7 +188,7 @@ g_unichar_isspace (gunichar c)
  * This is broken, and assumes an UTF8 system, but will do for eglib's first user
  */
 gchar *
-g_filename_from_utf8 (const gchar *utf8string, gssize len, gsize *bytes_read, gsize *bytes_written, GError **error)
+g_filename_from_utf8 (const gchar *utf8string, gssize len, gsize *bytes_read, gsize *bytes_written, GError **gerror)
 {
 	char *res;
 	
@@ -224,17 +224,17 @@ g_get_charset (G_CONST_RETURN char **charset)
 #endif /* G_OS_WIN32 */
 
 gchar *
-g_locale_to_utf8 (const gchar *opsysstring, gssize len, gsize *bytes_read, gsize *bytes_written, GError **error)
+g_locale_to_utf8 (const gchar *opsysstring, gssize len, gsize *bytes_read, gsize *bytes_written, GError **gerror)
 {
 	g_get_charset (NULL);
 
-	return g_convert (opsysstring, len, "UTF-8", my_charset, bytes_read, bytes_written, error);
+	return g_convert (opsysstring, len, "UTF-8", my_charset, bytes_read, bytes_written, gerror);
 }
 
 gchar *
-g_locale_from_utf8 (const gchar *utf8string, gssize len, gsize *bytes_read, gsize *bytes_written, GError **error)
+g_locale_from_utf8 (const gchar *utf8string, gssize len, gsize *bytes_read, gsize *bytes_written, GError **gerror)
 {
 	g_get_charset (NULL);
 
-	return g_convert (utf8string, len, my_charset, "UTF-8", bytes_read, bytes_written, error);
+	return g_convert (utf8string, len, my_charset, "UTF-8", bytes_read, bytes_written, gerror);
 }

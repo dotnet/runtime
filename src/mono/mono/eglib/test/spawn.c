@@ -19,9 +19,9 @@ test_spawn_sync ()
 	gchar *out;
 	gchar *err;
 	gint status = -1;
-	GError *error = NULL;
+	GError *gerror = NULL;
 
-	if (!g_spawn_command_line_sync ("ls", &out, &err, &status, &error))
+	if (!g_spawn_command_line_sync ("ls", &out, &err, &status, &gerror))
 		return FAILED ("Error executing 'ls'");
 
 	if (status != 0)
@@ -50,7 +50,7 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 			gint *standard_input,
 			gint *standard_output,
 			gint *standard_error,
-			GError **error) */
+			GError **gerror) */
 	char *argv [15];
 	int stdout_fd = -1;
 	char buffer [512];

@@ -593,14 +593,14 @@ _wapi_dirname (const gchar *filename)
 }
 
 static GDir*
-_wapi_g_dir_open (const gchar *path, guint flags, GError **error)
+_wapi_g_dir_open (const gchar *path, guint flags, GError **gerror)
 {
 	GDir *ret;
 
 	MONO_ENTER_GC_SAFE;
-	ret = g_dir_open (path, flags, error);
+	ret = g_dir_open (path, flags, gerror);
 	MONO_EXIT_GC_SAFE;
-	if (ret == NULL && ((*error)->code == G_FILE_ERROR_NOENT || (*error)->code == G_FILE_ERROR_NOTDIR || (*error)->code == G_FILE_ERROR_NAMETOOLONG) && IS_PORTABILITY_SET) {
+	if (ret == NULL && ((*gerror)->code == G_FILE_ERROR_NOENT || (*gerror)->code == G_FILE_ERROR_NOTDIR || (*gerror)->code == G_FILE_ERROR_NAMETOOLONG) && IS_PORTABILITY_SET) {
 		gchar *located_filename = mono_portability_find_file (path, TRUE);
 		GError *tmp_error = NULL;
 
@@ -613,7 +613,7 @@ _wapi_g_dir_open (const gchar *path, guint flags, GError **error)
 		MONO_EXIT_GC_SAFE;
 		g_free (located_filename);
 		if (tmp_error == NULL) {
-			g_clear_error (error);
+			g_clear_error (gerror);
 		}
 	}
 
@@ -706,19 +706,19 @@ file_compare (gconstpointer a, gconstpointer b)
 static gint
 _wapi_io_scandir (const gchar *dirname, const gchar *pattern, gchar ***namelist)
 {
-	GError *error = NULL;
+	GError *gerror = NULL;
 	GDir *dir;
 	GPtrArray *names;
 	gint result;
 	mono_w32file_unix_glob_t glob_buf;
 	gint flags = 0, i;
 
-	dir = _wapi_g_dir_open (dirname, 0, &error);
+	dir = _wapi_g_dir_open (dirname, 0, &gerror);
 	if (dir == NULL) {
 		/* g_dir_open returns ENOENT on directories on which we don't
 		 * have read/x permission */
-		gint errnum = get_errno_from_g_file_error (error->code);
-		g_error_free (error);
+		gint errnum = get_errno_from_g_file_error (gerror->code);
+		g_error_free (gerror);
 		if (errnum == ENOENT &&
 		    !_wapi_access (dirname, F_OK) &&
 		    _wapi_access (dirname, R_OK|X_OK)) {
