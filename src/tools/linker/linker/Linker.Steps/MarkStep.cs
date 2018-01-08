@@ -278,8 +278,12 @@ namespace Mono.Linker.Steps {
 
 		protected virtual void MarkCustomAttribute (CustomAttribute ca)
 		{
+			if (!ShouldMarkCustomAttribute (ca))
+				return;
+
 			Tracer.Push ((object)ca.AttributeType ?? (object)ca);
 			try {
+				Annotations.Mark (ca);
 				MarkMethod (ca.Constructor);
 
 				MarkCustomAttributeArguments (ca);
@@ -297,6 +301,11 @@ namespace Mono.Linker.Steps {
 			} finally {
 				Tracer.Pop ();
 			}
+		}
+
+		protected virtual bool ShouldMarkCustomAttribute (CustomAttribute ca)
+		{
+			return true;
 		}
 
 		protected void MarkSecurityDeclarations (ISecurityDeclarationProvider provider)

@@ -51,6 +51,7 @@ namespace Mono.Linker {
 
 		readonly Dictionary<object, Dictionary<IMetadataTokenProvider, object>> custom_annotations = new Dictionary<object, Dictionary<IMetadataTokenProvider, object>> ();
 		readonly Dictionary<AssemblyDefinition, HashSet<string>> resources_to_remove = new Dictionary<AssemblyDefinition, HashSet<string>> ();
+		readonly HashSet<CustomAttribute> marked_attributes = new HashSet<CustomAttribute> ();
 
 		public AnnotationStore (LinkContext context) => this.context = context;
 
@@ -117,6 +118,11 @@ namespace Mono.Linker {
 			Tracer.AddDependency (provider, true);
 		}
 
+		public void Mark (CustomAttribute attribute)
+		{
+			marked_attributes.Add (attribute);
+		}
+
 		public void MarkAndPush (IMetadataTokenProvider provider)
 		{
 			Mark (provider);
@@ -126,6 +132,11 @@ namespace Mono.Linker {
 		public bool IsMarked (IMetadataTokenProvider provider)
 		{
 			return marked.Contains (provider);
+		}
+
+		public bool IsMarked (CustomAttribute attribute)
+		{
+			return marked_attributes.Contains (attribute);
 		}
 
 		public void Processed (IMetadataTokenProvider provider)
