@@ -1,3 +1,4 @@
+
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
@@ -15838,6 +15839,31 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
                     assert(info.compRetNativeType != TYP_VOID &&
                            (fgMoreThanOneReturnBlock() || impInlineInfo->HasGcRefLocals()));
 
+                    // If this method returns a ref type, track the actual types seen
+                    // in the returns.
+                    if (info.compRetType == TYP_REF)
+                    {
+                        bool                 isExact      = false;
+                        bool                 isNonNull    = false;
+                        CORINFO_CLASS_HANDLE returnClsHnd = gtGetClassHandle(op2, &isExact, &isNonNull);
+
+                        if (impInlineInfo->retExpr == nullptr)
+                        {
+                            // This is the first return, so best known type is the type
+                            // of this return value.
+                            impInlineInfo->retExprClassHnd        = returnClsHnd;
+                            impInlineInfo->retExprClassHndIsExact = isExact;
+                        }
+                        else if (impInlineInfo->retExprClassHnd != returnClsHnd)
+                        {
+                            // This return site type differs from earlier seen sites,
+                            // so reset the info and we'll fall back to using the method's
+                            // declared return type for the return spill temp.
+                            impInlineInfo->retExprClassHnd        = nullptr;
+                            impInlineInfo->retExprClassHndIsExact = false;
+                        }
+                    }
+
                     // This is a bit of a workaround...
                     // If we are inlining a call that returns a struct, where the actual "native" return type is
                     // not a struct (for example, the struct is composed of exactly one int, and the native
@@ -15881,7 +15907,7 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
                     impAssignTempGen(lvaInlineeReturnSpillTemp, op2, se.seTypeInfo.GetClassHandle(),
                                      (unsigned)CHECK_SPILL_ALL);
 
-                    GenTreePtr tmpOp2 = gtNewLclvNode(lvaInlineeReturnSpillTemp, op2->TypeGet());
+                    GenTree* tmpOp2 = gtNewLclvNode(lvaInlineeReturnSpillTemp, op2->TypeGet());
 
                     if (restoreType)
                     {
