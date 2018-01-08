@@ -11,5 +11,11 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 			if (string.IsNullOrEmpty (attributeName))
 				throw new ArgumentException ("Value cannot be null or empty.", nameof (attributeName));
 		}
+
+		public KeptAttributeAttribute (Type type)
+		{
+			if (type == null)
+				throw new ArgumentNullException (nameof (type));
+		}
 	}
 }

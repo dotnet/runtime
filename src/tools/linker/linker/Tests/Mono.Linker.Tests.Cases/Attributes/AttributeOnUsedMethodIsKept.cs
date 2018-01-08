@@ -12,6 +12,7 @@ namespace Mono.Linker.Tests.Cases.Attributes {
 		class A {
 			[Foo]
 			[Kept]
+			[KeptAttributeAttribute (typeof (FooAttribute))]
 			public void Method ()
 			{
 			}

@@ -26,7 +26,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			// TODO: Implement fully, probably via custom Kept attribute
 			Assert.IsFalse (linkedAssembly.MainModule.HasExportedTypes);
 
-			VerifyCustomAttributes (linkedAssembly, originalAssembly);
+			VerifyCustomAttributes (originalAssembly, linkedAssembly);
 
 			VerifyResources (originalAssembly, linkedAssembly);
 
@@ -311,28 +311,45 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			Assert.That (linked.MainModule.Resources.Select (r => r.Name), Is.EquivalentTo (expectedResources));
 		}
 
-		static void VerifyCustomAttributes (ICustomAttributeProvider src, ICustomAttributeProvider linked)
+		protected virtual void VerifyCustomAttributes (ICustomAttributeProvider src, ICustomAttributeProvider linked)
 		{
-			var expectedAttrs = new List<string> (GetCustomAttributeCtorValues<string> (src, nameof (KeptAttributeAttribute)));
-			var linkedAttrs = new List<string> (FilterLinkedAttributes (linked));
+			var expectedAttrs = GetCustomAttributeCtorValues<object> (src, nameof (KeptAttributeAttribute))
+				.Select (attr => attr.ToString ())
+				.ToList ();
 
-			// FIXME: Linker unused attributes removal is not working
-			// Assert.That (linkedAttrs, Is.EquivalentTo (expectedAttrs), $"Custom attributes on `{src}' are not matching");
+			var linkedAttrs = FilterLinkedAttributes (linked).ToList ();
+
+			Assert.That (linkedAttrs, Is.EquivalentTo (expectedAttrs), $"Custom attributes on `{src}' are not matching");
 		}
 
-		static IEnumerable<string> FilterLinkedAttributes (ICustomAttributeProvider linked)
+		/// <summary>
+		/// Filters out some attributes that should not be taken into consideration when checking the linked result against the expected result
+		/// </summary>
+		/// <param name="linked"></param>
+		/// <returns></returns>
+		protected virtual IEnumerable<string> FilterLinkedAttributes (ICustomAttributeProvider linked)
 		{
 			foreach (var attr in linked.CustomAttributes) {
 				switch (attr.AttributeType.FullName) {
-				case "System.Runtime.CompilerServices.RuntimeCompatibilityAttribute":
-					continue;
+					case "System.Runtime.CompilerServices.RuntimeCompatibilityAttribute":
+					case "System.Runtime.CompilerServices.CompilerGeneratedAttribute":
+						continue;
+
+					// When mcs is used to compile the test cases, backing fields end up with this attribute on them
+					case "System.Diagnostics.DebuggerBrowsableAttribute":
+						continue;
+
+					case "System.Runtime.CompilerServices.CompilationRelaxationsAttribute":
+						if (linked is AssemblyDefinition)
+							continue;
+						break;
 				}
 
 				yield return attr.AttributeType.FullName;
 			}
 		}
 
-		static void VerifyGenericParameters (IGenericParameterProvider src, IGenericParameterProvider linked)
+		void VerifyGenericParameters (IGenericParameterProvider src, IGenericParameterProvider linked)
 		{
 			Assert.AreEqual (src.HasGenericParameters, linked.HasGenericParameters);
 			if (src.HasGenericParameters) {

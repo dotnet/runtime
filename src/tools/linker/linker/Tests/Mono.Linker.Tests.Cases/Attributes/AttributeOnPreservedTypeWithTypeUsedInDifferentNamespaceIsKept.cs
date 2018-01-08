@@ -12,6 +12,7 @@ namespace NamespaceForAttributeOnPreservedTypeWithTypeUsedInDifferentNamespaceIs
 
 namespace Mono.Linker.Tests.Cases.Attributes {
 	[Foo (typeof (NamespaceForAttributeOnPreservedTypeWithTypeUsedInDifferentNamespaceIsKept.A))]
+	[KeptAttributeAttribute (typeof (FooAttribute))]
 	class AttributeOnPreservedTypeWithTypeUsedInDifferentNamespaceIsKept {
 		public static void Main ()
 		{
