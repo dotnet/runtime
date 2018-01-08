@@ -40,6 +40,32 @@ elseif($ENV{__BuildArch} STREQUAL arm OR $ENV{__BuildArch} STREQUAL arm64)
     )
 endif()
 
+set (NATIVECOMPRESSION_SOURCES
+    ${NATIVECOMPRESSION_SOURCES}
+    ../../AnyOS/brotli/common/dictionary.c
+    ../../AnyOS/brotli/dec/bit_reader.c
+    ../../AnyOS/brotli/dec/decode.c
+    ../../AnyOS/brotli/dec/huffman.c
+    ../../AnyOS/brotli/dec/state.c
+    ../../AnyOS/brotli/enc/backward_references.c
+    ../../AnyOS/brotli/enc/backward_references_hq.c
+    ../../AnyOS/brotli/enc/bit_cost.c
+    ../../AnyOS/brotli/enc/block_splitter.c
+    ../../AnyOS/brotli/enc/brotli_bit_stream.c
+    ../../AnyOS/brotli/enc/cluster.c
+    ../../AnyOS/brotli/enc/compress_fragment.c
+    ../../AnyOS/brotli/enc/compress_fragment_two_pass.c
+    ../../AnyOS/brotli/enc/dictionary_hash.c
+    ../../AnyOS/brotli/enc/encode.c
+    ../../AnyOS/brotli/enc/entropy_encode.c
+    ../../AnyOS/brotli/enc/histogram.c
+    ../../AnyOS/brotli/enc/literal_cost.c
+    ../../AnyOS/brotli/enc/memory.c
+    ../../AnyOS/brotli/enc/metablock.c
+    ../../AnyOS/brotli/enc/static_dict.c
+    ../../AnyOS/brotli/enc/utf8_util.c
+)
+
 if ($ENV{__VSVersion} STREQUAL vs2015)
     add_definitions(-DHAVE_VSNPRINTF)
 endif ()
@@ -53,6 +79,9 @@ endif()
 
 # Include 'bin/obj' dir since it contains _version.h
 include_directories("${CMAKE_BINARY_DIR}/../../")
+
+#Include Brotli include files
+include_directories("../../AnyOS/brotli/include")
 
 add_library(clrcompression
     SHARED
