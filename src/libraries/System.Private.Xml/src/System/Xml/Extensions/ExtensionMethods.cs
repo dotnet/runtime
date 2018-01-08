@@ -48,25 +48,6 @@ namespace System.Xml.Extensions
             return type.GetMethod(methodName, bindingFlags, null, parameterTypes, null);
         }
 
-#if XMLSERIALIZERGENERATOR
-        internal static string ToBinHexString(byte[] inArray)
-        {
-            if (inArray == null)
-            {
-                throw new ArgumentNullException(nameof(inArray));
-            }
-            return BinHexEncoder.Encode(inArray, 0, inArray.Length);
-        }
-
-        internal static byte[] FromBinHexString(string s, bool allowOddCount)
-        {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
-            return BinHexDecoder.Decode(s.ToCharArray(), allowOddCount);
-        }
-#endif
         #endregion
 
         internal static Uri ToUri(string s)

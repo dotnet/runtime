@@ -1167,22 +1167,21 @@ public class DefaultValuesSetToNaN
     }
 }
 
-public class TypeWithoutPublicSetter
+[XmlRoot("RootElement")]
+public class TypeWithMismatchBetweenAttributeAndPropertyType
 {
-    public string Name { get; private set; }
+    private int _intValue = 120;
 
-    [XmlIgnore]
-    public int Age { get; private set; }
-
-    public Type MyType { get; private set; }
-
-    public string ValidProperty { get; set; }
-
-    public string PropertyWrapper
+    [DefaultValue(true), XmlAttribute("IntValue")]
+    public int IntValue
     {
         get
         {
-            return ValidProperty;
+            return _intValue;
+        }
+        set
+        {
+            _intValue = value;
         }
     }
 }
