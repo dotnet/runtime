@@ -105,6 +105,7 @@ namespace System
         public static int WindowsVersion { get { throw null; } }
         public static string GetDistroVersionString() { throw null; }
         public static bool TargetsNetFx452OrLower { get { throw null; } }
+        public static bool IsDomainJoinedMachine { get { throw null; } }
     }
     public static partial class TheoryExtensions
     {
