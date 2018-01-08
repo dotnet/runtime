@@ -865,15 +865,6 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_TypeWithMismatchBetweenAttributeAndPropertyType()
-    {
-        var value = new TypeWithMismatchBetweenAttributeAndPropertyType();
-        var actual = SerializeAndDeserialize(value,
-@"<?xml version=""1.0""?><RootElement xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" IntValue=""120"" />");
-        Assert.StrictEqual(value.IntValue, actual.IntValue);
-    }
-
-    [Fact]
     public static void Xml_TypeWithNestedPublicType()
     {
         var value = new List<TypeWithNestedPublicType.LevelData>();

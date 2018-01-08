@@ -1613,6 +1613,15 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(value, actual);
     }
 
+    [Fact]
+    public static void Xml_TypeWithMismatchBetweenAttributeAndPropertyType()
+    {
+        var value = new TypeWithMismatchBetweenAttributeAndPropertyType();
+        var actual = SerializeAndDeserialize(value,
+@"<?xml version=""1.0""?><RootElement xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" IntValue=""120"" />");
+        Assert.StrictEqual(value.IntValue, actual.IntValue);
+    }
+
     private static readonly string s_defaultNs = "http://tempuri.org/";
     private static T RoundTripWithXmlMembersMapping<T>(object requestBodyValue, string memberName, string baseline, bool skipStringCompare = false, string wrapperName = null)
     {

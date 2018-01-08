@@ -2,11 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if XMLSERIALIZERGENERATOR
-namespace Microsoft.XmlSerializer.Generator
-#else
 namespace System.Xml.Serialization
-#endif
 {
     using System.Reflection;
     using System.Collections;
@@ -1247,10 +1243,8 @@ namespace System.Xml.Serialization
             XmlSchemaObjectTable elements = null;
             if (Schema != null && Schema.TargetNamespace == elementNs)
             {
-#if !XMLSERIALIZERGENERATOR
                 XmlSchemas.Preprocess(Schema);
                 elements = Schema.Elements;
-#endif
             }
             else if (Schemas != null)
             {
@@ -1337,7 +1331,7 @@ namespace System.Xml.Serialization
                     // make sure that user-specified schemas are valid
                     _schemas.ValidationEventHandler += new ValidationEventHandler(ValidationCallbackWithErrorCode);
                     _schemas.Compile();
-#if !XMLSERIALIZERGENERATOR
+
                     // at this point we verified that the information returned by the IXmlSerializable is valid
                     // Now check to see if the type was referenced before:
                     // UNDONE check for the duplcate types
@@ -1369,7 +1363,6 @@ namespace System.Xml.Serialization
                             _xsdType = _xsdType.Redefined != null ? _xsdType.Redefined : _xsdType;
                         }
                     }
-#endif
                 }
                 else
                 {

@@ -1295,25 +1295,6 @@ namespace SerializationTypes
         }
     }
 
-    [XmlRoot("RootElement")]
-    public class TypeWithMismatchBetweenAttributeAndPropertyType
-    {
-        private int _intValue = 120;
-
-        [DefaultValue(true), XmlAttribute("IntValue")]
-        public int IntValue
-        {
-            get
-            {
-                return _intValue;
-            }
-            set
-            {
-                _intValue = value;
-            }
-        }
-    }
-
     public class Level
     {
         public string Name { get; set; }
@@ -2238,6 +2219,26 @@ public class TypeWithPrivateFieldAndPrivateGetPublicSetProperty
     public string GetName()
     {
         return _name;
+    }
+}
+
+public class TypeWithoutPublicSetter
+{
+    public string Name { get; private set; }
+
+    [XmlIgnore]
+    public int Age { get; private set; }
+
+    public Type MyType { get; private set; }
+
+    public string ValidProperty { get; set; }
+
+    public string PropertyWrapper
+    {
+        get
+        {
+            return ValidProperty;
+        }
     }
 }
 
