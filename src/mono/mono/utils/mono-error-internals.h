@@ -60,9 +60,11 @@ struct _MonoErrorBoxed {
 #define goto_if_nok(error,label) do { if (!is_ok ((error))) goto label; } while (0)
 
 /* Only use this in icalls */
-#define return_val_and_set_pending_if_nok(error,value)	\
+#define return_val_and_set_pending_if_nok(error, value) \
+do { 							\
 	if (mono_error_set_pending_exception ((error)))	\
-		return (value);
+		return (value); 			\
+} while (0)						\
 
 void
 mono_error_assert_ok_pos (MonoError *error, const char* filename, int lineno) MONO_LLVM_INTERNAL;
