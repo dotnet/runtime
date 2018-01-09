@@ -1177,6 +1177,11 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_srav_epi32 (__m256i a, __m256i count)
         /// </summary>
         public static Vector256<int> ShiftRightArithmeticVariable(Vector256<int> value, Vector256<uint> count) { throw new PlatformNotSupportedException(); }
+        
+        /// <summary>
+        /// __m128i _mm_srav_epi32 (__m128i a, __m128i count)
+        /// </summary>
+        public static Vector128<int> ShiftRightArithmeticVariable(Vector128<int> value, Vector128<uint> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_srl_epi16 (__m256i a, __m128i count)
