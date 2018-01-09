@@ -7,6 +7,8 @@
 setlocal ENABLEDELAYEDEXPANSION
   set ERRORLEVEL=
   set DOTNET_MULTILEVEL_LOOKUP=0
+  set UseSharedCompilation=false
+
   set BENCHVIEW_RUN_TYPE=local
   set CORECLR_REPO=%CD%
   set LV_SANDBOX_DIR=%CORECLR_REPO%\bin\sandbox

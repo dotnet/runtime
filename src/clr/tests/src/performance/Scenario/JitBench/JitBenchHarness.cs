@@ -20,6 +20,10 @@ namespace JitBench
     {
         static void Main(string[] args)
         {
+            // The flag below is set to false to prevent the VBCSCompiler.exe hanging around
+            // after the performance execution finished and preventing the deletion of the folder.
+            Environment.SetEnvironmentVariable("UseSharedCompilation", "false");
+
             var options = JitBenchHarnessOptions.Parse(args);
 
             SetupStatics(options);
@@ -395,7 +399,7 @@ namespace JitBench
         }
 
         private const string JitBenchRepoUrl = "https://github.com/aspnet/JitBench";
-        private const string JitBenchCommitSha1Id = "36db11e7ab15e96af10d995a048a1476b4e73d43";
+        private const string JitBenchCommitSha1Id = "1235b8ed0e867dae0be50ba9467f5028c813c4fd";
         private const string JitBenchTargetFramework = "netcoreapp2.1";
         private const string EnvironmentFileName = "JitBenchEnvironment.txt";
 
