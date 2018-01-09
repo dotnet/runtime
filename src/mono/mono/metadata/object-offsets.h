@@ -280,7 +280,6 @@ DECL_OFFSET(SeqPointInfo, ss_tramp_addr)
 DECL_OFFSET(SeqPointInfo, bp_addrs)
 #endif
 
-#ifndef DISABLE_INTERPRETER
 DECL_OFFSET(InterpMethodArguments, ilen)
 DECL_OFFSET(InterpMethodArguments, iargs)
 DECL_OFFSET(InterpMethodArguments, flen)
@@ -292,7 +291,6 @@ DECL_OFFSET(CallContext, gregs)
 DECL_OFFSET(CallContext, fregs)
 DECL_OFFSET(CallContext, stack_size)
 DECL_OFFSET(CallContext, stack)
-#endif
 #endif
 
 #endif //DISABLE_JIT_OFFSETS

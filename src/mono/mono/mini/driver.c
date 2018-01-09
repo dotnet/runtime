@@ -1752,14 +1752,12 @@ apply_root_domain_configuration_file_bindings (MonoDomain *domain, char *root_do
 static void
 mono_enable_interp (const char *opts)
 {
-#ifndef DISABLE_INTERPRETER
 	mono_use_interpreter = TRUE;
 	if (opts)
-		mono_interp_parse_options (opts);
-#endif
+		mono_interp_opts_string = opts;
 
 #ifdef DISABLE_INTERPRETER
-	g_warning ("Mono IL interpreter support is missing\n");
+	g_error ("Mono IL interpreter support is missing\n");
 #endif
 
 #ifdef MONO_CROSS_COMPILE
@@ -2282,7 +2280,6 @@ mono_main (int argc, char* argv[])
 	case DO_SINGLE_METHOD_REGRESSION:
 		mono_do_single_method_regression = TRUE;
 	case DO_REGRESSION:
-#ifndef DISABLE_INTERPRETER
 		if (mono_use_interpreter) {
 			if (mono_interp_regression_list (2, argc -i, argv + i)) {
 				g_print ("Regression ERRORS!\n");
@@ -2292,7 +2289,6 @@ mono_main (int argc, char* argv[])
 			// mini_cleanup (domain);
 			return 0;
 		}
-#endif
 		if (mini_regression_list (mini_verbose, argc -i, argv + i)) {
 			g_print ("Regression ERRORS!\n");
 			mini_cleanup (domain);

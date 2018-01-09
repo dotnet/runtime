@@ -69,6 +69,7 @@
 #include <mono/mini/aot-runtime.h>
 #include <mono/mini/jit-icalls.h>
 #include <mono/mini/debugger-agent.h>
+#include <mono/mini/ee.h>
 
 #ifdef TARGET_ARM
 #include <mono/mini/mini-arm.h>
@@ -109,6 +110,8 @@ init_frame (InterpFrame *frame, InterpFrame *parent_frame, InterpMethod *rmethod
 GSList *jit_classes;
 /* If TRUE, interpreted code will be interrupted at function entry/backward branches */
 static gboolean ss_enabled;
+
+static gboolean interp_init_done = FALSE;
 
 static char* dump_frame (InterpFrame *inv);
 static MonoArray *get_trace_ips (MonoDomain *domain, InterpFrame *top);
@@ -267,10 +270,10 @@ lookup_imethod (MonoDomain *domain, MonoMethod *method)
 	return rtm;
 }
 
-#ifndef DISABLE_REMOTING
 static gpointer
 interp_get_remoting_invoke (gpointer imethod, MonoError *error)
 {
+#ifndef DISABLE_REMOTING
 	InterpMethod *imethod_cast = (InterpMethod*) imethod;
 
 	g_assert (mono_use_interpreter);
@@ -278,8 +281,11 @@ interp_get_remoting_invoke (gpointer imethod, MonoError *error)
 	MonoMethod *remoting_invoke_method = mono_marshal_get_remoting_invoke (imethod_cast->method, error);
 	return_val_if_nok (error, NULL);
 	return mono_interp_get_imethod (mono_domain_get (), remoting_invoke_method, error);
-}
+#else
+	g_assert_not_reached ();
+	return NULL;
 #endif
+}
 
 InterpMethod*
 mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *error)
@@ -5214,10 +5220,13 @@ interp_exec_method (InterpFrame *frame, ThreadContext *context)
 	interp_exec_method_full (frame, context, NULL, NULL, -1, NULL);
 }
 
-void
-mono_interp_parse_options (const char *options)
+static void
+interp_parse_options (const char *options)
 {
 	char **args, **ptr;
+
+	if (!options)
+		return;
 
 	args = g_strsplit (options, ",", -1);
 	for (ptr = args; ptr && *ptr; ptr ++) {
@@ -5453,20 +5462,23 @@ interp_stop_single_stepping (void)
 }
 
 void
-mono_interp_init ()
+mono_ee_interp_init (const char *opts)
 {
+	g_assert (mono_ee_api_version () == MONO_EE_API_VERSION);
+	g_assert (!interp_init_done);
+	interp_init_done = TRUE;
+
 	mono_native_tls_alloc (&thread_context_id, NULL);
 	set_context (NULL);
 
+	interp_parse_options (opts);
 	mono_interp_transform_init ();
 
-	MonoInterpCallbacks c;
+	MonoEECallbacks c;
 	c.create_method_pointer = interp_create_method_pointer;
 	c.runtime_invoke = interp_runtime_invoke;
 	c.init_delegate = interp_init_delegate;
-#ifndef DISABLE_REMOTING
 	c.get_remoting_invoke = interp_get_remoting_invoke;
-#endif
 	c.create_trampoline = interp_create_trampoline;
 	c.walk_stack_with_ctx = interp_walk_stack_with_ctx;
 	c.set_resume_state = interp_set_resume_state;

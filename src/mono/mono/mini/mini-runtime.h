@@ -13,6 +13,7 @@
 #define __MONO_MINI_RUNTIME_H__
 
 #include "mini.h"
+#include "ee.h"
 
 /* Per-domain information maintained by the JIT */
 typedef struct
@@ -158,12 +159,9 @@ MONO_API void        mono_set_defaults              (int verbose_level, guint32 
 MONO_API void        mono_parse_env_options         (int *ref_argc, char **ref_argv []);
 MONO_API char       *mono_parse_options_from        (const char *options, int *ref_argc, char **ref_argv []);
 
-/* actual definition in interp.h */
-typedef struct _MonoInterpCallbacks MonoInterpCallbacks;
-
 void                   mono_interp_stub_init         (void);
-void                   mini_install_interp_callbacks (MonoInterpCallbacks *cbs);
-MonoInterpCallbacks*   mini_get_interp_callbacks     (void);
+void                   mini_install_interp_callbacks (MonoEECallbacks *cbs);
+MonoEECallbacks*       mini_get_interp_callbacks     (void);
 
 MonoDomain* mini_init                      (const char *filename, const char *runtime_version);
 void        mini_cleanup                   (MonoDomain *domain);

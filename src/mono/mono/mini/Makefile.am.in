@@ -95,12 +95,12 @@ endif
 if SUPPORT_SGEN
 sgen_binaries = mono-sgen
 sgen_libraries = libmonosgen-2.0.la
-sgen_static_libraries = libmini-static.la $(sgen_static_libs)
+sgen_static_libraries = libmini-static.la $(interp_libs_static) $(sgen_static_libs)
 endif
 
 if SUPPORT_BOEHM
 boehm_libraries = libmonoboehm-2.0.la
-boehm_static_libraries = libmini-static.la $(boehm_static_libs)
+boehm_static_libraries = libmini-static.la $(interp_libs_static) $(boehm_static_libs)
 boehm_binaries  = mono-boehm
 endif
 
@@ -151,7 +151,7 @@ endif
 lib_LTLIBRARIES = $(shared_libraries)
 
 if SHARED_MONO
-mini_common_lib = libmini.la
+mini_common_lib = libmini.la $(interp_libs)
 else
 mini_common_lib = 
 endif
@@ -159,7 +159,7 @@ endif
 if DISABLE_EXECUTABLES
 noinst_LTLIBRARIES = $(mini_common_lib)
 else
-noinst_LTLIBRARIES = $(mini_common_lib) libmini-static.la
+noinst_LTLIBRARIES = $(mini_common_lib) libmini-static.la $(interp_libs_static)
 endif
 
 if LOADED_LLVM
@@ -387,10 +387,6 @@ llvm_sources = \
 endif
 endif
 
-if DISABLE_INTERPRETER
-interp_sources =	\
-	interp/interp.h
-else
 interp_sources =	\
 	interp/hacks.h		\
 	interp/interp.h	\
@@ -400,6 +396,13 @@ interp_sources =	\
 	interp/mintops.def	\
 	interp/mintops.c	\
 	interp/transform.c
+
+if DISABLE_INTERPRETER
+interp_libs =
+interp_libs_static =
+else
+interp_libs = libmono-ee-interp.la
+interp_libs_static = libmono-ee-interp-static.la
 endif
 
 if ENABLE_LLVM
@@ -485,6 +488,7 @@ common_sources = \
 	mini-profiler.c	\
 	interp-stubs.c \
 	aot-runtime.h	\
+	ee.h \
 	mini-runtime.h
 
 test_sources = 			\
@@ -642,17 +646,20 @@ libmonoldflags += $(JEMALLOC_LDFLAGS)
 mono_CFLAGS += $(JEMALLOC_CFLAGS)
 endif
 
-libmini_la_SOURCES = $(common_sources) $(llvm_sources) $(llvm_runtime_sources) $(interp_sources) $(arch_sources) $(os_sources)
+libmono_ee_interp_la_SOURCES = $(interp_sources)
+libmono_ee_interp_la_CFLAGS = $(mono_CFLAGS)
+
+libmini_la_SOURCES = $(common_sources) $(llvm_sources) $(llvm_runtime_sources) $(arch_sources) $(os_sources)
 libmini_la_CFLAGS = $(mono_CFLAGS)
 
 libmonoboehm_2_0_la_SOURCES =
 libmonoboehm_2_0_la_CFLAGS = $(mono_boehm_CFLAGS)
-libmonoboehm_2_0_la_LIBADD = libmini.la $(boehm_libs) $(LIBMONO_DTRACE_OBJECT) $(LLVMMONOF)
+libmonoboehm_2_0_la_LIBADD = libmini.la $(interp_libs) $(boehm_libs) $(LIBMONO_DTRACE_OBJECT) $(LLVMMONOF)
 libmonoboehm_2_0_la_LDFLAGS = $(libmonoldflags) $(monobin_platform_ldflags)
 
 libmonosgen_2_0_la_SOURCES =
 libmonosgen_2_0_la_CFLAGS = $(mono_sgen_CFLAGS)
-libmonosgen_2_0_la_LIBADD = libmini.la $(sgen_libs) $(LIBMONO_DTRACE_OBJECT) $(LLVMMONOF)
+libmonosgen_2_0_la_LIBADD = libmini.la $(interp_libs) $(sgen_libs) $(LIBMONO_DTRACE_OBJECT) $(LLVMMONOF)
 libmonosgen_2_0_la_LDFLAGS = $(libmonoldflags) $(monobin_platform_ldflags)
 
 #
@@ -663,6 +670,10 @@ libmini_static_la_SOURCES = $(libmini_la_SOURCES)
 libmini_static_la_CFLAGS = $(AM_CFLAGS)
 libmini_static_la_LDFLAGS = -static
 libmini_static_la_LIBADD = $(MONO_DTRACE_OBJECT)
+
+libmono_ee_interp_static_la_SOURCES = $(libmono_ee_interp_la_SOURCES)
+libmono_ee_interp_static_la_CFLAGS = $(AM_CFLAGS)
+libmono_ee_interp_static_la_LDFLAGS = -static
 
 libmonoincludedir = $(includedir)/mono-$(API_VER)/mono/jit
 

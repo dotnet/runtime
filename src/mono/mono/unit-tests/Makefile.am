@@ -34,6 +34,13 @@ sgen_libs = \
 	$(monodir)/mono/utils/libmonoutils.la \
 	$(GLIB_LIBS) $(LIBICONV)
 
+mini_libs = \
+	$(monodir)/mono/mini/libmini.la
+
+if !DISABLE_INTERPRETER
+mini_libs += $(monodir)/mono/mini/libmono-ee-interp.la
+endif
+
 if !CROSS_COMPILE
 if !HOST_WIN32
 if SUPPORT_BOEHM
@@ -70,13 +77,13 @@ test_mono_handle_LDFLAGS = $(test_ldflags)
 
 test_mono_callspec_SOURCES = test-mono-callspec.c
 test_mono_callspec_CFLAGS = $(AM_CFLAGS)
-test_mono_callspec_LDADD = $(test_ldadd) ../mini/libmini.la $(sgen_libs)
+test_mono_callspec_LDADD = $(test_ldadd) $(mini_libs) $(sgen_libs)
 test_mono_callspec_LDFLAGS = $(test_ldflags)
 test_mono_callspec_DEPENDENCIES = callspec.exe
 
 test_mono_string_SOURCES = test-mono-string.c
 test_mono_string_CFLAGS = $(test-cflags)
-test_mono_string_LDADD = $(test_ldadd) ../mini/libmini.la $(sgen_libs)
+test_mono_string_LDADD = $(test_ldadd) $(mini_libs) $(sgen_libs)
 test_mono_string_LDFLAGS = $(test_ldflags)
 
 check_PROGRAMS = test-sgen-qsort test-memfuncs test-mono-linked-list-set test-conc-hashtable test-mono-handle	\

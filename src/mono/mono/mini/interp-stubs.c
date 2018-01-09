@@ -126,14 +126,12 @@ stub_init_delegate (MonoDelegate *del)
 	g_assert_not_reached ();
 }
 
-#ifndef DISABLE_REMOTING
 static gpointer
 stub_get_remoting_invoke (gpointer imethod, MonoError *error)
 {
 	g_assert_not_reached ();
 	return NULL;
 }
-#endif
 
 static gpointer
 stub_create_trampoline (MonoDomain *domain, MonoMethod *method, MonoError *error)
@@ -151,13 +149,15 @@ stub_walk_stack_with_ctx (MonoInternalStackWalk func, MonoContext *ctx, MonoUnwi
 void
 mono_interp_stub_init (void)
 {
-	MonoInterpCallbacks c;
+	if (mini_get_interp_callbacks ()->create_method_pointer)
+		/* already initialized */
+		return;
+
+	MonoEECallbacks c;
 	c.create_method_pointer = stub_create_method_pointer;
 	c.runtime_invoke = stub_runtime_invoke;
 	c.init_delegate = stub_init_delegate;
-#ifndef DISABLE_REMOTING
 	c.get_remoting_invoke = stub_get_remoting_invoke;
-#endif
 	c.create_trampoline = stub_create_trampoline;
 	c.walk_stack_with_ctx = stub_walk_stack_with_ctx;
 	c.set_resume_state = stub_set_resume_state;

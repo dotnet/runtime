@@ -86,6 +86,7 @@
 #include "debugger-agent.h"
 #include "lldb.h"
 #include "mini-runtime.h"
+#include "interp/interp.h"
 
 #ifdef MONO_ARCH_LLVM_SUPPORTED
 #ifdef ENABLE_LLVM
@@ -93,8 +94,6 @@
 #include "llvm-jit.h"
 #endif
 #endif
-
-#include "interp/interp.h"
 
 static guint32 default_opt = 0;
 static gboolean default_opt_set = FALSE;
@@ -118,6 +117,7 @@ int mini_verbose = 0;
 gboolean mono_use_llvm = FALSE;
 
 gboolean mono_use_interpreter = FALSE;
+const char *mono_interp_opts_string = NULL;
 
 #define mono_jit_lock() mono_os_mutex_lock (&jit_mutex)
 #define mono_jit_unlock() mono_os_mutex_unlock (&jit_mutex)
@@ -3781,20 +3781,25 @@ mini_add_profiler_argument (const char *desc)
 }
 
 
-MonoInterpCallbacks interp_cbs;
+MonoEECallbacks interp_cbs = {0};
 
 void
-mini_install_interp_callbacks (MonoInterpCallbacks *cbs)
+mini_install_interp_callbacks (MonoEECallbacks *cbs)
 {
-	memcpy (&interp_cbs, cbs, sizeof (MonoInterpCallbacks));
+	memcpy (&interp_cbs, cbs, sizeof (MonoEECallbacks));
 }
 
-MonoInterpCallbacks *
+MonoEECallbacks *
 mini_get_interp_callbacks (void)
 {
 	return &interp_cbs;
 }
 
+int
+mono_ee_api_version (void)
+{
+	return MONO_EE_API_VERSION;
+}
 
 MonoDomain *
 mini_init (const char *filename, const char *runtime_version)
@@ -3816,12 +3821,11 @@ mini_init (const char *filename, const char *runtime_version)
 	}
 #endif
 
+	mono_interp_stub_init ();
 #ifndef DISABLE_INTERPRETER
 	if (mono_use_interpreter)
-		mono_interp_init ();
-	else
+		mono_ee_interp_init (mono_interp_opts_string);
 #endif
-		mono_interp_stub_init ();
 
 	mono_os_mutex_init_recursive (&jit_mutex);
 
