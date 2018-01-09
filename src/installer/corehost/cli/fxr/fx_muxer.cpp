@@ -1396,10 +1396,14 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
     if (argc >= 1)
     {
         own_path = argv[0];
-        if (!own_path.empty() && (!pal::realpath(&own_path) || !pal::file_exists(own_path)))
+        if (!own_path.empty())
         {
-            trace::warning(_X("Failed to resolve argv[0] as path [%s]. Using location of current executable instead."), own_path.c_str());
-            own_path.clear();
+            trace::info(_X("Attempting to use argv[0] as path [%s]"), own_path.c_str());
+            if (!get_path_from_argv(&own_path))
+            {
+                trace::warning(_X("Failed to resolve argv[0] as path [%s]. Using location of current executable instead."), own_path.c_str());
+                own_path.clear();
+            }
         }
     }
 
