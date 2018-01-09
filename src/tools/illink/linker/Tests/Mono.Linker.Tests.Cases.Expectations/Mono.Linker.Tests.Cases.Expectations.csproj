@@ -56,6 +56,7 @@
     <Compile Include="Metadata\BaseMetadataAttribute.cs" />
     <Compile Include="Metadata\SetupCompileAfterAttribute.cs" />
     <Compile Include="Metadata\SetupCompileAssemblyNameAttribute.cs" />
+    <Compile Include="Metadata\SetupCompileArgumentAttribute.cs" />
     <Compile Include="Metadata\SetupCompileBeforeAttribute.cs" />
     <Compile Include="Metadata\DefineAttribute.cs" />
     <Compile Include="Metadata\IncludeBlacklistStepAttribute.cs" />

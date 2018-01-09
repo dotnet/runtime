@@ -24,7 +24,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			_metadataProvider = metadataProvider;
 		}
 
-		public NPath CompileTestIn (NPath outputDirectory, string outputName, IEnumerable<string> sourceFiles, IEnumerable<string> references, IEnumerable<string> defines, NPath[] resources)
+		public NPath CompileTestIn (NPath outputDirectory, string outputName, IEnumerable<string> sourceFiles, IEnumerable<string> references, IEnumerable<string> defines, NPath[] resources, string[] additionalArguments)
 		{
 			var originalReferences = references.Select (r => r.ToNPath ()).ToArray ();
 			var originalDefines = defines?.ToArray () ?? new string [0];
@@ -39,7 +39,8 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				sourceFiles.Select (s => s.ToNPath ()).ToArray (),
 				allTestCaseReferences,
 				originalDefines,
-				resources);
+				resources,
+				additionalArguments);
 			var testAssembly = CompileAssembly (options);
 				
 
@@ -56,7 +57,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		{
 		}
 
-		protected virtual CompilerOptions CreateOptionsForTestCase (NPath outputPath, NPath[] sourceFiles, NPath[] references, string[] defines, NPath[] resources)
+		protected virtual CompilerOptions CreateOptionsForTestCase (NPath outputPath, NPath[] sourceFiles, NPath[] references, string[] defines, NPath[] resources, string[] additionalArguments)
 		{
 			return new CompilerOptions
 			{
@@ -64,7 +65,8 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				SourceFiles = sourceFiles,
 				References = references,
 				Defines = defines.Concat (_metadataProvider.GetDefines ()).ToArray (),
-				Resources = resources
+				Resources = resources,
+				AdditionalArguments = additionalArguments
 			};
 		}
 
@@ -181,6 +183,11 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 			if (options.Resources != null)
 				compilerParameters.EmbeddedResources.AddRange (options.Resources.Select (r => r.ToString ()).ToArray ());
+
+			if (options.AdditionalArguments != null) {
+				var combinedValues = options.AdditionalArguments.Aggregate (string.Empty, (buff, arg) => $"{buff} {arg}");
+				compilerParameters.CompilerOptions = $"{compilerParameters.CompilerOptions} {combinedValues}";
+			}
 
 			return compilerParameters;
 		}

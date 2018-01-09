@@ -77,6 +77,7 @@
     <Compile Include="Resources\EmbeddedLinkXmlFileIsProcessed.cs" />
     <Compile Include="Resources\NonLinkerEmbeddedResourceHasNoImpact.cs" />
     <Compile Include="TestFramework\CanCompileILAssembly.cs" />
+    <Compile Include="TestFramework\CanCompileTestCaseWithDebugPdbs.cs" />
     <Compile Include="TestFramework\VerifyDefineAttributeBehavior.cs" />
     <None Include="TypeForwarding\Dependencies\ForwarderLibrary.cs" />
     <Compile Include="TestFramework\VerifyResourceInAssemblyAttributesBehavior.cs" />
