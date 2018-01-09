@@ -2884,6 +2884,11 @@
         "4.0.1.0": "4.3.0"
       }
     },
+    "System.Net.WebSockets.WebSocketProtocol": {
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.5.0"
+      }
+    },
     "System.Numerics": {
       "InboxOn": {
         "netcoreapp2.0": "4.0.0.0",
