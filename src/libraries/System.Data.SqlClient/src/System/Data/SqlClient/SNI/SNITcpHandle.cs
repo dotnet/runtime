@@ -137,19 +137,20 @@ namespace System.Data.SqlClient.SNI
                     }
 
                     connectTask = ParallelConnectAsync(serverAddresses, port);
+
+                    if (!(isInfiniteTimeOut ? connectTask.Wait(-1) : connectTask.Wait(ts)))
+                    {
+                        ReportTcpSNIError(0, SNICommon.ConnOpenFailedError, string.Empty);
+                        return;
+                    }
+
+                    _socket = connectTask.Result;
                 }
                 else
                 {
-                    connectTask = ConnectAsync(serverName, port);
+                    _socket = Connect(serverName, port, ts);
                 }
-
-                if (!(isInfiniteTimeOut ? connectTask.Wait(-1) : connectTask.Wait(ts)))
-                {
-                    ReportTcpSNIError(0, SNICommon.ConnOpenFailedError, string.Empty);
-                    return;
-                }
-
-                _socket = connectTask.Result;
+                
                 if (_socket == null || !_socket.Connected)
                 {
                     if (_socket != null)
@@ -182,31 +183,72 @@ namespace System.Data.SqlClient.SNI
             _status = TdsEnums.SNI_SUCCESS;
         }
 
-        private static async Task<Socket> ConnectAsync(string serverName, int port)
+        private static Socket Connect(string serverName, int port, TimeSpan timeout)
         {
-            IPAddress[] addresses = await Dns.GetHostAddressesAsync(serverName).ConfigureAwait(false);
-            IPAddress targetAddrV4 = Array.Find(addresses, addr => (addr.AddressFamily == AddressFamily.InterNetwork));
-            IPAddress targetAddrV6 = Array.Find(addresses, addr => (addr.AddressFamily == AddressFamily.InterNetworkV6));
-            if (targetAddrV4 != null && targetAddrV6 != null)
+            IPAddress[] ipAddresses = Dns.GetHostAddresses(serverName);
+            IPAddress serverIPv4 = null;
+            IPAddress serverIPv6 = null;
+            foreach (IPAddress ipAdress in ipAddresses)
             {
-                return await ParallelConnectAsync(new IPAddress[] { targetAddrV4, targetAddrV6 }, port).ConfigureAwait(false);
+                if (ipAdress.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    serverIPv4 = ipAdress;
+                }
+                else if (ipAdress.AddressFamily == AddressFamily.InterNetworkV6)
+                {
+                    serverIPv6 = ipAdress;
+                }
             }
-            else
-            {
-                IPAddress targetAddr = (targetAddrV4 != null) ? targetAddrV4 : targetAddrV6;
-                var socket = new Socket(targetAddr.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            ipAddresses = new IPAddress[] { serverIPv4, serverIPv6 };
+            Socket[] sockets = new Socket[2];
 
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(timeout);
+            void Cancel()
+            {
+                for (int i = 0; i < sockets.Length; ++i)
+                {
+                    try
+                    {
+                        if (sockets[i] != null && !sockets[i].Connected)
+                        {
+                            sockets[i].Dispose();
+                            sockets[i] = null;
+                        }
+                    }
+                    catch { }
+                }
+            }
+            cts.Token.Register(Cancel);
+
+            Socket availableSocket = null;
+            for (int i = 0; i < sockets.Length; ++i)
+            {
                 try
                 {
-                    await socket.ConnectAsync(targetAddr, port).ConfigureAwait(false);
+                    if (ipAddresses[i] != null)
+                    {
+                        sockets[i] = new Socket(ipAddresses[i].AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                        sockets[i].Connect(ipAddresses[i], port);
+                        if (sockets[i] != null) // sockets[i] can be null if cancel callback is executed during connect()
+                        {
+                            if (sockets[i].Connected)
+                            {
+                                availableSocket = sockets[i];
+                                break;
+                            }
+                            else
+                            {
+                                sockets[i].Dispose();
+                                sockets[i] = null;
+                            }
+                        }
+                    }
                 }
-                catch
-                {
-                    socket.Dispose();
-                    throw;
-                }
-                return socket;
+                catch { }
             }
+
+            return availableSocket;
         }
 
         private static Task<Socket> ParallelConnectAsync(IPAddress[] serverAddresses, int port)
@@ -320,7 +362,7 @@ namespace System.Data.SqlClient.SNI
 
             try
             {
-                _sslStream.AuthenticateAsClientAsync(_targetServer).GetAwaiter().GetResult();
+                _sslStream.AuthenticateAsClient(_targetServer);
                 _sslOverTdsStream.FinishHandshake();
             }
             catch (AuthenticationException aue)
