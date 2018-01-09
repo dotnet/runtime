@@ -3092,7 +3092,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	gboolean llvm = (flags & JIT_FLAG_LLVM) ? 1 : 0;
 #endif
 	static gboolean verbose_method_inited;
-	static char *verbose_method_name;
+	static char **verbose_method_names;
 
 	mono_atomic_inc_i32 (&mono_jit_stats.methods_compiled);
 	MONO_PROFILER_RAISE (jit_begin, (method));
@@ -3362,23 +3362,30 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	}
 
 	if (!verbose_method_inited) {
-		verbose_method_name = g_getenv ("MONO_VERBOSE_METHOD");
+		char *env = g_getenv ("MONO_VERBOSE_METHOD");
+		if (env != NULL)
+			verbose_method_names = g_strsplit (env, ",", -1);
+		
 		verbose_method_inited = TRUE;
 	}
-	if (verbose_method_name) {
-		const char *name = verbose_method_name;
+	if (verbose_method_names) {
+		int i;
+		
+		for (i = 0; verbose_method_names [i] != NULL; i++){
+			const char *name = verbose_method_names [i];
 
-		if ((strchr (name, '.') > name) || strchr (name, ':')) {
-			MonoMethodDesc *desc;
-			
-			desc = mono_method_desc_new (name, TRUE);
-			if (mono_method_desc_full_match (desc, cfg->method)) {
-				cfg->verbose_level = 4;
+			if ((strchr (name, '.') > name) || strchr (name, ':')) {
+				MonoMethodDesc *desc;
+				
+				desc = mono_method_desc_new (name, TRUE);
+				if (mono_method_desc_full_match (desc, cfg->method)) {
+					cfg->verbose_level = 4;
+				}
+				mono_method_desc_free (desc);
+			} else {
+				if (strcmp (cfg->method->name, name) == 0)
+					cfg->verbose_level = 4;
 			}
-			mono_method_desc_free (desc);
-		} else {
-			if (strcmp (cfg->method->name, name) == 0)
-				cfg->verbose_level = 4;
 		}
 	}
 

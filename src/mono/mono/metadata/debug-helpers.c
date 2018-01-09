@@ -575,6 +575,13 @@ mono_method_desc_is_full (MonoMethodDesc *desc)
 
 /**
  * mono_method_desc_full_match:
+ * \param desc A method description that you created with mono_method_desc_new
+ * \param method a MonoMethod instance that you want to match against
+ *
+ * This method is used to check whether the method matches the provided
+ * description, by making sure that the method matches both the class and the method parameters.
+ *
+ * \returns TRUE if the specified method matches the specified description, FALSE otherwise.
  */
 gboolean
 mono_method_desc_full_match (MonoMethodDesc *desc, MonoMethod *method)
