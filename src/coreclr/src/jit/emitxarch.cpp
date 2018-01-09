@@ -118,15 +118,9 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_paddb:
         case INS_paddd:
         case INS_paddq:
-        case INS_paddsb:
-        case INS_paddsw:
-        case INS_paddusb:
-        case INS_paddusw:
         case INS_paddw:
         case INS_pand:
         case INS_pandn:
-        case INS_pavgb:
-        case INS_pavgw:
         case INS_pcmpeqb:
         case INS_pcmpeqd:
         case INS_pcmpeqq:
@@ -136,7 +130,6 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_pcmpgtq:
         case INS_pcmpgtw:
         case INS_phaddd:
-        case INS_pmaddwd:
         case INS_pmaxsb:
         case INS_pmaxsd:
         case INS_pmaxsw:
@@ -149,22 +142,13 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_pminub:
         case INS_pminud:
         case INS_pminuw:
-        case INS_pmulhuw:
-        case INS_pmulhw:
         case INS_pmulld:
         case INS_pmullw:
         case INS_pmuludq:
         case INS_por:
-        case INS_psadbw:
-        case INS_pshufhw:
-        case INS_pshuflw:
         case INS_psubb:
         case INS_psubd:
         case INS_psubq:
-        case INS_psubsb:
-        case INS_psubsw:
-        case INS_psubusb:
-        case INS_psubusw:
         case INS_psubw:
         case INS_punpckhbw:
         case INS_punpckhdq:
@@ -181,8 +165,6 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_subps:
         case INS_subsd:
         case INS_subss:
-        case INS_unpckhpd:
-        case INS_unpcklpd:
         case INS_vinsertf128:
         case INS_vinserti128:
         case INS_vperm2i128:
@@ -201,9 +183,22 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
 // to indicate whether a 3-operand instruction.
 bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 {
-    return IsAVXInstruction(ins) &&
-           (ins == INS_movlpd || ins == INS_movlps || ins == INS_movhpd || ins == INS_movhps || ins == INS_movss ||
-            ins == INS_movlhps || ins == INS_sqrtss || ins == INS_sqrtsd || ins == INS_cvtss2sd || ins == INS_cvtsd2ss);
+    switch (ins)
+    {
+        case INS_cvtsd2ss:
+        case INS_cvtss2sd:
+        case INS_movhpd:
+        case INS_movhps:
+        case INS_movlhps:
+        case INS_movlpd:
+        case INS_movlps:
+        case INS_movss:
+        case INS_sqrtsd:
+        case INS_sqrtss:
+            return IsAVXInstruction(ins);
+        default:
+            return false;
+    }
 }
 
 // ------------------------------------------------------------------------------
