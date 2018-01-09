@@ -36,7 +36,6 @@ namespace System.Xml
         private Entry[] _entries;
         private int _count;
         private int _mask;
-        private int _hashCodeRandomizer;
 
         //
         // Constructor
@@ -47,7 +46,6 @@ namespace System.Xml
         {
             _mask = 31;
             _entries = new Entry[_mask + 1];
-            _hashCodeRandomizer = Environment.TickCount;
         }
 
         //
@@ -68,20 +66,7 @@ namespace System.Xml
                 return string.Empty;
             }
 
-            int hashCode;
-            unchecked
-            {
-                hashCode = len + _hashCodeRandomizer;
-                // use key.Length to eliminate the range check
-                for (int i = 0; i < key.Length; i++)
-                {
-                    hashCode += (hashCode << 7) ^ key[i];
-                }
-                // mix it a bit more
-                hashCode -= hashCode >> 17;
-                hashCode -= hashCode >> 11;
-                hashCode -= hashCode >> 5;
-            }
+            int hashCode = ComputeHash32(key);
 
             for (Entry e = _entries[hashCode & _mask]; e != null; e = e.next)
             {
@@ -104,21 +89,21 @@ namespace System.Xml
                 return string.Empty;
             }
 
-            int hashCode;
-            unchecked
+            // Compatibility check to ensure same exception as previous versions
+            // independently of any exceptions throw by the hashing function.
+            // note that NullReferenceException is the first one if key is null.
+            if (start >= key.Length || start < 0 || (long)start + len > (long)key.Length)
             {
-                hashCode = len + _hashCodeRandomizer;
-                hashCode += (hashCode << 7) ^ key[start];   // this will throw IndexOutOfRangeException in case the start index is invalid
-                int end = start + len;
-                for (int i = start + 1; i < end; i++)
-                {
-                    hashCode += (hashCode << 7) ^ key[i];
-                }
-                // mix it a bit more
-                hashCode -= hashCode >> 17;
-                hashCode -= hashCode >> 11;
-                hashCode -= hashCode >> 5;
+                throw new IndexOutOfRangeException();
             }
+
+            // Compatibility check for len < 0, just throw the same exception as new string(key, start, len)
+            if (len < 0)
+            {
+                throw new ArgumentOutOfRangeException();
+            }
+
+            int hashCode = ComputeHash32(key, start, len);
 
             for (Entry e = _entries[hashCode & _mask]; e != null; e = e.next)
             {
@@ -144,21 +129,7 @@ namespace System.Xml
                 return string.Empty;
             }
 
-            int hashCode;
-            unchecked
-            {
-                int len = value.Length + _hashCodeRandomizer;
-                hashCode = len;
-                // use value.Length to eliminate the range check
-                for (int i = 0; i < value.Length; i++)
-                {
-                    hashCode += (hashCode << 7) ^ value[i];
-                }
-                // mix it a bit more
-                hashCode -= hashCode >> 17;
-                hashCode -= hashCode >> 11;
-                hashCode -= hashCode >> 5;
-            }
+            int hashCode = ComputeHash32(value);
 
             for (Entry e = _entries[hashCode & _mask]; e != null; e = e.next)
             {
@@ -181,21 +152,18 @@ namespace System.Xml
                 return string.Empty;
             }
 
-            int hashCode;
-            unchecked
+            if (start >= key.Length || start < 0 || (long)start + len > (long)key.Length)
             {
-                hashCode = len + _hashCodeRandomizer;
-                hashCode += (hashCode << 7) ^ key[start];   // this will throw IndexOutOfRangeException in case the start index is invalid
-                int end = start + len;
-                for (int i = start + 1; i < end; i++)
-                {
-                    hashCode += (hashCode << 7) ^ key[i];
-                }
-                // mix it a bit more
-                hashCode -= hashCode >> 17;
-                hashCode -= hashCode >> 11;
-                hashCode -= hashCode >> 5;
+                throw new IndexOutOfRangeException();
             }
+
+            // Compatibility check for len < 0, just return null
+            if (len < 0)
+            {
+                return null;
+            }
+
+            int hashCode = ComputeHash32(key, start, len);
 
             for (Entry e = _entries[hashCode & _mask]; e != null; e = e.next)
             {
@@ -262,6 +230,18 @@ namespace System.Xml
                 }
             }
             return true;
+        }
+
+        private static int ComputeHash32(string key)
+        {
+            ReadOnlySpan<byte> bytes = key.AsReadOnlySpan().AsBytes();
+            return Marvin.ComputeHash32(bytes, Marvin.DefaultSeed);
+        }
+
+        private static int ComputeHash32(char[] key, int start, int len)
+        {
+            ReadOnlySpan<byte> bytes = key.AsReadOnlySpan().Slice(start, len).AsBytes();
+            return Marvin.ComputeHash32(bytes, Marvin.DefaultSeed);
         }
     }
 }
