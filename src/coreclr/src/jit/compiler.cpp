@@ -2741,6 +2741,15 @@ void Compiler::compSetProcessor()
         }
     }
 #endif
+#if defined(_TARGET_ARM64_)
+    // There is no JitFlag for Base instructions handle manually
+    opts.setSupportedISA(InstructionSet_Base);
+#define HARDWARE_INTRINSIC_CLASS(flag, isa)                                                                            \
+    if (jitFlags.IsSet(JitFlags::flag))                                                                                \
+        opts.setSupportedISA(InstructionSet_##isa);
+#include "hwintrinsiclistArm64.h"
+
+#endif
 }
 
 #ifdef PROFILING_SUPPORTED
