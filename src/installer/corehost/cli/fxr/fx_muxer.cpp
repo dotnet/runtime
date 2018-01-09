@@ -1102,14 +1102,14 @@ void append_probe_realpath(const pal::string_t& path, std::vector<pal::string_t>
         pal::string_t placeholder = _X("|arch|");
         placeholder.push_back(DIR_SEPARATOR);
         placeholder.append(_X("|tfm|"));
-        auto pos_placeholder = probe_path.find_last_of(placeholder);
+        auto pos_placeholder = probe_path.find(placeholder);
 
         if (pos_placeholder != pal::string_t::npos)
         {
             pal::string_t segment = get_arch();
             segment.push_back(DIR_SEPARATOR);
             segment.append(tfm);
-            probe_path.replace(pos_placeholder - placeholder.length() + 1, placeholder.length(), segment);
+            probe_path.replace(pos_placeholder, placeholder.length(), segment);
 
             if (pal::directory_exists(probe_path))
             {
