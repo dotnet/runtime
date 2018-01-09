@@ -219,9 +219,9 @@
 
   <Target Name="SetupPublishSymbols" Condition="'$(SymbolServerPath)'!=''" >
     <PropertyGroup>
-      <SymbolExpirationInDays Condition="'$(SymbolExpirationInDays)'=='' and '$(SymbolExpirationDate)'==''">5</SymbolExpirationInDays>
+      <SymbolExpirationInDays Condition="'$(SymbolExpirationInDays)'=='' and '$(SymbolExpirationDate)'==''">1</SymbolExpirationInDays>
       <SymbolVerboseLogging>true</SymbolVerboseLogging>
-      <ConvertPortablePdbsToWindowsPdbs>false</ConvertPortablePdbsToWindowsPdbs>
+      <ConvertPortablePdbsToWindowsPdbs>true</ConvertPortablePdbsToWindowsPdbs>
     </PropertyGroup>
     <ItemGroup>
       <SymbolPackagesToPublish Include="$(DownloadDirectory)**\*.symbols.nupkg" />
