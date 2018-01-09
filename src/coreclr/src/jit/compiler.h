@@ -7974,7 +7974,7 @@ private:
 
     bool compSupports(InstructionSet isa) const
     {
-#ifdef _TARGET_XARCH_
+#if defined(_TARGET_XARCH_) | defined(_TARGET_ARM64_)
         return (opts.compSupportsISA & (1ULL << isa)) != 0;
 #else
         return false;
@@ -8100,7 +8100,7 @@ public:
         bool compCanUseSSE4; // Allow CodeGen to use SSE3, SSSE3, SSE4.1 and SSE4.2 instructions
 #endif                       // _TARGET_XARCH_
 
-#ifdef _TARGET_XARCH_
+#if defined(_TARGET_XARCH_) | defined(_TARGET_ARM64_)
         uint64_t compSupportsISA;
         void setSupportedISA(InstructionSet isa)
         {

@@ -300,6 +300,29 @@ enum InstructionSet
     InstructionSet_POPCNT  = 38,
 #elif defined(_TARGET_ARM_)
     InstructionSet_NEON,
+#elif defined(_TARGET_ARM64_)
+    InstructionSet_Base,      // Base instructions available on all Arm64 platforms
+    InstructionSet_Aes,       // ID_AA64ISAR0_EL1.AES is 1 or better
+    InstructionSet_Atomics,   // ID_AA64ISAR0_EL1.Atomic is 2 or better
+    InstructionSet_Crc32,     // ID_AA64ISAR0_EL1.CRC32 is 1 or better
+    InstructionSet_Dcpop,     // ID_AA64ISAR1_EL1.DPB is 1 or better
+    InstructionSet_Dp,        // ID_AA64ISAR0_EL1.DP is 1 or better
+    InstructionSet_Fcma,      // ID_AA64ISAR1_EL1.FCMA is 1 or better
+    InstructionSet_Fp,        // ID_AA64PFR0_EL1.FP is 0 or better
+    InstructionSet_Fp16,      // ID_AA64PFR0_EL1.FP is 1 or better
+    InstructionSet_Jscvt,     // ID_AA64ISAR1_EL1.JSCVT is 1 or better
+    InstructionSet_Lrcpc,     // ID_AA64ISAR1_EL1.LRCPC is 1 or better
+    InstructionSet_Pmull,     // ID_AA64ISAR0_EL1.AES is 2 or better
+    InstructionSet_Sha1,      // ID_AA64ISAR0_EL1.SHA1 is 1 or better
+    InstructionSet_Sha2,      // ID_AA64ISAR0_EL1.SHA2 is 1 or better
+    InstructionSet_Sha512,    // ID_AA64ISAR0_EL1.SHA2 is 2 or better
+    InstructionSet_Sha3,      // ID_AA64ISAR0_EL1.SHA3 is 1 or better
+    InstructionSet_Simd,      // ID_AA64PFR0_EL1.AdvSIMD is 0 or better
+    InstructionSet_Simd_v81,  // ID_AA64ISAR0_EL1.RDM is 1 or better
+    InstructionSet_Simd_fp16, // ID_AA64PFR0_EL1.AdvSIMD is 1 or better
+    InstructionSet_Sm3,       // ID_AA64ISAR0_EL1.SM3 is 1 or better
+    InstructionSet_Sm4,       // ID_AA64ISAR0_EL1.SM4 is 1 or better
+    InstructionSet_Sve,       // ID_AA64PFR0_EL1.SVE is 1 or better
 #endif
     InstructionSet_NONE       // No instruction set is available indicating an invalid value
 };
