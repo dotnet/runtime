@@ -10208,10 +10208,14 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
         if (lclNode != nullptr)
         {
             LclVarDsc* varDsc = &(lvaTable[lclNode->gtLclNum]);
-            if (varTypeIsStruct(varDsc) && (varDsc->lvType == asgType))
+            if (varTypeIsStruct(varDsc) && (varDsc->lvExactSize == blockWidth) && (varDsc->lvType == asgType))
             {
 #ifndef LEGACY_BACKEND
-                effectiveVal     = lclNode;
+                if (effectiveVal != lclNode)
+                {
+                    JITDUMP("Replacing block node [%06d] with lclVar V%02u\n", dspTreeID(tree), lclNode->gtLclNum);
+                    effectiveVal = lclNode;
+                }
                 needsIndirection = false;
 #endif // !LEGACY_BACKEND
             }
