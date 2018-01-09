@@ -22,11 +22,10 @@
             Condition="'$(OSGroup)' == 'Windows_NT' and '$(GenerateMSI)' == 'true'">
       
       <PropertyGroup>
-        <WixVersion Condition="'$(WixVersion)' == ''">3.10.2</WixVersion>
         <WixFilename>wix.$(WixVersion).zip</WixFilename>
       </PropertyGroup>
 
-      <Exec Command="powershell -NoProfile -NoLogo $(GetWixScript) -WixVersion $(WixVersion) -OutputDir $(WixToolsDir)" />
+      <Exec Command="powershell -NoProfile -NoLogo $(GetWixScript) -WixFilename $(WixFilename) -OutputDir $(WixToolsDir)" />
       
       <ItemGroup>
         <_filelist Include="$(WixToolsDir)\**" />

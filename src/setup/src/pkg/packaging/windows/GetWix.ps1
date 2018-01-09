@@ -1,5 +1,5 @@
 ﻿Param(
-    [string]$WixFilename="wix.3.10.2.zip",
+    [string]$WixFilename,
     [string]$OutputDir="."
 )
 
