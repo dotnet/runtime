@@ -2301,11 +2301,38 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic intrinsicID = node->gtHWIntrinsicId;
-    GenTree*       op1         = node->gtOp.gtOp1;
-    GenTree*       op2         = node->gtOp.gtOp2;
+    GenTree*       op1         = node->gtGetOp1();
+    GenTree*       op2         = node->gtGetOp2();
 
     switch (node->gtHWIntrinsicId)
     {
+        case NI_SSE_Add:
+        case NI_SSE2_Add:
+            if (!comp->getEmitter()->UseVEXEncoding())
+            {
+                // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
+                // TODO-XArch-CQ: Non-VEX encoded instructions require memory ops to be aligned
+                break;
+            }
+            __fallthrough;
+
+        case NI_AVX_Add:
+        case NI_AVX2_Add:
+        {
+            assert(comp->getEmitter()->UseVEXEncoding());
+
+            if (IsContainableMemoryOp(op2))
+            {
+                MakeSrcContained(node, op2);
+            }
+            else
+            {
+                // TODO-XArch-CQ: Commutative operations can have op1 be contained
+                op2->SetRegOptional();
+            }
+            break;
+        }
+
         default:
             assert((intrinsicID > NI_HW_INTRINSIC_START) && (intrinsicID < NI_HW_INTRINSIC_END));
             break;
