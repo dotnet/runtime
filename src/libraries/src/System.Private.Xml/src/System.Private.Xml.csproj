@@ -20,7 +20,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs" />
+    <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
+      <Link>System\StringBuilderCache.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Marvin.cs">
+      <Link>System\Marvin.cs</Link>
+    </Compile>
     <Compile Include="System\Xml\BinaryXml\XmlBinaryReader.cs" />
     <Compile Include="System\Xml\BinaryXml\BinXmlToken.cs" />
     <Compile Include="System\Xml\BinaryXml\SqlUtils.cs" />
@@ -530,6 +535,7 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />
