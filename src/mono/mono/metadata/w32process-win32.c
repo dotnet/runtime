@@ -111,13 +111,11 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 		process_info->pid = -GetLastError ();
 	} else {
 		process_info->process_handle = shellex.hProcess;
-		process_info->thread_handle = NULL;
 #if !defined(MONO_CROSS_COMPILE)
 		process_info->pid = GetProcessId (shellex.hProcess);
 #else
 		process_info->pid = 0;
 #endif
-		process_info->tid = 0;
 	}
 
 	return ret;
@@ -335,11 +333,9 @@ ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStart
 	if (ret) {
 		process_info->process_handle = procinfo.hProcess;
 		/*process_info->thread_handle=procinfo.hThread;*/
-		process_info->thread_handle = NULL;
 		if (procinfo.hThread != NULL && procinfo.hThread != INVALID_HANDLE_VALUE)
 			CloseHandle (procinfo.hThread);
 		process_info->pid = procinfo.dwProcessId;
-		process_info->tid = procinfo.dwThreadId;
 	} else {
 		process_info->pid = -GetLastError ();
 	}
