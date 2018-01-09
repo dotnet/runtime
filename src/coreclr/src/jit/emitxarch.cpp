@@ -75,27 +75,123 @@ bool emitter::IsAVXInstruction(instruction ins)
 // to indicate whether a 3-operand instruction.
 bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
 {
-    return IsAVXInstruction(ins) &&
-           (ins == INS_cvtsi2ss || ins == INS_cvtsi2sd || ins == INS_addss || ins == INS_addsd || ins == INS_subss ||
-            ins == INS_subsd || ins == INS_mulss || ins == INS_mulsd || ins == INS_divss || ins == INS_divsd ||
-            ins == INS_addps || ins == INS_addpd || ins == INS_subps || ins == INS_subpd || ins == INS_mulps ||
-            ins == INS_mulpd || ins == INS_cmpps || ins == INS_cmppd || ins == INS_andps || ins == INS_andpd ||
-            ins == INS_orps || ins == INS_orpd || ins == INS_xorps || ins == INS_xorpd || ins == INS_dpps ||
-            ins == INS_dppd || ins == INS_haddpd || ins == INS_por || ins == INS_pand || ins == INS_pandn ||
-            ins == INS_pcmpeqd || ins == INS_pcmpgtd || ins == INS_pcmpeqw || ins == INS_pcmpgtw ||
-            ins == INS_pcmpeqb || ins == INS_pcmpgtb || ins == INS_pcmpeqq || ins == INS_pcmpgtq || ins == INS_pmulld ||
-            ins == INS_pmullw || ins == INS_shufps || ins == INS_shufpd || ins == INS_minps || ins == INS_minss ||
-            ins == INS_minpd || ins == INS_minsd || ins == INS_divps || ins == INS_divpd || ins == INS_maxps ||
-            ins == INS_maxpd || ins == INS_maxss || ins == INS_maxsd || ins == INS_andnps || ins == INS_andnpd ||
-            ins == INS_paddb || ins == INS_paddw || ins == INS_paddd || ins == INS_paddq || ins == INS_psubb ||
-            ins == INS_psubw || ins == INS_psubd || ins == INS_psubq || ins == INS_pmuludq || ins == INS_pxor ||
-            ins == INS_insertps || ins == INS_vinsertf128 || ins == INS_punpckldq || ins == INS_phaddd ||
-            ins == INS_pminub || ins == INS_pminsw || ins == INS_pminsb || ins == INS_pminsd || ins == INS_pminuw ||
-            ins == INS_pminud || ins == INS_pmaxub || ins == INS_pmaxsw || ins == INS_pmaxsb || ins == INS_pmaxsd ||
-            ins == INS_pmaxuw || ins == INS_pmaxud || ins == INS_vinserti128 || ins == INS_punpckhbw ||
-            ins == INS_punpcklbw || ins == INS_punpckhqdq || ins == INS_punpcklqdq || ins == INS_punpckhwd ||
-            ins == INS_punpcklwd || ins == INS_punpckhdq || ins == INS_packssdw || ins == INS_packsswb ||
-            ins == INS_packuswb || ins == INS_packusdw || ins == INS_vperm2i128);
+    switch (ins)
+    {
+        case INS_addpd:
+        case INS_addps:
+        case INS_addsd:
+        case INS_addss:
+        case INS_andnpd:
+        case INS_andnps:
+        case INS_andpd:
+        case INS_andps:
+        case INS_cmppd:
+        case INS_cmpps:
+        case INS_cvtsi2sd:
+        case INS_cvtsi2ss:
+        case INS_divpd:
+        case INS_divps:
+        case INS_divsd:
+        case INS_divss:
+        case INS_dppd:
+        case INS_dpps:
+        case INS_haddpd:
+        case INS_insertps:
+        case INS_maxpd:
+        case INS_maxps:
+        case INS_maxsd:
+        case INS_maxss:
+        case INS_minpd:
+        case INS_minps:
+        case INS_minsd:
+        case INS_minss:
+        case INS_mulpd:
+        case INS_mulps:
+        case INS_mulsd:
+        case INS_mulss:
+        case INS_orpd:
+        case INS_orps:
+        case INS_packssdw:
+        case INS_packsswb:
+        case INS_packusdw:
+        case INS_packuswb:
+        case INS_paddb:
+        case INS_paddd:
+        case INS_paddq:
+        case INS_paddsb:
+        case INS_paddsw:
+        case INS_paddusb:
+        case INS_paddusw:
+        case INS_paddw:
+        case INS_pand:
+        case INS_pandn:
+        case INS_pavgb:
+        case INS_pavgw:
+        case INS_pcmpeqb:
+        case INS_pcmpeqd:
+        case INS_pcmpeqq:
+        case INS_pcmpeqw:
+        case INS_pcmpgtb:
+        case INS_pcmpgtd:
+        case INS_pcmpgtq:
+        case INS_pcmpgtw:
+        case INS_phaddd:
+        case INS_pmaddwd:
+        case INS_pmaxsb:
+        case INS_pmaxsd:
+        case INS_pmaxsw:
+        case INS_pmaxub:
+        case INS_pmaxud:
+        case INS_pmaxuw:
+        case INS_pminsb:
+        case INS_pminsd:
+        case INS_pminsw:
+        case INS_pminub:
+        case INS_pminud:
+        case INS_pminuw:
+        case INS_pmulhuw:
+        case INS_pmulhw:
+        case INS_pmulld:
+        case INS_pmullw:
+        case INS_pmuludq:
+        case INS_por:
+        case INS_psadbw:
+        case INS_pshufhw:
+        case INS_pshuflw:
+        case INS_psubb:
+        case INS_psubd:
+        case INS_psubq:
+        case INS_psubsb:
+        case INS_psubsw:
+        case INS_psubusb:
+        case INS_psubusw:
+        case INS_psubw:
+        case INS_punpckhbw:
+        case INS_punpckhdq:
+        case INS_punpckhqdq:
+        case INS_punpckhwd:
+        case INS_punpcklbw:
+        case INS_punpckldq:
+        case INS_punpcklqdq:
+        case INS_punpcklwd:
+        case INS_pxor:
+        case INS_shufpd:
+        case INS_shufps:
+        case INS_subpd:
+        case INS_subps:
+        case INS_subsd:
+        case INS_subss:
+        case INS_unpckhpd:
+        case INS_unpcklpd:
+        case INS_vinsertf128:
+        case INS_vinserti128:
+        case INS_vperm2i128:
+        case INS_xorpd:
+        case INS_xorps:
+            return IsAVXInstruction(ins);
+        default:
+            return false;
+    }
 }
 
 // Returns true if the AVX instruction requires 3 operands that duplicate the source
