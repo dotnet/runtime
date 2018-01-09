@@ -56,7 +56,7 @@
   <!-- Publish symbol build task package -->
   <PropertyGroup>
     <PublishSymbolsPackage>Microsoft.SymbolUploader.Build.Task</PublishSymbolsPackage>
-    <PublishSymbolsPackageVersion>1.0.0-alpha-00014</PublishSymbolsPackageVersion>
+    <PublishSymbolsPackageVersion>1.0.0-alpha-00015</PublishSymbolsPackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
