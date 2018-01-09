@@ -116,6 +116,13 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			return GetOptionAttributeValue (nameof (SetupCompileAssemblyNameAttribute), "test.exe");
 		}
 
+		public virtual IEnumerable<string> GetSetupCompilerArguments ()
+		{
+			return _testCaseTypeDefinition.CustomAttributes
+				.Where (attr => attr.AttributeType.Name == nameof (SetupCompileArgumentAttribute))
+				.Select (attr => (string) attr.ConstructorArguments.First ().Value);
+		}
+
 		T GetOptionAttributeValue<T> (string attributeName, T defaultValue)
 		{
 			var attribute = _testCaseTypeDefinition.CustomAttributes.FirstOrDefault (attr => attr.AttributeType.Name == attributeName);
