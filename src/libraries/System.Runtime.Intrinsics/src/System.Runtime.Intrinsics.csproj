@@ -2,7 +2,7 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <AssemblyName>System.Runtime.Intrinsics.X86</AssemblyName>
+    <AssemblyName>System.Runtime.Intrinsics</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <ProjectGuid>{543FBFE5-E9E4-4631-8242-911A707FE818}</ProjectGuid>
   </PropertyGroup>
