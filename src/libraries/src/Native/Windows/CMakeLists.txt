@@ -97,6 +97,8 @@ endif()
 
 if (__LinkCustomCRT STREQUAL "true" AND $ENV{__BuildArch} STREQUAL "arm" )
     set(__LinkArgs "${__LinkArgs} /DEFAULTLIB:ole32.lib")
+elseif(__LinkCustomCRT STREQUAL "true" AND NOT $ENV{__BuildArch} STREQUAL "arm" )
+    set(__LinkArgs "${__LinkArgs} /NODEFAULTLIB")
 endif()
 
 # Linker flags
