@@ -1167,6 +1167,42 @@ VOID UMEntryThunk::FreeUMEntryThunk(UMEntryThunk* p)
 
 #endif // CROSSGEN_COMPILE
 
+//-------------------------------------------------------------------------
+// This function is used to report error when we call collected delegate.
+// But memory that was allocated for thunk can be reused, due to it this
+// function will not be called in all cases of the collected delegate call,
+// also it may crash while trying to report the problem.
+//-------------------------------------------------------------------------
+VOID __fastcall UMEntryThunk::ReportViolation(UMEntryThunk* pEntryThunk)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        PRECONDITION(CheckPointer(pEntryThunk));
+    }
+    CONTRACTL_END;
+
+    MethodDesc* pMethodDesc = pEntryThunk->GetMethod();
+
+    SString namespaceOrClassName;
+    SString methodName;
+    SString moduleName;
+
+    pMethodDesc->GetMethodInfoNoSig(namespaceOrClassName, methodName);
+    moduleName.SetUTF8(pMethodDesc->GetModule()->GetSimpleName());
+
+    SString message;
+
+    message.Printf(W("A callback was made on a garbage collected delegate of type '%s!%s::%s'."),
+        moduleName.GetUnicode(),
+        namespaceOrClassName.GetUnicode(),
+        methodName.GetUnicode());
+
+    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST, message.GetUnicode());
+}
+
 UMThunkMarshInfo::~UMThunkMarshInfo()
 {
     CONTRACTL
