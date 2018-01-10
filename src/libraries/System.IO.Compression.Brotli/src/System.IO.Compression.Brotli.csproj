@@ -33,20 +33,19 @@
   </ItemGroup>
   <!-- Windows specific files -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
-    <Compile Include="Interop\Library.Windows.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
   </ItemGroup>
-  <!-- Linux specific files -->
-  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
-    <Compile Include="Interop\Library.Linux.cs" />
+  <!-- Unix specific files -->
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
   </ItemGroup>
-  <!-- OSX specific files -->
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
-    <Compile Include="Interop\Library.OSX.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
+  <ItemGroup>
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.Contracts" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.IO.Compression" />
@@ -57,10 +56,6 @@
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Tasks" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

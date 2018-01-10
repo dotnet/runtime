@@ -8,13 +8,13 @@ using System.Threading;
 
 namespace System.IO.Compression
 {
-    public partial class BrotliStream : Stream
+    public sealed partial class BrotliStream : Stream
     {
         private const int DefaultInternalBufferSize = (1 << 16) - 16; //65520;
         private Stream _stream;
-        private byte[] _buffer;
-        private bool _leaveOpen;
-        private CompressionMode _mode;
+        private readonly byte[] _buffer;
+        private readonly bool _leaveOpen;
+        private readonly CompressionMode _mode;
 
         public BrotliStream(Stream stream, CompressionMode mode) : this(stream, mode, leaveOpen: false) { }
         public BrotliStream(Stream stream, CompressionMode mode, bool leaveOpen)
@@ -52,13 +52,18 @@ namespace System.IO.Compression
         {
             try
             {
-                if (_mode == CompressionMode.Compress && disposing && _stream != null)
+                if (disposing && _stream != null)
                 {
-                    WriteCore(ReadOnlySpan<byte>.Empty, isFinalBlock: true);
-                }
+                    if (_mode == CompressionMode.Compress)
+                    {
+                        WriteCore(ReadOnlySpan<byte>.Empty, isFinalBlock: true);
+                    }
 
-                if (disposing && !_leaveOpen)
-                    _stream?.Dispose();
+                    if (!_leaveOpen)
+                    {
+                        _stream.Dispose();
+                    }
+                }
             }
             finally
             {
@@ -85,8 +90,8 @@ namespace System.IO.Compression
         }
 
         public Stream BaseStream => _stream;
-        public override bool CanRead => _mode == CompressionMode.Compress ? false : (_stream == null ? false : _stream.CanRead);
-        public override bool CanWrite => _mode == CompressionMode.Decompress ? false : (_stream == null ? false : _stream.CanWrite);
+        public override bool CanRead => _mode == CompressionMode.Decompress  && _stream != null && _stream.CanRead;
+        public override bool CanWrite => _mode == CompressionMode.Compress  && _stream != null && _stream.CanWrite;
         public override bool CanSeek => false;
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
         public override long Length => throw new NotSupportedException();
@@ -120,7 +125,6 @@ namespace System.IO.Compression
             Debug.Assert(oldValue == 1, $"Expected {nameof(_activeAsyncOperation)} to be 1, got {oldValue}");
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowInvalidBeginCall()
         {
             throw new InvalidOperationException(SR.InvalidBeginCall);

@@ -13,18 +13,11 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            if (handle != IntPtr.Zero)
-            {
-                Interop.Brotli.BrotliEncoderDestroyInstance(handle);
-                SetHandle(IntPtr.Zero);
-            }
+            Interop.Brotli.BrotliEncoderDestroyInstance(handle);
             return true;
         }
 
-        public override bool IsInvalid
-        {
-            get { return handle == IntPtr.Zero; }
-        }
+        public override bool IsInvalid => handle == IntPtr.Zero;
     }
 
     internal sealed class SafeBrotliDecoderHandle : SafeHandle
@@ -33,17 +26,10 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            if (handle != IntPtr.Zero)
-            {
-                Interop.Brotli.BrotliDecoderDestroyInstance(handle);
-                SetHandle(IntPtr.Zero);
-            }
+            Interop.Brotli.BrotliDecoderDestroyInstance(handle);
             return true;
         }
 
-        public override bool IsInvalid
-        {
-            get { return handle == IntPtr.Zero; }
-        }
+        public override bool IsInvalid => handle == IntPtr.Zero;
     }
 }

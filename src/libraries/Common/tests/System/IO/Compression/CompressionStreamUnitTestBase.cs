@@ -27,9 +27,9 @@ namespace System.IO.Compression
                 Task task = null;
                 try
                 {
-                    // Write needs to be bigger enough to trigger a write to the underlying base stream so the WriteAsync call doesn't immediately complete.
+                    // Write needs to be big enough to trigger a write to the underlying base stream so the WriteAsync call doesn't immediately complete.
                     task = compressor.WriteAsync(buffer, 0, buffer.Length);
-                    while (task.IsCompletedSuccessfully)
+                    while (task.IsCompleted)
                     {
                         rand.NextBytes(buffer);
                         task = compressor.WriteAsync(buffer, 0, buffer.Length);
@@ -132,9 +132,9 @@ namespace System.IO.Compression
                 Task task = null;
                 try
                 {
-                    // Write needs to be bigger enough to trigger a write to the underlying base stream so the WriteAsync call doesn't immediately complete.
+                    // Write needs to be big enough to trigger a write to the underlying base stream so the WriteAsync call doesn't immediately complete.
                     task = compressor.WriteAsync(buffer, 0, buffer.Length);
-                    while (task.IsCompletedSuccessfully)
+                    while (task.IsCompleted)
                     {
                         rand.NextBytes(buffer);
                         task = compressor.WriteAsync(buffer, 0, buffer.Length);
@@ -192,9 +192,9 @@ namespace System.IO.Compression
                 Task task = null;
                 try
                 {
-                    // Write needs to be bigger enough to trigger a write to the underlying base stream so the WriteAsync call doesn't immediately complete.
+                    // Write needs to be big enough to trigger a write to the underlying base stream so the WriteAsync call doesn't immediately complete.
                     task = compressor.WriteAsync(buffer, 0, buffer.Length);
-                    while (task.IsCompletedSuccessfully)
+                    while (task.IsCompleted)
                     {
                         rand.NextBytes(buffer);
                         task = compressor.WriteAsync(buffer, 0, buffer.Length);
@@ -1139,7 +1139,7 @@ namespace System.IO.Compression
         [Theory]
         [OuterLoop]
         [InlineData(true)]
-        [InlineData(true)]
+        [InlineData(false)]
         public async Task CopyTo_Roundtrip_OutputMatchesInput(bool useAsync)
         {
             var rand = new Random();

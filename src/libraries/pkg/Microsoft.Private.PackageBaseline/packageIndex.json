@@ -1888,8 +1888,7 @@
     },
     "System.IO.Compression.Brotli": {
       "InboxOn": {
-        "netcoreapp2.1": "4.2.1.0",
-        "uap10.0.15138": "4.2.1.0"
+        "netcoreapp2.1": "4.2.1.0"
       },
       "AssemblyVersionInPackageVersion": {
         "4.2.0.0": "4.4.0",

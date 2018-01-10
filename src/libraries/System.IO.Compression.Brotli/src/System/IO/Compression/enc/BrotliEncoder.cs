@@ -18,10 +18,8 @@ namespace System.IO.Compression
         {
             _disposed = false;
             _state = Interop.Brotli.BrotliEncoderCreateInstance(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
-            if (_state == null || _state.IsInvalid || _state.IsClosed)
-            {
+            if (_state.IsInvalid)
                 throw new IOException(SR.BrotliEncoder_Create);
-            }
             SetQuality(quality);
             SetWindow(window);
         }
@@ -35,10 +33,8 @@ namespace System.IO.Compression
         {
             EnsureNotDisposed();
             _state = Interop.Brotli.BrotliEncoderCreateInstance(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
-            if (_state == null || _state.IsInvalid || _state.IsClosed)
-            {
+            if (_state.IsInvalid)
                 throw new IOException(SR.BrotliEncoder_Create);
-            }
         }
 
         internal void EnsureInitialized()
@@ -53,15 +49,13 @@ namespace System.IO.Compression
         public void Dispose()
         {
             _disposed = true;
-            if (_state == null || _state.IsInvalid || _state.IsClosed)
-                return;
-            _state.Dispose();
+            _state?.Dispose();
         }
 
         private void EnsureNotDisposed()
         {
             if (_disposed)
-                throw new ObjectDisposedException("BrotliEncoder", SR.BrotliEncoder_Disposed);
+                throw new ObjectDisposedException(nameof(BrotliEncoder), SR.BrotliEncoder_Disposed);
         }
 
         internal void SetQuality(int quality)
@@ -131,7 +125,6 @@ namespace System.IO.Compression
             size_t availableInput = (size_t)source.Length;
             unsafe
             {
-                IntPtr bufIn, bufOut;
                 // We can freely cast between int and size_t for two reasons: 
                 // 1. Interop Brotli functions will always return an availableInput/Output value lower or equal to the one passed to the function
                 // 2. Span's have a maximum length of the int boundary.
@@ -140,19 +133,16 @@ namespace System.IO.Compression
                     fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
                     fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
                     {
-                        bufIn = new IntPtr(inBytes);
-                        bufOut = new IntPtr(outBytes);
-                        if (!Interop.Brotli.BrotliEncoderCompressStream(_state, operation, ref availableInput, ref bufIn, ref availableOutput, ref bufOut, out size_t totalOut))
+                        if (!Interop.Brotli.BrotliEncoderCompressStream(_state, operation, ref availableInput, &inBytes, ref availableOutput, &outBytes, out size_t totalOut))
                         {
                             return OperationStatus.InvalidData;
                         }
                         bytesConsumed += source.Length - (int)availableInput;
                         bytesWritten += destination.Length - (int)availableOutput;
-                        if ((int)availableOutput == destination.Length) // no bytes written
+                        // no bytes written, no remaining input to give to the encoder, and no output in need of retrieving means we are Done
+                        if ((int)availableOutput == destination.Length && !Interop.Brotli.BrotliEncoderHasMoreOutput(_state) && (int)availableInput == 0)
                         {
-                            // no remaining input to give to the encoder and no output in need of retrieving
-                            if (!Interop.Brotli.BrotliEncoderHasMoreOutput(_state) && (int)availableInput == 0)
-                                return OperationStatus.Done;
+                            return OperationStatus.Done;
                         }
 
                         source = source.Slice(source.Length - (int)availableInput);
@@ -164,7 +154,7 @@ namespace System.IO.Compression
             }
         }
 
-        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten) => TryCompress(source, destination, out bytesWritten, 11, 22);
+        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten) => TryCompress(source, destination, out bytesWritten, BrotliUtils.Quality_Default, BrotliUtils.WindowBits_Default);
 
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int window)
         {
@@ -181,10 +171,8 @@ namespace System.IO.Compression
                 fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
                 fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
                 {
-                    IntPtr bufIn = new IntPtr(inBytes);
-                    IntPtr bufOut = new IntPtr(outBytes);
                     size_t availableOutput = (size_t)destination.Length;
-                    bool success = Interop.Brotli.BrotliEncoderCompress(quality, window, /*BrotliEncoderMode*/ 0, (size_t)source.Length, bufIn, ref availableOutput, bufOut);
+                    bool success = Interop.Brotli.BrotliEncoderCompress(quality, window, /*BrotliEncoderMode*/ 0, (size_t)source.Length, inBytes, ref availableOutput, outBytes);
                     bytesWritten = (int)availableOutput;
                     return success;
                 }
