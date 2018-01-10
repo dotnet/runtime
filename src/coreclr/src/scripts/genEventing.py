@@ -721,7 +721,7 @@ def generateEtmDummyHeader(sClrEtwAllMan,clretwdummy):
             #pal: create etmdummy.h
             Clretwdummy.write(generateclrEtwDummy(eventNodes, allTemplates) + "\n")
 
-def generatePlatformIndependentFiles(sClrEtwAllMan, incDir, etmDummyFile, extern):
+def generatePlatformIndependentFiles(sClrEtwAllMan, incDir, etmDummyFile, extern, write_xplatheader):
 
     generateEtmDummyHeader(sClrEtwAllMan,etmDummyFile)
     tree           = DOM.parse(sClrEtwAllMan)
@@ -751,13 +751,23 @@ def generatePlatformIndependentFiles(sClrEtwAllMan, incDir, etmDummyFile, extern
             Clrallevents.write(generateClrallEvents(eventNodes, allTemplates) + "\n")
 
 
-    # Write secondary headers for FireEtXplat* and EventPipe* functions
-    clrxplatevents = os.path.join(incDir, "clrxplatevents.h")
     clreventpipewriteevents = os.path.join(incDir, "clreventpipewriteevents.h")
-    with open_for_update(clrxplatevents) as Clrxplatevents:
-        with open_for_update(clreventpipewriteevents) as Clreventpipewriteevents:
+    with open_for_update(clreventpipewriteevents) as Clreventpipewriteevents:
+        Clreventpipewriteevents.write(stdprolog + "\n")
+
+        for providerNode in tree.getElementsByTagName('provider'):
+            templateNodes = providerNode.getElementsByTagName('template')
+            allTemplates  = parseTemplateNodes(templateNodes)
+            eventNodes = providerNode.getElementsByTagName('event')
+
+            #eventpipe: create clreventpipewriteevents.h
+            Clreventpipewriteevents.write(generateClrEventPipeWriteEvents(eventNodes, allTemplates, extern) + "\n")
+                
+    # Write secondary headers for FireEtXplat* and EventPipe* functions
+    if write_xplatheader:
+        clrxplatevents = os.path.join(incDir, "clrxplatevents.h")
+        with open_for_update(clrxplatevents) as Clrxplatevents:
             Clrxplatevents.write(stdprolog + "\n")
-            Clreventpipewriteevents.write(stdprolog + "\n")
 
             for providerNode in tree.getElementsByTagName('provider'):
                 templateNodes = providerNode.getElementsByTagName('template')
@@ -766,9 +776,6 @@ def generatePlatformIndependentFiles(sClrEtwAllMan, incDir, etmDummyFile, extern
 
                 #pal: create clrallevents.h
                 Clrxplatevents.write(generateClrXplatEvents(eventNodes, allTemplates, extern) + "\n")
-
-                #eventpipe: create clreventpipewriteevents.h
-                Clreventpipewriteevents.write(generateClrEventPipeWriteEvents(eventNodes, allTemplates, extern) + "\n")
 
 import argparse
 import sys
@@ -789,6 +796,8 @@ def main(argv):
                                     help='full path to directory where the test assets will be deployed' )
     required.add_argument('--nonextern', action='store_true',
                                     help='if specified, will not generated extern function stub headers' )
+    required.add_argument('--noxplatheader', action='store_true',
+                                    help='if specified, will not write a generated cross-platform header' )
     args, unknown = parser.parse_known_args(argv)
     if unknown:
         print('Unknown argument(s): ', ', '.join(unknown))
@@ -799,8 +808,9 @@ def main(argv):
     etmDummyFile      = args.dummy
     testDir           = args.testdir
     extern            = not args.nonextern
+    write_xplatheader = not args.noxplatheader
 
-    generatePlatformIndependentFiles(sClrEtwAllMan, incdir, etmDummyFile, extern)
+    generatePlatformIndependentFiles(sClrEtwAllMan, incdir, etmDummyFile, extern, write_xplatheader)
     generateSanityTest(sClrEtwAllMan, testDir)
 
 if __name__ == '__main__':

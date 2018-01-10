@@ -5,9 +5,9 @@
 ##
 ##  This file provides utility functions to the adjacent python scripts
 
-from filecmp import dircmp
 from hashlib import sha256
 from io import StringIO
+import filecmp
 import shutil
 import sys
 import os
@@ -68,48 +68,55 @@ class UpdateFileWriter:
 def open_for_update(filename):
     return UpdateFileWriter(filename)
 
-def walk_recursively_and_update(dcmp):
-    #for different Files Copy from right to left
-    for name in dcmp.diff_files:
-        srcpath = dcmp.right + "/" + name
-        destpath = dcmp.left + "/" + name
-        print("Updating %s" % (destpath))
-        if  os.path.isfile(srcpath):
-            shutil.copyfile(srcpath, destpath)
-        else :
-            raise Exception("path: " + srcpath + "is neither a file or folder")
+def split_entries(entries, directory):
+    """Given a list of entries in a directory, listing return a set of file and a set of dirs"""
+    files = set([entry for entry in entries if os.path.isfile(os.path.join(directory, entry))])
+    dirs = set([entry for entry in entries if os.path.isdir(os.path.join(directory, entry))])
 
-    #copy right only files
-    for name in dcmp.right_only:
-        srcpath = dcmp.right + "/" + name
-        destpath = dcmp.left + "/" + name
-        print("Updating %s" % (destpath))
-        if  os.path.isfile(srcpath):
-            shutil.copyfile(srcpath, destpath)
-        elif  os.path.isdir(srcpath):
-            shutil.copytree(srcpath, destpath)
-        else :
-            raise Exception("path: " + srcpath + "is neither a file or folder")
+    return files, dirs
 
-    #delete left only files
-    for name in dcmp.left_only:
-        path = dcmp.left + "/" + name
-        print("Deleting %s" % (path))
-        if  os.path.isfile(path):
-            os.remove(path)
-        elif  os.path.isdir(path):
-            shutil.rmtree(path)
-        else :
-            raise Exception("path: " + path + "is neither a file or folder")
+def update_directory(srcpath, dstpath, recursive=True, destructive=True, shallow=False):
+    """Updates dest directory with files from src directory
 
-    #call recursively
-    for sub_dcmp in dcmp.subdirs.values():
-        walk_recursively_and_update(sub_dcmp)
+    Args:
+        destpath (str): The destination path to sync with the source
+        srcpath (str): The source path to sync to the destination
+        recursive(boolean): If True, descend into and update subdirectories (default: True)
+        destructive(boolean): If True, delete files in the destination which do not exist in the source (default: True)
+        shallow(boolean): If True, only use os.stat to diff files. Do not examine contents (default: False)
+    """
+    srcfiles, srcdirs = split_entries(os.listdir(srcpath), srcpath)
+    dstfiles, dstdirs = split_entries(os.listdir(dstpath), dstpath)
 
-def UpdateDirectory(destpath,srcpath):
 
-    print("Updating %s with %s" % (destpath,srcpath))
-    if not os.path.exists(destpath):
-        os.makedirs(destpath)
-    dcmp = dircmp(destpath,srcpath)
-    walk_recursively_and_update(dcmp)
+    # Update files in both src and destination which are different in destination
+    commonfiles = srcfiles.intersection(dstfiles)
+    _, mismatches, errors = filecmp.cmpfiles(srcpath, dstpath, commonfiles, shallow=shallow)
+
+    if errors:
+        raise RuntimeError("Comparison failed for the following files(s): {}".format(errors))
+
+    for mismatch in mismatches:
+        shutil.copyfile(os.path.join(srcpath, mismatch), os.path.join(dstpath, mismatch))
+
+    # Copy over files from source which do not exist in the destination
+    for missingfile in srcfiles.difference(dstfiles):
+        shutil.copyfile(os.path.join(srcpath, missingfile), os.path.join(dstpath, missingfile))
+
+    #If destructive, delete files in destination which do not exist in sourc
+    if destructive:
+        for deadfile in dstfiles.difference(srcfiles):
+            print(deadfile)
+            os.remove(os.path.join(dstpath, deadfile))
+
+        for deaddir in dstdirs.difference(srcdirs):
+            print(deaddir)
+            shutil.rmtree(os.path.join(dstpath, deaddir))
+
+    #If recursive, do this again for each source directory
+    if recursive:
+        for dirname in srcdirs:
+            dstdir, srcdir = os.path.join(dstpath, dirname), os.path.join(srcpath, dirname)
+            if not os.path.exists(dstdir):
+                os.makedirs(dstdir)
+            update_directory(srcdir, dstdir, recursive, destructive, shallow)

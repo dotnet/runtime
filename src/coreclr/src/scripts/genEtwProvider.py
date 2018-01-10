@@ -14,7 +14,7 @@ import argparse
 import subprocess
 import xml.dom.minidom as DOM
 from genEventing import parseTemplateNodes
-from utilities import open_for_update
+from utilities import open_for_update, update_directory
 
 macroheader_filename = "etwmacros.h"
 mcheader_filename = "ClrEtwAll.h"
@@ -49,7 +49,7 @@ stdprolog_cmake="""
 """
 
 def genProviderInterface(manifest, intermediate):
-    provider_dirname = os.path.join(intermediate, etw_dirname)
+    provider_dirname = os.path.join(intermediate, etw_dirname + "_temp")
 
     if not os.path.exists(provider_dirname):
         os.makedirs(provider_dirname)
@@ -64,7 +64,7 @@ def genProviderInterface(manifest, intermediate):
     for pattern, replacement in replacements:
         header_text = re.sub(pattern, replacement, header_text)
 
-    with open_for_update(path.join(provider_dirname, mcheader_filename)) as mcheader_file:
+    with open(path.join(provider_dirname, mcheader_filename), 'w') as mcheader_file:
         mcheader_file.write(header_text)
 
 def genCmake(intermediate):
@@ -218,7 +218,7 @@ def checkConsistency(manifest, exclusion_filename):
                         raise Exception(sStackSpecificityError)
 
 def genEtwMacroHeader(manifest, exclusion_filename, intermediate):
-    provider_dirname = os.path.join(intermediate, etw_dirname)
+    provider_dirname = os.path.join(intermediate, etw_dirname + "_temp")
 
     if not os.path.exists(provider_dirname):
         os.makedirs(provider_dirname)
@@ -306,6 +306,15 @@ def main(argv):
 
     checkConsistency(manifest, exclusion_filename)
     genFiles(manifest, intermediate, exclusion_filename)
+
+    # Update the final directory from temp
+    provider_temp_dirname = os.path.join(intermediate, etw_dirname + "_temp")
+    provider_dirname = os.path.join(intermediate, etw_dirname)
+    if not os.path.exists(provider_dirname):
+        os.makedirs(provider_dirname)
+        
+    update_directory(provider_temp_dirname, provider_dirname)
+    shutil.rmtree(provider_temp_dirname)
 
 if __name__ == '__main__':
     return_code = main(sys.argv[1:])
