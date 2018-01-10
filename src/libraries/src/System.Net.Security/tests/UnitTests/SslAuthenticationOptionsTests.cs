@@ -17,8 +17,8 @@ namespace System.Net.Security.Tests
         [Fact]
         public void AllowRenegotiation_Get_Set_Succeeds()
         {
-            Assert.False(_clientOptions.AllowRenegotiation);
-            Assert.False(_serverOptions.AllowRenegotiation);
+            Assert.True(_clientOptions.AllowRenegotiation);
+            Assert.True(_serverOptions.AllowRenegotiation);
 
             _clientOptions.AllowRenegotiation = true;
             _serverOptions.AllowRenegotiation = true;
