@@ -369,7 +369,7 @@ namespace System.Globalization
             }
 
             // If not found in the hard coded table we'll have to find a culture that works for us
-            if (retVal == null || (retVal.IsNeutralCulture == true))
+            if (!GlobalizationMode.Invariant && (retVal == null || (retVal.IsNeutralCulture == true)))
             {
                 retVal = GetCultureDataFromRegionName(cultureName);
             }
@@ -415,7 +415,7 @@ namespace System.Globalization
                                                         CultureTypes.ReplacementCultures | CultureTypes.WindowsOnlyCultures |
                                                         CultureTypes.FrameworkCultures)) != 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(types), 
+                throw new ArgumentOutOfRangeException(nameof(types),
                               SR.Format(SR.ArgumentOutOfRange_Range, CultureTypes.NeutralCultures, CultureTypes.FrameworkCultures));
             }
 
@@ -429,7 +429,7 @@ namespace System.Globalization
                 // Remove the enum as it is an no-op.
                 types &= (~CultureTypes.WindowsOnlyCultures);
             }
-            
+
             if (GlobalizationMode.Invariant)
             {
                 // in invariant mode we always return invariant culture only from the enumeration
@@ -539,7 +539,7 @@ namespace System.Globalization
             invariant._iDefaultOemCodePage = 437;           // default oem code page ID (OCP or OEM)
             invariant._iDefaultMacCodePage = 10000;         // default macintosh code page
             invariant._iDefaultEbcdicCodePage = 037;        // default EBCDIC code page
-            
+
             if (GlobalizationMode.Invariant)
             {
                 invariant._sLocalizedDisplayName = invariant._sNativeDisplayName;
@@ -626,14 +626,19 @@ namespace System.Globalization
             return culture;
         }
 
-        private static unsafe string NormalizeCultureName(string name, out bool isNeutralName)
+        private static string NormalizeCultureName(string name, out bool isNeutralName)
         {
             isNeutralName = true;
             int i = 0;
 
-            Debug.Assert(name.Length <= LOCALE_NAME_MAX_LENGTH);
+            if (name.Length > LOCALE_NAME_MAX_LENGTH)
+            {
+                // Theoretically we shouldn't hit this exception.
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidId, nameof(name)));
+            }
 
-            char *pName = stackalloc char[LOCALE_NAME_MAX_LENGTH];
+            Span<char> normalizedName = stackalloc char[name.Length];
+
             bool changed = false;
 
             while (i < name.Length && name[i] != '-' && name[i] != '_')
@@ -641,12 +646,12 @@ namespace System.Globalization
                 if (name[i] >= 'A' && name[i] <= 'Z')
                 {
                     // lowercase characters before '-'
-                    pName[i] = (char) (((int)name[i]) + 0x20);
+                    normalizedName[i] = (char) (((int)name[i]) + 0x20);
                     changed = true;
                 }
                 else
                 {
-                    pName[i] = name[i];
+                    normalizedName[i] = name[i];
                 }
                 i++;
             }
@@ -661,19 +666,19 @@ namespace System.Globalization
             {
                 if (name[i] >= 'a' && name[i] <= 'z')
                 {
-                    pName[i] = (char) (((int)name[i]) - 0x20);
+                    normalizedName[i] = (char) (((int)name[i]) - 0x20);
                     changed = true;
                 }
                 else
                 {
-                    pName[i] = name[i];
+                    normalizedName[i] = name[i];
                 }
                 i++;
             }
 
             if (changed)
-                return new string(pName, 0, name.Length);
-            
+                return new string(normalizedName);
+
             return name;
         }
 
@@ -681,7 +686,10 @@ namespace System.Globalization
         {
             if (GlobalizationMode.Invariant)
             {
-                CultureInfo.VerifyCultureName(cultureName, true);
+                if (cultureName.Length > LOCALE_NAME_MAX_LENGTH || !CultureInfo.VerifyCultureName(cultureName, false))
+                {
+                    return null;
+                }
                 CultureData cd = CreateCultureWithInvariantData();
                 cd._bUseOverrides = useUserOverride;
                 cd._sName = NormalizeCultureName(cultureName, out cd._bNeutral);
@@ -749,7 +757,7 @@ namespace System.Globalization
 
             if (culture == CultureInfo.LOCALE_INVARIANT)
                 return Invariant;
-            
+
             if (GlobalizationMode.Invariant)
             {
                 // LCID is not supported in the InvariantMode
@@ -894,7 +902,7 @@ namespace System.Globalization
                         }
                         else
                         {
-                            // Usually the UI culture shouldn't be different than what we got from WinRT except 
+                            // Usually the UI culture shouldn't be different than what we got from WinRT except
                             // if DefaultThreadCurrentUICulture was set
                             CultureInfo ci;
 
@@ -1065,7 +1073,7 @@ namespace System.Globalization
             {
                 if (_sLocalizedLanguage == null)
                 {
-                    // Usually the UI culture shouldn't be different than what we got from WinRT except 
+                    // Usually the UI culture shouldn't be different than what we got from WinRT except
                     // if DefaultThreadCurrentUICulture was set
                     CultureInfo ci;
 
@@ -1153,7 +1161,7 @@ namespace System.Globalization
                     }
                     catch (Exception)
                     {
-                        // do nothing. we'll fallback 
+                        // do nothing. we'll fallback
                     }
 
                     if (_sLocalizedCountry == null)
@@ -2390,8 +2398,8 @@ namespace System.Globalization
         // This is ONLY used for caching names and shouldn't be used for anything else
         internal static string AnsiToLower(string testString)
         {
-            int index = 0; 
-            
+            int index = 0;
+
             while (index<testString.Length && (testString[index]<'A' || testString[index]>'Z' ))
             {
                 index++;
@@ -2400,7 +2408,7 @@ namespace System.Globalization
             {
                 return testString; // we didn't really change the string
             }
-            
+
             StringBuilder sb = new StringBuilder(testString.Length);
             for (int i=0; i<index; i++)
             {
