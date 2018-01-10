@@ -2483,11 +2483,21 @@ void UMEntryThunkCode::Encode(BYTE* pTargetCode, void* pvSecretParam)
     FlushInstructionCache(GetCurrentProcess(),&m_code,sizeof(m_code));
 }
 
+#ifndef DACCESS_COMPILE
+
 void UMEntryThunkCode::Poison()
 {
-    // Insert 'udf 0xff' at the entry point
-    m_code[0] = 0xdeff;
+    m_pTargetCode = (TADDR)UMEntryThunk::ReportViolation;
+
+    // ldr r0, [pc + 8]
+    m_code[0] = 0x4802;
+    // nop
+    m_code[1] = 0xbf00;
+
+    ClrFlushInstructionCache(&m_code,sizeof(m_code));
 }
+
+#endif // DACCESS_COMPILE
 
 ///////////////////////////// UNIMPLEMENTED //////////////////////////////////
 

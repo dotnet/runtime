@@ -1614,7 +1614,12 @@ void UMEntryThunkCode::Poison()
 {
     LIMITED_METHOD_CONTRACT;
 
-    m_movEAX = X86_INSTR_INT3;
+    m_execstub = (BYTE*) ((BYTE*)UMEntryThunk::ReportViolation - (4+((BYTE*)&m_execstub)));
+
+    // mov ecx, imm32
+    m_movEAX = 0xb9;
+
+    ClrFlushInstructionCache(GetEntryPoint(),sizeof(UMEntryThunkCode));
 }
 
 UMEntryThunk* UMEntryThunk::Decode(LPVOID pCallback)
