@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace System.IO.Compression
 {
-    public partial class BrotliStream : Stream
+    public sealed partial class BrotliStream : Stream
     {
         private BrotliEncoder _encoder;
 
@@ -26,17 +26,7 @@ namespace System.IO.Compression
 
         public override void Write(ReadOnlySpan<byte> source)
         {
-            if (GetType() != typeof(BrotliStream))
-            {
-                // BrotliStream is not sealed, and a derived type may override Write(byte[], int, int) without also
-                // overriding Write(ReadOnlySpan<byte>). In that case, this Read(Span<byte>) overload
-                // should use the behavior of Read(byte[],int,int) overload.
-                base.Write(source);
-            }
-            else
-            {
-                WriteCore(source);
-            }
+            WriteCore(source);
         }
 
         internal void WriteCore(ReadOnlySpan<byte> source, bool isFinalBlock = false)
@@ -70,24 +60,10 @@ namespace System.IO.Compression
         public override Task WriteAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateParameters(array, offset, count);
-            return WriteAsyncMemory(new ReadOnlyMemory<byte>(array, offset, count), cancellationToken);
+            return WriteAsync(new ReadOnlyMemory<byte>(array, offset, count), cancellationToken);
         }
 
         public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
-        {
-            if (GetType() != typeof(BrotliStream))
-            {
-                // Ensure that existing streams derived from BrotliStream and that override WriteAsync(byte[],...)
-                // get their existing behaviors when the newer Memory-based overload is used.
-                return base.WriteAsync(source, cancellationToken);
-            }
-            else
-            {
-                return WriteAsyncMemory(source, cancellationToken);
-            }
-        }
-
-        internal Task WriteAsyncMemory(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             if (_mode != CompressionMode.Compress)
                 throw new InvalidOperationException(SR.BrotliStream_Decompress_UnsupportedOperation);

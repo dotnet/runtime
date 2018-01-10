@@ -11,23 +11,21 @@ internal static partial class Interop
 {
     internal static partial class Brotli
     {
-        internal const string LibNameDecoder = Library.BrotliDecoder;
-
-        [DllImport(LibNameDecoder, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(Libraries.CompressionNative)]
         internal static extern SafeBrotliDecoderHandle BrotliDecoderCreateInstance(IntPtr allocFunc, IntPtr freeFunc, IntPtr opaque);
 
-        [DllImport(LibNameDecoder, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern int BrotliDecoderDecompressStream(
-            SafeBrotliDecoderHandle state, ref size_t availableIn, ref IntPtr nextIn,
-            ref size_t availableOut, ref IntPtr nextOut, out size_t totalOut);
+        [DllImport(Libraries.CompressionNative)]
+        internal static extern unsafe int BrotliDecoderDecompressStream(
+            SafeBrotliDecoderHandle state, ref size_t availableIn, byte** nextIn,
+            ref size_t availableOut, byte** nextOut, out size_t totalOut);
 
-        [DllImport(LibNameDecoder, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern bool BrotliDecoderDecompress(size_t availableInput, IntPtr inBytes, ref size_t availableOutput, IntPtr outBytes);
+        [DllImport(Libraries.CompressionNative)]
+        internal static extern unsafe bool BrotliDecoderDecompress(size_t availableInput, byte* inBytes, ref size_t availableOutput, byte* outBytes);
 
-        [DllImport(LibNameDecoder, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(Libraries.CompressionNative)]
         internal static extern void BrotliDecoderDestroyInstance(IntPtr state);
 
-        [DllImport(LibNameDecoder, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(Libraries.CompressionNative)]
         internal static extern bool BrotliDecoderIsFinished(SafeBrotliDecoderHandle state);
     }
 }

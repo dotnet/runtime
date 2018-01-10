@@ -17,7 +17,7 @@ namespace System.IO.Compression
         internal void InitializeDecoder()
         {
             _state = Interop.Brotli.BrotliDecoderCreateInstance(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
-            if (_state == null || _state.IsInvalid || _state.IsClosed)
+            if (_state.IsInvalid)
                 throw new IOException(SR.BrotliDecoder_Create);
         }
 
@@ -31,15 +31,13 @@ namespace System.IO.Compression
         public void Dispose()
         {
             _disposed = true;
-            if (_state == null || _state.IsInvalid || _state.IsClosed)
-                return;
-            _state.Dispose();
+            _state?.Dispose();
         }
 
         private void EnsureNotDisposed()
         {
             if (_disposed)
-                throw new ObjectDisposedException("BrotliDecoder", SR.BrotliDecoder_Disposed);
+                throw new ObjectDisposedException(nameof(BrotliDecoder), SR.BrotliDecoder_Disposed);
         }
 
         internal OperationStatus Decompress(ReadOnlyMemory<byte> source, Memory<byte> destination, out int bytesConsumed, out int bytesWritten) => Decompress(source.Span, destination.Span, out bytesConsumed, out bytesWritten);
@@ -55,7 +53,6 @@ namespace System.IO.Compression
             size_t availableInput = (size_t)source.Length;
             unsafe
             {
-                IntPtr bufIn, bufOut;
                 // We can freely cast between int and size_t for two reasons: 
                 // 1. Interop Brotli functions will always return an availableInput/Output value lower or equal to the one passed to the function
                 // 2. Span's have a maximum length of the int boundary.
@@ -64,9 +61,7 @@ namespace System.IO.Compression
                     fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
                     fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
                     {
-                        bufIn = new IntPtr(inBytes);
-                        bufOut = new IntPtr(outBytes);
-                        int brotliResult = Interop.Brotli.BrotliDecoderDecompressStream(_state, ref availableInput, ref bufIn, ref availableOutput, ref bufOut, out size_t totalOut);
+                        int brotliResult = Interop.Brotli.BrotliDecoderDecompressStream(_state, ref availableInput, &inBytes, ref availableOutput, &outBytes, out size_t totalOut);
                         if (brotliResult == 0) // Error
                         {
                             return OperationStatus.InvalidData;
@@ -101,10 +96,8 @@ namespace System.IO.Compression
                 fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
                 fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
                 {
-                    IntPtr bufIn = new IntPtr(inBytes);
-                    IntPtr bufOut = new IntPtr(outBytes);
                     size_t availableOutput = (size_t)destination.Length;
-                    bool success = Interop.Brotli.BrotliDecoderDecompress((size_t)source.Length, bufIn, ref availableOutput, bufOut);
+                    bool success = Interop.Brotli.BrotliDecoderDecompress((size_t)source.Length, inBytes, ref availableOutput, outBytes);
                     bytesWritten = (int)availableOutput;
                     return success;
                 }

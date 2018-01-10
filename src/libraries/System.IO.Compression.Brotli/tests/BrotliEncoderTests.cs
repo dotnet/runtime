@@ -171,9 +171,9 @@ namespace System.IO.Compression.Tests
                 var decompressedSpan = new Span<byte>(deompressed);
 
                 int totalWrittenThisIteration = 0;
-                var compres = encoder.Compress(uncompressedSpan, compressedSpan, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+                var compress = encoder.Compress(uncompressedSpan, compressedSpan, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
                 totalWrittenThisIteration += bytesWritten;
-                compres = encoder.Flush(compressedSpan.Slice(bytesWritten), out bytesWritten);
+                compress = encoder.Flush(compressedSpan.Slice(bytesWritten), out bytesWritten);
                 totalWrittenThisIteration += bytesWritten;
 
                 var res = decoder.Decompress(compressedSpan.Slice(0, totalWrittenThisIteration), decompressedSpan, out int decompressbytesConsumed, out int decompressbytesWritten);
