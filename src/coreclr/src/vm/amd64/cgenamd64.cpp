@@ -680,7 +680,18 @@ void UMEntryThunkCode::Poison()
     }
     CONTRACTL_END;
 
-    m_movR10[0] = X86_INSTR_INT3;
+    m_execstub    = (BYTE *)UMEntryThunk::ReportViolation;
+
+    m_movR10[0]  = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
+#ifdef _WIN32
+    // mov rcx, pUMEntryThunk // 48 b9 xx xx xx xx xx xx xx xx
+    m_movR10[1]  = 0xB9;
+#else
+    // mov rdi, pUMEntryThunk // 48 bf xx xx xx xx xx xx xx xx
+    m_movR10[1]  = 0xBF;
+#endif
+
+    ClrFlushInstructionCache(&m_movR10[0], &m_jmpRAX[3]-&m_movR10[0]);
 }
 
 UMEntryThunk* UMEntryThunk::Decode(LPVOID pCallback)
