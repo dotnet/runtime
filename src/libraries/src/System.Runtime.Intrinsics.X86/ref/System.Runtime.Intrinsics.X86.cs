@@ -76,14 +76,14 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<float> DuplicateEvenIndexed(Vector256<float> value) { throw null; }
         public static Vector256<double> DuplicateEvenIndexed(Vector256<double> value) { throw null; }
         public static Vector256<float> DuplicateOddIndexed(Vector256<float> value) { throw null; }
-        public static sbyte ExtractSByte<T>(Vector256<T> value, byte index) where T : struct { throw null; }
-        public static byte ExtractByte<T>(Vector256<T> value, byte index) where T : struct { throw null; }
-        public static short ExtractInt16<T>(Vector256<T> value, byte index) where T : struct { throw null; }
-        public static ushort ExtractUInt16<T>(Vector256<T> value, byte index) where T : struct { throw null; }
-        public static int ExtractInt32<T>(Vector256<T> value, byte index) where T : struct { throw null; }
-        public static uint ExtractUInt32<T>(Vector256<T> value, byte index) where T : struct { throw null; }
-        public static long ExtractInt64<T>(Vector256<T> value, byte index) where T : struct { throw null; }
-        public static ulong ExtractUInt64<T>(Vector256<T> value, byte index) where T : struct { throw null; }
+        public static sbyte Extract(Vector256<sbyte> value, byte index) { throw null; }
+        public static byte Extract(Vector256<byte> value, byte index) { throw null; }
+        public static short Extract(Vector256<short> value, byte index) { throw null; }
+        public static ushort Extract(Vector256<ushort> value, byte index) { throw null; }
+        public static int Extract(Vector256<int> value, byte index) { throw null; }
+        public static uint Extract(Vector256<uint> value, byte index) { throw null; }
+        public static long Extract(Vector256<long> value, byte index) { throw null; }
+        public static ulong Extract(Vector256<ulong> value, byte index) { throw null; }
         public static Vector128<T> ExtractVector128<T>(Vector256<T> value, byte index) where T : struct { throw null; }
         public static unsafe void ExtractVector128(byte* address, Vector256<byte> value, byte index) { throw null; }
         public static unsafe void ExtractVector128(sbyte* address, Vector256<sbyte> value, byte index) { throw null; }
@@ -103,14 +103,14 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<double> HorizontalAdd(Vector256<double> left, Vector256<double> right) { throw null; }
         public static Vector256<float> HorizontalSubtract(Vector256<float> left, Vector256<float> right) { throw null; }
         public static Vector256<double> HorizontalSubtract(Vector256<double> left, Vector256<double> right) { throw null; }
-        public static Vector256<T> InsertSByte<T>(Vector256<T> value, sbyte data, byte index) where T : struct { throw null; }
-        public static Vector256<T> InsertByte<T>(Vector256<T> value, byte data, byte index) where T : struct { throw null; }
-        public static Vector256<T> InsertInt16<T>(Vector256<T> value, short data, byte index) where T : struct { throw null; }
-        public static Vector256<T> InsertUInt16<T>(Vector256<T> value, ushort data, byte index) where T : struct { throw null; }
-        public static Vector256<T> InsertInt32<T>(Vector256<T> value, int data, byte index) where T : struct { throw null; }
-        public static Vector256<T> InsertUInt32<T>(Vector256<T> value, uint data, byte index) where T : struct { throw null; }
-        public static Vector256<T> InsertInt64<T>(Vector256<T> value, long data, byte index) where T : struct { throw null; }
-        public static Vector256<T> InsertUInt64<T>(Vector256<T> value, ulong data, byte index) where T : struct { throw null; }
+        public static Vector256<sbyte> Insert(Vector256<sbyte> value, sbyte data, byte index) { throw null; }
+        public static Vector256<byte> Insert(Vector256<byte> value, byte data, byte index) { throw null; }
+        public static Vector256<short> Insert(Vector256<short> value, short data, byte index) { throw null; }
+        public static Vector256<ushort> Insert(Vector256<ushort> value, ushort data, byte index) { throw null; }
+        public static Vector256<int> Insert(Vector256<int> value, int data, byte index) { throw null; }
+        public static Vector256<uint> Insert(Vector256<uint> value, uint data, byte index) { throw null; }
+        public static Vector256<long> Insert(Vector256<long> value, long data, byte index) { throw null; }
+        public static Vector256<ulong> Insert(Vector256<ulong> value, ulong data, byte index) { throw null; }
         public static Vector256<T> Insert<T>(Vector256<T> value, Vector128<T> data, byte index) where T : struct { throw null; }
         public static unsafe Vector256<sbyte> Insert(Vector256<sbyte> value, sbyte* address, byte index) { throw null; }
         public static unsafe Vector256<byte> Insert(Vector256<byte> value, byte* address, byte index) { throw null; }
@@ -122,34 +122,34 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe Vector256<ulong> Insert(Vector256<ulong> value, ulong* address, byte index) { throw null; }
         public static unsafe Vector256<float> Insert(Vector256<float> value, float* address, byte index) { throw null; }
         public static unsafe Vector256<double> Insert(Vector256<double> value, double* address, byte index) { throw null; }
-        public static unsafe Vector256<sbyte> Load(sbyte* address) { throw null; }
-        public static unsafe Vector256<byte> Load(byte* address) { throw null; }
-        public static unsafe Vector256<short> Load(short* address) { throw null; }
-        public static unsafe Vector256<ushort> Load(ushort* address) { throw null; }
-        public static unsafe Vector256<int> Load(int* address) { throw null; }
-        public static unsafe Vector256<uint> Load(uint* address) { throw null; }
-        public static unsafe Vector256<long> Load(long* address) { throw null; }
-        public static unsafe Vector256<ulong> Load(ulong* address) { throw null; }
-        public static unsafe Vector256<float> Load(float* address) { throw null; }
-        public static unsafe Vector256<double> Load(double* address) { throw null; }
-        public static unsafe Vector256<sbyte> LoadAligned(sbyte* address) { throw null; }
-        public static unsafe Vector256<byte> LoadAligned(byte* address) { throw null; }
-        public static unsafe Vector256<short> LoadAligned(short* address) { throw null; }
-        public static unsafe Vector256<ushort> LoadAligned(ushort* address) { throw null; }
-        public static unsafe Vector256<int> LoadAligned(int* address) { throw null; }
-        public static unsafe Vector256<uint> LoadAligned(uint* address) { throw null; }
-        public static unsafe Vector256<long> LoadAligned(long* address) { throw null; }
-        public static unsafe Vector256<ulong> LoadAligned(ulong* address) { throw null; }
-        public static unsafe Vector256<float> LoadAligned(float* address) { throw null; }
-        public static unsafe Vector256<double> LoadAligned(double* address) { throw null; }
-        public static unsafe Vector256<sbyte> LoadDqu(sbyte* address) { throw null; }
-        public static unsafe Vector256<byte> LoadDqu(byte* address) { throw null; }
-        public static unsafe Vector256<short> LoadDqu(short* address) { throw null; }
-        public static unsafe Vector256<ushort> LoadDqu(ushort* address) { throw null; }
-        public static unsafe Vector256<int> LoadDqu(int* address) { throw null; }
-        public static unsafe Vector256<uint> LoadDqu(uint* address) { throw null; }
-        public static unsafe Vector256<long> LoadDqu(long* address) { throw null; }
-        public static unsafe Vector256<ulong> LoadDqu(ulong* address) { throw null; }
+        public static unsafe Vector256<sbyte> LoadVector256(sbyte* address) { throw null; }
+        public static unsafe Vector256<byte> LoadVector256(byte* address) { throw null; }
+        public static unsafe Vector256<short> LoadVector256(short* address) { throw null; }
+        public static unsafe Vector256<ushort> LoadVector256(ushort* address) { throw null; }
+        public static unsafe Vector256<int> LoadVector256(int* address) { throw null; }
+        public static unsafe Vector256<uint> LoadVector256(uint* address) { throw null; }
+        public static unsafe Vector256<long> LoadVector256(long* address) { throw null; }
+        public static unsafe Vector256<ulong> LoadVector256(ulong* address) { throw null; }
+        public static unsafe Vector256<float> LoadVector256(float* address) { throw null; }
+        public static unsafe Vector256<double> LoadVector256(double* address) { throw null; }
+        public static unsafe Vector256<sbyte> LoadAlignedVector256(sbyte* address) { throw null; }
+        public static unsafe Vector256<byte> LoadAlignedVector256(byte* address) { throw null; }
+        public static unsafe Vector256<short> LoadAlignedVector256(short* address) { throw null; }
+        public static unsafe Vector256<ushort> LoadAlignedVector256(ushort* address) { throw null; }
+        public static unsafe Vector256<int> LoadAlignedVector256(int* address) { throw null; }
+        public static unsafe Vector256<uint> LoadAlignedVector256(uint* address) { throw null; }
+        public static unsafe Vector256<long> LoadAlignedVector256(long* address) { throw null; }
+        public static unsafe Vector256<ulong> LoadAlignedVector256(ulong* address) { throw null; }
+        public static unsafe Vector256<float> LoadAlignedVector256(float* address) { throw null; }
+        public static unsafe Vector256<double> LoadAlignedVector256(double* address) { throw null; }
+        public static unsafe Vector256<sbyte> LoadDquVector256(sbyte* address) { throw null; }
+        public static unsafe Vector256<byte> LoadDquVector256(byte* address) { throw null; }
+        public static unsafe Vector256<short> LoadDquVector256(short* address) { throw null; }
+        public static unsafe Vector256<ushort> LoadDquVector256(ushort* address) { throw null; }
+        public static unsafe Vector256<int> LoadDquVector256(int* address) { throw null; }
+        public static unsafe Vector256<uint> LoadDquVector256(uint* address) { throw null; }
+        public static unsafe Vector256<long> LoadDquVector256(long* address) { throw null; }
+        public static unsafe Vector256<ulong> LoadDquVector256(ulong* address) { throw null; }
         public static unsafe Vector128<float> MaskLoad(float* address, Vector128<uint> mask) { throw null; }
         public static unsafe Vector128<double> MaskLoad(double* address, Vector128<ulong> mask) { throw null; }
         public static unsafe Vector256<float> MaskLoad(float* address, Vector256<uint> mask) { throw null; }
@@ -189,19 +189,19 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<double> RoundToPositiveInfinity(Vector256<double> value) { throw null; }
         public static Vector256<double> RoundToZero(Vector256<double> value) { throw null; }
         public static Vector256<double> RoundCurrentDirection(Vector256<double> value) { throw null; }
-        public static Vector256<sbyte> Set(sbyte e31, sbyte e30, sbyte e29, sbyte e28, sbyte e27, sbyte e26, sbyte e25, sbyte e24, sbyte e23, sbyte e22, sbyte e21, sbyte e20, sbyte e19, sbyte e18, sbyte e17, sbyte e16, sbyte e15, sbyte e14, sbyte e13, sbyte e12, sbyte e11, sbyte e10, sbyte e9, sbyte e8, sbyte e7, sbyte e6, sbyte e5, sbyte e4, sbyte e3, sbyte e2, sbyte e1, sbyte e0) { throw null; }
-        public static Vector256<byte> Set(byte e31, byte e30, byte e29, byte e28, byte e27, byte e26, byte e25, byte e24, byte e23, byte e22, byte e21, byte e20, byte e19, byte e18, byte e17, byte e16, byte e15, byte e14, byte e13, byte e12, byte e11, byte e10, byte e9, byte e8, byte e7, byte e6, byte e5, byte e4, byte e3, byte e2, byte e1, byte e0) { throw null; }
-        public static Vector256<short> Set(short e15, short e14, short e13, short e12, short e11, short e10, short e9, short e8, short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0) { throw null; }
-        public static Vector256<ushort> Set(ushort e15, ushort e14, ushort e13, ushort e12, ushort e11, ushort e10, ushort e9, ushort e8, ushort e7, ushort e6, ushort e5, ushort e4, ushort e3, ushort e2, ushort e1, ushort e0) { throw null; }
-        public static Vector256<int> Set(int e7, int e6, int e5, int e4, int e3, int e2, int e1, int e0) { throw null; }
-        public static Vector256<uint> Set(uint e7, uint e6, uint e5, uint e4, uint e3, uint e2, uint e1, uint e0) { throw null; }
-        public static Vector256<long> Set(long e3, long e2, long e1, long e0) { throw null; }
-        public static Vector256<ulong> Set(ulong e3, ulong e2, ulong e1, ulong e0) { throw null; }
-        public static Vector256<float> Set(float e7, float e6, float e5, float e4, float e3, float e2, float e1, float e0) { throw null; }
-        public static Vector256<double> Set(double e3, double e2, double e1, double e0) { throw null; }
-        public static Vector256<T> Set1<T>(T value) where T : struct { throw null; }
+        public static Vector256<sbyte> SetVector256(sbyte e31, sbyte e30, sbyte e29, sbyte e28, sbyte e27, sbyte e26, sbyte e25, sbyte e24, sbyte e23, sbyte e22, sbyte e21, sbyte e20, sbyte e19, sbyte e18, sbyte e17, sbyte e16, sbyte e15, sbyte e14, sbyte e13, sbyte e12, sbyte e11, sbyte e10, sbyte e9, sbyte e8, sbyte e7, sbyte e6, sbyte e5, sbyte e4, sbyte e3, sbyte e2, sbyte e1, sbyte e0) { throw null; }
+        public static Vector256<byte> SetVector256(byte e31, byte e30, byte e29, byte e28, byte e27, byte e26, byte e25, byte e24, byte e23, byte e22, byte e21, byte e20, byte e19, byte e18, byte e17, byte e16, byte e15, byte e14, byte e13, byte e12, byte e11, byte e10, byte e9, byte e8, byte e7, byte e6, byte e5, byte e4, byte e3, byte e2, byte e1, byte e0) { throw null; }
+        public static Vector256<short> SetVector256(short e15, short e14, short e13, short e12, short e11, short e10, short e9, short e8, short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0) { throw null; }
+        public static Vector256<ushort> SetVector256(ushort e15, ushort e14, ushort e13, ushort e12, ushort e11, ushort e10, ushort e9, ushort e8, ushort e7, ushort e6, ushort e5, ushort e4, ushort e3, ushort e2, ushort e1, ushort e0) { throw null; }
+        public static Vector256<int> SetVector256(int e7, int e6, int e5, int e4, int e3, int e2, int e1, int e0) { throw null; }
+        public static Vector256<uint> SetVector256(uint e7, uint e6, uint e5, uint e4, uint e3, uint e2, uint e1, uint e0) { throw null; }
+        public static Vector256<long> SetVector256(long e3, long e2, long e1, long e0) { throw null; }
+        public static Vector256<ulong> SetVector256(ulong e3, ulong e2, ulong e1, ulong e0) { throw null; }
+        public static Vector256<float> SetVector256(float e7, float e6, float e5, float e4, float e3, float e2, float e1, float e0) { throw null; }
+        public static Vector256<double> SetVector256(double e3, double e2, double e1, double e0) { throw null; }
+        public static Vector256<T> SetAllVector256<T>(T value) where T : struct { throw null; }
         public static Vector256<T> SetHighLow<T>(Vector128<T> hi, Vector128<T> lo) where T : struct { throw null; }
-        public static Vector256<T> SetZero<T>() where T : struct { throw null; }
+        public static Vector256<T> SetZeroVector256<T>() where T : struct { throw null; }
         public static Vector256<float> Shuffle(Vector256<float> value, Vector256<float> right, byte control) { throw null; }
         public static Vector256<double> Shuffle(Vector256<double> value, Vector256<double> right, byte control) { throw null; }
         public static Vector256<float> Sqrt(Vector256<float> value) { throw null; }
@@ -427,6 +427,14 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<ulong> Insert(Vector256<ulong> value, Vector128<ulong> data, byte index) { throw null; }
         public static unsafe Vector256<ulong> Insert(Vector256<ulong> value, ulong* address, byte index) { throw null; }
         public static unsafe Vector128<int> MaskLoad(int* address, Vector128<int> mask) { throw null; }
+        public static unsafe Vector256<sbyte> LoadAlignedVector256NonTemporal(sbyte* address) { throw null; }
+        public static unsafe Vector256<byte> LoadAlignedVector256NonTemporal(byte* address) { throw null; }
+        public static unsafe Vector256<short> LoadAlignedVector256NonTemporal(short* address) { throw null; }
+        public static unsafe Vector256<ushort> LoadAlignedVector256NonTemporal(ushort* address) { throw null; }
+        public static unsafe Vector256<int> LoadAlignedVector256NonTemporal(int* address) { throw null; }
+        public static unsafe Vector256<uint> LoadAlignedVector256NonTemporal(uint* address) { throw null; }
+        public static unsafe Vector256<long> LoadAlignedVector256NonTemporal(long* address) { throw null; }
+        public static unsafe Vector256<ulong> LoadAlignedVector256NonTemporal(ulong* address) { throw null; }
         public static unsafe Vector128<uint> MaskLoad(uint* address, Vector128<uint> mask) { throw null; }
         public static unsafe Vector128<long> MaskLoad(long* address, Vector128<long> mask) { throw null; }
         public static unsafe Vector128<ulong> MaskLoad(ulong* address, Vector128<ulong> mask) { throw null; }
@@ -492,6 +500,12 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<int> PermuteVar8x32(Vector256<int> left, Vector256<int> mask) { throw null; }
         public static Vector256<uint> PermuteVar8x32(Vector256<uint> left, Vector256<uint> mask) { throw null; }
         public static Vector256<float> PermuteVar8x32(Vector256<float> left, Vector256<float> mask) { throw null; }
+        public static Vector256<short> ShiftLeftLogical(Vector256<short> value, Vector128<short> count) { throw null; }
+        public static Vector256<ushort> ShiftLeftLogical(Vector256<ushort> value, Vector128<ushort> count) { throw null; }
+        public static Vector256<int> ShiftLeftLogical(Vector256<int> value, Vector128<int> count) { throw null; }
+        public static Vector256<uint> ShiftLeftLogical(Vector256<uint> value, Vector128<uint> count) { throw null; }
+        public static Vector256<long> ShiftLeftLogical(Vector256<long> value, Vector128<long> count) { throw null; }
+        public static Vector256<ulong> ShiftLeftLogical(Vector256<ulong> value, Vector128<ulong> count) { throw null; }
         public static Vector256<short> ShiftLeftLogical(Vector256<short> value, byte count) { throw null; }
         public static Vector256<ushort> ShiftLeftLogical(Vector256<ushort> value, byte count) { throw null; }
         public static Vector256<int> ShiftLeftLogical(Vector256<int> value, byte count) { throw null; }
@@ -510,9 +524,22 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<uint> ShiftLeftLogicalVariable(Vector256<uint> value, Vector256<uint> count) { throw null; }
         public static Vector256<long> ShiftLeftLogicalVariable(Vector256<long> value, Vector256<ulong> count) { throw null; }
         public static Vector256<ulong> ShiftLeftLogicalVariable(Vector256<ulong> value, Vector256<ulong> count) { throw null; }
+        public static Vector128<int> ShiftLeftLogicalVariable(Vector128<int> value, Vector128<uint> count) { throw null; }
+        public static Vector128<uint> ShiftLeftLogicalVariable(Vector128<uint> value, Vector128<uint> count) { throw null; }
+        public static Vector128<long> ShiftLeftLogicalVariable(Vector128<long> value, Vector128<ulong> count) { throw null; }
+        public static Vector128<ulong> ShiftLeftLogicalVariable(Vector128<ulong> value, Vector128<ulong> count) { throw null; }
+        public static Vector256<short> ShiftRightArithmetic(Vector256<short> value, Vector128<short> count) { throw null; }
+        public static Vector256<int> ShiftRightArithmetic(Vector256<int> value, Vector128<int> count) { throw null; }
         public static Vector256<short> ShiftRightArithmetic(Vector256<short> value, byte count) { throw null; }
         public static Vector256<int> ShiftRightArithmetic(Vector256<int> value, byte count) { throw null; }
         public static Vector256<int> ShiftRightArithmeticVariable(Vector256<int> value, Vector256<uint> count) { throw null; }
+        public static Vector128<int> ShiftRightArithmeticVariable(Vector128<int> value, Vector128<uint> count) { throw null; }
+        public static Vector256<short> ShiftRightLogical(Vector256<short> value, Vector128<short> count) { throw null; }
+        public static Vector256<ushort> ShiftRightLogical(Vector256<ushort> value, Vector128<ushort> count) { throw null; }
+        public static Vector256<int> ShiftRightLogical(Vector256<int> value, Vector128<int> count) { throw null; }
+        public static Vector256<uint> ShiftRightLogical(Vector256<uint> value, Vector128<uint> count) { throw null; }
+        public static Vector256<long> ShiftRightLogical(Vector256<long> value, Vector128<long> count) { throw null; }
+        public static Vector256<ulong> ShiftRightLogical(Vector256<ulong> value, Vector128<ulong> count) { throw null; }
         public static Vector256<short> ShiftRightLogical(Vector256<short> value, byte count) { throw null; }
         public static Vector256<ushort> ShiftRightLogical(Vector256<ushort> value, byte count) { throw null; }
         public static Vector256<int> ShiftRightLogical(Vector256<int> value, byte count) { throw null; }
@@ -531,6 +558,10 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<uint> ShiftRightLogicalVariable(Vector256<uint> value, Vector256<uint> count) { throw null; }
         public static Vector256<long> ShiftRightLogicalVariable(Vector256<long> value, Vector256<ulong> count) { throw null; }
         public static Vector256<ulong> ShiftRightLogicalVariable(Vector256<ulong> value, Vector256<ulong> count) { throw null; }
+        public static Vector128<int> ShiftRightLogicalVariable(Vector128<int> value, Vector128<uint> count) { throw null; }
+        public static Vector128<uint> ShiftRightLogicalVariable(Vector128<uint> value, Vector128<uint> count) { throw null; }
+        public static Vector128<long> ShiftRightLogicalVariable(Vector128<long> value, Vector128<ulong> count) { throw null; }
+        public static Vector128<ulong> ShiftRightLogicalVariable(Vector128<ulong> value, Vector128<ulong> count) { throw null; }
         public static Vector256<sbyte> Shuffle(Vector256<sbyte> value, Vector256<sbyte> mask) { throw null; }
         public static Vector256<byte> Shuffle(Vector256<byte> value, Vector256<byte> mask) { throw null; }
         public static Vector256<int> Shuffle(Vector256<int> value, byte control) { throw null; }
@@ -770,8 +801,10 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<float> ConvertToVector128SingleScalar(Vector128<float> upper, long value) { throw null; }
         public static Vector128<float> Divide(Vector128<float> left,  Vector128<float> right) { throw null; }
         public static Vector128<float> DivideScalar(Vector128<float> left, Vector128<float> right) { throw null; }
-        public static unsafe Vector128<float> Load(float* address) { throw null; }
-        public static unsafe Vector128<float> LoadAligned(float* address) { throw null; }
+        public static unsafe Vector128<float> LoadVector128(float* address) { throw null; }
+        public static unsafe Vector128<float> LoadAlignedVector128(float* address) { throw null; }
+        public static unsafe Vector128<float> LoadHigh(Vector128<float> value, float* address) { throw null; }
+        public static unsafe Vector128<float> LoadLow(Vector128<float> value, float* address) { throw null; }
         public static unsafe Vector128<float> LoadScalar(float* address) { throw null; }
         public static Vector128<float> Max(Vector128<float> left,  Vector128<float> right) { throw null; }
         public static Vector128<float> MaxScalar(Vector128<float> left, Vector128<float> right) { throw null; }
@@ -780,6 +813,7 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<float> MoveHighToLow(Vector128<float> left,  Vector128<float> right) { throw null; }
         public static Vector128<float> MoveLowToHigh(Vector128<float> left,  Vector128<float> right) { throw null; }
         public static Vector128<float> MoveScalar(Vector128<float> upper, Vector128<float> value) { throw null; }
+        public static int MoveMask(Vector128<float> value) { throw null; }
         public static Vector128<float> Multiply(Vector128<float> left,  Vector128<float> right) { throw null; }
         public static Vector128<float> MultiplyScalar(Vector128<float> left, Vector128<float> right) { throw null; }
         public static Vector128<float> Or(Vector128<float> left,  Vector128<float> right) { throw null; }
@@ -787,10 +821,10 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<float> ReciprocalScalar(Vector128<float> value) { throw null; }
         public static Vector128<float> ReciprocalSqrt(Vector128<float> value) { throw null; }
         public static Vector128<float> ReciprocalSqrtScalar(Vector128<float> value) { throw null; }
-        public static Vector128<float> Set(float e3, float e2, float e1, float e0) { throw null; }
-        public static Vector128<float> Set1(float value) { throw null; }
+        public static Vector128<float> SetVector128(float e3, float e2, float e1, float e0) { throw null; }
+        public static Vector128<float> SetAllVector128(float value) { throw null; }
         public static Vector128<float> SetScalar(float value) { throw null; }
-        public static Vector128<float> SetZero() { throw null; }
+        public static Vector128<float> SetZeroVector128() { throw null; }
         public static Vector128<U> StaticCast<T, U>(Vector128<T> value) where T : struct where U : struct { throw null; }
         public static Vector128<float> Shuffle(Vector128<float> left, Vector128<float> right, byte control) { throw null; }
         public static Vector128<float> Sqrt(Vector128<float> value) { throw null; }
@@ -798,6 +832,8 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe void StoreAligned(float* address, Vector128<float> source) { throw null; }
         public static unsafe void StoreAlignedNonTemporal(float* address, Vector128<float> source) { throw null; }
         public static unsafe void Store(float* address, Vector128<float> source) { throw null; }
+        public static unsafe void StoreHigh(float* address, Vector128<float> source) { throw null; }
+        public static unsafe void StoreLow(float* address, Vector128<float> source) { throw null; }        
         public static unsafe void StoreScalar(float* address, Vector128<float> source) { throw null; }
         public static Vector128<float> Subtract(Vector128<float> left,  Vector128<float> right) { throw null; }
         public static Vector128<float> SubtractScalar(Vector128<float> left, Vector128<float> right) { throw null; }
@@ -917,28 +953,38 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<ulong> ConvertToVector128UInt64Scalar(ulong value) { throw null; }
         public static Vector128<double> Divide(Vector128<double> left,  Vector128<double> right) { throw null; }
         public static Vector128<double> DivideScalar(Vector128<double> left, Vector128<double> right) { throw null; }
-        public static short ExtractInt16<T>(Vector128<T> value,  byte index) where T : struct { throw null; }
-        public static ushort ExtractUInt16<T>(Vector128<T> value,  byte index) where T : struct { throw null; }
-        public static Vector128<T> InsertInt16<T>(Vector128<T> value,  short data, byte index) where T : struct { throw null; }
-        public static Vector128<T> InsertUInt16<T>(Vector128<T> value,  ushort data, byte index) where T : struct { throw null; }
-        public static unsafe Vector128<sbyte> Load(sbyte* address) { throw null; }
-        public static unsafe Vector128<byte> Load(byte* address) { throw null; }
-        public static unsafe Vector128<short> Load(short* address) { throw null; }
-        public static unsafe Vector128<ushort> Load(ushort* address) { throw null; }
-        public static unsafe Vector128<int> Load(int* address) { throw null; }
-        public static unsafe Vector128<uint> Load(uint* address) { throw null; }
-        public static unsafe Vector128<long> Load(long* address) { throw null; }
-        public static unsafe Vector128<ulong> Load(ulong* address) { throw null; }
-        public static unsafe Vector128<double> Load(double* address) { throw null; }
-        public static unsafe Vector128<sbyte> LoadAligned(sbyte* address) { throw null; }
-        public static unsafe Vector128<byte> LoadAligned(byte* address) { throw null; }
-        public static unsafe Vector128<short> LoadAligned(short* address) { throw null; }
-        public static unsafe Vector128<ushort> LoadAligned(ushort* address) { throw null; }
-        public static unsafe Vector128<int> LoadAligned(int* address) { throw null; }
-        public static unsafe Vector128<uint> LoadAligned(uint* address) { throw null; }
-        public static unsafe Vector128<long> LoadAligned(long* address) { throw null; }
-        public static unsafe Vector128<ulong> LoadAligned(ulong* address) { throw null; }
-        public static unsafe Vector128<double> LoadAligned(double* address) { throw null; }
+        public static short Extract(Vector128<short> value, byte index) { throw null; }
+        public static ushort Extract(Vector128<ushort> value, byte index) { throw null; }
+        public static Vector128<short> Insert(Vector128<short> value, short data, byte index) { throw null; }
+        public static Vector128<ushort> Insert(Vector128<ushort> value, ushort data, byte index) { throw null; }
+        public static unsafe Vector128<sbyte> LoadVector128(sbyte* address) { throw null; }
+        public static unsafe Vector128<byte> LoadVector128(byte* address) { throw null; }
+        public static unsafe Vector128<short> LoadVector128(short* address) { throw null; }
+        public static unsafe Vector128<ushort> LoadVector128(ushort* address) { throw null; }
+        public static unsafe Vector128<int> LoadVector128(int* address) { throw null; }
+        public static unsafe Vector128<uint> LoadVector128(uint* address) { throw null; }
+        public static unsafe Vector128<long> LoadVector128(long* address) { throw null; }
+        public static unsafe Vector128<ulong> LoadVector128(ulong* address) { throw null; }
+        public static unsafe Vector128<double> LoadVector128(double* address) { throw null; }
+        public static unsafe Vector128<sbyte> LoadAlignedVector128(sbyte* address) { throw null; }
+        public static unsafe Vector128<byte> LoadAlignedVector128(byte* address) { throw null; }
+        public static unsafe Vector128<short> LoadAlignedVector128(short* address) { throw null; }
+        public static unsafe Vector128<ushort> LoadAlignedVector128(ushort* address) { throw null; }
+        public static unsafe Vector128<int> LoadAlignedVector128(int* address) { throw null; }
+        public static unsafe Vector128<uint> LoadAlignedVector128(uint* address) { throw null; }
+        public static unsafe Vector128<long> LoadAlignedVector128(long* address) { throw null; }
+        public static unsafe Vector128<ulong> LoadAlignedVector128(ulong* address) { throw null; }
+        public static unsafe Vector128<double> LoadAlignedVector128(double* address) { throw null; }
+        public static unsafe Vector128<double> LoadHigh(Vector128<double> value, double* address) { throw null; }
+        public static unsafe Vector128<double> LoadLow(Vector128<double> value, double* address) { throw null; }
+        public static unsafe Vector128<sbyte> LoadScalar(sbyte* address) { throw null; }
+        public static unsafe Vector128<byte> LoadScalar(byte* address) { throw null; }
+        public static unsafe Vector128<short> LoadScalar(short* address) { throw null; }
+        public static unsafe Vector128<ushort> LoadScalar(ushort* address) { throw null; }
+        public static unsafe Vector128<int> LoadScalar(int* address) { throw null; }
+        public static unsafe Vector128<uint> LoadScalar(uint* address) { throw null; }
+        public static unsafe Vector128<long> LoadScalar(long* address) { throw null; }
+        public static unsafe Vector128<ulong> LoadScalar(ulong* address) { throw null; }
         public static unsafe Vector128<double> LoadScalar(double* address) { throw null; }
         public static unsafe void MaskMove(Vector128<sbyte> source,  Vector128<sbyte> mask, sbyte* address) { throw null; }
         public static unsafe void MaskMove(Vector128<byte> source,  Vector128<byte> mask, byte* address) { throw null; }
@@ -972,26 +1018,26 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<sbyte> PackSignedSaturate(Vector128<short> left,  Vector128<short> right) { throw null; }
         public static Vector128<short> PackSignedSaturate(Vector128<int> left,  Vector128<int> right) { throw null; }
         public static Vector128<byte> PackUnsignedSaturate(Vector128<short> left,  Vector128<short> right) { throw null; }
-        public static Vector128<sbyte> Set(sbyte e15, sbyte e14, sbyte e13, sbyte e12, sbyte e11, sbyte e10, sbyte e9, sbyte e8, sbyte e7, sbyte e6, sbyte e5, sbyte e4, sbyte e3, sbyte e2, sbyte e1, sbyte e0) { throw null; }
-        public static Vector128<byte> Set(byte e15, byte e14, byte e13, byte e12, byte e11, byte e10, byte e9, byte e8, byte e7, byte e6, byte e5, byte e4, byte e3, byte e2, byte e1, byte e0) { throw null; }
-        public static Vector128<short> Set(short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0) { throw null; }
-        public static Vector128<ushort> Set(ushort e7, ushort e6, ushort e5, ushort e4, ushort e3, ushort e2, ushort e1, ushort e0) { throw null; }
-        public static Vector128<int> Set(int e3, int e2, int e1, int e0) { throw null; }
-        public static Vector128<uint> Set(uint e3, uint e2, uint e1, uint e0) { throw null; }
-        public static Vector128<long> Set(long e1, long e0) { throw null; }
-        public static Vector128<ulong> Set(ulong e1, ulong e0) { throw null; }
-        public static Vector128<double> Set(double e1, double e0) { throw null; }
-        public static Vector128<byte> Set1(byte value) { throw null; }
-        public static Vector128<sbyte> Set1(sbyte value) { throw null; }
-        public static Vector128<short> Set1(short value) { throw null; }
-        public static Vector128<ushort> Set1(ushort value) { throw null; }
-        public static Vector128<int> Set1(int value) { throw null; }
-        public static Vector128<uint> Set1(uint value) { throw null; }
-        public static Vector128<long> Set1(long value) { throw null; }
-        public static Vector128<ulong> Set1(ulong value) { throw null; }
-        public static Vector128<double> Set1(double value) { throw null; }
+        public static Vector128<sbyte> SetVector128(sbyte e15, sbyte e14, sbyte e13, sbyte e12, sbyte e11, sbyte e10, sbyte e9, sbyte e8, sbyte e7, sbyte e6, sbyte e5, sbyte e4, sbyte e3, sbyte e2, sbyte e1, sbyte e0) { throw null; }
+        public static Vector128<byte> SetVector128(byte e15, byte e14, byte e13, byte e12, byte e11, byte e10, byte e9, byte e8, byte e7, byte e6, byte e5, byte e4, byte e3, byte e2, byte e1, byte e0) { throw null; }
+        public static Vector128<short> SetVector128(short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0) { throw null; }
+        public static Vector128<ushort> SetVector128(ushort e7, ushort e6, ushort e5, ushort e4, ushort e3, ushort e2, ushort e1, ushort e0) { throw null; }
+        public static Vector128<int> SetVector128(int e3, int e2, int e1, int e0) { throw null; }
+        public static Vector128<uint> SetVector128(uint e3, uint e2, uint e1, uint e0) { throw null; }
+        public static Vector128<long> SetVector128(long e1, long e0) { throw null; }
+        public static Vector128<ulong> SetVector128(ulong e1, ulong e0) { throw null; }
+        public static Vector128<double> SetVector128(double e1, double e0) { throw null; }
+        public static Vector128<byte> SetAllVector128(byte value) { throw null; }
+        public static Vector128<sbyte> SetAllVector128(sbyte value) { throw null; }
+        public static Vector128<short> SetAllVector128(short value) { throw null; }
+        public static Vector128<ushort> SetAllVector128(ushort value) { throw null; }
+        public static Vector128<int> SetAllVector128(int value) { throw null; }
+        public static Vector128<uint> SetAllVector128(uint value) { throw null; }
+        public static Vector128<long> SetAllVector128(long value) { throw null; }
+        public static Vector128<ulong> SetAllVector128(ulong value) { throw null; }
+        public static Vector128<double> SetAllVector128(double value) { throw null; }
         public static Vector128<double> SetScalar(double value) { throw null; }
-        public static Vector128<T> SetZero<T>() where T : struct { throw null; }
+        public static Vector128<T> SetZeroVector128<T>() where T : struct { throw null; }
         public static Vector128<long> SumAbsoluteDifferences(Vector128<byte> left,  Vector128<byte> right) { throw null; }
         public static Vector128<int> Shuffle(Vector128<int> value, byte control) { throw null; }
         public static Vector128<uint> Shuffle(Vector128<uint> value,  byte control) { throw null; }
@@ -1000,6 +1046,12 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<ushort> ShuffleHigh(Vector128<ushort> value, byte control) { throw null; }
         public static Vector128<short> ShuffleLow(Vector128<short> value, byte control) { throw null; }
         public static Vector128<ushort> ShuffleLow(Vector128<ushort> value, byte control) { throw null; }
+        public static Vector128<short> ShiftLeftLogical(Vector128<short> value, Vector128<short> count) { throw null; }
+        public static Vector128<ushort> ShiftLeftLogical(Vector128<ushort> value, Vector128<ushort> count) { throw null; }
+        public static Vector128<int> ShiftLeftLogical(Vector128<int> value, Vector128<int> count) { throw null; }
+        public static Vector128<uint> ShiftLeftLogical(Vector128<uint> value, Vector128<uint> count) { throw null; }
+        public static Vector128<long> ShiftLeftLogical(Vector128<long> value, Vector128<long> count) { throw null; }
+        public static Vector128<ulong> ShiftLeftLogical(Vector128<ulong> value, Vector128<ulong> count) { throw null; }
         public static Vector128<short> ShiftLeftLogical(Vector128<short> value, byte count) { throw null; }
         public static Vector128<ushort> ShiftLeftLogical(Vector128<ushort> value, byte count) { throw null; }
         public static Vector128<int> ShiftLeftLogical(Vector128<int> value, byte count) { throw null; }
@@ -1014,8 +1066,16 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<uint> ShiftLeftLogical128BitLane(Vector128<uint> value, byte numBytes) { throw null; }
         public static Vector128<long> ShiftLeftLogical128BitLane(Vector128<long> value, byte numBytes) { throw null; }
         public static Vector128<ulong> ShiftLeftLogical128BitLane(Vector128<ulong> value, byte numBytes) { throw null; }
+        public static Vector128<short> ShiftRightArithmetic(Vector128<short> value, Vector128<short> count) { throw null; }
+        public static Vector128<int> ShiftRightArithmetic(Vector128<int> value, Vector128<int> count) { throw null; }
         public static Vector128<short> ShiftRightArithmetic(Vector128<short> value, byte count) { throw null; }
         public static Vector128<int> ShiftRightArithmetic(Vector128<int> value, byte count) { throw null; }
+        public static Vector128<short> ShiftRightLogical(Vector128<short> value, Vector128<short> count) { throw null; }
+        public static Vector128<ushort> ShiftRightLogical(Vector128<ushort> value, Vector128<ushort> count) { throw null; }
+        public static Vector128<int> ShiftRightLogical(Vector128<int> value, Vector128<int> count) { throw null; }
+        public static Vector128<uint> ShiftRightLogical(Vector128<uint> value, Vector128<uint> count) { throw null; }
+        public static Vector128<long> ShiftRightLogical(Vector128<long> value, Vector128<long> count) { throw null; }
+        public static Vector128<ulong> ShiftRightLogical(Vector128<ulong> value, Vector128<ulong> count) { throw null; }
         public static Vector128<short> ShiftRightLogical(Vector128<short> value, byte count) { throw null; }
         public static Vector128<ushort> ShiftRightLogical(Vector128<ushort> value, byte count) { throw null; }
         public static Vector128<int> ShiftRightLogical(Vector128<int> value, byte count) { throw null; }
@@ -1115,15 +1175,15 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<double> HorizontalAdd(Vector128<double> left, Vector128<double> right) { throw null; }
         public static Vector128<float> HorizontalSubtract(Vector128<float> left, Vector128<float> right) { throw null; }
         public static Vector128<double> HorizontalSubtract(Vector128<double> left, Vector128<double> right) { throw null; }
-        public static unsafe Vector128<double> LoadAndDuplicate(double* address) { throw null; }
-        public static unsafe Vector128<sbyte> LoadDqu(sbyte* address) { throw null; }
-        public static unsafe Vector128<byte> LoadDqu(byte* address) { throw null; }
-        public static unsafe Vector128<short> LoadDqu(short* address) { throw null; }
-        public static unsafe Vector128<ushort> LoadDqu(ushort* address) { throw null; }
-        public static unsafe Vector128<int> LoadDqu(int* address) { throw null; }
-        public static unsafe Vector128<uint> LoadDqu(uint* address) { throw null; }
-        public static unsafe Vector128<long> LoadDqu(long* address) { throw null; }
-        public static unsafe Vector128<ulong> LoadDqu(ulong* address) { throw null; }
+        public static unsafe Vector128<double> LoadAndDuplicateToVector128(double* address) { throw null; }
+        public static unsafe Vector128<sbyte> LoadDquVector128(sbyte* address) { throw null; }
+        public static unsafe Vector128<byte> LoadDquVector128(byte* address) { throw null; }
+        public static unsafe Vector128<short> LoadDquVector128(short* address) { throw null; }
+        public static unsafe Vector128<ushort> LoadDquVector128(ushort* address) { throw null; }
+        public static unsafe Vector128<int> LoadDquVector128(int* address) { throw null; }
+        public static unsafe Vector128<uint> LoadDquVector128(uint* address) { throw null; }
+        public static unsafe Vector128<long> LoadDquVector128(long* address) { throw null; }
+        public static unsafe Vector128<ulong> LoadDquVector128(ulong* address) { throw null; }
         public static Vector128<double> MoveAndDuplicate(Vector128<double> source) { throw null; }
         public static Vector128<float> MoveHighAndDuplicate(Vector128<float> source) { throw null; }
         public static Vector128<float> MoveLowAndDuplicate(Vector128<float> source) { throw null; }
@@ -1159,24 +1219,24 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<long> ConvertToVector128Int64(Vector128<uint> value) { throw null; }
         public static Vector128<float> DotProduct(Vector128<float> left, Vector128<float> right, byte control) { throw null; }
         public static Vector128<double> DotProduct(Vector128<double> left, Vector128<double> right, byte control) { throw null; }
-        public static sbyte ExtractSByte<T>(Vector128<T> value, byte index) where T : struct { throw null; }
-        public static byte ExtractByte<T>(Vector128<T> value, byte index) where T : struct { throw null; }
-        public static int ExtractInt32<T>(Vector128<T> value, byte index) where T : struct { throw null; }
-        public static uint ExtractUInt32<T>(Vector128<T> value, byte index) where T : struct { throw null; }
-        public static long ExtractInt64<T>(Vector128<T> value, byte index) where T : struct { throw null; }
-        public static ulong ExtractUInt64<T>(Vector128<T> value, byte index) where T : struct { throw null; }
-        public static float ExtractSingle<T>(Vector128<T> value, byte index) where T : struct { throw null; }
+        public static sbyte Extract(Vector128<sbyte> value, byte index) { throw null; }
+        public static byte Extract(Vector128<byte> value, byte index) { throw null; }
+        public static int Extract(Vector128<int> value, byte index) { throw null; }
+        public static uint Extract(Vector128<uint> value, byte index) { throw null; }
+        public static long Extract(Vector128<long> value, byte index) { throw null; }
+        public static ulong Extract(Vector128<ulong> value, byte index) { throw null; }
+        public static float Extract(Vector128<float> value, byte index) { throw null; }
         public static Vector128<float> Floor(Vector128<float> value) { throw null; }
         public static Vector128<double> Floor(Vector128<double> value) { throw null; }
         public static Vector128<double> FloorScalar(Vector128<double> value) { throw null; }
         public static Vector128<float> FloorScalar(Vector128<float> value) { throw null; }
-        public static Vector128<T> InsertSByte<T>(Vector128<T> value, sbyte data, byte index) where T : struct { throw null; }
-        public static Vector128<T> InsertByte<T>(Vector128<T> value, byte data, byte index) where T : struct { throw null; }
-        public static Vector128<T> InsertInt32<T>(Vector128<T> value, int data, byte index) where T : struct { throw null; }
-        public static Vector128<T> InsertUInt32<T>(Vector128<T> value, uint data, byte index) where T : struct { throw null; }
-        public static Vector128<T> InsertInt64<T>(Vector128<T> value, long data, byte index) where T : struct { throw null; }
-        public static Vector128<T> InsertUInt64<T>(Vector128<T> value, ulong data, byte index) where T : struct { throw null; }
-        public static Vector128<T> InsertSingle<T>(Vector128<T> value, float data, byte index) where T : struct { throw null; }
+        public static Vector128<sbyte> Insert(Vector128<sbyte> value, sbyte data, byte index) { throw null; }
+        public static Vector128<byte> Insert(Vector128<byte> value, byte data, byte index) { throw null; }
+        public static Vector128<int> Insert(Vector128<int> value, int data, byte index) { throw null; }
+        public static Vector128<uint> Insert(Vector128<uint> value, uint data, byte index) { throw null; }
+        public static Vector128<long> Insert(Vector128<long> value, long data, byte index) { throw null; }
+        public static Vector128<ulong> Insert(Vector128<ulong> value, ulong data, byte index) { throw null; }
+        public static Vector128<float> Insert(Vector128<float> value, float data, byte index) { throw null; }
         public static Vector128<sbyte> Max(Vector128<sbyte> left,  Vector128<sbyte> right) { throw null; }
         public static Vector128<ushort> Max(Vector128<ushort> left,  Vector128<ushort> right) { throw null; }
         public static Vector128<int> Max(Vector128<int> left,  Vector128<int> right) { throw null; }
