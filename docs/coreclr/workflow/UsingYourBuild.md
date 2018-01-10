@@ -17,7 +17,7 @@ standard 'dotnet' host that installs with .NET Core SDK.
 The released version of 'dotnet' tool may not be compatible with the live CoreCLR repository. The following steps
 assume use of a dogfood build of the .NET SDK.
 
-## Acquire the latest nightly .NET Core 2.0 SDK
+## Acquire the latest nightly .NET Core SDK
 
 - [Win 64-bit Latest](https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-sdk-latest-win-x64.zip)
 - [macOS 64-bit Latest](https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-sdk-latest-osx-x64.tar.gz)
@@ -28,9 +28,9 @@ or always fully qualify the path to dotnet in the root of this folder for all th
 
 After setting up dotnet you can verify you are using the newer version by:
 
-`dotnet --info` -- the version should be greater than 2.0.0-*
+`dotnet --info` -- the version should be greater than 2.1.0-*
 
-For another small walkthrough see [Dogfooding .NET Core 2.0 SDK](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/dogfooding.md).
+For another small walkthrough see [Dogfooding .NET Core SDK](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/dogfooding.md).
 
 ## Create sample self-contained application
 
@@ -50,13 +50,13 @@ shared framework.  In order to do that you will need to add a `RuntimeIdentifier
 ```
   <PropertyGroup>
     ...
-    <RuntimeIdentifier>win7-x64</RuntimeIdentifier>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>
 ```
 
-For windows you will want `win7-x64` but for other OS's you will need to set it to the most appropriate one based
+For windows you will want `win-x64` but for other OS's you will need to set it to the most appropriate one based
 on what you built. You can generally figure that out by looking at the packages you found in your output. In our
-example you will see there is a package with the name `runtime.win7-x64.Microsoft.NETCore.Runtime.CoreCLR.2.0.0-beta-25023-0.nupkg`
+example you will see there is a package with the name `runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR.2.1.0-beta-25023-0.nupkg`
 so you will want to put whatever id is between `runtime.` and `Microsoft.NETCore.Runtime.CoreCLR`.
 
 Next you need to restore and publish. The publish step will also trigger a build but you can iterate on build by calling `dotnet build` as
@@ -67,20 +67,16 @@ dotnet restore
 dotnet publish
 ```
 
-After you publish you will find you all the binaries needed to run your application under `bin\Debug\netcoreapp2.0\win7-x64\publish\`.
+After you publish you will find you all the binaries needed to run your application under `bin\Debug\netcoreapp2.1\win-x64\publish\`.
 To run the application simply run the EXE that is in this publish directory (it is the name of the app, or specified in the project file).
 
 ```
-.\bin\Debug\netcoreapp2.0\win7-x64\publish\HelloWorld.exe
+.\bin\Debug\netcoreapp2.1\win-x64\publish\HelloWorld.exe
 ```
 
 Thus at this point publication directory directory has NO dependency outside that directory (including dotnet.exe). You can copy this publication
 directory to another machine and run the exe in it and it will 'just work' (assuming you are on the same OS). Note that your managed app's
 code is still in the 'app'.dll file, the 'app'.exe file is actually simply a rename of dotnet.exe.
-
-**NOTE**: Normally you would be able to run the application by calling `dotnet run` however there is currently tooling issues which lead to an error similar
-to `A fatal error was encountered. The library 'hostpolicy.dll' required to execute the application was not found in ...` so to workaround that for
-now you have to manually run the application from the publish directory.
 
 
 ## Update CoreCLR from raw binary output
@@ -97,7 +93,7 @@ you wish to update the DLLs. For example typically when you update CoreCLR you e
 * System.Private.CoreLib.dll - If you modified C# it will end up here.
 
 Thus after making a change and building, you can simply copy the updated binary from the `bin\Product\<OS>.<arch>.<flavor>`
-directory to your publication directory (e.g. `helloWorld\bin\Debug\netcoreapp2.0\win7-x64\publish`) to quickly
+directory to your publication directory (e.g. `helloWorld\bin\Debug\netcoreapp2.1\win-x64\publish`) to quickly
 deploy your new bits. In a lot of cases it is easiest to just copy everything from here to your publication directory.
 
 You can build just the .NET Library part of the build by doing (debug, for release add 'release' qualifier)
@@ -138,10 +134,10 @@ this by simply listing the name of the Microsoft.NETCore.Runtime.CoreCLR you bui
 and you will get name of the which looks something like this
 
 ```
-    Microsoft.NETCore.Runtime.CoreCLR.2.0.0-beta-25023-0.nupkg
+    Microsoft.NETCore.Runtime.CoreCLR.2.1.0-beta-25023-0.nupkg
 ```
 
-This gets us the version number, in the above case it is 2.0.0-beta-25023-0. We will
+This gets us the version number, in the above case it is 2.1.0-beta-25023-0. We will
 use this in the next step.
 
 #### 2 - Add a reference to your runtime package
@@ -150,7 +146,7 @@ Add the following lines to your project file:
 
 ```
   <ItemGroup>
-    <PackageReference Include="Microsoft.NETCore.Runtime.CoreCLR" Version="2.0.0-beta-25023-0" />
+    <PackageReference Include="Microsoft.NETCore.Runtime.CoreCLR" Version="2.1.0-beta-25023-0" />
   </ItemGroup>
 ```
 
@@ -203,12 +199,12 @@ give it a value by setting the BuildNumberMinor environment variable.
 ```bat
     set BuildNumberMinor=3
 ```
-before packaging. You should see this number show up in the version number (e.g. 2.0.0-beta-25023-03).
+before packaging. You should see this number show up in the version number (e.g. 2.1.0-beta-25023-03).
 
 As an alternative you can delete the existing copy of the package from the Nuget cache.   For example on
 windows (on Linux substitute ~/ for %HOMEPATH%) you could delete
 ```bat
-     %HOMEPATH%\.nuget\packages\Microsoft.NETCore.Runtime.CoreCLR\2.0.0-beta-25023-02
+     %HOMEPATH%\.nuget\packages\Microsoft.NETCore.Runtime.CoreCLR\2.1.0-beta-25023-02
 ```
 which should make things work (but is fragile, confirm file timestamps that you are getting the version you expect)
 
