@@ -86,6 +86,11 @@ class Constants {
                'tailcallstress'                 : ['COMPlus_TailcallStress' : '1'],
                'jitsse2only'                    : ['COMPlus_EnableAVX' : '0', 'COMPlus_EnableSSE3_4' : '0'],
                'jitnosimd'                      : ['COMPlus_FeatureSIMD' : '0'],
+               'jitincompletehwintrinsic'       : ['COMPlus_EnableIncompleteISAClass' : '1'],
+               'jitx86hwintrinsicnoavx'         : ['COMPlus_EnableIncompleteISAClass' : '1', 'COMPlus_EnableAVX' : '0'], // testing the legacy SSE encoding
+               'jitx86hwintrinsicnoavx2'        : ['COMPlus_EnableIncompleteISAClass' : '1', 'COMPlus_EnableAVX2' : '0'], // testing SNB/IVB
+               'jitx86hwintrinsicnosimd'        : ['COMPlus_EnableIncompleteISAClass' : '1', 'COMPlus_FeatureSIMD' : '0'], // match "jitnosimd", may need to remove after decoupling HW intrinsic from FeatureSIMD
+               'jitnox86hwintrinsic'            : ['COMPlus_EnableIncompleteISAClass' : '1', 'COMPlus_EnableSSE' : '0' , 'COMPlus_EnableSSE2' : '0' , 'COMPlus_EnableSSE3' : '0' , 'COMPlus_EnableSSSE3' : '0' , 'COMPlus_EnableSSE41' : '0' , 'COMPlus_EnableSSE42' : '0' , 'COMPlus_EnableAVX' : '0' , 'COMPlus_EnableAVX2' : '0' , 'COMPlus_EnableAES' : '0' , 'COMPlus_EnableBMI1' : '0' , 'COMPlus_EnableBMI2' : '0' , 'COMPlus_EnableFMA' : '0' , 'COMPlus_EnableLZCNT' : '0' , 'COMPlus_EnablePCLMULQDQ' : '0' , 'COMPlus_EnablePOPCNT' : '0'],
                'corefx_baseline'                : [ : ], // corefx baseline
                'corefx_minopts'                 : ['COMPlus_JITMinOpts' : '1'],
                'corefx_tieredcompilation'       : ['COMPlus_EXPERIMENTAL_TieredCompilation' : '1'],
@@ -981,6 +986,11 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
         case 'tailcallstress':
         case 'jitsse2only':
         case 'jitnosimd':
+        case 'jitnox86hwintrinsic':
+        case 'jitincompletehwintrinsic':
+        case 'jitx86hwintrinsicnoavx':
+        case 'jitx86hwintrinsicnoavx2':
+        case 'jitx86hwintrinsicnosimd':
         case 'corefx_baseline':
         case 'corefx_minopts':
         case 'corefx_jitstress1':
