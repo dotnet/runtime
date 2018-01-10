@@ -135,7 +135,8 @@ class Constants {
 
     // This is the basic set of scenarios
     def static basicScenarios = [
-               'default',
+               'innerloop',
+               'normal',
                'ilrt',
                'r2r',
                'longgc',
@@ -148,6 +149,52 @@ class Constants {
 
     def static allScenarios = basicScenarios + r2rStressScenarios.keySet() + jitStressModeScenarios.keySet()
 
+    // Valid PR trigger combinations.
+    def static prTriggeredValidInnerLoopCombos = [
+        'Windows_NT': [
+            'x64': [
+                'Checked'
+            ], 
+            'x86': [
+                'Checked',
+                'Release'
+            ], 
+            'arm': [
+                'Checked',
+            ],
+            'arm64': [
+                'Checked'
+            ],
+            'armlb': [
+                'Checked'
+            ]
+        ],
+        'Ubuntu': [
+            'x64': [
+                'Checked'
+            ],
+            'arm64': [
+                'Debug'
+            ]
+        ],
+        'CentOS7.1': [
+            'x64': [
+                'Debug',
+                'Release'
+            ]
+        ],
+        'OSX10.12': [
+            'x64': [
+                'Checked'
+            ]
+        ],
+        'Tizen': [
+            'arm': [
+                'Checked'
+            ]
+        ],
+    ]
+
     // A set of scenarios that are valid for arm/arm64/armlb tests run on hardware. This is a map from valid scenario name
     // to Tests.lst file categories to exclude.
     //
@@ -157,7 +204,8 @@ class Constants {
     // Note that some scenarios that are commented out should be enabled, but haven't yet been.
     //
     def static validArmWindowsScenarios = [
-               'default':                                [],
+               'innerloop':                              [],
+               'normal':                                 [],
                // 'ilrt'
                'r2r':                                    ["R2R_FAIL"],
                // 'longgc'
@@ -253,6 +301,14 @@ class Constants {
                'gcstress0xc_jitstressregs0x1000':        ["GCSTRESS_FAIL", "GCSTRESS_EXCLUDE", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"]
     ]
   
+    def static validLinuxArm64Scenarios = [ 
+        'normal',
+        'r2r',
+        'innerloop',
+        'gcstress0x3',
+        'gcstress0xc'
+    ]
+
     def static configurationList = ['Debug', 'Checked', 'Release']
 
     // This is the set of architectures
@@ -526,11 +582,32 @@ def static isArmWindowsScenario(def scenario) {
     return Constants.validArmWindowsScenarios.containsKey(scenario)
 }
 
+def static isValidPrTriggeredInnerLoopJob(os, architecture, configuration) {
+    def validOsPrTriggerArchConfigs = Constants.prTriggeredValidInnerLoopCombos[os]
+
+    if (validOsPrTriggerArchConfigs == null) {
+        return false
+    }
+
+    if (validOsPrTriggerArchConfigs[architecture] != null) {
+        def validOsPrTriggerConfigs = validOsPrTriggerArchConfigs[architecture]
+
+        if (!(configuration in validOsPrTriggerConfigs)) {
+            return false
+        }
+    } else {
+        return false
+    }
+
+    return true
+}
+
 def static setJobTimeout(newJob, isPR, architecture, configuration, scenario, isBuildOnly) {
     // 2 hours (120 minutes) is the default timeout
     def timeout = 120
+    def innerLoop = (scenario == "innerloop")
 
-    if (!(scenario == 'default' && isPR == true)) {
+    if (!innerLoop) {
         // Pri-1 test builds take a long time. Default PR jobs are Pri-0; everything else is Pri-1
         // (see calculateBuildCommands()). So up the Pri-1 build jobs timeout.
         timeout = 240
@@ -749,14 +826,14 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
     // Need to change around some systems and other builds to pick up the right builds
     // to do that.
 
-    def suffix = scenario != 'default' ? "_${scenario}" : '';
+    def suffix = scenario != 'normal' ? "_${scenario}" : '';
     if (isBuildOnly) {
         suffix += '_bld'
     }
     def baseName = ''
     switch (architecture) {
         case 'x64':
-            if (scenario == 'default') {
+            if (scenario == 'normal') {
                 // For now we leave x64 off of the name for compatibility with other jobs
                 baseName = configuration.toLowerCase() + '_' + os.toLowerCase()
             }
@@ -818,7 +895,9 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
 
     // Check scenario.
     switch (scenario) {
-        case 'default':
+        case 'innerloop':
+            break
+        case 'normal':
             switch (architecture) {
                 case 'x64':
                 case 'x86':
@@ -1092,6 +1171,8 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
 // it's just used for internal builds
 // If you add a job with a trigger phrase, please add that phrase to coreclr/Documentation/project-docs/ci-trigger-phrases.md
 def static addTriggers(def job, def branch, def isPR, def architecture, def os, def configuration, def scenario, def isFlowJob, def isWindowsBuildOnlyJob) {
+    def isNormalOrInnerloop = (scenario == "normal" || scenario == "innerloop")
+    
     if (isWindowsBuildOnlyJob) {
         return
     }
@@ -1134,8 +1215,9 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             if (scenario == 'formatting') {
                 assert configuration == 'Checked'
                 if (os == 'Windows_NT' || os == 'Ubuntu') {
-                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Innerloop Formatting")
+                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Formatting")
                 }
+
                 break
             }
 
@@ -1143,29 +1225,36 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                 // OpenSUSE, Debian & RedHat get trigger phrases for pri 0 build, and pri 1 build & test
                 case 'Debian8.4':
                 case 'RHEL7.2':
-                    if (scenario == 'default') {
+                    if (scenario == 'innerloop') {
                         assert !isFlowJob
-                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build", "(?i).*test\\W+${os}.*")
-                    }
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Innerloop Build")
+                    } 
+                    else if (scenario == 'normal') {
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build", "(?i).*test\\W+${os}\\W+${architecture}.*")
+                    }   
                     break
+
                 case 'Ubuntu16.04':
                     assert !isFlowJob
-                    assert scenario == 'default'
+                    assert scenario != 'innerloop'
                     // Distinguish with the other architectures (arm and x86)
                     Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build", "(?i).*test\\W+${os}\\W+${architecture}.*")
                     break
+
                 case 'Fedora24':
                 case 'Ubuntu16.10':
                     assert !isFlowJob
-                    assert scenario == 'default'
+                    assert scenario != 'innerloop'
                     Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build", "(?i).*test\\W+${os}\\W+.*")
                     break
+
                 case 'Ubuntu':
                     if (scenario == 'illink') {
                         Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} via ILLink", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
                         break
                     }
                     // fall through
+
                 case 'OSX10.12':
                     // Triggers on the non-flow jobs aren't necessary here
                     // Corefx testing uses non-flow jobs.
@@ -1173,44 +1262,58 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                         break
                     }
                     switch (scenario) {
-                        case 'default':
+                        case 'innerloop':
+                            // PR Triggered jobs. These jobs will run pri0 tests.
+                            if (configuration == 'Checked') {
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Innerloop Build and Test.*")
+                            }
+                            break
+
+                        case 'normal':
                             // OSX uses checked for default PR tests
                             if (configuration == 'Checked') {
                                 // Default trigger
                                 assert !job.name.contains("centos")
-                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Innerloop Build and Test")
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build and Test", "(?i).*test\\W+${os}\\W+${architecture}\\W+Build and Test.*")
                             }
                             break
+
                         case 'jitdiff':
                             if (configuration == 'Checked') {
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Jit Diff Build and Test", "(?i).*test\\W+${os}\\W+${scenario}.*")
                             }
                             break
+
                         case 'ilrt':
                             if (configuration == 'Release') {
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} IL RoundTrip Build and Test", "(?i).*test\\W+${os}\\W+${scenario}.*")
                             }
                             break
+
                         case 'longgc':
                             if (configuration == 'Release') {
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Long-Running GC Build & Test", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")
                             }
                             break
+
                         case 'gcsimulator':
                             if (configuration == 'Release') {
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} GC Simulator", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")
                             }
                             break
+
                         case 'standalone_gc':
                             if (configuration == 'Release' || configuration == 'Checked') {
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Standalone GC", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")
                             }
                             break
+
                         case 'gc_reliability_framework':
                             if (configuration == 'Release' || configuration == 'Checked') {
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} GC Reliability Framework", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")
                             }
                             break
+
                         default:
                             if (isJitStressScenario(scenario)) {
                                 def displayStr = getStressModeDisplayName(scenario)
@@ -1230,12 +1333,13 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                                 assert false
                             }
                             break
+
                     }
                     break
 
                 case 'CentOS7.1':
                     switch (scenario) {
-                        case 'default':
+                        case 'innerloop':
                             // CentOS uses checked for default PR tests while debug is build only
                             if (configuration == 'Debug') {
                                 // Default trigger
@@ -1243,12 +1347,22 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             }
                             
                             // Make sure this is a flow job to get build and test.
-                            if (configuration == 'Checked' && isFlowJob) {
+                            if (configuration == 'Release' && isFlowJob) {
                                 assert job.name.contains("flow")
                                 // Default trigger
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Innerloop Build and Test")
                             }
                             break
+
+                        case 'normal':
+                            // Make sure this is a flow job to get build and test.
+                            if (configuration == 'Checked' && isFlowJob) {
+                                assert job.name.contains("flow")
+                                // Default trigger
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build and Test", "(?i).*test\\W+${os}\\W+${architecture}\\W+Build and Test.*")
+                            }
+                            break
+
                         default:
                             if (isR2RScenario(scenario)) {
                                 if (configuration == 'Release' || configuration == 'Checked') {
@@ -1258,50 +1372,65 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                                 }
                             }
                             break
+
                     }
                     break
 
                 case 'Windows_NT':
                     switch (scenario) {
-                        case 'default':
+                        case 'innerloop':
                             // Default trigger
-                            if (configuration == 'Checked') {
+                            if (configuration == 'Checked' || configuration == 'Release') {
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Innerloop Build and Test")
                             }
                             break
+
+                        case 'normal':
+                            if (configuration == 'Checked') {
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build and Test", "(?i).*test\\W+${os}\\W+${architecture}\\W+Build and Test.*")
+                            }
+                            break
+
                         case 'jitdiff':
                             if (configuration == 'Checked') {
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Jit Diff Build and Test", "(?i).*test\\W+${os}\\W+${scenario}.*")
                             }
                             break
+
                         case 'ilrt':
                             if (configuration == 'Release') {
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} IL RoundTrip Build and Test", "(?i).*test\\W+${os}\\W+${scenario}.*")
                             }
                             break
+
                         case 'longgc':
                             if (configuration == 'Release') {
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Long-Running GC Build & Test", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")
                             }
                             break
+
                         case 'gcsimulator':
                             if (configuration == 'Release') {
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} GC Simulator", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")
                             }
                             break
+
                         case 'standalone_gc':
                             if (configuration == 'Release' || configuration == 'Checked') {
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Standalone GC", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")
                             }
                             break
+
                         case 'gc_reliability_framework':
                             if (configuration == 'Release' || configuration == 'Checked') {
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} GC Reliability Framework", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")
                             }
                             break
+
                         case 'illink':
                             Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} via ILLink", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
                             break
+
                         default:
                             if (isJitStressScenario(scenario)) {
                                 def displayStr = getStressModeDisplayName(scenario)
@@ -1321,14 +1450,19 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                                 assert false
                             }
                             break
+
                     }
                     break
+
                 default:
                     println("Unknown os: ${os}");
                     assert false
                     break
+
             }
+
             break
+
         // editor brace matching: }
         case 'armlb':
         case 'arm': // editor brace matching: {
@@ -1338,7 +1472,8 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     if (architecture == 'armlb') { // No arm legacy backend testing for Ubuntu
                         break
                     }
-                    assert scenario == 'default'
+
+                    assert scenario != 'innerloop'
                     job.with {
                         publishers {
                             azureVMAgentPostBuildAction {
@@ -1349,11 +1484,13 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build",
                             "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}\\W+Build.*")
                     break
+
                 case 'Tizen':
                     if (architecture == 'armlb') {  // No arm legacy backend testing for Tizen armel
                         break
                     }
-                    architecture='armel'
+
+                    architecture = 'armel'
                     job.with {
                         publishers {
                             azureVMAgentPostBuildAction {
@@ -1361,14 +1498,18 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             }
                         }
                     }
-                    if (configuration == 'Checked') {
-                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Innerloop Build and Test")
+
+                    if (scenario == 'innerloop') {
+                        if (configuration == 'Checked') {
+                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Innerloop Build and Test")
+                        }
                     }
                     else {
                         Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build",
                             "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}\\W+Build.*")
                     }
                     break
+
                 case 'Windows_NT':
                     // Triggers on the non-flow jobs aren't necessary here
                     if (!isFlowJob) {
@@ -1378,7 +1519,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     // Set up a private trigger
                     def contextString = "${os} ${architecture} Cross ${configuration}"
                     def triggerString = "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}"
-                    if (scenario == 'default') {
+                    if (scenario == 'innerloop') {
                         contextString += " Innerloop"
                         triggerString += "\\W+Innerloop"
                     }
@@ -1398,16 +1539,15 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     triggerString += ".*"
 
                     switch (scenario) {
-                        case 'default':
-                            // Only Checked is a default trigger.
+                        case 'innerloop':
+                            // Only Checked is an innerloop trigger.
                             if (configuration == 'Checked')
                             {
                                 Utilities.addDefaultPrivateGithubPRTriggerForBranch(job, branch, contextString, null, arm64Users)
                             }
-                            else 
-                            {
-                                Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString, triggerString, null, arm64Users)
-                            }
+                            break
+                        case 'normal':
+                            Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString, triggerString, null, arm64Users)
                             break
                         default:
                             // Stress jobs will use this code path.
@@ -1428,7 +1568,8 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             // Set up a private trigger
             def contextString = "${os} ${architecture} Cross ${configuration}"
             def triggerString = "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}"
-            if (scenario == 'default') {
+
+            if (scenario == 'innerloop') {
                 contextString += " Innerloop"
                 triggerString += "\\W+Innerloop"
             }
@@ -1451,14 +1592,14 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                 case 'Ubuntu':
                 case 'Ubuntu16.04':
                     switch (scenario) {
-                        case 'default':
+                        case 'innerloop':
                             if (configuration == 'Debug' && !isFlowJob) {
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Innerloop Build")
                             }
-                            else {
-                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build and Test", triggerString)
-                            }
                             
+                            break
+                        case 'normal':
+                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build and Test", triggerString)
                             break
                         default:
                             if (isR2RScenario(scenario)) {
@@ -1470,6 +1611,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             break
                     }
                     break
+
                 case 'Windows_NT':
                     // Triggers on the non-flow jobs aren't necessary here
                     if (!isFlowJob) {
@@ -1478,13 +1620,14 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
 
                     assert isArmWindowsScenario(scenario)
                     switch (scenario) {
-                        case 'default':
+                        case 'innerloop':
                             if (configuration == 'Checked') {
                                 Utilities.addDefaultPrivateGithubPRTriggerForBranch(job, branch, contextString, null, arm64Users)
                             }
-                            else {
-                                Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString, triggerString, null, arm64Users)
-                            }
+                            
+                            break
+                        case 'normal':
+                            Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString, triggerString, null, arm64Users)
                             break
                         default:
                             // Stress jobs will use this code path.
@@ -1500,57 +1643,68 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     break
             }
             break
+
         // editor brace matching: }
         case 'x86': // editor brace matching: {
-            assert ((os == 'Windows_NT') || ((os == 'Ubuntu') && (scenario == 'default')))
+            assert ((os == 'Windows_NT') || ((os == 'Ubuntu') && isNormalOrInnerloop))
             if (os == 'Ubuntu') {
                 // Triggers on the non-flow jobs aren't necessary here
                 if (!isFlowJob) {
                     break
                 }
+                
                 // on-demand only for ubuntu x86
                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build",
                     "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}.*")
                 break
+
             }
             switch (scenario) {
-                case 'default':
-                    if (configuration == 'Checked') {
-                        assert !job.name.contains("centos")
+                case 'innerloop':
+                    if (configuration == 'Checked' || configuration == 'Release') {
                         Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Innerloop Build and Test")
                     }
-                    else {
+                    break
+
+                case 'normal':
+                    if (configuration == 'Checked') {
                         Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build and Test",
-                            "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}.*")
+                            "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+Build and Test.*")
                     }
                     break
+
                 case 'ilrt':
                     if (configuration == 'Release') {
                         Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} IL RoundTrip Build and Test",
                             "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
                     }
                     break
+
                 case 'longgc':
                     if (configuration == 'Release') {
                         Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Long-Running GC Build & Test",
                             "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
                     }
                     break
+
                 case 'gcsimulator':
                     if (configuration == 'Release') {
                         Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} GC Simulator",
                             "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
                     }
                     break
+
                 case 'standalone_gc':
                     if (configuration == 'Release' || configuration == 'Checked') {
                         Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Standalone GC",
                             "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
                     }
                     break
+
                 case 'illink':
                     Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} via ILLink", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
                     break
+
                 default:
                     if (isJitStressScenario(scenario)) {
                         def displayStr = getStressModeDisplayName(scenario)
@@ -1569,14 +1723,16 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                         assert false
                     }
                     break
+
             }
             break
+
          // editor brace matching: }
         case 'x64_arm64_altjit':
         case 'x86_arm_altjit': // editor brace matching: {
             assert (os == 'Windows_NT')
             switch (scenario) {
-                case 'default':
+                case 'normal':
                     Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build and Test",
                         "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+Build and Test.*")
                     break
@@ -1586,6 +1742,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     break
             }
             break
+
         // editor brace matching: }
         default:
             println("Unknown architecture: ${architecture}");
@@ -1600,7 +1757,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
     def lowerConfiguration = configuration.toLowerCase()
 
     def priority = '1'
-    if (scenario == 'default' && isPR == true) {
+    if (scenario == 'innerloop') {
         priority = '0'
     }
 
@@ -1814,9 +1971,6 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         armCrossgenOpt = '-crossgenaltjit legacyjit.dll'
                     }
 
-                    // Hack: build pri1 tests for arm/armlb/arm64 build job, until we have separate pri0 and pri1 builds for the flow job to use.
-                    priority = '1'
-
                     // This is now a build only job. Do not run tests. Use the flow job.
                     buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${buildArchitecture} -priority=${priority} ${armCrossgenOpt}"
                     
@@ -1832,9 +1986,6 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 
                     def machineAffinityOptions = ['use_arm64_build_machine' : true]
                     setMachineAffinity(newJob, os, architecture, machineAffinityOptions)
-                   
-                    // Hack: build pri1 tests for arm/armlb/arm64 build job, until we have separate pri0 and pri1 builds for the flow job to use.
-                    priority = '1'
 
                     // This is now a build only job. Do not run tests. Use the flow job.
                     buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} toolset_dir C:\\ats2 -priority=${priority}"
@@ -2183,8 +2334,13 @@ Constants.allScenarios.each { scenario ->
                                     return
                                 }
                                 break
-                            case 'default':
+                            case 'normal':
                                 // Nothing skipped
+                                break
+                            case 'innerloop':
+                                if (!isValidPrTriggeredInnerLoopJob(os, architecture, configuration)) {
+                                    return
+                                }
                                 break
                             default:
                                 println("Unknown scenario: ${scenario}")
@@ -2247,7 +2403,7 @@ Constants.allScenarios.each { scenario ->
                                     // Define the Windows Tests and Corefx build job names
                                     def WindowsTestsName = projectFolder + '/' +
                                                            Utilities.getFullJobName(project,
-                                                                                    getJobName(lowerConfiguration, 'x64' , 'windows_nt', 'default', true),
+                                                                                    getJobName(lowerConfiguration, 'x64' , 'windows_nt', 'normal', true),
                                                                                     false)
                                     def corefxFolder = Utilities.getFolderName('dotnet/corefx') + '/' +
                                                        Utilities.getFolderName(branch)
@@ -2298,6 +2454,8 @@ Constants.allScenarios.each { scenario ->
 
 // Create jobs requiring flow jobs. This includes x64 non-Windows, arm64 Ubuntu, and arm/arm64/armlb Windows.
 Constants.allScenarios.each { scenario ->
+    def isNormalOrInnerloop = (scenario == 'innerloop' || scenario == 'normal')
+
     [true, false].each { isPR ->
         ['arm', 'armlb', 'x64', 'arm64', 'x86'].each { architecture ->
             Constants.crossList.each { os ->
@@ -2309,8 +2467,7 @@ Constants.allScenarios.each { scenario ->
                     if (os != 'Windows_NT') {
                         return
                     }
-                }
-                else if (architecture == 'x86') {
+                } else if (architecture == 'x86') {
                     if (os != "Ubuntu") {
                         return
                     }
@@ -2334,13 +2491,13 @@ Constants.allScenarios.each { scenario ->
                     else {
                         // Non-Windows
                         if (architecture == 'arm64') {
-                            if (scenario != 'default' && scenario != 'r2r' && scenario != 'gcstress0x3' && scenario != 'gcstress0xc') {
+                            if (!(scenario in Constants.validLinuxArm64Scenarios)) {
                                 return
                             }
                         }
                         else if (architecture == 'x86') {
-                            // Linux/x86 only want default test
-                            if (scenario != 'default') {
+                            // Linux/x86 only want innerloop and default test
+                            if (!isNormalOrInnerloop) {
                                 return
                             }
                         }
@@ -2351,7 +2508,7 @@ Constants.allScenarios.each { scenario ->
                         if (configuration != 'Checked' && configuration != 'Release') {
                             return
                         }
-                        if (scenario != 'default' && !isR2RScenario(scenario) && !isJitStressScenario(scenario)) {
+                        if (!isNormalOrInnerloop && !isR2RScenario(scenario) && !isJitStressScenario(scenario)) {
                             return
                         }
                     }
@@ -2361,7 +2518,7 @@ Constants.allScenarios.each { scenario ->
                         if (configuration != 'Release') {
                             return
                         }
-                        if (scenario != 'default') {
+                        if (!isNormalOrInnerloop) {
                             return
                         }
                     }
@@ -2399,17 +2556,20 @@ Constants.allScenarios.each { scenario ->
                                     return
                                 }
                                 break
+
                             case 'jitdiff':
                                 if (configuration != 'Checked') {
                                     return;
                                 }
                                 break
+
                             case 'gc_reliability_framework':
                             case 'standalone_gc':
                                 if (configuration != 'Release' && configuration != 'Checked') {
                                     return
                                 }
                                 break
+
                             case 'formatting':
                                 return
                             case 'illink':
@@ -2417,9 +2577,18 @@ Constants.allScenarios.each { scenario ->
                                     return
                                 }
                                 break
-                            case 'default':
+
+                            case 'normal':
                                 // Nothing skipped
                                 break
+
+                            case 'innerloop':
+                                // Nothing skipped
+                                if (!isValidPrTriggeredInnerLoopJob(os, architecture, configuration)) {
+                                    return
+                                }
+                                break
+
                             default:
                                 println("Unknown scenario: ${scenario}")
                                 assert false
@@ -2433,16 +2602,14 @@ Constants.allScenarios.each { scenario ->
                     def osGroup = getOSGroup(os)
                     def jobName = getJobName(configuration, architecture, os, scenario, false) + "_tst"
 
+                    def buildScenario = scenario == 'innerloop' ? 'innerloop' : 'normal'
+
                     def inputCoreCLRBuildName = projectFolder + '/' +
-                        Utilities.getFullJobName(project, getJobName(configuration, architecture, os, 'default', false), isPR)
+                        Utilities.getFullJobName(project, getJobName(configuration, architecture, os, buildScenario, false), isPR)
 
                     // If this is a stress scenario, there isn't any difference in the build job, so we didn't create a build only
                     // job for Windows_NT specific to that stress mode. Just copy from the default scenario.
-                    def testBuildScenario = scenario
-                    if (isJitStressScenario(testBuildScenario) || isR2RScenario(testBuildScenario) || isLongGc(testBuildScenario)) {
-                        testBuildScenario = 'default'
-                    }
-
+                    def testBuildScenario = scenario == 'innerloop' ? 'innerloop' : 'normal'
                     def inputWindowsTestBuildArch = architecture
                     if (architecture == "arm64" && os != "Windows_NT") {
                         // Use the x64 test build for arm64 unix
