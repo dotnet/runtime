@@ -663,5 +663,21 @@ namespace System
         NotEqual: // Workaround for https://github.com/dotnet/coreclr/issues/13549
             return false;
         }
+
+        public static int SequenceCompareTo<T>(ref T first, int firstLength, ref T second, int secondLength)
+            where T : IComparable<T>
+        {
+            Debug.Assert(firstLength >= 0);
+            Debug.Assert(secondLength >= 0);
+
+            var minLength = firstLength;
+            if (minLength > secondLength) minLength = secondLength;
+            for (int i = 0; i < minLength; i++)
+            {
+                int result = Unsafe.Add(ref first, i).CompareTo(Unsafe.Add(ref second, i));
+                if (result != 0) return result;
+            }
+            return firstLength.CompareTo(secondLength);
+        }
     }
 }
