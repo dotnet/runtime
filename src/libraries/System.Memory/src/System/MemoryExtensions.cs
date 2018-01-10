@@ -105,6 +105,21 @@ namespace System
         }
 
         /// <summary>
+        /// Determines the relative order of the sequences being compared by comparing the elements using IComparable{T}.CompareTo(T). 
+        /// </summary>
+        public static int SequenceCompareTo<T>(this Span<T> first, ReadOnlySpan<T> second)
+            where T : IComparable<T>
+        {
+            if (typeof(T) == typeof(byte))
+                return SpanHelpers.SequenceCompareTo(
+                    ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(first)),
+                    first.Length,
+                    ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(second)),
+                    second.Length);
+            return SpanHelpers.SequenceCompareTo(ref MemoryMarshal.GetReference(first), first.Length, ref MemoryMarshal.GetReference(second), second.Length);
+        }
+
+        /// <summary>
         /// Searches for the specified value and returns the index of its first occurrence. If not found, returns -1. Values are compared using IEquatable{T}.Equals(T). 
         /// </summary>
         /// <param name="span">The span to search.</param>
@@ -427,6 +442,21 @@ namespace System
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(second)),
                     length);
             return length == second.Length && SpanHelpers.SequenceEqual(ref MemoryMarshal.GetReference(first), ref MemoryMarshal.GetReference(second), length);
+        }
+
+        /// <summary>
+        /// Determines the relative order of the sequences being compared by comparing the elements using IComparable{T}.CompareTo(T). 
+        /// </summary>
+        public static int SequenceCompareTo<T>(this ReadOnlySpan<T> first, ReadOnlySpan<T> second)
+            where T : IComparable<T>
+        {
+            if (typeof(T) == typeof(byte))
+                return SpanHelpers.SequenceCompareTo(
+                    ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(first)),
+                    first.Length,
+                    ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(second)),
+                    second.Length);
+            return SpanHelpers.SequenceCompareTo(ref MemoryMarshal.GetReference(first), first.Length, ref MemoryMarshal.GetReference(second), second.Length);
         }
 
         /// <summary>

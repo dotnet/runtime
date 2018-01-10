@@ -49,6 +49,8 @@
     <Compile Include="Span\LastIndexOfSequence.char.cs" />
     <Compile Include="Span\NonPortableCast.cs" />
     <Compile Include="Span\Overflow.cs" />
+    <Compile Include="Span\SequenceCompareTo.T.cs" />
+    <Compile Include="Span\SequenceCompareTo.byte.cs" />
     <Compile Include="Span\SequenceEqual.T.cs" />
     <Compile Include="Span\SequenceEqual.byte.cs" />
     <Compile Include="Span\SequenceEqual.char.cs" />

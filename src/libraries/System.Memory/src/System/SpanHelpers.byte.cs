@@ -967,6 +967,63 @@ namespace System
         }
 #endif
 
+        public static unsafe int SequenceCompareTo(ref byte first, int firstLength, ref byte second, int secondLength)
+        {
+            Debug.Assert(firstLength >= 0);
+            Debug.Assert(secondLength >= 0);
+
+            if (Unsafe.AreSame(ref first, ref second))
+                goto Equal;
+
+            var minLength = firstLength;
+            if (minLength > secondLength) minLength = secondLength;
+
+            IntPtr i = (IntPtr)0; // Use IntPtr and byte* for arithmetic to avoid unnecessary 64->32->64 truncations
+            IntPtr n = (IntPtr)minLength;
+
+#if !netstandard11
+            if (Vector.IsHardwareAccelerated && (byte*)n > (byte*)Vector<byte>.Count)
+            {
+                n -= Vector<byte>.Count;
+                while ((byte*)n > (byte*)i)
+                {
+                    if (Unsafe.ReadUnaligned<Vector<byte>>(ref Unsafe.AddByteOffset(ref first, i)) !=
+                        Unsafe.ReadUnaligned<Vector<byte>>(ref Unsafe.AddByteOffset(ref second, i)))
+                    {
+                        goto NotEqual;
+                    }
+                    i += Vector<byte>.Count;
+                }
+                goto NotEqual;
+            }
+#endif
+
+            if ((byte*)n > (byte*)sizeof(UIntPtr))
+            {
+                n -= sizeof(UIntPtr);
+                while ((byte*)n > (byte*)i)
+                {
+                    if (Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.AddByteOffset(ref first, i)) !=
+                        Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.AddByteOffset(ref second, i)))
+                    {
+                        goto NotEqual;
+                    }
+                    i += sizeof(UIntPtr);
+                }
+            }
+
+        NotEqual:  // Workaround for https://github.com/dotnet/coreclr/issues/13549
+            while((byte*)minLength > (byte*)i)
+            {
+                int result = Unsafe.AddByteOffset(ref first, i).CompareTo(Unsafe.AddByteOffset(ref second, i));
+                if (result != 0) return result;
+                i += 1;
+            }
+
+        Equal:
+            return firstLength - secondLength;
+        }
+
 #if !netstandard11
         // Vector sub-search adapted from https://github.com/aspnet/KestrelHttpServer/pull/1138
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
