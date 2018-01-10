@@ -10,15 +10,17 @@ namespace System.ServiceModel.Syndication
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct ParseDateTimeArgs
     {
-        public string DateTimeString { get { throw null; } set { } }
-        public System.Xml.XmlQualifiedName ElemntQualifiedName { get { throw null; } set { } }
+        internal ParseDateTimeArgs(string dateTimeString, System.Xml.XmlQualifiedName elementQualifiedName) { throw null; }
+        public string DateTimeString { get { throw null; } }
+        public System.Xml.XmlQualifiedName ElementQualifiedName { get { throw null; } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct ParseUriArgs
     {
-        public System.Xml.XmlQualifiedName ElemntQualifiedName { get { throw null; } set { } }
-        public System.UriKind UriKind { get { throw null; } set { } }
-        public string UriString { get { throw null; } set { } }
+        internal ParseUriArgs(string uriString, UriKind uriKind, System.Xml.XmlQualifiedName elementQualifiedName) { throw null; }
+        public System.Xml.XmlQualifiedName ElementQualifiedName { get { throw null; } }
+        public System.UriKind UriKind { get { throw null; } }
+        public string UriString { get { throw null; } }
     }
     public abstract partial class SyndicationFeedFormatter
     {

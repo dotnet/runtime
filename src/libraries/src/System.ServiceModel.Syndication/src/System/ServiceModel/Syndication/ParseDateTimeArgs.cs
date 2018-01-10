@@ -8,7 +8,13 @@ namespace System.ServiceModel.Syndication
 {
     public struct ParseDateTimeArgs
     {
-        public string DateTimeString { get; set; }
-        public XmlQualifiedName ElemntQualifiedName { get; set; }
+        internal ParseDateTimeArgs(string dateTimeString, XmlQualifiedName elementQualifiedName)
+        {
+            DateTimeString = dateTimeString;
+            ElementQualifiedName = elementQualifiedName;
+        }
+
+        public string DateTimeString { get; private set; }
+        public XmlQualifiedName ElementQualifiedName { get; private set; }
     }
 }

@@ -51,7 +51,7 @@ namespace System.ServiceModel.Syndication.Tests
                 {
                     UriParser = (ParseUriArgs parseUriArgs, out Uri uri) =>
                     {
-                        uri = new Uri($"http://value-{parseUriArgs.UriString}-kind-{parseUriArgs.UriKind}-localName-{parseUriArgs.ElemntQualifiedName.Name}-ns-{parseUriArgs.ElemntQualifiedName.Namespace}-end");
+                        uri = new Uri($"http://value-{parseUriArgs.UriString}-kind-{parseUriArgs.UriKind}-localName-{parseUriArgs.ElementQualifiedName.Name}-ns-{parseUriArgs.ElementQualifiedName.Namespace}-end");
                         return true;
                     }
                 };
@@ -115,7 +115,7 @@ namespace System.ServiceModel.Syndication.Tests
                 {
                     UriParser = (ParseUriArgs parseUriArgs, out Uri uri) =>
                     {
-                        uri = new Uri($"http://value-{parseUriArgs.UriString}-kind-{parseUriArgs.UriKind}-localName-{parseUriArgs.ElemntQualifiedName.Name}-ns-{parseUriArgs.ElemntQualifiedName.Namespace}-end");
+                        uri = new Uri($"http://value-{parseUriArgs.UriString}-kind-{parseUriArgs.UriKind}-localName-{parseUriArgs.ElementQualifiedName.Name}-ns-{parseUriArgs.ElementQualifiedName.Namespace}-end");
                         return true;
                     }
                 };
