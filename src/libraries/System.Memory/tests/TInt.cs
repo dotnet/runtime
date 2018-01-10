@@ -10,7 +10,7 @@ using System.Linq;
 namespace System
 {
     // A wrapped integer that invokes a custom delegate every time IEquatable<TInt>.Equals() is invoked.
-    internal struct TInt : IEquatable<TInt>
+    internal struct TInt : IEquatable<TInt>, IComparable<TInt>
     {
         public TInt(int value)
             : this(value, (Action<int, int>)null)
@@ -37,6 +37,15 @@ namespace System
                 _onCompare(Value, other.Value);
             }
             return Value == other.Value;
+        }
+
+        public int CompareTo(TInt other)
+        {
+            if (_onCompare != null)
+            {
+                _onCompare(Value, other.Value);
+            }
+            return Value.CompareTo(other.Value);
         }
 
         [Obsolete("Don't call this. Call IEquatable<T>.Equals(T)")]

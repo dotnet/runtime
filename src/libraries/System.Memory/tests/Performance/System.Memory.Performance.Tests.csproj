@@ -15,6 +15,7 @@
     <Compile Include="Perf.Span.Fill.cs" />
     <Compile Include="Perf.Span.IndexOf.cs" />
     <Compile Include="Perf.Span.IndexOfAny.cs" />
+    <Compile Include="Perf.Span.SequenceCompareTo.cs" />
     <Compile Include="Perf.Span.StartsWith.cs" />
     <Compile Include="Perf.MemorySlice.cs" />
     <Compile Include="Perf.Utf8Formatter.cs" />

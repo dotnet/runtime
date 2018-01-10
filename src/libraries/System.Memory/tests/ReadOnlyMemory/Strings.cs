@@ -66,11 +66,7 @@ namespace System.MemoryTests
             ReadOnlyMemory<char> m = input.AsReadOnlyMemory();
             Assert.False(m.IsEmpty);
 
-            string text;
-            int start;
-            int length;
-
-            Assert.True(m.TryGetString(out text, out start, out length));
+            Assert.True(m.TryGetString(out string text, out int start, out int length));
             Assert.Same(input, text);
             Assert.Equal(0, start);
             Assert.Equal(input.Length, length);
