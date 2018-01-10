@@ -943,6 +943,13 @@ CI_DISABLED_TESTS = \
 CI_PR_DISABLED_TESTS = \
 	appdomain-threadpool-unload.exe
 
+if ENABLE_COOP
+CI_PR_DISABLED_TESTS += \
+	abort-cctor.exe \
+	bug-58782-plain-throw.exe \
+	bug-58782-capture-and-throw.exe
+endif
+
 # appdomain-threadpool-unload.exe creates 100 appdomains, takes too long with llvm
 LLVM_DISABLED_TESTS = \
 	finally_block_ending_in_dead_bb.exe \
