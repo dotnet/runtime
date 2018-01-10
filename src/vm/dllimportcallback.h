@@ -511,6 +511,8 @@ public:
     }
 #endif
 
+    static VOID __fastcall ReportViolation(UMEntryThunk* p);
+
 private:
     // The start of the managed code.
     // if m_pObjectHandle is non-NULL, this field is still set to help with diagnostic of call on collected delegate crashes

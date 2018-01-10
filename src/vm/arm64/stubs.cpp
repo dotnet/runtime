@@ -1268,11 +1268,19 @@ void UMEntryThunkCode::Encode(BYTE* pTargetCode, void* pvSecretParam)
     FlushInstructionCache(GetCurrentProcess(),&m_code,sizeof(m_code));
 }
 
+#ifndef DACCESS_COMPILE
+
 void UMEntryThunkCode::Poison()
 {
-    // Insert 'brk 0xbe' at the entry point
-    m_code[0] = 0xd42017c0;
+    m_pTargetCode = (TADDR)UMEntryThunk::ReportViolation;
+
+    // ldp x16, x0, [x12]
+    m_code[1] = 0xd42017c0;
+
+    ClrFlushInstructionCache(&m_code,sizeof(m_code));
 }
+
+#endif // DACCESS_COMPILE
 
 #ifdef PROFILING_SUPPORTED
 #include "proftoeeinterfaceimpl.h"
