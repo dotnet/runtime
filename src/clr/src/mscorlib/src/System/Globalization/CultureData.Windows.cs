@@ -19,7 +19,7 @@ namespace System.Globalization
     using StringList = List<string>;
 #else
     using StringList = LowLevelList<string>;
-#endif 
+#endif
 
     internal partial class CultureData
     {
@@ -273,10 +273,11 @@ namespace System.Globalization
             return result;
         }
 
-        // Enumerate all system cultures and then try to find out which culture has 
+        // Enumerate all system cultures and then try to find out which culture has
         // region name match the requested region name
         private static CultureData GetCultureDataFromRegionName(String regionName)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(regionName != null);
 
             const uint LOCALE_SUPPLEMENTAL = 0x00000002;
@@ -327,7 +328,7 @@ namespace System.Globalization
 #if ENABLE_WINRT
             return WinRTInterop.Callbacks.GetRegionDisplayName(isoCountryCode);
 #else
-            // If the current UI culture matching the OS UI language, we'll get the display name from the OS. 
+            // If the current UI culture matching the OS UI language, we'll get the display name from the OS.
             // otherwise, we use the native name as we don't carry resources for the region display names anyway.
             if (CultureInfo.CurrentUICulture.Name.Equals(CultureInfo.UserDefaultUICulture.Name))
             {
@@ -692,7 +693,7 @@ namespace System.Globalization
         private static CultureInfo[] EnumCultures(CultureTypes types)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            
+
             uint flags = 0;
 
 #pragma warning disable 618
@@ -736,7 +737,7 @@ namespace System.Globalization
                 cultures[i] = new CultureInfo(context.strings[i]);
             }
 
-            return cultures;            
+            return cultures;
         }
 
         private string GetConsoleFallbackName(string cultureName)
