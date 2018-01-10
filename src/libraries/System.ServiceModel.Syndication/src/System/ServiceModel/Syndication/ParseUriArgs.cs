@@ -8,8 +8,15 @@ namespace System.ServiceModel.Syndication
 {
     public struct ParseUriArgs
     {
-        public string UriString { get; set; }
-        public UriKind UriKind { get; set; }
-        public XmlQualifiedName ElemntQualifiedName { get; set; }
+        internal ParseUriArgs(string uriString, UriKind uriKind, XmlQualifiedName elementQualifiedName)
+        {
+            UriString = uriString;
+            UriKind = uriKind;
+            ElementQualifiedName = elementQualifiedName;
+        }
+
+        public string UriString { get; private set; }
+        public UriKind UriKind { get; private set; }
+        public XmlQualifiedName ElementQualifiedName { get; private set; }
     }
 }

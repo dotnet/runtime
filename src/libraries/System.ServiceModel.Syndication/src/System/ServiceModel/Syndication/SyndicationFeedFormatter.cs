@@ -396,15 +396,20 @@ namespace System.ServiceModel.Syndication
 
         internal Uri UriFromString(string uriString, UriKind uriKind, string localName, string namespaceURI, XmlReader reader)
         {
+            return UriFromString(UriParser, uriString, uriKind, localName, namespaceURI, reader);
+        }
+
+        internal static Uri UriFromString(TryParseUri uriParser, string uriString, UriKind uriKind, string localName, string namespaceURI, XmlReader reader)
+        {
             Uri uri = null;
-            var elemntQualifiedName = new XmlQualifiedName(localName, namespaceURI);
-            var parseUriArgs = new ParseUriArgs() { UriString = uriString, UriKind = uriKind, ElemntQualifiedName = elemntQualifiedName };
-            object[] args = new object[] { parseUriArgs, uri };            
+            var elementQualifiedName = new XmlQualifiedName(localName, namespaceURI);
+            var parseUriArgs = new ParseUriArgs(uriString, uriKind, elementQualifiedName);
+            object[] args = new object[] { parseUriArgs, uri };
             try
             {
-                foreach (Delegate uriParser in UriParser.GetInvocationList())
+                foreach (Delegate parser in uriParser.GetInvocationList())
                 {
-                    if ((bool)uriParser.Method.Invoke(uriParser.Target, args))
+                    if ((bool)parser.Method.Invoke(parser.Target, args))
                     {
                         uri = (Uri)args[args.Length - 1];
                         return uri;
@@ -426,8 +431,8 @@ namespace System.ServiceModel.Syndication
             try
             {
                 DateTimeOffset dateTimeOffset;
-                var elemntQualifiedName = new XmlQualifiedName(reader.LocalName, reader.NamespaceURI);
-                var parseDateTimeArgs = new ParseDateTimeArgs() { DateTimeString = dateTimeString, ElemntQualifiedName = elemntQualifiedName };
+                var elementQualifiedName = new XmlQualifiedName(reader.LocalName, reader.NamespaceURI);
+                var parseDateTimeArgs = new ParseDateTimeArgs(dateTimeString, elementQualifiedName);
                 object[] args = new object[] { parseDateTimeArgs, dateTimeOffset };
                 foreach (Delegate dateTimeParser in DateTimeParser.GetInvocationList())
                 {
