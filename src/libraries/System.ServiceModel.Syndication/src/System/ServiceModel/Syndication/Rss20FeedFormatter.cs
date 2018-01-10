@@ -303,14 +303,7 @@ namespace System.ServiceModel.Syndication
             }
 
             string uriString = reader.ReadElementString();
-            var elemntQualifiedName = new XmlQualifiedName(Rss20Constants.LinkTag, Rss20Constants.Rss20Namespace);
-            var parseUriArgs = new ParseUriArgs()
-            {
-                UriString = uriString,
-                UriKind = UriKind.RelativeOrAbsolute,
-                ElemntQualifiedName = elemntQualifiedName
-            };
-            uriParser(parseUriArgs, out Uri uri);
+            Uri uri = UriFromString(uriParser, uriString, UriKind.RelativeOrAbsolute, Rss20Constants.LinkTag, Rss20Constants.Rss20Namespace, reader);
             link.Uri = uri;
             return link;
         }
