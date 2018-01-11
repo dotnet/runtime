@@ -154,6 +154,27 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
+        [PerCompilationType(nameof(AndAlso_TestData))]
+        public static void AndAlso_UserDefinedOperatorTailCall(int leftValue, int rightValue, int expectedValue, bool calledMethod, bool useInterpreter)
+        {
+            TrueFalseClass left = new TrueFalseClass(leftValue);
+            TrueFalseClass right = new TrueFalseClass(rightValue);
+
+            BinaryExpression expression = Expression.AndAlso(Expression.Constant(left), Expression.Constant(right));
+            Func<TrueFalseClass> lambda = Expression.Lambda<Func<TrueFalseClass>>(expression, true).Compile(useInterpreter);
+            Assert.Equal(expectedValue, lambda().Value);
+
+            // AndAlso only evaluates the false operator of left
+            Assert.Equal(0, left.TrueCallCount);
+            Assert.Equal(1, left.FalseCallCount);
+            Assert.Equal(0, right.TrueCallCount);
+            Assert.Equal(0, right.FalseCallCount);
+
+            // AndAlso only evaluates the operator if left is not false
+            Assert.Equal(calledMethod ? 1 : 0, left.OperatorCallCount);
+        }
+
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void AndAlso_UserDefinedOperator_HasMethodNotOperator(bool useInterpreter)
         {
@@ -202,6 +223,27 @@ namespace System.Linq.Expressions.Tests
 
             BinaryExpression expression = Expression.OrElse(Expression.Constant(left), Expression.Constant(right));
             Func<TrueFalseClass> lambda = Expression.Lambda<Func<TrueFalseClass>>(expression).Compile(useInterpreter);
+            Assert.Equal(expectedValue, lambda().Value);
+
+            // OrElse only evaluates the true operator of left
+            Assert.Equal(1, left.TrueCallCount);
+            Assert.Equal(0, left.FalseCallCount);
+            Assert.Equal(0, right.TrueCallCount);
+            Assert.Equal(0, right.FalseCallCount);
+
+            // OrElse only evaluates the operator if left is not true
+            Assert.Equal(calledMethod ? 1 : 0, left.OperatorCallCount);
+        }
+
+        [Theory]
+        [PerCompilationType(nameof(OrElse_TestData))]
+        public static void OrElse_UserDefinedOperatorTailCall(int leftValue, int rightValue, int expectedValue, bool calledMethod, bool useInterpreter)
+        {
+            TrueFalseClass left = new TrueFalseClass(leftValue);
+            TrueFalseClass right = new TrueFalseClass(rightValue);
+
+            BinaryExpression expression = Expression.OrElse(Expression.Constant(left), Expression.Constant(right));
+            Func<TrueFalseClass> lambda = Expression.Lambda<Func<TrueFalseClass>>(expression, true).Compile(useInterpreter);
             Assert.Equal(expectedValue, lambda().Value);
 
             // OrElse only evaluates the true operator of left
