@@ -48,6 +48,8 @@
     <Compile Include="Attributes\AttributeOnPreservedTypeWithUsedSetter.cs" />
     <Compile Include="Attributes\AttributeOnUsedMethodIsKept.cs" />
     <Compile Include="Attributes\AttributeOnUsedPropertyIsKept.cs" />
+    <Compile Include="Attributes\SecurityAttributesOnUsedMethodAreKept.cs" />
+    <Compile Include="Attributes\SecurityAttributesOnUsedTypeAreKept.cs" />
     <Compile Include="Basic\ComplexNestedClassesHasUnusedRemoved.cs" />
     <Compile Include="Basic\InterfaceMethodImplementedOnBaseClassDoesNotGetStripped.cs" />
     <Compile Include="Basic\MultiLevelNestedClassesAllRemovedWhenNonUsed.cs" />

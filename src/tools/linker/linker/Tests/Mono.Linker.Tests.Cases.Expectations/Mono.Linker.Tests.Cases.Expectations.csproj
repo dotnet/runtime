@@ -47,6 +47,7 @@
     <Compile Include="Assertions\KeptMemberInAssemblyAttribute.cs" />
     <Compile Include="Assertions\KeptResourceAttribute.cs" />
     <Compile Include="Assertions\KeptResourceInAssemblyAttribute.cs" />
+    <Compile Include="Assertions\KeptSecurityAttribute.cs" />
     <Compile Include="Assertions\KeptTypeInAssemblyAttribute.cs" />
     <Compile Include="Assertions\RemovedAssemblyAttribute.cs" />
     <Compile Include="Assertions\RemovedMemberInAssemblyAttribute.cs" />
