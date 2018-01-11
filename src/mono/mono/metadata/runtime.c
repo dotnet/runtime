@@ -58,7 +58,8 @@ fire_process_exit_event (MonoDomain *domain, gpointer user_data)
 	ERROR_DECL (error);
 	MonoObject *exc = NULL;
 	MonoMethod *method = mono_class_get_method_from_name (mono_defaults.appdomain_class, "RunProcessExit", -1);
-	g_assert (method);
+	if (!method)
+		return;
 
 	//Possible leftover from other domains
 	mono_thread_internal_reset_abort (mono_thread_internal_current ());
