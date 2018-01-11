@@ -18,7 +18,7 @@
         "scriptName": "",
         "arguments": "-path $(build.SourcesDirectory)\\corefx",
         "workingFolder": "",
-        "inlineScript": "param($path)\n\nif (Test-Path $path){\n    Stop-Process -processname msbuild -ErrorAction Ignore -Verbose\n    Stop-Process -processname dotnet -ErrorAction Ignore -Verbose\n    Stop-Process -processname vbcscompiler -ErrorAction Ignore -Verbose\n    # this will print out an error each time a file can't be deleted.\n    Remove-Item -Recurse -Force $path\n }",
+        "inlineScript": "param($path)\nif ($path -and (Test-Path $path)){\nStop-Process -processname msbuild -ErrorAction Ignore -Verbose\nStop-Process -processname dotnet -ErrorAction Ignore -Verbose\nStop-Process -processname vbcscompiler -ErrorAction Ignore -Verbose\n$emptyFolder = (New-Item -ItemType Directory (Join-Path -Path $env:TEMP -ChildPath ([System.IO.Path]::GetRandomFileName()))).FullName\nrobocopy $emptyFolder $path /purge\nRemove-Item -Recurse -Force $path,$emptyFolder \nexit 0\n}",
         "failOnStandardError": "true"
       }
     },
