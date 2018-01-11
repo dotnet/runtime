@@ -101,6 +101,7 @@ void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins)
 
     if (op2->isContained() || op2->isUsedFromSpillTemp())
     {
+        TempDsc* tmpDsc = nullptr;
         unsigned varNum = BAD_VAR_NUM;
         unsigned offset = (unsigned)-1;
 
@@ -117,6 +118,13 @@ void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins)
                 {
                     varNum = memBase->AsLclVarCommon()->GetLclNum();
                     offset = 0;
+
+                    // Ensure that all the GenTreeIndir values are set to their defaults.
+                    assert(memBase->gtRegNum == REG_NA);
+                    assert(!mem->HasIndex());
+                    assert(mem->Scale() == 1);
+                    assert(mem->Offset() == 0);
+
                     break;
                 }
 
@@ -162,8 +170,7 @@ void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins)
                     assert(op2->isUsedFromSpillTemp());
                     assert(op2->IsRegOptional());
 
-                    TempDsc* tmpDsc = getSpillTempDsc(op2);
-
+                    tmpDsc = getSpillTempDsc(op2);
                     varNum = tmpDsc->tdTempNum();
                     offset = 0;
 
@@ -172,6 +179,12 @@ void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins)
                 }
             }
         }
+
+        // Ensure we got a good varNum and offset.
+        // We also need to check for `tmpDsc != nullptr` since spill temp numbers
+        // are negative and start with -1, which also happens to be BAD_VAR_NUM.
+        assert((varNum != BAD_VAR_NUM) || (tmpDsc != nullptr));
+        assert(offset != (unsigned)-1);
 
         emit->emitIns_SIMD_R_R_S(ins, targetReg, op1Reg, varNum, offset, targetType);
     }
