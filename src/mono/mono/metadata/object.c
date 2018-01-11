@@ -6786,23 +6786,6 @@ leave:
 	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
-typedef struct {
-	MonoDomain *orig_domain;
-	MonoString *ins;
-	MonoString *res;
-} LDStrInfo;
-
-static void
-str_lookup (MonoDomain *domain, gpointer user_data)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	LDStrInfo *info = (LDStrInfo *)user_data;
-	if (info->res || domain == info->orig_domain)
-		return;
-	info->res = (MonoString *)mono_g_hash_table_lookup (domain->ldstr_table, info->ins);
-}
-
 static MonoString*
 mono_string_get_pinned (MonoString *str, MonoError *error)
 {
@@ -6861,22 +6844,6 @@ mono_string_is_interned_lookup (MonoString *str, int insert, MonoError *error)
 			ldstr_unlock ();
 		}
 		return s;
-	} else {
-		LDStrInfo ldstr_info;
-		ldstr_info.orig_domain = domain;
-		ldstr_info.ins = str;
-		ldstr_info.res = NULL;
-
-		mono_domain_foreach (str_lookup, &ldstr_info);
-		if (ldstr_info.res) {
-			/* 
-			 * the string was already interned in some other domain:
-			 * intern it in the current one as well.
-			 */
-			mono_g_hash_table_insert (ldstr_table, str, str);
-			ldstr_unlock ();
-			return str;
-		}
 	}
 	ldstr_unlock ();
 	return NULL;
