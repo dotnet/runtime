@@ -36,31 +36,73 @@ namespace System
           1E9, 1E10, 1E11, 1E12, 1E13, 1E14, 1E15
         };
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short Abs(short value)
         {
-            return (value >= 0) ? value : AbsHelper(value);
+            if (value < 0)
+            {
+                value = (short)-value;
+                if (value < 0)
+                {
+                    ThrowAbsOverflow();
+                }
+            }
+            return value;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Abs(int value)
         {
-            return (value >= 0) ? value : AbsHelper(value);
+            if (value < 0)
+            {
+                value = -value;
+                if (value < 0)
+                {
+                    ThrowAbsOverflow();
+                }
+            }
+            return value;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long Abs(long value)
         {
-            return (value >= 0) ? value : AbsHelper(value);
+            if (value < 0)
+            {
+                value = -value;
+                if (value < 0)
+                {
+                    ThrowAbsOverflow();
+                }
+            }
+            return value;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static sbyte Abs(sbyte value)
         {
-            return (value >= 0) ? value : AbsHelper(value);
+            if (value < 0)
+            {
+                value = (sbyte)-value;
+                if (value < 0)
+                {
+                    ThrowAbsOverflow();
+                }
+            }
+            return value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static decimal Abs(decimal value)
         {
             return decimal.Abs(value);
+        }
+
+        [StackTraceHidden]
+        private static void ThrowAbsOverflow()
+        {
+            throw new OverflowException(SR.Overflow_NegateTwosCompNum);
         }
 
         public static long BigMul(int a, int b)
@@ -756,54 +798,6 @@ namespace System
         {
             ModF(d, &d);
             return d;
-        }
-
-        private static short AbsHelper(short value)
-        {
-            Debug.Assert(value < 0, "AbsHelper should only be called for negative values! (workaround for JIT inlining)");
-
-            if (value == short.MinValue)
-            {
-                throw new OverflowException(SR.Overflow_NegateTwosCompNum);
-            }
-
-            return ((short)(-value));
-        }
-
-        private static int AbsHelper(int value)
-        {
-            Debug.Assert(value < 0, "AbsHelper should only be called for negative values! (workaround for JIT inlining)");
-
-            if (value == int.MinValue)
-            {
-                throw new OverflowException(SR.Overflow_NegateTwosCompNum);
-            }
-
-            return -value;
-        }
-
-        private static long AbsHelper(long value)
-        {
-            Debug.Assert(value < 0, "AbsHelper should only be called for negative values! (workaround for JIT inlining)");
-
-            if (value == long.MinValue)
-            {
-                throw new OverflowException(SR.Overflow_NegateTwosCompNum);
-            }
-
-            return -value;
-        }
-
-        private static sbyte AbsHelper(sbyte value)
-        {
-            Debug.Assert(value < 0, "AbsHelper should only be called for negative values! (workaround for JIT inlining)");
-
-            if (value == sbyte.MinValue)
-            {
-                throw new OverflowException(SR.Overflow_NegateTwosCompNum);
-            }
-
-            return ((sbyte)(-value));
         }
 
         private static unsafe double copysign(double x, double y)
