@@ -13,6 +13,7 @@ namespace System.ComponentModel.Composition
     {
         string GetString();
     }
+
     public class PublicComponentWithPublicExports
     {
         public const string PublicFieldExpectedValue = "PublicField";
@@ -31,6 +32,7 @@ namespace System.ComponentModel.Composition
             public string GetString() { return PublicNestedClassExpectedValue; }
         }
     }
+
     [Export]
     public class PublicImportsExpectingPublicExports
     {
@@ -51,6 +53,7 @@ namespace System.ComponentModel.Composition
             Assert.Equal(PublicComponentWithPublicExports.PublicNestedClassExpectedValue, PublicImportPublicNestedClass.GetString());
         }
     }
+
     [Export]
     internal class InternalImportsExpectingPublicExports
     {
@@ -71,6 +74,7 @@ namespace System.ComponentModel.Composition
             Assert.Equal(PublicComponentWithPublicExports.PublicNestedClassExpectedValue, InternalImportPublicNestedClass.GetString());
         }
     }
+
     public class PublicComponentWithInternalExports
     {
         public const string InternalFieldExpectedValue = "InternalField";
@@ -89,6 +93,7 @@ namespace System.ComponentModel.Composition
             public string GetString() { return InternalNestedClassExpectedValue; }
         }
     }
+
     [Export]
     public class PublicImportsExpectingInternalExports
     {
@@ -109,6 +114,7 @@ namespace System.ComponentModel.Composition
             Assert.Equal(PublicComponentWithInternalExports.InternalNestedClassExpectedValue, PublicImportInternalNestedClass.GetString());
         }
     }
+
     [Export]
     internal class InternalImportsExpectingInternalExports
     {
@@ -129,6 +135,7 @@ namespace System.ComponentModel.Composition
             Assert.Equal(PublicComponentWithInternalExports.InternalNestedClassExpectedValue, InternalImportInternalNestedClass.GetString());
         }
     }
+
     public class PublicComponentWithProtectedExports
     {
         public const string ProtectedFieldExpectedValue = "ProtectedField";
@@ -147,6 +154,7 @@ namespace System.ComponentModel.Composition
             public string GetString() { return ProtectedNestedClassExpectedValue; }
         }
     }
+
     [Export]
     public class PublicImportsExpectingProtectedExports
     {
@@ -167,6 +175,7 @@ namespace System.ComponentModel.Composition
             Assert.Equal(PublicComponentWithProtectedExports.ProtectedNestedClassExpectedValue, PublicImportProtectedNestedClass.GetString());
         }
     }
+
     [Export]
     internal class InternalImportsExpectingProtectedExports
     {
@@ -187,6 +196,7 @@ namespace System.ComponentModel.Composition
             Assert.Equal(PublicComponentWithProtectedExports.ProtectedNestedClassExpectedValue, InternalImportProtectedNestedClass.GetString());
         }
     }
+
     public class PublicComponentWithProtectedInternalExports
     {
         public const string ProtectedInternalFieldExpectedValue = "ProtectedInternalField";
@@ -205,6 +215,7 @@ namespace System.ComponentModel.Composition
             public string GetString() { return ProtectedInternalNestedClassExpectedValue; }
         }
     }
+
     [Export]
     public class PublicImportsExpectingProtectedInternalExports
     {
@@ -225,6 +236,7 @@ namespace System.ComponentModel.Composition
             Assert.Equal(PublicComponentWithProtectedInternalExports.ProtectedInternalNestedClassExpectedValue, PublicImportProtectedInternalNestedClass.GetString());
         }
     }
+
     [Export]
     internal class InternalImportsExpectingProtectedInternalExports
     {
@@ -245,6 +257,7 @@ namespace System.ComponentModel.Composition
             Assert.Equal(PublicComponentWithProtectedInternalExports.ProtectedInternalNestedClassExpectedValue, InternalImportProtectedInternalNestedClass.GetString());
         }
     }
+
     public class PublicComponentWithPrivateExports
     {
         public const string PrivateFieldExpectedValue = "PrivateField";
@@ -261,6 +274,7 @@ namespace System.ComponentModel.Composition
             public string GetString() { return PrivateNestedClassExpectedValue; }
         }
     }
+
     [Export]
     public class PublicImportsExpectingPrivateExports
     {
@@ -281,6 +295,7 @@ namespace System.ComponentModel.Composition
             Assert.Equal(PublicComponentWithPrivateExports.PrivateNestedClassExpectedValue, PublicImportPrivateNestedClass.GetString());
         }
     }
+
     [Export]
     internal class InternalImportsExpectingPrivateExports
     {
@@ -613,6 +628,7 @@ namespace System.ComponentModel.Composition
         [ExportableTest(Var1 = "sub")]
         public Func<int, int, int> Subtract = (x, y) => x - y;
     }
+
     public class RealAddProvider
     {
         [Export("One")]
@@ -628,6 +644,7 @@ namespace System.ComponentModel.Composition
             return x + y;
         }
     }
+
     public class Consumer
     {
         [Import("One")]

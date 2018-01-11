@@ -28,6 +28,9 @@
         <AdditionalProperties>Configuration=%(Identity);%(_projectBuildConfigurations.AdditionalProperties)</AdditionalProperties>
       </_projectBuildConfigurations>
 
+      <!-- we need to ignore placeholder build configurations that start with _ -->
+      <_projectBuildConfigurations Remove="@(_projectBuildConfigurations)" Condition="$([System.String]::Copy('%(Identity)').StartsWith('_'))" />
+
       <!-- transform back to project -->
       <_projectWithConfiguration Include="@(_projectBuildConfigurations->'%(OriginalItemSpec)')" />
     </ItemGroup>
@@ -53,6 +56,9 @@
       <_NonPkgProjProjectReferenceBuildConfigurations>
         <AdditionalProperties>Configuration=%(Identity);%(_NonPkgProjProjectReferenceBuildConfigurations.AdditionalProperties)</AdditionalProperties>
       </_NonPkgProjProjectReferenceBuildConfigurations>
+
+      <!-- we need to ignore placeholder build configurations that start with _ -->
+      <_NonPkgProjProjectReferenceBuildConfigurations Remove="@(_NonPkgProjProjectReferenceBuildConfigurations)" Condition="$([System.String]::Copy('%(Identity)').StartsWith('_'))" />
 
       <!-- transform back to project -->
       <_NonPkgProjProjectReferenceWitnConfiguration Include="@(_NonPkgProjProjectReferenceBuildConfigurations->'%(OriginalItemSpec)')" />
@@ -176,6 +182,8 @@
   <Target Name="_getAllBuildConfigurations">
     <ItemGroup>
       <_buildConfigurations Include="$(BuildConfigurations)" />
+      <!-- For BuildAllConfigurations we need to ignore any placeholder build configuration that starts with _ -->
+      <_buildConfigurations Remove="@(_buildConfigurations)" Condition="$([System.String]::Copy('%(Identity)').StartsWith('_'))" />
       <_buildConfigurations Condition="'@(_buildConfigurations)' == ''" Include="$(_traversalBuildConfigurations)" />
     </ItemGroup>
   </Target>

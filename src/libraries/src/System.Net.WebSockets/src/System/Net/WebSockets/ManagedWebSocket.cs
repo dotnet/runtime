@@ -1265,7 +1265,7 @@ namespace System.Net.WebSockets
             int count = toMask.Length;
             if (count > 0)
             {
-                fixed (byte* toMaskPtr = &toMask.DangerousGetPinnableReference())
+                fixed (byte* toMaskPtr = &MemoryMarshal.GetReference(toMask))
                 {
                     byte* p = toMaskPtr;
 

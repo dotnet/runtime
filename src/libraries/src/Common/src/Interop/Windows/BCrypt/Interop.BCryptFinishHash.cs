@@ -11,7 +11,7 @@ internal partial class Interop
     internal partial class BCrypt
     {
         internal static NTSTATUS BCryptFinishHash(SafeBCryptHashHandle hHash, Span<byte> pbOutput, int cbOutput, int dwFlags) =>
-            BCryptFinishHash(hHash, ref pbOutput.DangerousGetPinnableReference(), cbOutput, dwFlags);
+            BCryptFinishHash(hHash, ref MemoryMarshal.GetReference(pbOutput), cbOutput, dwFlags);
 
         [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
         private static extern NTSTATUS BCryptFinishHash(SafeBCryptHashHandle hHash, ref byte pbOutput, int cbOutput, int dwFlags);

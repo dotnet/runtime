@@ -26,7 +26,7 @@ internal static partial class Interop
 
         public static unsafe int Sysctl(Span<int> name, ref byte* value, ref int len)
         {
-            fixed (int * ptr = &name.DangerousGetPinnableReference())
+            fixed (int * ptr = &MemoryMarshal.GetReference(name))
             {
                 return Sysctl(ptr, name.Length, ref value, ref len);
             }

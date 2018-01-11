@@ -28,7 +28,7 @@ internal static partial class Interop
             out SafeCFDataHandle pSignatureOut,
             out SafeCFErrorHandle pErrorOut) =>
             AppleCryptoNative_GenerateSignature(
-                privateKey, ref pbDataHash.DangerousGetPinnableReference(), cbDataHash, out pSignatureOut, out pErrorOut);
+                privateKey, ref MemoryMarshal.GetReference(pbDataHash), cbDataHash, out pSignatureOut, out pErrorOut);
 
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_GenerateSignature(
@@ -46,7 +46,7 @@ internal static partial class Interop
             out SafeCFDataHandle pSignatureOut,
             out SafeCFErrorHandle pErrorOut) =>
             AppleCryptoNative_GenerateSignatureWithHashAlgorithm(
-                privateKey, ref pbDataHash.DangerousGetPinnableReference(), cbDataHash, hashAlgorithm, out pSignatureOut, out pErrorOut);
+                privateKey, ref MemoryMarshal.GetReference(pbDataHash), cbDataHash, hashAlgorithm, out pSignatureOut, out pErrorOut);
 
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_GenerateSignatureWithHashAlgorithm(
@@ -66,9 +66,9 @@ internal static partial class Interop
             out SafeCFErrorHandle pErrorOut) =>
             AppleCryptoNative_VerifySignature(
                 publicKey,
-                ref pbDataHash.DangerousGetPinnableReference(),
+                ref MemoryMarshal.GetReference(pbDataHash),
                 cbDataHash,
-                ref pbSignature.DangerousGetPinnableReference(),
+                ref MemoryMarshal.GetReference(pbSignature),
                 cbSignature,
                 out pErrorOut);
 
@@ -91,9 +91,9 @@ internal static partial class Interop
             out SafeCFErrorHandle pErrorOut) =>
             AppleCryptoNative_VerifySignatureWithHashAlgorithm(
                 publicKey,
-                ref pbDataHash.DangerousGetPinnableReference(),
+                ref MemoryMarshal.GetReference(pbDataHash),
                 cbDataHash,
-                ref pbSignature.DangerousGetPinnableReference(),
+                ref MemoryMarshal.GetReference(pbSignature),
                 cbSignature,
                 hashAlgorithm,
                 out pErrorOut);

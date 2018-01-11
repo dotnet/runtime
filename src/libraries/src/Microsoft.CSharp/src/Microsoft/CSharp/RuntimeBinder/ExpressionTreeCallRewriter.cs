@@ -45,19 +45,17 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        public static Expression Rewrite(TypeManager typeManager, Expr pExpr, Expression[] listOfParameters)
+        public static Expression Rewrite(TypeManager typeManager, ExprBinOp binOp, Expression[] listOfParameters)
         {
             ExpressionTreeCallRewriter rewriter = new ExpressionTreeCallRewriter(typeManager, listOfParameters);
 
-            // We should have a EXPRBINOP thats an EK_SEQUENCE. The RHS of our sequence
+            // We should have a ExprBinOp that's an EK_SEQUENCE. The RHS of our sequence
             // should be a call to PM_EXPRESSION_LAMBDA. The LHS of our sequence is the 
             // set of declarations for the parameters that we'll need.
             // Assert all of these first, and then unwrap them.
 
-            Debug.Assert(pExpr != null);
-            Debug.Assert(pExpr.Kind == ExpressionKind.Sequence);
-            ExprBinOp binOp = (ExprBinOp)pExpr;
             Debug.Assert(binOp != null);
+            Debug.Assert(binOp.Kind == ExpressionKind.Sequence);
             Debug.Assert(binOp.OptionalRightChild is ExprCall);
             Debug.Assert(((ExprCall)binOp.OptionalRightChild).PredefinedMethod == PREDEFMETH.PM_EXPRESSION_LAMBDA);
             Debug.Assert(binOp.OptionalLeftChild != null);
@@ -1141,7 +1139,6 @@ namespace Microsoft.CSharp.RuntimeBinder
             PropertySymbol propSym = propinfo.Property.Prop();
 
             TypeArray genericInstanceParams = _typeManager.SubstTypeArray(propSym.Params, aggType, null);
-            CType genericInstanceReturn = _typeManager.SubstType(propSym.RetType, aggType, null);
 
             Type type = aggType.AssociatedSystemType;
             PropertyInfo propertyInfo = propSym.AssociatedPropertyInfo;

@@ -2,11 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if XMLSERIALIZERGENERATOR
-namespace Microsoft.XmlSerializer.Generator
-#else
 namespace System.Xml.Serialization
-#endif
 {
     using System;
     using System.Xml;
@@ -77,7 +73,7 @@ namespace System.Xml.Serialization
                     return FromXmlNmTokens((string)value);
                 }
             }
-            throw new Exception(SR.Format(SR.XmlUnsupportedDefaultType, type.FullName));
+            throw new XmlException(SR.Format(SR.XmlUnsupportedDefaultType, type.FullName));
         }
 
         internal static string FromDate(DateTime value)
@@ -164,11 +160,8 @@ namespace System.Xml.Serialization
                 return null;
             if (value.Length == 0)
                 return "";
-#if XMLSERIALIZERGENERATOR
-            return System.Xml.Extensions.ExtensionMethods.ToBinHexString(value);
-#else
+
             return XmlConvert.ToBinHexString(value);
-#endif
         }
 
         internal static string FromEnum(long val, string[] vals, long[] ids, string typeName)
@@ -243,7 +236,7 @@ namespace System.Xml.Serialization
             {
                 return ToXmlNmTokens(value);
             }
-            throw new Exception(SR.Format(SR.XmlUnsupportedDefaultValue, formatter));
+            throw new XmlException(SR.Format(SR.XmlUnsupportedDefaultValue, formatter));
             //            Debug.WriteLineIf(CompModSwitches.XmlSerialization.TraceVerbose, "XmlSerialization::Unhandled default value " + value + " formatter " + formatter);
             //            return DBNull.Value;
         }
@@ -436,11 +429,7 @@ namespace System.Xml.Serialization
         {
             if (value == null) return null;
             value = value.Trim();
-#if XMLSERIALIZERGENERATOR
-            return System.Xml.Extensions.ExtensionMethods.FromBinHexString(value, true);
-#else
             return XmlConvert.FromBinHexString(value);
-#endif
         }
 
         internal static long ToEnum(string val, Hashtable vals, string typeName, bool validate)

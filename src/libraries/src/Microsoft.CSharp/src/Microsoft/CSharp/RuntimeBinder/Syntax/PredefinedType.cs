@@ -75,6 +75,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
 
         PT_G_IREADONLYLIST,
         PT_G_IREADONLYCOLLECTION,
+        PT_FUNC,
         PT_COUNT,
         PT_VOID,             // (special case)
 

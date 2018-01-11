@@ -1,3 +1,8 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.IO;
 using System.Reflection;
 using System.Collections.Generic;
@@ -5,14 +10,25 @@ using Microsoft.Xunit.Performance.Api;
 
 public class PerfHarness
 {
-    public static void Main(string[] args)
+    public static int Main(string[] args)
     {
-        using (XunitPerformanceHarness harness = new XunitPerformanceHarness(args))
+        try
         {
-            foreach(var testName in GetTestAssemblies())
+            using (XunitPerformanceHarness harness = new XunitPerformanceHarness(args))
             {
-                harness.RunBenchmarks(GetTestAssembly(testName));
+                foreach(var testName in GetTestAssemblies())
+                {
+                    harness.RunBenchmarks(GetTestAssembly(testName));
+                }
             }
+
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("[ERROR] Benchmark execution failed.");
+            Console.WriteLine($"  {ex.ToString()}");
+            return 1;
         }
     }
 

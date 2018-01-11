@@ -5,6 +5,7 @@
 using System.Buffers;
 using System.ComponentModel;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -56,7 +57,7 @@ namespace System.Net.WebSockets
         }
 
         public virtual Task SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken) =>
-            buffer.DangerousTryGetArray(out ArraySegment<byte> arraySegment) ?
+            MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> arraySegment) ?
                 SendAsync(arraySegment, messageType, endOfMessage, cancellationToken) :
                 SendWithArrayPoolAsync(buffer, messageType, endOfMessage, cancellationToken);
 

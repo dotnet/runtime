@@ -26,14 +26,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{DDE3838B-0EEA-4D9A-A120-9D72CB33F250}.Debug|Any CPU.ActiveCfg = netstandard-Windows_NT-Debug|Any CPU
-		{DDE3838B-0EEA-4D9A-A120-9D72CB33F250}.Debug|Any CPU.Build.0 = netstandard-Windows_NT-Debug|Any CPU
-		{DDE3838B-0EEA-4D9A-A120-9D72CB33F250}.Release|Any CPU.ActiveCfg = netstandard-Windows_NT-Release|Any CPU
-		{DDE3838B-0EEA-4D9A-A120-9D72CB33F250}.Release|Any CPU.Build.0 = netstandard-Windows_NT-Release|Any CPU
-		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}.Debug|Any CPU.ActiveCfg = netstandard-Windows_NT-Debug|Any CPU
-		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}.Debug|Any CPU.Build.0 = netstandard-Windows_NT-Debug|Any CPU
-		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}.Release|Any CPU.ActiveCfg = netstandard-Windows_NT-Release|Any CPU
-		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}.Release|Any CPU.Build.0 = netstandard-Windows_NT-Release|Any CPU
+		{DDE3838B-0EEA-4D9A-A120-9D72CB33F250}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{DDE3838B-0EEA-4D9A-A120-9D72CB33F250}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{DDE3838B-0EEA-4D9A-A120-9D72CB33F250}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{DDE3838B-0EEA-4D9A-A120-9D72CB33F250}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
 		{CBCDA53B-4C01-4267-B08C-413205FE4D8D}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
 		{CBCDA53B-4C01-4267-B08C-413205FE4D8D}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
 		{CBCDA53B-4C01-4267-B08C-413205FE4D8D}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU

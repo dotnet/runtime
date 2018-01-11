@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Buffers;
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Text;
 using System.Runtime.InteropServices;
@@ -13,6 +15,7 @@ using X509IssuerSerial = System.Security.Cryptography.Xml.X509IssuerSerial;
 
 using Microsoft.Win32.SafeHandles;
 
+using CryptProvParam=Interop.Advapi32.CryptProvParam;
 using static Interop.Crypt32;
 
 namespace Internal.Cryptography.Pal.Windows
@@ -322,6 +325,124 @@ namespace Internal.Cryptography.Pal.Windows
                 {
                     CRYPT_ATTRIBUTES* pCryptAttributes = (CRYPT_ATTRIBUTES*)(sh.DangerousGetHandle());
                     return ToCryptographicAttributeObjectCollection(pCryptAttributes);
+                }
+            }
+        }
+
+        public static CspParameters GetProvParameters(this SafeProvOrNCryptKeyHandle handle)
+        {
+            // A normal key container name is a GUID (~34 bytes ASCII)
+            // The longest standard provider name is 64 bytes (including the \0),
+            // but we shouldn't have a CAPI call with a software CSP.
+            //
+            // In debug builds use a buffer which will need to be resized, but is big
+            // enough to hold the DWORD "can't fail" values.
+            Span<byte> stackSpan = stackalloc byte[
+#if DEBUG
+                sizeof(int)
+#else
+                64
+#endif
+                ];
+
+            stackSpan.Clear();
+            int size = stackSpan.Length;
+
+            if (!Interop.Advapi32.CryptGetProvParam(handle, CryptProvParam.PP_PROVTYPE, stackSpan, ref size))
+            {
+                throw Marshal.GetLastWin32Error().ToCryptographicException();
+            }
+
+            if (size != sizeof(int))
+            {
+                Debug.Fail("PP_PROVTYPE writes a DWORD - enum misalignment?");
+                throw new CryptographicException();
+            }
+
+            int provType = BinaryPrimitives.ReadMachineEndian<int>(stackSpan.Slice(0, size));
+
+            size = stackSpan.Length;
+            if (!Interop.Advapi32.CryptGetProvParam(handle, CryptProvParam.PP_KEYSET_TYPE, stackSpan, ref size))
+            {
+                throw Marshal.GetLastWin32Error().ToCryptographicException();
+            }
+
+            if (size != sizeof(int))
+            {
+                Debug.Fail("PP_KEYSET_TYPE writes a DWORD - enum misalignment?");
+                throw new CryptographicException();
+            }
+
+            int keysetType = BinaryPrimitives.ReadMachineEndian<int>(stackSpan.Slice(0, size));
+
+            // Only CRYPT_MACHINE_KEYSET is described as coming back, but be defensive.
+            CspProviderFlags provFlags =
+                ((CspProviderFlags)keysetType & CspProviderFlags.UseMachineKeyStore) |
+                CspProviderFlags.UseExistingKey;
+
+            byte[] rented = null;
+            Span<byte> asciiStringBuf = stackSpan;
+
+            string provName = GetStringProvParam(handle, CryptProvParam.PP_NAME, ref asciiStringBuf, ref rented, 0);
+            int maxClear = provName.Length;
+            string keyName = GetStringProvParam(handle, CryptProvParam.PP_CONTAINER, ref asciiStringBuf, ref rented, maxClear);
+            maxClear = Math.Max(maxClear, keyName.Length);
+
+            if (rented != null)
+            {
+                Array.Clear(rented, 0, maxClear);
+                ArrayPool<byte>.Shared.Return(rented);
+            }
+
+            return new CspParameters(provType)
+            {
+                Flags = provFlags,
+                KeyContainerName = keyName,
+                ProviderName = provName,
+            };
+        }
+
+        private static string GetStringProvParam(
+            SafeProvOrNCryptKeyHandle handle,
+            CryptProvParam dwParam,
+            ref Span<byte> buf,
+            ref byte[] rented,
+            int clearLen)
+        {
+            int len = buf.Length;
+
+            if (!Interop.Advapi32.CryptGetProvParam(handle, dwParam, buf, ref len))
+            {
+                if (len > buf.Length)
+                {
+                    ArrayPool<byte> pool = ArrayPool<byte>.Shared;
+
+                    if (rented != null)
+                    {
+                        Array.Clear(rented, 0, clearLen);
+                        pool.Return(rented);
+                    }
+
+                    rented = pool.Rent(len);
+                    buf = rented;
+                    len = rented.Length;
+                }
+                else
+                {
+                    throw Marshal.GetLastWin32Error().ToCryptographicException();
+                }
+
+                if (!Interop.Advapi32.CryptGetProvParam(handle, dwParam, buf, ref len))
+                {
+                    throw Marshal.GetLastWin32Error().ToCryptographicException();
+                }
+            }
+
+            unsafe
+            {
+                fixed (byte* asciiPtr = &MemoryMarshal.GetReference(buf))
+                {
+                    return Marshal.PtrToStringAnsi((IntPtr)asciiPtr, len);
                 }
             }
         }

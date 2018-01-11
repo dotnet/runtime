@@ -12,7 +12,7 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public class HttpClientTest : HttpClientTestBase
+    public partial class HttpClientTest : HttpClientTestBase
     {
         [Fact]
         public void Dispose_MultipleTimes_Success()

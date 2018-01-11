@@ -19,15 +19,13 @@
     <GenFacadesIgnoreMissingTypes>true</GenFacadesIgnoreMissingTypes>
     <IsRuntimeAssembly>true</IsRuntimeAssembly>
     <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
-    <ProjectGuid>{1FB7650D-7165-49B9-98B0-E345D56983DB}</ProjectGuid>
+    <ProjectGuid>{5E51460E-C9DC-4B6B-B87E-0ED742FC6733}</ProjectGuid>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System.Data.forwards.cs" />
-    <ReferencePath
-      Include="$(RuntimePath)System.*.dll;$(RuntimePath)Microsoft.*.dll"
-      Exclude="$(RuntimePath)Microsoft.Diagnostics.Tracing.TraceEvent.dll;$(RuntimePath)Microsoft.DiaSymReader.Native.*.dll;$(RuntimePath)System.Data.dll" />
+    <ReferencePath Include="$(RuntimePath)System.*.dll;$(RuntimePath)Microsoft.*.dll" Exclude="$(RuntimePath)Microsoft.Diagnostics.Tracing.TraceEvent.dll;$(RuntimePath)Microsoft.DiaSymReader.Native.*.dll;$(RuntimePath)System.Data.dll" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

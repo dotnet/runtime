@@ -163,7 +163,7 @@ namespace System.Drawing
 
             if ((image.PixelFormat & PixelFormat.Indexed) != 0)
             {
-                throw new Exception(SR.Format(SR.GdiplusCannotCreateGraphicsFromIndexedPixelFormat));
+                throw new ArgumentException(SR.Format(SR.GdiplusCannotCreateGraphicsFromIndexedPixelFormat),nameof(image));
             }
 
             IntPtr nativeGraphics = IntPtr.Zero;

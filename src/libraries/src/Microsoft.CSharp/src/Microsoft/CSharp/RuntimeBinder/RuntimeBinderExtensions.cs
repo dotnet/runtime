@@ -37,14 +37,9 @@ namespace Microsoft.CSharp.RuntimeBinder
                 return true;
             }
 
-            if (mi1 is MethodInfo && mi2 is MethodInfo)
+            if (mi1 is MethodInfo method1)
             {
-                MethodInfo method1 = mi1 as MethodInfo;
-                MethodInfo method2 = mi2 as MethodInfo;
-                ParameterInfo[] pis1;
-                ParameterInfo[] pis2;
-
-                if (method1.IsGenericMethod != method2.IsGenericMethod)
+                if (!(mi2 is MethodInfo method2) || method1.IsGenericMethod != method2.IsGenericMethod)
                 {
                     return false;
                 }
@@ -61,40 +56,49 @@ namespace Microsoft.CSharp.RuntimeBinder
                 }
 
                 return method1 != method2
+                    && method1.CallingConvention == method2.CallingConvention
                     && method1.Name == method2.Name
                     && method1.DeclaringType.IsGenericallyEqual(method2.DeclaringType)
                     && method1.ReturnType.IsGenericallyEquivalentTo(method2.ReturnType, method1, method2)
-                    && (pis1 = method1.GetParameters()).Length == (pis2 = method2.GetParameters()).Length
-                    && Enumerable.All(Enumerable.Zip(pis1, pis2, (pi1, pi2) => pi1.IsEquivalentTo(pi2, method1, method2)), x => x);
+                    && method1.AreParametersEquivalent(method2);
             }
 
-            if (mi1 is ConstructorInfo && mi2 is ConstructorInfo)
+            if (mi1 is ConstructorInfo ctor1)
             {
-                ConstructorInfo ctor1 = mi1 as ConstructorInfo;
-                ConstructorInfo ctor2 = mi2 as ConstructorInfo;
-                ParameterInfo[] pis1;
-                ParameterInfo[] pis2;
-
-                return ctor1 != ctor2
+                return mi2 is ConstructorInfo ctor2
+                    && ctor1 != ctor2
+                    && ctor1.CallingConvention == ctor2.CallingConvention
                     && ctor1.DeclaringType.IsGenericallyEqual(ctor2.DeclaringType)
-                    && (pis1 = ctor1.GetParameters()).Length == (pis2 = ctor2.GetParameters()).Length
-                    && Enumerable.All(Enumerable.Zip(pis1, pis2, (pi1, pi2) => pi1.IsEquivalentTo(pi2, ctor1, ctor2)), x => x);
+                    && ctor1.AreParametersEquivalent(ctor2);
             }
 
-            if (mi1 is PropertyInfo && mi2 is PropertyInfo)
+            return mi1 is PropertyInfo prop1 && mi2 is PropertyInfo prop2
+                && prop1 != prop2
+                && prop1.Name == prop2.Name
+                && prop1.DeclaringType.IsGenericallyEqual(prop2.DeclaringType)
+                && prop1.PropertyType.IsGenericallyEquivalentTo(prop2.PropertyType, prop1, prop2)
+                && prop1.GetGetMethod(true).IsEquivalentTo(prop2.GetGetMethod(true))
+                && prop1.GetSetMethod(true).IsEquivalentTo(prop2.GetSetMethod(true));
+        }
+
+        private static bool AreParametersEquivalent(this MethodBase method1, MethodBase method2)
+        {
+            ParameterInfo[] pis1 = method1.GetParameters();
+            ParameterInfo[] pis2 = method2.GetParameters();
+            if (pis1.Length != pis2.Length)
             {
-                PropertyInfo prop1 = mi1 as PropertyInfo;
-                PropertyInfo prop2 = mi2 as PropertyInfo;
-
-                return prop1 != prop2
-                    && prop1.Name == prop2.Name
-                    && prop1.DeclaringType.IsGenericallyEqual(prop2.DeclaringType)
-                    && prop1.PropertyType.IsGenericallyEquivalentTo(prop2.PropertyType, prop1, prop2)
-                    && prop1.GetGetMethod(true).IsEquivalentTo(prop2.GetGetMethod(true))
-                    && prop1.GetSetMethod(true).IsEquivalentTo(prop2.GetSetMethod(true));
+                return false;
             }
 
-            return false;
+            for (int i = 0; i < pis1.Length; ++i)
+            {
+                if (!pis1[i].IsEquivalentTo(pis2[i], method1, method2))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private static bool IsEquivalentTo(this ParameterInfo pi1, ParameterInfo pi2, MethodBase method1, MethodBase method2)

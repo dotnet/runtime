@@ -3,6 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+#if !netstandard
+using Internal.Runtime.CompilerServices;
+#endif
 
 namespace System.Buffers.Text
 {
@@ -27,8 +32,8 @@ namespace System.Buffers.Text
         /// </summary> 
         public static OperationStatus DecodeFromUtf8(ReadOnlySpan<byte> utf8, Span<byte> bytes, out int consumed, out int written, bool isFinalBlock = true)
         {
-            ref byte srcBytes = ref utf8.DangerousGetPinnableReference();
-            ref byte destBytes = ref bytes.DangerousGetPinnableReference();
+            ref byte srcBytes = ref MemoryMarshal.GetReference(utf8);
+            ref byte destBytes = ref MemoryMarshal.GetReference(bytes);
 
             int srcLength = utf8.Length & ~0x3;  // only decode input up to the closest multiple of 4.
             int destLength = bytes.Length;
@@ -36,7 +41,8 @@ namespace System.Buffers.Text
             int sourceIndex = 0;
             int destIndex = 0;
 
-            if (utf8.Length == 0) goto DoneExit;
+            if (utf8.Length == 0)
+                goto DoneExit;
 
             ref sbyte decodingMap = ref s_decodingMap[0];
 
@@ -59,24 +65,27 @@ namespace System.Buffers.Text
             while (sourceIndex < maxSrcLength)
             {
                 int result = Decode(ref Unsafe.Add(ref srcBytes, sourceIndex), ref decodingMap);
-                if (result < 0) goto InvalidExit;
+                if (result < 0)
+                    goto InvalidExit;
                 WriteThreeLowOrderBytes(ref Unsafe.Add(ref destBytes, destIndex), result);
                 destIndex += 3;
                 sourceIndex += 4;
             }
 
-            if (maxSrcLength != srcLength - skipLastChunk) goto DestinationSmallExit;
+            if (maxSrcLength != srcLength - skipLastChunk)
+                goto DestinationSmallExit;
 
             // If input is less than 4 bytes, srcLength == sourceIndex == 0
             // If input is not a multiple of 4, sourceIndex == srcLength != 0
             if (sourceIndex == srcLength)
             {
-                if (isFinalBlock) goto InvalidExit;
+                if (isFinalBlock)
+                    goto InvalidExit;
                 goto NeedMoreExit;
             }
 
             // if isFinalBlock is false, we will never reach this point
-            
+
             int i0 = Unsafe.Add(ref srcBytes, srcLength - 4);
             int i1 = Unsafe.Add(ref srcBytes, srcLength - 3);
             int i2 = Unsafe.Add(ref srcBytes, srcLength - 2);
@@ -100,8 +109,10 @@ namespace System.Buffers.Text
                 i0 |= i3;
                 i0 |= i2;
 
-                if (i0 < 0) goto InvalidExit;
-                if (destIndex > destLength - 3) goto DestinationSmallExit;
+                if (i0 < 0)
+                    goto InvalidExit;
+                if (destIndex > destLength - 3)
+                    goto DestinationSmallExit;
                 WriteThreeLowOrderBytes(ref Unsafe.Add(ref destBytes, destIndex), i0);
                 destIndex += 3;
             }
@@ -113,41 +124,47 @@ namespace System.Buffers.Text
 
                 i0 |= i2;
 
-                if (i0 < 0) goto InvalidExit;
-                if (destIndex > destLength - 2) goto DestinationSmallExit;
+                if (i0 < 0)
+                    goto InvalidExit;
+                if (destIndex > destLength - 2)
+                    goto DestinationSmallExit;
                 Unsafe.Add(ref destBytes, destIndex) = (byte)(i0 >> 16);
                 Unsafe.Add(ref destBytes, destIndex + 1) = (byte)(i0 >> 8);
                 destIndex += 2;
             }
             else
             {
-                if (i0 < 0) goto InvalidExit;
-                if (destIndex > destLength - 1) goto DestinationSmallExit;
+                if (i0 < 0)
+                    goto InvalidExit;
+                if (destIndex > destLength - 1)
+                    goto DestinationSmallExit;
                 Unsafe.Add(ref destBytes, destIndex) = (byte)(i0 >> 16);
                 destIndex += 1;
             }
 
             sourceIndex += 4;
 
-            if (srcLength != utf8.Length) goto InvalidExit;
+            if (srcLength != utf8.Length)
+                goto InvalidExit;
 
-            DoneExit:
+        DoneExit:
             consumed = sourceIndex;
             written = destIndex;
             return OperationStatus.Done;
 
-            DestinationSmallExit:
-            if (srcLength != utf8.Length && isFinalBlock) goto InvalidExit; // if input is not a multiple of 4, and there is no more data, return invalid data instead
+        DestinationSmallExit:
+            if (srcLength != utf8.Length && isFinalBlock)
+                goto InvalidExit; // if input is not a multiple of 4, and there is no more data, return invalid data instead
             consumed = sourceIndex;
             written = destIndex;
             return OperationStatus.DestinationTooSmall;
 
-            NeedMoreExit:
+        NeedMoreExit:
             consumed = sourceIndex;
             written = destIndex;
             return OperationStatus.NeedMoreData;
 
-            InvalidExit:
+        InvalidExit:
             consumed = sourceIndex;
             written = destIndex;
             return OperationStatus.InvalidData;
@@ -190,17 +207,20 @@ namespace System.Buffers.Text
             int destIndex = 0;
 
             // only decode input if it is a multiple of 4
-            if (bufferLength != ((bufferLength >> 2) * 4)) goto InvalidExit;
-            if (bufferLength == 0) goto DoneExit;
+            if (bufferLength != ((bufferLength >> 2) * 4))
+                goto InvalidExit;
+            if (bufferLength == 0)
+                goto DoneExit;
 
-            ref byte bufferBytes = ref buffer.DangerousGetPinnableReference();
+            ref byte bufferBytes = ref MemoryMarshal.GetReference(buffer);
 
             ref sbyte decodingMap = ref s_decodingMap[0];
 
             while (sourceIndex < bufferLength - 4)
             {
                 int result = Decode(ref Unsafe.Add(ref bufferBytes, sourceIndex), ref decodingMap);
-                if (result < 0) goto InvalidExit;
+                if (result < 0)
+                    goto InvalidExit;
                 WriteThreeLowOrderBytes(ref Unsafe.Add(ref bufferBytes, destIndex), result);
                 destIndex += 3;
                 sourceIndex += 4;
@@ -229,7 +249,8 @@ namespace System.Buffers.Text
                 i0 |= i3;
                 i0 |= i2;
 
-                if (i0 < 0) goto InvalidExit;
+                if (i0 < 0)
+                    goto InvalidExit;
                 WriteThreeLowOrderBytes(ref Unsafe.Add(ref bufferBytes, destIndex), i0);
                 destIndex += 3;
             }
@@ -241,23 +262,25 @@ namespace System.Buffers.Text
 
                 i0 |= i2;
 
-                if (i0 < 0) goto InvalidExit;
+                if (i0 < 0)
+                    goto InvalidExit;
                 Unsafe.Add(ref bufferBytes, destIndex) = (byte)(i0 >> 16);
                 Unsafe.Add(ref bufferBytes, destIndex + 1) = (byte)(i0 >> 8);
                 destIndex += 2;
             }
             else
             {
-                if (i0 < 0) goto InvalidExit;
+                if (i0 < 0)
+                    goto InvalidExit;
                 Unsafe.Add(ref bufferBytes, destIndex) = (byte)(i0 >> 16);
                 destIndex += 1;
             }
 
-            DoneExit:
+        DoneExit:
             written = destIndex;
             return OperationStatus.Done;
 
-            InvalidExit:
+        InvalidExit:
             written = destIndex;
             return OperationStatus.InvalidData;
         }

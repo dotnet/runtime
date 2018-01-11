@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Xunit;
@@ -318,6 +319,76 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             Assert.Throws<RuntimeBinderException>(() => targ(site, new SomePrivateType(), 9));
             Assert.Throws<RuntimeBinderException>(() => targ(site, new SomeInternalType(), 9));
             Assert.Throws<RuntimeBinderException>(() => targ(site, new SomeProtectedType(), 9));
+        }
+
+        interface ICounter1
+        {
+            int Count(ICollection x);
+            double ExplicitCount { get; set; }
+        }
+
+        interface ICounter2
+        {
+            int Count(ICollection x);
+            int ExplicitCount { get; set; }
+        }
+
+        interface ICounterBoth : ICounter1, ICounter2 { }
+
+        [Fact]
+        public void AmbiguousInterfaceInheritedMethodError()
+        {
+            ICounterBoth icb = null; // Error on ambiguity should happen before error on null.
+            string message = Assert.Throws<RuntimeBinderException>(() => icb.Count((dynamic)new int[3])).Message;
+            // The call is ambiguous between the following methods or properties:
+            // 'Microsoft.CSharp.RuntimeBinder.Tests.RuntimeBinderTests.ICounter1.Count(System.Collections.ICollection)'
+            // and 'Microsoft.CSharp.RuntimeBinder.Tests.RuntimeBinderTests.ICounter2.Count(System.Collections.ICollection)'
+            Assert.Contains("'Microsoft.CSharp.RuntimeBinder.Tests.RuntimeBinderTests.ICounter1.Count(System.Collections.ICollection)'", message);
+            Assert.Contains("'Microsoft.CSharp.RuntimeBinder.Tests.RuntimeBinderTests.ICounter2.Count(System.Collections.ICollection)'", message);
+        }
+
+        [Fact]
+        public void AmbiguousMemberError()
+        {
+            CallSite<Func<CallSite, ICounterBoth, int, object>> compileTimeTypeValueSetter =
+                CallSite<Func<CallSite, ICounterBoth, int, object>>.Create(
+                    Binder.SetMember(
+                        CSharpBinderFlags.None, "ExplicitCount", GetType(),
+                        new[]
+                        {
+                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null),
+                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null)
+                        }));
+            Func<CallSite, ICounterBoth, int, object> target0 = compileTimeTypeValueSetter.Target;
+            string message = Assert.Throws<RuntimeBinderException>(() => target0(compileTimeTypeValueSetter, null, 2)).Message;
+            // Ambiguity between 'Microsoft.CSharp.RuntimeBinder.Tests.RuntimeBinderTests.ICounter1.ExplicitCount'
+            // and 'Microsoft.CSharp.RuntimeBinder.Tests.RuntimeBinderTests.ICounter2.ExplicitCount'
+            Assert.Contains("'Microsoft.CSharp.RuntimeBinder.Tests.RuntimeBinderTests.ICounter1.ExplicitCount'", message);
+            Assert.Contains("'Microsoft.CSharp.RuntimeBinder.Tests.RuntimeBinderTests.ICounter2.ExplicitCount'", message);
+
+            CallSite<Func<CallSite, ICounterBoth, object, object>> runTimeTypeValueSetter =
+                CallSite<Func<CallSite, ICounterBoth, object, object>>.Create(
+                    Binder.SetMember(
+                        CSharpBinderFlags.None, "ExplicitCount", GetType(),
+                        new[]
+                        {
+                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null),
+                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
+                        }));
+            var target1 = runTimeTypeValueSetter.Target;
+            Assert.Equal(message, Assert.Throws<RuntimeBinderException>(() => target1(runTimeTypeValueSetter, null, 2)).Message);
+
+            CallSite<Func<CallSite, ICounterBoth, object>> getter =
+                CallSite<Func<CallSite, ICounterBoth, object>>.Create(
+                    Binder.GetMember(
+                        CSharpBinderFlags.None, "ExplicitCount", GetType(),
+                        new[]
+                        {
+                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null)
+                        }));
+
+            Func<CallSite, ICounterBoth, object> target2 = getter.Target;
+            Assert.Equal(message, Assert.Throws<RuntimeBinderException>(() => target2(getter, null)).Message);
         }
     }
 }

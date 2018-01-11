@@ -190,7 +190,7 @@ namespace System.Dynamic.Tests
 
         private static dynamic GetObjectWithNonIndexerParameterProperty(bool hasGetter, bool hasSetter)
         {
-            TypeBuilder typeBuild = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run)
+            TypeBuilder typeBuild = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.RunAndCollect)
                 .DefineDynamicModule("TestModule")
                 .DefineType("TestType", TypeAttributes.Public);
             FieldBuilder field = typeBuild.DefineField("_value", typeof(int), FieldAttributes.Private);
@@ -369,7 +369,7 @@ namespace System.Dynamic.Tests
                 .Select(
                     _ => Activator.CreateInstance(
                         AssemblyBuilder
-                            .DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run)
+                            .DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.RunAndCollect)
                             .DefineDynamicModule("TestModule")
                             .DefineType("TestType", TypeAttributes.Public)
                             .CreateType()))
@@ -387,5 +387,40 @@ namespace System.Dynamic.Tests
         }
 
 #endif
+
+        public class FuncWrapper<TResult>
+        {
+            public delegate void OutAction(out TResult arg);
+            private Func<TResult> _delegate;
+
+            public Func<TResult> Delegate
+            {
+                get => _delegate;
+                set
+                {
+                    _delegate = value;
+                    OutDelegate = value == null ? default(OutAction) : (out TResult arg) =>
+                    {
+                        arg = value();
+                    };
+                }
+            }
+
+            public OutAction OutDelegate;
+        }
+
+        [Fact]
+        public void InvokeFuncMember()
+        {
+            dynamic d = new FuncWrapper<int>
+            {
+                Delegate = () => 2
+            };
+            int result = d.Delegate();
+            Assert.Equal(2, result);
+            result = 0;
+            d.OutDelegate(out result);
+            Assert.Equal(2, result);
+        }
     }
 }

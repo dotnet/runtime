@@ -221,7 +221,7 @@ namespace System.Reflection.PortableExecutable
             builder.WriteUInt32((((uint)entryPointAddress + 2) / 0x1000) * 0x1000);
             builder.WriteUInt32((machine == Machine.IA64) ? 14u : 12u);
             uint offsetWithinPage = ((uint)entryPointAddress + 2) % 0x1000;
-            uint relocType = (machine == Machine.Amd64 || machine == Machine.IA64) ? 10u : 3u;
+            uint relocType = (machine == Machine.Amd64 || machine == Machine.IA64 || machine == Machine.Arm64) ? 10u : 3u;
             ushort s = (ushort)((relocType << 12) | offsetWithinPage);
             builder.WriteUInt16(s);
             if (machine == Machine.IA64)

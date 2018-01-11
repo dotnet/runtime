@@ -42,7 +42,7 @@ namespace System.Memory.Tests
             }
             var span = new Span<int>(a);
             var value = new Span<int>(b);
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -87,7 +87,7 @@ namespace System.Memory.Tests
             }
             var span = new Span<byte>(a);
             var value = new Span<byte>(b);
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -132,7 +132,7 @@ namespace System.Memory.Tests
             }
             var span = new Span<string>(a);
             var value = new Span<string>(b);
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {

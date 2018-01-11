@@ -569,7 +569,7 @@ namespace System
                                         EscapeAsciiChar((char)encodedBytes[l], dest, ref destOffset);
                                     }
                                 }
-                                else if (!UriHelper.IsBidiControlCharacter(unescapedCharsPtr[j]))
+                                else if (!UriHelper.IsBidiControlCharacter(unescapedCharsPtr[j]) || !UriParser.DontKeepUnicodeBidiFormattingCharacters)
                                 {
                                     //copy chars
                                     Debug.Assert(dest.Length > destOffset, "Destination length exceeded destination offset.");
@@ -657,28 +657,43 @@ namespace System
                        + 10)));
         }
 
-        // Do not unescape these in safe mode:
-        // 1)  reserved    = ";" | "/" | "?" | ":" | "@" | "&" | "=" | "+" | "$" | ","
-        // 2)  excluded = control | "#" | "%" | "\"
+        internal const string RFC3986ReservedMarks = @";/?:@&=+$,#[]!'()*";
+        private const string RFC2396ReservedMarks = @";/?:@&=+$,";
+        private const string RFC3986UnreservedMarks = @"-_.~";
+        private const string RFC2396UnreservedMarks = @"-_.~*'()!";
+        private const string AdditionalUnsafeToUnescape = @"%\#";// While not specified as reserved, these are still unsafe to unescape.
+
+        // When unescaping in safe mode, do not unescape the RFC 3986 reserved set:
+        // gen-delims  = ":" / "/" / "?" / "#" / "[" / "]" / "@"
+        // sub-delims  = "!" / "$" / "&" / "'" / "(" / ")"
+        //             / "*" / "+" / "," / ";" / "="
         //
-        // That will still give plenty characters unescaped by SafeUnesced mode such as
-        // 1) Unicode characters
-        // 2) Unreserved = alphanum | "-" | "_" | "." | "!" | "~" | "*" | "'" | "(" | ")"
-        // 3) DelimitersAndUnwise = "<" | ">" |  <"> | "{" | "}" | "|" | "^" | "[" | "]" | "`"
+        // In addition, do not unescape the following unsafe characters:
+        // excluded    = "%" / "\"
+        //
+        // This implementation used to use the following variant of the RFC 2396 reserved set. 
+        // That behavior is now disabled by default, and is controlled by a UriSyntax property. 
+        // reserved    = ";" | "/" | "?" | "@" | "&" | "=" | "+" | "$" | ","
+        // excluded    = control | "#" | "%" | "\"
         internal static bool IsNotSafeForUnescape(char ch)
         {
             if (ch <= '\x1F' || (ch >= '\x7F' && ch <= '\x9F'))
+            {
                 return true;
-            else if ((ch >= ';' && ch <= '@' && (ch | '\x2') != '>') ||
-                     (ch >= '#' && ch <= '&') ||
-                     ch == '+' || ch == ',' || ch == '/' || ch == '\\')
+            }
+            else if (UriParser.DontEnableStrictRFC3986ReservedCharacterSets)
+            {
+                if ((ch != ':' && (RFC2396ReservedMarks.IndexOf(ch) >= 0) || (AdditionalUnsafeToUnescape.IndexOf(ch) >= 0)))
+                {
+                    return true;
+                }
+            }
+            else if ((RFC3986ReservedMarks.IndexOf(ch) >= 0) || (AdditionalUnsafeToUnescape.IndexOf(ch) >= 0))
+            {
                 return true;
-
+            }
             return false;
         }
-
-        private const string RFC3986ReservedMarks = @":/?#[]@!$&'()*+,;=";
-        private const string RFC3986UnreservedMarks = @"-._~";
 
         private static unsafe bool IsReservedUnreservedOrHash(char c)
         {

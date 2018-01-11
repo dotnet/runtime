@@ -650,7 +650,7 @@ namespace System.Drawing
                 // note: this handle doesn't survive the lifespan of the icon instance
                 if (handle == IntPtr.Zero)
                 {
-                    handle = GetInternalBitmap().NativeObject;
+                    handle = GetInternalBitmap().nativeImage;
                 }
                 return handle;
             }

@@ -29,8 +29,8 @@ namespace System.Buffers.Text.Tests
             // Take good care of this method: it affects Xunit output and makes a lot of difference in how annoying test investigations are.
             //
 
-            string formatString = (FormatSymbol == default) ? 
-                "default" : 
+            string formatString = (FormatSymbol == default) ?
+                "default" :
                 FormatSymbol.ToString();
 
             return $"[Parse{typeof(T).Name} '{Text}',{formatString} to {(ExpectedSuccess ? ExpectedValue.DisplayString() : "(should-not-parse)")})]";

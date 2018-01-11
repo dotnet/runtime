@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
@@ -23,5 +24,54 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public static Memory<T> AsMemory<T>(ReadOnlyMemory<T> readOnlyMemory) =>
             Unsafe.As<ReadOnlyMemory<T>, Memory<T>>(ref readOnlyMemory);
+
+        /// <summary>
+        /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to the location where the 0th element
+        /// would have been stored. Such a reference can be used for pinning but must never be dereferenced.
+        /// </summary>
+        public static ref T GetReference<T>(Span<T> span)
+        {
+            if (span.Pinnable == null)
+                unsafe { return ref Unsafe.AsRef<T>(span.ByteOffset.ToPointer()); }
+            else
+                return ref Unsafe.AddByteOffset<T>(ref span.Pinnable.Data, span.ByteOffset);
+        }
+
+        /// <summary>
+        /// Returns a reference to the 0th element of the ReadOnlySpan. If the Span is empty, returns a reference to the location where the 0th element
+        /// would have been stored. Such a reference can be used for pinning but must never be dereferenced.
+        /// </summary>
+        public static ref T GetReference<T>(ReadOnlySpan<T> span)
+        {
+            if (span.Pinnable == null)
+                unsafe { return ref Unsafe.AsRef<T>(span.ByteOffset.ToPointer()); }
+            else
+                return ref Unsafe.AddByteOffset<T>(ref span.Pinnable.Data, span.ByteOffset);
+        }
+
+        /// <summary>
+        /// Get an array segment from the underlying memory. 
+        /// If unable to get the array segment, return false with a default array segment.
+        /// </summary>
+        public static bool TryGetArray<T>(ReadOnlyMemory<T> readOnlyMemory, out ArraySegment<T> arraySegment)
+        {
+            object obj = readOnlyMemory.GetObjectStartLength(out int index, out int length);
+            if (index < 0)
+            {
+                if (((OwnedMemory<T>)obj).TryGetArray(out var segment))
+                {
+                    arraySegment = new ArraySegment<T>(segment.Array, segment.Offset + (index & ReadOnlyMemory<T>.RemoveOwnedFlagBitMask), length);
+                    return true;
+                }
+            }
+            else if (obj is T[] arr)
+            {
+                arraySegment = new ArraySegment<T>(arr, index, length);
+                return true;
+            }
+
+            arraySegment = default;
+            return false;
+        }
     }
 }

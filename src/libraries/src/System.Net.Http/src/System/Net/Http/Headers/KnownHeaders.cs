@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.Net.Http.Headers
 {
@@ -370,7 +371,7 @@ namespace System.Net.Http.Headers
 
         internal unsafe static KnownHeader TryGetKnownHeader(ReadOnlySpan<byte> name)
         {
-            fixed (byte* p = &name.DangerousGetPinnableReference())
+            fixed (byte* p = &MemoryMarshal.GetReference(name))
             {
                 KnownHeader candidate = GetCandidate(new BytePtrAccessor(p, name.Length));
                 if (candidate != null && ByteArrayHelpers.EqualsOrdinalAsciiIgnoreCase(candidate.Name, name))

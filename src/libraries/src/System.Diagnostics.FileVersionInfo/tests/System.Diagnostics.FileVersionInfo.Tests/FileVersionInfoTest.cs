@@ -102,6 +102,26 @@ namespace System.Diagnostics.Tests
                 FileVersionInfo.GetVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), TestNotFoundFileName)));
         }
 
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Don't want to create temp file in app container current directory")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFX throws ArgumentException in this case")]
+        public void FileVersionInfo_RelativePath_CorrectFilePath()
+        {
+            try
+            {
+                File.WriteAllText("kernelbase.dll", "bogus kernelbase.dll");
+                FileVersionInfo fvi = FileVersionInfo.GetVersionInfo("kernelbase.dll");
+                // File name should be the full path to the local kernelbase.dll, not the relative path or the path to the system .dll
+                Assert.Equal(Path.GetFullPath("kernelbase.dll"), fvi.FileName);
+                // FileDescription should be null in the local kernelbase.dll
+                Assert.Equal(null, fvi.FileDescription);
+            }
+            finally
+            {
+                File.Delete("kernelbase.dll");
+            }
+        }
+
         // Additional Tests Wanted:
         // [] File exists but we don't have permission to read it
         // [] DLL has unknown codepage info

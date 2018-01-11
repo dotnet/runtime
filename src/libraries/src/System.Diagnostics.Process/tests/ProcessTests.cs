@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.DirectoryServices.ActiveDirectory;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -918,6 +919,30 @@ namespace System.Diagnostics.Tests
         public void GetProcesses_EmptyMachineName_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>(null, () => Process.GetProcesses(""));
+        }
+
+        [Fact]
+        public void GetProcesses_InvalidMachineName_ThrowsInvalidOperationException()
+        {
+            Assert.Throws<InvalidOperationException>(() => Process.GetProcesses(Guid.NewGuid().ToString()));
+        }
+
+        [Fact]
+        public void GetProcesses_RemoteMachinePath_ReturnsExpected()
+        {
+            try
+            {
+                Process[] processes = Process.GetProcesses(Environment.MachineName + "." + Domain.GetComputerDomain());
+                Assert.NotEmpty(processes);
+            }
+            catch (ActiveDirectoryObjectNotFoundException)
+            {
+                //This will be thrown when the executing machine is not domain-joined, i.e. in CI
+            }
+            catch (PlatformNotSupportedException)
+            {
+                //System.DirectoryServices is not supported on all platforms
+            }
         }
 
         [Fact]

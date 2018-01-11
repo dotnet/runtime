@@ -256,7 +256,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        public SqlBulkCopy(string connectionString) : this(new SqlConnection(connectionString))
+        public SqlBulkCopy(string connectionString)
         {
             if (connectionString == null)
             {

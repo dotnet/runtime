@@ -9,6 +9,7 @@ using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -547,7 +548,7 @@ namespace System.Net.Http
                     {
                         try
                         {
-                            fixed (byte* reasonPtr = &reasonBytes.DangerousGetPinnableReference())
+                            fixed (byte* reasonPtr = &MemoryMarshal.GetReference(reasonBytes))
                             {
                                 response.ReasonPhrase = Encoding.ASCII.GetString(reasonPtr, reasonBytes.Length);
                             }

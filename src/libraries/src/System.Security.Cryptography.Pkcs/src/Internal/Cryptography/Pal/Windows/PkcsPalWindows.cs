@@ -6,6 +6,7 @@ using System;
 using System.Text;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
@@ -163,6 +164,170 @@ namespace Internal.Cryptography.Pal.Windows
             {
                 byte[] ski = hCertContext.GetSubjectKeyIdentifer();
                 return ski;
+            }
+        }
+
+        public override T GetPrivateKeyForSigning<T>(X509Certificate2 certificate, bool silent)
+        {
+            return GetPrivateKey<T>(certificate, silent, preferNCrypt: true);
+        }
+
+        public override T GetPrivateKeyForDecryption<T>(X509Certificate2 certificate, bool silent)
+        {
+            return GetPrivateKey<T>(certificate, silent, preferNCrypt: false);
+        }
+
+        private T GetPrivateKey<T>(X509Certificate2 certificate, bool silent, bool preferNCrypt) where T : AsymmetricAlgorithm
+        {
+            if (!certificate.HasPrivateKey)
+            {
+                return null;
+            }
+
+            SafeProvOrNCryptKeyHandle handle = GetCertificatePrivateKey(
+                certificate,
+                silent,
+                preferNCrypt,
+                out CryptKeySpec keySpec,
+                out Exception exception);
+
+            using (handle)
+            {
+                if (handle == null || handle.IsInvalid)
+                {
+                    if (exception != null)
+                    {
+                        throw exception;
+                    }
+
+                    return null;
+                }
+
+                if (keySpec == CryptKeySpec.CERT_NCRYPT_KEY_SPEC)
+                {
+                    using (SafeNCryptKeyHandle keyHandle = new SafeNCryptKeyHandle(handle.DangerousGetHandle(), handle))
+                    using (CngKey cngKey = CngKey.Open(keyHandle, CngKeyHandleOpenOptions.None))
+                    {
+                        if (typeof(T) == typeof(RSA))
+                            return (T)(object)new RSACng(cngKey);
+                        if (typeof(T) == typeof(ECDsa))
+                            return (T)(object)new ECDsaCng(cngKey);
+                        if (typeof(T) == typeof(DSA))
+                            return (T)(object)new DSACng(cngKey);
+
+                        Debug.Fail($"Unknown CNG key type request: {typeof(T).FullName}");
+                        return null;
+                    }
+                }
+
+                // The key handle is for CAPI.
+                // Our CAPI types don't allow usage from a handle, so we have a few choices:
+                // 1) Extract the information we need to re-open the key handle.
+                // 2) Re-implement {R|D}SACryptoServiceProvider
+                // 3) PNSE.
+                // 4) Defer to cert.Get{R|D}SAPrivateKey if not silent, throw otherwise.
+                CspParameters cspParams = handle.GetProvParameters();
+                Debug.Assert((cspParams.Flags & CspProviderFlags.UseExistingKey) != 0);
+                cspParams.KeyNumber = (int)keySpec;
+
+                if (silent)
+                {
+                    cspParams.Flags |= CspProviderFlags.NoPrompt;
+                }
+
+                if (typeof(T) == typeof(RSA))
+                    return (T)(object)new RSACryptoServiceProvider(cspParams);
+                if (typeof(T) == typeof(DSA))
+                    return (T)(object)new DSACryptoServiceProvider(cspParams);
+
+                Debug.Fail($"Unknown CAPI key type request: {typeof(T).FullName}");
+                return null;
+            }
+        }
+
+        internal static SafeProvOrNCryptKeyHandle GetCertificatePrivateKey(
+            X509Certificate2 cert,
+            bool silent,
+            bool preferNCrypt,
+            out CryptKeySpec keySpec,
+            out Exception exception)
+        {
+            CryptAcquireCertificatePrivateKeyFlags flags =
+                CryptAcquireCertificatePrivateKeyFlags.CRYPT_ACQUIRE_USE_PROV_INFO_FLAG
+                | CryptAcquireCertificatePrivateKeyFlags.CRYPT_ACQUIRE_COMPARE_KEY_FLAG;
+
+            if (preferNCrypt)
+            {
+                flags |= CryptAcquireCertificatePrivateKeyFlags.CRYPT_ACQUIRE_PREFER_NCRYPT_KEY_FLAG;
+            }
+            else
+            {
+                flags |= CryptAcquireCertificatePrivateKeyFlags.CRYPT_ACQUIRE_ALLOW_NCRYPT_KEY_FLAG;
+            }
+
+            if (silent)
+            {
+                flags |= CryptAcquireCertificatePrivateKeyFlags.CRYPT_ACQUIRE_SILENT_FLAG;
+            }
+
+            bool isNCrypt;
+            bool mustFree;
+            using (SafeCertContextHandle hCertContext = cert.CreateCertContextHandle())
+            {
+                IntPtr hKey;
+                int cbSize = IntPtr.Size;
+
+                if (Interop.Crypt32.CertGetCertificateContextProperty(
+                    hCertContext,
+                    CertContextPropId.CERT_NCRYPT_KEY_HANDLE_PROP_ID,
+                    out hKey,
+                    ref cbSize))
+                {
+                    exception = null;
+                    keySpec = CryptKeySpec.CERT_NCRYPT_KEY_SPEC;
+                    return new SafeProvOrNCryptKeyHandleUwp(hKey, hCertContext);
+                }
+
+                if (!Interop.Crypt32.CryptAcquireCertificatePrivateKey(
+                    hCertContext,
+                    flags,
+                    IntPtr.Zero,
+                    out hKey,
+                    out keySpec,
+                    out mustFree))
+                {
+                    exception = Marshal.GetHRForLastWin32Error().ToCryptographicException();
+                    return null;
+                }
+
+                // We need to know whether we got back a CRYPTPROV or NCrypt handle.
+                // Unfortunately, NCryptIsKeyHandle() is a prohibited api on UWP.
+                // Fortunately, CryptAcquireCertificatePrivateKey() is documented to tell us which
+                // one we got through the keySpec value.
+                switch (keySpec)
+                {
+                    case CryptKeySpec.AT_KEYEXCHANGE:
+                    case CryptKeySpec.AT_SIGNATURE:
+                        isNCrypt = false;
+                        break;
+
+                    case CryptKeySpec.CERT_NCRYPT_KEY_SPEC:
+                        isNCrypt = true;
+                        break;
+
+                    default:
+                        // As of this writing, we've exhausted all the known values of keySpec.
+                        // We have no idea what kind of key handle we got so play it safe and fail fast.
+                        throw new NotSupportedException(SR.Format(SR.Cryptography_Cms_UnknownKeySpec, keySpec));
+                }
+
+                SafeProvOrNCryptKeyHandleUwp hProvOrNCryptKey = new SafeProvOrNCryptKeyHandleUwp(
+                    hKey,
+                    ownsHandle: mustFree,
+                    isNcrypt: isNCrypt);
+
+                exception = null;
+                return hProvOrNCryptKey;
             }
         }
     }

@@ -4,6 +4,7 @@
 
 using Xunit;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.SpanTests
 {
@@ -36,9 +37,9 @@ namespace System.SpanTests
                     try
                     {
                         ref Guid memory = ref Unsafe.AsRef<Guid>(memBlock.ToPointer());
-                        var span = new ReadOnlySpan<Guid>(memBlock.ToPointer(), GuidThreeGiBLimit);
+                        var span = new ReadOnlySpan<Guid>(memBlock.ToPointer(), s_guidThreeGiBLimit);
 
-                        int bigIndex = checked(GuidTwoGiBLimit + 1);
+                        int bigIndex = checked(s_guidTwoGiBLimit + 1);
                         uint byteOffset = checked((uint)bigIndex * (uint)sizeof(Guid));
                         Assert.True(byteOffset > int.MaxValue);  // Make sure byteOffset actually overflows 2Gb, or this test is pointless.
                         Guid expectedGuid = Guid.NewGuid();
@@ -48,10 +49,10 @@ namespace System.SpanTests
                         Assert.Equal(expectedGuid, actualGuid);
 
                         ReadOnlySpan<Guid> slice = span.Slice(bigIndex);
-                        Assert.True(Unsafe.AreSame<Guid>(ref expected, ref slice.DangerousGetPinnableReference()));
+                        Assert.True(Unsafe.AreSame<Guid>(ref expected, ref Unsafe.AsRef(in MemoryMarshal.GetReference(slice))));
 
                         slice = span.Slice(bigIndex, 1);
-                        Assert.True(Unsafe.AreSame<Guid>(ref expected, ref slice.DangerousGetPinnableReference()));
+                        Assert.True(Unsafe.AreSame<Guid>(ref expected, ref Unsafe.AsRef(in MemoryMarshal.GetReference(slice))));
                     }
                     finally
                     {
@@ -65,8 +66,7 @@ namespace System.SpanTests
         private const long TwoGiB = 2L * 1024L * 1024L * 1024L;
         private const long OneGiB = 1L * 1024L * 1024L * 1024L;
 
-        private static readonly int GuidThreeGiBLimit = (int)(ThreeGiB / Unsafe.SizeOf<Guid>());  // sizeof(Guid) requires unsafe keyword and I don't want to mark the entire class unsafe.
-        private static readonly int GuidTwoGiBLimit = (int)(TwoGiB / Unsafe.SizeOf<Guid>());
-        private static readonly int GuidOneGiBLimit = (int)(OneGiB / Unsafe.SizeOf<Guid>());
+        private static readonly int s_guidThreeGiBLimit = (int)(ThreeGiB / Unsafe.SizeOf<Guid>());  // sizeof(Guid) requires unsafe keyword and I don't want to mark the entire class unsafe.
+        private static readonly int s_guidTwoGiBLimit = (int)(TwoGiB / Unsafe.SizeOf<Guid>());
     }
 }

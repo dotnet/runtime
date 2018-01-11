@@ -138,4 +138,10 @@
   <data name="PlatformNotSupported_AccessControl" xml:space="preserve">
     <value>Access Control List (ACL) APIs are part of resource management on Windows and are not supported on this platform.</value>
   </data>
+  <data name="TypeUnrecognized_AccessControl" xml:space="preserve">
+    <value>AccessControlType '{0}' unrecognized</value>
+  </data>
+  <data name="InvalidOperation_RemoveFail" xml:space="preserve">
+    <value>Remove access rule failed</value>
+  </data>
 </root>

@@ -84,7 +84,6 @@ namespace System.IO.Tests
             Assert.Throws<IOException>(() => Copy(testFileSource, testFileDest));
         }
 
-        [ActiveIssue(25665)]
         [Fact]
         public void InvalidFileNames()
         {

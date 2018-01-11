@@ -16,7 +16,7 @@ using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
-
+using System.ComponentModel;
 namespace System.Security.AccessControl
 {
     [Flags]
@@ -671,8 +671,7 @@ nameof(sddlForm));
                     else if (error != Interop.Errors.ERROR_SUCCESS)
                     {
                         Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Unexpected error out of Win32.ConvertStringSdToSd: {0}", error));
-                        // TODO : This should be a Win32Exception once that type is available
-                        throw new Exception();
+                        throw new Win32Exception(error, SR.Format(SR.AccessControl_UnexpectedError, error));
                     }
                 }
 

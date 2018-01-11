@@ -6,5 +6,20 @@ namespace System
 {
     public class UriParser
     {
+        internal static bool DontEnableStrictRFC3986ReservedCharacterSets
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        internal static bool DontKeepUnicodeBidiFormattingCharacters
+        {
+            get
+            {
+                return false;
+            }
+        }
     }
 }

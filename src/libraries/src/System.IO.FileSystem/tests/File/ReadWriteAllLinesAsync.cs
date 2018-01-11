@@ -24,8 +24,7 @@ namespace System.IO.Tests
         #endregion
 
         #region UniversalTests
-
-        [ActiveIssue(25665)]
+        
         [Fact]
         public async Task InvalidPathAsync()
         {

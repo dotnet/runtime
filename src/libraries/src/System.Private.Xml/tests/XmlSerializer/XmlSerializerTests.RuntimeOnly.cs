@@ -865,15 +865,6 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_TypeWithMismatchBetweenAttributeAndPropertyType()
-    {
-        var value = new TypeWithMismatchBetweenAttributeAndPropertyType();
-        var actual = SerializeAndDeserialize(value,
-@"<?xml version=""1.0""?><RootElement xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" IntValue=""120"" />");
-        Assert.StrictEqual(value.IntValue, actual.IntValue);
-    }
-
-    [Fact]
     public static void Xml_TypeWithNestedPublicType()
     {
         var value = new List<TypeWithNestedPublicType.LevelData>();
@@ -1934,6 +1925,20 @@ public static partial class XmlSerializerTests
         XmlMemberMapping xmp = mappings[0];
         Assert.Equal(membername, xmp.ElementName);
         Assert.False(xmp.CheckSpecified);
+    }
+
+    [Fact]       
+    public static void XmlSchemaExporter_ExportMembersMapping_NotSupportedDefaultValue()
+    {
+        XmlReflectionImporter importer = new XmlReflectionImporter("http://www.contoso.com/");
+        XmlReflectionMember[] members = new XmlReflectionMember[1];
+        XmlReflectionMember member = members[0] = new XmlReflectionMember();
+        member.MemberType = typeof(TypeWithQNameArrayAsXmlAttributeInvalidDefaultValue);
+        XmlMembersMapping mappings = importer.ImportMembersMapping("root", "", members, true);
+        XmlMemberMapping xmp = mappings[0];
+        XmlSchemas schema = new XmlSchemas();
+        XmlSchemaExporter exporter = new XmlSchemaExporter(schema);
+        AssertExtensions.Throws<XmlException,Exception>(() => exporter.ExportMembersMapping(mappings));
     }
 
     [Fact]

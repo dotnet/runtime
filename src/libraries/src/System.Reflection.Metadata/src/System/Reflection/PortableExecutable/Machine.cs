@@ -125,5 +125,10 @@ namespace System.Reflection.PortableExecutable
         /// M32R little-endian
         /// </summary>
         M32R = 0x9041,
+
+        /// <summary>
+        /// ARM64
+        /// </summary>
+        Arm64 = 0xAA64,
     }
 }

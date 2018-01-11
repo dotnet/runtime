@@ -9,7 +9,7 @@
     <NugetRuntimeIdentifier>$(ToolRuntimeRID)</NugetRuntimeIdentifier>
     <RidSpecificAssets>true</RidSpecificAssets>
     <ILLinkTasksPackageId>illink.tasks</ILLinkTasksPackageId>
-    <ILLinkTasksPackageVersion>0.1.4-preview-981901</ILLinkTasksPackageVersion>
+    <ILLinkTasksPackageVersion>0.1.4-preview-1222833</ILLinkTasksPackageVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="$(ILLinkTasksPackageId)">

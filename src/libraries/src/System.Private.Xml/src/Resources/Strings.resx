@@ -3448,4 +3448,7 @@ Usage: dotnet {0} [[/assembly:&lt;assembly name&gt;] | [&lt;assembly file locati
   <data name="MoreHelp" xml:space="preserve">
     <value>If you would like more help, please type "sgen {0}".</value>
   </data>
+    <data name="GenerateSerializerNotFound" xml:space="preserve">
+    <value>`System.Xml.Serialization.XmlSerializer` does not have a method named `GenerateSerializerNotFound`. SGen does not support the framework of the version you are using.</value>
+  </data>
 </root>

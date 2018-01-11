@@ -197,7 +197,7 @@ namespace System.Net.Security
                 throw new ArgumentOutOfRangeException(nameof(count), SR.net_offset_plus_count);
             }
         }
-               
+
         private async ValueTask<int> ReadAsyncInternal<TReadAdapter>(TReadAdapter adapter, Memory<byte> buffer)
             where TReadAdapter : ISslReadAdapter
         {
@@ -212,7 +212,10 @@ namespace System.Net.Security
                 if (_decryptedBytesCount != 0)
                 {
                     copyBytes = CopyDecryptedData(buffer);
+
+                    _sslState.FinishRead(null);
                     _nestedRead = 0;
+
                     return copyBytes;
                 }
 
@@ -226,7 +229,7 @@ namespace System.Net.Security
 
                     ResetReadBuffer();
                     int readBytes = await FillBufferAsync(adapter, SecureChannel.ReadHeaderSize).ConfigureAwait(false);
-                    if(readBytes == 0)
+                    if (readBytes == 0)
                     {
                         return 0;
                     }
@@ -268,8 +271,14 @@ namespace System.Net.Security
                         ProtocolToken message = new ProtocolToken(null, status);
                         if (NetEventSource.IsEnabled)
                             NetEventSource.Info(null, $"***Processing an error Status = {message.Status}");
+
                         if (message.Renegotiate)
                         {
+                            if (!_sslState._sslAuthenticationOptions.AllowRenegotiation)
+                            {
+                                throw new IOException(SR.net_ssl_io_renego);
+                            }
+
                             _sslState.ReplyOnReAuthentication(extraBuffer);
 
                             // Loop on read.
@@ -285,13 +294,19 @@ namespace System.Net.Security
                         throw new IOException(SR.net_io_decrypt, message.GetException());
                     }
                 }
-                catch (Exception e) when (!(e is IOException))
+                catch (Exception e)
                 {
+                    _sslState.FinishRead(null);
+
+                    if (e is IOException)
+                    {
+                        throw;
+                    }
+
                     throw new IOException(SR.net_io_read, e);
                 }
                 finally
                 {
-                    _sslState.FinishRead(null);
                     _nestedRead = 0;
                 }
             }

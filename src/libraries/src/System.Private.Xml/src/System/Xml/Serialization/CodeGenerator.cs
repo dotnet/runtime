@@ -8,11 +8,7 @@ using System.Resources;
 using System.Runtime.CompilerServices;
 
 #if !FEATURE_SERIALIZATION_UAPAOT
-#if XMLSERIALIZERGENERATOR
-namespace Microsoft.XmlSerializer.Generator
-#else
 namespace System.Xml.Serialization
-#endif
 {
     using System;
     using System.Collections;

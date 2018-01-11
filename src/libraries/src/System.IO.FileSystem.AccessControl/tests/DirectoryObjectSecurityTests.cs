@@ -493,6 +493,23 @@ namespace System.Security.AccessControl
             Assert.False(existingRules.Contains(customAccessRuleSynchronize));
         }
 
+        [Fact]        
+        public void RemoveAccessRuleAll_AccessControlType_Deny_ThrowException()
+        {
+            var descriptor = new CommonSecurityDescriptor(true, true, string.Empty);
+            var customObjectSecurity = new CustomDirectoryObjectSecurity(descriptor);
+
+            var objectTypeGuid = Guid.NewGuid();
+            var identityReference = new NTAccount(@"NT AUTHORITY\SYSTEM");
+            var customAccessRuleReadWrite = new CustomAccessRule(
+                identityReference, ReadWriteAccessMask, true, InheritanceFlags.ObjectInherit,
+                PropagationFlags.InheritOnly, objectTypeGuid, Guid.NewGuid(), AccessControlType.Deny
+                );
+
+            customObjectSecurity.AddAccessRule(customAccessRuleReadWrite);
+            AssertExtensions.Throws<InvalidOperationException, SystemException>(() => customObjectSecurity.RemoveAccessRuleAll(customAccessRuleReadWrite));
+        }
+
         [Fact]
         public void RemoveAccessRuleAll_AccessControlType_Deny_Succeeds()
         {

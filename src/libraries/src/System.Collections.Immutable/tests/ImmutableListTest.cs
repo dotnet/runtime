@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Collections.Immutable.Tests
@@ -814,6 +815,29 @@ namespace System.Collections.Immutable.Tests
             list.GetEnumerator(); // ensure this doesn't throw
         }
 #endif // netcoreapp
+
+        [Fact]
+        public void ItemRef()
+        {
+            var list = new[] { 1, 2, 3 }.ToImmutableList();
+
+            ref readonly var safeRef = ref list.ItemRef(1);
+            ref var unsafeRef = ref Unsafe.AsRef(safeRef);
+
+            Assert.Equal(2, list.ItemRef(1));
+
+            unsafeRef = 4;
+
+            Assert.Equal(4, list.ItemRef(1));
+        }
+
+        [Fact]
+        public void ItemRef_OutOfBounds()
+        {
+            var list = new[] { 1, 2, 3 }.ToImmutableList();
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.ItemRef(5));
+        }
 
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)
         {

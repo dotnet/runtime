@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    public class ProcessStreamReadTests : ProcessTestBase
+    public partial class ProcessStreamReadTests : ProcessTestBase
     {
         [Fact]
         public void TestSyncErrorStream()
@@ -226,6 +226,57 @@ namespace System.Diagnostics.Tests
 
             Assert.Equal(ExpectedLineCount, nonWhitespaceLinesReceived);
             Assert.Equal(ExpectedLineCount + 1, totalLinesReceived);
+        }
+
+        [Fact]
+        public void TestClosingStreamsAsyncDoesNotThrow()
+        {
+            Process p = CreateProcessPortable(RemotelyInvokable.WriteLinesAfterClose);
+            p.StartInfo.RedirectStandardOutput = true;
+            p.StartInfo.RedirectStandardError = true;
+
+            // On netfx, the handler is called once with the Data as null, even if the process writes nothing to the pipe.
+            // That behavior is documented here https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.datareceivedeventhandler
+            p.OutputDataReceived += (s, e) => { Assert.True(PlatformDetection.IsFullFramework && e.Data == null, "OutputDataReceived called after closing the process"); };
+            p.ErrorDataReceived += (s, e) => { Assert.True(PlatformDetection.IsFullFramework && e.Data == null, "ErrorDataReceived called after closing the process"); };
+
+            p.Start();
+            p.BeginOutputReadLine();
+            p.BeginErrorReadLine();
+
+            p.Close();
+            RemotelyInvokable.FireClosedEvent();
+        }
+
+        [Fact]
+        public void TestClosingStreamsUndefinedDoesNotThrow()
+        {
+            Process p = CreateProcessPortable(RemotelyInvokable.WriteLinesAfterClose);
+            p.StartInfo.RedirectStandardOutput = true;
+            p.StartInfo.RedirectStandardError = true;
+
+            p.Start();
+            p.Close();
+            RemotelyInvokable.FireClosedEvent();
+        }
+
+        [Fact]
+        public void TestClosingSyncModeDoesNotCloseStreams()
+        {
+            Process p = CreateProcessPortable(RemotelyInvokable.WriteLinesAfterClose);
+            p.StartInfo.RedirectStandardOutput = true;
+            p.StartInfo.RedirectStandardError = true;
+
+            p.Start();
+
+            var output = p.StandardOutput;
+            var error = p.StandardError;
+
+            p.Close();
+            RemotelyInvokable.FireClosedEvent();
+
+            output.ReadToEnd();
+            error.ReadToEnd();
         }
 
         [Fact]

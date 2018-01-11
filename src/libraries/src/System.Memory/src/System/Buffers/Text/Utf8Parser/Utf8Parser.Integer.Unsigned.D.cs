@@ -61,12 +61,12 @@ namespace System.Buffers.Text
                 goto FalseExit;
             }
 
-FalseExit:
+        FalseExit:
             bytesConsumed = default;
             value = default;
             return false;
 
-Done:
+        Done:
             bytesConsumed = index;
             value = (byte)answer;
             return true;
@@ -143,12 +143,12 @@ Done:
                 goto FalseExit;
             }
 
-FalseExit:
+        FalseExit:
             bytesConsumed = default;
             value = default;
             return false;
 
-Done:
+        Done:
             bytesConsumed = index;
             value = (ushort)answer;
             return true;
@@ -265,12 +265,12 @@ Done:
                 goto FalseExit;
             }
 
-FalseExit:
+        FalseExit:
             bytesConsumed = default;
             value = default;
             return false;
 
-Done:
+        Done:
             bytesConsumed = index;
             value = (uint)answer;
             return true;

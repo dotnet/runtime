@@ -69,60 +69,6 @@ namespace System
         public static bool IsWindows7 => GetWindowsVersion() == 6 && GetWindowsMinorVersion() == 1;
         public static bool IsWindows8x => GetWindowsVersion() == 6 && (GetWindowsMinorVersion() == 2 || GetWindowsMinorVersion() == 3);
 
-        public static bool IsNetfx462OrNewer()
-        {
-            if (!IsFullFramework)
-            {
-                return false;
-            }
-
-            Version net462 = new Version(4, 6, 2);
-            Version runningVersion = GetFrameworkVersion();
-            return runningVersion != null && runningVersion >= net462;
-        }
-
-        public static bool IsNetfx470OrNewer()
-        {
-            if (!IsFullFramework)
-            {
-                return false;
-            }
-
-            Version net470 = new Version(4, 7, 0);
-            Version runningVersion = GetFrameworkVersion();
-            return runningVersion != null && runningVersion >= net470;
-        }
-
-        public static bool IsNetfx471OrNewer()
-        {
-            if (!IsFullFramework)
-            {
-                return false;
-            }
-
-            Version net471 = new Version(4, 7, 1);
-            Version runningVersion = GetFrameworkVersion();
-            return runningVersion != null && runningVersion >= net471;
-        }
-
-        private static Version GetFrameworkVersion()
-        {
-            string[] descriptionArray = RuntimeInformation.FrameworkDescription.Split(' ');
-            if (descriptionArray.Length < 3)
-                return null;
-
-            if (!Version.TryParse(descriptionArray[2], out Version actualVersion))
-                return null;
-
-            foreach (Range currentRange in FrameworkRanges)
-            {
-                if (currentRange.IsInRange(actualVersion))
-                    return currentRange.FrameworkVersion;
-            }
-
-            return null;
-        }
-
         public static string GetDistroVersionString() { return "ProductType=" + GetWindowsProductType() + "InstallationType=" + GetInstallationType(); }
 
         private static int s_isInAppContainer = -1;

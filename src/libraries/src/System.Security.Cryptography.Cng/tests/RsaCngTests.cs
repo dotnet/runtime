@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Cng.Tests
 {
     public static class RsaCngTests
     {
-        public static bool KeySizeTrustsOSValue => !PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer();
+        public static bool KeySizeTrustsOSValue => !PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer;
 
         [Fact]
         public static void SignVerifyHashRoundTrip()

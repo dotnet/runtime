@@ -2,11 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if XMLSERIALIZERGENERATOR
-namespace Microsoft.XmlSerializer.Generator
-#else
 namespace System.Xml.Serialization
-#endif
 {
     using System;
     using System.IO;
@@ -736,7 +732,7 @@ namespace System.Xml.Serialization
             return typeDesc;
         }
 
-#if XMLSERIALIZERGENERATOR
+#if !FEATURE_SERIALIZATION_UAPAOT
         internal TypeMapping GetTypeMappingFromTypeDesc(TypeDesc typeDesc)
         {
             foreach (TypeMapping typeMapping in TypeMappings)
@@ -1392,7 +1388,6 @@ namespace System.Xml.Serialization
             name = type.Substring(nsLen + 1, nameLen - nsLen - 1);
             dims = type.Substring(nameLen);
 
-#if !XMLSERIALIZERGENERATOR
             // parent is not null only in the case when we used XmlSchema.Read(), 
             // in which case we need to fixup the wsdl:arayType attribute value
             while (parent != null)
@@ -1409,7 +1404,6 @@ namespace System.Xml.Serialization
                 parent = parent.Parent;
             }
 
-#endif
             return new XmlQualifiedName(name, ns);
         }
 

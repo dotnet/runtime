@@ -6,18 +6,10 @@ using System.Reflection;
 using System;
 
 
-#if XMLSERIALIZERGENERATOR
-namespace Microsoft.XmlSerializer.Generator
-#else
 namespace System.Xml.Serialization
-#endif
 {
     /// <internalonly/>
-#if XMLSERIALIZERGENERATOR
-    internal class XmlMemberMapping
-#else
     public class XmlMemberMapping
-#endif
     {
         private MemberMapping _mapping;
 

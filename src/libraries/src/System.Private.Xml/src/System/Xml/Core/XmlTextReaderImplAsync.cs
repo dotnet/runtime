@@ -367,8 +367,8 @@ namespace System.Xml
 
         private async Task<int> ReadContentAsBase64_AsyncHelper(Task<bool> task, byte[] buffer, int index, int count)
         {
-            await task.ConfigureAwait(false);
-            if (!task.Result)
+            bool result = await task.ConfigureAwait(false);
+            if (!result)
             {
                 return 0;
             }
@@ -514,8 +514,8 @@ namespace System.Xml
 
         private async Task<int> ReadElementContentAsBase64Async_Helper(Task<bool> task, byte[] buffer, int index, int count)
         {
-            await task.ConfigureAwait(false);
-            if (!task.Result)
+            bool result = await task.ConfigureAwait(false);
+            if (!result)
             {
                 return 0;
             }
@@ -3593,7 +3593,7 @@ namespace System.Xml
                 ThrowInvalidChar(_ps.chars, _ps.charsUsed, _ps.charPos + offset);
             }
             //should never hit here
-            throw new Exception();
+            throw new XmlException(SR.Xml_InternalError);            
         }
 
         private async Task<ValueTuple<int, int, int, bool>> ParseTextAsync_ReadData(int outOrChars, char[] chars, int pos, int rcount, int rpos, int orChars, char c)

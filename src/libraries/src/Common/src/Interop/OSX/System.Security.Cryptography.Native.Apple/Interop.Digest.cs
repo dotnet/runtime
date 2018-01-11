@@ -17,13 +17,13 @@ internal static partial class Interop
         internal static extern SafeDigestCtxHandle DigestCreate(PAL_HashAlgorithm algorithm, out int cbDigest);
 
         internal static int DigestUpdate(SafeDigestCtxHandle ctx, ReadOnlySpan<byte> pbData, int cbData) =>
-            DigestUpdate(ctx, ref pbData.DangerousGetPinnableReference(), cbData);
+            DigestUpdate(ctx, ref MemoryMarshal.GetReference(pbData), cbData);
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestUpdate")]
         private static extern int DigestUpdate(SafeDigestCtxHandle ctx, ref byte pbData, int cbData);
 
         internal static int DigestFinal(SafeDigestCtxHandle ctx, Span<byte> pbOutput, int cbOutput) =>
-            DigestFinal(ctx, ref pbOutput.DangerousGetPinnableReference(), cbOutput);
+            DigestFinal(ctx, ref MemoryMarshal.GetReference(pbOutput), cbOutput);
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestFinal")]
         private static extern int DigestFinal(SafeDigestCtxHandle ctx, ref byte pbOutput, int cbOutput);

@@ -30,7 +30,12 @@ namespace Internal.Cryptography.Pal.Windows
                 return null;
 
             // Desktop compat: We pass false for "silent" here (thus allowing crypto providers to display UI.)
-            using (SafeProvOrNCryptKeyHandle hKey = TryGetCertificatePrivateKey(cert, false, out exception))
+            const bool Silent = false;
+            // Note: Using CRYPT_ACQUIRE_ALLOW_NCRYPT_KEY_FLAG rather than CRYPT_ACQUIRE_PREFER_NCRYPT_KEY_FLAG
+            // because wrapping an NCrypt wrapper over CAPI keys unconditionally causes some legacy features
+            // (such as RC4 support) to break.
+            const bool PreferNCrypt = false;
+            using (SafeProvOrNCryptKeyHandle hKey = PkcsPalWindows.GetCertificatePrivateKey(cert, Silent, PreferNCrypt, out _, out exception))
             {
                 if (hKey == null)
                     return null;
@@ -101,69 +106,6 @@ namespace Internal.Cryptography.Pal.Windows
                         return null;
                     }
                 }
-            }
-        }
-
-        private static SafeProvOrNCryptKeyHandle TryGetCertificatePrivateKey(X509Certificate2 cert, bool silent, out Exception exception)
-        {
-            CryptAcquireCertificatePrivateKeyFlags flags =
-                CryptAcquireCertificatePrivateKeyFlags.CRYPT_ACQUIRE_USE_PROV_INFO_FLAG
-                | CryptAcquireCertificatePrivateKeyFlags.CRYPT_ACQUIRE_COMPARE_KEY_FLAG
-                // Note: Using CRYPT_ACQUIRE_ALLOW_NCRYPT_KEY_FLAG rather than CRYPT_ACQUIRE_PREFER_NCRYPT_KEY_FLAG because wrapping an NCrypt wrapper over CAPI keys unconditionally
-                // causes some legacy features (such as RC4 support) to break.
-                | CryptAcquireCertificatePrivateKeyFlags.CRYPT_ACQUIRE_ALLOW_NCRYPT_KEY_FLAG;
-            if (silent)
-            {
-                flags |= CryptAcquireCertificatePrivateKeyFlags.CRYPT_ACQUIRE_SILENT_FLAG;
-            }
-
-            bool mustFree;
-            using (SafeCertContextHandle hCertContext = cert.CreateCertContextHandle())
-            {
-                IntPtr hKey;
-                int cbSize = IntPtr.Size;
-
-                if (Interop.Crypt32.CertGetCertificateContextProperty(
-                    hCertContext,
-                    CertContextPropId.CERT_NCRYPT_KEY_HANDLE_PROP_ID,
-                    out hKey,
-                    ref cbSize))
-                {
-                    exception = null;
-                    return new SafeProvOrNCryptKeyHandleUwp(hKey, hCertContext);
-                }
-
-                CryptKeySpec keySpec;
-
-                if (!Interop.Crypt32.CryptAcquireCertificatePrivateKey(hCertContext, flags, IntPtr.Zero, out hKey, out keySpec, out mustFree))
-                {
-                    exception = Marshal.GetHRForLastWin32Error().ToCryptographicException();
-                    return null;
-                }
-
-                // We need to know whether we got back a CRYPTPROV or NCrypt handle. Unfortunately, NCryptIsKeyHandle() is a prohibited api on UWP. 
-                // Fortunately, CryptAcquireCertificatePrivateKey() is documented to tell us which one we got through the keySpec value.
-                bool isNCrypt;
-                switch (keySpec)
-                {
-                    case CryptKeySpec.AT_KEYEXCHANGE:
-                    case CryptKeySpec.AT_SIGNATURE:
-                        isNCrypt = false;
-                        break;
-
-                    case CryptKeySpec.CERT_NCRYPT_KEY_SPEC:
-                        isNCrypt = true;
-                        break;
-
-                    default:
-                        // As of this writing, we've exhausted all the known values of keySpec. We have no idea what kind of key handle we got so
-                        // play it safe and fail fast.
-                        throw new NotSupportedException(SR.Format(SR.Cryptography_Cms_UnknownKeySpec, keySpec));
-                }
-
-                SafeProvOrNCryptKeyHandleUwp hProvOrNCryptKey = new SafeProvOrNCryptKeyHandleUwp(hKey, ownsHandle: mustFree, isNcrypt: isNCrypt);
-                exception = null;
-                return hProvOrNCryptKey;
             }
         }
 

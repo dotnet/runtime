@@ -13,7 +13,7 @@ namespace System.Buffers.Text.Tests
         public static MutableDecimal ToMutableDecimal(this decimal d)
         {
             int[] bits = decimal.GetBits(d);
-            return new MutableDecimal() { High = (uint)bits[0], Low = (uint)bits[1], Mid = (uint)bits[2], Flags = (uint)bits[3] }; 
+            return new MutableDecimal() { High = (uint)bits[0], Low = (uint)bits[1], Mid = (uint)bits[2], Flags = (uint)bits[3] };
         }
 
         public static decimal ToDecimal(this MutableDecimal md)

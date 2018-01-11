@@ -22,7 +22,7 @@ namespace System.Net.Security
         private static AsyncProtocolCallback s_readFrameCallback = new AsyncProtocolCallback(ReadFrameCallback);
         private static AsyncCallback s_writeCallback = new AsyncCallback(WriteCallback);
 
-        private SslAuthenticationOptions _sslAuthenticationOptions;
+        internal SslAuthenticationOptions _sslAuthenticationOptions;
 
         private Stream _innerStream;
 

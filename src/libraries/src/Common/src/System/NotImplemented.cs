@@ -26,6 +26,6 @@ namespace System
         /// Temporary NotImplementedException with no message shown to user.
         /// Example: Exception.ActiveIssue("https://github.com/dotnet/corefx/issues/xxxx") or Exception.ActiveIssue("TFS xxxxxx").
         /// </summary>
-        internal static Exception ActiveIssue(string issue) => new NotImplementedException(); 
+        internal static Exception ActiveIssue(string issue) => new NotImplementedException();
     }
 }
