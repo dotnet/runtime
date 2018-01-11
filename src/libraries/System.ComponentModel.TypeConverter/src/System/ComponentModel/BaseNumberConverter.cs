@@ -34,15 +34,7 @@ namespace System.ComponentModel
         /// Convert the given value to a string using the given formatInfo
         /// </summary>
         internal abstract object FromString(string value, NumberFormatInfo formatInfo);
-
-        /// <summary>
-        /// Create an error based on the failed text and the exception thrown.
-        /// </summary>
-        internal virtual Exception FromStringError(string failedText, Exception innerException)
-        {
-            return new Exception(SR.Format(SR.ConvertInvalidPrimitive, failedText, TargetType.Name), innerException);
-        }
-
+      
         /// <summary>
         /// Convert the given value from a string using the given formatInfo
         /// </summary>
@@ -90,7 +82,7 @@ namespace System.ComponentModel
                 }
                 catch (Exception e)
                 {
-                    throw FromStringError(text, e);
+                    throw new ArgumentException(SR.Format(SR.ConvertInvalidPrimitive, text, TargetType.Name), nameof(value), e);
                 }
             }
             return base.ConvertFrom(context, culture, value);

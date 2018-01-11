@@ -2931,7 +2931,34 @@ public static partial class DataContractJsonSerializerTests
         
         Assert.Equal(value.MyIntProperty, actual.MyIntProperty);
         Assert.Equal(value.MyStringProperty, actual.MyStringProperty);
-    } 
+    }
+
+    [Fact]
+    public static void DSJS_ThrowExceptionOnDispose()
+    {
+        using (MemoryStream ms = new MemoryStream(System.Text.Encoding.Unicode.GetBytes("{}")))
+        {
+            XmlDictionaryReader jsonReader = JsonReaderWriterFactory.CreateJsonReader(ms, System.Text.Encoding.Unicode, XmlDictionaryReaderQuotas.Max,
+                reader =>
+                {
+                    //sample exception on reader close
+                    throw new DivideByZeroException();
+                });
+            try
+            {
+                jsonReader.Dispose();
+                Assert.False(true);
+            }
+            catch (Exception ex)
+            {
+                Assert.True(
+                    ex is InvalidOperationException ||
+                    //Netfx throws System.Runtime.CallbackException
+                    ex.GetType().FullName == "System.Runtime.CallbackException"
+                    );
+            }
+        }
+    }
 
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractJsonSerializerSettings settings = null, Func<DataContractJsonSerializer> serializerFactory = null, bool skipStringCompare = false)
     {

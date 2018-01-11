@@ -95,11 +95,12 @@ namespace System
             {
                 return (component == (UriComponents)0) ? UriHelper.IsGenDelim(ch) : false;
             }
-            else
+            else if (UriParser.DontEnableStrictRFC3986ReservedCharacterSets)
             {
+                // Since we aren't enabling strict RFC 3986 reserved sets, we stick with the old behavior
+                // (for app-compat) which was a broken mix of RFCs 2396 and 3986.
                 switch (component)
                 {
-                    // Reserved chars according to RFC 3987
                     case UriComponents.UserInfo:
                         if (ch == '/' || ch == '?' || ch == '#' || ch == '[' || ch == ']' || ch == '@')
                             return true;
@@ -124,6 +125,10 @@ namespace System
                         break;
                 }
                 return false;
+            }
+            else
+            {
+                return (UriHelper.RFC3986ReservedMarks.IndexOf(ch) >= 0);
             }
         }
 
@@ -284,7 +289,7 @@ namespace System
                     {
                         if (CheckIriUnicodeRange(ch, component == UriComponents.Query))
                         {
-                            if (!UriHelper.IsBidiControlCharacter(ch))
+                            if (!UriHelper.IsBidiControlCharacter(ch) || !UriParser.DontKeepUnicodeBidiFormattingCharacters)
                             {
                                 // copy it
                                 Debug.Assert(dest.Length > destOffset, "Destination length exceeded destination offset.");

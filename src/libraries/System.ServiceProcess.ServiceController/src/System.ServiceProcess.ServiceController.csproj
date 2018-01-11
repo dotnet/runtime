@@ -20,7 +20,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
-  <ItemGroup Condition="$(TargetGroup.Contains('netcoreapp'))">
+  <ItemGroup Condition="$(TargetGroup.StartsWith('netcoreapp'))">
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
@@ -105,7 +105,7 @@
     <Reference Include="mscorlib" />
     <Reference Include="System.ServiceProcess" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetGroup.Contains('netcoreapp'))">
+  <ItemGroup Condition="$(TargetGroup.StartsWith('netcoreapp'))">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Console" />

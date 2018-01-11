@@ -93,6 +93,8 @@ namespace System.IO.Compression
         public System.DateTimeOffset LastWriteTime { get { throw null; } set { } }
         public long Length { get { throw null; } }
         public string Name { get { throw null; } }
+        [CLSCompliant(false)]
+        public uint Crc32 { get { throw null; } }
         public void Delete() { }
         public System.IO.Stream Open() { throw null; }
         public override string ToString() { throw null; }

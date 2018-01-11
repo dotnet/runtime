@@ -55,15 +55,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public ExprCast CreateCast(EXPRFLAG flags, CType type, Expr argument) => new ExprCast(flags, type, argument);
 
-        public ExprReturn CreateReturn(Expr optionalObject) => new ExprReturn(optionalObject);
-
         public ExprLocal CreateLocal(LocalVariableSymbol local) => new ExprLocal(local);
 
-        public ExprBoundLambda CreateAnonymousMethod(AggregateType delegateType, Scope argumentScope) => 
-            new ExprBoundLambda(delegateType, argumentScope);
-
-        public ExprHoistedLocalExpr CreateHoistedLocalInExpression() => 
-            new ExprHoistedLocalExpr(Types.GetPredefAgg(PredefinedType.PT_EXPRESSION).getThisType());
+        public ExprBoundLambda CreateAnonymousMethod(AggregateType delegateType, Scope argumentScope, Expr expression) => 
+            new ExprBoundLambda(delegateType, argumentScope, expression);
 
         public ExprMethodInfo CreateMethodInfo(MethPropWithInst mwi) => 
             CreateMethodInfo(mwi.Meth(), mwi.GetType(), mwi.TypeArgs);
@@ -152,8 +147,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ExprConstant CreateBoolConstant(bool b) => 
             CreateConstant(Types.GetPredefAgg(PredefinedType.PT_BOOL).getThisType(), ConstVal.Get(b));
 
-        public ExprBlock CreateBlock(ExprStatement pOptionalStatements) => new ExprBlock(pOptionalStatements);
-
         public ExprArrayIndex CreateArrayIndex(CType type, Expr array, Expr index) =>
             new ExprArrayIndex(type, array, index);
 
@@ -196,9 +189,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
         // Create a node that evaluates the first, evaluates the second, results in the first.
-
-        public ExprBinOp CreateReverseSequence(Expr first, Expr second) =>
-            CreateBinop(ExpressionKind.SequenceReverse, first.Type, first, second);
 
         public ExprAssignment CreateAssignment(Expr left, Expr right) => new ExprAssignment(left, right);
 

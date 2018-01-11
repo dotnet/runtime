@@ -38,8 +38,8 @@ namespace System.Security.Cryptography.Rsa.Tests
 
     public abstract class SignVerify
     {
-        public static bool BadKeyFormatDoesntThrow => !PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer();
-        public static bool InvalidKeySizeDoesntThrow => !PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer();
+        public static bool BadKeyFormatDoesntThrow => !PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer;
+        public static bool InvalidKeySizeDoesntThrow => !PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer;
 
         protected abstract byte[] SignData(RSA rsa, byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding);
         protected abstract byte[] SignHash(RSA rsa, byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding);

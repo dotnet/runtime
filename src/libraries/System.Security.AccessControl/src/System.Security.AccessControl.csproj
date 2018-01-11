@@ -21,7 +21,7 @@
   <ItemGroup Condition="'$(TargetGroup)'=='netfx'">
     <Reference Include="mscorlib" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetGroup.Contains('netcoreapp')) OR '$(TargetGroup)' == 'uap'">
+  <ItemGroup Condition="$(TargetGroup.StartsWith('netcoreapp')) OR '$(TargetGroup)' == 'uap'">
     <Compile Include="System\Security\AccessControl\ACE.cs" />
     <Compile Include="System\Security\AccessControl\ACL.cs" />
     <Compile Include="System\Security\AccessControl\CommonObjectSecurity.cs" />
@@ -125,7 +125,7 @@
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Security.Principal.Windows" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetGroup.Contains('netcoreapp')) == 'true' OR '$(TargetGroup)' == 'uap'">
+  <ItemGroup Condition="$(TargetGroup.StartsWith('netcoreapp')) == 'true' OR '$(TargetGroup)' == 'uap'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Contracts" />
     <Reference Include="System.Diagnostics.Debug" />
@@ -133,6 +133,7 @@
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
+    <Reference Include="Microsoft.Win32.Primitives" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

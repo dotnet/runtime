@@ -7,6 +7,7 @@
       netstandard1.4;
       netfx-Windows_NT;
       netcoreapp-Windows_NT;
+      netcoreapp;
       net462-Windows_NT;
       net47-Windows_NT;
     </PackageConfigurations>

@@ -366,7 +366,9 @@ namespace MonoTests.System.Drawing
             using (Image img = Image.FromFile(sInFile))
             {
                 Assert.Equal(PixelFormat.Format4bppIndexed, img.PixelFormat);
-                Assert.Throws<Exception>(() => Graphics.FromImage(img));
+                Exception exception = AssertExtensions.Throws<ArgumentException, Exception>(() => Graphics.FromImage(img));
+                if (exception is ArgumentException argumentException)
+                    Assert.Equal("image", argumentException.ParamName);                
             }
         }
 

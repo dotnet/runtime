@@ -18,13 +18,17 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp2.0-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp2.0-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp2.0-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp2.0'">
+  <ItemGroup Condition="$(TargetGroup.StartsWith('netcoreapp'))">
     <!-- Shared source code, all configurations -->
-    <Compile Include="misc\InvalidEnumArgumentException.cs" />
+    <Compile Include="System\Drawing\Bitmap.cs" />
     <Compile Include="System\Drawing\BitmapSuffixInSameAssemblyAttribute.cs" />
     <Compile Include="System\Drawing\BitmapSuffixInSatelliteAssemblyAttribute.cs" />
     <Compile Include="System\Drawing\Brushes.cs" />
@@ -32,6 +36,7 @@
     <Compile Include="System\Drawing\ColorTranslator.cs" />
     <Compile Include="System\Drawing\ContentAlignment.cs" />
     <Compile Include="System\Drawing\IDeviceContext.cs" />
+    <Compile Include="System\Drawing\Image.cs" />
     <Compile Include="System\Drawing\GdiplusNative.cs" />
     <Compile Include="System\Drawing\Graphics.cs" />
     <Compile Include="System\Drawing\GraphicsUnit.cs" />
@@ -175,9 +180,6 @@
     <Compile Include="$(CommonPath)\System\Drawing\ColorUtil.netcoreapp20.cs">
       <Link>System\Drawing\ColorUtil.netcoreapp20.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Drawing\KnownColor.cs">
-      <Link>System\Drawing\KnownColor.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Drawing\KnownColorTable.cs">
       <Link>System\Drawing\KnownColorTable.cs</Link>
     </Compile>
@@ -192,7 +194,13 @@
       <LogicalName>System.Drawing.ShieldIcon.ico</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp2.0' AND '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp2.0'">
+    <Compile Include="misc\InvalidEnumArgumentException.cs" />
+    <Compile Include="$(CommonPath)\System\Drawing\KnownColor.cs">
+      <Link>System\Drawing\KnownColor.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetGroup.StartsWith('netcoreapp')) AND '$(TargetsWindows)' == 'true'">
     <!-- Windows-specific -->
     <Compile Include="AssemblyRef.cs" />
     <Compile Include="SRDescriptionAttribute.cs" />
@@ -281,7 +289,7 @@
       <Link>Common\System\Runtime\InteropServices\FunctionWrapper.Windows.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp2.0' AND '$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="$(TargetGroup.StartsWith('netcoreapp')) AND '$(TargetsUnix)' == 'true'">
     <!-- Unix-specific -->
     <Compile Include="System\Drawing\Graphics.Unix.cs" />
     <Compile Include="System\Drawing\Icon.Unix.cs" />

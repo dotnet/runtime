@@ -253,7 +253,7 @@ namespace System.Linq.Expressions.Tests
                         new[]{ typeof(RuntimeCompatibilityAttribute).GetProperty(nameof(RuntimeCompatibilityAttribute.WrapNonExceptionThrows)) },
                         new object[] { assemblyWraps });
                 AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
-                    new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+                    new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect);
                 assembly.SetCustomAttribute(custAtt);
                 ModuleBuilder module = assembly.DefineDynamicModule("Name");
                 TypeBuilder type = module.DefineType("Type");
@@ -1198,6 +1198,97 @@ namespace System.Linq.Expressions.Tests
                         Expression.Label(target),
                         Expression.Empty())));
             Assert.Throws<InvalidOperationException>(() => tryExp.Compile(useInterpreter));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void JumpOutOfTry(bool useInterpreter)
+        {
+            LabelTarget target = Expression.Label();
+            Expression<Action> tryExp = Expression.Lambda<Action>(
+                Expression.Block(
+                    Expression.TryFinally(
+                        Expression.Block(
+                            Expression.Goto(target),
+                            Expression.Throw(Expression.Constant(new TestException()))),
+                        Expression.Empty()),
+                    Expression.Label(target)));
+            Action act = tryExp.Compile(useInterpreter);
+            act();
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void JumpOutOfTryToPreviousLabel(bool useInterpreter)
+        {
+            LabelTarget skipStart = Expression.Label();
+            LabelTarget skipToEnd = Expression.Label(typeof(int));
+            LabelTarget backToStart = Expression.Label();
+            Expression<Func<int>> tryExp = Expression.Lambda<Func<int>>(
+                Expression.Block(
+                    Expression.Goto(skipStart), Expression.Label(backToStart),
+                    Expression.Return(skipToEnd, Expression.Constant(1)), Expression.Label(skipStart),
+                    Expression.TryCatch(
+                        Expression.Goto(backToStart), Expression.Catch(typeof(Exception), Expression.Empty())),
+                    Expression.Return(skipToEnd, Expression.Constant(2)),
+                    Expression.Label(skipToEnd, Expression.Constant(0))));
+            Func<int> func = tryExp.Compile(useInterpreter);
+            Assert.Equal(1, func());
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void JumpOutOfTryToPreviousLabelInOtherBlock(bool useInterpreter)
+        {
+            LabelTarget skipStart = Expression.Label();
+            LabelTarget skipToEnd = Expression.Label(typeof(int));
+            LabelTarget backToStart = Expression.Label();
+            Expression<Func<int>> tryExp = Expression.Lambda<Func<int>>(
+                Expression.Block(
+                    Expression.Goto(skipStart),
+                    Expression.Block(
+                        Expression.Label(backToStart), Expression.Return(skipToEnd, Expression.Constant(1))),
+                    Expression.Block(
+                        Expression.Label(skipStart),
+                        Expression.TryCatch(
+                            Expression.Goto(backToStart), Expression.Catch(typeof(Exception), Expression.Empty())),
+                        Expression.Return(skipToEnd, Expression.Constant(2))),
+                    Expression.Label(skipToEnd, Expression.Constant(0))));
+            Func<int> func = tryExp.Compile(useInterpreter);
+            Assert.Equal(1, func());
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void JumpOutOfCatch(bool useIntepreter)
+        {
+            LabelTarget target = Expression.Label(typeof(int));
+            Expression<Func<int>> tryExp = Expression.Lambda<Func<int>>(
+                Expression.Block(
+                    Expression.TryCatch(
+                        Expression.Throw(Expression.Constant(new Exception())),
+                        Expression.Catch(
+                            typeof(Exception),
+                            Expression.Block(
+                                Expression.Goto(target, Expression.Constant(1)),
+                                Expression.Throw(Expression.Constant(new Exception()))))),
+                    Expression.Return(target, Expression.Constant(2)),
+                    Expression.Label(target, Expression.Constant(0))));
+            Assert.Equal(1, tryExp.Compile(useIntepreter)());
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void JumpOutOfCatchToPreviousLabel(bool useIntepreter)
+        {
+            LabelTarget skipStart = Expression.Label();
+            LabelTarget skipToEnd = Expression.Label(typeof(int));
+            LabelTarget backToStart = Expression.Label();
+            Expression<Func<int>> tryExp = Expression.Lambda<Func<int>>(
+                Expression.Block(
+                    Expression.Goto(skipStart), Expression.Label(backToStart),
+                    Expression.Return(skipToEnd, Expression.Constant(1)), Expression.Label(skipStart),
+                    Expression.TryCatch(
+                        Expression.Throw(Expression.Constant(new Exception())),
+                        Expression.Catch(typeof(Exception), Expression.Goto(backToStart))),
+                    Expression.Return(skipToEnd, Expression.Constant(2)),
+                    Expression.Label(skipToEnd, Expression.Constant(0))));
+            Assert.Equal(1, tryExp.Compile(useIntepreter)());
         }
 
         [Fact]

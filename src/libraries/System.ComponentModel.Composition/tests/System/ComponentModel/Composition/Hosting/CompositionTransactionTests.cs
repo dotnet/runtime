@@ -378,8 +378,7 @@ namespace System.ComponentModel.Composition.Hosting
                     {
                         if (parentQuery != null)
                             return !parentQuery(parameter);
-                        Assert.False(true);
-                        return false;
+                        throw new NotImplementedException();
                     });
                     TestQuery(contextB, key, 21, true);
                     TestQuery(contextB, key, 22, false);
@@ -392,8 +391,7 @@ namespace System.ComponentModel.Composition.Hosting
                                 return true;
                             if (parentQuery != null)
                                 return !parentQuery(parameter);
-                            Assert.False(true);
-                            return false;
+                            throw new NotImplementedException();
                         });
                         TestQuery(contextC, key, 21, false);
                         TestQuery(contextC, key, 22, true);
@@ -407,8 +405,7 @@ namespace System.ComponentModel.Composition.Hosting
                         {
                             if (parentQuery != null)
                                 return parentQuery(parameter + 1);
-                            Assert.False(true);
-                            return false;
+                            throw new NotImplementedException();
                         });
                         TestQuery(contextD, key, 21, true);
                         TestQuery(contextD, key, 22, true);

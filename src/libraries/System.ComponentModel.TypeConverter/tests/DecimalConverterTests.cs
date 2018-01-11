@@ -25,8 +25,8 @@ namespace System.ComponentModel.Tests
         [Fact]
         public static void ConvertFrom_WithContext_Negative()
         {
-            Assert.Throws<Exception>(
-                () => DecimalConverterTests.s_converter.ConvertFrom(TypeConverterTests.s_context, null, "0x8"));
+           AssertExtensions.Throws<ArgumentException, Exception>(
+               () => DecimalConverterTests.s_converter.ConvertFrom(TypeConverterTests.s_context, null, "0x8"));
         }
 
         [Fact]

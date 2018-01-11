@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Tests
@@ -565,7 +566,7 @@ namespace System.Tests
             ReadOnlySpan<char> span = s;
             Assert.Equal(s.Length, span.Length);
             fixed (char* stringPtr = s)
-            fixed (char* spanPtr = &span.DangerousGetPinnableReference())
+            fixed (char* spanPtr = &MemoryMarshal.GetReference(span))
             {
                 Assert.Equal((IntPtr)stringPtr, (IntPtr)spanPtr);
             }

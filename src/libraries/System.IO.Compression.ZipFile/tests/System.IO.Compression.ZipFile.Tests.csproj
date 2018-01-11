@@ -3,6 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{775727A6-DF41-4160-A7FD-180279A653C7}</ProjectGuid>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">$(DefineConstants);netcoreapp</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
@@ -41,7 +42,7 @@
     <Compile Include="ZipFileConvenienceMethods.netcoreapp1.1.cs" />
   </ItemGroup>
   <ItemGroup>
-    <SupplementalTestData Include="$(PackagesDir)system.io.compression.testdata\1.0.5-prerelease\content\**\*.*">
+    <SupplementalTestData Include="$(PackagesDir)system.io.compression.testdata\1.0.6-prerelease\content\**\*.*">
       <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
     </SupplementalTestData>
   </ItemGroup>

@@ -27,7 +27,7 @@ namespace System.SpanTests
                     a[i] = (char)(i + 1);
                 }
                 ReadOnlySpan<char> span = new ReadOnlySpan<char>(a);
-                
+
                 for (int targetIndex = 0; targetIndex < length; targetIndex++)
                 {
                     char target = a[targetIndex];

@@ -71,6 +71,8 @@
       <ILLinkArgs>$(ILLinkArgs) -v true</ILLinkArgs>
       <!-- reflection heuristics to apply -->
       <ILLinkArgs>$(ILLinkArgs) -h LdtokenTypeMethods,InstanceConstructors</ILLinkArgs>
+      <!-- add a linker step to clear initlocals flag on all assemblies before the output step -->
+      <ILLinkArgs Condition="'$(ILLinkClearInitLocals)' == 'true'">$(ILLinkArgs) -s ILLink.CustomSteps.ClearInitLocalsStep,ILLink.CustomSteps:OutputStep</ILLinkArgs>
     </PropertyGroup>
 
     <MakeDir Directories="$(ILLinkTrimInputPath)" />

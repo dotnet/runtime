@@ -2,8 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
+#if !netstandard
+using Internal.Runtime.CompilerServices;
+#else
 using System.Runtime.CompilerServices;
+#endif
+
+using System.Runtime.InteropServices;
 
 namespace System.Buffers.Text
 {
@@ -27,7 +32,7 @@ namespace System.Buffers.Text
             const int MinimumBytesNeeded = 19;
 
             bytesWritten = MinimumBytesNeeded;
-            if (offset != Utf8Constants.NullUtcOffset)
+            if (offset != Utf8Constants.s_nullUtcOffset)
             {
                 bytesWritten += 7; // Space['+'|'-']hh:ss
             }
@@ -38,7 +43,7 @@ namespace System.Buffers.Text
                 return false;
             }
 
-            ref byte utf8Bytes = ref buffer.DangerousGetPinnableReference();
+            ref byte utf8Bytes = ref MemoryMarshal.GetReference(buffer);
 
             FormattingHelpers.WriteDigits(value.Month, 2, ref utf8Bytes, 0);
             Unsafe.Add(ref utf8Bytes, 2) = Utf8Constants.Slash;
@@ -57,7 +62,7 @@ namespace System.Buffers.Text
 
             FormattingHelpers.WriteDigits(value.Second, 2, ref utf8Bytes, 17);
 
-            if (offset != Utf8Constants.NullUtcOffset)
+            if (offset != Utf8Constants.s_nullUtcOffset)
             {
                 Unsafe.Add(ref utf8Bytes, 19) = Utf8Constants.Space;
 

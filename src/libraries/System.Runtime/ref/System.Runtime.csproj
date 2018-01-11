@@ -5,6 +5,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsCoreAssembly>true</IsCoreAssembly>
     <ProjectGuid>{ADBCF120-3454-4A3C-9D1D-AC4293E795D6}</ProjectGuid>
+    <!-- disable warnings about obsolete APIs -->
+    <NoWarn>$(NoWarn);0809;0618</NoWarn>
+    <!-- Default interfaces are not officially supported in netcoreapp yet -->
+    <DefineConstants Condition="'$(IsPrerelease)' == 'true' and '$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_DEFAULT_INTERFACES</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />

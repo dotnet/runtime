@@ -32,9 +32,9 @@ namespace System.Buffers
         /// </exception>
         public Memory<T> Memory
         {
-            get 
+            get
             {
-                if (IsDisposed) 
+                if (IsDisposed)
                 {
                     ThrowHelper.ThrowObjectDisposedException_MemoryDisposed(nameof(OwnedMemory<T>));
                 }
@@ -60,7 +60,7 @@ namespace System.Buffers
         /// </exception>
         public void Dispose()
         {
-            if (IsRetained) 
+            if (IsRetained)
             {
                 ThrowHelper.ThrowInvalidOperationException_OutstandingReferences();
             }

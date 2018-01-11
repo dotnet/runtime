@@ -4191,7 +4191,15 @@ namespace System
                 if (UncNameHelper.IsValid(pString, start, ref end, StaticNotAny(flags, Flags.ImplicitFile)))
                 {
                     if (end - start <= UncNameHelper.MaximumInternetNameLength)
+                    {
                         flags |= Flags.UncHostType;
+                        if (hasUnicode && iriParsing && hostNotUnicodeNormalized)
+                        {
+                            newHost += new string(pString, start, end - start);
+                            flags |= Flags.HostUnicodeNormalized;
+                            justNormalized = true;
+                        }
+                    }
                 }
             }
 

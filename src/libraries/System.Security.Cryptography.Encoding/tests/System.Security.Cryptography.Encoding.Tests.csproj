@@ -10,6 +10,48 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="Asn1\Reader\Asn1ReaderTests.cs" />
+    <Compile Include="Asn1\Reader\ComprehensiveReadTests.cs" />
+    <Compile Include="Asn1\Reader\ParseTag.cs" />
+    <Compile Include="Asn1\Reader\PeekTests.cs" />
+    <Compile Include="Asn1\Reader\ReadBitString.cs" />
+    <Compile Include="Asn1\Reader\ReadBMPString.cs" />
+    <Compile Include="Asn1\Reader\ReadBoolean.cs" />
+    <Compile Include="Asn1\Reader\ReadEnumerated.cs" />
+    <Compile Include="Asn1\Reader\ReadGeneralizedTime.cs" />
+    <Compile Include="Asn1\Reader\ReadIA5String.cs" />
+    <Compile Include="Asn1\Reader\ReadInteger.cs" />
+    <Compile Include="Asn1\Reader\ReadLength.cs" />
+    <Compile Include="Asn1\Reader\ReadNull.cs" />
+    <Compile Include="Asn1\Reader\ReadNamedBitList.cs" />
+    <Compile Include="Asn1\Reader\ReadObjectIdentifier.cs" />
+    <Compile Include="Asn1\Reader\ReadOctetString.cs" />
+    <Compile Include="Asn1\Reader\ReadSequence.cs" />
+    <Compile Include="Asn1\Reader\ReadSetOf.cs" />
+    <Compile Include="Asn1\Reader\ReadUtcTime.cs" />
+    <Compile Include="Asn1\Reader\ReadUTF8String.cs" />
+    <Compile Include="Asn1\Reader\ReaderStateTests.cs" />
+    <Compile Include="Asn1\Serializer\SimpleDeserialize.cs" />
+    <Compile Include="Asn1\Serializer\SimpleSerialize.cs" />
+    <Compile Include="Asn1\Serializer\X509DeserializeTests.cs" />
+    <Compile Include="Asn1\Writer\Asn1WriterTests.cs" />
+    <Compile Include="Asn1\Writer\ComprehensiveWriteTest.cs" />
+    <Compile Include="Asn1\Writer\PushPopSequence.cs" />
+    <Compile Include="Asn1\Writer\PushPopSetOf.cs" />
+    <Compile Include="Asn1\Writer\WriteBitString.cs" />
+    <Compile Include="Asn1\Writer\WriteBMPString.cs" />
+    <Compile Include="Asn1\Writer\WriteBoolean.cs" />
+    <Compile Include="Asn1\Writer\WriteCharacterString.cs" />
+    <Compile Include="Asn1\Writer\WriteEnumerated.cs" />
+    <Compile Include="Asn1\Writer\WriteGeneralizedTime.cs" />
+    <Compile Include="Asn1\Writer\WriteIA5String.cs" />
+    <Compile Include="Asn1\Writer\WriteInteger.cs" />
+    <Compile Include="Asn1\Writer\WriteNamedBitList.cs" />
+    <Compile Include="Asn1\Writer\WriteNull.cs" />
+    <Compile Include="Asn1\Writer\WriteOctetString.cs" />
+    <Compile Include="Asn1\Writer\WriteObjectIdentifier.cs" />
+    <Compile Include="Asn1\Writer\WriteUtcTime.cs" />
+    <Compile Include="Asn1\Writer\WriteUtf8String.cs" />
     <Compile Include="AsnEncodedData.cs" />
     <Compile Include="AsnEncodedDataCollectionTests.cs" />
     <Compile Include="Base64TransformsTests.cs" />
@@ -17,6 +59,18 @@
     <Compile Include="DerSequenceReaderTests.cs" />
     <Compile Include="Oid.cs" />
     <Compile Include="OidCollectionTests.cs" />
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1V2.cs">
+      <Link>Common\System\Security\Cryptography\Asn1V2.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1V2.Serializer.cs">
+      <Link>Common\System\Security\Cryptography\Asn1V2.Serializer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\AsnReader.cs">
+      <Link>Common\System\Security\Cryptography\AsnReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\AsnWriter.cs">
+      <Link>Common\System\Security\Cryptography\AsnWriter.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\DerEncoder.cs">
       <Link>Common\System\Security\Cryptography\DerEncoder.cs</Link>
     </Compile>

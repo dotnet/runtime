@@ -150,7 +150,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         public void CreatePart_DoesntLoadType()
         {
             Type expectedType = typeof(TestPart);
-            Lazy<Type> expectedLazyType = new Lazy<Type>(() => { Assert.False(true); /*"Part should not be loaded" */ return null; });
+            Lazy<Type> expectedLazyType = new Lazy<Type>(() => { throw new NotImplementedException(); /*"Part should not be loaded" */ });
             IDictionary<string, object> expectedMetadata = new Dictionary<string, object>();
             expectedMetadata["Key1"] = 1;
             expectedMetadata["Key2"] = "Value2";
@@ -235,6 +235,7 @@ IEnumerable<ImportDefinition> imports;
         }
 
         [Fact]
+        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void ICompositionElementDisplayName_ShouldReturnTypeDisplayName()
         {
             var expectations = Expectations.GetAttributedTypes();

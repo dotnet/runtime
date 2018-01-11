@@ -4,6 +4,7 @@
 
 using Xunit;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.SpanTests
 {
@@ -16,7 +17,7 @@ namespace System.SpanTests
             ReadOnlySpan<uint> span = new ReadOnlySpan<uint>(a);
             ReadOnlySpan<byte> asBytes = span.AsBytes<uint>();
 
-            Assert.True(Unsafe.AreSame(ref Unsafe.As<uint, byte>(ref span.DangerousGetPinnableReference()), ref asBytes.DangerousGetPinnableReference()));
+            Assert.True(Unsafe.AreSame(ref Unsafe.As<uint, byte>(ref Unsafe.AsRef(in MemoryMarshal.GetReference(span))), ref Unsafe.AsRef(in MemoryMarshal.GetReference(asBytes))));
             asBytes.Validate<byte>(0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88);
         }
 

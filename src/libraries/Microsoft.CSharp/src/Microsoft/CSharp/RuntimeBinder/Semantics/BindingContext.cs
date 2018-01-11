@@ -24,8 +24,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public BindingContext(BindingContext parent)
             : this(parent.SemanticChecker, parent.ExprFactory)
         {
+            // We copy the context object, but leave checking false.
             ContextForMemberLookup = parent.ContextForMemberLookup;
-            Checked = parent.Checked;
         }
 
         //The SymbolLoader can be retrieved from SemanticChecker,

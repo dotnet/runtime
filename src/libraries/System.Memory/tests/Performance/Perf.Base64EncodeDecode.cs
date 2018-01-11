@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.Xunit.Performance;
-using System.Text;
 using Xunit;
 
 namespace System.Buffers.Text.Tests
@@ -23,8 +22,10 @@ namespace System.Buffers.Text.Tests
             Base64TestHelper.InitalizeBytes(source);
             Span<byte> destination = new byte[Base64.GetMaxEncodedToUtf8Length(numberOfBytes)];
 
-            foreach (var iteration in Benchmark.Iterations) {
-                using (iteration.StartMeasurement()) {
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
                     for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                         Base64.EncodeToUtf8(source, destination, out int consumed, out int written);
                 }
@@ -46,8 +47,10 @@ namespace System.Buffers.Text.Tests
             Base64TestHelper.InitalizeBytes(source);
             Span<byte> destination = new byte[Base64.GetMaxEncodedToUtf8Length(numberOfBytes) - 1];
 
-            foreach (var iteration in Benchmark.Iterations) {
-                using (iteration.StartMeasurement()) {
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
                     for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                         Base64.EncodeToUtf8(source, destination, out int consumed, out int written);
                 }
@@ -65,8 +68,10 @@ namespace System.Buffers.Text.Tests
             Base64TestHelper.InitalizeBytes(source.AsSpan());
             var destination = new char[Base64.GetMaxEncodedToUtf8Length(numberOfBytes)];
 
-            foreach (var iteration in Benchmark.Iterations) {
-                using (iteration.StartMeasurement()) {
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
                     for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                         Convert.ToBase64CharArray(source, 0, source.Length, destination, 0);
                 }
@@ -85,8 +90,10 @@ namespace System.Buffers.Text.Tests
             Span<byte> encoded = new byte[Base64.GetMaxEncodedToUtf8Length(numberOfBytes)];
             Base64.EncodeToUtf8(source, encoded, out _, out _);
 
-            foreach (var iteration in Benchmark.Iterations) {
-                using (iteration.StartMeasurement()) {
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
                     for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                         Base64.DecodeFromUtf8(encoded, source, out int bytesConsumed, out int bytesWritten);
                 }
@@ -111,8 +118,10 @@ namespace System.Buffers.Text.Tests
 
             source = source.Slice(0, source.Length - 1);
 
-            foreach (var iteration in Benchmark.Iterations) {
-                using (iteration.StartMeasurement()) {
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
                     for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                         Base64.DecodeFromUtf8(encoded, source, out int bytesConsumed, out int bytesWritten);
                 }
@@ -130,8 +139,10 @@ namespace System.Buffers.Text.Tests
             Base64TestHelper.InitalizeBytes(source);
             ReadOnlySpan<char> encoded = Convert.ToBase64String(source.ToArray()).ToCharArray();
 
-            foreach (var iteration in Benchmark.Iterations) {
-                using (iteration.StartMeasurement()) {
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
                     for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                         Convert.TryFromBase64Chars(encoded, source, out int bytesWritten);
                 }
@@ -153,7 +164,7 @@ namespace System.Buffers.Text.Tests
             Span<byte> backupSpan = decodedSpan.ToArray();
 
             int bytesWritten = 0;
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -182,7 +193,7 @@ namespace System.Buffers.Text.Tests
             Span<byte> backupSpan = decodedSpan.ToArray();
 
             int bytesWritten = 0;
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 backupSpan.CopyTo(decodedSpan);
                 using (iteration.StartMeasurement())
@@ -208,11 +219,11 @@ namespace System.Buffers.Text.Tests
             int length = Base64.GetMaxEncodedToUtf8Length(numberOfBytes);
             Span<byte> encodedSpan = new byte[length];
             Base64.EncodeToUtf8(source, encodedSpan, out _, out _);
-            
+
             Span<byte> backupSpan = encodedSpan.ToArray();
 
             int bytesWritten = 0;
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -237,7 +248,7 @@ namespace System.Buffers.Text.Tests
             Span<byte> encodedSpan = new byte[length];
 
             int bytesWritten = 0;
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 Base64.EncodeToUtf8(source, encodedSpan, out _, out _);
                 using (iteration.StartMeasurement())

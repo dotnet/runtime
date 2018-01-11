@@ -4,6 +4,8 @@
 
 using Xunit;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
 using static System.TestHelpers;
 
 namespace System.SpanTests
@@ -24,7 +26,7 @@ namespace System.SpanTests
             Span<char> span = Span<char>.DangerousCreate(testClass, ref testClass.C1, 3);
             span.Validate('b', 'c', 'd');
 
-            ref char pc1 = ref span.DangerousGetPinnableReference();
+            ref char pc1 = ref MemoryMarshal.GetReference(span);
             Assert.True(Unsafe.AreSame(ref testClass.C1, ref pc1));
         }
     }

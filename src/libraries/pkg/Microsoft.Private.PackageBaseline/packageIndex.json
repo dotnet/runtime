@@ -278,6 +278,9 @@
       "InboxOn": {}
     },
     "Microsoft.XmlSerializer.Generator": {
+      "StableVersions": [
+        "1.0.0"
+      ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "1.0.0.0": "1.0.0",
@@ -3479,10 +3482,7 @@
         "4.4.0"
       ],
       "BaselineVersion": "4.4.0",
-      "InboxOn": {
-        "netcoreapp2.1": "4.0.4.0",
-        "uap10.0.15138": "4.0.4.0"
-      },
+      "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.2.0": "4.3.0",
@@ -4857,13 +4857,13 @@
       "BaselineVersion": "4.4.0",
       "InboxOn": {
         "netcoreapp2.0": "4.1.1.0",
-        "netcoreapp2.1": "4.1.2.0"
+        "netcoreapp2.1": "4.1.2.0",
+        "uap10.0.15138": "4.1.2.0",
       },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.3.0",
-        "4.1.1.0": "4.4.0",
-        "4.1.2.0": "4.5.0"
+        "4.1.1.0": "4.4.0"
       }
     },
     "System.Threading.Tasks.Parallel": {

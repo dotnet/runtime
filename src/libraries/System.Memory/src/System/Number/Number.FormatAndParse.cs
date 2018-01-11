@@ -4,7 +4,12 @@
 
 using System.Diagnostics;
 using System.Buffers.Text;
+
+#if !netstandard
+using Internal.Runtime.CompilerServices;
+#else
 using System.Runtime.CompilerServices;
+#endif
 
 //
 // This code is copied almost verbatim from the same-named file in CoreRT with mechanical changes to Span-ify it.
@@ -454,7 +459,6 @@ namespace System
                 ulong multval = s_rgval64Power10By16[index + ((scale < 0) ? 21 : 0) - 1];
                 val = Mul64Lossy(val, multval, ref exp);
             }
-
 
             // round & scale down
             if (((int)val & (1 << 10)) != 0)

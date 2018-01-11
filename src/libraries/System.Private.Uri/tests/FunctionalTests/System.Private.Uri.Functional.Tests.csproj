@@ -11,6 +11,7 @@
     <Compile Include="IdnCheckHostNameTest.cs" />
     <Compile Include="IdnDnsSafeHostTest.cs" />
     <Compile Include="IdnHostNameValidationTest.cs" />
+    <Compile Include="IriEncodingDecodingTests.cs" />
     <Compile Include="IriRelativeFileResolutionTest.cs" />
     <Compile Include="IriTest.cs" />
     <Compile Include="UriBuilderParameterTest.cs" />

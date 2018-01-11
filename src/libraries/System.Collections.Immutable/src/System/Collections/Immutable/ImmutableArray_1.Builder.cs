@@ -157,6 +157,25 @@ namespace System.Collections.Immutable
                 }
             }
 
+#if FEATURE_ITEMREFAPI
+            /// <summary>
+            /// Gets a read-only reference to the element at the specified index.
+            /// </summary>
+            /// <param name="index">The index.</param>
+            /// <returns></returns>
+            /// <exception cref="IndexOutOfRangeException">
+            /// </exception>
+            public ref readonly T ItemRef(int index)
+            {
+                if (index >= this.Count)
+                {
+                    throw new IndexOutOfRangeException();
+                }
+
+                return ref this._elements[index];
+            }
+#endif
+
             /// <summary>
             /// Gets a value indicating whether the <see cref="ICollection{T}"/> is read-only.
             /// </summary>

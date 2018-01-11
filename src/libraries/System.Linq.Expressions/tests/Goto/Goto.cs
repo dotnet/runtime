@@ -288,5 +288,27 @@ namespace System.Linq.Expressions.Tests
             );
             Assert.Throws<InvalidOperationException>(() => exp.Compile(useInterpreter));
         }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void AmbiguousJumpBack(bool useInterpreter)
+        {
+            LabelTarget label = Expression.Label(typeof(void));
+            BlockExpression block = Expression.Block(
+                Expression.Block(Expression.Label(label)), Expression.Block(Expression.Label(label)),
+                Expression.Block(Expression.Block(Expression.Goto(label))));
+            Expression<Action> exp = Expression.Lambda<Action>(block);
+            Assert.Throws<InvalidOperationException>(() => exp.Compile(useInterpreter));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void AmbiguousJumpSplit(bool useInterpreter)
+        {
+            LabelTarget label = Expression.Label(typeof(void));
+            BlockExpression block = Expression.Block(
+                Expression.Block(Expression.Label(label)), Expression.Block(Expression.Block(Expression.Goto(label))),
+                Expression.Block(Expression.Label(label)));
+            Expression<Action> exp = Expression.Lambda<Action>(block);
+            Assert.Throws<InvalidOperationException>(() => exp.Compile(useInterpreter));
+        }
     }
 }

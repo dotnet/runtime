@@ -13,6 +13,7 @@
     <Compile Include="AttachmentTest.cs" />
     <Compile Include="ContentDispositionTest.cs" />
     <Compile Include="ContentTypeTest.cs" />
+    <Compile Include="HeaderCollectionTest.cs" />
     <Compile Include="LinkedResourceCollectionTest.cs" />
     <Compile Include="LinkedResourceTest.cs" />
     <Compile Include="LoggingTest.cs" />
@@ -24,6 +25,9 @@
     <Compile Include="SmtpServer.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
       <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+      <Link>Common\System\IO\TempFile.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

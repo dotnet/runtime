@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -559,7 +560,7 @@ namespace System.IO
         // there is no match. If there is no match, every byte read previously will be available 
         // for further consumption. If there is a match, we will compress the buffer for the 
         // leading preamble bytes
-        private unsafe bool IsPreamble()
+        private bool IsPreamble()
         {
             if (!_checkPreamble)
             {
@@ -571,17 +572,13 @@ namespace System.IO
             Debug.Assert(_bytePos <= preamble.Length, "_compressPreamble was called with the current bytePos greater than the preamble buffer length.  Are two threads using this StreamReader at the same time?");
             int len = (_byteLen >= (preamble.Length)) ? (preamble.Length - _bytePos) : (_byteLen - _bytePos);
 
-            fixed (byte* preamblePtr = &preamble.DangerousGetPinnableReference())
+            for (int i = 0; i < len; i++, _bytePos++)
             {
-                var preambleSpan = new Span<byte>(preamblePtr, preamble.Length);
-                for (int i = 0; i < len; i++, _bytePos++)
+                if (_byteBuffer[_bytePos] != preamble[_bytePos])
                 {
-                    if (_byteBuffer[_bytePos] != preambleSpan[_bytePos])
-                    {
-                        _bytePos = 0;
-                        _checkPreamble = false;
-                        break;
-                    }
+                    _bytePos = 0;
+                    _checkPreamble = false;
+                    break;
                 }
             }
 

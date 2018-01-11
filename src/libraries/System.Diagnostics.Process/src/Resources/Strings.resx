@@ -309,4 +309,7 @@
   <data name="GetProcessInfoNotSupported" xml:space="preserve">
     <value>Retrieving information about local processes is not supported on this platform.</value>
   </data>
+  <data name="StandardInputEncodingNotAllowed" xml:space="preserve">
+    <value>StandardInputEncoding is only supported when standard input is redirected.</value>
+  </data>
 </root>

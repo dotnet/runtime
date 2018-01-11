@@ -250,7 +250,7 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public static void InvokePrivateDelegate(bool useInterpreter)
         {
-            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect);
             ModuleBuilder module = assembly.DefineDynamicModule("Name");
             TypeBuilder builder = module.DefineType("Type", TypeAttributes.Class | TypeAttributes.NotPublic | TypeAttributes.Sealed | TypeAttributes.AnsiClass | TypeAttributes.AutoClass, typeof(MulticastDelegate));
             builder.DefineConstructor(MethodAttributes.RTSpecialName | MethodAttributes.HideBySig | MethodAttributes.Public, CallingConventions.Standard, new[] { typeof(object), typeof(IntPtr) }).SetImplementationFlags(MethodImplAttributes.Runtime | MethodImplAttributes.Managed);
@@ -267,7 +267,7 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public static void InvokePrivateDelegateTypeLambda(bool useInterpreter)
         {
-            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect);
             ModuleBuilder module = assembly.DefineDynamicModule("Name");
             TypeBuilder builder = module.DefineType("Type", TypeAttributes.Class | TypeAttributes.NotPublic | TypeAttributes.Sealed | TypeAttributes.AnsiClass | TypeAttributes.AutoClass, typeof(MulticastDelegate));
             builder.DefineConstructor(MethodAttributes.RTSpecialName | MethodAttributes.HideBySig | MethodAttributes.Public, CallingConventions.Standard, new[] { typeof(object), typeof(IntPtr) }).SetImplementationFlags(MethodImplAttributes.Runtime | MethodImplAttributes.Managed);
@@ -279,8 +279,27 @@ namespace System.Linq.Expressions.Tests
             var invFunc = invLambda.Compile(useInterpreter);
             Assert.Equal(42, invFunc());
         }
-
 #endif
 
+        private delegate void RefIntAction(ref int x);
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void InvokeByRefLambda(bool useInterpreter)
+        {
+            ParameterExpression refParam = Expression.Parameter(typeof(int).MakeByRefType());
+            ParameterExpression param = Expression.Parameter(typeof(List<int>));
+            Func<List<int>, List<int>> func = Expression.Lambda<Func<List<int>, List<int>>>(
+                    Expression.Block(
+                        Expression.Invoke(
+                            Expression.Lambda<RefIntAction>(
+                                Expression.AddAssign(refParam, Expression.Constant(2)), refParam),
+                            Expression.MakeIndex(
+                                param, typeof(List<int>).GetProperty("Item"), new[] {Expression.Constant(0)})), param),
+                    param)
+                .Compile(useInterpreter);
+            List<int> list = new List<int> { 9 };
+            Assert.Equal(11, func(list)[0]);
+            Assert.Equal(11, list[0]);
+        }
     }
 }

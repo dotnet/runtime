@@ -11,11 +11,7 @@ using System.Text.RegularExpressions;
 using System.Xml.Extensions;
 
 #if !FEATURE_SERIALIZATION_UAPAOT
-#if XMLSERIALIZERGENERATOR
-namespace Microsoft.XmlSerializer.Generator
-#else
 namespace System.Xml.Serialization
-#endif
 {
     internal class SourceInfo
     {

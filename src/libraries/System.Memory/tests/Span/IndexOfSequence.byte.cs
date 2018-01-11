@@ -13,7 +13,7 @@ namespace System.SpanTests
         {
             Span<byte> span = new Span<byte>(new byte[] { 5, 1, 77, 2, 3, 77, 77, 4, 5, 77, 77, 77, 88, 6, 6, 77, 77, 88, 9 });
             Span<byte> value = new Span<byte>(new byte[] { 5, 1, 77 });
-            int index = span.IndexOf<byte>(value);
+            int index = span.IndexOf(value);
             Assert.Equal(0, index);
         }
 
@@ -22,7 +22,7 @@ namespace System.SpanTests
         {
             Span<byte> span = new Span<byte>(new byte[] { 1, 2, 3, 1, 2, 3, 1, 2, 3 });
             Span<byte> value = new Span<byte>(new byte[] { 2, 3 });
-            int index = span.IndexOf<byte>(value);
+            int index = span.IndexOf(value);
             Assert.Equal(1, index);
         }
 
@@ -31,7 +31,7 @@ namespace System.SpanTests
         {
             Span<byte> span = new Span<byte>(new byte[] { 0, 1, 77, 2, 3, 77, 77, 4, 5, 77, 77, 77, 88, 6, 6, 77, 77, 88, 9 });
             Span<byte> value = new Span<byte>(new byte[] { 77, 77, 88 });
-            int index = span.IndexOf<byte>(value);
+            int index = span.IndexOf(value);
             Assert.Equal(10, index);
         }
 
@@ -40,7 +40,7 @@ namespace System.SpanTests
         {
             Span<byte> span = new Span<byte>(new byte[] { 0, 1, 77, 2, 3, 77, 77, 4, 5, 77, 77, 77, 88, 6, 6, 77, 77, 88, 9 });
             Span<byte> value = new Span<byte>(new byte[] { 77, 77, 88, 99 });
-            int index = span.IndexOf<byte>(value);
+            int index = span.IndexOf(value);
             Assert.Equal(-1, index);
         }
 
@@ -49,7 +49,7 @@ namespace System.SpanTests
         {
             Span<byte> span = new Span<byte>(new byte[] { 0, 1, 77, 2, 3, 77, 77, 4, 5, 77, 77, 77, 88, 6, 6, 77, 77, 88, 9 });
             Span<byte> value = new Span<byte>(new byte[] { 100, 77, 88, 99 });
-            int index = span.IndexOf<byte>(value);
+            int index = span.IndexOf(value);
             Assert.Equal(-1, index);
         }
 
@@ -58,7 +58,7 @@ namespace System.SpanTests
         {
             Span<byte> span = new Span<byte>(new byte[] { 0, 1, 2, 3, 4, 5 });
             Span<byte> value = new Span<byte>(new byte[] { 3, 4, 5 });
-            int index = span.IndexOf<byte>(value);
+            int index = span.IndexOf(value);
             Assert.Equal(3, index);
         }
 
@@ -67,7 +67,7 @@ namespace System.SpanTests
         {
             Span<byte> span = new Span<byte>(new byte[] { 0, 1, 2, 3, 4, 5 }, 0, 5);
             Span<byte> value = new Span<byte>(new byte[] { 3, 4, 5 });
-            int index = span.IndexOf<byte>(value);
+            int index = span.IndexOf(value);
             Assert.Equal(-1, index);
         }
 
@@ -77,7 +77,7 @@ namespace System.SpanTests
             // A zero-length value is always "found" at the start of the span.
             Span<byte> span = new Span<byte>(new byte[] { 0, 1, 77, 2, 3, 77, 77, 4, 5, 77, 77, 77, 88, 6, 6, 77, 77, 88, 9 });
             Span<byte> value = new Span<byte>(Array.Empty<byte>());
-            int index = span.IndexOf<byte>(value);
+            int index = span.IndexOf(value);
             Assert.Equal(0, index);
         }
 
@@ -86,7 +86,7 @@ namespace System.SpanTests
         {
             Span<byte> span = new Span<byte>(Array.Empty<byte>());
             Span<byte> value = new Span<byte>(new byte[] { 1, 2, 3 });
-            int index = span.IndexOf<byte>(value);
+            int index = span.IndexOf(value);
             Assert.Equal(-1, index);
         }
 
@@ -96,7 +96,7 @@ namespace System.SpanTests
             // A zero-length value is always "found" at the start of the span.
             Span<byte> span = new Span<byte>(new byte[] { 0, 1, 2, 3, 4, 5 });
             Span<byte> value = new Span<byte>(new byte[] { 2 });
-            int index = span.IndexOf<byte>(value);
+            int index = span.IndexOf(value);
             Assert.Equal(2, index);
         }
 
@@ -106,7 +106,7 @@ namespace System.SpanTests
             // A zero-length value is always "found" at the start of the span.
             Span<byte> span = new Span<byte>(new byte[] { 0, 1, 2, 3, 4, 5 });
             Span<byte> value = new Span<byte>(new byte[] { 5 });
-            int index = span.IndexOf<byte>(value);
+            int index = span.IndexOf(value);
             Assert.Equal(5, index);
         }
 
@@ -116,7 +116,7 @@ namespace System.SpanTests
             // A zero-length value is always "found" at the start of the span.
             Span<byte> span = new Span<byte>(new byte[] { 0, 1, 2, 3, 4, 5 }, 0, 5);
             Span<byte> value = new Span<byte>(new byte[] { 5 });
-            int index = span.IndexOf<byte>(value);
+            int index = span.IndexOf(value);
             Assert.Equal(-1, index);
         }
     }

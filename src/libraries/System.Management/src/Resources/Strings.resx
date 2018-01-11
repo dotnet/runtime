@@ -287,4 +287,10 @@
   <data name="PlatformNotSupported_FullFrameworkRequired" xml:space="preserve">
     <value>Could not find an installation of .NET Framework v4.0.30319. System.Management requires native modules from the .NET Framework to operate.</value>
   </data>
+  <data name="LoadLibraryFailed" xml:space="preserve">
+    <value>Failed to load required native library '{0}'.</value>
+  </data>
+  <data name="PlatformNotSupported_FrameworkUpdatedRequired" xml:space="preserve">
+    <value>The native library '{0}' does not have all required functions. Please, update the .NET Framework.</value>
+  </data>
 </root>

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Collections.Immutable.Tests
@@ -276,6 +277,37 @@ namespace System.Collections.Immutable.Tests
             Type proxyType = DebuggerAttributes.GetProxyType(ImmutableSortedDictionary.CreateBuilder<int, string>());
             TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance(proxyType, (object)null));
             Assert.IsType<ArgumentNullException>(tie.InnerException);
+        }
+
+        [Fact]
+        public void ValueRef()
+        {
+            var builder = new Dictionary<string, int>()
+            {
+                { "a", 1 },
+                { "b", 2 }
+            }.ToImmutableSortedDictionary().ToBuilder();
+
+            ref readonly var safeRef = ref builder.ValueRef("a");
+            ref var unsafeRef = ref Unsafe.AsRef(safeRef);
+
+            Assert.Equal(1, builder.ValueRef("a"));
+
+            unsafeRef = 5;
+
+            Assert.Equal(5, builder.ValueRef("a"));
+        }
+
+        [Fact]
+        public void ValueRef_NonExistentKey()
+        {
+            var builder = new Dictionary<string, int>()
+            {
+                { "a", 1 },
+                { "b", 2 }
+            }.ToImmutableSortedDictionary().ToBuilder();
+
+            Assert.Throws<KeyNotFoundException>(() => builder.ValueRef("c"));
         }
 
         protected override IImmutableDictionary<TKey, TValue> GetEmptyImmutableDictionary<TKey, TValue>()

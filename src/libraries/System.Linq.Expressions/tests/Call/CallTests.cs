@@ -215,6 +215,20 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public static void CallByRefMutableStructIndexWriteBack(bool useInterpreter)
         {
+            // Should not produce tail-call, but should still succeed
+            ParameterExpression p = Expression.Parameter(typeof(Mutable));
+            IndexExpression x = Expression.MakeIndex(p, typeof(Mutable).GetProperty("Item"), new[] { Expression.Constant(0) });
+            MethodCallExpression call = Expression.Call(typeof(Methods).GetMethod("ByRef"), x);
+            Action<Mutable> act = Expression.Lambda<Action<Mutable>>(call, true, p).Compile(useInterpreter);
+
+            Mutable m = new Mutable { X = 41 };
+            act(m);
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CallByRefAttemptTailCall(bool useInterpreter)
+        {
             ParameterExpression p = Expression.Parameter(typeof(Mutable));
             IndexExpression x = Expression.MakeIndex(p, typeof(Mutable).GetProperty("Item"), new[] { Expression.Constant(0) });
             MethodCallExpression call = Expression.Call(typeof(Methods).GetMethod("ByRef"), x);

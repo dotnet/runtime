@@ -5,10 +5,8 @@
     <ProjectGuid>{F05DE950-CA99-42A8-B44D-E7DAA5C3C783}</ProjectGuid>
     <RootNamespace>XmlReaderTest.Common</RootNamespace>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="CDataReader.cs" />
     <Compile Include="CDataReaderTestCase.cs" />

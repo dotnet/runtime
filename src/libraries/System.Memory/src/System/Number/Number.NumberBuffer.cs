@@ -5,7 +5,12 @@
 using System.Diagnostics;
 using System.Text;
 using System.Runtime.InteropServices;
+
+#if !netstandard
+using Internal.Runtime.CompilerServices;
+#else
 using System.Runtime.CompilerServices;
+#endif
 
 namespace System
 {
@@ -31,9 +36,9 @@ namespace System
         public int Scale;
         public bool IsNegative;
 
-        public unsafe Span<byte> Digits => new Span<byte>(Unsafe.AsPointer<byte>(ref _b0), BufferSize);
+        public unsafe Span<byte> Digits => new Span<byte>(Unsafe.AsPointer(ref _b0), BufferSize);
 
-        public unsafe byte* UnsafeDigits => (byte*)Unsafe.AsPointer<byte>(ref _b0);
+        public unsafe byte* UnsafeDigits => (byte*)Unsafe.AsPointer(ref _b0);
 
         public int NumDigits => Digits.IndexOf<byte>(0);
 
@@ -82,10 +87,10 @@ namespace System
             return sb.ToString();
         }
 
-        public const int BufferSize = 32;
+        public const int BufferSize = 50 + 1; // Matches https://github.com/dotnet/coreclr/blob/097e68658c5249eaefff33bd92b044e9ba22c819/src/classlibnative/bcltype/number.h#L15
 
         //
-        // 32 bytes of ASCII digits ('0'..'9'). (Not using "fixed byte[]" as this breaks the VS debugging experience.) 
+        // 50+1 bytes of ASCII digits ('0'..'9'). (Not using "fixed byte[]" as this breaks the VS debugging experience.) 
         // That's enough room to store the worst case Decimal and double.
         //
         // A NUL terminator (not to be confused with '0') marks the end of the digits. 
@@ -130,5 +135,24 @@ namespace System
         private byte _b29;
         private byte _b30;
         private byte _b31;
+        private byte _b32;
+        private byte _b33;
+        private byte _b34;
+        private byte _b35;
+        private byte _b36;
+        private byte _b37;
+        private byte _b38;
+        private byte _b39;
+        private byte _b40;
+        private byte _b41;
+        private byte _b42;
+        private byte _b43;
+        private byte _b44;
+        private byte _b45;
+        private byte _b46;
+        private byte _b47;
+        private byte _b48;
+        private byte _b49;
+        private byte _b50;
     }
 }

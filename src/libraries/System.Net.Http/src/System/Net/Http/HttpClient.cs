@@ -351,6 +351,30 @@ namespace System.Net.Http
             return SendAsync(request, cancellationToken);
         }
 
+        public Task<HttpResponseMessage> PatchAsync(string requestUri, HttpContent content)
+        {
+            return PatchAsync(CreateUri(requestUri), content);
+        }
+
+        public Task<HttpResponseMessage> PatchAsync(Uri requestUri, HttpContent content)
+        {
+            return PatchAsync(requestUri, content, CancellationToken.None);
+        }
+
+        public Task<HttpResponseMessage> PatchAsync(string requestUri, HttpContent content,
+            CancellationToken cancellationToken)
+        {
+            return PatchAsync(CreateUri(requestUri), content, cancellationToken);
+        }
+
+        public Task<HttpResponseMessage> PatchAsync(Uri requestUri, HttpContent content,
+            CancellationToken cancellationToken)
+        {
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Patch, requestUri);
+            request.Content = content;
+            return SendAsync(request, cancellationToken);
+        }
+
         public Task<HttpResponseMessage> DeleteAsync(string requestUri)
         {
             return DeleteAsync(CreateUri(requestUri));

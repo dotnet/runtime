@@ -129,6 +129,23 @@ namespace System.Collections.Immutable
             }
         }
 
+#if FEATURE_ITEMREFAPI
+        /// <summary>
+        /// Gets a read-only reference to the element at the specified index in the read-only list.
+        /// </summary>
+        /// <param name="index">The zero-based index of the element to get a reference to.</param>
+        /// <returns>A read-only reference to the element at the specified index in the read-only list.</returns>
+        public ref readonly T ItemRef(int index)
+        {
+            // We intentionally do not check this.array != null, and throw NullReferenceException
+            // if this is called while uninitialized.
+            // The reason for this is perf.
+            // Length and the indexer must be absolutely trivially implemented for the JIT optimization
+            // of removing array bounds checking to work.
+            return ref this.array[index];
+        }
+#endif
+
         /// <summary>
         /// Gets a value indicating whether this collection is empty.
         /// </summary>

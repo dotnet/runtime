@@ -33,7 +33,6 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => Create(string.Empty));
         }
 
-        [ActiveIssue(25665)]
         [Theory, MemberData(nameof(PathsWithInvalidCharacters))]
         public void PathWithInvalidCharactersAsPath_ThrowsArgumentException(string invalidPath)
         {

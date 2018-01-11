@@ -245,11 +245,11 @@ namespace System.Security.Cryptography.CryptoConfigTests
                 yield return new object[] { "X509Chain", "System.Security.Cryptography.X509Certificates.X509Chain", true };
 
                 // PKCS9 attributes
-                yield return new object[] { "1.2.840.113549.1.9.3", "System.Security.Cryptography.Pkcs.Pkcs9ContentType", false };
-                yield return new object[] { "1.2.840.113549.1.9.4", "System.Security.Cryptography.Pkcs.Pkcs9MessageDigest", false };
-                yield return new object[] { "1.2.840.113549.1.9.5", "System.Security.Cryptography.Pkcs.Pkcs9SigningTime", false };
-                yield return new object[] { "1.3.6.1.4.1.311.88.2.1", "System.Security.Cryptography.Pkcs.Pkcs9DocumentName", false };
-                yield return new object[] { "1.3.6.1.4.1.311.88.2.2", "System.Security.Cryptography.Pkcs.Pkcs9DocumentDescription", false };
+                yield return new object[] { "1.2.840.113549.1.9.3", "System.Security.Cryptography.Pkcs.Pkcs9ContentType", true };
+                yield return new object[] { "1.2.840.113549.1.9.4", "System.Security.Cryptography.Pkcs.Pkcs9MessageDigest", true };
+                yield return new object[] { "1.2.840.113549.1.9.5", "System.Security.Cryptography.Pkcs.Pkcs9SigningTime", true };
+                yield return new object[] { "1.3.6.1.4.1.311.88.2.1", "System.Security.Cryptography.Pkcs.Pkcs9DocumentName", true };
+                yield return new object[] { "1.3.6.1.4.1.311.88.2.2", "System.Security.Cryptography.Pkcs.Pkcs9DocumentDescription", true };
             }
         }
 

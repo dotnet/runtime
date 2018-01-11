@@ -141,7 +141,7 @@ namespace System
         /// <exception cref="System.IndexOutOfRangeException">
         /// Thrown when index less than 0 or index greater than or equal to Length
         /// </exception>
-        public T this[int index]
+        public ref readonly T this[int index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
@@ -150,9 +150,9 @@ namespace System
                     ThrowHelper.ThrowIndexOutOfRangeException();
 
                 if (_pinnable == null)
-                    unsafe { return Unsafe.Add<T>(ref Unsafe.AsRef<T>(_byteOffset.ToPointer()), index); }
+                    unsafe { return ref Unsafe.Add<T>(ref Unsafe.AsRef<T>(_byteOffset.ToPointer()), index); }
                 else
-                    return Unsafe.Add<T>(ref Unsafe.AddByteOffset<T>(ref _pinnable.Data, _byteOffset), index);
+                    return ref Unsafe.Add<T>(ref Unsafe.AddByteOffset<T>(ref _pinnable.Data, _byteOffset), index);
             }
         }
 
@@ -171,7 +171,6 @@ namespace System
             if (!TryCopyTo(destination))
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
         }
-
 
         /// <summary>
         /// Copies the contents of this read-only span into destination span. If the source
@@ -308,12 +307,13 @@ namespace System
         public static ReadOnlySpan<T> Empty => default(ReadOnlySpan<T>);
 
         /// <summary>
+        /// This method is obsolete, use System.Runtime.InteropServices.MemoryMarshal.GetReference instead.
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to the location where the 0th element
         /// would have been stored. Such a reference can be used for pinning but must never be dereferenced.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public ref T DangerousGetPinnableReference()
+        internal ref T DangerousGetPinnableReference()
         {
             if (_pinnable == null)
                 unsafe { return ref Unsafe.AsRef<T>(_byteOffset.ToPointer()); }

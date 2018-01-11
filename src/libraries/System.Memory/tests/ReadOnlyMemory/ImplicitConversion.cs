@@ -45,7 +45,7 @@ namespace System.MemoryTests
             long[] b = { 1, -3, 7, -15, 31 };
             ArraySegment<long> segmentLong = new ArraySegment<long>(b, 1, 3);
             CastReadOnly<long>(segmentLong, -3, 7, -15);
-            
+
             object o1 = new object();
             object o2 = new object();
             object o3 = new object();
@@ -61,7 +61,7 @@ namespace System.MemoryTests
             int[] empty = Array.Empty<int>();
             ArraySegment<int> emptySegment = new ArraySegment<int>(empty);
             CastReadOnly<int>(emptySegment);
-            
+
             int[] a = { 19, -17 };
             ArraySegment<int> segmentInt = new ArraySegment<int>(a, 1, 0);
             CastReadOnly<int>(segmentInt);

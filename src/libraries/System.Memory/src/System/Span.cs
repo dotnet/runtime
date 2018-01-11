@@ -419,12 +419,13 @@ namespace System
         public static Span<T> Empty => default(Span<T>);
 
         /// <summary>
+        /// This method is obsolete, use System.Runtime.InteropServices.MemoryMarshal.GetReference instead.
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to the location where the 0th element
         /// would have been stored. Such a reference can be used for pinning but must never be dereferenced.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public ref T DangerousGetPinnableReference()
+        internal ref T DangerousGetPinnableReference()
         {
             if (_pinnable == null)
                 unsafe { return ref Unsafe.AsRef<T>(_byteOffset.ToPointer()); }

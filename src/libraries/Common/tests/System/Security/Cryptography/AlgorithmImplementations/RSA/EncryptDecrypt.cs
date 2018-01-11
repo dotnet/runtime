@@ -26,7 +26,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
     public abstract class EncryptDecrypt
     {
-        private static bool EphemeralKeysAreExportable => !PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer();
+        private static bool EphemeralKeysAreExportable => !PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer;
 
         protected abstract byte[] Encrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding);
         protected abstract byte[] Decrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding);

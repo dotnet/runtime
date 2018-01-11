@@ -20,13 +20,13 @@ internal static partial class Interop
         internal static extern unsafe int HmacInit(SafeHmacHandle ctx, [In] byte[] pbKey, int cbKey);
 
         internal static int HmacUpdate(SafeHmacHandle ctx, ReadOnlySpan<byte> pbData, int cbData) =>
-            HmacUpdate(ctx, ref pbData.DangerousGetPinnableReference(), cbData);
+            HmacUpdate(ctx, ref MemoryMarshal.GetReference(pbData), cbData);
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacUpdate")]
         private static extern int HmacUpdate(SafeHmacHandle ctx, ref byte pbData, int cbData);
 
         internal static int HmacFinal(SafeHmacHandle ctx, ReadOnlySpan<byte> pbOutput, int cbOutput) =>
-            HmacFinal(ctx, ref pbOutput.DangerousGetPinnableReference(), cbOutput);
+            HmacFinal(ctx, ref MemoryMarshal.GetReference(pbOutput), cbOutput);
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacFinal")]
         private static extern unsafe int HmacFinal(SafeHmacHandle ctx, ref byte pbOutput, int cbOutput);

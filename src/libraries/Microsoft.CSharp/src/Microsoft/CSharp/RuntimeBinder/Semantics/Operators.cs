@@ -427,9 +427,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return exprRes;
                 }
             }
-            Expr pExpr = BadOperatorTypesError(ek, info.arg1, info.arg2, GetTypes().GetErrorSym());
-            pExpr.AssertIsBin();
-            return (ExprBinOp)pExpr;
+
+            throw BadOperatorTypesError(info.arg1, info.arg2);
         }
 
         /*
@@ -441,13 +440,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(arg1 != null);
             Debug.Assert(arg2 != null);
 
-            BinOpArgInfo info = new BinOpArgInfo(arg1, arg2);
-            if (!GetBinopKindAndFlags(ek, out info.binopKind, out EXPRFLAG flags))
+            (BinOpKind kind, EXPRFLAG flags) = GetBinopKindAndFlags(ek);
+            BinOpArgInfo info = new BinOpArgInfo(arg1, arg2)
             {
-                // If we don't get the BinopKind and the flags, then we must have had some bad operator types.
-
-                return BadOperatorTypesError(ek, arg1, arg2);
-            }
+                binopKind = kind
+            };
 
             info.mask = (BinOpMask)(1 << (int)info.binopKind);
 
@@ -516,7 +513,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             if (bofs.pfn == null)
             {
-                return BadOperatorTypesError(ek, info.arg1, info.arg2);
+                throw BadOperatorTypesError(info.arg1, info.arg2);
             }
 
             if (!bofs.isLifted() || !bofs.AutoLift())
@@ -1039,16 +1036,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // Bind a standard unary operator. Takes care of user defined operators, predefined operators
         // and lifting over nullable.
 
-        private static bool CalculateExprAndUnaryOpKinds(
-                OperatorKind op,
-                bool bChecked,
-                out /*out*/ ExpressionKind ek,
-                out /*out*/ UnaOpKind uok,
-                out /*out*/ EXPRFLAG flags)
+        private static (ExpressionKind, UnaOpKind, EXPRFLAG) CalculateExprAndUnaryOpKinds(OperatorKind op, bool bChecked)
         {
-            flags = 0;
-            ek = 0;
-            uok = 0;
+            ExpressionKind ek;
+            UnaOpKind uok;
+            EXPRFLAG flags = 0;
             switch (op)
             {
                 case OperatorKind.OP_UPLUS:
@@ -1059,7 +1051,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case OperatorKind.OP_NEG:
                     if (bChecked)
                     {
-                        flags |= EXPRFLAG.EXF_CHECKOVERFLOW;
+                        flags = EXPRFLAG.EXF_CHECKOVERFLOW;
                     }
                     uok = UnaOpKind.Minus;
                     ek = ExpressionKind.Negate;
@@ -1076,7 +1068,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     break;
 
                 case OperatorKind.OP_POSTINC:
-                    flags |= EXPRFLAG.EXF_ISPOSTOP;
+                    flags = EXPRFLAG.EXF_ISPOSTOP;
                     if (bChecked)
                     {
                         flags |= EXPRFLAG.EXF_CHECKOVERFLOW;
@@ -1088,14 +1080,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case OperatorKind.OP_PREINC:
                     if (bChecked)
                     {
-                        flags |= EXPRFLAG.EXF_CHECKOVERFLOW;
+                        flags = EXPRFLAG.EXF_CHECKOVERFLOW;
                     }
                     uok = UnaOpKind.IncDec;
                     ek = ExpressionKind.Add;
                     break;
 
                 case OperatorKind.OP_POSTDEC:
-                    flags |= EXPRFLAG.EXF_ISPOSTOP;
+                    flags = EXPRFLAG.EXF_ISPOSTOP;
                     if (bChecked)
                     {
                         flags |= EXPRFLAG.EXF_CHECKOVERFLOW;
@@ -1107,7 +1099,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case OperatorKind.OP_PREDEC:
                     if (bChecked)
                     {
-                        flags |= EXPRFLAG.EXF_CHECKOVERFLOW;
+                        flags = EXPRFLAG.EXF_CHECKOVERFLOW;
                     }
                     uok = UnaOpKind.IncDec;
                     ek = ExpressionKind.Subtract;
@@ -1115,20 +1107,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 default:
                     Debug.Fail($"Bad op: {op}");
-                    return false;
+                    throw Error.InternalCompilerError();
             }
-            return true;
+
+            return (ek, uok, flags);
         }
 
         public Expr BindStandardUnaryOperator(OperatorKind op, Expr pArgument)
         {
             Debug.Assert(pArgument != null);
 
-            ExpressionKind ek;
-            UnaOpKind unaryOpKind;
-            EXPRFLAG flags;
-
             CType type = pArgument.Type;
+            Debug.Assert(type != null);
             if (type is NullableType nub)
             {
                 CType nonNub = nub.UnderlyingType;
@@ -1161,16 +1151,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
 
-            if (type == null ||
-                !CalculateExprAndUnaryOpKinds(
-                           op,
-                           Context.Checked,
-                           out ek/*out*/,
-                           out unaryOpKind/*out*/,
-                           out flags/*out*/))
-            {
-                return BadOperatorTypesError(ExpressionKind.UnaryOp, pArgument, null);
-            }
+            (ExpressionKind ek, UnaOpKind unaryOpKind, EXPRFLAG flags) =
+                CalculateExprAndUnaryOpKinds(op, Context.Checked);
 
             UnaOpMask unaryOpMask = (UnaOpMask)(1 << (int)unaryOpKind);
 
@@ -1197,7 +1179,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     if (pSignatures.Count == 0)
                     {
-                        return BadOperatorTypesError(ek, pArgument, null);
+                        throw BadOperatorTypesError(pArgument, null);
                     }
 
                     nBestSignature = 0;
@@ -1260,12 +1242,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     return BindIncOp(ek, flags, pArgument, uofs);
                 }
-                return BadOperatorTypesError(ek, pArgument, null);
+
+                throw BadOperatorTypesError(pArgument, null);
             }
 
             if (uofs.isLifted())
             {
                 return BindLiftedStandardUnop(ek, flags, pArgument, uofs);
+            }
+
+            if (pArgument.isCONSTANT_OK())
+            {
+                // Wrap the constant in an identity cast, to force the later casts to not be optimised out.
+                // The ExpressionTreeRewriter will remove this again.
+                pArgument = ExprFactory.CreateCast(pArgument.Type, pArgument);
             }
 
             // Try the conversion - if it fails, do a cast without user defined casts.
@@ -1507,7 +1497,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(arg?.Type != null);
             if (arg.Type is NullType)
             {
-                return BadOperatorTypesError(ek, arg, null, type);
+                throw BadOperatorTypesError(arg, null);
             }
 
             LiftArgument(arg, uofs.GetType(), uofs.Convert(), out Expr pArgument, out Expr nonLiftedArg);
@@ -2136,22 +2126,23 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         /*
             Given a binary operator EXPRKIND, get the BinOpKind and flags.
         */
-        private bool GetBinopKindAndFlags(ExpressionKind ek, out BinOpKind pBinopKind, out EXPRFLAG flags)
+        private (BinOpKind, EXPRFLAG) GetBinopKindAndFlags(ExpressionKind ek)
         {
-            flags = 0;
+            BinOpKind pBinopKind;
+            EXPRFLAG flags = 0;
             switch (ek)
             {
                 case ExpressionKind.Add:
                     if (Context.Checked)
                     {
-                        flags |= EXPRFLAG.EXF_CHECKOVERFLOW;
+                        flags = EXPRFLAG.EXF_CHECKOVERFLOW;
                     }
                     pBinopKind = BinOpKind.Add;
                     break;
                 case ExpressionKind.Subtract:
                     if (Context.Checked)
                     {
-                        flags |= EXPRFLAG.EXF_CHECKOVERFLOW;
+                        flags = EXPRFLAG.EXF_CHECKOVERFLOW;
                     }
                     pBinopKind = BinOpKind.Sub;
                     break;
@@ -2159,7 +2150,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case ExpressionKind.Modulo:
                     // EXPRKIND.EK_DIV and EXPRKIND.EK_MOD need to be treated special for hasSideEffects, 
                     // hence the EXPRFLAG.EXF_ASSGOP. Yes, this is a hack.
-                    flags |= EXPRFLAG.EXF_ASSGOP;
+                    flags = EXPRFLAG.EXF_ASSGOP;
                     if (Context.Checked)
                     {
                         flags |= EXPRFLAG.EXF_CHECKOVERFLOW;
@@ -2169,7 +2160,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case ExpressionKind.Multiply:
                     if (Context.Checked)
                     {
-                        flags |= EXPRFLAG.EXF_CHECKOVERFLOW;
+                        flags = EXPRFLAG.EXF_CHECKOVERFLOW;
                     }
                     pBinopKind = BinOpKind.Mul;
                     break;
@@ -2200,10 +2191,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     break;
                 default:
                     Debug.Fail($"Bad ek: {ek}");
-                    pBinopKind = BinOpKind.Add;
-                    return false;
+                    throw Error.InternalCompilerError();
             }
-            return true;
+
+            return (pBinopKind, flags);
         }
 
         /*
@@ -2272,7 +2263,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (ptOp == PredefinedType.PT_ULONG)
             {
-                return BadOperatorTypesError(ExpressionKind.Negate, op, null);
+                throw BadOperatorTypesError(op, null);
             }
 
             if (ptOp == PredefinedType.PT_UINT && op.Type.fundType() == FUNDTYPE.FT_U4)

@@ -8,9 +8,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="ArrayHandling.cs" />
+    <Compile Include="AssignmentTests.cs" />
     <Compile Include="BindingErrors.cs" />
+    <Compile Include="EnumUnaryOperationTests.cs" />
     <Compile Include="ImplicitConversionTests.cs" />
     <Compile Include="CSharpArgumentInfoTests.cs" />
+    <Compile Include="DefaultParameterTests.cs" />
     <Compile Include="DelegateInDynamicTests.cs" />
     <Compile Include="EnumArithmeticTests.cs" />
     <Compile Include="IndexingTests.cs" />
@@ -22,6 +25,7 @@
     <Compile Include="RuntimeBinderInternalCompilerExceptionTests.cs" />
     <Compile Include="RuntimeBinderTests.cs" />
     <Compile Include="UserDefinedShortCircuitOperators.cs" />
+    <Compile Include="VarArgsTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

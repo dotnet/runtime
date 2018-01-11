@@ -173,16 +173,18 @@ namespace System.SpanTests
 
                         for (int count = 0; count < GuidCount; ++count)
                         {
-                            var guidfirst = Unsafe.Add(ref memoryFirst, count);
-                            var guidSecond = Unsafe.Add(ref memorySecond, count);
+                            Guid guidfirst = Unsafe.Add(ref memoryFirst, count);
+                            Guid guidSecond = Unsafe.Add(ref memorySecond, count);
                             Assert.Equal(guidfirst, guidSecond);
                         }
                     }
                 }
                 finally
                 {
-                    if (allocatedFirst) AllocationHelper.ReleaseNative(ref memBlockFirst);
-                    if (allocatedSecond) AllocationHelper.ReleaseNative(ref memBlockSecond);
+                    if (allocatedFirst)
+                        AllocationHelper.ReleaseNative(ref memBlockFirst);
+                    if (allocatedSecond)
+                        AllocationHelper.ReleaseNative(ref memBlockSecond);
                 }
             }
         }

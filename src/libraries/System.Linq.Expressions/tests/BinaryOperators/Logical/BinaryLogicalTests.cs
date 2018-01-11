@@ -154,6 +154,27 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
+        [PerCompilationType(nameof(AndAlso_TestData))]
+        public static void AndAlso_UserDefinedOperatorTailCall(int leftValue, int rightValue, int expectedValue, bool calledMethod, bool useInterpreter)
+        {
+            TrueFalseClass left = new TrueFalseClass(leftValue);
+            TrueFalseClass right = new TrueFalseClass(rightValue);
+
+            BinaryExpression expression = Expression.AndAlso(Expression.Constant(left), Expression.Constant(right));
+            Func<TrueFalseClass> lambda = Expression.Lambda<Func<TrueFalseClass>>(expression, true).Compile(useInterpreter);
+            Assert.Equal(expectedValue, lambda().Value);
+
+            // AndAlso only evaluates the false operator of left
+            Assert.Equal(0, left.TrueCallCount);
+            Assert.Equal(1, left.FalseCallCount);
+            Assert.Equal(0, right.TrueCallCount);
+            Assert.Equal(0, right.FalseCallCount);
+
+            // AndAlso only evaluates the operator if left is not false
+            Assert.Equal(calledMethod ? 1 : 0, left.OperatorCallCount);
+        }
+
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void AndAlso_UserDefinedOperator_HasMethodNotOperator(bool useInterpreter)
         {
@@ -202,6 +223,27 @@ namespace System.Linq.Expressions.Tests
 
             BinaryExpression expression = Expression.OrElse(Expression.Constant(left), Expression.Constant(right));
             Func<TrueFalseClass> lambda = Expression.Lambda<Func<TrueFalseClass>>(expression).Compile(useInterpreter);
+            Assert.Equal(expectedValue, lambda().Value);
+
+            // OrElse only evaluates the true operator of left
+            Assert.Equal(1, left.TrueCallCount);
+            Assert.Equal(0, left.FalseCallCount);
+            Assert.Equal(0, right.TrueCallCount);
+            Assert.Equal(0, right.FalseCallCount);
+
+            // OrElse only evaluates the operator if left is not true
+            Assert.Equal(calledMethod ? 1 : 0, left.OperatorCallCount);
+        }
+
+        [Theory]
+        [PerCompilationType(nameof(OrElse_TestData))]
+        public static void OrElse_UserDefinedOperatorTailCall(int leftValue, int rightValue, int expectedValue, bool calledMethod, bool useInterpreter)
+        {
+            TrueFalseClass left = new TrueFalseClass(leftValue);
+            TrueFalseClass right = new TrueFalseClass(rightValue);
+
+            BinaryExpression expression = Expression.OrElse(Expression.Constant(left), Expression.Constant(right));
+            Func<TrueFalseClass> lambda = Expression.Lambda<Func<TrueFalseClass>>(expression, true).Compile(useInterpreter);
             Assert.Equal(expectedValue, lambda().Value);
 
             // OrElse only evaluates the true operator of left
@@ -615,7 +657,7 @@ namespace System.Linq.Expressions.Tests
         [InlineData("op_False")]
         public static void Method_NoTrueFalseOperator_ThrowsArgumentException(string name)
         {
-            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect);
             ModuleBuilder module = assembly.DefineDynamicModule("Name");
             TypeBuilder builder = module.DefineType("Type");
 
@@ -638,7 +680,7 @@ namespace System.Linq.Expressions.Tests
         [InlineData("op_False")]
         public static void AndAlso_NoMethod_NoTrueFalseOperator_ThrowsArgumentException(string name)
         {
-            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect);
             ModuleBuilder module = assembly.DefineDynamicModule("Name");
             TypeBuilder builder = module.DefineType("Type");
 
@@ -658,7 +700,7 @@ namespace System.Linq.Expressions.Tests
         [InlineData("op_False")]
         public static void OrElse_NoMethod_NoTrueFalseOperator_ThrowsArgumentException(string name)
         {
-            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect);
             ModuleBuilder module = assembly.DefineDynamicModule("Name");
             TypeBuilder builder = module.DefineType("Type");
 
@@ -797,14 +839,14 @@ namespace System.Linq.Expressions.Tests
 
         private static TypeBuilder GetTypeBuilder()
         {
-            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect);
             ModuleBuilder module = assembly.DefineDynamicModule("Name");
             return module.DefineType("Type");
         }
 
         private static MethodInfo GlobalMethod(Type returnType, Type[] parameterTypes)
         {
-            ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run).DefineDynamicModule("Module");
+            ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect).DefineDynamicModule("Module");
             MethodBuilder globalMethod = module.DefineGlobalMethod("GlobalMethod", MethodAttributes.Public | MethodAttributes.Static, returnType, parameterTypes);
             globalMethod.GetILGenerator().Emit(OpCodes.Ret);
             module.CreateGlobalFunctions();

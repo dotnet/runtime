@@ -5,6 +5,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -270,8 +271,6 @@ namespace System.IO.Compression
 
                 if (_inflater.Finished())
                 {
-                    // if we finished decompressing, we can't have anything left in the outputwindow.
-                    Debug.Assert(_inflater.AvailableOutput == 0, "We should have copied all stuff out!");
                     break;
                 }
 
@@ -495,7 +494,7 @@ namespace System.IO.Compression
             unsafe
             {
                 // Pass new bytes through deflater and write them too:
-                fixed (byte* bufferPtr = &source.DangerousGetPinnableReference())
+                fixed (byte* bufferPtr = &MemoryMarshal.GetReference(source))
                 {
                     _deflater.SetInput(bufferPtr, source.Length);
                     WriteDeflaterOutput();

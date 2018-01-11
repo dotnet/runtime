@@ -9,7 +9,6 @@ namespace System.ServiceModel.Syndication
 {
     public abstract partial class SyndicationFeedFormatter
     {
-        public System.Func<string, string, string, System.DateTimeOffset> DateTimeParser { get { throw null; } set { } }
-        public System.Func<string, System.UriKind, string, string, System.Uri> UriParser { get { throw null; } set { } }
+        
     }
 }

@@ -270,7 +270,6 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     PER_FUNCTION_BLOCK(SSL_CTX_set_alpn_select_cb, false) \
     PER_FUNCTION_BLOCK(SSL_CTX_set_cert_verify_callback, true) \
     PER_FUNCTION_BLOCK(SSL_CTX_set_cipher_list, true) \
-    PER_FUNCTION_BLOCK(SSL_CTX_set_client_CA_list, true) \
     PER_FUNCTION_BLOCK(SSL_CTX_set_client_cert_cb, true) \
     PER_FUNCTION_BLOCK(SSL_CTX_set_quiet_shutdown, true) \
     PER_FUNCTION_BLOCK(SSL_CTX_set_verify, true) \
@@ -326,7 +325,6 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     PER_FUNCTION_BLOCK(X509_get_serialNumber, true) \
     PER_FUNCTION_BLOCK(X509_get_subject_name, true) \
     PER_FUNCTION_BLOCK(X509_issuer_name_hash, true) \
-    PER_FUNCTION_BLOCK(X509_NAME_dup, true) \
     PER_FUNCTION_BLOCK(X509_NAME_entry_count, true) \
     PER_FUNCTION_BLOCK(X509_NAME_ENTRY_get_data, true) \
     PER_FUNCTION_BLOCK(X509_NAME_ENTRY_get_object, true) \
@@ -564,7 +562,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_CTX_set_alpn_select_cb SSL_CTX_set_alpn_select_cb_ptr
 #define SSL_CTX_set_cert_verify_callback SSL_CTX_set_cert_verify_callback_ptr
 #define SSL_CTX_set_cipher_list SSL_CTX_set_cipher_list_ptr
-#define SSL_CTX_set_client_CA_list SSL_CTX_set_client_CA_list_ptr
 #define SSL_CTX_set_client_cert_cb SSL_CTX_set_client_cert_cb_ptr
 #define SSL_CTX_set_quiet_shutdown SSL_CTX_set_quiet_shutdown_ptr
 #define SSL_CTX_set_verify SSL_CTX_set_verify_ptr
@@ -620,7 +617,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define X509_get_serialNumber X509_get_serialNumber_ptr
 #define X509_get_subject_name X509_get_subject_name_ptr
 #define X509_issuer_name_hash X509_issuer_name_hash_ptr
-#define X509_NAME_dup X509_NAME_dup_ptr
 #define X509_NAME_entry_count X509_NAME_entry_count_ptr
 #define X509_NAME_ENTRY_get_data X509_NAME_ENTRY_get_data_ptr
 #define X509_NAME_ENTRY_get_object X509_NAME_ENTRY_get_object_ptr

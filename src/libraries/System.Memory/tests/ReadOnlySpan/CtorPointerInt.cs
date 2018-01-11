@@ -4,6 +4,7 @@
 
 using Xunit;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 #pragma warning disable 0649 //Field 'SpanTests.InnerStruct.J' is never assigned to, and will always have its default value 0
 
@@ -17,11 +18,11 @@ namespace System.SpanTests
             unsafe
             {
                 int[] a = { 90, 91, 92 };
-                fixed (int *pa = a)
+                fixed (int* pa = a)
                 {
                     ReadOnlySpan<int> span = new ReadOnlySpan<int>(pa, 3);
                     span.Validate(90, 91, 92);
-                    Assert.True(Unsafe.AreSame(ref Unsafe.AsRef<int>(pa), ref span.DangerousGetPinnableReference()));
+                    Assert.True(Unsafe.AreSame(ref Unsafe.AsRef<int>(pa), ref Unsafe.AsRef(in MemoryMarshal.GetReference(span))));
                 }
             }
         }
@@ -33,7 +34,7 @@ namespace System.SpanTests
             {
                 ReadOnlySpan<int> span = new ReadOnlySpan<int>((void*)null, 0);
                 span.Validate();
-                Assert.True(Unsafe.AreSame(ref Unsafe.AsRef<int>((void*)null), ref span.DangerousGetPinnableReference()));
+                Assert.True(Unsafe.AreSame(ref Unsafe.AsRef<int>((void*)null), ref Unsafe.AsRef(in MemoryMarshal.GetReference(span))));
             }
         }
 

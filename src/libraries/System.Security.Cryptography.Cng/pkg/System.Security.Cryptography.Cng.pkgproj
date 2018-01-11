@@ -3,7 +3,8 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Security.Cryptography.Cng.csproj">
-      <SupportedFramework>net461;netcoreapp2.1;$(UAPvNextTFM);$(AllXamarinFrameworks)</SupportedFramework>
+      <!-- Removing AllXamarianFrameworks from validation because of https://github.com/dotnet/corefx/issues/25924 -->
+      <SupportedFramework>net461;netcoreapp2.1;$(UAPvNextTFM)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Security.Cryptography.Cng.csproj" />
     <File Include="$(PlaceHolderFile)">

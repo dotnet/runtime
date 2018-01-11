@@ -17,6 +17,16 @@
     <Compile Include="$(CommonTestPath)\System\Threading\ThreadTestHelpers.cs">
       <Link>CommonTest\System\Threading\ThreadPoolHelpers.cs</Link>
     </Compile>
+    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>RemoteExecutorConsoleApp</Name>
+    </ProjectReference>
+    <ProjectReference Include="STAMain\STAMain.csproj">
+      <Name>STAMain</Name>
+    </ProjectReference>
+    <ProjectReference Include="MTAMain\MTAMain.csproj">
+      <Name>MTAMain</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

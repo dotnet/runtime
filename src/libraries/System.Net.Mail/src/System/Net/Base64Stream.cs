@@ -207,6 +207,7 @@ namespace System.Net
                     {
                         WriteState.LastBits = (byte)((buffer[cur] & 0x0f) << 2);
                         WriteState.Padding = 1;
+                        cur++;
                         return cur - offset;
                     }
                     WriteState.Append(s_base64EncodeMap[((buffer[cur] & 0x0f) << 2) | ((buffer[cur + 1] & 0xc0) >> 6)]);

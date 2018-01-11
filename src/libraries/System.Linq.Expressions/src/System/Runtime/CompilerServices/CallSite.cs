@@ -92,26 +92,21 @@ namespace System.Runtime.CompilerServices
                 s_siteCtors = ctors = new CacheDict<Type, Func<CallSiteBinder, CallSite>>(100);
             }
 
-            Func<CallSiteBinder, CallSite> ctor;
-            MethodInfo method = null;
-            if (!ctors.TryGetValue(delegateType, out ctor))
+            if (!ctors.TryGetValue(delegateType, out Func<CallSiteBinder, CallSite> ctor))
             {
-                method = typeof(CallSite<>).MakeGenericType(delegateType).GetMethod(nameof(Create));
+                MethodInfo method = typeof(CallSite<>).MakeGenericType(delegateType).GetMethod(nameof(Create));
 
-                if (delegateType.CanCache())
+                if (delegateType.IsCollectible)
                 {
-                    ctor = (Func<CallSiteBinder, CallSite>)method.CreateDelegate(typeof(Func<CallSiteBinder, CallSite>));
-                    ctors.Add(delegateType, ctor);
+                    // slow path
+                    return (CallSite)method.Invoke(null, new object[] { binder });
                 }
+
+                ctor = (Func<CallSiteBinder, CallSite>)method.CreateDelegate(typeof(Func<CallSiteBinder, CallSite>));
+                ctors.Add(delegateType, ctor);
             }
 
-            if (ctor != null)
-            {
-                return ctor(binder);
-            }
-
-            // slow path
-            return (CallSite)method.Invoke(null, new object[] { binder });
+            return ctor(binder);
         }
     }
 

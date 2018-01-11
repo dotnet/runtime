@@ -12,7 +12,7 @@ namespace System.Buffers.Text.Tests
     //
     internal static partial class TestData
     {
-        public static readonly IEnumerable<byte> Precisions = new byte[] { StandardFormat.NoPrecision, 0, 1, 3, 10, StandardFormat.MaxPrecision };
+        public static readonly IEnumerable<byte> s_precisions = new byte[] { StandardFormat.NoPrecision, 0, 1, 3, 10, StandardFormat.MaxPrecision };
 
         public static IEnumerable<object[]> IntegerTypesTheoryData => IntegerTypes.Select(t => new object[] { t });
 
@@ -483,6 +483,9 @@ namespace System.Buffers.Text.Tests
                 yield return "1.79769313486233E+308";   //Just over Double.MaxValue
                 yield return "-1.79769313486232E+308";  //Double.MinValue
                 yield return "-1.79769313486233E+308";  //Just under Double.MinValue
+
+                // Ensures that the NumberBuffer capacity is consistent with Desktop's.
+                yield return ".2222222222222222222222222222500000000000000000001";
             }
         }
 

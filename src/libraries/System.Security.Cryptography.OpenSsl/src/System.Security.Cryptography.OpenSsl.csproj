@@ -6,10 +6,11 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.OpenSsl</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard'">4.1.0.0</AssemblyVersion>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' == 'netstandard'">
+  <PropertyGroup Condition="'$(TargetsUnix)' != 'true'">
     <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_CryptographyOpenSSL</GeneratePlatformNotSupportedAssemblyMessage>
-    <!-- Clear PackageTargetRuntime on Windows to package the PlatformNotSupported assembly 
+    <!-- Clear PackageTargetRuntime on Windows to package the PlatformNotSupported assembly
          without a RID so that it applies in desktop packages.config projects as well -->
     <PackageTargetRuntime>
     </PackageTargetRuntime>
@@ -20,6 +21,8 @@
   </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
@@ -121,6 +124,7 @@
     <Reference Include="System.Diagnostics.Contracts" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />

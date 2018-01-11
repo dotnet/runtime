@@ -31,7 +31,7 @@ namespace System.Buffers.Text
         {
             switch (standardFormat)
             {
-                case default(char):
+                case (default):
                 case 'D':
                     return TryParseGuidCore(text, false, ' ', ' ', out value, out bytesConsumed);
                 case 'B':
@@ -55,8 +55,7 @@ namespace System.Buffers.Text
                 return false;
             }
 
-            int justConsumed;
-            if (!TryParseUInt32X(text.Slice(0, 8), out uint i1, out justConsumed) || justConsumed != 8)
+            if (!TryParseUInt32X(text.Slice(0, 8), out uint i1, out int justConsumed) || justConsumed != 8)
             {
                 value = default;
                 bytesConsumed = 0;
@@ -121,8 +120,7 @@ namespace System.Buffers.Text
                 text = text.Slice(1); // skip begining
             }
 
-            int justConsumed;
-            if (!TryParseUInt32X(text, out uint i1, out justConsumed))
+            if (!TryParseUInt32X(text, out uint i1, out int justConsumed))
             {
                 value = default;
                 bytesConsumed = 0;
@@ -227,7 +225,6 @@ namespace System.Buffers.Text
                 bytesConsumed = 0;
                 return false; // 12 digits
             }
-
 
             if (ends && text[justConsumed] != end)
             {

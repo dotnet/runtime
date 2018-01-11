@@ -486,6 +486,9 @@
     },
     "PB_PackageVersionPropsUrl": {
       "value": ""
+    },
+    "PB_AssetRootUrl": {
+      "value": ""
     }
   },
   "demands": [

@@ -96,7 +96,15 @@ namespace System.ServiceProcess.Tests
 
                 if (File.Exists(LogPath))
                 {
-                    File.Delete(LogPath);
+                    try
+                    {
+                        File.Delete(LogPath);
+                    }
+                    catch (IOException)
+                    {
+                        // Don't fail simply because the service was not fully cleaned up
+                        // and is still holding a handle to the log file
+                    }
                 }
             }
             finally
@@ -110,7 +118,7 @@ namespace System.ServiceProcess.Tests
             }
         }
 
-        private string LogPath => typeof(TestService).Assembly.Location + "." + TestServiceName + ".log";
+        private string LogPath => TestService.GetLogPath(TestServiceName);
 
         public string GetServiceOutput()
         {

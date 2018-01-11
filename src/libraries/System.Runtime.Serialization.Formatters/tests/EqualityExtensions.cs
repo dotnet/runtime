@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.ComponentModel.Composition;
 using System.Data;
 using System.Data.SqlClient;
 using System.Data.SqlTypes;
@@ -1185,6 +1184,12 @@ namespace System.Runtime.Serialization.Formatters.Tests
             Assert.NotNull(other);
             IsEqual(@this as Exception, other as Exception, isSamePlatform);
             @this.InnerExceptions.CheckSequenceEquals(other.InnerExceptions, isSamePlatform);
+        }
+
+        public static void IsEqual(this EventArgs @this, EventArgs other, bool isSamePlatform)
+        {
+            Assert.NotNull(@this);
+            Assert.NotNull(other);
         }
 
         public class ReferenceComparer<T> : IEqualityComparer<T> where T: class
