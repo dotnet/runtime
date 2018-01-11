@@ -1573,6 +1573,12 @@ namespace Mono.Linker.Steps {
 
 			foreach (Instruction instruction in body.Instructions)
 				MarkInstruction (instruction);
+
+			MarkSomethingUsedViaReflection ("GetConstructor", MarkConstructorsUsedViaReflection, body.Instructions);
+			MarkSomethingUsedViaReflection ("GetMethod", MarkMethodsUsedViaReflection, body.Instructions);
+			MarkSomethingUsedViaReflection ("GetProperty", MarkPropertyUsedViaReflection, body.Instructions);
+			MarkSomethingUsedViaReflection ("GetField", MarkFieldUsedViaReflection, body.Instructions);
+			MarkSomethingUsedViaReflection ("GetEvent", MarkEventUsedViaReflection, body.Instructions);
 		}
 
 		protected virtual void MarkInstruction (Instruction instruction)
@@ -1619,6 +1625,153 @@ namespace Mono.Linker.Steps {
 		{
 			MarkCustomAttributes (iface);
 			MarkType (iface.InterfaceType);
+		}
+
+
+		void MarkSomethingUsedViaReflection (string reflectionMethod, Action<Collection<Instruction>, string, TypeDefinition, BindingFlags> markMethod, Collection<Instruction> instructions)
+		{
+			for (var i = 0; i < instructions.Count; i++) {
+				var instruction = instructions [i];
+				if (instruction.OpCode != OpCodes.Call && instruction.OpCode != OpCodes.Callvirt)
+					continue;
+
+				var methodBeingCalled = instruction.Operand as MethodReference;
+				if (methodBeingCalled == null || methodBeingCalled.DeclaringType.Name != "Type" || methodBeingCalled.DeclaringType.Namespace != "System")
+					continue;
+
+				if (methodBeingCalled.Name != reflectionMethod)
+					continue;
+
+				_context.Tracer.Push ($"Reflection-{methodBeingCalled}");
+				var nameOfThingUsedViaReflection = OperandOfNearestInstructionBefore<string> (i, OpCodes.Ldstr, instructions);
+				var bindingFlags = (BindingFlags) OperandOfNearestInstructionBefore<sbyte> (i, OpCodes.Ldc_I4_S, instructions);
+
+				// There might be more than one ldtoken opcode above the call in the IL stream. Be conservative and check all of
+				// the types which were loaded for the method being used.
+				var declaringTypesOfThingInvokedViaReflection = OperandsOfInstructionsBefore (i, OpCodes.Ldtoken, instructions);
+				foreach (var declaringTypeOfThingInvokedViaReflection in declaringTypesOfThingInvokedViaReflection) {
+					var typeDefinition = declaringTypeOfThingInvokedViaReflection?.Resolve ();
+					if (typeDefinition != null)
+						markMethod (instructions, nameOfThingUsedViaReflection, typeDefinition, bindingFlags);
+				}
+				_context.Tracer.Pop ();
+			}
+		}
+
+		void MarkConstructorsUsedViaReflection (Collection<Instruction> instructions, string unused, TypeDefinition declaringType, BindingFlags bindingFlags)
+		{
+			foreach (var method in declaringType.Methods) {
+				if ((bindingFlags == BindingFlags.Default || bindingFlags.IsSet(BindingFlags.Public) == method.IsPublic) && method.Name == ".ctor")
+					MarkMethod (method);
+			}
+		}
+
+		void MarkMethodsUsedViaReflection (Collection<Instruction> instructions, string name, TypeDefinition declaringType, BindingFlags bindingFlags)
+		{
+			if (name == null)
+				return;
+
+			foreach (var method in declaringType.Methods) {
+				if ((bindingFlags == BindingFlags.Default || bindingFlags.IsSet(BindingFlags.Public) == method.IsPublic && bindingFlags.IsSet(BindingFlags.Static) == method.IsStatic)
+					&& method.Name == name)
+					MarkMethod (method);
+			}
+		}
+
+		void MarkPropertyUsedViaReflection (Collection<Instruction> instructions, string name, TypeDefinition declaringType, BindingFlags unused)
+		{
+			if (name == null)
+				return;
+
+			foreach (var property in declaringType.Properties) {
+				if (property.Name == name) {
+					// It is not easy to reliably detect in the IL code whether the getter or setter (or both) are used.
+					// Be conservative and mark everything for the property.
+					MarkProperty (property);
+					MarkMethodIfNotNull (property.GetMethod);
+					MarkMethodIfNotNull (property.SetMethod);
+				}
+			}
+		}
+
+		void MarkFieldUsedViaReflection (Collection<Instruction> instructions, string name, TypeDefinition declaringType, BindingFlags unused)
+		{
+			if (name == null)
+				return;
+
+			foreach (var field in declaringType.Fields) {
+				if (field.Name == name)
+					MarkField (field);
+			}
+		}
+
+		void MarkEventUsedViaReflection (Collection<Instruction> instructions, string name, TypeDefinition declaringType, BindingFlags unused)
+		{
+			if (name == null)
+				return;
+
+			foreach (var eventInfo in declaringType.Events) {
+				if (eventInfo.Name == name)
+					MarkEvent (eventInfo);
+			}
+		}
+
+		static TOperand OperandOfNearestInstructionBefore<TOperand> (int startingInstructionIndex, OpCode opCode, IList<Instruction> instructions)
+		{
+			for (var i = startingInstructionIndex; i >= 0; i--) {
+				if (instructions [i].OpCode == opCode)
+					return (TOperand) instructions [i].Operand;
+			}
+
+			return default (TOperand);
+		}
+
+		static List<TypeReference> OperandsOfInstructionsBefore (int startingInstructionIndex, OpCode opCode, IList<Instruction> instructions)
+		{
+			var operands = new List<TypeReference> ();
+			for (var i = startingInstructionIndex; i >= 0; i--) {
+				if (instructions [i].OpCode == opCode) {
+					var type = instructions [i].Operand as TypeReference;
+					if (type != null)
+						operands.Add (type);
+				}
+			}
+
+			return operands;
+		}
+	}
+
+	// Make our own copy of the BindingFlags enum, so that we don't depend on System.Reflection.
+	[Flags]
+	enum BindingFlags
+	{
+		Default = 0,
+		IgnoreCase = 1,
+		DeclaredOnly = 2,
+		Instance = 4,
+		Static = 8,
+		Public = 16,
+		NonPublic = 32,
+		FlattenHierarchy = 64,
+		InvokeMethod = 256,
+		CreateInstance = 512,
+		GetField = 1024,
+		SetField = 2048,
+		GetProperty = 4096,
+		SetProperty = 8192,
+		PutDispProperty = 16384,
+		PutRefDispProperty = 32768,
+		ExactBinding = 65536,
+		SuppressChangeType = 131072,
+		OptionalParamBinding = 262144,
+		IgnoreReturn = 16777216
+	}
+
+	static class BindingFlagsExtensions
+	{
+		public static bool IsSet(this BindingFlags flags, BindingFlags check)
+		{
+			return (flags & check) == check;
 		}
 	}
 }

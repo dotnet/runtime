@@ -69,6 +69,11 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesByPrefix ("TestFramework.");
 		}
 
+		public static IEnumerable<TestCaseData> ReflectionTests ()
+		{
+			return NUnitCasesByPrefix ("Reflection.");
+		}
+
 		public static IEnumerable<TestCaseData> OtherTests()
 		{
 			var allGroupedTestNames = new HashSet<string>(
@@ -85,6 +90,7 @@ namespace Mono.Linker.Tests.TestCases
 					.Concat(ResourcesTests ())
 					.Concat(TypeForwardingTests ())
 					.Concat(TestFrameworkTests ())
+					.Concat(ReflectionTests ())
 					.Select(c => ((TestCase)c.Arguments[0]).ReconstructedFullTypeName));
 
 			return AllCases().Where(c => !allGroupedTestNames.Contains(c.ReconstructedFullTypeName)).Select(c => CreateNUnitTestCase(c, c.DisplayName));

@@ -83,6 +83,14 @@
     <Compile Include="References\Individual\Dependencies\CanSkipUnresolved_Library.cs" />
     <Compile Include="References\Dependencies\UserAssembliesAreLinkedByDefault_Library1.cs" />
     <Compile Include="References\UserAssembliesAreLinkedByDefault.cs" />
+    <Compile Include="Reflection\ConstructorUsedViaReflection.cs" />
+    <Compile Include="Reflection\EventUsedViaReflection.cs" />
+    <Compile Include="Reflection\FieldUsedViaReflection.cs" />
+    <Compile Include="Reflection\MethodUsedViaReflectionWithDefaultBindingFlags.cs" />
+    <Compile Include="Reflection\MightKeepExtraThings.cs" />
+    <Compile Include="Reflection\MethodUsedViaReflection.cs" />
+    <Compile Include="Reflection\PropertyUsedViaReflection.cs" />
+    <Compile Include="Reflection\UsedViaReflectionIntegrationTest.cs" />
     <Compile Include="Resources\EmbeddedLinkXmlFileIsNotProcessedIfNameDoesNotMatchAnAssembly.cs" />
     <Compile Include="Resources\EmbeddedLinkXmlFileIsNotProcessedWhenBlacklistStepIsDisabled.cs" />
     <Compile Include="Resources\EmbeddedLinkXmlFileIsNotProcessedWhenCoreLinkActionIsSkip.cs" />
