@@ -171,6 +171,7 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
+        [ActiveIssue(20766,TargetFrameworkMonikers.UapAot)]
         [PlatformSpecific(TestPlatforms.Windows)]
         public static void ApartmentState_NoAttributePresent_DefaultState_Windows()
         {
@@ -183,6 +184,7 @@ namespace System.Threading.Threads.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20766,TargetFrameworkMonikers.UapAot)]
         [PlatformSpecific(TestPlatforms.Windows)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void ApartmentState_NoAttributePresent_STA_Windows_Core()
