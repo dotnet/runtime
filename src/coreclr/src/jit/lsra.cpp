@@ -2787,6 +2787,47 @@ void LinearScan::addRefsForPhysRegMask(regMaskTP mask, LsraLocation currentLoc, 
 }
 
 //------------------------------------------------------------------------
+// getKillSetForStoreInd: Determine the liveness kill set for a GT_STOREIND node.
+// If the GT_STOREIND will generate a write barrier, determine the specific kill
+// set required by the case-specific, platform-specific write barrier. If no
+// write barrier is required, the kill set will be RBM_NONE.
+//
+// Arguments:
+//    tree - the GT_STOREIND node
+//
+// Return Value:    a register mask of the registers killed
+//
+regMaskTP LinearScan::getKillSetForStoreInd(GenTreeStoreInd* tree)
+{
+    assert(tree->OperIs(GT_STOREIND));
+
+    regMaskTP killMask = RBM_NONE;
+
+    GenTree* data = tree->Data();
+
+    GCInfo::WriteBarrierForm writeBarrierForm = compiler->codeGen->gcInfo.gcIsWriteBarrierCandidate(tree, data);
+    if (writeBarrierForm != GCInfo::WBF_NoBarrier)
+    {
+        if (compiler->codeGen->genUseOptimizedWriteBarriers(writeBarrierForm))
+        {
+            // We can't determine the exact helper to be used at this point, because it depends on
+            // the allocated register for the `data` operand. However, all the (x86) optimized
+            // helpers have the same kill set: EDX.
+            killMask = RBM_CALLEE_TRASH_NOGC;
+        }
+        else
+        {
+            // Figure out which helper we're going to use, and then get the kill set for that helper.
+            CorInfoHelpFunc helper =
+                compiler->codeGen->genWriteBarrierHelperForWriteBarrierForm(tree, writeBarrierForm);
+            killMask = compiler->compHelperCallKillSet(helper);
+        }
+    }
+
+    return killMask;
+}
+
+//------------------------------------------------------------------------
 // getKillSetForNode:   Return the registers killed by the given tree node.
 //
 // Arguments:
@@ -2936,10 +2977,7 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
             }
             break;
         case GT_STOREIND:
-            if (compiler->codeGen->gcInfo.gcIsWriteBarrierAsgNode(tree))
-            {
-                killMask = RBM_CALLEE_TRASH_NOGC;
-            }
+            killMask = getKillSetForStoreInd(tree->AsStoreInd());
             break;
 
 #if defined(PROFILING_SUPPORTED)
