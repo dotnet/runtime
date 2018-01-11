@@ -2795,7 +2795,7 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 	thread_data->refcount = 2; /*Must be 2: unload thread + initiator */
 
 	/*The managed callback finished successfully, now we start tearing down the appdomain*/
-	domain->state = MONO_APPDOMAIN_UNLOADING;
+	mono_domain_set_state (domain, MONO_APPDOMAIN_UNLOADING);
 	/* 
 	 * First we create a separate thread for unloading, since
 	 * we might have to abort some threads, including the current one.
