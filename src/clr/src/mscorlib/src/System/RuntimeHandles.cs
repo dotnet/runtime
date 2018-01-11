@@ -244,7 +244,6 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern static RuntimeModule GetModule(RuntimeType type);
 
-        [CLSCompliant(false)]
         public ModuleHandle GetModuleHandle()
         {
             return new ModuleHandle(RuntimeTypeHandle.GetModule(m_type));
