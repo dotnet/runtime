@@ -9,6 +9,16 @@ using System.Threading;
 
 namespace System.Globalization
 {
+#if CORERT
+    using StringStringDictionary = LowLevelDictionary<string, string>;
+    using StringCultureDataDictionary = LowLevelDictionary<string, CultureData>;
+    using LcidToCultureNameDictionary = LowLevelDictionary<int, string>;
+#else
+    using StringStringDictionary = Dictionary<string, string>;
+    using StringCultureDataDictionary = Dictionary<string, CultureData>;
+    using LcidToCultureNameDictionary = Dictionary<int, string>;
+#endif
+
     //
     // List of culture data
     // Note the we cache overrides.
@@ -150,13 +160,13 @@ namespace System.Globalization
         // (In future would be nice to be in registry or something)
 
         //Using a property so we avoid creating the dictionary until we need it
-        private static Dictionary<string, string> RegionNames
+        private static StringStringDictionary RegionNames
         {
             get
             {
                 if (s_RegionNames == null)
                 {
-                    Dictionary<string, string> regionNames = new Dictionary<string, string>(211 /* prime */);
+                    StringStringDictionary regionNames = new StringStringDictionary(211 /* prime */);
 
                     regionNames.Add("029", "en-029");
                     regionNames.Add("AE", "ar-AE");
@@ -295,8 +305,8 @@ namespace System.Globalization
         }
 
         // Cache of regions we've already looked up
-        private static volatile Dictionary<string,CultureData> s_cachedRegions;
-        private static volatile Dictionary<string, string> s_RegionNames;
+        private static volatile StringCultureDataDictionary s_cachedRegions;
+        private static volatile StringStringDictionary s_RegionNames;
 
         internal static CultureData GetCultureDataForRegion(string cultureName, bool useUserOverride)
         {
@@ -322,11 +332,11 @@ namespace System.Globalization
 
             // Try the hash table next
             string hashName = AnsiToLower(useUserOverride ? cultureName : cultureName + '*');
-            Dictionary<string,CultureData> tempHashTable = s_cachedRegions;
+            StringCultureDataDictionary tempHashTable = s_cachedRegions;
             if (tempHashTable == null)
             {
                 // No table yet, make a new one
-                tempHashTable = new Dictionary<string,CultureData>();
+                tempHashTable = new StringCultureDataDictionary();
             }
             else
             {
@@ -561,7 +571,7 @@ namespace System.Globalization
         // Constructors //
         ///////////////
         // Cache of cultures we've already looked up
-        private static volatile Dictionary<string,CultureData> s_cachedCultures;
+        private static volatile StringCultureDataDictionary s_cachedCultures;
         private static readonly object s_lock = new object();
 
         internal static CultureData GetCultureData(string cultureName, bool useUserOverride)
@@ -574,11 +584,11 @@ namespace System.Globalization
 
             // Try the hash table first
             string hashName = AnsiToLower(useUserOverride ? cultureName : cultureName + '*');
-            Dictionary<string,CultureData> tempHashTable = s_cachedCultures;
+            StringCultureDataDictionary tempHashTable = s_cachedCultures;
             if (tempHashTable == null)
             {
                 // No table yet, make a new one
-                tempHashTable = new Dictionary<string,CultureData>();
+                tempHashTable = new StringCultureDataDictionary();
             }
             else
             {
