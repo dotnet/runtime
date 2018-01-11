@@ -4659,9 +4659,9 @@ mono_unhandled_exception (MonoObject *exc_raw)
 }
 
 /**
- * mono_unhandled_exception:
- * @exc: exception thrown
- * @fatal: if true abort execution
+ * mono_unhandled_exception_checked:
+ * \param exc exception thrown
+ * \param fatal if true abort execution
  *
  * This is a VM internal routine.
  *
