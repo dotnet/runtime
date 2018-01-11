@@ -405,7 +405,7 @@ namespace System
     }
     public partial struct Boolean : System.IComparable, System.IComparable<bool>, System.IConvertible, System.IEquatable<bool>
     {
-        private int _dummy;
+        private bool _dummy;
         public static readonly string FalseString;
         public static readonly string TrueString;
         public int CompareTo(System.Boolean value) { throw null; }
@@ -450,7 +450,7 @@ namespace System
     }
     public partial struct Byte : System.IComparable, System.IComparable<byte>, System.IConvertible, System.IEquatable<byte>, System.IFormattable
     {
-        private int _dummy;
+        private byte _dummy;
         public const byte MaxValue = (byte)255;
         public const byte MinValue = (byte)0;
         public int CompareTo(System.Byte value) { throw null; }
@@ -491,7 +491,7 @@ namespace System
     }
     public partial struct Char : System.IComparable, System.IComparable<char>, System.IConvertible, System.IEquatable<char>
     {
-        private int _dummy;
+        private char _dummy;
         public const char MaxValue = '\uFFFF';
         public const char MinValue = '\0';
         public int CompareTo(System.Char value) { throw null; }
@@ -1017,7 +1017,7 @@ namespace System
     }
     public partial struct Double : System.IComparable, System.IComparable<double>, System.IConvertible, System.IEquatable<double>, System.IFormattable
     {
-        private int _dummy;
+        private double _dummy;
         //public const double Epsilon = 4.94065645841247E-324;     -- defined in System.Runtime.Manual.cs
         //public const double MaxValue = 1.7976931348623157E+308;  -- defined in System.Runtime.Manual.cs
         //public const double MinValue = -1.7976931348623157E+308; -- defined in System.Runtime.Manual.cs
@@ -1444,7 +1444,7 @@ namespace System
     }
     public partial struct Int16 : System.IComparable, System.IComparable<short>, System.IConvertible, System.IEquatable<short>, System.IFormattable
     {
-        private int _dummy;
+        private short _dummy;
         public const short MaxValue = (short)32767;
         public const short MinValue = (short)-32768;
         public int CompareTo(System.Int16 value) { throw null; }
@@ -1526,7 +1526,7 @@ namespace System
     }
     public partial struct Int64 : System.IComparable, System.IComparable<long>, System.IConvertible, System.IEquatable<long>, System.IFormattable
     {
-        private int _dummy;
+        private long _dummy;
         public const long MaxValue = (long)9223372036854775807;
         public const long MinValue = (long)-9223372036854775808;
         public int CompareTo(System.Int64 value) { throw null; }
@@ -2040,7 +2040,7 @@ namespace System
     [System.CLSCompliantAttribute(false)]
     public partial struct SByte : System.IComparable, System.IComparable<sbyte>, System.IConvertible, System.IEquatable<sbyte>, System.IFormattable
     {
-        private int _dummy;
+        private sbyte _dummy;
         public const sbyte MaxValue = (sbyte)127;
         public const sbyte MinValue = (sbyte)-128;
         public int CompareTo(object obj) { throw null; }
@@ -2095,7 +2095,7 @@ namespace System
     }
     public partial struct Single : System.IComparable, System.IComparable<float>, System.IConvertible, System.IEquatable<float>, System.IFormattable
     {
-        private int _dummy;
+        private float _dummy;
         //public const float Epsilon = 1.401298E-45f;         -- defined in System.Runtime.Manual.cs
         //public const float MaxValue = 3.40282347E+38f;      -- defined in System.Runtime.Manual.cs
         //public const float MinValue = -3.40282347E+38f;     -- defined in System.Runtime.Manual.cs
@@ -3102,7 +3102,7 @@ namespace System
     [System.CLSCompliantAttribute(false)]
     public partial struct UInt16 : System.IComparable, System.IComparable<ushort>, System.IConvertible, System.IEquatable<ushort>, System.IFormattable
     {
-        private int _dummy;
+        private ushort _dummy;
         public const ushort MaxValue = (ushort)65535;
         public const ushort MinValue = (ushort)0;
         public int CompareTo(object value) { throw null; }
@@ -3153,7 +3153,7 @@ namespace System
     [System.CLSCompliantAttribute(false)]
     public partial struct UInt32 : System.IComparable, System.IComparable<uint>, System.IConvertible, System.IEquatable<uint>, System.IFormattable
     {
-        private int _dummy;
+        private uint _dummy;
         public const uint MaxValue = (uint)4294967295;
         public const uint MinValue = (uint)0;
         public int CompareTo(object value) { throw null; }
@@ -3204,7 +3204,7 @@ namespace System
     [System.CLSCompliantAttribute(false)]
     public partial struct UInt64 : System.IComparable, System.IComparable<ulong>, System.IConvertible, System.IEquatable<ulong>, System.IFormattable
     {
-        private int _dummy;
+        private ulong _dummy;
         public const ulong MaxValue = (ulong)18446744073709551615;
         public const ulong MinValue = (ulong)0;
         public int CompareTo(object value) { throw null; }
