@@ -301,6 +301,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 			VerifyGenericParameters (src, linked);
 			VerifyCustomAttributes (src, linked);
+			VerifyParameters (src, linked);
 		}
 
 		void VerifyResources (AssemblyDefinition original, AssemblyDefinition linked)
@@ -356,6 +357,16 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				for (int i = 0; i < src.GenericParameters.Count; ++i) {
 					// TODO: Verify constraints
 					VerifyCustomAttributes (src.GenericParameters [i], linked.GenericParameters [i]);
+				}
+			}
+		}
+
+		void VerifyParameters (IMethodSignature src, IMethodSignature linked)
+		{
+			Assert.AreEqual (src.HasParameters, linked.HasParameters);
+			if (src.HasParameters) {
+				for (int i = 0; i < src.Parameters.Count; ++i) {
+					VerifyCustomAttributes (src.Parameters [i], linked.Parameters [i]);
 				}
 			}
 		}
