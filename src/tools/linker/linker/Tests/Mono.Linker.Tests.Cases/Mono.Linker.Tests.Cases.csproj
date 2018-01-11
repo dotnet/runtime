@@ -38,6 +38,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Attributes\AttributeOnAssemblyIsKept.cs" />
+    <Compile Include="Attributes\AttributeOnParameterInUsedMethodIsKept.cs" />
     <Compile Include="Attributes\AttributeOnPreservedTypeWithTypeUsedInConstructorIsKept.cs" />
     <Compile Include="Attributes\AttributeOnPreservedTypeWithTypeUsedInDifferentNamespaceIsKept.cs" />
     <Compile Include="Attributes\AttributeOnPreservedTypeWithTypeUsedInFieldIsKept.cs" />
