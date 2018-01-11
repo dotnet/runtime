@@ -24,6 +24,9 @@ namespace System.Reflection.PortableExecutable.Tests
             Assert.Equal(128 + 4 + 20 + 224 + 16, new PEHeaderBuilder(Machine.Amd64).ComputeSizeOfPEHeaders(0));
             Assert.Equal(128 + 4 + 20 + 224 + 16 + 40 * 1, new PEHeaderBuilder(Machine.Amd64).ComputeSizeOfPEHeaders(1));
             Assert.Equal(128 + 4 + 20 + 224 + 16 + 40 * 2, new PEHeaderBuilder(Machine.Amd64).ComputeSizeOfPEHeaders(2));
+            Assert.Equal(128 + 4 + 20 + 224 + 16, new PEHeaderBuilder(Machine.Arm64).ComputeSizeOfPEHeaders(0));
+            Assert.Equal(128 + 4 + 20 + 224 + 16 + 40 * 1, new PEHeaderBuilder(Machine.Arm64).ComputeSizeOfPEHeaders(1));
+            Assert.Equal(128 + 4 + 20 + 224 + 16 + 40 * 2, new PEHeaderBuilder(Machine.Arm64).ComputeSizeOfPEHeaders(2));
         }
 
         [Fact]
