@@ -1160,7 +1160,7 @@ namespace MonoTests.System.Runtime.Caching
 
             cip = new CacheItemPolicy();
             cip.RemovedCallback = removedCb;
-            cip.AbsoluteExpiration = DateTimeOffset.Now.AddMilliseconds(sleepPeriod + 500);
+            cip.AbsoluteExpiration = DateTimeOffset.Now.AddMilliseconds(sleepPeriod + 55500);
             mc.Set("key4", "value4", cip);
 
             await Task.Delay(sleepPeriod);
