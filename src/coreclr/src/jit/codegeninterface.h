@@ -151,6 +151,11 @@ protected:
     regMaskTP genLiveMask(VARSET_VALARG_TP liveSet);
 #endif
 
+public:
+    bool genUseOptimizedWriteBarriers(GCInfo::WriteBarrierForm wbf);
+    bool genUseOptimizedWriteBarriers(GenTree* tgt, GenTree* assignVal);
+    CorInfoHelpFunc genWriteBarrierHelperForWriteBarrierForm(GenTree* tgt, GCInfo::WriteBarrierForm wbf);
+
     // The following property indicates whether the current method sets up
     // an explicit stack frame or not.
 private:
