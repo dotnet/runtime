@@ -139,6 +139,9 @@ static void *open_handle (void *handle, MonoString *mapName, int mode, gint64 *c
 	wchar_t *w_mapName = NULL;
 	HANDLE result = NULL;
 
+	// INVALID_HANDLE_VALUE (-1) is valid, to make named shared memory,
+	// backed by physical memory / pagefile.
+
 	if (handle == INVALID_HANDLE_VALUE) {
 		if (*capacity <= 0 && mode != FILE_MODE_OPEN) {
 			*error = CAPACITY_MUST_BE_POSITIVE;
@@ -156,7 +159,7 @@ static void *open_handle (void *handle, MonoString *mapName, int mode, gint64 *c
 		}
 	} else {
 		FILE_STANDARD_INFO info;
-		if (!GetFileInformationByHandleEx ((HANDLE) handle, FileStandardInfo, &info, sizeof (FILE_STANDARD_INFO))) {
+		if (!GetFileInformationByHandleEx (handle, FileStandardInfo, &info, sizeof (FILE_STANDARD_INFO))) {
 			*error = convert_win32_error (GetLastError (), COULD_NOT_OPEN);
 			return NULL;
 		}
@@ -171,10 +174,10 @@ static void *open_handle (void *handle, MonoString *mapName, int mode, gint64 *c
 		}
 	}
 
-	w_mapName = mapName ? mono_string_to_utf16 (mapName) : NULL;
+	w_mapName = mapName ? mono_string_chars (mapName) : NULL;
 
 	if (mode == FILE_MODE_CREATE_NEW || handle != INVALID_HANDLE_VALUE) {
-		result = CreateFileMappingW ((HANDLE)handle, NULL, get_page_access (access) | options, (DWORD)(((guint64)*capacity) >> 32), (DWORD)*capacity, w_mapName);
+		result = CreateFileMappingW (handle, NULL, get_page_access (access) | options, (DWORD)(((guint64)*capacity) >> 32), (DWORD)*capacity, w_mapName);
 		if (result && GetLastError () == ERROR_ALREADY_EXISTS) {
 			CloseHandle (result);
 			result = NULL;
@@ -209,7 +212,7 @@ static void *open_handle (void *handle, MonoString *mapName, int mode, gint64 *c
 		guint32 waitSleep = 0;
 
 		while (waitRetries > 0) {
-			result = CreateFileMappingW ((HANDLE)handle, NULL, get_page_access (access) | options, (DWORD)(((guint64)*capacity) >> 32), (DWORD)*capacity, w_mapName);
+			result = CreateFileMappingW (handle, NULL, get_page_access (access) | options, (DWORD)(((guint64)*capacity) >> 32), (DWORD)*capacity, w_mapName);
 			if (result)
 				break;
 			if (GetLastError() != ERROR_ACCESS_DENIED) {
@@ -238,8 +241,6 @@ static void *open_handle (void *handle, MonoString *mapName, int mode, gint64 *c
 		}
 	}
 
-	if (w_mapName)
-		g_free (w_mapName);
 	return result;
 }
 
@@ -253,7 +254,7 @@ void *mono_mmap_open_file (MonoString *path, int mode, MonoString *mapName, gint
 	gboolean delete_on_error = FALSE;
 
 	if (path) {
-		w_path = mono_string_to_utf16 (path);
+		w_path = mono_string_chars (path);
 		WIN32_FILE_ATTRIBUTE_DATA file_attrs;
 		gboolean existed = GetFileAttributesExW (w_path, GetFileExInfoStandard, &file_attrs);
 		if (!existed && mode == FILE_MODE_CREATE_NEW && *capacity == 0) {
@@ -266,6 +267,9 @@ void *mono_mmap_open_file (MonoString *path, int mode, MonoString *mapName, gint
 			goto done;
 		}
 		delete_on_error = !existed;
+	} else {
+		// INVALID_HANDLE_VALUE (-1) is valid, to make named shared memory,
+		// backed by physical memory / pagefile.
 	}
 
 	result = open_handle (hFile, mapName, mode, capacity, access, options, error);
@@ -275,8 +279,6 @@ done:
 		CloseHandle (hFile);
 	if (!result && delete_on_error)
 		DeleteFileW (w_path);
-	if (w_path)
-		g_free (w_path);
 
 	return result;
 }
@@ -291,13 +293,13 @@ void *mono_mmap_open_handle (void *handle, MonoString *mapName, gint64 *capacity
 void mono_mmap_close (void *mmap_handle)
 {
 	g_assert (mmap_handle);
-	CloseHandle ((HANDLE) mmap_handle);
+	CloseHandle (mmap_handle);
 }
 
 void mono_mmap_configure_inheritability (void *mmap_handle, gboolean inheritability)
 {
 	g_assert (mmap_handle);
-	if (!SetHandleInformation ((HANDLE) mmap_handle, HANDLE_FLAG_INHERIT, inheritability ? HANDLE_FLAG_INHERIT : 0)) {
+	if (!SetHandleInformation (mmap_handle, HANDLE_FLAG_INHERIT, inheritability ? HANDLE_FLAG_INHERIT : 0)) {
 		g_error ("mono_mmap_configure_inheritability: SetHandleInformation failed with error %d!", GetLastError ());
 	}
 }
@@ -361,7 +363,7 @@ int mono_mmap_map (void *handle, gint64 offset, gint64 *size, int access, void *
 		return CAPACITY_LARGER_THAN_LOGICAL_ADDRESS_SPACE;
 #endif
 	
-	void *address = MapViewOfFile ((HANDLE) handle, get_file_map_access (access), (DWORD) (newOffset >> 32), (DWORD) newOffset, (SIZE_T) nativeSize);
+	void *address = MapViewOfFile (handle, get_file_map_access (access), (DWORD) (newOffset >> 32), (DWORD) newOffset, (SIZE_T) nativeSize);
 	if (!address)
 		return convert_win32_error (GetLastError (), COULD_NOT_MAP_MEMORY);
 
