@@ -2595,20 +2595,11 @@ void LinearScan::TreeNodeInfoInitGCWriteBarrier(GenTree* tree, TreeNodeInfo* inf
     info->srcCount = 2;
     assert(info->dstCount == 0);
 
-    bool useOptimizedWriteBarrierHelper = false; // By default, assume no optimized write barriers.
+    bool useOptimizedWriteBarrierHelper = compiler->codeGen->genUseOptimizedWriteBarriers(tree, src);
 
 #if NOGC_WRITE_BARRIERS
 
 #if defined(_TARGET_X86_)
-
-    useOptimizedWriteBarrierHelper = true; // On x86, use the optimized write barriers by default.
-#ifdef DEBUG
-    GCInfo::WriteBarrierForm wbf = compiler->codeGen->gcInfo.gcIsWriteBarrierCandidate(tree, src);
-    if (wbf == GCInfo::WBF_NoBarrier_CheckNotHeapInDebug) // This one is always a call to a C++ method.
-    {
-        useOptimizedWriteBarrierHelper = false;
-    }
-#endif
 
     if (useOptimizedWriteBarrierHelper)
     {

@@ -269,7 +269,7 @@ protected:
     void genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize);
 #endif
 
-    void genGCWriteBarrier(GenTreePtr tree, GCInfo::WriteBarrierForm wbf);
+    void genGCWriteBarrier(GenTreePtr tgt, GCInfo::WriteBarrierForm wbf);
 
     BasicBlock* genCreateTempLabel();
 

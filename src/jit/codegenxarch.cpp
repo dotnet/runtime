@@ -4987,14 +4987,7 @@ bool CodeGen::genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarri
     assert(writeBarrierForm != GCInfo::WBF_NoBarrier);
 
 #if defined(_TARGET_X86_) && NOGC_WRITE_BARRIERS
-    bool useOptimizedWriteBarriers = true;
-
-#ifdef DEBUG
-    useOptimizedWriteBarriers =
-        (writeBarrierForm != GCInfo::WBF_NoBarrier_CheckNotHeapInDebug); // This one is always a call to a C++ method.
-#endif
-
-    if (!useOptimizedWriteBarriers)
+    if (!genUseOptimizedWriteBarriers(writeBarrierForm))
     {
         return false;
     }
@@ -5002,15 +4995,26 @@ bool CodeGen::genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarri
     const static int regToHelper[2][8] = {
         // If the target is known to be in managed memory
         {
-            CORINFO_HELP_ASSIGN_REF_EAX, CORINFO_HELP_ASSIGN_REF_ECX, -1, CORINFO_HELP_ASSIGN_REF_EBX, -1,
-            CORINFO_HELP_ASSIGN_REF_EBP, CORINFO_HELP_ASSIGN_REF_ESI, CORINFO_HELP_ASSIGN_REF_EDI,
+            CORINFO_HELP_ASSIGN_REF_EAX, // EAX
+            CORINFO_HELP_ASSIGN_REF_ECX, // ECX
+            -1,                          // EDX (always the target address)
+            CORINFO_HELP_ASSIGN_REF_EBX, // EBX
+            -1,                          // ESP
+            CORINFO_HELP_ASSIGN_REF_EBP, // EBP
+            CORINFO_HELP_ASSIGN_REF_ESI, // ESI
+            CORINFO_HELP_ASSIGN_REF_EDI, // EDI
         },
 
         // Don't know if the target is in managed memory
         {
-            CORINFO_HELP_CHECKED_ASSIGN_REF_EAX, CORINFO_HELP_CHECKED_ASSIGN_REF_ECX, -1,
-            CORINFO_HELP_CHECKED_ASSIGN_REF_EBX, -1, CORINFO_HELP_CHECKED_ASSIGN_REF_EBP,
-            CORINFO_HELP_CHECKED_ASSIGN_REF_ESI, CORINFO_HELP_CHECKED_ASSIGN_REF_EDI,
+            CORINFO_HELP_CHECKED_ASSIGN_REF_EAX, // EAX
+            CORINFO_HELP_CHECKED_ASSIGN_REF_ECX, // ECX
+            -1,                                  // EDX (always the target address)
+            CORINFO_HELP_CHECKED_ASSIGN_REF_EBX, // EBX
+            -1,                                  // ESP
+            CORINFO_HELP_CHECKED_ASSIGN_REF_EBP, // EBP
+            CORINFO_HELP_CHECKED_ASSIGN_REF_ESI, // ESI
+            CORINFO_HELP_CHECKED_ASSIGN_REF_EDI, // EDI
         },
     };
 

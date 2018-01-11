@@ -986,6 +986,7 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   //    For e.g return value could be preserved in rcx so that it is available for
   //    profiler.
   #define REG_DEFAULT_HELPER_CALL_TARGET    REG_RAX
+  #define RBM_DEFAULT_HELPER_CALL_TARGET    RBM_RAX
 
   // GenericPInvokeCalliHelper VASigCookie Parameter
   #define REG_PINVOKE_COOKIE_PARAM          REG_R11
@@ -1242,12 +1243,12 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
 
   #define RBM_CALLEE_SAVED        (RBM_INT_CALLEE_SAVED | RBM_FLT_CALLEE_SAVED)
   #define RBM_CALLEE_TRASH        (RBM_INT_CALLEE_TRASH | RBM_FLT_CALLEE_TRASH)
-#ifdef LEGACY_BACKEND
-  #define RBM_CALLEE_TRASH_NOGC   (RBM_R2|RBM_R3|RBM_LR)
-#else
-  #define RBM_CALLEE_TRASH_NOGC   RBM_CALLEE_TRASH
-#endif
+
   #define REG_DEFAULT_HELPER_CALL_TARGET REG_R12
+  #define RBM_DEFAULT_HELPER_CALL_TARGET RBM_R12
+
+  #define RBM_CALLEE_TRASH_NOGC   (RBM_R2|RBM_R3|RBM_LR|RBM_DEFAULT_HELPER_CALL_TARGET)
+
   #define REG_FASTTAILCALL_TARGET REG_R12   // Target register for fast tail call
   #define RBM_FASTTAILCALL_TARGET RBM_R12
 
@@ -1598,8 +1599,13 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
 
   #define RBM_CALLEE_SAVED        (RBM_INT_CALLEE_SAVED | RBM_FLT_CALLEE_SAVED)
   #define RBM_CALLEE_TRASH        (RBM_INT_CALLEE_TRASH | RBM_FLT_CALLEE_TRASH)
-  #define RBM_CALLEE_TRASH_NOGC   (RBM_R12|RBM_R13|RBM_R14|RBM_R15|RBM_IP1)
+
   #define REG_DEFAULT_HELPER_CALL_TARGET REG_R12
+  #define RBM_DEFAULT_HELPER_CALL_TARGET RBM_R12
+
+  // REVIEW: why does arm64 RBM_CALLEE_TRASH_NOGC include IP1? The JIT_ByRefWriteBarrier only trashes r12 and r15.
+  #define RBM_CALLEE_TRASH_NOGC   (RBM_R12|RBM_R15|RBM_IP1|RBM_DEFAULT_HELPER_CALL_TARGET)
+
   #define REG_FASTTAILCALL_TARGET REG_IP0   // Target register for fast tail call
   #define RBM_FASTTAILCALL_TARGET RBM_IP0
 
