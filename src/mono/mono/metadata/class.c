@@ -8411,13 +8411,15 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 
 			// If the target we're trying to cast to is a valuetype, we must account of weird valuetype equivalences such as IntEnum <> int or uint <> int
 			// We can't apply it for ref types as this would go wrong with arrays - IList<byte[]> would have byte tested
-			if (iface_klass->valuetype)
-				iface_klass = iface_klass->cast_class;
+			if (!mono_class_is_nullable (iface_klass)) {
+				if (iface_klass->valuetype)
+					iface_klass = iface_klass->cast_class;
 
-			//array covariant casts only operates on scalar to scalar
-			//This is so int[] can't be casted to IComparable<int>[]
-			if (!(obj_klass->valuetype && !iface_klass->valuetype) && mono_class_is_assignable_from (iface_klass, obj_klass))
-				return TRUE;
+				//array covariant casts only operates on scalar to scalar
+				//This is so int[] can't be casted to IComparable<int>[]
+				if (!(obj_klass->valuetype && !iface_klass->valuetype) && mono_class_is_assignable_from (iface_klass, obj_klass))
+					return TRUE;
+			}
 		}
 
 		if (mono_class_has_variant_generic_params (klass)) {

@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using System.Reflection;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
@@ -787,6 +788,11 @@ class Tests {
 		}
 		if (!ok)
 			return 12;
+
+		object arr = new int [10];
+		if (arr is IList<int?>)
+			return 13;
+
 		return 0;
 	}
 
