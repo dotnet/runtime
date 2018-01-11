@@ -90721,7 +90721,7 @@ RelativePath=GC\API\NoGCRegion\NoGC\NoGC.cmd
 WorkingDir=GC\API\NoGCRegion\NoGC
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW
+Categories=EXPECTED_PASS;NEW;GCSTRESS_EXCLUDE
 HostStyle=0
 
 [DevDiv_462274.cmd_11391]
