@@ -1955,7 +1955,7 @@ namespace System
     }
     public readonly ref partial struct ReadOnlySpan<T>
     {
-        private readonly int _dummy;
+        private readonly object _dummy;
         [System.CLSCompliantAttribute(false)]
         public unsafe ReadOnlySpan(void* pointer, int length) { throw null; }
         public ReadOnlySpan(T[] array) { throw null; }
@@ -1984,7 +1984,7 @@ namespace System
         public bool TryCopyTo(System.Span<T> destination) { throw null; }
         public ref partial struct Enumerator
         {
-            private int _dummy;
+            private object _dummy;
             public ref readonly T Current { get { throw null; } }
             public bool MoveNext() { throw null; }
         }
@@ -2154,7 +2154,7 @@ namespace System
     }
     public readonly ref partial struct Span<T>
     {
-        private readonly int _dummy;
+        private readonly object _dummy;
         [System.CLSCompliantAttribute(false)]
         public unsafe Span(void* pointer, int length) { throw null; }
         public Span(T[] array) { throw null; }
@@ -2186,7 +2186,7 @@ namespace System
         public bool TryCopyTo(System.Span<T> destination) { throw null; }
         public ref partial struct Enumerator
         {
-            private int _dummy;
+            private object _dummy;
             public ref T Current { get { throw null; } }
             public bool MoveNext() { throw null; }
         }
