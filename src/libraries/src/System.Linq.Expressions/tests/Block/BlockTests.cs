@@ -225,5 +225,29 @@ namespace System.Linq.Expressions.Tests
             BlockExpression e3 = Expression.Block(new[] { Expression.Parameter(typeof(int), "x"), Expression.Parameter(typeof(int), "y") }, Expression.Empty());
             Assert.Equal("{var x;var y; ... }", e3.ToString());
         }
+
+        [Fact]
+        public static void InsignificantBlock()
+        {
+            Expression<Action> nop = Expression.Lambda<Action>(
+                    Expression.Block(
+                        Expression.Block(Expression.Empty(), Expression.Default(typeof(void))),
+                        Expression.Block(Expression.Empty(), Expression.Default(typeof(void))),
+                        Expression.Block(Expression.Empty(), Expression.Default(typeof(void))),
+                        Expression.Block(Expression.Empty(), Expression.Default(typeof(void)))));
+
+            nop.Verify(
+@".method void ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure)
+{
+  .maxstack 0
+  IL_0000: ret        
+}",
+@"object lambda_method(object[])
+{
+  .locals 0
+  .maxstack 0
+  .maxcontinuation 0
+}");
+        }
     }
 }
