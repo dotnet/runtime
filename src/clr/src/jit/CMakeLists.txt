@@ -79,6 +79,122 @@ set( JIT_SOURCES
   valuenum.cpp
 )
 
+# Add header files to Visual Studio vcxproj, not required for unixes
+# change has effect on editor experience and has no impact on build
+if (WIN32)
+  set( JIT_HEADERS
+    _typeinfo.h
+    alloc.h
+    arraystack.h
+    bitset.h
+    bitsetasshortlong.h
+    bitsetasuint64.h
+    bitsetasuint64inclass.h
+    bitsetops.h
+    bitvec.h
+    block.h
+    blockset.h
+    codegen.h
+    codegenclassic.h
+    codegeninterface.h
+    codegenlinear.h
+    compiler.h
+    compiler.hpp
+    compilerbitsettraits.h
+    compilerbitsettraits.hpp
+    compmemkind.h
+    compphases.h
+    dataflow.h
+    decomposelongs.h
+    disasm.h
+    emit.h
+    emitarm.h
+    emitarm64.h
+    emitdef.h
+    emitfmts.h
+    emitfmtsarm.h
+    emitfmtsarm64.h
+    emitfmtsxarch.h
+    emitinl.h
+    emitjmps.h
+    emitpub.h
+    emitxarch.h
+    error.h
+    fp.h
+    gentree.h
+    gtlist.h
+    gtstructs.h
+    hashbv.h
+    host.h
+    hostallocator.h
+    hwintrinsiclistxarch.h
+    ICorJitInfo_API_names.h
+    ICorJitInfo_API_wrapper.hpp
+    inline.h
+    inlinepolicy.h
+    instr.h
+    instrs.h
+    instrsarm.h
+    instrsarm64.h
+    instrsxarch.h
+    jit.h
+    jitconfig.h
+    jitconfigvalues.h
+    jitee.h
+    jiteh.h
+    jitexpandarray.h
+    jitgcinfo.h
+    jithashtable.h
+    jitpch.h
+    jitstd.h
+    jittelemetry.h
+    lir.h
+    loopcloning.h
+    loopcloningopts.h
+    lower.h
+    lsra_reftypes.h
+    lsra.h
+    namedintrinsiclist.h
+    nodeinfo.h
+    objectalloc.h
+    opcode.h
+    phase.h
+    rangecheck.h
+    rationalize.h
+    regalloc.h
+    register_arg_convention.h
+    register.h
+    registerarm.h
+    registerarm64.h
+    registerfp.h
+    registerxmm.h
+    reglist.h
+    regpair.h
+    regset.h
+    sideeffects.h
+    simd.h
+    simdintrinsiclist.h
+    sm.h
+    smallhash.h
+    smcommon.h
+    smopenum.h
+    ssabuilder.h
+    ssaconfig.h
+    ssarenamestate.h
+    target.h
+    tinyarray.h
+    titypes.h
+    typelist.h
+    unwind.h
+    utils.h
+    valuenum.h
+    valuenumtype.h
+    varset.h
+    vartype.h
+    x86_instrs.h
+  )
+endif(WIN32)
+
 # The following defines all the source files used by the "legacy" back-end (#ifdef LEGACY_BACKEND).
 # It is always safe to include both legacy and non-legacy files in the build, as everything is properly
 # #ifdef'ed, though it makes the build slightly slower to do so. Note there is only a legacy backend for
@@ -165,6 +281,7 @@ endif()
 
 set( SOURCES
   ${JIT_SOURCES}
+  ${JIT_HEADERS}
   ${JIT_RESOURCES}
 )
 
