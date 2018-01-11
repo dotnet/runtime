@@ -27,6 +27,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			Assert.IsFalse (linkedAssembly.MainModule.HasExportedTypes);
 
 			VerifyCustomAttributes (originalAssembly, linkedAssembly);
+			VerifySecurityAttributes (originalAssembly, linkedAssembly);
 
 			VerifyResources (originalAssembly, linkedAssembly);
 
@@ -88,6 +89,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 			VerifyGenericParameters (original, linked);
 			VerifyCustomAttributes (original, linked);
+			VerifySecurityAttributes (original, linked);
 
 			foreach (var td in original.NestedTypes) {
 				VerifyTypeDefinition (td, linked?.NestedTypes.FirstOrDefault (l => td.FullName == l.FullName));
@@ -302,6 +304,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			VerifyGenericParameters (src, linked);
 			VerifyCustomAttributes (src, linked);
 			VerifyParameters (src, linked);
+			VerifySecurityAttributes (src, linked);
 		}
 
 		void VerifyResources (AssemblyDefinition original, AssemblyDefinition linked)
@@ -321,6 +324,17 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			var linkedAttrs = FilterLinkedAttributes (linked).ToList ();
 
 			Assert.That (linkedAttrs, Is.EquivalentTo (expectedAttrs), $"Custom attributes on `{src}' are not matching");
+		}
+
+		protected virtual void VerifySecurityAttributes (ICustomAttributeProvider src, ISecurityDeclarationProvider linked)
+		{
+			var expectedAttrs = GetCustomAttributeCtorValues<object> (src, nameof (KeptSecurityAttribute))
+				.Select (attr => attr.ToString ())
+				.ToList ();
+
+			var linkedAttrs = FilterLinkedSecurityAttributes (linked).ToList ();
+
+			Assert.That (linkedAttrs, Is.EquivalentTo (expectedAttrs), $"Security attributes on `{src}' are not matching");
 		}
 
 		/// <summary>
@@ -348,6 +362,13 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 				yield return attr.AttributeType.FullName;
 			}
+		}
+
+		protected virtual IEnumerable<string> FilterLinkedSecurityAttributes (ISecurityDeclarationProvider linked)
+		{
+			return linked.SecurityDeclarations
+				.SelectMany (d => d.SecurityAttributes)
+				.Select (attr => attr.AttributeType.ToString ());
 		}
 
 		void VerifyGenericParameters (IGenericParameterProvider src, IGenericParameterProvider linked)
