@@ -6,6 +6,7 @@ using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
@@ -114,7 +115,7 @@ namespace System.IO.Pipes
             }
 
             // For anonymous pipes, read from the file descriptor.
-            fixed (byte* bufPtr = &buffer.DangerousGetPinnableReference())
+            fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
             {
                 int result = CheckPipeCall(Interop.Sys.Read(_handle, bufPtr, buffer.Length));
                 Debug.Assert(result <= buffer.Length);
@@ -149,7 +150,7 @@ namespace System.IO.Pipes
             }
 
             // For anonymous pipes, write the file descriptor.
-            fixed (byte* bufPtr = &buffer.DangerousGetPinnableReference())
+            fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
             {
                 while (buffer.Length > 0)
                 {
@@ -223,7 +224,7 @@ namespace System.IO.Pipes
                 // accepts a Memory<T> in the near future.
                 byte[] buffer;
                 int offset, count;
-                if (source.DangerousTryGetArray(out ArraySegment<byte> segment))
+                if (MemoryMarshal.TryGetArray(source, out ArraySegment<byte> segment))
                 {
                     buffer = segment.Array;
                     offset = segment.Offset;

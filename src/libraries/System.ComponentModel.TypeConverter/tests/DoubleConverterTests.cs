@@ -25,7 +25,7 @@ namespace System.ComponentModel.Tests
         [Fact]
         public static void ConvertFrom_WithContext_Negative()
         {
-            Assert.Throws<Exception>(
+            AssertExtensions.Throws<ArgumentException, Exception>(
                 () => DoubleConverterTests.s_converter.ConvertFrom(TypeConverterTests.s_context, null, "0x8"));
         }
 

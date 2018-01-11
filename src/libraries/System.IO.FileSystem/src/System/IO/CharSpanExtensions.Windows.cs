@@ -13,9 +13,9 @@ namespace System.IO
         internal static unsafe int CompareOrdinal(ReadOnlySpan<char> first, ReadOnlySpan<char> second, bool ignoreCase = false)
         {
             int result = Interop.Kernel32.CompareStringOrdinal(
-                ref first.DangerousGetPinnableReference(),
+                ref MemoryMarshal.GetReference(first),
                 first.Length,
-                ref second.DangerousGetPinnableReference(),
+                ref MemoryMarshal.GetReference(second),
                 second.Length,
                 ignoreCase);
 

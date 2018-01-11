@@ -69,7 +69,7 @@ namespace System.Net.Sockets
             int sockAddrLen = socketAddress != null ? socketAddressLen : 0;
 
             fixed (byte* sockAddr = socketAddress)
-            fixed (byte* b = &buffer.DangerousGetPinnableReference())
+            fixed (byte* b = &MemoryMarshal.GetReference(buffer))
             {
                 var iov = new Interop.Sys.IOVector {
                     Base = b,
@@ -107,7 +107,7 @@ namespace System.Net.Sockets
         {
             int sent;
             fixed (byte* sockAddr = socketAddress)
-            fixed (byte* b = &buffer.DangerousGetPinnableReference())
+            fixed (byte* b = &MemoryMarshal.GetReference(buffer))
             {
                 var iov = new Interop.Sys.IOVector
                 {
@@ -355,7 +355,7 @@ namespace System.Net.Sockets
 
             long received;
             fixed (byte* rawSocketAddress = socketAddress)
-            fixed (byte* b = &buffer.DangerousGetPinnableReference())
+            fixed (byte* b = &MemoryMarshal.GetReference(buffer))
             {
                 var iov = new Interop.Sys.IOVector {
                     Base = b,

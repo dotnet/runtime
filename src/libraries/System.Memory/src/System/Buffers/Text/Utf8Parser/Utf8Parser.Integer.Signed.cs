@@ -2,7 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if !netstandard
+using Internal.Runtime.CompilerServices;
+#else
 using System.Runtime.CompilerServices;
+#endif
 
 namespace System.Buffers.Text
 {
@@ -37,7 +41,7 @@ namespace System.Buffers.Text
         {
             switch (standardFormat)
             {
-                case default(char):
+                case (default):
                 case 'g':
                 case 'G':
                 case 'd':
@@ -83,7 +87,7 @@ namespace System.Buffers.Text
         {
             switch (standardFormat)
             {
-                case default(char):
+                case (default):
                 case 'g':
                 case 'G':
                 case 'd':
@@ -129,7 +133,7 @@ namespace System.Buffers.Text
         {
             switch (standardFormat)
             {
-                case default(char):
+                case (default):
                 case 'g':
                 case 'G':
                 case 'd':
@@ -175,7 +179,7 @@ namespace System.Buffers.Text
         {
             switch (standardFormat)
             {
-                case default(char):
+                case (default):
                 case 'g':
                 case 'G':
                 case 'd':

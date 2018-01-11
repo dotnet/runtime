@@ -10,9 +10,12 @@
   <ItemGroup>
     <Compile Include="Perf.Base64EncodeDecode.cs" />
     <Compile Include="Perf.Span.BinaryReadAndWrite.cs" />
+    <Compile Include="Perf.Span.BinarySearch.cs" />
     <Compile Include="Perf.Span.Clear.cs" />
     <Compile Include="Perf.Span.Fill.cs" />
     <Compile Include="Perf.Span.IndexOf.cs" />
+    <Compile Include="Perf.Span.IndexOfAny.cs" />
+    <Compile Include="Perf.Span.SequenceCompareTo.cs" />
     <Compile Include="Perf.Span.StartsWith.cs" />
     <Compile Include="Perf.MemorySlice.cs" />
     <Compile Include="Perf.Utf8Formatter.cs" />
@@ -28,6 +31,9 @@
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>PerfRunner</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -17,7 +17,7 @@
             "PB_DockerTag": "centos-7-d485f41-20173404063424",
             "PB_BuildArguments": "-buildArch=x64 -$(PB_ConfigurationGroup) -stripSymbols",
             "PB_BuildTestsArguments": "-buildArch=x64 -$(PB_ConfigurationGroup) -SkipTests -Outerloop -- /p:ArchiveTests=true /p:EnableDumpling=true",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:DotNetRestoreSources=$(PB_RestoreSource)",
+            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_TargetQueue": "Centos.73.Amd64+RedHat.72.Amd64+RedHat.73.Amd64+Debian.87.Amd64+Debian.90.Amd64+Ubuntu.1404.Amd64+Ubuntu.1604.Amd64+Ubuntu.1704.Amd64+Ubuntu.1710.Amd64+suse.422.amd64+SLES.12.Amd64+fedora.25.amd64+Fedora.26.Amd64",
             "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Linux"
           },
@@ -33,7 +33,7 @@
             "PB_DockerTag": "centos-6-376e1a3-20174311014331",
             "PB_BuildArguments": "-buildArch=x64 -$(PB_ConfigurationGroup) -stripSymbols -RuntimeOS=rhel.6 -- /p:PortableBuild=false",
             "PB_BuildTestsArguments": "-buildArch=x64 -$(PB_ConfigurationGroup) -SkipTests -Outerloop -RuntimeOS=rhel.6 -- /p:ArchiveTests=true /p:EnableDumpling=true /p:PortableBuild=false",
-            "PB_SyncArguments": "-p -RuntimeOS=rhel.6 -- /p:ArchGroup=x64 /p:PortableBuild=false /p:DotNetRestoreSources=$(PB_RestoreSource)",
+            "PB_SyncArguments": "-p -RuntimeOS=rhel.6 -- /p:ArchGroup=x64 /p:PortableBuild=false /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_TargetQueue": "RedHat.69.Amd64",
             "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Linux"
           },
@@ -50,7 +50,7 @@
             "PB_BuildArguments": "-buildArch=x64 -$(PB_ConfigurationGroup) -BuildTests=false -stripSymbols -RuntimeOS=alpine.3.6 -- /p:PortableBuild=false",
             "PB_SkipTestBuild" : "true",
             "PB_BuildTestsArguments": "-buildArch=x64 -$(PB_ConfigurationGroup) -SkipTests -Outerloop -RuntimeOS=alpine.3.6 -- /p:ArchiveTests=false /p:EnableDumpling=true /p:PortableBuild=false",
-            "PB_SyncArguments": "-p -BuildTests=false -RuntimeOS=alpine.3.6 -- /p:ArchGroup=x64 /p:PortableBuild=false /p:DotNetRestoreSources=$(PB_RestoreSource)",
+            "PB_SyncArguments": "-p -BuildTests=false -RuntimeOS=alpine.3.6 -- /p:ArchGroup=x64 /p:PortableBuild=false /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_TargetQueue": "Alpine.36.Amd64",
             "PB_EnableCloudTest" : "false",
             "PB_CreateHelixArguments": "/p:EnableCloudTest=$(PB_EnableCloudTest) /p:ArchGroup=x64 /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Linux"
@@ -67,7 +67,7 @@
             "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20170319080304",
             "PB_Architecture": "arm",
             "PB_BuildArguments": "-buildArch=arm -$(PB_ConfigurationGroup) -stripSymbols",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:DotNetRestoreSources=$(PB_RestoreSource)"
+            "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)"
           },
           "ReportingParameters": {
             "OperatingSystem": "Linux",
@@ -85,14 +85,14 @@
       "BuildParameters": {
         "PB_BuildArguments": "-buildArch=x64 -$(PB_ConfigurationGroup) -stripSymbols",
         "PB_BuildTestsArguments": "-buildArch=x64 -$(PB_ConfigurationGroup) -SkipTests -Outerloop -- /p:ArchiveTests=true",
-        "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:DotNetRestoreSources=$(PB_RestoreSource)",
+        "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
         "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:EnableCloudTest=false /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=OSX"
       },
       "Definitions": [{
           "Name": "DotNet-CoreFx-Trusted-OSX",
           "Parameters": {
             "PB_BuildArguments": "-buildArch=x64 -$(PB_ConfigurationGroup)",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:DotNetRestoreSources=$(PB_RestoreSource)",
+            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_TargetQueue": "OSX.1012.Amd64+OSX.1013.Amd64",
             "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=OSX"
           },
@@ -119,7 +119,7 @@
             "PB_Platform": "arm",
             "PB_BuildArguments": "-buildArch=arm -$(PB_ConfigurationGroup) -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-buildArch=arm -$(PB_ConfigurationGroup) -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:RuntimeOS=win10 /p:DotNetRestoreSources=$(PB_RestoreSource)",
+            "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:RuntimeOS=win10 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_CreateHelixArguments": "/p:ArchGroup=arm /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:EnableCloudTest=false /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT"
           },
           "ReportingParameters": {
@@ -135,7 +135,7 @@
             "PB_Platform": "arm64",
             "PB_BuildArguments": "-buildArch=arm64 -$(PB_ConfigurationGroup) -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-buildArch=arm64 -$(PB_ConfigurationGroup) -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=arm64 /p:RuntimeOS=win10 /p:DotNetRestoreSources=$(PB_RestoreSource)",
+            "PB_SyncArguments": "-p -- /p:ArchGroup=arm64 /p:RuntimeOS=win10 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_CreateHelixArguments": "/p:ArchGroup=arm64 /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:EnableCloudTest=false /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT"
           },
           "ReportingParameters": {
@@ -151,7 +151,7 @@
             "PB_Platform": "x64",
             "PB_BuildArguments": "-buildArch=x64 -$(PB_ConfigurationGroup) -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-buildArch=x64 -$(PB_ConfigurationGroup) -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10 /p:DotNetRestoreSources=$(PB_RestoreSource)",
+            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_TargetQueue": "Windows.10.Amd64+Windows.10.Nano.Amd64+Windows.10.Amd64.Core+Windows.7.Amd64+Windows.81.Amd64",
             "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT"
           },
@@ -168,7 +168,7 @@
             "PB_Platform": "x86",
             "PB_BuildArguments": "-buildArch=x86 -$(PB_ConfigurationGroup) -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-buildArch=x86 -$(PB_ConfigurationGroup) -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10 /p:DotNetRestoreSources=$(PB_RestoreSource)",
+            "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_TargetQueue": "Windows.10.Amd64+Windows.10.Amd64.Core+Windows.7.Amd64+Windows.81.Amd64",
             "PB_CreateHelixArguments": "/p:ArchGroup=x86 /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT"
           },
@@ -185,7 +185,7 @@
             "PB_Platform": "arm",
             "PB_BuildArguments": "-framework=uap -buildArch=arm -$(PB_ConfigurationGroup) -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework=uap -buildArch=arm -$(PB_ConfigurationGroup) -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:RuntimeOS=win10 /p:TargetGroup=uap /p:DotNetRestoreSources=$(PB_RestoreSource)",
+            "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:RuntimeOS=win10 /p:TargetGroup=uap /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_TargetQueue": "Windows.10.Arm64",
             "PB_CreateHelixArguments": "/p:ArchGroup=arm /p:TargetGroup=uap /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/uwp/\""
           },
@@ -202,7 +202,7 @@
             "PB_Platform": "x64",
             "PB_BuildArguments": "-framework=uap -buildArch=x64 -$(PB_ConfigurationGroup) -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework=uap -buildArch=x64 -$(PB_ConfigurationGroup) -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10 /p:TargetGroup=uap /p:DotNetRestoreSources=$(PB_RestoreSource)",
+            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10 /p:TargetGroup=uap /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_TargetQueue": "Windows.10.Amd64.ClientRS3",
             "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:TargetGroup=uap /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/uwp/\""
           },
@@ -219,7 +219,7 @@
             "PB_Platform": "x86",
             "PB_BuildArguments": "-framework=uap -buildArch=x86 -$(PB_ConfigurationGroup) -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework=uap -buildArch=x86 -$(PB_ConfigurationGroup) -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10 /p:TargetGroup=uap /p:DotNetRestoreSources=$(PB_RestoreSource)",
+            "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10 /p:TargetGroup=uap /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_TargetQueue": "Windows.10.Amd64.ClientRS3",
             "PB_CreateHelixArguments": "/p:ArchGroup=x86 /p:TargetGroup=uap /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/uwp/\""
           },
@@ -234,9 +234,9 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "arm",
-            "PB_BuildArguments": "-framework=uapaot -buildArch=arm -$(PB_ConfigurationGroup) -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:DotNetRestoreSources=$(PB_RestoreSource)",
+            "PB_BuildArguments": "-framework=uapaot -buildArch=arm -$(PB_ConfigurationGroup) -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_BuildTestsArguments": "-framework=uapaot -buildArch=arm -$(PB_ConfigurationGroup) -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:RuntimeOS=win10 /p:TargetGroup=uapaot /p:DotNetRestoreSources=$(PB_RestoreSource)",
+            "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:RuntimeOS=win10 /p:TargetGroup=uapaot /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_TargetQueue": "Windows.10.Amd64",
             "PB_CreateHelixArguments": "/p:ArchGroup=arm /p:TargetGroup=uapaot /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:SecondaryQueue=Windows.10.Arm64 /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/ilc/\""
           },
@@ -251,9 +251,9 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x64",
-            "PB_BuildArguments": "-framework=uapaot -buildArch=x64 -$(PB_ConfigurationGroup) -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:DotNetRestoreSources=$(PB_RestoreSource)",
+            "PB_BuildArguments": "-framework=uapaot -buildArch=x64 -$(PB_ConfigurationGroup) -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_BuildTestsArguments": "-framework=uapaot -buildArch=x64 -$(PB_ConfigurationGroup) -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10 /p:TargetGroup=uapaot /p:DotNetRestoreSources=$(PB_RestoreSource)",
+            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10 /p:TargetGroup=uapaot /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_TargetQueue": "Windows.10.Amd64.ClientRS3",
             "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:TargetGroup=uapaot /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/ilc/\""
           },
@@ -268,9 +268,9 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x86",
-            "PB_BuildArguments": "-framework=uapaot -buildArch=x86 -$(PB_ConfigurationGroup) -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:DotNetRestoreSources=$(PB_RestoreSource)",
+            "PB_BuildArguments": "-framework=uapaot -buildArch=x86 -$(PB_ConfigurationGroup) -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_BuildTestsArguments": "-framework=uapaot -buildArch=x86 -$(PB_ConfigurationGroup) -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10 /p:DotNetRestoreSources=$(PB_RestoreSource)",
+            "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_TargetQueue": "Windows.10.Amd64.ClientRS3",
             "PB_CreateHelixArguments": "/p:ArchGroup=x86 /p:TargetGroup=uapaot /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/ilc/\""
           },
@@ -286,7 +286,7 @@
           "Parameters": {
             "PB_Platform": "x64",
             "PB_BuildArguments": "-allConfigurations -buildArch=x64 -$(PB_ConfigurationGroup) -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10 /p:BuildAllConfigurations=true /p:DotNetRestoreSources=$(PB_RestoreSource)"
+            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10 /p:BuildAllConfigurations=true /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -301,7 +301,7 @@
             "PB_Platform": "x64",
             "PB_BuildArguments": "-framework=netfx -buildArch=x64 -$(PB_ConfigurationGroup) -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework=netfx -buildArch=x64 -$(PB_ConfigurationGroup) -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10 /p:TargetGroup=netfx /p:DotNetRestoreSources=$(PB_RestoreSource)",
+            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10 /p:TargetGroup=netfx /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_TargetQueue": "Windows.10.Amd64",
             "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:TargetGroup=netfx /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/desktop/cli/\""
           },
@@ -318,7 +318,7 @@
             "PB_Platform": "x86",
             "PB_BuildArguments": "-framework=netfx -buildArch=x86 -$(PB_ConfigurationGroup) -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework=netfx -buildArch=x86 -$(PB_ConfigurationGroup) -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10 /p:TargetGroup=netfx /p:DotNetRestoreSources=$(PB_RestoreSource)",
+            "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10 /p:TargetGroup=netfx /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_TargetQueue": "Windows.10.Amd64",
             "PB_CreateHelixArguments": "/p:ArchGroup=x86 /p:TargetGroup=netfx /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/desktop/cli/\""
           },

@@ -1,0 +1,3 @@
+Compat issues with assembly System.Runtime.Intrinsics.X86:
+MembersMustExist : Member 'System.Runtime.Intrinsics.X86.Avx2.ShiftRightArithmeticVariable(System.Runtime.Intrinsics.Vector128<System.Int32>, System.Runtime.Intrinsics.Vector128<System.UInt32>)' does not exist in the implementation but it does exist in the contract.
+Total Issues: 1

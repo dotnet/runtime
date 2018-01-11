@@ -20,7 +20,8 @@ namespace System.Net.NetworkInformation.Tests
             _log = TestLogging.GetInstance();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/308
+        // dotnet: /d/git/corefx/src/Native/Unix/Common/pal_safecrt.h:47: errno_t memcpy_s(void *, size_t, const void *, size_t): Assertion `sizeInBytes >= count' failed.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/dotnet/corefx/issues/15513
         public void IPInfoTest_AccessAllProperties_NoErrors()
         {
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
@@ -102,7 +103,8 @@ namespace System.Net.NetworkInformation.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/308
+        // dotnet: /d/git/corefx/src/Native/Unix/Common/pal_safecrt.h:47: errno_t memcpy_s(void *, size_t, const void *, size_t): Assertion `sizeInBytes >= count' failed.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/dotnet/corefx/issues/15513
         public void IPInfoTest_AccessAllIPv4Properties_NoErrors()
         {
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
@@ -125,7 +127,8 @@ namespace System.Net.NetworkInformation.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/308
+        // dotnet: /d/git/corefx/src/Native/Unix/Common/pal_safecrt.h:47: errno_t memcpy_s(void *, size_t, const void *, size_t): Assertion `sizeInBytes >= count' failed.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/dotnet/corefx/issues/15513
         public void IPInfoTest_AccessAllIPv6Properties_NoErrors()
         {
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
@@ -150,7 +153,8 @@ namespace System.Net.NetworkInformation.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/308
+        // dotnet: /d/git/corefx/src/Native/Unix/Common/pal_safecrt.h:47: errno_t memcpy_s(void *, size_t, const void *, size_t): Assertion `sizeInBytes >= count' failed.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/dotnet/corefx/issues/15513
         [Trait("IPv6", "true")]
         public void IPv6ScopeId_AccessAllValues_Success()
         {

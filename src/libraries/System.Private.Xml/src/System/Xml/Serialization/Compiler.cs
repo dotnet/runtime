@@ -2,11 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if XMLSERIALIZERGENERATOR
-namespace Microsoft.XmlSerializer.Generator
-#else
 namespace System.Xml.Serialization
-#endif
 {
     using System.Reflection;
     using System.Reflection.Emit;
@@ -27,12 +23,10 @@ namespace System.Xml.Serialization
 
     internal class Compiler
     {
-#if !XMLSERIALIZERGENERATOR
         private bool _debugEnabled = DiagnosticsSwitches.KeepTempFiles.Enabled;
-#endif
         private StringWriter _writer = new StringWriter(CultureInfo.InvariantCulture);
 
-#if XMLSERIALIZERGENERATOR
+#if !FEATURE_SERIALIZATION_UAPAOT
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
         // It's OK to suppress the SxS warning.
         internal void AddImport(Type type, Hashtable types)

@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -329,6 +332,27 @@ namespace System.Collections.Immutable
 
                 return this.RemoveRecursive(key, keyComparer, out mutated);
             }
+
+#if FEATURE_ITEMREFAPI
+            /// <summary>
+            /// Returns a read-only reference to the value associated with the provided key.
+            /// </summary>
+            /// <exception cref="KeyNotFoundException">If the key is not present.</exception>
+            [Pure]
+            internal ref readonly TValue ValueRef(TKey key, IComparer<TKey> keyComparer)
+            {
+                Requires.NotNullAllowStructs(key, nameof(key));
+                Requires.NotNull(keyComparer, nameof(keyComparer));
+
+                var match = this.Search(key, keyComparer);
+                if (match.IsEmpty)
+                {
+                    throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
+                }
+
+                return ref match._value;
+            }
+#endif
 
             /// <summary>
             /// Tries to get the value.

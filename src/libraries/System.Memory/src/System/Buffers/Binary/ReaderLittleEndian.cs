@@ -94,7 +94,7 @@ namespace System.Buffers.Binary
             }
             return result;
         }
-        
+
         /// <summary>
         /// Reads an Int16 out of a read-only span of bytes as little endian.
         /// <returns>If the span is too small to contain an Int16, return false.</returns>

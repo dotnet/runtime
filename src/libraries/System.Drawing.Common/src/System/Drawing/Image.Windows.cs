@@ -13,11 +13,7 @@ using System.Runtime.Serialization;
 
 namespace System.Drawing
 {
-    /// <summary>
-    /// An abstract base class that provides functionality for 'Bitmap', 'Icon', 'Cursor', and 'Metafile' descended classes.
-    /// </summary>
-    [ImmutableObject(true)]
-    public abstract partial class Image : MarshalByRefObject, ICloneable, IDisposable, ISerializable
+    public abstract partial class Image
     {
 #if FINALIZATION_WATCH
         private string allocationSite = Graphics.GetAllocationStack();
@@ -35,9 +31,6 @@ namespace System.Drawing
         public delegate bool GetThumbnailImageAbort();
 
         internal IntPtr nativeImage;
-
-        // used to work around lack of animated gif encoder... rarely set...
-        private byte[] _rawData;
 
         //userData : so that user can use TAGS with IMAGES..
         private object _userData;
@@ -277,83 +270,6 @@ namespace System.Drawing
             Dispose(false);
         }
 
-        internal static void EnsureSave(Image image, string filename, Stream dataStream)
-        {
-            if (image.RawFormat.Equals(ImageFormat.Gif))
-            {
-                bool animatedGif = false;
-
-                Guid[] dimensions = image.FrameDimensionsList;
-                foreach (Guid guid in dimensions)
-                {
-                    FrameDimension dimension = new FrameDimension(guid);
-                    if (dimension.Equals(FrameDimension.Time))
-                    {
-                        animatedGif = image.GetFrameCount(FrameDimension.Time) > 1;
-                        break;
-                    }
-                }
-
-
-                if (animatedGif)
-                {
-                    try
-                    {
-                        Stream created = null;
-                        long lastPos = 0;
-                        if (dataStream != null)
-                        {
-                            lastPos = dataStream.Position;
-                            dataStream.Position = 0;
-                        }
-
-                        try
-                        {
-                            if (dataStream == null)
-                            {
-                                created = dataStream = File.OpenRead(filename);
-                            }
-
-                            image._rawData = new byte[(int)dataStream.Length];
-                            dataStream.Read(image._rawData, 0, (int)dataStream.Length);
-                        }
-                        finally
-                        {
-                            if (created != null)
-                            {
-                                created.Close();
-                            }
-                            else
-                            {
-                                dataStream.Position = lastPos;
-                            }
-                        }
-                    }
-                    // possible exceptions for reading the filename
-                    catch (UnauthorizedAccessException)
-                    {
-                    }
-                    catch (DirectoryNotFoundException)
-                    {
-                    }
-                    catch (IOException)
-                    {
-                    }
-                    // possible exceptions for setting/getting the position inside dataStream
-                    catch (NotSupportedException)
-                    {
-                    }
-                    catch (ObjectDisposedException)
-                    {
-                    }
-                    // possible exception when reading stuff into dataStream
-                    catch (ArgumentException)
-                    {
-                    }
-                }
-            }
-        }
-
         internal static Image CreateImageObject(IntPtr nativeImage)
         {
             Image image;
@@ -368,7 +284,7 @@ namespace System.Drawing
             switch ((ImageType)type)
             {
                 case ImageType.Bitmap:
-                    image = Bitmap.FromGDIplus(nativeImage);
+                    image = new Bitmap(nativeImage);
                     break;
 
                 case ImageType.Metafile:
@@ -1163,14 +1079,6 @@ namespace System.Drawing
             }
         }
 
-        internal void SetNativeImage(IntPtr handle)
-        {
-            if (handle == IntPtr.Zero)
-                throw new ArgumentException(SR.Format(SR.NativeHandle0), "handle");
-
-            nativeImage = handle;
-        }
-
         /// <summary>
         /// Creates a <see cref='Bitmap'/> from a Windows handle.
         /// </summary>
@@ -1190,7 +1098,7 @@ namespace System.Drawing
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
 
-            return Bitmap.FromGDIplus(bitmap);
+            return new Bitmap(bitmap);
         }
 
         /// <summary>

@@ -5,6 +5,10 @@
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
+#if !netstandard
+using Internal.Runtime.CompilerServices;
+#endif
+
 namespace System
 {
     internal static partial class SpanHelpers
@@ -96,7 +100,7 @@ namespace System
             }
         }
 
-        public unsafe static void ClearPointerSizedWithReferences(ref IntPtr ip, UIntPtr pointerSizeLength)
+        public static void ClearPointerSizedWithReferences(ref IntPtr ip, UIntPtr pointerSizeLength)
         {
             // TODO: Perhaps do switch casing to improve small size perf
 

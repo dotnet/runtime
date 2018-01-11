@@ -38,8 +38,7 @@ namespace System.Buffers.Text
                 }
             }
 
-            int justConsumed;
-            if (!TryParseUInt32D(text.Slice(srcIndex), out uint days, out justConsumed))
+            if (!TryParseUInt32D(text.Slice(srcIndex), out uint days, out int justConsumed))
             {
                 value = default;
                 bytesConsumed = 0;

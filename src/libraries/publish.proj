@@ -29,18 +29,26 @@
   <PropertyGroup>
     <PackageDownloadDirectory Condition="'$(DownloadDirectory)' == ''">$(PackagesDir)AzureTransfer\$(ConfigurationGroup)</PackageDownloadDirectory>
     <FinalPublishPattern>$(PackageDownloadDirectory)\**\*.nupkg</FinalPublishPattern>
+    <FinalPublishPrivatePattern>$(PackageDownloadDirectory)\**\*Private*.nupkg</FinalPublishPrivatePattern>
     <FinalSymbolsPackagesPattern>$(PackageDownloadDirectory)\**\*.symbols.nupkg</FinalSymbolsPackagesPattern>
   </PropertyGroup>
   
   <Target Name="PublishToAzureBlobFeed">
     <ItemGroup>
-      <ItemsToPush Include="$(FinalPublishPattern)" Exclude="$(FinalSymbolsPackagesPattern)" />
+      <ItemsToPush Include="$(FinalPublishPrivatePattern)" Exclude="$(FinalSymbolsPackagesPattern)">
+        <ManifestArtifactData>NonShipping=true</ManifestArtifactData>
+      </ItemsToPush>
+      <ItemsToPush Include="$(FinalPublishPattern)" Exclude="@(ItemsToPush);$(FinalSymbolsPackagesPattern)" />
     </ItemGroup>
     <Error Condition="'@(ItemsToPush)'==''" Text="ItemsToPush for packages is empty." />
     <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
                     AccountKey="$(AccountKey)"
                     ItemsToPush="@(ItemsToPush)"
-                    Overwrite="$(PublishOverwrite)" />
+                    Overwrite="$(PublishOverwrite)"
+                    ManifestName="$(GitHubRepositoryName)"
+                    ManifestBuildId="$(ManifestBuildId)"
+                    ManifestBranch="$(ManifestBranch)"
+                    ManifestCommit="$(ManifestCommit)" />
   </Target>
   
   <Target Name="PublishSymbolsToAzureBlobFeed" Condition="'$(PublishSymbols)' == 'true'" >
@@ -51,6 +59,10 @@
     <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
                     AccountKey="$(AccountKey)"
                     ItemsToPush="@(ItemsToPush)"
-                    Overwrite="$(PublishOverwrite)" />
+                    Overwrite="$(PublishOverwrite)"
+                    ManifestName="$(GitHubRepositoryName)"
+                    ManifestBuildId="$(ManifestBuildId)"
+                    ManifestBranch="$(ManifestBranch)"
+                    ManifestCommit="$(ManifestCommit)" />
   </Target>
 </Project>

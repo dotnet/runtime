@@ -8,6 +8,7 @@
     <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=863421</ReleaseNotes>
     <ProjectUrl>https://go.microsoft.com/fwlink/?linkid=858594</ProjectUrl>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    <HarvestStablePackage>false</HarvestStablePackage>
   </PropertyGroup>
   <ItemGroup>
     <PackageFile Include=".\build\prefercliruntime"/>

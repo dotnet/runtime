@@ -1,4 +1,8 @@
-﻿using System.Collections.Concurrent;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -38,6 +42,7 @@ namespace System.Diagnostics.Tests
         /// A simple test to make sure the Http Diagnostic Source is initialized properly after we subscribed to it, using
         /// the subscribe overload with just the observer argument.
         /// </summary>
+        [OuterLoop]
         [Fact]
         public void TestReflectInitializationViaSubscription1()
         {
@@ -59,6 +64,7 @@ namespace System.Diagnostics.Tests
         /// A simple test to make sure the Http Diagnostic Source is initialized properly after we subscribed to it, using
         /// the subscribe overload with just the observer argument and the more complicating enable filter function.
         /// </summary>
+        [OuterLoop]
         [Fact]
         public void TestReflectInitializationViaSubscription2()
         {
@@ -80,6 +86,7 @@ namespace System.Diagnostics.Tests
         /// A simple test to make sure the Http Diagnostic Source is initialized properly after we subscribed to it, using
         /// the subscribe overload with the observer argument and the simple predicate argument.
         /// </summary>
+        [OuterLoop]
         [Fact]
         public void TestReflectInitializationViaSubscription3()
         {
@@ -100,6 +107,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Test to make sure we get both request and response events.
         /// </summary>
+        [OuterLoop]
         [Fact]
         public async Task TestBasicReceiveAndResponseEvents()
         {
@@ -135,8 +143,50 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
+        /// Test to make sure we get both request and response events.
+        /// </summary>
+        [OuterLoop]
+        [Fact]
+        public async Task TestResponseWithoutContentEvents()
+        {
+            using (var eventRecords = new EventObserverAndRecorder())
+            {
+                // Send a random Http request to generate some events
+                using (var client = new HttpClient())
+                {
+                    (await client.GetAsync(Configuration.Http.RemoteEmptyContentServer)).Dispose();
+                }
+
+                // We should have exactly one Start and one Stop event
+                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
+                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
+                Assert.Equal(2, eventRecords.Records.Count);
+
+                // Check to make sure: The first record must be a request, the next record must be a response. 
+                KeyValuePair<string, object> startEvent;
+                Assert.True(eventRecords.Records.TryDequeue(out startEvent));
+                Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Start", startEvent.Key);
+                HttpWebRequest startRequest = ReadPublicProperty<HttpWebRequest>(startEvent.Value, "Request");
+                Assert.NotNull(startRequest);
+                Assert.NotNull(startRequest.Headers["Request-Id"]);
+
+                KeyValuePair<string, object> stopEvent;
+                Assert.True(eventRecords.Records.TryDequeue(out stopEvent));
+                Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Ex.Stop", stopEvent.Key);
+                HttpWebRequest stopRequest = ReadPublicProperty<HttpWebRequest>(stopEvent.Value, "Request");
+                Assert.Equal(startRequest, stopRequest);
+                HttpStatusCode status = ReadPublicProperty<HttpStatusCode>(stopEvent.Value, "StatusCode");
+                Assert.NotNull(status);
+
+                WebHeaderCollection headers = ReadPublicProperty<WebHeaderCollection>(stopEvent.Value, "Headers");
+                Assert.NotNull(headers);
+            }
+        }
+
+        /// <summary>
         /// Test that if request is redirected, it gets only one Start and one Stop event
         /// </summary>
+        [OuterLoop]
         [Fact]
         public async Task TestRedirectedRequest()
         {
@@ -158,6 +208,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Test exception in request processing: exception should have expected type/status and now be swallowed by reflection hook
         /// </summary>
+        [OuterLoop]
         [Fact]
         public async Task TestRequestWithException()
         {
@@ -181,6 +232,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Test request cancellation: reflection hook does not throw
         /// </summary>
+        [OuterLoop]
         [Fact]
         public async Task TestCanceledRequest()
         {
@@ -202,6 +254,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Test Request-Id and Correlation-Context headers injection
         /// </summary>
+        [OuterLoop]
         [Fact]
         public async Task TestActivityIsCreated()
         {
@@ -232,6 +285,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests IsEnabled order and parameters
         /// </summary>
+        [OuterLoop]
         [Fact]
         public async Task TestIsEnabled()
         {
@@ -262,10 +316,11 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(2, eventNumber);
             }
         }
-        
+
         /// <summary>
         /// Tests that nothing happens if IsEnabled returns false
         /// </summary>
+        [OuterLoop]
         [Fact]
         public async Task TestIsEnabledAllOff()
         {
@@ -283,6 +338,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests that if IsEnabled for request  is false, request is not instrumented
         /// </summary>
+        [OuterLoop]
         [Fact]
         public async Task TestIsEnabledRequestOff()
         {
@@ -311,6 +367,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Test to make sure every event record has the right dynamic properties.
         /// </summary>
+        [OuterLoop]
         [Fact]
         public void TestMultipleConcurrentRequests()
         {

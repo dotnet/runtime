@@ -214,7 +214,7 @@
       },
       "inputs": {
         "filename": "msbuild",
-        "arguments": "src\\publish.proj /t:PublishToAzureBlobFeed /p:AccountKey=$(PB_PublishBlobFeedKey) /p:ExpectedFeedUrl=$(PB_PublishBlobFeedUrl) /p:ConfigurationGroup=$(PB_ConfigurationGroup)",
+        "arguments": "src\\publish.proj /t:PublishToAzureBlobFeed $(FeedPublishArguments)",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -258,7 +258,7 @@
       },
       "inputs": {
         "filename": "msbuild",
-        "arguments": "src\\publish.proj /t:PublishSymbolsToAzureBlobFeed /p:AccountKey=$(PB_PublishBlobFeedKey) /p:ExpectedFeedUrl=$(PB_PublishBlobFeedUrl) /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:PublishSymbols=\"true\" ",
+        "arguments": "src\\publish.proj /t:PublishSymbolsToAzureBlobFeed /p:PublishSymbols=\"true\" $(FeedPublishArguments)",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -494,6 +494,9 @@
       "value": "master",
       "allowOverride": true
     },
+    "FeedPublishArguments": {
+      "value": "$(PB_BuildOutputManifestArguments) /p:AccountKey=$(PB_PublishBlobFeedKey) /p:ExpectedFeedUrl=$(PB_PublishBlobFeedUrl) /p:ConfigurationGroup=$(PB_ConfigurationGroup)"
+    },
     "PB_AzureContainerPackageGlob": {
       "value": "*.nupkg",
       "allowOverride": true
@@ -523,6 +526,9 @@
     },
     "PB_PublishType": {
       "value": ""
+    },
+    "PB_BuildOutputManifestArguments": {
+      "value": "/p:ManifestBuildId=$(OfficialBuildId) /p:ManifestBranch=$(SourceBranch) /p:ManifestCommit=$(SourceVersion)"
     }
   },
   "retentionRules": [

@@ -57,7 +57,7 @@ namespace System.Buffers.Text.Tests
                 // Workaroudn for indices.Cast<byte>().ToArray() since it throws
                 // InvalidCastException: Unable to cast object of type 'System.Int32' to type 'System.Byte'
                 byte[] bytes = new byte[indices.Length];
-                for(int i = 0; i < indices.Length; i++)
+                for (int i = 0; i < indices.Length; i++)
                 {
                     bytes[i] = (byte)indices[i];
                 }
@@ -87,7 +87,7 @@ namespace System.Buffers.Text.Tests
         [Fact]
         public static void GenerateEncodingMapAndVerify()
         {
-            var data = new byte[64]; // Base64
+            byte[] data = new byte[64]; // Base64
             for (int i = 0; i < s_characters.Length; i++)
             {
                 data[i] = (byte)s_characters[i];
@@ -98,7 +98,7 @@ namespace System.Buffers.Text.Tests
         [Fact]
         public static void GenerateDecodingMapAndVerify()
         {
-            var data = new sbyte[256]; // 0 to byte.MaxValue (255)
+            sbyte[] data = new sbyte[256]; // 0 to byte.MaxValue (255)
             for (int i = 0; i < data.Length; i++)
             {
                 data[i] = s_invalidByte;

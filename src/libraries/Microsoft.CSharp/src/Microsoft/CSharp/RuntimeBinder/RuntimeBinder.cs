@@ -145,13 +145,12 @@ namespace Microsoft.CSharp.RuntimeBinder
             //    Linq expression tree for the whole thing and return it.
 
             // (1) - Create the locals
-            Scope pScope = _semanticChecker.GetGlobalSymbolFactory().CreateScope(null);
+            Scope pScope = _semanticChecker.GetGlobalSymbolFactory().CreateScope();
             LocalVariableSymbol[] locals = PopulateLocalScope(payload, pScope, arguments, parameters);
 
             // (1.5) - Check to see if we need to defer.
-            if (DeferBinding(payload, arguments, args, locals, out DynamicMetaObject o))
+            if (DeferBinding(payload, arguments, args, locals, out deferredBinding))
             {
-                deferredBinding = o;
                 return null;
             }
 
@@ -159,9 +158,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             Expr pResult = payload.DispatchPayload(this, arguments, locals);
             Debug.Assert(pResult != null);
 
-            deferredBinding = null;
-            Expression e = CreateExpressionTreeFromResult(parameters, pScope, pResult);
-            return e;
+            return CreateExpressionTreeFromResult(parameters, pScope, pResult);
         }
 
         #region Helpers
@@ -249,11 +246,11 @@ namespace Microsoft.CSharp.RuntimeBinder
             Scope pScope,
             Expr pResult)
         {
-            // (3) - Place the result in a return statement and create the EXPRBOUNDLAMBDA.
+            // (3) - Place the result in a return statement and create the ExprBoundLambda.
             ExprBoundLambda boundLambda = GenerateBoundLambda(pScope, pResult);
 
-            // (4) - Rewrite the EXPRBOUNDLAMBDA into an expression tree.
-            Expr exprTree = ExpressionTreeRewriter.Rewrite(boundLambda, _exprFactory, SymbolLoader);
+            // (4) - Rewrite the ExprBoundLambda into an expression tree.
+            ExprBinOp exprTree = ExpressionTreeRewriter.Rewrite(boundLambda, _exprFactory, SymbolLoader);
 
             // (5) - Create the actual Expression Tree
             Expression e = ExpressionTreeCallRewriter.Rewrite(SymbolLoader.GetTypeManager(), exprTree, parameters);
@@ -419,7 +416,6 @@ namespace Microsoft.CSharp.RuntimeBinder
                 LocalVariableSymbol local =
                     _semanticChecker.GetGlobalSymbolFactory()
                         .CreateLocalVar(NameManager.Add("p" + i), pScope, type);
-                local.fUsedInAnonMeth = true;
                 locals[i] = local;
             }
 
@@ -434,14 +430,8 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
             // We don't actually need the real delegate type here - we just need SOME delegate type.
             // This is because we never attempt any conversions on the lambda itself.
-            AggregateType delegateType = _symbolTable.GetCTypeFromType(typeof(Func<>)) as AggregateType;
-            LocalVariableSymbol thisLocal = _semanticChecker.GetGlobalSymbolFactory().CreateLocalVar(NameManager.Add("this"), pScope, _symbolTable.GetCTypeFromType(typeof(object)));
-            thisLocal.isThis = true;
-            ExprBoundLambda boundLambda = _exprFactory.CreateAnonymousMethod(delegateType, pScope);
-            ExprReturn returnStatement = _exprFactory.CreateReturn(call);
-            ExprBlock block = _exprFactory.CreateBlock(returnStatement);
-            boundLambda.OptionalBody = block;
-            return boundLambda;
+            AggregateType delegateType = _semanticChecker.SymbolLoader.GetPredefindType(PredefinedType.PT_FUNC);
+            return _exprFactory.CreateAnonymousMethod(delegateType, pScope, call);
         }
 
         #region ExprCreation
@@ -644,8 +634,6 @@ namespace Microsoft.CSharp.RuntimeBinder
             // as well so that overload resolution can find them.
             if (callingType.IsWindowsRuntimeType())
             {
-                TypeArray collectioniFaces = callingType.GetWinRTCollectionIfacesAll(SymbolLoader);
-
                 foreach (AggregateType t in callingType.GetWinRTCollectionIfacesAll(SymbolLoader).Items)
                 {
                     if (_symbolTable.AggregateContainsMethod(t.GetOwningAggregate(), Name, mask) && distinctCallingTypes.Add(t))
@@ -741,7 +729,6 @@ namespace Microsoft.CSharp.RuntimeBinder
             // For a field, simply create the EXPRFIELD and our caller takes care of the rest.
 
             FieldSymbol fieldSymbol = swt.Field();
-            CType returnType = fieldSymbol.GetType();
             AggregateType fieldType = swt.GetType();
             FieldWithType fwt = new FieldWithType(fieldSymbol, fieldType);
 
@@ -1020,7 +1007,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             ArgInfos argInfo = new ArgInfos
             {
-                carg = ExpressionBinder.CountArguments(arguments, out _)
+                carg = ExpressionBinder.CountArguments(arguments)
             };
             _binder.FillInArgInfoFromArgList(argInfo, arguments);
 
@@ -1421,6 +1408,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             LocalVariableSymbol[] locals)
         {
             Debug.Assert(arguments.Length >= 2);
+            Debug.Assert(arguments.All(a => a.Type != null));
 
             string name = payload.Name;
 
@@ -1445,12 +1433,6 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             int indexOfLast = arguments.Length - 1;
             Expr rhs = CreateArgumentEXPR(arguments[indexOfLast], locals[indexOfLast]);
-
-            if (arguments[0].Type == null)
-            {
-                throw Error.BindBinaryAssignmentFailedNullReference();
-            }
-
             return _binder.BindAssignment(lhs, rhs, bIsCompound);
         }
         #endregion

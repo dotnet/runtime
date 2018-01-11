@@ -5,6 +5,10 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
+#if !netstandard
+using Internal.Runtime.CompilerServices;
+#endif
+
 namespace System.Buffers.Text
 {
     // All the helper methods in this class assume that the by-ref is valid and that there is
@@ -98,7 +102,7 @@ namespace System.Buffers.Text
                 left = DivMod(left, 10, out ulong num);
                 Unsafe.Add(ref buffer, index + i) = (byte)('0' + num);
             }
-            
+
             Debug.Assert(left == 0);
         }
 
@@ -182,11 +186,11 @@ namespace System.Buffers.Text
                 part = (uint)value;
             }
 
-            if (part < 10) 
-            { 
+            if (part < 10)
+            {
                 // no-op
             }
-            else if (part < 100) 
+            else if (part < 100)
             {
                 digits += 1;
             }
@@ -194,20 +198,20 @@ namespace System.Buffers.Text
             {
                 digits += 2;
             }
-            else if (part < 10000) 
+            else if (part < 10000)
             {
                 digits += 3;
             }
-            else if (part < 100000) 
+            else if (part < 100000)
             {
                 digits += 4;
             }
-            else if (part < 1000000) 
+            else if (part < 1000000)
             {
                 digits += 5;
             }
-            else 
-            { 
+            else
+            {
                 Debug.Assert(part < 10000000);
                 digits += 6;
             }

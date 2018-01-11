@@ -19,11 +19,7 @@ using System.Xml.Serialization;
 using System.Linq.Expressions;
 using System.Collections.Concurrent;
 
-#if XMLSERIALIZERGENERATOR
-namespace Microsoft.XmlSerializer.Generator
-#else
 namespace System.Xml.Serialization
-#endif
 {
     internal delegate void UnknownNodeAction(object o);
 

@@ -7,21 +7,13 @@ using System;
 using System.Text;
 
 
-#if XMLSERIALIZERGENERATOR
-namespace Microsoft.XmlSerializer.Generator
-#else
 namespace System.Xml.Serialization
-#endif
 {
     ///<internalonly/>
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
-#if XMLSERIALIZERGENERATOR
-    internal class XmlMembersMapping : XmlMapping
-#else
     public class XmlMembersMapping : XmlMapping
-#endif
     {
         private XmlMemberMapping[] _mappings;
 

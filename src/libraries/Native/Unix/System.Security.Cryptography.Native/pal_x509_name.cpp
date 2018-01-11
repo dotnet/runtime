@@ -52,11 +52,6 @@ extern "C" void CryptoNative_RecursiveFreeX509NameStack(STACK_OF(X509_NAME) * st
     sk_X509_NAME_pop_free(stack, X509_NAME_free);
 }
 
-extern "C" X509_NAME* CryptoNative_DuplicateX509Name(X509_NAME* x509Name)
-{
-    return X509_NAME_dup(x509Name);
-}
-
 extern "C" int32_t CryptoNative_GetX509NameEntryCount(X509_NAME* x509Name)
 {
     return X509_NAME_entry_count(x509Name);

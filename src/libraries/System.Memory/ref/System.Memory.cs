@@ -5,6 +5,8 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Collections.Generic;
+
 namespace System
 {
     public readonly ref struct ReadOnlySpan<T>
@@ -15,13 +17,11 @@ namespace System
         [CLSCompliant(false)]
         public unsafe ReadOnlySpan(void* pointer, int length) { throw null; }
         public bool IsEmpty { get { throw null; } }
-        public T this[int index] { get { throw null; }}
+        public ref readonly T this[int index] { get { throw null; }}
         public int Length { get { throw null; } }
         public void CopyTo(Span<T> destination) { }
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static ReadOnlySpan<T> DangerousCreate(object obj, ref T objectData, int length) { throw null; }
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        public ref T DangerousGetPinnableReference() { throw null; }
 #pragma warning disable 0809  //warning CS0809: Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
         [System.ObsoleteAttribute("Equals() on ReadOnlySpan will always throw an exception. Use == instead.")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -32,8 +32,8 @@ namespace System
         public override int GetHashCode() { throw null; }
 #pragma warning restore 0809
         public static bool operator ==(ReadOnlySpan<T> left, ReadOnlySpan<T> right) { throw null; }
-        public static implicit operator ReadOnlySpan<T> (T[] array) { throw null; }
-        public static implicit operator ReadOnlySpan<T> (ArraySegment<T> arraySegment) { throw null; }
+        public static implicit operator ReadOnlySpan<T>(T[] array) { throw null; }
+        public static implicit operator ReadOnlySpan<T>(ArraySegment<T> arraySegment) { throw null; }
         public static bool operator !=(ReadOnlySpan<T> left, ReadOnlySpan<T> right) { throw null; }
         public ReadOnlySpan<T> Slice(int start) { throw null; }
         public ReadOnlySpan<T> Slice(int start, int length) { throw null; }
@@ -61,8 +61,6 @@ namespace System
         public void CopyTo(Span<T> destination) { }
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static Span<T> DangerousCreate(object obj, ref T objectData, int length) { throw null; }
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        public ref T DangerousGetPinnableReference() { throw null; }
 #pragma warning disable 0809  //warning CS0809: Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
         [System.ObsoleteAttribute("Equals() on Span will always throw an exception. Use == instead.")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -73,9 +71,9 @@ namespace System
         public override int GetHashCode() { throw null; }
 #pragma warning restore 0809
         public static bool operator ==(Span<T> left, Span<T> right) { throw null; }
-        public static implicit operator Span<T> (T[] array) { throw null; }
-        public static implicit operator Span<T> (ArraySegment<T> arraySegment) { throw null; }
-        public static implicit operator ReadOnlySpan<T> (Span<T> span) { throw null; }
+        public static implicit operator Span<T>(T[] array) { throw null; }
+        public static implicit operator Span<T>(ArraySegment<T> arraySegment) { throw null; }
+        public static implicit operator ReadOnlySpan<T>(Span<T> span) { throw null; }
         public static bool operator !=(Span<T> left, Span<T> right) { throw null; }
         public Span<T> Slice(int start) { throw null; }
         public Span<T> Slice(int start, int length) { throw null; }
@@ -87,18 +85,25 @@ namespace System
             public ref T Current { get { throw null; } }
         }
     }
-    
+
     public static class MemoryExtensions
     {
         public static int IndexOf<T>(this Span<T> span, T value) where T : IEquatable<T> { throw null; }
         public static int IndexOf<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T> { throw null; }
 
-        public static int IndexOfAny(this Span<byte> span, byte value0, byte value1) { throw null; }
-        public static int IndexOfAny(this Span<byte> span, byte value0, byte value1, byte value2) { throw null; }
-        public static int IndexOfAny(this Span<byte> span, ReadOnlySpan<byte> values) { throw null; }
+        public static int IndexOfAny<T>(this Span<T> span, T value0, T value1) where T : IEquatable<T> { throw null; }
+        public static int IndexOfAny<T>(this Span<T> span, T value0, T value1, T value2) where T : IEquatable<T> { throw null; }
+        public static int IndexOfAny<T>(this Span<T> span, ReadOnlySpan<T> values) where T : IEquatable<T> { throw null; }
+
+        public static int LastIndexOf<T>(this Span<T> span, T value) where T : IEquatable<T> { throw null; }
+        public static int LastIndexOf<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T> { throw null; }
+
+        public static int LastIndexOfAny<T>(this Span<T> span, T value0, T value1) where T : IEquatable<T> { throw null; }
+        public static int LastIndexOfAny<T>(this Span<T> span, T value0, T value1, T value2) where T : IEquatable<T> { throw null; }
+        public static int LastIndexOfAny<T>(this Span<T> span, ReadOnlySpan<T> values) where T : IEquatable<T> { throw null; }
 
         public static bool SequenceEqual<T>(this Span<T> first, ReadOnlySpan<T> second) where T : IEquatable<T> { throw null; }
-        
+
         public static bool StartsWith<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T> { throw null; }
 
         public static bool EndsWith<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T> { throw null; }
@@ -107,7 +112,7 @@ namespace System
         public static Span<byte> AsBytes<T>(this Span<T> source) where T : struct { throw null; }
 
         public static Span<TTo> NonPortableCast<TFrom, TTo>(this Span<TFrom> source) where TFrom : struct where TTo : struct { throw null; }
-        
+
         public static ReadOnlySpan<char> AsReadOnlySpan(this string text) { throw null; }
         public static ReadOnlyMemory<char> AsReadOnlyMemory(this string text) { throw null; }
 
@@ -124,16 +129,23 @@ namespace System
         public static int IndexOf<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T> { throw null; }
         public static int IndexOf<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : IEquatable<T> { throw null; }
 
-        public static int IndexOfAny(this ReadOnlySpan<byte> span, byte value0, byte value1) { throw null; }
-        public static int IndexOfAny(this ReadOnlySpan<byte> span, byte value0, byte value1, byte value2) { throw null; }
-        public static int IndexOfAny(this ReadOnlySpan<byte> span, ReadOnlySpan<byte> values) { throw null; }
+        public static int IndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1) where T : IEquatable<T> { throw null; }
+        public static int IndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2) where T : IEquatable<T> { throw null; }
+        public static int IndexOfAny<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values) where T : IEquatable<T> { throw null; }
+
+        public static int LastIndexOf<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T> { throw null; }
+        public static int LastIndexOf<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : IEquatable<T> { throw null; }
+
+        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1) where T : IEquatable<T> { throw null; }
+        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2) where T : IEquatable<T> { throw null; }
+        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values) where T : IEquatable<T> { throw null; }
 
         public static bool SequenceEqual<T>(this ReadOnlySpan<T> first, ReadOnlySpan<T> second) where T : IEquatable<T> { throw null; }
 
         public static bool StartsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : IEquatable<T> { throw null; }
 
         public static ReadOnlySpan<byte> AsBytes<T>(this ReadOnlySpan<T> source) where T : struct { throw null; }
-        
+
         public static ReadOnlySpan<TTo> NonPortableCast<TFrom, TTo>(this ReadOnlySpan<TFrom> source) where TFrom : struct where TTo : struct { throw null; }
 
         public static bool TryGetString(this ReadOnlyMemory<char> readOnlyMemory, out string text, out int start, out int length) { throw null; }
@@ -142,6 +154,16 @@ namespace System
         public static bool Overlaps<T>(this Span<T> first, ReadOnlySpan<T> second, out int elementOffset) { throw null; }
         public static bool Overlaps<T>(this ReadOnlySpan<T> first, ReadOnlySpan<T> second) { throw null; }
         public static bool Overlaps<T>(this ReadOnlySpan<T> first, ReadOnlySpan<T> second, out int elementOffset) { throw null; }
+
+        public static int SequenceCompareTo<T>(this Span<T> first, ReadOnlySpan<T> second) where T : IComparable<T> { throw null; }
+        public static int SequenceCompareTo<T>(this ReadOnlySpan<T> first, ReadOnlySpan<T> second) where T : IComparable<T> { throw null; }
+        
+        public static int BinarySearch<T>(this ReadOnlySpan<T> span, IComparable<T> comparable) { throw null; }
+        public static int BinarySearch<T, TComparable>(this ReadOnlySpan<T> span, TComparable comparable) where TComparable : IComparable<T> { throw null; }
+        public static int BinarySearch<T, TComparer>(this ReadOnlySpan<T> span, T value, TComparer comparer) where TComparer : IComparer<T> { throw null; }
+        public static int BinarySearch<T>(this Span<T> span, IComparable<T> comparable) { throw null; }
+        public static int BinarySearch<T, TComparable>(this Span<T> span, TComparable comparable) where TComparable : IComparable<T> { throw null; }
+        public static int BinarySearch<T, TComparer>(this Span<T> span, T value, TComparer comparer) where TComparer : IComparer<T> { throw null; }
     }
 
     public readonly struct ReadOnlyMemory<T>
@@ -165,8 +187,6 @@ namespace System
         public ReadOnlySpan<T> Span { get { throw null; } }
         public unsafe Buffers.MemoryHandle Retain(bool pin = false) { throw null; }
         public T[] ToArray() { throw null; }
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        public bool DangerousTryGetArray(out ArraySegment<T> arraySegment) { throw null; }
     }
 
     public readonly struct Memory<T>
@@ -197,23 +217,23 @@ namespace System
 
 namespace System.Buffers
 {
-    public unsafe struct MemoryHandle : IDisposable 
+    public unsafe struct MemoryHandle : IDisposable
     {
         [CLSCompliant(false)]
-        public MemoryHandle(IRetainable owner, void* pointer = null,  System.Runtime.InteropServices.GCHandle handle = default(System.Runtime.InteropServices.GCHandle))  { throw null; }
+        public MemoryHandle(IRetainable owner, void* pointer = null, System.Runtime.InteropServices.GCHandle handle = default) { throw null; }
         [CLSCompliant(false)]
         public void* Pointer { get { throw null; } }
         public bool HasPointer { get { throw null; } }
         public void Dispose() { throw null; }
     }
 
-    public interface IRetainable 
+    public interface IRetainable
     {
         bool Release();
         void Retain();
     }
-    
-    public abstract class OwnedMemory<T> : IDisposable, IRetainable 
+
+    public abstract class OwnedMemory<T> : IDisposable, IRetainable
     {
         public Memory<T> Memory { get { throw null; } }
         public abstract bool IsDisposed { get; }
@@ -348,12 +368,12 @@ namespace System.Buffers
     {
         public const byte MaxPrecision = 99;
         public const byte NoPrecision = 255;
-        public StandardFormat(char symbol, byte precision= 255) => throw null;
+        public StandardFormat(char symbol, byte precision = 255) => throw null;
         public bool HasPrecision => throw null;
         public bool IsDefault => throw null;
         public byte Precision => throw null;
         public char Symbol => throw null;
-        public static implicit operator StandardFormat (char symbol) => throw null;
+        public static implicit operator StandardFormat(char symbol) => throw null;
         public static StandardFormat Parse(ReadOnlySpan<char> format) => throw null;
         public static StandardFormat Parse(string format) => throw null;
         public override bool Equals(object obj) => throw null;
@@ -429,5 +449,10 @@ namespace System.Runtime.InteropServices
     public static class MemoryMarshal
     {
         public static Memory<T> AsMemory<T>(ReadOnlyMemory<T> readOnlyMemory) { throw null; }
+
+        public static ref T GetReference<T>(Span<T> span) { throw null; }
+        public static ref T GetReference<T>(ReadOnlySpan<T> span) { throw null; }
+
+        public static bool TryGetArray<T>(ReadOnlyMemory<T> readOnlyMemory, out ArraySegment<T> arraySegment) { throw null; }
     }
 }

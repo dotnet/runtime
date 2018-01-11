@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.InteropServices;
 
 namespace System.IO
 {
@@ -16,8 +17,8 @@ namespace System.IO
             if (!ignoreCase)
                 return first.SequenceEqual(second);
 
-            fixed (char* fp = &first.DangerousGetPinnableReference())
-            fixed (char* sp = &second.DangerousGetPinnableReference())
+            fixed (char* fp = &MemoryMarshal.GetReference(first))
+            fixed (char* sp = &MemoryMarshal.GetReference(second))
             {
                 char* f = fp;
                 char* s = sp;

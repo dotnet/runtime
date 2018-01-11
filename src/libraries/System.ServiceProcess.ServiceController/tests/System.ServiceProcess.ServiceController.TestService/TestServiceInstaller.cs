@@ -146,9 +146,20 @@ namespace System.ServiceProcess.Tests
             // Stop the service
             using (ServiceController svc = new ServiceController(ServiceName))
             {
+                // The Service exists at this point, but OpenService is failing, possibly because its being invoked concurrently for another service.
+                // https://github.com/dotnet/corefx/issues/23388 
                 if (svc.Status != ServiceControllerStatus.Stopped)
                 {
-                    svc.Stop();
+                    try
+                    {
+                        svc.Stop();
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        ServiceName = null;
+                        return;
+                    }
+
                     svc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
                 }
             }

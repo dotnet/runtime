@@ -105,8 +105,24 @@ namespace System.Collections.Immutable
             /// </remarks>
             public T this[int index]
             {
+#if FEATURE_ITEMREFAPI
+                get { return _root.ItemRef(index); }
+#else
                 get { return _root[index]; }
+#endif
             }
+
+#if FEATURE_ITEMREFAPI
+            /// <summary>
+            /// Gets a read-only reference to the element of the set at the given index.
+            /// </summary>
+            /// <param name="index">The 0-based index of the element in the set to return.</param>
+            /// <returns>A read-only reference to the element at the given position.</returns>
+            public ref readonly T ItemRef(int index)
+            {
+                return ref _root.ItemRef(index);
+            }
+#endif
 
             /// <summary>
             /// Gets the maximum value in the collection, as defined by the comparer.

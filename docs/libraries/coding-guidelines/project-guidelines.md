@@ -88,6 +88,22 @@ All supported targets with unique windows/unix build for netcoreapp:
 <PropertyGroup>
 ```
 
+### Placeholder build configurations
+Placeholder build configurations can be added to the `<BuildConfigurations>` property to indicate the build system that the specific project is inbox in that framework and that build configuration needs to be ignored.
+
+Placeholder build configurations start with _ prefix.
+
+Example:
+When we have a project that has a `netstandard` build configuration that means that this project is compatible with any build configuration. So if we do a vertical build for `netfx` this project will be built as part of the vertical because `netfx` is compatible with `netstandard`. This means that in the runtime and testhost binaries the netstandard implementation will be included, and we will test against those assets instead of testing against the framework inbox asset. In order to tell the build system to not include this project as part of the `netfx` vertical we need to add a placeholder configuration:
+```
+<PropertyGroup>
+  <BuildConfigurations>
+    netstandard;
+    _netfx;
+  </BuildConfigurations>
+</PropertyGroup>
+```
+
 ## Options for building
 
 A full or individual project build is centered around BuildConfiguration and will be setup in one of the following ways:

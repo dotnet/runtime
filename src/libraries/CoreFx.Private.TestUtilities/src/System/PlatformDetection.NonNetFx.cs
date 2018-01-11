@@ -9,5 +9,8 @@ namespace System
     public static partial class PlatformDetection
     {
         public static bool TargetsNetFx452OrLower => false;
+        public static bool IsNetfx462OrNewer => false;
+        public static bool IsNetfx470OrNewer => false;
+        public static bool IsNetfx471OrNewer => false;
     }
 }

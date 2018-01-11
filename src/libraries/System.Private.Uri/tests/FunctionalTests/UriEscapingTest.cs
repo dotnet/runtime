@@ -321,13 +321,14 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
-        public void UriAbsoluteUnEscaping_RFC2396UnreservedEscaped_AllUnescaped()
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Requires fix shipping in .NET 4.7.2")]
+        public void UriAbsoluteUnEscaping_RFC3986UnreservedEscaped_AllUnescaped()
         {
-            string escaped = Escape(RFC2396Unreserved);
+            string escaped = Escape(RFC3986Unreserved);
             string input = "http://" + AlphaNumeric.ToLowerInvariant() + "/" + escaped
                 + "?" + escaped + "#" + escaped;
-            string expectedOutput = "http://" + AlphaNumeric.ToLowerInvariant() + "/" + RFC2396Unreserved
-                + "?" + RFC2396Unreserved + "#" + RFC2396Unreserved;
+            string expectedOutput = "http://" + AlphaNumeric.ToLowerInvariant() + "/" + RFC3986Unreserved
+                + "?" + RFC3986Unreserved + "#" + RFC3986Unreserved;
 
             Uri testUri = new Uri(input);
             Assert.Equal(expectedOutput, testUri.AbsoluteUri);
@@ -398,12 +399,12 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Requires fix shipping in .NET 4.7.2")]
         public void UriAbsoluteEscaping_SurrogatePair_LocaleIndependent()
         {
             string uriString = "http://contosotest.conto.soco.ntosoco.com/surrgtest()?$filter=";
-            string expectedString = uriString + "%E6%95%B0%E6%8D%AE%20eq%20" +
-                            "'%F0%A0%80%80%F0%A0%80%81%F0%A0%80%82%F0%A0%80%83%F0%AA%9B%91%F0%AA%9B" +
-                            "%92%F0%AA%9B%93%F0%AA%9B%94%F0%AA%9B%95%F0%AA%9B%96'";
+            string expectedString = uriString + "%E6%95%B0%E6%8D%AE%20eq%20%27%F0%A0%80%80%F0%A0%80%81%F0%A0%80%82%F0%A0%80%83%F0" + 
+                                                "%AA%9B%91%F0%AA%9B%92%F0%AA%9B%93%F0%AA%9B%94%F0%AA%9B%95%F0%AA%9B%96%27";
 
             using (ThreadCultureChange iriHelper = new ThreadCultureChange())
             {

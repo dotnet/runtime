@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.Globalization
@@ -564,7 +565,7 @@ namespace System.Globalization
             {
                 Debug.Assert(numfmt != null);
 
-                fixed (char* stringPointer = &str.DangerousGetPinnableReference())
+                fixed (char* stringPointer = &MemoryMarshal.GetReference(str))
                 {
                     char* p = stringPointer;
                     if (!ParseNumber(ref p, options, ref number, sb, numfmt, parseDecimal)
@@ -1211,7 +1212,7 @@ namespace System.Globalization
                     return 0;
                 }
 
-                fixed (char* pFormat = &format.DangerousGetPinnableReference())
+                fixed (char* pFormat = &MemoryMarshal.GetReference(format))
                 {
                     int src = 0;
                     for (;;)
@@ -1287,7 +1288,7 @@ namespace System.Globalization
                     scaleAdjust = 0;
                     src = section;
 
-                    fixed (char* pFormat = &format.DangerousGetPinnableReference())
+                    fixed (char* pFormat = &MemoryMarshal.GetReference(format))
                     {
                         while (src < format.Length && (ch = pFormat[src++]) != 0 && ch != ';')
                         {
@@ -1477,7 +1478,7 @@ namespace System.Globalization
 
                 bool decimalWritten = false;
 
-                fixed (char* pFormat = &format.DangerousGetPinnableReference())
+                fixed (char* pFormat = &MemoryMarshal.GetReference(format))
                 {
                     char* cur = dig;
 

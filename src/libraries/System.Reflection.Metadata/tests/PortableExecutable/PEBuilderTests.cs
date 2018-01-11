@@ -17,7 +17,7 @@ namespace System.Reflection.PortableExecutable.Tests
     {
         #region Helpers
 
-        private void VerifyPE(Stream peStream, byte[] expectedSignature = null)
+        private void VerifyPE(Stream peStream, Machine machine, byte[] expectedSignature = null)
         {
             peStream.Position = 0;
 
@@ -32,6 +32,11 @@ namespace System.Reflection.PortableExecutable.Tests
 
                 Assert.Equal(s_contentId.Stamp, unchecked((uint)peReader.PEHeaders.CoffHeader.TimeDateStamp));
                 Assert.Equal(s_guid, mdReader.GetGuid(mdReader.GetModuleDefinition().Mvid));
+
+                if (machine == Machine.Unknown) // Unknown machine type translates into AnyCpu, which is marked as I386 in the PE file
+                    Assert.Equal(Machine.I386, headers.CoffHeader.Machine);
+                else 
+                    Assert.Equal(machine, headers.CoffHeader.Machine);
             }
         }
 
@@ -58,14 +63,19 @@ namespace System.Reflection.PortableExecutable.Tests
             BlobBuilder ilBuilder, 
             MethodDefinitionHandle entryPointHandle,
             Blob mvidFixup = default(Blob),
-            byte[] privateKeyOpt = null)
+            byte[] privateKeyOpt = null,
+            bool publicSigned = false,
+            Machine machine = 0)
         {
+            var peHeaderBuilder = new PEHeaderBuilder(imageCharacteristics: entryPointHandle.IsNil ? Characteristics.Dll : Characteristics.ExecutableImage,
+                                                      machine: machine);
+
             var peBuilder = new ManagedPEBuilder(
-                entryPointHandle.IsNil ? PEHeaderBuilder.CreateLibraryHeader() : PEHeaderBuilder.CreateExecutableHeader(),
+                peHeaderBuilder,
                 new MetadataRootBuilder(metadataBuilder),
                 ilBuilder,
                 entryPoint: entryPointHandle,
-                flags: CorFlags.ILOnly | (privateKeyOpt != null ? CorFlags.StrongNameSigned : 0),
+                flags: CorFlags.ILOnly | (privateKeyOpt != null || publicSigned ? CorFlags.StrongNameSigned : 0),
                 deterministicIdProvider: content => s_contentId);
 
             var peBlob = new BlobBuilder();
@@ -85,6 +95,11 @@ namespace System.Reflection.PortableExecutable.Tests
             peBlob.WriteContentTo(peStream);
         }
 
+        public static IEnumerable<object> AllMachineTypes()
+        {
+            return ((Machine[])Enum.GetValues(typeof(Machine))).Select(m => new object[]{(object)m});
+        }
+
         #endregion
 
         [Fact]
@@ -100,17 +115,22 @@ namespace System.Reflection.PortableExecutable.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => new ManagedPEBuilder(hdr, ms, il, strongNameSignatureSize: -1));
         }
 
-        [Fact]
-        public void BasicValidation()
+        [Theory] // Do BasicValidation on all machine types listed in the Machine enum
+        [MemberData(nameof(AllMachineTypes))]
+        public void BasicValidation(Machine machine)
         {
             using (var peStream = new MemoryStream())
             {
                 var ilBuilder = new BlobBuilder();
                 var metadataBuilder = new MetadataBuilder();
                 var entryPoint = BasicValidationEmit(metadataBuilder, ilBuilder);
-                WritePEImage(peStream, metadataBuilder, ilBuilder, entryPoint);
+                WritePEImage(peStream, metadataBuilder, ilBuilder, entryPoint, publicSigned: true, machine: machine);
 
-                VerifyPE(peStream);
+                peStream.Position = 0;
+                var actualChecksum = new PEHeaders(peStream).PEHeader.CheckSum;
+                Assert.Equal(0U, actualChecksum);
+
+                VerifyPE(peStream, machine);
             }
         }
 
@@ -124,7 +144,15 @@ namespace System.Reflection.PortableExecutable.Tests
                 var entryPoint = BasicValidationEmit(metadataBuilder, ilBuilder);
                 WritePEImage(peStream, metadataBuilder, ilBuilder, entryPoint, privateKeyOpt: Misc.KeyPair);
 
-                VerifyPE(peStream, expectedSignature: new byte[] 
+                // The expected checksum can be determined by saving the PE stream to a file, 
+                // running "sn -R test.dll KeyPair.snk" and inspecting the resulting binary.
+                // The re-signed binary should be the same as the original one.
+                // See https://github.com/dotnet/corefx/issues/25829.
+                peStream.Position = 0;
+                var actualChecksum = new PEHeaders(peStream).PEHeader.CheckSum;
+                Assert.Equal(0x0000319cU, actualChecksum);
+
+                VerifyPE(peStream, Machine.Unknown, expectedSignature: new byte[] 
                 {
                     0x58, 0xD4, 0xD7, 0x88, 0x3B, 0xF9, 0x19, 0x9F, 0x3A, 0x55, 0x8F, 0x1B, 0x88, 0xBE, 0xA8, 0x42,
                     0x09, 0x2B, 0xE3, 0xB4, 0xC7, 0x09, 0xD5, 0x96, 0x35, 0x50, 0x0F, 0x3C, 0x87, 0x95, 0x6A, 0x31,
@@ -307,8 +335,9 @@ namespace System.Reflection.PortableExecutable.Tests
             return mainMethodDef;
         }
 
-        [Fact]
-        public void Complex()
+        [Theory] // Do BasicValidation on common machine types
+        [MemberData(nameof(AllMachineTypes))]
+        public void Complex(Machine machine)
         {
             using (var peStream = new MemoryStream())
             {
@@ -317,8 +346,8 @@ namespace System.Reflection.PortableExecutable.Tests
                 Blob mvidFixup;
                 var entryPoint = ComplexEmit(metadataBuilder, ilBuilder, out mvidFixup);
 
-                WritePEImage(peStream, metadataBuilder, ilBuilder, entryPoint, mvidFixup);
-                VerifyPE(peStream);
+                WritePEImage(peStream, metadataBuilder, ilBuilder, entryPoint, mvidFixup, machine: machine);
+                VerifyPE(peStream, machine);
             }
         }
 

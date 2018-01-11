@@ -129,7 +129,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         // Members of aggs
-        public FieldSymbol CreateMemberVar(Name name, ParentSymbol parent)
+        public FieldSymbol CreateMemberVar(Name name, AggregateSymbol parent)
         {
             Debug.Assert(name != null);
 
@@ -139,7 +139,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return (sym);
         }
 
-        public LocalVariableSymbol CreateLocalVar(Name name, ParentSymbol parent, CType type)
+        public LocalVariableSymbol CreateLocalVar(Name name, Scope parent, CType type)
         {
             LocalVariableSymbol sym = (LocalVariableSymbol)NewBasicSymbol(SYMKIND.SK_LocalVariableSymbol, name, parent);
             sym.SetType(type);
@@ -149,17 +149,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return sym;
         }
 
-        public MethodSymbol CreateMethod(Name name, ParentSymbol parent) => 
+        public MethodSymbol CreateMethod(Name name, AggregateSymbol parent) => 
             NewBasicSymbol(SYMKIND.SK_MethodSymbol, name, parent) as MethodSymbol;
 
-        public PropertySymbol CreateProperty(Name name, ParentSymbol parent)
+        public PropertySymbol CreateProperty(Name name, AggregateSymbol parent)
         {
             PropertySymbol sym = NewBasicSymbol(SYMKIND.SK_PropertySymbol, name, parent) as PropertySymbol;
             Debug.Assert(sym != null);
             return (sym);
         }
 
-        public EventSymbol CreateEvent(Name name, ParentSymbol parent)
+        public EventSymbol CreateEvent(Name name, AggregateSymbol parent)
         {
             EventSymbol sym = NewBasicSymbol(SYMKIND.SK_EventSymbol, name, parent) as EventSymbol;
 
@@ -191,16 +191,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return pResult;
         }
 
-        public Scope CreateScope(Scope parent)
-        {
-            Scope sym = (Scope)NewBasicSymbol(SYMKIND.SK_Scope, null, parent);
-            if (parent != null)
-            {
-                sym.nestingOrder = parent.nestingOrder + 1;
-            }
-
-            return sym;
-        }
+        public Scope CreateScope() => (Scope)NewBasicSymbol(SYMKIND.SK_Scope, null, null);
 
         public IndexerSymbol CreateIndexer(Name name, ParentSymbol parent, Name realName)
         {

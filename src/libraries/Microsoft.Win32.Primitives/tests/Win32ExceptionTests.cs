@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Tests;
 using System.Text;
@@ -16,6 +17,7 @@ namespace System.ComponentModel.Tests
         private const int FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000;
         private const int ERROR_INSUFFICIENT_BUFFER = 0x7A;
         private const int FirstPassBufferSize = 256;
+        private const int E_FAIL = unchecked((int)0x80004005);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, EntryPoint = "FormatMessageW", SetLastError = true, BestFitMapping = true)]
         private static extern int FormatMessage(
@@ -49,6 +51,12 @@ namespace System.ComponentModel.Tests
         {
             int error = 5;
             string message = "This is an error message.";
+            string toStringStart = string.Format(
+                CultureInfo.InvariantCulture,
+                "{0} ({1})",
+                typeof(Win32Exception).ToString(),
+                PlatformDetection.IsFullFramework ? $"0x{E_FAIL:X8}" : error.ToString(CultureInfo.InvariantCulture));
+
             Exception innerException = new FormatException();
 
             // Test each of the constructors and validate the properties of the resulting instance
@@ -59,6 +67,7 @@ namespace System.ComponentModel.Tests
             ex = new Win32Exception(error);
             Assert.Equal(expected: E_FAIL, actual: ex.HResult);
             Assert.Equal(expected: error, actual: ex.NativeErrorCode);
+            Assert.StartsWith(expectedStartString: toStringStart, actualString: ex.ToString(), comparisonType: StringComparison.Ordinal);
 
             ex = new Win32Exception(message);
             Assert.Equal(expected: E_FAIL, actual: ex.HResult);
@@ -68,14 +77,13 @@ namespace System.ComponentModel.Tests
             Assert.Equal(expected: E_FAIL, actual: ex.HResult);
             Assert.Equal(expected: error, actual: ex.NativeErrorCode);
             Assert.Equal(expected: message, actual: ex.Message);
+            Assert.StartsWith(expectedStartString: toStringStart, actualString: ex.ToString(), comparisonType: StringComparison.Ordinal);
 
             ex = new Win32Exception(message, innerException);
             Assert.Equal(expected: E_FAIL, actual: ex.HResult);
             Assert.Equal(expected: message, actual: ex.Message);
             Assert.Same(expected: innerException, actual: ex.InnerException);
         }
-
-        private const int E_FAIL = unchecked((int)0x80004005);
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes to check whether the exception resource length >256 chars

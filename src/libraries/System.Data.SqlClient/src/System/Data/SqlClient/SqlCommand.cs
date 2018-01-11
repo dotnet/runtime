@@ -889,8 +889,13 @@ namespace System.Data.SqlClient
             }
         }
 
+        public IAsyncResult BeginExecuteNonQuery()
+        {
+            // BeginExecuteNonQuery will track ExecutionTime for us
+            return BeginExecuteNonQuery(null, null);
+        }
 
-        private IAsyncResult BeginExecuteNonQuery(AsyncCallback callback, object stateObject)
+        public IAsyncResult BeginExecuteNonQuery(AsyncCallback callback, object stateObject)
         {
             // Reset _pendingCancel upon entry into any Execute - used to synchronize state
             // between entry into Execute* API and the thread obtaining the stateObject.
@@ -1027,7 +1032,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        private int EndExecuteNonQuery(IAsyncResult asyncResult)
+        public int EndExecuteNonQuery(IAsyncResult asyncResult)
         {
             Exception asyncException = ((Task)asyncResult).Exception;
             if (asyncException != null)

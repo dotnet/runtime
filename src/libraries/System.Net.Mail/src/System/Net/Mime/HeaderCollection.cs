@@ -137,7 +137,7 @@ namespace System.Net.Mime
 
             if (value == string.Empty)
             {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(value)), nameof(name));
+                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(value)), nameof(value));
             }
 
             if (!MimeBasePart.IsAscii(name, false))
@@ -183,7 +183,7 @@ namespace System.Net.Mime
             }
             if (value == string.Empty)
             {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(value)), nameof(name));
+                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(value)), nameof(value));
             }
 
             MailBnfHelper.ValidateHeaderName(name);

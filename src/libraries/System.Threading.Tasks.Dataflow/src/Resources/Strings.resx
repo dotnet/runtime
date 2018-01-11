@@ -97,4 +97,7 @@
   <data name="ConcurrentCollection_SyncRoot_NotSupported" xml:space="preserve">
     <value>The SyncRoot property may not be used for the synchronization of concurrent collections.</value>
   </data>
+  <data name="InvalidOperation_ErrorDuringCleanup" xml:space="preserve">
+    <value>An error occurred while linking up the target or during the cleanup after completion.</value>
+  </data>
 </root>

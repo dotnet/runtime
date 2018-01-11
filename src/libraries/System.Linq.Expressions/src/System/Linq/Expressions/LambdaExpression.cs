@@ -601,27 +601,22 @@ namespace System.Linq.Expressions
                 s_lambdaFactories = factories = new CacheDict<Type, Func<Expression, string, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>>(50);
             }
 
-            MethodInfo create = null;
             if (!factories.TryGetValue(delegateType, out fastPath))
             {
 #if FEATURE_COMPILE
-                create = typeof(Expression<>).MakeGenericType(delegateType).GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic);
+                MethodInfo create = typeof(Expression<>).MakeGenericType(delegateType).GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic);
 #else
-                create = typeof(ExpressionCreator<>).MakeGenericType(delegateType).GetMethod("CreateExpressionFunc", BindingFlags.Static | BindingFlags.Public);
+                MethodInfo create = typeof(ExpressionCreator<>).MakeGenericType(delegateType).GetMethod("CreateExpressionFunc", BindingFlags.Static | BindingFlags.Public);
 #endif
-                if (delegateType.CanCache())
+                if (delegateType.IsCollectible)
                 {
-                    factories[delegateType] = fastPath = (Func<Expression, string, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>)create.CreateDelegate(typeof(Func<Expression, string, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>));
+                    return (LambdaExpression)create.Invoke(null, new object[] { body, name, tailCall, parameters });
                 }
+
+                factories[delegateType] = fastPath = (Func<Expression, string, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>)create.CreateDelegate(typeof(Func<Expression, string, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>));
             }
 
-            if (fastPath != null)
-            {
-                return fastPath(body, name, tailCall, parameters);
-            }
-
-            Debug.Assert(create != null);
-            return (LambdaExpression)create.Invoke(null, new object[] { body, name, tailCall, parameters });
+            return fastPath(body, name, tailCall, parameters);
         }
 
         /// <summary>
@@ -893,12 +888,11 @@ namespace System.Linq.Expressions
 
             TypeUtils.ValidateType(delegateType, nameof(delegateType), allowByRef: true, allowPointer: true);
 
-            MethodInfo mi;
             CacheDict<Type, MethodInfo> ldc = s_lambdaDelegateCache;
-            if (!ldc.TryGetValue(delegateType, out mi))
+            if (!ldc.TryGetValue(delegateType, out MethodInfo mi))
             {
                 mi = delegateType.GetInvokeMethod();
-                if (delegateType.CanCache())
+                if (!delegateType.IsCollectible)
                 {
                     ldc[delegateType] = mi;
                 }

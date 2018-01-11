@@ -3,6 +3,7 @@
   <PropertyGroup>
     <PackageConfigurations>
       netstandard1.0;
+      netstandard1.3;
       netstandard;
     </PackageConfigurations>
     <BuildConfigurations>

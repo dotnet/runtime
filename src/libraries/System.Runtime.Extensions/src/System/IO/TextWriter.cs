@@ -7,6 +7,7 @@ using System.Threading;
 using System.Globalization;
 using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Buffers;
 
 namespace System.IO
@@ -548,7 +549,7 @@ namespace System.IO
         }
 
         public virtual Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default(CancellationToken)) =>
-            buffer.DangerousTryGetArray(out ArraySegment<char> array) ?
+            MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
                 WriteAsync(array.Array, array.Offset, array.Count) :
                 Task.Factory.StartNew(state =>
                 {
@@ -600,7 +601,7 @@ namespace System.IO
         }
 
         public virtual Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default(CancellationToken)) =>
-            buffer.DangerousTryGetArray(out ArraySegment<char> array) ?
+            MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
                 WriteLineAsync(array.Array, array.Offset, array.Count) :
                 Task.Factory.StartNew(state =>
                 {

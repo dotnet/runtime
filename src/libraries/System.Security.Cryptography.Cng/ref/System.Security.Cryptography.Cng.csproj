@@ -6,9 +6,11 @@
     <ProjectGuid>{9FD12550-3A7C-49D3-9A1E-C4B7410989DD}</ProjectGuid>
     <DefineConstants Condition="'$(TargetGroup)' == 'uap' Or '$(TargeGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_HASHDATA</DefineConstants>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx' OR '$(TargetGroup)' == 'net462' OR '$(TargetGroup)' == 'net47'">true</IsPartialFacadeAssembly>
-    <!-- Must match version supported by frameworks which support 4.3.* inbox.
-         Can be removed when API is added and this assembly is versioned to 4.4.* -->
-    <AssemblyVersion Condition="'$(TargetsNetFx)' != 'true'">4.3.1.0</AssemblyVersion>
+    <!-- We must pin the netstandard2.0 version to match what was shipped in netcoreapp2.0
+         If we decided to add more Apis to that version of the library we need to also start
+         producing the netcoreapp2.0 src library again instead of harvesting it.
+     -->
+    <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard'">4.3.0.0</AssemblyVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />

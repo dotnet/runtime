@@ -525,5 +525,48 @@ namespace System.Linq.Expressions.Tests
         }
 #endif
 
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CoalesceWideningLeft(bool useInterpreter)
+        {
+            ParameterExpression x = Expression.Parameter(typeof(int?));
+            ParameterExpression y = Expression.Parameter(typeof(long));
+            Func<int?, long, long> func = Expression.Lambda<Func<int?, long, long>>(Expression.Coalesce(x, y), x, y).Compile(useInterpreter);
+            Assert.Equal(2, func(null, 2));
+            Assert.Equal(2, func(2, 1));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CoalesceWideningLeftNullableRight(bool useInterpreter)
+        {
+            ParameterExpression x = Expression.Parameter(typeof(int?));
+            ParameterExpression y = Expression.Parameter(typeof(long?));
+            Func<int?, long?, long?> func = Expression.Lambda<Func<int?, long?, long?>>(Expression.Coalesce(x, y), x, y).Compile(useInterpreter);
+            Assert.Equal(2, func(null, 2));
+            Assert.Equal(2, func(2, 1));
+            Assert.Equal(2, func(2, null));
+            Assert.Null(func(null, null));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CoalesceWideningRight(bool useInterpreter)
+        {
+            ParameterExpression x = Expression.Parameter(typeof(long?));
+            ParameterExpression y = Expression.Parameter(typeof(int));
+            Func<long?, int, long> func = Expression.Lambda<Func<long?, int, long>>(Expression.Coalesce(x, y), x, y).Compile(useInterpreter);
+            Assert.Equal(2, func(null, 2));
+            Assert.Equal(2, func(2, 1));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CoalesceWideningRightNullable(bool useInterpreter)
+        {
+            ParameterExpression x = Expression.Parameter(typeof(long?));
+            ParameterExpression y = Expression.Parameter(typeof(int?));
+            Func<long?, int?, long?> func = Expression.Lambda<Func<long?, int?, long?>>(Expression.Coalesce(x, y), x, y).Compile(useInterpreter);
+            Assert.Equal(2, func(null, 2));
+            Assert.Equal(2, func(2, 1));
+            Assert.Equal(2, func(2, null));
+            Assert.Null(func(null, null));
+        }
     }
 }

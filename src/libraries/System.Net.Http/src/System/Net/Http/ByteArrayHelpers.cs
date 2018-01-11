@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System
@@ -44,7 +45,7 @@ namespace System
         internal static unsafe string GetStringFromByteSpan(ReadOnlySpan<byte> bytes)
         {
             // TODO #22431: Use new Span-based Encoding overload when available
-            fixed (byte* p = &bytes.DangerousGetPinnableReference())
+            fixed (byte* p = &MemoryMarshal.GetReference(bytes))
             {
                 return Encoding.ASCII.GetString(p, bytes.Length);
             }

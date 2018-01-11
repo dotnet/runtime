@@ -30,7 +30,7 @@ namespace System.Buffers.Text
             ReadOnlySpan<byte> result;
             if (format.IsDefault || format.Symbol == 'G')
             {
-                result = value ? Utf8Constants.s_True : Utf8Constants.s_False;
+                result = value ? Utf8Constants.s_capitalizedTrue : Utf8Constants.s_capitalizedFalse;
             }
             else if (format.Symbol == 'l')
             {

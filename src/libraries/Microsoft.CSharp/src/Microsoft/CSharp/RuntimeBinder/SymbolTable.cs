@@ -1507,7 +1507,6 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             methodSymbol.SetAccess(access);
             methodSymbol.isVirtual = member.IsVirtual;
-            methodSymbol.isAbstract = member.IsAbstract;
             methodSymbol.isStatic = member.IsStatic;
 
             if (method != null)
@@ -1516,7 +1515,6 @@ namespace Microsoft.CSharp.RuntimeBinder
                 methodSymbol.isOverride = method.IsVirtual && method.IsHideBySig && method.GetRuntimeBaseDefinition() != method;
                 methodSymbol.isOperator = IsOperator(method);
                 methodSymbol.swtSlot = GetSlotForOverride(method);
-                methodSymbol.isVarargs = (method.CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs;
                 methodSymbol.RetType = GetCTypeFromType(method.ReturnType);
             }
             else
@@ -1525,7 +1523,6 @@ namespace Microsoft.CSharp.RuntimeBinder
                 methodSymbol.isOverride = false;
                 methodSymbol.isOperator = false;
                 methodSymbol.swtSlot = null;
-                methodSymbol.isVarargs = false;
                 methodSymbol.RetType = _typeManager.GetVoid();
             }
 
@@ -1623,6 +1620,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     {
                         object defValue = parameter.DefaultValue;
 #endif
+                        Debug.Assert(Type.GetTypeCode(defValue.GetType()) != TypeCode.Decimal); // Handled above
                         switch (Type.GetTypeCode(defValue.GetType()))
                         {
 
@@ -1654,11 +1652,6 @@ namespace Microsoft.CSharp.RuntimeBinder
                             case TypeCode.Double:
                                 cv = ConstVal.Get((double)defValue);
                                 cvType = _semanticChecker.SymbolLoader.GetPredefindType(PredefinedType.PT_DOUBLE);
-                                break;
-
-                            case TypeCode.Decimal:
-                                cv = ConstVal.Get((decimal)defValue);
-                                cvType = _semanticChecker.SymbolLoader.GetPredefindType(PredefinedType.PT_DECIMAL);
                                 break;
 
                             case TypeCode.Char:
@@ -1750,9 +1743,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 types.Add(GetTypeOfParameter(p, associatedInfo));
             }
 
-            MethodInfo mi = associatedInfo as MethodInfo;
-
-            if (mi != null && (mi.CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs)
+            if (associatedInfo is MethodBase mb && (mb.CallingConvention & CallingConventions.VarArgs) != 0)
             {
                 types.Add(_typeManager.GetArgListType());
             }

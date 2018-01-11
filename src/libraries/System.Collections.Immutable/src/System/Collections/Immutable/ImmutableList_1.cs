@@ -169,7 +169,21 @@ namespace System.Collections.Immutable
         /// <param name="index">The 0-based index of the element in the set to return.</param>
         /// <returns>The element at the given position.</returns>
         /// <exception cref="IndexOutOfRangeException">Thrown from getter when <paramref name="index"/> is negative or not less than <see cref="Count"/>.</exception>
+#if FEATURE_ITEMREFAPI
+        public T this[int index] => _root.ItemRef(index);
+#else
         public T this[int index] => _root[index];
+#endif
+
+#if FEATURE_ITEMREFAPI
+        /// <summary>
+        /// Gets a read-only reference to the element of the set at the given index.
+        /// </summary>
+        /// <param name="index">The 0-based index of the element in the set to return.</param>
+        /// <returns>A read-only reference to the element at the given position.</returns>
+        /// <exception cref="IndexOutOfRangeException">Thrown when <paramref name="index"/> is negative or not less than <see cref="Count"/>.</exception>
+        public ref readonly T ItemRef(int index) => ref _root.ItemRef(index);
+#endif
 
         #endregion
 

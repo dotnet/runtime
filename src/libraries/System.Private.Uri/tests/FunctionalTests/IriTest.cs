@@ -403,47 +403,47 @@ namespace System.PrivateUri.Tests
 
         /// <summary>
         /// First column contains input characters found to be potential issues with the current implementation.
-        /// The second column contains the current (.Net 4.5.2) Uri behavior for Uri normalization.
+        /// The second column contains the current (.Net Core 2.1/Framework 4.7.2) Uri behavior for Uri normalization.
         /// </summary>
         private static string[,] s_checkIsReservedEscapingStrings =
         {
-            // : [ ] in host
+            // : [ ] in host.
             {"http://user@ser%3Aver.srv:123/path/path/resource.ext?query=expression#fragment", null},
             {"http://user@server.srv%3A999/path/path/resource.ext?query=expression#fragment", null},
             {"http://user@server.%5Bsrv:123/path/path/resource.ext?query=expression#fragment", null},
             {"http://user@ser%5Dver.srv:123/path/path/resource.ext?query=expression#fragment", null},
 
-            // [ ] in userinfo
-            {"http://us%5Ber@server.srv:123/path/path/resource.ext?query=expression#fragment",
+            // [ ] in userinfo.
+            {"http://us%5Ber@server.srv:123/path/path/resource.ext?query=expression#fragment",  
                 "http://us%5Ber@server.srv:123/path/path/resource.ext?query=expression#fragment"},
-            {"http://u%5Dser@server.srv:123/path/path/resource.ext?query=expression#fragment",
+            {"http://u%5Dser@server.srv:123/path/path/resource.ext?query=expression#fragment", 
                 "http://u%5Dser@server.srv:123/path/path/resource.ext?query=expression#fragment"},
-            {"http://us%5B%5Der@server.srv:123/path/path/resource.ext?query=expression#fragment",
+            {"http://us%5B%5Der@server.srv:123/path/path/resource.ext?query=expression#fragment", 
                 "http://us%5B%5Der@server.srv:123/path/path/resource.ext?query=expression#fragment"},
             
-            // [ ] in path
-            {"http://user@server.srv:123/path/pa%5Bth/resource.ext?query=expression#fragment",
-                "http://user@server.srv:123/path/pa[th/resource.ext?query=expression#fragment"},
-            {"http://user@server.srv:123/pa%5Dth/path%5D/resource.ext?query=expression#fragment",
-                "http://user@server.srv:123/pa]th/path]/resource.ext?query=expression#fragment"},
-            {"http://user@server.srv:123/path/p%5Ba%5Dth/resource.ext?query=expression#fragment",
-                "http://user@server.srv:123/path/p[a]th/resource.ext?query=expression#fragment"},
+            // [ ] : ' in path.
+            {"http://user@server.srv:123/path/pa%5B%3A%27th/resource.ext?query=expression#fragment", 
+                "http://user@server.srv:123/path/pa%5B%3A%27th/resource.ext?query=expression#fragment"},
+            {"http://user@server.srv:123/pa%5D%3A%27th/path%5D%3A%27/resource.ext?query=expression#fragment", 
+                "http://user@server.srv:123/pa%5D%3A%27th/path%5D%3A%27/resource.ext?query=expression#fragment"},
+            {"http://user@server.srv:123/path/p%5B%3A%27a%5D%3A%27th/resource.ext?query=expression#fragment", 
+                "http://user@server.srv:123/path/p%5B%3A%27a%5D%3A%27th/resource.ext?query=expression#fragment"},
             
-            // [ ] in query
-            {"http://user@server.srv:123/path/path/resource.ext?que%5Bry=expression#fragment",
-                "http://user@server.srv:123/path/path/resource.ext?que[ry=expression#fragment"},
-            {"http://user@server.srv:123/path/path/resource.ext?query=exp%5Dression#fragment",
-                "http://user@server.srv:123/path/path/resource.ext?query=exp]ression#fragment"},
-            {"http://user@server.srv:123/path/path/resource.ext?que%5Bry=exp%5Dression#fragment",
-                "http://user@server.srv:123/path/path/resource.ext?que[ry=exp]ression#fragment"},
+            // [ ] : ' in query.
+            {"http://user@server.srv:123/path/path/resource.ext?que%5B%3A%27ry=expression#fragment",
+                "http://user@server.srv:123/path/path/resource.ext?que%5B%3A%27ry=expression#fragment"},
+            {"http://user@server.srv:123/path/path/resource.ext?query=exp%5D%3A%27ression#fragment",
+                "http://user@server.srv:123/path/path/resource.ext?query=exp%5D%3A%27ression#fragment"},
+            {"http://user@server.srv:123/path/path/resource.ext?que%5B%3A%27ry=exp%5D%3A%27ression#fragment",
+                "http://user@server.srv:123/path/path/resource.ext?que%5B%3A%27ry=exp%5D%3A%27ression#fragment"},
             
-            // [ ] in fragment
-            {"http://user@server.srv:123/path/path/resource.ext?query=expression#fr%5Bagment",
-                "http://user@server.srv:123/path/path/resource.ext?query=expression#fr[agment"},
-            {"http://user@server.srv:123/path/path/resource.ext?query=expression#fragment%5D",
-                "http://user@server.srv:123/path/path/resource.ext?query=expression#fragment]"},
-            {"http://user@server.srv:123/path/path/resource.ext?query=expression#fr%5Bagment%5D",
-                "http://user@server.srv:123/path/path/resource.ext?query=expression#fr[agment]"}
+            // [ ] : ' in fragment.
+            {"http://user@server.srv:123/path/path/resource.ext?query=expression#fr%5B%3A%27agment",
+                "http://user@server.srv:123/path/path/resource.ext?query=expression#fr%5B%3A%27agment"},
+            {"http://user@server.srv:123/path/path/resource.ext?query=expression#fragment%5D%3A%27",
+                "http://user@server.srv:123/path/path/resource.ext?query=expression#fragment%5D%3A%27"},
+            {"http://user@server.srv:123/path/path/resource.ext?query=expression#fr%5B%3A%27agment%5D%3A%27",
+                "http://user@server.srv:123/path/path/resource.ext?query=expression#fr%5B%3A%27agment%5D%3A%27"}
         };
 
         /// <summary>
@@ -451,6 +451,7 @@ namespace System.PrivateUri.Tests
         /// CheckIsReserved().
         /// </summary>
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Requires fix shipping in .NET 4.7.2")]
         public void Iri_CheckIsReserved_EscapingBehavior()
         {
             for (int i = 0; i < s_checkIsReservedEscapingStrings.GetLength(0); i++)
@@ -520,6 +521,20 @@ namespace System.PrivateUri.Tests
             }
             catch (FormatException)
             { }
+        }
+
+        [Theory]
+        [InlineData("\u00E8")]
+        [InlineData("_\u00E8")]
+        [InlineData("_")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Requires fix shipping in .NET 4.7.2")]
+        public void Iri_FileUriUncFallback_DoesSupportUnicodeHost(string authority)
+        {
+            Uri fileTwoSlashes = new Uri("file://" + authority);
+            Uri fileFourSlashes = new Uri("file:////" + authority);
+
+            Assert.Equal(authority, fileTwoSlashes.Authority); // Two slashes must be followed by an authority
+            Assert.Equal(authority, fileFourSlashes.Authority); // More than three slashes looks like a UNC share
         }
     }
 }

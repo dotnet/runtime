@@ -258,7 +258,14 @@ namespace System.Drawing
             // resort to type converter which will handle named colors
             if (c.IsEmpty)
             {
-                c = ColorConverterCommon.ConvertFromString(htmlColor, CultureInfo.CurrentCulture);
+                try
+                {
+                    c = ColorConverterCommon.ConvertFromString(htmlColor, CultureInfo.CurrentCulture);
+                }
+                catch(Exception ex)
+                {
+                    throw new ArgumentException(ex.Message, nameof(htmlColor), ex);
+                }
             }
 
             return c;

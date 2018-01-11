@@ -433,9 +433,12 @@ nameof(value));
             {
                 var results = validatable.Validate(validationContext);
 
-                foreach (var result in results.Where(r => r != ValidationResult.Success))
+                if (results != null)
                 {
-                    errors.Add(new ValidationError(null, instance, result));
+                    foreach (var result in results.Where(r => r != ValidationResult.Success))
+                    {
+                        errors.Add(new ValidationError(null, instance, result));
+                    }
                 }
             }
 

@@ -7,7 +7,6 @@ using Xunit;
 using System.Net;
 
 using static System.Buffers.Binary.BinaryPrimitives;
-using static System.TestHelpers;
 
 namespace System.Buffers.Binary.Tests
 {
@@ -21,7 +20,7 @@ namespace System.Buffers.Binary.Tests
             Span<byte> spanBE = TestHelpers.GetSpanBE();
 
             var readStruct = new TestHelpers.TestStructExplicit();
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -47,7 +46,7 @@ namespace System.Buffers.Binary.Tests
                 }
             }
 
-            Assert.Equal(TestHelpers.testExplicitStruct, readStruct);
+            Assert.Equal(TestHelpers.s_testExplicitStruct, readStruct);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
@@ -56,7 +55,7 @@ namespace System.Buffers.Binary.Tests
             Span<byte> spanLE = TestHelpers.GetSpanLE();
 
             var readStruct = new TestHelpers.TestStructExplicit();
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -82,7 +81,7 @@ namespace System.Buffers.Binary.Tests
                 }
             }
 
-            Assert.Equal(TestHelpers.testExplicitStruct, readStruct);
+            Assert.Equal(TestHelpers.s_testExplicitStruct, readStruct);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
@@ -91,7 +90,7 @@ namespace System.Buffers.Binary.Tests
             Span<byte> spanBE = TestHelpers.GetSpanBE();
 
             var readStruct = new TestHelpers.TestStructExplicit();
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -116,7 +115,7 @@ namespace System.Buffers.Binary.Tests
                 }
             }
 
-            Assert.Equal(TestHelpers.testExplicitStruct, readStruct);
+            Assert.Equal(TestHelpers.s_testExplicitStruct, readStruct);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
@@ -125,7 +124,7 @@ namespace System.Buffers.Binary.Tests
             Span<byte> spanLE = TestHelpers.GetSpanLE();
 
             var readStruct = new TestHelpers.TestStructExplicit();
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -150,7 +149,7 @@ namespace System.Buffers.Binary.Tests
                 }
             }
 
-            Assert.Equal(TestHelpers.testExplicitStruct, readStruct);
+            Assert.Equal(TestHelpers.s_testExplicitStruct, readStruct);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
@@ -160,7 +159,7 @@ namespace System.Buffers.Binary.Tests
             byte[] arrayLE = spanLE.ToArray();
 
             var readStruct = new TestHelpers.TestStructExplicit();
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -185,7 +184,7 @@ namespace System.Buffers.Binary.Tests
                 }
             }
 
-            Assert.Equal(TestHelpers.testExplicitStruct, readStruct);
+            Assert.Equal(TestHelpers.s_testExplicitStruct, readStruct);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
@@ -195,7 +194,7 @@ namespace System.Buffers.Binary.Tests
             byte[] arrayBE = spanBE.ToArray();
 
             var readStruct = new TestHelpers.TestStructExplicit();
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -235,15 +234,15 @@ namespace System.Buffers.Binary.Tests
                 }
             }
 
-            Assert.Equal(TestHelpers.testExplicitStruct, readStruct);
+            Assert.Equal(TestHelpers.s_testExplicitStruct, readStruct);
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
         private static void MeasureReverseEndianness()
         {
             var myArray = new int[1000];
-            
-            foreach (var iteration in Benchmark.Iterations)
+
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
@@ -263,7 +262,7 @@ namespace System.Buffers.Binary.Tests
         {
             var myArray = new int[1000];
 
-            foreach (var iteration in Benchmark.Iterations)
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {

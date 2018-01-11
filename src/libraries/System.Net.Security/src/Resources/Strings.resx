@@ -171,6 +171,9 @@
   <data name="net_ssl_io_frame" xml:space="preserve">
     <value>The handshake failed due to an unexpected packet format.</value>
   </data>
+  <data name="net_ssl_io_renego" xml:space="preserve">
+    <value>The remote party requested renegotiation when AllowRenegotiation was set to false.</value>
+  </data>
   <data name="net_ssl_io_cert_validation" xml:space="preserve">
     <value>The remote certificate is invalid according to the validation procedure.</value>
   </data>

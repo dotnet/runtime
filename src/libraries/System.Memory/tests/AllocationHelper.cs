@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -11,14 +15,14 @@ namespace System.SpanTests
     /// </summary>
     static class AllocationHelper
     {
-        private static readonly Mutex MemoryLock = new Mutex();
-        private static readonly TimeSpan WaitTimeout = TimeSpan.FromSeconds(120);
+        private static readonly Mutex s_memoryLock = new Mutex();
+        private static readonly TimeSpan s_waitTimeout = TimeSpan.FromSeconds(120);
 
         public static bool TryAllocNative(IntPtr size, out IntPtr memory)
         {
             memory = IntPtr.Zero;
 
-            if (!MemoryLock.WaitOne(WaitTimeout))
+            if (!s_memoryLock.WaitOne(s_waitTimeout))
                 return false;
 
             try
@@ -28,7 +32,7 @@ namespace System.SpanTests
             catch (OutOfMemoryException)
             {
                 memory = IntPtr.Zero;
-                MemoryLock.ReleaseMutex();
+                s_memoryLock.ReleaseMutex();
             }
 
             return memory != IntPtr.Zero;
@@ -43,7 +47,7 @@ namespace System.SpanTests
             }
             finally
             {
-                MemoryLock.ReleaseMutex();
+                s_memoryLock.ReleaseMutex();
             }
         }
     }

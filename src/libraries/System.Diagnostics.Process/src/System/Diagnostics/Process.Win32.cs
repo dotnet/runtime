@@ -34,6 +34,9 @@ namespace System.Diagnostics
             if (startInfo.RedirectStandardInput || startInfo.RedirectStandardOutput || startInfo.RedirectStandardError)
                 throw new InvalidOperationException(SR.CantRedirectStreams);
 
+            if (startInfo.StandardInputEncoding != null)
+                throw new InvalidOperationException(SR.StandardInputEncodingNotAllowed);
+
             if (startInfo.StandardErrorEncoding != null)
                 throw new InvalidOperationException(SR.StandardErrorEncodingNotAllowed);
 

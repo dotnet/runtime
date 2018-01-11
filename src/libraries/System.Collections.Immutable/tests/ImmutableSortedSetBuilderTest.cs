@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Collections.Immutable.Tests
@@ -374,6 +375,31 @@ namespace System.Collections.Immutable.Tests
             Type proxyType = DebuggerAttributes.GetProxyType(ImmutableSortedSet.CreateBuilder<int>());
             TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance(proxyType, (object)null));
             Assert.IsType<ArgumentNullException>(tie.InnerException);
+        }
+
+        [Fact]
+        public void ItemRef()
+        {
+            var array = new[] { 1, 2, 3 }.ToImmutableSortedSet();
+            var builder = new ImmutableSortedSet<int>.Builder(array);
+
+            ref readonly var safeRef = ref builder.ItemRef(1);
+            ref var unsafeRef = ref Unsafe.AsRef(safeRef);
+
+            Assert.Equal(2, builder.ItemRef(1));
+
+            unsafeRef = 4;
+
+            Assert.Equal(4, builder.ItemRef(1));
+        }
+
+        [Fact]
+        public void ItemRef_OutOfBounds()
+        {
+            var array = new[] { 1, 2, 3 }.ToImmutableSortedSet();
+            var builder = new ImmutableSortedSet<int>.Builder(array);
+
+            Assert.Throws<ArgumentOutOfRangeException> (() => builder.ItemRef(5));
         }
     }
 }
