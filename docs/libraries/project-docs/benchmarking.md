@@ -72,6 +72,16 @@ Follow the instructions described here https://github.com/dotnet/corefx/blob/mas
 Whenever you want to benchmark an application simultaneously with one or multiple different .NET Core run time framework versions, you want to create a manual BenchmarkDotNet configuration file. Add the desired amount of Jobs and `NetCoreAppSettings` to specify the `targetFrameworkMoniker`, `runtimeFrameworkVersion` and `customDotNetCliPath`:
 
 ```csharp
+using BenchmarkDotNet.Columns;
+using BenchmarkDotNet.Configs;
+using BenchmarkDotNet.Diagnosers;
+using BenchmarkDotNet.Environments;
+using BenchmarkDotNet.Exporters;
+using BenchmarkDotNet.Jobs;
+using BenchmarkDotNet.Loggers;
+using BenchmarkDotNet.Toolchains.CsProj;
+using BenchmarkDotNet.Toolchains.DotNetCli;
+
 public class MainConfig : ManualConfig
 {
     public MainConfig()
@@ -83,7 +93,7 @@ public class MainConfig : ManualConfig
                 targetFrameworkMoniker: "netcoreapp2.1",
                 runtimeFrameworkVersion: "2.1.0-preview1-25919-02", // <-- Adjust version here
                 customDotNetCliPath: @"C:\dotnet-nightly\dotnet.exe", // <-- Adjust path here
-                name: "Core 2.1.0-preview")));
+                name: "Core 2.1.0-preview"))));
             
         // Job #2 which could be in-process (see Alternative #2)
         // ...
