@@ -3968,12 +3968,12 @@ bool CodeGenInterface::genUseOptimizedWriteBarriers(GCInfo::WriteBarrierForm wbf
 #if defined(_TARGET_X86_) && NOGC_WRITE_BARRIERS
 #ifdef DEBUG
     return (wbf != GCInfo::WBF_NoBarrier_CheckNotHeapInDebug); // This one is always a call to a C++ method.
-#else                                                          // !DEBUG
+#else
     return true;
-#endif                                                         // !DEBUG
-#else // !defined(_TARGET_X86_) || !NOGC_WRITE_BARRIERS
+#endif
+#else
     return false;
-#endif !defined(_TARGET_X86_) || !NOGC_WRITE_BARRIERS
+#endif
 }
 
 //----------------------------------------------------------------------
@@ -3999,9 +3999,9 @@ bool CodeGenInterface::genUseOptimizedWriteBarriers(GenTree* tgt, GenTree* assig
 #ifdef DEBUG
     GCInfo::WriteBarrierForm wbf = compiler->codeGen->gcInfo.gcIsWriteBarrierCandidate(tgt, assignVal);
     return (wbf != GCInfo::WBF_NoBarrier_CheckNotHeapInDebug); // This one is always a call to a C++ method.
-#else                                                          // !DEBUG
+#else
     return true;
-#endif                                                         // !DEBUG
+#endif
 #else
     return false;
 #endif
