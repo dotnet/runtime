@@ -91,7 +91,7 @@ namespace System.Reflection.PortableExecutable
         /// If set, the module contains instructions that assume a 64 bit instruction set. For example it may depend on an address being 64 bits.
         /// This may be true even if the module contains only IL instructions because of PlatformInvoke and COM interop.
         /// </summary>
-        internal bool Requires64bits => Machine == Machine.Amd64 || Machine == Machine.IA64;
+        internal bool Requires64bits => Machine == Machine.Amd64 || Machine == Machine.IA64 || Machine == Machine.Arm64;
 
         public bool Is32Bit => !Requires64bits;
 
