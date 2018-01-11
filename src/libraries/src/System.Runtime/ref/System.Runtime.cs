@@ -405,7 +405,7 @@ namespace System
     }
     public partial struct Boolean : System.IComparable, System.IComparable<bool>, System.IConvertible, System.IEquatable<bool>
     {
-        private object _dummy;
+        private int _dummy;
         public static readonly string FalseString;
         public static readonly string TrueString;
         public int CompareTo(System.Boolean value) { throw null; }
@@ -491,7 +491,7 @@ namespace System
     }
     public partial struct Char : System.IComparable, System.IComparable<char>, System.IConvertible, System.IEquatable<char>
     {
-        private object _dummy;
+        private int _dummy;
         public const char MaxValue = '\uFFFF';
         public const char MinValue = '\0';
         public int CompareTo(System.Char value) { throw null; }
@@ -712,7 +712,7 @@ namespace System
     }
     public partial struct DateTimeOffset : System.IComparable, System.IComparable<System.DateTimeOffset>, System.IEquatable<System.DateTimeOffset>, System.IFormattable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
-        private object _dummy;
+        private int _dummy;
         public static readonly System.DateTimeOffset MaxValue;
         public static readonly System.DateTimeOffset MinValue;
         public static readonly System.DateTimeOffset UnixEpoch;
@@ -1567,7 +1567,7 @@ namespace System
     }
     public partial struct IntPtr : System.IEquatable<System.IntPtr>, System.Runtime.Serialization.ISerializable
     {
-        private object _dummy;
+        private int _dummy;
         public static readonly System.IntPtr Zero;
         public IntPtr(int value) { throw null; }
         public IntPtr(long value) { throw null; }
@@ -1955,7 +1955,7 @@ namespace System
     }
     public readonly ref partial struct ReadOnlySpan<T>
     {
-        private readonly object _dummy;
+        private readonly int _dummy;
         [System.CLSCompliantAttribute(false)]
         public unsafe ReadOnlySpan(void* pointer, int length) { throw null; }
         public ReadOnlySpan(T[] array) { throw null; }
@@ -1984,7 +1984,7 @@ namespace System
         public bool TryCopyTo(System.Span<T> destination) { throw null; }
         public ref partial struct Enumerator
         {
-            private object _dummy;
+            private int _dummy;
             public ref readonly T Current { get { throw null; } }
             public bool MoveNext() { throw null; }
         }
@@ -1998,7 +1998,7 @@ namespace System
     }
     public partial struct RuntimeArgumentHandle
     {
-        private object _dummy;
+        private int _dummy;
     }
     public partial struct RuntimeFieldHandle : System.Runtime.Serialization.ISerializable
     {
@@ -2155,7 +2155,7 @@ namespace System
     }
     public readonly ref partial struct Span<T>
     {
-        private readonly object _dummy;
+        private readonly int _dummy;
         [System.CLSCompliantAttribute(false)]
         public unsafe Span(void* pointer, int length) { throw null; }
         public Span(T[] array) { throw null; }
@@ -2187,7 +2187,7 @@ namespace System
         public bool TryCopyTo(System.Span<T> destination) { throw null; }
         public ref partial struct Enumerator
         {
-            private object _dummy;
+            private int _dummy;
             public ref T Current { get { throw null; } }
             public bool MoveNext() { throw null; }
         }
@@ -2580,7 +2580,7 @@ namespace System
         }
         public readonly partial struct TransitionTime : System.IEquatable<System.TimeZoneInfo.TransitionTime>, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
         {
-            private readonly object _dummy;
+            private readonly int _dummy;
             public int Day { get { throw null; } }
             public System.DayOfWeek DayOfWeek { get { throw null; } }
             public bool IsFixedDateRule { get { throw null; } }
@@ -3066,7 +3066,7 @@ namespace System
     [System.CLSCompliantAttribute(false)]
     public partial struct TypedReference
     {
-        private object _dummy;
+        private int _dummy;
         public override bool Equals(object o) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Type GetTargetType(System.TypedReference value) { throw null; }
@@ -3256,7 +3256,7 @@ namespace System
     [System.CLSCompliantAttribute(false)]
     public partial struct UIntPtr : System.IEquatable<System.UIntPtr>, System.Runtime.Serialization.ISerializable
     {
-        private object _dummy;
+        private int _dummy;
         public static readonly System.UIntPtr Zero;
         public UIntPtr(uint value) { throw null; }
         public UIntPtr(ulong value) { throw null; }
@@ -6835,7 +6835,7 @@ namespace System.Runtime.InteropServices
     }
     public partial struct GCHandle
     {
-        private object _dummy;
+        private int _dummy;
         public bool IsAllocated { get { throw null; } }
         public object Target { get { throw null; } set { } }
         public System.IntPtr AddrOfPinnedObject() { throw null; }
