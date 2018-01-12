@@ -33,6 +33,79 @@ struct UM2MThunk_Args
     int argLen;
 };
 
+class UMEntryThunkFreeList
+{
+public:
+    UMEntryThunkFreeList(size_t threshold) :
+        m_threshold(threshold),
+        m_count(0),
+        m_pHead(NULL),
+        m_pTail(NULL)
+    {
+        WRAPPER_NO_CONTRACT;
+
+        m_crst.Init(CrstLeafLock, CRST_UNSAFE_ANYMODE);
+    }
+
+    UMEntryThunk *GetUMEntryThunk()
+    {
+        WRAPPER_NO_CONTRACT;
+
+        if (m_count < m_threshold)
+            return NULL;
+
+        CrstHolder ch(&m_crst);
+
+        UMEntryThunk *pThunk = m_pHead;
+
+        if (pThunk == NULL)
+            return NULL;
+
+        m_pHead = m_pHead->m_pNextFreeThunk;
+        --m_count;
+
+        return pThunk;
+    }
+
+    void AddToList(UMEntryThunk *pThunk)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+        }
+        CONTRACTL_END;
+
+        CrstHolder ch(&m_crst);
+
+        if (m_pHead == NULL)
+        {
+            m_pHead = pThunk;
+            m_pTail = pThunk;
+        }
+        else
+        {
+            m_pTail->m_pNextFreeThunk = pThunk;
+            m_pTail = pThunk;
+        }
+
+        pThunk->m_pNextFreeThunk = NULL;
+
+        ++m_count;
+    }
+
+private:
+    // Used to delay reusing freed thunks
+    size_t m_threshold;
+    size_t m_count;
+    UMEntryThunk *m_pHead;
+    UMEntryThunk *m_pTail;
+    CrstStatic m_crst;
+};
+
+#define DEFAULT_THUNK_FREE_LIST_THRESHOLD 64
+
+static UMEntryThunkFreeList s_thunkFreeList(DEFAULT_THUNK_FREE_LIST_THRESHOLD);
+
 EXTERN_C void STDCALL UM2MThunk_WrapperHelper(void *pThunkArgs,
                                               int argLen,
                                               void *pAddr,
@@ -1111,20 +1184,26 @@ UMEntryThunk* UMEntryThunk::CreateUMEntryThunk()
 
     UMEntryThunk * p;
 
-    // On the phone, use loader heap to save memory commit of regular executable heap
-    p = (UMEntryThunk *)(void *)SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap()->AllocMem(S_SIZE_T(sizeof(UMEntryThunk)));
+    p = s_thunkFreeList.GetUMEntryThunk();
+
+    if (p == NULL)
+        p = (UMEntryThunk *)(void *)SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap()->AllocMem(S_SIZE_T(sizeof(UMEntryThunk)));
 
     RETURN p;
 }
 
 void UMEntryThunk::Terminate()
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL
+    {
+        NOTHROW;
+    }
+    CONTRACTL_END;
 
     _ASSERTE(!SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap()->IsZeroInit());
     m_code.Poison();
 
-    SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap()->BackoutMem(this, sizeof(UMEntryThunk));
+    s_thunkFreeList.AddToList(this);
 }
 
 VOID UMEntryThunk::FreeUMEntryThunk(UMEntryThunk* p)
