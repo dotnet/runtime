@@ -23,6 +23,7 @@ perfArch="x64"
 perfConfig="Release"
 perfBranch=
 throughput=0
+nocorefx=0
 
 for i in "$@"
 do
@@ -36,6 +37,9 @@ do
             ;;
         -t|--throughput)
             throughput=1
+            ;;
+        --nocorefx)
+            nocorefx=1
             ;;
         *)
             echo "Unknown switch: $i"
@@ -63,8 +67,8 @@ if [ ! -d "./tests/scripts/Microsoft.Benchview.JSONFormat" ]; then
 fi
 
 # Install python 3.5.2 to run machinedata.py for machine data collection
-python3.5 --version
-python3.5 ./tests/scripts/Microsoft.BenchView.JSONFormat/tools/machinedata.py
+python3 --version
+python3 ./tests/scripts/Microsoft.BenchView.JSONFormat/tools/machinedata.py
 
 if [ $throughput -eq 1 ]; then
     # Download throughput benchmarks
@@ -78,27 +82,33 @@ if [ $throughput -eq 1 ]; then
     fi
 
 else
-    # Set up the copies
-    # Coreclr build containing the tests and mscorlib
-    curl https://ci.dot.net/job/$perfBranch/job/master/job/release_windows_nt/lastSuccessfulBuild/artifact/bin/tests/tests.zip -o tests.zip
+    if [ $nocorefx -eq 0 ]; then
+        # Corefx components.  We now have full stack builds on all distros we test here, so we can copy straight from CoreFX jobs.
+        echo "Downloading corefx"
+        mkdir corefx		
+        curl https://ci.dot.net/job/dotnet_corefx/job/master/job/ubuntu14.04_release/lastSuccessfulBuild/artifact/bin/build.tar.gz -o ./corefx/build.tar.gz		
 
-    # Corefx components.  We now have full stack builds on all distros we test here, so we can copy straight from CoreFX jobs.
-    mkdir corefx
-    curl https://ci.dot.net/job/dotnet_corefx/job/master/job/ubuntu14.04_release/lastSuccessfulBuild/artifact/bin/build.tar.gz -o ./corefx/build.tar.gz
-
-    # Unpack the corefx binaries
-    pushd corefx > /dev/null
-    tar -xf build.tar.gz
-    rm build.tar.gz
-    popd > /dev/null
+        # Unpack the corefx binaries		
+        pushd corefx > /dev/null		
+        tar -xf build.tar.gz		
+        rm build.tar.gz		
+        popd > /dev/null
+    fi
 
     # If the tests don't already exist, download them.
     if [ ! -d "bin" ]; then
+        echo "Making bin dir"
         mkdir bin
     fi
 
     if [ ! -d "bin/tests" ]; then
+        echo "Making bin/tests"
         mkdir bin/tests
+    fi
+
+    if [ ! -d "bin/tests/Windows_NT.$perfArch.$perfConfig" ]; then
+        echo "Downloading tests"
+        curl https://ci.dot.net/job/$perfBranch/job/master/job/release_windows_nt/lastSuccessfulBuild/artifact/bin/tests/tests.zip -o tests.zip
         echo "unzip tests to ./bin/tests/Windows_NT.$perfArch.$perfConfig"
         unzip -q -o tests.zip -d ./bin/tests/Windows_NT.$perfArch.$perfConfig || exit 0
     fi
