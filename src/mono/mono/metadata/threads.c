@@ -158,6 +158,14 @@ static MonoGHashTable *threads_starting_up = NULL;
 static GHashTable *joinable_threads;
 static gint32 joinable_thread_count;
 
+static GHashTable *pending_joinable_threads;
+static gint32 pending_joinable_thread_count;
+
+static mono_cond_t zero_pending_joinable_thread_event;
+
+static void threads_add_pending_joinable_runtime_thread (MonoThreadInfo *mono_thread_info);
+static gboolean threads_wait_pending_joinable_threads (uint32_t timeout);
+
 #define SET_CURRENT_OBJECT(x) mono_tls_set_thread (x)
 #define GET_CURRENT_OBJECT() (MonoInternalThread*) mono_tls_get_thread ()
 
@@ -779,6 +787,17 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 
 	MONO_PROFILER_RAISE (thread_stopping, (thread->tid));
 
+	/*
+	* Prevent race condition between thread shutdown and runtime shutdown.
+	* Including all runtime threads in the pending joinable count will make
+	* sure shutdown will wait for it to get onto the joinable thread list before
+	* critical resources have been cleanup (like GC memory). Threads getting onto
+	* the joinable thread list should just about to exit and not blocking a potential
+	* join call. Owner of threads attached to the runtime but not identified as runtime
+	* threads needs to make sure thread detach calls won't race with runtime shutdown.
+	*/
+	threads_add_pending_joinable_runtime_thread (info);
+
 #ifndef HOST_WIN32
 	mono_w32mutex_abandon (thread);
 #endif
@@ -790,17 +809,6 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 
 	thread->abort_exc = NULL;
 	thread->current_appcontext = NULL;
-
-	/*
-	* Prevent race condition between execution of this method and runtime shutdown.
-	* Adding runtime thread to the joinable threads list will make sure runtime shutdown
-	* won't complete until added runtime thread have exited. Owner of threads attached to the
-	* runtime but not identified as runtime threads needs to make sure thread detach calls won't
-	* race with runtime shutdown.
-	*/
-#ifdef HOST_WIN32
-	mono_threads_add_joinable_runtime_thread (info);
-#endif
 
 	/*
 	 * thread->synch_cs can be NULL if this was called after
@@ -3017,6 +3025,8 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 	
 	mono_os_event_init (&background_change_event, FALSE);
 	
+	mono_os_cond_init (&zero_pending_joinable_thread_event);
+
 	mono_init_static_data_info (&thread_static_info);
 	mono_init_static_data_info (&context_static_info);
 
@@ -3108,6 +3118,13 @@ mono_thread_callbacks_init (void)
 void
 mono_thread_cleanup (void)
 {
+	/* Wait for pending threads to park on joinable threads list */
+	/* NOTE, waiting on this should be extremely rare and will only happen */
+	/* under certain specific conditions. */
+	gboolean wait_result = threads_wait_pending_joinable_threads (2000);
+	if (!wait_result)
+		g_warning ("Waiting on threads to park on joinable thread list timed out.");
+
 	mono_threads_join_threads ();
 
 #if !defined(RUN_IN_SUBTHREAD) && !defined(HOST_WIN32)
@@ -3129,6 +3146,7 @@ mono_thread_cleanup (void)
 	mono_os_mutex_destroy (&interlocked_mutex);
 	mono_os_mutex_destroy (&delayed_free_table_mutex);
 	mono_os_mutex_destroy (&small_id_mutex);
+	mono_os_cond_destroy (&zero_pending_joinable_runtime_thread_event);
 	mono_os_event_destroy (&background_change_event);
 #endif
 }
@@ -3353,6 +3371,7 @@ mono_thread_manage (void)
 		mono_threads_unlock ();
 		return;
 	}
+
 	mono_threads_unlock ();
 	
 	do {
@@ -5111,6 +5130,85 @@ threads_add_joinable_thread_nolock (gpointer tid)
 }
 #endif
 
+static void
+threads_add_pending_joinable_thread (gpointer tid)
+{
+	joinable_threads_lock ();
+
+	if (!pending_joinable_threads)
+		pending_joinable_threads = g_hash_table_new (NULL, NULL);
+
+	gpointer orig_key;
+	gpointer value;
+
+	if (!g_hash_table_lookup_extended (pending_joinable_threads, tid, &orig_key, &value)) {
+		g_hash_table_insert (pending_joinable_threads, tid, tid);
+		UnlockedIncrement (&pending_joinable_thread_count);
+	}
+
+	joinable_threads_unlock ();
+}
+
+static void
+threads_add_pending_joinable_runtime_thread (MonoThreadInfo *mono_thread_info)
+{
+	g_assert (mono_thread_info);
+
+	if (mono_thread_info->runtime_thread) {
+		threads_add_pending_joinable_thread ((gpointer)(MONO_UINT_TO_NATIVE_THREAD_ID (mono_thread_info_get_tid (mono_thread_info))));
+	}
+}
+
+static void
+threads_remove_pending_joinable_thread_nolock (gpointer tid)
+{
+	gpointer orig_key;
+	gpointer value;
+
+	if (pending_joinable_threads && g_hash_table_lookup_extended (pending_joinable_threads, tid, &orig_key, &value)) {
+		g_hash_table_remove (pending_joinable_threads, tid);
+		if (UnlockedDecrement (&pending_joinable_thread_count) == 0)
+			mono_os_cond_broadcast (&zero_pending_joinable_thread_event);
+	}
+}
+
+static gboolean
+threads_wait_pending_joinable_threads (uint32_t timeout)
+{
+	if (UnlockedRead (&pending_joinable_thread_count) > 0) {
+		joinable_threads_lock ();
+		if (timeout == MONO_INFINITE_WAIT) {
+			while (UnlockedRead (&pending_joinable_thread_count) > 0)
+				mono_os_cond_wait (&zero_pending_joinable_thread_event, &joinable_threads_mutex);
+		} else {
+			gint64 start = mono_msec_ticks ();
+			gint64 elapsed = 0;
+			while (UnlockedRead (&pending_joinable_thread_count) > 0 && elapsed < timeout) {
+				mono_os_cond_timedwait (&zero_pending_joinable_thread_event, &joinable_threads_mutex, timeout - (uint32_t)elapsed);
+				elapsed = mono_msec_ticks () - start;
+			}
+		}
+		joinable_threads_unlock ();
+	}
+
+	return UnlockedRead (&pending_joinable_thread_count) == 0;
+}
+
+static void
+threads_add_unique_joinable_thread_nolock (gpointer tid)
+{
+	if (!joinable_threads)
+		joinable_threads = g_hash_table_new (NULL, NULL);
+
+	gpointer orig_key;
+	gpointer value;
+
+	if (!g_hash_table_lookup_extended (joinable_threads, tid, &orig_key, &value)) {
+		threads_add_joinable_thread_nolock (tid);
+		UnlockedIncrement (&joinable_thread_count);
+	}
+}
+
 void
 mono_threads_add_joinable_runtime_thread (gpointer thread_info)
 {
@@ -5118,8 +5216,19 @@ mono_threads_add_joinable_runtime_thread (gpointer thread_info)
 	MonoThreadInfo *mono_thread_info = (MonoThreadInfo*)thread_info;
 
 	if (mono_thread_info->runtime_thread) {
-		if (mono_atomic_cas_i32 (&mono_thread_info->thread_pending_native_join, TRUE, FALSE) == FALSE)
-			mono_threads_add_joinable_thread ((gpointer)(MONO_UINT_TO_NATIVE_THREAD_ID (mono_thread_info_get_tid (mono_thread_info))));
+		gpointer tid = (gpointer)(MONO_UINT_TO_NATIVE_THREAD_ID (mono_thread_info_get_tid (mono_thread_info)));
+
+		joinable_threads_lock ();
+
+		// Add to joinable thread list, if not already included.
+		threads_add_unique_joinable_thread_nolock (tid);
+
+		// Remove thread from pending joinable list, if present.
+		threads_remove_pending_joinable_thread_nolock (tid);
+
+		joinable_threads_unlock ();
+
+		mono_gc_finalize_notify ();
 	}
 }
 
@@ -5138,15 +5247,7 @@ mono_threads_add_joinable_thread (gpointer tid)
 	 * we have time (in the finalizer thread).
 	 */
 	joinable_threads_lock ();
-	if (!joinable_threads)
-		joinable_threads = g_hash_table_new (NULL, NULL);
-
-	gpointer orig_key;
-	gpointer value;
-	if (!g_hash_table_lookup_extended (joinable_threads, tid, &orig_key, &value)) {
-		threads_add_joinable_thread_nolock (tid);
-		UnlockedIncrement (&joinable_thread_count);
-	}
+	threads_add_unique_joinable_thread_nolock (tid);
 	joinable_threads_unlock ();
 
 	mono_gc_finalize_notify ();
