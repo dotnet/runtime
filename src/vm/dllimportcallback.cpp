@@ -1153,7 +1153,6 @@ void UMEntryThunk::Terminate()
     }
     CONTRACTL_END;
 
-    _ASSERTE(!SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap()->IsZeroInit());
     m_code.Poison();
 
     s_thunkFreeList.AddToList(this);
