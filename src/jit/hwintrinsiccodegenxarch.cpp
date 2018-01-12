@@ -548,6 +548,11 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             emit->emitIns_SIMD_R_R_R(INS_movlhps, targetReg, op1Reg, op2Reg, TYP_SIMD16);
             break;
 
+        case NI_SSE_MoveMask:
+            assert(baseType == TYP_FLOAT);
+            emit->emitIns_SIMD_R_R(INS_movmskps, targetReg, op1Reg, TYP_INT);
+            break;
+
         case NI_SSE_MoveScalar:
             assert(baseType == TYP_FLOAT);
             op2Reg = op2->gtRegNum;
