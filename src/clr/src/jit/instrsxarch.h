@@ -206,6 +206,7 @@ INST3( movupd,      "movupd"      , 0, IUM_WR, 0, 0, PCKDBL(0x11), BAD_CODE, PCK
 INST3( movups,      "movups"      , 0, IUM_WR, 0, 0, PCKFLT(0x11), BAD_CODE, PCKFLT(0x10))
 INST3( movhlps,     "movhlps"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, PCKFLT(0x12))
 INST3( movlhps,     "movlhps"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, PCKFLT(0x16))
+INST3( movmskps,    "movmskps"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, PCKFLT(0x50))
 INST3( unpckhps,    "unpckhps"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, PCKFLT(0x15))
 INST3( unpcklps,    "unpcklps"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, PCKFLT(0x14))
 
