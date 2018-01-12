@@ -250,6 +250,7 @@ class UMEntryThunk
 {
     friend class CheckAsmOffsets;
     friend class NDirectStubLinker;
+    friend class UMEntryThunkFreeList;
 
 private:
 #ifdef _DEBUG
@@ -526,8 +527,13 @@ private:
     // Field is NULL for a static method.
     OBJECTHANDLE            m_pObjectHandle;
 
-    // Pointer to the shared structure containing everything else
-    PTR_UMThunkMarshInfo    m_pUMThunkMarshInfo;
+    union
+    {
+        // Pointer to the shared structure containing everything else
+        PTR_UMThunkMarshInfo    m_pUMThunkMarshInfo;
+        // Pointer to the next UMEntryThunk in the free list. Used when it is freed.
+        UMEntryThunk *m_pNextFreeThunk;
+    };
 
     ADID                    m_dwDomainId;   // appdomain of module (cached for fast access)
 #ifdef _DEBUG
