@@ -76,7 +76,7 @@
 
     <ItemGroup>      
       <HelixCorrelationPayloadFile Include="$(ArchivesRoot)Core_Root*/*.zip">
-        <RelativeBlobPath>$(Platform)$(ConfigurationGroup)/%(Identity)</RelativeBlobPath>
+        <RelativeBlobPath>$(Platform)$(BuildType)/%(Identity)</RelativeBlobPath>
       </HelixCorrelationPayloadFile>
       <HelixWorkItem>
         <Command Condition="'$(TargetsWindows)' == 'true'">$(HelixPythonPath) $(RunnerScript) --script %HELIX_WORKITEM_PAYLOAD%\runtests.cmd</Command>
@@ -84,7 +84,7 @@
         <PayloadFile>%(Identity)</PayloadFile>
         <WorkItemId>%(Filename)</WorkItemId>
         <TimeoutInSeconds>$(TimeoutInSeconds)</TimeoutInSeconds>
-        <RelativeBlobPath>$(Platform)-$(ConfigurationGroup)/Tests/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)</RelativeBlobPath>
+        <RelativeBlobPath>$(Platform)-$(BuildType)-$(Rid)/Tests/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)</RelativeBlobPath>
       </HelixWorkItem>      
     </ItemGroup>
   </Target>
