@@ -616,6 +616,14 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_SSE_MoveMask:
+            assert(sig->numArgs == 1);
+            assert(JITtype2varType(sig->retType) == TYP_INT);
+            assert(getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args)) == TYP_FLOAT);
+            op1     = impSIMDPopStack(TYP_SIMD16);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_INT, op1, intrinsic, TYP_FLOAT, 16);
+            break;
+
         case NI_SSE_StaticCast:
         {
             assert(sig->numArgs == 1);
