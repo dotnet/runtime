@@ -27,7 +27,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		public virtual TestCaseLinkerOptions GetLinkerOptions ()
 		{
 			var tclo = new TestCaseLinkerOptions {
-				Il8n = GetOptionAttributeValue (nameof (Il8nAttribute), string.Empty),
+				Il8n = GetOptionAttributeValue (nameof (Il8nAttribute), "none"),
 				IncludeBlacklistStep = GetOptionAttributeValue (nameof (IncludeBlacklistStepAttribute), false),
 				KeepTypeForwarderOnlyAssemblies = GetOptionAttributeValue (nameof (KeepTypeForwarderOnlyAssembliesAttribute), string.Empty),
 				CoreAssembliesAction = GetOptionAttributeValue<string> (nameof (SetupLinkerCoreActionAttribute), null)
