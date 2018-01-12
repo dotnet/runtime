@@ -146,6 +146,7 @@ namespace Microsoft.Build.Net.CoreRuntimeTask
             {
                 XDocument doc = XDocument.Load(sr, LoadOptions.None);
                 XNamespace ns = @"http://schemas.microsoft.com/appx/manifest/foundation/windows10";
+                XNamespace desktop4NameSpace = @"http://schemas.microsoft.com/appx/manifest/desktop/windows10/4";
 
                 string inprocServer = WindowsUWPShimEXE;
                 var windowsUwpShimLocation = Path.Combine(new [] {
@@ -166,7 +167,7 @@ namespace Microsoft.Build.Net.CoreRuntimeTask
                                                 Descendants(ns + "Application").
                                                 Where(x => x.Attribute("Executable") != null).
                                                 Select(x => new { Executable = x.Attribute("Executable").Value,
-                                                                  ShimFileName = "console".Equals(x.Attribute("desktop4:Subsystem")?.Value, StringComparison.OrdinalIgnoreCase) ? consoleUwpShimLocation : windowsUwpShimLocation});
+                                                                  ShimFileName = "console".Equals(x.Attribute(desktop4NameSpace + "Subsystem")?.Value, StringComparison.OrdinalIgnoreCase) ? consoleUwpShimLocation : windowsUwpShimLocation});
 
                     if (entryPointExecutables.Any())
                     {
