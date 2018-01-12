@@ -112,34 +112,6 @@ EXTERN_C void STDCALL UM2MThunk_WrapperHelper(void *pThunkArgs,
                                               UMEntryThunk *pEntryThunk,
                                               Thread *pThread);
 
-#ifdef MDA_SUPPORTED
-EXTERN_C void __fastcall CallbackOnCollectedDelegateHelper(UMEntryThunk *pEntryThunk)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        SO_TOLERANT;
-        PRECONDITION(CheckPointer(pEntryThunk));
-    }
-    CONTRACTL_END;
-
-    MdaCallbackOnCollectedDelegate* pProbe = MDA_GET_ASSISTANT(CallbackOnCollectedDelegate);
-    
-    // This MDA must be active if we generated a call to CallbackOnCollectedDelegateHelper
-    _ASSERTE(pProbe);
-
-    if (pEntryThunk->IsCollected())
-    {
-        INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-        pProbe->ReportViolation(pEntryThunk->GetMethod());
-        COMPlusThrow(kNullReferenceException);
-        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-    }
-}
-#endif // MDA_SUPPORTED
-
 // This is used as target of callback from DoADCallBack. It sets up the environment and effectively
 // calls back into the thunk that needed to switch ADs.
 void UM2MThunk_Wrapper(LPVOID ptr) // UM2MThunk_Args
@@ -411,25 +383,6 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
     // without coordinating with the GC.  During shutdown, such coordination
     // would deadlock).
     pcpusl->EmitLabel(pDoADCallBackStartLabel);
-
-
-#ifdef MDA_SUPPORTED
-    if ((pInfo->m_wFlags & umtmlSkipStub) && !(pInfo->m_wFlags & umtmlIsStatic) && 
-        MDA_GET_ASSISTANT(CallbackOnCollectedDelegate))
-    {
-        // save registers
-        pcpusl->X86EmitPushReg(kEAXentryThunk);
-        pcpusl->X86EmitPushReg(kECXthread);
-
-        // CallbackOnCollectedDelegateHelper is a fast call
-        pcpusl->X86EmitMovRegReg(kECX, kEAXentryThunk);
-        pcpusl->X86EmitCall(pcpusl->NewExternalCodeLabel((LPVOID)CallbackOnCollectedDelegateHelper), 0);
-
-        // restore registers
-        pcpusl->X86EmitPopReg(kECXthread);
-        pcpusl->X86EmitPopReg(kEAXentryThunk);
-    }
-#endif
 
     // save the thread pointer
     pcpusl->X86EmitPushReg(kECXthread);
@@ -1216,30 +1169,6 @@ VOID UMEntryThunk::FreeUMEntryThunk(UMEntryThunk* p)
         PRECONDITION(CheckPointer(p));
     }
     CONTRACTL_END;
-
-#ifdef MDA_SUPPORTED
-    MdaCallbackOnCollectedDelegate* pProbe = MDA_GET_ASSISTANT(CallbackOnCollectedDelegate);
-    if (pProbe)
-    {
-        if (p->GetObjectHandle())
-        {
-            DestroyLongWeakHandle(p->GetObjectHandle());
-            p->m_pObjectHandle = NULL;
-
-            // We are intentionally not reseting m_pManagedTarget here so that
-            // it is available for diagnostics of call on collected delegate crashes.
-        }
-        else
-        {
-            p->m_pManagedTarget = NULL;
-        }
-
-        // Add this to the array of delegates to be cleaned up.
-        pProbe->AddToList(p);
-
-        return;
-    }
-#endif
 
     p->Terminate();
 }

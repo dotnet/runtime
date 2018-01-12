@@ -424,13 +424,7 @@ public:
             MODE_ANY;
             SUPPORTS_DAC;
             PRECONDITION(m_state == kRunTimeInited || m_state == kLoadTimeInited);
-#ifdef MDA_SUPPORTED
-            // We can return NULL here if the CollectedDelegate probe is on because
-            // a collected delegate will have set this field to NULL.
-            POSTCONDITION(g_pDebugInterface->ThisIsHelperThread() || MDA_GET_ASSISTANT(CallbackOnCollectedDelegate) || CheckPointer(RETVAL));
-#else
             POSTCONDITION(CheckPointer(RETVAL));
-#endif
         }
         CONTRACT_END;
     
@@ -502,15 +496,6 @@ public:
     }
 
     static UMEntryThunk* Decode(LPVOID pCallback);
-
-#ifdef MDA_SUPPORTED
-    BOOL IsCollected() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_pMD != NULL && m_pMD->IsEEImpl());
-        return m_pObjectHandle == NULL;
-    }
-#endif
 
     static VOID __fastcall ReportViolation(UMEntryThunk* p);
 
@@ -612,9 +597,5 @@ EXTERN_C void UMThunkStub(void);
 #ifdef _DEBUG
 void STDCALL LogUMTransition(UMEntryThunk* thunk);
 #endif
-
-#ifdef MDA_SUPPORTED
-EXTERN_C void __fastcall CallbackOnCollectedDelegateHelper(UMEntryThunk *pEntryThunk);
-#endif // MDA_SUPPORTED
 
 #endif //__dllimportcallback_h__
