@@ -124,6 +124,9 @@ namespace Mono.Linker.Steps {
 
 			SweepResources (assembly);
 			SweepCustomAttributes (assembly);
+
+			foreach (var module in assembly.Modules)
+				SweepCustomAttributes (module);
 		}
 
 		bool IsMarkedAssembly (AssemblyDefinition assembly)
@@ -282,6 +285,9 @@ namespace Mono.Linker.Steps {
 
 			if (type.HasProperties)
 				SweepCustomAttributeCollection (type.Properties);
+
+			if (type.HasEvents)
+				SweepCustomAttributeCollection (type.Events);
 		}
 
 		protected void SweepNestedTypes (TypeDefinition type)
@@ -308,15 +314,70 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		protected void SweepCustomAttributes (ICustomAttributeProvider provider)
+		protected void SweepCustomAttributes (TypeDefinition type)
 		{
+			var removed = SweepCustomAttributes (type as ICustomAttributeProvider);
+
+			if (ShouldSetHasSecurityToFalse (type, type, type.HasSecurity, removed))
+				type.HasSecurity = false;
+		}
+
+		protected void SweepCustomAttributes (MethodDefinition method)
+		{
+			var removed = SweepCustomAttributes (method as ICustomAttributeProvider);
+
+			if (ShouldSetHasSecurityToFalse (method, method, method.HasSecurity, removed))
+				method.HasSecurity = false;
+		}
+
+		bool ShouldSetHasSecurityToFalse (ISecurityDeclarationProvider providerAsSecurity, ICustomAttributeProvider provider, bool existingHasSecurity, IList<CustomAttribute> removedAttributes)
+		{
+			if (existingHasSecurity && removedAttributes.Count > 0 && !providerAsSecurity.HasSecurityDeclarations) {
+				// If the method or type had security before and all attributes were removed, or no remaining attributes are security attributes,
+				// then we need to set HasSecurity to false
+				if (provider.CustomAttributes.Count == 0 || provider.CustomAttributes.All (attr => !IsSecurityAttributeType (attr.AttributeType.Resolve ())))
+					return true;
+			}
+
+			return false;
+		}
+
+		static bool IsSecurityAttributeType (TypeDefinition definition)
+		{
+			if (definition == null)
+				return false;
+
+			if (definition.Namespace == "System.Security") {
+				switch (definition.FullName) {
+					// This seems to be one attribute in the System.Security namespace that doesn't count
+					// as an attribute that requires HasSecurity to be true
+					case "System.Security.SecurityCriticalAttribute":
+						return false;
+				}
+
+				return true;
+			}
+
+			if (definition.BaseType == null)
+				return false;
+
+			return IsSecurityAttributeType (definition.BaseType.Resolve ());
+		}
+
+		protected IList<CustomAttribute> SweepCustomAttributes (ICustomAttributeProvider provider)
+		{
+			var removed = new List<CustomAttribute>();
+
 			for (int i = provider.CustomAttributes.Count - 1; i >= 0; i--) {
 				var attribute = provider.CustomAttributes [i];
 				if (!Annotations.IsMarked (attribute)) {
 					CustomAttributeUsageRemoved (provider, attribute);
+					removed.Add (provider.CustomAttributes [i]);
 					provider.CustomAttributes.RemoveAt (i);
 				}
 			}
+
+			return removed;
 		}
 
 		protected void SweepCustomAttributeCollection<T> (Collection<T> providers) where T : ICustomAttributeProvider
@@ -330,6 +391,14 @@ namespace Mono.Linker.Steps {
 			SweepCollection (methods);
 			if (sweepSymbols)
 				SweepDebugInfo (methods);
+
+			foreach (var method in methods) {
+				if (!method.HasParameters)
+					continue;
+
+				foreach (var parameter in method.Parameters)
+					SweepCustomAttributes (parameter);
+			}
 		}
 
 		void SweepDebugInfo (Collection<MethodDefinition> methods)
@@ -375,6 +444,17 @@ namespace Mono.Linker.Steps {
 					import = import.Parent;
 				}
 			}
+		}
+
+		protected void SweepCollection (IList<MethodDefinition> list)
+		{
+			for (int i = 0; i < list.Count; i++)
+				if (ShouldRemove (list [i])) {
+					ElementRemoved (list [i]);
+					list.RemoveAt (i--);
+				} else {
+					SweepCustomAttributes (list [i]);
+				}
 		}
 
 		protected void SweepCollection<T> (IList<T> list) where T : ICustomAttributeProvider

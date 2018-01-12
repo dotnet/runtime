@@ -46,6 +46,7 @@ namespace Mono.Linker.Steps {
 		protected Dictionary<TypeDefinition, CustomAttribute> _assemblyDebuggerDisplayAttributes;
 		protected Dictionary<TypeDefinition, CustomAttribute> _assemblyDebuggerTypeProxyAttributes;
 		protected Queue<CustomAttribute> _topLevelAttributes;
+		protected Queue<CustomAttribute> _lateMarkedAttributes;
 
 		public AnnotationStore Annotations {
 			get { return _context.Annotations; }
@@ -62,6 +63,7 @@ namespace Mono.Linker.Steps {
 			_methods = new Queue<MethodDefinition> ();
 			_virtual_methods = new List<MethodDefinition> ();
 			_topLevelAttributes = new Queue<CustomAttribute> ();
+			_lateMarkedAttributes = new Queue<CustomAttribute> ();
 
 			_assemblyDebuggerDisplayAttributes = new Dictionary<TypeDefinition, CustomAttribute> ();
 			_assemblyDebuggerTypeProxyAttributes = new Dictionary<TypeDefinition, CustomAttribute> ();
@@ -131,7 +133,7 @@ namespace Mono.Linker.Steps {
 			if (QueueIsEmpty ())
 				throw new InvalidOperationException ("No entry methods");
 
-			while (ProcessPrimaryQueue () || ProcessLazyAttributes ())
+			while (ProcessPrimaryQueue () || ProcessLazyAttributes () || ProcessLateMarkedAttributes ())
 
 			// deal with [TypeForwardedTo] pseudo-attributes
 			foreach (AssemblyDefinition assembly in _context.GetAssemblies ()) {
@@ -260,10 +262,15 @@ namespace Mono.Linker.Steps {
 			Tracer.Push (provider);
 			try {
 				foreach (CustomAttribute ca in provider.CustomAttributes) {
-					if (!ShouldMarkCustomAttribute (ca))
-						continue;
 
-					MarkCustomAttribute (ca);
+					if (_context.KeepUsedAttributeTypesOnly) {
+						_lateMarkedAttributes.Enqueue (ca);
+					} else {
+						if (!ShouldMarkCustomAttribute (ca))
+							continue;
+
+						MarkCustomAttribute (ca);
+					}
 				}
 			} finally {
 				Tracer.Pop ();
@@ -305,11 +312,16 @@ namespace Mono.Linker.Steps {
 
 		protected virtual bool ShouldMarkCustomAttribute (CustomAttribute ca)
 		{
+			if (_context.KeepUsedAttributeTypesOnly && !Annotations.IsMarked (ca.AttributeType.Resolve ()))
+				return false;
 			return true;
 		}
 
 		protected virtual bool ShouldMarkTopLevelCustomAttribute (CustomAttribute ca, MethodDefinition resolvedConstructor)
 		{
+			if (!ShouldMarkCustomAttribute (ca))
+				return false;
+
 			// If an attribute's module has not been marked after processing all types in all assemblies and the attribute itself has not been marked,
 			// then surely nothing is using this attribute and there is no need to mark it
 			if (!Annotations.IsMarked (resolvedConstructor.Module) && !Annotations.IsMarked (ca.AttributeType))
@@ -570,6 +582,40 @@ namespace Mono.Linker.Steps {
 			// requeue the items we skipped in case we need to make another pass
 			foreach (var item in skippedItems)
 				_topLevelAttributes.Enqueue (item);
+
+			return markOccurred;
+		}
+
+		bool ProcessLateMarkedAttributes ()
+		{
+			var startingQueueCount = _lateMarkedAttributes.Count;
+			if (startingQueueCount == 0)
+				return false;
+
+			var skippedItems = new List<CustomAttribute> ();
+			var markOccurred = false;
+
+			while (_lateMarkedAttributes.Count != 0) {
+				var customAttribute = _lateMarkedAttributes.Dequeue ();
+
+				var resolved = customAttribute.Constructor.Resolve ();
+				if (resolved == null) {
+					HandleUnresolvedMethod (customAttribute.Constructor);
+					continue;
+				}
+
+				if (!ShouldMarkCustomAttribute (customAttribute)) {
+					skippedItems.Add (customAttribute);
+					continue;
+				}
+
+				markOccurred = true;
+				MarkCustomAttribute (customAttribute);
+			}
+
+			// requeue the items we skipped in case we need to make another pass
+			foreach (var item in skippedItems)
+				_lateMarkedAttributes.Enqueue (item);
 
 			return markOccurred;
 		}

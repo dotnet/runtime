@@ -29,6 +29,9 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			VerifyCustomAttributes (originalAssembly, linkedAssembly);
 			VerifySecurityAttributes (originalAssembly, linkedAssembly);
 
+			foreach (var originalModule in originalAssembly.Modules)
+				VerifyModule (originalModule, linkedAssembly.Modules.FirstOrDefault (m => m.Name == originalModule.Name));
+
 			VerifyResources (originalAssembly, linkedAssembly);
 
 			linkedMembers = new HashSet<string> (linkedAssembly.MainModule.AllMembers ().Select (s => {
@@ -55,6 +58,15 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			}
 
 			Assert.IsEmpty (linkedMembers, "Linked output includes unexpected member");
+		}
+
+		protected virtual void VerifyModule (ModuleDefinition original, ModuleDefinition linked)
+		{
+			// We never link away a module today so let's make sure the linked one isn't null
+			if (linked == null)
+				Assert.Fail ($"Linked assembly `{original.Assembly.Name.Name}` is missing module `{original.Name}`");
+
+			VerifyCustomAttributes (original, linked);
 		}
 
 		protected virtual void VerifyTypeDefinition (TypeDefinition original, TypeDefinition linked)

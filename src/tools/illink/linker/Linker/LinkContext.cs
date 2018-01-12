@@ -109,6 +109,8 @@ namespace Mono.Linker {
 
 		public bool EnableReducedTracing { get; set; }
 
+		public bool KeepUsedAttributeTypesOnly { get; set; }
+
 		public System.Collections.IDictionary Actions {
 			get { return _actions; }
 		}
