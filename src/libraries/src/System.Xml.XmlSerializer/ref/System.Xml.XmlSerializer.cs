@@ -251,9 +251,9 @@ namespace System.Xml.Serialization
         public XmlChoiceIdentifierAttribute(string name) { }
         public string MemberName { get { throw null; } set { } }
     }
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct XmlDeserializationEvents
     {
+        private object _dummy;
         public System.Xml.Serialization.XmlAttributeEventHandler OnUnknownAttribute { get { throw null; } set { } }
         public System.Xml.Serialization.XmlElementEventHandler OnUnknownElement { get { throw null; } set { } }
         public System.Xml.Serialization.XmlNodeEventHandler OnUnknownNode { get { throw null; } set { } }

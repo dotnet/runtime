@@ -5,12 +5,11 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
 namespace System.Collections.Specialized
 {
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct BitVector32
     {
+        private int _dummy;
         public BitVector32(System.Collections.Specialized.BitVector32 value) { throw null; }
         public BitVector32(int data) { throw null; }
         public int Data { get { throw null; } }
@@ -24,9 +23,9 @@ namespace System.Collections.Specialized
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
         public static string ToString(System.Collections.Specialized.BitVector32 value) { throw null; }
-        [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
         public readonly partial struct Section
         {
+            private readonly int _dummy;
             public short Mask { get { throw null; } }
             public short Offset { get { throw null; } }
             public bool Equals(System.Collections.Specialized.BitVector32.Section obj) { throw null; }
@@ -87,7 +86,7 @@ namespace System.Collections.Specialized
         public void Remove(object key) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
     }
-    public abstract partial class NameObjectCollectionBase : System.Collections.ICollection, System.Collections.IEnumerable, System.Runtime.Serialization.ISerializable, System.Runtime.Serialization.IDeserializationCallback
+    public abstract partial class NameObjectCollectionBase : System.Collections.ICollection, System.Collections.IEnumerable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
         protected NameObjectCollectionBase() { }
         protected NameObjectCollectionBase(System.Collections.IEqualityComparer equalityComparer) { }
@@ -162,7 +161,7 @@ namespace System.Collections.Specialized
         public virtual void Remove(string name) { }
         public virtual void Set(string name, string value) { }
     }
-    public partial class OrderedDictionary : System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable, System.Collections.Specialized.IOrderedDictionary, System.Runtime.Serialization.ISerializable, System.Runtime.Serialization.IDeserializationCallback
+    public partial class OrderedDictionary : System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable, System.Collections.Specialized.IOrderedDictionary, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
         public OrderedDictionary() { }
         public OrderedDictionary(System.Collections.IEqualityComparer comparer) { }
@@ -187,10 +186,10 @@ namespace System.Collections.Specialized
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public void Insert(int index, object key, object value) { }
         protected virtual void OnDeserialization(object sender) { }
-        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
         public void Remove(object key) { }
         public void RemoveAt(int index) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
     }
     public partial class StringCollection : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
     {
