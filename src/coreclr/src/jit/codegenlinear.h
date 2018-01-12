@@ -116,6 +116,7 @@ void genPutArgStkSIMD12(GenTree* treeNode);
 
 #if FEATURE_HW_INTRINSICS && defined(_TARGET_XARCH_)
 void genHWIntrinsic(GenTreeHWIntrinsic* node);
+void genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins);
 void genSSEIntrinsic(GenTreeHWIntrinsic* node);
 void genSSE2Intrinsic(GenTreeHWIntrinsic* node);
 void genSSE3Intrinsic(GenTreeHWIntrinsic* node);
