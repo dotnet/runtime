@@ -105,12 +105,20 @@ void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins)
         unsigned varNum = BAD_VAR_NUM;
         unsigned offset = (unsigned)-1;
 
-        if (op2->isIndir())
+        if (op2->isUsedFromSpillTemp())
         {
-            assert(op2->isContained());
+            assert(op2->IsRegOptional());
 
-            GenTreeIndir* mem     = op2->AsIndir();
-            GenTree*      memBase = mem->Base();
+            tmpDsc = getSpillTempDsc(op2);
+            varNum = tmpDsc->tdTempNum();
+            offset = 0;
+
+            compiler->tmpRlsTemp(tmpDsc);
+        }
+        else if (op2->isIndir())
+        {
+            GenTreeIndir* memIndir = op2->AsIndir();
+            GenTree*      memBase  = memIndir->gtOp1;
 
             switch (memBase->OperGet())
             {
@@ -121,9 +129,9 @@ void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins)
 
                     // Ensure that all the GenTreeIndir values are set to their defaults.
                     assert(memBase->gtRegNum == REG_NA);
-                    assert(!mem->HasIndex());
-                    assert(mem->Scale() == 1);
-                    assert(mem->Offset() == 0);
+                    assert(!memIndir->HasIndex());
+                    assert(memIndir->Scale() == 1);
+                    assert(memIndir->Offset() == 0);
 
                     break;
                 }
@@ -136,9 +144,7 @@ void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins)
 
                 default:
                 {
-                    regNumber indxReg = mem->HasIndex() ? mem->Index()->gtRegNum : REG_NA;
-                    emit->emitIns_SIMD_R_R_A(ins, targetReg, op1Reg, memBase->gtRegNum, indxReg, mem->Scale(),
-                                             mem->Offset(), targetType);
+                    emit->emitIns_SIMD_R_R_A(ins, targetReg, op1Reg, memIndir, targetType);
                     return;
                 }
             }
@@ -159,24 +165,14 @@ void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins)
                 case GT_LCL_VAR:
                 {
                     assert(op2->IsRegOptional() || !compiler->lvaTable[op2->gtLclVar.gtLclNum].lvIsRegCandidate());
-
                     varNum = op2->AsLclVar()->GetLclNum();
                     offset = 0;
                     break;
                 }
 
                 default:
-                {
-                    assert(op2->isUsedFromSpillTemp());
-                    assert(op2->IsRegOptional());
-
-                    tmpDsc = getSpillTempDsc(op2);
-                    varNum = tmpDsc->tdTempNum();
-                    offset = 0;
-
-                    compiler->tmpRlsTemp(tmpDsc);
+                    unreached();
                     break;
-                }
             }
         }
 
