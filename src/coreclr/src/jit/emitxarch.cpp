@@ -3891,18 +3891,15 @@ void emitter::emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regN
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_R_A(
-    instruction ins, emitAttr attr, regNumber reg1, regNumber baseReg, regNumber indxReg, size_t scale, ssize_t offs)
+void emitter::emitIns_R_A(instruction ins, emitAttr attr, regNumber reg1, GenTreeIndir* indir, insFormat fmt)
 {
-    instrDesc* id = emitNewInstrAmd(attr, offs);
-    id->idIns(ins);
-    id->idInsFmt(IF_RRW_ARD);
-    id->idReg1(reg1);
-    id->idAddr()->iiaAddrMode.amBaseReg = baseReg;
-    id->idAddr()->iiaAddrMode.amIndxReg = indxReg;
-    id->idAddr()->iiaAddrMode.amScale   = emitEncodeScale(scale);
+    ssize_t    offs = indir->Offset();
+    instrDesc* id   = emitNewInstrAmd(attr, offs);
 
-    assert(emitGetInsAmdAny(id) == offs);
+    id->idIns(ins);
+    id->idReg1(reg1);
+
+    emitHandleMemOp(indir, id, fmt, ins);
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
     id->idCodeSize(sz);
@@ -3911,32 +3908,24 @@ void emitter::emitIns_R_A(
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_R_R_A(instruction ins,
-                            emitAttr    attr,
-                            regNumber   reg1,
-                            regNumber   reg2,
-                            regNumber   baseReg,
-                            regNumber   indxReg,
-                            size_t      scale,
-                            ssize_t     offs)
+void emitter::emitIns_R_R_A(
+    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, GenTreeIndir* indir, insFormat fmt)
 {
     assert(IsSSEOrAVXInstruction(ins));
     assert(IsThreeOperandAVXInstruction(ins));
 
-    instrDesc*     id = emitNewInstrAmd(attr, offs);
-    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins)) + emitGetVexPrefixAdjustedSize(ins, attr, insCodeRM(ins));
+    ssize_t    offs = indir->Offset();
+    instrDesc* id   = emitNewInstrAmd(attr, offs);
 
     id->idIns(ins);
-    id->idInsFmt(IF_RWR_RRD_ARD);
     id->idReg1(reg1);
     id->idReg2(reg2);
-    id->idAddr()->iiaAddrMode.amBaseReg = baseReg;
-    id->idAddr()->iiaAddrMode.amIndxReg = indxReg;
-    id->idAddr()->iiaAddrMode.amScale   = emitEncodeScale(scale);
 
-    assert(emitGetInsAmdAny(id) == offs);
+    emitHandleMemOp(indir, id, fmt, ins);
 
+    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins)) + emitGetVexPrefixAdjustedSize(ins, attr, insCodeRM(ins));
     id->idCodeSize(sz);
+
     dispIns(id);
     emitCurIGsize += sz;
 }
@@ -4990,18 +4979,12 @@ void emitter::emitIns_AX_R(instruction ins, emitAttr attr, regNumber ireg, regNu
 }
 
 #if FEATURE_HW_INTRINSICS
-void emitter::emitIns_SIMD_R_R_A(instruction ins,
-                                 regNumber   reg,
-                                 regNumber   reg1,
-                                 regNumber   baseReg,
-                                 regNumber   indxReg,
-                                 size_t      scale,
-                                 ssize_t     offs,
-                                 var_types   simdtype)
+void emitter::emitIns_SIMD_R_R_A(
+    instruction ins, regNumber reg, regNumber reg1, GenTreeIndir* indir, var_types simdtype)
 {
     if (UseVEXEncoding())
     {
-        emitIns_R_R_A(ins, emitTypeSize(simdtype), reg, reg1, baseReg, indxReg, scale, offs);
+        emitIns_R_R_A(ins, emitTypeSize(simdtype), reg, reg1, indir, IF_RWR_RRD_ARD);
     }
     else
     {
@@ -5009,7 +4992,7 @@ void emitter::emitIns_SIMD_R_R_A(instruction ins,
         {
             emitIns_R_R(INS_movaps, emitTypeSize(simdtype), reg, reg1);
         }
-        emitIns_R_A(ins, emitTypeSize(simdtype), reg, baseReg, indxReg, scale, offs);
+        emitIns_R_A(ins, emitTypeSize(simdtype), reg, indir, IF_RRW_ARD);
     }
 }
 
