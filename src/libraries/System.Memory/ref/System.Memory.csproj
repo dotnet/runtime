@@ -4,6 +4,8 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ProjectGuid>{E883935B-D8FD-4FC9-A189-9D9E7F7EF550}</ProjectGuid>
+    <!-- disable warnings about obsolete APIs -->
+    <NoWarn>$(NoWarn);0809</NoWarn>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netcoreapp' Or '$(TargetGroup)' == 'uap'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
