@@ -44,13 +44,13 @@ public class GCKeepAlive
             GC.WaitForPendingFinalizers();
             GC.Collect();
 
-            GC.KeepAlive(tc);
             if (TestClass.m_TestInt != 1)
             {
                 TestLibrary.TestFramework.LogError("001.1", "Calling KeepAlive can not prevent an object to be GCed");
                 TestLibrary.TestFramework.LogInformation("WARNING [LOCAL VARIABLE] TestClass.m_TestInt = " + TestClass.m_TestInt);
                 retVal = false;
             }
+            GC.KeepAlive(tc);
         }
         catch (Exception e)
         {
