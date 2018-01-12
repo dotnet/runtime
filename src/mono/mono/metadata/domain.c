@@ -429,7 +429,7 @@ mono_domain_create (void)
 	domain->proxy_vtable_hash = g_hash_table_new ((GHashFunc)mono_ptrarray_hash, (GCompareFunc)mono_ptrarray_equal);
 	mono_jit_code_hash_init (&domain->jit_code_hash);
 	domain->ldstr_table = mono_g_hash_table_new_type ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain String Pool Table");
-	domain->num_jit_info_tables = 1;
+	domain->num_jit_info_table_duplicates = 0;
 	domain->jit_info_table = mono_jit_info_table_new (domain);
 	domain->jit_info_free_queue = NULL;
 	domain->finalizable_objects_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
@@ -1176,7 +1176,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	mono_thread_hazardous_try_free_all ();
 	if (domain->aot_modules)
 		mono_jit_info_table_free (domain->aot_modules);
-	g_assert (domain->num_jit_info_tables == 1);
+	g_assert (domain->num_jit_info_table_duplicates == 0);
 	mono_jit_info_table_free (domain->jit_info_table);
 	domain->jit_info_table = NULL;
 	g_assert (!domain->jit_info_free_queue);
