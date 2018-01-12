@@ -3,7 +3,7 @@
 
 We assume that you have successfully built CoreCLR repository and thus have files of the form
 ```
-    bin\Product\<OS>.<arch>.<flavor>\.nuget\pkg\Microsoft.NETCore.Runtime.CoreCLR.<version>.nupkg
+    bin\Product\<OS>.<arch>.<flavor>\
 ```
 And now you wish to try it out.  We will be using Windows OS as an example and thus will use \ rather
 than / for directory separators and things like Windows_NT instead of Linux but it should be
@@ -34,7 +34,7 @@ For another small walkthrough see [Dogfooding .NET Core SDK](https://github.com/
 
 ## Create sample self-contained application
 
-At this point you can create a new 'Hello World' program in the standard way.
+At this point, you can create a new 'Hello World' program in the standard way.
 
 ```bat
 mkdir HelloWorld
@@ -44,40 +44,39 @@ dotnet new console
 
 ### Change project to be self-contained
 
-In order to update with your local changes the application needs to be self-contained, as opposed to running on the
+In order to update with your local changes, the application needs to be self-contained, as opposed to running on the
 shared framework.  In order to do that you will need to add a `RuntimeIdentifier` to your project.
 
-```
-  <PropertyGroup>
-    ...
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-  </PropertyGroup>
+```xml
+<PropertyGroup>
+  ...
+  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+</PropertyGroup>
 ```
 
-For windows you will want `win-x64` but for other OS's you will need to set it to the most appropriate one based
-on what you built. You can generally figure that out by looking at the packages you found in your output. In our
-example you will see there is a package with the name `runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR.2.1.0-beta-25023-0.nupkg`
-so you will want to put whatever id is between `runtime.` and `Microsoft.NETCore.Runtime.CoreCLR`.
+For Windows you will want `win-x64`, for macOS `osx-x64` and `linux-x64` for Linux.
 
-Next you need to restore and publish. The publish step will also trigger a build but you can iterate on build by calling `dotnet build` as
+### Publish
+
+Now is the time to publish. The publish step will trigger restore and build. You can iterate on build by calling `dotnet build` as
 needed.
 
 ```bat
-dotnet restore
 dotnet publish
 ```
 
+**Note:** If publish fails to restore runtime packages you need to configure custom NuGet feed. To do so you have to:
+
+1. run `dotnet new nugetconfig`
+2. go to the `NuGet.Config` file and add `<add key="dotnet-core" value="https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" />`
+
 After you publish you will find you all the binaries needed to run your application under `bin\Debug\netcoreapp2.1\win-x64\publish\`.
-To run the application simply run the EXE that is in this publish directory (it is the name of the app, or specified in the project file).
 
 ```
 .\bin\Debug\netcoreapp2.1\win-x64\publish\HelloWorld.exe
 ```
 
-Thus at this point publication directory directory has NO dependency outside that directory (including dotnet.exe). You can copy this publication
-directory to another machine and run the exe in it and it will 'just work' (assuming you are on the same OS). Note that your managed app's
-code is still in the 'app'.dll file, the 'app'.exe file is actually simply a rename of dotnet.exe.
-
+**But we are not done yet, you need to replace the published runtime files with the files from your local build!**
 
 ## Update CoreCLR from raw binary output
 
@@ -111,120 +110,30 @@ location that dotnet.exe installed, OR it is fetched from the local nuget packag
 build was put when you did a 'dotnet restore' and had a dependency on your particular runtime).    In theory you
 could update these locations in place, but that is not recommended since they are shared more widely.
 
-## Update CoreCLR using runtime nuget package
-
-### WARNING: TODO: This section has been broken when Microsoft.Netcore.App included the CoreCLR binaries.  We need to update this. 
-
-Updating CoreCLR from raw binary output is easier for quick one-off testing but using the nuget package is better
-for referencing your CoreCLR build in your actual application because of it does not require manual copying of files
-around each time the application is built and plugs into the rest of the tool chain. This set of instructions will cover
-the further steps needed to consume the runtime nuget package.
-
-#### 1 - Get the Version number of the CoreCLR package you built.
-
-This makes a 'standard' hello world application but uses the .NET Core Runtime version that
-came with the dotnet.exe tool. First you need to modify your app to ask for the .NET Core
-you have built, and to do that, we need to know the version number of what you built.  Get
-this by simply listing the name of the Microsoft.NETCore.Runtime.CoreCLR you built.
-
-```bat
-    dir bin\Product\Windows_NT.x64.Release\.nuget\pkg
-```
-
-and you will get name of the which looks something like this
-
-```
-    Microsoft.NETCore.Runtime.CoreCLR.2.1.0-beta-25023-0.nupkg
-```
-
-This gets us the version number, in the above case it is 2.1.0-beta-25023-0. We will
-use this in the next step.
-
-#### 2 - Add a reference to your runtime package
-
-Add the following lines to your project file:
-
-```
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NETCore.Runtime.CoreCLR" Version="2.1.0-beta-25023-0" />
-  </ItemGroup>
-```
-
-In your project you should also see a `RuntimeFrameworkVersion` property which represents the
-version of Micorosoft.NETCore.App which is used for all the other dependencies. It is possible
-that libraries between your runtime and that package are far enough apart to cause issues, so
-it is best to have the latest version of Microsoft.NETCore.App package if you are working on the
-latest version of the source in coreclr master branch. You can find the latest package by looking
-at https://dotnet.myget.org/feed/dotnet-core/package/nuget/Microsoft.NETCore.App.
-
-#### 3 - Place your build directory and beta .NET Core Framework feed on your Nuget source list
-
-By default the dogfooding dotnet SDK will create a Nuget.Config file next to your project, if it doesn't
-you can create one. Your config file will need a source for your local coreclr package directory as well
-as a reference to our nightly dotnet-core feed on myget:
-
-```xml
-<configuration>
-  <packageSources>
-    <add key="local coreclr" value="D:\git\coreclr\bin\Product\Windows_NT.x64.Debug\.nuget\pkg" />
-    <add key="dotnet-core" value="https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" />
-  </packageSources>
-</configuration>
-
-```
-Obviously **you need to update path in the XML to be the path to output directory for your build**.
-
-On Windows you also have the alternative of modifying the Nuget.Config
-at `%HOMEPATH%\AppData\Roaming\Nuget\Nuget.Config` (`~/.nuget/NuGet/NuGet.Config` on Linux) with the new location.
-This will allow your new runtime to be used on any 'dotnet restore' run by the current user.
-Alternatively you can skip creating this file and pass the path to your package directory using
-the -s SOURCE qualifer on the dotnet restore command below.   The important part is that somehow
-you have told the tools where to find your new package.
-
-Once have made these modifications you will need to rerun the restore and publish as such.
-
-```
-dotnet restore
-dotnet publish
-```
-Now your publication directory should contain your local built CoreCLR builds.
-
-#### 4 - Update BuildNumberMinor Environment Variable
-
-One possible problem with the technique above is that Nuget assumes that distinct builds have distinct version numbers.
-Thus if you modify the source and create a new NuGet package you must it a new version number and use that in your
-application's project. Otherwise the dotnet.exe tool will assume that the existing version is fine and you
-won't get the updated bits. This is what the Minor Build number is all about. By default it is 0, but you can
-give it a value by setting the BuildNumberMinor environment variable.
-```bat
-    set BuildNumberMinor=3
-```
-before packaging. You should see this number show up in the version number (e.g. 2.1.0-beta-25023-03).
-
-As an alternative you can delete the existing copy of the package from the Nuget cache.   For example on
-windows (on Linux substitute ~/ for %HOMEPATH%) you could delete
-```bat
-     %HOMEPATH%\.nuget\packages\Microsoft.NETCore.Runtime.CoreCLR\2.1.0-beta-25023-02
-```
-which should make things work (but is fragile, confirm file timestamps that you are getting the version you expect)
-
 ## (Optional) Confirm that the app used your new runtime
 
-Congratulations, you have successfully used your newly built runtime. To confirm that everything worked, you
-should compare the file creation timestamps for the CoreCLR.dll and System.Private.Runtime.dll in the publishing
-directory and the build output directory. They should be identical. If not, something went wrong and the
-dotnet tool picked up a different version of your runtime.
+Congratulations, you have successfully used your newly built runtime. 
 
-As a hint you could adde some code like:
+As a hint you could add some code like:
 ```
-    var coreAssemblyInfo = System.Diagnostics.FileVersionInfo.GetVersionInfo(typeof(object).Assembly.Location);
-    Console.WriteLine($"Hello World from Core {coreAssemblyInfo.ProductVersion}");
+var coreAssemblyInfo = System.Diagnostics.FileVersionInfo.GetVersionInfo(typeof(object).Assembly.Location);
+Console.WriteLine($"Hello World from Core {coreAssemblyInfo.ProductVersion}");
+Console.WriteLine($"The location is {typeof(object).Assembly.Location}");
 ```
+
 That should tell you the version and which user and machine build the assembly as well as the commit hash of the code
-at the time of building.
+at the time of building:
 
+```
+Hello World from Core 4.6.26210.0 @BuiltBy: adsitnik-MININT-O513E3V @SrcCode: https://github.com/dotnet/coreclr/tree/3d6da797d1f7dc47d5934189787a4e8006ab3a04
+The location is C:\coreclr\helloWorld\bin\Debug\netcoreapp2.1\win-x64\publish\System.Private.CoreLib.dll
+```
 
---------------------------
+## Using CoreRun to run your .NET Core Application
+
+If you don't like the idea of copying files manually you can follow [this instructions](UsingDotNetCli.md) to use dotnet cli to do this for you.
+However the steps described here are the simplest and most commonly used by CoreCLR developers for ad-hoc testing.
+
 ## Using CoreRun to run your .NET Core Application
 
 Generally using dotnet.exe tool to run your .NET Core application is the preferred mechanism to run .NET Core Apps.
