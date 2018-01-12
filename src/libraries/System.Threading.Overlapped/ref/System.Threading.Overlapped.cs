@@ -10,7 +10,6 @@ namespace System.Threading
 {
     [System.CLSCompliantAttribute(false)]
     public unsafe delegate void IOCompletionCallback(uint errorCode, uint numBytes, System.Threading.NativeOverlapped* pOVERLAP);
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct NativeOverlapped
     {
         public System.IntPtr EventHandle;

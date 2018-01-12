@@ -22,6 +22,7 @@ namespace System.Threading
     }
     public partial struct AsyncFlowControl : System.IDisposable
     {
+        private object _dummy;
         public void Dispose() { }
         public override bool Equals(object obj) { throw null; }
         public bool Equals(System.Threading.AsyncFlowControl obj) { throw null; }
@@ -36,9 +37,9 @@ namespace System.Threading
         public AsyncLocal(System.Action<System.Threading.AsyncLocalValueChangedArgs<T>> valueChangedHandler) { }
         public T Value { get { throw null; } set { } }
     }
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct AsyncLocalValueChangedArgs<T>
     {
+        private T _dummy;
         public T CurrentValue { get { throw null; } }
         public T PreviousValue { get { throw null; } }
         public bool ThreadContextChanged { get { throw null; } }
@@ -179,6 +180,7 @@ namespace System.Threading
     }
     public partial struct LockCookie
     {
+        private int _dummy;
         public override bool Equals(object obj) { throw null; }
         public bool Equals(System.Threading.LockCookie obj) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -340,9 +342,9 @@ namespace System.Threading
         public System.Threading.Tasks.Task<bool> WaitAsync(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public delegate void SendOrPostCallback(object state);
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct SpinLock
     {
+        private int _dummy;
         public SpinLock(bool enableThreadOwnerTracking) { throw null; }
         public bool IsHeld { get { throw null; } }
         public bool IsHeldByCurrentThread { get { throw null; } }
@@ -354,9 +356,9 @@ namespace System.Threading
         public void TryEnter(int millisecondsTimeout, ref bool lockTaken) { }
         public void TryEnter(System.TimeSpan timeout, ref bool lockTaken) { }
     }
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct SpinWait
     {
+        private int _dummy;
         public int Count { get { throw null; } }
         public bool NextSpinWillYield { get { throw null; } }
         public void Reset() { }
