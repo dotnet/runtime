@@ -231,6 +231,11 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(IsReferenceAssembly)' == 'true'">
+    <!-- disable warnings about unused fields -->
+    <NoWarn>$(NoWarn);0169;0649</NoWarn>
+  </PropertyGroup>
+
   <!-- Set up some common paths -->
   <PropertyGroup>
     <CommonPath>$(SourceDir)Common\src</CommonPath>

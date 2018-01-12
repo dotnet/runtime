@@ -93,17 +93,14 @@ namespace System.Collections.Immutable
         public static System.Collections.Immutable.ImmutableArray<T> Create<T>(T[] items, int start, int length) { throw null; }
         public static System.Collections.Immutable.ImmutableArray<TSource> ToImmutableArray<TSource>(this System.Collections.Generic.IEnumerable<TSource> items) { throw null; }
     }
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct ImmutableArray<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Collections.Immutable.IImmutableList<T>, System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.IEquatable<System.Collections.Immutable.ImmutableArray<T>>
     {
+        internal T[] array;
         public static readonly System.Collections.Immutable.ImmutableArray<T> Empty;
         public bool IsDefault { get { throw null; } }
         public bool IsDefaultOrEmpty { get { throw null; } }
         public bool IsEmpty { get { throw null; } }
         public T this[int index] { get { throw null; } }
-#if FEATURE_ITEMREFAPI
-        public ref readonly T ItemRef(int index) { throw null; }
-#endif
         public int Length { get { throw null; } }
         int System.Collections.Generic.ICollection<T>.Count { get { throw null; } }
         bool System.Collections.Generic.ICollection<T>.IsReadOnly { get { throw null; } }
@@ -139,6 +136,9 @@ namespace System.Collections.Immutable
         public System.Collections.Immutable.ImmutableArray<T> Insert(int index, T item) { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> InsertRange(int index, System.Collections.Generic.IEnumerable<T> items) { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> InsertRange(int index, System.Collections.Immutable.ImmutableArray<T> items) { throw null; }
+#if FEATURE_ITEMREFAPI
+        public ref readonly T ItemRef(int index) { throw null; }
+#endif
         public int LastIndexOf(T item) { throw null; }
         public int LastIndexOf(T item, int startIndex) { throw null; }
         public int LastIndexOf(T item, int startIndex, int count) { throw null; }
@@ -201,9 +201,6 @@ namespace System.Collections.Immutable
             public int Capacity { get { throw null; } set { } }
             public int Count { get { throw null; } set { } }
             public T this[int index] { get { throw null; } set { } }
-#if FEATURE_ITEMREFAPI
-            public ref readonly T ItemRef(int index) { throw null; }
-#endif
             bool System.Collections.Generic.ICollection<T>.IsReadOnly { get { throw null; } }
             public void Add(T item) { }
             public void AddRange(System.Collections.Generic.IEnumerable<T> items) { }
@@ -224,6 +221,9 @@ namespace System.Collections.Immutable
             public int IndexOf(T item, int startIndex, int count) { throw null; }
             public int IndexOf(T item, int startIndex, int count, System.Collections.Generic.IEqualityComparer<T> equalityComparer) { throw null; }
             public void Insert(int index, T item) { }
+#if FEATURE_ITEMREFAPI
+            public ref readonly T ItemRef(int index) { throw null; }
+#endif
             public int LastIndexOf(T item) { throw null; }
             public int LastIndexOf(T item, int startIndex) { throw null; }
             public int LastIndexOf(T item, int startIndex, int count) { throw null; }
@@ -241,9 +241,9 @@ namespace System.Collections.Immutable
             public T[] ToArray() { throw null; }
             public System.Collections.Immutable.ImmutableArray<T> ToImmutable() { throw null; }
         }
-        [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
         public partial struct Enumerator
         {
+            private readonly T[] _array;
             public T Current { get { throw null; } }
             public bool MoveNext() { throw null; }
         }
@@ -326,8 +326,8 @@ namespace System.Collections.Immutable
         System.Collections.Immutable.IImmutableDictionary<TKey, TValue> System.Collections.Immutable.IImmutableDictionary<TKey,TValue>.SetItem(TKey key, TValue value) { throw null; }
         System.Collections.Immutable.IImmutableDictionary<TKey, TValue> System.Collections.Immutable.IImmutableDictionary<TKey,TValue>.SetItems(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> items) { throw null; }
         public System.Collections.Immutable.ImmutableDictionary<TKey, TValue>.Builder ToBuilder() { throw null; }
-        public bool TryGetKey(TKey equalKey, out TKey actualKey) { actualKey = default(TKey); throw null; }
-        public bool TryGetValue(TKey key, out TValue value) { value = default(TValue); throw null; }
+        public bool TryGetKey(TKey equalKey, out TKey actualKey) { throw null; }
+        public bool TryGetValue(TKey key, out TValue value) { throw null; }
         public System.Collections.Immutable.ImmutableDictionary<TKey, TValue> WithComparers(System.Collections.Generic.IEqualityComparer<TKey> keyComparer) { throw null; }
         public System.Collections.Immutable.ImmutableDictionary<TKey, TValue> WithComparers(System.Collections.Generic.IEqualityComparer<TKey> keyComparer, System.Collections.Generic.IEqualityComparer<TValue> valueComparer) { throw null; }
         public sealed partial class Builder : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IDictionary<TKey, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable
@@ -371,12 +371,12 @@ namespace System.Collections.Immutable
             void System.Collections.IDictionary.Remove(object key) { }
             System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
             public System.Collections.Immutable.ImmutableDictionary<TKey, TValue> ToImmutable() { throw null; }
-            public bool TryGetKey(TKey equalKey, out TKey actualKey) { actualKey = default(TKey); throw null; }
-            public bool TryGetValue(TKey key, out TValue value) { value = default(TValue); throw null; }
+            public bool TryGetKey(TKey equalKey, out TKey actualKey) { throw null; }
+            public bool TryGetValue(TKey key, out TValue value) { throw null; }
         }
-        [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IEnumerator, System.IDisposable
         {
+            private object _dummy;
             public System.Collections.Generic.KeyValuePair<TKey, TValue> Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
@@ -443,7 +443,7 @@ namespace System.Collections.Immutable
         System.Collections.Immutable.IImmutableSet<T> System.Collections.Immutable.IImmutableSet<T>.SymmetricExcept(System.Collections.Generic.IEnumerable<T> other) { throw null; }
         System.Collections.Immutable.IImmutableSet<T> System.Collections.Immutable.IImmutableSet<T>.Union(System.Collections.Generic.IEnumerable<T> other) { throw null; }
         public System.Collections.Immutable.ImmutableHashSet<T>.Builder ToBuilder() { throw null; }
-        public bool TryGetValue(T equalValue, out T actualValue) { actualValue = default(T); throw null; }
+        public bool TryGetValue(T equalValue, out T actualValue) { throw null; }
         public System.Collections.Immutable.ImmutableHashSet<T> Union(System.Collections.Generic.IEnumerable<T> other) { throw null; }
         public System.Collections.Immutable.ImmutableHashSet<T> WithComparer(System.Collections.Generic.IEqualityComparer<T> equalityComparer) { throw null; }
         public sealed partial class Builder : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.ISet<T>, System.Collections.IEnumerable
@@ -473,9 +473,9 @@ namespace System.Collections.Immutable
             public System.Collections.Immutable.ImmutableHashSet<T> ToImmutable() { throw null; }
             public void UnionWith(System.Collections.Generic.IEnumerable<T> other) { }
         }
-        [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
+            private object _dummy;
             public T Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
@@ -496,9 +496,9 @@ namespace System.Collections.Immutable
         public static bool InterlockedInitialize<T>(ref System.Collections.Immutable.ImmutableArray<T> location, System.Collections.Immutable.ImmutableArray<T> value) { throw null; }
         public static void Push<T>(ref System.Collections.Immutable.ImmutableStack<T> location, T value) { }
         public static bool TryAdd<TKey, TValue>(ref System.Collections.Immutable.ImmutableDictionary<TKey, TValue> location, TKey key, TValue value) { throw null; }
-        public static bool TryDequeue<T>(ref System.Collections.Immutable.ImmutableQueue<T> location, out T value) { value = default(T); throw null; }
-        public static bool TryPop<T>(ref System.Collections.Immutable.ImmutableStack<T> location, out T value) { value = default(T); throw null; }
-        public static bool TryRemove<TKey, TValue>(ref System.Collections.Immutable.ImmutableDictionary<TKey, TValue> location, TKey key, out TValue value) { value = default(TValue); throw null; }
+        public static bool TryDequeue<T>(ref System.Collections.Immutable.ImmutableQueue<T> location, out T value) { throw null; }
+        public static bool TryPop<T>(ref System.Collections.Immutable.ImmutableStack<T> location, out T value) { throw null; }
+        public static bool TryRemove<TKey, TValue>(ref System.Collections.Immutable.ImmutableDictionary<TKey, TValue> location, TKey key, out TValue value) { throw null; }
         public static bool TryUpdate<TKey, TValue>(ref System.Collections.Immutable.ImmutableDictionary<TKey, TValue> location, TKey key, TValue newValue, TValue comparisonValue) { throw null; }
         public static bool Update<T>(ref T location, System.Func<T, T> transformer) where T : class { throw null; }
         public static bool Update<T, TArg>(ref T location, System.Func<T, TArg, T> transformer, TArg transformerArgument) where T : class { throw null; }
@@ -530,9 +530,6 @@ namespace System.Collections.Immutable
         public int Count { get { throw null; } }
         public bool IsEmpty { get { throw null; } }
         public T this[int index] { get { throw null; } }
-#if FEATURE_ITEMREFAPI
-        public ref readonly T ItemRef(int index) { throw null; }
-#endif
         bool System.Collections.Generic.ICollection<T>.IsReadOnly { get { throw null; } }
         T System.Collections.Generic.IList<T>.this[int index] { get { throw null; } set { } }
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
@@ -568,6 +565,9 @@ namespace System.Collections.Immutable
         public int IndexOf(T item, int index, int count, System.Collections.Generic.IEqualityComparer<T> equalityComparer) { throw null; }
         public System.Collections.Immutable.ImmutableList<T> Insert(int index, T item) { throw null; }
         public System.Collections.Immutable.ImmutableList<T> InsertRange(int index, System.Collections.Generic.IEnumerable<T> items) { throw null; }
+#if FEATURE_ITEMREFAPI
+        public ref readonly T ItemRef(int index) { throw null; }
+#endif
         public int LastIndexOf(T item, int index, int count, System.Collections.Generic.IEqualityComparer<T> equalityComparer) { throw null; }
         public System.Collections.Immutable.ImmutableList<T> Remove(T value) { throw null; }
         public System.Collections.Immutable.ImmutableList<T> Remove(T value, System.Collections.Generic.IEqualityComparer<T> equalityComparer) { throw null; }
@@ -619,9 +619,6 @@ namespace System.Collections.Immutable
             internal Builder() { }
             public int Count { get { throw null; } }
             public T this[int index] { get { throw null; } set { } }
-#if FEATURE_ITEMREFAPI
-            public ref readonly T ItemRef(int index) { throw null; }
-#endif
             bool System.Collections.Generic.ICollection<T>.IsReadOnly { get { throw null; } }
             bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
             object System.Collections.ICollection.SyncRoot { get { throw null; } }
@@ -658,6 +655,9 @@ namespace System.Collections.Immutable
             public int IndexOf(T item, int index, int count, System.Collections.Generic.IEqualityComparer<T> equalityComparer) { throw null; }
             public void Insert(int index, T item) { }
             public void InsertRange(int index, System.Collections.Generic.IEnumerable<T> items) { }
+#if FEATURE_ITEMREFAPI
+            public ref readonly T ItemRef(int index) { throw null; }
+#endif
             public int LastIndexOf(T item) { throw null; }
             public int LastIndexOf(T item, int startIndex) { throw null; }
             public int LastIndexOf(T item, int startIndex, int count) { throw null; }
@@ -684,9 +684,9 @@ namespace System.Collections.Immutable
             public bool TrueForAll(System.Predicate<T> match) { throw null; }
         }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
-        [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
+            private object _dummy;
             public T Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
@@ -700,7 +700,7 @@ namespace System.Collections.Immutable
         public static System.Collections.Immutable.ImmutableQueue<T> Create<T>() { throw null; }
         public static System.Collections.Immutable.ImmutableQueue<T> Create<T>(T item) { throw null; }
         public static System.Collections.Immutable.ImmutableQueue<T> Create<T>(params T[] items) { throw null; }
-        public static System.Collections.Immutable.IImmutableQueue<T> Dequeue<T>(this System.Collections.Immutable.IImmutableQueue<T> queue, out T value) { value = default(T); throw null; }
+        public static System.Collections.Immutable.IImmutableQueue<T> Dequeue<T>(this System.Collections.Immutable.IImmutableQueue<T> queue, out T value) { throw null; }
     }
     public sealed partial class ImmutableQueue<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.Collections.Immutable.IImmutableQueue<T>
     {
@@ -709,7 +709,7 @@ namespace System.Collections.Immutable
         public bool IsEmpty { get { throw null; } }
         public System.Collections.Immutable.ImmutableQueue<T> Clear() { throw null; }
         public System.Collections.Immutable.ImmutableQueue<T> Dequeue() { throw null; }
-        public System.Collections.Immutable.ImmutableQueue<T> Dequeue(out T value) { value = default(T); throw null; }
+        public System.Collections.Immutable.ImmutableQueue<T> Dequeue(out T value) { throw null; }
         public System.Collections.Immutable.ImmutableQueue<T> Enqueue(T value) { throw null; }
         public System.Collections.Immutable.ImmutableQueue<T>.Enumerator GetEnumerator() { throw null; }
         public T Peek() { throw null; }
@@ -722,9 +722,9 @@ namespace System.Collections.Immutable
         System.Collections.Immutable.IImmutableQueue<T> System.Collections.Immutable.IImmutableQueue<T>.Dequeue() { throw null; }
         System.Collections.Immutable.IImmutableQueue<T> System.Collections.Immutable.IImmutableQueue<T>.Enqueue(T value) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
-        [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
         public partial struct Enumerator
         {
+            private object _dummy;
             public T Current { get { throw null; } }
             public bool MoveNext() { throw null; }
         }
@@ -754,9 +754,6 @@ namespace System.Collections.Immutable
         public int Count { get { throw null; } }
         public bool IsEmpty { get { throw null; } }
         public TValue this[TKey key] { get { throw null; } }
-#if FEATURE_ITEMREFAPI
-        public ref readonly TValue ValueRef(TKey key) { throw null; }
-#endif
         public System.Collections.Generic.IComparer<TKey> KeyComparer { get { throw null; } }
         public System.Collections.Generic.IEnumerable<TKey> Keys { get { throw null; } }
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey,TValue>>.IsReadOnly { get { throw null; } }
@@ -805,8 +802,11 @@ namespace System.Collections.Immutable
         System.Collections.Immutable.IImmutableDictionary<TKey, TValue> System.Collections.Immutable.IImmutableDictionary<TKey,TValue>.SetItem(TKey key, TValue value) { throw null; }
         System.Collections.Immutable.IImmutableDictionary<TKey, TValue> System.Collections.Immutable.IImmutableDictionary<TKey,TValue>.SetItems(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> items) { throw null; }
         public System.Collections.Immutable.ImmutableSortedDictionary<TKey, TValue>.Builder ToBuilder() { throw null; }
-        public bool TryGetKey(TKey equalKey, out TKey actualKey) { actualKey = default(TKey); throw null; }
-        public bool TryGetValue(TKey key, out TValue value) { value = default(TValue); throw null; }
+        public bool TryGetKey(TKey equalKey, out TKey actualKey) { throw null; }
+        public bool TryGetValue(TKey key, out TValue value) { throw null; }
+#if FEATURE_ITEMREFAPI
+        public ref readonly TValue ValueRef(TKey key) { throw null; }
+#endif
         public System.Collections.Immutable.ImmutableSortedDictionary<TKey, TValue> WithComparers(System.Collections.Generic.IComparer<TKey> keyComparer) { throw null; }
         public System.Collections.Immutable.ImmutableSortedDictionary<TKey, TValue> WithComparers(System.Collections.Generic.IComparer<TKey> keyComparer, System.Collections.Generic.IEqualityComparer<TValue> valueComparer) { throw null; }
         public sealed partial class Builder : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IDictionary<TKey, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable
@@ -814,9 +814,6 @@ namespace System.Collections.Immutable
             internal Builder() { }
             public int Count { get { throw null; } }
             public TValue this[TKey key] { get { throw null; } set { } }
-#if FEATURE_ITEMREFAPI
-            public ref readonly TValue ValueRef(TKey key) { throw null; }
-#endif
             public System.Collections.Generic.IComparer<TKey> KeyComparer { get { throw null; } set { } }
             public System.Collections.Generic.IEnumerable<TKey> Keys { get { throw null; } }
             bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey,TValue>>.IsReadOnly { get { throw null; } }
@@ -853,13 +850,16 @@ namespace System.Collections.Immutable
             void System.Collections.IDictionary.Remove(object key) { }
             System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
             public System.Collections.Immutable.ImmutableSortedDictionary<TKey, TValue> ToImmutable() { throw null; }
-            public bool TryGetKey(TKey equalKey, out TKey actualKey) { actualKey = default(TKey); throw null; }
-            public bool TryGetValue(TKey key, out TValue value) { value = default(TValue); throw null; }
+            public bool TryGetKey(TKey equalKey, out TKey actualKey) { throw null; }
+            public bool TryGetValue(TKey key, out TValue value) { throw null; }
+#if FEATURE_ITEMREFAPI
+            public ref readonly TValue ValueRef(TKey key) { throw null; }
+#endif
         }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
-        [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IEnumerator, System.IDisposable
         {
+            private object _dummy;
             public System.Collections.Generic.KeyValuePair<TKey, TValue> Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
@@ -889,9 +889,6 @@ namespace System.Collections.Immutable
         public int Count { get { throw null; } }
         public bool IsEmpty { get { throw null; } }
         public T this[int index] { get { throw null; } }
-#if FEATURE_ITEMREFAPI
-        public ref readonly T ItemRef(int index) { throw null; }
-#endif
         public System.Collections.Generic.IComparer<T> KeyComparer { get { throw null; } }
         public T Max { get { throw null; } }
         public T Min { get { throw null; } }
@@ -913,6 +910,9 @@ namespace System.Collections.Immutable
         public bool IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
         public bool IsSubsetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
         public bool IsSupersetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
+#if FEATURE_ITEMREFAPI
+        public ref readonly T ItemRef(int index) { throw null; }
+#endif
         public bool Overlaps(System.Collections.Generic.IEnumerable<T> other) { throw null; }
         public System.Collections.Immutable.ImmutableSortedSet<T> Remove(T value) { throw null; }
         public System.Collections.Generic.IEnumerable<T> Reverse() { throw null; }
@@ -947,7 +947,7 @@ namespace System.Collections.Immutable
         System.Collections.Immutable.IImmutableSet<T> System.Collections.Immutable.IImmutableSet<T>.SymmetricExcept(System.Collections.Generic.IEnumerable<T> other) { throw null; }
         System.Collections.Immutable.IImmutableSet<T> System.Collections.Immutable.IImmutableSet<T>.Union(System.Collections.Generic.IEnumerable<T> other) { throw null; }
         public System.Collections.Immutable.ImmutableSortedSet<T>.Builder ToBuilder() { throw null; }
-        public bool TryGetValue(T equalValue, out T actualValue) { actualValue = default(T); throw null; }
+        public bool TryGetValue(T equalValue, out T actualValue) { throw null; }
         public System.Collections.Immutable.ImmutableSortedSet<T> Union(System.Collections.Generic.IEnumerable<T> other) { throw null; }
         public System.Collections.Immutable.ImmutableSortedSet<T> WithComparer(System.Collections.Generic.IComparer<T> comparer) { throw null; }
         public sealed partial class Builder : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable
@@ -955,9 +955,6 @@ namespace System.Collections.Immutable
             internal Builder() { }
             public int Count { get { throw null; } }
             public T this[int index] { get { throw null; } }
-#if FEATURE_ITEMREFAPI
-            public ref readonly T ItemRef(int index) { throw null; }
-#endif
             public System.Collections.Generic.IComparer<T> KeyComparer { get { throw null; } set { } }
             public T Max { get { throw null; } }
             public T Min { get { throw null; } }
@@ -974,6 +971,9 @@ namespace System.Collections.Immutable
             public bool IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
             public bool IsSubsetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
             public bool IsSupersetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
+#if FEATURE_ITEMREFAPI
+            public ref readonly T ItemRef(int index) { throw null; }
+#endif
             public bool Overlaps(System.Collections.Generic.IEnumerable<T> other) { throw null; }
             public bool Remove(T item) { throw null; }
             public System.Collections.Generic.IEnumerable<T> Reverse() { throw null; }
@@ -988,9 +988,9 @@ namespace System.Collections.Immutable
             public void UnionWith(System.Collections.Generic.IEnumerable<T> other) { }
         }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
-        [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
+            private object _dummy;
             public T Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
@@ -1004,7 +1004,7 @@ namespace System.Collections.Immutable
         public static System.Collections.Immutable.ImmutableStack<T> Create<T>() { throw null; }
         public static System.Collections.Immutable.ImmutableStack<T> Create<T>(T item) { throw null; }
         public static System.Collections.Immutable.ImmutableStack<T> Create<T>(params T[] items) { throw null; }
-        public static System.Collections.Immutable.IImmutableStack<T> Pop<T>(this System.Collections.Immutable.IImmutableStack<T> stack, out T value) { value = default(T); throw null; }
+        public static System.Collections.Immutable.IImmutableStack<T> Pop<T>(this System.Collections.Immutable.IImmutableStack<T> stack, out T value) { throw null; }
     }
     public sealed partial class ImmutableStack<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.Collections.Immutable.IImmutableStack<T>
     {
@@ -1018,7 +1018,7 @@ namespace System.Collections.Immutable
         public ref readonly T PeekRef() { throw null; }
 #endif
         public System.Collections.Immutable.ImmutableStack<T> Pop() { throw null; }
-        public System.Collections.Immutable.ImmutableStack<T> Pop(out T value) { value = default(T); throw null; }
+        public System.Collections.Immutable.ImmutableStack<T> Pop(out T value) { throw null; }
         public System.Collections.Immutable.ImmutableStack<T> Push(T value) { throw null; }
         System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
@@ -1026,9 +1026,9 @@ namespace System.Collections.Immutable
         System.Collections.Immutable.IImmutableStack<T> System.Collections.Immutable.IImmutableStack<T>.Pop() { throw null; }
         System.Collections.Immutable.IImmutableStack<T> System.Collections.Immutable.IImmutableStack<T>.Push(T value) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
-        [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
         public partial struct Enumerator
         {
+            private object _dummy;
             public T Current { get { throw null; } }
             public bool MoveNext() { throw null; }
         }

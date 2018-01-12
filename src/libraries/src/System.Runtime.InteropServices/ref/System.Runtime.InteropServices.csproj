@@ -4,7 +4,7 @@
   <PropertyGroup>
     <!-- Don't warn about usage of obsolete API since the contract must keep its own references
          to its own obsolete API. -->
-    <NoWarn>618</NoWarn>
+    <NoWarn>$(NoWarn);618</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ProjectGuid>{B17014F1-D902-417F-89B0-271204695831}</ProjectGuid>
   </PropertyGroup>
