@@ -123,6 +123,7 @@ IF_DEF(RRD_MRD,     IS_GM_RD|IS_R1_RD,          DSP)      // read   reg , read [
 IF_DEF(RWR_MRD,     IS_GM_RD|IS_R1_WR,          DSP)      // write  reg , read [mem]
 IF_DEF(RRW_MRD,     IS_GM_RD|IS_R1_RW,          DSP)      // r/w    reg , read [mem]
 
+IF_DEF(RWR_RRD_MRD, IS_GM_RD|IS_R1_WR|IS_R2_RD, DSP)      // write  reg , read reg2 , read [mem]
 IF_DEF(RWR_MRD_OFF, IS_GM_RD|IS_R1_WR,          DSP)      // write  reg , offset mem
 
 IF_DEF(MRD_RRD,     IS_GM_RD|IS_R1_RD,          DSP)      // read  [mem], read  reg
@@ -147,6 +148,8 @@ IF_DEF(RRD_SRD,     IS_SF_RD|IS_R1_RD,          NONE)     // read   reg , read [
 IF_DEF(RWR_SRD,     IS_SF_RD|IS_R1_WR,          NONE)     // write  reg , read [stk]
 IF_DEF(RRW_SRD,     IS_SF_RD|IS_R1_RW,          NONE)     // r/w    reg , read [stk]
 
+IF_DEF(RWR_RRD_SRD, IS_SF_RD|IS_R1_WR|IS_R2_RD, NONE)     // write  reg , read  reg2, read [stk]
+
 IF_DEF(SRD_RRD,     IS_SF_RD|IS_R1_RD,          NONE)     // read  [stk], read  reg
 IF_DEF(SWR_RRD,     IS_SF_WR|IS_R1_RD,          NONE)     // write [stk], read  reg
 IF_DEF(SRW_RRD,     IS_SF_RW|IS_R1_RD,          NONE)     // r/w   [stk], read  reg
@@ -169,6 +172,8 @@ IF_DEF(ARW,         IS_AM_RW,                   AMD )     // r/w   [adr]
 IF_DEF(RRD_ARD,     IS_AM_RD|IS_R1_RD,          AMD )     // read   reg , read [adr]
 IF_DEF(RWR_ARD,     IS_AM_RD|IS_R1_WR,          AMD )     // write  reg , read [adr]
 IF_DEF(RRW_ARD,     IS_AM_RD|IS_R1_RW,          AMD )     // r/w    reg , read [adr]
+
+IF_DEF(RWR_RRD_ARD, IS_AM_RD|IS_R1_WR|IS_R2_RD, AMD )     // write  reg , read  reg2, read [adr]
 
 IF_DEF(ARD_RRD,     IS_AM_RD|IS_R1_RD,          AMD )     // read  [adr], read  reg
 IF_DEF(AWR_RRD,     IS_AM_WR|IS_R1_RD,          AMD )     // write [adr], read  reg
