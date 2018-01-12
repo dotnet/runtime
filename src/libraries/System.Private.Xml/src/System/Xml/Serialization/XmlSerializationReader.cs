@@ -3190,7 +3190,7 @@ namespace System.Xml.Serialization
         {
             for (StructMapping derived = mapping.DerivedMappings; derived != null; derived = derived.NextDerivedMapping)
             {
-                Writer.Write("else if (");
+                Writer.Write("if (");
                 WriteQNameEqual("xsiType", derived.TypeName, derived.Namespace);
                 Writer.WriteLine(")");
                 Writer.Indent++;
@@ -3227,7 +3227,7 @@ namespace System.Xml.Serialization
                     if (m is EnumMapping)
                     {
                         EnumMapping mapping = (EnumMapping)m;
-                        Writer.Write("else if (");
+                        Writer.Write("if (");
                         WriteQNameEqual("xsiType", mapping.TypeName, mapping.Namespace);
                         Writer.WriteLine(") {");
                         Writer.Indent++;
@@ -3250,7 +3250,7 @@ namespace System.Xml.Serialization
                         ArrayMapping mapping = (ArrayMapping)m;
                         if (mapping.TypeDesc.HasDefaultConstructor)
                         {
-                            Writer.Write("else if (");
+                            Writer.Write("if (");
                             WriteQNameEqual("xsiType", mapping.TypeName, mapping.Namespace);
                             Writer.WriteLine(") {");
                             Writer.Indent++;
@@ -3397,10 +3397,10 @@ namespace System.Xml.Serialization
                 Writer.Indent--;
             }
             Writer.WriteLine("}");
+            Writer.WriteLine("else {");
+            Writer.Indent++;
             WriteDerivedTypes(structMapping, !useReflection && !structMapping.TypeDesc.IsRoot, typeName);
             if (structMapping.TypeDesc.IsRoot) WriteEnumAndArrayTypes();
-            Writer.WriteLine("else");
-            Writer.Indent++;
             if (structMapping.TypeDesc.IsRoot)
                 Writer.Write("return ReadTypedPrimitive((");
             else
@@ -3409,7 +3409,9 @@ namespace System.Xml.Serialization
             Writer.WriteLine(")xsiType);");
             Writer.Indent--;
             Writer.WriteLine("}");
-
+            if (structMapping.TypeDesc.IsRoot)
+                Writer.Indent--;
+            Writer.WriteLine("}");
             if (structMapping.TypeDesc.IsNullable)
                 Writer.WriteLine("if (isNull) return null;");
 
@@ -4350,16 +4352,27 @@ namespace System.Xml.Serialization
                     ElementAccessor e = elements[j];
                     string ns = e.Form == XmlSchemaForm.Qualified ? e.Namespace : "";
                     if (!isSequence && e.Any && (e.Name == null || e.Name.Length == 0)) continue;
-                    if (!firstElement || (!isSequence && count > 0))
+                    if (!isSequence)
                     {
-                        Writer.Write("else ");
+                        if (firstElement && count == 0)
+                        {
+                            Writer.WriteLine("do {");
+                            Writer.Indent++;
+                        }
                     }
-                    else if (isSequence)
+                    else
                     {
-                        Writer.Write("case ");
-                        Writer.Write(cases.ToString(CultureInfo.InvariantCulture));
-                        Writer.WriteLine(":");
-                        Writer.Indent++;
+                        if (!firstElement || (!isSequence && count > 0))
+                        {
+                            Writer.Write("else ");
+                        }
+                        else if (isSequence)
+                        {
+                            Writer.Write("case ");
+                            Writer.Write(cases.ToString(CultureInfo.InvariantCulture));
+                            Writer.WriteLine(":");
+                            Writer.Indent++;
+                        }
                     }
                     count++;
                     firstElement = false;
@@ -4449,6 +4462,10 @@ namespace System.Xml.Serialization
                         Writer.Write(member.ParamsReadSource);
                         Writer.WriteLine(" = true;");
                     }
+                    if (!isSequence)
+                    {
+                        Writer.WriteLine("break;");
+                    }
                     Writer.Indent--;
                     Writer.WriteLine("}");
                 }
@@ -4475,10 +4492,10 @@ namespace System.Xml.Serialization
             if (count > 0)
             {
                 if (isSequence)
+                {
                     Writer.WriteLine("default:");
-                else
-                    Writer.WriteLine("else {");
-                Writer.Indent++;
+                    Writer.Indent++;
+                }
             }
             WriteMemberElementsElse(anyElement, elementElseString);
             if (count > 0)
@@ -4488,7 +4505,14 @@ namespace System.Xml.Serialization
                     Writer.WriteLine("break;");
                 }
                 Writer.Indent--;
-                Writer.WriteLine("}");
+                if (!isSequence)
+                {
+                    Writer.WriteLine("} while (false);");
+                }
+                else
+                {
+                    Writer.WriteLine("}");
+                }
             }
         }
 
