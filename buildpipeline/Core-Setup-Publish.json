@@ -489,14 +489,14 @@
       "value": "$(Build.SourcesDirectory)\\tools"
     },
     "PB_SymbolServerPath": {
-      "value": "https://microsoftpublicsymbolsppe.artifacts.visualstudio.com/DefaultCollection"
+      "value": "https://microsoftpublicsymbols.artifacts.visualstudio.com/DefaultCollection"
     },
     "PB_SymbolServerPAT": {
       "value": null,
       "isSecret": true
     },
     "PB_SymbolExpirationInDays": {
-      "value": ""
+      "value": "30"
     },
     "PB_BuildOutputManifestArguments": {
       "value": "/p:ManifestBuildId=$(OfficialBuildId) /p:ManifestBranch=$(SourceBranch) /p:ManifestCommit=$(SourceVersion)"
