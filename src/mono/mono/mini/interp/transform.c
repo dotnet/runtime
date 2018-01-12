@@ -824,6 +824,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	int op = -1;
 	int native = 0;
 	int is_void = 0;
+	int need_null_check = 0;
 
 	guint32 token = read32 (td->ip + 1);
 
@@ -1090,6 +1091,19 @@ no_intrinsic:
 	if (target_method)
 		mono_class_init (target_method->klass);
 
+	if (!virtual && target_method && (target_method->flags & METHOD_ATTRIBUTE_ABSTRACT))
+		/* MS.NET seems to silently convert this to a callvirt */
+		virtual = TRUE;
+
+	if (virtual && target_method && (!(target_method->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
+		(MONO_METHOD_IS_FINAL (target_method) &&
+		 target_method->wrapper_type != MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)) &&
+		!(mono_class_is_marshalbyref (target_method->klass))) {
+		/* Not really virtual, just needs a null check */
+		virtual = FALSE;
+		need_null_check = TRUE;
+	}
+
 	CHECK_STACK (td, csignature->param_count + csignature->hasthis);
 	if (!calli && op == -1 && (!virtual || (target_method->flags & METHOD_ATTRIBUTE_VIRTUAL) == 0) &&
 		(target_method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 && 
@@ -1133,8 +1147,8 @@ no_intrinsic:
 					ADD_CODE (td, 0);
 				}
 				if (csignature->hasthis) {
-					if (virtual)
-						ADD_CODE(td, MINT_CKNULL);
+					if (virtual || need_null_check)
+						ADD_CODE (td, MINT_CKNULL);
 					ADD_CODE (td, MINT_POP);
 					ADD_CODE (td, 0);
 				}
@@ -1171,6 +1185,11 @@ no_intrinsic:
 			size = (size + 7) & ~7;
 			vt_stack_used += size;
 		}
+	}
+
+	if (need_null_check) {
+		ADD_CODE (td, MINT_CKNULL_N);
+		ADD_CODE (td, csignature->param_count + 1);
 	}
 
 	/* need to handle typedbyref ... */

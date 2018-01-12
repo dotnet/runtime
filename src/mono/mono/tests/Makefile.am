@@ -976,9 +976,7 @@ KNOWN_FAILING_TESTS = \
 	appdomain-marshalbyref-assemblyload.exe	\
 	abort-try-holes.exe \
 	dim-constrainedcall.exe	\
-	dim-diamondshape.exe	\
-	dim-methodimpl.exe	\
-	dim-simple.exe
+	dim-diamondshape.exe
 
 DISABLED_TESTS = \
 	$(KNOWN_FAILING_TESTS) \
@@ -995,7 +993,6 @@ DISABLED_TESTS = \
 #                exit code 0, but doesn't actually execute the test.
 # block_guard_restore_aligment_on_exit.exe: flaky (10% of the time it hangs and thus times out)
 # weak-fields.exe: https://bugzilla.xamarin.com/show_bug.cgi?id=60973
-# dim-valuetypes.exe: https://github.com/mono/mono/issues/6287
 INTERP_DISABLED_TESTS = \
 	$(KNOWN_FAILING_TESTS) \
 	$(INTERP_PLATFORM_DISABLED_TESTS) \
@@ -1038,8 +1035,7 @@ INTERP_DISABLED_TESTS = \
 	weak-fields.exe \
 	vararg.exe \
 	vararg2.exe \
-	vararg3.exe \
-	dim-valuetypes.exe
+	vararg3.exe
 
 TESTS_CS=$(filter-out $(DISABLED_TESTS),$(TESTS_CS_SRC:.cs=.exe))
 TESTS_IL=$(filter-out $(DISABLED_TESTS),$(TESTS_IL_SRC:.il=.exe))

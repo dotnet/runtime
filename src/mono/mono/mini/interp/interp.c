@@ -2656,8 +2656,13 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			child_frame.retval = sp;
 			/* decrement by the actual number of args */
 			sp -= child_frame.imethod->param_count;
-			if (child_frame.imethod->hasthis)
+			if (child_frame.imethod->hasthis) {
 				--sp;
+				MonoObject *this_arg = sp->data.p;
+				if (!this_arg && (child_frame.imethod->method->flags & METHOD_ATTRIBUTE_VIRTUAL))
+					THROW_EX (mono_get_exception_null_reference(), ip - 2);
+			}
+
 			child_frame.stack_args = sp;
 
 			interp_exec_method (&child_frame, context);
@@ -3720,6 +3725,15 @@ array_constructed:
 				THROW_EX (mono_get_exception_null_reference (), ip);
 			++ip;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CKNULL_N) {
+			/* Same as CKNULL, but further down the stack */
+			int n = *(guint16*)(ip + 1);
+			o = sp [-n].data.p;
+			if (!o)
+				THROW_EX (mono_get_exception_null_reference (), ip);
+			ip += 2;
+			MINT_IN_BREAK;
+		}
 
 #define LDFLD(datamem, fieldtype) \
 	o = sp [-1].data.p; \
