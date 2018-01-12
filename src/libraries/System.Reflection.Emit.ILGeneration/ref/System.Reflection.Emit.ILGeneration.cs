@@ -57,9 +57,9 @@ namespace System.Reflection.Emit
         public virtual void ThrowException(System.Type excType) { }
         public virtual void UsingNamespace(string usingNamespace) { }
     }
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Label
     {
+        private int _dummy;
         public override bool Equals(object obj) { throw null; }
         public bool Equals(System.Reflection.Emit.Label obj) { throw null; }
         public override int GetHashCode() { throw null; }

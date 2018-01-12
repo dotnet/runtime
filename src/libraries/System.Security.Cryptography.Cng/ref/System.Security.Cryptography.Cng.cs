@@ -5,7 +5,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
 namespace Microsoft.Win32.SafeHandles
 {
     public abstract partial class SafeNCryptHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
@@ -197,9 +196,9 @@ namespace System.Security.Cryptography
         None = 0,
         Signing = 2,
     }
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct CngProperty : System.IEquatable<System.Security.Cryptography.CngProperty>
     {
+        private object _dummy;
         public CngProperty(string name, byte[] value, System.Security.Cryptography.CngPropertyOptions options) { throw null; }
         public string Name { get { throw null; } }
         public System.Security.Cryptography.CngPropertyOptions Options { get { throw null; } }
