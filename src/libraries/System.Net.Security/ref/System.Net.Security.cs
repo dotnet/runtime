@@ -124,11 +124,13 @@ namespace System.Net.Security
     }
     public readonly partial struct SslApplicationProtocol : IEquatable<SslApplicationProtocol>
     {
+        private readonly object _dummy;
+
         public static readonly SslApplicationProtocol Http2;
         public static readonly SslApplicationProtocol Http11;
 
-        public SslApplicationProtocol(byte[] protocol) { }
-        public SslApplicationProtocol(string protocol) { }
+        public SslApplicationProtocol(byte[] protocol) { throw null; }
+        public SslApplicationProtocol(string protocol) { throw null; }
 
         public ReadOnlyMemory<byte> Protocol { get { throw null; } }
 

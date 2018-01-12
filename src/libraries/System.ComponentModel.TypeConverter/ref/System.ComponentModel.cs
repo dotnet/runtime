@@ -1440,6 +1440,7 @@ namespace System.ComponentModel.Design.Serialization
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public readonly partial struct MemberRelationship
     {
+        private readonly object _dummy;
         public static readonly System.ComponentModel.Design.Serialization.MemberRelationship Empty;
         public MemberRelationship(object owner, System.ComponentModel.MemberDescriptor member) { throw null; }
         public bool IsEmpty { get { throw null; } }

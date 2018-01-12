@@ -14,9 +14,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public DefaultInterfaceAttribute(global::System.Type defaultInterface) { }
         public global::System.Type DefaultInterface { get { throw null; } }
     }
-    [global::System.Runtime.InteropServices.StructLayoutAttribute(global::System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct EventRegistrationToken
     {
+        private int _dummy;
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(global::System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken left, global::System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken right) { throw null; }

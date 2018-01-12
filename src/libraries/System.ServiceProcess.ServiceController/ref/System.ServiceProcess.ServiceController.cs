@@ -115,9 +115,9 @@ namespace System.ServiceProcess
         Win32OwnProcess = 16,
         Win32ShareProcess = 32,
     }
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public readonly partial struct SessionChangeDescription
     {
+        private readonly int _dummy;
         public System.ServiceProcess.SessionChangeReason Reason { get { throw null; } }
         public int SessionId { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
