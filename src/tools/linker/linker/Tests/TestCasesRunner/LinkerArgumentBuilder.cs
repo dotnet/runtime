@@ -93,7 +93,6 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			// our test cases that pollutes the results
 			IncludeBlacklist (options.IncludeBlacklistStep);
 
-			// Internationalization assemblies pollute our test case results as well so disable them
 			if (!string.IsNullOrEmpty (options.Il8n))
 				AddIl8n (options.Il8n);
 
