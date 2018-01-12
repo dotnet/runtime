@@ -1998,8 +1998,8 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         // BT supports 16 bit operands and this code doesn't handle the necessary 66 prefix.
         assert(ins != INS_bt);
 
-        assert((attrSize == EA_4BYTE) || (attrSize == EA_PTRSIZE) // Only for x64
-               || (attrSize == EA_16BYTE)                         // only for x64
+        assert((attrSize == EA_4BYTE) || (attrSize == EA_PTRSIZE)    // Only for x64
+               || (attrSize == EA_16BYTE) || (attrSize == EA_32BYTE) // only for x64
                || (ins == INS_movzx) || (ins == INS_movsx));
         size = 3;
     }
@@ -2588,6 +2588,8 @@ emitter::insFormat emitter::emitMapFmtAtoM(insFormat fmt)
             return IF_RWR_MRD;
         case IF_RRW_ARD:
             return IF_RRW_MRD;
+        case IF_RWR_RRD_ARD:
+            return IF_RWR_RRD_MRD;
 
         case IF_ARD_RRD:
             return IF_MRD_RRD;
@@ -3889,6 +3891,71 @@ void emitter::emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regN
     emitCurIGsize += sz;
 }
 
+void emitter::emitIns_R_A(instruction ins, emitAttr attr, regNumber reg1, GenTreeIndir* indir, insFormat fmt)
+{
+    ssize_t    offs = indir->Offset();
+    instrDesc* id   = emitNewInstrAmd(attr, offs);
+
+    id->idIns(ins);
+    id->idReg1(reg1);
+
+    emitHandleMemOp(indir, id, fmt, ins);
+
+    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
+    id->idCodeSize(sz);
+
+    dispIns(id);
+    emitCurIGsize += sz;
+}
+
+void emitter::emitIns_R_R_A(
+    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, GenTreeIndir* indir, insFormat fmt)
+{
+    assert(IsSSEOrAVXInstruction(ins));
+    assert(IsThreeOperandAVXInstruction(ins));
+
+    ssize_t    offs = indir->Offset();
+    instrDesc* id   = emitNewInstrAmd(attr, offs);
+
+    id->idIns(ins);
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+
+    emitHandleMemOp(indir, id, fmt, ins);
+
+    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins)) + emitGetVexPrefixAdjustedSize(ins, attr, insCodeRM(ins));
+    id->idCodeSize(sz);
+
+    dispIns(id);
+    emitCurIGsize += sz;
+}
+
+void emitter::emitIns_R_R_C(
+    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, CORINFO_FIELD_HANDLE fldHnd, int offs)
+{
+    assert(IsSSEOrAVXInstruction(ins));
+    assert(IsThreeOperandAVXInstruction(ins));
+
+    // Static always need relocs
+    if (!jitStaticFldIsGlobAddr(fldHnd))
+    {
+        attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
+    }
+
+    instrDesc*     id = emitNewInstrDsp(attr, offs);
+    UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeRM(ins)) + emitGetVexPrefixAdjustedSize(ins, attr, insCodeRM(ins));
+
+    id->idIns(ins);
+    id->idInsFmt(IF_RWR_RRD_MRD);
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+    id->idAddr()->iiaFieldHnd = fldHnd;
+
+    id->idCodeSize(sz);
+    dispIns(id);
+    emitCurIGsize += sz;
+}
+
 /*****************************************************************************
 *
 *  Add an instruction with three register operands.
@@ -3909,6 +3976,30 @@ void emitter::emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg,
     id->idReg1(targetReg);
     id->idReg2(reg1);
     id->idReg3(reg2);
+
+    id->idCodeSize(sz);
+    dispIns(id);
+    emitCurIGsize += sz;
+}
+
+void emitter::emitIns_R_R_S(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int varx, int offs)
+{
+    assert(IsSSEOrAVXInstruction(ins));
+    assert(IsThreeOperandAVXInstruction(ins));
+
+    instrDesc*     id = emitNewInstr(attr);
+    UNATIVE_OFFSET sz =
+        emitInsSizeSV(insCodeRM(ins), varx, offs) + emitGetVexPrefixAdjustedSize(ins, attr, insCodeRM(ins));
+
+    id->idIns(ins);
+    id->idInsFmt(IF_RWR_RRD_SRD);
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+    id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
+
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
+#endif
 
     id->idCodeSize(sz);
     dispIns(id);
@@ -4888,9 +4979,43 @@ void emitter::emitIns_AX_R(instruction ins, emitAttr attr, regNumber ireg, regNu
 }
 
 #if FEATURE_HW_INTRINSICS
+void emitter::emitIns_SIMD_R_R_A(
+    instruction ins, regNumber reg, regNumber reg1, GenTreeIndir* indir, var_types simdtype)
+{
+    if (UseVEXEncoding())
+    {
+        emitIns_R_R_A(ins, emitTypeSize(simdtype), reg, reg1, indir, IF_RWR_RRD_ARD);
+    }
+    else
+    {
+        if (reg1 != reg)
+        {
+            emitIns_R_R(INS_movaps, emitTypeSize(simdtype), reg, reg1);
+        }
+        emitIns_R_A(ins, emitTypeSize(simdtype), reg, indir, IF_RRW_ARD);
+    }
+}
+
+void emitter::emitIns_SIMD_R_R_C(
+    instruction ins, regNumber reg, regNumber reg1, CORINFO_FIELD_HANDLE fldHnd, int offs, var_types simdtype)
+{
+    if (UseVEXEncoding())
+    {
+        emitIns_R_R_C(ins, emitTypeSize(simdtype), reg, reg1, fldHnd, offs);
+    }
+    else
+    {
+        if (reg1 != reg)
+        {
+            emitIns_R_R(INS_movaps, emitTypeSize(simdtype), reg, reg1);
+        }
+        emitIns_R_C(ins, emitTypeSize(simdtype), reg, fldHnd, offs);
+    }
+}
+
 void emitter::emitIns_SIMD_R_R_R(instruction ins, regNumber reg, regNumber reg1, regNumber reg2, var_types simdtype)
 {
-    if (UseVEXEncoding() && reg1 != reg)
+    if (UseVEXEncoding())
     {
         emitIns_R_R_R(ins, emitTypeSize(simdtype), reg, reg1, reg2);
     }
@@ -4901,6 +5026,22 @@ void emitter::emitIns_SIMD_R_R_R(instruction ins, regNumber reg, regNumber reg1,
             emitIns_R_R(INS_movaps, emitTypeSize(simdtype), reg, reg1);
         }
         emitIns_R_R(ins, emitTypeSize(simdtype), reg, reg2);
+    }
+}
+
+void emitter::emitIns_SIMD_R_R_S(instruction ins, regNumber reg, regNumber reg1, int varx, int offs, var_types simdtype)
+{
+    if (UseVEXEncoding())
+    {
+        emitIns_R_R_S(ins, emitTypeSize(simdtype), reg, reg1, varx, offs);
+    }
+    else
+    {
+        if (reg1 != reg)
+        {
+            emitIns_R_R(INS_movaps, emitTypeSize(simdtype), reg, reg1);
+        }
+        emitIns_R_S(ins, emitTypeSize(simdtype), reg, varx, offs);
     }
 }
 #endif
@@ -6918,6 +7059,11 @@ void emitter::emitDispIns(
             emitDispAddrMode(id);
             break;
 
+        case IF_RWR_RRD_ARD:
+            printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
+            emitDispAddrMode(id);
+            break;
+
         case IF_ARD_RRD:
         case IF_AWR_RRD:
         case IF_ARW_RRD:
@@ -7061,6 +7207,12 @@ void emitter::emitDispIns(
 
             break;
 
+        case IF_RWR_RRD_SRD:
+            printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
+            emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
+                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+            break;
+
         case IF_RRD_RRD:
         case IF_RWR_RRD:
         case IF_RRW_RRD:
@@ -7185,6 +7337,12 @@ void emitter::emitDispIns(
             }
 #endif
             printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
+            offs = emitGetInsDsp(id);
+            emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
+            break;
+
+        case IF_RWR_RRD_MRD:
+            printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
             break;
@@ -7635,12 +7793,17 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     // Therefore, add VEX prefix is one is not already present.
     code = AddVexPrefixIfNeededAndNotPresent(ins, code, size);
 
-    // For this format, moves do not support a third operand, so we only need to handle the binary ops.
     if (IsDstDstSrcAVXInstruction(ins))
     {
-        // Encode source operand reg in 'vvvv' bits in 1's complement form
-        // The order of operands are reversed, therefore use reg2 as the source.
-        code = insEncodeReg3456(ins, id->idReg1(), size, code);
+        regNumber src1 = id->idReg2();
+
+        if (id->idInsFmt() != IF_RWR_RRD_ARD)
+        {
+            src1 = id->idReg1();
+        }
+
+        // encode source operand reg in 'vvvv' bits in 1's compliement form
+        code = insEncodeReg3456(ins, src1, size, code);
     }
 
     // Emit the REX prefix if required
@@ -10988,6 +11151,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RRD_ARD:
         case IF_RWR_ARD:
         case IF_RRW_ARD:
+        case IF_RWR_RRD_ARD:
             code    = insCodeRM(ins);
             code    = AddVexPrefixIfNeeded(ins, code, size);
             regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
@@ -11082,6 +11246,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RRD_SRD:
         case IF_RWR_SRD:
         case IF_RRW_SRD:
+        case IF_RWR_RRD_SRD:
             code = insCodeRM(ins);
 
             // 4-byte AVX instructions are special cased inside emitOutputSV
@@ -11094,16 +11259,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 code = AddVexPrefixIfNeeded(ins, code, size);
 
-                // In case of AVX instructions that take 3 operands, encode reg1 as first source.
-                // Note that reg1 is both a source and a destination.
-                //
-                // TODO-XArch-CQ: Eventually we need to support 3 operand instruction formats. For
-                // now we use the single source as source1 and source2.
-                // For this format, moves do not support a third operand, so we only need to handle the binary ops.
                 if (IsDstDstSrcAVXInstruction(ins))
                 {
+                    regNumber src1 = id->idReg2();
+
+                    if (id->idInsFmt() != IF_RWR_RRD_SRD)
+                    {
+                        src1 = id->idReg1();
+                    }
+
                     // encode source operand reg in 'vvvv' bits in 1's compliement form
-                    code = insEncodeReg3456(ins, id->idReg1(), size, code);
+                    code = insEncodeReg3456(ins, src1, size, code);
                 }
 
                 regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
@@ -11165,6 +11331,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RRD_MRD:
         case IF_RWR_MRD:
         case IF_RRW_MRD:
+        case IF_RWR_RRD_MRD:
             code = insCodeRM(ins);
             // Special case 4-byte AVX instructions
             if (Is4ByteAVXInstruction(ins))
@@ -11175,16 +11342,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 code = AddVexPrefixIfNeeded(ins, code, size);
 
-                // In case of AVX instructions that take 3 operands, encode reg1 as first source.
-                // Note that reg1 is both a source and a destination.
-                //
-                // TODO-XArch-CQ: Eventually we need to support 3 operand instruction formats. For
-                // now we use the single source as source1 and source2.
-                // For this format, moves do not support a third operand, so we only need to handle the binary ops.
                 if (IsDstDstSrcAVXInstruction(ins))
                 {
+                    regNumber src1 = id->idReg2();
+
+                    if (id->idInsFmt() != IF_RWR_RRD_MRD)
+                    {
+                        src1 = id->idReg1();
+                    }
+
                     // encode source operand reg in 'vvvv' bits in 1's compliement form
-                    code = insEncodeReg3456(ins, id->idReg1(), size, code);
+                    code = insEncodeReg3456(ins, src1, size, code);
                 }
 
                 regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
