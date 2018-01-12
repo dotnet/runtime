@@ -65,6 +65,7 @@ namespace System
     }
     public readonly partial struct Memory<T>
     {
+        private readonly object _dummy;
         public Memory(T[] array) { throw null; }
         public Memory(T[] array, int start, int length) { throw null; }
         public static System.Memory<T> Empty { get { throw null; } }
@@ -89,6 +90,7 @@ namespace System
     }
     public readonly partial struct ReadOnlyMemory<T>
     {
+        private readonly object _dummy;
         public ReadOnlyMemory(T[] array) { throw null; }
         public ReadOnlyMemory(T[] array, int start, int length) { throw null; }
         public static System.ReadOnlyMemory<T> Empty { get { throw null; } }
@@ -111,6 +113,7 @@ namespace System
     }
     public readonly ref partial struct ReadOnlySpan<T>
     {
+        private readonly object _dummy;
         [System.CLSCompliantAttribute(false)]
         public unsafe ReadOnlySpan(void* pointer, int length) { throw null; }
         public ReadOnlySpan(T[] array) { throw null; }
@@ -139,12 +142,14 @@ namespace System
         public bool TryCopyTo(System.Span<T> destination) { throw null; }
         public ref partial struct Enumerator
         {
+            private object _dummy;
             public ref readonly T Current { get { throw null; } }
             public bool MoveNext() { throw null; }
         }
     }
     public readonly ref partial struct Span<T>
     {
+        private readonly object _dummy;
         [System.CLSCompliantAttribute(false)]
         public unsafe Span(void* pointer, int length) { throw null; }
         public Span(T[] array) { throw null; }
@@ -176,6 +181,7 @@ namespace System
         public bool TryCopyTo(System.Span<T> destination) { throw null; }
         public ref partial struct Enumerator
         {
+            private object _dummy;
             public ref T Current { get { throw null; } }
             public bool MoveNext() { throw null; }
         }
@@ -190,8 +196,9 @@ namespace System.Buffers
     }
     public partial struct MemoryHandle : System.IDisposable
     {
+        private object _dummy;
         [System.CLSCompliantAttribute(false)]
-        public unsafe MemoryHandle(System.Buffers.IRetainable owner, void* pointer=null, System.Runtime.InteropServices.GCHandle handle=default(System.Runtime.InteropServices.GCHandle)) { throw null; }
+        public unsafe MemoryHandle(System.Buffers.IRetainable retainable, void* pointer=null, System.Runtime.InteropServices.GCHandle handle=default(System.Runtime.InteropServices.GCHandle)) { throw null; }
         public bool HasPointer { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
         public unsafe void* Pointer { get { throw null; } }
@@ -221,6 +228,7 @@ namespace System.Buffers
     }
     public readonly partial struct StandardFormat : System.IEquatable<System.Buffers.StandardFormat>
     {
+        private readonly int _dummy;
         public const byte MaxPrecision = (byte)99;
         public const byte NoPrecision = (byte)255;
         public StandardFormat(char symbol, byte precision=(byte)255) { throw null; }
@@ -236,6 +244,7 @@ namespace System.Buffers
         public static bool operator !=(System.Buffers.StandardFormat left, System.Buffers.StandardFormat right) { throw null; }
         public static System.Buffers.StandardFormat Parse(System.ReadOnlySpan<char> format) { throw null; }
         public static System.Buffers.StandardFormat Parse(string format) { throw null; }
+        public override string ToString() { throw null; }
     }
 }
 namespace System.Buffers.Binary
