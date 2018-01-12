@@ -131,13 +131,7 @@ namespace Mono.Linker.Steps {
 			if (QueueIsEmpty ())
 				throw new InvalidOperationException ("No entry methods");
 
-			ProcessEntireQueue ();
-
-			// After all types have been processed then we can process the lazily marked attributes
-			ProcessLazyAttributes ();
-
-			// We need to process the queue again in case marking the attributes enqueued more work
-			ProcessEntireQueue ();
+			while (ProcessPrimaryQueue () || ProcessLazyAttributes ())
 
 			// deal with [TypeForwardedTo] pseudo-attributes
 			foreach (AssemblyDefinition assembly in _context.GetAssemblies ()) {
@@ -173,13 +167,18 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		void ProcessEntireQueue ()
+		bool ProcessPrimaryQueue ()
 		{
+			if (QueueIsEmpty ())
+				return false;
+
 			while (!QueueIsEmpty ()) {
 				ProcessQueue ();
 				ProcessVirtualMethods ();
 				DoAdditionalProcessing ();
 			}
+
+			return true;
 		}
 
 		void ProcessQueue ()
@@ -260,8 +259,12 @@ namespace Mono.Linker.Steps {
 
 			Tracer.Push (provider);
 			try {
-				foreach (CustomAttribute ca in provider.CustomAttributes)
+				foreach (CustomAttribute ca in provider.CustomAttributes) {
+					if (!ShouldMarkCustomAttribute (ca))
+						continue;
+
 					MarkCustomAttribute (ca);
+				}
 			} finally {
 				Tracer.Pop ();
 			}
@@ -278,9 +281,6 @@ namespace Mono.Linker.Steps {
 
 		protected virtual void MarkCustomAttribute (CustomAttribute ca)
 		{
-			if (!ShouldMarkCustomAttribute (ca))
-				return;
-
 			Tracer.Push ((object)ca.AttributeType ?? (object)ca);
 			try {
 				Annotations.Mark (ca);
@@ -305,6 +305,16 @@ namespace Mono.Linker.Steps {
 
 		protected virtual bool ShouldMarkCustomAttribute (CustomAttribute ca)
 		{
+			return true;
+		}
+
+		protected virtual bool ShouldMarkTopLevelCustomAttribute (CustomAttribute ca, MethodDefinition resolvedConstructor)
+		{
+			// If an attribute's module has not been marked after processing all types in all assemblies and the attribute itself has not been marked,
+			// then surely nothing is using this attribute and there is no need to mark it
+			if (!Annotations.IsMarked (resolvedConstructor.Module) && !Annotations.IsMarked (ca.AttributeType))
+				return false;
+
 			return true;
 		}
 
@@ -530,8 +540,15 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		void ProcessLazyAttributes ()
+		bool ProcessLazyAttributes ()
 		{
+			var startingQueueCount = _topLevelAttributes.Count;
+			if (startingQueueCount == 0)
+				return false;
+
+			var skippedItems = new List<CustomAttribute> ();
+			var markOccurred = false;
+
 			while (_topLevelAttributes.Count != 0) {
 				var customAttribute = _topLevelAttributes.Dequeue ();
 
@@ -541,13 +558,20 @@ namespace Mono.Linker.Steps {
 					continue;
 				}
 
-				// If an attribute's module has not been marked after processing all types in all assemblies and the attribute itself has not been marked,
-				// then surely nothing is using this attribute and there is no need to mark it
-				if (!Annotations.IsMarked (resolved.Module) && !Annotations.IsMarked (customAttribute.AttributeType))
+				if (!ShouldMarkTopLevelCustomAttribute (customAttribute, resolved)) {
+					skippedItems.Add (customAttribute);
 					continue;
+				}
 
+				markOccurred = true;
 				MarkCustomAttribute (customAttribute);
 			}
+
+			// requeue the items we skipped in case we need to make another pass
+			foreach (var item in skippedItems)
+				_topLevelAttributes.Enqueue (item);
+
+			return markOccurred;
 		}
 
 		protected void MarkField (FieldReference reference)
