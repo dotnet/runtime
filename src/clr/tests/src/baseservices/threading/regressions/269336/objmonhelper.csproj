@@ -21,6 +21,16 @@
       <Visible>False</Visible>
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
+  <PropertyGroup>
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+set COMPlus_FastGCStress=1
+]]></CLRTestBatchPreCommands>
+    <BashCLRTestPreCommands><![CDATA[
+$(BashCLRTestPreCommands)
+export COMPlus_FastGCStress=1
+]]></BashCLRTestPreCommands>
+  </PropertyGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
     <Compile Include="objmonhelper.cs" />
