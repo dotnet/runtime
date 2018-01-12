@@ -98,6 +98,10 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			process.StartInfo.UseShellExecute = false;
 			process.StartInfo.CreateNoWindow = true;
 			process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+
+			if (Environment.OSVersion.Platform != PlatformID.Win32NT) {
+				process.StartInfo.Environment ["MONO_PATH"] = assemblyPath.Parent.ToString ();
+			}
 		}
 
 		public static NPath FindPeExecutableFromRegistry ()
