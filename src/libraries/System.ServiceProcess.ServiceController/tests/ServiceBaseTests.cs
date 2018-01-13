@@ -174,6 +174,48 @@ OnStop
             Assert.Equal(expected, _testService.GetServiceOutput());
         }
 
+        [ConditionalFact(nameof(IsProcessElevated))]
+        public void LogWritten()
+        {
+            using (EventLog eventLog = new EventLog("Application"))
+            {
+                ServiceBase sb = new ServiceBase() { ServiceName = nameof(LogWritten) + Guid.NewGuid().ToString() };
+                Assert.False(EventLog.SourceExists(sb.ServiceName));
+                int count = eventLog.Entries.Count;
+                try
+                {
+                    ServiceBase.Run(sb);
+                    eventLog.Source = sb.ServiceName;
+                    Assert.True(EventLog.SourceExists(sb.ServiceName));
+                }
+                finally
+                {
+                    sb.Stop();
+                    EventLog.DeleteEventSource(sb.ServiceName);
+                }
+            } 
+        }
+
+        [ConditionalFact(nameof(IsProcessElevated))]
+        public void LogWritten_AutoLog_False()
+        {
+            using (EventLog eventLog = new EventLog("Application"))
+            {
+                ServiceBase sb = new ServiceBase() { ServiceName = nameof(LogWritten) + Guid.NewGuid().ToString(), AutoLog = false };
+                Assert.False(EventLog.SourceExists(sb.ServiceName));
+                int count = eventLog.Entries.Count;
+                try
+                {
+                    ServiceBase.Run(sb);
+                    Assert.False(EventLog.SourceExists(sb.ServiceName));
+                }
+                finally
+                {
+                    sb.Stop();
+                }
+            }
+        }
+
         public void Dispose()
         {
             if (!_disposed)
