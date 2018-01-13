@@ -2396,7 +2396,7 @@ HCIMPL2(Object*, JIT_ChkCastClass_Portable, MethodTable* pTargetMT, Object* pObj
         if (pMT == pTargetMT)
             return pObject;
 
-        pMT = MethodTable::GetParentMethodTable(pMT);
+        pMT = MethodTable::GetParentMethodTableOrIndirection(pMT);
     } while (pMT);
 
     ENDFORBIDGC();
@@ -2416,14 +2416,14 @@ HCIMPL2(Object*, JIT_ChkCastClassSpecial_Portable, MethodTable* pTargetMT, Objec
         PRECONDITION(pObject->GetMethodTable() != pTargetMT);
     } CONTRACTL_END;
 
-    PTR_VOID pMT = MethodTable::GetParentMethodTable(pObject->GetMethodTable());
+    PTR_VOID pMT = MethodTable::GetParentMethodTableOrIndirection(pObject->GetMethodTable());
 
     while (pMT)
     {
         if (pMT == pTargetMT)
             return pObject;
 
-        pMT = MethodTable::GetParentMethodTable(pMT);
+        pMT = MethodTable::GetParentMethodTableOrIndirection(pMT);
     }
 
     ENDFORBIDGC();
@@ -2450,7 +2450,7 @@ HCIMPL2(Object*, JIT_IsInstanceOfClass_Portable, MethodTable* pTargetMT, Object*
         if (pMT == pTargetMT)
             return pObject;
 
-        pMT = MethodTable::GetParentMethodTable(pMT);
+        pMT = MethodTable::GetParentMethodTableOrIndirection(pMT);
     } while (pMT);
 
     if (!pObject->GetMethodTable()->HasTypeEquivalence())
