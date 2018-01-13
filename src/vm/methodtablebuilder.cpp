@@ -9585,11 +9585,6 @@ void MethodTableBuilder::CheckForSystemTypes()
             }
             LOG((LF_CLASSLOADER, LL_INFO10000, "%s::%s marked as primitive type %i\n", nameSpace, name, type));
 #endif // _DEBUG
-
-            if (type == ELEMENT_TYPE_TYPEDBYREF)
-            {
-                pMT->SetIsByRefLike();
-            }
         }
         else if (strcmp(name, g_NullableName) == 0)
         {
@@ -9606,19 +9601,11 @@ void MethodTableBuilder::CheckForSystemTypes()
             pMT->SetInternalCorElementType(ELEMENT_TYPE_VALUETYPE);
         }
 #endif
-        else if (strcmp(name, g_ArgIteratorName) == 0)
-        {
-            // Mark the special types that have embeded stack pointers in them
-            pMT->SetIsByRefLike();
-        }
+#ifndef _TARGET_X86_ 
         else if (strcmp(name, g_RuntimeArgumentHandleName) == 0)
         {
-            pMT->SetIsByRefLike();
-#ifndef _TARGET_X86_ 
             pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
-#endif
         }
-#ifndef _TARGET_X86_ 
         else if (strcmp(name, g_RuntimeMethodHandleInternalName) == 0)
         {
             pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
