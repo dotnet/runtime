@@ -173,6 +173,213 @@ InstructionSet Compiler::isaOfHWIntrinsic(NamedIntrinsic intrinsic)
     return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].isa;
 }
 
+int Compiler::ivalOfHWIntrinsic(NamedIntrinsic intrinsic)
+{
+    assert(intrinsic != NI_Illegal);
+    assert(intrinsic > NI_HW_INTRINSIC_START && intrinsic < NI_HW_INTRINSIC_END);
+
+    switch (intrinsic)
+    {
+        case NI_SSE_CompareEqual:
+        case NI_SSE_CompareEqualScalar:
+            return 0;
+
+        case NI_SSE_CompareLessThan:
+        case NI_SSE_CompareLessThanScalar:
+        case NI_SSE_CompareNotGreaterThanOrEqual:
+        case NI_SSE_CompareNotGreaterThanOrEqualScalar:
+            return 1;
+
+        case NI_SSE_CompareLessThanOrEqual:
+        case NI_SSE_CompareLessThanOrEqualScalar:
+        case NI_SSE_CompareNotGreaterThan:
+        case NI_SSE_CompareNotGreaterThanScalar:
+            return 2;
+
+        case NI_SSE_CompareUnordered:
+        case NI_SSE_CompareUnorderedScalar:
+            return 3;
+
+        case NI_SSE_CompareNotEqual:
+        case NI_SSE_CompareNotEqualScalar:
+            return 4;
+
+        case NI_SSE_CompareGreaterThanOrEqual:
+        case NI_SSE_CompareGreaterThanOrEqualScalar:
+        case NI_SSE_CompareNotLessThan:
+        case NI_SSE_CompareNotLessThanScalar:
+            return 5;
+
+        case NI_SSE_CompareGreaterThan:
+        case NI_SSE_CompareGreaterThanScalar:
+        case NI_SSE_CompareNotLessThanOrEqual:
+        case NI_SSE_CompareNotLessThanOrEqualScalar:
+            return 6;
+
+        case NI_SSE_CompareOrdered:
+        case NI_SSE_CompareOrderedScalar:
+            return 7;
+
+        default:
+            return -1;
+    }
+}
+
+instruction Compiler::insOfHWIntrinsic(NamedIntrinsic intrinsic, var_types type)
+{
+    assert(intrinsic != NI_Illegal);
+    assert(intrinsic > NI_HW_INTRINSIC_START && intrinsic < NI_HW_INTRINSIC_END);
+
+    switch (intrinsic)
+    {
+        case NI_SSE_Add:
+            return INS_addps;
+
+        case NI_SSE_AddScalar:
+            return INS_addss;
+
+        case NI_SSE_And:
+            return INS_andps;
+
+        case NI_SSE_AndNot:
+            return INS_andnps;
+
+        case NI_SSE_CompareEqual:
+        case NI_SSE_CompareGreaterThan:
+        case NI_SSE_CompareGreaterThanOrEqual:
+        case NI_SSE_CompareLessThan:
+        case NI_SSE_CompareLessThanOrEqual:
+        case NI_SSE_CompareNotEqual:
+        case NI_SSE_CompareNotGreaterThan:
+        case NI_SSE_CompareNotGreaterThanOrEqual:
+        case NI_SSE_CompareNotLessThan:
+        case NI_SSE_CompareNotLessThanOrEqual:
+        case NI_SSE_CompareOrdered:
+        case NI_SSE_CompareUnordered:
+            return INS_cmpps;
+
+        case NI_SSE_CompareEqualScalar:
+        case NI_SSE_CompareGreaterThanScalar:
+        case NI_SSE_CompareGreaterThanOrEqualScalar:
+        case NI_SSE_CompareLessThanScalar:
+        case NI_SSE_CompareLessThanOrEqualScalar:
+        case NI_SSE_CompareNotEqualScalar:
+        case NI_SSE_CompareNotGreaterThanScalar:
+        case NI_SSE_CompareNotGreaterThanOrEqualScalar:
+        case NI_SSE_CompareNotLessThanScalar:
+        case NI_SSE_CompareNotLessThanOrEqualScalar:
+        case NI_SSE_CompareOrderedScalar:
+        case NI_SSE_CompareUnorderedScalar:
+            return INS_cmpss;
+
+        case NI_SSE_CompareEqualOrderedScalar:
+        case NI_SSE_CompareGreaterThanOrderedScalar:
+        case NI_SSE_CompareGreaterThanOrEqualOrderedScalar:
+        case NI_SSE_CompareLessThanOrderedScalar:
+        case NI_SSE_CompareLessThanOrEqualOrderedScalar:
+        case NI_SSE_CompareNotEqualOrderedScalar:
+            return INS_comiss;
+
+        case NI_SSE_CompareEqualUnorderedScalar:
+        case NI_SSE_CompareGreaterThanUnorderedScalar:
+        case NI_SSE_CompareGreaterThanOrEqualUnorderedScalar:
+        case NI_SSE_CompareLessThanUnorderedScalar:
+        case NI_SSE_CompareLessThanOrEqualUnorderedScalar:
+        case NI_SSE_CompareNotEqualUnorderedScalar:
+            return INS_ucomiss;
+
+        case NI_SSE_ConvertToInt32:
+        case NI_SSE_ConvertToInt64:
+            return INS_cvtss2si;
+
+        case NI_SSE_ConvertToInt32WithTruncation:
+        case NI_SSE_ConvertToInt64WithTruncation:
+            return INS_cvttss2si;
+
+        case NI_SSE_ConvertToSingle:
+        case NI_SSE_MoveScalar:
+            return INS_movss;
+
+        case NI_SSE_ConvertToVector128SingleScalar:
+            return INS_cvtsi2ss;
+
+        case NI_SSE_Divide:
+            return INS_divps;
+
+        case NI_SSE_DivideScalar:
+            return INS_divss;
+
+        case NI_SSE_StaticCast:
+            return INS_movaps;
+
+        case NI_SSE_Max:
+            return INS_maxps;
+
+        case NI_SSE_MaxScalar:
+            return INS_maxss;
+
+        case NI_SSE_Min:
+            return INS_minps;
+
+        case NI_SSE_MinScalar:
+            return INS_minss;
+
+        case NI_SSE_MoveHighToLow:
+            return INS_movhlps;
+
+        case NI_SSE_MoveLowToHigh:
+            return INS_movlhps;
+
+        case NI_SSE_MoveMask:
+            return INS_movmskps;
+
+        case NI_SSE_Multiply:
+            return INS_mulps;
+
+        case NI_SSE_MultiplyScalar:
+            return INS_mulss;
+
+        case NI_SSE_Or:
+            return INS_orps;
+
+        case NI_SSE_Reciprocal:
+            return INS_rcpps;
+
+        case NI_SSE_ReciprocalScalar:
+            return INS_rcpss;
+
+        case NI_SSE_ReciprocalSqrt:
+            return INS_rsqrtps;
+
+        case NI_SSE_ReciprocalSqrtScalar:
+            return INS_rsqrtss;
+
+        case NI_SSE_Sqrt:
+            return INS_sqrtps;
+
+        case NI_SSE_SqrtScalar:
+            return INS_sqrtss;
+
+        case NI_SSE_Subtract:
+            return INS_subps;
+
+        case NI_SSE_SubtractScalar:
+            return INS_subss;
+
+        case NI_SSE_UnpackHigh:
+            return INS_unpckhps;
+
+        case NI_SSE_UnpackLow:
+            return INS_unpcklps;
+
+        case NI_SSE_Xor:
+            return INS_xorps;
+
+        default:
+            return INS_invalid;
+    }
+}
+
 //------------------------------------------------------------------------
 // isIntrinsicAnIsSupportedPropertyGetter: return true if the intrinsic is "get_IsSupported"
 //
