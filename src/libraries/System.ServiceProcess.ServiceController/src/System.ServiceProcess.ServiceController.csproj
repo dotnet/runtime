@@ -116,7 +116,11 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading.ThreadPool" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Diagnostics.EventLog" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
