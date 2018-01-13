@@ -1029,6 +1029,9 @@ private:
 
     static Compiler::fgWalkResult markAddrModeOperandsHelperMD(GenTree* tree, void* p);
 
+    // Helper for getKillSetForNode().
+    regMaskTP getKillSetForStoreInd(GenTreeStoreInd* tree);
+
     // Return the registers killed by the given tree node.
     regMaskTP getKillSetForNode(GenTree* tree);
 
