@@ -519,7 +519,6 @@ namespace System.Net.Http
             response.Version =
                 (majorVersion == '1' && minorVersion == '1') ? HttpVersionInternal.Version11 :
                 (majorVersion == '1' && minorVersion == '0') ? HttpVersionInternal.Version10 :
-                (majorVersion == '2' && minorVersion == '0') ? HttpVersionInternal.Version20 :
                 HttpVersionInternal.Unknown;
             response.StatusCode =
                 (HttpStatusCode)(100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0'));
