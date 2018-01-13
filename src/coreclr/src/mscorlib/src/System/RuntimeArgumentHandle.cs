@@ -15,7 +15,7 @@ namespace System
     //  This corresponds to EE VARARGS cookie.
 
     // Cannot be serialized
-    public struct RuntimeArgumentHandle
+    public ref struct RuntimeArgumentHandle
     {
         private IntPtr m_ptr;
 
