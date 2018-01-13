@@ -3118,6 +3118,8 @@ protected:
                                 bool                  mustExpand);
     bool compSupportsHWIntrinsic(InstructionSet isa);
     bool isScalarISA(InstructionSet isa);
+    static int ivalOfHWIntrinsic(NamedIntrinsic intrinsic);
+    static instruction insOfHWIntrinsic(NamedIntrinsic intrinsic, var_types type);
 #endif // _TARGET_XARCH_
 #endif // FEATURE_HW_INTRINSICS
     GenTreePtr impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
