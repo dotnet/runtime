@@ -16,7 +16,7 @@ namespace System
 
     [CLSCompliant(false)]
     [System.Runtime.Versioning.NonVersionable] // This only applies to field layout
-    public struct TypedReference
+    public ref struct TypedReference
     {
         private IntPtr Value;
         private IntPtr Type;
