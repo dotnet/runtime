@@ -600,8 +600,11 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
     }
 }
 
-// Gets a register mask that represent the kill set for a helper call since
-// not all JIT Helper calls follow the standard ABI on the target architecture.
+//----------------------------------------------------------------------
+// compNoGCHelperCallKillSet:
+//
+// Gets a register mask that represents the kill set for a helper call.
+// Not all JIT Helper calls follow the standard ABI on the target architecture.
 //
 // TODO-CQ: Currently this list is incomplete (not all helpers calls are
 //          enumerated) and not 100% accurate (some killsets are bigger than
@@ -624,19 +627,24 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
 //
 //         The interim solution is to only add known helper calls that don't
 //         follow the AMD64 ABI and actually trash registers that are supposed to be non-volatile.
+//
+// Arguments:
+//   helper - The helper being inquired about
+//
+// Return Value:
+//   Mask of register kills -- registers whose value is no longer guaranteed to be the same.
+//
 regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
 {
     switch (helper)
     {
         case CORINFO_HELP_ASSIGN_BYREF:
 #if defined(_TARGET_AMD64_)
-            return RBM_RSI | RBM_RDI | RBM_CALLEE_TRASH;
-#elif defined(_TARGET_ARM64_)
+            return RBM_RSI | RBM_RDI | RBM_CALLEE_TRASH_NOGC;
+#elif defined(_TARGET_ARMARCH_)
             return RBM_WRITE_BARRIER_SRC_BYREF | RBM_WRITE_BARRIER_DST_BYREF | RBM_CALLEE_TRASH_NOGC;
 #elif defined(_TARGET_X86_)
             return RBM_ESI | RBM_EDI | RBM_ECX;
-#elif defined(_TARGET_ARM_)
-            return RBM_ARG_1 | RBM_ARG_0 | RBM_CALLEE_TRASH_NOGC;
 #else
             NYI("Model kill set for CORINFO_HELP_ASSIGN_BYREF on target arch");
             return RBM_CALLEE_TRASH;
@@ -663,6 +671,29 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
             NYI("Model kill set for CORINFO_HELP_PROF_FCN_TAILCALL on target arch");
 #endif
 
+#ifdef _TARGET_X86_
+        case CORINFO_HELP_ASSIGN_REF_EAX:
+        case CORINFO_HELP_ASSIGN_REF_ECX:
+        case CORINFO_HELP_ASSIGN_REF_EBX:
+        case CORINFO_HELP_ASSIGN_REF_EBP:
+        case CORINFO_HELP_ASSIGN_REF_ESI:
+        case CORINFO_HELP_ASSIGN_REF_EDI:
+
+        case CORINFO_HELP_CHECKED_ASSIGN_REF_EAX:
+        case CORINFO_HELP_CHECKED_ASSIGN_REF_ECX:
+        case CORINFO_HELP_CHECKED_ASSIGN_REF_EBX:
+        case CORINFO_HELP_CHECKED_ASSIGN_REF_EBP:
+        case CORINFO_HELP_CHECKED_ASSIGN_REF_ESI:
+        case CORINFO_HELP_CHECKED_ASSIGN_REF_EDI:
+            return RBM_EDX;
+
+#ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
+        case CORINFO_HELP_ASSIGN_REF:
+        case CORINFO_HELP_CHECKED_ASSIGN_REF:
+            return RBM_EAX | RBM_EDX;
+#endif // FEATURE_USE_ASM_GC_WRITE_BARRIERS
+#endif
+
         case CORINFO_HELP_STOP_FOR_GC:
             return RBM_STOP_FOR_GC_TRASH;
 
@@ -674,11 +705,22 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
     }
 }
 
+//----------------------------------------------------------------------
+// compNoGCHelperCallKillSet: Gets a register mask that represents the set of registers that no longer
+// contain GC or byref pointers, for "NO GC" helper calls. This is used by the emitter when determining
+// what registers to remove from the current live GC/byref sets (and thus what to report as dead in the
+// GC info). Note that for the CORINFO_HELP_ASSIGN_BYREF helper, in particular, the kill set reported by
+// compHelperCallKillSet() doesn't match this kill set. compHelperCallKillSet() reports the dst/src
+// address registers as killed for liveness purposes, since their values change. However, they still are
+// valid byref pointers after the call, so the dst/src address registers are NOT reported as killed here.
 //
-// Gets a register mask that represents the kill set for "NO GC" helper calls since
-// not all JIT Helper calls follow the standard ABI on the target architecture.
+// Note: This list may not be complete and defaults to the default RBM_CALLEE_TRASH_NOGC registers.
 //
-// Note: This list may not be complete and defaults to the default NOGC registers.
+// Arguments:
+//   helper - The helper being inquired about
+//
+// Return Value:
+//   Mask of GC register kills
 //
 regMaskTP Compiler::compNoGCHelperCallKillSet(CorInfoHelpFunc helper)
 {
@@ -686,7 +728,7 @@ regMaskTP Compiler::compNoGCHelperCallKillSet(CorInfoHelpFunc helper)
 
     switch (helper)
     {
-#if defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
+#if defined(_TARGET_XARCH_)
         case CORINFO_HELP_PROF_FCN_ENTER:
             return RBM_PROFILER_ENTER_TRASH;
 
@@ -695,18 +737,15 @@ regMaskTP Compiler::compNoGCHelperCallKillSet(CorInfoHelpFunc helper)
 
         case CORINFO_HELP_PROF_FCN_TAILCALL:
             return RBM_PROFILER_TAILCALL_TRASH;
-#endif // defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
+#endif // defined(_TARGET_XARCH_)
 
         case CORINFO_HELP_ASSIGN_BYREF:
 #if defined(_TARGET_AMD64_)
-            // this helper doesn't trash RSI and RDI
-            return RBM_CALLEE_TRASH_NOGC & ~(RBM_RSI | RBM_RDI);
+            return RBM_CALLEE_TRASH_NOGC;
 #elif defined(_TARGET_X86_)
             // This helper only trashes ECX.
             return RBM_ECX;
-#elif defined(_TARGET_ARM64_)
-            return RBM_CALLEE_TRASH_NOGC & ~(RBM_WRITE_BARRIER_SRC_BYREF | RBM_WRITE_BARRIER_DST_BYREF);
-#else
+#elif defined(_TARGET_ARMARCH_)
             return RBM_CALLEE_TRASH_NOGC;
 #endif // defined(_TARGET_AMD64_)
 
@@ -3912,7 +3951,77 @@ void CodeGen::genReportEH()
     assert(XTnum == EHCount);
 }
 
-void CodeGen::genGCWriteBarrier(GenTreePtr tgt, GCInfo::WriteBarrierForm wbf)
+//----------------------------------------------------------------------
+// genUseOptimizedWriteBarriers: Determine if an optimized write barrier
+// helper should be used.
+//
+// Arguments:
+//   wbf - The WriteBarrierForm of the write (GT_STOREIND) that is happening.
+//
+// Return Value:
+//   true if an optimized write barrier helper should be used, false otherwise.
+//   Note: only x86 implements (register-specific source) optimized write
+//   barriers currently).
+//
+bool CodeGenInterface::genUseOptimizedWriteBarriers(GCInfo::WriteBarrierForm wbf)
+{
+#if defined(_TARGET_X86_) && NOGC_WRITE_BARRIERS
+#ifdef DEBUG
+    return (wbf != GCInfo::WBF_NoBarrier_CheckNotHeapInDebug); // This one is always a call to a C++ method.
+#else
+    return true;
+#endif
+#else
+    return false;
+#endif
+}
+
+//----------------------------------------------------------------------
+// genUseOptimizedWriteBarriers: Determine if an optimized write barrier
+// helper should be used.
+//
+// This has the same functionality as the version of
+// genUseOptimizedWriteBarriers that takes a WriteBarrierForm, but avoids
+// determining what the required write barrier form is, if possible.
+//
+// Arguments:
+//   tgt - target tree of write (e.g., GT_STOREIND)
+//   assignVal - tree with value to write
+//
+// Return Value:
+//   true if an optimized write barrier helper should be used, false otherwise.
+//   Note: only x86 implements (register-specific source) optimized write
+//   barriers currently).
+//
+bool CodeGenInterface::genUseOptimizedWriteBarriers(GenTree* tgt, GenTree* assignVal)
+{
+#if defined(_TARGET_X86_) && NOGC_WRITE_BARRIERS
+#ifdef DEBUG
+    GCInfo::WriteBarrierForm wbf = compiler->codeGen->gcInfo.gcIsWriteBarrierCandidate(tgt, assignVal);
+    return (wbf != GCInfo::WBF_NoBarrier_CheckNotHeapInDebug); // This one is always a call to a C++ method.
+#else
+    return true;
+#endif
+#else
+    return false;
+#endif
+}
+
+//----------------------------------------------------------------------
+// genWriteBarrierHelperForWriteBarrierForm: Given a write node requiring a write
+// barrier, and the write barrier form required, determine the helper to call.
+//
+// Arguments:
+//   tgt - target tree of write (e.g., GT_STOREIND)
+//   wbf - already computed write barrier form to use
+//
+// Return Value:
+//   Write barrier helper to use.
+//
+// Note: do not call this function to get an optimized write barrier helper (e.g.,
+// for x86).
+//
+CorInfoHelpFunc CodeGenInterface::genWriteBarrierHelperForWriteBarrierForm(GenTree* tgt, GCInfo::WriteBarrierForm wbf)
 {
 #ifndef LEGACY_BACKEND
     noway_assert(tgt->gtOper == GT_STOREIND);
@@ -3920,8 +4029,8 @@ void CodeGen::genGCWriteBarrier(GenTreePtr tgt, GCInfo::WriteBarrierForm wbf)
     noway_assert(tgt->gtOper == GT_IND || tgt->gtOper == GT_CLS_VAR); // enforced by gcIsWriteBarrierCandidate
 #endif // LEGACY_BACKEND
 
-    /* Call the proper vm helper */
-    int helper = CORINFO_HELP_ASSIGN_REF;
+    CorInfoHelpFunc helper = CORINFO_HELP_ASSIGN_REF;
+
 #ifdef DEBUG
     if (wbf == GCInfo::WBF_NoBarrier_CheckNotHeapInDebug)
     {
@@ -3948,6 +4057,20 @@ void CodeGen::genGCWriteBarrier(GenTreePtr tgt, GCInfo::WriteBarrierForm wbf)
             (wbf == GCInfo::WBF_BarrierChecked || wbf == GCInfo::WBF_BarrierUnknown)) ||
            ((helper == CORINFO_HELP_ASSIGN_REF) &&
             (wbf == GCInfo::WBF_BarrierUnchecked || wbf == GCInfo::WBF_BarrierUnknown)));
+
+    return helper;
+}
+
+//----------------------------------------------------------------------
+// genGCWriteBarrier: Generate a write barrier for a node.
+//
+// Arguments:
+//   tgt - target tree of write (e.g., GT_STOREIND)
+//   wbf - already computed write barrier form to use
+//
+void CodeGen::genGCWriteBarrier(GenTreePtr tgt, GCInfo::WriteBarrierForm wbf)
+{
+    CorInfoHelpFunc helper = genWriteBarrierHelperForWriteBarrierForm(tgt, wbf);
 
 #ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
     // We classify the "tgt" trees as follows:

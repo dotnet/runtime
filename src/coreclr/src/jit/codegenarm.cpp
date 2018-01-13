@@ -873,8 +873,10 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
 #endif // DEBUG
 
     // Consume the operands and get them into the right registers.
-    // They may now contain gc pointers; genConsumeBlockOp will take care of that.
+    // They may now contain gc pointers (depending on their type; gcMarkRegPtrVal will "do the right thing").
     genConsumeBlockOp(cpObjNode, REG_WRITE_BARRIER_DST_BYREF, REG_WRITE_BARRIER_SRC_BYREF, REG_NA);
+    gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_SRC_BYREF, srcAddrType);
+    gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_DST_BYREF, dstAddr->TypeGet());
 
     // Temp register used to perform the sequence of loads and stores.
     regNumber tmpReg = cpObjNode->ExtractTempReg();
