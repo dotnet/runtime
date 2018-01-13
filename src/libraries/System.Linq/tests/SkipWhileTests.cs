@@ -94,11 +94,11 @@ namespace System.Linq.Tests
             int[] source = { 8, 3, 12, 4, 6, 10 };
             int[] expected = { 3, 12, 4, 6, 10 };
 
-            Assert.Equal(expected, source.SkipWhile((e, i) => e % 2 == 0));
+            Assert.Equal(expected, source.SkipWhile(e => e % 2 == 0));
         }
 
         [Fact]
-        public void PredicateManyFalseOnSecondInex()
+        public void PredicateManyFalseOnSecondIndex()
         {
             int[] source = { 8, 3, 12, 4, 6, 10 };
             int[] expected = { 3, 12, 4, 6, 10 };
@@ -112,7 +112,7 @@ namespace System.Linq.Tests
             int[] source = { 3, 2, 4, 12, 6 };
             int[] expected = { 3, 2, 4, 12, 6 };
 
-            Assert.Equal(expected, source.SkipWhile((e, i) => e % 2 == 0));
+            Assert.Equal(expected, source.SkipWhile(e => e % 2 == 0));
         }
 
         [Fact]
