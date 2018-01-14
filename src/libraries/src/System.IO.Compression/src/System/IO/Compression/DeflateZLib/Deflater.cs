@@ -4,7 +4,6 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Security;
 
 using ZErrorCode = System.IO.Compression.ZLibNative.ErrorCode;
@@ -128,8 +127,6 @@ namespace System.IO.Compression
 
         internal int GetDeflateOutput(byte[] outputBuffer)
         {
-            Contract.Ensures(Contract.Result<int>() >= 0 && Contract.Result<int>() <= outputBuffer.Length);
-
             Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
             Debug.Assert(!NeedsInput(), "GetDeflateOutput should only be called after providing input");
 

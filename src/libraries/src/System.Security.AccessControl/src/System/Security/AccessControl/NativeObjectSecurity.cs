@@ -13,7 +13,6 @@ using Microsoft.Win32;
 using System;
 using System.Collections;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -346,7 +345,6 @@ nameof(name));
             {
                 throw new ArgumentNullException(nameof(name));
             }
-            Contract.EndContractBlock();
 
             Persist(name, null, includeSections, exceptionContext);
         }
@@ -368,7 +366,6 @@ nameof(name));
             {
                 throw new ArgumentNullException(nameof(handle));
             }
-            Contract.EndContractBlock();
 
             Persist(null, handle, includeSections, exceptionContext);
         }

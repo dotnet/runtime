@@ -7,7 +7,6 @@
 
 using System;
 using System.Security.AccessControl;
-using System.Diagnostics.Contracts;
 
 namespace System.Threading
 {
@@ -22,7 +21,6 @@ namespace System.Threading
         {
             if (eventSecurity == null)
                 throw new ArgumentNullException(nameof(eventSecurity));
-            Contract.EndContractBlock();
 
             eventSecurity.Persist(handle.GetSafeWaitHandle());
         }
@@ -36,7 +34,6 @@ namespace System.Threading
         {
             if (mutexSecurity == null)
                 throw new ArgumentNullException(nameof(mutexSecurity));
-            Contract.EndContractBlock();
 
             mutexSecurity.Persist(mutex.GetSafeWaitHandle());
         }

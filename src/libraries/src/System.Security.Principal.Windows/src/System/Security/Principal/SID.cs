@@ -6,7 +6,6 @@ using Microsoft.Win32.SafeHandles;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -318,8 +317,6 @@ namespace System.Security.Principal
                 throw new ArgumentNullException(nameof(subAuthorities));
             }
 
-            Contract.EndContractBlock();
-
             //
             // Check the number of subauthorities passed in 
             //
@@ -430,7 +427,6 @@ nameof(offset),
 nameof(binaryForm),
                     SR.ArgumentOutOfRange_ArrayTooSmall);
             }
-            Contract.EndContractBlock();
 
             IdentifierAuthority Authority;
             int[] SubAuthorities;
@@ -527,7 +523,6 @@ nameof(binaryForm));
             {
                 throw new ArgumentNullException(nameof(sddlForm));
             }
-            Contract.EndContractBlock();
 
             //
             // Call into the underlying O/S conversion routine
@@ -595,7 +590,6 @@ nameof(binaryForm));
             {
                 throw new ArgumentException(SR.IdentityReference_CannotCreateLogonIdsSid, nameof(sidType));
             }
-            Contract.EndContractBlock();
 
             byte[] resultSid;
             int Error;
@@ -895,7 +889,6 @@ nameof(binaryForm));
             {
                 throw new ArgumentNullException(nameof(targetType));
             }
-            Contract.EndContractBlock();
 
             if (targetType == typeof(SecurityIdentifier))
             {
@@ -955,7 +948,6 @@ nameof(binaryForm));
             {
                 throw new ArgumentNullException(nameof(sid));
             }
-            Contract.EndContractBlock();
 
             if (this.IdentifierAuthority < sid.IdentifierAuthority)
             {
@@ -1040,7 +1032,6 @@ nameof(binaryForm));
             {
                 throw new ArgumentException(SR.Arg_EmptyCollection, nameof(sourceSids));
             }
-            Contract.EndContractBlock();
 
             IntPtr[] SidArrayPtr = new IntPtr[sourceSids.Count];
             GCHandle[] HandleArray = new GCHandle[sourceSids.Count];
@@ -1221,7 +1212,6 @@ nameof(binaryForm));
             {
                 throw new ArgumentNullException(nameof(sourceSids));
             }
-            Contract.EndContractBlock();
 
             if (targetType == typeof(NTAccount))
             {

@@ -11,7 +11,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Security.Principal;
 
@@ -691,7 +690,6 @@ nameof(binaryForm));
             {
                 throw new ArgumentNullException(nameof(securityIdentifier));
             }
-            Contract.EndContractBlock();
 
             //
             // The values are set by invoking the properties.
@@ -742,7 +740,6 @@ nameof(binaryForm));
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
-                Contract.EndContractBlock();
 
                 _sid = value;
             }
@@ -791,7 +788,6 @@ nameof(binaryForm));
 nameof(type),
                      SR.ArgumentOutOfRange_InvalidUserDefinedAceType);
             }
-            Contract.EndContractBlock();
 
             SetOpaque(opaque);
         }

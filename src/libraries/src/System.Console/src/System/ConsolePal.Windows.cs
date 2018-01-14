@@ -4,7 +4,6 @@
 
 using System.IO;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -550,7 +549,6 @@ namespace System
                 // Value should be a percentage from [1, 100].
                 if (value < 1 || value > 100)
                     throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_CursorSize);
-                Contract.EndContractBlock();
 
                 Interop.Kernel32.CONSOLE_CURSOR_INFO cci;
                 if (!Interop.Kernel32.GetConsoleCursorInfo(OutputHandle, out cci))
@@ -652,7 +650,6 @@ namespace System
             if (duration <= 0)
                 throw new ArgumentOutOfRangeException(nameof(duration), duration, SR.ArgumentOutOfRange_NeedPosNum);
 
-            Contract.EndContractBlock();
             Interop.Kernel32.Beep(frequency, duration);
         }
 
@@ -665,7 +662,6 @@ namespace System
                 throw new ArgumentException(SR.Arg_InvalidConsoleColor, nameof(sourceForeColor));
             if (sourceBackColor < ConsoleColor.Black || sourceBackColor > ConsoleColor.White)
                 throw new ArgumentException(SR.Arg_InvalidConsoleColor, nameof(sourceBackColor));
-            Contract.EndContractBlock();
 
             Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
             Interop.Kernel32.COORD bufferSize = csbi.dwSize;
@@ -1015,7 +1011,6 @@ namespace System
         {
             if ((((int)color) & ~0xf) != 0)
                 throw new ArgumentException(SR.Arg_InvalidConsoleColor);
-            Contract.EndContractBlock();
 
             Interop.Kernel32.Color c = (Interop.Kernel32.Color)color;
 
@@ -1153,7 +1148,6 @@ namespace System
                 // to this stream simultaneously.
                 if (bytes.Length - offset < count)
                     throw new IndexOutOfRangeException(SR.IndexOutOfRange_IORaceCondition);
-                Contract.EndContractBlock();
 
                 // You can't use the fixed statement on an array of length 0.
                 if (bytes.Length == 0)

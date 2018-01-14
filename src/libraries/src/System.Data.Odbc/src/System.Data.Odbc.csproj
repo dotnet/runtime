@@ -150,7 +150,6 @@
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.ComponentModel.TypeConverter" />
     <Reference Include="System.Data.Common" />
-    <Reference Include="System.Diagnostics.Contracts" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.FileVersionInfo" />
     <Reference Include="System.Diagnostics.Tools" />
