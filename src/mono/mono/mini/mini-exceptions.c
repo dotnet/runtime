@@ -2874,15 +2874,15 @@ mono_print_thread_dump_internal (void *sigctx, MonoContext *start_ctx)
 #endif
 	GString* text;
 	char *name;
-	GError *error = NULL;
+	GError *gerror = NULL;
 
 	if (!thread)
 		return;
 
 	text = g_string_new (0);
 	if (thread->name) {
-		name = g_utf16_to_utf8 (thread->name, thread->name_len, NULL, NULL, &error);
-		g_assert (!error);
+		name = g_utf16_to_utf8 (thread->name, thread->name_len, NULL, NULL, &gerror);
+		g_assert (!gerror);
 		g_string_append_printf (text, "\n\"%s\"", name);
 		g_free (name);
 	}

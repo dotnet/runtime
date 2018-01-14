@@ -1879,7 +1879,7 @@ mono_assembly_open_predicate (const char *filename, gboolean refonly,
 	*status = MONO_IMAGE_OK;
 
 	if (strncmp (filename, "file://", 7) == 0) {
-		GError *error = NULL;
+		GError *gerror = NULL;
 		gchar *uri = (gchar *) filename;
 		gchar *tmpuri;
 
@@ -1892,15 +1892,15 @@ mono_assembly_open_predicate (const char *filename, gboolean refonly,
 	
 		tmpuri = uri;
 		uri = mono_escape_uri_string (tmpuri);
-		fname = g_filename_from_uri (uri, NULL, &error);
+		fname = g_filename_from_uri (uri, NULL, &gerror);
 		g_free (uri);
 
 		if (tmpuri != filename)
 			g_free (tmpuri);
 
-		if (error != NULL) {
-			g_warning ("%s\n", error->message);
-			g_error_free (error);
+		if (gerror != NULL) {
+			g_warning ("%s\n", gerror->message);
+			g_error_free (gerror);
 			fname = g_strdup (filename);
 		}
 	} else {

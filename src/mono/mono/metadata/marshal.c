@@ -999,19 +999,19 @@ mono_string_utf8_to_builder (MonoStringBuilder *sb, char *text)
 	if (!sb || !text)
 		return;
 
-	GError *error = NULL;
+	GError *gerror = NULL;
 	glong copied;
-	gunichar2* ut = g_utf8_to_utf16 (text, strlen (text), NULL, &copied, &error);
+	gunichar2* ut = g_utf8_to_utf16 (text, strlen (text), NULL, &copied, &gerror);
 	int capacity = mono_string_builder_capacity (sb);
 
 	if (copied > capacity)
 		copied = capacity;
 
-	if (!error) {
+	if (!gerror) {
 		MONO_OBJECT_SETREF (sb, chunkPrevious, NULL);
 		mono_string_utf16_to_builder_copy (sb, ut, copied);
 	} else
-		g_error_free (error);
+		g_error_free (gerror);
 
 	g_free (ut);
 }
