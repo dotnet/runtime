@@ -1996,7 +1996,7 @@ namespace System
         public string Name { get { throw null; } }
         public System.Reflection.Assembly RequestingAssembly { get { throw null; } }
     }
-    public partial struct RuntimeArgumentHandle
+    public ref partial struct RuntimeArgumentHandle
     {
         private int _dummy;
     }
@@ -3063,7 +3063,7 @@ namespace System
         UInt64 = 12,
     }
     [System.CLSCompliantAttribute(false)]
-    public partial struct TypedReference
+    public ref partial struct TypedReference
     {
         private int _dummy;
         public override bool Equals(object o) { throw null; }
