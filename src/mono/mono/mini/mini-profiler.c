@@ -237,8 +237,8 @@ gpointer
 mini_profiler_context_get_local (MonoProfilerCallContext *ctx, guint32 pos)
 {
 	ERROR_DECL (error);
-	MonoMethodHeader *header = mono_method_get_header_checked (ctx->method, &error);
-	mono_error_assert_ok (&error); // Must be a valid method at this point.
+	MonoMethodHeader *header = mono_method_get_header_checked (ctx->method, error);
+	mono_error_assert_ok (error); // Must be a valid method at this point.
 
 	if (pos >= header->num_locals) {
 		mono_metadata_free_mh (header);

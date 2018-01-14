@@ -350,10 +350,10 @@ worker_callback (void)
 
 		domains_unlock ();
 
-		MonoString *thread_name = mono_string_new_checked (mono_get_root_domain (), "Thread Pool Worker", &error);
-		mono_error_assert_ok (&error);
-		mono_thread_set_name_internal (thread, thread_name, FALSE, TRUE, &error);
-		mono_error_assert_ok (&error);
+		MonoString *thread_name = mono_string_new_checked (mono_get_root_domain (), "Thread Pool Worker", error);
+		mono_error_assert_ok (error);
+		mono_thread_set_name_internal (thread, thread_name, FALSE, TRUE, error);
+		mono_error_assert_ok (error);
 
 		mono_thread_clr_state (thread, (MonoThreadState)~ThreadState_Background);
 		if (!mono_thread_test_state (thread , ThreadState_Background))
@@ -363,12 +363,12 @@ worker_callback (void)
 		if (mono_domain_set (tpdomain->domain, FALSE)) {
 			MonoObject *exc = NULL, *res;
 
-			res = try_invoke_perform_wait_callback (&exc, &error);
-			if (exc || !mono_error_ok(&error)) {
+			res = try_invoke_perform_wait_callback (&exc, error);
+			if (exc || !mono_error_ok(error)) {
 				if (exc == NULL)
-					exc = (MonoObject *) mono_error_convert_to_exception (&error);
+					exc = (MonoObject *) mono_error_convert_to_exception (error);
 				else
-					mono_error_cleanup (&error);
+					mono_error_cleanup (error);
 				mono_thread_internal_unhandled_exception (exc);
 			} else if (res && *(MonoBoolean*) mono_object_unbox (res) == FALSE) {
 				retire = TRUE;
@@ -749,8 +749,8 @@ ves_icall_System_Threading_ThreadPool_ReportThreadStatus (MonoBoolean is_working
 {
 	// TODO
 	ERROR_DECL (error);
-	mono_error_set_not_implemented (&error, "");
-	mono_error_set_pending_exception (&error);
+	mono_error_set_not_implemented (error, "");
+	mono_error_set_pending_exception (error);
 }
 
 MonoBoolean
@@ -810,8 +810,8 @@ ves_icall_System_Threading_ThreadPool_PostQueuedCompletionStatus (MonoNativeOver
 {
 	/* This copy the behavior of the current Mono implementation */
 	ERROR_DECL (error);
-	mono_error_set_not_implemented (&error, "");
-	mono_error_set_pending_exception (&error);
+	mono_error_set_not_implemented (error, "");
+	mono_error_set_pending_exception (error);
 	return FALSE;
 }
 

@@ -46,8 +46,8 @@ MonoMList*
 mono_mlist_alloc (MonoObject *data)
 {
 	ERROR_DECL (error);
-	MonoMList *result = mono_mlist_alloc_checked (data, &error);
-	mono_error_cleanup (&error);
+	MonoMList *result = mono_mlist_alloc_checked (data, error);
+	mono_error_cleanup (error);
 	return result;
 }
 
@@ -172,8 +172,8 @@ MonoMList*
 mono_mlist_prepend (MonoMList* list, MonoObject *data)
 {
 	ERROR_DECL (error);
-	MonoMList *result = mono_mlist_prepend_checked (list, data, &error);
-	mono_error_cleanup (&error);
+	MonoMList *result = mono_mlist_prepend_checked (list, data, error);
+	mono_error_cleanup (error);
 	return result;
 }
 
@@ -210,8 +210,8 @@ MonoMList*
 mono_mlist_append (MonoMList* list, MonoObject *data)
 {
 	ERROR_DECL (error);
-	MonoMList *result = mono_mlist_append_checked (list, data, &error);
-	mono_error_cleanup (&error);
+	MonoMList *result = mono_mlist_append_checked (list, data, error);
+	mono_error_cleanup (error);
 	return result;
 }
 

@@ -295,28 +295,28 @@ mono_attach_load_agent (MonoDomain *domain, char *agent, char *args, MonoObject 
 		return 1;
 	}
 
-	method = mono_get_method_checked (image, entry, NULL, NULL, &error);
+	method = mono_get_method_checked (image, entry, NULL, NULL, error);
 	if (method == NULL){
-		g_print ("The entry point method of assembly '%s' could not be loaded due to %s\n", agent, mono_error_get_message (&error));
-		mono_error_cleanup (&error);
+		g_print ("The entry point method of assembly '%s' could not be loaded due to %s\n", agent, mono_error_get_message (error));
+		mono_error_cleanup (error);
 		g_free (agent);
 		return 1;
 	}
 	
 	
-	main_args = (MonoArray*)mono_array_new_checked (domain, mono_defaults.string_class, (args == NULL) ? 0 : 1, &error);
+	main_args = (MonoArray*)mono_array_new_checked (domain, mono_defaults.string_class, (args == NULL) ? 0 : 1, error);
 	if (main_args == NULL) {
-		g_print ("Could not allocate main method args due to %s\n", mono_error_get_message (&error));
-		mono_error_cleanup (&error);
+		g_print ("Could not allocate main method args due to %s\n", mono_error_get_message (error));
+		mono_error_cleanup (error);
 		g_free (agent);
 		return 1;
 	}
 
 	if (args) {
-		MonoString *args_str = mono_string_new_checked (domain, args, &error);
-		if (!is_ok (&error)) {
-			g_print ("Could not allocate main method arg string due to %s\n", mono_error_get_message (&error));
-			mono_error_cleanup (&error);
+		MonoString *args_str = mono_string_new_checked (domain, args, error);
+		if (!is_ok (error)) {
+			g_print ("Could not allocate main method arg string due to %s\n", mono_error_get_message (error));
+			mono_error_cleanup (error);
 			g_free (agent);
 			return 1;
 		}
@@ -325,10 +325,10 @@ mono_attach_load_agent (MonoDomain *domain, char *agent, char *args, MonoObject 
 
 
 	pa [0] = main_args;
-	mono_runtime_try_invoke (method, NULL, pa, exc, &error);
-	if (!is_ok (&error)) {
-		g_print ("The entry point method of assembly '%s' could not be executed due to %s\n", agent, mono_error_get_message (&error));
-		mono_error_cleanup (&error);
+	mono_runtime_try_invoke (method, NULL, pa, exc, error);
+	if (!is_ok (error)) {
+		g_print ("The entry point method of assembly '%s' could not be executed due to %s\n", agent, mono_error_get_message (error));
+		mono_error_cleanup (error);
 		g_free (agent);
 		return 1;
 	}
@@ -491,8 +491,8 @@ transport_start_receive (void)
 	if (!listen_fd)
 		return;
 
-	internal = mono_thread_create_internal (mono_get_root_domain (), receiver_thread, NULL, MONO_THREAD_CREATE_FLAGS_NONE, &error);
-	mono_error_assert_ok (&error);
+	internal = mono_thread_create_internal (mono_get_root_domain (), receiver_thread, NULL, MONO_THREAD_CREATE_FLAGS_NONE, error);
+	mono_error_assert_ok (error);
 
 	receiver_thread_handle = mono_threads_open_thread_handle (internal->handle);
 	g_assert (receiver_thread_handle);
@@ -509,10 +509,10 @@ receiver_thread (void *arg)
 	MonoInternalThread *internal;
 
 	internal = mono_thread_internal_current ();
-	MonoString *attach_str = mono_string_new_checked (mono_domain_get (), "Attach receiver", &error);
-	mono_error_assert_ok (&error);
-	mono_thread_set_name_internal (internal, attach_str, TRUE, FALSE, &error);
-	mono_error_assert_ok (&error);
+	MonoString *attach_str = mono_string_new_checked (mono_domain_get (), "Attach receiver", error);
+	mono_error_assert_ok (error);
+	mono_thread_set_name_internal (internal, attach_str, TRUE, FALSE, error);
+	mono_error_assert_ok (error);
 	/* Ask the runtime to not abort this thread */
 	//internal->flags |= MONO_THREAD_FLAG_DONT_MANAGE;
 	/* Ask the runtime to not wait for this thread */

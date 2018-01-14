@@ -1913,11 +1913,11 @@ mono_assembly_open_predicate (const char *filename, gboolean refonly,
 	new_fname = NULL;
 	if (!mono_assembly_is_in_gac (fname)) {
 		ERROR_DECL (error);
-		new_fname = mono_make_shadow_copy (fname, &error);
-		if (!is_ok (&error)) {
+		new_fname = mono_make_shadow_copy (fname, error);
+		if (!is_ok (error)) {
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY,
-				    "Assembly Loader shadow copy error: %s.", mono_error_get_message (&error));
-			mono_error_cleanup (&error);
+				    "Assembly Loader shadow copy error: %s.", mono_error_get_message (error));
+			mono_error_cleanup (error);
 			*status = MONO_IMAGE_IMAGE_INVALID;
 			g_free (fname);
 			return NULL;
@@ -2019,8 +2019,8 @@ mono_assembly_load_friends (MonoAssembly* ass)
 	if (ass->friend_assembly_names_inited)
 		return;
 
-	attrs = mono_custom_attrs_from_assembly_checked (ass, FALSE, &error);
-	mono_error_assert_ok (&error);
+	attrs = mono_custom_attrs_from_assembly_checked (ass, FALSE, error);
+	mono_error_assert_ok (error);
 	if (!attrs) {
 		mono_assemblies_lock ();
 		ass->friend_assembly_names_inited = TRUE;
@@ -2269,7 +2269,7 @@ mono_assembly_load_from_predicate (MonoImage *image, const char *fname,
 	 * candidate. */
 
 	if (!refonly) {
-		ERROR_DECL (refasm_error);
+		ERROR_DECL_VALUE (refasm_error);
 		if (mono_assembly_has_reference_assembly_attribute (ass, &refasm_error)) {
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Image for assembly '%s' (%s) has ReferenceAssemblyAttribute, skipping", ass->aname.name, image->name);
 			g_free (ass);
@@ -2993,9 +2993,9 @@ mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *sta
 	else {
 		MonoDomain *domain = mono_domain_get ();
 
-		res = mono_try_assembly_resolve (domain, name, NULL, FALSE, &error);
-		if (!is_ok (&error)) {
-			mono_error_cleanup (&error);
+		res = mono_try_assembly_resolve (domain, name, NULL, FALSE, error);
+		if (!is_ok (error)) {
+			mono_error_cleanup (error);
 			if (*status == MONO_IMAGE_OK)
 				*status = MONO_IMAGE_IMAGE_INVALID;
 		}
@@ -3327,10 +3327,10 @@ mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_nam
 	}
 
 	if (domain && domain->setup && domain->setup->configuration_file) {
-		gchar *domain_config_file_name = mono_string_to_utf8_checked (domain->setup->configuration_file, &error);
+		gchar *domain_config_file_name = mono_string_to_utf8_checked (domain->setup->configuration_file, error);
 		/* expect this to succeed because mono_domain_set_options_from_config () did
 		 * the same thing when the domain was created. */
-		mono_error_assert_ok (&error);
+		mono_error_assert_ok (error);
 		mono_domain_parse_assembly_bindings (domain, aname->major, aname->minor, domain_config_file_name);
 		g_free (domain_config_file_name);
 
@@ -3511,7 +3511,7 @@ return_corlib_and_facades:
 static MonoAssembly*
 prevent_reference_assembly_from_running (MonoAssembly* candidate, gboolean refonly)
 {
-	ERROR_DECL (refasm_error);
+	ERROR_DECL_VALUE (refasm_error);
 	error_init (&refasm_error);
 	if (candidate && !refonly) {
 		/* .NET Framework seems to not check for ReferenceAssemblyAttribute on dynamic assemblies */
@@ -3864,8 +3864,8 @@ MonoImage*
 mono_assembly_load_module (MonoAssembly *assembly, guint32 idx)
 {
 	ERROR_DECL (error);
-	MonoImage *result = mono_assembly_load_module_checked (assembly, idx, &error);
-	mono_error_assert_ok (&error);
+	MonoImage *result = mono_assembly_load_module_checked (assembly, idx, error);
+	mono_error_assert_ok (error);
 	return result;
 }
 

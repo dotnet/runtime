@@ -235,7 +235,7 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 	 */
 	sig_type = (MonoType *)find_cached_memberref_sig (image, cols [MONO_MEMBERREF_SIGNATURE]);
 	if (!sig_type) {
-		ERROR_DECL (inner_error);
+		ERROR_DECL_VALUE (inner_error);
 		sig_type = mono_metadata_parse_type_checked (image, NULL, 0, FALSE, ptr, &ptr, &inner_error);
 		if (sig_type == NULL) {
 			mono_error_set_field_load (error, klass, fname, "Could not parse field '%s' signature %08x due to: %s", fname, token, mono_error_get_message (&inner_error));
@@ -266,8 +266,8 @@ MonoClassField*
 mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass, MonoGenericContext *context)
 {
 	ERROR_DECL (error);
-	MonoClassField *res = mono_field_from_token_checked (image, token, retklass, context, &error);
-	mono_error_assert_ok (&error);
+	MonoClassField *res = mono_field_from_token_checked (image, token, retklass, context, error);
+	mono_error_assert_ok (error);
 	return res;
 }
 
@@ -285,7 +285,7 @@ mono_field_from_token_checked (MonoImage *image, guint32 token, MonoClass **retk
 		MonoClass *handle_class;
 
 		*retklass = NULL;
-		ERROR_DECL (inner_error);
+		ERROR_DECL_VALUE (inner_error);
 		result = (MonoClassField *)mono_lookup_dynamic_token_class (image, token, TRUE, &handle_class, context, &inner_error);
 		mono_error_cleanup (&inner_error);
 		// This checks the memberref type as well
@@ -318,7 +318,7 @@ mono_field_from_token_checked (MonoImage *image, guint32 token, MonoClass **retk
 		if (retklass)
 			*retklass = k;
 		if (mono_class_has_failure (k)) {
-			ERROR_DECL (causedby_error);
+			ERROR_DECL_VALUE (causedby_error);
 			error_init (&causedby_error);
 			mono_error_set_for_class_failure (&causedby_error, k);
 			mono_error_set_bad_image (error, image, "Could not resolve field token 0x%08x, due to: %s", token, mono_error_get_message (&causedby_error));
@@ -650,8 +650,8 @@ MonoMethodSignature*
 mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 token, MonoGenericContext *context)
 {
 	ERROR_DECL (error);
-	MonoMethodSignature *res = mono_method_get_signature_checked (method, image, token, context, &error);
-	mono_error_cleanup (&error);
+	MonoMethodSignature *res = mono_method_get_signature_checked (method, image, token, context, error);
+	mono_error_cleanup (error);
 	return res;
 }
 
@@ -752,8 +752,8 @@ MonoMethodSignature*
 mono_method_get_signature (MonoMethod *method, MonoImage *image, guint32 token)
 {
 	ERROR_DECL (error);
-	MonoMethodSignature *res = mono_method_get_signature_checked (method, image, token, NULL, &error);
-	mono_error_cleanup (&error);
+	MonoMethodSignature *res = mono_method_get_signature_checked (method, image, token, NULL, error);
+	mono_error_cleanup (error);
 	return res;
 }
 
@@ -1742,8 +1742,8 @@ MonoMethod *
 mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 {
 	ERROR_DECL (error);
-	MonoMethod *result = mono_get_method_checked (image, token, klass, NULL, &error);
-	mono_error_cleanup (&error);
+	MonoMethod *result = mono_get_method_checked (image, token, klass, NULL, error);
+	mono_error_cleanup (error);
 	return result;
 }
 
@@ -1755,8 +1755,8 @@ mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 		      MonoGenericContext *context)
 {
 	ERROR_DECL (error);
-	MonoMethod *result = mono_get_method_checked (image, token, klass, context, &error);
-	mono_error_cleanup (&error);
+	MonoMethod *result = mono_get_method_checked (image, token, klass, context, error);
+	mono_error_cleanup (error);
 	return result;
 }
 
@@ -1929,8 +1929,8 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 			     MonoGenericContext *context, MonoMethod **cil_method)
 {
 	ERROR_DECL (error);
-	MonoMethod *result = mono_get_method_constrained_checked (image, token, constrained_class, context, cil_method, &error);
-	mono_error_cleanup (&error);
+	MonoMethod *result = mono_get_method_constrained_checked (image, token, constrained_class, context, cil_method, error);
+	mono_error_cleanup (error);
 	return result;
 }
 
@@ -2582,12 +2582,12 @@ mono_method_signature (MonoMethod *m)
 	ERROR_DECL (error);
 	MonoMethodSignature *sig;
 
-	sig = mono_method_signature_checked (m, &error);
+	sig = mono_method_signature_checked (m, error);
 	if (!sig) {
 		char *type_name = mono_type_get_full_name (m->klass);
-		g_warning ("Could not load signature of %s:%s due to: %s", type_name, m->name, mono_error_get_message (&error));
+		g_warning ("Could not load signature of %s:%s due to: %s", type_name, m->name, mono_error_get_message (error));
 		g_free (type_name);
-		mono_error_cleanup (&error);
+		mono_error_cleanup (error);
 	}
 
 	return sig;
@@ -2696,8 +2696,8 @@ MonoMethodHeader*
 mono_method_get_header (MonoMethod *method)
 {
 	ERROR_DECL (error);
-	MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
-	mono_error_cleanup (&error);
+	MonoMethodHeader *header = mono_method_get_header_checked (method, error);
+	mono_error_cleanup (error);
 	return header;
 }
 

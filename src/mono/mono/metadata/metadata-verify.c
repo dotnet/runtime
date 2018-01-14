@@ -1802,11 +1802,11 @@ get_enum_by_encoded_name (VerifyContext *ctx, const char **_ptr, const char *end
 
 	enum_name = (char *)g_memdup (str_start, str_len + 1);
 	enum_name [str_len] = 0;
-	type = mono_reflection_type_from_name_checked (enum_name, ctx->image, &error);
-	if (!type || !is_ok (&error)) {
-		ADD_ERROR_NO_RETURN (ctx, g_strdup_printf ("CustomAttribute: Invalid enum class %s, due to %s", enum_name, mono_error_get_message (&error)));
+	type = mono_reflection_type_from_name_checked (enum_name, ctx->image, error);
+	if (!type || !is_ok (error)) {
+		ADD_ERROR_NO_RETURN (ctx, g_strdup_printf ("CustomAttribute: Invalid enum class %s, due to %s", enum_name, mono_error_get_message (error)));
 		g_free (enum_name);
-		mono_error_cleanup (&error);
+		mono_error_cleanup (error);
 		return NULL;
 	}
 	g_free (enum_name);
@@ -1965,10 +1965,10 @@ is_valid_cattr_content (VerifyContext *ctx, MonoMethod *ctor, const char *ptr, g
 	if (!ctor)
 		FAIL (ctx, g_strdup ("CustomAttribute: Invalid constructor"));
 
-	sig = mono_method_signature_checked (ctor, &error);
-	if (!mono_error_ok (&error)) {
-		ADD_ERROR_NO_RETURN (ctx, g_strdup_printf ("CustomAttribute: Invalid constructor signature %s", mono_error_get_message (&error)));
-		mono_error_cleanup (&error);
+	sig = mono_method_signature_checked (ctor, error);
+	if (!mono_error_ok (error)) {
+		ADD_ERROR_NO_RETURN (ctx, g_strdup_printf ("CustomAttribute: Invalid constructor signature %s", mono_error_get_message (error)));
+		mono_error_cleanup (error);
 		return FALSE;
 	}
 
@@ -2409,8 +2409,8 @@ verify_typeref_table (VerifyContext *ctx)
 	guint32 i;
 
 	for (i = 0; i < table->rows; ++i) {
-		mono_verifier_verify_typeref_row (ctx->image, i, &error);
-		add_from_mono_error (ctx, &error);
+		mono_verifier_verify_typeref_row (ctx->image, i, error);
+		add_from_mono_error (ctx, error);
 	}
 }
 
@@ -2969,11 +2969,11 @@ verify_cattr_table_full (VerifyContext *ctx)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid CustomAttribute constructor row %d Token 0x%08x", i, data [MONO_CUSTOM_ATTR_TYPE]));
 		}
 
-		ctor = mono_get_method_checked (ctx->image, mtoken, NULL, NULL, &error);
+		ctor = mono_get_method_checked (ctx->image, mtoken, NULL, NULL, error);
 
 		if (!ctor) {
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid CustomAttribute content row %d Could not load ctor due to %s", i, mono_error_get_message (&error)));
-			mono_error_cleanup (&error);
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid CustomAttribute content row %d Could not load ctor due to %s", i, mono_error_get_message (error)));
+			mono_error_cleanup (error);
 		}
 
 		/*This can't fail since this is checked in is_valid_cattr_blob*/

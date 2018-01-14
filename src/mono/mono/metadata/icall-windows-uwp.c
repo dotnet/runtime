@@ -31,7 +31,7 @@ mono_icall_get_windows_folder_path (int folder, MonoError *error)
 MonoArray *
 mono_icall_get_logical_drives (void)
 {
-	ERROR_DECL (mono_error);
+	ERROR_DECL_VALUE (mono_error);
 	error_init (&mono_error);
 
 	g_unsupported_api ("GetLogicalDriveStrings");
@@ -61,7 +61,7 @@ mono_icall_broadcast_setting_change (MonoError *error)
 guint32
 mono_icall_drive_info_get_drive_type (MonoString *root_path_name)
 {
-	ERROR_DECL (mono_error);
+	ERROR_DECL_VALUE (mono_error);
 	error_init (&mono_error);
 
 	g_unsupported_api ("GetDriveType");
@@ -75,7 +75,7 @@ mono_icall_drive_info_get_drive_type (MonoString *root_path_name)
 gint32
 mono_icall_wait_for_input_idle (gpointer handle, gint32 milliseconds)
 {
-	ERROR_DECL (mono_error);
+	ERROR_DECL_VALUE (mono_error);
 	error_init (&mono_error);
 
 	g_unsupported_api ("WaitForInputIdle");

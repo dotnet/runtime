@@ -1304,19 +1304,19 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	assembly->assembly.dynamic = TRUE;
 	assembly->assembly.corlib_internal = assemblyb->corlib_internal;
 	assemblyb->assembly.assembly = (MonoAssembly*)assembly;
-	assembly->assembly.basedir = mono_string_to_utf8_checked (assemblyb->dir, &error);
-	if (mono_error_set_pending_exception (&error))
+	assembly->assembly.basedir = mono_string_to_utf8_checked (assemblyb->dir, error);
+	if (mono_error_set_pending_exception (error))
 		return;
 	if (assemblyb->culture) {
-		assembly->assembly.aname.culture = mono_string_to_utf8_checked (assemblyb->culture, &error);
-		if (mono_error_set_pending_exception (&error))
+		assembly->assembly.aname.culture = mono_string_to_utf8_checked (assemblyb->culture, error);
+		if (mono_error_set_pending_exception (error))
 			return;
 	} else
 		assembly->assembly.aname.culture = g_strdup ("");
 
         if (assemblyb->version) {
-			char *vstr = mono_string_to_utf8_checked (assemblyb->version, &error);
-			if (mono_error_set_pending_exception (&error))
+			char *vstr = mono_string_to_utf8_checked (assemblyb->version, error);
+			if (mono_error_set_pending_exception (error))
 				return;
 			char **version = g_strsplit (vstr, ".", 4);
 			char **parts = version;
@@ -1339,8 +1339,8 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	assembly->save = assemblybuilderaccess_can_save (assemblyb->access);
 	assembly->domain = domain;
 
-	char *assembly_name = mono_string_to_utf8_checked (assemblyb->name, &error);
-	if (mono_error_set_pending_exception (&error))
+	char *assembly_name = mono_string_to_utf8_checked (assemblyb->name, error);
+	if (mono_error_set_pending_exception (error))
 		return;
 	image = mono_dynamic_image_create (assembly, assembly_name, g_strdup ("RefEmit_YouForgotToDefineAModule"));
 	image->initial_image = TRUE;
@@ -2307,8 +2307,8 @@ MonoArray*
 mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues) 
 {
 	ERROR_DECL (error);
-	MonoArray *result = mono_reflection_get_custom_attrs_blob_checked (assembly, ctor, ctorArgs, properties, propValues, fields, fieldValues, &error);
-	mono_error_cleanup (&error);
+	MonoArray *result = mono_reflection_get_custom_attrs_blob_checked (assembly, ctor, ctorArgs, properties, propValues, fields, fieldValues, error);
+	mono_error_cleanup (error);
 	return result;
 }
 
@@ -3627,7 +3627,7 @@ remove_instantiations_of_and_ensure_contents (gpointer key,
 	MonoType *type = (MonoType*)key;
 	MonoClass *klass = data->klass;
 	gboolean already_failed = !is_ok (data->error);
-	ERROR_DECL (lerror);
+	ERROR_DECL_VALUE (lerror);
 	MonoError *error = already_failed ? &lerror : data->error;
 
 	if ((type->type == MONO_TYPE_GENERICINST) && (type->data.generic_class->container_class == klass)) {
@@ -4352,16 +4352,16 @@ void
 ves_icall_ModuleBuilder_WriteToFile (MonoReflectionModuleBuilder *mb, HANDLE file)
 {
 	ERROR_DECL (error);
-	mono_image_create_pefile (mb, file, &error);
-	mono_error_set_pending_exception (&error);
+	mono_image_create_pefile (mb, file, error);
+	mono_error_set_pending_exception (error);
 }
 
 void
 ves_icall_ModuleBuilder_build_metadata (MonoReflectionModuleBuilder *mb)
 {
 	ERROR_DECL (error);
-	mono_image_build_metadata (mb, &error);
-	mono_error_set_pending_exception (&error);
+	mono_image_build_metadata (mb, error);
+	mono_error_set_pending_exception (error);
 }
 
 void
@@ -4386,8 +4386,8 @@ MonoArray*
 ves_icall_CustomAttributeBuilder_GetBlob (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues)
 {
 	ERROR_DECL (error);
-	MonoArray *result = mono_reflection_get_custom_attrs_blob_checked (assembly, ctor, ctorArgs, properties, propValues, fields, fieldValues, &error);
-	mono_error_set_pending_exception (&error);
+	MonoArray *result = mono_reflection_get_custom_attrs_blob_checked (assembly, ctor, ctorArgs, properties, propValues, fields, fieldValues, error);
+	mono_error_set_pending_exception (error);
 	return result;
 }
 #endif

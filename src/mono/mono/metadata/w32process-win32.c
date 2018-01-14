@@ -238,7 +238,7 @@ process_get_shell_arguments (MonoW32ProcessStartInfo *proc_start_info, MonoStrin
 {
 	gchar		*spath = NULL;
 	gchar		*new_cmd, *cmd_utf8;
-	ERROR_DECL (mono_error);
+	ERROR_DECL_VALUE (mono_error);
 
 	*cmd = proc_start_info->arguments;
 
@@ -382,8 +382,8 @@ ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
 	} while (TRUE);
 
 	count = needed / sizeof (guint32);
-	procs = mono_array_new_checked (mono_domain_get (), mono_get_int32_class (), count, &error);
-	if (mono_error_set_pending_exception (&error)) {
+	procs = mono_array_new_checked (mono_domain_get (), mono_get_int32_class (), count, error);
+	if (mono_error_set_pending_exception (error)) {
 		g_free (pids);
 		return NULL;
 	}

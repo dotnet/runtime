@@ -338,14 +338,14 @@ mono_ppc_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp,
 	memcpy (&ctx.regs, int_regs, sizeof (mgreg_t) * MONO_MAX_IREGS);
 	memcpy (&ctx.fregs, fp_regs, sizeof (double) * MONO_MAX_FREGS);
 
-	if (mono_object_isinst_checked (exc, mono_defaults.exception_class, &error)) {
+	if (mono_object_isinst_checked (exc, mono_defaults.exception_class, error)) {
 		MonoException *mono_ex = (MonoException*)exc;
 		if (!rethrow) {
 			mono_ex->stack_trace = NULL;
 			mono_ex->trace_ips = NULL;
 		}
 	}
-	mono_error_assert_ok (&error);
+	mono_error_assert_ok (error);
 	mono_handle_exception (&ctx, exc);
 	mono_restore_context (&ctx);
 

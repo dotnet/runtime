@@ -3077,7 +3077,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 {
 	MonoMethodHeader *header;
 	MonoMethodSignature *sig;
-	ERROR_DECL (err);
+	ERROR_DECL_VALUE (err);
 	MonoCompile *cfg;
 	int i;
 	gboolean try_generic_shared, try_llvm = FALSE;

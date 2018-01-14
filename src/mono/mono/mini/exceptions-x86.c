@@ -473,14 +473,14 @@ mono_x86_throw_exception (mgreg_t *regs, MonoObject *exc,
 	g_assert ((ctx.esp % MONO_ARCH_FRAME_ALIGNMENT) == 0);
 #endif
 
-	if (mono_object_isinst_checked (exc, mono_defaults.exception_class, &error)) {
+	if (mono_object_isinst_checked (exc, mono_defaults.exception_class, error)) {
 		MonoException *mono_ex = (MonoException*)exc;
 		if (!rethrow) {
 			mono_ex->stack_trace = NULL;
 			mono_ex->trace_ips = NULL;
 		}
 	}
-	mono_error_assert_ok (&error);
+	mono_error_assert_ok (error);
 
 	/* adjust eip so that it point into the call instruction */
 	ctx.eip -= 1;

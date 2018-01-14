@@ -230,8 +230,8 @@ do_console_cancel_event (void)
 	if (System_Console_DoConsoleCancelEventBackground_method == NULL)
 		return;
 
-	mono_runtime_invoke_checked (System_Console_DoConsoleCancelEventBackground_method, NULL, NULL, &error);
-	mono_error_assert_ok (&error);
+	mono_runtime_invoke_checked (System_Console_DoConsoleCancelEventBackground_method, NULL, NULL, error);
+	mono_error_assert_ok (error);
 }
 
 static int need_cancel = FALSE;
@@ -448,8 +448,8 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardow
 
 	/* 17 is the number of entries set in set_control_chars() above.
 	 * NCCS is the total size, but, by now, we only care about those 17 values*/
-	MonoArray *control_chars_arr = mono_array_new_checked (mono_domain_get (), mono_defaults.byte_class, 17, &error);
-	if (mono_error_set_pending_exception (&error))
+	MonoArray *control_chars_arr = mono_array_new_checked (mono_domain_get (), mono_defaults.byte_class, 17, error);
+	if (mono_error_set_pending_exception (error))
 		return FALSE;
 	mono_gc_wbarrier_generic_store (control_chars, (MonoObject*) control_chars_arr);
 	if (tcgetattr (STDIN_FILENO, &initial_attr) == -1)
@@ -474,8 +474,8 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardow
 
 	keypad_xmit_str = NULL;
 	if (keypad != NULL) {
-		keypad_xmit_str = mono_string_to_utf8_checked (keypad, &error);
-		if (mono_error_set_pending_exception (&error))
+		keypad_xmit_str = mono_string_to_utf8_checked (keypad, error);
+		if (mono_error_set_pending_exception (error))
 			return FALSE;
 	}
 	
@@ -483,8 +483,8 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardow
 	setup_finished = TRUE;
 	if (!atexit_called) {
 		if (teardown != NULL) {
-			teardown_str = mono_string_to_utf8_checked (teardown, &error);
-			if (mono_error_set_pending_exception (&error))
+			teardown_str = mono_string_to_utf8_checked (teardown, error);
+			if (mono_error_set_pending_exception (error))
 				return FALSE;
 		}
 

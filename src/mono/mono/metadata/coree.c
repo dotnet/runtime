@@ -189,10 +189,10 @@ __int32 STDMETHODCALLTYPE _CorExeMain(void)
 		ExitProcess (1);
 	}
 
-	method = mono_get_method_checked (image, entry, NULL, NULL, &error);
+	method = mono_get_method_checked (image, entry, NULL, NULL, error);
 	if (method == NULL) {
 		g_free (file_name);
-		mono_error_cleanup (&error); /* FIXME don't swallow the error */
+		mono_error_cleanup (error); /* FIXME don't swallow the error */
 		MessageBox (NULL, L"The entry point method could not be loaded.", NULL, MB_ICONERROR);
 		mono_runtime_quit ();
 		ExitProcess (1);
@@ -205,8 +205,8 @@ __int32 STDMETHODCALLTYPE _CorExeMain(void)
 		argv [i] = g_utf16_to_utf8 (argvw [i], -1, NULL, NULL, NULL);
 	LocalFree (argvw);
 
-	mono_runtime_run_main_checked (method, argc, argv, &error);
-	mono_error_raise_exception_deprecated (&error); /* OK, triggers unhandled exn handler */
+	mono_runtime_run_main_checked (method, argc, argv, error);
+	mono_error_raise_exception_deprecated (error); /* OK, triggers unhandled exn handler */
 	mono_thread_manage ();
 
 	mono_runtime_quit ();

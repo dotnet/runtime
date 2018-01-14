@@ -850,8 +850,8 @@ mono_filesize_from_path (MonoString *string)
 	ERROR_DECL (error);
 	struct stat buf;
 	gint64 res;
-	char *path = mono_string_to_utf8_checked (string, &error);
-	mono_error_raise_exception_deprecated (&error); /* OK to throw, external only without a good alternative */
+	char *path = mono_string_to_utf8_checked (string, error);
+	mono_error_raise_exception_deprecated (error); /* OK to throw, external only without a good alternative */
 
 	gint stat_res;
 	MONO_ENTER_GC_SAFE;

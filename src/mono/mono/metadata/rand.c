@@ -38,8 +38,8 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngGetBytes (gpo
 {
 	ERROR_DECL (error);
 	g_assert (arry);
-	mono_rand_try_get_bytes (&handle, mono_array_addr (arry, guchar, 0), mono_array_length (arry), &error);
-	mono_error_set_pending_exception (&error);
+	mono_rand_try_get_bytes (&handle, mono_array_addr (arry, guchar, 0), mono_array_length (arry), error);
+	mono_error_set_pending_exception (error);
 	return handle;
 }
 

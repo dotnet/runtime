@@ -274,16 +274,16 @@ wait_callback (gint fd, gint events, gpointer user_data)
 		if (list && (events & EVENT_IN) != 0) {
 			MonoIOSelectorJob *job = get_job_for_event (&list, EVENT_IN);
 			if (job) {
-				mono_threadpool_enqueue_work_item (((MonoObject*) job)->vtable->domain, (MonoObject*) job, &error);
-				mono_error_assert_ok (&error);
+				mono_threadpool_enqueue_work_item (((MonoObject*) job)->vtable->domain, (MonoObject*) job, error);
+				mono_error_assert_ok (error);
 			}
 
 		}
 		if (list && (events & EVENT_OUT) != 0) {
 			MonoIOSelectorJob *job = get_job_for_event (&list, EVENT_OUT);
 			if (job) {
-				mono_threadpool_enqueue_work_item (((MonoObject*) job)->vtable->domain, (MonoObject*) job, &error);
-				mono_error_assert_ok (&error);
+				mono_threadpool_enqueue_work_item (((MonoObject*) job)->vtable->domain, (MonoObject*) job, error);
+				mono_error_assert_ok (error);
 			}
 		}
 
@@ -319,10 +319,10 @@ selector_thread (gpointer data)
 	ERROR_DECL (error);
 	MonoGHashTable *states;
 
-	MonoString *thread_name = mono_string_new_checked (mono_get_root_domain (), "Thread Pool I/O Selector", &error);
-	mono_error_assert_ok (&error);
-	mono_thread_set_name_internal (mono_thread_internal_current (), thread_name, FALSE, TRUE, &error);
-	mono_error_assert_ok (&error);
+	MonoString *thread_name = mono_string_new_checked (mono_get_root_domain (), "Thread Pool I/O Selector", error);
+	mono_error_assert_ok (error);
+	mono_thread_set_name_internal (mono_thread_internal_current (), thread_name, FALSE, TRUE, error);
+	mono_error_assert_ok (error);
 
 	if (mono_runtime_is_shutting_down ()) {
 		io_selector_running = FALSE;
@@ -362,8 +362,8 @@ selector_thread (gpointer data)
 				g_assert (job);
 
 				exists = mono_g_hash_table_lookup_extended (states, GINT_TO_POINTER (fd), &k, (gpointer*) &list);
-				list = mono_mlist_append_checked (list, (MonoObject*) job, &error);
-				mono_error_assert_ok (&error);
+				list = mono_mlist_append_checked (list, (MonoObject*) job, error);
+				mono_error_assert_ok (error);
 				mono_g_hash_table_replace (states, GINT_TO_POINTER (fd), list);
 
 				operations = get_operations_for_jobs (list);
@@ -393,8 +393,8 @@ selector_thread (gpointer data)
 					}
 
 					for (; list; list = mono_mlist_remove_item (list, list)) {
-						mono_threadpool_enqueue_work_item (mono_object_domain (mono_mlist_get_data (list)), mono_mlist_get_data (list), &error);
-						mono_error_assert_ok (&error);
+						mono_threadpool_enqueue_work_item (mono_object_domain (mono_mlist_get_data (list)), mono_mlist_get_data (list), error);
+						mono_error_assert_ok (error);
 					}
 
 					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_SELECTOR, "io threadpool: del fd %3d", fd);
@@ -569,8 +569,8 @@ initialize (void)
 	io_selector_running = TRUE;
 
 	ERROR_DECL (error);
-	if (!mono_thread_create_internal (mono_get_root_domain (), selector_thread, NULL, MONO_THREAD_CREATE_FLAGS_THREADPOOL | MONO_THREAD_CREATE_FLAGS_SMALL_STACK, &error))
-		g_error ("initialize: mono_thread_create_internal () failed due to %s", mono_error_get_message (&error));
+	if (!mono_thread_create_internal (mono_get_root_domain (), selector_thread, NULL, MONO_THREAD_CREATE_FLAGS_THREADPOOL | MONO_THREAD_CREATE_FLAGS_SMALL_STACK, error))
+		g_error ("initialize: mono_thread_create_internal () failed due to %s", mono_error_get_message (error));
 
 	mono_coop_mutex_unlock (&threadpool_io->updates_lock);
 }

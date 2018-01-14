@@ -240,8 +240,8 @@ type_from_handle (MonoType *handle)
 
 	mono_class_init (klass);
 
-	ret = mono_type_get_object_checked (domain, handle, &error);
-	mono_error_set_pending_exception (&error);
+	ret = mono_type_get_object_checked (domain, handle, error);
+	mono_error_set_pending_exception (error);
 
 	return ret;
 }
@@ -402,8 +402,8 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 				} else {
 					/* runtime_invoke expects a boxed instance */
 					if (mono_class_is_nullable (mono_class_from_mono_type (sig->params [i]))) {
-						mparams[i] = mono_nullable_box ((guint8 *)params [i], klass, &error);
-						goto_if_nok (&error, fail);
+						mparams[i] = mono_nullable_box ((guint8 *)params [i], klass, error);
+						goto_if_nok (error, fail);
 					} else
 						mparams[i] = params [i];
 				}
@@ -412,31 +412,31 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 			}
 		}
 
-		res = mono_runtime_invoke_checked (method, method->klass->valuetype? mono_object_unbox ((MonoObject*)this_obj): this_obj, mparams, &error);
-		goto_if_nok (&error, fail);
+		res = mono_runtime_invoke_checked (method, method->klass->valuetype? mono_object_unbox ((MonoObject*)this_obj): this_obj, mparams, error);
+		goto_if_nok (error, fail);
 
 		return res;
 	}
 
-	msg = mono_method_call_message_new (method, params, NULL, NULL, NULL, &error);
-	goto_if_nok (&error, fail);
+	msg = mono_method_call_message_new (method, params, NULL, NULL, NULL, error);
+	goto_if_nok (error, fail);
 
-	res = mono_remoting_invoke ((MonoObject *)this_obj->rp, msg, &exc, &out_args, &error);
-	goto_if_nok (&error, fail);
+	res = mono_remoting_invoke ((MonoObject *)this_obj->rp, msg, &exc, &out_args, error);
+	goto_if_nok (error, fail);
 
 	if (exc) {
-		error_init (&error);
+		error_init (error);
 		exc = (MonoObject*) mono_remoting_update_exception ((MonoException*)exc);
-		mono_error_set_exception_instance (&error, (MonoException *)exc);
+		mono_error_set_exception_instance (error, (MonoException *)exc);
 		goto fail;
 	}
 
-	mono_method_return_message_restore (method, params, out_args, &error);
-	goto_if_nok (&error, fail);
+	mono_method_return_message_restore (method, params, out_args, error);
+	goto_if_nok (error, fail);
 
 	return res;
 fail:
-	mono_error_set_pending_exception (&error);
+	mono_error_set_pending_exception (error);
 	return NULL;
 } 
 
@@ -569,8 +569,8 @@ mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst)
 			int i, len = mono_array_length ((MonoArray *)dst);
 			for (i = 0; i < len; i++) {
 				MonoObject *item = (MonoObject *)mono_array_get ((MonoArray *)src, gpointer, i);
-				MonoObject *item_copy = mono_marshal_xdomain_copy_value (item, &error);
-				if (mono_error_set_pending_exception (&error))
+				MonoObject *item_copy = mono_marshal_xdomain_copy_value (item, error);
+				if (mono_error_set_pending_exception (error))
 					return;
 				mono_array_setref ((MonoArray *)dst, i, item_copy);
 			}
@@ -641,8 +641,8 @@ gpointer
 mono_compile_method_icall (MonoMethod *method)
 {
 	ERROR_DECL (error);
-	gpointer result = mono_compile_method_checked (method, &error);
-	mono_error_set_pending_exception (&error);
+	gpointer result = mono_compile_method_checked (method, error);
+	mono_error_set_pending_exception (error);
 	return result;
 }
 
@@ -1317,12 +1317,12 @@ mono_marshal_load_remoting_wrapper (MonoRealProxy *rp, MonoMethod *method)
 	ERROR_DECL (error);
 	MonoMethod *marshal_method = NULL;
 	if (rp->target_domain_id != -1)
-		marshal_method = mono_marshal_get_xappdomain_invoke (method, &error);
+		marshal_method = mono_marshal_get_xappdomain_invoke (method, error);
 	else
-		marshal_method = mono_marshal_get_remoting_invoke (method, &error);
-	mono_error_assert_ok (&error);
-	gpointer compiled_ptr = mono_compile_method_checked (marshal_method, &error);
-	mono_error_assert_ok (&error);
+		marshal_method = mono_marshal_get_remoting_invoke (method, error);
+	mono_error_assert_ok (error);
+	gpointer compiled_ptr = mono_compile_method_checked (marshal_method, error);
+	mono_error_assert_ok (error);
 	return compiled_ptr;
 }
 
@@ -1937,7 +1937,7 @@ mono_upgrade_remote_class_wrapper (MonoReflectionType *rtype_raw, MonoTransparen
 	MONO_HANDLE_DCL (MonoTransparentProxy, tproxy);
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (tproxy);
 	MonoClass *klass = mono_class_from_mono_type (MONO_HANDLE_GETVAL (rtype, type));
-	mono_upgrade_remote_class (domain, MONO_HANDLE_CAST (MonoObject, tproxy), klass, &error);
+	mono_upgrade_remote_class (domain, MONO_HANDLE_CAST (MonoObject, tproxy), klass, error);
 	ICALL_RETURN ();
 }
 
@@ -2102,8 +2102,8 @@ MonoObject *
 ves_icall_mono_marshal_xdomain_copy_value (MonoObject *val)
 {
 	ERROR_DECL (error);
-	MonoObject *result = mono_marshal_xdomain_copy_value (val, &error);
-	mono_error_set_pending_exception (&error);
+	MonoObject *result = mono_marshal_xdomain_copy_value (val, error);
+	mono_error_set_pending_exception (error);
 	return result;
 }
 

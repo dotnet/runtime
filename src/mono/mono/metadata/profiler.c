@@ -315,8 +315,8 @@ mono_profiler_get_coverage_data (MonoProfilerHandle handle, MonoMethod *method, 
 	coverage_unlock ();
 
 	ERROR_DECL (error);
-	MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
-	mono_error_assert_ok (&error);
+	MonoMethodHeader *header = mono_method_get_header_checked (method, error);
+	mono_error_assert_ok (error);
 
 	guint32 size;
 

@@ -34,8 +34,8 @@ extern MonoBoolean ves_icall_System_Net_NetworkInformation_MacOsIPInterfacePrope
 
 	MonoDomain *domain = mono_domain_get ();
 
-	ifacename = mono_string_to_utf8_checked(iface, &error);
-	if (mono_error_set_pending_exception (&error))
+	ifacename = mono_string_to_utf8_checked(iface, error);
+	if (mono_error_set_pending_exception (error))
 		return FALSE;
 
 	if ((ifindex = if_nametoindex(ifacename)) == 0)
@@ -76,8 +76,8 @@ extern MonoBoolean ves_icall_System_Net_NetworkInformation_MacOsIPInterfacePrope
 		num_gws++;
 	}
 
-	*gw_addr_list = mono_array_new_checked (domain, mono_get_string_class (), num_gws, &error);
-	goto_if_nok (&error, leave);
+	*gw_addr_list = mono_array_new_checked (domain, mono_get_string_class (), num_gws, error);
+	goto_if_nok (error, leave);
 
 	for (next = buf; next < lim; next += rtm->rtm_msglen) {
 		rtm = (struct rt_msghdr *)next;
@@ -103,14 +103,14 @@ extern MonoBoolean ves_icall_System_Net_NetworkInformation_MacOsIPInterfacePrope
 			// snprintf output truncated
 			continue;
 
-		addr_string = mono_string_new_checked (domain, addr, &error);
-		goto_if_nok (&error, leave);
+		addr_string = mono_string_new_checked (domain, addr, error);
+		goto_if_nok (error, leave);
 		mono_array_setref (*gw_addr_list, gwnum, addr_string);
 		gwnum++;
 	}
 leave:
 	g_free (buf);
-	return is_ok (&error);
+	return is_ok (error);
 }
 
 in_addr_t gateway_from_rtm(struct rt_msghdr *rtm)

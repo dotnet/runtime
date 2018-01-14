@@ -374,9 +374,9 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 		fprintf (mini_stats_fd, "[");
 	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
 		ERROR_DECL (error);
-		MonoMethod *method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, &error);
+		MonoMethod *method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, error);
 		if (!method) {
-			mono_error_cleanup (&error); /* FIXME don't swallow the error */
+			mono_error_cleanup (error); /* FIXME don't swallow the error */
 			continue;
 		}
 		if (strncmp (method->name, "test_", 5) == 0) {
@@ -393,8 +393,8 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 					g_print ("Running '%s' ...\n", method->name);
 #ifdef MONO_USE_AOT_COMPILER
 				ERROR_DECL (error);
-				func = (TestMethod)mono_aot_get_method_checked (mono_get_root_domain (), method, &error);
-				mono_error_cleanup (&error);
+				func = (TestMethod)mono_aot_get_method_checked (mono_get_root_domain (), method, error);
+				mono_error_cleanup (error);
 				if (!func)
 					func = (TestMethod)(gpointer)cfg->native_code;
 #else
@@ -473,9 +473,9 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 	/* load the metadata */
 	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
 		ERROR_DECL (error);
-		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, &error);
+		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, error);
 		if (!method) {
-			mono_error_cleanup (&error);
+			mono_error_cleanup (error);
 			continue;
 		}
 		mono_class_init (method->klass);
@@ -582,9 +582,9 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
 		MonoObject *exc = NULL;
 		ERROR_DECL (error);
-		MonoMethod *method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, &error);
+		MonoMethod *method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, error);
 		if (!method) {
-			mono_error_cleanup (&error); /* FIXME don't swallow the error */
+			mono_error_cleanup (error); /* FIXME don't swallow the error */
 			continue;
 		}
 
@@ -605,8 +605,8 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 			}
 		} else { /* no filter, check for `Category' attribute on method */
 			filter = TRUE;
-			MonoCustomAttrInfo* ainfo = mono_custom_attrs_from_method_checked (method, &error);
-			mono_error_cleanup (&error);
+			MonoCustomAttrInfo* ainfo = mono_custom_attrs_from_method_checked (method, error);
+			mono_error_cleanup (error);
 
 			if (ainfo) {
 				int j;
@@ -619,15 +619,15 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 					if (strcmp (klass->name, "CategoryAttribute"))
 						continue;
 
-					MonoObject *obj = mono_custom_attrs_get_attr_checked (ainfo, klass, &error);
+					MonoObject *obj = mono_custom_attrs_get_attr_checked (ainfo, klass, error);
 					/* FIXME: there is an ordering problem if there're multiple attributes, do this instead:
-					 * MonoObject *obj = create_custom_attr (ainfo->image, centry->ctor, centry->data, centry->data_size, &error); */
-					mono_error_cleanup (&error);
+					 * MonoObject *obj = create_custom_attr (ainfo->image, centry->ctor, centry->data, centry->data_size, error); */
+					mono_error_cleanup (error);
 					MonoMethod *getter = mono_class_get_method_from_name (klass, "get_Category", -1);
-					MonoObject *str = mini_get_interp_callbacks ()->runtime_invoke (getter, obj, NULL, &exc, &error);
-					mono_error_cleanup (&error);
-					char *utf8_str = mono_string_to_utf8_checked ((MonoString *) str, &error);
-					mono_error_cleanup (&error);
+					MonoObject *str = mini_get_interp_callbacks ()->runtime_invoke (getter, obj, NULL, &exc, error);
+					mono_error_cleanup (error);
+					char *utf8_str = mono_string_to_utf8_checked ((MonoString *) str, error);
+					mono_error_cleanup (error);
 					if (!strcmp (utf8_str, "!INTERPRETER")) {
 						g_print ("skip %s...\n", method->name);
 						filter = FALSE;
@@ -636,7 +636,7 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 			}
 		}
 		if (strncmp (method->name, "test_", 5) == 0 && filter) {
-			ERROR_DECL (interp_error);
+			ERROR_DECL_VALUE (interp_error);
 			MonoObject *exc = NULL;
 
 			result_obj = mini_get_interp_callbacks ()->runtime_invoke (method, NULL, NULL, &exc, &interp_error);
@@ -687,9 +687,9 @@ interp_regression (MonoImage *image, int verbose, int *total_run)
 	/* load the metadata */
 	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
 		ERROR_DECL (error);
-		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, &error);
+		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, error);
 		if (!method) {
-			mono_error_cleanup (&error);
+			mono_error_cleanup (error);
 			continue;
 		}
 		mono_class_init (method->klass);
@@ -1044,8 +1044,8 @@ jit_info_table_test (MonoDomain *domain)
 	*/
 
 	for (i = 0; i < num_threads; ++i) {
-		mono_thread_create_checked (domain, test_thread_func, &thread_datas [i], &error);
-		mono_error_assert_ok (&error);
+		mono_thread_create_checked (domain, test_thread_func, &thread_datas [i], error);
+		mono_error_assert_ok (error);
 	}
 }
 #endif
@@ -1085,9 +1085,9 @@ compile_all_methods_thread_main_inner (CompileAllThreadArgs *args)
 		if (mono_metadata_has_generic_params (image, token))
 			continue;
 
-		method = mono_get_method_checked (image, token, NULL, NULL, &error);
+		method = mono_get_method_checked (image, token, NULL, NULL, error);
 		if (!method) {
-			mono_error_cleanup (&error); /* FIXME don't swallow the error */
+			mono_error_cleanup (error); /* FIXME don't swallow the error */
 			continue;
 		}
 		if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
@@ -1151,8 +1151,8 @@ compile_all_methods (MonoAssembly *ass, int verbose, guint32 opts, guint32 recom
 	 * Need to create a mono thread since compilation might trigger
 	 * running of managed code.
 	 */
-	mono_thread_create_checked (mono_domain_get (), compile_all_methods_thread_main, &args, &error);
-	mono_error_assert_ok (&error);
+	mono_thread_create_checked (mono_domain_get (), compile_all_methods_thread_main, &args, error);
+	mono_error_assert_ok (error);
 
 	mono_thread_manage ();
 }
@@ -1179,10 +1179,10 @@ mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[
 		return 1;
 	}
 
-	method = mono_get_method_checked (image, entry, NULL, NULL, &error);
+	method = mono_get_method_checked (image, entry, NULL, NULL, error);
 	if (method == NULL){
-		g_print ("The entry point method could not be loaded due to %s\n", mono_error_get_message (&error));
-		mono_error_cleanup (&error);
+		g_print ("The entry point method could not be loaded due to %s\n", mono_error_get_message (error));
+		mono_error_cleanup (error);
 		mono_environment_exitcode_set (1);
 		return 1;
 	}
@@ -1199,9 +1199,9 @@ mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[
 		}
 		return res;
 	} else {
-		int res = mono_runtime_run_main_checked (method, argc, argv, &error);
-		if (!is_ok (&error)) {
-			MonoException *ex = mono_error_convert_to_exception (&error);
+		int res = mono_runtime_run_main_checked (method, argc, argv, error);
+		if (!is_ok (error)) {
+			MonoException *ex = mono_error_convert_to_exception (error);
 			if (ex) {
 				mono_unhandled_exception (&ex->object);
 				mono_invoke_unhandled_exception_hook (&ex->object);
@@ -1322,10 +1322,10 @@ load_agent (MonoDomain *domain, char *desc)
 		return 1;
 	}
 
-	method = mono_get_method_checked (image, entry, NULL, NULL, &error);
+	method = mono_get_method_checked (image, entry, NULL, NULL, error);
 	if (method == NULL){
-		g_print ("The entry point method of assembly '%s' could not be loaded due to %s\n", agent, mono_error_get_message (&error));
-		mono_error_cleanup (&error);
+		g_print ("The entry point method of assembly '%s' could not be loaded due to %s\n", agent, mono_error_get_message (error));
+		mono_error_cleanup (error);
 		g_free (agent);
 		return 1;
 	}
@@ -1333,18 +1333,18 @@ load_agent (MonoDomain *domain, char *desc)
 	mono_thread_set_main (mono_thread_current ());
 
 	if (args) {
-		main_args = (MonoArray*)mono_array_new_checked (domain, mono_defaults.string_class, 1, &error);
+		main_args = (MonoArray*)mono_array_new_checked (domain, mono_defaults.string_class, 1, error);
 		if (main_args) {
-			MonoString *str = mono_string_new_checked (domain, args, &error);
+			MonoString *str = mono_string_new_checked (domain, args, error);
 			if (str)
 				mono_array_set (main_args, MonoString*, 0, str);
 		}
 	} else {
-		main_args = (MonoArray*)mono_array_new_checked (domain, mono_defaults.string_class, 0, &error);
+		main_args = (MonoArray*)mono_array_new_checked (domain, mono_defaults.string_class, 0, error);
 	}
 	if (!main_args) {
-		g_print ("Could not allocate array for main args of assembly '%s' due to %s\n", agent, mono_error_get_message (&error));
-		mono_error_cleanup (&error);
+		g_print ("Could not allocate array for main args of assembly '%s' due to %s\n", agent, mono_error_get_message (error));
+		mono_error_cleanup (error);
 		g_free (agent);
 		return 1;
 	}
@@ -1352,10 +1352,10 @@ load_agent (MonoDomain *domain, char *desc)
 
 	pa [0] = main_args;
 	/* Pass NULL as 'exc' so unhandled exceptions abort the runtime */
-	mono_runtime_invoke_checked (method, NULL, pa, &error);
-	if (!is_ok (&error)) {
-		g_print ("The entry point method of assembly '%s' could not execute due to %s\n", agent, mono_error_get_message (&error));
-		mono_error_cleanup (&error);
+	mono_runtime_invoke_checked (method, NULL, pa, error);
+	if (!is_ok (error)) {
+		g_print ("The entry point method of assembly '%s' could not execute due to %s\n", agent, mono_error_get_message (error));
+		mono_error_cleanup (error);
 		g_free (agent);
 		return 1;
 	}

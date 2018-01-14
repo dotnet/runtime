@@ -34,7 +34,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken (MonoError *
 MonoArray*
 ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token)
 {
-	ERROR_DECL (mono_error);
+	ERROR_DECL_VALUE (mono_error);
 	error_init (&mono_error);
 
 	g_unsupported_api ("GetTokenInformation");
@@ -50,7 +50,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token)
 gpointer
 ves_icall_System_Security_Principal_WindowsImpersonationContext_DuplicateToken (gpointer token)
 {
-	ERROR_DECL (mono_error);
+	ERROR_DECL_VALUE (mono_error);
 	error_init (&mono_error);
 
 	g_unsupported_api ("DuplicateToken");
@@ -66,7 +66,7 @@ ves_icall_System_Security_Principal_WindowsImpersonationContext_DuplicateToken (
 gboolean
 ves_icall_System_Security_Principal_WindowsImpersonationContext_SetCurrentToken (gpointer token)
 {
-	ERROR_DECL (mono_error);
+	ERROR_DECL_VALUE (mono_error);
 	error_init (&mono_error);
 
 	g_unsupported_api ("ImpersonateLoggedOnUser");
@@ -82,7 +82,7 @@ ves_icall_System_Security_Principal_WindowsImpersonationContext_SetCurrentToken 
 gboolean
 ves_icall_System_Security_Principal_WindowsImpersonationContext_RevertToSelf (void)
 {
-	ERROR_DECL (mono_error);
+	ERROR_DECL_VALUE (mono_error);
 	error_init (&mono_error);
 
 	g_unsupported_api ("RevertToSelf");
@@ -98,7 +98,7 @@ ves_icall_System_Security_Principal_WindowsImpersonationContext_RevertToSelf (vo
 gint32
 mono_security_win_get_token_name (gpointer token, gunichar2 ** uniname)
 {
-	ERROR_DECL (mono_error);
+	ERROR_DECL_VALUE (mono_error);
 	error_init (&mono_error);
 
 	g_unsupported_api ("GetTokenInformation");
@@ -114,7 +114,7 @@ mono_security_win_get_token_name (gpointer token, gunichar2 ** uniname)
 gboolean
 mono_security_win_is_machine_protected (gunichar2 *path)
 {
-	ERROR_DECL (mono_error);
+	ERROR_DECL_VALUE (mono_error);
 	error_init (&mono_error);
 
 	g_unsupported_api ("GetNamedSecurityInfo, LocalFree");
@@ -130,7 +130,7 @@ mono_security_win_is_machine_protected (gunichar2 *path)
 gboolean
 mono_security_win_is_user_protected (gunichar2 *path)
 {
-	ERROR_DECL (mono_error);
+	ERROR_DECL_VALUE (mono_error);
 	error_init (&mono_error);
 
 	g_unsupported_api ("GetNamedSecurityInfo, LocalFree");
@@ -146,7 +146,7 @@ mono_security_win_is_user_protected (gunichar2 *path)
 gboolean
 mono_security_win_protect_machine (gunichar2 *path)
 {
-	ERROR_DECL (mono_error);
+	ERROR_DECL_VALUE (mono_error);
 	error_init (&mono_error);
 
 	g_unsupported_api ("BuildTrusteeWithSid, SetEntriesInAcl, SetNamedSecurityInfo, LocalFree, FreeSid");
@@ -162,7 +162,7 @@ mono_security_win_protect_machine (gunichar2 *path)
 gboolean
 mono_security_win_protect_user (gunichar2 *path)
 {
-	ERROR_DECL (mono_error);
+	ERROR_DECL_VALUE (mono_error);
 	error_init (&mono_error);
 
 	g_unsupported_api ("BuildTrusteeWithSid, SetEntriesInAcl, SetNamedSecurityInfo, LocalFree");

@@ -37,8 +37,8 @@ MonoString *
 ves_icall_System_String_InternalAllocateStr (gint32 length)
 {
 	ERROR_DECL (error);
-	MonoString *str = mono_string_new_size_checked (mono_domain_get (), length, &error);
-	mono_error_set_pending_exception (&error);
+	MonoString *str = mono_string_new_size_checked (mono_domain_get (), length, error);
+	mono_error_set_pending_exception (error);
 
 	return str;
 }
@@ -49,9 +49,9 @@ ves_icall_System_String_InternalIntern (MonoString *str)
 	ERROR_DECL (error);
 	MonoString *res;
 
-	res = mono_string_intern_checked (str, &error);
+	res = mono_string_intern_checked (str, error);
 	if (!res) {
-		mono_error_set_pending_exception (&error);
+		mono_error_set_pending_exception (error);
 		return NULL;
 	}
 	return res;

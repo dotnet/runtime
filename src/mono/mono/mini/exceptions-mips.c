@@ -198,14 +198,14 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gboolean
 	memset (&ctx.sc_fpregs, 0, sizeof (mips_freg) * MONO_SAVED_FREGS);
 	MONO_CONTEXT_SET_IP (&ctx, eip);
 
-	if (mono_object_isinst_checked (exc, mono_defaults.exception_class, &error)) {
+	if (mono_object_isinst_checked (exc, mono_defaults.exception_class, error)) {
 		MonoException *mono_ex = (MonoException*)exc;
 		if (!rethrow) {
 			mono_ex->stack_trace = NULL;
 			mono_ex->trace_ips = NULL;
 		}
 	}
-	mono_error_assert_ok (&error);
+	mono_error_assert_ok (error);
 	mono_handle_exception (&ctx, exc);
 #ifdef DEBUG_EXCEPTIONS
 	g_print ("throw_exception: restore to pc=%p sp=%p fp=%p ctx=%p\n",

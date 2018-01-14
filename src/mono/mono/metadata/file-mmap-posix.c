@@ -386,16 +386,16 @@ mono_mmap_open_file (MonoString *path, int mode, MonoString *mapName, gint64 *ca
 	g_assert (path || mapName);
 
 	if (!mapName) {
-		char * c_path = mono_string_to_utf8_checked (path, &error);
-		if (mono_error_set_pending_exception (&error))
+		char * c_path = mono_string_to_utf8_checked (path, error);
+		if (mono_error_set_pending_exception (error))
 			return NULL;
 		handle = open_file_map (c_path, -1, mode, capacity, access, options, ioerror);
 		g_free (c_path);
 		return handle;
 	}
 
-	char *c_mapName = mono_string_to_utf8_checked (mapName, &error);
-	if (mono_error_set_pending_exception (&error))
+	char *c_mapName = mono_string_to_utf8_checked (mapName, error);
+	if (mono_error_set_pending_exception (error))
 		return NULL;
 
 	if (path) {
@@ -405,8 +405,8 @@ mono_mmap_open_file (MonoString *path, int mode, MonoString *mapName, gint64 *ca
 			*ioerror = FILE_ALREADY_EXISTS;
 			handle = NULL;
 		} else {
-			char *c_path = mono_string_to_utf8_checked (path, &error);
-			if (is_ok (&error)) {
+			char *c_path = mono_string_to_utf8_checked (path, error);
+			if (is_ok (error)) {
 				handle = (MmapHandle *)open_file_map (c_path, -1, mode, capacity, access, options, ioerror);
 				if (handle) {
 					handle->name = g_strdup (c_mapName);
@@ -434,8 +434,8 @@ mono_mmap_open_handle (void *input_fd, MonoString *mapName, gint64 *capacity, in
 	if (!mapName) {
 		handle = (MmapHandle *)open_file_map (NULL, GPOINTER_TO_INT (input_fd), FILE_MODE_OPEN, capacity, access, options, ioerror);
 	} else {
-		char *c_mapName = mono_string_to_utf8_checked (mapName, &error);
-		if (mono_error_set_pending_exception (&error))
+		char *c_mapName = mono_string_to_utf8_checked (mapName, error);
+		if (mono_error_set_pending_exception (error))
 			return NULL;
 
 		named_regions_lock ();

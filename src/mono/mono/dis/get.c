@@ -1748,7 +1748,6 @@ get_fieldref_signature (MonoImage *m, int idx, MonoGenericContainer *container)
 {
 	guint32 cols [MONO_MEMBERREF_SIZE];
 	ERROR_DECL (error);
-	error_init (&error);
 	MonoGenericContainer *new_container;
 	char *type, *esname;
         char *sig;
@@ -1757,8 +1756,8 @@ get_fieldref_signature (MonoImage *m, int idx, MonoGenericContainer *container)
         mono_metadata_decode_row (&m->tables [MONO_TABLE_MEMBERREF],
 				  idx - 1, cols, MONO_MEMBERREF_SIZE);
 
-	new_container = get_memberref_container (m, cols [MONO_MEMBERREF_CLASS], container, &error);
-	mono_error_assert_ok (&error);
+	new_container = get_memberref_container (m, cols [MONO_MEMBERREF_CLASS], container, error);
+	mono_error_assert_ok (error);
         sig = get_field_signature (m, cols [MONO_MEMBERREF_SIGNATURE], new_container);
 
 	type = get_memberref_parent (m, cols [MONO_MEMBERREF_CLASS], container);

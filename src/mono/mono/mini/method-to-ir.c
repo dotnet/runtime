@@ -1586,8 +1586,8 @@ mini_emit_runtime_constant (MonoCompile *cfg, MonoJumpInfoType patch_type, gpoin
 
 		ji.type = patch_type;
 		ji.data.target = data;
-		target = mono_resolve_patch_target (NULL, cfg->domain, NULL, &ji, FALSE, &error);
-		mono_error_assert_ok (&error);
+		target = mono_resolve_patch_target (NULL, cfg->domain, NULL, &ji, FALSE, error);
+		mono_error_assert_ok (error);
 
 		EMIT_NEW_PCONST (cfg, ins, target);
 	}
@@ -2420,8 +2420,8 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 #ifndef DISABLE_REMOTING
 	if (might_be_remote) {
 		ERROR_DECL (error);
-		call->method = mono_marshal_get_remoting_invoke_with_check (method, &error);
-		mono_error_assert_ok (&error);
+		call->method = mono_marshal_get_remoting_invoke_with_check (method, error);
+		mono_error_assert_ok (error);
 	} else
 #endif
 		call->method = method;
@@ -2478,8 +2478,8 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 				 * The check above ensures method is not gshared, this is needed since
 				 * gshared methods can't have wrappers.
 				 */
-				method = call->method = mono_marshal_get_remoting_invoke_with_check (method, &error);
-				mono_error_assert_ok (&error);
+				method = call->method = mono_marshal_get_remoting_invoke_with_check (method, error);
+				mono_error_assert_ok (error);
 			}
 #endif
 
@@ -4206,14 +4206,14 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 		if (method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING) {
 			if (method->klass->has_cctor) {
 				ERROR_DECL (error);
-				vtable = mono_class_vtable_checked (cfg->domain, method->klass, &error);
-				if (!is_ok (&error)) {
-					mono_error_cleanup (&error);
+				vtable = mono_class_vtable_checked (cfg->domain, method->klass, error);
+				if (!is_ok (error)) {
+					mono_error_cleanup (error);
 					return FALSE;
 				}
 				if (!cfg->compile_aot) {
-					if (!mono_runtime_class_init_full (vtable, &error)) {
-						mono_error_cleanup (&error);
+					if (!mono_runtime_class_init_full (vtable, error)) {
+						mono_error_cleanup (error);
 						return FALSE;
 					}
 				}
@@ -4225,9 +4225,9 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 				if (!method->klass->runtime_info)
 					/* No vtable created yet */
 					return FALSE;
-				vtable = mono_class_vtable_checked (cfg->domain, method->klass, &error);
-				if (!is_ok (&error)) {
-					mono_error_cleanup (&error);
+				vtable = mono_class_vtable_checked (cfg->domain, method->klass, error);
+				if (!is_ok (error)) {
+					mono_error_cleanup (error);
 					return FALSE;
 				}
 				/* This makes so that inline cannot trigger */
@@ -4235,8 +4235,8 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 				/* running with a specific order... */
 				if (! vtable->initialized)
 					return FALSE;
-				if (!mono_runtime_class_init_full (vtable, &error)) {
-					mono_error_cleanup (&error);
+				if (!mono_runtime_class_init_full (vtable, error)) {
+					mono_error_cleanup (error);
 					return FALSE;
 				}
 			}
@@ -4245,9 +4245,9 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 			if (!method->klass->runtime_info)
 				/* No vtable created yet */
 				return FALSE;
-			vtable = mono_class_vtable_checked (cfg->domain, method->klass, &error);
-			if (!is_ok (&error)) {
-				mono_error_cleanup (&error);
+			vtable = mono_class_vtable_checked (cfg->domain, method->klass, error);
+			if (!is_ok (error)) {
+				mono_error_cleanup (error);
 				return FALSE;
 			}
 			if (!vtable->initialized)
@@ -6035,13 +6035,13 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	}
 
 	/* allocate local variables */
-	cheader = mono_method_get_header_checked (cmethod, &error);
+	cheader = mono_method_get_header_checked (cmethod, error);
 	if (!cheader) {
 		if (inline_always) {
 			mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
-			mono_error_move (&cfg->error, &error);
+			mono_error_move (&cfg->error, error);
 		} else {
-			mono_error_cleanup (&error);
+			mono_error_cleanup (error);
 		}
 		return 0;
 	}
@@ -6357,7 +6357,7 @@ static inline MonoMethod *
 mini_get_method (MonoCompile *cfg, MonoMethod *m, guint32 token, MonoClass *klass, MonoGenericContext *context)
 {
 	ERROR_DECL (error);
-	MonoMethod *method = mini_get_method_allow_open (m, token, klass, context, cfg ? &cfg->error : &error);
+	MonoMethod *method = mini_get_method_allow_open (m, token, klass, context, cfg ? &cfg->error : error);
 
 	if (method && cfg && !cfg->gshared && mono_class_is_open_constructed_type (&method->klass->byval_arg)) {
 		mono_error_set_bad_image (&cfg->error, cfg->method->klass->image, "Method with open type while not compiling gshared");
@@ -6365,7 +6365,7 @@ mini_get_method (MonoCompile *cfg, MonoMethod *m, guint32 token, MonoClass *klas
 	}
 
 	if (!method && !cfg)
-		mono_error_cleanup (&error); /* FIXME don't swallow the error */
+		mono_error_cleanup (error); /* FIXME don't swallow the error */
 
 	return method;
 }
@@ -6470,11 +6470,11 @@ initialize_array_data (MonoMethod *method, gboolean aot, unsigned char *ip, Mono
 		int size = 0;
 		MonoMethod *cmethod;
 		MonoClass *dummy_class;
-		MonoClassField *field = mono_field_from_token_checked (method->klass->image, field_token, &dummy_class, NULL, &error);
+		MonoClassField *field = mono_field_from_token_checked (method->klass->image, field_token, &dummy_class, NULL, error);
 		int dummy_align;
 
 		if (!field) {
-			mono_error_cleanup (&error); /* FIXME don't swallow the error */
+			mono_error_cleanup (error); /* FIXME don't swallow the error */
 			return NULL;
 		}
 
@@ -6535,11 +6535,11 @@ set_exception_type_from_invalid_il (MonoCompile *cfg, MonoMethod *method, unsign
 	ERROR_DECL (error);
 	char *method_fname = mono_method_full_name (method, TRUE);
 	char *method_code;
-	MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
+	MonoMethodHeader *header = mono_method_get_header_checked (method, error);
 
 	if (!header) {
-		method_code = g_strdup_printf ("could not parse method body due to %s", mono_error_get_message (&error));
-		mono_error_cleanup (&error);
+		method_code = g_strdup_printf ("could not parse method body due to %s", mono_error_get_message (error));
+		mono_error_cleanup (error);
 	} else if (header->code_size == 0)
 		method_code = g_strdup ("method body is empty.");
 	else
@@ -6935,8 +6935,8 @@ is_jit_optimizer_disabled (MonoMethod *m)
 		return FALSE;
 	}
 
-	attrs = mono_custom_attrs_from_assembly_checked (ass, FALSE, &error);
-	mono_error_cleanup (&error); /* FIXME don't swallow the error */
+	attrs = mono_custom_attrs_from_assembly_checked (ass, FALSE, error);
+	mono_error_cleanup (error); /* FIXME don't swallow the error */
 	if (attrs) {
 		for (i = 0; i < attrs->num_attrs; ++i) {
 			MonoCustomAttrEntry *attr = &attrs->attrs [i];
@@ -11305,12 +11305,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 							tclass, MONO_RGCTX_INFO_REFLECTION_TYPE);
 					} else if (cfg->compile_aot) {
 						if (method->wrapper_type) {
-							error_init (&error); //got to do it since there are multiple conditionals below
-							if (mono_class_get_checked (tclass->image, tclass->type_token, &error) == tclass && !generic_context) {
+							error_init (error); //got to do it since there are multiple conditionals below
+							if (mono_class_get_checked (tclass->image, tclass->type_token, error) == tclass && !generic_context) {
 								/* Special case for static synchronized wrappers */
 								EMIT_NEW_TYPE_FROM_HANDLE_CONST (cfg, ins, tclass->image, tclass->type_token, generic_context);
 							} else {
-								mono_error_cleanup (&error); /* FIXME don't swallow the error */
+								mono_error_cleanup (error); /* FIXME don't swallow the error */
 								/* FIXME: n is not a normal token */
 								DISABLE_AOT (cfg);
 								EMIT_NEW_PCONST (cfg, ins, NULL);

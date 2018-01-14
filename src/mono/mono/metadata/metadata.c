@@ -1452,8 +1452,8 @@ MonoArrayType *
 mono_metadata_parse_array (MonoImage *m, const char *ptr, const char **rptr)
 {
 	ERROR_DECL (error);
-	MonoArrayType *ret = mono_metadata_parse_array_internal (m, NULL, FALSE, ptr, rptr, &error);
-	mono_error_cleanup (&error);
+	MonoArrayType *ret = mono_metadata_parse_array_internal (m, NULL, FALSE, ptr, rptr, error);
+	mono_error_cleanup (error);
 
 	return ret;
 }
@@ -1857,8 +1857,8 @@ mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs,
 			  const char *ptr, const char **rptr)
 {
 	ERROR_DECL (error);
-	MonoType * type = mono_metadata_parse_type_internal (m, NULL, opt_attrs, FALSE, ptr, rptr, &error);
-	mono_error_cleanup (&error);
+	MonoType * type = mono_metadata_parse_type_internal (m, NULL, opt_attrs, FALSE, ptr, rptr, error);
+	mono_error_cleanup (error);
 	return type;
 }
 
@@ -1940,8 +1940,8 @@ mono_metadata_parse_signature (MonoImage *image, guint32 token)
 {
 	ERROR_DECL (error);
 	MonoMethodSignature *ret;
-	ret = mono_metadata_parse_signature_checked (image, token, &error);
-	mono_error_cleanup (&error);
+	ret = mono_metadata_parse_signature_checked (image, token, error);
+	mono_error_cleanup (error);
 	return ret;
 }
 
@@ -2242,8 +2242,8 @@ mono_metadata_parse_method_signature (MonoImage *m, int def, const char *ptr, co
 	 */
 	ERROR_DECL (error);
 	MonoMethodSignature *ret;
-	ret = mono_metadata_parse_method_signature_full (m, NULL, def, ptr, rptr, &error);
-	mono_error_assert_ok (&error);
+	ret = mono_metadata_parse_method_signature_full (m, NULL, def, ptr, rptr, error);
+	mono_error_assert_ok (error);
 
 	return ret;
 }
@@ -4093,8 +4093,8 @@ MonoMethodHeader *
 mono_metadata_parse_mh (MonoImage *m, const char *ptr)
 {
 	ERROR_DECL (error);
-	MonoMethodHeader *header = mono_metadata_parse_mh_full (m, NULL, ptr, &error);
-	mono_error_cleanup (&error);
+	MonoMethodHeader *header = mono_metadata_parse_mh_full (m, NULL, ptr, error);
+	mono_error_cleanup (error);
 	return header;
 }
 
@@ -4231,8 +4231,8 @@ MonoType *
 mono_metadata_parse_field_type (MonoImage *m, short field_flags, const char *ptr, const char **rptr)
 {
 	ERROR_DECL (error);
-	MonoType * type = mono_metadata_parse_type_internal (m, NULL, field_flags, FALSE, ptr, rptr, &error);
-	mono_error_cleanup (&error);
+	MonoType * type = mono_metadata_parse_type_internal (m, NULL, field_flags, FALSE, ptr, rptr, error);
+	mono_error_cleanup (error);
 	return type;
 }
 
@@ -4250,8 +4250,8 @@ MonoType *
 mono_metadata_parse_param (MonoImage *m, const char *ptr, const char **rptr)
 {
 	ERROR_DECL (error);
-	MonoType * type = mono_metadata_parse_type_internal (m, NULL, 0, FALSE, ptr, rptr, &error);
-	mono_error_cleanup (&error);
+	MonoType * type = mono_metadata_parse_type_internal (m, NULL, 0, FALSE, ptr, rptr, error);
+	mono_error_cleanup (error);
 	return type;
 }
 
@@ -4586,8 +4586,8 @@ mono_metadata_interfaces_from_typedef (MonoImage *meta, guint32 index, guint *co
 	MonoClass **interfaces = NULL;
 	gboolean rv;
 
-	rv = mono_metadata_interfaces_from_typedef_full (meta, index, &interfaces, count, TRUE, NULL, &error);
-	mono_error_assert_ok (&error);
+	rv = mono_metadata_interfaces_from_typedef_full (meta, index, &interfaces, count, TRUE, NULL, error);
+	mono_error_assert_ok (error);
 	if (rv)
 		return interfaces;
 	else
@@ -5848,9 +5848,9 @@ MonoType *
 mono_type_create_from_typespec (MonoImage *image, guint32 type_spec)
 {
 	ERROR_DECL (error);
-	MonoType *type = mono_type_create_from_typespec_checked (image, type_spec, &error);
+	MonoType *type = mono_type_create_from_typespec_checked (image, type_spec, error);
 	if (!type)
-		 g_error ("Could not create typespec %x due to %s", type_spec, mono_error_get_message (&error));
+		 g_error ("Could not create typespec %x due to %s", type_spec, mono_error_get_message (error));
 	return type;
 }
 

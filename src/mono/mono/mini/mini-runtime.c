@@ -622,12 +622,12 @@ mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 	g_free (name);
 
 	if (do_compile) {
-		trampoline = mono_compile_method_checked (wrapper, &error);
-		mono_error_assert_ok (&error);
+		trampoline = mono_compile_method_checked (wrapper, error);
+		mono_error_assert_ok (error);
 	} else {
 
-		trampoline = mono_create_jit_trampoline (domain, wrapper, &error);
-		mono_error_assert_ok (&error);
+		trampoline = mono_create_jit_trampoline (domain, wrapper, error);
+		mono_error_assert_ok (error);
 		trampoline = mono_create_ftnptr (domain, (gpointer)trampoline);
 	}
 
@@ -1745,12 +1745,12 @@ mini_get_class (MonoMethod *method, guint32 token, MonoGenericContext *context)
 	if (method->wrapper_type != MONO_WRAPPER_NONE) {
 		klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
 		if (context) {
-			klass = mono_class_inflate_generic_class_checked (klass, context, &error);
-			mono_error_cleanup (&error); /* FIXME don't swallow the error */
+			klass = mono_class_inflate_generic_class_checked (klass, context, error);
+			mono_error_cleanup (error); /* FIXME don't swallow the error */
 		}
 	} else {
-		klass = mono_class_get_and_inflate_typespec_checked (method->klass->image, token, context, &error);
-		mono_error_cleanup (&error); /* FIXME don't swallow the error */
+		klass = mono_class_get_and_inflate_typespec_checked (method->klass->image, token, context, error);
+		mono_error_cleanup (error); /* FIXME don't swallow the error */
 	}
 	if (klass)
 		mono_class_init (klass);
@@ -4063,8 +4063,8 @@ mini_init (const char *filename, const char *runtime_version)
 #define JIT_RUNTIME_WORKS
 #ifdef JIT_RUNTIME_WORKS
 	mono_install_runtime_cleanup ((MonoDomainFunc)mini_cleanup);
-	mono_runtime_init_checked (domain, mono_thread_start_cb, mono_thread_attach_cb, &error);
-	mono_error_assert_ok (&error);
+	mono_runtime_init_checked (domain, mono_thread_start_cb, mono_thread_attach_cb, error);
+	mono_error_assert_ok (error);
 	mono_thread_attach (domain);
 	MONO_PROFILER_RAISE (thread_name, (MONO_NATIVE_THREAD_ID_TO_UINT (mono_native_thread_id_get ()), "Main"));
 #endif
@@ -4558,9 +4558,9 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
 		ERROR_DECL (error);
 
-		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, &error);
+		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, error);
 		if (!method) {
-			mono_error_cleanup (&error); /* FIXME don't swallow the error */
+			mono_error_cleanup (error); /* FIXME don't swallow the error */
 			continue;
 		}
 		if (method->flags & METHOD_ATTRIBUTE_ABSTRACT)
@@ -4574,22 +4574,22 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 			g_print ("Compiling %d %s\n", count, desc);
 			g_free (desc);
 		}
-		mono_compile_method_checked (method, &error);
-		if (!is_ok (&error)) {
-			mono_error_cleanup (&error); /* FIXME don't swallow the error */
+		mono_compile_method_checked (method, error);
+		if (!is_ok (error)) {
+			mono_error_cleanup (error); /* FIXME don't swallow the error */
 			continue;
 		}
 		if (strcmp (method->name, "Finalize") == 0) {
 			invoke = mono_marshal_get_runtime_invoke (method, FALSE);
-			mono_compile_method_checked (invoke, &error);
-			mono_error_assert_ok (&error);
+			mono_compile_method_checked (invoke, error);
+			mono_error_assert_ok (error);
 		}
 #ifndef DISABLE_REMOTING
 		if (mono_class_is_marshalbyref (method->klass) && mono_method_signature (method)->hasthis) {
-			invoke = mono_marshal_get_remoting_invoke_with_check (method, &error);
-			mono_error_assert_ok (&error);
-			mono_compile_method_checked (invoke, &error);
-			mono_error_assert_ok (&error);
+			invoke = mono_marshal_get_remoting_invoke_with_check (method, error);
+			mono_error_assert_ok (error);
+			mono_compile_method_checked (invoke, error);
+			mono_error_assert_ok (error);
 		}
 #endif
 	}

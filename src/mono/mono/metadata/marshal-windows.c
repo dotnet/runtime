@@ -60,8 +60,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (MonoString
 	ERROR_DECL (error);
 	char* tres, *ret;
 	size_t len;
-	tres = mono_string_to_utf8_checked (string, &error);
-	if (mono_error_set_pending_exception (&error))
+	tres = mono_string_to_utf8_checked (string, error);
+	if (mono_error_set_pending_exception (error))
 		return NULL;
 	if (!tres)
 		return tres;

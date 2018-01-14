@@ -165,8 +165,8 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token)
 			int i=0;
 			int num = tg->GroupCount;
 
-			array = mono_array_new_checked (domain, mono_get_string_class (), num, &error);
-			if (mono_error_set_pending_exception (&error)) {
+			array = mono_array_new_checked (domain, mono_get_string_class (), num, error);
+			if (mono_error_set_pending_exception (error)) {
 				g_free (tg);
 				return NULL;
 			}
@@ -176,11 +176,11 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token)
 				gunichar2 *uniname = GetSidName (NULL, tg->Groups [i].Sid, &size);
 
 				if (uniname) {
-					MonoString *str = mono_string_new_utf16_checked (domain, uniname, size, &error);
-					if (!is_ok (&error)) {
+					MonoString *str = mono_string_new_utf16_checked (domain, uniname, size, error);
+					if (!is_ok (error)) {
 						g_free (uniname);
 						g_free (tg);
-						mono_error_set_pending_exception (&error);
+						mono_error_set_pending_exception (error);
 						return NULL;
 					}
 					mono_array_setref (array, i, str);
@@ -193,8 +193,8 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token)
 
 	if (!array) {
 		/* return empty array of string, i.e. string [0] */
-		array = mono_array_new_checked (domain, mono_get_string_class (), 0, &error);
-		mono_error_set_pending_exception (&error);
+		array = mono_array_new_checked (domain, mono_get_string_class (), 0, error);
+		mono_error_set_pending_exception (error);
 	}
 	return array;
 }

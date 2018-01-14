@@ -644,9 +644,9 @@ mono_method_desc_search_in_image (MonoMethodDesc *desc, MonoImage *image)
 
 		if (strcmp (n, desc->name))
 			continue;
-		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, &error);
+		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, error);
 		if (!method) {
-			mono_error_cleanup (&error);
+			mono_error_cleanup (error);
 			continue;
 		}
 		if (mono_method_desc_full_match (desc, method))
@@ -659,7 +659,7 @@ static const unsigned char*
 dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned char *ip, const unsigned char *end)
 {
 	ERROR_DECL (error);
-	MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
+	MonoMethodHeader *header = mono_method_get_header_checked (method, error);
 	const MonoOpcode *opcode;
 	guint32 label, token;
 	gint32 sval;
@@ -668,8 +668,8 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 	const unsigned char* il_code;
 
 	if (!header) {
-		g_string_append_printf (str, "could not disassemble, bad header due to %s", mono_error_get_message (&error));
-		mono_error_cleanup (&error);
+		g_string_append_printf (str, "could not disassemble, bad header due to %s", mono_error_get_message (error));
+		mono_error_cleanup (error);
 		return end;
 	}
 	il_code = mono_method_header_get_code (header, NULL, NULL);
@@ -954,12 +954,12 @@ mono_method_get_name_full (MonoMethod *method, gboolean signature, gboolean ret,
 		strcpy (wrapper, "");
 
 	if (signature) {
-		MonoMethodSignature *sig = mono_method_signature_checked (method, &error);
+		MonoMethodSignature *sig = mono_method_signature_checked (method, error);
 		char *tmpsig;
 
-		if (!is_ok (&error)) {
+		if (!is_ok (error)) {
 			tmpsig = g_strdup_printf ("<unable to load signature>");
-			mono_error_cleanup (&error);
+			mono_error_cleanup (error);
 		} else {
 			tmpsig = mono_signature_get_desc (sig, TRUE);
 		}
@@ -1051,8 +1051,8 @@ mono_object_describe (MonoObject *obj)
 	}
 	klass = mono_object_class (obj);
 	if (klass == mono_defaults.string_class) {
-		char *utf8 = mono_string_to_utf8_checked ((MonoString*)obj, &error);
-		mono_error_cleanup (&error); /* FIXME don't swallow the error */
+		char *utf8 = mono_string_to_utf8_checked ((MonoString*)obj, error);
+		mono_error_cleanup (error); /* FIXME don't swallow the error */
 		if (utf8 && strlen (utf8) > 60) {
 			utf8 [57] = '.';
 			utf8 [58] = '.';
@@ -1225,11 +1225,11 @@ mono_class_describe_statics (MonoClass* klass)
 	MonoClassField *field;
 	MonoClass *p;
 	const char *field_ptr;
-	MonoVTable *vtable = mono_class_vtable_checked (mono_domain_get (), klass, &error);
+	MonoVTable *vtable = mono_class_vtable_checked (mono_domain_get (), klass, error);
 	const char *addr;
 
-	if (!vtable || !is_ok (&error)) {
-		mono_error_cleanup (&error);
+	if (!vtable || !is_ok (error)) {
+		mono_error_cleanup (error);
 		return;
 	}
 
@@ -1264,10 +1264,10 @@ mono_method_print_code (MonoMethod *method)
 {
 	ERROR_DECL (error);
 	char *code;
-	MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
+	MonoMethodHeader *header = mono_method_get_header_checked (method, error);
 	if (!header) {
-		printf ("METHOD HEADER NOT FOUND DUE TO: %s\n", mono_error_get_message (&error));
-		mono_error_cleanup (&error);
+		printf ("METHOD HEADER NOT FOUND DUE TO: %s\n", mono_error_get_message (error));
+		mono_error_cleanup (error);
 		return;
 	}
 	code = mono_disasm_code (0, method, header->code, header->code + header->code_size);

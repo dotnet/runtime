@@ -117,7 +117,7 @@ mono_w32file_unlock (HANDLE handle, gint64 position, gint64 length, gint32 *erro
 HANDLE
 mono_w32file_get_console_output (void)
 {
-	ERROR_DECL (mono_error);
+	ERROR_DECL_VALUE (mono_error);
 	error_init (&mono_error);
 
 	g_unsupported_api ("GetStdHandle (STD_OUTPUT_HANDLE)");
@@ -133,7 +133,7 @@ mono_w32file_get_console_output (void)
 HANDLE
 mono_w32file_get_console_input (void)
 {
-	ERROR_DECL (mono_error);
+	ERROR_DECL_VALUE (mono_error);
 	error_init (&mono_error);
 
 	g_unsupported_api ("GetStdHandle (STD_INPUT_HANDLE)");
@@ -149,7 +149,7 @@ mono_w32file_get_console_input (void)
 HANDLE
 mono_w32file_get_console_error (void)
 {
-	ERROR_DECL (mono_error);
+	ERROR_DECL_VALUE (mono_error);
 	error_init (&mono_error);
 
 	g_unsupported_api ("GetStdHandle (STD_ERROR_HANDLE)");

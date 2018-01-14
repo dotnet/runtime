@@ -1316,8 +1316,8 @@ token_handler (MonoDisHelper *dh, MonoMethod *method, guint32 token)
 		if (method->wrapper_type) {
 			klass = (MonoClass *)data;
 		} else {
-			klass = mono_class_get_checked (method->klass->image, token, &error);
-			g_assert (mono_error_ok (&error)); /* FIXME error handling */
+			klass = mono_class_get_checked (method->klass->image, token, error);
+			g_assert (mono_error_ok (error)); /* FIXME error handling */
 		}
 		res = g_strdup_printf ("<%s>", klass->name);
 		break;
@@ -1328,9 +1328,9 @@ token_handler (MonoDisHelper *dh, MonoMethod *method, guint32 token)
 			cmethod = (MonoMethod *)data;
 		} else {
 			ERROR_DECL (error);
-			cmethod = mono_get_method_checked (method->klass->image, token, NULL, NULL, &error);
+			cmethod = mono_get_method_checked (method->klass->image, token, NULL, NULL, error);
 			if (!cmethod)
-				g_error ("Could not load method due to %s", mono_error_get_message (&error)); /* FIXME don't swallow the error */
+				g_error ("Could not load method due to %s", mono_error_get_message (error)); /* FIXME don't swallow the error */
 		}
 		desc = mono_method_full_name (cmethod, TRUE);
 		res = g_strdup_printf ("<%s>", desc);
@@ -1352,8 +1352,8 @@ token_handler (MonoDisHelper *dh, MonoMethod *method, guint32 token)
 		if (method->wrapper_type) {
 			field = (MonoClassField *)data;
 		} else {
-			field = mono_field_from_token_checked (method->klass->image, token, &klass, NULL,  &error);
-			g_assert (mono_error_ok (&error)); /* FIXME error handling */
+			field = mono_field_from_token_checked (method->klass->image, token, &klass, NULL,  error);
+			g_assert (mono_error_ok (error)); /* FIXME error handling */
 		}
 		desc = mono_field_full_name (field);
 		res = g_strdup_printf ("<%s>", desc);
@@ -1380,8 +1380,8 @@ disasm_ins (MonoMethod *method, const guchar *ip, const guint8 **endip)
 	ERROR_DECL (error);
 	char *dis;
 	MonoDisHelper dh;
-	MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
-	mono_error_assert_ok (&error); /* FIXME don't swallow the error */
+	MonoMethodHeader *header = mono_method_get_header_checked (method, error);
+	mono_error_assert_ok (error); /* FIXME don't swallow the error */
 
 	memset (&dh, 0, sizeof (dh));
 	dh.newline = "";
@@ -1503,12 +1503,12 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 	gboolean first = TRUE;
 	MonoDebugSourceLocation *loc;
 	char *prev_file_name = NULL;
-	MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
+	MonoMethodHeader *header = mono_method_get_header_checked (method, error);
 	MonoDebugMethodInfo *minfo;
 	MonoDebugLineNumberEntry *ln_array;
 	int *native_to_il_offset = NULL;
 	
-	mono_error_assert_ok (&error); /* FIXME don't swallow the error */
+	mono_error_assert_ok (error); /* FIXME don't swallow the error */
 
 	if (!w->emit_line) {
 		mono_metadata_free_mh (header);
@@ -1770,8 +1770,8 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 	emit_section_change (w, ".debug_info", 0);
 
 	sig = mono_method_signature (method);
-	header = mono_method_get_header_checked (method, &error);
-	mono_error_assert_ok (&error); /* FIXME don't swallow the error */
+	header = mono_method_get_header_checked (method, error);
+	mono_error_assert_ok (error); /* FIXME don't swallow the error */
 
 	/* Parameter types */
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {

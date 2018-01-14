@@ -1091,8 +1091,8 @@ resolve_patch (MonoCompile *cfg, MonoJumpInfoType type, gconstpointer target)
 	ji.type = type;
 	ji.data.target = target;
 
-	res = mono_resolve_patch_target (cfg->method, cfg->domain, NULL, &ji, FALSE, &error);
-	mono_error_assert_ok (&error);
+	res = mono_resolve_patch_target (cfg->method, cfg->domain, NULL, &ji, FALSE, error);
+	mono_error_assert_ok (error);
 
 	return res;
 }
@@ -3246,10 +3246,10 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 				if (!tramp_var) {
 					target =
 						mono_create_jit_trampoline (mono_domain_get (),
-													call->method, &error);
-					if (!is_ok (&error)) {
-						set_failure (ctx, mono_error_get_message (&error));
-						mono_error_cleanup (&error);
+													call->method, error);
+					if (!is_ok (error)) {
+						set_failure (ctx, mono_error_get_message (error));
+						mono_error_cleanup (error);
 						return;
 					}
 
@@ -3262,11 +3262,11 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 #else
 				target =
 					mono_create_jit_trampoline (mono_domain_get (),
-								    call->method, &error);
-				if (!is_ok (&error)) {
+								    call->method, error);
+				if (!is_ok (error)) {
 					g_free (name);
-					set_failure (ctx, mono_error_get_message (&error));
-					mono_error_cleanup (&error);
+					set_failure (ctx, mono_error_get_message (error));
+					mono_error_cleanup (error);
 					return;
 				}
 
@@ -3331,8 +3331,8 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 					if (abs_ji) {
 						ERROR_DECL (error);
 
-						target = mono_resolve_patch_target (cfg->method, cfg->domain, NULL, abs_ji, FALSE, &error);
-						mono_error_assert_ok (&error);
+						target = mono_resolve_patch_target (cfg->method, cfg->domain, NULL, abs_ji, FALSE, error);
+						mono_error_assert_ok (error);
 						callee = emit_jit_callee (ctx, "", llvm_sig, target);
 					} else {
 						g_assert_not_reached ();
@@ -3352,8 +3352,8 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 						 * FIXME: Some trampolines might have
 						 * their own calling convention on some platforms.
 						 */
-						target = mono_resolve_patch_target (cfg->method, cfg->domain, NULL, abs_ji, FALSE, &error);
-						mono_error_assert_ok (&error);
+						target = mono_resolve_patch_target (cfg->method, cfg->domain, NULL, abs_ji, FALSE, error);
+						mono_error_assert_ok (error);
 						LLVMAddGlobalMapping (ctx->module->ee, callee, target);
 					}
 				}

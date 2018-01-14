@@ -432,15 +432,15 @@ ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoObject
 
 	stash_system_image (mono_object_class (this_obj)->image);
 
-	mono_w32process_get_fileversion (this_obj, mono_string_chars (filename), &error);
-	if (!mono_error_ok (&error)) {
-		mono_error_set_pending_exception (&error);
+	mono_w32process_get_fileversion (this_obj, mono_string_chars (filename), error);
+	if (!mono_error_ok (error)) {
+		mono_error_set_pending_exception (error);
 		return;
 	}
 
-	process_set_field_string (this_obj, "filename", mono_string_chars (filename), mono_string_length (filename), &error);
-	if (!mono_error_ok (&error)) {
-		mono_error_set_pending_exception (&error);
+	process_set_field_string (this_obj, "filename", mono_string_chars (filename), mono_string_length (filename), error);
+	if (!mono_error_ok (error)) {
+		mono_error_set_pending_exception (error);
 	}
 }
 
@@ -584,17 +584,17 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, 
 		module_count += needed / sizeof(HMODULE);
 
 	count = module_count + assembly_count;
-	temp_arr = mono_array_new_checked (mono_domain_get (), get_process_module_class (), count, &error);
-	if (mono_error_set_pending_exception (&error))
+	temp_arr = mono_array_new_checked (mono_domain_get (), get_process_module_class (), count, error);
+	if (mono_error_set_pending_exception (error))
 		return NULL;
 
 	for (i = 0; i < module_count; i++) {
 		if (mono_w32process_module_get_name (process, mods[i], modname, MAX_PATH)
 			 && mono_w32process_module_get_filename (process, mods[i], filename, MAX_PATH))
 		{
-			MonoObject *module = process_add_module (process, mods[i], filename, modname, get_process_module_class (), &error);
-			if (!mono_error_ok (&error)) {
-				mono_error_set_pending_exception (&error);
+			MonoObject *module = process_add_module (process, mods[i], filename, modname, get_process_module_class (), error);
+			if (!mono_error_ok (error)) {
+				mono_error_set_pending_exception (error);
 				return NULL;
 			}
 			mono_array_setref (temp_arr, num_added++, module);
@@ -604,9 +604,9 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, 
 	if (assemblies) {
 		for (i = 0; i < assembly_count; i++) {
 			MonoAssembly *ass = (MonoAssembly *)g_ptr_array_index (assemblies, i);
-			MonoObject *module = process_get_module (ass, get_process_module_class (), &error);
-			if (!mono_error_ok (&error)) {
-				mono_error_set_pending_exception (&error);
+			MonoObject *module = process_get_module (ass, get_process_module_class (), error);
+			if (!mono_error_ok (error)) {
+				mono_error_set_pending_exception (error);
 				return NULL;
 			}
 			mono_array_setref (temp_arr, num_added++, module);
@@ -618,8 +618,8 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, 
 		arr = temp_arr;
 	} else {
 		/* shorter version of the array */
-		arr = mono_array_new_checked (mono_domain_get (), get_process_module_class (), num_added, &error);
-		if (mono_error_set_pending_exception (&error))
+		arr = mono_array_new_checked (mono_domain_get (), get_process_module_class (), num_added, error);
+		if (mono_error_set_pending_exception (error))
 			return NULL;
 
 		for (i = 0; i < num_added; i++)
@@ -652,9 +652,9 @@ ves_icall_System_Diagnostics_Process_ProcessName_internal (HANDLE process)
 	if (len == 0)
 		return NULL;
 
-	string = mono_string_new_utf16_checked (mono_domain_get (), name, len, &error);
-	if (!mono_error_ok (&error))
-		mono_error_set_pending_exception (&error);
+	string = mono_string_new_utf16_checked (mono_domain_get (), name, len, error);
+	if (!mono_error_ok (error))
+		mono_error_set_pending_exception (error);
 
 	return string;
 }

@@ -41,7 +41,7 @@ TODO (things to explore):
 
 There's no convenient way to wrap the object allocation function.
 Right now we do this:
-	MonoCultureInfoHandle culture = MONO_HANDLE_NEW (MonoCultureInfo, mono_object_new_checked (domain, klass, &error));
+	MonoCultureInfoHandle culture = MONO_HANDLE_NEW (MonoCultureInfo, mono_object_new_checked (domain, klass, error));
 
 Maybe what we need is a round of cleanup around all exposed types in the runtime to unify all helpers under the same hoof.
 Combine: MonoDefaults, GENERATE_GET_CLASS_WITH_CACHE, TYPED_HANDLE_DECL and friends.

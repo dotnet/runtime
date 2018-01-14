@@ -189,41 +189,41 @@ create_domain_objects (MonoDomain *domain)
 	 * Initialize String.Empty. This enables the removal of
 	 * the static cctor of the String class.
 	 */
-	string_vt = mono_class_vtable_checked (domain, mono_defaults.string_class, &error);
-	mono_error_assert_ok (&error);
+	string_vt = mono_class_vtable_checked (domain, mono_defaults.string_class, error);
+	mono_error_assert_ok (error);
 	string_empty_fld = mono_class_get_field_from_name (mono_defaults.string_class, "Empty");
 	g_assert (string_empty_fld);
-	MonoString *empty_str = mono_string_new_checked (domain, "", &error);
-	mono_error_assert_ok (&error);
-	empty_str = mono_string_intern_checked (empty_str, &error);
-	mono_error_assert_ok (&error);
+	MonoString *empty_str = mono_string_new_checked (domain, "", error);
+	mono_error_assert_ok (error);
+	empty_str = mono_string_intern_checked (empty_str, error);
+	mono_error_assert_ok (error);
 	mono_field_static_set_value (string_vt, string_empty_fld, empty_str);
 	domain->empty_string = empty_str;
 
 	/*
 	 * Create an instance early since we can't do it when there is no memory.
 	 */
-	arg = mono_string_new_checked (domain, "Out of memory", &error);
-	mono_error_assert_ok (&error);
-	domain->out_of_memory_ex = mono_exception_from_name_two_strings_checked (mono_defaults.corlib, "System", "OutOfMemoryException", arg, NULL, &error);
-	mono_error_assert_ok (&error);
+	arg = mono_string_new_checked (domain, "Out of memory", error);
+	mono_error_assert_ok (error);
+	domain->out_of_memory_ex = mono_exception_from_name_two_strings_checked (mono_defaults.corlib, "System", "OutOfMemoryException", arg, NULL, error);
+	mono_error_assert_ok (error);
 
 	/* 
 	 * These two are needed because the signal handlers might be executing on
 	 * an alternate stack, and Boehm GC can't handle that.
 	 */
-	arg = mono_string_new_checked (domain, "A null value was found where an object instance was required", &error);
-	mono_error_assert_ok (&error);
-	domain->null_reference_ex = mono_exception_from_name_two_strings_checked (mono_defaults.corlib, "System", "NullReferenceException", arg, NULL, &error);
-	mono_error_assert_ok (&error);
-	arg = mono_string_new_checked (domain, "The requested operation caused a stack overflow.", &error);
-	mono_error_assert_ok (&error);
-	domain->stack_overflow_ex = mono_exception_from_name_two_strings_checked (mono_defaults.corlib, "System", "StackOverflowException", arg, NULL, &error);
-	mono_error_assert_ok (&error);
+	arg = mono_string_new_checked (domain, "A null value was found where an object instance was required", error);
+	mono_error_assert_ok (error);
+	domain->null_reference_ex = mono_exception_from_name_two_strings_checked (mono_defaults.corlib, "System", "NullReferenceException", arg, NULL, error);
+	mono_error_assert_ok (error);
+	arg = mono_string_new_checked (domain, "The requested operation caused a stack overflow.", error);
+	mono_error_assert_ok (error);
+	domain->stack_overflow_ex = mono_exception_from_name_two_strings_checked (mono_defaults.corlib, "System", "StackOverflowException", arg, NULL, error);
+	mono_error_assert_ok (error);
 
 	/*The ephemeron tombstone i*/
-	domain->ephemeron_tombstone = mono_object_new_checked (domain, mono_defaults.object_class, &error);
-	mono_error_assert_ok (&error);
+	domain->ephemeron_tombstone = mono_object_new_checked (domain, mono_defaults.object_class, error);
+	mono_error_assert_ok (error);
 
 	if (domain != old_domain) {
 		mono_thread_pop_appdomain_ref ();
@@ -253,8 +253,8 @@ void
 mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb, MonoThreadAttachCB attach_cb)
 {
 	ERROR_DECL (error);
-	mono_runtime_init_checked (domain, start_cb, attach_cb, &error);
-	mono_error_cleanup (&error);
+	mono_runtime_init_checked (domain, start_cb, attach_cb, error);
+	mono_error_cleanup (error);
 }
 
 void
@@ -349,8 +349,8 @@ mono_get_corlib_version (void)
 		return -1;
 	if (! (field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 		return -1;
-	value = mono_field_get_value_object_checked (mono_domain_get (), field, NULL, &error);
-	mono_error_assert_ok (&error);
+	value = mono_field_get_value_object_checked (mono_domain_get (), field, NULL, error);
+	mono_error_assert_ok (error);
 	return *(gint32*)((gchar*)value + sizeof (MonoObject));
 }
 
@@ -385,8 +385,8 @@ void
 mono_context_init (MonoDomain *domain)
 {
 	ERROR_DECL (error);
-	mono_context_init_checked (domain, &error);
-	mono_error_cleanup (&error);
+	mono_context_init_checked (domain, error);
+	mono_error_cleanup (error);
 }
 
 void
@@ -469,8 +469,8 @@ mono_domain_create_appdomain (char *friendly_name, char *configuration_file)
 {
 	HANDLE_FUNCTION_ENTER ();
 	ERROR_DECL (error);
-	MonoDomain *domain = mono_domain_create_appdomain_checked (friendly_name, configuration_file, &error);
-	mono_error_cleanup (&error);
+	MonoDomain *domain = mono_domain_create_appdomain_checked (friendly_name, configuration_file, error);
+	mono_error_cleanup (error);
 	HANDLE_FUNCTION_RETURN_VAL (domain);
 }
 
@@ -526,8 +526,8 @@ mono_domain_set_config (MonoDomain *domain, const char *base_dir, const char *co
 {
 	HANDLE_FUNCTION_ENTER ();
 	ERROR_DECL (error);
-	mono_domain_set_config_checked (domain, base_dir, config_file_name, &error);
-	mono_error_cleanup (&error);
+	mono_domain_set_config_checked (domain, base_dir, config_file_name, error);
+	mono_error_cleanup (error);
 	HANDLE_FUNCTION_RETURN ();
 }
 
@@ -723,13 +723,13 @@ mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *typebu
 	g_assert (name || typebuilder);
 
 	ERROR_DECL (error);
-	error_init (&error);
+	error_init (error);
 
 	MonoReflectionAssembly * const ret = name
-		? mono_domain_try_type_resolve_name (domain, name, &error)
-		: mono_domain_try_type_resolve_typebuilder (domain, (MonoReflectionTypeBuilder *)typebuilder, &error);
+		? mono_domain_try_type_resolve_name (domain, name, error)
+		: mono_domain_try_type_resolve_typebuilder (domain, (MonoReflectionTypeBuilder *)typebuilder, error);
 
-	mono_error_cleanup (&error);
+	mono_error_cleanup (error);
 	return ret;
 }
 
@@ -1073,9 +1073,9 @@ mono_domain_set_options_from_config (MonoDomain *domain)
 	if (!domain || !domain->setup || !domain->setup->configuration_file)
 		return;
 
-	config_file_name = mono_string_to_utf8_checked (domain->setup->configuration_file, &error);
-	if (!mono_error_ok (&error)) {
-		mono_error_cleanup (&error);
+	config_file_name = mono_string_to_utf8_checked (domain->setup->configuration_file, error);
+	if (!mono_error_ok (error)) {
+		mono_error_cleanup (error);
 		goto free_and_out;
 	}
 
@@ -1250,9 +1250,9 @@ mono_domain_assembly_postload_search (MonoAssemblyName *aname, MonoAssembly *req
 
 	/* FIXME: We invoke managed code here, so there is a potential for deadlocks */
 
-	assembly = mono_try_assembly_resolve (domain, aname_str, requesting, refonly, &error);
+	assembly = mono_try_assembly_resolve (domain, aname_str, requesting, refonly, error);
 	g_free (aname_str);
-	mono_error_cleanup (&error);
+	mono_error_cleanup (error);
 
 	return assembly;
 }
@@ -1320,7 +1320,7 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 #endif
 	klass = domain->domain->mbr.obj.vtable->klass;
 
-	error_init (&error);
+	error_init (error);
 
 	mono_domain_assemblies_lock (domain);
 	add_assemblies_to_domain (domain, assembly, NULL);
@@ -1337,18 +1337,18 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 		goto leave;
 	}
 
-	MonoReflectionAssemblyHandle ref_assembly = mono_assembly_get_object_handle (domain, assembly, &error);
-	mono_error_assert_ok (&error);
+	MonoReflectionAssemblyHandle ref_assembly = mono_assembly_get_object_handle (domain, assembly, error);
+	mono_error_assert_ok (error);
 
 	if (assembly_load_method == NULL) {
-		assembly_load_method = mono_class_get_method_from_name_checked (klass, "DoAssemblyLoad", -1, 0, &error);
+		assembly_load_method = mono_class_get_method_from_name_checked (klass, "DoAssemblyLoad", -1, 0, error);
 		g_assert (assembly_load_method);
 	}
 
 	*params = MONO_HANDLE_RAW(ref_assembly);
 
-	mono_runtime_invoke_checked (assembly_load_method, domain->domain, params, &error);
-	mono_error_cleanup (&error);
+	mono_runtime_invoke_checked (assembly_load_method, domain->domain, params, error);
+	mono_error_cleanup (error);
 leave:
 	HANDLE_FUNCTION_RETURN ();
 }
@@ -1393,10 +1393,10 @@ set_domain_search_path (MonoDomain *domain)
 	npaths++;
 	
 	if (setup->private_bin_path) {
-		search_path = mono_string_to_utf8_checked (setup->private_bin_path, &error);
-		if (!mono_error_ok (&error)) { /*FIXME maybe we should bubble up the error.*/
+		search_path = mono_string_to_utf8_checked (setup->private_bin_path, error);
+		if (!mono_error_ok (error)) { /*FIXME maybe we should bubble up the error.*/
 			g_warning ("Could not decode AppDomain search path since it contains invalid characters");
-			mono_error_cleanup (&error);
+			mono_error_cleanup (error);
 			mono_domain_assemblies_unlock (domain);
 			return;
 		}
@@ -1458,9 +1458,9 @@ set_domain_search_path (MonoDomain *domain)
 	tmp = (gchar **)g_malloc ((npaths + 1) * sizeof (gchar *));
 	tmp [npaths] = NULL;
 
-	*tmp = mono_string_to_utf8_checked (setup->application_base, &error);
-	if (!mono_error_ok (&error)) {
-		mono_error_cleanup (&error);
+	*tmp = mono_string_to_utf8_checked (setup->application_base, error);
+	if (!mono_error_ok (error)) {
+		mono_error_cleanup (error);
 		g_strfreev (pvt_split);
 		g_free (tmp);
 
@@ -1779,9 +1779,9 @@ mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name)
 	if (setup == NULL || setup->shadow_copy_files == NULL)
 		return FALSE;
 
-	shadow_status_string = mono_string_to_utf8_checked (setup->shadow_copy_files, &error);
-	if (!mono_error_ok (&error)) {
-		mono_error_cleanup (&error);
+	shadow_status_string = mono_string_to_utf8_checked (setup->shadow_copy_files, error);
+	if (!mono_error_ok (error)) {
+		mono_error_cleanup (error);
 		return FALSE;
 	}
 	shadow_enabled = !g_ascii_strncasecmp (shadow_status_string, "true", 4);
@@ -1794,9 +1794,9 @@ mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name)
 		return TRUE;
 
 	/* Is dir_name a shadow_copy destination already? */
-	base_dir = get_shadow_assembly_location_base (domain, &error);
-	if (!mono_error_ok (&error)) {
-		mono_error_cleanup (&error);
+	base_dir = get_shadow_assembly_location_base (domain, error);
+	if (!mono_error_ok (error)) {
+		mono_error_cleanup (error);
 		return FALSE;
 	}
 
@@ -1806,9 +1806,9 @@ mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name)
 	}
 	g_free (base_dir);
 
-	all_dirs = mono_string_to_utf8_checked (setup->shadow_copy_directories, &error);
-	if (!mono_error_ok (&error)) {
-		mono_error_cleanup (&error);
+	all_dirs = mono_string_to_utf8_checked (setup->shadow_copy_directories, error);
+	if (!mono_error_ok (error)) {
+		mono_error_cleanup (error);
 		return FALSE;
 	}
 
@@ -1860,9 +1860,9 @@ mono_make_shadow_copy (const char *filename, MonoError *oerror)
 	}
 
 	/* Is dir_name a shadow_copy destination already? */
-	shadow_dir = get_shadow_assembly_location_base (domain, &error);
-	if (!mono_error_ok (&error)) {
-		mono_error_cleanup (&error);
+	shadow_dir = get_shadow_assembly_location_base (domain, error);
+	if (!mono_error_ok (error)) {
+		mono_error_cleanup (error);
 		g_free (dir_name);
 		mono_error_set_execution_engine (oerror, "Failed to create shadow copy (invalid characters in shadow directory name).");
 		return NULL;
@@ -1876,9 +1876,9 @@ mono_make_shadow_copy (const char *filename, MonoError *oerror)
 	g_free (shadow_dir);
 	g_free (dir_name);
 
-	shadow = get_shadow_assembly_location (filename, &error);
-	if (!mono_error_ok (&error)) {
-		mono_error_cleanup (&error);
+	shadow = get_shadow_assembly_location (filename, error);
+	if (!mono_error_ok (error)) {
+		mono_error_cleanup (error);
 		mono_error_set_execution_engine (oerror, "Failed to create shadow copy (invalid characters in file name).");
 		return NULL;
 	}
@@ -2597,12 +2597,12 @@ unload_thread_main (void *arg)
 
 	internal = mono_thread_internal_current ();
 
-	MonoString *thread_name_str = mono_string_new_checked (mono_domain_get (), "Domain unloader", &error);
-	if (is_ok (&error))
-		mono_thread_set_name_internal (internal, thread_name_str, TRUE, FALSE, &error);
-	if (!is_ok (&error)) {
-		data->failure_reason = g_strdup (mono_error_get_message (&error));
-		mono_error_cleanup (&error);
+	MonoString *thread_name_str = mono_string_new_checked (mono_domain_get (), "Domain unloader", error);
+	if (is_ok (error))
+		mono_thread_set_name_internal (internal, thread_name_str, TRUE, FALSE, error);
+	if (!is_ok (error)) {
+		data->failure_reason = g_strdup (mono_error_get_message (error));
+		mono_error_cleanup (error);
 		goto failure;
 	}
 
@@ -2731,7 +2731,7 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 	MonoInternalThread *internal;
 	MonoDomain *caller_domain = mono_domain_get ();
 
-	error_init(&error);
+	error_init(error);
 
 	/* printf ("UNLOAD STARTING FOR %s (%p) IN THREAD 0x%x.\n", domain->friendly_name, domain, mono_native_thread_id_get ()); */
 
@@ -2756,16 +2756,16 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 
 	mono_domain_set (domain, FALSE);
 	/* Notify OnDomainUnload listeners */
-	method = mono_class_get_method_from_name_checked (domain->domain->mbr.obj.vtable->klass, "DoDomainUnload", -1, 0, &error);
+	method = mono_class_get_method_from_name_checked (domain->domain->mbr.obj.vtable->klass, "DoDomainUnload", -1, 0, error);
 	g_assert (method);
 
-	mono_runtime_try_invoke (method, domain->domain, NULL, exc, &error);
+	mono_runtime_try_invoke (method, domain->domain, NULL, exc, error);
 
-	if (!mono_error_ok (&error)) {
+	if (!mono_error_ok (error)) {
 		if (*exc)
-			mono_error_cleanup (&error);
+			mono_error_cleanup (error);
 		else
-			*exc = (MonoObject*)mono_error_convert_to_exception (&error);
+			*exc = (MonoObject*)mono_error_convert_to_exception (error);
 	}
 
 	if (*exc) {
@@ -2792,8 +2792,8 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 	 *
 	 * Force it to be attached to avoid racing during shutdown.
 	 */
-	internal = mono_thread_create_internal (mono_get_root_domain (), unload_thread_main, thread_data, MONO_THREAD_CREATE_FLAGS_FORCE_CREATE, &error);
-	mono_error_assert_ok (&error);
+	internal = mono_thread_create_internal (mono_get_root_domain (), unload_thread_main, thread_data, MONO_THREAD_CREATE_FLAGS_FORCE_CREATE, error);
+	mono_error_assert_ok (error);
 
 	thread_handle = mono_threads_open_thread_handle (internal->handle);
 

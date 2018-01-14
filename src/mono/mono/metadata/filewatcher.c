@@ -115,10 +115,10 @@ ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
 	FAMEvent ev;
 
 	if (FAMNextEvent (conn, &ev) == 1) {
-		*filename = mono_string_new_checked (mono_domain_get (), ev.filename, &error);
+		*filename = mono_string_new_checked (mono_domain_get (), ev.filename, error);
 		*code = ev.code;
 		*reqnum = ev.fr.reqnum;
-		if (mono_error_set_pending_exception (&error))
+		if (mono_error_set_pending_exception (error))
 			return FALSE;
 		return TRUE;
 	}
@@ -162,8 +162,8 @@ ves_icall_System_IO_InotifyWatcher_AddWatch (int fd, MonoString *name, gint32 ma
 	if (name == NULL)
 		return -1;
 
-	str = mono_string_to_utf8_checked (name, &error);
-	if (mono_error_set_pending_exception (&error))
+	str = mono_string_to_utf8_checked (name, error);
+	if (mono_error_set_pending_exception (error))
 		return -1;
 	path = mono_portability_find_file (str, TRUE);
 	if (!path)
