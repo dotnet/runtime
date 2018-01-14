@@ -1819,16 +1819,10 @@ namespace Microsoft.CSharp.RuntimeBinder
 
                 AggregateSymbol aggregate = GetCTypeFromType(baseMethodInfo.DeclaringType).getAggregate();
                 MethodSymbol baseMethod = FindMethodFromMemberInfo(baseMethodInfo);
-
-                // This assert is temporarily disabled to improve testability of the area on .NetNative
-                //Debug.Assert(baseMethod != null);
-                if ((object)baseMethod == null)
-                {
-                    throw Error.InternalCompilerError();
-                }
-
+                Debug.Assert(baseMethod != null);
                 return new SymWithType(baseMethod, aggregate.getThisType());
             }
+
             return null;
         }
 
