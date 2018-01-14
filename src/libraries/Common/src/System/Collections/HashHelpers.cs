@@ -14,7 +14,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
@@ -50,7 +49,6 @@ namespace System.Collections
         {
             if (min < 0)
                 throw new ArgumentException(SR.Arg_HTCapacityOverflow);
-            Contract.EndContractBlock();
 
             for (int i = 0; i < primes.Length; i++)
             {

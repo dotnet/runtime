@@ -6,7 +6,6 @@ using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Security.Claims;
 using System.Text;
@@ -212,7 +211,6 @@ namespace System.Security.Principal
         {
             if (userToken == IntPtr.Zero)
                 throw new ArgumentException(SR.Argument_TokenZero);
-            Contract.EndContractBlock();
 
             // Find out if the specified token is a valid.
             uint dwLength = (uint)sizeof(uint);
@@ -372,8 +370,6 @@ namespace System.Security.Principal
         }
         private bool CheckNtTokenForSid(SecurityIdentifier sid)
         {
-            Contract.EndContractBlock();
-
             // special case the anonymous identity.
             if (_safeTokenHandle.IsInvalid)
                 return false;

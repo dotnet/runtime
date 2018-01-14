@@ -34,7 +34,6 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Buffers" />
-    <Reference Include="System.Diagnostics.Contracts" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />

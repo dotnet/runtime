@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Security;
 
 namespace System.IO
@@ -18,7 +17,6 @@ namespace System.IO
 
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_PathEmpty, nameof(path));
-            Contract.EndContractBlock();
 
             string fullPath = Path.GetFullPath(path);
 
@@ -34,7 +32,6 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(path));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_PathEmpty, nameof(path));
-            Contract.EndContractBlock();
 
             string fullPath = Path.GetFullPath(path);
 
@@ -156,8 +153,6 @@ namespace System.IO
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
-            Contract.Ensures(Contract.Result<string[]>() != null);
-            Contract.EndContractBlock();
 
             return InternalGetFiles(path, "*", SearchOption.TopDirectoryOnly);
         }
@@ -170,8 +165,6 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(path));
             if (searchPattern == null)
                 throw new ArgumentNullException(nameof(searchPattern));
-            Contract.Ensures(Contract.Result<string[]>() != null);
-            Contract.EndContractBlock();
 
             return InternalGetFiles(path, searchPattern, SearchOption.TopDirectoryOnly);
         }
@@ -186,8 +179,6 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(searchPattern));
             if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
                 throw new ArgumentOutOfRangeException(nameof(searchOption), SR.ArgumentOutOfRange_Enum);
-            Contract.Ensures(Contract.Result<string[]>() != null);
-            Contract.EndContractBlock();
 
             return InternalGetFiles(path, searchPattern, searchOption);
         }
@@ -208,8 +199,6 @@ namespace System.IO
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
-            Contract.Ensures(Contract.Result<string[]>() != null);
-            Contract.EndContractBlock();
 
             return InternalGetDirectories(path, "*", SearchOption.TopDirectoryOnly);
         }
@@ -222,8 +211,6 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(path));
             if (searchPattern == null)
                 throw new ArgumentNullException(nameof(searchPattern));
-            Contract.Ensures(Contract.Result<string[]>() != null);
-            Contract.EndContractBlock();
 
             return InternalGetDirectories(path, searchPattern, SearchOption.TopDirectoryOnly);
         }
@@ -238,8 +225,6 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(searchPattern));
             if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
                 throw new ArgumentOutOfRangeException(nameof(searchOption), SR.ArgumentOutOfRange_Enum);
-            Contract.Ensures(Contract.Result<string[]>() != null);
-            Contract.EndContractBlock();
 
             return InternalGetDirectories(path, searchPattern, searchOption);
         }
@@ -251,7 +236,6 @@ namespace System.IO
             Debug.Assert(path != null);
             Debug.Assert(searchPattern != null);
             Debug.Assert(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
-            Contract.Ensures(Contract.Result<string[]>() != null);
 
             return InternalGetFileDirectoryNames(path, path, searchPattern, false, true, searchOption);
         }
@@ -261,8 +245,6 @@ namespace System.IO
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
-            Contract.Ensures(Contract.Result<string[]>() != null);
-            Contract.EndContractBlock();
 
             return InternalGetFileSystemEntries(path, "*", SearchOption.TopDirectoryOnly);
         }
@@ -275,8 +257,6 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(path));
             if (searchPattern == null)
                 throw new ArgumentNullException(nameof(searchPattern));
-            Contract.Ensures(Contract.Result<string[]>() != null);
-            Contract.EndContractBlock();
 
             return InternalGetFileSystemEntries(path, searchPattern, SearchOption.TopDirectoryOnly);
         }
@@ -291,8 +271,6 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(searchPattern));
             if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
                 throw new ArgumentOutOfRangeException(nameof(searchOption), SR.ArgumentOutOfRange_Enum);
-            Contract.Ensures(Contract.Result<string[]>() != null);
-            Contract.EndContractBlock();
 
             return InternalGetFileSystemEntries(path, searchPattern, searchOption);
         }
@@ -327,7 +305,6 @@ namespace System.IO
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
-            Contract.EndContractBlock();
 
             return InternalEnumerateDirectories(path, "*", SearchOption.TopDirectoryOnly);
         }
@@ -338,7 +315,6 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(path));
             if (searchPattern == null)
                 throw new ArgumentNullException(nameof(searchPattern));
-            Contract.EndContractBlock();
 
             return InternalEnumerateDirectories(path, searchPattern, SearchOption.TopDirectoryOnly);
         }
@@ -351,7 +327,6 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(searchPattern));
             if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
                 throw new ArgumentOutOfRangeException(nameof(searchOption), SR.ArgumentOutOfRange_Enum);
-            Contract.EndContractBlock();
 
             return InternalEnumerateDirectories(path, searchPattern, searchOption);
         }
@@ -369,8 +344,6 @@ namespace System.IO
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
-            Contract.Ensures(Contract.Result<IEnumerable<string>>() != null);
-            Contract.EndContractBlock();
 
             return InternalEnumerateFiles(path, "*", SearchOption.TopDirectoryOnly);
         }
@@ -381,8 +354,6 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(path));
             if (searchPattern == null)
                 throw new ArgumentNullException(nameof(searchPattern));
-            Contract.Ensures(Contract.Result<IEnumerable<string>>() != null);
-            Contract.EndContractBlock();
 
             return InternalEnumerateFiles(path, searchPattern, SearchOption.TopDirectoryOnly);
         }
@@ -395,8 +366,6 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(searchPattern));
             if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
                 throw new ArgumentOutOfRangeException(nameof(searchOption), SR.ArgumentOutOfRange_Enum);
-            Contract.Ensures(Contract.Result<IEnumerable<string>>() != null);
-            Contract.EndContractBlock();
 
             return InternalEnumerateFiles(path, searchPattern, searchOption);
         }
@@ -406,7 +375,6 @@ namespace System.IO
             Debug.Assert(path != null);
             Debug.Assert(searchPattern != null);
             Debug.Assert(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
-            Contract.Ensures(Contract.Result<IEnumerable<string>>() != null);
 
             return EnumerateFileSystemNames(path, searchPattern, searchOption, true, false);
         }
@@ -415,8 +383,6 @@ namespace System.IO
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
-            Contract.Ensures(Contract.Result<IEnumerable<string>>() != null);
-            Contract.EndContractBlock();
 
             return InternalEnumerateFileSystemEntries(path, "*", SearchOption.TopDirectoryOnly);
         }
@@ -427,8 +393,6 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(path));
             if (searchPattern == null)
                 throw new ArgumentNullException(nameof(searchPattern));
-            Contract.Ensures(Contract.Result<IEnumerable<string>>() != null);
-            Contract.EndContractBlock();
 
             return InternalEnumerateFileSystemEntries(path, searchPattern, SearchOption.TopDirectoryOnly);
         }
@@ -441,8 +405,6 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(searchPattern));
             if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
                 throw new ArgumentOutOfRangeException(nameof(searchOption), SR.ArgumentOutOfRange_Enum);
-            Contract.Ensures(Contract.Result<IEnumerable<string>>() != null);
-            Contract.EndContractBlock();
 
             return InternalEnumerateFileSystemEntries(path, searchPattern, searchOption);
         }
@@ -452,7 +414,6 @@ namespace System.IO
             Debug.Assert(path != null);
             Debug.Assert(searchPattern != null);
             Debug.Assert(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
-            Contract.Ensures(Contract.Result<IEnumerable<string>>() != null);
 
             return EnumerateFileSystemNames(path, searchPattern, searchOption, true, true);
         }
@@ -463,7 +424,6 @@ namespace System.IO
             Debug.Assert(path != null);
             Debug.Assert(searchPattern != null);
             Debug.Assert(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
-            Contract.Ensures(Contract.Result<IEnumerable<string>>() != null);
 
             return FileSystem.Current.EnumeratePaths(path, searchPattern, searchOption,
                 (includeFiles ? SearchTarget.Files : 0) | (includeDirs ? SearchTarget.Directories : 0));
@@ -473,7 +433,6 @@ namespace System.IO
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
-            Contract.EndContractBlock();
 
             string fullPath = Path.GetFullPath(path);
             string root = fullPath.Substring(0, PathInternal.GetRootLength(fullPath));
@@ -505,7 +464,6 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(path));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_PathEmpty, nameof(path));
-            Contract.EndContractBlock();
 
             string fulldestDirName = Path.GetFullPath(path);
 
@@ -523,7 +481,6 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(destDirName));
             if (destDirName.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destDirName));
-            Contract.EndContractBlock();
 
             string fullsourceDirName = Path.GetFullPath(sourceDirName);
             string sourcePath = EnsureTrailingDirectorySeparator(fullsourceDirName);

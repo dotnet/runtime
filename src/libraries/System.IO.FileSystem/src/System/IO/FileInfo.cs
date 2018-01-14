@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Text;
 
 namespace System.IO
@@ -138,7 +137,6 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(destFileName), SR.ArgumentNull_FileName);
             if (destFileName.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destFileName));
-            Contract.EndContractBlock();
 
             return new FileInfo(File.InternalCopy(FullPath, destFileName, overwrite), isNormalized: true);
         }
@@ -225,7 +223,6 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(destFileName));
             if (destFileName.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destFileName));
-            Contract.EndContractBlock();
 
             string fullDestFileName = Path.GetFullPath(destFileName);
 

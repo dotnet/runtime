@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
-using System.Diagnostics.Contracts;
 using System.Security.AccessControl;
 using System;
 
@@ -25,7 +24,6 @@ namespace System.IO
         {
             if (directorySecurity == null)
                 throw new ArgumentNullException(nameof(directorySecurity));
-            Contract.EndContractBlock();
 
             String fullPath = Path.GetFullPath(directoryInfo.FullName);
             directorySecurity.Persist(fullPath);
@@ -45,7 +43,6 @@ namespace System.IO
         {
             if (fileSecurity == null)
                 throw new ArgumentNullException(nameof(fileSecurity));
-            Contract.EndContractBlock();
 
             String fullPath = Path.GetFullPath(fileInfo.FullName);
             // Appropriate security check should be done for us by FileSecurity.
@@ -68,7 +65,6 @@ namespace System.IO
 
             if (fileSecurity == null)
                 throw new ArgumentNullException(nameof(fileSecurity));
-            Contract.EndContractBlock();
 
             if (handle.IsClosed)
             {

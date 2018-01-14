@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 
 namespace System.Numerics
@@ -23,8 +22,6 @@ namespace System.Numerics
 
         public static void GetDoubleParts(double dbl, out int sign, out int exp, out ulong man, out bool fFinite)
         {
-            Contract.Ensures(Contract.ValueAtReturn(out sign) == +1 || Contract.ValueAtReturn(out sign) == -1);
-
             DoubleUlong du;
             du.uu = 0;
             du.dbl = dbl;

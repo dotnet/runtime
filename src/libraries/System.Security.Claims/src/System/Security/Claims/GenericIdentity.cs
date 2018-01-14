@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Security.Claims;
 
 namespace System.Security.Principal
@@ -17,7 +16,6 @@ namespace System.Security.Principal
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
-            Contract.EndContractBlock();
 
             m_name = name;
             m_type = "";
@@ -31,7 +29,6 @@ namespace System.Security.Principal
                 throw new ArgumentNullException(nameof(name));
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
-            Contract.EndContractBlock();
 
             m_name = name;
             m_type = type;

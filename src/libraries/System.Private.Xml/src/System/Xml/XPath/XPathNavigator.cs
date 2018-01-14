@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Xml.Schema;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Security;
 using System.Text;
 using System.Xml;
@@ -1183,22 +1182,16 @@ namespace System.Xml.XPath
 
         public virtual XPathNodeIterator Select(string xpath)
         {
-            Contract.Ensures(Contract.Result<XPathNodeIterator>() != null);
-
             return this.Select(XPathExpression.Compile(xpath));
         }
 
         public virtual XPathNodeIterator Select(string xpath, IXmlNamespaceResolver resolver)
         {
-            Contract.Ensures(Contract.Result<XPathNodeIterator>() != null);
-
             return this.Select(XPathExpression.Compile(xpath, resolver));
         }
 
         public virtual XPathNodeIterator Select(XPathExpression expr)
         {
-            Contract.Ensures(Contract.Result<XPathNodeIterator>() != null);
-
             XPathNodeIterator result = Evaluate(expr) as XPathNodeIterator;
             if (result == null)
             {
@@ -2253,23 +2246,4 @@ namespace System.Xml.XPath
             }
         }
     }
-
-#if CONTRACTS_FULL
-    [ContractClassFor(typeof(XPathNavigator))]
-    internal abstract class XPathNavigatorContract : XPathNavigator
-    {
-        public override XPathNavigator Clone()
-        {
-            Contract.Ensures(Contract.Result<XPathNavigator>() != null);
-            return default(XPathNavigator);
-        }
-
-        public override XmlNameTable NameTable { 
-            get {
-                Contract.Ensures(Contract.Result<XmlNameTable>() != null);
-                return default(XmlNameTable);
-            }
-        }
-    }
-#endif
 }

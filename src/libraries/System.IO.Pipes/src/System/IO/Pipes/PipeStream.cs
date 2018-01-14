@@ -5,7 +5,6 @@
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
@@ -497,7 +496,6 @@ namespace System.IO.Pipes
 
         public override bool CanRead
         {
-            [Pure]
             get
             {
                 return _canRead;
@@ -506,7 +504,6 @@ namespace System.IO.Pipes
 
         public override bool CanWrite
         {
-            [Pure]
             get
             {
                 return _canWrite;
@@ -515,7 +512,6 @@ namespace System.IO.Pipes
 
         public override bool CanSeek
         {
-            [Pure]
             get
             {
                 return false;
