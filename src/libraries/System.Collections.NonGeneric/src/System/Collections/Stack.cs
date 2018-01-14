@@ -13,8 +13,6 @@
 =============================================================================*/
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 
 namespace System.Collections
 {
@@ -27,7 +25,6 @@ namespace System.Collections
     public class Stack : ICollection, ICloneable
     {
         private Object[] _array; // Storage for stack elements. Do not rename (binary serialization)
-        [ContractPublicPropertyName("Count")]
         private int _size; // Number of items in the stack. Do not rename (binary serialization)
         private int _version; // Used to keep enumerator in sync w/ collection. Do not rename (binary serialization)
         [NonSerialized]
@@ -48,7 +45,7 @@ namespace System.Collections
         {
             if (initialCapacity < 0)
                 throw new ArgumentOutOfRangeException(nameof(initialCapacity), SR.ArgumentOutOfRange_NeedNonNegNum);
-            Contract.EndContractBlock();
+
             if (initialCapacity < _defaultCapacity)
                 initialCapacity = _defaultCapacity;  // Simplify doubling logic in Push.
             _array = new Object[initialCapacity];
@@ -63,7 +60,7 @@ namespace System.Collections
         {
             if (col == null)
                 throw new ArgumentNullException(nameof(col));
-            Contract.EndContractBlock();
+
             IEnumerator en = col.GetEnumerator();
             while (en.MoveNext())
                 Push(en.Current);
@@ -73,7 +70,6 @@ namespace System.Collections
         {
             get
             {
-                Contract.Ensures(Contract.Result<int>() >= 0);
                 return _size;
             }
         }
@@ -105,8 +101,6 @@ namespace System.Collections
 
         public virtual Object Clone()
         {
-            Contract.Ensures(Contract.Result<Object>() != null);
-
             Stack s = new Stack(_size);
             s._size = _size;
             Array.Copy(_array, 0, s._array, 0, _size);
@@ -144,7 +138,6 @@ namespace System.Collections
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (array.Length - index < _size)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
 
             int i = 0;
             object[] objArray = array as object[];
@@ -169,7 +162,6 @@ namespace System.Collections
         // Returns an IEnumerator for this Stack.
         public virtual IEnumerator GetEnumerator()
         {
-            Contract.Ensures(Contract.Result<IEnumerator>() != null);
             return new StackEnumerator(this);
         }
 
@@ -179,7 +171,7 @@ namespace System.Collections
         {
             if (_size == 0)
                 throw new InvalidOperationException(SR.InvalidOperation_EmptyStack);
-            Contract.EndContractBlock();
+
             return _array[_size - 1];
         }
 
@@ -189,8 +181,7 @@ namespace System.Collections
         {
             if (_size == 0)
                 throw new InvalidOperationException(SR.InvalidOperation_EmptyStack);
-            //Contract.Ensures(Count == Contract.OldValue(Count) - 1);
-            Contract.EndContractBlock();
+
             _version++;
             Object obj = _array[--_size];
             _array[_size] = null;     // Free memory quicker.
@@ -201,7 +192,6 @@ namespace System.Collections
         // 
         public virtual void Push(Object obj)
         {
-            //Contract.Ensures(Count == Contract.OldValue(Count) + 1);
             if (_size == _array.Length)
             {
                 Object[] newArray = new Object[2 * _array.Length];
@@ -218,8 +208,7 @@ namespace System.Collections
         {
             if (stack == null)
                 throw new ArgumentNullException(nameof(stack));
-            Contract.Ensures(Contract.Result<Stack>() != null);
-            Contract.EndContractBlock();
+
             return new SyncStack(stack);
         }
 
@@ -227,8 +216,6 @@ namespace System.Collections
         // Copies the Stack to an array, in the same order Pop would return the items.
         public virtual Object[] ToArray()
         {
-            Contract.Ensures(Contract.Result<Object[]>() != null);
-
             if (_size == 0)
                 return Array.Empty<Object>();
 
@@ -317,7 +304,6 @@ namespace System.Collections
                 }
             }
 
-            [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Thread safety problems with precondition - can't express the precondition as of Dev10.
             public override Object Pop()
             {
                 lock (_root)
@@ -334,7 +320,6 @@ namespace System.Collections
                 }
             }
 
-            [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Thread safety problems with precondition - can't express the precondition
             public override Object Peek()
             {
                 lock (_root)
@@ -420,7 +405,6 @@ namespace System.Collections
             {
                 if (stack == null)
                     throw new ArgumentNullException(nameof(stack));
-                Contract.EndContractBlock();
 
                 _stack = stack;
             }

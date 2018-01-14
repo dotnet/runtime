@@ -13,7 +13,6 @@ using Microsoft.Win32;
 using System;
 using System.Collections;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 
@@ -229,7 +228,6 @@ nameof(targetType));
             {
                 throw new ArgumentNullException(nameof(rule));
             }
-            Contract.EndContractBlock();
 
             WriteLock();
             try
@@ -360,7 +358,6 @@ nameof(modification),
             {
                 throw new ArgumentNullException(nameof(rule));
             }
-            Contract.EndContractBlock();
 
             WriteLock();
             try
@@ -444,7 +441,6 @@ nameof(modification),
             {
                 throw new ArgumentNullException(nameof(rule));
             }
-            Contract.EndContractBlock();
 
             WriteLock();
 
@@ -465,7 +461,6 @@ nameof(modification),
             {
                 throw new ArgumentNullException(nameof(rule));
             }
-            Contract.EndContractBlock();
 
             WriteLock();
 
@@ -486,7 +481,6 @@ nameof(modification),
             {
                 throw new ArgumentNullException(nameof(rule));
             }
-            Contract.EndContractBlock();
 
             WriteLock();
 
@@ -509,7 +503,6 @@ nameof(modification),
             {
                 throw new ArgumentNullException(nameof(rule));
             }
-            Contract.EndContractBlock();
 
             WriteLock();
 
@@ -535,7 +528,6 @@ nameof(modification),
             {
                 throw new ArgumentNullException(nameof(rule));
             }
-            Contract.EndContractBlock();
 
             WriteLock();
 
@@ -563,7 +555,6 @@ nameof(modification),
             {
                 throw new ArgumentNullException(nameof(rule));
             }
-            Contract.EndContractBlock();
 
             WriteLock();
 
@@ -589,7 +580,6 @@ nameof(modification),
             {
                 throw new ArgumentNullException(nameof(rule));
             }
-            Contract.EndContractBlock();
 
             WriteLock();
 
@@ -610,7 +600,6 @@ nameof(modification),
             {
                 throw new ArgumentNullException(nameof(rule));
             }
-            Contract.EndContractBlock();
 
             WriteLock();
 
@@ -631,7 +620,6 @@ nameof(modification),
             {
                 throw new ArgumentNullException(nameof(rule));
             }
-            Contract.EndContractBlock();
 
             WriteLock();
 
@@ -652,7 +640,6 @@ nameof(modification),
             {
                 throw new ArgumentNullException(nameof(rule));
             }
-            Contract.EndContractBlock();
 
             WriteLock();
 
@@ -673,7 +660,6 @@ nameof(modification),
             {
                 throw new ArgumentNullException(nameof(rule));
             }
-            Contract.EndContractBlock();
 
             WriteLock();
 

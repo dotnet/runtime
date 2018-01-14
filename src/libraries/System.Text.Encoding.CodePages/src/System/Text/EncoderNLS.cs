@@ -4,7 +4,6 @@
 
 using System.Text;
 using System;
-using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
 
 namespace System.Text
@@ -99,7 +98,6 @@ namespace System.Text
 
             if (chars.Length - index < count)
                 throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
-            Contract.EndContractBlock();
 
             // Avoid empty input problem
             if (chars.Length == 0)
@@ -122,7 +120,6 @@ namespace System.Text
 
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            Contract.EndContractBlock();
 
             m_mustFlush = flush;
             m_throwOnOverflow = true;
@@ -144,7 +141,6 @@ namespace System.Text
 
             if (byteIndex < 0 || byteIndex > bytes.Length)
                 throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_Index);
-            Contract.EndContractBlock();
 
             if (chars.Length == 0)
                 chars = new char[1];
@@ -170,7 +166,6 @@ namespace System.Text
 
             if (byteCount < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException((byteCount < 0 ? nameof(byteCount): nameof(charCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
-            Contract.EndContractBlock();
 
             m_mustFlush = flush;
             m_throwOnOverflow = true;
@@ -198,8 +193,6 @@ namespace System.Text
 
             if (bytes.Length - byteIndex < byteCount)
                 throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
-
-            Contract.EndContractBlock();
 
             // Avoid empty input problem
             if (chars.Length == 0)
@@ -230,7 +223,6 @@ namespace System.Text
 
             if (charCount < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException((charCount < 0 ? nameof(charCount): nameof(byteCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
-            Contract.EndContractBlock();
 
             // We don't want to throw
             m_mustFlush = flush;
