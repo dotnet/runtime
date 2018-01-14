@@ -7557,7 +7557,7 @@ mono_type_get_checked (MonoImage *image, guint32 type_token, MonoGenericContext 
 MonoClass *
 mono_class_get (MonoImage *image, guint32 type_token)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	error_init (&error);
 	MonoClass *result = mono_class_get_checked (image, type_token, &error);
 	mono_error_assert_ok (&error);
