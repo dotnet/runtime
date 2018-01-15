@@ -9,6 +9,9 @@
 #cmakedefine01 HAVE_STAT64
 #cmakedefine01 HAVE_PIPE2
 #cmakedefine01 HAVE_STAT_BIRTHTIME
+#cmakedefine01 HAVE_STAT_TIMESPEC
+#cmakedefine01 HAVE_STAT_TIM
+#cmakedefine01 HAVE_STAT_NSEC
 #cmakedefine01 HAVE_GNU_STRERROR_R
 #cmakedefine01 HAVE_READDIR_R
 #cmakedefine01 HAVE_DIRENT_NAME_LEN
