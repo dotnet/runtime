@@ -20,6 +20,7 @@ namespace System.ServiceProcess.Tests
 
         private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(() => AdminHelpers.IsProcessElevated());
         protected static bool IsProcessElevated => s_isElevated.Value;
+        protected static bool IsElevatedAndSupportsEventLogs => IsProcessElevated && PlatformDetection.IsNotWindowsNanoServer;
 
         private bool _disposed;
 
@@ -174,14 +175,13 @@ OnStop
             Assert.Equal(expected, _testService.GetServiceOutput());
         }
 
-        [ConditionalFact(nameof(IsProcessElevated))]
+        [ConditionalFact(nameof(IsElevatedAndSupportsEventLogs))]
         public void LogWritten()
         {
             using (EventLog eventLog = new EventLog("Application"))
             {
                 ServiceBase sb = new ServiceBase() { ServiceName = nameof(LogWritten) + Guid.NewGuid().ToString() };
                 Assert.False(EventLog.SourceExists(sb.ServiceName));
-                int count = eventLog.Entries.Count;
                 try
                 {
                     ServiceBase.Run(sb);
@@ -196,14 +196,13 @@ OnStop
             } 
         }
 
-        [ConditionalFact(nameof(IsProcessElevated))]
+        [ConditionalFact(nameof(IsElevatedAndSupportsEventLogs))]
         public void LogWritten_AutoLog_False()
         {
             using (EventLog eventLog = new EventLog("Application"))
             {
                 ServiceBase sb = new ServiceBase() { ServiceName = nameof(LogWritten) + Guid.NewGuid().ToString(), AutoLog = false };
                 Assert.False(EventLog.SourceExists(sb.ServiceName));
-                int count = eventLog.Entries.Count;
                 try
                 {
                     ServiceBase.Run(sb);
