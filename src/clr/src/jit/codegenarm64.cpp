@@ -3843,7 +3843,7 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
     }
 }
 
-insOpts CodeGen::genGetSimdInsOpt(bool is16B, var_types elementType)
+insOpts CodeGen::genGetSimdInsOpt(bool is16Byte, var_types elementType)
 {
     insOpts result = INS_OPTS_NONE;
 
@@ -3852,20 +3852,20 @@ insOpts CodeGen::genGetSimdInsOpt(bool is16B, var_types elementType)
         case TYP_DOUBLE:
         case TYP_ULONG:
         case TYP_LONG:
-            result = is16B ? INS_OPTS_2D : INS_OPTS_1D;
+            result = is16Byte ? INS_OPTS_2D : INS_OPTS_1D;
             break;
         case TYP_FLOAT:
         case TYP_UINT:
         case TYP_INT:
-            result = is16B ? INS_OPTS_4S : INS_OPTS_2S;
+            result = is16Byte ? INS_OPTS_4S : INS_OPTS_2S;
             break;
         case TYP_USHORT:
         case TYP_SHORT:
-            result = is16B ? INS_OPTS_8H : INS_OPTS_4H;
+            result = is16Byte ? INS_OPTS_8H : INS_OPTS_4H;
             break;
         case TYP_UBYTE:
         case TYP_BYTE:
-            result = is16B ? INS_OPTS_16B : INS_OPTS_8B;
+            result = is16Byte ? INS_OPTS_16B : INS_OPTS_8B;
             break;
         default:
             assert(!"Unsupported element type");
@@ -4090,9 +4090,9 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
     assert(genIsValidFloatReg(targetReg));
     assert(genIsValidIntReg(op1Reg) || genIsValidFloatReg(op1Reg));
 
-    bool     is16B = (simdNode->gtSIMDSize > 8);
-    emitAttr attr  = is16B ? EA_16BYTE : EA_8BYTE;
-    insOpts  opt   = genGetSimdInsOpt(is16B, baseType);
+    bool     is16Byte = (simdNode->gtSIMDSize > 8);
+    emitAttr attr     = is16Byte ? EA_16BYTE : EA_8BYTE;
+    insOpts  opt      = genGetSimdInsOpt(is16Byte, baseType);
 
     if (genIsValidIntReg(op1Reg))
     {
@@ -4218,9 +4218,9 @@ void CodeGen::genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode)
 
     instruction ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
 
-    bool     is16B = (simdNode->gtSIMDSize > 8);
-    emitAttr attr  = is16B ? EA_16BYTE : EA_8BYTE;
-    insOpts  opt   = (ins == INS_mov) ? INS_OPTS_NONE : genGetSimdInsOpt(is16B, baseType);
+    bool     is16Byte = (simdNode->gtSIMDSize > 8);
+    emitAttr attr     = is16Byte ? EA_16BYTE : EA_8BYTE;
+    insOpts  opt      = (ins == INS_mov) ? INS_OPTS_NONE : genGetSimdInsOpt(is16Byte, baseType);
 
     getEmitter()->emitIns_R_R(ins, attr, targetReg, op1Reg, opt);
 
@@ -4260,10 +4260,10 @@ void CodeGen::genSIMDIntrinsicWiden(GenTreeSIMD* simdNode)
     }
     else
     {
-        bool    is16B = (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicWidenHi);
-        insOpts opt   = genGetSimdInsOpt(is16B, baseType);
+        bool    is16Byte = (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicWidenHi);
+        insOpts opt      = genGetSimdInsOpt(is16Byte, baseType);
 
-        getEmitter()->emitIns_R_R(ins, is16B ? EA_16BYTE : EA_8BYTE, targetReg, op1Reg, opt);
+        getEmitter()->emitIns_R_R(ins, is16Byte ? EA_16BYTE : EA_8BYTE, targetReg, op1Reg, opt);
     }
 
     genProduceReg(simdNode);
@@ -4388,9 +4388,9 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
 
     instruction ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
 
-    bool     is16B = (simdNode->gtSIMDSize > 8);
-    emitAttr attr  = is16B ? EA_16BYTE : EA_8BYTE;
-    insOpts  opt   = genGetSimdInsOpt(is16B, baseType);
+    bool     is16Byte = (simdNode->gtSIMDSize > 8);
+    emitAttr attr     = is16Byte ? EA_16BYTE : EA_8BYTE;
+    insOpts  opt      = genGetSimdInsOpt(is16Byte, baseType);
 
     getEmitter()->emitIns_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, opt);
 
@@ -4425,9 +4425,9 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
 
     instruction ins = getOpForSIMDIntrinsic(SIMDIntrinsicEqual, baseType);
 
-    bool     is16B = (simdNode->gtSIMDSize > 8);
-    emitAttr attr  = is16B ? EA_16BYTE : EA_8BYTE;
-    insOpts  opt   = genGetSimdInsOpt(is16B, baseType);
+    bool     is16Byte = (simdNode->gtSIMDSize > 8);
+    emitAttr attr     = is16Byte ? EA_16BYTE : EA_8BYTE;
+    insOpts  opt      = genGetSimdInsOpt(is16Byte, baseType);
 
     // TODO-ARM64-CQ Contain integer constants where posible
 
@@ -4494,9 +4494,9 @@ void CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
 
     instruction ins = getOpForSIMDIntrinsic(SIMDIntrinsicMul, baseType);
 
-    bool     is16B = (simdNode->gtSIMDSize > 8);
-    emitAttr attr  = is16B ? EA_16BYTE : EA_8BYTE;
-    insOpts  opt   = genGetSimdInsOpt(is16B, baseType);
+    bool     is16Byte = (simdNode->gtSIMDSize > 8);
+    emitAttr attr     = is16Byte ? EA_16BYTE : EA_8BYTE;
+    insOpts  opt      = genGetSimdInsOpt(is16Byte, baseType);
 
     // Vector multiply
     getEmitter()->emitIns_R_R_R(ins, attr, tmpReg, op1Reg, op2Reg, opt);
