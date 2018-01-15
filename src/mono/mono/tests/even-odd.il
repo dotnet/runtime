@@ -59,7 +59,7 @@ LoadOdd:
 .method public static void main() il managed
 { .entrypoint
   .maxstack     1
-  ldc.i4        10000001
+  ldc.i4        1001
   call          void EvenOdd::Test(int32)
   ret
 } // end of global method `main'
