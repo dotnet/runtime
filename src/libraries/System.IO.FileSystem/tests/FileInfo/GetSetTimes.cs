@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Xunit;
 
 namespace System.IO.Tests
 {
@@ -63,6 +64,7 @@ namespace System.IO.Tests
                 DateTimeKind.Utc);
         }
 
+        [Fact]
         public void DeleteAfterEnumerate_TimesStillSet()
         {
             // When enumerating we populate the state as we already have it.
@@ -76,6 +78,25 @@ namespace System.IO.Tests
             // Deleting doesn't change any info state
             info.Delete();
             ValidateSetTimes(info, beforeTime, afterTime);
+        }
+
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void BirthTimeIsNotNewerThanLowestOfAccessModifiedTimes()
+        {
+            // On Linux (if no birth time), we synthesize CreationTime from the oldest of 
+            // status changed time (ctime) and write time (mtime)
+            // Sanity check that it is in that range.
+
+            DateTime before = DateTime.UtcNow.AddMinutes(-1);
+
+            FileInfo fi = GetExistingItem(); // should set ctime
+            fi.LastWriteTimeUtc = DateTime.UtcNow.AddMinutes(1); // mtime
+            fi.LastAccessTimeUtc = DateTime.UtcNow.AddMinutes(2); // atime
+
+            // Assert.InRange is inclusive
+            Assert.InRange(fi.CreationTimeUtc, before, fi.LastWriteTimeUtc);
         }
     }
 }
