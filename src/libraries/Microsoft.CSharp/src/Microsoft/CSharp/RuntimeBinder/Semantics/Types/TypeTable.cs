@@ -52,14 +52,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private readonly Dictionary<KeyPair<CType, Name>, ParameterModifierType> _pParameterModifierTable;
 
         // One way hashes
-        private readonly Dictionary<Name, ErrorType> _pErrorWithNamespaceParentTable;
         private readonly Dictionary<CType, PointerType> _pPointerTable;
         private readonly Dictionary<CType, NullableType> _pNullableTable;
 
         public TypeTable()
         {
             _aggregateTable = new Dictionary<KeyPair<AggregateSymbol, KeyPair<AggregateType, TypeArray>>, AggregateType>();
-            _pErrorWithNamespaceParentTable = new Dictionary<Name, ErrorType>();
             _pArrayTable = new Dictionary<KeyPair<CType, Name>, ArrayType>();
             _pParameterModifierTable = new Dictionary<KeyPair<CType, Name>, ParameterModifierType>();
             _pPointerTable = new Dictionary<CType, PointerType>();
@@ -80,15 +78,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(LookupAggregate(aggregate, outer, args) == null);
             _aggregateTable.Add(MakeKey(aggregate, MakeKey(outer, args)), pAggregate);
-        }
-
-        public ErrorType LookupError(Name pName) =>
-            _pErrorWithNamespaceParentTable.TryGetValue(pName, out ErrorType result) ? result : null;
-
-        public void InsertError(Name pName, ErrorType pError)
-        {
-            Debug.Assert(LookupError(pName) == null);
-            _pErrorWithNamespaceParentTable.Add(pName, pError);
         }
 
         public ArrayType LookupArray(Name pName, CType pElementType)

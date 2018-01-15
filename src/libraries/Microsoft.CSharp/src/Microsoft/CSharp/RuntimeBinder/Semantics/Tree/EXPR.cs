@@ -2,10 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal abstract class Expr
     {
+        private CType _type;
+
         protected Expr(ExpressionKind kind)
         {
             Kind = kind;
@@ -23,15 +27,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public string ErrorString { get; set; }
 
-        public CType Type { get; protected set; }
-
-        public bool IsOK => !HasError;
-
-        public bool HasError { get; private set; }
-
-        public void SetError()
+        public CType Type
         {
-            HasError = true;
+            get
+            {
+                Debug.Assert(!(this is ExprList));
+                Debug.Assert(_type != null);
+                return _type;
+            }
+            protected set { _type = value; }
         }
     }
 }

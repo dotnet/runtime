@@ -129,12 +129,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             }
         }
 
-        private void ErrAppendMethodParentSym(MethodSymbol sym, SubstContext pcxt, out TypeArray substMethTyParams)
-        {
-            substMethTyParams = null;
-            ErrAppendParentSym(sym, pcxt);
-        }
-
         private void ErrAppendParentSym(Symbol sym, SubstContext pctx)
         {
             ErrAppendParentCore(sym.parent, pctx);
@@ -232,7 +226,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 return;
             }
 
-            ErrAppendMethodParentSym(meth, pctx, out TypeArray replacementTypeArray);
+            ErrAppendParentSym(meth, pctx);
             if (meth.IsConstructor())
             {
                 // Use the name of the parent class instead of the name "<ctor>".
@@ -260,21 +254,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 ErrAppendString("operator ");
                 ErrAppendString(Operators.OperatorOfMethodName(meth.name));
             }
-            else if (meth.IsExpImpl())
-            {
-                if (meth.errExpImpl != null)
-                    ErrAppendType(meth.errExpImpl, pctx, fArgs);
-            }
-            else
+            else if (!meth.IsExpImpl())
             {
                 // regular method
                 ErrAppendName(meth.name);
             }
 
-            if (null == replacementTypeArray)
-            {
-                ErrAppendTypeParameters(meth.typeVars, pctx, false);
-            }
+            ErrAppendTypeParameters(meth.typeVars, pctx, false);
 
             if (fArgs)
             {
@@ -296,16 +282,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         private void ErrAppendProperty(PropertySymbol prop, SubstContext pctx)
         {
             ErrAppendParentSym(prop, pctx);
-            if (prop.IsExpImpl() && prop.swtSlot.Sym != null)
+            if (prop.IsExpImpl())
             {
-                SubstContext ctx = new SubstContext(GetTypeManager().SubstType(prop.swtSlot.GetType(), pctx));
-                ErrAppendSym(prop.swtSlot.Sym, ctx);
-            }
-            else if (prop.IsExpImpl())
-            {
-                if (prop.errExpImpl != null)
-                    ErrAppendType(prop.errExpImpl, pctx, false);
-                if (prop is IndexerSymbol indexer)
+                if (prop.swtSlot.Sym != null)
+                {
+                    SubstContext ctx = new SubstContext(GetTypeManager().SubstType(prop.swtSlot.GetType(), pctx));
+                    ErrAppendSym(prop.swtSlot.Sym, ctx);
+                }
+                else if (prop is IndexerSymbol indexer)
                 {
                     ErrAppendChar('.');
                     ErrAppendIndexer(indexer, pctx);
@@ -486,20 +470,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     else
                     {
                         ErrAppendName(pType.GetName());
-                    }
-                    break;
-
-                case TypeKind.TK_ErrorType:
-                    ErrorType err = (ErrorType)pType;
-                    if (err.HasParent)
-                    {
-                        Debug.Assert(err.nameText != null);
-                        ErrAppendName(err.nameText);
-                    }
-                    else
-                    {
-                        // Load the string "<error>".
-                        ErrAppendId(MessageID.ERRORSYM);
                     }
                     break;
 

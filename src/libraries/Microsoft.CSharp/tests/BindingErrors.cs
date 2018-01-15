@@ -447,5 +447,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             // Throws ArgumentOutOfRangeException for zero arguments, ArgumentException for 1 or 3 or more.
             Assert.ThrowsAny<ArgumentException>(() => binder.Bind(args, parameters, target));
         }
+
+        public static void DoStuff<T>(IEnumerable<T> x)
+        {
+            // Don't actually do stuff!
+        }
+
+        [Fact]
+        public void CannotInferTypeArgument()
+        {
+            dynamic d = new object();
+            Assert.Throws<RuntimeBinderException>(() => DoStuff(d));
+        }
     }
 }

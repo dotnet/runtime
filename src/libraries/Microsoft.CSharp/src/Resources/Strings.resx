@@ -61,9 +61,6 @@
   <data name="InternalCompilerError" xml:space="preserve">
     <value>An unexpected exception occurred while binding a dynamic operation</value>
   </data>
-  <data name="BindCallFailedOverloadResolution" xml:space="preserve">
-    <value>Overload resolution failed</value>
-  </data>
   <data name="BindPropertyFailedMethodGroup" xml:space="preserve">
     <value>The name '{0}' is bound to a method and cannot be used like a property</value>
   </data>

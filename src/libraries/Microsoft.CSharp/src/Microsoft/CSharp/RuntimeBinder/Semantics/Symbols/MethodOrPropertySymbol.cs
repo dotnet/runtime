@@ -48,7 +48,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // If this symbol is a property and an explicit interface member implementation, the swtSlot
         // may be an event. This is filled in during prepare.
         public SymWithType swtSlot;
-        public ErrorType errExpImpl;          // If name == NULL but swtExpImpl couldn't be resolved, this contains error information.
         public CType RetType;            // Return type.
 
         private TypeArray _Params;
