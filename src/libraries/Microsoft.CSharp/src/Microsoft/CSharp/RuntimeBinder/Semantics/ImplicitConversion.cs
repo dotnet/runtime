@@ -78,7 +78,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // (14.4.3), cast expressions (14.6.6), and assignments (14.14).
 
                 // Can't convert to or from the error type.
-                if (_typeSrc == null || _typeDest == null || _typeDest.IsNeverSameType())
+                if (_typeSrc == null || _typeDest == null || _typeDest is MethodGroupType)
                 {
                     return false;
                 }
@@ -89,17 +89,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 switch (_typeDest.GetTypeKind())
                 {
-                    case TypeKind.TK_ErrorType:
-                        Debug.Assert(((ErrorType)_typeDest).HasParent);
-                        if (_typeSrc != _typeDest)
-                        {
-                            return false;
-                        }
-                        if (_needsExprDest)
-                        {
-                            _exprDest = _exprSrc;
-                        }
-                        return true;
                     case TypeKind.TK_NullType:
                         // Can only convert to the null type if src is null.
                         if (!(_typeSrc is NullType))
@@ -111,21 +100,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             _exprDest = _exprSrc;
                         }
                         return true;
-                    case TypeKind.TK_MethodGroupType:
-                        Debug.Fail("Something is wrong with Type.IsNeverSameType()");
-                        return false;
                     case TypeKind.TK_ArgumentListType:
                         return _typeSrc == _typeDest;
                     case TypeKind.TK_VoidType:
                         return false;
                     default:
                         break;
-                }
-
-                if (_typeSrc is ErrorType)
-                {
-                    Debug.Assert(!(_typeDest is ErrorType));
-                    return false;
                 }
 
                 // 13.1.1 Identity conversion
@@ -168,7 +148,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         Debug.Fail($"Bad type symbol kind: {_typeSrc.GetTypeKind()}");
                         break;
                     case TypeKind.TK_VoidType:
-                    case TypeKind.TK_ErrorType:
                     case TypeKind.TK_ParameterModifierType:
                     case TypeKind.TK_ArgumentListType:
                         return false;
@@ -325,19 +304,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // The null type can be implicitly converted to T? as the default value.
                     if (_typeSrc is NullType)
                     {
-                        // If we have the constant null, generate it as a default value of T?.  If we have 
+                        // If we have the constant null, generate it as a default value of T?.  If we have
                         // some crazy expression which has been determined to be always null, like (null??null)
                         // keep it in its expression form and transform it in the nullable rewrite pass.
                         if (_needsExprDest)
                         {
-                            if (_exprSrc.isCONSTANT_OK())
-                            {
-                                _exprDest = GetExprFactory().CreateZeroInit(nubDst);
-                            }
-                            else
-                            {
-                                _exprDest = GetExprFactory().CreateCast(_typeDest, _exprSrc);
-                            }
+                            _exprDest = _exprSrc is ExprConstant
+                                ? GetExprFactory().CreateZeroInit(nubDst)
+                                : GetExprFactory().CreateCast(_typeDest, _exprSrc);
                         }
                         return true;
                     }
@@ -430,17 +404,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
                 if (_needsExprDest)
                 {
-                    // If the conversion argument is a constant null then return a ZEROINIT.   
-                    // Otherwise, bind this as a cast to the destination type. In a later 
+                    // If the conversion argument is a constant null then return a ZEROINIT.
+                    // Otherwise, bind this as a cast to the destination type. In a later
                     // rewrite pass we will rewrite the cast as SEQ(side effects, ZEROINIT).
-                    if (_exprSrc.isCONSTANT_OK())
-                    {
-                        _exprDest = GetExprFactory().CreateZeroInit(_typeDest);
-                    }
-                    else
-                    {
-                        _exprDest = GetExprFactory().CreateCast(_typeDest, _exprSrc);
-                    }
+                    _exprDest = _exprSrc is ExprConstant
+                        ? GetExprFactory().CreateZeroInit(_typeDest)
+                        : GetExprFactory().CreateCast(_typeDest, _exprSrc);
                 }
                 return true;
             }
@@ -704,7 +673,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // *   A constant-expression of type long can be converted to type ulong, provided the value of
                 //     the constant-expression is not negative.
                 // Note: Don't use GetConst here since the conversion only applies to bona-fide compile time constants.
-                if (_exprSrc is ExprConstant constant && _exprSrc.IsOK &&
+                if (_exprSrc is ExprConstant constant &&
                     ((ptSrc == PredefinedType.PT_INT && ptDest != PredefinedType.PT_BOOL && ptDest != PredefinedType.PT_CHAR) ||
                     (ptSrc == PredefinedType.PT_LONG && ptDest == PredefinedType.PT_ULONG)) &&
                     isConstantInRange(constant, _typeDest))

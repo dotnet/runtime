@@ -1531,7 +1531,6 @@ namespace Microsoft.CSharp.RuntimeBinder
             methodSymbol.isParamArray = DoesMethodHaveParameterArray(parameters);
             methodSymbol.isHideByName = false;
 
-            methodSymbol.errExpImpl = null;
             methodSymbol.Params = CreateParameterArray(methodSymbol.AssociatedMemberInfo, parameters);
 
             SetParameterDataForMethProp(methodSymbol, parameters);

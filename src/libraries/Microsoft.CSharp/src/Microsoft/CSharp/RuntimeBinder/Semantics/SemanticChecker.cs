@@ -38,8 +38,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                    typeThru is AggregateType ||
                    typeThru is TypeParameterType ||
                    typeThru is ArrayType ||
-                   typeThru is NullableType ||
-                   typeThru is ErrorType);
+                   typeThru is NullableType);
 
 #if DEBUG
 
@@ -88,7 +87,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (!(type is AggregateType ats))
             {
-                Debug.Assert(type is VoidType || type is ErrorType || type is TypeParameterType);
+                Debug.Assert(type is VoidType || type is TypeParameterType);
                 return true;
             }
 
@@ -146,8 +145,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                    typeThru is AggregateType ||
                    typeThru is TypeParameterType ||
                    typeThru is ArrayType ||
-                   typeThru is NullableType ||
-                   typeThru is ErrorType);
+                   typeThru is NullableType);
 
             switch (symCheck.GetAccess())
             {

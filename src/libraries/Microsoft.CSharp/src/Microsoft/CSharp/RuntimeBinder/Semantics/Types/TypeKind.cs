@@ -10,7 +10,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         TK_VoidType,
         TK_NullType,
         TK_MethodGroupType,
-        TK_ErrorType,
         TK_ArgumentListType,
         TK_ArrayType,
         TK_PointerType,
