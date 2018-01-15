@@ -66,14 +66,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return type;
         }
 
-        public ErrorType CreateError(Name nameText)
-        {
-            ErrorType e = new ErrorType();
-            e.nameText = nameText;
-            e.SetTypeKind(TypeKind.TK_ErrorType);
-            return e;
-        }
-
         // Derived types - parent is base type
         public ArrayType CreateArray(Name name, CType pElementType, int rank, bool isSZArray)
         {

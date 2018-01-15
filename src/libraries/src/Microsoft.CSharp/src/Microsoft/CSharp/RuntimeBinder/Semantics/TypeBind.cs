@@ -146,12 +146,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             bool fReportErrors = 0 == (flags & CheckConstraintsFlags.NoErrors);
 
-            if (arg is ErrorType)
-            {
-                // Error should have been reported previously.
-                return false;
-            }
-
             bool fError = false;
             if (var.HasRefConstraint() && !arg.IsRefType())
             {
@@ -303,7 +297,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 case TypeKind.TK_VoidType:
                 case TypeKind.TK_PointerType:
-                case TypeKind.TK_ErrorType:
                     return false;
 
                 case TypeKind.TK_ArrayType:
@@ -324,7 +317,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 default:
                     return false;
-                case TypeKind.TK_ErrorType:
                 case TypeKind.TK_PointerType:
                     return false;
                 case TypeKind.TK_NullableType:

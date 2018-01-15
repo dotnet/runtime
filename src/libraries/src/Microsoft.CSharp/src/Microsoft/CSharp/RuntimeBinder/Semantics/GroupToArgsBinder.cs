@@ -1108,7 +1108,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 for (int i = 0; i < typeVars.Count; i++)
                 {
                     CType type = typeVars[i];
-                    if (type is ErrorType)
+                    if (type == null)
                     {
                         return true;
                     }

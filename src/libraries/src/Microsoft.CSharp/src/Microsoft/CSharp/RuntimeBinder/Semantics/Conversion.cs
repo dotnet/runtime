@@ -356,40 +356,33 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return exprResult;
             }
 
-            if (expr.IsOK && !(dest is ErrorType))
+            // don't report cascading error.
+
+            // For certain situations, try to give a better error.
+
+            FUNDTYPE ftSrc = expr.Type.fundType();
+            FUNDTYPE ftDest = dest.fundType();
+
+            if (expr is ExprConstant constant &&
+                expr.Type.isSimpleType() && dest.isSimpleType())
             {
-                // don't report cascading error.
-
-                // For certain situations, try to give a better error.
-
-                FUNDTYPE ftSrc = expr.Type.fundType();
-                FUNDTYPE ftDest = dest.fundType();
-
-                if (expr is ExprConstant constant && constant.IsOK &&
-                    expr.Type.isSimpleType() && dest.isSimpleType())
+                if ((ftSrc == FUNDTYPE.FT_I4 && (ftDest <= FUNDTYPE.FT_LASTNONLONG || ftDest == FUNDTYPE.FT_U8)) ||
+                    (ftSrc == FUNDTYPE.FT_I8 && ftDest == FUNDTYPE.FT_U8))
                 {
-                    if ((ftSrc == FUNDTYPE.FT_I4 && (ftDest <= FUNDTYPE.FT_LASTNONLONG || ftDest == FUNDTYPE.FT_U8)) ||
-                        (ftSrc == FUNDTYPE.FT_I8 && ftDest == FUNDTYPE.FT_U8))
-                    {
-                        // Failed because value was out of range. Report nifty error message.
-                        string value = constant.Int64Value.ToString(CultureInfo.InvariantCulture);
-                        throw ErrorContext.Error(ErrorCode.ERR_ConstOutOfRange, value, dest);
-                    }
+                    // Failed because value was out of range. Report nifty error message.
+                    string value = constant.Int64Value.ToString(CultureInfo.InvariantCulture);
+                    throw ErrorContext.Error(ErrorCode.ERR_ConstOutOfRange, value, dest);
                 }
-
-                if (expr.Type is NullType && dest.fundType() != FUNDTYPE.FT_REF)
-                {
-                    throw ErrorContext.Error(ErrorCode.ERR_ValueCantBeNull, dest);
-                }
-
-                // canCast => can't convert, but explicit exists and can be specified by the user (no anonymous types).
-                // !canCast => Generic "can't convert" error.
-                throw ErrorContext.Error(canCast(expr.Type, dest, flags) ? ErrorCode.ERR_NoImplicitConvCast : ErrorCode.ERR_NoImplicitConv, new ErrArg(expr.Type, ErrArgFlags.Unique), new ErrArg(dest, ErrArgFlags.Unique));
             }
 
-            exprResult = ExprFactory.CreateCast(0, dest, expr);
-            exprResult.SetError();
-            return exprResult;
+            if (expr.Type is NullType && dest.fundType() != FUNDTYPE.FT_REF)
+            {
+                throw ErrorContext.Error(ErrorCode.ERR_ValueCantBeNull, dest);
+            }
+
+            // canCast => can't convert, but explicit exists and can be specified by the user (no anonymous types).
+            // !canCast => Generic "can't convert" error.
+            throw ErrorContext.Error(canCast(expr.Type, dest, flags) ? ErrorCode.ERR_NoImplicitConvCast : ErrorCode.ERR_NoImplicitConv, new ErrArg(expr.Type, ErrArgFlags.Unique), new ErrArg(dest, ErrArgFlags.Unique));
         }
 
         // performs an implicit conversion if its possible. otherwise returns null. flags is an optional parameter.
@@ -430,89 +423,74 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Expr mustCastCore(Expr expr, CType dest, CONVERTTYPE flags)
         {
             Debug.Assert(!(expr is ExprMemberGroup));
-            Expr exprResult;
+            Debug.Assert(dest != null);
+
             SemanticChecker.CheckForStaticClass(null, dest, ErrorCode.ERR_ConvertToStaticClass);
-            if (expr.IsOK)
+            if (BindExplicitConversion(expr, expr.Type, dest, out Expr exprResult, flags))
             {
-                if (BindExplicitConversion(expr, expr.Type, dest, out exprResult, flags))
+                // Conversion works.
+                checkUnsafe(expr.Type); // added to the binder so we don't bind to pointer ops
+                checkUnsafe(dest); // added to the binder so we don't bind to pointer ops
+                return exprResult;
+            }
+
+            // For certain situations, try to give a better error.
+            Expr exprConst = expr.GetConst();
+            bool simpleConstToSimpleDestination = exprConst != null && expr.Type.isSimpleOrEnum() &&
+                dest.isSimpleOrEnum();
+
+            if (simpleConstToSimpleDestination)
+            {
+                FUNDTYPE exprType = expr.Type.fundType();
+                if (exprType == FUNDTYPE.FT_STRUCT)
                 {
-                    // Conversion works.
-                    checkUnsafe(expr.Type); // added to the binder so we don't bind to pointer ops
-                    checkUnsafe(dest); // added to the binder so we don't bind to pointer ops
-                    return exprResult;
+                    // We have a constant decimal that is out of range of the destination type.
+                    // In both checked and unchecked contexts we issue an error. No need to recheck conversion in unchecked context.
+                    // Decimal is a SimpleType represented in a FT_STRUCT
+                    throw ErrorContext.Error(
+                        ErrorCode.ERR_ConstOutOfRange,
+                        ((ExprConstant)exprConst).Val.DecimalVal.ToString(CultureInfo.InvariantCulture), dest);
                 }
-                if (dest != null && !(dest is ErrorType))
-                { // don't report cascading error.
-                    // For certain situations, try to give a better error.
-                    string value = "";
-                    Expr exprConst = expr.GetConst();
-                    FUNDTYPE expr_type = expr.Type.fundType();
-                    bool simpleConstToSimpleDestination = exprConst != null && expr.Type.isSimpleOrEnum() &&
-                        dest.isSimpleOrEnum();
 
-                    if (simpleConstToSimpleDestination && expr_type == FUNDTYPE.FT_STRUCT)
+                if (Context.Checked)
+                {
+                    // check if we failed because we are in checked mode...
+                    if (!canExplicitConversionBeBoundInUncheckedContext(expr, expr.Type, dest, flags | CONVERTTYPE.NOUDC))
                     {
-                        // We have a constant decimal that is out of range of the destination type.
-                        // In both checked and unchecked contexts we issue an error. No need to recheck conversion in unchecked context.
-                        // Decimal is a SimpleType represented in a FT_STRUCT
-                        throw ErrorContext.Error(ErrorCode.ERR_ConstOutOfRange, ((ExprConstant)exprConst).Val.DecimalVal.ToString(CultureInfo.InvariantCulture), dest);
+                        throw CantConvert(expr, dest);
                     }
 
-                    if (simpleConstToSimpleDestination && Context.Checked)
+                    // Failed because value was out of range. Report nifty error message.
+                    string value;
+                    if (exprType <= FUNDTYPE.FT_LASTINTEGRAL)
                     {
-                        // check if we failed because we are in checked mode...
-                        bool okNow = canExplicitConversionBeBoundInUncheckedContext(expr, expr.Type, dest, flags | CONVERTTYPE.NOUDC);
-
-                        if (!okNow)
-                        {
-                            CantConvert(expr, dest);
-                            goto CANTCONVERT;
-                        }
-
-                        // Failed because value was out of range. Report nifty error message.
-                        if (expr_type <= FUNDTYPE.FT_LASTINTEGRAL)
-                        {
-                            if (expr.Type.isUnsigned())
-                                value = ((ulong)((ExprConstant)exprConst).Int64Value).ToString(CultureInfo.InvariantCulture);
-                            else
-                                value = ((long)((ExprConstant)exprConst).Int64Value).ToString(CultureInfo.InvariantCulture);
-                        }
-                        else if (expr_type <= FUNDTYPE.FT_LASTNUMERIC)
-                        {
-                            value = ((ExprConstant)exprConst).Val.DoubleVal.ToString(CultureInfo.InvariantCulture);
-                        }
-                        else
-                        {
-                            // We should have taken care of constant decimal conversion errors
-                            Debug.Assert(expr_type == FUNDTYPE.FT_STRUCT);
-                            Debug.Assert(false, "Error in constant conversion logic!");
-                        }
-
-                        throw ErrorContext.Error(ErrorCode.ERR_ConstOutOfRangeChecked, value, dest);
+                        value = expr.Type.isUnsigned()
+                            ? ((ulong)((ExprConstant)exprConst).Int64Value).ToString(CultureInfo.InvariantCulture)
+                            : ((ExprConstant)exprConst).Int64Value.ToString(CultureInfo.InvariantCulture);
+                    }
+                    else
+                    {
+                        Debug.Assert(exprType <= FUNDTYPE.FT_LASTNUMERIC, "Error in constant conversion logic!");
+                        value = ((ExprConstant)exprConst).Val.DoubleVal.ToString(CultureInfo.InvariantCulture);
                     }
 
-                    if (expr.Type is NullType && dest.fundType() != FUNDTYPE.FT_REF)
-                    {
-                        throw ErrorContext.Error(ErrorCode.ERR_ValueCantBeNull, dest);
-                    }
-
-                    CantConvert(expr, dest);
+                    throw ErrorContext.Error(ErrorCode.ERR_ConstOutOfRangeChecked, value, dest);
                 }
             }
-        CANTCONVERT:
-            exprResult = ExprFactory.CreateCast(0, dest, expr);
-            exprResult.SetError();
-            return exprResult;
+
+            if (expr.Type is NullType && dest.fundType() != FUNDTYPE.FT_REF)
+            {
+                throw ErrorContext.Error(ErrorCode.ERR_ValueCantBeNull, dest);
+            }
+
+            throw CantConvert(expr, dest);
         }
 
-        private void CantConvert(Expr expr, CType dest)
+        private RuntimeBinderException CantConvert(Expr expr, CType dest)
         {
             // Generic "can't convert" error.
-            // Only report if we don't have an error type.
-            if (expr.Type != null && !(expr.Type is ErrorType))
-            {
-                throw ErrorContext.Error(ErrorCode.ERR_NoExplicitConv, new ErrArg(expr.Type, ErrArgFlags.Unique), new ErrArg(dest, ErrArgFlags.Unique));
-            }
+            Debug.Assert(expr.Type != null);
+            return ErrorContext.Error(ErrorCode.ERR_NoExplicitConv, new ErrArg(expr.Type, ErrArgFlags.Unique), new ErrArg(dest, ErrArgFlags.Unique));
         }
 
         public Expr mustCast(Expr expr, CType dest) => mustCast(expr, dest, 0);

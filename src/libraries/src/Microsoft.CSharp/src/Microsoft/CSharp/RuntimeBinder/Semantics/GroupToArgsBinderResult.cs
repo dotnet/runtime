@@ -58,11 +58,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 int nCount = 0;
                 for (int i = 0; i < pTypeArgs.Count; i++)
                 {
-                    if (pTypeArgs[i] is ErrorType)
+                    if (pTypeArgs[i] == null)
                     {
                         nCount++;
                     }
                 }
+
                 return nCount;
             }
 

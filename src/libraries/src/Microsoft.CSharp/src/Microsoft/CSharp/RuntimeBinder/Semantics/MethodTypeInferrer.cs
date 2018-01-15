@@ -142,51 +142,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
 
-        private TypeArray GetResults()
-        {
-            // Anything we didn't infer a CType for, give the error CType.
-            // Note: the error CType will have the same name as the name
-            // of the CType parameter we were trying to infer.  This will give a
-            // nice user experience where by we will show something like
-            // the following:
-            //
-            // user types: customers.Select(
-            // we show   : IE<TResult> IE<Customer>.Select<Customer,TResult>(Func<Customer,TResult> selector)
-            //
-            // Initially we thought we'd just show ?.  i.e.:
-            //
-            //  IE<?> IE<Customer>.Select<Customer,?>(Func<Customer,?> selector)
-            //
-            // This is nice and concise.  However, it falls down if there are multiple
-            // CType params that we have left.
-
-            for (int iParam = 0; iParam < _pMethodTypeParameters.Count; iParam++)
-            {
-                // We iterate through the resultant types and replace any that are
-                // null, or an error CType that has less information (e.g null name or
-                // PredefinedName.PN_MISSING name).
-
-                // We get an ErrorType with a null nameText
-                // for a CType variable that we couldn't infer.
-                if (_pFixedResults[iParam] != null)
-                {
-                    if (!(_pFixedResults[iParam] is ErrorType err))
-                    {
-                        continue;
-                    }
-
-                    Name pErrorTypeName = err.nameText;
-                    if (pErrorTypeName != null)
-                    {
-                        continue;
-                    }
-                }
-
-                _pFixedResults[iParam] = GetTypeManager()
-                    .GetErrorType(((TypeParameterType)_pMethodTypeParameters[iParam]).GetName());
-            }
-            return GetGlobalSymbols().AllocParams(_pMethodTypeParameters.Count, _pFixedResults);
-        }
+        private TypeArray GetResults() => GetGlobalSymbols().AllocParams(_pFixedResults);
 
         ////////////////////////////////////////////////////////////////////////////////
 
