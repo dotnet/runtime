@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public class HttpProtocolTests : HttpClientTest
+    public class HttpProtocolTests : HttpClientTestBase
     {
         protected virtual Stream GetStream(Stream s) => s;
 
