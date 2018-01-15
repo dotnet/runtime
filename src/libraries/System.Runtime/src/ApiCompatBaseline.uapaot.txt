@@ -1,3 +1,0 @@
-Compat issues with assembly System.Runtime:
-TypeCannotChangeClassification : Type 'System.RuntimeArgumentHandle' is a 'struct' in the implementation but is a 'ref struct' in the contract.
-Total Issues: 1
