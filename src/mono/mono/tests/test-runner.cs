@@ -38,6 +38,7 @@ public class TestRunner
 		public StringBuilder stdout, stderr;
 		public object stdoutLock = new object (), stderrLock = new object ();
 		public string stdoutName, stderrName;
+		public TimeSpan duration;
 	}
 
 	class TestInfo {
@@ -301,6 +302,9 @@ public class TestRunner
 					p.BeginErrorReadLine ();
 
 					if (!p.WaitForExit (timeout * 1000)) {
+						var end = DateTime.UtcNow;
+						data.duration =  end - start;
+
 						lock (monitor) {
 							timedout.Add (data);
 						}
@@ -318,22 +322,24 @@ public class TestRunner
 						}
 					} else if (p.ExitCode != expectedExitCode) {
 						var end = DateTime.UtcNow;
+						data.duration =  end - start;
 
 						lock (monitor) {
 							failed.Add (data);
 						}
 
 						if (verbose)
-							output.Write ("failed, time: {0}, exit code: {1}", (end - start).ToString (TEST_TIME_FORMAT), p.ExitCode);
+							output.Write ("failed, time: {0}, exit code: {1}", data.duration.ToString (TEST_TIME_FORMAT), p.ExitCode);
 					} else {
 						var end = DateTime.UtcNow;
+						data.duration =  end - start;
 
 						lock (monitor) {
 							passed.Add (data);
 						}
 
 						if (verbose)
-							output.Write ("passed, time: {0}", (end - start).ToString (TEST_TIME_FORMAT));
+							output.Write ("passed, time: {0}", data.duration.ToString (TEST_TIME_FORMAT));
 					}
 
 					p.Close ();
@@ -397,7 +403,7 @@ public class TestRunner
 			writer.WriteStartElement ("test-suite");
 			writer.WriteAttributeString ("name", String.Format ("{0}-tests.dummy", testsuiteName));
 			writer.WriteAttributeString ("success", (nfailed + ntimedout == 0).ToString());
-			writer.WriteAttributeString ("time", test_time.Seconds.ToString());
+			writer.WriteAttributeString ("time", test_time.TotalSeconds.ToString(CultureInfo.InvariantCulture));
 			writer.WriteAttributeString ("asserts", (nfailed + ntimedout).ToString());
 			//     <results>
 			writer.WriteStartElement ("results");
@@ -405,7 +411,7 @@ public class TestRunner
 			writer.WriteStartElement ("test-suite");
 			writer.WriteAttributeString ("name","MonoTests");
 			writer.WriteAttributeString ("success", (nfailed + ntimedout == 0).ToString());
-			writer.WriteAttributeString ("time", test_time.Seconds.ToString());
+			writer.WriteAttributeString ("time", test_time.TotalSeconds.ToString(CultureInfo.InvariantCulture));
 			writer.WriteAttributeString ("asserts", (nfailed + ntimedout).ToString());
 			//         <results>
 			writer.WriteStartElement ("results");
@@ -413,7 +419,7 @@ public class TestRunner
 			writer.WriteStartElement ("test-suite");
 			writer.WriteAttributeString ("name", testsuiteName);
 			writer.WriteAttributeString ("success", (nfailed + ntimedout == 0).ToString());
-			writer.WriteAttributeString ("time", test_time.Seconds.ToString());
+			writer.WriteAttributeString ("time", test_time.TotalSeconds.ToString(CultureInfo.InvariantCulture));
 			writer.WriteAttributeString ("asserts", (nfailed + ntimedout).ToString());
 			//             <results>
 			writer.WriteStartElement ("results");
@@ -424,7 +430,7 @@ public class TestRunner
 				writer.WriteAttributeString ("name", String.Format ("MonoTests.{0}.{1}", testsuiteName, pd.test));
 				writer.WriteAttributeString ("executed", "True");
 				writer.WriteAttributeString ("success", "True");
-				writer.WriteAttributeString ("time", "0");
+				writer.WriteAttributeString ("time", pd.duration.TotalSeconds.ToString(CultureInfo.InvariantCulture));
 				writer.WriteAttributeString ("asserts", "0");
 				writer.WriteEndElement ();
 			}
@@ -435,7 +441,7 @@ public class TestRunner
 				writer.WriteAttributeString ("name", String.Format ("MonoTests.{0}.{1}", testsuiteName, pd.test));
 				writer.WriteAttributeString ("executed", "True");
 				writer.WriteAttributeString ("success", "False");
-				writer.WriteAttributeString ("time", "0");
+				writer.WriteAttributeString ("time", pd.duration.TotalSeconds.ToString(CultureInfo.InvariantCulture));
 				writer.WriteAttributeString ("asserts", "1");
 				writer.WriteStartElement ("failure");
 				writer.WriteStartElement ("message");
@@ -454,7 +460,7 @@ public class TestRunner
 				writer.WriteAttributeString ("name", String.Format ("MonoTests.{0}.{1}_timedout", testsuiteName, pd.test));
 				writer.WriteAttributeString ("executed", "True");
 				writer.WriteAttributeString ("success", "False");
-				writer.WriteAttributeString ("time", "0");
+				writer.WriteAttributeString ("time", pd.duration.TotalSeconds.ToString(CultureInfo.InvariantCulture));
 				writer.WriteAttributeString ("asserts", "1");
 				writer.WriteStartElement ("failure");
 				writer.WriteStartElement ("message");

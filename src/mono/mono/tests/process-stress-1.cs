@@ -20,16 +20,16 @@ class Driver
 
 			Task t = Task.Run (() => {
 				mre.Set ();
-				if (!p.WaitForExit (1000))
+				if (!p.WaitForExit (10000))
 					Environment.Exit (1);
 			});
 
-			if (!mre.WaitOne (1000))
+			if (!mre.WaitOne (10000))
 				Environment.Exit (2);
-			if (!p.WaitForExit (1000))
+			if (!p.WaitForExit (10000))
 				Environment.Exit (3);
 
-			if (!t.Wait (1000))
+			if (!t.Wait (10000))
 				Environment.Exit (4);
 		}
 	}

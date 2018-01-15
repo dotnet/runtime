@@ -59,9 +59,9 @@ class Driver
 
 		if (!mre_exit.WaitOne (10000))
 			Environment.Exit (1);
-		if (!mre_output.WaitOne (1000))
+		if (!mre_output.WaitOne (10000))
 			Environment.Exit (2);
-		if (!mre_error.WaitOne (1000))
+		if (!mre_error.WaitOne (10000))
 			Environment.Exit (3);
 	}
 

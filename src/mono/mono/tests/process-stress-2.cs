@@ -49,9 +49,9 @@ class Driver
 
 		p.BeginOutputReadLine ();
 
-		if (!mre_exit.WaitOne (1000))
+		if (!mre_exit.WaitOne (10000))
 			Environment.Exit (1);
-		if (!mre_output.WaitOne (1000))
+		if (!mre_output.WaitOne (10000))
 			Environment.Exit (2);
 
 		if (sb.ToString () != "hello") {
@@ -78,9 +78,9 @@ class Driver
 
 		p.BeginOutputReadLine ();
 
-		if (!p.WaitForExit (1000))
+		if (!p.WaitForExit (10000))
 			Environment.Exit (4);
-		if (!mre_output.WaitOne (1000))
+		if (!mre_output.WaitOne (10000))
 			Environment.Exit (5);
 
 		if (sb.ToString () != "hello") {
