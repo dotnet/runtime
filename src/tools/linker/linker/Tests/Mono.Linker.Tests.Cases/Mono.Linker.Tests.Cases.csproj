@@ -165,6 +165,7 @@
     <Compile Include="TypeForwarding\MissingTargetReference.cs" />
     <None Include="TypeForwarding\Dependencies\TypeForwarderMissingReference.il" />
     <Compile Include="Basic\UsedInterfaceIsKept.cs" />
+    <Compile Include="LinkXml\PreserveBackingFieldWhenPropertyIsKept.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="LinkXml\CanPreserveTypesUsingRegex.xml" />
@@ -192,6 +193,7 @@
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileIsProcessed.xml" />
     <Content Include="Resources\Dependencies\NonLinkerEmbeddedResourceHasNoImpact.xml" />
     <Content Include="TestFramework\Dependencies\VerifyResourceInAssemblyAttributesBehavior.txt" />
+    <Content Include="LinkXml\PreserveBackingFieldWhenPropertyIsKept.xml" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj">
