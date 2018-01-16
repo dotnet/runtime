@@ -241,8 +241,8 @@ parse_generic_type_names(char *name)
 					*new_name++ = '`';
 					*new_name++ = '0' + generic_members;
 				} else {
-					memcpy (new_name, "&lt;&gt;", 8);
-					new_name += 8;
+					memcpy (new_name, "<>", 2);
+					new_name += 2;
 				}
 
 				generic_members = 0;
