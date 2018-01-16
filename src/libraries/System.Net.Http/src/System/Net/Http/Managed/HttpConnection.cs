@@ -42,6 +42,7 @@ namespace System.Net.Http
         private static readonly byte[] s_spaceHttp10NewlineAsciiBytes = Encoding.ASCII.GetBytes(" HTTP/1.0\r\n");
         private static readonly byte[] s_spaceHttp11NewlineAsciiBytes = Encoding.ASCII.GetBytes(" HTTP/1.1\r\n");
         private static readonly byte[] s_hostKeyAndSeparator = Encoding.ASCII.GetBytes(HttpKnownHeaderNames.Host + ": ");
+        private static readonly byte[] s_httpSchemeAndDelimiter = Encoding.ASCII.GetBytes(Uri.UriSchemeHttp + Uri.SchemeDelimiter);
 
         private readonly HttpConnectionPool _pool;
         private readonly HttpConnectionKey _key;
@@ -226,9 +227,16 @@ namespace System.Net.Http
                 // Write request line
                 await WriteStringAsync(request.Method.Method, cancellationToken).ConfigureAwait(false);
                 await WriteByteAsync((byte)' ', cancellationToken).ConfigureAwait(false);
-                await WriteStringAsync(
-                    _usingProxy ? request.RequestUri.AbsoluteUri : request.RequestUri.PathAndQuery,
-                    cancellationToken).ConfigureAwait(false);
+
+                if (_usingProxy)
+                {
+                    // Proxied requests contain full URL
+                    Debug.Assert(request.RequestUri.Scheme == Uri.UriSchemeHttp);
+                    await WriteBytesAsync(s_httpSchemeAndDelimiter, cancellationToken).ConfigureAwait(false);
+                    await WriteAsciiStringAsync(request.RequestUri.IdnHost, cancellationToken).ConfigureAwait(false);
+                }
+
+                await WriteStringAsync(request.RequestUri.PathAndQuery, cancellationToken).ConfigureAwait(false);
 
                 // fall-back to 1.1 for all versions other than 1.0
                 await WriteBytesAsync(isHttp10 ? s_spaceHttp10NewlineAsciiBytes : s_spaceHttp11NewlineAsciiBytes,
