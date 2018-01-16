@@ -42,9 +42,11 @@ namespace Internal.Cryptography
             public override byte[] EncodeOctetString(byte[] octets)
             {
                 // Write using DER to support the most readers.
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                writer.WriteOctetString(octets);
-                return writer.Encode();
+                using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+                {
+                    writer.WriteOctetString(octets);
+                    return writer.Encode();
+                }
             }
 
             public override byte[] DecodeOctetString(byte[] encodedOctets)
@@ -104,16 +106,17 @@ namespace Internal.Cryptography
             public override byte[] EncodeUtcTime(DateTime utcTime)
             {
                 // Write using DER to support the most readers.
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-
-                // Sending the DateTime through ToLocalTime here will cause the right normalization
-                // of DateTimeKind.Unknown.
-                //
-                // Local => Local (noop) => UTC (in WriteUtcTime) (adjust, correct)
-                // UTC => Local (adjust) => UTC (adjust back, correct)
-                // Unknown => Local (adjust) => UTC (adjust "back", add Z marker; matches Windows)
-                writer.WriteUtcTime(utcTime.ToLocalTime());
-                return writer.Encode();
+                using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+                {
+                    // Sending the DateTime through ToLocalTime here will cause the right normalization
+                    // of DateTimeKind.Unknown.
+                    //
+                    // Local => Local (noop) => UTC (in WriteUtcTime) (adjust, correct)
+                    // UTC => Local (adjust) => UTC (adjust back, correct)
+                    // Unknown => Local (adjust) => UTC (adjust "back", add Z marker; matches Windows)
+                    writer.WriteUtcTime(utcTime.ToLocalTime());
+                    return writer.Encode();
+                }
             }
 
             public override DateTime DecodeUtcTime(byte[] encodedUtcTime)
