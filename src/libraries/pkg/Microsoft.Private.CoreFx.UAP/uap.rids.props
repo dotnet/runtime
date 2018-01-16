@@ -8,12 +8,18 @@
     <OfficialBuildRID Include="win10-arm">
       <Platform>arm</Platform>
     </OfficialBuildRID>
+    <OfficialBuildRID Include="win10-arm64">
+      <Platform>arm64</Platform>
+    </OfficialBuildRID>
     <OfficialBuildRID Include="win10-x86-aot">
       <Platform>x86</Platform>
     </OfficialBuildRID>
     <OfficialBuildRID Include="win10-x64-aot" />
     <OfficialBuildRID Include="win10-arm-aot">
       <Platform>arm</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="win10-arm64-aot">
+      <Platform>arm64</Platform>
     </OfficialBuildRID>
   </ItemGroup>
 </Project>
