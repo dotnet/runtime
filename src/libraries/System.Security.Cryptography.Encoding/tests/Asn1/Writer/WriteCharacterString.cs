@@ -42,261 +42,312 @@ namespace System.Security.Cryptography.Tests.Asn1
 
         protected void VerifyWrite_BER_String(string input, string expectedPayloadHex)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-            WriteString(writer, input);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            {
+                WriteString(writer, input);
 
-            Verify(writer, Stringify(StandardTag) + expectedPayloadHex);
+                Verify(writer, Stringify(StandardTag) + expectedPayloadHex);
+            }
         }
 
         protected void VerifyWrite_BER_String_CustomTag(string input, string expectedPayloadHex)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-            Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 14);
-            WriteString(writer, tag, input);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            {
+                Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 14);
+                WriteString(writer, tag, input);
 
-            Verify(writer, Stringify(tag) + expectedPayloadHex);
+                Verify(writer, Stringify(tag) + expectedPayloadHex);
+            }
         }
 
         protected void VerifyWrite_CER_String(string input, string expectedPayloadHex)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-            WriteString(writer, input);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            {
+                WriteString(writer, input);
 
-            Verify(writer, Stringify(StandardTag) + expectedPayloadHex);
+                Verify(writer, Stringify(StandardTag) + expectedPayloadHex);
+            }
         }
 
         protected void VerifyWrite_CER_String_CustomTag(string input, string expectedPayloadHex)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-            Asn1Tag tag = new Asn1Tag(TagClass.Private, 19);
-            WriteString(writer, tag, input);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            {
+                Asn1Tag tag = new Asn1Tag(TagClass.Private, 19);
+                WriteString(writer, tag, input);
 
-            Verify(writer, Stringify(tag) + expectedPayloadHex);
+                Verify(writer, Stringify(tag) + expectedPayloadHex);
+            }
         }
 
         protected void VerifyWrite_DER_String(string input, string expectedPayloadHex)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-            WriteString(writer, input);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            {
+                WriteString(writer, input);
 
-            Verify(writer, Stringify(StandardTag) + expectedPayloadHex);
+                Verify(writer, Stringify(StandardTag) + expectedPayloadHex);
+            }
         }
 
         protected void VerifyWrite_DER_String_CustomTag(string input, string expectedPayloadHex)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-            Asn1Tag tag = new Asn1Tag(TagClass.Application, 2);
-            WriteString(writer, tag, input);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            {
+                Asn1Tag tag = new Asn1Tag(TagClass.Application, 2);
+                WriteString(writer, tag, input);
 
-            Verify(writer, Stringify(tag) + expectedPayloadHex);
+                Verify(writer, Stringify(tag) + expectedPayloadHex);
+            }
         }
 
         protected void VerifyWrite_BER_Span(string input, string expectedPayloadHex)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-            WriteSpan(writer, input.AsReadOnlySpan());
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            {
+                WriteSpan(writer, input.AsReadOnlySpan());
 
-            Verify(writer, Stringify(StandardTag) + expectedPayloadHex);
+                Verify(writer, Stringify(StandardTag) + expectedPayloadHex);
+            }
         }
 
         protected void VerifyWrite_BER_Span_CustomTag(string input, string expectedPayloadHex)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-            Asn1Tag tag = new Asn1Tag(TagClass.Private, int.MaxValue >> 1);
-            WriteSpan(writer, tag, input.AsReadOnlySpan());
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            {
+                Asn1Tag tag = new Asn1Tag(TagClass.Private, int.MaxValue >> 1);
+                WriteSpan(writer, tag, input.AsReadOnlySpan());
 
-            Verify(writer, Stringify(tag) + expectedPayloadHex);
+                Verify(writer, Stringify(tag) + expectedPayloadHex);
+            }
         }
 
         protected void VerifyWrite_CER_Span(string input, string expectedPayloadHex)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-            WriteSpan(writer, input.AsReadOnlySpan());
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            {
+                WriteSpan(writer, input.AsReadOnlySpan());
 
-            Verify(writer, Stringify(StandardTag) + expectedPayloadHex);
+                Verify(writer, Stringify(StandardTag) + expectedPayloadHex);
+            }
         }
 
         protected void VerifyWrite_CER_Span_CustomTag(string input, string expectedPayloadHex)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-            Asn1Tag tag = new Asn1Tag(TagClass.Application, 30);
-            WriteSpan(writer, tag, input.AsReadOnlySpan());
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            {
+                Asn1Tag tag = new Asn1Tag(TagClass.Application, 30);
+                WriteSpan(writer, tag, input.AsReadOnlySpan());
 
-            Verify(writer, Stringify(tag) + expectedPayloadHex);
+                Verify(writer, Stringify(tag) + expectedPayloadHex);
+            }
         }
 
         protected void VerifyWrite_DER_Span(string input, string expectedPayloadHex)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-            WriteSpan(writer, input.AsReadOnlySpan());
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            {
+                WriteSpan(writer, input.AsReadOnlySpan());
 
-            Verify(writer, Stringify(StandardTag) + expectedPayloadHex);
+                Verify(writer, Stringify(StandardTag) + expectedPayloadHex);
+            }
         }
 
         protected void VerifyWrite_DER_Span_CustomTag(string input, string expectedPayloadHex)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-            Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 31);
-            WriteSpan(writer, tag, input.AsReadOnlySpan());
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            {
+                Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 31);
+                WriteSpan(writer, tag, input.AsReadOnlySpan());
 
-            Verify(writer, Stringify(tag) + expectedPayloadHex);
+                Verify(writer, Stringify(tag) + expectedPayloadHex);
+            }
         }
 
         protected void VerifyWrite_BER_String_ClearsConstructed(string input, string expectedPayloadHex)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-            Asn1Tag standard = StandardTag;
-            Asn1Tag tag = new Asn1Tag(standard.TagClass, standard.TagValue, isConstructed: true);
-            WriteString(writer, tag, input);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            {
+                Asn1Tag standard = StandardTag;
+                Asn1Tag tag = new Asn1Tag(standard.TagClass, standard.TagValue, isConstructed: true);
+                WriteString(writer, tag, input);
 
-            Verify(writer, Stringify(standard) + expectedPayloadHex);
+                Verify(writer, Stringify(standard) + expectedPayloadHex);
+            }
         }
 
         protected void VerifyWrite_BER_String_CustomTag_ClearsConstructed(string input, string expectedPayloadHex)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-            Asn1Tag tag = new Asn1Tag(TagClass.Application, 19, isConstructed: true);
-            Asn1Tag expected = new Asn1Tag(tag.TagClass, tag.TagValue);
-            WriteString(writer, tag, input);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            {
+                Asn1Tag tag = new Asn1Tag(TagClass.Application, 19, isConstructed: true);
+                Asn1Tag expected = new Asn1Tag(tag.TagClass, tag.TagValue);
+                WriteString(writer, tag, input);
 
-            Verify(writer, Stringify(expected) + expectedPayloadHex);
+                Verify(writer, Stringify(expected) + expectedPayloadHex);
+            }
         }
 
         protected void VerifyWrite_BER_Span_ClearsConstructed(string input, string expectedPayloadHex)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-            Asn1Tag standard = StandardTag;
-            Asn1Tag tag = new Asn1Tag(standard.TagClass, standard.TagValue, isConstructed: true);
-            WriteSpan(writer, tag, input.AsReadOnlySpan());
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            {
+                Asn1Tag standard = StandardTag;
+                Asn1Tag tag = new Asn1Tag(standard.TagClass, standard.TagValue, isConstructed: true);
+                WriteSpan(writer, tag, input.AsReadOnlySpan());
 
-            Verify(writer, Stringify(standard) + expectedPayloadHex);
+                Verify(writer, Stringify(standard) + expectedPayloadHex);
+            }
         }
 
         protected void VerifyWrite_BER_Span_CustomTag_ClearsConstructed(string input, string expectedPayloadHex)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-            Asn1Tag tag = new Asn1Tag(TagClass.Private, 24601, isConstructed: true);
-            Asn1Tag expected = new Asn1Tag(tag.TagClass, tag.TagValue);
-            WriteSpan(writer, tag, input.AsReadOnlySpan());
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            {
+                Asn1Tag tag = new Asn1Tag(TagClass.Private, 24601, isConstructed: true);
+                Asn1Tag expected = new Asn1Tag(tag.TagClass, tag.TagValue);
+                WriteSpan(writer, tag, input.AsReadOnlySpan());
 
-            Verify(writer, Stringify(expected) + expectedPayloadHex);
+                Verify(writer, Stringify(expected) + expectedPayloadHex);
+            }
         }
 
         protected void VerifyWrite_CER_String_ClearsConstructed(string input, string expectedPayloadHex)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.CER);
-            Asn1Tag standard = StandardTag;
-            Asn1Tag tag = new Asn1Tag(standard.TagClass, standard.TagValue, isConstructed: true);
-            WriteString(writer, tag, input);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
+            {
+                Asn1Tag standard = StandardTag;
+                Asn1Tag tag = new Asn1Tag(standard.TagClass, standard.TagValue, isConstructed: true);
+                WriteString(writer, tag, input);
 
-            Verify(writer, Stringify(standard) + expectedPayloadHex);
+                Verify(writer, Stringify(standard) + expectedPayloadHex);
+            }
         }
 
         protected void VerifyWrite_CER_String_CustomTag_ClearsConstructed(string input, string expectedPayloadHex)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.CER);
-            Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 1701, isConstructed: true);
-            Asn1Tag expected = new Asn1Tag(tag.TagClass, tag.TagValue);
-            WriteString(writer, tag, input);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
+            {
+                Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 1701, isConstructed: true);
+                Asn1Tag expected = new Asn1Tag(tag.TagClass, tag.TagValue);
+                WriteString(writer, tag, input);
 
-            Verify(writer, Stringify(expected) + expectedPayloadHex);
+                Verify(writer, Stringify(expected) + expectedPayloadHex);
+            }
         }
 
         protected void VerifyWrite_CER_Span_ClearsConstructed(string input, string expectedPayloadHex)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.CER);
-            Asn1Tag standard = StandardTag;
-            Asn1Tag tag = new Asn1Tag(standard.TagClass, standard.TagValue, isConstructed: true);
-            WriteSpan(writer, tag, input.AsReadOnlySpan());
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
+            {
+                Asn1Tag standard = StandardTag;
+                Asn1Tag tag = new Asn1Tag(standard.TagClass, standard.TagValue, isConstructed: true);
+                WriteSpan(writer, tag, input.AsReadOnlySpan());
 
-            Verify(writer, Stringify(standard) + expectedPayloadHex);
+                Verify(writer, Stringify(standard) + expectedPayloadHex);
+            }
         }
 
         protected void VerifyWrite_CER_Span_CustomTag_ClearsConstructed(string input, string expectedPayloadHex)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.CER);
-            Asn1Tag tag = new Asn1Tag(TagClass.Application, 11, isConstructed: true);
-            Asn1Tag expected = new Asn1Tag(tag.TagClass, tag.TagValue);
-            WriteSpan(writer, tag, input.AsReadOnlySpan());
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
+            {
+                Asn1Tag tag = new Asn1Tag(TagClass.Application, 11, isConstructed: true);
+                Asn1Tag expected = new Asn1Tag(tag.TagClass, tag.TagValue);
+                WriteSpan(writer, tag, input.AsReadOnlySpan());
 
-            Verify(writer, Stringify(expected) + expectedPayloadHex);
+                Verify(writer, Stringify(expected) + expectedPayloadHex);
+            }
         }
 
         protected void VerifyWrite_DER_String_ClearsConstructed(string input, string expectedPayloadHex)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            Asn1Tag standard = StandardTag;
-            Asn1Tag tag = new Asn1Tag(standard.TagClass, standard.TagValue, isConstructed: true);
-            WriteString(writer, tag, input);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                Asn1Tag standard = StandardTag;
+                Asn1Tag tag = new Asn1Tag(standard.TagClass, standard.TagValue, isConstructed: true);
+                WriteString(writer, tag, input);
 
-            Verify(writer, Stringify(standard) + expectedPayloadHex);
+                Verify(writer, Stringify(standard) + expectedPayloadHex);
+            }
         }
 
         protected void VerifyWrite_DER_String_CustomTag_ClearsConstructed(string input, string expectedPayloadHex)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            Asn1Tag tag = new Asn1Tag(TagClass.Application, 19, isConstructed: true);
-            Asn1Tag expected = new Asn1Tag(tag.TagClass, tag.TagValue);
-            WriteString(writer, tag, input);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                Asn1Tag tag = new Asn1Tag(TagClass.Application, 19, isConstructed: true);
+                Asn1Tag expected = new Asn1Tag(tag.TagClass, tag.TagValue);
+                WriteString(writer, tag, input);
 
-            Verify(writer, Stringify(expected) + expectedPayloadHex);
+                Verify(writer, Stringify(expected) + expectedPayloadHex);
+            }
         }
 
         protected void VerifyWrite_DER_Span_ClearsConstructed(string input, string expectedPayloadHex)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            Asn1Tag standard = StandardTag;
-            Asn1Tag tag = new Asn1Tag(standard.TagClass, standard.TagValue, isConstructed: true);
-            WriteSpan(writer, tag, input.AsReadOnlySpan());
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                Asn1Tag standard = StandardTag;
+                Asn1Tag tag = new Asn1Tag(standard.TagClass, standard.TagValue, isConstructed: true);
+                WriteSpan(writer, tag, input.AsReadOnlySpan());
 
-            Verify(writer, Stringify(standard) + expectedPayloadHex);
+                Verify(writer, Stringify(standard) + expectedPayloadHex);
+            }
         }
 
         protected void VerifyWrite_DER_Span_CustomTag_ClearsConstructed(string input, string expectedPayloadHex)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            Asn1Tag tag = new Asn1Tag(TagClass.Private, 24601, isConstructed: true);
-            Asn1Tag expected = new Asn1Tag(tag.TagClass, tag.TagValue);
-            WriteSpan(writer, tag, input.AsReadOnlySpan());
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                Asn1Tag tag = new Asn1Tag(TagClass.Private, 24601, isConstructed: true);
+                Asn1Tag expected = new Asn1Tag(tag.TagClass, tag.TagValue);
+                WriteSpan(writer, tag, input.AsReadOnlySpan());
 
-            Verify(writer, Stringify(expected) + expectedPayloadHex);
+                Verify(writer, Stringify(expected) + expectedPayloadHex);
+            }
         }
 
         protected void VerifyWrite_String_Null(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-
-            AssertExtensions.Throws<ArgumentNullException>(
-                "str",
-                () => WriteString(writer, null));
-
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                AssertExtensions.Throws<ArgumentNullException>(
+                    "str",
+                    () => WriteString(writer, null));
+            }
         }
 
         protected void VerifyWrite_String_Null_CustomTag(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-
-            AssertExtensions.Throws<ArgumentNullException>(
-                "str",
-                () => WriteString(writer, new Asn1Tag(TagClass.ContextSpecific, 3), null));
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                AssertExtensions.Throws<ArgumentNullException>(
+                    "str",
+                    () => WriteString(writer, new Asn1Tag(TagClass.ContextSpecific, 3), null));
+            }
         }
 
         protected void VerifyWrite_EndOfContents_String(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-
-            AssertExtensions.Throws<ArgumentException>(
-                "tag",
-                () => WriteString(writer, Asn1Tag.EndOfContents, "hi"));
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => WriteString(writer, Asn1Tag.EndOfContents, "hi"));
+            }
         }
 
         protected void VerifyWrite_EndOfContents_Span(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-
-            AssertExtensions.Throws<ArgumentException>(
-                "tag",
-                () => WriteSpan(writer, Asn1Tag.EndOfContents, "hi".AsReadOnlySpan()));
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => WriteSpan(writer, Asn1Tag.EndOfContents, "hi".AsReadOnlySpan()));
+            }
         }
 
         private void VerifyWrite_CERSegmented(AsnWriter writer, string tagHex, int contentByteCount)
@@ -328,110 +379,120 @@ namespace System.Security.Cryptography.Tests.Asn1
 
         protected void VerifyWrite_CERSegmented_String(string input, int contentByteCount)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.CER);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
+            {
+                Asn1Tag standard = StandardTag;
+                Asn1Tag tag = new Asn1Tag(standard.TagClass, standard.TagValue, true);
+                string tagHex = Stringify(tag);
 
-            Asn1Tag standard = StandardTag;
-            Asn1Tag tag = new Asn1Tag(standard.TagClass, standard.TagValue, true);
-            string tagHex = Stringify(tag);
-
-            WriteString(writer, input);
-            VerifyWrite_CERSegmented(writer, tagHex, contentByteCount);
+                WriteString(writer, input);
+                VerifyWrite_CERSegmented(writer, tagHex, contentByteCount);
+            }
         }
 
         protected void VerifyWrite_CERSegmented_String_CustomTag(string input, int contentByteCount)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.CER);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
+            {
+                Asn1Tag tag = new Asn1Tag(TagClass.Private, 7, true);
+                string tagHex = Stringify(tag);
 
-            Asn1Tag tag = new Asn1Tag(TagClass.Private, 7, true);
-            string tagHex = Stringify(tag);
-
-            WriteString(writer, tag, input);
-            VerifyWrite_CERSegmented(writer, tagHex, contentByteCount);
+                WriteString(writer, tag, input);
+                VerifyWrite_CERSegmented(writer, tagHex, contentByteCount);
+            }
         }
 
         protected void VerifyWrite_CERSegmented_String_ConstructedTag(string input, int contentByteCount)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.CER);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
+            {
+                Asn1Tag standard = StandardTag;
+                Asn1Tag tag = new Asn1Tag(standard.TagClass, standard.TagValue, true);
+                string tagHex = Stringify(tag);
 
-            Asn1Tag standard = StandardTag;
-            Asn1Tag tag = new Asn1Tag(standard.TagClass, standard.TagValue, true);
-            string tagHex = Stringify(tag);
-
-            WriteString(writer, tag, input);
-            VerifyWrite_CERSegmented(writer, tagHex, contentByteCount);
+                WriteString(writer, tag, input);
+                VerifyWrite_CERSegmented(writer, tagHex, contentByteCount);
+            }
         }
 
         protected void VerifyWrite_CERSegmented_String_CustomPrimitiveTag(string input, int contentByteCount)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.CER);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
+            {
+                Asn1Tag prim = new Asn1Tag(TagClass.Application, 42);
+                Asn1Tag constr = new Asn1Tag(prim.TagClass, prim.TagValue, true);
+                string tagHex = Stringify(constr);
 
-            Asn1Tag prim = new Asn1Tag(TagClass.Application, 42);
-            Asn1Tag constr = new Asn1Tag(prim.TagClass, prim.TagValue, true);
-            string tagHex = Stringify(constr);
-
-            WriteString(writer, prim, input);
-            VerifyWrite_CERSegmented(writer, tagHex, contentByteCount);
+                WriteString(writer, prim, input);
+                VerifyWrite_CERSegmented(writer, tagHex, contentByteCount);
+            }
         }
 
         protected void VerifyWrite_CERSegmented_Span(string input, int contentByteCount)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.CER);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
+            {
+                Asn1Tag standard = StandardTag;
+                Asn1Tag tag = new Asn1Tag(standard.TagClass, standard.TagValue, true);
+                string tagHex = Stringify(tag);
 
-            Asn1Tag standard = StandardTag;
-            Asn1Tag tag = new Asn1Tag(standard.TagClass, standard.TagValue, true);
-            string tagHex = Stringify(tag);
-
-            WriteSpan(writer, input.AsReadOnlySpan());
-            VerifyWrite_CERSegmented(writer, tagHex, contentByteCount);
+                WriteSpan(writer, input.AsReadOnlySpan());
+                VerifyWrite_CERSegmented(writer, tagHex, contentByteCount);
+            }
         }
 
         protected void VerifyWrite_CERSegmented_Span_CustomTag(string input, int contentByteCount)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.CER);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
+            {
+                Asn1Tag tag = new Asn1Tag(TagClass.Private, 7, true);
+                string tagHex = Stringify(tag);
 
-            Asn1Tag tag = new Asn1Tag(TagClass.Private, 7, true);
-            string tagHex = Stringify(tag);
-
-            WriteSpan(writer, tag, input.AsReadOnlySpan());
-            VerifyWrite_CERSegmented(writer, tagHex, contentByteCount);
+                WriteSpan(writer, tag, input.AsReadOnlySpan());
+                VerifyWrite_CERSegmented(writer, tagHex, contentByteCount);
+            }
         }
 
         protected void VerifyWrite_CERSegmented_Span_ConstructedTag(string input, int contentByteCount)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.CER);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
+            {
+                Asn1Tag standard = StandardTag;
+                Asn1Tag tag = new Asn1Tag(standard.TagClass, standard.TagValue, true);
+                string tagHex = Stringify(tag);
 
-            Asn1Tag standard = StandardTag;
-            Asn1Tag tag = new Asn1Tag(standard.TagClass, standard.TagValue, true);
-            string tagHex = Stringify(tag);
-
-            WriteSpan(writer, tag, input.AsReadOnlySpan());
-            VerifyWrite_CERSegmented(writer, tagHex, contentByteCount);
+                WriteSpan(writer, tag, input.AsReadOnlySpan());
+                VerifyWrite_CERSegmented(writer, tagHex, contentByteCount);
+            }
         }
 
         protected void VerifyWrite_CERSegmented_Span_CustomPrimitiveTag(string input, int contentByteCount)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.CER);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
+            {
+                Asn1Tag prim = new Asn1Tag(TagClass.Application, 42);
+                Asn1Tag constr = new Asn1Tag(prim.TagClass, prim.TagValue, true);
+                string tagHex = Stringify(constr);
 
-            Asn1Tag prim = new Asn1Tag(TagClass.Application, 42);
-            Asn1Tag constr = new Asn1Tag(prim.TagClass, prim.TagValue, true);
-            string tagHex = Stringify(constr);
-
-            WriteSpan(writer, prim, input.AsReadOnlySpan());
-            VerifyWrite_CERSegmented(writer, tagHex, contentByteCount);
+                WriteSpan(writer, prim, input.AsReadOnlySpan());
+                VerifyWrite_CERSegmented(writer, tagHex, contentByteCount);
+            }
         }
 
         protected void VerifyWrite_String_NonEncodable(string input)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-
-            Assert.Throws<EncoderFallbackException>(() => WriteString(writer, input));
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            {
+                Assert.Throws<EncoderFallbackException>(() => WriteString(writer, input));
+            }
         }
 
         protected void VerifyWrite_Span_NonEncodable(string input)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-
-            Assert.Throws<EncoderFallbackException>(() => WriteSpan(writer, input.AsReadOnlySpan()));
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            {
+                Assert.Throws<EncoderFallbackException>(() => WriteSpan(writer, input.AsReadOnlySpan()));
+            }
         }
     }
 }

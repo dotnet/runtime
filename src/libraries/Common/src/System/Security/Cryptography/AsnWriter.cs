@@ -15,7 +15,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Asn1
 {
-    internal class AsnWriter
+    internal sealed class AsnWriter : IDisposable
     {
         private byte[] _buffer;
         private int _offset;
@@ -33,6 +33,19 @@ namespace System.Security.Cryptography.Asn1
             }
 
             RuleSet = ruleSet;
+        }
+
+        public void Dispose()
+        {
+            _nestingStack = null;
+
+            if (_buffer != null)
+            {
+                Array.Clear(_buffer, 0, _offset);
+                ArrayPool<byte>.Shared.Return(_buffer);
+                _buffer = null;
+                _offset = 0;
+            }
         }
 
         private void EnsureWriteCapacity(int pendingCount)

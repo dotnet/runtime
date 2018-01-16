@@ -22,9 +22,11 @@ namespace System.Security.Cryptography.Pkcs
 
         internal Pkcs9MessageDigest(ReadOnlySpan<byte> signatureDigest)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            writer.WriteOctetString(signatureDigest);
-            RawData = writer.Encode();
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                writer.WriteOctetString(signatureDigest);
+                RawData = writer.Encode();
+            }
         }
 
         //

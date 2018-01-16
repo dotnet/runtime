@@ -168,16 +168,20 @@ namespace System.Security.Cryptography.Pkcs
             X509Certificate2Collection chain;
             SignerInfoAsn newSignerInfo = signer.Sign(effectiveThis._signature, null, false, out chain);
 
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            writer.PushSetOf();
-            AsnSerializer.Serialize(newSignerInfo, writer);
-            writer.PopSetOf();
+            AttributeAsn newUnsignedAttr;
 
-            AttributeAsn newUnsignedAttr = new AttributeAsn
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
             {
-                AttrType = new Oid(Oids.CounterSigner, Oids.CounterSigner),
-                AttrValues = writer.Encode(),
-            };
+                writer.PushSetOf();
+                AsnSerializer.Serialize(newSignerInfo, writer);
+                writer.PopSetOf();
+
+                newUnsignedAttr = new AttributeAsn
+                {
+                    AttrType = new Oid(Oids.CounterSigner, Oids.CounterSigner),
+                    AttrValues = writer.Encode(),
+                };
+            }
 
             ref SignedDataAsn signedData = ref _document.GetRawData();
             ref SignerInfoAsn mySigner = ref signedData.SignerInfos[myIdx];
@@ -302,27 +306,29 @@ namespace System.Security.Cryptography.Pkcs
             {
                 ref AttributeAsn modifiedAttr = ref unsignedAttrs[removeAttrIdx];
 
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-                writer.PushSetOf();
-
-                AsnReader reader = new AsnReader(modifiedAttr.AttrValues, writer.RuleSet);
-
-                int i = 0;
-
-                while (reader.HasData)
+                using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
                 {
-                    ReadOnlyMemory<byte> encodedValue = reader.GetEncodedValue();
+                    writer.PushSetOf();
 
-                    if (i != removeValueIndex)
+                    AsnReader reader = new AsnReader(modifiedAttr.AttrValues, writer.RuleSet);
+
+                    int i = 0;
+
+                    while (reader.HasData)
                     {
-                        writer.WriteEncodedValue(encodedValue);
+                        ReadOnlyMemory<byte> encodedValue = reader.GetEncodedValue();
+
+                        if (i != removeValueIndex)
+                        {
+                            writer.WriteEncodedValue(encodedValue);
+                        }
+
+                        i++;
                     }
 
-                    i++;
+                    writer.PopSetOf();
+                    modifiedAttr.AttrValues = writer.Encode();
                 }
-
-                writer.PopSetOf();
-                modifiedAttr.AttrValues = writer.Encode();
             }
         }
 
@@ -483,38 +489,40 @@ namespace System.Security.Cryptography.Pkcs
             {
                 byte[] contentDigest = hasher.GetHashAndReset();
 
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                writer.PushSetOf();
-
-                foreach (AttributeAsn attr in _signedAttributes)
+                using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
                 {
-                    AsnSerializer.Serialize(attr, writer);
+                    writer.PushSetOf();
 
-                    // .NET Framework doesn't seem to validate the content type attribute,
-                    // so we won't, either.
-
-                    if (attr.AttrType.Value == Oids.MessageDigest)
+                    foreach (AttributeAsn attr in _signedAttributes)
                     {
-                        CryptographicAttributeObject obj = MakeAttribute(attr);
+                        AsnSerializer.Serialize(attr, writer);
 
-                        if (obj.Values.Count != 1)
+                        // .NET Framework doesn't seem to validate the content type attribute,
+                        // so we won't, either.
+
+                        if (attr.AttrType.Value == Oids.MessageDigest)
                         {
-                            throw new CryptographicException(SR.Cryptography_BadHashValue);
+                            CryptographicAttributeObject obj = MakeAttribute(attr);
+
+                            if (obj.Values.Count != 1)
+                            {
+                                throw new CryptographicException(SR.Cryptography_BadHashValue);
+                            }
+
+                            var digestAttr = (Pkcs9MessageDigest)obj.Values[0];
+
+                            if (!contentDigest.AsSpan().SequenceEqual(digestAttr.MessageDigest.AsReadOnlySpan()))
+                            {
+                                throw new CryptographicException(SR.Cryptography_BadHashValue);
+                            }
+
+                            invalid = false;
                         }
-
-                        var digestAttr = (Pkcs9MessageDigest)obj.Values[0];
-
-                        if (!contentDigest.AsSpan().SequenceEqual(digestAttr.MessageDigest.AsReadOnlySpan()))
-                        {
-                            throw new CryptographicException(SR.Cryptography_BadHashValue);
-                        }
-
-                        invalid = false;
                     }
-                }
 
-                writer.PopSetOf();
-                Helpers.DigestWriter(hasher, writer);
+                    writer.PopSetOf();
+                    Helpers.DigestWriter(hasher, writer);
+                }
             }
 
             if (invalid)

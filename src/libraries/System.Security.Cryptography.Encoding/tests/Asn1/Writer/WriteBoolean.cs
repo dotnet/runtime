@@ -18,10 +18,12 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER, true, "0101FF")]
         public void VerifyWriteBoolean(PublicEncodingRules ruleSet, bool value, string expectedHex)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            writer.WriteBoolean(value);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.WriteBoolean(value);
 
-            Verify(writer, expectedHex);
+                Verify(writer, expectedHex);
+            }
         }
 
         [Theory]
@@ -33,10 +35,12 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER, true, "8301FF")]
         public void VerifyWriteBoolean_Context3(PublicEncodingRules ruleSet, bool value, string expectedHex)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            writer.WriteBoolean(new Asn1Tag(TagClass.ContextSpecific, 3), value);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.WriteBoolean(new Asn1Tag(TagClass.ContextSpecific, 3), value);
 
-            Verify(writer, expectedHex);
+                Verify(writer, expectedHex);
+            }
         }
 
         [Theory]
@@ -48,11 +52,12 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER, true)]
         public void VerifyWriteBoolean_EndOfContents(PublicEncodingRules ruleSet, bool value)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-
-            AssertExtensions.Throws<ArgumentException>(
-                "tag",
-                () => writer.WriteBoolean(Asn1Tag.EndOfContents, value));
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteBoolean(Asn1Tag.EndOfContents, value));
+            }
         }
 
         [Theory]
@@ -64,17 +69,19 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER, true)]
         public void VerifyWriteBoolean_ConstructedIgnored(PublicEncodingRules ruleSet, bool value)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            writer.WriteBoolean(new Asn1Tag(TagClass.ContextSpecific, 7, true), value);
-            writer.WriteBoolean(new Asn1Tag(UniversalTagNumber.Boolean, true), value);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.WriteBoolean(new Asn1Tag(TagClass.ContextSpecific, 7, true), value);
+                writer.WriteBoolean(new Asn1Tag(UniversalTagNumber.Boolean, true), value);
 
-            if (value)
-            {
-                Verify(writer, "8701FF0101FF");
-            }
-            else
-            {
-                Verify(writer, "870100010100");
+                if (value)
+                {
+                    Verify(writer, "8701FF0101FF");
+                }
+                else
+                {
+                    Verify(writer, "870100010100");
+                }
             }
         }
     }

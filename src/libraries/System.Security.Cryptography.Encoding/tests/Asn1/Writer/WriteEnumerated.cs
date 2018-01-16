@@ -24,18 +24,19 @@ namespace System.Security.Cryptography.Tests.Asn1
             bool customTag,
             string expectedHex)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-
-            if (customTag)
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
             {
-                writer.WriteEnumeratedValue(new Asn1Tag(TagClass.ContextSpecific, 30), value);
-            }
-            else
-            {
-                writer.WriteEnumeratedValue(value);
-            }
+                if (customTag)
+                {
+                    writer.WriteEnumeratedValue(new Asn1Tag(TagClass.ContextSpecific, 30), value);
+                }
+                else
+                {
+                    writer.WriteEnumeratedValue(value);
+                }
 
-            Verify(writer, expectedHex);
+                Verify(writer, expectedHex);
+            }
         }
 
         [Theory]
@@ -50,18 +51,19 @@ namespace System.Security.Cryptography.Tests.Asn1
             bool customTag,
             string expectedHex)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-
-            if (customTag)
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
             {
-                writer.WriteEnumeratedValue(new Asn1Tag(TagClass.ContextSpecific, 26), value);
-            }
-            else
-            {
-                writer.WriteEnumeratedValue(value);
-            }
+                if (customTag)
+                {
+                    writer.WriteEnumeratedValue(new Asn1Tag(TagClass.ContextSpecific, 26), value);
+                }
+                else
+                {
+                    writer.WriteEnumeratedValue(value);
+                }
 
-            Verify(writer, expectedHex);
+                Verify(writer, expectedHex);
+            }
         }
 
         [Theory]
@@ -78,18 +80,19 @@ namespace System.Security.Cryptography.Tests.Asn1
             bool customTag,
             string expectedHex)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-
-            if (customTag)
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
             {
-                writer.WriteEnumeratedValue(new Asn1Tag(TagClass.Private, 212), value);
-            }
-            else
-            {
-                writer.WriteEnumeratedValue(value);
-            }
+                if (customTag)
+                {
+                    writer.WriteEnumeratedValue(new Asn1Tag(TagClass.Private, 212), value);
+                }
+                else
+                {
+                    writer.WriteEnumeratedValue(value);
+                }
 
-            Verify(writer, expectedHex);
+                Verify(writer, expectedHex);
+            }
         }
 
         [Theory]
@@ -106,18 +109,19 @@ namespace System.Security.Cryptography.Tests.Asn1
             bool customTag,
             string expectedHex)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-
-            if (customTag)
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
             {
-                writer.WriteEnumeratedValue(new Asn1Tag(TagClass.Application, 13), value);
-            }
-            else
-            {
-                writer.WriteEnumeratedValue(value);
-            }
+                if (customTag)
+                {
+                    writer.WriteEnumeratedValue(new Asn1Tag(TagClass.Application, 13), value);
+                }
+                else
+                {
+                    writer.WriteEnumeratedValue(value);
+                }
 
-            Verify(writer, expectedHex);
+                Verify(writer, expectedHex);
+            }
         }
 
         [Theory]
@@ -136,18 +140,19 @@ namespace System.Security.Cryptography.Tests.Asn1
             bool customTag,
             string expectedHex)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-
-            if (customTag)
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
             {
-                writer.WriteEnumeratedValue(new Asn1Tag(TagClass.Application, short.MaxValue), value);
-            }
-            else
-            {
-                writer.WriteEnumeratedValue(value);
-            }
+                if (customTag)
+                {
+                    writer.WriteEnumeratedValue(new Asn1Tag(TagClass.Application, short.MaxValue), value);
+                }
+                else
+                {
+                    writer.WriteEnumeratedValue(value);
+                }
 
-            Verify(writer, expectedHex);
+                Verify(writer, expectedHex);
+            }
         }
 
         [Theory]
@@ -164,18 +169,19 @@ namespace System.Security.Cryptography.Tests.Asn1
             bool customTag,
             string expectedHex)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-
-            if (customTag)
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
             {
-                writer.WriteEnumeratedValue(new Asn1Tag(TagClass.ContextSpecific, 97), value);
-            }
-            else
-            {
-                writer.WriteEnumeratedValue(value);
-            }
+                if (customTag)
+                {
+                    writer.WriteEnumeratedValue(new Asn1Tag(TagClass.ContextSpecific, 97), value);
+                }
+                else
+                {
+                    writer.WriteEnumeratedValue(value);
+                }
 
-            Verify(writer, expectedHex);
+                Verify(writer, expectedHex);
+            }
         }
 
         [Theory]
@@ -196,18 +202,19 @@ namespace System.Security.Cryptography.Tests.Asn1
             bool customTag,
             string expectedHex)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-
-            if (customTag)
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
             {
-                writer.WriteEnumeratedValue(new Asn1Tag(TagClass.ContextSpecific, 0), value);
-            }
-            else
-            {
-                writer.WriteEnumeratedValue(value);
-            }
+                if (customTag)
+                {
+                    writer.WriteEnumeratedValue(new Asn1Tag(TagClass.ContextSpecific, 0), value);
+                }
+                else
+                {
+                    writer.WriteEnumeratedValue(value);
+                }
 
-            Verify(writer, expectedHex);
+                Verify(writer, expectedHex);
+            }
         }
 
         [Theory]
@@ -226,18 +233,19 @@ namespace System.Security.Cryptography.Tests.Asn1
             bool customTag,
             string expectedHex)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-
-            if (customTag)
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
             {
-                writer.WriteEnumeratedValue(new Asn1Tag(TagClass.Private, 1), value);
-            }
-            else
-            {
-                writer.WriteEnumeratedValue(value);
-            }
+                if (customTag)
+                {
+                    writer.WriteEnumeratedValue(new Asn1Tag(TagClass.Private, 1), value);
+                }
+                else
+                {
+                    writer.WriteEnumeratedValue(value);
+                }
 
-            Verify(writer, expectedHex);
+                Verify(writer, expectedHex);
+            }
         }
 
         [Theory]
@@ -246,27 +254,28 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public void VerifyFlagsBased(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                AssertExtensions.Throws<ArgumentException>(
+                    "tEnum",
+                    () => writer.WriteEnumeratedValue(OpenFlags.IncludeArchived));
 
-            AssertExtensions.Throws<ArgumentException>(
-                "tEnum",
-                () => writer.WriteEnumeratedValue(OpenFlags.IncludeArchived));
+                AssertExtensions.Throws<ArgumentException>(
+                    "tEnum",
+                    () => writer.WriteEnumeratedValue(
+                        new Asn1Tag(TagClass.ContextSpecific, 13),
+                        OpenFlags.IncludeArchived));
 
-            AssertExtensions.Throws<ArgumentException>(
-                "tEnum",
-                () => writer.WriteEnumeratedValue(
-                    new Asn1Tag(TagClass.ContextSpecific, 13),
-                    OpenFlags.IncludeArchived));
+                AssertExtensions.Throws<ArgumentException>(
+                    "tEnum",
+                    () => writer.WriteEnumeratedValue((object)OpenFlags.IncludeArchived));
 
-            AssertExtensions.Throws<ArgumentException>(
-                "tEnum",
-                () => writer.WriteEnumeratedValue((object)OpenFlags.IncludeArchived));
-
-            AssertExtensions.Throws<ArgumentException>(
-                "tEnum",
-                () => writer.WriteEnumeratedValue(
-                    new Asn1Tag(TagClass.ContextSpecific, 13),
-                    (object)OpenFlags.IncludeArchived));
+                AssertExtensions.Throws<ArgumentException>(
+                    "tEnum",
+                    () => writer.WriteEnumeratedValue(
+                        new Asn1Tag(TagClass.ContextSpecific, 13),
+                        (object)OpenFlags.IncludeArchived));
+            }
         }
 
         [Theory]
@@ -275,25 +284,26 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public void VerifyNonEnum(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                Assert.Throws<ArgumentException>(
+                    () => writer.WriteEnumeratedValue(5));
 
-            Assert.Throws<ArgumentException>(
-                () => writer.WriteEnumeratedValue(5));
+                Assert.Throws<ArgumentException>(
+                    () => writer.WriteEnumeratedValue((object)"hi"));
 
-            Assert.Throws<ArgumentException>(
-                () => writer.WriteEnumeratedValue((object)"hi"));
+                Assert.Throws<ArgumentException>(
+                    () => writer.WriteEnumeratedValue((object)5));
 
-            Assert.Throws<ArgumentException>(
-                () => writer.WriteEnumeratedValue((object)5));
+                Assert.Throws<ArgumentException>(
+                    () => writer.WriteEnumeratedValue(new Asn1Tag(TagClass.ContextSpecific, 3), 5));
 
-            Assert.Throws<ArgumentException>(
-                () => writer.WriteEnumeratedValue(new Asn1Tag(TagClass.ContextSpecific, 3), 5));
+                Assert.Throws<ArgumentException>(
+                    () => writer.WriteEnumeratedValue(new Asn1Tag(TagClass.ContextSpecific, 3), (object)"hi"));
 
-            Assert.Throws<ArgumentException>(
-                () => writer.WriteEnumeratedValue(new Asn1Tag(TagClass.ContextSpecific, 3), (object)"hi"));
-
-            Assert.Throws<ArgumentException>(
-                () => writer.WriteEnumeratedValue(new Asn1Tag(TagClass.ContextSpecific, 3), (object)5));
+                Assert.Throws<ArgumentException>(
+                    () => writer.WriteEnumeratedValue(new Asn1Tag(TagClass.ContextSpecific, 3), (object)5));
+            }
         }
 
         [Theory]
@@ -302,15 +312,16 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public void VerifyEndOfContents(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteEnumeratedValue(Asn1Tag.EndOfContents, ReadEnumerated.IntBacked.Pillow));
 
-            AssertExtensions.Throws<ArgumentException>(
-                "tag",
-                () => writer.WriteEnumeratedValue(Asn1Tag.EndOfContents, ReadEnumerated.IntBacked.Pillow));
-
-            AssertExtensions.Throws<ArgumentException>(
-                "tag",
-                () => writer.WriteEnumeratedValue(Asn1Tag.EndOfContents, (object)ReadEnumerated.IntBacked.Pillow));
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteEnumeratedValue(Asn1Tag.EndOfContents, (object)ReadEnumerated.IntBacked.Pillow));
+            }
         }
 
         [Theory]
@@ -319,17 +330,18 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public static void VerifyWriteEnumeratedValue_NonNull(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                AssertExtensions.Throws<ArgumentNullException>(
+                    "enumValue",
+                    () => writer.WriteEnumeratedValue(null));
 
-            AssertExtensions.Throws<ArgumentNullException>(
-                "enumValue",
-                () => writer.WriteEnumeratedValue(null));
-
-            AssertExtensions.Throws<ArgumentNullException>(
-                "enumValue",
-                () => writer.WriteEnumeratedValue(
-                    new Asn1Tag(TagClass.ContextSpecific, 1),
-                    null));
+                AssertExtensions.Throws<ArgumentNullException>(
+                    "enumValue",
+                    () => writer.WriteEnumeratedValue(
+                        new Asn1Tag(TagClass.ContextSpecific, 1),
+                        null));
+            }
         }
 
         [Theory]
@@ -338,19 +350,20 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public static void VerifyWriteEnumeratedValue_Object(PublicEncodingRules ruleSet)
         {
-            AsnWriter objWriter = new AsnWriter((AsnEncodingRules)ruleSet);
-            AsnWriter genWriter = new AsnWriter((AsnEncodingRules)ruleSet);
+            using (AsnWriter objWriter = new AsnWriter((AsnEncodingRules)ruleSet))
+            using (AsnWriter genWriter = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                genWriter.WriteEnumeratedValue(ReadEnumerated.UIntBacked.Fluff);
+                objWriter.WriteEnumeratedValue((object)ReadEnumerated.UIntBacked.Fluff);
 
-            genWriter.WriteEnumeratedValue(ReadEnumerated.UIntBacked.Fluff);
-            objWriter.WriteEnumeratedValue((object)ReadEnumerated.UIntBacked.Fluff);
+                genWriter.WriteEnumeratedValue(ReadEnumerated.SByteBacked.Fluff);
+                objWriter.WriteEnumeratedValue((object)ReadEnumerated.SByteBacked.Fluff);
 
-            genWriter.WriteEnumeratedValue(ReadEnumerated.SByteBacked.Fluff);
-            objWriter.WriteEnumeratedValue((object)ReadEnumerated.SByteBacked.Fluff);
+                genWriter.WriteEnumeratedValue(ReadEnumerated.ULongBacked.Fluff);
+                objWriter.WriteEnumeratedValue((object)ReadEnumerated.ULongBacked.Fluff);
 
-            genWriter.WriteEnumeratedValue(ReadEnumerated.ULongBacked.Fluff);
-            objWriter.WriteEnumeratedValue((object)ReadEnumerated.ULongBacked.Fluff);
-
-            Verify(objWriter, genWriter.Encode().ByteArrayToHex());
+                Verify(objWriter, genWriter.Encode().ByteArrayToHex());
+            }
         }
 
         [Theory]
@@ -359,25 +372,26 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public static void VerifyWriteEnumeratedValue_Object_WithTag(PublicEncodingRules ruleSet)
         {
-            AsnWriter objWriter = new AsnWriter((AsnEncodingRules)ruleSet);
-            AsnWriter genWriter = new AsnWriter((AsnEncodingRules)ruleSet);
+            using (AsnWriter objWriter = new AsnWriter((AsnEncodingRules)ruleSet))
+            using (AsnWriter genWriter = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 52);
 
-            Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 52);
+                genWriter.WriteEnumeratedValue(tag, ReadEnumerated.UIntBacked.Fluff);
+                objWriter.WriteEnumeratedValue(tag, (object)ReadEnumerated.UIntBacked.Fluff);
 
-            genWriter.WriteEnumeratedValue(tag, ReadEnumerated.UIntBacked.Fluff);
-            objWriter.WriteEnumeratedValue(tag, (object)ReadEnumerated.UIntBacked.Fluff);
+                tag = new Asn1Tag(TagClass.Private, 4);
 
-            tag = new Asn1Tag(TagClass.Private, 4);
+                genWriter.WriteEnumeratedValue(tag, ReadEnumerated.SByteBacked.Fluff);
+                objWriter.WriteEnumeratedValue(tag, (object)ReadEnumerated.SByteBacked.Fluff);
 
-            genWriter.WriteEnumeratedValue(tag, ReadEnumerated.SByteBacked.Fluff);
-            objWriter.WriteEnumeratedValue(tag, (object)ReadEnumerated.SByteBacked.Fluff);
+                tag = new Asn1Tag(TagClass.Application, 75);
 
-            tag = new Asn1Tag(TagClass.Application, 75);
+                genWriter.WriteEnumeratedValue(tag, ReadEnumerated.ULongBacked.Fluff);
+                objWriter.WriteEnumeratedValue(tag, (object)ReadEnumerated.ULongBacked.Fluff);
 
-            genWriter.WriteEnumeratedValue(tag, ReadEnumerated.ULongBacked.Fluff);
-            objWriter.WriteEnumeratedValue(tag, (object)ReadEnumerated.ULongBacked.Fluff);
-
-            Verify(objWriter, genWriter.Encode().ByteArrayToHex());
+                Verify(objWriter, genWriter.Encode().ByteArrayToHex());
+            }
         }
 
         [Theory]
@@ -386,17 +400,18 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public void VerifyWriteEnumeratedValue_ConstructedIgnored(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.WriteEnumeratedValue(
+                    new Asn1Tag(UniversalTagNumber.Enumerated, isConstructed: true),
+                    ReadEnumerated.ULongBacked.Fluff);
 
-            writer.WriteEnumeratedValue(
-                new Asn1Tag(UniversalTagNumber.Enumerated, isConstructed: true),
-                ReadEnumerated.ULongBacked.Fluff);
+                writer.WriteEnumeratedValue(
+                    new Asn1Tag(TagClass.ContextSpecific, 0, isConstructed: true),
+                    (object)ReadEnumerated.SByteBacked.Fluff);
 
-            writer.WriteEnumeratedValue(
-                new Asn1Tag(TagClass.ContextSpecific, 0, isConstructed: true),
-                (object)ReadEnumerated.SByteBacked.Fluff);
-
-            Verify(writer, "0A0900FACEF00DCAFEBEEF" + "800153");
+                Verify(writer, "0A0900FACEF00DCAFEBEEF" + "800153");
+            }
         }
     }
 }
