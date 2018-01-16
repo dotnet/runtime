@@ -37,9 +37,9 @@ Revision History:
 
 #include <pthread.h>
 #include <locale.h>
-#ifndef __APPLE__
+#if HAVE_LIBINTL_H
 #include <libintl.h>
-#endif // __APPLE__
+#endif // HAVE_LIBINTL_H
 #include <errno.h>
 #if HAVE_COREFOUNDATION
 #include <CoreFoundation/CoreFoundation.h>
@@ -915,7 +915,7 @@ BOOL
 PALAPI
 PAL_BindResources(IN LPCSTR lpDomain)
 {
-#ifndef __APPLE__
+#if HAVE_LIBINTL_H
     _ASSERTE(g_szCoreCLRPath != NULL);
     char * coreCLRDirectoryPath;
     PathCharString coreCLRDirectoryPathPS;
@@ -931,10 +931,10 @@ PAL_BindResources(IN LPCSTR lpDomain)
     LPCSTR boundPath = bindtextdomain(lpDomain, coreCLRDirectoryPath);
 
     return boundPath != NULL;
-#else // __APPLE__
-    // UNIXTODO: Implement for OSX if necessary
+#else // HAVE_LIBINTL_H
+    // UNIXTODO: Implement for Unixes without libintl if necessary
     return TRUE;
-#endif // __APPLE__
+#endif // HAVE_LIBINTL_H
 }
 
 /*++
@@ -955,16 +955,16 @@ PAL_GetResourceString(
         IN int cchWideChar
       )
 {
-#ifndef __APPLE__
+#if HAVE_LIBINTL_H
     // NOTE: dgettext returns the key if it fails to locate the appropriate
     // resource. In our case, that will be the English string.
     LPCSTR resourceString = dgettext(lpDomain, lpResourceStr);
-#else // __APPLE__
+#else // HAVE_LIBINTL_H
     // UNIXTODO: Implement for OSX using the native localization API 
 
     // This is a temporary solution until we add the real native resource support.
     LPCSTR resourceString = lpResourceStr;
-#endif // __APPLE__
+#endif // HAVE_LIBINTL_H
 
     int length = strlen(resourceString);
     return UTF8ToUnicode(lpResourceStr, length + 1, lpWideCharStr, cchWideChar, 0);

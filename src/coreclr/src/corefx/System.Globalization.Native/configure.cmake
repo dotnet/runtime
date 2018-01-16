@@ -1,5 +1,5 @@
 include(CheckCXXSourceCompiles)
-include(CheckSymbolExists)
+include(CheckCXXSymbolExists)
 
 set(CMAKE_REQUIRED_INCLUDES ${UTYPES_H} ${ICU_HOMEBREW_INC_PATH})
 
@@ -14,7 +14,7 @@ else()
     set(CMAKE_REQUIRED_LIBRARIES ${ICUCORE})
 endif()
 
-check_symbol_exists(
+check_cxx_symbol_exists(
     ucol_setMaxVariable
     "unicode/ucol.h"
     HAVE_SET_MAX_VARIABLE)
