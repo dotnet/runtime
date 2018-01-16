@@ -87,6 +87,9 @@
       <FilesToPackage Include="$(UWPOutputDir)\uwpshim.exe">
         <TargetPath>tools/AppLocal</TargetPath>
       </FilesToPackage>
+      <FilesToPackage Include="$(UWPOutputDir)\consoleuwpshim.exe">
+        <TargetPath>tools/AppLocal</TargetPath>
+      </FilesToPackage>
       <FilesToPackage Include="$(MicrosoftNetCoreRuntimeAppxOutputPath)">
         <TargetPath>tools/Appx</TargetPath>
       </FilesToPackage>
