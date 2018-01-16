@@ -45,7 +45,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
 
             if ((uint)start > (uint)text.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException();
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
 
             return new ReadOnlyMemory<char>(text, start, text.Length - start);
         }
@@ -62,7 +62,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
 
             if ((uint)start > (uint)text.Length || (uint)length > (uint)(text.Length - start))
-                ThrowHelper.ThrowArgumentOutOfRangeException();
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
 
             return new ReadOnlyMemory<char>(text, start, length);
         }
@@ -215,7 +215,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
 
             if ((uint)start > (uint)text.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException();
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
 
             return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetRawStringData(), start), text.Length - start);
         }
@@ -237,7 +237,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
 
             if ((uint)start > (uint)text.Length || (uint)length > (uint)(text.Length - start))
-                ThrowHelper.ThrowArgumentOutOfRangeException();
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
 
             return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetRawStringData(), start), length);
         }
