@@ -485,12 +485,12 @@ bool fx_muxer_t::resolve_hostpolicy_dir(
     {
         if (!pal::file_exists(get_app(fx_definitions).get_runtime_config().get_path()))
         {
-            trace::error(_X("Failed to run as a standalone app because there is no '%s' file. If this should be a portable app instead, add that file specifying the appropriate framework."),
+            trace::error(_X("Failed to run as a standalone app. If this should be a portable app, add the %s file specifying the appropriate framework."),
                 get_app(fx_definitions).get_runtime_config().get_path().c_str());
         }
         else if (get_app(fx_definitions).get_runtime_config().get_fx_name().empty())
         {
-            trace::error(_X("Failed to run as a standalone app because there is no framework specified in '%s'. If this should be a portable app instead, specify the appropriate framework in that file."),
+            trace::error(_X("Failed to run as a standalone app. If this should be a portable app, specify the appropriate framework in %s."),
                 get_app(fx_definitions).get_runtime_config().get_path().c_str());
         }
     }
