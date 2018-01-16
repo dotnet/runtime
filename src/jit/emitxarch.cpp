@@ -3891,6 +3891,7 @@ void emitter::emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regN
     emitCurIGsize += sz;
 }
 
+#ifndef LEGACY_BACKEND
 void emitter::emitIns_R_A(instruction ins, emitAttr attr, regNumber reg1, GenTreeIndir* indir, insFormat fmt)
 {
     ssize_t    offs = indir->Offset();
@@ -3929,6 +3930,7 @@ void emitter::emitIns_R_R_A(
     dispIns(id);
     emitCurIGsize += sz;
 }
+#endif // !LEGACY_BACKEND
 
 void emitter::emitIns_R_R_C(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, CORINFO_FIELD_HANDLE fldHnd, int offs)
