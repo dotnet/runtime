@@ -25,7 +25,10 @@ Abstract:
 #include <sys/resource.h>
 #include <errno.h>
 
+#ifndef SIZE_T_MAX
 #define SIZE_T_MAX (~(size_t)0)
+#endif
+
 #define PROC_MOUNTINFO_FILENAME "/proc/self/mountinfo"
 #define PROC_CGROUP_FILENAME "/proc/self/cgroup"
 #define PROC_STATM_FILENAME "/proc/self/statm"
