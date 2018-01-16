@@ -17,10 +17,12 @@ namespace System.Security.Cryptography.Tests.Asn1
             string oidValue,
             string expectedHex)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            writer.WriteObjectIdentifier(oidValue);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.WriteObjectIdentifier(oidValue);
 
-            Verify(writer, expectedHex);
+                Verify(writer, expectedHex);
+            }
         }
 
         [Theory]
@@ -30,10 +32,12 @@ namespace System.Security.Cryptography.Tests.Asn1
             string oidValue,
             string expectedHex)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            writer.WriteObjectIdentifier(oidValue.AsReadOnlySpan());
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.WriteObjectIdentifier(oidValue.AsReadOnlySpan());
 
-            Verify(writer, expectedHex);
+                Verify(writer, expectedHex);
+            }
         }
 
         [Theory]
@@ -44,10 +48,13 @@ namespace System.Security.Cryptography.Tests.Asn1
             string expectedHex)
         {
             Oid oidObj = new Oid(oidValue, "FriendlyName does not matter");
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            writer.WriteObjectIdentifier(oidObj);
 
-            Verify(writer, expectedHex);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.WriteObjectIdentifier(oidObj);
+
+                Verify(writer, expectedHex);
+            }
         }
 
         [Theory]
@@ -57,10 +64,11 @@ namespace System.Security.Cryptography.Tests.Asn1
             PublicEncodingRules ruleSet,
             string nonOidValue)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-
-            Assert.Throws<CryptographicException>(
-                () => writer.WriteObjectIdentifier(nonOidValue));
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                Assert.Throws<CryptographicException>(
+                    () => writer.WriteObjectIdentifier(nonOidValue));
+            }
         }
 
         [Theory]
@@ -70,10 +78,11 @@ namespace System.Security.Cryptography.Tests.Asn1
             PublicEncodingRules ruleSet,
             string nonOidValue)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-
-            Assert.Throws<CryptographicException>(
-                () => writer.WriteObjectIdentifier(nonOidValue.AsReadOnlySpan()));
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                Assert.Throws<CryptographicException>(
+                    () => writer.WriteObjectIdentifier(nonOidValue.AsReadOnlySpan()));
+            }
         }
 
         [Theory]
@@ -83,11 +92,13 @@ namespace System.Security.Cryptography.Tests.Asn1
             PublicEncodingRules ruleSet,
             string nonOidValue)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            Oid nonOidObj = new Oid(nonOidValue, "FriendlyName does not matter");
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                Oid nonOidObj = new Oid(nonOidValue, "FriendlyName does not matter");
 
-            Assert.Throws<CryptographicException>(
-                () => writer.WriteObjectIdentifier(nonOidObj));
+                Assert.Throws<CryptographicException>(
+                    () => writer.WriteObjectIdentifier(nonOidObj));
+            }
         }
 
         [Theory]
@@ -96,10 +107,12 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public void WriteObjectIdentifier_CustomTag_String(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            writer.WriteObjectIdentifier(new Asn1Tag(TagClass.ContextSpecific, 3), "1.3.14.3.2.26");
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.WriteObjectIdentifier(new Asn1Tag(TagClass.ContextSpecific, 3), "1.3.14.3.2.26");
 
-            Verify(writer, "83052B0E03021A");
+                Verify(writer, "83052B0E03021A");
+            }
         }
 
         [Theory]
@@ -108,10 +121,12 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public void WriteObjectIdentifier_CustomTag_Span(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            writer.WriteObjectIdentifier(new Asn1Tag(TagClass.Application, 2), "1.3.14.3.2.26".AsReadOnlySpan());
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.WriteObjectIdentifier(new Asn1Tag(TagClass.Application, 2), "1.3.14.3.2.26".AsReadOnlySpan());
 
-            Verify(writer, "42052B0E03021A");
+                Verify(writer, "42052B0E03021A");
+            }
         }
 
         [Theory]
@@ -120,10 +135,14 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public void WriteObjectIdentifier_CustomTag_Oid(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            writer.WriteObjectIdentifier(new Asn1Tag(TagClass.Private, 36), Oid.FromFriendlyName("SHA1", OidGroup.HashAlgorithm));
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.WriteObjectIdentifier(
+                    new Asn1Tag(TagClass.Private, 36),
+                    Oid.FromFriendlyName("SHA1", OidGroup.HashAlgorithm));
 
-            Verify(writer, "DF24052B0E03021A");
+                Verify(writer, "DF24052B0E03021A");
+            }
         }
 
         [Theory]
@@ -131,21 +150,22 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(true)]
         public void WriteObjectIdentifier_NullString(bool defaultTag)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-
-            AssertExtensions.Throws<ArgumentNullException>(
-                "oidValue",
-                () =>
-                {
-                    if (defaultTag)
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            {
+                AssertExtensions.Throws<ArgumentNullException>(
+                    "oidValue",
+                    () =>
                     {
-                        writer.WriteObjectIdentifier((string)null);
-                    }
-                    else
-                    {
-                        writer.WriteObjectIdentifier(new Asn1Tag(TagClass.ContextSpecific, 6), (string)null);
-                    }
-                });
+                        if (defaultTag)
+                        {
+                            writer.WriteObjectIdentifier((string)null);
+                        }
+                        else
+                        {
+                            writer.WriteObjectIdentifier(new Asn1Tag(TagClass.ContextSpecific, 6), (string)null);
+                        }
+                    });
+            }
         }
 
         [Theory]
@@ -153,21 +173,22 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(true)]
         public void WriteObjectIdentifier_NullOid(bool defaultTag)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-
-            AssertExtensions.Throws<ArgumentNullException>(
-                "oid",
-                () =>
-                {
-                    if (defaultTag)
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            {
+                AssertExtensions.Throws<ArgumentNullException>(
+                    "oid",
+                    () =>
                     {
-                        writer.WriteObjectIdentifier((Oid)null);
-                    }
-                    else
-                    {
-                        writer.WriteObjectIdentifier(new Asn1Tag(TagClass.Application, 2), (Oid)null);
-                    }
-                });
+                        if (defaultTag)
+                        {
+                            writer.WriteObjectIdentifier((Oid)null);
+                        }
+                        else
+                        {
+                            writer.WriteObjectIdentifier(new Asn1Tag(TagClass.Application, 2), (Oid)null);
+                        }
+                    });
+            }
         }
 
 
@@ -177,19 +198,20 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public void VerifyWriteObjectIdentifier_EndOfContents(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteObjectIdentifier(Asn1Tag.EndOfContents, "1.1"));
 
-            AssertExtensions.Throws<ArgumentException>(
-                "tag",
-                () => writer.WriteObjectIdentifier(Asn1Tag.EndOfContents, "1.1"));
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteObjectIdentifier(Asn1Tag.EndOfContents, "1.1".AsReadOnlySpan()));
 
-            AssertExtensions.Throws<ArgumentException>(
-                "tag",
-                () => writer.WriteObjectIdentifier(Asn1Tag.EndOfContents, "1.1".AsReadOnlySpan()));
-
-            AssertExtensions.Throws<ArgumentException>(
-                "tag",
-                () => writer.WriteObjectIdentifier(Asn1Tag.EndOfContents, new Oid("1.1", "1.1")));
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteObjectIdentifier(Asn1Tag.EndOfContents, new Oid("1.1", "1.1")));
+            }
         }
 
         [Theory]
@@ -198,19 +220,21 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public void VerifyWriteObjectIdentifier_ConstructedIgnored(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            const string OidValue = "1.1";
-            Asn1Tag constructedOid = new Asn1Tag(UniversalTagNumber.ObjectIdentifier, isConstructed: true);
-            Asn1Tag constructedContext0 = new Asn1Tag(TagClass.ContextSpecific, 0, isConstructed: true);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                const string OidValue = "1.1";
+                Asn1Tag constructedOid = new Asn1Tag(UniversalTagNumber.ObjectIdentifier, isConstructed: true);
+                Asn1Tag constructedContext0 = new Asn1Tag(TagClass.ContextSpecific, 0, isConstructed: true);
 
-            writer.WriteObjectIdentifier(constructedOid, OidValue);
-            writer.WriteObjectIdentifier(constructedContext0, OidValue);
-            writer.WriteObjectIdentifier(constructedOid, OidValue.AsReadOnlySpan());
-            writer.WriteObjectIdentifier(constructedContext0, OidValue.AsReadOnlySpan());
-            writer.WriteObjectIdentifier(constructedOid, new Oid(OidValue, OidValue));
-            writer.WriteObjectIdentifier(constructedContext0, new Oid(OidValue, OidValue));
+                writer.WriteObjectIdentifier(constructedOid, OidValue);
+                writer.WriteObjectIdentifier(constructedContext0, OidValue);
+                writer.WriteObjectIdentifier(constructedOid, OidValue.AsReadOnlySpan());
+                writer.WriteObjectIdentifier(constructedContext0, OidValue.AsReadOnlySpan());
+                writer.WriteObjectIdentifier(constructedOid, new Oid(OidValue, OidValue));
+                writer.WriteObjectIdentifier(constructedContext0, new Oid(OidValue, OidValue));
 
-            Verify(writer, "060129800129060129800129060129800129");
+                Verify(writer, "060129800129060129800129060129800129");
+            }
         }
 
         public static IEnumerable<object[]> ValidOidData { get; } =

@@ -17,10 +17,12 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public void WriteEmpty(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            writer.WriteBitString(ReadOnlySpan<byte>.Empty);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.WriteBitString(ReadOnlySpan<byte>.Empty);
 
-            Verify(writer, "030100");
+                Verify(writer, "030100");
+            }
         }
 
         [Theory]
@@ -42,10 +44,12 @@ namespace System.Security.Cryptography.Tests.Asn1
             string expectedHex = hexStart + payloadHex;
             byte[] data = new byte[length];
 
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            writer.WriteBitString(data, unusedBitCount);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.WriteBitString(data, unusedBitCount);
 
-            Verify(writer, expectedHex);
+                Verify(writer, expectedHex);
+            }
         }
 
         [Theory]
@@ -63,10 +67,12 @@ namespace System.Security.Cryptography.Tests.Asn1
                 data[i] = 0x88;
             }
 
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.CER);
-            writer.WriteBitString(data, unusedBitCount);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
+            {
+                writer.WriteBitString(data, unusedBitCount);
 
-            Verify(writer, expectedHex);
+                Verify(writer, expectedHex);
+            }
         }
 
         [Theory]
@@ -103,11 +109,15 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             foreach (Asn1Tag toTry in tagsToTry)
             {
-                AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-                writer.WriteBitString(toTry, data);
+                Asn1Tag writtenTag;
 
-                Assert.True(writer.TryEncode(answerBuf, out _));
-                Assert.True(Asn1Tag.TryParse(answerBuf, out Asn1Tag writtenTag, out _));
+                using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+                {
+                    writer.WriteBitString(toTry, data);
+
+                    Assert.True(writer.TryEncode(answerBuf, out _));
+                    Assert.True(Asn1Tag.TryParse(answerBuf, out writtenTag, out _));
+                }
 
                 if (expectConstructed)
                 {
@@ -171,30 +181,34 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             byte[] inputBytes = inputHex.HexToByteArray();
 
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-
-            if (expectThrow)
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
             {
-                Assert.Throws<CryptographicException>(
-                    () => writer.WriteBitString(inputBytes, unusedBitCount));
+                if (expectThrow)
+                {
+                    Assert.Throws<CryptographicException>(
+                        () => writer.WriteBitString(inputBytes, unusedBitCount));
 
-                Assert.Throws<CryptographicException>(
-                    () => writer.WriteBitString(new Asn1Tag(TagClass.ContextSpecific, 3), inputBytes, unusedBitCount));
+                    Assert.Throws<CryptographicException>(
+                        () => writer.WriteBitString(
+                            new Asn1Tag(TagClass.ContextSpecific, 3),
+                            inputBytes,
+                            unusedBitCount));
 
-                return;
+                    return;
+                }
+
+                byte[] output = new byte[512];
+                writer.WriteBitString(inputBytes, unusedBitCount);
+                Assert.True(writer.TryEncode(output, out int bytesWritten));
+
+                // This assumes that inputBytes is never more than 999 (and avoids CER constructed forms)
+                Assert.Equal(unusedBitCount, output[bytesWritten - inputBytes.Length - 1]);
+
+                writer.WriteBitString(new Asn1Tag(TagClass.ContextSpecific, 9), inputBytes, unusedBitCount);
+                Assert.True(writer.TryEncode(output, out bytesWritten));
+
+                Assert.Equal(unusedBitCount, output[bytesWritten - inputBytes.Length - 1]);
             }
-
-            byte[] output = new byte[512];
-            writer.WriteBitString(inputBytes, unusedBitCount);
-            Assert.True(writer.TryEncode(output, out int bytesWritten));
-
-            // This assumes that inputBytes is never more than 999 (and avoids CER constructed forms)
-            Assert.Equal(unusedBitCount, output[bytesWritten - inputBytes.Length - 1]);
-
-            writer.WriteBitString(new Asn1Tag(TagClass.ContextSpecific, 9), inputBytes, unusedBitCount);
-            Assert.True(writer.TryEncode(output, out bytesWritten));
-
-            Assert.Equal(unusedBitCount, output[bytesWritten - inputBytes.Length - 1]);
         }
 
         [Theory]
@@ -216,19 +230,21 @@ namespace System.Security.Cryptography.Tests.Asn1
         public static void UnusedBitCounts_Bounds(PublicEncodingRules ruleSet, int unusedBitCount)
         {
             byte[] data = new byte[5];
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
 
-            ArgumentOutOfRangeException exception = AssertExtensions.Throws<ArgumentOutOfRangeException>(
-                nameof(unusedBitCount),
-                () => writer.WriteBitString(data, unusedBitCount));
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                ArgumentOutOfRangeException exception = AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                    nameof(unusedBitCount),
+                    () => writer.WriteBitString(data, unusedBitCount));
 
-            Assert.Equal(unusedBitCount, exception.ActualValue);
+                Assert.Equal(unusedBitCount, exception.ActualValue);
 
-            exception = AssertExtensions.Throws<ArgumentOutOfRangeException>(
-                nameof(unusedBitCount),
-                () => writer.WriteBitString(new Asn1Tag(TagClass.ContextSpecific, 5), data, unusedBitCount));
+                exception = AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                    nameof(unusedBitCount),
+                    () => writer.WriteBitString(new Asn1Tag(TagClass.ContextSpecific, 5), data, unusedBitCount));
 
-            Assert.Equal(unusedBitCount, exception.ActualValue);
+                Assert.Equal(unusedBitCount, exception.ActualValue);
+            }
         }
 
         [Theory]
@@ -237,24 +253,25 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public static void EmptyData_Requires0UnusedBits(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                Assert.Throws<CryptographicException>(
+                    () => writer.WriteBitString(ReadOnlySpan<byte>.Empty, 1));
 
-            Assert.Throws<CryptographicException>(
-                () => writer.WriteBitString(ReadOnlySpan<byte>.Empty, 1));
+                Assert.Throws<CryptographicException>(
+                    () => writer.WriteBitString(ReadOnlySpan<byte>.Empty, 7));
 
-            Assert.Throws<CryptographicException>(
-                () => writer.WriteBitString(ReadOnlySpan<byte>.Empty, 7));
+                Asn1Tag contextTag = new Asn1Tag(TagClass.ContextSpecific, 19);
 
-            Asn1Tag contextTag = new Asn1Tag(TagClass.ContextSpecific, 19);
+                Assert.Throws<CryptographicException>(
+                    () => writer.WriteBitString(contextTag, ReadOnlySpan<byte>.Empty, 1));
 
-            Assert.Throws<CryptographicException>(
-                () => writer.WriteBitString(contextTag, ReadOnlySpan<byte>.Empty, 1));
+                Assert.Throws<CryptographicException>(
+                    () => writer.WriteBitString(contextTag, ReadOnlySpan<byte>.Empty, 7));
 
-            Assert.Throws<CryptographicException>(
-                () => writer.WriteBitString(contextTag, ReadOnlySpan<byte>.Empty, 7));
-
-            writer.WriteBitString(ReadOnlySpan<byte>.Empty, 0);
-            writer.WriteBitString(contextTag, ReadOnlySpan<byte>.Empty, 0);
+                writer.WriteBitString(ReadOnlySpan<byte>.Empty, 0);
+                writer.WriteBitString(contextTag, ReadOnlySpan<byte>.Empty, 0);
+            }
         }
 
         [Theory]
@@ -270,19 +287,21 @@ namespace System.Security.Cryptography.Tests.Asn1
             int tagValue,
             string expectedHex)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-
-            if (tagClass == PublicTagClass.Universal)
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
             {
-                Debug.Assert(tagValue == (int)UniversalTagNumber.BitString);
-                writer.WriteBitString(ReadOnlySpan<byte>.Empty, 0);
-            }
-            else
-            {
-                writer.WriteBitString(new Asn1Tag((TagClass)tagClass, tagValue), ReadOnlySpan<byte>.Empty, 0);
-            }
 
-            Verify(writer, expectedHex);
+                if (tagClass == PublicTagClass.Universal)
+                {
+                    Debug.Assert(tagValue == (int)UniversalTagNumber.BitString);
+                    writer.WriteBitString(ReadOnlySpan<byte>.Empty, 0);
+                }
+                else
+                {
+                    writer.WriteBitString(new Asn1Tag((TagClass)tagClass, tagValue), ReadOnlySpan<byte>.Empty, 0);
+                }
+
+                Verify(writer, expectedHex);
+            }
         }
 
         [Theory]
@@ -291,15 +310,16 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public void VerifyWriteBitString_EndOfContents(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteBitString(Asn1Tag.EndOfContents, ReadOnlySpan<byte>.Empty));
 
-            AssertExtensions.Throws<ArgumentException>(
-                "tag",
-                () => writer.WriteBitString(Asn1Tag.EndOfContents, ReadOnlySpan<byte>.Empty));
-
-            AssertExtensions.Throws<ArgumentException>(
-                "tag",
-                () => writer.WriteBitString(Asn1Tag.EndOfContents, new byte[1]));
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteBitString(Asn1Tag.EndOfContents, new byte[1]));
+            }
         }
     }
 }

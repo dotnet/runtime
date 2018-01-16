@@ -153,44 +153,46 @@ namespace System.Security.Cryptography.Pkcs
                 fieldSize * 2 == ieeeSignature.Length,
                 $"ieeeSignature.Length ({ieeeSignature.Length}) must be even");
 
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            writer.PushSequence();
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                writer.PushSequence();
 
 #if netcoreapp
-            // r
-            BigInteger val = new BigInteger(
-                ieeeSignature.Slice(0, fieldSize),
-                isUnsigned: true,
-                isBigEndian: true);
+                // r
+                BigInteger val = new BigInteger(
+                    ieeeSignature.Slice(0, fieldSize),
+                    isUnsigned: true,
+                    isBigEndian: true);
 
-            writer.WriteInteger(val);
+                writer.WriteInteger(val);
 
-            // s
-            val = new BigInteger(
-                ieeeSignature.Slice(fieldSize, fieldSize),
-                isUnsigned: true,
-                isBigEndian: true);
+                // s
+                val = new BigInteger(
+                    ieeeSignature.Slice(fieldSize, fieldSize),
+                    isUnsigned: true,
+                    isBigEndian: true);
 
-            writer.WriteInteger(val);
+                writer.WriteInteger(val);
 #else
-            byte[] buf = new byte[fieldSize + 1];
-            Span<byte> bufWriter = new Span<byte>(buf, 1, fieldSize);
+                byte[] buf = new byte[fieldSize + 1];
+                Span<byte> bufWriter = new Span<byte>(buf, 1, fieldSize);
 
-            ieeeSignature.Slice(0, fieldSize).CopyTo(bufWriter);
-            Array.Reverse(buf);
-            BigInteger val = new BigInteger(buf);
-            writer.WriteInteger(val);
+                ieeeSignature.Slice(0, fieldSize).CopyTo(bufWriter);
+                Array.Reverse(buf);
+                BigInteger val = new BigInteger(buf);
+                writer.WriteInteger(val);
 
-            buf[0] = 0;
-            ieeeSignature.Slice(fieldSize, fieldSize).CopyTo(bufWriter);
-            Array.Reverse(buf);
-            val = new BigInteger(buf);
-            writer.WriteInteger(val);
+                buf[0] = 0;
+                ieeeSignature.Slice(fieldSize, fieldSize).CopyTo(bufWriter);
+                Array.Reverse(buf);
+                val = new BigInteger(buf);
+                writer.WriteInteger(val);
 #endif
 
-            writer.PopSequence();
+                writer.PopSequence();
 
-            return writer.Encode();
+                return writer.Encode();
+            }
         }
     }
 }
