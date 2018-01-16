@@ -31,6 +31,7 @@ SET_DEFAULT_DEBUG_CHANNEL(NUMA);
 
 #include <pthread.h>
 #include <dlfcn.h>
+#include <alloca.h>
 
 #include <algorithm>
 
@@ -87,26 +88,6 @@ static const WORD NO_GROUP = 0xffff;
 
 /*++
 Function:
-  AllocateLookupArrays
-
-Allocate CPU and group lookup arrays
---*/
-VOID
-AllocateLookupArrays()
-{
-    g_groupAndIndexToCpu = (short*)malloc(g_groupCount * MaxCpusPerGroup * sizeof(short));
-    g_cpuToAffinity = (CpuAffinity*)malloc(g_possibleCpuCount * sizeof(CpuAffinity));
-    g_groupToCpuMask = (KAFFINITY*)malloc(g_groupCount * sizeof(KAFFINITY));
-    g_groupToCpuCount = (BYTE*)malloc(g_groupCount * sizeof(BYTE));
-
-    memset(g_groupAndIndexToCpu, 0xff, g_groupCount * MaxCpusPerGroup * sizeof(short));
-    memset(g_cpuToAffinity, 0xff, g_possibleCpuCount * sizeof(CpuAffinity));
-    memset(g_groupToCpuMask, 0, g_groupCount * sizeof(KAFFINITY));
-    memset(g_groupToCpuCount, 0, g_groupCount * sizeof(BYTE));
-}
-
-/*++
-Function:
   FreeLookupArrays
 
 Free CPU and group lookup arrays
@@ -123,6 +104,42 @@ FreeLookupArrays()
     g_cpuToAffinity = NULL;
     g_groupToCpuMask = NULL;
     g_groupToCpuCount = NULL;
+}
+
+/*++
+Function:
+  AllocateLookupArrays
+
+Allocate CPU and group lookup arrays
+Return TRUE if the allocation succeeded
+--*/
+BOOL
+AllocateLookupArrays()
+{
+    g_groupAndIndexToCpu = (short*)malloc(g_groupCount * MaxCpusPerGroup * sizeof(short));
+    if (g_groupAndIndexToCpu != NULL)
+    {
+        g_cpuToAffinity = (CpuAffinity*)malloc(g_possibleCpuCount * sizeof(CpuAffinity));
+        if (g_cpuToAffinity != NULL)
+        {
+            g_groupToCpuMask = (KAFFINITY*)malloc(g_groupCount * sizeof(KAFFINITY));
+            if (g_groupToCpuMask != NULL)
+            {
+                g_groupToCpuCount = (BYTE*)malloc(g_groupCount * sizeof(BYTE));
+                memset(g_groupAndIndexToCpu, 0xff, g_groupCount * MaxCpusPerGroup * sizeof(short));
+                memset(g_cpuToAffinity, 0xff, g_possibleCpuCount * sizeof(CpuAffinity));
+                memset(g_groupToCpuMask, 0, g_groupCount * sizeof(KAFFINITY));
+                memset(g_groupToCpuCount, 0, g_groupCount * sizeof(BYTE));
+
+                return TRUE;
+            }
+        }
+    }
+
+    // One of the allocations have failed
+    FreeLookupArrays();
+
+    return FALSE;
 }
 
 /*++
@@ -191,7 +208,11 @@ FOR_ALL_NUMA_FUNCTIONS
                 g_groupCount += nodeGroupCount;
             }
 
-            AllocateLookupArrays();
+            if (!AllocateLookupArrays())
+            {
+                dlclose(numaHandle);
+                return FALSE;
+            }
 
             WORD currentGroup = 0;
             int currentGroupCpus = 0;
@@ -246,7 +267,10 @@ FOR_ALL_NUMA_FUNCTIONS
         g_groupCount = 1;
         g_highestNumaNode = 0;
 
-        AllocateLookupArrays();
+        if (!AllocateLookupArrays())
+        {
+            return FALSE;
+        }
 
         for (int i = 0; i < g_possibleCpuCount; i++)
         {
@@ -836,8 +860,7 @@ VirtualAllocExNuma(
             if (result != NULL && g_numaAvailable)
             {
                 int nodeMaskLength = (g_highestNumaNode + 1 + sizeof(unsigned long) - 1) / sizeof(unsigned long);
-                unsigned long *nodeMask = new unsigned long[nodeMaskLength];
-
+                unsigned long *nodeMask = (unsigned long*)alloca(nodeMaskLength * sizeof(unsigned long));
                 memset(nodeMask, 0, nodeMaskLength);
 
                 int index = nndPreferred / sizeof(unsigned long);
@@ -846,7 +869,6 @@ VirtualAllocExNuma(
 
                 int st = mbind(result, dwSize, MPOL_PREFERRED, nodeMask, g_highestNumaNode, 0);
 
-                free(nodeMask);
                 _ASSERTE(st == 0);
                 // If the mbind fails, we still return the allocated memory since the nndPreferred is just a hint
             }
