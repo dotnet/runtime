@@ -117,26 +117,37 @@ BOOL
 AllocateLookupArrays()
 {
     g_groupAndIndexToCpu = (short*)malloc(g_groupCount * MaxCpusPerGroup * sizeof(short));
-    if (g_groupAndIndexToCpu != NULL)
+    if (g_groupAndIndexToCpu == NULL)
     {
-        g_cpuToAffinity = (CpuAffinity*)malloc(g_possibleCpuCount * sizeof(CpuAffinity));
-        if (g_cpuToAffinity != NULL)
-        {
-            g_groupToCpuMask = (KAFFINITY*)malloc(g_groupCount * sizeof(KAFFINITY));
-            if (g_groupToCpuMask != NULL)
-            {
-                g_groupToCpuCount = (BYTE*)malloc(g_groupCount * sizeof(BYTE));
-                memset(g_groupAndIndexToCpu, 0xff, g_groupCount * MaxCpusPerGroup * sizeof(short));
-                memset(g_cpuToAffinity, 0xff, g_possibleCpuCount * sizeof(CpuAffinity));
-                memset(g_groupToCpuMask, 0, g_groupCount * sizeof(KAFFINITY));
-                memset(g_groupToCpuCount, 0, g_groupCount * sizeof(BYTE));
-
-                return TRUE;
-            }
-        }
+        goto FAILED;
     }
 
-    // One of the allocations have failed
+    g_cpuToAffinity = (CpuAffinity*)malloc(g_possibleCpuCount * sizeof(CpuAffinity));
+    if (g_cpuToAffinity == NULL)
+    {
+        goto FAILED;
+    }
+
+    g_groupToCpuMask = (KAFFINITY*)malloc(g_groupCount * sizeof(KAFFINITY));
+    if (g_groupToCpuMask == NULL)
+    {
+        goto FAILED;
+    }
+
+    g_groupToCpuCount = (BYTE*)malloc(g_groupCount * sizeof(BYTE));
+    if (g_groupToCpuCount == NULL)
+    {
+        goto FAILED;
+    }
+
+    memset(g_groupAndIndexToCpu, 0xff, g_groupCount * MaxCpusPerGroup * sizeof(short));
+    memset(g_cpuToAffinity, 0xff, g_possibleCpuCount * sizeof(CpuAffinity));
+    memset(g_groupToCpuMask, 0, g_groupCount * sizeof(KAFFINITY));
+    memset(g_groupToCpuCount, 0, g_groupCount * sizeof(BYTE));
+
+    return TRUE;
+
+FAILED:
     FreeLookupArrays();
 
     return FALSE;
