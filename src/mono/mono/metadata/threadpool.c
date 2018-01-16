@@ -355,9 +355,9 @@ worker_callback (void)
 		mono_thread_set_name_internal (thread, thread_name, FALSE, TRUE, error);
 		mono_error_assert_ok (error);
 
-		mono_thread_clr_state (thread, (MonoThreadState)~ThreadState_Background);
-		if (!mono_thread_test_state (thread , ThreadState_Background))
-			ves_icall_System_Threading_Thread_SetState (thread, ThreadState_Background);
+		mono_thread_clear_and_set_state (thread,
+			(MonoThreadState)~ThreadState_Background,
+			ThreadState_Background);
 
 		mono_thread_push_appdomain_ref (tpdomain->domain);
 		if (mono_domain_set (tpdomain->domain, FALSE)) {
