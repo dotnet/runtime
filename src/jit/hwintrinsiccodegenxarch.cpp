@@ -505,6 +505,29 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_SSE_LoadAlignedVector128:
+        case NI_SSE_LoadScalar:
+        case NI_SSE_LoadVector128:
+        {
+            assert(baseType == TYP_FLOAT);
+            assert(op2 == nullptr);
+
+            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
+            emit->emitIns_R_AR(ins, emitTypeSize(TYP_SIMD16), targetReg, op1Reg, 0);
+            break;
+        }
+
+        case NI_SSE_LoadHigh:
+        case NI_SSE_LoadLow:
+        {
+            assert(baseType == TYP_FLOAT);
+            op2Reg = op2->gtRegNum;
+
+            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
+            emit->emitIns_SIMD_R_R_AR(ins, targetReg, op1Reg, op2Reg, TYP_SIMD16);
+            break;
+        }
+
         case NI_SSE_MoveMask:
         {
             assert(baseType == TYP_FLOAT);

@@ -297,6 +297,7 @@ instruction Compiler::insOfHWIntrinsic(NamedIntrinsic intrinsic, var_types type)
             return INS_cvttss2si;
 
         case NI_SSE_ConvertToSingle:
+        case NI_SSE_LoadScalar:
         case NI_SSE_MoveScalar:
             return INS_movss;
 
@@ -309,8 +310,18 @@ instruction Compiler::insOfHWIntrinsic(NamedIntrinsic intrinsic, var_types type)
         case NI_SSE_DivideScalar:
             return INS_divss;
 
+        case NI_SSE_LoadAlignedVector128:
         case NI_SSE_StaticCast:
             return INS_movaps;
+
+        case NI_SSE_LoadHigh:
+            return INS_movhps;
+
+        case NI_SSE_LoadLow:
+            return INS_movlps;
+
+        case NI_SSE_LoadVector128:
+            return INS_movups;
 
         case NI_SSE_Max:
             return INS_maxps;
@@ -823,6 +834,17 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_SSE_LoadHigh:
+        case NI_SSE_LoadLow:
+        {
+            assert(sig->numArgs == 2);
+            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
+            op2     = impPopStack().val;
+            op1     = impSIMDPopStack(TYP_SIMD16);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, TYP_FLOAT, 16);
+            break;
+        }
+
         case NI_SSE_MoveMask:
             assert(sig->numArgs == 1);
             assert(JITtype2varType(sig->retType) == TYP_INT);
@@ -849,6 +871,9 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_SSE_LoadAlignedVector128:
+        case NI_SSE_LoadScalar:
+        case NI_SSE_LoadVector128:
         case NI_SSE_SetAllVector128:
         case NI_SSE_SetScalar:
             assert(sig->numArgs == 1);
