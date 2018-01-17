@@ -2240,6 +2240,7 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 	mono_internal_hash_table_remove (&domain->jit_code_hash, method);
 	mono_domain_jit_code_hash_unlock (domain);
 	g_hash_table_remove (info->jump_trampoline_hash, method);
+	g_hash_table_remove (info->seq_points, method);
 
 	/* requires the domain lock - took above */
 	mono_conc_hashtable_remove (info->runtime_invoke_hash, method);
