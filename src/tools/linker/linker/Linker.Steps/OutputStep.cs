@@ -113,7 +113,10 @@ namespace Mono.Linker.Steps {
 
 			CopyConfigFileIfNeeded (assembly, directory);
 
-			switch (Annotations.GetAction (assembly)) {
+			var action = Annotations.GetAction (assembly);
+			Context.LogMessage (MessageImportance.Low, $"Output action: {action,8} assembly: {assembly}");
+
+			switch (action) {
 			case AssemblyAction.Save:
 			case AssemblyAction.Link:
 			case AssemblyAction.AddBypassNGen:
