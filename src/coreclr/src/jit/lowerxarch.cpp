@@ -2311,6 +2311,48 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
     switch (node->gtHWIntrinsicId)
     {
         case NI_SSE_Add:
+        case NI_SSE_AddScalar:
+        case NI_SSE_And:
+        case NI_SSE_AndNot:
+        case NI_SSE_CompareEqual:
+        case NI_SSE_CompareEqualScalar:
+        case NI_SSE_CompareGreaterThan:
+        case NI_SSE_CompareGreaterThanScalar:
+        case NI_SSE_CompareGreaterThanOrEqual:
+        case NI_SSE_CompareGreaterThanOrEqualScalar:
+        case NI_SSE_CompareLessThan:
+        case NI_SSE_CompareLessThanScalar:
+        case NI_SSE_CompareLessThanOrEqual:
+        case NI_SSE_CompareLessThanOrEqualScalar:
+        case NI_SSE_CompareNotEqual:
+        case NI_SSE_CompareNotEqualScalar:
+        case NI_SSE_CompareNotGreaterThan:
+        case NI_SSE_CompareNotGreaterThanScalar:
+        case NI_SSE_CompareNotGreaterThanOrEqual:
+        case NI_SSE_CompareNotGreaterThanOrEqualScalar:
+        case NI_SSE_CompareNotLessThan:
+        case NI_SSE_CompareNotLessThanScalar:
+        case NI_SSE_CompareNotLessThanOrEqual:
+        case NI_SSE_CompareNotLessThanOrEqualScalar:
+        case NI_SSE_CompareOrdered:
+        case NI_SSE_CompareOrderedScalar:
+        case NI_SSE_CompareUnordered:
+        case NI_SSE_CompareUnorderedScalar:
+        case NI_SSE_ConvertToVector128SingleScalar:
+        case NI_SSE_Divide:
+        case NI_SSE_DivideScalar:
+        case NI_SSE_Max:
+        case NI_SSE_MaxScalar:
+        case NI_SSE_Min:
+        case NI_SSE_MinScalar:
+        case NI_SSE_Multiply:
+        case NI_SSE_MultiplyScalar:
+        case NI_SSE_Or:
+        case NI_SSE_Subtract:
+        case NI_SSE_SubtractScalar:
+        case NI_SSE_UnpackHigh:
+        case NI_SSE_UnpackLow:
+        case NI_SSE_Xor:
         case NI_SSE2_Add:
             if (!comp->getEmitter()->UseVEXEncoding())
             {
@@ -2333,6 +2375,18 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 // TODO-XArch-CQ: Commutative operations can have op1 be contained
                 op2->SetRegOptional();
+            }
+            break;
+        }
+
+        case NI_SSE_Shuffle:
+        {
+            assert(op1->OperIsList());
+            GenTree* op3 = op1->AsArgList()->Rest()->Rest()->Current();
+
+            if (op3->IsCnsIntOrI())
+            {
+                MakeSrcContained(node, op3);
             }
             break;
         }

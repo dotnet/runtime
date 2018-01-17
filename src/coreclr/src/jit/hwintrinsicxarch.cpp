@@ -153,6 +153,244 @@ InstructionSet Compiler::isaOfHWIntrinsic(NamedIntrinsic intrinsic)
 }
 
 //------------------------------------------------------------------------
+// ivalOfHWIntrinsic: get the imm8 value of the given intrinsic
+//
+// Arguments:
+//    intrinsic -- id of the intrinsic function.
+//
+// Return Value:
+//     the imm8 value of the intrinsic, -1 for non-IMM intrinsics
+//
+int Compiler::ivalOfHWIntrinsic(NamedIntrinsic intrinsic)
+{
+    assert(intrinsic != NI_Illegal);
+    assert(intrinsic > NI_HW_INTRINSIC_START && intrinsic < NI_HW_INTRINSIC_END);
+
+    switch (intrinsic)
+    {
+        case NI_SSE_CompareEqual:
+        case NI_SSE_CompareEqualScalar:
+            return 0;
+
+        case NI_SSE_CompareLessThan:
+        case NI_SSE_CompareLessThanScalar:
+        case NI_SSE_CompareNotGreaterThanOrEqual:
+        case NI_SSE_CompareNotGreaterThanOrEqualScalar:
+            return 1;
+
+        case NI_SSE_CompareLessThanOrEqual:
+        case NI_SSE_CompareLessThanOrEqualScalar:
+        case NI_SSE_CompareNotGreaterThan:
+        case NI_SSE_CompareNotGreaterThanScalar:
+            return 2;
+
+        case NI_SSE_CompareUnordered:
+        case NI_SSE_CompareUnorderedScalar:
+            return 3;
+
+        case NI_SSE_CompareNotEqual:
+        case NI_SSE_CompareNotEqualScalar:
+            return 4;
+
+        case NI_SSE_CompareGreaterThanOrEqual:
+        case NI_SSE_CompareGreaterThanOrEqualScalar:
+        case NI_SSE_CompareNotLessThan:
+        case NI_SSE_CompareNotLessThanScalar:
+            return 5;
+
+        case NI_SSE_CompareGreaterThan:
+        case NI_SSE_CompareGreaterThanScalar:
+        case NI_SSE_CompareNotLessThanOrEqual:
+        case NI_SSE_CompareNotLessThanOrEqualScalar:
+            return 6;
+
+        case NI_SSE_CompareOrdered:
+        case NI_SSE_CompareOrderedScalar:
+            return 7;
+
+        default:
+            return -1;
+    }
+}
+
+//------------------------------------------------------------------------
+// insOfHWIntrinsic: get the instruction of the given intrinsic
+//
+// Arguments:
+//    intrinsic -- id of the intrinsic function.
+//    type      -- vector base type of this intrinsic
+//
+// Return Value:
+//     the instruction of the given intrinsic on the base type
+//     return INS_invalid for unsupported base types
+//
+instruction Compiler::insOfHWIntrinsic(NamedIntrinsic intrinsic, var_types type)
+{
+    assert(intrinsic != NI_Illegal);
+    assert(intrinsic > NI_HW_INTRINSIC_START && intrinsic < NI_HW_INTRINSIC_END);
+
+    switch (intrinsic)
+    {
+        case NI_SSE_Add:
+            return INS_addps;
+
+        case NI_SSE_AddScalar:
+            return INS_addss;
+
+        case NI_SSE_And:
+            return INS_andps;
+
+        case NI_SSE_AndNot:
+            return INS_andnps;
+
+        case NI_SSE_CompareEqual:
+        case NI_SSE_CompareGreaterThan:
+        case NI_SSE_CompareGreaterThanOrEqual:
+        case NI_SSE_CompareLessThan:
+        case NI_SSE_CompareLessThanOrEqual:
+        case NI_SSE_CompareNotEqual:
+        case NI_SSE_CompareNotGreaterThan:
+        case NI_SSE_CompareNotGreaterThanOrEqual:
+        case NI_SSE_CompareNotLessThan:
+        case NI_SSE_CompareNotLessThanOrEqual:
+        case NI_SSE_CompareOrdered:
+        case NI_SSE_CompareUnordered:
+            return INS_cmpps;
+
+        case NI_SSE_CompareEqualScalar:
+        case NI_SSE_CompareGreaterThanScalar:
+        case NI_SSE_CompareGreaterThanOrEqualScalar:
+        case NI_SSE_CompareLessThanScalar:
+        case NI_SSE_CompareLessThanOrEqualScalar:
+        case NI_SSE_CompareNotEqualScalar:
+        case NI_SSE_CompareNotGreaterThanScalar:
+        case NI_SSE_CompareNotGreaterThanOrEqualScalar:
+        case NI_SSE_CompareNotLessThanScalar:
+        case NI_SSE_CompareNotLessThanOrEqualScalar:
+        case NI_SSE_CompareOrderedScalar:
+        case NI_SSE_CompareUnorderedScalar:
+            return INS_cmpss;
+
+        case NI_SSE_CompareEqualOrderedScalar:
+        case NI_SSE_CompareGreaterThanOrderedScalar:
+        case NI_SSE_CompareGreaterThanOrEqualOrderedScalar:
+        case NI_SSE_CompareLessThanOrderedScalar:
+        case NI_SSE_CompareLessThanOrEqualOrderedScalar:
+        case NI_SSE_CompareNotEqualOrderedScalar:
+            return INS_comiss;
+
+        case NI_SSE_CompareEqualUnorderedScalar:
+        case NI_SSE_CompareGreaterThanUnorderedScalar:
+        case NI_SSE_CompareGreaterThanOrEqualUnorderedScalar:
+        case NI_SSE_CompareLessThanUnorderedScalar:
+        case NI_SSE_CompareLessThanOrEqualUnorderedScalar:
+        case NI_SSE_CompareNotEqualUnorderedScalar:
+            return INS_ucomiss;
+
+        case NI_SSE_ConvertToInt32:
+        case NI_SSE_ConvertToInt64:
+            return INS_cvtss2si;
+
+        case NI_SSE_ConvertToInt32WithTruncation:
+        case NI_SSE_ConvertToInt64WithTruncation:
+            return INS_cvttss2si;
+
+        case NI_SSE_ConvertToSingle:
+        case NI_SSE_LoadScalar:
+        case NI_SSE_MoveScalar:
+            return INS_movss;
+
+        case NI_SSE_ConvertToVector128SingleScalar:
+            return INS_cvtsi2ss;
+
+        case NI_SSE_Divide:
+            return INS_divps;
+
+        case NI_SSE_DivideScalar:
+            return INS_divss;
+
+        case NI_SSE_LoadAlignedVector128:
+        case NI_SSE_StaticCast:
+            return INS_movaps;
+
+        case NI_SSE_LoadHigh:
+            return INS_movhps;
+
+        case NI_SSE_LoadLow:
+            return INS_movlps;
+
+        case NI_SSE_LoadVector128:
+            return INS_movups;
+
+        case NI_SSE_Max:
+            return INS_maxps;
+
+        case NI_SSE_MaxScalar:
+            return INS_maxss;
+
+        case NI_SSE_Min:
+            return INS_minps;
+
+        case NI_SSE_MinScalar:
+            return INS_minss;
+
+        case NI_SSE_MoveHighToLow:
+            return INS_movhlps;
+
+        case NI_SSE_MoveLowToHigh:
+            return INS_movlhps;
+
+        case NI_SSE_MoveMask:
+            return INS_movmskps;
+
+        case NI_SSE_Multiply:
+            return INS_mulps;
+
+        case NI_SSE_MultiplyScalar:
+            return INS_mulss;
+
+        case NI_SSE_Or:
+            return INS_orps;
+
+        case NI_SSE_Reciprocal:
+            return INS_rcpps;
+
+        case NI_SSE_ReciprocalScalar:
+            return INS_rcpss;
+
+        case NI_SSE_ReciprocalSqrt:
+            return INS_rsqrtps;
+
+        case NI_SSE_ReciprocalSqrtScalar:
+            return INS_rsqrtss;
+
+        case NI_SSE_Sqrt:
+            return INS_sqrtps;
+
+        case NI_SSE_SqrtScalar:
+            return INS_sqrtss;
+
+        case NI_SSE_Subtract:
+            return INS_subps;
+
+        case NI_SSE_SubtractScalar:
+            return INS_subss;
+
+        case NI_SSE_UnpackHigh:
+            return INS_unpckhps;
+
+        case NI_SSE_UnpackLow:
+            return INS_unpcklps;
+
+        case NI_SSE_Xor:
+            return INS_xorps;
+
+        default:
+            return INS_invalid;
+    }
+}
+
+//------------------------------------------------------------------------
 // isIntrinsicAnIsSupportedPropertyGetter: return true if the intrinsic is "get_IsSupported"
 //
 // Arguments:
@@ -450,13 +688,238 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
     GenTree* retNode = nullptr;
     GenTree* op1     = nullptr;
     GenTree* op2     = nullptr;
+    GenTree* op3     = nullptr;
+    GenTree* op4     = nullptr;
+
     switch (intrinsic)
     {
+        case NI_SSE_SetVector128:
+        {
+            assert(sig->numArgs == 4);
+            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
+
+            op4 = impPopStack().val;
+            op3 = impPopStack().val;
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            GenTree* left    = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op4, op3, NI_SSE_UnpackLow, TYP_FLOAT, 16);
+            GenTree* right   = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_UnpackLow, TYP_FLOAT, 16);
+            GenTree* control = gtNewIconNode(68, TYP_UBYTE);
+
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, left, right, control, NI_SSE_Shuffle, TYP_FLOAT, 16);
+            break;
+        }
+
+        case NI_SSE_Shuffle:
+        {
+            assert(sig->numArgs == 3);
+            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
+
+            op3 = impStackTop().val;
+
+            if (op3->IsCnsIntOrI() || mustExpand)
+            {
+                impPopStack(); // Pop the value we peeked at
+                op2     = impSIMDPopStack(TYP_SIMD16);
+                op1     = impSIMDPopStack(TYP_SIMD16);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, intrinsic, TYP_FLOAT, 16);
+            }
+            else
+            {
+                // When op3 is not a constant and we are not being forced to expand, we need to
+                // return nullptr so a GT_CALL to the intrinsic method is emitted instead. The
+                // intrinsic method is recursive and will be forced to expand, at which point
+                // we emit some less efficient fallback code.
+
+                return nullptr;
+            }
+            break;
+        }
+
         case NI_SSE_Add:
+        case NI_SSE_AddScalar:
+        case NI_SSE_And:
+        case NI_SSE_AndNot:
+        case NI_SSE_CompareEqual:
+        case NI_SSE_CompareEqualScalar:
+        case NI_SSE_CompareGreaterThan:
+        case NI_SSE_CompareGreaterThanScalar:
+        case NI_SSE_CompareGreaterThanOrEqual:
+        case NI_SSE_CompareGreaterThanOrEqualScalar:
+        case NI_SSE_CompareLessThan:
+        case NI_SSE_CompareLessThanScalar:
+        case NI_SSE_CompareLessThanOrEqual:
+        case NI_SSE_CompareLessThanOrEqualScalar:
+        case NI_SSE_CompareNotEqual:
+        case NI_SSE_CompareNotEqualScalar:
+        case NI_SSE_CompareNotGreaterThan:
+        case NI_SSE_CompareNotGreaterThanScalar:
+        case NI_SSE_CompareNotGreaterThanOrEqual:
+        case NI_SSE_CompareNotGreaterThanOrEqualScalar:
+        case NI_SSE_CompareNotLessThan:
+        case NI_SSE_CompareNotLessThanScalar:
+        case NI_SSE_CompareNotLessThanOrEqual:
+        case NI_SSE_CompareNotLessThanOrEqualScalar:
+        case NI_SSE_CompareOrdered:
+        case NI_SSE_CompareOrderedScalar:
+        case NI_SSE_CompareUnordered:
+        case NI_SSE_CompareUnorderedScalar:
+        case NI_SSE_Divide:
+        case NI_SSE_DivideScalar:
+        case NI_SSE_Max:
+        case NI_SSE_MaxScalar:
+        case NI_SSE_Min:
+        case NI_SSE_MinScalar:
+        case NI_SSE_MoveHighToLow:
+        case NI_SSE_MoveLowToHigh:
+        case NI_SSE_MoveScalar:
+        case NI_SSE_Multiply:
+        case NI_SSE_MultiplyScalar:
+        case NI_SSE_Or:
+        case NI_SSE_Subtract:
+        case NI_SSE_SubtractScalar:
+        case NI_SSE_UnpackHigh:
+        case NI_SSE_UnpackLow:
+        case NI_SSE_Xor:
             assert(sig->numArgs == 2);
+            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
             op2     = impSIMDPopStack(TYP_SIMD16);
             op1     = impSIMDPopStack(TYP_SIMD16);
-            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, NI_SSE_Add, TYP_FLOAT, 16);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, TYP_FLOAT, 16);
+            break;
+
+        case NI_SSE_CompareEqualOrderedScalar:
+        case NI_SSE_CompareEqualUnorderedScalar:
+        case NI_SSE_CompareGreaterThanOrderedScalar:
+        case NI_SSE_CompareGreaterThanUnorderedScalar:
+        case NI_SSE_CompareGreaterThanOrEqualOrderedScalar:
+        case NI_SSE_CompareGreaterThanOrEqualUnorderedScalar:
+        case NI_SSE_CompareLessThanOrderedScalar:
+        case NI_SSE_CompareLessThanUnorderedScalar:
+        case NI_SSE_CompareLessThanOrEqualOrderedScalar:
+        case NI_SSE_CompareLessThanOrEqualUnorderedScalar:
+        case NI_SSE_CompareNotEqualOrderedScalar:
+        case NI_SSE_CompareNotEqualUnorderedScalar:
+            assert(sig->numArgs == 2);
+            assert(JITtype2varType(sig->retType) == TYP_BOOL);
+            assert(getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args)) == TYP_FLOAT);
+            op2     = impSIMDPopStack(TYP_SIMD16);
+            op1     = impSIMDPopStack(TYP_SIMD16);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_BOOL, op1, op2, intrinsic, TYP_FLOAT, 16);
+            break;
+
+        case NI_SSE_ConvertToVector128SingleScalar:
+        {
+            assert(sig->numArgs == 2);
+            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
+
+#ifdef _TARGET_X86_
+            CORINFO_CLASS_HANDLE argClass;
+
+            CORINFO_ARG_LIST_HANDLE argLst = info.compCompHnd->getArgNext(sig->args);
+            CorInfoType             corType =
+                strip(info.compCompHnd->getArgType(sig, argLst, &argClass)); // type of the second argument
+
+            if (varTypeIsLong(JITtype2varType(corType)))
+            {
+                return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
+            }
+#endif // _TARGET_X86_
+
+            op2     = impPopStack().val;
+            op1     = impSIMDPopStack(TYP_SIMD16);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, TYP_FLOAT, 16);
+            break;
+        }
+
+        case NI_SSE_LoadHigh:
+        case NI_SSE_LoadLow:
+        {
+            assert(sig->numArgs == 2);
+            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
+            op2     = impPopStack().val;
+            op1     = impSIMDPopStack(TYP_SIMD16);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, TYP_FLOAT, 16);
+            break;
+        }
+
+        case NI_SSE_MoveMask:
+            assert(sig->numArgs == 1);
+            assert(JITtype2varType(sig->retType) == TYP_INT);
+            assert(getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args)) == TYP_FLOAT);
+            op1     = impSIMDPopStack(TYP_SIMD16);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_INT, op1, intrinsic, TYP_FLOAT, 16);
+            break;
+
+        case NI_SSE_StaticCast:
+        {
+            assert(sig->numArgs == 1);
+            var_types tgtType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            var_types srcType = getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args));
+
+            if (varTypeIsArithmetic(tgtType) && varTypeIsArithmetic(srcType))
+            {
+                op1     = impSIMDPopStack(TYP_SIMD16);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, intrinsic, tgtType, 16);
+            }
+            else
+            {
+                return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
+            }
+            break;
+        }
+
+        case NI_SSE_LoadAlignedVector128:
+        case NI_SSE_LoadScalar:
+        case NI_SSE_LoadVector128:
+        case NI_SSE_SetAllVector128:
+        case NI_SSE_SetScalar:
+            assert(sig->numArgs == 1);
+            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
+            op1     = impPopStack().val;
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, intrinsic, TYP_FLOAT, 16);
+            break;
+
+        case NI_SSE_Reciprocal:
+        case NI_SSE_ReciprocalScalar:
+        case NI_SSE_ReciprocalSqrt:
+        case NI_SSE_ReciprocalSqrtScalar:
+        case NI_SSE_Sqrt:
+        case NI_SSE_SqrtScalar:
+            assert(sig->numArgs == 1);
+            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
+            op1     = impSIMDPopStack(TYP_SIMD16);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, intrinsic, TYP_FLOAT, 16);
+            break;
+
+        case NI_SSE_ConvertToInt32:
+        case NI_SSE_ConvertToInt32WithTruncation:
+        case NI_SSE_ConvertToInt64:
+        case NI_SSE_ConvertToInt64WithTruncation:
+        case NI_SSE_ConvertToSingle:
+        {
+            assert(sig->numArgs == 1);
+            assert(getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args)) == TYP_FLOAT);
+            var_types callType = JITtype2varType(sig->retType);
+
+#ifdef _TARGET_X86_
+            if (varTypeIsLong(callType))
+            {
+                assert(intrinsic == NI_SSE_ConvertToInt64 || intrinsic == NI_SSE_ConvertToInt64WithTruncation);
+                return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
+            }
+#endif // _TARGET_X86_
+
+            op1     = impSIMDPopStack(TYP_SIMD16);
+            retNode = gtNewSimdHWIntrinsicNode(callType, op1, intrinsic, TYP_FLOAT, 16);
+            break;
+        }
+
+        case NI_SSE_SetZeroVector128:
+            assert(sig->numArgs == 0);
+            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, intrinsic, TYP_FLOAT, 16);
             break;
 
         default:
