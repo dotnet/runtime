@@ -325,7 +325,7 @@ namespace Mono.Linker.Steps {
 				SweepCustomAttributes (provider);
 		}
 
-		void SweepMethods (Collection<MethodDefinition> methods)
+		protected virtual void SweepMethods (Collection<MethodDefinition> methods)
 		{
 			SweepCollection (methods);
 			if (sweepSymbols)
