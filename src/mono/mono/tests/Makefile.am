@@ -536,10 +536,18 @@ TESTS_CS_SRC=		\
 
 if AMD64
 TESTS_CS_SRC += async-exc-compilation.cs finally_guard.cs finally_block_ending_in_dead_bb.cs
+if !HOST_WIN32
+# requires working altstack
+TESTS_CS_SRC += bug-60862.cs
+endif
 endif
 
 if X86
 TESTS_CS_SRC += async-exc-compilation.cs finally_guard.cs finally_block_ending_in_dead_bb.cs
+if !HOST_WIN32
+# requires working altstack
+TESTS_CS_SRC += bug-60862.cs
+endif
 endif
 
 TESTS_IL_SRC=			\
@@ -993,6 +1001,7 @@ DISABLED_TESTS = \
 #                exit code 0, but doesn't actually execute the test.
 # block_guard_restore_aligment_on_exit.exe: flaky (10% of the time it hangs and thus times out)
 # weak-fields.exe: https://bugzilla.xamarin.com/show_bug.cgi?id=60973
+# bug-60862.exe: missing support to map IP->method; only works on platforms with altstack support.
 INTERP_DISABLED_TESTS = \
 	$(KNOWN_FAILING_TESTS) \
 	$(INTERP_PLATFORM_DISABLED_TESTS) \
@@ -1011,6 +1020,7 @@ INTERP_DISABLED_TESTS = \
 	bug-58782-capture-and-throw.exe \
 	bug-58782-plain-throw.exe \
 	bug445361.exe \
+	bug-60862.exe \
 	calliGenericTest.exe \
 	cominterop.exe \
 	context-static.exe \
