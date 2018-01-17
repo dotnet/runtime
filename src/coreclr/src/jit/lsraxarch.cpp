@@ -2069,10 +2069,17 @@ void LinearScan::TreeNodeInfoInitIntrinsic(GenTree* tree, TreeNodeInfo* info)
 #ifdef _TARGET_X86_
         case CORINFO_INTRINSIC_Cos:
         case CORINFO_INTRINSIC_Sin:
-        case CORINFO_INTRINSIC_Round:
-            NYI_X86("Math intrinsics Cos, Sin and Round");
+            NYI_X86("Math intrinsics Cos and Sin");
             break;
 #endif // _TARGET_X86_
+
+        case CORINFO_INTRINSIC_Round:
+        case CORINFO_INTRINSIC_Ceiling:
+        case CORINFO_INTRINSIC_Floor:
+#if defined(LEGACY_BACKEND)
+            NYI_X86("Math intrinsics Round, Ceiling, and Floor");
+#endif // LEGACY_BACKEND
+            break;
 
         default:
             // Right now only Sqrt/Abs are treated as math intrinsics

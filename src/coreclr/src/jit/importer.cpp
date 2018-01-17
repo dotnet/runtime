@@ -19111,7 +19111,8 @@ bool Compiler::IsTargetIntrinsic(CorInfoIntrinsics intrinsicId)
 #if defined(_TARGET_AMD64_) || (defined(_TARGET_X86_) && !defined(LEGACY_BACKEND))
     switch (intrinsicId)
     {
-        // Amd64 only has SSE2 instruction to directly compute sqrt/abs.
+        // AMD64/x86 has SSE2 instructions to directly compute sqrt/abs and SSE4.1
+        // instructions to directly compute round/ceiling/floor.
         //
         // TODO: Because the x86 backend only targets SSE for floating-point code,
         //       it does not treat Sine, Cosine, or Round as intrinsics (JIT32
@@ -19122,6 +19123,11 @@ bool Compiler::IsTargetIntrinsic(CorInfoIntrinsics intrinsicId)
         case CORINFO_INTRINSIC_Sqrt:
         case CORINFO_INTRINSIC_Abs:
             return true;
+
+        case CORINFO_INTRINSIC_Round:
+        case CORINFO_INTRINSIC_Ceiling:
+        case CORINFO_INTRINSIC_Floor:
+            return compSupports(InstructionSet_SSE41);
 
         default:
             return false;

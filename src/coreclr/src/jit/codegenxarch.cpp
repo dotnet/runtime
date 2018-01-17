@@ -7331,6 +7331,173 @@ void CodeGen::genSSE2BitwiseOp(GenTreePtr treeNode)
     inst_RV_RV(ins, targetReg, operandReg, targetType);
 }
 
+//-----------------------------------------------------------------------------------------
+// genSSE41RoundOp - generate SSE41 code for the given tree as a round operation
+//
+// Arguments:
+//    treeNode  - tree node
+//
+// Return value:
+//    None
+//
+// Assumptions:
+//     i) SSE4.1 is supported by the underlying hardware
+//    ii) treeNode oper is a GT_INTRINSIC
+//   iii) treeNode type is a floating point type
+//    iv) treeNode is not used from memory
+//     v) tree oper is CORINFO_INTRINSIC_Round, _Ceiling, or _Floor
+//    vi) caller of this routine needs to call genProduceReg()
+void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
+{
+    // i) SSE4.1 is supported by the underlying hardware
+    assert(compiler->compSupports(InstructionSet_SSE41));
+
+    // ii) treeNode oper is a GT_INTRINSIC
+    assert(treeNode->OperGet() == GT_INTRINSIC);
+
+    GenTree* srcNode = treeNode->gtGetOp1();
+
+    // iii) treeNode type is floating point type
+    assert(varTypeIsFloating(srcNode));
+    assert(srcNode->TypeGet() == treeNode->TypeGet());
+
+    // iv) treeNode is not used from memory
+    assert(!treeNode->isUsedFromMemory());
+
+    genConsumeOperands(treeNode);
+
+    instruction ins  = (treeNode->TypeGet() == TYP_FLOAT) ? INS_roundss : INS_roundsd;
+    emitAttr    size = emitTypeSize(treeNode);
+
+    regNumber dstReg = treeNode->gtRegNum;
+
+    unsigned ival = 0;
+
+    // v) tree oper is CORINFO_INTRINSIC_Round, _Ceiling, or _Floor
+    switch (treeNode->gtIntrinsic.gtIntrinsicId)
+    {
+        case CORINFO_INTRINSIC_Round:
+            ival = 4;
+            break;
+
+        case CORINFO_INTRINSIC_Ceiling:
+            ival = 10;
+            break;
+
+        case CORINFO_INTRINSIC_Floor:
+            ival = 9;
+            break;
+
+        default:
+            ins = INS_invalid;
+            assert(!"genSSE41RoundOp: unsupported intrinsic");
+            unreached();
+    }
+
+    if (srcNode->isContained() || srcNode->isUsedFromSpillTemp())
+    {
+        emitter* emit = getEmitter();
+
+        TempDsc* tmpDsc = nullptr;
+        unsigned varNum = BAD_VAR_NUM;
+        unsigned offset = (unsigned)-1;
+
+        if (srcNode->isUsedFromSpillTemp())
+        {
+            assert(srcNode->IsRegOptional());
+
+            tmpDsc = getSpillTempDsc(srcNode);
+            varNum = tmpDsc->tdTempNum();
+            offset = 0;
+
+            compiler->tmpRlsTemp(tmpDsc);
+        }
+        else if (srcNode->isIndir())
+        {
+            GenTreeIndir* memIndir = srcNode->AsIndir();
+            GenTree*      memBase  = memIndir->gtOp1;
+
+            switch (memBase->OperGet())
+            {
+                case GT_LCL_VAR_ADDR:
+                {
+                    varNum = memBase->AsLclVarCommon()->GetLclNum();
+                    offset = 0;
+
+                    // Ensure that all the GenTreeIndir values are set to their defaults.
+                    assert(memBase->gtRegNum == REG_NA);
+                    assert(!memIndir->HasIndex());
+                    assert(memIndir->Scale() == 1);
+                    assert(memIndir->Offset() == 0);
+
+                    break;
+                }
+
+                case GT_CLS_VAR_ADDR:
+                {
+                    emit->emitIns_R_C_I(ins, size, dstReg, memBase->gtClsVar.gtClsVarHnd, 0, ival);
+                    return;
+                }
+
+                default:
+                {
+                    emit->emitIns_R_A_I(ins, size, dstReg, memIndir, ival);
+                    return;
+                }
+            }
+        }
+        else
+        {
+            switch (srcNode->OperGet())
+            {
+                case GT_CNS_DBL:
+                {
+                    GenTreeDblCon*       dblConst = srcNode->AsDblCon();
+                    CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(dblConst->gtDconVal, emitTypeSize(dblConst));
+
+                    emit->emitIns_R_C_I(ins, size, dstReg, hnd, 0, ival);
+                    return;
+                }
+
+                case GT_LCL_FLD:
+                {
+                    GenTreeLclFld* lclField = srcNode->AsLclFld();
+
+                    varNum = lclField->GetLclNum();
+                    offset = lclField->gtLclFld.gtLclOffs;
+                    break;
+                }
+
+                case GT_LCL_VAR:
+                {
+                    assert(srcNode->IsRegOptional() ||
+                           !compiler->lvaTable[srcNode->gtLclVar.gtLclNum].lvIsRegCandidate());
+
+                    varNum = srcNode->AsLclVar()->GetLclNum();
+                    offset = 0;
+                    break;
+                }
+
+                default:
+                    unreached();
+                    break;
+            }
+        }
+
+        // Ensure we got a good varNum and offset.
+        // We also need to check for `tmpDsc != nullptr` since spill temp numbers
+        // are negative and start with -1, which also happens to be BAD_VAR_NUM.
+        assert((varNum != BAD_VAR_NUM) || (tmpDsc != nullptr));
+        assert(offset != (unsigned)-1);
+
+        emit->emitIns_R_S_I(ins, size, dstReg, varNum, offset, ival);
+    }
+    else
+    {
+        inst_RV_RV_IV(ins, size, dstReg, srcNode->gtRegNum, ival);
+    }
+}
+
 //---------------------------------------------------------------------
 // genIntrinsic - generate code for a given intrinsic
 //
@@ -7359,6 +7526,12 @@ void CodeGen::genIntrinsic(GenTreePtr treeNode)
 
         case CORINFO_INTRINSIC_Abs:
             genSSE2BitwiseOp(treeNode);
+            break;
+
+        case CORINFO_INTRINSIC_Round:
+        case CORINFO_INTRINSIC_Ceiling:
+        case CORINFO_INTRINSIC_Floor:
+            genSSE41RoundOp(treeNode->AsOp());
             break;
 
         default:

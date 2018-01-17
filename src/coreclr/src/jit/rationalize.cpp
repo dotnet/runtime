@@ -823,7 +823,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
 
         case GT_INTRINSIC:
             // Non-target intrinsics should have already been rewritten back into user calls.
-            assert(Compiler::IsTargetIntrinsic(node->gtIntrinsic.gtIntrinsicId));
+            assert(comp->IsTargetIntrinsic(node->gtIntrinsic.gtIntrinsicId));
             break;
 
 #ifdef FEATURE_SIMD
@@ -999,7 +999,7 @@ void Rationalizer::DoPhase()
         {
             GenTree* const node = *use;
             if (node->OperGet() == GT_INTRINSIC &&
-                Compiler::IsIntrinsicImplementedByUserCall(node->gtIntrinsic.gtIntrinsicId))
+                m_rationalizer.comp->IsIntrinsicImplementedByUserCall(node->gtIntrinsic.gtIntrinsicId))
             {
                 m_rationalizer.RewriteIntrinsicAsUserCall(use, this->m_ancestors);
             }

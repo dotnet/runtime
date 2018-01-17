@@ -3222,10 +3222,10 @@ public:
                                        unsigned*            typeSize,
                                        bool                 forReturn);
 
-    static bool IsIntrinsicImplementedByUserCall(CorInfoIntrinsics intrinsicId);
-    static bool IsTargetIntrinsic(CorInfoIntrinsics intrinsicId);
-    static bool IsMathIntrinsic(CorInfoIntrinsics intrinsicId);
-    static bool IsMathIntrinsic(GenTreePtr tree);
+    bool IsIntrinsicImplementedByUserCall(CorInfoIntrinsics intrinsicId);
+    bool IsTargetIntrinsic(CorInfoIntrinsics intrinsicId);
+    bool IsMathIntrinsic(CorInfoIntrinsics intrinsicId);
+    bool IsMathIntrinsic(GenTreePtr tree);
 
 private:
     //----------------- Importing the method ----------------------------------

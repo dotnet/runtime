@@ -2258,7 +2258,7 @@ void CodeGen::genCodeForTreeStackFP_SmpOp(GenTreePtr tree)
         }
         case GT_INTRINSIC:
         {
-            assert(Compiler::IsMathIntrinsic(tree));
+            assert(compiler->IsMathIntrinsic(tree));
 
             GenTreePtr op1 = tree->gtOp.gtOp1;
 
