@@ -108,7 +108,7 @@ namespace System.Data.SqlClient.Tests
 
             int threshold = (timeoutSec + 1) * 1000;
 
-            Console.WriteLine($"Elapsed Time in ConnectionTimeoutTestWithThread  {theMax}");
+            Console.WriteLine($"ConnectionTimeoutTestWithThread: Elapsed Time {theMax} and threshold {threshold}");
         }
 
         public class ConnectionWorker
