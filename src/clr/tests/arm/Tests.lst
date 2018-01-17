@@ -60921,7 +60921,7 @@ RelativePath=GC\API\GC\GetGeneration\GetGeneration.cmd
 WorkingDir=GC\API\GC\GetGeneration
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL
+Categories=EXPECTED_FAIL;GCSTRESS_EXCLUDE
 HostStyle=0
 
 [OpCodeOperandType.cmd_7644]
