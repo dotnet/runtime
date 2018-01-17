@@ -42,11 +42,11 @@ if it exists, and are defined as 0 otherwise.
 
 --
 
-Also note that there is no analog to "creation time" on Unix systems.
+Also note that there is no analog to "creation time" on Linux systems.
 Instead, we use the inode change time, which is set to the current time
 whenever mtime changes or when chmod, chown, etc. syscalls modify the
-file status.
-
+file status; or mtime if older. Ideally we would use birthtime when
+available.
 
 
 --*/

@@ -417,22 +417,30 @@ FindNextFileA(
     
             if ( stat_result )
             {
-                    lpFindFileData->ftCreationTime = 
+                    lpFindFileData->ftCreationTime =
                         FILEUnixTimeToFileTime( stat_data.st_ctime,
                                         ST_CTIME_NSEC(&stat_data) );
-                    lpFindFileData->ftLastAccessTime = 
+                    lpFindFileData->ftLastAccessTime =
                         FILEUnixTimeToFileTime( stat_data.st_atime,
                                         ST_ATIME_NSEC(&stat_data) );
-                    lpFindFileData->ftLastWriteTime = 
+                    lpFindFileData->ftLastWriteTime =
                         FILEUnixTimeToFileTime( stat_data.st_mtime,
                                         ST_MTIME_NSEC(&stat_data) );
 
-                    /* if Unix mtime is greater than atime, return mtime 
+                    /* if Unix mtime is greater than atime, return mtime
                        as the last access time */
-                    if (CompareFileTime(&lpFindFileData->ftLastAccessTime, 
+                    if (CompareFileTime(&lpFindFileData->ftLastAccessTime,
                                         &lpFindFileData->ftLastWriteTime) < 0)
                     {
                          lpFindFileData->ftLastAccessTime = lpFindFileData->ftLastWriteTime;
+                    }
+
+                    /* if Unix ctime is greater than mtime, return mtime
+                       as the create time */
+                    if (CompareFileTime(&lpFindFileData->ftLastWriteTime,
+                                        &lpFindFileData->ftCreationTime) < 0)
+                    {
+                         lpFindFileData->ftCreationTime = lpFindFileData->ftLastWriteTime;
                     }
 
                     /* get file size */
