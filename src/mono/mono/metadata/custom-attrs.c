@@ -311,7 +311,13 @@ handle_enum:
 		if (slen > 0 && !bcheck_blob (p, slen - 1, boundp, error))
 			return NULL;
 		*end = p + slen;
-		return mono_string_new_len_checked (mono_domain_get (), p, slen, error);
+		// https://bugzilla.xamarin.com/show_bug.cgi?id=60848
+		// Custom attribute strings are encoded as wtf-8 instead of utf-8.
+		// If we decode using utf-8 like the spec says, we will silently fail
+		//  to decode some attributes in assemblies that Windows .NET Framework
+		//  and CoreCLR both manage to decode.
+		// See https://simonsapin.github.io/wtf-8/ for a description of wtf-8.
+		return mono_string_new_wtf8_len_checked (mono_domain_get (), p, slen, error);
 	case MONO_TYPE_CLASS: {
 		MonoReflectionType *rt;
 		char *n;

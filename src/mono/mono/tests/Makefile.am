@@ -532,7 +532,8 @@ TESTS_CS_SRC=		\
 	init_array_with_lazy_type.cs \
 	weak-fields.cs \
 	threads-leak.cs	\
-	threads-init.cs
+	threads-init.cs \
+	bug-60848.cs
 
 if AMD64
 TESTS_CS_SRC += async-exc-compilation.cs finally_guard.cs finally_block_ending_in_dead_bb.cs

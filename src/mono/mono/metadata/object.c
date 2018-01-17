@@ -6376,6 +6376,38 @@ leave:
 }
 
 /**
+ * mono_string_new_wtf8_len_checked:
+ * \param text a pointer to an wtf8 string (see https://simonsapin.github.io/wtf-8/)
+ * \param length number of bytes in \p text to consider
+ * \param merror set on error
+ * \returns A newly created string object which contains \p text.
+ * On error returns NULL and sets \p merror.
+ */
+MonoString*
+mono_string_new_wtf8_len_checked (MonoDomain *domain, const char *text, guint length, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	error_init (error);
+
+	GError *eg_error = NULL;
+	MonoString *o = NULL;
+	guint16 *ut = NULL;
+	glong items_written;
+
+	ut = eg_wtf8_to_utf16 (text, length, NULL, &items_written, &eg_error);
+
+	if (!eg_error)
+		o = mono_string_new_utf16_checked (domain, ut, items_written, error);
+	else 
+		g_error_free (eg_error);
+
+	g_free (ut);
+
+	return o;
+}
+
+/**
  * mono_string_new_wrapper:
  * \param text pointer to UTF-8 characters.
  * Helper function to create a string object from \p text in the current domain.

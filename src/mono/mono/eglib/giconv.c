@@ -833,7 +833,7 @@ g_utf8_to_ucs4_fast (const gchar *str, glong len, glong *items_written)
 }
 
 static gunichar2 *
-eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong *items_written, gboolean include_nuls, GError **err)
+eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong *items_written, gboolean include_nuls, gboolean replace_invalid_codepoints,	GError **err) 
 {
 	gunichar2 *outbuf, *outptr;
 	size_t outlen = 0;
@@ -864,8 +864,12 @@ eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong 
 			break;
 		
 		if ((u = g_unichar_to_utf16 (c, NULL)) < 0) {
-			errno = EILSEQ;
-			goto error;
+			if (replace_invalid_codepoints) {
+				u = 2;
+			} else {
+				errno = EILSEQ;
+				goto error;
+			}
 		}
 		
 		outlen += u;
@@ -890,7 +894,14 @@ eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong 
 		if (c == 0 && !include_nuls)
 			break;
 		
-		outptr += g_unichar_to_utf16 (c, outptr);
+		u = g_unichar_to_utf16 (c, outptr);
+		if ((u < 0) && replace_invalid_codepoints) {
+			outptr[0] = 0xFFFD;
+			outptr[1] = 0xFFFD;
+			u = 2;
+		}
+
+		outptr += u;
 		inleft -= n;
 		inptr += n;
 	}
@@ -922,13 +933,19 @@ eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong 
 gunichar2 *
 g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
 {
-	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, err);
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, err);
 }
 
 gunichar2 *
 eg_utf8_to_utf16_with_nuls (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
 {
-	return eg_utf8_to_utf16_general (str, len, items_read, items_written, TRUE, err);
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, TRUE, FALSE, err);
+}
+
+gunichar2 *
+eg_wtf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
+{
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, TRUE, TRUE, err);
 }
 
 gunichar *
