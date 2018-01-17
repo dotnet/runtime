@@ -204,7 +204,11 @@ INST3( movapd,      "movapd"      , 0, IUM_WR, 0, 0, PCKDBL(0x29), BAD_CODE, PCK
 INST3( movaps,      "movaps"      , 0, IUM_WR, 0, 0, PCKFLT(0x29), BAD_CODE, PCKFLT(0x28))
 INST3( movupd,      "movupd"      , 0, IUM_WR, 0, 0, PCKDBL(0x11), BAD_CODE, PCKDBL(0x10))
 INST3( movups,      "movups"      , 0, IUM_WR, 0, 0, PCKFLT(0x11), BAD_CODE, PCKFLT(0x10))
+INST3( movhlps,     "movhlps"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, PCKFLT(0x12))
 INST3( movlhps,     "movlhps"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, PCKFLT(0x16))
+INST3( movmskps,    "movmskps"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, PCKFLT(0x50))
+INST3( unpckhps,    "unpckhps"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, PCKFLT(0x15))
+INST3( unpcklps,    "unpcklps"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, PCKFLT(0x14))
 
 INST3( shufps,      "shufps"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, PCKFLT(0xC6))
 INST3( shufpd,      "shufpd"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, PCKDBL(0xC6))
@@ -249,6 +253,12 @@ INST3( orps,   "orps",   0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKFLT(0x56))    /
 INST3( orpd,   "orpd",   0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKDBL(0x56))    // Or packed doubles
 INST3( haddpd, "haddpd", 0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKDBL(0x7C))    // Horizontal add packed doubles
 
+// SSE 2 approx arith
+INST3( rcpps,   "rcpps",   0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKFLT(0x53))    // Reciprocal of packed singles
+INST3( rcpss,   "rcpss",   0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, SSEFLT(0x53))    // Reciprocal of scalar single
+INST3( rsqrtps, "rsqrtps", 0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKFLT(0x52))    // Reciprocal Sqrt of packed singles
+INST3( rsqrtss, "rsqrtss", 0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, SSEFLT(0x52))    // Reciprocal Sqrt of scalar single
+
 // SSE2 conversions
 INST3( cvtpi2ps,  "cvtpi2ps",   0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKFLT(0x2A))   // cvt packed DWORDs to singles
 INST3( cvtsi2ss,  "cvtsi2ss",   0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, SSEFLT(0x2A))   // cvt DWORD to scalar single
@@ -273,6 +283,8 @@ INST3( cvttpd2dq, "cvttpd2dq",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKDBL(0xE6
 INST3( cvtdq2pd,  "cvtdq2pd",   0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, SSEFLT(0xE6))   // cvt packed DWORDs to doubles
 
 // SSE2 comparison instructions
+INST3( comiss,    "comiss",     0, IUM_RD, 0, 0, BAD_CODE, BAD_CODE, PCKFLT(0x2F))    // ordered compare singles
+INST3( comisd,    "comisd",     0, IUM_RD, 0, 0, BAD_CODE, BAD_CODE, PCKDBL(0x2F))    // ordered compare doubles
 INST3( ucomiss,   "ucomiss",    0, IUM_RD, 0, 0, BAD_CODE, BAD_CODE, PCKFLT(0x2E))    // unordered compare singles
 INST3( ucomisd,   "ucomisd",    0, IUM_RD, 0, 0, BAD_CODE, BAD_CODE, PCKDBL(0x2E))    // unordered compare doubles
 
@@ -280,6 +292,8 @@ INST3( ucomisd,   "ucomisd",    0, IUM_RD, 0, 0, BAD_CODE, BAD_CODE, PCKDBL(0x2E
 // Note that these instructions not only compare but also overwrite the first source.
 INST3( cmpps,     "cmpps",      0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKFLT(0xC2))    // compare packed singles
 INST3( cmppd,     "cmppd",      0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKDBL(0xC2))    // compare packed doubles
+INST3( cmpss,     "cmpss",      0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, SSEFLT(0xC2))    // compare scalar singles 
+INST3( cmpsd,     "cmpsd",      0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, SSEDBL(0xC2))    // compare scalar doubles
 
 //SSE2 packed integer operations
 INST3( paddb,       "paddb"       , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE,      PCKDBL(0xFC))   // Add packed byte integers

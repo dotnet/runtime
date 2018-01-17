@@ -4891,6 +4891,19 @@ void GenTree::VisitOperands(TVisitor visitor)
             return;
 #endif // FEATURE_SIMD
 
+#if FEATURE_HW_INTRINSICS
+        case GT_HWIntrinsic:
+            if ((this->AsHWIntrinsic()->gtOp1 != nullptr) && this->AsHWIntrinsic()->gtOp1->OperIsList())
+            {
+                this->AsHWIntrinsic()->gtOp1->VisitListOperands(visitor);
+            }
+            else
+            {
+                VisitBinOpOperands<TVisitor>(visitor);
+            }
+            return;
+#endif // FEATURE_HW_INTRINSICS
+
         // Special nodes
         case GT_CMPXCHG:
         {
