@@ -6609,6 +6609,7 @@ namespace System.Runtime.CompilerServices
     }
     public static partial class RuntimeFeature
     {
+        public const string PortablePdb = "PortablePdb";
 #if FEATURE_DEFAULT_INTERFACES
         public const string DefaultImplementationsOfInterfaces = "DefaultImplementationsOfInterfaces";
 #endif
