@@ -253,8 +253,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\Vector64.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\Vector64DebugView.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\Vector128.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\Vector128DebugView.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\Vector256.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\Vector256DebugView.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Enums.cs" />
