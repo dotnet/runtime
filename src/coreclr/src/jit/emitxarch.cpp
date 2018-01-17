@@ -3929,9 +3929,7 @@ void emitter::emitIns_R_A(instruction ins, emitAttr attr, regNumber reg1, GenTre
 void emitter::emitIns_R_A_I(instruction ins, emitAttr attr, regNumber reg1, GenTreeIndir* indir, int ival)
 {
     noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), reg1));
-
     assert(IsSSEOrAVXInstruction(ins));
-    assert(IsThreeOperandAVXInstruction(ins));
 
     ssize_t    offs = indir->Offset();
     instrDesc* id   = emitNewInstrAmdCns(attr, offs, ival);
@@ -3939,7 +3937,7 @@ void emitter::emitIns_R_A_I(instruction ins, emitAttr attr, regNumber reg1, GenT
     id->idIns(ins);
     id->idReg1(reg1);
 
-    emitHandleMemOp(indir, id, IF_RWR_ARD_CNS, ins);
+    emitHandleMemOp(indir, id, IF_RRW_ARD_CNS, ins);
 
     // Plus one for the 1-byte immediate (ival)
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins)) + emitGetVexPrefixAdjustedSize(ins, attr, insCodeRM(ins)) + 1;
@@ -3952,22 +3950,20 @@ void emitter::emitIns_R_A_I(instruction ins, emitAttr attr, regNumber reg1, GenT
 void emitter::emitIns_R_C_I(
     instruction ins, emitAttr attr, regNumber reg1, CORINFO_FIELD_HANDLE fldHnd, int offs, int ival)
 {
-    noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), reg1));
-
-    assert(IsSSEOrAVXInstruction(ins));
-    assert(IsThreeOperandAVXInstruction(ins));
-
     // Static always need relocs
     if (!jitStaticFldIsGlobAddr(fldHnd))
     {
         attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
     }
 
+    noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), reg1));
+    assert(IsSSEOrAVXInstruction(ins));
+
     instrDesc*     id = emitNewInstrCnsDsp(attr, ival, offs);
     UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeRM(ins)) + emitGetVexPrefixAdjustedSize(ins, attr, insCodeRM(ins)) + 1;
 
     id->idIns(ins);
-    id->idInsFmt(IF_RWR_RRD_MRD_CNS);
+    id->idInsFmt(IF_RRW_MRD_CNS);
     id->idReg1(reg1);
     id->idAddr()->iiaFieldHnd = fldHnd;
 
@@ -3979,16 +3975,14 @@ void emitter::emitIns_R_C_I(
 void emitter::emitIns_R_S_I(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs, int ival)
 {
     noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), reg1));
-
     assert(IsSSEOrAVXInstruction(ins));
-    assert(IsThreeOperandAVXInstruction(ins));
 
     instrDesc*     id = emitNewInstrCns(attr, ival);
     UNATIVE_OFFSET sz =
         emitInsSizeSV(insCodeRM(ins), varx, offs) + emitGetVexPrefixAdjustedSize(ins, attr, insCodeRM(ins)) + 1;
 
     id->idIns(ins);
-    id->idInsFmt(IF_RWR_RRD_SRD_CNS);
+    id->idInsFmt(IF_RRW_SRD_CNS);
     id->idReg1(reg1);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
 
@@ -5190,7 +5184,7 @@ void emitter::emitIns_SIMD_R_R_A(
         {
             emitIns_R_R(INS_movaps, emitTypeSize(simdtype), reg, reg1);
         }
-        emitIns_R_A(ins, emitTypeSize(simdtype), reg, indir, IF_RWR_ARD);
+        emitIns_R_A(ins, emitTypeSize(simdtype), reg, indir, IF_RRW_ARD);
     }
 }
 
@@ -7341,6 +7335,7 @@ void emitter::emitDispIns(
             emitDispAddrMode(id);
             break;
 
+        case IF_RRW_ARD_CNS:
         case IF_RWR_ARD_CNS:
         {
             printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
@@ -7531,6 +7526,7 @@ void emitter::emitDispIns(
 
             break;
 
+        case IF_RRW_SRD_CNS:
         case IF_RWR_SRD_CNS:
         {
             printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
@@ -7707,6 +7703,7 @@ void emitter::emitDispIns(
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
             break;
 
+        case IF_RRW_MRD_CNS:
         case IF_RWR_MRD_CNS:
         {
             printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
@@ -11750,6 +11747,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_RRW_ARD_CNS:
+        case IF_RWR_ARD_CNS:
             emitGetInsAmdCns(id, &cnsVal);
             code = insCodeRM(ins);
 
@@ -11779,7 +11777,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             sz      = emitSizeOfInsDsc(id);
             break;
 
-        case IF_RWR_ARD_CNS:
         case IF_RWR_RRD_ARD_CNS:
         {
             emitGetInsAmdCns(id, &cnsVal);
@@ -11876,6 +11873,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_RRW_SRD_CNS:
+        case IF_RWR_SRD_CNS:
             emitGetInsCns(id, &cnsVal);
             code = insCodeRM(ins);
 
@@ -11941,7 +11939,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             break;
 
-        case IF_RWR_SRD_CNS:
         case IF_RWR_RRD_SRD_CNS:
         {
             emitGetInsCns(id, &cnsVal);
@@ -12021,6 +12018,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_RRW_MRD_CNS:
+        case IF_RWR_MRD_CNS:
             emitGetInsDcmCns(id, &cnsVal);
             code = insCodeRM(ins);
 
@@ -12085,7 +12083,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             sz = emitSizeOfInsDsc(id);
             break;
 
-        case IF_RWR_MRD_CNS:
         case IF_RWR_RRD_MRD_CNS:
         {
             emitGetInsCns(id, &cnsVal);
