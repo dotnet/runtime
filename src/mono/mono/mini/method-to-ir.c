@@ -4150,6 +4150,93 @@ mono_emit_load_got_addr (MonoCompile *cfg)
 static int inline_limit;
 static gboolean inline_limit_inited;
 
+typedef struct {
+	int method_il_size;
+	int budget;
+	int max_depth;
+} ExtraInliningData;
+
+#define INLINING_DEFAULT_MAX_DEPTH 10
+#define INLINING_DEFAULT_IL_LIMIT INLINE_LENGTH_LIMIT
+#define INLINING_DEFAULT_BUDGET 60
+
+static void
+update_inlining_heuristics (MonoCompile *cfg, MonoSimpleBasicBlock *bb)
+{
+	static gboolean better_inlining, better_inlining_inited;
+	if (!better_inlining_inited) {
+		char *env = g_getenv ("MONO_DISABLE_ADV_INLINING");
+		if (env) {
+			g_warning ("Advanced inlining heuristics disabled");
+			better_inlining = FALSE;
+		} else {
+			better_inlining = TRUE;
+		}
+		g_free (env);
+		better_inlining_inited = TRUE;
+	}
+
+	if (!better_inlining)
+		return;
+
+	//TODO We only use the top level method decision for now (it would be nice to cascade it and that would be better served by a block-freq inliner)
+	if (cfg->inlined_method)
+		return;
+
+	if (!cfg->extra_inlining_data)
+		cfg->extra_inlining_data = mono_mempool_alloc0 (cfg->mempool, sizeof (ExtraInliningData));
+
+
+	ExtraInliningData *data = cfg->extra_inlining_data;
+
+	//FIXME allow this to be tweaked by an env var
+	if (bb->inside_catch || bb->end_in_throw) {
+		data->method_il_size = 10;
+		data->budget = 40;
+		data->max_depth = 2;
+	} else if (bb->loop_idx) {
+		data->method_il_size = 40;
+		data->budget = 200;
+		data->max_depth = 15;
+	} else {
+		data->method_il_size = INLINING_DEFAULT_IL_LIMIT;
+		data->budget = INLINING_DEFAULT_BUDGET;
+		data->max_depth = INLINING_DEFAULT_MAX_DEPTH;
+	}
+
+	if (cfg->verbose_level > 2)
+		printf (">Updated inlinig limits: il size: %d budget: %d max depth: %d\n", data->method_il_size, data->budget, data->max_depth);
+	
+}
+
+static void
+init_inlining_heuristics (MonoCompile *cfg, MonoSimpleBasicBlock *bb)
+{
+	update_inlining_heuristics (cfg, bb);
+}
+
+static int
+get_inlining_max_depth (MonoCompile *cfg)
+{
+	ExtraInliningData *data = cfg->extra_inlining_data;
+	return data ? data->max_depth : INLINING_DEFAULT_MAX_DEPTH;
+}
+
+static int
+get_inlining_method_il_limit (MonoCompile *cfg)
+{
+	ExtraInliningData *data = cfg->extra_inlining_data;
+	return data ? data->method_il_size : INLINING_DEFAULT_IL_LIMIT;
+}
+
+static int
+get_inlining_cost_limit (MonoCompile *cfg)
+{
+	//TODO this is a dumb policy, budgeting should be allocated in a smarter way than this.
+	ExtraInliningData *data = cfg->extra_inlining_data;
+	return data ? data->budget : INLINING_DEFAULT_BUDGET;
+}
+
 static gboolean
 mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 {
@@ -4165,7 +4252,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	if (cfg->gsharedvt)
 		return FALSE;
 
-	if (cfg->inline_depth > 10)
+	if (cfg->inline_depth > get_inlining_max_depth (cfg))
 		return FALSE;
 
 	if (!mono_method_get_header_summary (method, &header))
@@ -4189,7 +4276,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 			inline_limit = INLINE_LENGTH_LIMIT;
 		inline_limit_inited = TRUE;
 	}
-	if (header.code_size >= inline_limit && !(method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING))
+	if (header.code_size >= get_inlining_method_il_limit (cfg) && !(method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING))
 		return FALSE;
 
 	/*
@@ -6113,7 +6200,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	cfg->disable_inline = prev_disable_inline;
 	cfg->inline_depth --;
 
-	if ((costs >= 0 && costs < 60) || inline_always || (costs >= 0 && (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING))) {
+	if ((costs >= 0 && costs < get_inlining_cost_limit (cfg)) || inline_always || (costs >= 0 && (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING))) {
 		if (cfg->verbose_level > 2)
 			printf ("INLINE END %s -> %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
 
@@ -7628,6 +7715,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		original_bb = bb = mono_basic_block_split (method, &cfg->error, header);
 		CHECK_CFG_ERROR;
 		g_assert (bb);
+		init_inlining_heuristics (cfg, bb);
 	}
 
 	/* we use a spare stack slot in SWITCH and NEWOBJ and others */
@@ -7687,8 +7775,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		if (skip_dead_blocks) {
 			int ip_offset = ip - header->code;
 
-			if (ip_offset == bb->end)
+			if (ip_offset == bb->end) {
 				bb = bb->next;
+				update_inlining_heuristics (cfg, bb);
+			}
 
 			if (bb->dead) {
 				int op_size = mono_opcode_size (ip, end);

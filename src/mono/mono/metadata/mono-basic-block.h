@@ -20,6 +20,18 @@ struct _MonoSimpleBasicBlock {
 	int start, end;
 	unsigned colour   : 1;
 	unsigned dead     : 1;
+	unsigned end_in_throw : 1;
+	unsigned end_in_ret : 1;
+	unsigned inside_try : 1;
+	unsigned inside_catch : 1;
+	unsigned inside_finally : 1;
+
+	//loop detection
+	unsigned on_stack : 1;
+	int index;
+	int lowlink;
+	int loop_idx;
+
 };
 
 MonoSimpleBasicBlock*

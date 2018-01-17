@@ -1300,6 +1300,7 @@ typedef struct {
 	MonoInst        *this_arg;
 
 	MonoBackend *backend;
+	void *extra_inlining_data;
 
 	/* 
 	 * This variable represents the hidden argument holding the vtype
