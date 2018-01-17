@@ -1759,6 +1759,22 @@ GetFileAttributesExW(
         FILEUnixTimeToFileTime( stat_data.st_mtime,
                                 ST_MTIME_NSEC(&stat_data) );
 
+    /* if Unix mtime is greater than atime, return mtime
+       as the last access time */
+    if (CompareFileTime(&attr_data->ftLastAccessTime,
+                        &attr_data->ftLastWriteTime) < 0)
+    {
+         attr_data->ftLastAccessTime = attr_data->ftLastWriteTime;
+    }
+
+    /* if Unix ctime is greater than mtime, return mtime
+       as the create time */
+    if (CompareFileTime(&attr_data->ftLastWriteTime,
+                        &attr_data->ftCreationTime) < 0)
+    {
+         attr_data->ftCreationTime = attr_data->ftLastWriteTime;
+    }
+
     /* Get the file size. GetFileSize is not used because it gets the
        size of an already-open file */
     attr_data->nFileSizeLow = (DWORD) stat_data.st_size;
@@ -4450,6 +4466,22 @@ GetFileInformationByHandle(
     lpFileInformation->ftLastWriteTime =
         FILEUnixTimeToFileTime( stat_data.st_mtime,
                                 ST_MTIME_NSEC(&stat_data) );
+
+    /* if Unix mtime is greater than atime, return mtime
+       as the last access time */
+    if (CompareFileTime(&lpFileInformation->ftLastAccessTime,
+                        &lpFileInformation->ftLastWriteTime) < 0)
+    {
+         lpFileInformation->ftLastAccessTime = lpFileInformation->ftLastWriteTime;
+    }
+
+    /* if Unix ctime is greater than mtime, return mtime
+       as the create time */
+    if (CompareFileTime(&lpFileInformation->ftLastWriteTime,
+                        &lpFileInformation->ftCreationTime) < 0)
+    {
+         lpFileInformation->ftCreationTime = lpFileInformation->ftLastWriteTime;
+    }
 
     lpFileInformation->dwVolumeSerialNumber = stat_data.st_dev;
 

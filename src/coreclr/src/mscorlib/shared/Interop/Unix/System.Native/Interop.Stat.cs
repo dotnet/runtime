@@ -24,9 +24,13 @@ internal static partial class Interop
             internal uint Gid;
             internal long Size;
             internal long ATime;
+            internal long ATimeNsec;
             internal long MTime;
+            internal long MTimeNsec;
             internal long CTime;
+            internal long CTimeNsec;
             internal long BirthTime;
+            internal long BirthTimeNsec;
             internal long Dev;
             internal long Ino;
         }
@@ -49,13 +53,13 @@ internal static partial class Interop
             HasBirthTime = 1,
         }
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FStat", SetLastError = true)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FStat2", SetLastError = true)]
         internal static extern int FStat(SafeFileHandle fd, out FileStatus output);
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Stat", SetLastError = true)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Stat2", SetLastError = true)]
         internal static extern int Stat(string path, out FileStatus output);
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_LStat", SetLastError = true)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_LStat2", SetLastError = true)]
         internal static extern int LStat(string path, out FileStatus output);
     }
 }
