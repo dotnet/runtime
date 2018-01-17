@@ -518,7 +518,6 @@ AC_CHECK_HEADER(zlib.h, [have_zlib=yes], [have_zlib=no])
 if test x$have_zlib = xyes; then
    AC_TRY_COMPILE([#include <zlib.h>], [
    #if defined(ZLIB_VERNUM) && (ZLIB_VERNUM >= 0x1230)
-   return 0;
    #else
    #error No good zlib found
    #endif
@@ -616,7 +615,6 @@ if test x$platform_android = xyes; then
 					#include <android/versioning.h>
 				],[
 					#if __ANDROID_API_O__ == 26 && defined(__INTRODUCED_IN)
-						return 0
 					#else
 						#error __ANDROID_API_O__ != 26 or the __INTRODUCED_IN macro not defined
 					#endif
@@ -657,7 +655,6 @@ AC_CACHE_CHECK([for clang],
 		#else
 		#error "FAILED"
 		#endif
-		return 0;
 	],
 	[mono_cv_clang=yes],
 	[mono_cv_clang=no],
@@ -693,7 +690,6 @@ if test x"$GCC" = xyes; then
 		CFLAGS="$CFLAGS -Wunused-but-set-variable -Werror"
 		AC_MSG_CHECKING(for -Wno-unused-but-set-variable option to gcc)
 		AC_TRY_COMPILE([],[
-				return 0;
 		], [
 		   AC_MSG_RESULT(yes)
 		   CFLAGS="$ORIG_CFLAGS -Wno-unused-but-set-variable"
@@ -864,7 +860,6 @@ if test "x$with_xen_opt" = "xyes" -a "x$mono_cv_clang" = "xno"; then
 	CFLAGS="$CFLAGS -mno-tls-direct-seg-refs"
 	AC_MSG_CHECKING(for -mno-tls-direct-seg-refs option to gcc)
 	AC_TRY_COMPILE([], [
-		return 0;
 	], [
 	   AC_MSG_RESULT(yes)
 	   # Pass it to libgc as well
@@ -1691,7 +1686,6 @@ if test x$host_win32 = xno; then
 	AC_TRY_COMPILE([#include <sched.h>], [
             int mask = 1; 
             sched_setaffinity(0, &mask);
-			return 0;
 	], [
 		# Yes, we have it...
 		AC_MSG_RESULT(yes)
@@ -3268,7 +3262,6 @@ case "$host" in
 		#if _MIPS_SIM != _ABIN32
 		#error Not mips n32
 		#endif
-		return 0;
 		],[
 		AC_MSG_RESULT(yes)
 		sizeof_register=8
@@ -3735,7 +3728,6 @@ if test "x$target_mach" = "xyes"; then
        #if TARGET_IPHONE_SIMULATOR == 1 || TARGET_OS_IPHONE == 1
        #error fail this for ios
        #endif
-       return 0;
        ], [
 	   	  AC_DEFINE(TARGET_OSX,1,[The JIT/AOT targets OSX])
           CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DTARGET_OSX"
@@ -4133,7 +4125,6 @@ if test ${TARGET} = ARM; then
 			#ifndef __ARM_PCS_VFP
 			#error "Float ABI is not 'hard'"
 			#endif
-			return 0;
 		], [
 			fpu=VFP_HARD
 		], [
@@ -4147,7 +4138,6 @@ if test ${TARGET} = ARM; then
 			#ifdef __SOFTFP__
 			#error "Float ABI is not 'softfp'"
 			#endif
-			return 0;
 		], [
 			fpu=VFP
 		], [
@@ -4172,7 +4162,6 @@ if test ${TARGET} = ARM; then
 		#if !defined(__ARM_ARCH_5T__) && !defined(__ARM_ARCH_5TE__) && !defined(__ARM_ARCH_5TEJ__)
 		#error Not on ARM v5.
 		#endif
-		return 0;
 	], [
 		arm_v5=yes
 
@@ -4183,7 +4172,6 @@ if test ${TARGET} = ARM; then
 		#if !defined(__ARM_ARCH_6J__) && !defined(__ARM_ARCH_6ZK__) && !defined(__ARM_ARCH_6K__) && !defined(__ARM_ARCH_6T2__) && !defined(__ARM_ARCH_6M__)
 		#error Not on ARM v6.
 		#endif
-		return 0;
 	], [
 		arm_v5=yes
 		arm_v6=yes
@@ -4195,7 +4183,6 @@ if test ${TARGET} = ARM; then
 		#if !defined(__ARM_ARCH_7A__) && !defined(__ARM_ARCH_7R__) && !defined(__ARM_ARCH_7EM__) && !defined(__ARM_ARCH_7M__) && !defined(__ARM_ARCH_7S__)
 		#error Not on ARM v7.
 		#endif
-		return 0;
 	], [
 		arm_v5=yes
 		arm_v6=yes
