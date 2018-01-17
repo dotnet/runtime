@@ -663,7 +663,7 @@ namespace Mono.Linker.Steps {
 			MarkSecurityDeclarations (type);
 
 			if (IsMulticastDelegate (type)) {
-				MarkMethodCollection (type.Methods);
+				MarkMulticastDelegate (type);
 			}
 
 			if (IsSerializable (type))
@@ -1104,6 +1104,11 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
+		protected virtual void MarkMulticastDelegate (TypeDefinition type)
+		{
+			MarkMethodCollection (type.Methods);
+		}
+
 		protected TypeDefinition ResolveTypeDefinition (TypeReference type)
 		{
 			TypeDefinition td = type as TypeDefinition;
@@ -1541,7 +1546,7 @@ namespace Mono.Linker.Steps {
 			MarkCustomAttributes (prop);
 		}
 
-		protected void MarkEvent (EventDefinition evt)
+		protected virtual void MarkEvent (EventDefinition evt)
 		{
 			MarkCustomAttributes (evt);
 			MarkMethodIfNotNull (evt.AddMethod);
