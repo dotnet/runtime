@@ -16,8 +16,8 @@
   <ItemGroup>
     <Compile Include="..\..\System.Diagnostics.Tracing\src\System\Diagnostics\Tracing\EventCounter.cs" />
     <Compile Include="*.cs" />
-    <Compile Include="..\shared\*.cs" />
-    <Compile Include="..\shared\TraceLogging\*.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\Tracing\*.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\Tracing\TraceLogging\*.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
