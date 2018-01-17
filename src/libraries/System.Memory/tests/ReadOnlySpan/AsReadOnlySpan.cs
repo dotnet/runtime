@@ -46,7 +46,7 @@ namespace System.SpanTests
         {
             int[] empty = Array.Empty<int>();
             ReadOnlySpan<int> span = empty.AsReadOnlySpan();
-            span.Validate();
+            span.ValidateNonNullEmpty();
         }
 
         [Fact]
@@ -86,12 +86,12 @@ namespace System.SpanTests
             int[] empty = Array.Empty<int>();
             ArraySegment<int> emptySegment = new ArraySegment<int>(empty);
             ReadOnlySpan<int> span = emptySegment.AsReadOnlySpan();
-            span.Validate();
+            span.ValidateNonNullEmpty();
 
             int[] a = { 19, -17 };
             ArraySegment<int> segmentInt = new ArraySegment<int>(a, 1, 0);
             ReadOnlySpan<int> spanInt = segmentInt.AsReadOnlySpan();
-            spanInt.Validate();
+            spanInt.ValidateNonNullEmpty();
         }
 
         [Fact]
@@ -108,8 +108,7 @@ namespace System.SpanTests
         {
             string s = "";
             ReadOnlySpan<char> span = s.AsReadOnlySpan();
-            char[] expected = s.ToCharArray();
-            span.Validate(expected);
+            span.ValidateNonNullEmpty();
         }
 
         [Fact]

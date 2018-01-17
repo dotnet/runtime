@@ -11,7 +11,7 @@ namespace System.SpanTests
     public static partial class ReadOnlySpanTests
     {
         [Fact]
-        public static void PortableCastUIntToUShort()
+        public static void NonPortableCastUIntToUShort()
         {
             uint[] a = { 0x44332211, 0x88776655 };
             ReadOnlySpan<uint> span = new ReadOnlySpan<uint>(a);
@@ -22,14 +22,34 @@ namespace System.SpanTests
         }
 
         [Fact]
-        public static void PortableCastToTypeContainsReferences()
+        public static void NonPortableCastShortToLong()
+        {
+            short[] a = { 0x1234, 0x2345, 0x3456, 0x4567, 0x5678 };
+            ReadOnlySpan<short> span = new ReadOnlySpan<short>(a);
+            ReadOnlySpan<long> asLong = span.NonPortableCast<short, long>();
+
+            Assert.True(Unsafe.AreSame<long>(ref Unsafe.As<short, long>(ref MemoryMarshal.GetReference(span)), ref MemoryMarshal.GetReference(asLong)));
+            asLong.Validate<long>(0x4567345623451234);
+        }
+
+        [Fact]
+        public static unsafe void NonPortableCastOverflow()
+        {
+            ReadOnlySpan<TestHelpers.TestStructExplicit> span = new ReadOnlySpan<TestHelpers.TestStructExplicit>(null, Int32.MaxValue);
+
+            TestHelpers.AssertThrows<OverflowException, TestHelpers.TestStructExplicit>(span, (_span) => _span.NonPortableCast<TestHelpers.TestStructExplicit, byte>().DontBox());
+            TestHelpers.AssertThrows<OverflowException, TestHelpers.TestStructExplicit>(span, (_span) => _span.NonPortableCast<TestHelpers.TestStructExplicit, ulong>().DontBox());
+        }
+
+        [Fact]
+        public static void NonPortableCastToTypeContainsReferences()
         {
             ReadOnlySpan<uint> span = new ReadOnlySpan<uint>(Array.Empty<uint>());
             TestHelpers.AssertThrows<ArgumentException, uint>(span, (_span) => _span.NonPortableCast<uint, StructWithReferences>().DontBox());
         }
 
         [Fact]
-        public static void PortableCastFromTypeContainsReferences()
+        public static void NonPortableCastFromTypeContainsReferences()
         {
             ReadOnlySpan<StructWithReferences> span = new ReadOnlySpan<StructWithReferences>(Array.Empty<StructWithReferences>());
             TestHelpers.AssertThrows<ArgumentException, StructWithReferences>(span, (_span) => _span.NonPortableCast<StructWithReferences, uint>().DontBox());
