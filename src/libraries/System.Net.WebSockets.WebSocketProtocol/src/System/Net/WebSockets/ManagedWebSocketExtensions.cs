@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -54,8 +55,7 @@ namespace System.Net.WebSockets
     {
         internal static unsafe int ToInt32(ReadOnlySpan<byte> value)
         {
-            if (value.Length < sizeof(int))
-                throw new ArgumentOutOfRangeException(nameof(value));
+            Debug.Assert(value.Length >= sizeof(int));
             return Unsafe.ReadUnaligned<int>(ref MemoryMarshal.GetReference(value));
         }
     }
