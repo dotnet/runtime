@@ -146,6 +146,7 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_pminub:
         case INS_pminud:
         case INS_pminuw:
+        case INS_pmuldq:
         case INS_pmulld:
         case INS_pmullw:
         case INS_pmuludq:
@@ -4227,6 +4228,43 @@ void emitter::emitIns_R_R_S_I(
     emitCurIGsize += sz;
 }
 
+static bool isAvxBlendv(instruction ins)
+{
+    return ins == INS_vblendvps || ins == INS_vblendvpd || ins == INS_vpblendvb;
+}
+
+static bool isSse41Blendv(instruction ins)
+{
+    return ins == INS_blendvps || ins == INS_blendvpd || ins == INS_pblendvb;
+}
+
+void emitter::emitIns_R_R_R_R(
+    instruction ins, emitAttr attr, regNumber targetReg, regNumber reg1, regNumber reg2, regNumber reg3)
+{
+    assert(isAvxBlendv(ins));
+    assert(UseVEXEncoding());
+    // Currently vex prefix only use three bytes mode.
+    // size = vex + opcode + ModR/M + 1-byte-cns(Reg) = 3 + 1 + 1 + 1 = 6
+    // TODO-XArch-CQ: We should create function which can calculate all kinds of AVX instructions size in future
+    UNATIVE_OFFSET sz = 6;
+
+    // AVX/AVX2 supports 4-reg format for vblendvps/vblendvpd/vpblendvb,
+    // which encodes the fourth register into imm8[7:4]
+    int ival = (reg3 - XMMBASE) << 4; // convert reg3 to ival
+
+    instrDesc* id = emitNewInstrCns(attr, ival);
+    id->idIns(ins);
+    id->idInsFmt(IF_RWR_RRD_RRD_RRD);
+    id->idReg1(targetReg);
+    id->idReg2(reg1);
+    id->idReg3(reg2);
+    id->idReg4(reg3);
+
+    id->idCodeSize(sz);
+    dispIns(id);
+    emitCurIGsize += sz;
+}
+
 /*****************************************************************************
  *
  *  Add an instruction with a register + static member operands.
@@ -5166,23 +5204,17 @@ void emitter::emitIns_AX_R(instruction ins, emitAttr attr, regNumber ireg, regNu
 }
 
 #if FEATURE_HW_INTRINSICS
-void emitter::emitIns_SIMD_R_R(instruction ins, regNumber reg, regNumber reg1, var_types simdtype)
-{
-    emitIns_R_R(ins, emitTypeSize(simdtype), reg, reg1);
-}
-
-void emitter::emitIns_SIMD_R_R_A(
-    instruction ins, regNumber reg, regNumber reg1, GenTreeIndir* indir, var_types simdtype)
+void emitter::emitIns_SIMD_R_R_A(instruction ins, emitAttr attr, regNumber reg, regNumber reg1, GenTreeIndir* indir)
 {
     if (UseVEXEncoding())
     {
-        emitIns_R_R_A(ins, emitTypeSize(simdtype), reg, reg1, indir, IF_RWR_RRD_ARD);
+        emitIns_R_R_A(ins, attr, reg, reg1, indir, IF_RWR_RRD_ARD);
     }
     else
     {
         if (reg1 != reg)
         {
-            emitIns_R_R(INS_movaps, emitTypeSize(simdtype), reg, reg1);
+            emitIns_R_R(INS_movaps, attr, reg, reg1);
         }
         emitIns_R_A(ins, emitTypeSize(simdtype), reg, indir, IF_RRW_ARD);
     }
@@ -5205,51 +5237,90 @@ void emitter::emitIns_SIMD_R_R_AR(instruction ins, regNumber reg, regNumber reg1
 }
 
 void emitter::emitIns_SIMD_R_R_C(
-    instruction ins, regNumber reg, regNumber reg1, CORINFO_FIELD_HANDLE fldHnd, int offs, var_types simdtype)
+    instruction ins, emitAttr attr, regNumber reg, regNumber reg1, CORINFO_FIELD_HANDLE fldHnd, int offs)
 {
     if (UseVEXEncoding())
     {
-        emitIns_R_R_C(ins, emitTypeSize(simdtype), reg, reg1, fldHnd, offs);
+        emitIns_R_R_C(ins, attr, reg, reg1, fldHnd, offs);
     }
     else
     {
         if (reg1 != reg)
         {
-            emitIns_R_R(INS_movaps, emitTypeSize(simdtype), reg, reg1);
+            emitIns_R_R(INS_movaps, attr, reg, reg1);
         }
-        emitIns_R_C(ins, emitTypeSize(simdtype), reg, fldHnd, offs);
+        emitIns_R_C(ins, attr, reg, fldHnd, offs);
     }
 }
 
-void emitter::emitIns_SIMD_R_R_R(instruction ins, regNumber reg, regNumber reg1, regNumber reg2, var_types simdtype)
+void emitter::emitIns_SIMD_R_R_R(instruction ins, emitAttr attr, regNumber reg, regNumber reg1, regNumber reg2)
 {
     if (UseVEXEncoding())
     {
-        emitIns_R_R_R(ins, emitTypeSize(simdtype), reg, reg1, reg2);
+        emitIns_R_R_R(ins, attr, reg, reg1, reg2);
     }
     else
     {
         if (reg1 != reg)
         {
-            emitIns_R_R(INS_movaps, emitTypeSize(simdtype), reg, reg1);
+            emitIns_R_R(INS_movaps, attr, reg, reg1);
         }
-        emitIns_R_R(ins, emitTypeSize(simdtype), reg, reg2);
+        emitIns_R_R(ins, attr, reg, reg2);
     }
 }
 
-void emitter::emitIns_SIMD_R_R_S(instruction ins, regNumber reg, regNumber reg1, int varx, int offs, var_types simdtype)
+void emitter::emitIns_SIMD_R_R_R_R(
+    instruction ins, emitAttr attr, regNumber reg, regNumber reg1, regNumber reg2, regNumber reg3)
+{
+    assert(isAvxBlendv(ins) || isSse41Blendv(ins));
+    if (UseVEXEncoding())
+    {
+        // convert SSE encoding of SSE4.1 instructions to VEX encoding
+        switch (ins)
+        {
+            case INS_blendvps:
+                ins = INS_vblendvps;
+                break;
+            case INS_blendvpd:
+                ins = INS_vblendvpd;
+                break;
+            case INS_pblendvb:
+                ins = INS_vpblendvb;
+                break;
+            default:
+                break;
+        }
+        emitIns_R_R_R_R(ins, attr, reg, reg1, reg2, reg3);
+    }
+    else
+    {
+        assert(isSse41Blendv(ins));
+        // SSE4.1 blendv* hardcode the mask vector (op3) in XMM0
+        if (reg3 != REG_XMM0)
+        {
+            emitIns_R_R(INS_movaps, attr, REG_XMM0, reg3);
+        }
+        if (reg1 != reg)
+        {
+            emitIns_R_R(INS_movaps, attr, reg, reg1);
+        }
+        emitIns_R_R(ins, attr, reg, reg2);
+    }
+}
+
+void emitter::emitIns_SIMD_R_R_S(instruction ins, emitAttr attr, regNumber reg, regNumber reg1, int varx, int offs)
 {
     if (UseVEXEncoding())
     {
-        emitIns_R_R_S(ins, emitTypeSize(simdtype), reg, reg1, varx, offs);
+        emitIns_R_R_S(ins, attr, reg, reg1, varx, offs);
     }
     else
     {
         if (reg1 != reg)
         {
-            emitIns_R_R(INS_movaps, emitTypeSize(simdtype), reg, reg1);
+            emitIns_R_R(INS_movaps, attr, reg, reg1);
         }
-        emitIns_R_S(ins, emitTypeSize(simdtype), reg, varx, offs);
+        emitIns_R_S(ins, attr, reg, varx, offs);
     }
 }
 
@@ -7652,6 +7723,14 @@ void emitter::emitDispIns(
             printf("%s, ", emitRegName(id->idReg3(), attr));
             val = emitGetInsSC(id);
             goto PRINT_CONSTANT;
+            break;
+        case IF_RWR_RRD_RRD_RRD:
+            assert(IsAVXOnlyInstruction(ins));
+            assert(UseVEXEncoding());
+            printf("%s, ", emitRegName(id->idReg1(), attr));
+            printf("%s, ", emitRegName(id->idReg2(), attr));
+            printf("%s, ", emitRegName(id->idReg3(), attr));
+            printf("%s", emitRegName(id->idReg4(), attr));
             break;
         case IF_RRW_RRW_CNS:
             printf("%s,", emitRegName(id->idReg1(), attr));
@@ -10304,7 +10383,7 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
 
     instruction ins = id->idIns();
     assert(IsAVXInstruction(ins));
-    assert(IsThreeOperandAVXInstruction(ins));
+    assert(IsThreeOperandAVXInstruction(ins) || isAvxBlendv(ins));
     regNumber targetReg = id->idReg1();
     regNumber src1      = id->idReg2();
     regNumber src2      = id->idReg3();
@@ -11570,6 +11649,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             sz  = emitSizeOfInsDsc(id);
             break;
         case IF_RWR_RRD_RRD_CNS:
+        case IF_RWR_RRD_RRD_RRD:
             dst = emitOutputRRR(dst, id);
             sz  = emitSizeOfInsDsc(id);
             dst += emitOutputByte(dst, emitGetInsSC(id));

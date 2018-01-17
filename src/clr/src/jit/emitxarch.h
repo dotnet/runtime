@@ -398,6 +398,8 @@ void emitIns_R_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber r
 
 void emitIns_R_R_S_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int varx, int offs, int ival);
 
+void emitIns_R_R_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3, regNumber reg4);
+
 void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
 
 void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
@@ -453,13 +455,7 @@ void emitIns_R_AX(instruction ins, emitAttr attr, regNumber ireg, regNumber reg,
 void emitIns_AX_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, unsigned mul, int disp);
 
 #if FEATURE_HW_INTRINSICS
-void emitIns_SIMD_R_R(instruction ins, regNumber reg, regNumber reg1, var_types simdtype);
-void emitIns_SIMD_R_R_A(instruction ins, regNumber reg, regNumber reg1, GenTreeIndir* indir, var_types simdtype);
 void emitIns_SIMD_R_R_AR(instruction ins, regNumber reg, regNumber reg1, regNumber base, var_types simdtype);
-void emitIns_SIMD_R_R_C(
-    instruction ins, regNumber reg, regNumber reg1, CORINFO_FIELD_HANDLE fldHnd, int offs, var_types simdtype);
-void emitIns_SIMD_R_R_R(instruction ins, regNumber reg, regNumber reg1, regNumber reg2, var_types simdtype);
-void emitIns_SIMD_R_R_S(instruction ins, regNumber reg, regNumber reg1, int varx, int offs, var_types simdtype);
 void emitIns_SIMD_R_R_A_I(
     instruction ins, regNumber reg, regNumber reg1, GenTreeIndir* indir, int ival, var_types simdtype);
 void emitIns_SIMD_R_R_C_I(instruction          ins,
@@ -472,6 +468,13 @@ void emitIns_SIMD_R_R_C_I(instruction          ins,
 void emitIns_SIMD_R_R_R_I(instruction ins, regNumber reg, regNumber reg1, regNumber reg2, int ival, var_types simdtype);
 void emitIns_SIMD_R_R_S_I(
     instruction ins, regNumber reg, regNumber reg1, int varx, int offs, int ival, var_types simdtype);
+void emitIns_SIMD_R_R_A(instruction ins, emitAttr attr, regNumber reg, regNumber reg1, GenTreeIndir* indir);
+void emitIns_SIMD_R_R_C(
+    instruction ins, emitAttr attr, regNumber reg, regNumber reg1, CORINFO_FIELD_HANDLE fldHnd, int offs);
+void emitIns_SIMD_R_R_S(instruction ins, emitAttr attr, regNumber reg, regNumber reg1, int varx, int offs);
+void emitIns_SIMD_R_R_R(instruction ins, emitAttr attr, regNumber reg, regNumber reg1, regNumber reg2);
+void emitIns_SIMD_R_R_R_R(
+    instruction ins, emitAttr attr, regNumber reg, regNumber reg1, regNumber reg2, regNumber reg3);
 #endif
 
 #if FEATURE_STACK_FP_X87

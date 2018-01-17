@@ -3042,11 +3042,11 @@ protected:
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
 
 #if FEATURE_HW_INTRINSICS
-    InstructionSet lookupHWIntrinsicISA(const char* className);
-    NamedIntrinsic lookupHWIntrinsic(const char* methodName, InstructionSet isa);
-    InstructionSet isaOfHWIntrinsic(NamedIntrinsic intrinsic);
-    bool isIntrinsicAnIsSupportedPropertyGetter(NamedIntrinsic intrinsic);
-    bool isFullyImplmentedISAClass(InstructionSet isa);
+    static InstructionSet lookupHWIntrinsicISA(const char* className);
+    static NamedIntrinsic lookupHWIntrinsic(const char* methodName, InstructionSet isa);
+    static InstructionSet isaOfHWIntrinsic(NamedIntrinsic intrinsic);
+    static bool isIntrinsicAnIsSupportedPropertyGetter(NamedIntrinsic intrinsic);
+    static bool isFullyImplmentedISAClass(InstructionSet isa);
 #ifdef _TARGET_XARCH_
     GenTree* impUnsupportedHWIntrinsic(unsigned              helper,
                                        CORINFO_METHOD_HANDLE method,
@@ -3119,7 +3119,12 @@ protected:
     bool compSupportsHWIntrinsic(InstructionSet isa);
     bool isScalarISA(InstructionSet isa);
     static int ivalOfHWIntrinsic(NamedIntrinsic intrinsic);
+    static int numArgsOfHWIntrinsic(NamedIntrinsic intrinsic);
     static instruction insOfHWIntrinsic(NamedIntrinsic intrinsic, var_types type);
+    static HWIntrinsicCategory categoryOfHWIntrinsic(NamedIntrinsic intrinsic);
+    static HWIntrinsicFlag flagOfHWIntrinsic(NamedIntrinsic intrinsic);
+    GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass);
+    GenTreeArgList* buildArgList(CORINFO_SIG_INFO* sig);
 #endif // _TARGET_XARCH_
 #endif // FEATURE_HW_INTRINSICS
     GenTreePtr impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
