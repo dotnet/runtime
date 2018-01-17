@@ -8,13 +8,20 @@
 
 struct HWIntrinsicInfo
 {
-    NamedIntrinsic intrinsicID;
-    const char*    intrinsicName;
-    InstructionSet isa;
-}
+    NamedIntrinsic      intrinsicID;
+    const char*         intrinsicName;
+    InstructionSet      isa;
+    int                 ival;
+    unsigned            simdSize;
+    int                 numArgs;
+    instruction         ins[10];
+    HWIntrinsicCategory category;
+    HWIntrinsicFlag     flag;
+};
 
-static const hwIntrinsicInfoArray[] = {
-#define HARDWARE_INTRINSIC(id, name, isa) {NI_##id, name, InstructionSet_##isa},
+static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
+#define HARDWARE_INTRINSIC(id, name, isa, ival, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+    {NI_##id, name, InstructionSet_##isa, ival, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag},
 #include "hwintrinsiclistxarch.h"
 };
 
@@ -153,64 +160,56 @@ InstructionSet Compiler::isaOfHWIntrinsic(NamedIntrinsic intrinsic)
 }
 
 //------------------------------------------------------------------------
-// ivalOfHWIntrinsic: get the imm8 value of the given intrinsic
+// ivalOfHWIntrinsic: get the imm8 value of this intrinsic from the hwIntrinsicInfoArray table
 //
 // Arguments:
 //    intrinsic -- id of the intrinsic function.
 //
 // Return Value:
-//     the imm8 value of the intrinsic, -1 for non-IMM intrinsics
+//     The imm8 value that is implicit for this intrinsic, or -1 for intrinsics that do not take an immediate, or for
+//     which the immediate is an explicit argument.
 //
 int Compiler::ivalOfHWIntrinsic(NamedIntrinsic intrinsic)
 {
     assert(intrinsic != NI_Illegal);
     assert(intrinsic > NI_HW_INTRINSIC_START && intrinsic < NI_HW_INTRINSIC_END);
+    return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].ival;
+}
 
-    switch (intrinsic)
-    {
-        case NI_SSE_CompareEqual:
-        case NI_SSE_CompareEqualScalar:
-            return 0;
+//------------------------------------------------------------------------
+// simdSizeOfHWIntrinsic: get the SIMD size of this intrinsic
+//
+// Arguments:
+//    intrinsic -- id of the intrinsic function.
+//
+// Return Value:
+//     the SIMD size of this intrinsic
+//         - from the hwIntrinsicInfoArray table if intrinsic has NO HW_Flag_UnfixedSIMDSize
+//         - TODO-XArch-NYI - from the signature if intrinsic has HW_Flag_UnfixedSIMDSize
+//
+// Note - this function is only used by the importer
+//        after importation (i.e., codegen), we can get the SIMD size from GenTreeHWIntrinsic IR
+static unsigned simdSizeOfHWIntrinsic(NamedIntrinsic intrinsic, CORINFO_SIG_INFO* sig)
+{
+    assert(intrinsic > NI_HW_INTRINSIC_START && intrinsic < NI_HW_INTRINSIC_END);
+    assert((hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].flag & HW_Flag_UnfixedSIMDSize) == 0);
+    return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].simdSize;
+}
 
-        case NI_SSE_CompareLessThan:
-        case NI_SSE_CompareLessThanScalar:
-        case NI_SSE_CompareNotGreaterThanOrEqual:
-        case NI_SSE_CompareNotGreaterThanOrEqualScalar:
-            return 1;
-
-        case NI_SSE_CompareLessThanOrEqual:
-        case NI_SSE_CompareLessThanOrEqualScalar:
-        case NI_SSE_CompareNotGreaterThan:
-        case NI_SSE_CompareNotGreaterThanScalar:
-            return 2;
-
-        case NI_SSE_CompareUnordered:
-        case NI_SSE_CompareUnorderedScalar:
-            return 3;
-
-        case NI_SSE_CompareNotEqual:
-        case NI_SSE_CompareNotEqualScalar:
-            return 4;
-
-        case NI_SSE_CompareGreaterThanOrEqual:
-        case NI_SSE_CompareGreaterThanOrEqualScalar:
-        case NI_SSE_CompareNotLessThan:
-        case NI_SSE_CompareNotLessThanScalar:
-            return 5;
-
-        case NI_SSE_CompareGreaterThan:
-        case NI_SSE_CompareGreaterThanScalar:
-        case NI_SSE_CompareNotLessThanOrEqual:
-        case NI_SSE_CompareNotLessThanOrEqualScalar:
-            return 6;
-
-        case NI_SSE_CompareOrdered:
-        case NI_SSE_CompareOrderedScalar:
-            return 7;
-
-        default:
-            return -1;
-    }
+//------------------------------------------------------------------------
+// numArgsOfHWIntrinsic: get the number of arguments
+//
+// Arguments:
+//    intrinsic -- id of the intrinsic function.
+//
+// Return Value:
+//     number of arguments
+//
+int Compiler::numArgsOfHWIntrinsic(NamedIntrinsic intrinsic)
+{
+    assert(intrinsic != NI_Illegal);
+    assert(intrinsic > NI_HW_INTRINSIC_START && intrinsic < NI_HW_INTRINSIC_END);
+    return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].numArgs;
 }
 
 //------------------------------------------------------------------------
@@ -228,200 +227,72 @@ instruction Compiler::insOfHWIntrinsic(NamedIntrinsic intrinsic, var_types type)
 {
     assert(intrinsic != NI_Illegal);
     assert(intrinsic > NI_HW_INTRINSIC_START && intrinsic < NI_HW_INTRINSIC_END);
-
-    switch (intrinsic)
-    {
-        case NI_SSE_Add:
-            return INS_addps;
-
-        case NI_SSE_AddScalar:
-            return INS_addss;
-
-        case NI_SSE_And:
-            return INS_andps;
-
-        case NI_SSE_AndNot:
-            return INS_andnps;
-
-        case NI_SSE_CompareEqual:
-        case NI_SSE_CompareGreaterThan:
-        case NI_SSE_CompareGreaterThanOrEqual:
-        case NI_SSE_CompareLessThan:
-        case NI_SSE_CompareLessThanOrEqual:
-        case NI_SSE_CompareNotEqual:
-        case NI_SSE_CompareNotGreaterThan:
-        case NI_SSE_CompareNotGreaterThanOrEqual:
-        case NI_SSE_CompareNotLessThan:
-        case NI_SSE_CompareNotLessThanOrEqual:
-        case NI_SSE_CompareOrdered:
-        case NI_SSE_CompareUnordered:
-            return INS_cmpps;
-
-        case NI_SSE_CompareEqualScalar:
-        case NI_SSE_CompareGreaterThanScalar:
-        case NI_SSE_CompareGreaterThanOrEqualScalar:
-        case NI_SSE_CompareLessThanScalar:
-        case NI_SSE_CompareLessThanOrEqualScalar:
-        case NI_SSE_CompareNotEqualScalar:
-        case NI_SSE_CompareNotGreaterThanScalar:
-        case NI_SSE_CompareNotGreaterThanOrEqualScalar:
-        case NI_SSE_CompareNotLessThanScalar:
-        case NI_SSE_CompareNotLessThanOrEqualScalar:
-        case NI_SSE_CompareOrderedScalar:
-        case NI_SSE_CompareUnorderedScalar:
-            return INS_cmpss;
-
-        case NI_SSE_CompareEqualOrderedScalar:
-        case NI_SSE_CompareGreaterThanOrderedScalar:
-        case NI_SSE_CompareGreaterThanOrEqualOrderedScalar:
-        case NI_SSE_CompareLessThanOrderedScalar:
-        case NI_SSE_CompareLessThanOrEqualOrderedScalar:
-        case NI_SSE_CompareNotEqualOrderedScalar:
-            return INS_comiss;
-
-        case NI_SSE_CompareEqualUnorderedScalar:
-        case NI_SSE_CompareGreaterThanUnorderedScalar:
-        case NI_SSE_CompareGreaterThanOrEqualUnorderedScalar:
-        case NI_SSE_CompareLessThanUnorderedScalar:
-        case NI_SSE_CompareLessThanOrEqualUnorderedScalar:
-        case NI_SSE_CompareNotEqualUnorderedScalar:
-            return INS_ucomiss;
-
-        case NI_SSE_ConvertToInt32:
-        case NI_SSE_ConvertToInt64:
-            return INS_cvtss2si;
-
-        case NI_SSE_ConvertToInt32WithTruncation:
-        case NI_SSE_ConvertToInt64WithTruncation:
-            return INS_cvttss2si;
-
-        case NI_SSE_ConvertToSingle:
-        case NI_SSE_LoadScalar:
-        case NI_SSE_MoveScalar:
-            return INS_movss;
-
-        case NI_SSE_ConvertToVector128SingleScalar:
-            return INS_cvtsi2ss;
-
-        case NI_SSE_Divide:
-            return INS_divps;
-
-        case NI_SSE_DivideScalar:
-            return INS_divss;
-
-        case NI_SSE_LoadAlignedVector128:
-        case NI_SSE_StaticCast:
-            return INS_movaps;
-
-        case NI_SSE_LoadHigh:
-            return INS_movhps;
-
-        case NI_SSE_LoadLow:
-            return INS_movlps;
-
-        case NI_SSE_LoadVector128:
-            return INS_movups;
-
-        case NI_SSE_Max:
-            return INS_maxps;
-
-        case NI_SSE_MaxScalar:
-            return INS_maxss;
-
-        case NI_SSE_Min:
-            return INS_minps;
-
-        case NI_SSE_MinScalar:
-            return INS_minss;
-
-        case NI_SSE_MoveHighToLow:
-            return INS_movhlps;
-
-        case NI_SSE_MoveLowToHigh:
-            return INS_movlhps;
-
-        case NI_SSE_MoveMask:
-            return INS_movmskps;
-
-        case NI_SSE_Multiply:
-            return INS_mulps;
-
-        case NI_SSE_MultiplyScalar:
-            return INS_mulss;
-
-        case NI_SSE_Or:
-            return INS_orps;
-
-        case NI_SSE_Reciprocal:
-            return INS_rcpps;
-
-        case NI_SSE_ReciprocalScalar:
-            return INS_rcpss;
-
-        case NI_SSE_ReciprocalSqrt:
-            return INS_rsqrtps;
-
-        case NI_SSE_ReciprocalSqrtScalar:
-            return INS_rsqrtss;
-
-        case NI_SSE_Sqrt:
-            return INS_sqrtps;
-
-        case NI_SSE_SqrtScalar:
-            return INS_sqrtss;
-
-        case NI_SSE_Subtract:
-            return INS_subps;
-
-        case NI_SSE_SubtractScalar:
-            return INS_subss;
-
-        case NI_SSE_UnpackHigh:
-            return INS_unpckhps;
-
-        case NI_SSE_UnpackLow:
-            return INS_unpcklps;
-
-        case NI_SSE_Xor:
-            return INS_xorps;
-
-        default:
-            return INS_invalid;
-    }
+    assert(type >= TYP_BYTE && type <= TYP_DOUBLE);
+    return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].ins[type - TYP_BYTE];
 }
 
 //------------------------------------------------------------------------
-// isIntrinsicAnIsSupportedPropertyGetter: return true if the intrinsic is "get_IsSupported"
+// categoryOfHWIntrinsic: get the category of the given intrinsic
 //
 // Arguments:
 //    intrinsic -- id of the intrinsic function.
 //
 // Return Value:
-//    true if the intrinsic is "get_IsSupported"
-//    Sometimes we need to specially treat "get_IsSupported"
-bool Compiler::isIntrinsicAnIsSupportedPropertyGetter(NamedIntrinsic intrinsic)
+//     the category of the given intrinsic
+//
+HWIntrinsicCategory Compiler::categoryOfHWIntrinsic(NamedIntrinsic intrinsic)
 {
-    switch (intrinsic)
+    assert(intrinsic != NI_Illegal);
+    assert(intrinsic > NI_HW_INTRINSIC_START && intrinsic < NI_HW_INTRINSIC_END);
+    return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].category;
+}
+
+//------------------------------------------------------------------------
+// HWIntrinsicFlag: get the flag of the given intrinsic
+//
+// Arguments:
+//    intrinsic -- id of the intrinsic function.
+//
+// Return Value:
+//     the flag of the given intrinsic
+//
+HWIntrinsicFlag Compiler::flagOfHWIntrinsic(NamedIntrinsic intrinsic)
+{
+    assert(intrinsic != NI_Illegal);
+    assert(intrinsic > NI_HW_INTRINSIC_START && intrinsic < NI_HW_INTRINSIC_END);
+    return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].flag;
+}
+
+//------------------------------------------------------------------------
+// getArgForHWIntrinsic: get the argument from the stack and match  the signature
+//
+// Arguments:
+//    argType   -- the required type of argument
+//    argClass  -- the class handle of argType
+//
+// Return Value:
+//     get the argument at the given index from the stack and match  the signature
+//
+GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass)
+{
+    GenTree* arg = nullptr;
+    if (argType == TYP_STRUCT)
     {
-        case NI_SSE_IsSupported:
-        case NI_SSE2_IsSupported:
-        case NI_SSE3_IsSupported:
-        case NI_SSSE3_IsSupported:
-        case NI_SSE41_IsSupported:
-        case NI_SSE42_IsSupported:
-        case NI_AVX_IsSupported:
-        case NI_AVX2_IsSupported:
-        case NI_AES_IsSupported:
-        case NI_BMI1_IsSupported:
-        case NI_BMI2_IsSupported:
-        case NI_FMA_IsSupported:
-        case NI_LZCNT_IsSupported:
-        case NI_PCLMULQDQ_IsSupported:
-        case NI_POPCNT_IsSupported:
-            return true;
-        default:
-            return false;
+        unsigned int argSizeBytes;
+        var_types    base = getBaseTypeAndSizeOfSIMDType(argClass, &argSizeBytes);
+        argType           = getSIMDTypeForSize(argSizeBytes);
+        assert(argType == TYP_SIMD32 || argType == TYP_SIMD16);
+        arg = impSIMDPopStack(argType);
+        assert(arg->TypeGet() == TYP_SIMD16 || arg->TypeGet() == TYP_SIMD32);
     }
+    else
+    {
+        assert(varTypeIsArithmetic(argType));
+        arg = impPopStack().val;
+        assert(varTypeIsArithmetic(arg->TypeGet()));
+        assert(genTypeSize(argType) <= genTypeSize(arg->TypeGet()));
+    }
+    return arg;
 }
 
 //------------------------------------------------------------------------
@@ -503,6 +374,15 @@ bool Compiler::compSupportsHWIntrinsic(InstructionSet isa)
                                                     isFullyImplmentedISAClass(isa));
 }
 
+static bool isTypeSupportedForIntrinsic(var_types type)
+{
+#ifdef _TARGET_X86_
+    return !varTypeIsLong(type);
+#else
+    return true;
+#endif
+}
+
 //------------------------------------------------------------------------
 // impUnsupportedHWIntrinsic: returns a node for an unsupported HWIntrinsic
 //
@@ -548,8 +428,24 @@ GenTree* Compiler::impUnsupportedHWIntrinsic(unsigned              helper,
 }
 
 //------------------------------------------------------------------------
+// impIsTableDrivenHWIntrinsic:
+//
+// Arguments:
+//    category - category of a HW intrinsic
+//
+// Return Value:
+//    returns true if this category can be table-driven in the importer
+//
+static bool impIsTableDrivenHWIntrinsic(HWIntrinsicCategory category)
+{
+    // TODO - make more categories to the table-driven framework
+    const bool tableDrivenIntrinsic    = category == HW_Category_SimpleSIMD;
+    const bool nonTableDrivenIntrinsic = category == HW_Category_Special;
+    return tableDrivenIntrinsic && !nonTableDrivenIntrinsic;
+}
+
+//------------------------------------------------------------------------
 // impX86HWIntrinsic: dispatch hardware intrinsics to their own implementation
-// function
 //
 // Arguments:
 //    intrinsic -- id of the intrinsic function.
@@ -564,22 +460,94 @@ GenTree* Compiler::impX86HWIntrinsic(NamedIntrinsic        intrinsic,
                                      CORINFO_SIG_INFO*     sig,
                                      bool                  mustExpand)
 {
-    InstructionSet isa = isaOfHWIntrinsic(intrinsic);
+    InstructionSet      isa      = isaOfHWIntrinsic(intrinsic);
+    HWIntrinsicCategory category = categoryOfHWIntrinsic(intrinsic);
+    int                 numArgs  = sig->numArgs;
+    var_types           callType = JITtype2varType(sig->retType);
 
     // This intrinsic is supported if
     // - the ISA is available on the underlying hardware (compSupports returns true)
     // - the compiler supports this hardware intrinsics (compSupportsHWIntrinsic returns true)
-    bool issupported = compSupports(isa) && compSupportsHWIntrinsic(isa);
+    // - intrinsics do not require 64-bit registers (r64) on 32-bit platforms (isTypeSupportedForIntrinsic returns
+    // true)
+    bool issupported = compSupports(isa) && compSupportsHWIntrinsic(isa) && isTypeSupportedForIntrinsic(callType);
 
-    if (isIntrinsicAnIsSupportedPropertyGetter(intrinsic))
+    if (category == HW_Category_IsSupportedProperty)
     {
         return gtNewIconNode(issupported);
     }
+    // - calling to unsupported intrinsics must throw PlatforNotSupportedException
     else if (!issupported)
     {
         return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
     }
 
+    // table-driven importer of simple intrinsics
+    if (impIsTableDrivenHWIntrinsic(category))
+    {
+        unsigned int sizeBytes;
+        var_types    baseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeSigClass, &sizeBytes);
+        assert(baseType != TYP_UNKNOWN && sizeBytes != 0);
+        var_types               retType  = getSIMDTypeForSize(sizeBytes);
+        unsigned                simdSize = simdSizeOfHWIntrinsic(intrinsic, sig);
+        CORINFO_ARG_LIST_HANDLE argList  = sig->args;
+        CORINFO_CLASS_HANDLE    argClass;
+        var_types               argType = TYP_UNKNOWN;
+
+        assert(numArgs > 0);
+        assert(retType != TYP_UNDEF);
+        assert(retType == TYP_SIMD16 || retType == TYP_SIMD32);
+        assert(insOfHWIntrinsic(intrinsic, baseType) != INS_invalid);
+        assert(simdSize == 32 || simdSize == 16);
+
+        GenTree* retNode = nullptr;
+        GenTree* op1     = nullptr;
+        GenTree* op2     = nullptr;
+
+        switch (numArgs)
+        {
+            case 1:
+                argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
+                op1     = getArgForHWIntrinsic(argType, argClass);
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
+                break;
+            case 2:
+                argType = JITtype2varType(
+                    strip(info.compCompHnd->getArgType(sig, info.compCompHnd->getArgNext(argList), &argClass)));
+                op2 = getArgForHWIntrinsic(argType, argClass);
+
+                argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
+                op1     = getArgForHWIntrinsic(argType, argClass);
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, baseType, simdSize);
+                break;
+
+            case 3:
+            {
+                CORINFO_ARG_LIST_HANDLE arg2 = info.compCompHnd->getArgNext(argList);
+                CORINFO_ARG_LIST_HANDLE arg3 = info.compCompHnd->getArgNext(arg2);
+
+                argType      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+                GenTree* op3 = getArgForHWIntrinsic(argType, argClass);
+
+                argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+                op2     = getArgForHWIntrinsic(argType, argClass);
+
+                argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
+                op1     = getArgForHWIntrinsic(argType, argClass);
+
+                op1     = gtNewArgList(op1, op2, op3);
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
+                break;
+            }
+            default:
+                unreached();
+        }
+        return retNode;
+    }
+
+    // other intrinsics need special importation
     switch (isa)
     {
         case InstructionSet_SSE:
@@ -940,14 +908,6 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic        intrinsic,
     var_types baseType = TYP_UNKNOWN;
     switch (intrinsic)
     {
-        case NI_SSE2_Add:
-            assert(sig->numArgs == 2);
-            op2      = impSIMDPopStack(TYP_SIMD16);
-            op1      = impSIMDPopStack(TYP_SIMD16);
-            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
-            retNode  = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, NI_SSE2_Add, baseType, 16);
-            break;
-
         default:
             JITDUMP("Not implemented hardware intrinsic");
             break;
@@ -989,26 +949,17 @@ GenTree* Compiler::impSSE42Intrinsic(NamedIntrinsic        intrinsic,
     GenTree*  op2      = nullptr;
     var_types callType = JITtype2varType(sig->retType);
 
-    CORINFO_ARG_LIST_HANDLE argLst = sig->args;
+    CORINFO_ARG_LIST_HANDLE argList = sig->args;
     CORINFO_CLASS_HANDLE    argClass;
     CorInfoType             corType;
     switch (intrinsic)
     {
         case NI_SSE42_Crc32:
             assert(sig->numArgs == 2);
-
-#ifdef _TARGET_X86_
-            if (varTypeIsLong(callType))
-            {
-                return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
-            }
-#endif
-
-            op2 = impPopStack().val;
-            op1 = impPopStack().val;
-
-            argLst  = info.compCompHnd->getArgNext(argLst);                        // the second argument
-            corType = strip(info.compCompHnd->getArgType(sig, argLst, &argClass)); // type of the second argument
+            op2     = impPopStack().val;
+            op1     = impPopStack().val;
+            argList = info.compCompHnd->getArgNext(argList);                        // the second argument
+            corType = strip(info.compCompHnd->getArgType(sig, argList, &argClass)); // type of the second argument
 
             retNode = gtNewScalarHWIntrinsicNode(callType, op1, op2, NI_SSE42_Crc32);
 
@@ -1035,14 +986,6 @@ GenTree* Compiler::impAVXIntrinsic(NamedIntrinsic        intrinsic,
     var_types baseType = TYP_UNKNOWN;
     switch (intrinsic)
     {
-        case NI_AVX_Add:
-            assert(sig->numArgs == 2);
-            op2      = impSIMDPopStack(TYP_SIMD32);
-            op1      = impSIMDPopStack(TYP_SIMD32);
-            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
-            retNode  = gtNewSimdHWIntrinsicNode(TYP_SIMD32, op1, op2, NI_AVX_Add, baseType, 32);
-            break;
-
         default:
             JITDUMP("Not implemented hardware intrinsic");
             break;
@@ -1061,14 +1004,6 @@ GenTree* Compiler::impAVX2Intrinsic(NamedIntrinsic        intrinsic,
     var_types baseType = TYP_UNKNOWN;
     switch (intrinsic)
     {
-        case NI_AVX2_Add:
-            assert(sig->numArgs == 2);
-            op2      = impSIMDPopStack(TYP_SIMD32);
-            op1      = impSIMDPopStack(TYP_SIMD32);
-            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
-            retNode  = gtNewSimdHWIntrinsicNode(TYP_SIMD32, op1, op2, NI_AVX2_Add, baseType, 32);
-            break;
-
         default:
             JITDUMP("Not implemented hardware intrinsic");
             break;
@@ -1115,14 +1050,6 @@ GenTree* Compiler::impLZCNTIntrinsic(NamedIntrinsic        intrinsic,
 {
     assert(sig->numArgs == 1);
     var_types callType = JITtype2varType(sig->retType);
-
-#ifdef _TARGET_X86_
-    if (varTypeIsLong(callType))
-    {
-        return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
-    }
-#endif
-
     return gtNewScalarHWIntrinsicNode(callType, impPopStack().val, NI_LZCNT_LeadingZeroCount);
 }
 
@@ -1141,14 +1068,6 @@ GenTree* Compiler::impPOPCNTIntrinsic(NamedIntrinsic        intrinsic,
 {
     assert(sig->numArgs == 1);
     var_types callType = JITtype2varType(sig->retType);
-
-#ifdef _TARGET_X86_
-    if (varTypeIsLong(callType))
-    {
-        return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
-    }
-#endif
-
     return gtNewScalarHWIntrinsicNode(callType, impPopStack().val, NI_POPCNT_PopCount);
 }
 
