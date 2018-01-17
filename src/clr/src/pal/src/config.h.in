@@ -71,6 +71,7 @@
 #cmakedefine01 HAVE_PR_SET_PTRACER
 
 #cmakedefine01 HAVE_STAT_TIMESPEC
+#cmakedefine01 HAVE_STAT_TIM
 #cmakedefine01 HAVE_STAT_NSEC
 #cmakedefine01 HAVE_TM_GMTOFF
 
