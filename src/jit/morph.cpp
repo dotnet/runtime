@@ -3297,7 +3297,10 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
-    bool hasStructArgument     = false; // @TODO-ARM64-UNIX: Remove this bool during a future refactoring
+    bool hasStructArgument = false; // @TODO-ARM64-UNIX: Remove this bool during a future refactoring
+    // hasMultiregStructArgs is true if there are any structs that are eligible for passing
+    // in registers; this is true even if it is not actually passed in registers (i.e. because
+    // previous arguments have used up available argument registers).
     bool hasMultiregStructArgs = false;
     for (args = call->gtCallArgs; args; args = args->gtOp.gtOp2, argIndex++)
     {
@@ -3557,7 +3560,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
                         if (size == 2)
                         {
-                            // Structs that are the size of 2 pointers are passed by value in multiple registers
+                            // Structs that are the size of 2 pointers are passed by value in multiple registers,
+                            // if sufficient registers are available.
                             hasMultiregStructArgs = true;
                         }
                         else if (size > 2)
@@ -4594,7 +4598,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
     // In the future we can migrate UNIX_AMD64 to use this
     // method instead of fgMorphSystemVStructArgs
 
-    // We only build GT_FIELD_LISTs for MultiReg structs for the RyuJIT backend
+    // We only require morphing of structs that may be passed in multiple registers
+    // for the RyuJIT backend.
     if (hasMultiregStructArgs)
     {
         fgMorphMultiregStructArgs(call);
@@ -4808,9 +4813,8 @@ void Compiler::fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgumen
 //    call:    a GenTreeCall node that has one or more TYP_STRUCT arguments
 //
 // Notes:
-//    We only call fgMorphMultiregStructArg for the register passed TYP_STRUCT arguments.
-//    The call to fgMorphMultiregStructArg will mutate the argument into the GT_FIELD_LIST form
-//    which is only used for struct arguments.
+//    We only call fgMorphMultiregStructArg for struct arguments that are not passed as simple types.
+//    It will ensure that the struct arguments are in the correct form.
 //    If this method fails to find any TYP_STRUCT arguments it will assert.
 //
 void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
@@ -4900,17 +4904,21 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 }
 
 //-----------------------------------------------------------------------------
-// fgMorphMultiregStructArg:  Given a multireg TYP_STRUCT arg from a call argument list
-//   Morph the argument into a set of GT_FIELD_LIST nodes.
+// fgMorphMultiregStructArg:  Given a TYP_STRUCT arg from a call argument list,
+//     morph the argument as needed to be passed correctly.
 //
 // Arguments:
-//     arg        - A GenTree node containing a TYP_STRUCT arg that
-//                  is to be passed in multiple registers
+//     arg        - A GenTree node containing a TYP_STRUCT arg
 //     fgEntryPtr - the fgArgTabEntry information for the current 'arg'
 //
 // Notes:
-//    arg must be a GT_OBJ or GT_LCL_VAR or GT_LCL_FLD of TYP_STRUCT that is suitable
-//    for passing in multiple registers.
+//    The arg must be a GT_OBJ or GT_LCL_VAR or GT_LCL_FLD of TYP_STRUCT.
+//    If 'arg' is a lclVar passed on the stack, we will ensure that any lclVars that must be on the
+//    stack are marked as doNotEnregister, and then we return.
+//
+//    If it is passed by register, we mutate the argument into the GT_FIELD_LIST form
+//    which is only used for struct arguments.
+//
 //    If arg is a LclVar we check if it is struct promoted and has the right number of fields
 //    and if they are at the appropriate offsets we will use the struct promted fields
 //    in the GT_FIELD_LIST nodes that we create.
@@ -4933,22 +4941,34 @@ GenTreePtr Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr f
     if ((fgEntryPtr->isSplit && fgEntryPtr->numSlots + fgEntryPtr->numRegs > 4) ||
         (!fgEntryPtr->isSplit && fgEntryPtr->regNum == REG_STK))
     {
+        GenTreeLclVarCommon* lcl = nullptr;
+
         // If already OBJ it is set properly already.
         if (arg->OperGet() == GT_OBJ)
         {
-            return arg;
+            if (arg->gtGetOp1()->OperIs(GT_ADDR) && arg->gtGetOp1()->gtGetOp1()->OperIs(GT_LCL_VAR))
+            {
+                lcl = arg->gtGetOp1()->gtGetOp1()->AsLclVarCommon();
+            }
         }
+        else
+        {
+            assert(arg->OperGet() == GT_LCL_VAR);
 
-        assert(arg->OperGet() == GT_LCL_VAR);
+            // We need to construct a `GT_OBJ` node for the argmuent,
+            // so we need to get the address of the lclVar.
+            lcl = arg->AsLclVarCommon();
 
-        // We need to construct a `GT_OBJ` node for the argmuent,
-        // so we need to get the address of the lclVar.
-        GenTreeLclVarCommon* lclCommon = arg->AsLclVarCommon();
+            arg = gtNewOperNode(GT_ADDR, TYP_I_IMPL, arg);
 
-        arg = gtNewOperNode(GT_ADDR, TYP_I_IMPL, arg);
-
-        // Create an Obj of the temp to use it as a call argument.
-        arg = gtNewObjNode(lvaGetStruct(lclCommon->gtLclNum), arg);
+            // Create an Obj of the temp to use it as a call argument.
+            arg = gtNewObjNode(lvaGetStruct(lcl->gtLclNum), arg);
+        }
+        if (lcl != nullptr)
+        {
+            // Its fields will need to accessed by address.
+            lvaSetVarDoNotEnregister(lcl->gtLclNum, DNER_IsStructArg);
+        }
 
         return arg;
     }
