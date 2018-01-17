@@ -59,10 +59,15 @@
     <Compile Include="Basic\MultiLevelNestedClassesAllRemovedWhenNonUsed.cs" />
     <Compile Include="Basic\NestedDelegateInvokeMethodsPreserved.cs" />
     <Compile Include="Basic\UninvokedInterfaceMemberGetsRemoved.cs" />
+    <Compile Include="Basic\UnusedDelegateGetsRemoved.cs" />
+    <Compile Include="Basic\UnusedEventGetsRemoved.cs" />
+    <Compile Include="Basic\UsedEventOnInterfaceIsKept.cs" />
     <Compile Include="Basic\UnusedFieldGetsRemoved.cs" />
     <Compile Include="Basic\UnusedMethodGetsRemoved.cs" />
     <Compile Include="Basic\UnusedPropertyGetsRemoved.cs" />
     <Compile Include="Basic\UnusedPropertySetterRemoved.cs" />
+    <Compile Include="Basic\UsedEventIsKept.cs" />
+    <Compile Include="Basic\UsedEventOnInterfaceIsRemovedWhenUsedFromClass.cs" />
     <Compile Include="Basic\UsedPropertyIsKept.cs" />
     <Compile Include="Basic\UsedStructIsKept.cs" />
     <Compile Include="LinkXml\CanPreserveTypesUsingRegex.cs" />

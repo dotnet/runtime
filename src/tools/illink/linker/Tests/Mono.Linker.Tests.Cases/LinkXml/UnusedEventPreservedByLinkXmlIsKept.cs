@@ -12,6 +12,8 @@ namespace Mono.Linker.Tests.Cases.LinkXml {
 		class Unused {
 			[Kept]
 			[KeptBackingField]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
 			public event EventHandler<EventArgs> Preserved;
 
 			[Kept]
