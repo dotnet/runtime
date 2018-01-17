@@ -23,27 +23,6 @@ extern const char* getHWIntrinsicName(NamedIntrinsic intrinsic)
     return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].intrinsicName;
 }
 
-static const bool isNumericType(var_types type)
-{
-    switch (type)
-    {
-        case TYP_BYTE:
-        case TYP_UBYTE:
-        case TYP_SHORT:
-        case TYP_USHORT:
-        case TYP_INT:
-        case TYP_UINT:
-        case TYP_LONG:
-        case TYP_ULONG:
-        case TYP_FLOAT:
-        case TYP_DOUBLE:
-            return true;
-
-        default:
-            return false;
-    }
-}
-
 //------------------------------------------------------------------------
 // lookupHWIntrinsicISA: map class name to InstructionSet value
 //
@@ -173,6 +152,15 @@ InstructionSet Compiler::isaOfHWIntrinsic(NamedIntrinsic intrinsic)
     return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].isa;
 }
 
+//------------------------------------------------------------------------
+// ivalOfHWIntrinsic: get the imm8 value of the given intrinsic
+//
+// Arguments:
+//    intrinsic -- id of the intrinsic function.
+//
+// Return Value:
+//     the imm8 value of the intrinsic, -1 for non-IMM intrinsics
+//
 int Compiler::ivalOfHWIntrinsic(NamedIntrinsic intrinsic)
 {
     assert(intrinsic != NI_Illegal);
@@ -225,6 +213,17 @@ int Compiler::ivalOfHWIntrinsic(NamedIntrinsic intrinsic)
     }
 }
 
+//------------------------------------------------------------------------
+// insOfHWIntrinsic: get the instruction of the given intrinsic
+//
+// Arguments:
+//    intrinsic -- id of the intrinsic function.
+//    type      -- vector base type of this intrinsic
+//
+// Return Value:
+//     the instruction of the given intrinsic on the base type
+//     return INS_invalid for unsupported base types
+//
 instruction Compiler::insOfHWIntrinsic(NamedIntrinsic intrinsic, var_types type)
 {
     assert(intrinsic != NI_Illegal);
@@ -859,7 +858,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
             var_types tgtType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
             var_types srcType = getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args));
 
-            if (isNumericType(tgtType) && isNumericType(srcType))
+            if (varTypeIsArithmetic(tgtType) && varTypeIsArithmetic(srcType))
             {
                 op1     = impSIMDPopStack(TYP_SIMD16);
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, intrinsic, tgtType, 16);
