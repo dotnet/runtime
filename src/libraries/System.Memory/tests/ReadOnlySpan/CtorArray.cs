@@ -63,10 +63,10 @@ namespace System.SpanTests
             ReadOnlySpan<int> span;
 
             span = new ReadOnlySpan<int>(empty);
-            span.Validate();
+            span.ValidateNonNullEmpty();
 
             span = new ReadOnlySpan<int>(empty, 0, empty.Length);
-            span.Validate();
+            span.ValidateNonNullEmpty();
         }
 
         [Fact]

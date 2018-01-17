@@ -73,7 +73,7 @@ namespace System.SpanTests
             // Valid for start to equal the array length. This returns an empty span that starts "just past the array."
             int[] a = { 91, 92, 93 };
             Span<int> span = new Span<int>(a, 3, 0);
-            span.Validate();
+            span.ValidateNonNullEmpty();
         }
     }
 }
