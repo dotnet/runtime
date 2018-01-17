@@ -20,6 +20,7 @@ As much as possible, we should link to the most authoritative and recent source 
 | JIT | [Just-in-Time](https://github.com/dotnet/coreclr/blob/master/Documentation/botr/ryujit-overview.md) compiler. RyuJIT is the code name for the next generation Just-in-Time(aka "JIT") for the .NET runtime. |
 | LCG | Lightweight Code Generation. An early name for [dynamic methods](https://github.com/dotnet/coreclr/blob/master/src/mscorlib/src/System/Reflection/Emit/DynamicMethod.cs). |
 | MD | MetaData. |
+| MDA | Managed Debugging Assistant - see [details](https://docs.microsoft.com/en-us/dotnet/framework/debug-trace-profile/diagnosing-errors-with-managed-debugging-assistants) (Note: Not in .NET Core, equivalent diagnostic functionality is made available on a case-by-case basis, e.g. [#15465](https://github.com/dotnet/coreclr/issues/15465)) |
 | NGen | Native Image Generator. |
 | NYI | Not Yet Implemented. |
 | PAL | [Platform Adaptation Layer](http://archive.oreilly.com/pub/a/dotnet/2002/03/04/rotor.html). Provides an abstraction layer between the runtime and the operating system. |
