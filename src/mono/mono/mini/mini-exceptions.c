@@ -111,11 +111,6 @@ static gpointer restore_context_func, call_filter_func;
 static gpointer throw_exception_func, rethrow_exception_func;
 static gpointer throw_corlib_exception_func;
 
-static gpointer try_more_restore_tramp = NULL;
-static gpointer restore_stack_protection_tramp = NULL;
-
-static void try_more_restore (void);
-static void restore_stack_protection (void);
 static void mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain *domain, MonoJitTlsData *jit_tls, MonoLMF *lmf, MonoUnwindOptions unwind_options, gpointer user_data);
 static void mono_raise_exception_with_ctx (MonoException *exc, MonoContext *ctx);
 static void mono_runtime_walk_stack_with_ctx (MonoJitStackWalk func, MonoContext *start_ctx, MonoUnwindOptions unwind_options, void *user_data);
@@ -220,12 +215,6 @@ mono_exceptions_init (void)
 		rethrow_exception_func = mono_arch_get_rethrow_exception (&info, FALSE);
 		mono_tramp_info_register (info, NULL);
 	}
-#ifdef MONO_ARCH_HAVE_RESTORE_STACK_SUPPORT
-	if (!mono_llvm_only) {
-		try_more_restore_tramp = mono_create_specific_trampoline (try_more_restore, MONO_TRAMPOLINE_RESTORE_STACK_PROT, mono_domain_get (), NULL);
-		restore_stack_protection_tramp = mono_create_specific_trampoline (restore_stack_protection, MONO_TRAMPOLINE_RESTORE_STACK_PROT, mono_domain_get (), NULL);
-	}
-#endif
 
 #ifdef MONO_ARCH_HAVE_EXCEPTIONS_INIT
 	mono_arch_exceptions_init ();
@@ -2462,59 +2451,6 @@ mono_free_altstack (MonoJitTlsData *tls)
 
 #endif /* MONO_ARCH_SIGSEGV_ON_ALTSTACK */
 
-static gboolean
-try_restore_stack_protection (MonoJitTlsData *jit_tls, int extra_bytes)
-{
-	gint32 unprotect_size = jit_tls->stack_ovf_guard_size;
-	/* we need to leave some room for throwing the exception */
-	while (unprotect_size >= 0 && (char*)jit_tls->stack_ovf_guard_base + unprotect_size > ((char*)&unprotect_size - extra_bytes))
-		unprotect_size -= mono_pagesize ();
-	/* at this point we could try and build a new domain->stack_overflow_ex, but only if there
-	 * is sufficient stack
-	 */
-	//fprintf (stderr, "restoring stack protection: %p-%p (%d)\n", jit_tls->stack_ovf_guard_base, (char*)jit_tls->stack_ovf_guard_base + unprotect_size, unprotect_size);
-	if (unprotect_size)
-		mono_mprotect (jit_tls->stack_ovf_guard_base, unprotect_size, MONO_MMAP_NONE);
-	return unprotect_size == jit_tls->stack_ovf_guard_size;
-}
-
-static G_GNUC_UNUSED void
-try_more_restore (void)
-{
-	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_tls_get_jit_tls ();
-	if (try_restore_stack_protection (jit_tls, 500))
-		jit_tls->restore_stack_prot = NULL;
-}
-
-static G_GNUC_UNUSED void
-restore_stack_protection (void)
-{
-	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_tls_get_jit_tls ();
-	MonoException *ex = mono_domain_get ()->stack_overflow_ex;
-	/* if we can't restore the stack protection, keep a callback installed so
-	 * we'll try to restore as much stack as we can at each return from unmanaged
-	 * code.
-	 */
-	if (try_restore_stack_protection (jit_tls, 4096))
-		jit_tls->restore_stack_prot = NULL;
-	else
-		jit_tls->restore_stack_prot = try_more_restore_tramp;
-	/* here we also throw a stack overflow exception */
-	ex->trace_ips = NULL;
-	ex->stack_trace = NULL;
-	mono_raise_exception_deprecated (ex);
-}
-
-gpointer
-mono_altstack_restore_prot (mgreg_t *regs, guint8 *code, gpointer *tramp_data, guint8* tramp)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	void (*func)(void) = (void (*)(void))tramp_data;
-	func ();
-	return NULL;
-}
-
 gboolean
 mono_handle_soft_stack_ovf (MonoJitTlsData *jit_tls, MonoJitInfo *ji, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *siginfo, guint8* fault_addr)
 {
@@ -2549,7 +2485,6 @@ mono_handle_soft_stack_ovf (MonoJitTlsData *jit_tls, MonoJitInfo *ji, void *ctx,
 			 */
 			mono_runtime_printf_err ("Stack overflow in unmanaged: IP: %p, fault addr: %p", mono_arch_ip_from_context (ctx), fault_addr);
 			if (!jit_tls->handling_stack_ovf) {
-				jit_tls->restore_stack_prot = restore_stack_protection_tramp;
 				jit_tls->handling_stack_ovf = 1;
 			} else {
 				/*fprintf (stderr, "Already handling stack overflow\n");*/

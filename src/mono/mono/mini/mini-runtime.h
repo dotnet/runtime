@@ -73,8 +73,7 @@ struct MonoJitTlsData {
 	guint32           stack_size;
 	MonoLMF          *lmf;
 	MonoLMF          *first_lmf;
-	gpointer         restore_stack_prot;
-	guint32          handling_stack_ovf;
+	guint            handling_stack_ovf : 1;
 	gpointer         signal_stack;
 	guint32          signal_stack_size;
 	gpointer         stack_ovf_guard_base;

@@ -1308,8 +1308,6 @@ mono_get_trampoline_func (MonoTrampolineType tramp_type)
 #endif
 	case MONO_TRAMPOLINE_DELEGATE:
 		return mono_delegate_trampoline;
-	case MONO_TRAMPOLINE_RESTORE_STACK_PROT:
-		return mono_altstack_restore_prot;
 #ifndef DISABLE_REMOTING
 	case MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING:
 		return mono_generic_virtual_remoting_trampoline;
@@ -1350,7 +1348,6 @@ mono_trampolines_init (void)
 	mono_trampoline_code [MONO_TRAMPOLINE_AOT_PLT] = create_trampoline_code (MONO_TRAMPOLINE_AOT_PLT);
 #endif
 	mono_trampoline_code [MONO_TRAMPOLINE_DELEGATE] = create_trampoline_code (MONO_TRAMPOLINE_DELEGATE);
-	mono_trampoline_code [MONO_TRAMPOLINE_RESTORE_STACK_PROT] = create_trampoline_code (MONO_TRAMPOLINE_RESTORE_STACK_PROT);
 #ifndef DISABLE_REMOTING
 	mono_trampoline_code [MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING] = create_trampoline_code (MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING);
 #endif
@@ -1670,7 +1667,6 @@ static const char*tramp_names [MONO_TRAMPOLINE_NUM] = {
 	"aot",
 	"aot_plt",
 	"delegate",
-	"restore_stack_prot",
 	"generic_virtual_remoting",
 	"vcall"
 };

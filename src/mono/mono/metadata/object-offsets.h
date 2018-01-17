@@ -161,7 +161,6 @@ DECL_OFFSET(MonoMethodRuntimeGenericContext, class_vtable)
 DECL_OFFSET(MonoJitTlsData, lmf)
 DECL_OFFSET(MonoJitTlsData, class_cast_from)
 DECL_OFFSET(MonoJitTlsData, class_cast_to)
-DECL_OFFSET(MonoJitTlsData, restore_stack_prot)
 
 DECL_OFFSET(MonoGSharedVtMethodRuntimeInfo, locals_size)
 DECL_OFFSET(MonoGSharedVtMethodRuntimeInfo, entries) //XXX more to fix here
