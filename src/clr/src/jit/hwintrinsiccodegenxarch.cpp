@@ -97,8 +97,6 @@ void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins)
     assert(targetReg != REG_NA);
     assert(op1Reg != REG_NA);
 
-    genConsumeOperands(node);
-
     if (op2->isContained() || op2->isUsedFromSpillTemp())
     {
         TempDsc* tmpDsc = nullptr;
@@ -188,22 +186,490 @@ void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins)
     {
         emit->emitIns_SIMD_R_R_R(ins, targetReg, op1Reg, op2->gtRegNum, targetType);
     }
+}
 
-    genProduceReg(node);
+void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins)
+{
+    var_types targetType = node->TypeGet();
+    regNumber targetReg  = node->gtRegNum;
+    GenTree*  op1        = node->gtGetOp1();
+    GenTree*  op2        = node->gtGetOp2();
+    int       ival       = Compiler::ivalOfHWIntrinsic(node->gtHWIntrinsicId);
+    emitter*  emit       = getEmitter();
+
+    // TODO-XArch-CQ: Commutative operations can have op1 be contained
+    // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
+
+    regNumber op1Reg = op1->gtRegNum;
+
+    assert(targetReg != REG_NA);
+    assert(op1Reg != REG_NA);
+
+    if (op2->isContained() || op2->isUsedFromSpillTemp())
+    {
+        TempDsc* tmpDsc = nullptr;
+        unsigned varNum = BAD_VAR_NUM;
+        unsigned offset = (unsigned)-1;
+
+        if (op2->isUsedFromSpillTemp())
+        {
+            assert(op2->IsRegOptional());
+
+            tmpDsc = getSpillTempDsc(op2);
+            varNum = tmpDsc->tdTempNum();
+            offset = 0;
+
+            compiler->tmpRlsTemp(tmpDsc);
+        }
+        else if (op2->isIndir())
+        {
+            GenTreeIndir* memIndir = op2->AsIndir();
+            GenTree*      memBase  = memIndir->gtOp1;
+
+            switch (memBase->OperGet())
+            {
+                case GT_LCL_VAR_ADDR:
+                {
+                    varNum = memBase->AsLclVarCommon()->GetLclNum();
+                    offset = 0;
+
+                    // Ensure that all the GenTreeIndir values are set to their defaults.
+                    assert(memBase->gtRegNum == REG_NA);
+                    assert(!memIndir->HasIndex());
+                    assert(memIndir->Scale() == 1);
+                    assert(memIndir->Offset() == 0);
+
+                    break;
+                }
+
+                case GT_CLS_VAR_ADDR:
+                {
+                    emit->emitIns_SIMD_R_R_C_I(ins, targetReg, op1Reg, memBase->gtClsVar.gtClsVarHnd, 0, ival,
+                                               targetType);
+                    return;
+                }
+
+                default:
+                {
+                    emit->emitIns_SIMD_R_R_A_I(ins, targetReg, op1Reg, memIndir, ival, targetType);
+                    return;
+                }
+            }
+        }
+        else
+        {
+            switch (op2->OperGet())
+            {
+                case GT_LCL_FLD:
+                {
+                    GenTreeLclFld* lclField = op2->AsLclFld();
+
+                    varNum = lclField->GetLclNum();
+                    offset = lclField->gtLclFld.gtLclOffs;
+                    break;
+                }
+
+                case GT_LCL_VAR:
+                {
+                    assert(op2->IsRegOptional() || !compiler->lvaTable[op2->gtLclVar.gtLclNum].lvIsRegCandidate());
+                    varNum = op2->AsLclVar()->GetLclNum();
+                    offset = 0;
+                    break;
+                }
+
+                default:
+                    unreached();
+                    break;
+            }
+        }
+
+        // Ensure we got a good varNum and offset.
+        // We also need to check for `tmpDsc != nullptr` since spill temp numbers
+        // are negative and start with -1, which also happens to be BAD_VAR_NUM.
+        assert((varNum != BAD_VAR_NUM) || (tmpDsc != nullptr));
+        assert(offset != (unsigned)-1);
+
+        emit->emitIns_SIMD_R_R_S_I(ins, targetReg, op1Reg, varNum, offset, ival, targetType);
+    }
+    else
+    {
+        emit->emitIns_SIMD_R_R_R_I(ins, targetReg, op1Reg, op2->gtRegNum, ival, targetType);
+    }
 }
 
 void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic intrinsicID = node->gtHWIntrinsicId;
+    GenTree*       op1         = node->gtGetOp1();
+    GenTree*       op2         = node->gtGetOp2();
+    GenTree*       op3         = nullptr;
+    GenTree*       op4         = nullptr;
+    regNumber      targetReg   = node->gtRegNum;
+    var_types      targetType  = node->TypeGet();
+    var_types      baseType    = node->gtSIMDBaseType;
     instruction    ins         = INS_invalid;
+
+    regNumber op1Reg = REG_NA;
+    regNumber op2Reg = REG_NA;
+    regNumber op3Reg = REG_NA;
+    regNumber op4Reg = REG_NA;
+    emitter*  emit   = getEmitter();
+
+    if ((op1 != nullptr) && !op1->OperIsList())
+    {
+        op1Reg = op1->gtRegNum;
+        genConsumeOperands(node);
+    }
 
     switch (intrinsicID)
     {
         case NI_SSE_Add:
+        case NI_SSE_AddScalar:
+        case NI_SSE_And:
+        case NI_SSE_AndNot:
+        case NI_SSE_ConvertToVector128SingleScalar:
+        case NI_SSE_Divide:
+        case NI_SSE_DivideScalar:
+        case NI_SSE_Max:
+        case NI_SSE_MaxScalar:
+        case NI_SSE_Min:
+        case NI_SSE_MinScalar:
+        case NI_SSE_MoveHighToLow:
+        case NI_SSE_MoveLowToHigh:
+        case NI_SSE_MoveScalar:
+        case NI_SSE_Multiply:
+        case NI_SSE_MultiplyScalar:
+        case NI_SSE_Or:
+        case NI_SSE_Subtract:
+        case NI_SSE_SubtractScalar:
+        case NI_SSE_UnpackHigh:
+        case NI_SSE_UnpackLow:
+        case NI_SSE_Xor:
         {
             assert(node->TypeGet() == TYP_SIMD16);
             assert(node->gtSIMDBaseType == TYP_FLOAT);
-            genHWIntrinsic_R_R_RM(node, INS_addps);
+            assert(Compiler::ivalOfHWIntrinsic(intrinsicID) == -1);
+
+            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
+            genHWIntrinsic_R_R_RM(node, ins);
+            break;
+        }
+
+        case NI_SSE_CompareEqual:
+        case NI_SSE_CompareEqualScalar:
+        case NI_SSE_CompareGreaterThan:
+        case NI_SSE_CompareGreaterThanScalar:
+        case NI_SSE_CompareGreaterThanOrEqual:
+        case NI_SSE_CompareGreaterThanOrEqualScalar:
+        case NI_SSE_CompareLessThan:
+        case NI_SSE_CompareLessThanScalar:
+        case NI_SSE_CompareLessThanOrEqual:
+        case NI_SSE_CompareLessThanOrEqualScalar:
+        case NI_SSE_CompareNotEqual:
+        case NI_SSE_CompareNotEqualScalar:
+        case NI_SSE_CompareNotGreaterThan:
+        case NI_SSE_CompareNotGreaterThanScalar:
+        case NI_SSE_CompareNotGreaterThanOrEqual:
+        case NI_SSE_CompareNotGreaterThanOrEqualScalar:
+        case NI_SSE_CompareNotLessThan:
+        case NI_SSE_CompareNotLessThanScalar:
+        case NI_SSE_CompareNotLessThanOrEqual:
+        case NI_SSE_CompareNotLessThanOrEqualScalar:
+        case NI_SSE_CompareOrdered:
+        case NI_SSE_CompareOrderedScalar:
+        case NI_SSE_CompareUnordered:
+        case NI_SSE_CompareUnorderedScalar:
+        {
+            assert(node->TypeGet() == TYP_SIMD16);
+            assert(node->gtSIMDBaseType == TYP_FLOAT);
+            assert(Compiler::ivalOfHWIntrinsic(intrinsicID) != -1);
+
+            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
+            genHWIntrinsic_R_R_RM_I(node, ins);
+            break;
+        }
+
+        case NI_SSE_CompareEqualOrderedScalar:
+        case NI_SSE_CompareEqualUnorderedScalar:
+        {
+            assert(baseType == TYP_FLOAT);
+            op2Reg = op2->gtRegNum;
+
+            regNumber   tmpReg = node->GetSingleTempReg();
+            instruction ins    = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
+
+            emit->emitIns_SIMD_R_R(ins, op1Reg, op2Reg, TYP_SIMD16);
+            emit->emitIns_R(INS_setpo, EA_1BYTE, targetReg);
+            emit->emitIns_R(INS_sete, EA_1BYTE, tmpReg);
+            emit->emitIns_R_R(INS_and, EA_1BYTE, tmpReg, targetReg);
+            emit->emitIns_R(INS_setne, EA_1BYTE, targetReg);
+            emit->emitIns_R_R(INS_movzx, EA_1BYTE, targetReg, targetReg);
+            break;
+        }
+
+        case NI_SSE_CompareGreaterThanOrderedScalar:
+        case NI_SSE_CompareGreaterThanUnorderedScalar:
+        {
+            assert(baseType == TYP_FLOAT);
+            op2Reg = op2->gtRegNum;
+
+            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
+            emit->emitIns_SIMD_R_R(ins, op1Reg, op2Reg, TYP_SIMD16);
+            emit->emitIns_R(INS_seta, EA_1BYTE, targetReg);
+            emit->emitIns_R_R(INS_movzx, EA_1BYTE, targetReg, targetReg);
+            break;
+        }
+
+        case NI_SSE_CompareGreaterThanOrEqualOrderedScalar:
+        case NI_SSE_CompareGreaterThanOrEqualUnorderedScalar:
+        {
+            assert(baseType == TYP_FLOAT);
+            op2Reg = op2->gtRegNum;
+
+            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
+            emit->emitIns_SIMD_R_R(ins, op1Reg, op2Reg, TYP_SIMD16);
+            emit->emitIns_R(INS_setae, EA_1BYTE, targetReg);
+            emit->emitIns_R_R(INS_movzx, EA_1BYTE, targetReg, targetReg);
+            break;
+        }
+
+        case NI_SSE_CompareLessThanOrderedScalar:
+        case NI_SSE_CompareLessThanUnorderedScalar:
+        {
+            assert(baseType == TYP_FLOAT);
+            op2Reg = op2->gtRegNum;
+
+            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
+            emit->emitIns_SIMD_R_R(ins, op2Reg, op1Reg, TYP_SIMD16);
+            emit->emitIns_R(INS_seta, EA_1BYTE, targetReg);
+            emit->emitIns_R_R(INS_movzx, EA_1BYTE, targetReg, targetReg);
+            break;
+        }
+
+        case NI_SSE_CompareLessThanOrEqualOrderedScalar:
+        case NI_SSE_CompareLessThanOrEqualUnorderedScalar:
+        {
+            assert(baseType == TYP_FLOAT);
+            op2Reg = op2->gtRegNum;
+
+            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
+            emit->emitIns_SIMD_R_R(ins, op2Reg, op1Reg, TYP_SIMD16);
+            emit->emitIns_R(INS_setae, EA_1BYTE, targetReg);
+            emit->emitIns_R_R(INS_movzx, EA_1BYTE, targetReg, targetReg);
+            break;
+        }
+
+        case NI_SSE_CompareNotEqualOrderedScalar:
+        case NI_SSE_CompareNotEqualUnorderedScalar:
+        {
+            assert(baseType == TYP_FLOAT);
+            op2Reg = op2->gtRegNum;
+
+            regNumber   tmpReg = node->GetSingleTempReg();
+            instruction ins    = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
+
+            emit->emitIns_SIMD_R_R(ins, op1Reg, op2Reg, TYP_SIMD16);
+            emit->emitIns_R(INS_setpe, EA_1BYTE, targetReg);
+            emit->emitIns_R(INS_setne, EA_1BYTE, tmpReg);
+            emit->emitIns_R_R(INS_or, EA_1BYTE, tmpReg, targetReg);
+            emit->emitIns_R(INS_setne, EA_1BYTE, targetReg);
+            emit->emitIns_R_R(INS_movzx, EA_1BYTE, targetReg, targetReg);
+            break;
+        }
+
+        case NI_SSE_ConvertToInt32:
+        case NI_SSE_ConvertToInt32WithTruncation:
+        case NI_SSE_ConvertToInt64:
+        case NI_SSE_ConvertToInt64WithTruncation:
+        case NI_SSE_Reciprocal:
+        case NI_SSE_ReciprocalSqrt:
+        case NI_SSE_Sqrt:
+        {
+            assert(baseType == TYP_FLOAT);
+            assert(op2 == nullptr);
+
+            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
+            emit->emitIns_SIMD_R_R(ins, targetReg, op1Reg, TYP_SIMD16);
+            break;
+        }
+
+        case NI_SSE_ConvertToSingle:
+        case NI_SSE_StaticCast:
+        {
+            assert(op2 == nullptr);
+            if (op1Reg != targetReg)
+            {
+                instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
+                emit->emitIns_SIMD_R_R(ins, targetReg, op1Reg, TYP_SIMD16);
+            }
+            break;
+        }
+
+        case NI_SSE_LoadAlignedVector128:
+        case NI_SSE_LoadScalar:
+        case NI_SSE_LoadVector128:
+        {
+            assert(baseType == TYP_FLOAT);
+            assert(op2 == nullptr);
+
+            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
+            emit->emitIns_R_AR(ins, emitTypeSize(TYP_SIMD16), targetReg, op1Reg, 0);
+            break;
+        }
+
+        case NI_SSE_LoadHigh:
+        case NI_SSE_LoadLow:
+        {
+            assert(baseType == TYP_FLOAT);
+            op2Reg = op2->gtRegNum;
+
+            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
+            emit->emitIns_SIMD_R_R_AR(ins, targetReg, op1Reg, op2Reg, TYP_SIMD16);
+            break;
+        }
+
+        case NI_SSE_MoveMask:
+        {
+            assert(baseType == TYP_FLOAT);
+            assert(op2 == nullptr);
+
+            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
+            emit->emitIns_SIMD_R_R(ins, targetReg, op1Reg, TYP_INT);
+            break;
+        }
+
+        case NI_SSE_ReciprocalScalar:
+        case NI_SSE_ReciprocalSqrtScalar:
+        case NI_SSE_SqrtScalar:
+        {
+            assert(baseType == TYP_FLOAT);
+            assert(op2 == nullptr);
+
+            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
+            emit->emitIns_SIMD_R_R_R(ins, targetReg, op1Reg, op1Reg, TYP_SIMD16);
+            break;
+        }
+
+        case NI_SSE_SetAllVector128:
+        {
+            assert(baseType == TYP_FLOAT);
+            assert(op2 == nullptr);
+            emit->emitIns_SIMD_R_R_R_I(INS_shufps, targetReg, op1Reg, op1Reg, 0, TYP_SIMD16);
+            break;
+        }
+
+        case NI_SSE_SetScalar:
+        {
+            assert(baseType == TYP_FLOAT);
+            assert(op2 == nullptr);
+
+            if (op1Reg == targetReg)
+            {
+                regNumber tmpReg = node->GetSingleTempReg();
+                emit->emitIns_SIMD_R_R(INS_movaps, tmpReg, op1Reg, TYP_SIMD16);
+                op1Reg = tmpReg;
+            }
+
+            emit->emitIns_SIMD_R_R_R(INS_xorps, targetReg, targetReg, targetReg, TYP_SIMD16);
+            emit->emitIns_SIMD_R_R_R(INS_movss, targetReg, targetReg, op1Reg, TYP_SIMD16);
+            break;
+        }
+
+        case NI_SSE_SetZeroVector128:
+        {
+            assert(baseType == TYP_FLOAT);
+            assert(op1 == nullptr);
+            assert(op2 == nullptr);
+            emit->emitIns_SIMD_R_R_R(INS_xorps, targetReg, targetReg, targetReg, TYP_SIMD16);
+            break;
+        }
+
+        case NI_SSE_Shuffle:
+        {
+            GenTreeArgList* argList;
+
+            // Shuffle takes 3 operands, so op1 should be an arg list with two
+            // additional node in the chain.
+            assert(baseType == TYP_FLOAT);
+            assert(op1->OperIsList());
+            assert(op1->AsArgList()->Rest() != nullptr);
+            assert(op1->AsArgList()->Rest()->Rest() != nullptr);
+            assert(op1->AsArgList()->Rest()->Rest()->Rest() == nullptr);
+            assert(op2 == nullptr);
+
+            argList = op1->AsArgList();
+            op1     = argList->Current();
+            op1Reg  = op1->gtRegNum;
+            genConsumeRegs(op1);
+
+            argList = argList->Rest();
+            op2     = argList->Current();
+            op2Reg  = op2->gtRegNum;
+            genConsumeRegs(op2);
+
+            argList = argList->Rest();
+            op3     = argList->Current();
+            genConsumeRegs(op3);
+
+            if (op3->IsCnsIntOrI())
+            {
+                ssize_t ival = op3->AsIntConCommon()->IconValue();
+                emit->emitIns_SIMD_R_R_R_I(INS_shufps, targetReg, op1Reg, op2Reg, (int)ival, TYP_SIMD16);
+            }
+            else
+            {
+                // We emit a fallback case for the scenario when op3 is not a constant. This should normally
+                // happen when the intrinsic is called indirectly, such as via Reflection. However, it can
+                // also occur if the consumer calls it directly and just doesn't pass a constant value.
+
+                const unsigned jmpCount = 256;
+                BasicBlock*    jmpTable[jmpCount];
+
+                unsigned jmpTableBase = emit->emitBBTableDataGenBeg(jmpCount, true);
+                unsigned jmpTableOffs = 0;
+
+                // Emit the jump table
+
+                JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", Compiler::s_compMethodsCount, jmpTableBase);
+
+                for (unsigned i = 0; i < jmpCount; i++)
+                {
+                    jmpTable[i] = genCreateTempLabel();
+                    JITDUMP("            DD      L_M%03u_BB%02u\n", Compiler::s_compMethodsCount, jmpTable[i]->bbNum);
+                    emit->emitDataGenData(i, jmpTable[i]);
+                }
+
+                emit->emitDataGenEnd();
+
+                // Compute and jump to the appropriate offset in the switch table
+
+                regNumber baseReg = node->ExtractTempReg();   // the start of the switch table
+                regNumber offsReg = node->GetSingleTempReg(); // the offset into the switch table
+
+                emit->emitIns_R_C(INS_lea, emitTypeSize(TYP_I_IMPL), offsReg, compiler->eeFindJitDataOffs(jmpTableBase),
+                                  0);
+
+                emit->emitIns_R_ARX(INS_mov, EA_4BYTE, offsReg, offsReg, op3->gtRegNum, 4, 0);
+                emit->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, compiler->fgFirstBB, baseReg);
+                emit->emitIns_R_R(INS_add, EA_PTRSIZE, offsReg, baseReg);
+                emit->emitIns_R(INS_i_jmp, emitTypeSize(TYP_I_IMPL), offsReg);
+
+                // Emit the switch table entries
+
+                BasicBlock* switchTableBeg = genCreateTempLabel();
+                BasicBlock* switchTableEnd = genCreateTempLabel();
+
+                genDefineTempLabel(switchTableBeg);
+
+                for (unsigned i = 0; i < jmpCount; i++)
+                {
+                    genDefineTempLabel(jmpTable[i]);
+                    emit->emitIns_SIMD_R_R_R_I(INS_shufps, targetReg, op1Reg, op2Reg, i, TYP_SIMD16);
+                    emit->emitIns_J(INS_jmp, switchTableEnd);
+                }
+
+                genDefineTempLabel(switchTableEnd);
+            }
             break;
         }
 
@@ -211,6 +677,8 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             unreached();
             break;
     }
+
+    genProduceReg(node);
 }
 
 void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
@@ -218,6 +686,8 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
     NamedIntrinsic intrinsicID = node->gtHWIntrinsicId;
     var_types      baseType    = node->gtSIMDBaseType;
     instruction    ins         = INS_invalid;
+
+    genConsumeOperands(node);
 
     switch (intrinsicID)
     {
@@ -259,6 +729,8 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
             unreached();
             break;
     }
+
+    genProduceReg(node);
 }
 
 void CodeGen::genSSE3Intrinsic(GenTreeHWIntrinsic* node)
@@ -324,6 +796,8 @@ void CodeGen::genAVXIntrinsic(GenTreeHWIntrinsic* node)
     var_types      baseType    = node->gtSIMDBaseType;
     instruction    ins         = INS_invalid;
 
+    genConsumeOperands(node);
+
     switch (intrinsicID)
     {
         case NI_AVX_Add:
@@ -351,6 +825,8 @@ void CodeGen::genAVXIntrinsic(GenTreeHWIntrinsic* node)
             unreached();
             break;
     }
+
+    genProduceReg(node);
 }
 
 void CodeGen::genAVX2Intrinsic(GenTreeHWIntrinsic* node)
@@ -358,6 +834,8 @@ void CodeGen::genAVX2Intrinsic(GenTreeHWIntrinsic* node)
     NamedIntrinsic intrinsicID = node->gtHWIntrinsicId;
     var_types      baseType    = node->gtSIMDBaseType;
     instruction    ins         = INS_invalid;
+
+    genConsumeOperands(node);
 
     switch (intrinsicID)
     {
@@ -396,6 +874,8 @@ void CodeGen::genAVX2Intrinsic(GenTreeHWIntrinsic* node)
             unreached();
             break;
     }
+
+    genProduceReg(node);
 }
 
 void CodeGen::genAESIntrinsic(GenTreeHWIntrinsic* node)
