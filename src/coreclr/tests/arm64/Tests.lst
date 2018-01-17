@@ -21177,7 +21177,7 @@ RelativePath=GC\API\GC\GetGeneration\GetGeneration.cmd
 WorkingDir=GC\API\GC\GetGeneration
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_EXCLUDE
 HostStyle=0
 
 [GetGeneration_box.cmd_2871]
