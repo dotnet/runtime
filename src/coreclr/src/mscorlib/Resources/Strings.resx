@@ -3145,6 +3145,9 @@
   <data name="ObjectDisposed_ObjectName_Name" xml:space="preserve">
     <value>Object name: '{0}'.</value>
   </data>
+  <data name="ObjectDisposed_WriterClosed" xml:space="preserve">
+    <value>Cannot write to a closed TextWriter.</value>
+  </data>
   <data name="ObjectDisposed_ReaderClosed" xml:space="preserve">
     <value>Cannot read from a closed TextReader.</value>
   </data>
@@ -3696,5 +3699,8 @@
   </data>
   <data name="Arg_TypeNotSupported" xml:space="preserve">
     <value>Specified type is not supported</value>
+  </data>
+  <data name="IO_InvalidReadLength" xml:space="preserve">
+    <value>The read operation returned an invalid length.</value>
   </data>
 </root>
