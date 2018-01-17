@@ -11,7 +11,7 @@
 
   <!-- Define vNext UAP Moniker -->
   <PropertyGroup>
-    <UAPvNextVersion>10.0.15138</UAPvNextVersion>
+    <UAPvNextVersion>10.0.16300</UAPvNextVersion>
     <UAPvNextTFMFull>UAP,Version=v$(UAPvNextVersion)</UAPvNextTFMFull>
     <UAPvNextTFM>uap$(UAPvNextVersion)</UAPvNextTFM>
   </PropertyGroup>
