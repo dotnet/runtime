@@ -36,7 +36,7 @@
 #endif
 #include <errno.h>
 
-static gpointer error_quark = "FileError";
+static gpointer error_quark = (gpointer)"FileError";
 
 gpointer
 g_file_error_quark (void)

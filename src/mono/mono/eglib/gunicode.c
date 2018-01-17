@@ -98,7 +98,7 @@ g_unichar_break_type (gunichar c)
 	return G_UNICODE_BREAK_UNKNOWN;
 }
 
-gunichar
+static gunichar
 g_unichar_case (gunichar c, gboolean upper)
 {
 	gint8 i, i2;

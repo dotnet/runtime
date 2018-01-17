@@ -600,7 +600,7 @@ encode_latin1 (gunichar c, char *outbuf, size_t outleft)
  * Simple conversion API
  */
 
-static gpointer error_quark = "ConvertError";
+static gpointer error_quark = (gpointer)"ConvertError";
 
 gpointer
 g_convert_error_quark (void)
