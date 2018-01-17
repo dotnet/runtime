@@ -71,17 +71,7 @@ dump_bb_list (MonoSimpleBasicBlock *bb, MonoSimpleBasicBlock **root, const char 
 			MonoSimpleBasicBlock *to = tmp->data;
 			printf ("%x ", to->start);
 		}
-		printf ("] %s", bb->dead ? "dead" : "alive");
-
-		printf ("%s", bb->end_in_throw ? " end-in-throw" : "");
-		printf ("%s", bb->end_in_ret ? " end-in-ret" : "");
-		printf ("%s", bb->inside_try ? " inside-try" : "");
-		printf ("%s", bb->inside_catch ? " inside-catch" : "");
-		printf ("%s", bb->inside_finally ? " inside-finally" : "");
-		if (bb->loop_idx)
-			printf (" loop-idx %d", bb->loop_idx);
-
-		printf ("\n");
+		printf ("] %s\n", bb->dead ? "dead" : "alive");
 		bb = bb->next;
 	}
 }
@@ -373,10 +363,6 @@ bb_formation_il_pass (const unsigned char *start, const unsigned char *end, Mono
 				break;
 			if (!(next = bb_split (bb, current, root, ip - start, FALSE, method, error)))
 				return;
-			if (value == MONO_CEE_THROW)
-				current->end_in_throw = TRUE;
-			else if (value == MONO_CEE_RET)
-				current->end_in_ret = TRUE;
 
 			bb_unlink (current, next);
 			current = next;
@@ -531,95 +517,6 @@ mono_basic_block_free (MonoSimpleBasicBlock *bb)
 	}
 }
 
-
-typedef struct {
-	int index;
-	int loop_index;
-	GPtrArray *stack;
-} scc_data;
-
-static inline gpointer
-stack_top (GPtrArray *array)
-{
-	return array->pdata [array->len - 1];
-}
-
-static inline gpointer
-stack_pop (GPtrArray *array)
-{
-	return g_ptr_array_remove_index (array, array->len - 1);
-}
-
-static void
-strongconnect (MonoSimpleBasicBlock *bb, scc_data *data)
-{
-	GSList *next;
-
-	bb->index = data->index;
-	bb->lowlink = data->index;
-	++data->index;
-
-	g_ptr_array_add (data->stack, bb);
-	bb->on_stack = TRUE;
-
-	gboolean single_bb_loop = FALSE;
-	for (next = bb->out_bb; next; next = next->next) {
-		MonoSimpleBasicBlock *cur = next->data;
-		if (cur == bb)
-			single_bb_loop = TRUE;
-
-		if (cur->index == -1) {
-			strongconnect (cur, data);
-			bb->lowlink = MIN (bb->lowlink, cur->lowlink);
-		} else if (cur->on_stack) {
-			bb->lowlink = MIN (bb->lowlink, cur->index);
-		}
-	}
-
-	if (bb->lowlink == bb->index) {
-		if (stack_top (data->stack) == bb && !single_bb_loop) {
-			stack_pop (data->stack);
-			bb->on_stack = FALSE;
-		} else {
-			int loop_idx = ++data->loop_index;
-			MonoSimpleBasicBlock *cur;
-			do {
-				cur = stack_pop (data->stack);
-				cur->on_stack = FALSE;
-				cur->loop_idx = loop_idx;
-			} while (cur != bb);
-		}
-	}
-}
-
-/*
-Notes:
-
-Interesting fact about using SCC to detect loops.
-It can't handle loop nesting as the inner loop will be strongly connected to the outer loop.
-This is fine'ish as the current inlining heuristic doesnt't take that into account.
-*/
-static void
-bb_inline_cost (MonoSimpleBasicBlock *bb)
-{
-	MonoSimpleBasicBlock *cur;
-	scc_data data = {
-		.index = 0,
-		.loop_index = 0,
-		.stack = g_ptr_array_new (),
-	};
-	
-	//FIXME given most BB are connected and form a tree (except for EH handlers), it makes more sense to traverse them backwards as this would lead to a shallower stack
-	for (cur = bb; cur; cur = cur->next)
-		cur->index = -1;
-
-	for (cur = bb; cur; cur = cur->next) {
-		if (cur->index == -1)
-			strongconnect (bb,  &data);
-	}
-	g_ptr_array_free (data.stack, TRUE);
-}
-
 /*
  * mono_basic_block_split:
  *
@@ -653,11 +550,8 @@ mono_basic_block_split (MonoMethod *method, MonoError *error, MonoMethodHeader *
 
 	bb_liveness (bb);
 
-	bb_inline_cost (bb);
 #if DEBUG_BB
-
-	if (!strcmp ("Teste", method->name))
-		dump_bb_list (bb, &root, g_strdup_printf("AFTER LIVENESS %s", mono_method_full_name (method, TRUE)));
+	dump_bb_list (bb, &root, g_strdup_printf("AFTER LIVENESS %s", mono_method_full_name (method, TRUE)));
 #endif
 
 	return bb;
