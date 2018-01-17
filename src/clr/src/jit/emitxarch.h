@@ -386,8 +386,10 @@ void emitIns_R_R_S(instruction ins, emitAttr attr, regNumber reg1, regNumber reg
 
 void emitIns_R_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3);
 
+#ifndef LEGACY_BACKEND
 void emitIns_R_R_A_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, GenTreeIndir* indir, int ival, insFormat fmt);
+#endif // !LEGACY_BACKEND
 
 void emitIns_R_R_C_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, CORINFO_FIELD_HANDLE fldHnd, int offs, int ival);
