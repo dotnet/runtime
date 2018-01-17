@@ -2269,11 +2269,7 @@ if test x$host_win32 = xno; then
 			child ()
 			{
 				struct sigaction sa;
-			#ifdef __APPLE__
 				stack_t sas;
-			#else
-				struct sigaltstack sas;
-			#endif
 				pthread_t id;
 				pthread_attr_t attr;
 
