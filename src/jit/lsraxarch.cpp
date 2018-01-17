@@ -2505,31 +2505,105 @@ void LinearScan::TreeNodeInfoInitHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, 
 {
     NamedIntrinsic intrinsicID = intrinsicTree->gtHWIntrinsicId;
     InstructionSet isa         = compiler->isaOfHWIntrinsic(intrinsicID);
+
     if (isa == InstructionSet_AVX || isa == InstructionSet_AVX2)
     {
         SetContainsAVXFlags(true, 32);
     }
-    info->srcCount += GetOperandInfo(intrinsicTree->gtOp.gtOp1);
-    if (intrinsicTree->gtGetOp2IfPresent() != nullptr)
-    {
-        info->srcCount += GetOperandInfo(intrinsicTree->gtOp.gtOp2);
-    }
 
-#ifdef _TARGET_X86_
-    if (intrinsicTree->gtHWIntrinsicId == NI_SSE42_Crc32)
+    GenTree* op1   = intrinsicTree->gtOp.gtOp1;
+    GenTree* op2   = intrinsicTree->gtOp.gtOp2;
+    info->srcCount = 0;
+
+    if (op1 != nullptr)
     {
-        // CRC32 may operate over "byte" but on x86 only RBM_BYTE_REGS can be used as byte registers.
-        //
-        // TODO - currently we use the BaseType to bring the type of the second argument
-        // to the code generator. May encode the overload info in other way.
-        var_types srcType = intrinsicTree->gtSIMDBaseType;
-        if (varTypeIsByte(srcType))
+        if (op1->OperIsList())
         {
-            LocationInfoListNode* op2Info = useList.GetSecond(INDEBUG(intrinsicTree->gtGetOp2()));
-            op2Info->info.setSrcCandidates(this, RBM_BYTE_REGS);
+            int srcCount = 0;
+
+            for (GenTreeArgList* list = op1->AsArgList(); list != nullptr; list = list->Rest())
+            {
+                GenTree* listItem = list->Current();
+                srcCount += GetOperandInfo(listItem);
+            }
+
+            info->srcCount += srcCount;
+        }
+        else
+        {
+            info->srcCount += GetOperandInfo(op1);
         }
     }
-#endif
+
+    if (op2 != nullptr)
+    {
+        info->srcCount += GetOperandInfo(op2);
+    }
+
+    switch (intrinsicID)
+    {
+        case NI_SSE_CompareEqualOrderedScalar:
+        case NI_SSE_CompareEqualUnorderedScalar:
+        case NI_SSE_CompareNotEqualOrderedScalar:
+        case NI_SSE_CompareNotEqualUnorderedScalar:
+            info->internalIntCount = 1;
+            info->setInternalCandidates(this, allRegs(TYP_INT));
+            break;
+
+        case NI_SSE_SetScalar:
+            // Need an internal register to stitch together all the values into a single vector in a SIMD reg.
+            info->internalFloatCount = 1;
+            info->setInternalCandidates(this, allSIMDRegs());
+            break;
+
+        case NI_SSE_Shuffle:
+        {
+            assert(op1->OperIsList());
+            GenTree* op3 = op1->AsArgList()->Rest()->Rest()->Current();
+
+            if (!op3->isContainedIntOrIImmed())
+            {
+                assert(!op3->IsCnsIntOrI());
+
+                // We need two extra reg when op3 isn't a constant so
+                // the offset into the jump table for the fallback path
+                // can be computed.
+
+                info->internalIntCount = 2;
+                info->setInternalCandidates(this, allRegs(TYP_INT));
+                break;
+            }
+            break;
+        }
+
+        case NI_SSE_ConvertToSingle:
+        case NI_SSE_StaticCast:
+            assert(info->srcCount == 1);
+            assert(info->dstCount == 1);
+            useList.Last()->info.isTgtPref = true;
+            break;
+
+#ifdef _TARGET_X86_
+        case NI_SSE42_Crc32:
+        {
+            // CRC32 may operate over "byte" but on x86 only RBM_BYTE_REGS can be used as byte registers.
+            //
+            // TODO - currently we use the BaseType to bring the type of the second argument
+            // to the code generator. May encode the overload info in other way.
+            var_types srcType = intrinsicTree->gtSIMDBaseType;
+            if (varTypeIsByte(srcType))
+            {
+                LocationInfoListNode* op2Info = useList.GetSecond(INDEBUG(intrinsicTree->gtGetOp2()));
+                op2Info->info.setSrcCandidates(this, RBM_BYTE_REGS);
+            }
+            break;
+        }
+#endif // _TARGET_X86_
+
+        default:
+            assert((intrinsicID > NI_HW_INTRINSIC_START) && (intrinsicID < NI_HW_INTRINSIC_END));
+            break;
+    }
 }
 #endif
 
