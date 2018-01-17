@@ -43,6 +43,9 @@
     <Compile Include="Assertions\KeptAttribute.cs" />
     <Compile Include="Assertions\BaseExpectedLinkedBehaviorAttribute.cs" />
     <Compile Include="Assertions\KeptBackingFieldAttribute.cs" />
+    <Compile Include="Assertions\KeptDelegateCacheFieldAttribute.cs" />
+    <Compile Include="Assertions\KeptEventAddMethodAttribute.cs" />
+    <Compile Include="Assertions\KeptEventRemoveMethodAttribute.cs" />
     <Compile Include="Assertions\KeptMemberAttribute.cs" />
     <Compile Include="Assertions\KeptMemberInAssemblyAttribute.cs" />
     <Compile Include="Assertions\KeptResourceAttribute.cs" />

@@ -12,7 +12,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		readonly AssemblyDefinition originalAssembly, linkedAssembly;
 
 		HashSet<string> linkedMembers;
-		HashSet<string> verifiedBackingFields = new HashSet<string> ();
+		HashSet<string> verifiedGeneratedFields = new HashSet<string> ();
 		HashSet<string> verifiedEventMethods = new HashSet<string>();
 
 		public AssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked)
@@ -107,8 +107,11 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				linkedMembers.Remove (e.FullName);
 			}
 
+			// Need to check delegate cache fields before the normal field check
+			VerifyDelegateBackingFields (original, linked);
+
 			foreach (var f in original.Fields) {
-				if (verifiedBackingFields.Contains (f.FullName))
+				if (verifiedGeneratedFields.Contains (f.FullName))
 					continue;
 				VerifyField (f, linked?.Fields.FirstOrDefault (l => f.Name == l.Name));
 				linkedMembers.Remove (f.FullName);
@@ -222,26 +225,22 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 					Assert.Fail ($"Event `{src}' should have been removed");
 
 				return;
-			} else {
-				var keptBackingFieldAttribute = src.CustomAttributes
-					.FirstOrDefault (attr => attr.AttributeType.Name == nameof (KeptBackingFieldAttribute));
-
-				// If we have KeepBackingFieldAttribute set, 
-				// then we expect having 'add' and 'remove' accessors marked as 'kept' implicitly.
-				if (keptBackingFieldAttribute != null)
-				{
-					VerifyMethodInternal (src.AddMethod, linked.AddMethod, true);
-					verifiedEventMethods.Add (src.AddMethod.FullName);
-					linkedMembers.Remove (src.AddMethod.FullName);
-
-					VerifyMethodInternal (src.RemoveMethod, linked.RemoveMethod, true);
-					verifiedEventMethods.Add (src.RemoveMethod.FullName);
-					linkedMembers.Remove (src.RemoveMethod.FullName);
-				}
 			}
 
 			if (linked == null)
 				Assert.Fail ($"Event `{src}' should have been kept");
+
+			if (src.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptEventAddMethodAttribute))) {
+				VerifyMethodInternal (src.AddMethod, linked.AddMethod, true);
+				verifiedEventMethods.Add (src.AddMethod.FullName);
+				linkedMembers.Remove (src.AddMethod.FullName);
+			}
+
+			if (src.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptEventRemoveMethodAttribute))) {
+				VerifyMethodInternal (src.RemoveMethod, linked.RemoveMethod, true);
+				verifiedEventMethods.Add (src.RemoveMethod.FullName);
+				linkedMembers.Remove (src.RemoveMethod.FullName);
+			}
 
 			Assert.AreEqual (src?.Attributes, linked?.Attributes, $"Event `{src}' attributes");
 
@@ -290,7 +289,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				Assert.Fail ($"{src.MetadataToken.TokenType} `{src}', could not locate the expected backing field {backingFieldName}");
 
 			VerifyFieldKept (srcField, linkedType?.Fields.FirstOrDefault (l => srcField.Name == l.Name));
-			verifiedBackingFields.Add (srcField.FullName);
+			verifiedGeneratedFields.Add (srcField.FullName);
 			linkedMembers.Remove (srcField.FullName);
 		}
 
@@ -369,6 +368,26 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			return linked.SecurityDeclarations
 				.SelectMany (d => d.SecurityAttributes)
 				.Select (attr => attr.AttributeType.ToString ());
+		}
+
+		void VerifyDelegateBackingFields (TypeDefinition src, TypeDefinition linked)
+		{
+			var expectedFieldNames = GetCustomAttributeCtorValues<string> (src, nameof (KeptDelegateCacheFieldAttribute))
+				.Select (unique => $"<>f__mg$cache{unique}")
+				.ToList ();
+
+			if (expectedFieldNames.Count == 0)
+				return;
+
+			foreach (var srcField in src.Fields) {
+				if (!expectedFieldNames.Contains (srcField.Name))
+					continue;
+
+				var linkedField = linked?.Fields.FirstOrDefault (l => l.Name == srcField.Name);
+				VerifyFieldKept (srcField, linkedField);
+				verifiedGeneratedFields.Add (srcField.FullName);
+				linkedMembers.Remove (srcField.FullName);
+			}
 		}
 
 		void VerifyGenericParameters (IGenericParameterProvider src, IGenericParameterProvider linked)
