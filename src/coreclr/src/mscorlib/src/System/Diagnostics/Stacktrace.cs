@@ -498,12 +498,16 @@ namespace System.Diagnostics
 
                     sb.AppendFormat(CultureInfo.InvariantCulture, "   {0} ", word_At);
 
-                    Type t = mb.DeclaringType;
+                    Type declaringType = mb.DeclaringType;
+                    bool isAsync = (declaringType != null &&
+                                    declaringType.IsDefined(typeof(CompilerGeneratedAttribute)) &&
+                                    typeof(IAsyncStateMachine).IsAssignableFrom(declaringType));
+
                     // if there is a type (non global method) print it
-                    if (t != null)
+                    if (declaringType != null)
                     {
                         // Append t.FullName, replacing '+' with '.'
-                        string fullName = t.FullName;
+                        string fullName = declaringType.FullName;
                         for (int i = 0; i < fullName.Length; i++)
                         {
                             char ch = fullName[i];
@@ -594,7 +598,8 @@ namespace System.Diagnostics
                         }
                     }
 
-                    if (sf.GetIsLastFrameFromForeignExceptionStackTrace())
+                    if (sf.GetIsLastFrameFromForeignExceptionStackTrace() &&
+                        !isAsync) // Skip EDI boundary for async
                     {
                         sb.Append(Environment.NewLine);
                         sb.Append(SR.Exception_EndStackTraceFromPreviousThrow);
