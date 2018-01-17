@@ -216,6 +216,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PinnedBufferMemoryStream.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\SeekOrigin.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\StreamHelpers.CopyValidation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\StreamReader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\StreamWriter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\TextReader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\TextWriter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\UnmanagedMemoryAccessor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\UnmanagedMemoryStream.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\UnmanagedMemoryStreamWrapper.cs" />
