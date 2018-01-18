@@ -7,20 +7,46 @@ using System.Runtime.InteropServices;
 
 namespace System.Buffers
 {
+    /// <summary>
+    /// A handle for the memory.
+    /// </summary>
     public unsafe struct MemoryHandle : IDisposable
     {
-        private IRetainable _owner;
+        private IRetainable _retainable;
         private void* _pointer;
         private GCHandle _handle;
 
+        /// <summary>
+        /// Creates a new memory handle for the memory.
+        /// </summary>
+        /// <param name="retainable">reference to manually managed object</param>
+        /// <param name="pointer">pointer to memory, or null if a pointer was not provided when the handle was created</param>
+        /// <param name="handle">handle used to pin array buffers</param>
         [CLSCompliant(false)]
-        public MemoryHandle(IRetainable owner, void* pointer = null, GCHandle handle = default(GCHandle))
+        public MemoryHandle(IRetainable retainable, void* pointer = null, GCHandle handle = default(GCHandle))
         {
-            _owner = owner;
+            _retainable = retainable;
             _pointer = pointer;
             _handle = handle;
         }
 
+        /// <summary>
+        /// Returns the pointer to memory, or null if a pointer was not provided when the handle was created.
+        /// </summary>
+        [CLSCompliant(false)]
+        public void* Pointer => _pointer;
+
+        /// <summary>
+        /// Returns false if the pointer to memory is null.
+        /// </summary>
+        public bool HasPointer => _pointer != null;
+
+        /// <summary>
+        /// Adds an offset to the pinned pointer.
+        /// </summary>
+        /// <exception cref="System.ArgumentNullException">
+        /// Throw when pinned pointer is null.
+        /// </exception>
         internal void AddOffset(int offset)
         {
             if (_pointer == null)
@@ -33,26 +59,24 @@ namespace System.Buffers
             }
         }
 
-        [CLSCompliant(false)]
-        public void* Pointer => _pointer;
-
-        public bool HasPointer => _pointer != null;
-
-        public void Dispose()
-        { 
-            if (_handle.IsAllocated) 
+        /// <summary>
+        /// Frees the pinned handle and releases IRetainable.
+        /// </summary>
+       public void Dispose()
+        {
+            if (_handle.IsAllocated)
             {
                 _handle.Free();
             }
 
-            if (_owner != null) 
+            if (_retainable != null)
             {
-                _owner.Release();
-                _owner = null;
+                _retainable.Release();
+                _retainable = null;
             }
 
-            _pointer = null;           
+            _pointer = null;
         }
-        
+
     }
 }
