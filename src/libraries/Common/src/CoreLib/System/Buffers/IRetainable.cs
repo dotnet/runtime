@@ -7,9 +7,20 @@ using System.Runtime.CompilerServices;
 
 namespace System.Buffers
 {
+    /// <summary>
+    /// Provides a mechanism for manual lifetime management.
+    /// </summary>
     public interface IRetainable
     {
+        /// <summary>
+        /// Call this method to indicate that the IRetainable object is in use.
+        /// Do not dispose until Release is called.
+        /// </summary>
         void Retain();
+        /// <summary>
+        /// Call this method to indicate that the IRetainable object is no longer in use.
+        /// The object can now be disposed.
+        /// </summary>
         bool Release();
     }
 }
