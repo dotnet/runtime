@@ -964,6 +964,10 @@ LLVM_DISABLED_TESTS = \
 	finally_block_ending_in_dead_bb.exe \
 	appdomain-threadpool-unload.exe
 
+# https://github.com/mono/mono/issues/6490
+LLVM_DISABLED_TESTS += \
+	weak-fields.exe
+
 LLVM = $(filter --llvm, $(MONO_ENV_OPTIONS))
 
 # The two finalizer tests only work under sgen
