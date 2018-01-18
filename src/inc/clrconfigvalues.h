@@ -190,7 +190,8 @@ CONFIG_DWORD_INFO_EX(INTERNAL_D__FCE, W("D::FCE"), 0, "allows an assert when cra
 // 
 // Debugger
 // 
-CONFIG_DWORD_INFO_EX(INTERNAL_DbgBreakIfLocksUnavailable, W("DbgBreakIfLocksUnavailable"), 0, "allows an assert when the debugger can't take a lock ", CLRConfig::REGUTIL_default)
+RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_EnableDiagnostics, W("EnableDiagnostics"), 1, "allows the debugger and profiler diagnostics to be disabled", CLRConfig::REGUTIL_default)
+CONFIG_DWORD_INFO_EX(INTERNAL_DbgBreakIfLocksUnavailable, W("DbgBreakIfLocksUnavailable"), 0, "allows an assert when the debugger can't take a lock", CLRConfig::REGUTIL_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgBreakOnErr, W("DbgBreakOnErr"), 0, "allows an assert when we get a failing hresult", CLRConfig::REGUTIL_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgBreakOnMapPatchToDJI, W("DbgBreakOnMapPatchToDJI"), 0, "allows an assert when mapping a patch to an address", CLRConfig::REGUTIL_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgBreakOnRawInt3, W("DbgBreakOnRawInt3"), 0, "allows an assert for test coverage for debug break or other int3 breaks", CLRConfig::REGUTIL_default)
