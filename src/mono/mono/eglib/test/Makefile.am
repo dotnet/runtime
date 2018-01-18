@@ -27,12 +27,13 @@ SOURCES = \
 	utf8.c		\
 	endian.c	\
 	module.c	\
-	memory.c
+	memory.c	\
+	assertf.c
 
 test_eglib_SOURCES = $(SOURCES)
 
-test_eglib_CFLAGS = -Wall -DEGLIB_TESTS=1 -D_FORTIFY_SOURCE=2 -I$(srcdir)/../src -I../src -DDRIVER_NAME=\"EGlib\"
-test_eglib_LDADD = ../src/libeglib.la $(LIBICONV)
+test_eglib_CFLAGS = -Wall -DEGLIB_TESTS=1 -D_FORTIFY_SOURCE=2 -I$(srcdir)/.. -I.. -DDRIVER_NAME=\"EGlib\"
+test_eglib_LDADD = ../libeglib.la $(LIBICONV)
 
 run-eglib: all
 	srcdir=`readlink -f $(srcdir)` ./test-eglib

@@ -272,7 +272,7 @@ test_ppath2 ()
 #ifdef G_OS_WIN32
 	const gchar *searchfor = "test_eglib.exe";
 #else
-	const gchar *searchfor = "test-glib";
+	const gchar *searchfor = "test-eglib";
 #endif
 	
 	g_setenv ("PATH", "", TRUE);
