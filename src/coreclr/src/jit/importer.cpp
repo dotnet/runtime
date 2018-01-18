@@ -19127,7 +19127,8 @@ bool Compiler::IsTargetIntrinsic(CorInfoIntrinsics intrinsicId)
         case CORINFO_INTRINSIC_Round:
         case CORINFO_INTRINSIC_Ceiling:
         case CORINFO_INTRINSIC_Floor:
-            return compSupports(InstructionSet_SSE41);
+            // TODO-XArch-CQ: Update to work on non-AVX machines: https://github.com/dotnet/coreclr/issues/15908
+            return compSupports(InstructionSet_SSE41) && canUseVexEncoding();
 
         default:
             return false;

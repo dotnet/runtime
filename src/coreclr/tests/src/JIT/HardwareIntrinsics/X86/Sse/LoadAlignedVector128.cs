@@ -22,7 +22,8 @@ namespace IntelHardwareIntrinsicTest
 
             if (Sse.IsSupported)
             {
-                float* inArray = stackalloc float[4];
+                byte* inBuffer = stackalloc byte[32];
+                float* inArray = Align(inBuffer, 16);
                 float* outArray = stackalloc float[4];
 
                 var vf = Sse.LoadAlignedVector128(inArray);
@@ -46,6 +47,16 @@ namespace IntelHardwareIntrinsicTest
             }
 
             return testResult;
+        }
+
+        static unsafe float* Align(byte* buffer, byte expectedAlignment)
+        {
+            // Compute how bad the misalignment is, which is at most (expectedAlignment - 1).
+            // Then subtract that from the expectedAlignment and add it to the original address
+            // to compute the aligned address.
+
+            var misalignment = expectedAlignment - ((ulong)(buffer) % expectedAlignment);
+            return (float*)(buffer + misalignment);
         }
     }
 }
