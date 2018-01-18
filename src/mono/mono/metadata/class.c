@@ -998,8 +998,7 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 	ERROR_DECL (error);
 	error_init (error);
 	MonoMethod *res = mono_class_inflate_generic_method_full_checked (method, NULL, context, error);
-	if (!is_ok (error))
-		g_error ("Could not inflate generic method due to %s", mono_error_get_message (error));
+	mono_error_assert_msg_ok (error, "Could not inflate generic method");
 	return res;
 }
 
@@ -8050,8 +8049,7 @@ mono_class_load_from_name (MonoImage *image, const char* name_space, const char 
 	klass = mono_class_from_name_checked (image, name_space, name, error);
 	if (!klass)
 		g_error ("Runtime critical type %s.%s not found", name_space, name);
-	if (!mono_error_ok (error))
-		g_error ("Could not load runtime critical type %s.%s due to %s", name_space, name, mono_error_get_message (error));
+	mono_error_assertf_ok (error, "Could not load runtime critical type %s.%s", name_space, name);
 	return klass;
 }
 
@@ -8075,8 +8073,7 @@ mono_class_try_load_from_name (MonoImage *image, const char* name_space, const c
 	MonoClass *klass;
 
 	klass = mono_class_from_name_checked (image, name_space, name, error);
-	if (!mono_error_ok (error))
-		g_error ("Could not load runtime critical type %s.%s due to %s", name_space, name, mono_error_get_message (error));
+	mono_error_assertf_ok (error, "Could not load runtime critical type %s.%s", name_space, name);
 	return klass;
 }
 
@@ -8668,16 +8665,14 @@ mono_class_get_cctor (MonoClass *klass)
 		ERROR_DECL (error);
 		error_init (error);
 		MonoMethod *result = mono_class_get_inflated_method (klass, mono_class_get_cctor (mono_class_get_generic_class (klass)->container_class), error);
-		if (!is_ok (error))
-			g_error ("Could not lookup inflated class cctor due to %s", mono_error_get_message (error)); /* FIXME do proper error handling */
+		mono_error_assert_msg_ok (error, "Could not lookup inflated class cctor"); /* FIXME do proper error handling */
 		return result;
 	}
 
 	if (mono_class_get_cached_class_info (klass, &cached_info)) {
 		ERROR_DECL (error);
 		MonoMethod *result = mono_get_method_checked (klass->image, cached_info.cctor_token, klass, NULL, error);
-		if (!mono_error_ok (error))
-			g_error ("Could not lookup class cctor from cached metadata due to %s", mono_error_get_message (error));
+		mono_error_assert_msg_ok (error, "Could not lookup class cctor from cached metadata");
 		return result;
 	}
 
@@ -8703,8 +8698,7 @@ mono_class_get_finalizer (MonoClass *klass)
 	if (mono_class_get_cached_class_info (klass, &cached_info)) {
 		ERROR_DECL (error);
 		MonoMethod *result = mono_get_method_checked (cached_info.finalize_image, cached_info.finalize_token, NULL, NULL, error);
-		if (!mono_error_ok (error))
-			g_error ("Could not lookup finalizer from cached metadata due to %s", mono_error_get_message (error));
+		mono_error_assert_msg_ok (error, "Could not lookup finalizer from cached metadata");
 		return result;
 	}else {
 		mono_class_setup_vtable (klass);
