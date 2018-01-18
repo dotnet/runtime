@@ -6,7 +6,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'">true</IsPartialFacadeAssembly>
-    <DefineConstants Condition="'$(IsPartialFacadeAssembly)' != 'true'">$(DefineConstants);netstandard</DefineConstants>
+    <DefineConstants Condition="'$(IsPartialFacadeAssembly)' != 'true'">$(DefineConstants);netstandard;FEATURE_PORTABLE_SPAN</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.1'">$(DefineConstants);netstandard11</DefineConstants>
   </PropertyGroup>
@@ -100,6 +100,13 @@
     <Compile Include="..\Common\src\System\MutableDecimal.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="$(CommonPath)\CoreLib\System\Memory.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\MemoryDebugView.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\ReadOnlyMemory.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\IRetainable.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\MemoryHandle.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\OwnedMemory.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Runtime\InteropServices\MemoryMarshal.cs" />
     <Compile Include="System\ReadOnlySpan.cs" />
     <Compile Include="System\Span.cs" />
     <Compile Include="System\SpanDebugView.cs" />
@@ -107,13 +114,6 @@
     <Compile Include="System\SpanHelpers.cs" />
     <Compile Include="System\Pinnable.cs" />
     <Compile Include="System\SpanHelpers.Clear.cs" />
-    <Compile Include="System\Memory.cs" />
-    <Compile Include="System\MemoryDebugView.cs" />
-    <Compile Include="System\ReadOnlyMemory.cs" />
-    <Compile Include="System\Buffers\IRetainable.cs" />
-    <Compile Include="System\Buffers\MemoryHandle.cs" />
-    <Compile Include="System\Buffers\OwnedMemory.cs" />
-    <Compile Include="System\Runtime\InteropServices\MemoryMarshal.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Common or Common-branched source files -->

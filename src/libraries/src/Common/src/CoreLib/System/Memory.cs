@@ -8,10 +8,16 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
 using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
+#if !FEATURE_PORTABLE_SPAN
 using Internal.Runtime.CompilerServices;
+#endif // FEATURE_PORTABLE_SPAN
 
 namespace System
 {
+    /// <summary>
+    /// Memory represents a contiguous region of arbitrary memory similar to <see cref="Span{T}"/>.
+    /// Unlike <see cref="Span{T}"/>, it is not a byref-like type.
+    /// </summary>
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     [DebuggerTypeProxy(typeof(MemoryDebugView<>))]
     public readonly struct Memory<T>
@@ -77,16 +83,12 @@ namespace System
             _index = start;
             _length = length;
         }
-        
+
         // Constructor for internal use only.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal Memory(OwnedMemory<T> owner, int index, int length)
         {
-            if (owner == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.ownedMemory);
-            if (index < 0 || length < 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException();
-
+            // No validation performed; caller must provide any necessary validation.
             _object = owner;
             _index = index | (1 << 31); // Before using _index, check if _index < 0, then 'and' it with RemoveOwnedFlagBitMask
             _length = length;
@@ -105,7 +107,7 @@ namespace System
         /// Defines an implicit conversion of an array to a <see cref="Memory{T}"/>
         /// </summary>
         public static implicit operator Memory<T>(T[] array) => new Memory<T>(array);
-        
+
         /// <summary>
         /// Defines an implicit conversion of a <see cref="ArraySegment{T}"/> to a <see cref="Memory{T}"/>
         /// </summary>
@@ -168,7 +170,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException();
             }
-            
+
             return new Memory<T>(_object, _index + start, length);
         }
 
@@ -191,7 +193,11 @@ namespace System
                     // and then cast to a Memory<T>. Such a cast can only be done with unsafe or marshaling code,
                     // in which case that's the dangerous operation performed by the dev, and we're just following
                     // suit here to make it work as best as possible.
+#if FEATURE_PORTABLE_SPAN
+                    return new Span<T>(Unsafe.As<Pinnable<T>>(s), MemoryExtensions.StringAdjustment, s.Length).Slice(_index, _length);
+#else
                     return new Span<T>(ref Unsafe.As<char, T>(ref s.GetRawStringData()), s.Length).Slice(_index, _length);
+#endif // FEATURE_PORTABLE_SPAN
                 }
                 else if (_object != null)
                 {
@@ -227,6 +233,10 @@ namespace System
         /// <param name="destination">The span to copy items into.</param>
         public bool TryCopyTo(Memory<T> destination) => Span.TryCopyTo(destination.Span);
 
+        /// <summary>
+        /// Returns a handle for the array.
+        /// <param name="pin">If pin is true, the GC will not move the array and hence its address can be taken</param>
+        /// </summary>
         public unsafe MemoryHandle Retain(bool pin = false)
         {
             MemoryHandle memoryHandle = default;
@@ -245,13 +255,21 @@ namespace System
                     // a readable ReadOnlyMemory<char> or a writable Memory<char> can still be pinned and
                     // used for interop purposes.
                     GCHandle handle = GCHandle.Alloc(s, GCHandleType.Pinned);
+#if FEATURE_PORTABLE_SPAN
+                    void* pointer = Unsafe.Add<T>((void*)handle.AddrOfPinnedObject(), _index);
+#else
                     void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref s.GetRawStringData()), _index);
+#endif // FEATURE_PORTABLE_SPAN
                     memoryHandle = new MemoryHandle(null, pointer, handle);
                 }
                 else if (_object is T[] array)
                 {
                     var handle = GCHandle.Alloc(array, GCHandleType.Pinned);
+#if FEATURE_PORTABLE_SPAN
+                    void* pointer = Unsafe.Add<T>((void*)handle.AddrOfPinnedObject(), _index);
+#else
                     void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref array.GetRawSzArrayData()), _index);
+#endif // FEATURE_PORTABLE_SPAN
                     memoryHandle = new MemoryHandle(null, pointer, handle);
                 }
             }
@@ -267,7 +285,7 @@ namespace System
         }
 
         /// <summary>
-        /// Get an array segment from the underlying memory. 
+        /// Get an array segment from the underlying memory.
         /// If unable to get the array segment, return false with a default array segment.
         /// </summary>
         public bool TryGetArray(out ArraySegment<T> arraySegment)
@@ -297,6 +315,10 @@ namespace System
         /// </summary>
         public T[] ToArray() => Span.ToArray();
 
+        /// <summary>
+        /// Determines whether the specified object is equal to the current object.
+        /// Returns true if the object is Memory or ReadOnlyMemory and if both objects point to the same array and have the same length.
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override bool Equals(object obj)
         {
@@ -326,6 +348,9 @@ namespace System
                 _length == other._length;
         }
 
+        /// <summary>
+        /// Serves as the default hash function.
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override int GetHashCode()
         {

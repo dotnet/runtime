@@ -41,7 +41,11 @@ namespace System
                     return (T[])(object)text.Substring(start, length).ToCharArray();
                 }
 
+#if FEATURE_PORTABLE_SPAN
+                return SpanHelpers.PerTypeValues<T>.EmptyArray;
+#else
                 return Array.Empty<T>();
+#endif // FEATURE_PORTABLE_SPAN
             }
         }
     }
