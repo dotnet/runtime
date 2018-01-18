@@ -16,6 +16,9 @@
  */
 #include <config.h>
 #include <fcntl.h>
+#ifndef HOST_WIN32
+#include <dirent.h>
+#endif
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/utils/mono-mmap.h>
@@ -185,6 +188,46 @@ save_library (int fd, uint64_t offset, uint64_t size, const char *destfname)
 	g_free (buffer);
 }
 
+#ifndef HOST_WIN32
+static gboolean
+search_directories(const char *envPath, const char *program, char **new_program)
+{
+	gchar **paths = NULL;
+	gint i;
+
+	paths = g_strsplit (envPath, G_SEARCHPATH_SEPARATOR_S, 0);
+	g_assert (paths);
+
+	for (i = 0; paths [i]; ++i) {
+		gchar *path = paths [i];
+		gint path_len = strlen (path);
+		DIR *dir;
+		struct dirent *ent;
+
+		if (path_len == 0)
+			continue;
+
+		dir = opendir (path);
+		if (!dir)
+			continue;
+
+		while ((ent = readdir (dir))){
+			if (!strcmp (ent->d_name, program)){
+				*new_program = g_strdup_printf ("%s%s%s", path, path [path_len - 1] == '/' ? "" : "/", program);
+				g_strfreev (paths);
+				return TRUE;
+			}
+		}
+
+		closedir (dir);
+	}
+
+	*new_program = NULL;
+	g_strfreev (paths);
+	return FALSE;
+}
+#endif
+
 static gboolean
 probe_embedded (const char *program, int *ref_argc, char **ref_argv [])
 {
@@ -204,6 +247,20 @@ probe_embedded (const char *program, int *ref_argc, char **ref_argv [])
 	int j;
 
 	int fd = open (program, O_RDONLY);
+#ifndef HOST_WIN32
+	if (fd == -1){
+		// Also search through the PATH in case the program was run from a different directory
+		gchar* envPath = getenv ("PATH");
+		if (envPath){
+			gchar *new_program = NULL;
+			if (search_directories (envPath, program, &new_program)){
+				fd = open (new_program, O_RDONLY);
+				g_free (new_program);
+				new_program = NULL;
+			}
+		}
+	}
+#endif
 	if (fd == -1)
 		return FALSE;
 	if ((sigstart = lseek (fd, -24, SEEK_END)) == -1)
