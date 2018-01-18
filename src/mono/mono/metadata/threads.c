@@ -1625,25 +1625,20 @@ mono_thread_get_managed_id (MonoThread *thread)
 	return id;
 }
 
-MonoString* 
-ves_icall_System_Threading_Thread_GetName_internal (MonoInternalThread *this_obj)
+MonoStringHandle
+ves_icall_System_Threading_Thread_GetName_internal (MonoInternalThreadHandle thread_handle, MonoError *error)
 {
-	ERROR_DECL (error);
-	MonoString* str;
+	// InternalThreads are always pinned, so shallowly coop-handleize.
+	MonoInternalThread * const this_obj = MONO_HANDLE_RAW (thread_handle);
 
-	error_init (error);
+	MonoStringHandle str = MONO_HANDLE_NEW (MonoString, NULL);
 
 	LOCK_THREAD (this_obj);
 	
-	if (!this_obj->name)
-		str = NULL;
-	else
-		str = mono_string_new_utf16_checked (mono_domain_get (), this_obj->name, this_obj->name_len, error);
-	
-	UNLOCK_THREAD (this_obj);
+	if (this_obj->name)
+		MONO_HANDLE_ASSIGN (str, mono_string_new_utf16_handle (mono_domain_get (), this_obj->name, this_obj->name_len, error));
 
-	if (mono_error_set_pending_exception (error))
-		return NULL;
+	UNLOCK_THREAD (this_obj);
 	
 	return str;
 }
