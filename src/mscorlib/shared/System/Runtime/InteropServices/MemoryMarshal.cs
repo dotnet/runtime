@@ -4,7 +4,9 @@
 
 using System.Buffers;
 using System.Runtime.CompilerServices;
+#if !FEATURE_PORTABLE_SPAN
 using Internal.Runtime.CompilerServices;
+#endif // FEATURE_PORTABLE_SPAN
 
 namespace System.Runtime.InteropServices
 {
@@ -26,10 +28,48 @@ namespace System.Runtime.InteropServices
         public static Memory<T> AsMemory<T>(ReadOnlyMemory<T> readOnlyMemory) =>
             Unsafe.As<ReadOnlyMemory<T>, Memory<T>>(ref readOnlyMemory);
 
+#if FEATURE_PORTABLE_SPAN
+        /// <summary>
+        /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to the location where the 0th element
+        /// would have been stored. Such a reference can be used for pinning but must never be dereferenced.
+        /// </summary>
+        public static ref T GetReference<T>(Span<T> span)
+        {
+            if (span.Pinnable == null)
+                unsafe { return ref Unsafe.AsRef<T>(span.ByteOffset.ToPointer()); }
+            else
+                return ref Unsafe.AddByteOffset<T>(ref span.Pinnable.Data, span.ByteOffset);
+        }
+
+        /// <summary>
+        /// Returns a reference to the 0th element of the ReadOnlySpan. If the Span is empty, returns a reference to the location where the 0th element
+        /// would have been stored. Such a reference can be used for pinning but must never be dereferenced.
+        /// </summary>
+        public static ref T GetReference<T>(ReadOnlySpan<T> span)
+        {
+            if (span.Pinnable == null)
+                unsafe { return ref Unsafe.AsRef<T>(span.ByteOffset.ToPointer()); }
+            else
+                return ref Unsafe.AddByteOffset<T>(ref span.Pinnable.Data, span.ByteOffset);
+        }
+#else
+        /// <summary>
+        /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to the location where the 0th element
+        /// would have been stored. Such a reference can be used for pinning but must never be dereferenced.
+        /// </summary>
         public static ref T GetReference<T>(Span<T> span) => ref span._pointer.Value;
 
+        /// <summary>
+        /// Returns a reference to the 0th element of the ReadOnlySpan. If the Span is empty, returns a reference to the location where the 0th element
+        /// would have been stored. Such a reference can be used for pinning but must never be dereferenced.
+        /// </summary>
         public static ref T GetReference<T>(ReadOnlySpan<T> span) => ref span._pointer.Value;
+#endif // FEATURE_PORTABLE_SPAN
 
+        /// <summary>
+        /// Get an array segment from the underlying memory.
+        /// If unable to get the array segment, return false with a default array segment.
+        /// </summary>
         public static bool TryGetArray<T>(ReadOnlyMemory<T> readOnlyMemory, out ArraySegment<T> arraySegment)
         {
             object obj = readOnlyMemory.GetObjectStartLength(out int index, out int length);
