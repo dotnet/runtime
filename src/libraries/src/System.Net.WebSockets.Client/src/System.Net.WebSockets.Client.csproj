@@ -4,20 +4,14 @@
   <PropertyGroup>
     <ProjectGuid>{B8AD98AE-84C3-4313-B3F1-EE8BD5BFF69B}</ProjectGuid>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <!-- // uncomment to use the managed "unix" implementation on Windows
-      <TargetsWindows>false</TargetsWindows>
-      <TargetsUnix>true</TargetsUnix>
-    -->
   </PropertyGroup>
   <PropertyGroup>
     <DefineConstants Condition="'$(TargetGroup)' == 'uap'">$(DefineConstants);uap</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Unix-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Unix-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\Net\WebSockets\ClientWebSocket.cs" />
     <Compile Include="System\Net\WebSockets\ClientWebSocketOptions.cs" />
@@ -33,60 +27,8 @@
       <Link>Common\System\Net\WebSockets\WebSocketValidate.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
     <Compile Include="System\Net\WebSockets\WebSocketHandle.Windows.cs" />
-  </ItemGroup>
-  <!-- Windows : Win32 only -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' != 'uap'">
-    <Compile Include="System\Net\WebSockets\WebSocketHandle.Win32.cs" />
-    <Compile Include="System\Net\WebSockets\WebSocketMessageTypeAdapter.cs" />
-    <Compile Include="System\Net\WebSockets\WinHttpWebSocket.cs" />
-    <Compile Include="System\Net\WebSockets\WinHttpWebSocketCallback.cs" />
-    <Compile Include="System\Net\WebSockets\WinHttpWebSocketState.cs" />
-    <!-- Common -->
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Http\WinHttpException.cs">
-      <Link>Common\System\Net\Http\WinHttpException.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Runtime\ExceptionServices\ExceptionStackTrace.cs">
-      <Link>Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs</Link>
-    </Compile>
-    <!-- Interop -->
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
-      <Link>Interop\Windows\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetModuleHandle.cs">
-      <Link>Interop\Windows\kernel32\Interop.GetModuleHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs">
-      <Link>Interop\Windows\Interop.HRESULT_FROM_WIN32.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FormatMessage.cs">
-      <Link>Interop\Windows\kernel32\Interop.FormatMessage.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FreeLibrary.cs">
-      <Link>Interop\Windows\kernel32\Interop.FreeLibrary.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetProcAddress.cs">
-      <Link>Interop\Windows\kernel32\Interop.GetProcAddress.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.LoadLibraryEx.cs">
-      <Link>Interop\Windows\kernel32\Interop.LoadLibraryEx.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\winhttp\Interop.SafeWinHttpHandle.cs">
-      <Link>Interop\Windows\winhttp\Interop.SafeWinHttpHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\winhttp\Interop.winhttp.cs">
-      <Link>Interop\Windows\winhttp\Interop.winhttp.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\winhttp\Interop.winhttp_types.cs">
-      <Link>Interop\Windows\winhttp\Interop.winhttp_types.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <!-- Windows : Win32 + WinRT -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' == 'uap'">
     <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.cs">
       <Link>Common\System\Net\Security\CertificateHelper.cs</Link>
     </Compile>
@@ -96,7 +38,7 @@
     <Compile Include="System\Net\WebSockets\WebSocketHandle.WinRT.cs" />
     <Compile Include="System\Net\WebSockets\WinRTWebSocket.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+  <ItemGroup Condition="'$(TargetGroup)' != 'uap'">
     <Compile Include="System\Net\WebSockets\WebSocketHandle.Managed.cs" />
     <Compile Include="$(CommonPath)\System\StringExtensions.cs">
       <Link>Common\System\StringExtensions.cs</Link>
@@ -137,7 +79,7 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Tasks" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'uap'">
     <Reference Include="System.Buffers" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Net.NameResolution" />
