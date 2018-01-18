@@ -162,15 +162,6 @@ mono_error_ok (MonoError *error)
 	return error->error_code == MONO_ERROR_NONE;
 }
 
-void
-mono_error_assert_ok_pos (MonoError *error, const char* filename, int lineno)
-{
-	if (mono_error_ok (error))
-		return;
-
-	g_error ("%s:%d: %s\n", filename, lineno, mono_error_get_message (error));
-}
-
 unsigned short
 mono_error_get_error_code (MonoError *error)
 {
