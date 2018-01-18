@@ -360,9 +360,6 @@
   <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
     <value>Cannot access a closed Stream.</value>
   </data>
-  <data name="InvalidOperation_AsyncIOInProgress" xml:space="preserve">
-    <value>The stream is currently in use by a previous operation on the stream.</value>
-  </data>
   <data name="Argument_EmptyPath" xml:space="preserve">
     <value>Empty path name is not legal.</value>
   </data>
@@ -410,9 +407,6 @@
   </data>
   <data name="PlatformNotSupported_AppDomain_ResMon" xml:space="preserve">
     <value>AppDomain resource monitoring is not supported on this platform.</value>
-  </data>
-  <data name="IO_InvalidReadLength" xml:space="preserve">
-    <value>The read operation returned an invalid length.</value>
   </data>
   <data name="IO_PathTooLong_Path" xml:space="preserve">
     <value>The path '{0}' is too long, or a component of the specified path is too long.</value>
