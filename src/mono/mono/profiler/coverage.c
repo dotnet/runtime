@@ -58,22 +58,12 @@
 
 #include <stdio.h>
 
-#ifdef HAVE_DLFCN_H
-#include <dlfcn.h>
-#endif
-#include <fcntl.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_SYS_MMAN_H
-#include <sys/mman.h>
-#endif
-
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/tabledefs.h>
-#include <mono/metadata/metadata-internals.h>
+#include <mono/metadata/tokentype.h>
 
 #include <mono/mini/jit.h>
 
@@ -81,6 +71,7 @@
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/lock-free-queue.h>
 #include <mono/utils/mono-conc-hashtable.h>
+#include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-counters.h>
@@ -98,8 +89,13 @@ struct _MonoProfiler {
 
 	char *args;
 
-	mono_mutex_t mutex;
+	volatile gint32 runtime_inited;
+	volatile gint32 in_shutdown;
+
+	guint32 previous_offset;
 	GPtrArray *data;
+
+	mono_mutex_t mutex;
 
 	GPtrArray *filters;
 	MonoConcurrentHashTable *filtered_classes;
@@ -107,13 +103,12 @@ struct _MonoProfiler {
 
 	MonoConcurrentHashTable *methods;
 	MonoConcurrentHashTable *assemblies;
-	MonoConcurrentHashTable *classes;
+	GHashTable *deferred_assemblies;
 
+	MonoConcurrentHashTable *class_to_methods;
 	MonoConcurrentHashTable *image_to_methods;
 
 	GHashTable *uncovered_methods;
-
-	guint32 previous_offset;
 };
 
 typedef struct {
@@ -128,7 +123,7 @@ typedef struct {
 } ProfilerConfig;
 
 static ProfilerConfig coverage_config;
-static struct _MonoProfiler coverage_profiler;
+static MonoProfiler coverage_profiler;
 
 /* This is a very basic escape function that escapes < > and &
    Ideally we'd use g_markup_escape_string but that function isn't
@@ -198,8 +193,6 @@ free_coverage_entry (gpointer data, gpointer userdata)
 static void
 obtain_coverage_for_method (MonoProfiler *prof, const MonoProfilerCoverageData *entry)
 {
-	g_assert (prof == &coverage_profiler);
-
 	CoverageEntry *e = g_new (CoverageEntry, 1);
 
 	coverage_profiler.previous_offset = entry->il_offset;
@@ -443,7 +436,7 @@ dump_assembly (gpointer key, gpointer value, gpointer userdata)
 	g_free (escaped_image_name);
 	g_free (escaped_image_filename);
 
-	mono_conc_hashtable_foreach (coverage_profiler.classes, dump_classes_for_image, image);
+	mono_conc_hashtable_foreach (coverage_profiler.class_to_methods, dump_classes_for_image, image);
 }
 
 static void
@@ -472,49 +465,30 @@ create_method_node (MonoMethod *method)
 }
 
 static gboolean
-coverage_filter (MonoProfiler *prof, MonoMethod *method)
+consider_image (MonoImage *image)
 {
-	MonoError error;
-	MonoClass *klass;
-	MonoImage *image;
-	MonoAssembly *assembly;
-	MonoMethodHeader *header;
-	guint32 iflags, flags, code_size;
-	char *fqn, *classname;
-	gboolean has_positive, found;
-	MonoLockFreeQueue *image_methods, *class_methods;
-	MonoLockFreeQueueNode *node;
-
-	g_assert (prof == &coverage_profiler);
-
-	flags = mono_method_get_flags (method, &iflags);
-	if ((iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-	    (flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
-		return FALSE;
-
-	// Don't need to do anything else if we're already tracking this method
-	if (mono_conc_hashtable_lookup (coverage_profiler.methods, method))
-		return TRUE;
-
-	klass = mono_method_get_class (method);
-	image = mono_class_get_image (klass);
-
 	// Don't handle coverage for the core assemblies
 	if (mono_conc_hashtable_lookup (coverage_profiler.suppressed_assemblies, (gpointer) mono_image_get_name (image)) != NULL)
 		return FALSE;
 
+	return TRUE;
+}
+
+static gboolean
+consider_class (MonoImage *image, MonoClass *klass)
+{
 	if (coverage_profiler.filters) {
 		/* Check already filtered classes first */
 		if (mono_conc_hashtable_lookup (coverage_profiler.filtered_classes, klass))
 			return FALSE;
 
-		classname = mono_type_get_name (mono_class_get_type (klass));
-
-		fqn = g_strdup_printf ("[%s]%s", mono_image_get_name (image), classname);
+		char *classname = mono_type_get_name (mono_class_get_type (klass));
+		char *fqn = g_strdup_printf ("[%s]%s", mono_image_get_name (image), classname);
 
 		// Check positive filters first
-		has_positive = FALSE;
-		found = FALSE;
+		gboolean has_positive = FALSE;
+		gboolean found = FALSE;
+
 		for (guint i = 0; i < coverage_profiler.filters->len; ++i) {
 			char *filter = (char *)g_ptr_array_index (coverage_profiler.filters, i);
 
@@ -562,48 +536,195 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 		g_free (classname);
 	}
 
-	header = mono_method_get_header_checked (method, &error);
-	mono_error_cleanup (&error);
+	return TRUE;
+}
 
-	mono_method_header_get_code (header, &code_size, NULL);
+static MonoLockFreeQueue *
+register_image (MonoImage *image)
+{
+	// First try the fast path...
+	MonoLockFreeQueue *image_methods = (MonoLockFreeQueue *) mono_conc_hashtable_lookup (coverage_profiler.image_to_methods, image);
 
-	assembly = mono_image_get_assembly (image);
-
-	// Need to keep the assemblies around for as long as they are kept in the hashtable
-	// Nunit, for example, has a habit of unloading them before the coverage statistics are
-	// generated causing a crash. See https://bugzilla.xamarin.com/show_bug.cgi?id=39325
-	mono_assembly_addref (assembly);
+	if (image_methods)
+		return image_methods;
 
 	mono_os_mutex_lock (&coverage_profiler.mutex);
-	mono_conc_hashtable_insert (coverage_profiler.methods, method, method);
-	mono_conc_hashtable_insert (coverage_profiler.assemblies, assembly, assembly);
-	mono_os_mutex_unlock (&coverage_profiler.mutex);
 
-	image_methods = (MonoLockFreeQueue *)mono_conc_hashtable_lookup (coverage_profiler.image_to_methods, image);
+	/*
+	 * Another thread might've inserted the image since the check above, so
+	 * check again now that we're holding the lock.
+	 */
+	image_methods = (MonoLockFreeQueue *) mono_conc_hashtable_lookup (coverage_profiler.image_to_methods, image);
 
 	if (image_methods == NULL) {
 		image_methods = (MonoLockFreeQueue *) g_malloc (sizeof (MonoLockFreeQueue));
 		mono_lock_free_queue_init (image_methods);
-		mono_os_mutex_lock (&coverage_profiler.mutex);
 		mono_conc_hashtable_insert (coverage_profiler.image_to_methods, image, image_methods);
-		mono_os_mutex_unlock (&coverage_profiler.mutex);
+
+		MonoAssembly *assembly = mono_image_get_assembly (image);
+
+		/*
+		 * We have to keep all the assemblies we reference metadata in alive,
+		 * otherwise they might be gone by the time we dump coverage data
+		 * during shutdown. This can happen with e.g. the corlib test suite.
+		 */
+		mono_assembly_addref (assembly);
+
+		mono_conc_hashtable_insert (coverage_profiler.assemblies, assembly, assembly);
 	}
 
-	node = create_method_node (method);
-	mono_lock_free_queue_enqueue (image_methods, node);
+	mono_os_mutex_unlock (&coverage_profiler.mutex);
 
-	class_methods = (MonoLockFreeQueue *)mono_conc_hashtable_lookup (coverage_profiler.classes, klass);
+	return image_methods;
+}
+
+static MonoLockFreeQueue *
+register_class (MonoClass *klass)
+{
+	// First try the fast path...
+	MonoLockFreeQueue *class_methods = (MonoLockFreeQueue *) mono_conc_hashtable_lookup (coverage_profiler.class_to_methods, klass);
+
+	if (class_methods)
+		return class_methods;
+
+	mono_os_mutex_lock (&coverage_profiler.mutex);
+
+	/*
+	 * Another thread might've inserted the class since the check above, so
+	 * check again now that we're holding the lock.
+	 */
+	class_methods = (MonoLockFreeQueue *) mono_conc_hashtable_lookup (coverage_profiler.class_to_methods, klass);
 
 	if (class_methods == NULL) {
 		class_methods = (MonoLockFreeQueue *) g_malloc (sizeof (MonoLockFreeQueue));
 		mono_lock_free_queue_init (class_methods);
-		mono_os_mutex_lock (&coverage_profiler.mutex);
-		mono_conc_hashtable_insert (coverage_profiler.classes, klass, class_methods);
-		mono_os_mutex_unlock (&coverage_profiler.mutex);
+		mono_conc_hashtable_insert (coverage_profiler.class_to_methods, klass, class_methods);
 	}
 
-	node = create_method_node (method);
-	mono_lock_free_queue_enqueue (class_methods, node);
+	mono_os_mutex_unlock (&coverage_profiler.mutex);
+
+	return class_methods;
+}
+
+/*
+ * Note: It's important that we do all of this work in the assembly_loaded
+ * callback rather than the (more intuitive) image_loaded callback. This is
+ * because assembly loading has not finished by the time image_loaded is
+ * raised, so if the mono_class_get_checked () call below ends up needing to
+ * resolve typeref tokens that point to other assemblies (it almost always
+ * does), we end up accessing a bunch of half-initialized state, leading to
+ * crashes.
+ */
+static void
+assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
+{
+	/*
+	 * When dumping coverage data at shutdown, we may end up loading some extra
+	 * assemblies for reflection purposes (e.g. method signatures). We don't
+	 * need to consider these assemblies for coverage since no code in them is
+	 * ever actually executed. This avoids a deadlock where we would try to
+	 * take the coverage profiler lock recursively.
+	 */
+	if (mono_atomic_load_i32 (&coverage_profiler.in_shutdown))
+		return;
+
+	if (!mono_atomic_load_i32 (&coverage_profiler.runtime_inited)) {
+		/*
+		 * Certain assemblies (i.e. corlib) can be problematic during startup.
+		 * The assembly_loaded callback is raised before mono_defaults.corlib
+		 * is set, which means when we try to load classes from it, things
+		 * break in weird ways because various mono_is_corlib_image () special
+		 * cases throughout the runtime are suddenly false.
+		 *
+		 * Work around this by remembering assemblies that are loaded before
+		 * runtime initialization has finished and processing them when we get
+		 * the runtime_initialized callback.
+		 */
+		mono_assembly_addref (assembly);
+		g_hash_table_insert (coverage_profiler.deferred_assemblies, assembly, assembly);
+		return;
+	}
+
+	MonoImage *image = mono_assembly_get_image (assembly);
+
+	if (!consider_image (image))
+		return;
+
+	register_image (image);
+
+	int rows = mono_image_get_table_rows (image, MONO_TABLE_TYPEDEF);
+
+	for (int i = 1; i <= rows; i++) {
+		ERROR_DECL (error);
+
+		MonoClass *klass = mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF | i, &error);
+
+		/*
+		 * Swallow the error. The program will get an exception later on anyway
+		 * when trying to use the class. If it's an entirely unused class,
+		 * there's not much we can do; in that case, we just won't write it as
+		 * uncovered to the output file.
+		 */
+		mono_error_cleanup (&error);
+
+		if (!klass || !consider_class (image, klass))
+			continue;
+
+		register_class (klass);
+	}
+}
+
+static void
+process_deferred_assembly (gpointer key, gpointer value, gpointer userdata)
+{
+	MonoAssembly *assembly = key;
+
+	assembly_loaded ((MonoProfiler *) userdata, assembly);
+	mono_assembly_close (assembly);
+}
+
+static gboolean
+coverage_filter (MonoProfiler *prof, MonoMethod *method)
+{
+	guint32 iflags, flags;
+
+	flags = mono_method_get_flags (method, &iflags);
+
+	if ((iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+	    (flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
+		return FALSE;
+
+	// Don't need to do anything else if we're already tracking this method.
+	if (mono_conc_hashtable_lookup (coverage_profiler.methods, method))
+		return TRUE;
+
+	MonoClass *klass = mono_method_get_class (method);
+	MonoImage *image = mono_class_get_image (klass);
+
+	if (!consider_image (image) || !consider_class (image, klass))
+		return FALSE;
+
+	MonoLockFreeQueue *image_methods = register_image (image);
+	MonoLockFreeQueue *class_methods = register_class (klass);
+
+	mono_os_mutex_lock (&coverage_profiler.mutex);
+
+	/*
+	 * Another thread might've inserted the method since the check above, so
+	 * check again now that we're holding the lock.
+	 */
+	if (!mono_conc_hashtable_lookup (coverage_profiler.methods, method)) {
+		mono_conc_hashtable_insert (coverage_profiler.methods, method, method);
+		mono_os_mutex_unlock (&coverage_profiler.mutex);
+
+		// Don't need to hold the lock for these.
+		MonoLockFreeQueueNode *image_methods_node = create_method_node (method);
+		mono_lock_free_queue_enqueue (image_methods, image_methods_node);
+
+		MonoLockFreeQueueNode *class_methods_node = create_method_node (method);
+		mono_lock_free_queue_enqueue (class_methods, class_methods_node);
+	} else
+		mono_os_mutex_unlock (&coverage_profiler.mutex);
 
 	return TRUE;
 }
@@ -727,7 +848,7 @@ unref_coverage_assemblies (gpointer key, gpointer value, gpointer userdata)
 static void
 cov_shutdown (MonoProfiler *prof)
 {
-	g_assert (prof == &coverage_profiler);
+	mono_atomic_store_i32 (&coverage_profiler.in_shutdown, TRUE);
 
 	dump_coverage ();
 
@@ -735,13 +856,18 @@ cov_shutdown (MonoProfiler *prof)
 	mono_conc_hashtable_foreach (coverage_profiler.assemblies, unref_coverage_assemblies, NULL);
 	mono_os_mutex_unlock (&coverage_profiler.mutex);
 
-	mono_conc_hashtable_destroy (coverage_profiler.methods);
-	mono_conc_hashtable_destroy (coverage_profiler.assemblies);
-	mono_conc_hashtable_destroy (coverage_profiler.classes);
-	mono_conc_hashtable_destroy (coverage_profiler.filtered_classes);
+	g_hash_table_destroy (coverage_profiler.uncovered_methods);
 
 	mono_conc_hashtable_destroy (coverage_profiler.image_to_methods);
+	mono_conc_hashtable_destroy (coverage_profiler.class_to_methods);
+
+	g_hash_table_destroy (coverage_profiler.deferred_assemblies);
+	mono_conc_hashtable_destroy (coverage_profiler.assemblies);
+	mono_conc_hashtable_destroy (coverage_profiler.methods);
+
 	mono_conc_hashtable_destroy (coverage_profiler.suppressed_assemblies);
+	mono_conc_hashtable_destroy (coverage_profiler.filtered_classes);
+
 	mono_os_mutex_destroy (&coverage_profiler.mutex);
 
 	if (*coverage_config.output_filename == '|') {
@@ -758,10 +884,15 @@ cov_shutdown (MonoProfiler *prof)
 static void
 runtime_initialized (MonoProfiler *profiler)
 {
+	mono_atomic_store_i32 (&coverage_profiler.runtime_inited, TRUE);
+
 	mono_counters_register ("Event: Coverage methods", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &coverage_methods_ctr);
 	mono_counters_register ("Event: Coverage statements", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &coverage_statements_ctr);
 	mono_counters_register ("Event: Coverage classes", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &coverage_classes_ctr);
 	mono_counters_register ("Event: Coverage assemblies", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &coverage_assemblies_ctr);
+
+	// See the comment in assembly_loaded ().
+	g_hash_table_foreach (coverage_profiler.deferred_assemblies, process_deferred_assembly, profiler);
 }
 
 static void usage (void);
@@ -929,20 +1060,25 @@ mono_profiler_init_coverage (const char *desc)
 	}
 
 	mono_os_mutex_init (&coverage_profiler.mutex);
-	coverage_profiler.methods = mono_conc_hashtable_new (NULL, NULL);
-	coverage_profiler.assemblies = mono_conc_hashtable_new (NULL, NULL);
-	coverage_profiler.classes = mono_conc_hashtable_new (NULL, NULL);
-	coverage_profiler.filtered_classes = mono_conc_hashtable_new (NULL, NULL);
-	coverage_profiler.image_to_methods = mono_conc_hashtable_new (NULL, NULL);
-	coverage_profiler.uncovered_methods = g_hash_table_new (NULL, NULL);
-	init_suppressed_assemblies ();
 
 	coverage_profiler.filters = filters;
+	coverage_profiler.filtered_classes = mono_conc_hashtable_new (NULL, NULL);
+	init_suppressed_assemblies ();
+
+	coverage_profiler.methods = mono_conc_hashtable_new (NULL, NULL);
+	coverage_profiler.assemblies = mono_conc_hashtable_new (NULL, NULL);
+	coverage_profiler.deferred_assemblies = g_hash_table_new (NULL, NULL);
+
+	coverage_profiler.class_to_methods = mono_conc_hashtable_new (NULL, NULL);
+	coverage_profiler.image_to_methods = mono_conc_hashtable_new (NULL, NULL);
+
+	coverage_profiler.uncovered_methods = g_hash_table_new (NULL, NULL);
 
 	MonoProfilerHandle handle = coverage_profiler.handle = mono_profiler_create (&coverage_profiler);
 
 	mono_profiler_set_runtime_shutdown_end_callback (handle, cov_shutdown);
 	mono_profiler_set_runtime_initialized_callback (handle, runtime_initialized);
+	mono_profiler_set_assembly_loaded_callback (handle, assembly_loaded);
 
 	mono_profiler_enable_coverage ();
 	mono_profiler_set_coverage_filter_callback (handle, coverage_filter);

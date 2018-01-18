@@ -581,8 +581,11 @@ struct _MonoMethodHeader {
 };
 
 typedef struct {
+	const unsigned char *code;
 	guint32      code_size;
+	guint16      max_stack;
 	gboolean     has_clauses;
+	gboolean     has_locals;
 } MonoMethodHeaderSummary;
 
 #define MONO_SIZEOF_METHOD_HEADER (sizeof (struct _MonoMethodHeader) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)

@@ -3898,8 +3898,11 @@ mono_method_get_header_summary (MonoMethod *method, MonoMethodHeaderSummary *sum
 	while (method->is_inflated)
 		method = ((MonoMethodInflated*)method)->declaring;
 
+	summary->code = NULL;
 	summary->code_size = 0;
+	summary->max_stack = 0;
 	summary->has_clauses = FALSE;
+	summary->has_locals = FALSE;
 
 	/*FIXME extract this into a MACRO and share it with mono_method_get_header*/
 	if ((method->flags & METHOD_ATTRIBUTE_ABSTRACT) || (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
@@ -3909,8 +3912,11 @@ mono_method_get_header_summary (MonoMethod *method, MonoMethodHeaderSummary *sum
 		MonoMethodHeader *header =  ((MonoMethodWrapper *)method)->header;
 		if (!header)
 			return FALSE;
+		summary->code = header->code;
 		summary->code_size = header->code_size;
+		summary->max_stack = header->max_stack;
 		summary->has_clauses = header->num_clauses > 0;
+		summary->has_locals = header->num_locals > 0;
 		return TRUE;
 	}
 
@@ -3933,14 +3939,22 @@ mono_method_get_header_summary (MonoMethod *method, MonoMethodHeaderSummary *sum
 	switch (format) {
 	case METHOD_HEADER_TINY_FORMAT:
 		ptr++;
+		summary->max_stack = 8;
+		summary->code = (unsigned char *) ptr;
 		summary->code_size = flags >> 2;
 		break;
 	case METHOD_HEADER_FAT_FORMAT:
 		fat_flags = read16 (ptr);
-		ptr += 4;
+		ptr += 2;
+		summary->max_stack = read16 (ptr);
+		ptr += 2;
 		summary->code_size = read32 (ptr);
+		ptr += 4;
+		summary->has_locals = !!read32 (ptr);
+		ptr += 4;
 		if (fat_flags & METHOD_HEADER_MORE_SECTS)
 			summary->has_clauses = TRUE;
+		summary->code = (unsigned char *) ptr;
 		break;
 	default:
 		return FALSE;
