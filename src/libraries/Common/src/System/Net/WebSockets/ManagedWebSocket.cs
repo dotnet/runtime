@@ -13,8 +13,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-// NOTE: This file is shared between CoreFX and ASP.NET.  Be very thoughtful when changing it.
-
 namespace System.Net.WebSockets
 {
     /// <summary>A managed implementation of a web socket that sends and receives data via a <see cref="Stream"/>.</summary>
@@ -26,7 +24,7 @@ namespace System.Net.WebSockets
     ///   a send operation while another is in progress or a receive operation while another is in progress will
     ///   result in an exception.
     /// </remarks>
-    internal sealed class ManagedWebSocket : WebSocket
+    internal sealed partial class ManagedWebSocket : WebSocket
     {
         /// <summary>Creates a <see cref="ManagedWebSocket"/> from a <see cref="Stream"/> connected to a websocket endpoint.</summary>
         /// <param name="stream">The connected Stream.</param>
@@ -264,10 +262,10 @@ namespace System.Net.WebSockets
 
             WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
 
-            return SendAsync((ReadOnlyMemory<byte>)buffer, messageType, endOfMessage, cancellationToken);
+            return SendPrivateAsync((ReadOnlyMemory<byte>)buffer, messageType, endOfMessage, cancellationToken);
         }
 
-        public override Task SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
+        private Task SendPrivateAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
         {
             if (messageType != WebSocketMessageType.Text && messageType != WebSocketMessageType.Binary)
             {
@@ -318,29 +316,6 @@ namespace System.Net.WebSockets
             catch (Exception exc)
             {
                 return Task.FromException<WebSocketReceiveResult>(exc);
-            }
-        }
-
-        public override ValueTask<ValueWebSocketReceiveResult> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken)
-        {
-            try
-            {
-                WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validReceiveStates);
-
-                Debug.Assert(!Monitor.IsEntered(StateUpdateLock), $"{nameof(StateUpdateLock)} must never be held when acquiring {nameof(ReceiveAsyncLock)}");
-                lock (ReceiveAsyncLock) // synchronize with receives in CloseAsync
-                {
-                    ThrowIfOperationInProgress(_lastReceiveAsync);
-                    ValueTask<ValueWebSocketReceiveResult> t = ReceiveAsyncPrivate<ValueWebSocketReceiveResultGetter, ValueWebSocketReceiveResult>(buffer, cancellationToken);
-                    _lastReceiveAsync =
-                        t.IsCompletedSuccessfully ? (t.Result.MessageType == WebSocketMessageType.Close ? s_cachedCloseTask : Task.CompletedTask) :
-                        t.AsTask();
-                    return t;
-                }
-            }
-            catch (Exception exc)
-            {
-                return new ValueTask<ValueWebSocketReceiveResult>(Task.FromException<ValueWebSocketReceiveResult>(exc));
             }
         }
 
@@ -545,7 +520,7 @@ namespace System.Net.WebSockets
                 Task t = SendFrameLockAcquiredNonCancelableAsync(MessageOpcode.Ping, true, Memory<byte>.Empty);
 
                 // "Observe" any exception, ignoring it to prevent the unobserved exception event from being raised.
-                if (!t.IsCompletedSuccessfully)
+                if (t.Status != TaskStatus.RanToCompletion)
                 {
                     t.ContinueWith(p => { Exception ignored = p.Exception; },
                         CancellationToken.None,
@@ -1068,16 +1043,7 @@ namespace System.Net.WebSockets
                         // a race condition here, e.g. if there's a in-flight receive that completes after we check, but that's fine: worst
                         // case is we then await it, find that it's not what we need, and try again.
                         receiveTask = _lastReceiveAsync;
-                        if (receiveTask == null ||
-                            (receiveTask.Status == TaskStatus.RanToCompletion && 
-                             !(receiveTask is Task<WebSocketReceiveResult> wsrr && wsrr.Result.MessageType == WebSocketMessageType.Close) &&
-                             !(receiveTask is Task<ValueWebSocketReceiveResult> vwsrr && vwsrr.Result.MessageType == WebSocketMessageType.Close)))
-                        {
-                            ValueTask<ValueWebSocketReceiveResult> vt = ReceiveAsyncPrivate<ValueWebSocketReceiveResultGetter, ValueWebSocketReceiveResult>(closeBuffer, cancellationToken);
-                            _lastReceiveAsync = receiveTask =
-                                vt.IsCompletedSuccessfully ? (vt.Result.MessageType == WebSocketMessageType.Close ? s_cachedCloseTask : Task.CompletedTask) :
-                                vt.AsTask();
-                        }
+                        _lastReceiveAsync = receiveTask = ValidateAndReceiveAsync(receiveTask, closeBuffer, cancellationToken);
                     }
 
                     // Wait for whatever receive task we have.  We'll then loop around again to re-check our state.
@@ -1452,13 +1418,6 @@ namespace System.Net.WebSockets
         {
             public WebSocketReceiveResult GetResult(int count, WebSocketMessageType messageType, bool endOfMessage, WebSocketCloseStatus? closeStatus, string closeDescription) =>
                 new WebSocketReceiveResult(count, messageType, endOfMessage, closeStatus, closeDescription);
-        }
-
-        /// <summary><see cref="IWebSocketReceiveResultGetter{TResult}"/> implementation for <see cref="ValueWebSocketReceiveResult"/>.</summary>
-        private readonly struct ValueWebSocketReceiveResultGetter : IWebSocketReceiveResultGetter<ValueWebSocketReceiveResult>
-        {
-            public ValueWebSocketReceiveResult GetResult(int count, WebSocketMessageType messageType, bool endOfMessage, WebSocketCloseStatus? closeStatus, string closeDescription) =>
-                new ValueWebSocketReceiveResult(count, messageType, endOfMessage); // closeStatus/closeDescription are ignored
         }
     }
 }
