@@ -254,6 +254,11 @@ class BulkTypeEventLogger
 {
 private:
 
+#ifdef FEATURE_PAL
+    // The maximum event size, and the size of the buffer that we allocate to hold the event contents.
+    static const size_t kSizeOfEventBuffer = 65536;
+#endif
+
     // Estimate of how many bytes we can squeeze in the event data for the value struct
     // array.  (Intentionally overestimate the size of the non-array parts to keep it safe.)
     static const int kMaxBytesTypeValues = (cbMaxEtwEvent - 0x30);
@@ -295,7 +300,7 @@ private:
     BulkTypeValue m_rgBulkTypeValues[kMaxCountTypeValues];
 
 #ifdef FEATURE_PAL
-    BYTE m_BulkTypeEventBuffer[65536];
+    BYTE *m_pBulkTypeEventBuffer;
 #endif
 
 #ifdef FEATURE_REDHAWK
@@ -308,9 +313,38 @@ public:
     BulkTypeEventLogger() :
         m_nBulkTypeValueCount(0),
         m_nBulkTypeValueByteCount(0)
+#ifdef FEATURE_PAL
+        , m_pBulkTypeEventBuffer(NULL)
+#endif
     {
-        LIMITED_METHOD_CONTRACT;
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
+
+#ifdef FEATURE_PAL
+        m_pBulkTypeEventBuffer = new (nothrow) BYTE[kSizeOfEventBuffer];
+#endif
     }
+
+#ifdef FEATURE_PAL
+    ~BulkTypeEventLogger()
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
+
+        delete[] m_pBulkTypeEventBuffer;
+        m_pBulkTypeEventBuffer = NULL;
+    }
+#endif
 
     void LogTypeAndParameters(ULONGLONG thAsAddr, ETW::TypeSystemLog::TypeLogBehavior typeLogBehavior);
     void FireBulkTypeEvent();

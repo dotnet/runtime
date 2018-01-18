@@ -1714,7 +1714,6 @@ void BulkTypeEventLogger::FireBulkTypeEvent()
         // No types were batched up, so nothing to send
         return;
     }
-    
     UINT16 nClrInstanceID = GetClrInstanceId();
 
 #if !defined(FEATURE_PAL)
@@ -1792,6 +1791,12 @@ void BulkTypeEventLogger::FireBulkTypeEvent()
     
 #else // FEATURE_PAL
 
+    if(m_pBulkTypeEventBuffer == NULL)
+    {
+        // The buffer could not be allocated when this object was created, so bail.
+        return;
+    }
+
     UINT iSize = 0;
     
     for (int iTypeData = 0; iTypeData < m_nBulkTypeValueCount; iTypeData++)
@@ -1800,7 +1805,7 @@ void BulkTypeEventLogger::FireBulkTypeEvent()
         
         // Do fixed-size data as one bulk copy
         memcpy(
-                m_BulkTypeEventBuffer + iSize,
+                m_pBulkTypeEventBuffer + iSize,
                 &(target.fixedSizedData),
                 sizeof(target.fixedSizedData));
         iSize += sizeof(target.fixedSizedData);
@@ -1810,20 +1815,20 @@ void BulkTypeEventLogger::FireBulkTypeEvent()
         LPCWSTR wszName = target.sName.GetUnicode();
         if (wszName == NULL)
         {
-            m_BulkTypeEventBuffer[iSize++] = 0;
-            m_BulkTypeEventBuffer[iSize++] = 0;
+            m_pBulkTypeEventBuffer[iSize++] = 0;
+            m_pBulkTypeEventBuffer[iSize++] = 0;
         }
         else
         {
             UINT nameSize = (target.sName.GetCount() + 1) * sizeof(WCHAR);
-            memcpy(m_BulkTypeEventBuffer + iSize, wszName, nameSize);
+            memcpy(m_pBulkTypeEventBuffer + iSize, wszName, nameSize);
             iSize += nameSize;
         }
 
         // Type parameter count
         ULONG params = target.rgTypeParameters.GetCount();
         
-        ULONG *ptrInt = (ULONG*)(m_BulkTypeEventBuffer + iSize);
+        ULONG *ptrInt = (ULONG*)(m_pBulkTypeEventBuffer + iSize);
         *ptrInt = params;
         iSize += 4;
         
@@ -1832,12 +1837,12 @@ void BulkTypeEventLogger::FireBulkTypeEvent()
         // Type parameter array
         if (target.cTypeParameters > 0)
         {
-            memcpy(m_BulkTypeEventBuffer + iSize, target.rgTypeParameters.GetElements(), sizeof(ULONGLONG) * target.cTypeParameters);
+            memcpy(m_pBulkTypeEventBuffer + iSize, target.rgTypeParameters.GetElements(), sizeof(ULONGLONG) * target.cTypeParameters);
             iSize += sizeof(ULONGLONG) * target.cTypeParameters;
         }
     }
 
-    FireEtwBulkType(m_nBulkTypeValueCount, GetClrInstanceId(), iSize, m_BulkTypeEventBuffer);
+    FireEtwBulkType(m_nBulkTypeValueCount, GetClrInstanceId(), iSize, m_pBulkTypeEventBuffer);
 
 #endif // FEATURE_PAL
     // Reset state
