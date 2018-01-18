@@ -7319,7 +7319,11 @@ void Compiler::gtBlockOpInit(GenTreePtr result, GenTreePtr dst, GenTreePtr srcOr
         {
             src = src->AsIndir()->Addr()->gtGetOp1();
         }
+#ifdef FEATURE_HW_INTRINSICS
+        if ((src->OperGet() == GT_SIMD) || (src->OperGet() == GT_HWIntrinsic))
+#else
         if (src->OperGet() == GT_SIMD)
+#endif // FEATURE_HW_INTRINSICS
         {
             if (dst->OperIsBlk() && (dst->AsIndir()->Addr()->OperGet() == GT_ADDR))
             {
@@ -17850,10 +17854,7 @@ GenTreeSIMD* Compiler::gtNewSIMDNode(
 {
     assert(op1 != nullptr);
     SetOpLclRelatedToSIMDIntrinsic(op1);
-    if (op2 != nullptr)
-    {
-        SetOpLclRelatedToSIMDIntrinsic(op2);
-    }
+    SetOpLclRelatedToSIMDIntrinsic(op2);
 
     return new (this, GT_SIMD) GenTreeSIMD(type, op1, op2, simdIntrinsicID, baseType, size);
 }
@@ -17867,14 +17868,17 @@ GenTreeSIMD* Compiler::gtNewSIMDNode(
 //
 void Compiler::SetOpLclRelatedToSIMDIntrinsic(GenTreePtr op)
 {
-    if (op->OperIsLocal())
+    if (op != nullptr)
     {
-        setLclRelatedToSIMDIntrinsic(op);
-    }
-    else if ((op->OperGet() == GT_OBJ) && (op->gtOp.gtOp1->OperGet() == GT_ADDR) &&
-             op->gtOp.gtOp1->gtOp.gtOp1->OperIsLocal())
-    {
-        setLclRelatedToSIMDIntrinsic(op->gtOp.gtOp1->gtOp.gtOp1);
+        if (op->OperIsLocal())
+        {
+            setLclRelatedToSIMDIntrinsic(op);
+        }
+        else if ((op->OperGet() == GT_OBJ) && (op->gtOp.gtOp1->OperGet() == GT_ADDR) &&
+                 op->gtOp.gtOp1->gtOp.gtOp1->OperIsLocal())
+        {
+            setLclRelatedToSIMDIntrinsic(op->gtOp.gtOp1->gtOp.gtOp1);
+        }
     }
 }
 
@@ -17912,12 +17916,17 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
 GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(
     var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
 {
+    SetOpLclRelatedToSIMDIntrinsic(op1);
+
     return new (this, GT_HWIntrinsic) GenTreeHWIntrinsic(type, op1, hwIntrinsicID, baseType, size);
 }
 
 GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(
     var_types type, GenTree* op1, GenTree* op2, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
 {
+    SetOpLclRelatedToSIMDIntrinsic(op1);
+    SetOpLclRelatedToSIMDIntrinsic(op2);
+
     return new (this, GT_HWIntrinsic) GenTreeHWIntrinsic(type, op1, op2, hwIntrinsicID, baseType, size);
 }
 
@@ -17929,6 +17938,10 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
                                                        var_types      baseType,
                                                        unsigned       size)
 {
+    SetOpLclRelatedToSIMDIntrinsic(op1);
+    SetOpLclRelatedToSIMDIntrinsic(op2);
+    SetOpLclRelatedToSIMDIntrinsic(op3);
+
     return new (this, GT_HWIntrinsic)
         GenTreeHWIntrinsic(type, gtNewArgList(op1, op2, op3), hwIntrinsicID, baseType, size);
 }
@@ -17942,12 +17955,19 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
                                                        var_types      baseType,
                                                        unsigned       size)
 {
+    SetOpLclRelatedToSIMDIntrinsic(op1);
+    SetOpLclRelatedToSIMDIntrinsic(op2);
+    SetOpLclRelatedToSIMDIntrinsic(op3);
+    SetOpLclRelatedToSIMDIntrinsic(op4);
+
     return new (this, GT_HWIntrinsic)
         GenTreeHWIntrinsic(type, gtNewArgList(op1, op2, op3, op4), hwIntrinsicID, baseType, size);
 }
 
 GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID)
 {
+    SetOpLclRelatedToSIMDIntrinsic(op1);
+
     return new (this, GT_HWIntrinsic) GenTreeHWIntrinsic(type, op1, hwIntrinsicID, TYP_UNKNOWN, 0);
 }
 
@@ -17956,6 +17976,9 @@ GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types      type,
                                                          GenTree*       op2,
                                                          NamedIntrinsic hwIntrinsicID)
 {
+    SetOpLclRelatedToSIMDIntrinsic(op1);
+    SetOpLclRelatedToSIMDIntrinsic(op2);
+
     return new (this, GT_HWIntrinsic) GenTreeHWIntrinsic(type, op1, op2, hwIntrinsicID, TYP_UNKNOWN, 0);
 }
 
