@@ -72,10 +72,10 @@ public class MyProgram
     {
         if ((w != 1) || (s1.f1 != i1) || (s1.f2 != i2) || (s1.f3 != i3) || (s1.f4 != i4))
         {
-            Console.WriteLine("FAIL");
+            Console.WriteLine("Check1: FAIL");
             return Fail;
         }
-        Console.WriteLine("PASS");
+        Console.WriteLine("Check1: PASS");
         return Pass;
     }
 
@@ -96,10 +96,10 @@ public class MyProgram
     {
         if ((w != 2) || (s2.f1 != i1) || (s2.f2 != i2) || (s2.f3 != i3) || (i4 != 4))
         {
-            Console.WriteLine("FAIL");
+            Console.WriteLine("Check2: FAIL");
             return Fail;
         }
-        Console.WriteLine("PASS");
+        Console.WriteLine("Check2: PASS");
         return Pass;
     }
 
@@ -120,10 +120,10 @@ public class MyProgram
     {
         if ((w != 2) || (s3.f1 != i1) || (s3.f2 != i2) || (s3.f3 != i3) || (i4 != 4))
         {
-            Console.WriteLine("FAIL");
+            Console.WriteLine("Check3: FAIL");
             return Fail;
         }
-        Console.WriteLine("PASS");
+        Console.WriteLine("Check3: PASS");
         return Pass;
     }
 
@@ -144,10 +144,10 @@ public class MyProgram
     {
         if ((w != 2) || (s4.f1 != i1) || (s4.f2 != i2) || (s4.f3 != i3) || (i4 != 4))
         {
-            Console.WriteLine("FAIL");
+            Console.WriteLine("Check4: FAIL");
             return Fail;
         }
-        Console.WriteLine("PASS");
+        Console.WriteLine("Check4: PASS");
         return Pass;
     }
 
