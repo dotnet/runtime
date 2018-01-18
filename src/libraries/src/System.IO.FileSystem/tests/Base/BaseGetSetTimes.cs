@@ -68,7 +68,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue(26349, TestPlatforms.OSX)]
+        [ActiveIssue(26349, TestPlatforms.AnyUnix)]
         public void TimesIncludeMillisecondPart()
         {
             T item = GetExistingItem();
