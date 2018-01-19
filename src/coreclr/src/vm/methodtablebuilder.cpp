@@ -1844,6 +1844,24 @@ MethodTableBuilder::BuildMethodTableThrowing(
         pMT->SetIsByRefLike();
     }
 
+    // If this type is marked by [Intrinsic] attribute, it may be specially treated by the runtime/compiler
+    // Currently, only SIMD types have [Intrinsic] attribute
+    //
+    // We check this here, before the SystemVAmd64CheckForPass[Native]StructInRegister calls to ensure the SIMD
+    // intrinsics are not enregistered incorrectly.
+    if ((GetModule()->IsSystem() || GetAssembly()->IsSIMDVectorAssembly()) && IsValueClass() && bmtGenerics->HasInstantiation())
+    {
+        HRESULT hr = GetMDImport()->GetCustomAttributeByName(bmtInternal->pType->GetTypeDefToken(), 
+            g_CompilerServicesIntrinsicAttribute, 
+            NULL, 
+            NULL);
+
+        if (hr == S_OK)
+        {
+            pMT->SetIsIntrinsicType();
+        }
+    }
+
     if (IsValueClass())
     {
         if (bmtFP->NumInstanceFieldBytes != totalDeclaredFieldSize || HasOverLayedField())
@@ -2025,21 +2043,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
         pMT->SetICastable();
     }
 #endif // FEATURE_ICASTABLE       
- 
-    // If this type is marked by [Intrinsic] attribute, it may be specially treated by the runtime/compiler
-    // Currently, only SIMD types have [Intrinsic] attribute
-    if ((GetModule()->IsSystem() || GetAssembly()->IsSIMDVectorAssembly()) && IsValueClass() && bmtGenerics->HasInstantiation())
-    {
-        HRESULT hr = GetMDImport()->GetCustomAttributeByName(bmtInternal->pType->GetTypeDefToken(), 
-            g_CompilerServicesIntrinsicAttribute, 
-            NULL, 
-            NULL);
-
-        if (hr == S_OK)
-        {
-            pMT->SetIsIntrinsicType();
-        }
-    }
 
     // Grow the typedef ridmap in advance as we can't afford to
     // fail once we set the resolve bit
