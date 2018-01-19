@@ -1,0 +1,61 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <AssemblyName>System.IO.Compression.Brotli</AssemblyName>
+    <OutputType>Library</OutputType>
+    <ProjectGuid>{5471BFE8-8071-466F-838E-5ADAA779E742}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <!-- Platform agnostic files -->
+  <ItemGroup>
+    <Compile Include="Interop\Interop.Brotli.Encoder.cs" />
+    <Compile Include="Interop\Interop.Brotli.Decoder.cs" />
+    <Compile Include="System\IO\Compression\enc\BrotliStream.Compress.cs" />
+    <Compile Include="System\IO\Compression\dec\BrotliStream.Decompress.cs" />
+    <Compile Include="System\IO\Compression\BrotliUtils.cs" />
+    <Compile Include="System\IO\Compression\dec\BrotliDecoder.cs" />
+    <Compile Include="System\IO\Compression\enc\BrotliEncoder.cs" />
+    <Compile Include="System\IO\Compression\enc\BrotliEncoderOperation.cs" />
+    <Compile Include="System\IO\Compression\enc\BrotliEncoderParameter.cs" />
+    <Compile Include="System\IO\Compression\BrotliStream.cs" />
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBrotliHandle.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeBrotliHandle.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- Windows specific files -->
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- Unix specific files -->
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Buffers" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Tasks" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

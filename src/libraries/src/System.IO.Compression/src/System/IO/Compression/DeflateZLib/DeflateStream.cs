@@ -843,7 +843,6 @@ namespace System.IO.Compression
             Debug.Assert(oldValue == 1, $"Expected {nameof(_activeAsyncOperation)} to be 1, got {oldValue}");
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowInvalidBeginCall()
         {
             throw new InvalidOperationException(SR.InvalidBeginCall);
