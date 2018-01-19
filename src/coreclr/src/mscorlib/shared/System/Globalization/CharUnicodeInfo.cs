@@ -276,7 +276,7 @@ namespace System.Globalization
 
         public static UnicodeCategory GetUnicodeCategory(char ch)
         {
-            return (InternalGetUnicodeCategory(ch));
+            return (GetUnicodeCategory((int)ch));
         }
 
         public static UnicodeCategory GetUnicodeCategory(String s, int index)
@@ -290,9 +290,9 @@ namespace System.Globalization
             return InternalGetUnicodeCategory(s, index);
         }
 
-        internal static unsafe UnicodeCategory InternalGetUnicodeCategory(int ch)
+        public static UnicodeCategory GetUnicodeCategory(int codePoint)
         {
-            return ((UnicodeCategory)InternalGetCategoryValue(ch, UNICODE_CATEGORY_OFFSET));
+            return ((UnicodeCategory)InternalGetCategoryValue(codePoint, UNICODE_CATEGORY_OFFSET));
         }
 
 
@@ -352,7 +352,7 @@ namespace System.Globalization
             Debug.Assert(value != null, "value can not be null");
             Debug.Assert(index < value.Length, "index < value.Length");
 
-            return (InternalGetUnicodeCategory(InternalConvertToUtf32(value, index)));
+            return (GetUnicodeCategory(InternalConvertToUtf32(value, index)));
         }
 
         internal static BidiCategory GetBidiCategory(String s, int index)
@@ -381,7 +381,7 @@ namespace System.Globalization
             Debug.Assert(str.Length > 0, "str.Length > 0"); ;
             Debug.Assert(index >= 0 && index < str.Length, "index >= 0 && index < str.Length");
 
-            return (InternalGetUnicodeCategory(InternalConvertToUtf32(str, index, out charLength)));
+            return (GetUnicodeCategory(InternalConvertToUtf32(str, index, out charLength)));
         }
 
         internal static bool IsCombiningCategory(UnicodeCategory uc)
