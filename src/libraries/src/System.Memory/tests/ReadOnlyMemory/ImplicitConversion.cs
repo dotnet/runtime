@@ -67,6 +67,14 @@ namespace System.MemoryTests
             CastReadOnly<int>(segmentInt);
         }
 
+        [Fact]
+        public static void NullImplicitCast()
+        {
+            int[] dst = null;
+            ReadOnlyMemory<int> srcMemory = dst;
+            Assert.True(ReadOnlyMemory<int>.Empty.Span == srcMemory.Span);
+        }
+
         private static void CastReadOnly<T>(ReadOnlyMemory<T> memory, params T[] expected) where T : struct, IEquatable<T>
         {
             memory.Validate(expected);
