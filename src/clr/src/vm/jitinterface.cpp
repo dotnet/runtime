@@ -5397,7 +5397,8 @@ void CEEInfo::getCallInfo(
         directCall = true;
     }
     else
-    if (pTargetMD->GetMethodTable()->IsInterface() && pTargetMD->IsVirtual())
+    // Backwards compat: calls to abstract interface methods are treated as callvirt
+    if (pTargetMD->GetMethodTable()->IsInterface() && pTargetMD->IsAbstract())
     {
         directCall = false;
     }
@@ -5439,6 +5440,12 @@ void CEEInfo::getCallInfo(
         }
         else
 #endif
+        if (pTargetMD->GetMethodTable()->IsInterface())
+        {
+            // Handle interface methods specially because the Sealed bit has no meaning on interfaces.
+            devirt = !IsMdVirtual(pTargetMD->GetAttrs());
+        }
+        else
         {
             DWORD dwMethodAttrs = pTargetMD->GetAttrs();
             devirt = !IsMdVirtual(dwMethodAttrs) || IsMdFinal(dwMethodAttrs) || pTargetMD->GetMethodTable()->IsSealed();
