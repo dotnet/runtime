@@ -2564,7 +2564,6 @@ void LinearScan::TreeNodeInfoInitHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, 
 
                 info->internalIntCount = 2;
                 info->setInternalCandidates(this, allRegs(TYP_INT));
-                break;
             }
             break;
         }
@@ -2577,7 +2576,6 @@ void LinearScan::TreeNodeInfoInitHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, 
             break;
 
         case NI_SSE41_BlendVariable:
-        {
             if (!compiler->canUseVexEncoding())
             {
                 // SSE4.1 blendv* hardcode the mask vector (op3) in XMM0
@@ -2589,7 +2587,6 @@ void LinearScan::TreeNodeInfoInitHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, 
                 info->hasDelayFreeSrc = true;
             }
             break;
-        }
 
 #ifdef _TARGET_X86_
         case NI_SSE42_Crc32:
