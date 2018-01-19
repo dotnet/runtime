@@ -19,7 +19,6 @@ namespace System.Net.Http.Functional.Tests
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws PNSE for ServerCertificateCustomValidationCallback")]
     public partial class HttpClientHandler_ServerCertificates_Test : HttpClientTestBase
     {
-        // TODO: https://github.com/dotnet/corefx/issues/7812
         private static bool ClientSupportsDHECipherSuites => (!PlatformDetection.IsWindows || PlatformDetection.IsWindows10Version1607OrGreater);
         private bool BackendSupportsCustomCertificateHandlingAndClientSupportsDHECipherSuites =>
             (BackendSupportsCustomCertificateHandling && ClientSupportsDHECipherSuites);
@@ -337,29 +336,41 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(CertificateValidationServersAndExpectedPolicies))]
         public async Task UseCallback_BadCertificate_ExpectedPolicyErrors(string url, SslPolicyErrors expectedErrors)
         {
+            const int SEC_E_BUFFER_TOO_SMALL = unchecked((int)0x80090321);
+
             if (!BackendSupportsCustomCertificateHandlingAndClientSupportsDHECipherSuites)
             {
                 return;
             }
 
-            if (PlatformDetection.IsUap)
+            try
             {
-                // UAP HTTP stack caches connections per-process. This causes interference when these tests run in
-                // the same process as the other tests. Each test needs to be isolated to its own process.
-                // See dicussion: https://github.com/dotnet/corefx/issues/21945
-                RemoteInvoke((remoteUrl, remoteExpectedErrors, useManagedHandlerString) =>
+                if (PlatformDetection.IsUap)
                 {
-                    UseCallback_BadCertificate_ExpectedPolicyErrors_Helper(
-                        remoteUrl,
-                        bool.Parse(useManagedHandlerString),
-                        (SslPolicyErrors)Enum.Parse(typeof(SslPolicyErrors), remoteExpectedErrors)).Wait();
+                    // UAP HTTP stack caches connections per-process. This causes interference when these tests run in
+                    // the same process as the other tests. Each test needs to be isolated to its own process.
+                    // See dicussion: https://github.com/dotnet/corefx/issues/21945
+                    RemoteInvoke((remoteUrl, remoteExpectedErrors, useManagedHandlerString) =>
+                    {
+                        UseCallback_BadCertificate_ExpectedPolicyErrors_Helper(
+                            remoteUrl,
+                            bool.Parse(useManagedHandlerString),
+                            (SslPolicyErrors)Enum.Parse(typeof(SslPolicyErrors), remoteExpectedErrors)).Wait();
 
-                    return SuccessExitCode;
-                }, url, expectedErrors.ToString(), UseManagedHandler.ToString()).Dispose();
+                        return SuccessExitCode;
+                    }, url, expectedErrors.ToString(), UseManagedHandler.ToString()).Dispose();
+                }
+                else
+                {
+                    await UseCallback_BadCertificate_ExpectedPolicyErrors_Helper(url, UseManagedHandler, expectedErrors);
+                }
             }
-            else
+            catch (HttpRequestException e) when (e.InnerException?.GetType().Name == "WinHttpException" &&
+                e.InnerException.HResult == SEC_E_BUFFER_TOO_SMALL &&
+                !PlatformDetection.IsWindows10Version1607OrGreater)
             {
-                await UseCallback_BadCertificate_ExpectedPolicyErrors_Helper(url, UseManagedHandler, expectedErrors);
+                // Testing on old Windows versions can hit https://github.com/dotnet/corefx/issues/7812
+                // Ignore SEC_E_BUFFER_TOO_SMALL error on such cases.
             }
         }
 
