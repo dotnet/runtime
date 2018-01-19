@@ -3033,7 +3033,6 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                     offset = 0;
 
                     // Ensure that all the GenTreeIndir values are set to their defaults.
-                    assert(memBase->gtRegNum == REG_NA);
                     assert(!memIndir->HasIndex());
                     assert(memIndir->Scale() == 1);
                     assert(memIndir->Offset() == 0);
