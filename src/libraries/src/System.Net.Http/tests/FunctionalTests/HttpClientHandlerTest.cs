@@ -1694,7 +1694,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(23768)]
         [ActiveIssue(22191, TargetFrameworkMonikers.Uap)]
         [OuterLoop] // takes several seconds
         [Fact]
