@@ -1650,7 +1650,12 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     }
 
                     if (enableCorefxTesting) {
-                        buildOpts += ' skiptests';
+                        // We shouldn't need to build the tests. However, run-corefx-tests.py currently depends on having the restored corefx
+                        // package available, to determine the correct corefx version git commit hash, and we need to build the tests before
+                        // running "tests\\runtest.cmd GenerateLayoutOnly". So build the pri-0 tests to make this happen.
+                        //
+                        // buildOpts += ' skiptests';
+                        buildOpts += " -priority=0"
                     } else {
                         buildOpts += " -priority=${priority}"
                     }
@@ -1748,6 +1753,10 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         runtestArguments = "${lowerConfiguration} ${arch} ${testOpts}"
 
                         if (enableCorefxTesting) {
+                            // Generate the test layout because it restores the corefx package which allows run-corefx-tests.py
+                            // to determine the correct matching corefx version git commit hash.
+                            buildCommands += "tests\\runtest.cmd ${runtestArguments} GenerateLayoutOnly"
+
                             def workspaceRelativeFxRoot = "_/fx"
                             def absoluteFxRoot = "%WORKSPACE%\\_\\fx"
 
@@ -1915,6 +1924,10 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 
                         // Build coreclr
                         buildCommands += "./build.sh verbose ${lowerConfiguration} ${architecture}"
+
+                        // Generate the test layout, which restores the corefx package, and allows run-corefx-tests.py to determine the
+                        // matching corefx version git commit hash.
+                        buildCommands += "./build-test.sh ${architecture} ${lowerConfiguration} generatelayoutonly"
 
                         def scriptFileName = "\$WORKSPACE/set_stress_test_env.sh"
 
