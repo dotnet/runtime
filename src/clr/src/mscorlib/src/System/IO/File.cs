@@ -107,34 +107,6 @@ namespace System.IO
             return bytes;
         }
 
-#if PLATFORM_UNIX
-        public static String[] ReadAllLines(String path)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath);
-
-            return InternalReadAllLines(path, Encoding.UTF8);
-        }
-
-        private static String[] InternalReadAllLines(String path, Encoding encoding)
-        {
-            Debug.Assert(path != null);
-            Debug.Assert(encoding != null);
-            Debug.Assert(path.Length != 0);
-
-            String line;
-            List<String> lines = new List<String>();
-
-            using (StreamReader sr = new StreamReader(path, encoding))
-                while ((line = sr.ReadLine()) != null)
-                    lines.Add(line);
-
-            return lines.ToArray();
-        }
-#endif // PLATFORM_UNIX
-
         // Returns 0 on success, otherwise a Win32 error code.  Note that
         // classes should use -1 as the uninitialized state for dataInitialized.
         internal static int FillAttributeInfo(String path, ref Win32Native.WIN32_FILE_ATTRIBUTE_DATA data, bool tryagain, bool returnErrorOnNotFound)

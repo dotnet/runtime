@@ -347,10 +347,6 @@
     <Compile Include="$(BclSourcesRoot)\System\RuntimeHandles.cs" />
     <Compile Include="$(BclSourcesRoot)\System\SharedStatics.cs" />
     <Compile Include="$(BclSourcesRoot)\System\StubHelpers.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\TimeZoneInfo.AdjustmentRule.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\TimeZoneInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\TimeZoneInfo.StringSerializer.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\TimeZoneInfo.TransitionTime.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Type.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TypeNameParser.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TypedReference.cs" />
