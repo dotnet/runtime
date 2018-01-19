@@ -52,11 +52,8 @@ namespace System.Net.Security.Tests
                 // Initiate Read operation, that results in starting renegotiation as per server response to the above request.
                 int bytesRead = await ssl.ReadAsync(message, 0, message.Length);
 
-                // SslStream.ReadAsync should return -1 bytes, indicating renegotiation operation is in progress.
-                Assert.Equal(-1, bytesRead);
-
-                // Do another Read, to get the HTTP response from the server, after successful renegotiation.
-                bytesRead = await ssl.ReadAsync(message, 0, message.Length);
+                // There's no good way to ensure renegotiation happened in the test.
+                // Under the debugger, we can see this test hits the renegotiation codepath.
                 Assert.InRange(bytesRead, 1, message.Length);
                 Assert.Contains("HTTP/1.1 200 OK", Encoding.UTF8.GetString(message));
             }
