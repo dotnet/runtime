@@ -137,6 +137,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert(!(args.prgexpr[i] is ExprNamedArgumentSpecification));
             }
 #endif
+            // If we've no args we can skip. If the last argument isn't named then either we
+            // have no named arguments, and we can skip, or we have non-trailing named arguments
+            // and we MUST skip!
+            if (args.carg == 0 || !(args.prgexpr[args.carg - 1] is ExprNamedArgumentSpecification))
+            {
+                return pta;
+            }
 
             CType type = pTypeThrough != null ? pTypeThrough : mpwi.GetType();
             CType[] typeList = new CType[pta.Count];

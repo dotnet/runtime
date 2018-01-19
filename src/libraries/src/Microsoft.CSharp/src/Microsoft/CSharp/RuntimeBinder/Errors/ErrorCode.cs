@@ -63,11 +63,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         ERR_AssgReadonly2 = 1648,
         ERR_AssgReadonlyStatic2 = 1650,
         ERR_BadCtorArgCount = 1729,
+        ERR_BadNamedArgument = 1739,
+        ERR_DuplicateNamedArgument = 1740,
+        ERR_NamedArgumentUsedInPositional = 1744,
+        ERR_BadNamedArgumentForDelegateInvoke = 1746,
         ERR_NonInvocableMemberCalled = 1955,
-        ERR_NamedArgumentSpecificationBeforeFixedArgument = 5002,
-        ERR_BadNamedArgument = 5003,
-        ERR_BadNamedArgumentForDelegateInvoke = 5004,
-        ERR_DuplicateNamedArgument = 5005,
-        ERR_NamedArgumentUsedInPositional = 5006,
+        ERR_BadNonTrailingNamedArgument = 8323
     }
 }
