@@ -209,7 +209,7 @@ void Compiler::unwindPush(regNumber reg)
 #ifdef UNIX_AMD64_ABI
     if (generateCFIUnwindCodes())
     {
-        unwindPushCFI(reg);
+        unwindPushPopCFI(reg);
     }
     else
 #endif // UNIX_AMD64_ABI

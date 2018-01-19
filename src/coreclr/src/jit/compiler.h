@@ -7377,9 +7377,9 @@ private:
 #if defined(_TARGET_UNIX_)
     int mapRegNumToDwarfReg(regNumber reg);
     void createCfiCode(FuncInfoDsc* func, UCHAR codeOffset, UCHAR opcode, USHORT dwarfReg, INT offset = 0);
-    void unwindPushCFI(regNumber reg);
+    void unwindPushPopCFI(regNumber reg);
     void unwindBegPrologCFI();
-    void unwindPushMaskCFI(regMaskTP regMask, bool isFloat);
+    void unwindPushPopMaskCFI(regMaskTP regMask, bool isFloat);
     void unwindAllocStackCFI(unsigned size);
     void unwindSetFrameRegCFI(regNumber reg, unsigned offset);
     void unwindEmitFuncCFI(FuncInfoDsc* func, void* pHotCode, void* pColdCode);
