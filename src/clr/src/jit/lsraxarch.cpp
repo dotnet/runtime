@@ -322,16 +322,6 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree, TreeNodeInfo* info)
 #endif
         case GT_ADD:
         case GT_SUB:
-            // SSE2 arithmetic instructions doesn't support the form "op mem, xmm".
-            // Rather they only support "op xmm, mem/xmm" form.
-            if (varTypeIsFloating(tree->TypeGet()))
-            {
-                info->srcCount = appendBinaryLocationInfoToList(tree->AsOp());
-                break;
-            }
-
-            __fallthrough;
-
         case GT_AND:
         case GT_OR:
         case GT_XOR:
