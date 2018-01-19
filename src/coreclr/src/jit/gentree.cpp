@@ -17914,20 +17914,20 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
 }
 
 GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(
-    var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
+    var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned simdSize)
 {
     SetOpLclRelatedToSIMDIntrinsic(op1);
 
-    return new (this, GT_HWIntrinsic) GenTreeHWIntrinsic(type, op1, hwIntrinsicID, baseType, size);
+    return new (this, GT_HWIntrinsic) GenTreeHWIntrinsic(type, op1, hwIntrinsicID, baseType, simdSize);
 }
 
 GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(
-    var_types type, GenTree* op1, GenTree* op2, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
+    var_types type, GenTree* op1, GenTree* op2, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned simdSize)
 {
     SetOpLclRelatedToSIMDIntrinsic(op1);
     SetOpLclRelatedToSIMDIntrinsic(op2);
 
-    return new (this, GT_HWIntrinsic) GenTreeHWIntrinsic(type, op1, op2, hwIntrinsicID, baseType, size);
+    return new (this, GT_HWIntrinsic) GenTreeHWIntrinsic(type, op1, op2, hwIntrinsicID, baseType, simdSize);
 }
 
 GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,

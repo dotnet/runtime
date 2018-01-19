@@ -16,10 +16,101 @@ enum NamedIntrinsic : unsigned int
     NI_System_Collections_Generic_EqualityComparer_get_Default = 4,
 #if FEATURE_HW_INTRINSICS
     NI_HW_INTRINSIC_START,
-#define HARDWARE_INTRINSIC(id, name, isa) NI_##id,
+#define HARDWARE_INTRINSIC(id, name, isa, ival, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+    NI_##id,
 #include "hwintrinsiclistxarch.h"
     NI_HW_INTRINSIC_END
 #endif
 };
+
+#if FEATURE_HW_INTRINSICS && defined(_TARGET_XARCH_)
+enum HWIntrinsicFlag : unsigned int
+{
+    HW_Flag_NoFlag = 0,
+
+    // Commutative
+    // - if a binary-op intrinsic is commutative (e.g., Add, Multiply), its op1 can be contained
+    HW_Flag_Commutative = 0x1,
+
+    // Full range IMM intrinsic
+    // - the immediate value is vaild on the full range of imm8 (0-255)
+    HW_Flag_FullRangeIMM = 0x2,
+
+    // Generic
+    // - must throw NotSupportException if the type argument is not numeric type
+    HW_Flag_Generic = 0x4,
+    // Two-type Generic
+    // - the intrinsic has two type parameters
+    HW_Flag_TwoTypeGeneric = 0xC,
+
+    // NoCodeGen
+    // - should be transformed in the compiler front-end, cannot reach CodeGen
+    HW_Flag_NoCodeGen = 0x10,
+
+    // Unfixed SIMD-size
+    // - overloaded on multiple vector sizes (SIMD size in the table is unreliable)
+    HW_Flag_UnfixedSIMDSize = 0x20,
+
+    // Complex overload
+    // - the codegen of overloads cannot be determined by intrinsicID and base type
+    HW_Flag_ComplexOverloads = 0x40,
+
+    // Multi-instruction
+    // - that one intrinsic can generate multiple instructions
+    HW_Flag_MultiIns = 0x80,
+
+    // NoContainment
+    // the intrinsic cannot be contained
+    HW_Flag_NoContainment = 0x100,
+
+    // Copy Upper bits
+    // some SIMD scalar intrinsics need the semantics of copying upper bits from the source operand
+    HW_Flag_CopyUpperBits = 0x200,
+};
+
+inline HWIntrinsicFlag operator|(HWIntrinsicFlag c1, HWIntrinsicFlag c2)
+{
+    return static_cast<HWIntrinsicFlag>(static_cast<unsigned>(c1) | static_cast<unsigned>(c2));
+}
+
+enum HWIntrinsicCategory : unsigned int
+{
+    // Simple SIMD intrinsics
+    // - take Vector128/256<T> parameters
+    // - return a Vector128/256<T>
+    // - the codegen of overloads can be determined by intrinsicID and base type of returned vector
+    HW_Category_SimpleSIMD,
+
+    // IsSupported Property
+    // - each ISA class has an "IsSupported" property
+    HW_Category_IsSupportedProperty,
+
+    // IMM intrinsics
+    // - some SIMD intrinsics requires immediate value (i.e. imm8) to generate instruction
+    HW_Category_IMM,
+
+    // Scalar intrinsics
+    // - operate over general purpose registers, like crc32, lzcnt, popcnt, etc.
+    HW_Category_Scalar,
+
+    // SIMD scalar
+    // - operate over vector registers(XMM), but just compute on the first element
+    HW_Category_SIMDScalar,
+
+    // Memory access intrinsics
+    // - e.g., Avx.Load, Avx.Store, Sse.LoadAligned
+    HW_Category_MemoryLoad,
+    HW_Category_MemoryStore,
+
+    // Helper intrinsics
+    // - do not directly correspond to a instruction, such as Avx.SetAllVector256
+    HW_Category_Helper,
+
+    // Special intrinsics
+    // - have to be addressed specially
+    HW_Category_Special
+};
+
+#endif // FEATURE_HW_INTRINSICS && defined(_TARGET_XARCH_)
 
 #endif // _NAMEDINTRINSICLIST_H_
