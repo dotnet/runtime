@@ -820,7 +820,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         ////////////////////////////////////////////////////////////////////////////////
         // Given a method group or indexer group, bind it to the arguments for an 
         // invocation.
-        private GroupToArgsBinderResult BindMethodGroupToArgumentsCore(BindingFlag bindFlags, ExprMemberGroup grp, Expr args, int carg, bool bHasNamedArgumentSpecifiers)
+        private GroupToArgsBinderResult BindMethodGroupToArgumentsCore(BindingFlag bindFlags, ExprMemberGroup grp, Expr args, int carg, NamedArgumentsKind namedArgumentsKind)
         {
             ArgInfos pargInfo = new ArgInfos {carg = carg};
             FillInArgInfoFromArgList(pargInfo, args);
@@ -828,7 +828,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             ArgInfos pOriginalArgInfo = new ArgInfos {carg = carg};
             FillInArgInfoFromArgList(pOriginalArgInfo, args);
 
-            GroupToArgsBinder binder = new GroupToArgsBinder(this, bindFlags, grp, pargInfo, pOriginalArgInfo, bHasNamedArgumentSpecifiers);
+            GroupToArgsBinder binder = new GroupToArgsBinder(this, bindFlags, grp, pargInfo, pOriginalArgInfo, namedArgumentsKind);
             binder.Bind();
 
             return binder.GetResultsOfBind();
@@ -846,17 +846,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             Debug.Assert(grp.Name != null);
 
-            // If we have named arguments specified, make sure we have them all appearing after
-            // fixed arguments.
-            bool seenNamed = VerifyNamedArgumentsAfterFixed(args);
+            // Do we have named arguments specified, are they after fixed arguments (can position) or
+            // non-trailing (can rule out methods only).
+            NamedArgumentsKind namedKind = FindNamedArgumentsType(args);
 
-            MethPropWithInst mpwiBest = BindMethodGroupToArgumentsCore(bindFlags, grp, args, carg, seenNamed)
-                .GetBestResult();
+            MethPropWithInst mpwiBest = BindMethodGroupToArgumentsCore(bindFlags, grp, args, carg, namedKind).BestResult;
             if (grp.SymKind == SYMKIND.SK_PropertySymbol)
             {
                 Debug.Assert((grp.Flags & EXPRFLAG.EXF_INDEXER) != 0);
-                //PropWithType pwt = new PropWithType(mpwiBest.Prop(), mpwiBest.GetType());
-
                 return BindToProperty(grp.OptionalObject, new PropWithType(mpwiBest), bindFlags, args, grp);
             }
 
@@ -865,10 +862,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private bool VerifyNamedArgumentsAfterFixed(Expr args)
+        public enum NamedArgumentsKind
+        {
+            None,
+            Positioning,
+            NonTrailing
+        }
+
+        private static NamedArgumentsKind FindNamedArgumentsType(Expr args)
         {
             Expr list = args;
-            bool seenNamed = false;
             while (list != null)
             {
                 Expr arg;
@@ -886,18 +889,30 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert(arg != null);
                 if (arg is ExprNamedArgumentSpecification)
                 {
-                    seenNamed = true;
-                }
-                else
-                {
-                    if (seenNamed)
+                    while (list != null)
                     {
-                        throw GetErrorContext().Error(ErrorCode.ERR_NamedArgumentSpecificationBeforeFixedArgument);
+                        if (list is ExprList nextList)
+                        {
+                            arg = nextList.OptionalElement;
+                            list = nextList.OptionalNextListNode;
+                        }
+                        else
+                        {
+                            arg = list;
+                            list = null;
+                        }
+
+                        if (!(arg is ExprNamedArgumentSpecification))
+                        {
+                            return NamedArgumentsKind.NonTrailing;
+                        }
                     }
+
+                    return NamedArgumentsKind.Positioning;
                 }
             }
 
-            return seenNamed;
+            return NamedArgumentsKind.None;
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -1277,6 +1292,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             }
                             index++;
                         }
+
                         Debug.Assert(index != mp.Params.Count);
                         CType substDestType = GetTypes().SubstType(@params[index], type, pTypeArgs);
 
