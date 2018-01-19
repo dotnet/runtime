@@ -2866,9 +2866,6 @@
   <data name="Marshaler_StringTooLong" xml:space="preserve">
     <value>Marshaler restriction: Excessively long string.</value>
   </data>
-  <data name="MemoryDisposed" xml:space="preserve">
-    <value>Memory&lt;T&gt; has been disposed.</value>
-  </data>
   <data name="MissingConstructor_Name" xml:space="preserve">
     <value>Constructor on type '{0}' not found.</value>
   </data>
@@ -3688,7 +3685,7 @@
   <data name="NotSupported_SignatureType" xml:space="preserve">
     <value>This method is not supported on signature types.</value>
   </data>
-  <data name="Memory_ThrowIfDisposed" xml:space="preserve">
+  <data name="MemoryDisposed" xml:space="preserve">
     <value>Memory&lt;T&gt; has been disposed.</value>
   </data>
   <data name="Memory_OutstandingReferences" xml:space="preserve">
