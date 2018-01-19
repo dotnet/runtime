@@ -13,6 +13,7 @@
     <Compile Include="AssignmentTests.cs" />
     <Compile Include="BindingErrors.cs" />
     <Compile Include="EnumUnaryOperationTests.cs" />
+    <Compile Include="ExplicitConversionTests.cs" />
     <Compile Include="ImplicitConversionTests.cs" />
     <Compile Include="CSharpArgumentInfoTests.cs" />
     <Compile Include="DefaultParameterTests.cs" />
