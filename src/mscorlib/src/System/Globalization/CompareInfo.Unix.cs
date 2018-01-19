@@ -329,7 +329,7 @@ namespace System.Globalization
                     if (index == length - 1 || !Char.IsLowSurrogate(text[index+1]))
                         return false; // unpaired surrogate
 
-                    uc = CharUnicodeInfo.InternalGetUnicodeCategory(Char.ConvertToUtf32(text[index], text[index+1]));
+                    uc = CharUnicodeInfo.GetUnicodeCategory(Char.ConvertToUtf32(text[index], text[index+1]));
                     if (uc == UnicodeCategory.PrivateUse || uc == UnicodeCategory.OtherNotAssigned)
                         return false;
 
