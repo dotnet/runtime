@@ -381,6 +381,11 @@ INST3( roundps,      "roundps"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SS
 INST3( roundss,      "roundss"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x0A))   // Round scalar single precision floating-point values
 INST3( roundpd,      "roundpd"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x09))   // Round packed double precision floating-point values
 INST3( roundsd,      "roundsd"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x0B))   // Round scalar double precision floating-point values
+INST3( pmuldq,       "pmuldq"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x28))   // packed multiply 32-bit signed integers and store 64-bit result
+INST3( blendvps,     "blendvps"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x14))   // Variable Blend Packed Singles
+INST3( blendvpd,     "blendvpd"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x15))   // Variable Blend Packed Doubles
+INST3( pblendvb,     "pblendvb"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x10))   // Variable Blend Packed Bytes
+
 INST3(LAST_SSE4_INSTRUCTION, "LAST_SSE4_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
 
 INST3(FIRST_AVX_INSTRUCTION, "FIRST_AVX_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
@@ -398,6 +403,9 @@ INST3( vinserti128,  "inserti128"  , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SS
 INST3( vzeroupper,   "zeroupper"   , 0, IUM_WR, 0, 0, 0xC577F8,     BAD_CODE, BAD_CODE)      // Zero upper 128-bits of all YMM regs (includes 2-byte fixed VEX prefix)
 INST3( vperm2i128,   "perm2i128"   , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x46))   // Permute 128-bit halves of input register
 INST3( vpermq,       "permq"       , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x00))   // Permute 64-bit of input register
+INST3( vblendvps,    "blendvps"   , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x4A))   // Variable Blend Packed Singles
+INST3( vblendvpd,    "blendvpd"   , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x4B))   // Variable Blend Packed Doubles
+INST3( vpblendvb,    "pblendvb"   , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x4C))   // Variable Blend Packed Bytes
 INST3(LAST_AVX_INSTRUCTION, "LAST_AVX_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
 
 // Scalar instructions in SSE4.2

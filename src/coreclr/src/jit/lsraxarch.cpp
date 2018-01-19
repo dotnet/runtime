@@ -2504,13 +2504,11 @@ void LinearScan::TreeNodeInfoInitSIMD(GenTreeSIMD* simdTree, TreeNodeInfo* info)
 void LinearScan::TreeNodeInfoInitHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, TreeNodeInfo* info)
 {
     NamedIntrinsic intrinsicID = intrinsicTree->gtHWIntrinsicId;
-    InstructionSet isa         = compiler->isaOfHWIntrinsic(intrinsicID);
-
+    InstructionSet isa         = Compiler::isaOfHWIntrinsic(intrinsicID);
     if (isa == InstructionSet_AVX || isa == InstructionSet_AVX2)
     {
         SetContainsAVXFlags(true, 32);
     }
-
     GenTree* op1   = intrinsicTree->gtOp.gtOp1;
     GenTree* op2   = intrinsicTree->gtOp.gtOp2;
     info->srcCount = 0;
@@ -2519,15 +2517,10 @@ void LinearScan::TreeNodeInfoInitHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, 
     {
         if (op1->OperIsList())
         {
-            int srcCount = 0;
-
             for (GenTreeArgList* list = op1->AsArgList(); list != nullptr; list = list->Rest())
             {
-                GenTree* listItem = list->Current();
-                srcCount += GetOperandInfo(listItem);
+                info->srcCount += GetOperandInfo(list->Current());
             }
-
-            info->srcCount += srcCount;
         }
         else
         {
@@ -2571,7 +2564,6 @@ void LinearScan::TreeNodeInfoInitHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, 
 
                 info->internalIntCount = 2;
                 info->setInternalCandidates(this, allRegs(TYP_INT));
-                break;
             }
             break;
         }
@@ -2581,6 +2573,19 @@ void LinearScan::TreeNodeInfoInitHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, 
             assert(info->srcCount == 1);
             assert(info->dstCount == 1);
             useList.Last()->info.isTgtPref = true;
+            break;
+
+        case NI_SSE41_BlendVariable:
+            if (!compiler->canUseVexEncoding())
+            {
+                // SSE4.1 blendv* hardcode the mask vector (op3) in XMM0
+                LocationInfoListNode* op2Info = useList.Begin()->Next();
+                LocationInfoListNode* op3Info = op2Info->Next();
+                op2Info->info.isDelayFree     = true;
+                op3Info->info.isDelayFree     = true;
+                op3Info->info.setSrcCandidates(this, RBM_XMM0);
+                info->hasDelayFreeSrc = true;
+            }
             break;
 
 #ifdef _TARGET_X86_
