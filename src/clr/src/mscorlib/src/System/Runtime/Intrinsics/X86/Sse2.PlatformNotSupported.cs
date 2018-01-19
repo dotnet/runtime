@@ -695,6 +695,10 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static int MoveMask(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
+        /// int _mm_movemask_epi8 (__m128i a)
+        /// </summary>
+        public static int MoveMask(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
         /// int _mm_movemask_pd (__m128d a)
         /// </summary>
         public static int MoveMask(Vector128<double> value) { throw new PlatformNotSupportedException(); }
