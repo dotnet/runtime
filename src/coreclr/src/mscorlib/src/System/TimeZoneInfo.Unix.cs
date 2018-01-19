@@ -241,54 +241,50 @@ namespace System
         /// </remarks>
         private static List<string> GetTimeZoneIds(string timeZoneDirectory)
         {
-            string[] zoneTabFileLines = null;
+            List<string> timeZoneIds = new List<string>();
+
             try
             {
-                zoneTabFileLines = File.ReadAllLines(Path.Combine(timeZoneDirectory, ZoneTabFileName));
-            }
-            catch (IOException) { }
-            catch (UnauthorizedAccessException) { }
-
-            if (zoneTabFileLines == null)
-            {
-                return new List<string>();
-            }
-
-            List<string> timeZoneIds = new List<string>(zoneTabFileLines.Length);
-
-            foreach (string zoneTabFileLine in zoneTabFileLines)
-            {
-                if (!string.IsNullOrEmpty(zoneTabFileLine) && zoneTabFileLine[0] != '#')
+                using (StreamReader sr = new StreamReader(Path.Combine(timeZoneDirectory, ZoneTabFileName), Encoding.UTF8))
                 {
-                    // the format of the line is "country-code \t coordinates \t TimeZone Id \t comments"
-
-                    int firstTabIndex = zoneTabFileLine.IndexOf('\t');
-                    if (firstTabIndex != -1)
+                    string zoneTabFileLine;
+                    while ((zoneTabFileLine = sr.ReadLine()) != null)
                     {
-                        int secondTabIndex = zoneTabFileLine.IndexOf('\t', firstTabIndex + 1);
-                        if (secondTabIndex != -1)
+                        if (!string.IsNullOrEmpty(zoneTabFileLine) && zoneTabFileLine[0] != '#')
                         {
-                            string timeZoneId;
-                            int startIndex = secondTabIndex + 1;
-                            int thirdTabIndex = zoneTabFileLine.IndexOf('\t', startIndex);
-                            if (thirdTabIndex != -1)
-                            {
-                                int length = thirdTabIndex - startIndex;
-                                timeZoneId = zoneTabFileLine.Substring(startIndex, length);
-                            }
-                            else
-                            {
-                                timeZoneId = zoneTabFileLine.Substring(startIndex);
-                            }
+                            // the format of the line is "country-code \t coordinates \t TimeZone Id \t comments"
 
-                            if (!string.IsNullOrEmpty(timeZoneId))
+                            int firstTabIndex = zoneTabFileLine.IndexOf('\t');
+                            if (firstTabIndex != -1)
                             {
-                                timeZoneIds.Add(timeZoneId);
+                                int secondTabIndex = zoneTabFileLine.IndexOf('\t', firstTabIndex + 1);
+                                if (secondTabIndex != -1)
+                                {
+                                    string timeZoneId;
+                                    int startIndex = secondTabIndex + 1;
+                                    int thirdTabIndex = zoneTabFileLine.IndexOf('\t', startIndex);
+                                    if (thirdTabIndex != -1)
+                                    {
+                                        int length = thirdTabIndex - startIndex;
+                                        timeZoneId = zoneTabFileLine.Substring(startIndex, length);
+                                    }
+                                    else
+                                    {
+                                        timeZoneId = zoneTabFileLine.Substring(startIndex);
+                                    }
+
+                                    if (!string.IsNullOrEmpty(timeZoneId))
+                                    {
+                                        timeZoneIds.Add(timeZoneId);
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
 
             return timeZoneIds;
         }
