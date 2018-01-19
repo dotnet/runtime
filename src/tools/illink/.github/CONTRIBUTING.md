@@ -21,18 +21,12 @@ investigate bugs, regressions and problems.
 License
 =======
 
-The Mono runtime, compilers, and tools and most of the class libraries
-are licensed under the MIT license. But include some bits of code
-licensed under different licenses. The exact list is [available here](https://github.com/mono/mono/blob/master/LICENSE).
-
-Different parts of Mono use different licenses.  The actual details of
-which licenses are used for which parts are detailed on the LICENSE
-file in this directory.
+Check the [LICENSE](https://github.com/mono/linker/blob/master/LICENSE) file.
 
 CLA
 =======
 
-Contributions are now taken under the [.NET Foundation CLA](https://cla2.dotnetfoundation.org/). 
+Contributions are now taken under the [.NET Foundation CLA](https://cla.dotnetfoundation.org/).
 
 Testing
 =======
