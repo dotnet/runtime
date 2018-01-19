@@ -12275,6 +12275,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 								ip += 5;
 								sp ++;
 								break;
+							} else {
+								CHECK_CFG_ERROR;
 							}
 							ip -= 6;
 						}
@@ -12339,6 +12341,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 								ip += 5;
 								sp ++;
 								break;
+							} else {
+								CHECK_CFG_ERROR;
 							}
 							ip -= 6;
 						}
