@@ -16,7 +16,7 @@ struct HWIntrinsicInfo
     int                 numArgs;
     instruction         ins[10];
     HWIntrinsicCategory category;
-    HWIntrinsicFlag     flag;
+    HWIntrinsicFlag     flags;
 };
 
 static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
@@ -192,7 +192,7 @@ int Compiler::ivalOfHWIntrinsic(NamedIntrinsic intrinsic)
 static unsigned simdSizeOfHWIntrinsic(NamedIntrinsic intrinsic, CORINFO_SIG_INFO* sig)
 {
     assert(intrinsic > NI_HW_INTRINSIC_START && intrinsic < NI_HW_INTRINSIC_END);
-    assert((hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].flag & HW_Flag_UnfixedSIMDSize) == 0);
+    assert((hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].flags & HW_Flag_UnfixedSIMDSize) == 0);
     return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].simdSize;
 }
 
@@ -248,19 +248,19 @@ HWIntrinsicCategory Compiler::categoryOfHWIntrinsic(NamedIntrinsic intrinsic)
 }
 
 //------------------------------------------------------------------------
-// HWIntrinsicFlag: get the flag of the given intrinsic
+// HWIntrinsicFlag: get the flags of the given intrinsic
 //
 // Arguments:
 //    intrinsic -- id of the intrinsic function.
 //
 // Return Value:
-//     the flag of the given intrinsic
+//     the flags of the given intrinsic
 //
-HWIntrinsicFlag Compiler::flagOfHWIntrinsic(NamedIntrinsic intrinsic)
+HWIntrinsicFlag Compiler::flagsOfHWIntrinsic(NamedIntrinsic intrinsic)
 {
     assert(intrinsic != NI_Illegal);
     assert(intrinsic > NI_HW_INTRINSIC_START && intrinsic < NI_HW_INTRINSIC_END);
-    return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].flag;
+    return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].flags;
 }
 
 //------------------------------------------------------------------------
@@ -290,7 +290,7 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE 
         assert(varTypeIsArithmetic(argType));
         arg = impPopStack().val;
         assert(varTypeIsArithmetic(arg->TypeGet()));
-        assert(genTypeSize(argType) <= genTypeSize(arg->TypeGet()));
+        assert(genActualType(arg->gtType) == genActualType(argType));
     }
     return arg;
 }
@@ -436,12 +436,10 @@ GenTree* Compiler::impUnsupportedHWIntrinsic(unsigned              helper,
 // Return Value:
 //    returns true if this category can be table-driven in the importer
 //
-static bool impIsTableDrivenHWIntrinsic(HWIntrinsicCategory category)
+static bool impIsTableDrivenHWIntrinsic(HWIntrinsicCategory category, HWIntrinsicFlag flags)
 {
-    // TODO - make more categories to the table-driven framework
-    const bool tableDrivenIntrinsic    = category == HW_Category_SimpleSIMD;
-    const bool nonTableDrivenIntrinsic = category == HW_Category_Special;
-    return tableDrivenIntrinsic && !nonTableDrivenIntrinsic;
+    // HW_Flag_NoCodeGen implies this intrinsic should be manually morphed in the importer.
+    return category != HW_Category_Special && category != HW_Category_Scalar && (flags & HW_Flag_NoCodeGen) == 0;
 }
 
 //------------------------------------------------------------------------
@@ -462,15 +460,24 @@ GenTree* Compiler::impX86HWIntrinsic(NamedIntrinsic        intrinsic,
 {
     InstructionSet      isa      = isaOfHWIntrinsic(intrinsic);
     HWIntrinsicCategory category = categoryOfHWIntrinsic(intrinsic);
+    HWIntrinsicFlag     flags    = flagsOfHWIntrinsic(intrinsic);
     int                 numArgs  = sig->numArgs;
-    var_types           callType = JITtype2varType(sig->retType);
+    var_types           retType  = JITtype2varType(sig->retType);
+    var_types           baseType = TYP_UNKNOWN;
+    if (retType == TYP_STRUCT && featureSIMD)
+    {
+        unsigned int sizeBytes;
+        baseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeSigClass, &sizeBytes);
+        retType  = getSIMDTypeForSize(sizeBytes);
+        assert(sizeBytes != 0 && baseType != TYP_UNKNOWN);
+    }
 
     // This intrinsic is supported if
     // - the ISA is available on the underlying hardware (compSupports returns true)
     // - the compiler supports this hardware intrinsics (compSupportsHWIntrinsic returns true)
     // - intrinsics do not require 64-bit registers (r64) on 32-bit platforms (isTypeSupportedForIntrinsic returns
     // true)
-    bool issupported = compSupports(isa) && compSupportsHWIntrinsic(isa) && isTypeSupportedForIntrinsic(callType);
+    bool issupported = compSupports(isa) && compSupportsHWIntrinsic(isa) && isTypeSupportedForIntrinsic(retType);
 
     if (category == HW_Category_IsSupportedProperty)
     {
@@ -481,22 +488,59 @@ GenTree* Compiler::impX86HWIntrinsic(NamedIntrinsic        intrinsic,
     {
         return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
     }
+    else if (category == HW_Category_IMM)
+    {
+        GenTree* lastOp = impStackTop().val;
+        if (!lastOp->IsCnsIntOrI() && !mustExpand)
+        {
+            // When the imm-argument is not a constant and we are not being forced to expand, we need to
+            // return nullptr so a GT_CALL to the intrinsic method is emitted instead. The
+            // intrinsic method is recursive and will be forced to expand, at which point
+            // we emit some less efficient fallback code.
+            return nullptr;
+        }
+    }
+
+    if ((flags & HW_Flag_Generic) != 0)
+    {
+        assert(baseType != TYP_UNKNOWN);
+        // When the type argument is not a numeric type (and we are not being forced to expand), we need to
+        // return nullptr so a GT_CALL to the intrinsic method is emitted that will throw NotSupportedException
+        if (!varTypeIsArithmetic(baseType))
+        {
+            assert(!mustExpand);
+            return nullptr;
+        }
+
+        if ((flags & HW_Flag_TwoTypeGeneric) != 0)
+        {
+            // StaticCast<T, U> has two type parameters.
+            assert(!mustExpand);
+            assert(numArgs == 1);
+            var_types srcType = getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args));
+            assert(srcType != TYP_UNKNOWN);
+            if (!varTypeIsArithmetic(srcType))
+            {
+                return nullptr;
+            }
+        }
+    }
 
     // table-driven importer of simple intrinsics
-    if (impIsTableDrivenHWIntrinsic(category))
+    if (impIsTableDrivenHWIntrinsic(category, flags))
     {
-        unsigned int sizeBytes;
-        var_types    baseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeSigClass, &sizeBytes);
-        assert(baseType != TYP_UNKNOWN && sizeBytes != 0);
-        var_types               retType  = getSIMDTypeForSize(sizeBytes);
+        if (!varTypeIsSIMD(retType))
+        {
+            baseType = getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args));
+            assert(baseType != TYP_UNKNOWN);
+        }
+
         unsigned                simdSize = simdSizeOfHWIntrinsic(intrinsic, sig);
         CORINFO_ARG_LIST_HANDLE argList  = sig->args;
         CORINFO_CLASS_HANDLE    argClass;
         var_types               argType = TYP_UNKNOWN;
 
-        assert(numArgs > 0);
-        assert(retType != TYP_UNDEF);
-        assert(retType == TYP_SIMD16 || retType == TYP_SIMD32);
+        assert(numArgs >= 0);
         assert(insOfHWIntrinsic(intrinsic, baseType) != INS_invalid);
         assert(simdSize == 32 || simdSize == 16);
 
@@ -506,10 +550,12 @@ GenTree* Compiler::impX86HWIntrinsic(NamedIntrinsic        intrinsic,
 
         switch (numArgs)
         {
+            case 0:
+                retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, baseType, simdSize);
+                break;
             case 1:
                 argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
                 op1     = getArgForHWIntrinsic(argType, argClass);
-
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
                 break;
             case 2:
@@ -537,8 +583,7 @@ GenTree* Compiler::impX86HWIntrinsic(NamedIntrinsic        intrinsic,
                 argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
                 op1     = getArgForHWIntrinsic(argType, argClass);
 
-                op1     = gtNewArgList(op1, op2, op3);
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, baseType, simdSize);
                 break;
             }
             default:
@@ -653,11 +698,13 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
                                    CORINFO_SIG_INFO*     sig,
                                    bool                  mustExpand)
 {
-    GenTree* retNode = nullptr;
-    GenTree* op1     = nullptr;
-    GenTree* op2     = nullptr;
-    GenTree* op3     = nullptr;
-    GenTree* op4     = nullptr;
+    GenTree* retNode  = nullptr;
+    GenTree* op1      = nullptr;
+    GenTree* op2      = nullptr;
+    GenTree* op3      = nullptr;
+    GenTree* op4      = nullptr;
+    int      simdSize = simdSizeOfHWIntrinsic(intrinsic, sig);
+    assert(simdSize == 16);
 
     switch (intrinsic)
     {
@@ -671,111 +718,13 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impPopStack().val;
             op1 = impPopStack().val;
 
-            GenTree* left    = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op4, op3, NI_SSE_UnpackLow, TYP_FLOAT, 16);
-            GenTree* right   = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_UnpackLow, TYP_FLOAT, 16);
+            GenTree* left    = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op4, op3, NI_SSE_UnpackLow, TYP_FLOAT, simdSize);
+            GenTree* right   = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_UnpackLow, TYP_FLOAT, simdSize);
             GenTree* control = gtNewIconNode(68, TYP_UBYTE);
 
-            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, left, right, control, NI_SSE_Shuffle, TYP_FLOAT, 16);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, left, right, control, NI_SSE_Shuffle, TYP_FLOAT, simdSize);
             break;
         }
-
-        case NI_SSE_Shuffle:
-        {
-            assert(sig->numArgs == 3);
-            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
-
-            op3 = impStackTop().val;
-
-            if (op3->IsCnsIntOrI() || mustExpand)
-            {
-                impPopStack(); // Pop the value we peeked at
-                op2     = impSIMDPopStack(TYP_SIMD16);
-                op1     = impSIMDPopStack(TYP_SIMD16);
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, intrinsic, TYP_FLOAT, 16);
-            }
-            else
-            {
-                // When op3 is not a constant and we are not being forced to expand, we need to
-                // return nullptr so a GT_CALL to the intrinsic method is emitted instead. The
-                // intrinsic method is recursive and will be forced to expand, at which point
-                // we emit some less efficient fallback code.
-
-                return nullptr;
-            }
-            break;
-        }
-
-        case NI_SSE_Add:
-        case NI_SSE_AddScalar:
-        case NI_SSE_And:
-        case NI_SSE_AndNot:
-        case NI_SSE_CompareEqual:
-        case NI_SSE_CompareEqualScalar:
-        case NI_SSE_CompareGreaterThan:
-        case NI_SSE_CompareGreaterThanScalar:
-        case NI_SSE_CompareGreaterThanOrEqual:
-        case NI_SSE_CompareGreaterThanOrEqualScalar:
-        case NI_SSE_CompareLessThan:
-        case NI_SSE_CompareLessThanScalar:
-        case NI_SSE_CompareLessThanOrEqual:
-        case NI_SSE_CompareLessThanOrEqualScalar:
-        case NI_SSE_CompareNotEqual:
-        case NI_SSE_CompareNotEqualScalar:
-        case NI_SSE_CompareNotGreaterThan:
-        case NI_SSE_CompareNotGreaterThanScalar:
-        case NI_SSE_CompareNotGreaterThanOrEqual:
-        case NI_SSE_CompareNotGreaterThanOrEqualScalar:
-        case NI_SSE_CompareNotLessThan:
-        case NI_SSE_CompareNotLessThanScalar:
-        case NI_SSE_CompareNotLessThanOrEqual:
-        case NI_SSE_CompareNotLessThanOrEqualScalar:
-        case NI_SSE_CompareOrdered:
-        case NI_SSE_CompareOrderedScalar:
-        case NI_SSE_CompareUnordered:
-        case NI_SSE_CompareUnorderedScalar:
-        case NI_SSE_Divide:
-        case NI_SSE_DivideScalar:
-        case NI_SSE_Max:
-        case NI_SSE_MaxScalar:
-        case NI_SSE_Min:
-        case NI_SSE_MinScalar:
-        case NI_SSE_MoveHighToLow:
-        case NI_SSE_MoveLowToHigh:
-        case NI_SSE_MoveScalar:
-        case NI_SSE_Multiply:
-        case NI_SSE_MultiplyScalar:
-        case NI_SSE_Or:
-        case NI_SSE_Subtract:
-        case NI_SSE_SubtractScalar:
-        case NI_SSE_UnpackHigh:
-        case NI_SSE_UnpackLow:
-        case NI_SSE_Xor:
-            assert(sig->numArgs == 2);
-            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
-            op2     = impSIMDPopStack(TYP_SIMD16);
-            op1     = impSIMDPopStack(TYP_SIMD16);
-            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, TYP_FLOAT, 16);
-            break;
-
-        case NI_SSE_CompareEqualOrderedScalar:
-        case NI_SSE_CompareEqualUnorderedScalar:
-        case NI_SSE_CompareGreaterThanOrderedScalar:
-        case NI_SSE_CompareGreaterThanUnorderedScalar:
-        case NI_SSE_CompareGreaterThanOrEqualOrderedScalar:
-        case NI_SSE_CompareGreaterThanOrEqualUnorderedScalar:
-        case NI_SSE_CompareLessThanOrderedScalar:
-        case NI_SSE_CompareLessThanUnorderedScalar:
-        case NI_SSE_CompareLessThanOrEqualOrderedScalar:
-        case NI_SSE_CompareLessThanOrEqualUnorderedScalar:
-        case NI_SSE_CompareNotEqualOrderedScalar:
-        case NI_SSE_CompareNotEqualUnorderedScalar:
-            assert(sig->numArgs == 2);
-            assert(JITtype2varType(sig->retType) == TYP_BOOL);
-            assert(getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args)) == TYP_FLOAT);
-            op2     = impSIMDPopStack(TYP_SIMD16);
-            op1     = impSIMDPopStack(TYP_SIMD16);
-            retNode = gtNewSimdHWIntrinsicNode(TYP_BOOL, op1, op2, intrinsic, TYP_FLOAT, 16);
-            break;
 
         case NI_SSE_ConvertToVector128SingleScalar:
         {
@@ -797,18 +746,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
 
             op2     = impPopStack().val;
             op1     = impSIMDPopStack(TYP_SIMD16);
-            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, TYP_FLOAT, 16);
-            break;
-        }
-
-        case NI_SSE_LoadHigh:
-        case NI_SSE_LoadLow:
-        {
-            assert(sig->numArgs == 2);
-            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
-            op2     = impPopStack().val;
-            op1     = impSIMDPopStack(TYP_SIMD16);
-            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, TYP_FLOAT, 16);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, TYP_FLOAT, simdSize);
             break;
         }
 
@@ -817,77 +755,15 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
             assert(JITtype2varType(sig->retType) == TYP_INT);
             assert(getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args)) == TYP_FLOAT);
             op1     = impSIMDPopStack(TYP_SIMD16);
-            retNode = gtNewSimdHWIntrinsicNode(TYP_INT, op1, intrinsic, TYP_FLOAT, 16);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_INT, op1, intrinsic, TYP_FLOAT, simdSize);
             break;
 
-        case NI_SSE_StaticCast:
-        {
-            assert(sig->numArgs == 1);
-            var_types tgtType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
-            var_types srcType = getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args));
-
-            if (varTypeIsArithmetic(tgtType) && varTypeIsArithmetic(srcType))
-            {
-                op1     = impSIMDPopStack(TYP_SIMD16);
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, intrinsic, tgtType, 16);
-            }
-            else
-            {
-                return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
-            }
-            break;
-        }
-
-        case NI_SSE_LoadAlignedVector128:
-        case NI_SSE_LoadScalar:
-        case NI_SSE_LoadVector128:
         case NI_SSE_SetAllVector128:
-        case NI_SSE_SetScalar:
             assert(sig->numArgs == 1);
             assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
             op1     = impPopStack().val;
-            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, intrinsic, TYP_FLOAT, 16);
-            break;
-
-        case NI_SSE_Reciprocal:
-        case NI_SSE_ReciprocalScalar:
-        case NI_SSE_ReciprocalSqrt:
-        case NI_SSE_ReciprocalSqrtScalar:
-        case NI_SSE_Sqrt:
-        case NI_SSE_SqrtScalar:
-            assert(sig->numArgs == 1);
-            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
-            op1     = impSIMDPopStack(TYP_SIMD16);
-            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, intrinsic, TYP_FLOAT, 16);
-            break;
-
-        case NI_SSE_ConvertToInt32:
-        case NI_SSE_ConvertToInt32WithTruncation:
-        case NI_SSE_ConvertToInt64:
-        case NI_SSE_ConvertToInt64WithTruncation:
-        case NI_SSE_ConvertToSingle:
-        {
-            assert(sig->numArgs == 1);
-            assert(getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args)) == TYP_FLOAT);
-            var_types callType = JITtype2varType(sig->retType);
-
-#ifdef _TARGET_X86_
-            if (varTypeIsLong(callType))
-            {
-                assert(intrinsic == NI_SSE_ConvertToInt64 || intrinsic == NI_SSE_ConvertToInt64WithTruncation);
-                return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
-            }
-#endif // _TARGET_X86_
-
-            op1     = impSIMDPopStack(TYP_SIMD16);
-            retNode = gtNewSimdHWIntrinsicNode(callType, op1, intrinsic, TYP_FLOAT, 16);
-            break;
-        }
-
-        case NI_SSE_SetZeroVector128:
-            assert(sig->numArgs == 0);
-            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
-            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, intrinsic, TYP_FLOAT, 16);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, gtCloneExpr(op1), gtNewIconNode(0), NI_SSE_Shuffle,
+                                               TYP_FLOAT, simdSize);
             break;
 
         default:

@@ -39,18 +39,33 @@ enum HWIntrinsicFlag : unsigned int
     // Generic
     // - must throw NotSupportException if the type argument is not numeric type
     HW_Flag_Generic = 0x4,
+    // Two-type Generic
+    // - the intrinsic has two type parameters
+    HW_Flag_TwoTypeGeneric = 0xC,
 
     // NoCodeGen
     // - should be transformed in the compiler front-end, cannot reach CodeGen
-    HW_Flag_NoCodeGen = 0x8,
+    HW_Flag_NoCodeGen = 0x10,
 
     // Unfixed SIMD-size
     // - overloaded on multiple vector sizes (SIMD size in the table is unreliable)
-    HW_Flag_UnfixedSIMDSize = 0x10,
+    HW_Flag_UnfixedSIMDSize = 0x20,
 
     // Complex overload
     // - the codegen of overloads cannot be determined by intrinsicID and base type
-    HW_Flag_ComplexOverloads = 0x20,
+    HW_Flag_ComplexOverloads = 0x40,
+
+    // Multi-instruction
+    // - that one intrinsic can generate multiple instructions
+    HW_Flag_MultiIns = 0x80,
+
+    // NoContainment
+    // the intrinsic cannot be contained
+    HW_Flag_NoContainment = 0x100,
+
+    // Copy Upper bits
+    // some SIMD scalar intrinsics need the semantics of copying upper bits from the source operand
+    HW_Flag_CopyUpperBits = 0x200,
 };
 
 inline HWIntrinsicFlag operator|(HWIntrinsicFlag c1, HWIntrinsicFlag c2)
@@ -63,7 +78,6 @@ enum HWIntrinsicCategory : unsigned int
     // Simple SIMD intrinsics
     // - take Vector128/256<T> parameters
     // - return a Vector128/256<T>
-    // - generate single instruction
     // - the codegen of overloads can be determined by intrinsicID and base type of returned vector
     HW_Category_SimpleSIMD,
 
@@ -78,6 +92,10 @@ enum HWIntrinsicCategory : unsigned int
     // Scalar intrinsics
     // - operate over general purpose registers, like crc32, lzcnt, popcnt, etc.
     HW_Category_Scalar,
+
+    // SIMD scalar
+    // - operate over vector registers(XMM), but just compute on the first element
+    HW_Category_SIMDScalar,
 
     // Memory access intrinsics
     // - e.g., Avx.Load, Avx.Store, Sse.LoadAligned

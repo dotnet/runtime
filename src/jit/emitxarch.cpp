@@ -4228,6 +4228,7 @@ void emitter::emitIns_R_R_S_I(
     emitCurIGsize += sz;
 }
 
+#ifdef DEBUG
 static bool isAvxBlendv(instruction ins)
 {
     return ins == INS_vblendvps || ins == INS_vblendvpd || ins == INS_vpblendvb;
@@ -4237,6 +4238,7 @@ static bool isSse41Blendv(instruction ins)
 {
     return ins == INS_blendvps || ins == INS_blendvpd || ins == INS_pblendvb;
 }
+#endif
 
 void emitter::emitIns_R_R_R_R(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber reg1, regNumber reg2, regNumber reg3)
@@ -5216,23 +5218,23 @@ void emitter::emitIns_SIMD_R_R_A(instruction ins, emitAttr attr, regNumber reg, 
         {
             emitIns_R_R(INS_movaps, attr, reg, reg1);
         }
-        emitIns_R_A(ins, emitTypeSize(simdtype), reg, indir, IF_RRW_ARD);
+        emitIns_R_A(ins, attr, reg, indir, IF_RRW_ARD);
     }
 }
 
-void emitter::emitIns_SIMD_R_R_AR(instruction ins, regNumber reg, regNumber reg1, regNumber base, var_types simdtype)
+void emitter::emitIns_SIMD_R_R_AR(instruction ins, emitAttr attr, regNumber reg, regNumber reg1, regNumber base)
 {
     if (UseVEXEncoding())
     {
-        emitIns_R_R_AR(ins, emitTypeSize(simdtype), reg, reg1, base, 0);
+        emitIns_R_R_AR(ins, attr, reg, reg1, base, 0);
     }
     else
     {
         if (reg1 != reg)
         {
-            emitIns_R_R(INS_movaps, emitTypeSize(simdtype), reg, reg1);
+            emitIns_R_R(INS_movaps, attr, reg, reg1);
         }
-        emitIns_R_AR(ins, emitTypeSize(simdtype), reg, base, 0);
+        emitIns_R_AR(ins, attr, reg, base, 0);
     }
 }
 
@@ -5325,70 +5327,70 @@ void emitter::emitIns_SIMD_R_R_S(instruction ins, emitAttr attr, regNumber reg, 
 }
 
 void emitter::emitIns_SIMD_R_R_A_I(
-    instruction ins, regNumber reg, regNumber reg1, GenTreeIndir* indir, int ival, var_types simdtype)
+    instruction ins, emitAttr attr, regNumber reg, regNumber reg1, GenTreeIndir* indir, int ival)
 {
     if (UseVEXEncoding())
     {
-        emitIns_R_R_A_I(ins, emitTypeSize(simdtype), reg, reg1, indir, ival, IF_RWR_RRD_ARD_CNS);
+        emitIns_R_R_A_I(ins, attr, reg, reg1, indir, ival, IF_RWR_RRD_ARD_CNS);
     }
     else
     {
         if (reg1 != reg)
         {
-            emitIns_R_R(INS_movaps, emitTypeSize(simdtype), reg, reg1);
+            emitIns_R_R(INS_movaps, attr, reg, reg1);
         }
-        emitIns_R_A_I(ins, emitTypeSize(simdtype), reg, indir, ival);
+        emitIns_R_A_I(ins, attr, reg, indir, ival);
     }
 }
 
 void emitter::emitIns_SIMD_R_R_C_I(
-    instruction ins, regNumber reg, regNumber reg1, CORINFO_FIELD_HANDLE fldHnd, int offs, int ival, var_types simdtype)
+    instruction ins, emitAttr attr, regNumber reg, regNumber reg1, CORINFO_FIELD_HANDLE fldHnd, int offs, int ival)
 {
     if (UseVEXEncoding())
     {
-        emitIns_R_R_C_I(ins, emitTypeSize(simdtype), reg, reg1, fldHnd, offs, ival);
+        emitIns_R_R_C_I(ins, attr, reg, reg1, fldHnd, offs, ival);
     }
     else
     {
         if (reg1 != reg)
         {
-            emitIns_R_R(INS_movaps, emitTypeSize(simdtype), reg, reg1);
+            emitIns_R_R(INS_movaps, attr, reg, reg1);
         }
-        emitIns_R_C_I(ins, emitTypeSize(simdtype), reg, fldHnd, offs, ival);
+        emitIns_R_C_I(ins, attr, reg, fldHnd, offs, ival);
     }
 }
 
 void emitter::emitIns_SIMD_R_R_R_I(
-    instruction ins, regNumber reg, regNumber reg1, regNumber reg2, int ival, var_types simdtype)
+    instruction ins, emitAttr attr, regNumber reg, regNumber reg1, regNumber reg2, int ival)
 {
     if (UseVEXEncoding())
     {
-        emitIns_R_R_R_I(ins, emitTypeSize(simdtype), reg, reg1, reg2, ival);
+        emitIns_R_R_R_I(ins, attr, reg, reg1, reg2, ival);
     }
     else
     {
         if (reg1 != reg)
         {
-            emitIns_R_R(INS_movaps, emitTypeSize(simdtype), reg, reg1);
+            emitIns_R_R(INS_movaps, attr, reg, reg1);
         }
-        emitIns_R_R_I(ins, emitTypeSize(simdtype), reg, reg2, ival);
+        emitIns_R_R_I(ins, attr, reg, reg2, ival);
     }
 }
 
 void emitter::emitIns_SIMD_R_R_S_I(
-    instruction ins, regNumber reg, regNumber reg1, int varx, int offs, int ival, var_types simdtype)
+    instruction ins, emitAttr attr, regNumber reg, regNumber reg1, int varx, int offs, int ival)
 {
     if (UseVEXEncoding())
     {
-        emitIns_R_R_S_I(ins, emitTypeSize(simdtype), reg, reg1, varx, offs, ival);
+        emitIns_R_R_S_I(ins, attr, reg, reg1, varx, offs, ival);
     }
     else
     {
         if (reg1 != reg)
         {
-            emitIns_R_R(INS_movaps, emitTypeSize(simdtype), reg, reg1);
+            emitIns_R_R(INS_movaps, attr, reg, reg1);
         }
-        emitIns_R_S_I(ins, emitTypeSize(simdtype), reg, varx, offs, ival);
+        emitIns_R_S_I(ins, attr, reg, varx, offs, ival);
     }
 }
 #endif
