@@ -2305,14 +2305,17 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic      intrinsicID = node->gtHWIntrinsicId;
-    HWIntrinsicCategory category    = comp->categoryOfHWIntrinsic(intrinsicID);
-    int                 numArgs     = comp->numArgsOfHWIntrinsic(intrinsicID);
+    HWIntrinsicCategory category    = Compiler::categoryOfHWIntrinsic(intrinsicID);
+    HWIntrinsicFlag     flags       = Compiler::flagsOfHWIntrinsic(intrinsicID);
+    int                 numArgs     = Compiler::numArgsOfHWIntrinsic(intrinsicID);
     GenTree*            op1         = node->gtGetOp1();
     GenTree*            op2         = node->gtGetOp2();
 
     // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
     // TODO-XArch-CQ: Non-VEX encoded instructions require memory ops to be aligned
-    if (category == HW_Category_SimpleSIMD && numArgs == 2 && comp->canUseVexEncoding())
+
+    if (comp->canUseVexEncoding() && numArgs == 2 && (flags & HW_Flag_NoContainment) == 0 &&
+        category == HW_Category_SimpleSIMD)
     {
         if (IsContainableMemoryOp(op2))
         {
@@ -2325,7 +2328,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
         }
     }
 
-    if (NamedIntrinsic == NI_SSE_Shuffle)
+    // TODO - change to all IMM intrinsics
+    if (intrinsicID == NI_SSE_Shuffle)
     {
         assert(op1->OperIsList());
         GenTree* op3 = op1->AsArgList()->Rest()->Rest()->Current();

@@ -3122,7 +3122,7 @@ protected:
     static int numArgsOfHWIntrinsic(NamedIntrinsic intrinsic);
     static instruction insOfHWIntrinsic(NamedIntrinsic intrinsic, var_types type);
     static HWIntrinsicCategory categoryOfHWIntrinsic(NamedIntrinsic intrinsic);
-    static HWIntrinsicFlag flagOfHWIntrinsic(NamedIntrinsic intrinsic);
+    static HWIntrinsicFlag flagsOfHWIntrinsic(NamedIntrinsic intrinsic);
     GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass);
     GenTreeArgList* buildArgList(CORINFO_SIG_INFO* sig);
 #endif // _TARGET_XARCH_
