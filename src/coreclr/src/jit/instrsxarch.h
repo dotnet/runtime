@@ -252,7 +252,6 @@ INST3( andnpd, "andnpd", 0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKDBL(0x55))    /
 INST3( orps,   "orps",   0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKFLT(0x56))    // Or packed singles
 INST3( orpd,   "orpd",   0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKDBL(0x56))    // Or packed doubles
 INST3( haddpd, "haddpd", 0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKDBL(0x7C))    // Horizontal add packed doubles
-INST3( rcpps,  "rcpps",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKFLT(0x53))    // Reciprocals of Packed Singles
 
 // SSE 2 approx arith
 INST3( rcpps,   "rcpps",   0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKFLT(0x53))    // Reciprocal of packed singles
