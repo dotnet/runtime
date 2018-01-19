@@ -148,8 +148,9 @@ def run_command(runArgs, environment, errorMessage):
     try:
         subprocess.check_output(runArgs, stderr=subprocess.PIPE, env=environment)
     except subprocess.CalledProcessError as e:
+        log(errorMessage)
         log(e.output.decode('utf-8'))
-        raise RuntimeException(errorMessage);
+        raise
 
 ##########################################################################
 # Execution Functions
@@ -214,7 +215,6 @@ def run_benchmark(benchname, benchdir, env, sandboxDir, benchmarkOutputDir, test
     log(" ".join(runArgs))
 
     error = 0
-    expectedOutputFile = os.path.join(benchmarkOutputDir, lvRunId + '-' + benchname + '.xml')
     with open(benchnameLogFileName, 'wb') as out:
         proc = subprocess.Popen(' '.join(runArgs), shell=True, stdout=out, stderr=out, env=myEnv)
         proc.communicate()
@@ -226,9 +226,6 @@ def run_benchmark(benchname, benchdir, env, sandboxDir, benchmarkOutputDir, test
         if os.path.isfile(benchnameLogFileName):
             with open(benchnameLogFileName, 'r') as f:
                 print(f.read())
-        return error
-    elif not os.path.isfile(expectedOutputFile):
-        log("CoreRun.exe failed to generate results in %s." % expectedOutputFile)
         return 1
 
     return 0
@@ -245,18 +242,18 @@ def generate_results_for_benchview(python, lvRunId, benchname, isScenarioTest, b
         benchviewPath (str): path to benchview tools
     """
     benchviewMeasurementParser = 'xunitscenario' if isScenarioTest else 'xunit'
-    warmupRun = '--drop-first-value' if hasWarmupRun else ''
     lvMeasurementArgs = [benchviewMeasurementParser,
             '--better',
-            better,
-            warmupRun,
-            '--append']
+            better]
+    if hasWarmupRun:
+        lvMeasurementArgs = lvMeasurementArgs + ['--drop-first-value']
 
-    filename = os.path.join(benchmarkOutputDir, lvRunId + '-' + benchname + '.xml')
+    lvMeasurementArgs = lvMeasurementArgs + ['--append']
 
-    runArgs = [python, os.path.join(benchviewPath, 'measurement.py')] + lvMeasurementArgs + [filename]
-
-    run_command(runArgs, os.environ, 'Call to %s failed' % runArgs[1])
+    files = glob.iglob(os.path.join(benchmarkOutputDir, "*.xml"))
+    for filename in files:
+        runArgs = [python, os.path.join(benchviewPath, 'measurement.py')] + lvMeasurementArgs + [filename]
+        run_command(runArgs, os.environ, 'Call to %s failed' % runArgs[1])
 
 def upload_to_benchview(python, coreclrRepo, benchviewPath, uploadToBenchview, benchviewGroup, runType, configuration, operatingSystem, etwCollection, optLevel, jitName, pgoOptimized, architecture):
     """ Upload results to benchview
@@ -438,6 +435,7 @@ def main(args):
     myEnv = dict(os.environ)
     myEnv['DOTNET_MULTILEVEL_LOOKUP'] = '0'
     myEnv['UseSharedCompilation'] = 'false'
+    myEnv['CORECLR_REPO'] = coreclrRepo
 
     # Setup directories
     log('Setting up directories')
@@ -475,12 +473,13 @@ def main(args):
 
     else:
     # If slice was not specified, run everything in the coreclrPerf directory. Set benchmarks to an empty string
-        benchmarks = [{ 'directory' : '', 'extraFlags': ''}]
+        benchmarks = [{ 'directory' : '', 'extraFlags': '-library' if isLibrary else ''}]
 
     testFileExt = 'dll' if isLibrary else 'exe'
 
     # Run benchmarks
     failures = 0
+    totalBenchmarks = 0
     lvRunId = 'Perf-%s' % etwCollection
 
     for benchmark in benchmarks:
@@ -492,6 +491,7 @@ def main(args):
         for root, dirs, files in os.walk(testPath):
             for f in files:
                 if f.endswith(testFileExt):
+                    totalBenchmarks += 1
                     benchname, ext = os.path.splitext(f)
 
                     benchmarkOutputDir = os.path.join(sandboxOutputDir, 'Scenarios') if isScenarioTest else os.path.join(sandboxOutputDir, 'Microbenchmarks')
@@ -505,8 +505,8 @@ def main(args):
     # Setup variables for uploading to benchview
     pgoOptimized = 'pgo' if isPgoOptimized else 'nopgo'
 
-    # Upload to benchview
-    if benchviewPath is not None:
+    # Upload to benchview only if we did not fail all benchmarks
+    if benchviewPath is not None and failures != totalBenchmarks:
         upload_to_benchview(python, coreclrRepo, benchviewPath, uploadToBenchview, benchviewGroup, runType, configuration, operatingSystem, etwCollection, optLevel, jitName, pgoOptimized, arch)
 
     if failures != 0:
