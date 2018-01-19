@@ -113,7 +113,7 @@ namespace System.Globalization
         // Get in touch with the diagnostics team if you have questions.
 
         //The Invariant culture;
-        private static volatile CultureInfo s_InvariantCultureInfo;
+        private static readonly CultureInfo s_InvariantCultureInfo = new CultureInfo(CultureData.Invariant, isReadOnly: true);
 
         //These are defaults that we use if a thread has not opted into having an explicit culture
         private static volatile CultureInfo s_DefaultThreadCurrentUICulture;
@@ -156,13 +156,6 @@ namespace System.Globalization
         private static readonly bool init = Init();
         private static bool Init()
         {
-            if (s_InvariantCultureInfo == null)
-            {
-                CultureInfo temp = new CultureInfo("", false);
-                temp._isReadOnly = true;
-                s_InvariantCultureInfo = temp;
-            }
-
             s_userDefaultCulture = GetUserDefaultCulture();
             s_userDefaultUICulture = GetUserDefaultUILanguage();
             return true;
@@ -192,12 +185,13 @@ namespace System.Globalization
             InitializeFromName(name, useUserOverride);
         }
 
-        private CultureInfo(CultureData cultureData)
+        private CultureInfo(CultureData cultureData, bool isReadOnly = false)
         {
             Debug.Assert(cultureData != null);
             _cultureData = cultureData;
             _name = cultureData.CultureName;
             _isInherited = false;
+            _isReadOnly = isReadOnly;
         }
 
         private static CultureInfo CreateCultureInfoNoThrow(string name, bool useUserOverride)
@@ -508,6 +502,7 @@ namespace System.Globalization
         {
             get
             {
+                Debug.Assert(s_InvariantCultureInfo != null);
                 return (s_InvariantCultureInfo);
             }
         }
@@ -1055,7 +1050,7 @@ namespace System.Globalization
             if (temp == null)
             {
                 temp = CreateSpecificCulture(_cultureData.SCONSOLEFALLBACKNAME);
-                _isReadOnly = true;
+                temp._isReadOnly = true;
                 _consoleFallbackCulture = temp;
             }
             return (temp);
