@@ -2,14 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if !netstandard
-using Internal.Runtime.CompilerServices;
-#else
-using System.Runtime.CompilerServices;
-#endif
-
-using System.Runtime.InteropServices;
-
 namespace System.Buffers.Text
 {
     /// <summary>
@@ -17,49 +9,47 @@ namespace System.Buffers.Text
     /// </summary>
     public static partial class Utf8Formatter
     {
-        private static bool TryFormatUInt64N(ulong value, byte precision, Span<byte> buffer, out int bytesWritten)
+        private static bool TryFormatUInt64N(ulong value, byte precision, Span<byte> buffer, bool insertNegationSign, out int bytesWritten)
         {
-            if (value <= long.MaxValue)
-                return TryFormatInt64N((long)value, precision, buffer, out bytesWritten);
+            // Calculate the actual digit count, number of group separators required, and the
+            // number of trailing zeros requested. From all of this we can get the required
+            // buffer length.
 
-            // The ulong path is much slower than the long path here, so we are doing the last group
-            // inside this method plus the zero padding but routing to the long version for the rest.
-            value = FormattingHelpers.DivMod(value, 1000, out ulong lastGroup);
+            int digitCount = FormattingHelpers.CountDigits(value);
+            int commaCount = (digitCount - 1) / 3;
+            int trailingZeroCount = (precision == StandardFormat.NoPrecision) ? 2 /* default for 'N' */ : precision;
 
-            if (!TryFormatInt64N((long)value, 0, buffer, out bytesWritten))
-                return false;
+            int requiredBufferLength = digitCount + commaCount;
+            if (trailingZeroCount > 0)
+            {
+                requiredBufferLength += trailingZeroCount + 1;
+            }
 
-            if (precision == StandardFormat.NoPrecision)
-                precision = 2;
+            if (insertNegationSign)
+            {
+                requiredBufferLength++;
+            }
 
-            int idx = bytesWritten;
-
-            // Since this method routes entirely to the long version if the number is smaller than
-            // long.MaxValue, we are guaranteed to need to write 3 more digits here before the set
-            // of trailing zeros.
-
-            bytesWritten += 4; // 3 digits + group separator
-            if (precision > 0)
-                bytesWritten += precision + 1; // +1 for period.
-
-            if (buffer.Length < bytesWritten)
+            if (requiredBufferLength > buffer.Length)
             {
                 bytesWritten = 0;
                 return false;
             }
 
-            ref byte utf8Bytes = ref MemoryMarshal.GetReference(buffer);
+            bytesWritten = requiredBufferLength;
 
-            // Write the last group
-            Unsafe.Add(ref utf8Bytes, idx++) = Utf8Constants.Separator;
-            FormattingHelpers.WriteDigits(lastGroup, 3, ref utf8Bytes, idx);
-            idx += 3;
-
-            // Write out the trailing zeros
-            if (precision > 0)
+            if (insertNegationSign)
             {
-                Unsafe.Add(ref utf8Bytes, idx) = Utf8Constants.Period;
-                FormattingHelpers.WriteDigits(0, precision, ref utf8Bytes, idx + 1);
+                buffer[0] = Utf8Constants.Minus;
+                buffer = buffer.Slice(1);
+            }
+
+            FormattingHelpers.WriteDigitsWithGroupSeparator(value, buffer.Slice(0, digitCount + commaCount));
+
+            if (trailingZeroCount > 0)
+            {
+                buffer[digitCount + commaCount] = Utf8Constants.Period;
+                FormattingHelpers.FillWithAsciiZeros(buffer.Slice(digitCount + commaCount + 1, trailingZeroCount));
             }
 
             return true;

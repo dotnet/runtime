@@ -17,58 +17,60 @@ namespace System.Buffers.Text
         private const byte GMT2Lowercase = (byte)'m';
         private const byte GMT3Lowercase = (byte)'t';
 
-        private static readonly byte[][] DayAbbreviations = new byte[][]
+        // The three-letter abbreviation is packed into a 24-bit unsigned integer
+        // where the least significant byte represents the first letter.
+        private static readonly uint[] DayAbbreviations = new uint[]
         {
-            new byte[] { (byte)'S', (byte)'u', (byte)'n' },
-            new byte[] { (byte)'M', (byte)'o', (byte)'n' },
-            new byte[] { (byte)'T', (byte)'u', (byte)'e' },
-            new byte[] { (byte)'W', (byte)'e', (byte)'d' },
-            new byte[] { (byte)'T', (byte)'h', (byte)'u' },
-            new byte[] { (byte)'F', (byte)'r', (byte)'i' },
-            new byte[] { (byte)'S', (byte)'a', (byte)'t' },
+            'S' + ('u' << 8) + ('n' << 16),
+            'M' + ('o' << 8) + ('n' << 16),
+            'T' + ('u' << 8) + ('e' << 16),
+            'W' + ('e' << 8) + ('d' << 16),
+            'T' + ('h' << 8) + ('u' << 16),
+            'F' + ('r' << 8) + ('i' << 16),
+            'S' + ('a' << 8) + ('t' << 16),
         };
 
-        private static readonly byte[][] DayAbbreviationsLowercase = new byte[][]
+        private static readonly uint[] DayAbbreviationsLowercase = new uint[]
         {
-            new byte[] { (byte)'s', (byte)'u', (byte)'n' },
-            new byte[] { (byte)'m', (byte)'o', (byte)'n' },
-            new byte[] { (byte)'t', (byte)'u', (byte)'e' },
-            new byte[] { (byte)'w', (byte)'e', (byte)'d' },
-            new byte[] { (byte)'t', (byte)'h', (byte)'u' },
-            new byte[] { (byte)'f', (byte)'r', (byte)'i' },
-            new byte[] { (byte)'s', (byte)'a', (byte)'t' },
+            's' + ('u' << 8) + ('n' << 16),
+            'm' + ('o' << 8) + ('n' << 16),
+            't' + ('u' << 8) + ('e' << 16),
+            'w' + ('e' << 8) + ('d' << 16),
+            't' + ('h' << 8) + ('u' << 16),
+            'f' + ('r' << 8) + ('i' << 16),
+            's' + ('a' << 8) + ('t' << 16)
         };
 
-        private static readonly byte[][] MonthAbbreviations = new byte[][]
+        private static readonly uint[] MonthAbbreviations = new uint[]
         {
-            new byte[] { (byte)'J', (byte)'a', (byte)'n' },
-            new byte[] { (byte)'F', (byte)'e', (byte)'b' },
-            new byte[] { (byte)'M', (byte)'a', (byte)'r' },
-            new byte[] { (byte)'A', (byte)'p', (byte)'r' },
-            new byte[] { (byte)'M', (byte)'a', (byte)'y' },
-            new byte[] { (byte)'J', (byte)'u', (byte)'n' },
-            new byte[] { (byte)'J', (byte)'u', (byte)'l' },
-            new byte[] { (byte)'A', (byte)'u', (byte)'g' },
-            new byte[] { (byte)'S', (byte)'e', (byte)'p' },
-            new byte[] { (byte)'O', (byte)'c', (byte)'t' },
-            new byte[] { (byte)'N', (byte)'o', (byte)'v' },
-            new byte[] { (byte)'D', (byte)'e', (byte)'c' },
+            'J' + ('a' << 8) + ('n' << 16),
+            'F' + ('e' << 8) + ('b' << 16),
+            'M' + ('a' << 8) + ('r' << 16),
+            'A' + ('p' << 8) + ('r' << 16),
+            'M' + ('a' << 8) + ('y' << 16),
+            'J' + ('u' << 8) + ('n' << 16),
+            'J' + ('u' << 8) + ('l' << 16),
+            'A' + ('u' << 8) + ('g' << 16),
+            'S' + ('e' << 8) + ('p' << 16),
+            'O' + ('c' << 8) + ('t' << 16),
+            'N' + ('o' << 8) + ('v' << 16),
+            'D' + ('e' << 8) + ('c' << 16),
         };
 
-        private static readonly byte[][] MonthAbbreviationsLowercase = new byte[][]
+        private static readonly uint[] MonthAbbreviationsLowercase = new uint[]
         {
-            new byte[] { (byte)'j', (byte)'a', (byte)'n' },
-            new byte[] { (byte)'f', (byte)'e', (byte)'b' },
-            new byte[] { (byte)'m', (byte)'a', (byte)'r' },
-            new byte[] { (byte)'a', (byte)'p', (byte)'r' },
-            new byte[] { (byte)'m', (byte)'a', (byte)'y' },
-            new byte[] { (byte)'j', (byte)'u', (byte)'n' },
-            new byte[] { (byte)'j', (byte)'u', (byte)'l' },
-            new byte[] { (byte)'a', (byte)'u', (byte)'g' },
-            new byte[] { (byte)'s', (byte)'e', (byte)'p' },
-            new byte[] { (byte)'o', (byte)'c', (byte)'t' },
-            new byte[] { (byte)'n', (byte)'o', (byte)'v' },
-            new byte[] { (byte)'d', (byte)'e', (byte)'c' },
+            'j' + ('a' << 8) + ('n' << 16),
+            'f' + ('e' << 8) + ('b' << 16),
+            'm' + ('a' << 8) + ('r' << 16),
+            'a' + ('p' << 8) + ('r' << 16),
+            'm' + ('a' << 8) + ('y' << 16),
+            'j' + ('u' << 8) + ('n' << 16),
+            'j' + ('u' << 8) + ('l' << 16),
+            'a' + ('u' << 8) + ('g' << 16),
+            's' + ('e' << 8) + ('p' << 16),
+            'o' + ('c' << 8) + ('t' << 16),
+            'n' + ('o' << 8) + ('v' << 16),
+            'd' + ('e' << 8) + ('c' << 16),
         };
 
         /// <summary>
@@ -145,7 +147,7 @@ namespace System.Buffers.Text
         /// </exceptions>
         public static bool TryFormat(DateTime value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default)
         {
-            char symbol = format.IsDefault ? 'G' : format.Symbol;
+            char symbol = FormattingHelpers.GetSymbolOrDefault(format, 'G');
 
             switch (symbol)
             {

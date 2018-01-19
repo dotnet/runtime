@@ -322,6 +322,8 @@ namespace System.Buffers.Text.Tests
             {
                 yield return DateTimeOffset.MinValue;
                 yield return DateTimeOffset.MaxValue;
+                yield return new DateTimeOffset(year: 2017, month: 1, day: 13, hour: 3, minute: 45, second: 32, new TimeSpan(hours: 0, minutes: 30, seconds: 0));
+                yield return new DateTimeOffset(year: 2017, month: 1, day: 13, hour: 3, minute: 45, second: 32, new TimeSpan(hours: 0, minutes: -30, seconds: 0));
                 yield return new DateTimeOffset(year: 2017, month: 1, day: 13, hour: 3, minute: 45, second: 32, new TimeSpan(hours: 8, minutes: 0, seconds: 0));
                 yield return new DateTimeOffset(year: 2017, month: 1, day: 13, hour: 3, minute: 45, second: 32, new TimeSpan(hours: -8, minutes: 0, seconds: 0));
                 yield return new DateTimeOffset(year: 2017, month: 12, day: 31, hour: 23, minute: 59, second: 58, new TimeSpan(hours: 14, minutes: 0, seconds: 0));

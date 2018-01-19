@@ -3,14 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 #if !netstandard
 using Internal.Runtime.CompilerServices;
-#else
-using System.Runtime.CompilerServices;
 #endif
-
-using System.Runtime.InteropServices;
 
 namespace System.Buffers.Text
 {
@@ -19,70 +16,40 @@ namespace System.Buffers.Text
     /// </summary>
     public static partial class Utf8Formatter
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryFormatInt64N(long value, byte precision, Span<byte> buffer, out int bytesWritten)
         {
-            int digitCount = FormattingHelpers.CountDigits(value);
-            int groupSeparators = (int)FormattingHelpers.DivMod(digitCount, Utf8Constants.GroupSize, out long firstGroup);
-            if (firstGroup == 0)
+            bool insertNegationSign = false;
+            if (value < 0)
             {
-                firstGroup = 3;
-                groupSeparators--;
-            }
-
-            int trailingZeros = (precision == StandardFormat.NoPrecision) ? 2 : precision;
-            int idx = (int)((value >> 63) & 1) + digitCount + groupSeparators;
-
-            bytesWritten = idx;
-            if (trailingZeros > 0)
-                bytesWritten += trailingZeros + 1; // +1 for period.
-
-            if (buffer.Length < bytesWritten)
-            {
-                bytesWritten = 0;
-                return false;
-            }
-
-            ref byte utf8Bytes = ref MemoryMarshal.GetReference(buffer);
-            long v = value;
-
-            if (v < 0)
-            {
-                Unsafe.Add(ref utf8Bytes, 0) = Utf8Constants.Minus;
-
-                // Abs(long.MinValue) == long.MaxValue + 1, so we need to re-route to unsigned to handle value
-                if (v == long.MinValue)
+                insertNegationSign = true;
+                value = -value;
+                if (value < 0)
                 {
-                    bool success = TryFormatUInt64N((ulong)long.MaxValue + 1, precision, buffer.Slice(1), out bytesWritten);
-                    Debug.Assert(success, "TryFormatInt64N already did a full buffer length check so this subcall should never have failed.");
-
-                    bytesWritten += 1; // Add the minus sign
-                    return true;
+                    Debug.Assert(value == Int64.MinValue);
+                    return TryFormatInt64N_MinValue(precision, buffer, out bytesWritten);
                 }
-
-                v = -v;
             }
 
-            // Write out the trailing zeros
-            if (trailingZeros > 0)
+            return TryFormatUInt64N((ulong)value, precision, buffer, insertNegationSign, out bytesWritten);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool TryFormatInt64N_MinValue(byte precision, Span<byte> buffer, out int bytesWritten)
+        {
+            // Int64.MinValue must be treated specially since its two's complement negation doesn't fit into 64 bits.
+            // Instead, we'll perform one's complement negation and fix up the +1 later (-x := ~x + 1).
+            // Int64.MinValue = -9,223,372,036,854,775,808 (26 digits, including minus and commas)
+            // Int64.MaxValue =  9,223,372,036,854,775,807
+
+            bool retVal = TryFormatUInt64N((ulong)Int64.MaxValue, precision, buffer, insertNegationSign: true, out int tempBytesWritten);
+            if (retVal)
             {
-                Unsafe.Add(ref utf8Bytes, idx) = Utf8Constants.Period;
-                FormattingHelpers.WriteDigits(0, trailingZeros, ref utf8Bytes, idx + 1);
+                buffer[25]++; // bump the last ASCII '7' to an '8'
             }
 
-            // Starting from the back, write each group of digits except the first group
-            while (digitCount > 3)
-            {
-                digitCount -= 3;
-                idx -= 3;
-                v = FormattingHelpers.DivMod(v, 1000, out long groupValue);
-                FormattingHelpers.WriteDigits(groupValue, 3, ref utf8Bytes, idx);
-                Unsafe.Add(ref utf8Bytes, --idx) = Utf8Constants.Separator;
-            }
-
-            // Write the first group of digits.
-            FormattingHelpers.WriteDigits(v, (int)firstGroup, ref utf8Bytes, idx - (int)firstGroup);
-
-            return true;
+            bytesWritten = tempBytesWritten;
+            return retVal;
         }
     }
 }

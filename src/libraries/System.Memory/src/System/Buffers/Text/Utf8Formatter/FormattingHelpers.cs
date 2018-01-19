@@ -16,110 +16,212 @@ namespace System.Buffers.Text
     // code must have already done all the necessary validation.
     internal static class FormattingHelpers
     {
-        // For the purpose of formatting time, the format specifier contains room for
-        // exactly 7 digits in the fraction portion. See "Round-trip format specifier"
-        // at the following URL for more information.
-        // https://msdn.microsoft.com/en-us/library/az4se3k1(v=vs.110).aspx#Roundtrip
-        private const int FractionDigits = 7;
-
         // A simple lookup table for converting numbers to hex.
-        private const string HexTable = "0123456789abcdef";
+        internal const string HexTableLower = "0123456789abcdef";
+
+        internal const string HexTableUpper = "0123456789ABCDEF";
+
+        /// <summary>
+        /// Returns the symbol contained within the standard format. If the standard format
+        /// has not been initialized, returns the provided fallback symbol.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static char GetSymbolOrDefault(in StandardFormat format, char defaultSymbol)
+        {
+            // This is equivalent to the line below, but it is written in such a way
+            // that the JIT is able to perform more optimizations.
+            //
+            // return (format.IsDefault) ? defaultSymbol : format.Symbol;
+
+            var symbol = format.Symbol;
+            if (symbol == default && format.Precision == default)
+            {
+                symbol = defaultSymbol;
+            }
+            return symbol;
+        }
 
         #region UTF-8 Helper methods
 
+        /// <summary>
+        /// Fills a buffer with the ASCII character '0' (0x30).
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void WriteHexByte(byte value, ref byte buffer, int index)
+        public static void FillWithAsciiZeros(Span<byte> buffer)
         {
-            Unsafe.Add(ref buffer, index) = (byte)HexTable[value >> 4];
-            Unsafe.Add(ref buffer, index + 1) = (byte)HexTable[value & 0xF];
+            // This is a faster implementation of Span<T>.Fill().
+            for (int i = 0; i < buffer.Length; i++)
+            {
+                buffer[i] = (byte)'0';
+            }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void WriteFractionDigits(long value, int digitCount, ref byte buffer, int index)
+        public enum HexCasing : uint
         {
-            for (int i = FractionDigits; i > digitCount; i--)
-                value /= 10;
+            // Output [ '0' .. '9' ] and [ 'A' .. 'F' ].
+            Uppercase = 0,
 
-            WriteDigits(value, digitCount, ref buffer, index);
+            // Output [ '0' .. '9' ] and [ 'a' .. 'f' ].
+            // This works because values in the range [ 0x30 .. 0x39 ] ([ '0' .. '9' ])
+            // already have the 0x20 bit set, so ORing them with 0x20 is a no-op,
+            // while outputs in the range [ 0x41 .. 0x46 ] ([ 'A' .. 'F' ])
+            // don't have the 0x20 bit set, so ORing them maps to
+            // [ 0x61 .. 0x66 ] ([ 'a' .. 'f' ]), which is what we want.
+            Lowercase = 0x2020U,
+        }
+
+        // The JIT can elide bounds checks if 'startingIndex' is constant and if the caller is
+        // writing to a span of known length (or the caller has already checked the bounds of the
+        // furthest access).
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteHexByte(byte value, Span<byte> buffer, int startingIndex = 0, HexCasing casing = HexCasing.Uppercase)
+        {
+            // We want to pack the incoming byte into a single integer [ 0000 HHHH 0000 LLLL ],
+            // where HHHH and LLLL are the high and low nibbles of the incoming byte. Then
+            // subtract this integer from a constant minuend as shown below.
+            //
+            //   [ 1000 1001 1000 1001 ]
+            // - [ 0000 HHHH 0000 LLLL ]
+            // =========================
+            //   [ *YYY **** *ZZZ **** ]
+            //
+            // The end result of this is that YYY is 0b000 if HHHH <= 9, and YYY is 0b111 if HHHH >= 10.
+            // Similarly, ZZZ is 0b000 if LLLL <= 9, and ZZZ is 0b111 if LLLL >= 10.
+            // (We don't care about the value of asterisked bits.)
+            //
+            // To turn a nibble in the range [ 0 .. 9 ] into hex, we calculate hex := nibble + 48 (ascii '0').
+            // To turn a nibble in the range [ 10 .. 15 ] into hex, we calculate hex := nibble - 10 + 65 (ascii 'A').
+            //                                                                => hex := nibble + 55.
+            // The difference in the starting ASCII offset is (55 - 48) = 7, depending on whether the nibble is <= 9 or >= 10.
+            // Since 7 is 0b111, this conveniently matches the YYY or ZZZ value computed during the earlier subtraction.
+
+            // The commented out code below is code that directly implements the logic described above.
+
+            //uint packedOriginalValues = (((uint)value & 0xF0U) << 4) + ((uint)value & 0x0FU);
+            //uint difference = 0x8989U - packedOriginalValues;
+            //uint add7Mask = (difference & 0x7070U) >> 4; // line YYY and ZZZ back up with the packed values
+            //uint packedResult = packedOriginalValues + add7Mask + 0x3030U /* ascii '0' */;
+
+            // The code below is equivalent to the commented out code above but has been tweaked
+            // to allow codegen to make some extra optimizations.
+
+            uint difference = (((uint)value & 0xF0U) << 4) + ((uint)value & 0x0FU) - 0x8989U;
+            uint packedResult = ((((uint)(-(int)difference) & 0x7070U) >> 4) + difference + 0xB9B9U) | (uint)casing;
+
+            // The low byte of the packed result contains the hex representation of the incoming byte's low nibble.
+            // The adjacent byte of the packed result contains the hex representation of the incoming byte's high nibble.
+
+            // Finally, write to the output buffer starting with the *highest* index so that codegen can
+            // elide all but the first bounds check. (This only works if 'startingIndex' is a compile-time constant.)
+
+            buffer[startingIndex + 1] = (byte)(packedResult);
+            buffer[startingIndex] = (byte)(packedResult >> 8);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteDigits(ulong value, Span<byte> buffer)
         {
-            ulong left = value;
+            // We can mutate the 'value' parameter since it's a copy-by-value local.
+            // It'll be used to represent the value left over after each division by 10.
 
             for (int i = buffer.Length - 1; i >= 1; i--)
             {
-                left = DivMod(left, 10, out ulong num);
-                buffer[i] = (byte)('0' + num);
+                ulong temp = '0' + value;
+                value /= 10;
+                buffer[i] = (byte)(temp - (value * 10));
             }
 
-            Debug.Assert(left < 10);
-            buffer[0] = (byte)('0' + left);
+            Debug.Assert(value < 10);
+            buffer[0] = (byte)('0' + value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteDigitsWithGroupSeparator(ulong value, Span<byte> buffer)
+        {
+            // We can mutate the 'value' parameter since it's a copy-by-value local.
+            // It'll be used to represent the value left over after each division by 10.
+
+            int digitsWritten = 0;
+            for (int i = buffer.Length - 1; i >= 1; i--)
+            {
+                ulong temp = '0' + value;
+                value /= 10;
+                buffer[i] = (byte)(temp - (value * 10));
+                if (digitsWritten == Utf8Constants.GroupSize - 1)
+                {
+                    buffer[--i] = Utf8Constants.Comma;
+                    digitsWritten = 0;
+                }
+                else
+                {
+                    digitsWritten++;
+                }
+            }
+
+            Debug.Assert(value < 10);
+            buffer[0] = (byte)('0' + value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteDigits(uint value, Span<byte> buffer)
         {
-            uint left = value;
+            // We can mutate the 'value' parameter since it's a copy-by-value local.
+            // It'll be used to represent the value left over after each division by 10.
 
             for (int i = buffer.Length - 1; i >= 1; i--)
             {
-                left = DivMod(left, 10, out uint num);
-                buffer[i] = (byte)('0' + num);
+                uint temp = '0' + value;
+                value /= 10;
+                buffer[i] = (byte)(temp - (value * 10));
             }
 
-            Debug.Assert(left < 10);
-            buffer[0] = (byte)('0' + left);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void WriteDigits(long value, int digitCount, ref byte buffer, int index)
-        {
-            long left = value;
-
-            for (int i = digitCount - 1; i >= 0; i--)
-            {
-                left = DivMod(left, 10, out long num);
-                Unsafe.Add(ref buffer, index + i) = (byte)('0' + num);
-            }
-
-            Debug.Assert(left == 0);
+            Debug.Assert(value < 10);
+            buffer[0] = (byte)('0' + value);
         }
 
         /// <summary>
-        /// The unsigned long implementation of this method is much slower than the signed version above
-        /// due to optimization tricks that happen at the IL to ASM stage. Use the signed version unless
-        /// you definitely need to deal with numbers larger than long.MaxValue.
+        /// Writes a value [ 0000 .. 9999 ] to the buffer starting at the specified offset.
+        /// This method performs best when the starting index is a constant literal.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void WriteDigits(ulong value, int digitCount, ref byte buffer, int index)
+        public static void WriteFourDecimalDigits(uint value, Span<byte> buffer, int startingIndex = 0)
         {
-            ulong left = value;
+            Debug.Assert(0 <= value && value <= 9999);
 
-            for (int i = digitCount - 1; i >= 0; i--)
-            {
-                left = DivMod(left, 10, out ulong num);
-                Unsafe.Add(ref buffer, index + i) = (byte)('0' + num);
-            }
+            uint temp = '0' + value;
+            value /= 10;
+            buffer[startingIndex + 3] = (byte)(temp - (value * 10));
 
-            Debug.Assert(left == 0);
+            temp = '0' + value;
+            value /= 10;
+            buffer[startingIndex + 2] = (byte)(temp - (value * 10));
+
+            temp = '0' + value;
+            value /= 10;
+            buffer[startingIndex + 1] = (byte)(temp - (value * 10));
+
+            buffer[startingIndex] = (byte)('0' + value);
+        }
+
+        /// <summary>
+        /// Writes a value [ 00 .. 99 ] to the buffer starting at the specified offset.
+        /// This method performs best when the starting index is a constant literal.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteTwoDecimalDigits(uint value, Span<byte> buffer, int startingIndex = 0)
+        {
+            Debug.Assert(0 <= value && value <= 99);
+
+            uint temp = '0' + value;
+            value /= 10;
+            buffer[startingIndex + 1] = (byte)(temp - (value * 10));
+
+            buffer[startingIndex] = (byte)('0' + value);
         }
 
         #endregion UTF-8 Helper methods
 
         #region Math Helper methods
-
-        /// <summary>
-        /// We don't have access to Math.DivRem, so this is a copy of the implementation.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static long DivMod(long numerator, long denominator, out long modulo)
-        {
-            long div = numerator / denominator;
-            modulo = numerator - (div * denominator);
-            return div;
-        }
 
         /// <summary>
         /// We don't have access to Math.DivRem, so this is a copy of the implementation.
@@ -147,20 +249,31 @@ namespace System.Buffers.Text
 
         #region Character counting helper methods
 
+        // Counts the number of trailing '0' digits in a decimal numnber.
+        // e.g., value =      0 => retVal = 0, valueWithoutTrailingZeros = 0
+        //       value =   1234 => retVal = 0, valueWithoutTrailingZeros = 1234
+        //       value = 320900 => retVal = 2, valueWithoutTrailingZeros = 3209
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int CountDigits(long n)
+        public static int CountDecimalTrailingZeros(uint value, out uint valueWithoutTrailingZeros)
         {
-            if (n == 0)
-                return 1;
+            int zeroCount = 0;
 
-            int digits = 0;
-            while (n != 0)
+            if (value != 0)
             {
-                n /= 10;
-                digits++;
+                while (true)
+                {
+                    uint temp = DivMod(value, 10, out uint modulus);
+                    if (modulus != 0)
+                    {
+                        break;
+                    }
+                    value = temp;
+                    zeroCount++;
+                }
             }
 
-            return digits;
+            valueWithoutTrailingZeros = value;
+            return zeroCount;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -229,11 +342,11 @@ namespace System.Buffers.Text
                 digits += 5;
             }
 
-            if (value < 10) 
-            { 
+            if (value < 10)
+            {
                 // no-op
             }
-            else if (value < 100) 
+            else if (value < 100)
             {
                 digits += 1;
             }
@@ -255,22 +368,32 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int CountFractionDigits(long n)
+        public static int CountHexDigits(ulong value)
         {
-            Debug.Assert(n >= 0);
+            // TODO: When x86 intrinsic support comes online, experiment with implementing this using lzcnt.
+            // return 16 - (int)((uint)Lzcnt.LeadingZeroCount(value | 1) >> 3);
 
-            long left = n;
-            long m = 0;
-            int count = FractionDigits;
+            int digits = 1;
 
-            // Remove all the 0 (zero) values from the right.
-            while (left > 0 && m == 0 && count > 0)
+            if (value > 0xFFFFFFFF)
             {
-                left = DivMod(left, 10, out m);
-                count--;
+                digits += 8;
+                value >>= 0x20;
             }
+            if (value > 0xFFFF)
+            {
+                digits += 4;
+                value >>= 0x10;
+            }
+            if (value > 0xFF)
+            {
+                digits += 2;
+                value >>= 0x8;
+            }
+            if (value > 0xF)
+                digits++;
 
-            return count + 1;
+            return digits;
         }
 
         #endregion Character counting helper methods

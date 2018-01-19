@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.InteropServices;
-
 namespace System.Buffers.Text
 {
     /// <summary>
@@ -11,32 +9,45 @@ namespace System.Buffers.Text
     /// </summary>
     public static partial class Utf8Formatter
     {
-        private static bool TryFormatUInt64D(ulong value, byte precision, Span<byte> buffer, out int bytesWritten)
+        private static bool TryFormatUInt64D(ulong value, byte precision, Span<byte> buffer, bool insertNegationSign, out int bytesWritten)
         {
-            if (value <= long.MaxValue)
-                return TryFormatInt64D((long)value, precision, buffer, out bytesWritten);
+            // Calculate the actual digit count and the number of padding zeroes requested.
+            // From all of this we can get the required buffer length.
 
-            // Remove a single digit from the number. This will get it below long.MaxValue
-            // Then we call the faster long version and follow-up with writing the last
-            // digit. This ends up being faster by a factor of 2 than to just do the entire
-            // operation using the unsigned versions.
-            value = FormattingHelpers.DivMod(value, 10, out ulong lastDigit);
+            int digitCount = FormattingHelpers.CountDigits(value);
+            int leadingZeroCount = ((precision == StandardFormat.NoPrecision) ? 0 : (int)precision) - digitCount;
+            if (leadingZeroCount < 0)
+            {
+                leadingZeroCount = 0;
+            }
 
-            if (precision != StandardFormat.NoPrecision && precision > 0)
-                precision -= 1;
+            int requiredBufferLength = digitCount + leadingZeroCount;
 
-            if (!TryFormatInt64D((long)value, precision, buffer, out bytesWritten))
-                return false;
+            if (insertNegationSign)
+            {
+                requiredBufferLength++;
+            }
 
-            if (buffer.Length - 1 < bytesWritten)
+            if (requiredBufferLength > buffer.Length)
             {
                 bytesWritten = 0;
                 return false;
             }
 
-            ref byte utf8Bytes = ref MemoryMarshal.GetReference(buffer);
-            FormattingHelpers.WriteDigits(lastDigit, 1, ref utf8Bytes, bytesWritten);
-            bytesWritten += 1;
+            bytesWritten = requiredBufferLength;
+
+            if (insertNegationSign)
+            {
+                buffer[0] = Utf8Constants.Minus;
+                buffer = buffer.Slice(1);
+            }
+
+            if (leadingZeroCount > 0)
+            {
+                FormattingHelpers.FillWithAsciiZeros(buffer.Slice(0, leadingZeroCount));
+            }
+            FormattingHelpers.WriteDigits(value, buffer.Slice(leadingZeroCount, digitCount));
+
             return true;
         }
     }

@@ -28,21 +28,21 @@ namespace System.Buffers.Text
                 case 'g':
                     if (format.HasPrecision)
                         throw new NotSupportedException(SR.Argument_GWithPrecisionNotSupported); // With a precision, 'G' can produce exponential format, even for integers.
-                    return TryFormatUInt64D(value, format.Precision, buffer, out bytesWritten);
+                    return TryFormatUInt64D(value, format.Precision, buffer, insertNegationSign: false, out bytesWritten);
 
                 case 'd':
                 case 'D':
-                    return TryFormatUInt64D(value, format.Precision, buffer, out bytesWritten);
+                    return TryFormatUInt64D(value, format.Precision, buffer, insertNegationSign: false, out bytesWritten);
 
                 case 'n':
                 case 'N':
-                    return TryFormatUInt64N(value, format.Precision, buffer, out bytesWritten);
+                    return TryFormatUInt64N(value, format.Precision, buffer, insertNegationSign: false, out bytesWritten);
 
                 case 'x':
-                    return TryFormatUInt64X(value, format.Precision, true, buffer, out bytesWritten);
+                    return TryFormatUInt64X(value, format.Precision, true /* useLower */, buffer, out bytesWritten);
 
                 case 'X':
-                    return TryFormatUInt64X(value, format.Precision, false, buffer, out bytesWritten);
+                    return TryFormatUInt64X(value, format.Precision, false /* useLower */, buffer, out bytesWritten);
 
                 default:
                     return ThrowHelper.TryFormatThrowFormatException(out bytesWritten);

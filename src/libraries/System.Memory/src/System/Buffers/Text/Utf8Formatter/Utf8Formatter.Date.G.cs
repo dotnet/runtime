@@ -2,14 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if !netstandard
-using Internal.Runtime.CompilerServices;
-#else
-using System.Runtime.CompilerServices;
-#endif
-
-using System.Runtime.InteropServices;
-
 namespace System.Buffers.Text
 {
     public static partial class Utf8Formatter
@@ -31,56 +23,67 @@ namespace System.Buffers.Text
         {
             const int MinimumBytesNeeded = 19;
 
-            bytesWritten = MinimumBytesNeeded;
+            int bytesRequired = MinimumBytesNeeded;
+
             if (offset != Utf8Constants.s_nullUtcOffset)
             {
-                bytesWritten += 7; // Space['+'|'-']hh:ss
+                bytesRequired += 7; // Space['+'|'-']hh:mm
             }
 
-            if (buffer.Length < bytesWritten)
+            if (buffer.Length < bytesRequired)
             {
                 bytesWritten = 0;
                 return false;
             }
 
-            ref byte utf8Bytes = ref MemoryMarshal.GetReference(buffer);
+            bytesWritten = bytesRequired;
 
-            FormattingHelpers.WriteDigits(value.Month, 2, ref utf8Bytes, 0);
-            Unsafe.Add(ref utf8Bytes, 2) = Utf8Constants.Slash;
+            // Hoist most of the bounds checks on buffer.
+            { var unused = buffer[MinimumBytesNeeded - 1]; }
 
-            FormattingHelpers.WriteDigits(value.Day, 2, ref utf8Bytes, 3);
-            Unsafe.Add(ref utf8Bytes, 5) = Utf8Constants.Slash;
+            // TODO: Introduce an API which can parse DateTime instances efficiently, pulling out
+            // all their properties (Month, Day, etc.) in one shot. This would help avoid the
+            // duplicate work that implicitly results from calling these properties individually.
 
-            FormattingHelpers.WriteDigits(value.Year, 4, ref utf8Bytes, 6);
-            Unsafe.Add(ref utf8Bytes, 10) = Utf8Constants.Space;
+            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Month, buffer, 0);
+            buffer[2] = Utf8Constants.Slash;
 
-            FormattingHelpers.WriteDigits(value.Hour, 2, ref utf8Bytes, 11);
-            Unsafe.Add(ref utf8Bytes, 13) = Utf8Constants.Colon;
+            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Day, buffer, 3);
+            buffer[5] = Utf8Constants.Slash;
 
-            FormattingHelpers.WriteDigits(value.Minute, 2, ref utf8Bytes, 14);
-            Unsafe.Add(ref utf8Bytes, 16) = Utf8Constants.Colon;
+            FormattingHelpers.WriteFourDecimalDigits((uint)value.Year, buffer, 6);
+            buffer[10] = Utf8Constants.Space;
 
-            FormattingHelpers.WriteDigits(value.Second, 2, ref utf8Bytes, 17);
+            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Hour, buffer, 11);
+            buffer[13] = Utf8Constants.Colon;
+
+            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Minute, buffer, 14);
+            buffer[16] = Utf8Constants.Colon;
+
+            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Second, buffer, 17);
 
             if (offset != Utf8Constants.s_nullUtcOffset)
             {
-                Unsafe.Add(ref utf8Bytes, 19) = Utf8Constants.Space;
+                byte sign;
 
-                int offsetHours = offset.Hours;
-                if (offsetHours >= 0)
+                if (offset < default(TimeSpan) /* a "const" version of TimeSpan.Zero */)
                 {
-                    Unsafe.Add(ref utf8Bytes, 20) = Utf8Constants.Plus;
-                    FormattingHelpers.WriteDigits(offsetHours, 2, ref utf8Bytes, 21);
+                    sign = Utf8Constants.Minus;
+                    offset = TimeSpan.FromTicks(-offset.Ticks);
                 }
                 else
                 {
-                    Unsafe.Add(ref utf8Bytes, 20) = Utf8Constants.Minus;
-                    FormattingHelpers.WriteDigits(-offsetHours, 2, ref utf8Bytes, 21);
+                    sign = Utf8Constants.Plus;
                 }
 
-                int offsetMinutes = Math.Abs(offset.Minutes);
-                Unsafe.Add(ref utf8Bytes, 23) = Utf8Constants.Colon;
-                FormattingHelpers.WriteDigits(offsetMinutes, 2, ref utf8Bytes, 24);
+                // Writing the value backward allows the JIT to optimize by
+                // performing a single bounds check against buffer.
+
+                FormattingHelpers.WriteTwoDecimalDigits((uint)offset.Minutes, buffer, 24);
+                buffer[23] = Utf8Constants.Colon;
+                FormattingHelpers.WriteTwoDecimalDigits((uint)offset.Hours, buffer, 21);
+                buffer[20] = sign;
+                buffer[19] = Utf8Constants.Space;
             }
 
             return true;
