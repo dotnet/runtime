@@ -167,19 +167,29 @@ namespace System.Xml.Serialization
                 name.Name = serializerName;
                 name.CodeBase = null;
                 name.CultureInfo = CultureInfo.InvariantCulture;
-                string serializerPath = Path.Combine(Path.GetDirectoryName(type.Assembly.Location), serializerName + ".dll");
-                if (!File.Exists(serializerPath))
-                {
-                    serializerPath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), serializerName + ".dll");
-                }
+
+                string serializerPath = null;
 
                 try
                 {
-                    serializer = Assembly.LoadFile(serializerPath);
+                    if (!string.IsNullOrEmpty(type.Assembly.Location))
+                    {
+                        serializerPath = Path.Combine(Path.GetDirectoryName(type.Assembly.Location), serializerName + ".dll");
+                    }
+
+                    if ((string.IsNullOrEmpty(serializerPath) || !File.Exists(serializerPath)) && !string.IsNullOrEmpty(Assembly.GetEntryAssembly().Location))
+                    {
+                        serializerPath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), serializerName + ".dll");
+                    }
+
+                    if (!string.IsNullOrEmpty(serializerPath))
+                    {
+                        serializer = Assembly.LoadFile(serializerPath);
+                    }
                 }
                 catch (Exception e)
                 {
-                    if (e is OutOfMemoryException)
+                    if (e is ThreadAbortException || e is StackOverflowException || e is OutOfMemoryException)
                     {
                         throw;
                     }
@@ -190,6 +200,7 @@ namespace System.Xml.Serialization
                         return null;
                     }
                 }
+
                 if (serializer == null)
                 {
                     if (XmlSerializer.Mode == SerializationMode.PreGenOnly)
