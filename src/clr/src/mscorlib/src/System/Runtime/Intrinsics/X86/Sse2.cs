@@ -1105,7 +1105,7 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128d _mm_sqrt_sd (__m128d a)
         /// </summary>
-        public static Vector128<double> SqrtScalar(Vector128<double> value) => SqrtScalar(value);
+        public static Vector128<double> SqrtScalar(Vector128<double> upper, Vector128<double> value) => SqrtScalar(upper, value);
 
         /// <summary>
         /// void _mm_store_sd (double* mem_addr, __m128d a)
