@@ -4248,16 +4248,10 @@ void  AdjustImageRuntimeVersion (SString* pVersion);
 SELECTANY const WCHAR kDebugApplicationsPoliciesKey[] = W("SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Error Reporting\\DebugApplications");
 SELECTANY const WCHAR kDebugApplicationsKey[] = W("SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\DebugApplications");
 
-#ifdef FEATURE_CORECLR
-SELECTANY const WCHAR kUnmanagedDebuggerKey[] = W("SOFTWARE\\Microsoft\\.NETCore\\JITDebugging");
-SELECTANY const WCHAR kUnmanagedDebuggerAutoExclusionListKey[] = W("SOFTWARE\\Microsoft\\.NETCore\\JITDebugging\\AutoExclusionList");
-#else 
 SELECTANY const WCHAR kUnmanagedDebuggerKey[] = W("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug");
-SELECTANY const WCHAR kUnmanagedDebuggerAutoExclusionListKey[] = W("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug\\AutoExclusionList");
-#endif // FEATURE_CORECLR
-
 SELECTANY const WCHAR kUnmanagedDebuggerValue[] = W("Debugger");
 SELECTANY const WCHAR kUnmanagedDebuggerAutoValue[] = W("Auto");
+SELECTANY const WCHAR kUnmanagedDebuggerAutoExclusionListKey[] = W("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug\\AutoExclusionList");
 
 BOOL GetRegistryLongValue(HKEY    hKeyParent,              // Parent key.
                           LPCWSTR szKey,                   // Key name to look at.
