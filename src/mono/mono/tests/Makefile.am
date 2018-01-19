@@ -736,6 +736,15 @@ INTERP_PLATFORM_DISABLED_TESTS= \
 	delegate3.exe \
 	thunks.exe \
 	finalizer-exception.exe \
+	delegate5.exe \
+	delegate8.exe \
+	bug-323114.exe \
+	threadpool-exceptions3.exe \
+	threadpool-exceptions6.exe \
+	bug-80392.2.exe \
+	remoting3.exe \
+	remoting2.exe \
+	appdomain-unload-callback.exe \
 	monitor-abort.exe
 endif
 
