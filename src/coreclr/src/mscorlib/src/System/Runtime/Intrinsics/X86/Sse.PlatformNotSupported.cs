@@ -274,12 +274,12 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128 _mm_loadh_pi (__m128 a, __m64 const* mem_addr)
         /// </summary>
-        public static unsafe Vector128<float> LoadHigh(Vector128<float> value, float* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<float> LoadHigh(Vector128<float> lower, float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm_loadh_pi (__m128 a, __m64 const* mem_addr)
         /// </summary>
-        public static unsafe Vector128<float> LoadLow(Vector128<float> value, float* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<float> LoadLow(Vector128<float> upper, float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm_max_ps (__m128 a,  __m128 b)
