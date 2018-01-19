@@ -126,16 +126,25 @@ void Compiler::createCfiCode(FuncInfoDsc* func, UCHAR codeOffset, UCHAR cfiOpcod
     func->cfiCodes->push_back(cfiEntry);
 }
 
-void Compiler::unwindPushCFI(regNumber reg)
+void Compiler::unwindPushPopCFI(regNumber reg)
 {
+#if defined(_TARGET_ARM_)
+    assert(compGeneratingEpilog);
+#else
     assert(compGeneratingProlog);
+#endif
 
     FuncInfoDsc* func = funCurrentFunc();
 
-    unsigned int cbProlog = unwindGetCurrentOffset(func);
-    noway_assert((BYTE)cbProlog == cbProlog);
+    unsigned int cbProlog = 0;
+    if (compGeneratingProlog)
+    {
+        cbProlog = unwindGetCurrentOffset(func);
+        noway_assert((BYTE)cbProlog == cbProlog);
 
-    createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, REGSIZE_BYTES == 8 ? 8 : 4);
+        createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, REGSIZE_BYTES == 8 ? 8 : 4);
+    }
+
     if ((RBM_CALLEE_SAVED & genRegMask(reg))
 #if defined(UNIX_AMD64_ABI)
 #if ETW_EBP_FRAMED
@@ -183,7 +192,7 @@ void Compiler::unwindBegPrologCFI()
 #endif // FEATURE_EH_FUNCLETS
 }
 
-void Compiler::unwindPushMaskCFI(regMaskTP regMask, bool isFloat)
+void Compiler::unwindPushPopMaskCFI(regMaskTP regMask, bool isFloat)
 {
     regMaskTP regBit = isFloat ? genRegMask(REG_FP_FIRST) : 1;
 
@@ -197,7 +206,7 @@ void Compiler::unwindPushMaskCFI(regMaskTP regMask, bool isFloat)
 
         if (regBit & regMask)
         {
-            unwindPushCFI(regNum);
+            unwindPushPopCFI(regNum);
         }
     }
 }
