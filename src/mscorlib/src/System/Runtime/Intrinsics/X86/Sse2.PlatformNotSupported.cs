@@ -600,12 +600,12 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128d _mm_loadh_pd (__m128d a, double const* mem_addr)
         /// </summary>
-        public static unsafe Vector128<double> LoadHigh(Vector128<double> value, double* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<double> LoadHigh(Vector128<double> lower, double* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128d _mm_loadl_pd (__m128d a, double const* mem_addr)
         /// </summary>
-        public static unsafe Vector128<double> LoadLow(Vector128<double> value, double* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<double> LoadLow(Vector128<double> upper, double* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr)
