@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
-using System.Diagnostics.Contracts;
 using System.Numerics.Hashing;
 
 namespace System.Drawing
@@ -256,7 +255,6 @@ namespace System.Drawing
         ///       rectangular region defined by this <see cref='System.Drawing.Rectangle'/> .
         ///    </para>
         /// </summary>
-        [Pure]
         public bool Contains(int x, int y) => X <= x && x < X + Width && Y <= y && y < Y + Height;
 
         /// <summary>
@@ -265,7 +263,6 @@ namespace System.Drawing
         ///       rectangular region defined by this <see cref='System.Drawing.Rectangle'/> .
         ///    </para>
         /// </summary>
-        [Pure]
         public bool Contains(Point pt) => Contains(pt.X, pt.Y);
 
         /// <summary>
@@ -275,7 +272,6 @@ namespace System.Drawing
         ///       this <see cref='System.Drawing.Rectangle'/> .
         ///    </para>
         /// </summary>
-        [Pure]
         public bool Contains(Rectangle rect) =>
             (X <= rect.X) && (rect.X + rect.Width <= X + Width) &&
             (Y <= rect.Y) && (rect.Y + rect.Height <= Y + Height);
@@ -353,7 +349,6 @@ namespace System.Drawing
         /// <summary>
         ///     Determines if this rectangle intersects with rect.
         /// </summary>
-        [Pure]
         public bool IntersectsWith(Rectangle rect) =>
             (rect.X < X + Width) && (X < rect.X + rect.Width) &&
             (rect.Y < Y + Height) && (Y < rect.Y + rect.Height);
@@ -364,7 +359,6 @@ namespace System.Drawing
         ///       b.
         ///    </para>
         /// </summary>
-        [Pure]
         public static Rectangle Union(Rectangle a, Rectangle b)
         {
             int x1 = Math.Min(a.X, b.X);

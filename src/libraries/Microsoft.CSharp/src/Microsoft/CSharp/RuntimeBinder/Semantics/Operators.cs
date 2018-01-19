@@ -99,30 +99,22 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return null;
             }
 
-            Expr expr = null;
-
-            switch (info.binopKind)
+            Expr expr;
+            if (info.binopKind == BinOpKind.Logical)
             {
-                case BinOpKind.Logical:
-                    {
-                        // Logical operators cannot be overloaded, but use the bitwise overloads.
-                        ExprCall call = BindUDBinop((ExpressionKind)(ek - ExpressionKind.LogicalAnd + ExpressionKind.BitwiseAnd), info.arg1, info.arg2, true, out pmpwi);
-                        if (call != null)
-                        {
-                            if (call.IsOK)
-                            {
-                                expr = BindUserBoolOp(ek, call);
-                            }
-                            else
-                            {
-                                expr = call;
-                            }
-                        }
-                        break;
-                    }
-                default:
-                    expr = BindUDBinop(ek, info.arg1, info.arg2, false, out pmpwi);
-                    break;
+                // Logical operators cannot be overloaded, but use the bitwise overloads.
+                ExprCall call = BindUDBinop(
+                    ek - ExpressionKind.LogicalAnd + ExpressionKind.BitwiseAnd, info.arg1, info.arg2, true, out pmpwi);
+                if (call == null)
+                {
+                    return null;
+                }
+
+                expr = BindUserBoolOp(ek, call);
+            }
+            else
+            {
+                expr = BindUDBinop(ek, info.arg1, info.arg2, false, out pmpwi);
             }
 
             if (expr == null)
@@ -181,23 +173,26 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     case ConvKind.None:
                         continue;
                     case ConvKind.Explicit:
-                        if (!info.arg1.isCONSTANT_OK())
+                        if (!(info.arg1 is ExprConstant constant))
                         {
                             continue;
                         }
                         // Need to try to convert.
-                        if (canConvert(info.arg1, typeSig1))
+
+                        if (canConvert(constant, typeSig1))
                         {
                             break;
                         }
+
                         if (ibos < ibosMinLift || !bos.CanLift())
                         {
                             continue;
                         }
+
                         Debug.Assert(typeSig1.IsValType());
 
                         typeSig1 = GetSymbolLoader().GetTypeManager().GetNullable(typeSig1);
-                        if (!canConvert(info.arg1, typeSig1))
+                        if (!canConvert(constant, typeSig1))
                         {
                             continue;
                         }
@@ -263,15 +258,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     case ConvKind.None:
                         continue;
                     case ConvKind.Explicit:
-                        if (!info.arg2.isCONSTANT_OK())
+                        if (!(info.arg2 is ExprConstant constant))
                         {
                             continue;
                         }
+
                         // Need to try to convert.
-                        if (canConvert(info.arg2, typeSig2))
+                        if (canConvert(constant, typeSig2))
                         {
                             break;
                         }
+
                         if (ibos < ibosMinLift || !bos.CanLift())
                         {
                             continue;
@@ -279,10 +276,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         Debug.Assert(typeSig2.IsValType());
 
                         typeSig2 = GetSymbolLoader().GetTypeManager().GetNullable(typeSig2);
-                        if (!canConvert(info.arg2, typeSig2))
+                        if (!canConvert(constant, typeSig2))
                         {
                             continue;
                         }
+
                         switch (GetConvKind(info.ptRaw2, bos.pt2))
                         {
                             default:
@@ -1251,7 +1249,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return BindLiftedStandardUnop(ek, flags, pArgument, uofs);
             }
 
-            if (pArgument.isCONSTANT_OK())
+            if (pArgument is ExprConstant)
             {
                 // Wrap the constant in an identity cast, to force the later casts to not be optimised out.
                 // The ExpressionTreeRewriter will remove this again.
@@ -1326,7 +1324,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     Expr exprVal = bindUDUnop((ExpressionKind)(exprKind - ExpressionKind.Add + ExpressionKind.Inc), exprGet);
                     if (exprVal != null)
                     {
-                        if (exprVal.Type != null && !(exprVal.Type is ErrorType) && exprVal.Type != pArgumentType)
+                        if (exprVal.Type != null && exprVal.Type != pArgumentType)
                         {
                             exprVal = mustConvert(exprVal, pArgumentType);
                         }
@@ -1335,16 +1333,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         ExprMulti exprMulti = GetExprFactory().CreateMulti(EXPRFLAG.EXF_ASSGOP | flags, pArgumentType, pArgument, exprVal);
                         exprGet.OptionalMulti = exprMulti;
 
-                        // Check whether Lvalue can be assigned. checkLvalue may return true 
-                        // despite reporting an error. 
-                        if (!checkLvalue(pArgument, CheckLvalueKind.Increment))
-                        {
-                            // This seems like it can never be reached - exprVal is only valid if 
-                            // we have a UDUnop, and in order for checkLValue to return false, either the 
-                            // arg has to not be OK, in which case we shouldn't get here, or we have an 
-                            // AnonMeth, Lambda, or Constant, all of which cannot have UDUnops defined for them. 
-                            exprMulti.SetError();
-                        }
+                        // Check whether Lvalue can be assigned.
+                        CheckLvalue(pArgument, CheckLvalueKind.Increment);
                         ppResult = exprMulti;
                         return UnaryOperatorSignatureFindResult.Return;
                     }
@@ -1404,10 +1394,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         continue;
 
                     case ConvKind.Explicit:
-                        if (!pArgument.isCONSTANT_OK())
+                        if (!(pArgument is ExprConstant))
                         {
                             continue;
                         }
+
                         if (canConvert(pArgument, typeSig = GetPredefindType(uos.pt)))
                         {
                             break;
@@ -1588,13 +1579,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Expr BindIncOp(ExpressionKind ek, EXPRFLAG flags, Expr arg, UnaOpFullSig uofs)
         {
             Debug.Assert(ek == ExpressionKind.Add || ek == ExpressionKind.Subtract);
-            if (!checkLvalue(arg, CheckLvalueKind.Increment))
-            {
-                Expr rval = GetExprFactory().CreateBinop(ek, arg.Type, arg, null);
-                rval.SetError();
-                return rval;
-            }
 
+            CheckLvalue(arg, CheckLvalueKind.Increment);
             CType typeRaw = uofs.GetType().StripNubs();
 
             FUNDTYPE ft = typeRaw.fundType();
@@ -2008,11 +1994,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             Expr exprRes = BindIntOp(ek, flags, arg1, arg2, ptOp);
 
-            if (!exprRes.IsOK)
-            {
-                return exprRes;
-            }
-
             if (exprRes.Type != typeDst)
             {
                 Debug.Assert(!typeDst.isPredefType(PredefinedType.PT_BOOL));
@@ -2067,11 +2048,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             exprRes.Flags |= flags;
             Debug.Assert((exprRes.Flags & EXPRFLAG.EXF_LVALUE) == 0);
 
-            if (!exprRes.IsOK)
-            {
-                return exprRes;
-            }
-
             if (exprRes.Type != typeDst)
             {
                 return mustCast(exprRes, typeDst, CONVERTTYPE.NOUDC);
@@ -2114,12 +2090,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             arg = mustCast(arg, typeOp, CONVERTTYPE.NOUDC);
 
             Expr exprRes = BindIntOp(ek, flags, arg, null, ptOp);
-
-            if (!exprRes.IsOK)
-            {
-                return exprRes;
-            }
-
             return mustCastInUncheckedContext(exprRes, typeEnum, CONVERTTYPE.NOUDC);
         }
 
@@ -2738,41 +2708,28 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private ExprBinOp CreateBinopForPredefMethodCall(ExpressionKind ek, PREDEFMETH predefMeth, CType RetType, Expr arg1, Expr arg2)
         {
             MethodSymbol methSym = GetSymbolLoader().getPredefinedMembers().GetMethod(predefMeth);
+            Debug.Assert(methSym != null);
             ExprBinOp binop = GetExprFactory().CreateBinop(ek, RetType, arg1, arg2);
 
             // Set the predefined method to call.
-            if (methSym != null)
-            {
-                AggregateSymbol agg = methSym.getClass();
-                AggregateType callingType = GetTypes().GetAggregate(agg, BSYMMGR.EmptyTypeArray());
-                binop.PredefinedMethodToCall = new MethWithInst(methSym, callingType, null);
-                binop.UserDefinedCallMethod = binop.PredefinedMethodToCall;
-            }
-            else
-            {
-                // Couldn't find it.
-                binop.SetError();
-            }
+            AggregateSymbol agg = methSym.getClass();
+            AggregateType callingType = GetTypes().GetAggregate(agg, BSYMMGR.EmptyTypeArray());
+            binop.PredefinedMethodToCall = new MethWithInst(methSym, callingType, null);
+            binop.UserDefinedCallMethod = binop.PredefinedMethodToCall;
             return binop;
         }
 
         private ExprUnaryOp CreateUnaryOpForPredefMethodCall(ExpressionKind ek, PREDEFMETH predefMeth, CType pRetType, Expr pArg)
         {
             MethodSymbol methSym = GetSymbolLoader().getPredefinedMembers().GetMethod(predefMeth);
+            Debug.Assert(methSym != null);
             ExprUnaryOp pUnaryOp = GetExprFactory().CreateUnaryOp(ek, pRetType, pArg);
 
             // Set the predefined method to call.
-            if (methSym != null)
-            {
-                AggregateSymbol pAgg = methSym.getClass();
-                AggregateType pCallingType = GetTypes().GetAggregate(pAgg, BSYMMGR.EmptyTypeArray());
-                pUnaryOp.PredefinedMethodToCall = new MethWithInst(methSym, pCallingType, null);
-                pUnaryOp.UserDefinedCallMethod = pUnaryOp.PredefinedMethodToCall;
-            }
-            else
-            {
-                pUnaryOp.SetError();
-            }
+            AggregateSymbol pAgg = methSym.getClass();
+            AggregateType pCallingType = GetTypes().GetAggregate(pAgg, BSYMMGR.EmptyTypeArray());
+            pUnaryOp.PredefinedMethodToCall = new MethWithInst(methSym, pCallingType, null);
+            pUnaryOp.UserDefinedCallMethod = pUnaryOp.PredefinedMethodToCall;
             return pUnaryOp;
         }
     }

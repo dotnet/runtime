@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using Microsoft.CSharp.RuntimeBinder.Errors;
-using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
@@ -38,8 +37,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                    typeThru is AggregateType ||
                    typeThru is TypeParameterType ||
                    typeThru is ArrayType ||
-                   typeThru is NullableType ||
-                   typeThru is ErrorType);
+                   typeThru is NullableType);
 
 #if DEBUG
 
@@ -88,7 +86,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (!(type is AggregateType ats))
             {
-                Debug.Assert(type is VoidType || type is ErrorType || type is TypeParameterType);
+                Debug.Assert(type is VoidType || type is TypeParameterType);
                 return true;
             }
 
@@ -146,8 +144,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                    typeThru is AggregateType ||
                    typeThru is TypeParameterType ||
                    typeThru is ArrayType ||
-                   typeThru is NullableType ||
-                   typeThru is ErrorType);
+                   typeThru is NullableType);
 
             switch (symCheck.GetAccess())
             {
@@ -184,6 +181,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     {
                         return ACCESSERROR.ACCESSERROR_NOACCESS;
                     }
+                    break;
+
+                case ACCESS.ACC_INTERNAL_AND_PROTECTED:
+                    if (symWhere == null || !symWhere.SameAssemOrFriend(symCheck))
+                    {
+                        return ACCESSERROR.ACCESSERROR_NOACCESS;
+                    }
+
                     break;
             }
 
@@ -229,7 +234,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             // Handle the protected case - which is the only real complicated one.
-            Debug.Assert(symCheck.GetAccess() == ACCESS.ACC_PROTECTED || symCheck.GetAccess() == ACCESS.ACC_INTERNALPROTECTED);
+            Debug.Assert(symCheck.GetAccess() == ACCESS.ACC_PROTECTED
+                || symCheck.GetAccess() == ACCESS.ACC_INTERNALPROTECTED
+                || symCheck.GetAccess() == ACCESS.ACC_INTERNAL_AND_PROTECTED);
 
             // Check if symCheck is in aggWhere or a base of aggWhere,
             // or in an outer agg of aggWhere or a base of an outer agg of aggWhere.

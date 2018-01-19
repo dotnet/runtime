@@ -24,7 +24,6 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections.Concurrent" />
-    <Reference Include="System.Diagnostics.Contracts" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Diagnostics.Tracing" />

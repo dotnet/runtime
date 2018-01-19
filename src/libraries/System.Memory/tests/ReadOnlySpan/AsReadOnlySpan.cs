@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.SpanTests
@@ -46,7 +48,7 @@ namespace System.SpanTests
         {
             int[] empty = Array.Empty<int>();
             ReadOnlySpan<int> span = empty.AsReadOnlySpan();
-            span.Validate();
+            span.ValidateNonNullEmpty();
         }
 
         [Fact]
@@ -86,12 +88,12 @@ namespace System.SpanTests
             int[] empty = Array.Empty<int>();
             ArraySegment<int> emptySegment = new ArraySegment<int>(empty);
             ReadOnlySpan<int> span = emptySegment.AsReadOnlySpan();
-            span.Validate();
+            span.ValidateNonNullEmpty();
 
             int[] a = { 19, -17 };
             ArraySegment<int> segmentInt = new ArraySegment<int>(a, 1, 0);
             ReadOnlySpan<int> spanInt = segmentInt.AsReadOnlySpan();
-            spanInt.Validate();
+            spanInt.ValidateNonNullEmpty();
         }
 
         [Fact]
@@ -108,8 +110,7 @@ namespace System.SpanTests
         {
             string s = "";
             ReadOnlySpan<char> span = s.AsReadOnlySpan();
-            char[] expected = s.ToCharArray();
-            span.Validate(expected);
+            span.ValidateNonNullEmpty();
         }
 
         [Fact]
@@ -117,6 +118,8 @@ namespace System.SpanTests
         {
             string s = null;
             Assert.Throws<ArgumentNullException>(() => s.AsReadOnlySpan().DontBox());
+            Assert.Throws<ArgumentNullException>(() => s.AsReadOnlySpan(0).DontBox());
+            Assert.Throws<ArgumentNullException>(() => s.AsReadOnlySpan(0, 0).DontBox());
         }
 
         [Fact]
@@ -134,6 +137,51 @@ namespace System.SpanTests
             ReadOnlySpan<int> readOnlySpan = span.AsReadOnlySpan();
 
             readOnlySpan.Validate(a);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestHelpers.StringSliceTestData), MemberType = typeof(TestHelpers))]
+        public static unsafe void AsReadOnlySpan_PointerAndLength(string text, int start, int length)
+        {
+            ReadOnlySpan<char> span;
+            if (start == -1)
+            {
+                start = 0;
+                length = text.Length;
+                span = text.AsReadOnlySpan();
+            }
+            else if (length == -1)
+            {
+                length = text.Length - start;
+                span = text.AsReadOnlySpan(start);
+            }
+            else
+            {
+                span = text.AsReadOnlySpan(start, length);
+            }
+
+            Assert.Equal(length, span.Length);
+
+            fixed (char* pText = text)
+            {
+                char* expected = pText + start;
+                void* actual = Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
+                Assert.Equal((IntPtr)expected, (IntPtr)actual);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TestHelpers.StringSlice2ArgTestOutOfRangeData), MemberType = typeof(TestHelpers))]
+        public static unsafe void AsReadOnlySpan_2Arg_OutOfRange(string text, int start)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => text.AsReadOnlySpan(start).DontBox());
+        }
+
+        [Theory]
+        [MemberData(nameof(TestHelpers.StringSlice3ArgTestOutOfRangeData), MemberType = typeof(TestHelpers))]
+        public static unsafe void AsReadOnlySpan_3Arg_OutOfRange(string text, int start, int length)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => text.AsReadOnlySpan(start, length).DontBox());
         }
     }
 }

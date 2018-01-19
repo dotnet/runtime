@@ -34,13 +34,8 @@
     <Compile Include="System\LoaderOptimizationAttribute.cs" />
     <Compile Include="System\OperatingSystem.cs" />
     <Compile Include="System\PlatformID.cs" />
-    <Compile Include="System\IO\EncodingCache.cs" />
-    <Compile Include="System\IO\StreamReader.cs" />
-    <Compile Include="System\IO\StreamWriter.cs" />
     <Compile Include="System\IO\StringReader.cs" />
     <Compile Include="System\IO\StringWriter.cs" />
-    <Compile Include="System\IO\TextReader.cs" />
-    <Compile Include="System\IO\TextWriter.cs" />
     <Compile Include="System\IO\BufferedStream.cs" />
     <Compile Include="System\IO\InvalidDataException.cs" />
     <Compile Include="System\Net\WebUtility.cs" />

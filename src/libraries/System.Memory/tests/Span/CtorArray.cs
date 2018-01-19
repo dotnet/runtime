@@ -62,10 +62,10 @@ namespace System.SpanTests
             Span<int> span;
 
             span = new Span<int>(empty);
-            span.Validate();
+            span.ValidateNonNullEmpty();
 
             span = new Span<int>(empty, 0, empty.Length);
-            span.Validate();
+            span.ValidateNonNullEmpty();
         }
 
         [Fact]

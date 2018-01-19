@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.IO;
 
 namespace System.Security.Claims
@@ -263,8 +262,6 @@ namespace System.Security.Claims
             {
                 throw new ArgumentNullException(nameof(value));
             }
-
-            Contract.EndContractBlock();
 
             _type = type;
             _value = value;

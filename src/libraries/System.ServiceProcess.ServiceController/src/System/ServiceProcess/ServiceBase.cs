@@ -35,6 +35,7 @@ namespace System.ServiceProcess
         private bool _commandPropsFrozen;  // set to true once we've use the Can... properties.
         private bool _disposed;
         private bool _initialized;
+        private EventLog _eventLog;
 
         /// <devdoc>
         ///    <para>
@@ -50,6 +51,7 @@ namespace System.ServiceProcess
         {
             _acceptedCommands = AcceptOptions.ACCEPT_STOP;
             ServiceName = "";
+            AutoLog = true;
         }
 
         /// <devdoc>
@@ -74,6 +76,12 @@ namespace System.ServiceProcess
                 SetServiceStatus(_statusHandle, pStatus);
             }
         }
+
+        /// <devdoc>
+        /// Indicates whether to report Start, Stop, Pause, and Continue commands in the event
+        /// </devdoc>
+        [DefaultValue(true)]
+        public bool AutoLog { get; set; }
 
         /// <devdoc>
         /// The termination code for the service.  Set this to a non-zero value before
@@ -222,6 +230,24 @@ namespace System.ServiceProcess
                 {
                     _acceptedCommands &= ~AcceptOptions.ACCEPT_STOP;
                 }
+            }
+        }
+
+        /// <devdoc>
+        /// can be used to write notification of service command calls, such as Start and Stop, to the Application event log. This property is read-only.
+        /// </devdoc>
+        [Browsable (false), DesignerSerializationVisibility (DesignerSerializationVisibility.Hidden)]
+        public virtual EventLog EventLog 
+        {
+            get 
+            {
+                if (_eventLog == null)
+                {
+                    _eventLog = new EventLog("Application");
+                    _eventLog.Source = ServiceName;
+                }
+
+                return _eventLog;
             }
         }
 
@@ -889,10 +915,18 @@ namespace System.ServiceProcess
 
         private void WriteLogEntry(string message, bool error = false)
         {
-            // Used to write to EventLog but for now just logging to debug output stream
-            // might want to plumb other logging in the future.
-
-            Debug.WriteLine((error ? "Error: " : "") + message);
+            // EventLog failures shouldn't affect the service operation
+            try 
+            {
+                if (AutoLog)
+                {
+                    EventLog.WriteEntry(message); 
+                }
+            }
+            catch  
+            {
+                // Do nothing.  Not having the event log is bad, but not starting the service as a result is worse.
+            }        
         }
     }
 }

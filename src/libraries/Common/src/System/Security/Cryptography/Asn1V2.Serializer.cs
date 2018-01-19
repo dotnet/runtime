@@ -427,11 +427,15 @@ namespace System.Security.Cryptography.Asn1
             {
                 serializer = (obj, writer) =>
                 {
-                    AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
-                    literalValueSerializer(obj, tmp);
-                    AsnReader reader = new AsnReader(tmp.Encode(), AsnEncodingRules.DER);
-                    var encoded = reader.GetEncodedValue().Span;
+                    AsnReader reader;
 
+                    using (AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER))
+                    {
+                        literalValueSerializer(obj, tmp);
+                        reader = new AsnReader(tmp.Encode(), AsnEncodingRules.DER);
+                    }
+
+                    ReadOnlySpan<byte> encoded = reader.GetEncodedValue().Span;
                     bool equal = false;
 
                     if (encoded.Length == defaultContents.Length)
@@ -459,14 +463,16 @@ namespace System.Security.Cryptography.Asn1
             {
                 return (obj, writer) =>
                 {
-                    AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
-                    serializer(obj, tmp);
-
-                    if (tmp.Encode().Length > 0)
+                    using (AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER))
                     {
-                        writer.PushSequence(explicitTag.Value);
-                        serializer(obj, writer);
-                        writer.PopSequence(explicitTag.Value);
+                        serializer(obj, tmp);
+
+                        if (tmp.Encode().Length > 0)
+                        {
+                            writer.PushSequence(explicitTag.Value);
+                            serializer(obj, writer);
+                            writer.PopSequence(explicitTag.Value);
+                        }
                     }
                 };
             }
@@ -1395,8 +1401,17 @@ namespace System.Security.Cryptography.Asn1
         public static AsnWriter Serialize<T>(T value, AsnEncodingRules ruleSet)
         {
             AsnWriter writer = new AsnWriter(ruleSet);
-            Serialize(value, writer);
-            return writer;
+
+            try
+            {
+                Serialize(value, writer);
+                return writer;
+            }
+            catch
+            {
+                writer.Dispose();
+                throw;
+            }
         }
 
         /// <summary>

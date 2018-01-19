@@ -376,25 +376,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(op1 is ExprCast
                 || op1 is ExprArrayIndex
                 || op1 is ExprCall
-                || op1 is ExprProperty 
+                || op1 is ExprProperty
                 || op1 is ExprClass
                 || op1 is ExprField);
 
-            if (!checkLvalue(op1, CheckLvalueKind.Assignment))
-            {
-                ExprAssignment rval = GetExprFactory().CreateAssignment(op1, op2);
-                rval.SetError();
-                return rval;
-            }
-
+            CheckLvalue(op1, CheckLvalueKind.Assignment);
             op2 = GenerateAssignmentConversion(op1, op2, allowExplicit);
             return GenerateOptimizedAssignment(op1, op2);
         }
 
         internal Expr BindArrayIndexCore(Expr pOp1, Expr pOp2)
         {
-            bool bIsError = !pOp1.IsOK || !pOp2.IsOK;
-
             CType pIntType = GetPredefindType(PredefinedType.PT_INT);
 
             ArrayType pArrayType = pOp1.Type as ArrayType;
@@ -416,14 +408,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             // Allocate a new expression, the type is the element type of the array.
             // Array index operations are always lvalues.
-            Expr pExpr = GetExprFactory().CreateArrayIndex(elementType, pOp1, transformedIndices);
-
-            if (bIsError)
-            {
-                pExpr.SetError();
-            }
-
-            return pExpr;
+            return GetExprFactory().CreateArrayIndex(elementType, pOp1, transformedIndices);
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -497,11 +482,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             ExprCall pResult = GetExprFactory().CreateCall(0, pReturnType, pArguments, pMemGroup, mwi);
 
-            if (!pResult.IsOK)
-            {
-                return pResult;
-            }
-
             // Set the return type and flags for constructors.
             if ((flags & MemLookFlags.Ctor) != 0)
             {
@@ -535,15 +515,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(fwt.GetType() != null && fwt.Field().getClass() == fwt.GetType().getAggregate());
 
             CType pFieldType = GetTypes().SubstType(fwt.Field().GetType(), fwt.GetType());
-            if (pOptionalObject != null && !pOptionalObject.IsOK)
-            {
-                ExprField pField = GetExprFactory().CreateField(pFieldType, pOptionalObject, fwt, false);
-                pField.SetError();
-                return pField;
-            }
-
-            bool pfConstrained;
-            pOptionalObject = AdjustMemberObject(fwt, pOptionalObject, out pfConstrained);
+            pOptionalObject = AdjustMemberObject(fwt, pOptionalObject, out _);
 
             checkUnsafe(pFieldType); // added to the binder so we don't bind to pointer ops
 
@@ -568,11 +540,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             ExprField pResult = GetExprFactory()
                 .CreateField(pFieldType, pOptionalObject, fwt, isLValue);
-
-            if (pFieldType is ErrorType)
-            {
-                pResult.SetError();
-            }
 
             Debug.Assert(BindingFlag.BIND_MEMBERSET == (BindingFlag)EXPRFLAG.EXF_MEMBERSET);
             pResult.Flags |= (EXPRFLAG)(bindFlags & BindingFlag.BIND_MEMBERSET);
@@ -656,12 +623,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             pMemGroup.OptionalObject = pObject;
             CType pReturnType = GetTypes().SubstType(pwt.Prop().RetType, pwt.GetType());
-            if (pObject != null && !pObject.IsOK)
-            {
-                ExprProperty pResult = GetExprFactory().CreateProperty(pReturnType, pObjectThrough, args, pMemGroup, pwt, null);
-                pResult.SetError();
-                return pResult;
-            }
 
             // if we are doing a get on this thing, and there is no get, and
             // most importantly, we are not leaving the arguments to be bound by the array index
@@ -859,7 +820,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         ////////////////////////////////////////////////////////////////////////////////
         // Given a method group or indexer group, bind it to the arguments for an 
         // invocation.
-        private GroupToArgsBinderResult BindMethodGroupToArgumentsCore(BindingFlag bindFlags, ExprMemberGroup grp, Expr args, int carg, bool bHasNamedArgumentSpecifiers)
+        private GroupToArgsBinderResult BindMethodGroupToArgumentsCore(BindingFlag bindFlags, ExprMemberGroup grp, Expr args, int carg, NamedArgumentsKind namedArgumentsKind)
         {
             ArgInfos pargInfo = new ArgInfos {carg = carg};
             FillInArgInfoFromArgList(pargInfo, args);
@@ -867,7 +828,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             ArgInfos pOriginalArgInfo = new ArgInfos {carg = carg};
             FillInArgInfoFromArgList(pOriginalArgInfo, args);
 
-            GroupToArgsBinder binder = new GroupToArgsBinder(this, bindFlags, grp, pargInfo, pOriginalArgInfo, bHasNamedArgumentSpecifiers);
+            GroupToArgsBinder binder = new GroupToArgsBinder(this, bindFlags, grp, pargInfo, pOriginalArgInfo, namedArgumentsKind);
             binder.Bind();
 
             return binder.GetResultsOfBind();
@@ -885,17 +846,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             Debug.Assert(grp.Name != null);
 
-            // If we have named arguments specified, make sure we have them all appearing after
-            // fixed arguments.
-            bool seenNamed = VerifyNamedArgumentsAfterFixed(args);
+            // Do we have named arguments specified, are they after fixed arguments (can position) or
+            // non-trailing (can rule out methods only).
+            NamedArgumentsKind namedKind = FindNamedArgumentsType(args);
 
-            MethPropWithInst mpwiBest = BindMethodGroupToArgumentsCore(bindFlags, grp, args, carg, seenNamed)
-                .GetBestResult();
+            MethPropWithInst mpwiBest = BindMethodGroupToArgumentsCore(bindFlags, grp, args, carg, namedKind).BestResult;
             if (grp.SymKind == SYMKIND.SK_PropertySymbol)
             {
                 Debug.Assert((grp.Flags & EXPRFLAG.EXF_INDEXER) != 0);
-                //PropWithType pwt = new PropWithType(mpwiBest.Prop(), mpwiBest.GetType());
-
                 return BindToProperty(grp.OptionalObject, new PropWithType(mpwiBest), bindFlags, args, grp);
             }
 
@@ -904,10 +862,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private bool VerifyNamedArgumentsAfterFixed(Expr args)
+        public enum NamedArgumentsKind
+        {
+            None,
+            Positioning,
+            NonTrailing
+        }
+
+        private static NamedArgumentsKind FindNamedArgumentsType(Expr args)
         {
             Expr list = args;
-            bool seenNamed = false;
             while (list != null)
             {
                 Expr arg;
@@ -925,18 +889,30 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert(arg != null);
                 if (arg is ExprNamedArgumentSpecification)
                 {
-                    seenNamed = true;
-                }
-                else
-                {
-                    if (seenNamed)
+                    while (list != null)
                     {
-                        throw GetErrorContext().Error(ErrorCode.ERR_NamedArgumentSpecificationBeforeFixedArgument);
+                        if (list is ExprList nextList)
+                        {
+                            arg = nextList.OptionalElement;
+                            list = nextList.OptionalNextListNode;
+                        }
+                        else
+                        {
+                            arg = list;
+                            list = null;
+                        }
+
+                        if (!(arg is ExprNamedArgumentSpecification))
+                        {
+                            return NamedArgumentsKind.NonTrailing;
+                        }
                     }
+
+                    return NamedArgumentsKind.Positioning;
                 }
             }
 
-            return seenNamed;
+            return NamedArgumentsKind.None;
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -949,13 +925,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             Debug.Assert(pOperand1 != null);
             Debug.Assert(pOperand1.Type != null);
-            Debug.Assert(!(pOperand1.Type is ErrorType));
 
             if (pOperand2 != null)
             {
                 Debug.Assert(pOperand2.Type != null);
-                Debug.Assert(!(pOperand2.Type is ErrorType));
-
                 return ErrorContext.Error(ErrorCode.ERR_BadBinaryOps, strOp, pOperand1.Type, pOperand2.Type);
             }
 
@@ -1000,18 +973,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         ////////////////////////////////////////////////////////////////////////////////
         // A false return means not to process the expr any further - it's totally out
         // of place. For example - a method group or an anonymous method.
-        private bool checkLvalue(Expr expr, CheckLvalueKind kind)
+        private void CheckLvalue(Expr expr, CheckLvalueKind kind)
         {
-            if (!expr.IsOK)
-                return false;
             if (expr.isLvalue())
             {
                 if (expr is ExprProperty prop)
                 {
                     CheckLvalueProp(prop);
                 }
+
                 markFieldAssigned(expr);
-                return true;
+                return;
             }
 
             Debug.Assert(!(expr is ExprLocal));
@@ -1056,7 +1028,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             TryReportLvalueFailure(expr, kind);
-            return true;
         }
 
         private void PostBindMethod(MethWithInst pMWI)
@@ -1321,6 +1292,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             }
                             index++;
                         }
+
                         Debug.Assert(index != mp.Params.Count);
                         CType substDestType = GetTypes().SubstType(@params[index], type, pTypeArgs);
 

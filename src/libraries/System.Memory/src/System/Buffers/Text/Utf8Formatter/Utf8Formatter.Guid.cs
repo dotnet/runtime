@@ -2,12 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if !netstandard
-using Internal.Runtime.CompilerServices;
-#else
-using System.Runtime.CompilerServices;
-#endif
-
 using System.Runtime.InteropServices;
 
 namespace System.Buffers.Text
@@ -15,8 +9,6 @@ namespace System.Buffers.Text
     public static partial class Utf8Formatter
     {
         #region Constants
-
-        private const int GuidChars = 32;
 
         private const byte OpenBrace = (byte)'{';
         private const byte CloseBrace = (byte)'}';
@@ -49,105 +41,179 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static unsafe bool TryFormat(Guid value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default)
+        public static bool TryFormat(Guid value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default)
         {
-            char formatSymbol = format.IsDefault ? 'D' : format.Symbol;
+            const int INSERT_DASHES = unchecked((int)0x80000000);
+            const int NO_DASHES = 0;
+            const int INSERT_CURLY_BRACES = (CloseBrace << 16) | (OpenBrace << 8);
+            const int INSERT_ROUND_BRACES = (CloseParen << 16) | (OpenParen << 8);
+            const int NO_BRACES = 0;
+            const int LEN_GUID_BASE = 32;
+            const int LEN_ADD_DASHES = 4;
+            const int LEN_ADD_BRACES = 2;
 
-            bool dash;
-            bool bookEnds;
-            switch (formatSymbol)
+            // This is a 32-bit value whose contents (where 0 is the low byte) are:
+            // 0th byte: minimum required length of the output buffer,
+            // 1st byte: the ASCII byte to insert for the opening brace position (or 0 if no braces),
+            // 2nd byte: the ASCII byte to insert for the closing brace position (or 0 if no braces),
+            // 3rd byte: high bit set if dashes are to be inserted.
+            // 
+            // The reason for keeping a single flag instead of separate vars is that we can avoid register spillage
+            // as we build up the output value.
+            int flags;
+
+            switch (FormattingHelpers.GetSymbolOrDefault(format, 'D'))
             {
                 case 'D': // nnnnnnnn-nnnn-nnnn-nnnn-nnnnnnnnnnnn
-                    dash = true;
-                    bookEnds = false;
+                    flags = INSERT_DASHES + NO_BRACES + LEN_GUID_BASE + LEN_ADD_DASHES;
                     break;
 
                 case 'B': // {nnnnnnnn-nnnn-nnnn-nnnn-nnnnnnnnnnnn}
-                    dash = true;
-                    bookEnds = true;
+                    flags = INSERT_DASHES + INSERT_CURLY_BRACES + LEN_GUID_BASE + LEN_ADD_DASHES + LEN_ADD_BRACES;
                     break;
 
                 case 'P': // (nnnnnnnn-nnnn-nnnn-nnnn-nnnnnnnnnnnn)
-                    dash = true;
-                    bookEnds = true;
+                    flags = INSERT_DASHES + INSERT_ROUND_BRACES + LEN_GUID_BASE + LEN_ADD_DASHES + LEN_ADD_BRACES;
                     break;
 
                 case 'N': // nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
-                    dash = false;
-                    bookEnds = false;
+                    flags = NO_BRACES + NO_DASHES + LEN_GUID_BASE;
                     break;
 
                 default:
                     return ThrowHelper.TryFormatThrowFormatException(out bytesWritten);
             }
 
-            bytesWritten = GuidChars + (dash ? 4 : 0) + (bookEnds ? 2 : 0);
-            if (buffer.Length < bytesWritten)
+            // At this point, the low byte of flags contains the minimum required length
+
+            if ((byte)flags > buffer.Length)
             {
                 bytesWritten = 0;
                 return false;
             }
 
-            ref byte utf8Bytes = ref MemoryMarshal.GetReference(buffer);
-            byte* bytes = (byte*)&value;
-            int idx = 0;
+            bytesWritten = (byte)flags;
+            flags >>= 8;
 
-            if (bookEnds && format.Symbol == 'B')
-                Unsafe.Add(ref utf8Bytes, idx++) = OpenBrace;
-            else if (bookEnds && format.Symbol == (byte)'P')
-                Unsafe.Add(ref utf8Bytes, idx++) = OpenParen;
+            // At this point, the low byte of flags contains the opening brace char (if any)
 
-            FormattingHelpers.WriteHexByte(bytes[3], ref utf8Bytes, idx);
-            FormattingHelpers.WriteHexByte(bytes[2], ref utf8Bytes, idx + 2);
-            FormattingHelpers.WriteHexByte(bytes[1], ref utf8Bytes, idx + 4);
-            FormattingHelpers.WriteHexByte(bytes[0], ref utf8Bytes, idx + 6);
-            idx += 8;
-
-            if (dash)
-                Unsafe.Add(ref utf8Bytes, idx++) = Dash;
-
-            FormattingHelpers.WriteHexByte(bytes[5], ref utf8Bytes, idx);
-            FormattingHelpers.WriteHexByte(bytes[4], ref utf8Bytes, idx + 2);
-            idx += 4;
-
-            if (dash)
-                Unsafe.Add(ref utf8Bytes, idx++) = Dash;
-
-            FormattingHelpers.WriteHexByte(bytes[7], ref utf8Bytes, idx);
-            FormattingHelpers.WriteHexByte(bytes[6], ref utf8Bytes, idx + 2);
-            idx += 4;
-
-            if (dash)
-                Unsafe.Add(ref utf8Bytes, idx++) = Dash;
-
-            FormattingHelpers.WriteHexByte(bytes[8], ref utf8Bytes, idx);
-            FormattingHelpers.WriteHexByte(bytes[9], ref utf8Bytes, idx + 2);
-            idx += 4;
-
-            if (dash)
-                Unsafe.Add(ref utf8Bytes, idx++) = Dash;
-
-            FormattingHelpers.WriteHexByte(bytes[10], ref utf8Bytes, idx);
-            FormattingHelpers.WriteHexByte(bytes[11], ref utf8Bytes, idx + 2);
-            FormattingHelpers.WriteHexByte(bytes[12], ref utf8Bytes, idx + 4);
-            FormattingHelpers.WriteHexByte(bytes[13], ref utf8Bytes, idx + 6);
-            FormattingHelpers.WriteHexByte(bytes[14], ref utf8Bytes, idx + 8);
-            FormattingHelpers.WriteHexByte(bytes[15], ref utf8Bytes, idx + 10);
-            idx += 12;
-
-            if (bookEnds)
+            if ((byte)flags != 0)
             {
-                if (format.Symbol == 'B')
-                {
-                    Unsafe.Add(ref utf8Bytes, idx++) = CloseBrace;
-                }
-                else if (format.Symbol == 'P')
-                {
-                    Unsafe.Add(ref utf8Bytes, idx++) = CloseParen;
-                }
+                buffer[0] = (byte)flags;
+                buffer = buffer.Slice(1);
+            }
+            flags >>= 8;
+
+            // At this point, the low byte of flags contains the closing brace char (if any)
+            // And since we're performing arithmetic shifting the high bit of flags is set (flags is negative) if dashes are required
+
+            DecomposedGuid guidAsBytes = default;
+            guidAsBytes.Guid = value;
+
+            // When a GUID is blitted, the first three components are little-endian, and the last component is big-endian.
+
+            // The line below forces the JIT to hoist the bounds check for the following segment.
+            // The JIT will optimize away the read, but it cannot optimize away the bounds check
+            // because it may have an observeable side effect (throwing).
+            // We use 8 instead of 7 so that we also capture the dash if we're asked to insert one.
+
+            { var unused = buffer[8]; }
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte03, buffer, 0, FormattingHelpers.HexCasing.Lowercase);
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte02, buffer, 2, FormattingHelpers.HexCasing.Lowercase);
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte01, buffer, 4, FormattingHelpers.HexCasing.Lowercase);
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte00, buffer, 6, FormattingHelpers.HexCasing.Lowercase);
+
+            if (flags < 0 /* use dash? */)
+            {
+                buffer[8] = Dash;
+                buffer = buffer.Slice(9);
+            }
+            else
+            {
+                buffer = buffer.Slice(8);
+            }
+
+            { var unused = buffer[4]; }
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte05, buffer, 0, FormattingHelpers.HexCasing.Lowercase);
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte04, buffer, 2, FormattingHelpers.HexCasing.Lowercase);
+
+            if (flags < 0 /* use dash? */)
+            {
+                buffer[4] = Dash;
+                buffer = buffer.Slice(5);
+            }
+            else
+            {
+                buffer = buffer.Slice(4);
+            }
+
+            { var unused = buffer[4]; }
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte07, buffer, 0, FormattingHelpers.HexCasing.Lowercase);
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte06, buffer, 2, FormattingHelpers.HexCasing.Lowercase);
+
+            if (flags < 0 /* use dash? */)
+            {
+                buffer[4] = Dash;
+                buffer = buffer.Slice(5);
+            }
+            else
+            {
+                buffer = buffer.Slice(4);
+            }
+
+            { var unused = buffer[4]; }
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte08, buffer, 0, FormattingHelpers.HexCasing.Lowercase);
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte09, buffer, 2, FormattingHelpers.HexCasing.Lowercase);
+
+            if (flags < 0 /* use dash? */)
+            {
+                buffer[4] = Dash;
+                buffer = buffer.Slice(5);
+            }
+            else
+            {
+                buffer = buffer.Slice(4);
+            }
+
+            { var unused = buffer[11]; } // can't hoist bounds check on the final brace (if exists)
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte10, buffer, 0, FormattingHelpers.HexCasing.Lowercase);
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte11, buffer, 2, FormattingHelpers.HexCasing.Lowercase);
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte12, buffer, 4, FormattingHelpers.HexCasing.Lowercase);
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte13, buffer, 6, FormattingHelpers.HexCasing.Lowercase);
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte14, buffer, 8, FormattingHelpers.HexCasing.Lowercase);
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte15, buffer, 10, FormattingHelpers.HexCasing.Lowercase);
+
+            if ((byte)flags != 0)
+            {
+                buffer[12] = (byte)flags;
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Used to provide access to the individual bytes of a GUID.
+        /// </summary>
+        [StructLayout(LayoutKind.Explicit)]
+        private struct DecomposedGuid
+        {
+            [FieldOffset(00)] public Guid Guid;
+            [FieldOffset(00)] public byte Byte00;
+            [FieldOffset(01)] public byte Byte01;
+            [FieldOffset(02)] public byte Byte02;
+            [FieldOffset(03)] public byte Byte03;
+            [FieldOffset(04)] public byte Byte04;
+            [FieldOffset(05)] public byte Byte05;
+            [FieldOffset(06)] public byte Byte06;
+            [FieldOffset(07)] public byte Byte07;
+            [FieldOffset(08)] public byte Byte08;
+            [FieldOffset(09)] public byte Byte09;
+            [FieldOffset(10)] public byte Byte10;
+            [FieldOffset(11)] public byte Byte11;
+            [FieldOffset(12)] public byte Byte12;
+            [FieldOffset(13)] public byte Byte13;
+            [FieldOffset(14)] public byte Byte14;
+            [FieldOffset(15)] public byte Byte15;
         }
     }
 }

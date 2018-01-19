@@ -17,12 +17,13 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public static void PopNewWriter(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-
-            // Maybe ArgumentException isn't right for this, since no argument was provided.
-            AssertExtensions.Throws<ArgumentException>(
-                "tag",
-                () => writer.PopSequence());
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                // Maybe ArgumentException isn't right for this, since no argument was provided.
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.PopSequence());
+            }
         }
 
         [Theory]
@@ -31,11 +32,12 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public static void PopNewWriter_CustomTag(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-
-            AssertExtensions.Throws<ArgumentException>(
-                "tag",
-                () => writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, (int)ruleSet, true)));
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, (int)ruleSet, true)));
+            }
         }
 
         [Theory]
@@ -44,14 +46,16 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public static void PopBalancedWriter(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            writer.PushSequence();
-            writer.PopSequence();
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.PushSequence();
+                writer.PopSequence();
 
-            // Maybe ArgumentException isn't right for this, since no argument was provided.
-            AssertExtensions.Throws<ArgumentException>(
-                "tag",
-                () => writer.PopSequence());
+                // Maybe ArgumentException isn't right for this, since no argument was provided.
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.PopSequence());
+            }
         }
 
         [Theory]
@@ -60,13 +64,15 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public static void PopBalancedWriter_CustomTag(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            writer.PushSequence();
-            writer.PopSequence();
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.PushSequence();
+                writer.PopSequence();
 
-            AssertExtensions.Throws<ArgumentException>(
-                "tag",
-                () => writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, (int)ruleSet, true)));
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, (int)ruleSet, true)));
+            }
         }
 
         [Theory]
@@ -75,13 +81,15 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public static void PushCustom_PopStandard(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)ruleSet, true));
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)ruleSet, true));
 
-            // Maybe ArgumentException isn't right for this, since no argument was provided.
-            AssertExtensions.Throws<ArgumentException>(
-                "tag",
-                () => writer.PopSequence());
+                // Maybe ArgumentException isn't right for this, since no argument was provided.
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.PopSequence());
+            }
         }
 
         [Theory]
@@ -90,12 +98,14 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public static void PushStandard_PopCustom(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            writer.PushSequence();
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.PushSequence();
 
-            AssertExtensions.Throws<ArgumentException>(
-                "tag",
-                () => writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, (int)ruleSet, true)));
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, (int)ruleSet, true)));
+            }
         }
 
         [Theory]
@@ -104,17 +114,19 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public static void PushPrimitive_PopStandard(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            writer.PushSequence(new Asn1Tag(UniversalTagNumber.Sequence));
-            writer.PopSequence();
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.PushSequence(new Asn1Tag(UniversalTagNumber.Sequence));
+                writer.PopSequence();
 
-            if (ruleSet == PublicEncodingRules.CER)
-            {
-                Verify(writer, "30800000");
-            }
-            else
-            {
-                Verify(writer, "3000");
+                if (ruleSet == PublicEncodingRules.CER)
+                {
+                    Verify(writer, "30800000");
+                }
+                else
+                {
+                    Verify(writer, "3000");
+                }
             }
         }
 
@@ -124,17 +136,19 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public static void PushCustomPrimitive_PopConstructed(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            writer.PushSequence(new Asn1Tag(TagClass.Private, 5));
-            writer.PopSequence(new Asn1Tag(TagClass.Private, 5, true));
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.PushSequence(new Asn1Tag(TagClass.Private, 5));
+                writer.PopSequence(new Asn1Tag(TagClass.Private, 5, true));
 
-            if (ruleSet == PublicEncodingRules.CER)
-            {
-                Verify(writer, "E5800000");
-            }
-            else
-            {
-                Verify(writer, "E500");
+                if (ruleSet == PublicEncodingRules.CER)
+                {
+                    Verify(writer, "E5800000");
+                }
+                else
+                {
+                    Verify(writer, "E500");
+                }
             }
         }
 
@@ -144,17 +158,19 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public static void PushStandard_PopPrimitive(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            writer.PushSequence();
-            writer.PopSequence(new Asn1Tag(UniversalTagNumber.Sequence, isConstructed: false));
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.PushSequence();
+                writer.PopSequence(new Asn1Tag(UniversalTagNumber.Sequence, isConstructed: false));
 
-            if (ruleSet == PublicEncodingRules.CER)
-            {
-                Verify(writer, "30800000");
-            }
-            else
-            {
-                Verify(writer, "3000");
+                if (ruleSet == PublicEncodingRules.CER)
+                {
+                    Verify(writer, "30800000");
+                }
+                else
+                {
+                    Verify(writer, "3000");
+                }
             }
         }
 
@@ -164,78 +180,92 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public static void PushCustomConstructed_PopPrimitive(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            writer.PushSequence(new Asn1Tag(TagClass.Private, (int)ruleSet, true));
-            writer.PopSequence(new Asn1Tag(TagClass.Private, (int)ruleSet));
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.PushSequence(new Asn1Tag(TagClass.Private, (int)ruleSet, true));
+                writer.PopSequence(new Asn1Tag(TagClass.Private, (int)ruleSet));
 
-            byte tag = (byte)((int)ruleSet | 0b1110_0000);
-            string tagHex = tag.ToString("X2");
-            string rest = ruleSet == PublicEncodingRules.CER ? "800000" : "00";
+                byte tag = (byte)((int)ruleSet | 0b1110_0000);
+                string tagHex = tag.ToString("X2");
+                string rest = ruleSet == PublicEncodingRules.CER ? "800000" : "00";
 
-            Verify(writer, tagHex + rest);
+                Verify(writer, tagHex + rest);
+            }
         }
 
         [Fact]
         public static void BER_WritesDefinite_Empty()
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-            writer.PushSequence();
-            writer.PopSequence();
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            {
+                writer.PushSequence();
+                writer.PopSequence();
 
-            Verify(writer, "3000");
+                Verify(writer, "3000");
+            }
         }
 
         [Fact]
         public static void CER_WritesIndefinite_Empty()
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.CER);
-            writer.PushSequence();
-            writer.PopSequence();
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
+            {
+                writer.PushSequence();
+                writer.PopSequence();
 
-            Verify(writer, "30800000");
+                Verify(writer, "30800000");
+            }
         }
 
         [Fact]
         public static void DER_WritesDefinite_CustomTag_Empty()
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            writer.PushSequence();
-            writer.PopSequence();
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                writer.PushSequence();
+                writer.PopSequence();
 
-            Verify(writer, "3000");
+                Verify(writer, "3000");
+            }
         }
 
         [Fact]
         public static void BER_WritesDefinite_CustomTag__Empty()
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-            Asn1Tag tag = new Asn1Tag(TagClass.Private, 15, true);
-            writer.PushSequence(tag);
-            writer.PopSequence(tag);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            {
+                Asn1Tag tag = new Asn1Tag(TagClass.Private, 15, true);
+                writer.PushSequence(tag);
+                writer.PopSequence(tag);
 
-            Verify(writer, "EF00");
+                Verify(writer, "EF00");
+            }
         }
 
         [Fact]
         public static void CER_WritesIndefinite_CustomTag__Empty()
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.CER);
-            Asn1Tag tag = new Asn1Tag(TagClass.Application, 91, true);
-            writer.PushSequence(tag);
-            writer.PopSequence(tag);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
+            {
+                Asn1Tag tag = new Asn1Tag(TagClass.Application, 91, true);
+                writer.PushSequence(tag);
+                writer.PopSequence(tag);
 
-            Verify(writer, "7F5B800000");
+                Verify(writer, "7F5B800000");
+            }
         }
 
         [Fact]
         public static void DER_WritesDefinite_CustomTag__Empty()
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 30, true);
-            writer.PushSequence(tag);
-            writer.PopSequence(tag);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 30, true);
+                writer.PushSequence(tag);
+                writer.PopSequence(tag);
 
-            Verify(writer, "BE00");
+                Verify(writer, "BE00");
+            }
         }
 
         private static void TestNested(AsnWriter writer, Asn1Tag alt, string expectedHex)
@@ -267,28 +297,34 @@ namespace System.Security.Cryptography.Tests.Asn1
         [Fact]
         public static void BER_Nested()
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-            Asn1Tag alt = new Asn1Tag(TagClass.Private, 127, true);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            {
+                Asn1Tag alt = new Asn1Tag(TagClass.Private, 127, true);
 
-            TestNested(writer, alt, "300AFF7F003005FF7F023000");
+                TestNested(writer, alt, "300AFF7F003005FF7F023000");
+            }
         }
 
         [Fact]
         public static void CER_Nested()
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.CER);
-            Asn1Tag alt = new Asn1Tag(TagClass.ContextSpecific, 12, true);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
+            {
+                Asn1Tag alt = new Asn1Tag(TagClass.ContextSpecific, 12, true);
 
-            TestNested(writer, alt, "3080AC8000003080AC8030800000000000000000");
+                TestNested(writer, alt, "3080AC8000003080AC8030800000000000000000");
+            }
         }
 
         [Fact]
         public static void DER_Nested()
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            Asn1Tag alt = new Asn1Tag(TagClass.Application, 5, true);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                Asn1Tag alt = new Asn1Tag(TagClass.Application, 5, true);
 
-            TestNested(writer, alt, "30086500300465023000");
+                TestNested(writer, alt, "30086500300465023000");
+            }
         }
 
         private static void SimpleContentShift(AsnWriter writer, string expectedHex)
@@ -315,8 +351,6 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public static void SimpleContentShift(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            
             const string ExpectedHex =
                 "308180" +
                     "047E" +
@@ -325,14 +359,15 @@ namespace System.Security.Cryptography.Tests.Asn1
                         "F00DF00DF00DF00DF00DF00DF00DF00DF00DF00DF00DF00DF00DF00DF00DF00D" +
                         "F00DF00DF00DF00DF00DF00DF00DF00DF00DF00DF00DF00DF00DF00DF00D";
 
-            SimpleContentShift(writer, ExpectedHex);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                SimpleContentShift(writer, ExpectedHex);
+            }
         }
 
         [Fact]
         public static void SimpleContentShift_CER()
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.CER);
-
             const string ExpectedHex =
                 "3080" +
                     "047E" +
@@ -342,48 +377,54 @@ namespace System.Security.Cryptography.Tests.Asn1
                         "F00DF00DF00DF00DF00DF00DF00DF00DF00DF00DF00DF00DF00DF00DF00D" +
                     "0000";
 
-            SimpleContentShift(writer, ExpectedHex);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
+            {
+                SimpleContentShift(writer, ExpectedHex);
+            }
         }
 
         private static void WriteRSAPublicKey(AsnEncodingRules ruleSet, string expectedHex)
         {
-            AsnWriter innerWriter = new AsnWriter(ruleSet);
+            using (AsnWriter innerWriter = new AsnWriter(ruleSet))
+            {
+                byte[] paddedBigEndianN = (
+                    "00" +
+                    "AF81C1CBD8203F624A539ED6608175372393A2837D4890E48A19DED369731156" +
+                    "20968D6BE0D3DAA38AA777BE02EE0B6B93B724E8DCC12B632B4FA80BBC925BCE" +
+                    "624F4CA7CC606306B39403E28C932D24DD546FFE4EF6A37F10770B2215EA8CBB" +
+                    "5BF427E8C4D89B79EB338375100C5F83E55DE9B4466DDFBEEE42539AEF33EF18" +
+                    "7B7760C3B1A1B2103C2D8144564A0C1039A09C85CF6B5974EB516FC8D6623C94" +
+                    "AE3A5A0BB3B4C792957D432391566CF3E2A52AFB0C142B9E0681B8972671AF2B" +
+                    "82DD390A39B939CF719568687E4990A63050CA7768DCD6B378842F18FDB1F6D9" +
+                    "FF096BAF7BEB98DCF930D66FCFD503F58D41BFF46212E24E3AFC45EA42BD8847").HexToByteArray();
 
-            byte[] paddedBigEndianN = (
-                "00" +
-                "AF81C1CBD8203F624A539ED6608175372393A2837D4890E48A19DED369731156" +
-                "20968D6BE0D3DAA38AA777BE02EE0B6B93B724E8DCC12B632B4FA80BBC925BCE" +
-                "624F4CA7CC606306B39403E28C932D24DD546FFE4EF6A37F10770B2215EA8CBB" +
-                "5BF427E8C4D89B79EB338375100C5F83E55DE9B4466DDFBEEE42539AEF33EF18" +
-                "7B7760C3B1A1B2103C2D8144564A0C1039A09C85CF6B5974EB516FC8D6623C94" +
-                "AE3A5A0BB3B4C792957D432391566CF3E2A52AFB0C142B9E0681B8972671AF2B" +
-                "82DD390A39B939CF719568687E4990A63050CA7768DCD6B378842F18FDB1F6D9" +
-                "FF096BAF7BEB98DCF930D66FCFD503F58D41BFF46212E24E3AFC45EA42BD8847").HexToByteArray();
+                // Now it's padded little-endian.
+                Array.Reverse(paddedBigEndianN);
+                BigInteger n = new BigInteger(paddedBigEndianN);
+                const long e = 8589935681;
 
-            // Now it's padded little-endian.
-            Array.Reverse(paddedBigEndianN);
-            BigInteger n = new BigInteger(paddedBigEndianN);
-            const long e = 8589935681;
+                innerWriter.PushSequence();
+                innerWriter.WriteInteger(n);
+                innerWriter.WriteInteger(e);
+                innerWriter.PopSequence();
 
-            innerWriter.PushSequence();
-            innerWriter.WriteInteger(n);
-            innerWriter.WriteInteger(e);
-            innerWriter.PopSequence();
+                using (AsnWriter outerWriter = new AsnWriter(ruleSet))
+                {
+                    // RSAPublicKey
+                    outerWriter.PushSequence();
 
-            AsnWriter outerWriter = new AsnWriter(ruleSet);
-            // RSAPublicKey
-            outerWriter.PushSequence();
-            
-            // AlgorithmIdentifier
-            outerWriter.PushSequence();
-            outerWriter.WriteObjectIdentifier("1.2.840.113549.1.1.1");
-            outerWriter.WriteNull();
-            outerWriter.PopSequence();
+                    // AlgorithmIdentifier
+                    outerWriter.PushSequence();
+                    outerWriter.WriteObjectIdentifier("1.2.840.113549.1.1.1");
+                    outerWriter.WriteNull();
+                    outerWriter.PopSequence();
 
-            outerWriter.WriteBitString(innerWriter.Encode());
-            outerWriter.PopSequence();
+                    outerWriter.WriteBitString(innerWriter.Encode());
+                    outerWriter.PopSequence();
 
-            Verify(outerWriter, expectedHex);
+                    Verify(outerWriter, expectedHex);
+                }
+            }
         }
 
         [Theory]
@@ -476,26 +517,27 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER, true)]
         public static void CannotEncodeWhileUnbalanced(PublicEncodingRules ruleSet, bool customTag)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-
-            if (customTag)
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
             {
-                writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)ruleSet, true));
+                if (customTag)
+                {
+                    writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)ruleSet, true));
+                }
+                else
+                {
+                    writer.PushSequence();
+                }
+
+                int written = -5;
+
+                Assert.Throws<InvalidOperationException>(() => writer.Encode());
+                Assert.Throws<InvalidOperationException>(() => writer.TryEncode(Span<byte>.Empty, out written));
+                Assert.Equal(-5, written);
+
+                byte[] buf = new byte[10];
+                Assert.Throws<InvalidOperationException>(() => writer.TryEncode(buf, out written));
+                Assert.Equal(-5, written);
             }
-            else
-            {
-                writer.PushSequence();
-            }
-
-            int written = -5;
-
-            Assert.Throws<InvalidOperationException>(() => writer.Encode());
-            Assert.Throws<InvalidOperationException>(() => writer.TryEncode(Span<byte>.Empty, out written));
-            Assert.Equal(-5, written);
-
-            byte[] buf = new byte[10];
-            Assert.Throws<InvalidOperationException>(() => writer.TryEncode(buf, out written));
-            Assert.Equal(-5, written);
         }
 
         [Theory]
@@ -504,11 +546,12 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public static void PushSequence_EndOfContents(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-
-            AssertExtensions.Throws<ArgumentException>(
-                "tag",
-                () => writer.PushSequence(Asn1Tag.EndOfContents));
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.PushSequence(Asn1Tag.EndOfContents));
+            }
         }
     }
 }

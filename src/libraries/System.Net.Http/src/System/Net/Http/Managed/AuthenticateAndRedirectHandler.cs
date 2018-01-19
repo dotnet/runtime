@@ -16,7 +16,6 @@ namespace System.Net.Http
         private readonly ICredentials _credentials;
         private readonly bool _allowRedirect;
         private readonly int _maxAutomaticRedirections;
-        private AuthenticationHelper.DigestResponse _digestResponse;
 
         public AuthenticateAndRedirectHandler(bool preAuthenticate, ICredentials credentials, bool allowRedirect, int maxAutomaticRedirections, HttpMessageHandler innerHandler)
         {
@@ -48,20 +47,12 @@ namespace System.Net.Http
 
                 if (currentCredential != null && _preAuthenticate)
                 {
-                    // Try using previous digest response WWWAuthenticate header
-                    if (_digestResponse != null)
-                    {
-                        await AuthenticationHelper.TrySetDigestAuthToken(request, currentCredential, _digestResponse, HttpKnownHeaderNames.Authorization).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        AuthenticationHelper.TrySetBasicAuthToken(request, currentCredential);
-                    }
+                    AuthenticationHelper.TrySetBasicAuthToken(request, currentCredential);
                 }
 
                 response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
-                if (currentCredential != null && !_preAuthenticate && response.StatusCode == HttpStatusCode.Unauthorized)
+                if (currentCredential != null && response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     AuthenticationHeaderValue selectedAuth = GetSupportedAuthScheme(response.Headers.WwwAuthenticate);
                     if (selectedAuth != null)
@@ -70,8 +61,8 @@ namespace System.Net.Http
                         {
                             case AuthenticationHelper.Digest:
                                 // Update digest response with new parameter from WWWAuthenticate
-                                _digestResponse = new AuthenticationHelper.DigestResponse(selectedAuth.Parameter);
-                                if (await AuthenticationHelper.TrySetDigestAuthToken(request, currentCredential, _digestResponse, HttpKnownHeaderNames.Authorization).ConfigureAwait(false))
+                                var digestResponse = new AuthenticationHelper.DigestResponse(selectedAuth.Parameter);
+                                if (await AuthenticationHelper.TrySetDigestAuthToken(request, currentCredential, digestResponse, HttpKnownHeaderNames.Authorization).ConfigureAwait(false))
                                 {
                                     response.Dispose();
                                     response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
@@ -83,9 +74,9 @@ namespace System.Net.Http
                                         {
                                             if (ahv.Scheme == AuthenticationHelper.Digest)
                                             {
-                                                _digestResponse = new AuthenticationHelper.DigestResponse(ahv.Parameter);
-                                                if (AuthenticationHelper.IsServerNonceStale(_digestResponse) &&
-                                                    await AuthenticationHelper.TrySetDigestAuthToken(request, currentCredential, _digestResponse, HttpKnownHeaderNames.Authorization).ConfigureAwait(false))
+                                                digestResponse = new AuthenticationHelper.DigestResponse(ahv.Parameter);
+                                                if (AuthenticationHelper.IsServerNonceStale(digestResponse) &&
+                                                    await AuthenticationHelper.TrySetDigestAuthToken(request, currentCredential, digestResponse, HttpKnownHeaderNames.Authorization).ConfigureAwait(false))
                                                 {
                                                     response.Dispose();
                                                     response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
@@ -99,6 +90,12 @@ namespace System.Net.Http
                                 break;
 
                             case AuthenticationHelper.Basic:
+                                if (_preAuthenticate)
+                                {
+                                    // We already tried these credentials via preauthentication, so no need to try again
+                                    break;
+                                }
+
                                 if (AuthenticationHelper.TrySetBasicAuthToken(request, currentCredential))
                                 {
                                     response.Dispose();

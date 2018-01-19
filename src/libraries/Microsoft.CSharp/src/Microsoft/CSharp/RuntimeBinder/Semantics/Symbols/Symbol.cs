@@ -16,6 +16,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     {
         ACC_UNKNOWN,     // Not yet determined.
         ACC_PRIVATE,
+        ACC_INTERNAL_AND_PROTECTED,
         ACC_INTERNAL,
         ACC_PROTECTED,
         ACC_INTERNALPROTECTED,   // internal OR protected

@@ -13,7 +13,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Security.Principal;
 
 namespace System.Security.AccessControl
@@ -44,7 +43,6 @@ namespace System.Security.AccessControl
             {
                 throw new ArgumentNullException( nameof(collection));
             }
-            Contract.EndContractBlock();
 
             _acl = collection;
             Reset();
@@ -180,7 +178,6 @@ namespace System.Security.AccessControl
             {
                 throw new RankException( SR.Rank_MultiDimNotSupported );
             }
-            Contract.EndContractBlock();
 
             if ( index < 0 )
             {
@@ -253,7 +250,6 @@ nameof(array),
             {
                 throw new ArgumentNullException( nameof(binaryForm));
             }
-            Contract.EndContractBlock();
 
             if ( offset < 0 )
             {
@@ -552,7 +548,6 @@ nameof(binaryForm));
                 {
                     throw new ArgumentNullException( nameof(value));
                 }
-                Contract.EndContractBlock();
 
                 if ( value.BinaryLength % 4 != 0 )
                 {
@@ -590,7 +585,6 @@ nameof(binaryForm));
             {
                 throw new ArgumentNullException( nameof(ace));
             }
-            Contract.EndContractBlock();
 
             if ( BinaryLength + ace.BinaryLength > MaxBinaryLength )
             {
@@ -1855,7 +1849,6 @@ nameof(binaryForm));
             return true;
         }
 
-        [Pure]
         private void ThrowIfNotCanonical()
         {
             if ( !_isCanonical )
@@ -1896,7 +1889,6 @@ nameof(binaryForm));
             {
                 throw new ArgumentNullException( nameof(rawAcl));
             }
-            Contract.EndContractBlock();
 
             _isContainer = isContainer;
             _isDS = isDS;
@@ -2024,7 +2016,6 @@ nameof(propagationFlags));
             {
                 throw new ArgumentNullException( nameof(sid));
             }
-            Contract.EndContractBlock();
 
             ThrowIfNotCanonical();
 
@@ -2123,7 +2114,7 @@ nameof(flags));
                     SR.Argument_ArgumentZero,
 nameof(accessMask));
             }
-            Contract.EndContractBlock();
+
             ThrowIfNotCanonical();
 
             GenericAce newAce;
@@ -2234,7 +2225,7 @@ nameof(flags));
             {
                 throw new ArgumentNullException( nameof(sid));
             }
-            Contract.EndContractBlock();
+
             ThrowIfNotCanonical();
 
 
@@ -2679,7 +2670,7 @@ nameof(flags));
             {
                 throw new ArgumentNullException( nameof(sid));
             }
-            Contract.EndContractBlock();
+
             ThrowIfNotCanonical();
 
             for ( int i = 0; i < Count; i++ )
@@ -2899,7 +2890,7 @@ nameof(flags));
             {
                 throw new ArgumentNullException( nameof(sid));
             }
-            Contract.EndContractBlock();
+
             ThrowIfNotCanonical();
             
             for ( int i = Count - 1; i >= 0; i-- )
@@ -3019,7 +3010,6 @@ nameof(flags));
                 throw new InvalidOperationException(
                     SR.InvalidOperation_OnlyValidForDS );
             }
-            Contract.EndContractBlock();
 
             CheckFlags( inheritanceFlags, propagationFlags );
             AddQualifiedAce(sid, AceQualifier.SystemAudit, accessMask, GenericAce.AceFlagsFromAuditFlags(auditFlags) | GenericAce.AceFlagsFromInheritanceFlags(inheritanceFlags, propagationFlags), objectFlags, objectType, inheritedObjectType);
@@ -3040,7 +3030,6 @@ nameof(flags));
                 throw new InvalidOperationException(
                     SR.InvalidOperation_OnlyValidForDS );
             }
-            Contract.EndContractBlock();
 
             CheckFlags( inheritanceFlags, propagationFlags );
             SetQualifiedAce(sid, AceQualifier.SystemAudit, accessMask, GenericAce.AceFlagsFromAuditFlags(auditFlags) | GenericAce.AceFlagsFromInheritanceFlags(inheritanceFlags, propagationFlags), objectFlags, objectType, inheritedObjectType);
@@ -3061,7 +3050,6 @@ nameof(flags));
                 throw new InvalidOperationException(
                     SR.InvalidOperation_OnlyValidForDS );
             }
-            Contract.EndContractBlock();
 
             return RemoveQualifiedAces(sid, AceQualifier.SystemAudit, accessMask, GenericAce.AceFlagsFromAuditFlags(auditFlags) | GenericAce.AceFlagsFromInheritanceFlags(inheritanceFlags, propagationFlags), true, objectFlags, objectType, inheritedObjectType);
         }
@@ -3081,7 +3069,6 @@ nameof(flags));
                 throw new InvalidOperationException(
                     SR.InvalidOperation_OnlyValidForDS );
             }
-            Contract.EndContractBlock();
 
             RemoveQualifiedAcesSpecific(sid, AceQualifier.SystemAudit, accessMask, GenericAce.AceFlagsFromAuditFlags(auditFlags) | GenericAce.AceFlagsFromInheritanceFlags(inheritanceFlags, propagationFlags), objectFlags, objectType, inheritedObjectType);
         }
@@ -3182,7 +3169,6 @@ nameof(flags));
                 throw new InvalidOperationException(
                     SR.InvalidOperation_OnlyValidForDS );
             }
-            Contract.EndContractBlock();
 
             CheckAccessType( accessType );
             CheckFlags( inheritanceFlags, propagationFlags );
@@ -3205,7 +3191,6 @@ nameof(flags));
                 throw new InvalidOperationException(
                     SR.InvalidOperation_OnlyValidForDS );
             }
-            Contract.EndContractBlock();
 
             CheckAccessType( accessType );
             CheckFlags( inheritanceFlags, propagationFlags );
@@ -3228,7 +3213,6 @@ nameof(flags));
                 throw new InvalidOperationException(
                     SR.InvalidOperation_OnlyValidForDS );
             }
-            Contract.EndContractBlock();
 
             CheckAccessType( accessType );
             everyOneFullAccessForNullDacl = false;
@@ -3250,7 +3234,6 @@ nameof(flags));
                 throw new InvalidOperationException(
                     SR.InvalidOperation_OnlyValidForDS );
             }
-            Contract.EndContractBlock();
 
             CheckAccessType( accessType );
             everyOneFullAccessForNullDacl = false;

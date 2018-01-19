@@ -163,6 +163,35 @@ static void ConvertFileStatus(const struct stat_* src, struct FileStatus* dst)
 #endif
 }
 
+static void ConvertFileStatus2(const struct stat_* src, struct FileStatus2* dst)
+{
+    dst->Dev = (int64_t)src->st_dev;
+    dst->Ino = (int64_t)src->st_ino;
+    dst->Flags = FILESTATUS_FLAGS_NONE;
+    dst->Mode = (int32_t)src->st_mode;
+    dst->Uid = src->st_uid;
+    dst->Gid = src->st_gid;
+    dst->Size = src->st_size;
+
+    dst->ATime = src->st_atime;
+    dst->MTime = src->st_mtime;
+    dst->CTime = src->st_ctime;
+
+    dst->ATimeNsec = ST_ATIME_NSEC(src);
+    dst->MTimeNsec = ST_MTIME_NSEC(src);
+    dst->CTimeNsec = ST_CTIME_NSEC(src);
+
+#if HAVE_STAT_BIRTHTIME
+    dst->BirthTime = src->st_birthtimespec.tv_sec;
+    dst->BirthTimeNsec = src->st_birthtimespec.tv_nsec;
+    dst->Flags |= FILESTATUS_FLAGS_HAS_BIRTHTIME;
+#else
+    // Linux path: until we use statx() instead
+    dst->BirthTime = 0;
+    dst->BirthTimeNsec = 0;
+#endif
+}
+
 int32_t SystemNative_Stat(const char* path, struct FileStatus* output)
 {
     struct stat_ result;
@@ -199,6 +228,47 @@ int32_t SystemNative_LStat(const char* path, struct FileStatus* output)
     if (ret == 0)
     {
         ConvertFileStatus(&result, output);
+    }
+
+    return ret;
+}
+
+int32_t SystemNative_Stat2(const char* path, struct FileStatus2* output)
+{
+    struct stat_ result;
+    int ret;
+    while ((ret = stat_(path, &result)) < 0 && errno == EINTR);
+
+    if (ret == 0)
+    {
+        ConvertFileStatus2(&result, output);
+    }
+
+    return ret;
+}
+
+int32_t SystemNative_FStat2(intptr_t fd, struct FileStatus2* output)
+{
+    struct stat_ result;
+    int ret;
+    while ((ret = fstat_(ToFileDescriptor(fd), &result)) < 0 && errno == EINTR);
+
+    if (ret == 0)
+    {
+        ConvertFileStatus2(&result, output);
+    }
+
+    return ret;
+}
+
+int32_t SystemNative_LStat2(const char* path, struct FileStatus2* output)
+{
+    struct stat_ result;
+    int ret = lstat_(path, &result);
+
+    if (ret == 0)
+    {
+        ConvertFileStatus2(&result, output);
     }
 
     return ret;

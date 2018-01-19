@@ -145,9 +145,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 }
 namespace Windows.Foundation
 {
-    [global::System.Runtime.InteropServices.StructLayoutAttribute(global::System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Point
     {
+        private int _dummy;
         public Point(double x, double y) { throw null; }
         public double X { get { throw null; } set { } }
         public double Y { get { throw null; } set { } }
@@ -159,9 +159,9 @@ namespace Windows.Foundation
         public override string ToString() { throw null; }
         public string ToString(global::System.IFormatProvider provider) { throw null; }
     }
-    [global::System.Runtime.InteropServices.StructLayoutAttribute(global::System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Rect
     {
+        private int _dummy;
         public Rect(double x, double y, double width, double height) { throw null; }
         public Rect(global::Windows.Foundation.Point point1, global::Windows.Foundation.Point point2) { throw null; }
         public Rect(global::Windows.Foundation.Point location, global::Windows.Foundation.Size size) { throw null; }
@@ -187,9 +187,9 @@ namespace Windows.Foundation
         public void Union(global::Windows.Foundation.Point point) { }
         public void Union(global::Windows.Foundation.Rect rect) { }
     }
-    [global::System.Runtime.InteropServices.StructLayoutAttribute(global::System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Size
     {
+        private int _dummy;
         public Size(double width, double height) { throw null; }
         public static global::Windows.Foundation.Size Empty { get { throw null; } }
         public double Height { get { throw null; } set { } }
@@ -205,9 +205,9 @@ namespace Windows.Foundation
 }
 namespace Windows.UI
 {
-    [global::System.Runtime.InteropServices.StructLayoutAttribute(global::System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Color
     {
+        private int _dummy;
         public byte A { get { throw null; } set { } }
         public byte B { get { throw null; } set { } }
         public byte G { get { throw null; } set { } }

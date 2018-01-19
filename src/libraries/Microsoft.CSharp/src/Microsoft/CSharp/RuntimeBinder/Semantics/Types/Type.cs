@@ -15,8 +15,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private TypeKind _typeKind;
         private Name _pName;
 
-        private bool _fHasErrors;  // Whether anyituents have errors. This is immutable.
-
         public bool IsWindowsRuntimeType()
         {
             return (AssociatedSystemType.Attributes & TypeAttributes.WindowsRuntime) == TypeAttributes.WindowsRuntime;
@@ -174,22 +172,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 default:
                     return null;
             }
-        }
-
-        public void InitFromParent()
-        {
-            Debug.Assert(!(this is AggregateType));
-            Debug.Assert(!(this is ErrorType));
-            _fHasErrors = GetBaseOrParameterOrElementType().HasErrors();
-        }
-
-        public bool HasErrors()
-        {
-            return _fHasErrors;
-        }
-        public void SetErrors(bool fHasErrors)
-        {
-            _fHasErrors = fHasErrors;
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -509,13 +491,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 default:
                     return false;
             }
-        }
-
-        // A few types can be the same pointer value and not actually
-        // be equivalent or convertible (like ANONMETHSYMs)
-        public bool IsNeverSameType()
-        {
-            return this is MethodGroupType || this is ErrorType err && !err.HasParent;
         }
     }
 }

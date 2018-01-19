@@ -317,10 +317,6 @@ namespace System.Net.Http
             
             Debug.Assert(state != null, "OnRequestError: state is null");
 
-            Debug.Assert((unchecked((int)asyncResult.dwError) != Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER &&
-                unchecked((int)asyncResult.dwError) != unchecked((int)0x80090321)), // SEC_E_BUFFER_TOO_SMALL
-                $"Unexpected async error in WinHttpRequestCallback: {unchecked((int)asyncResult.dwError)}, WinHttp API: {unchecked((uint)asyncResult.dwResult.ToInt32())}");
-
             Exception innerException = WinHttpException.CreateExceptionUsingError(unchecked((int)asyncResult.dwError));
 
             switch (unchecked((uint)asyncResult.dwResult.ToInt32()))

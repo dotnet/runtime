@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
-using System.Diagnostics.Contracts;
 
 namespace System.IO.Compression
 {
@@ -47,9 +46,6 @@ namespace System.IO.Compression
         /// <returns>A wrapper for the newly created entry.</returns>
         public static ZipArchiveEntry CreateEntryFromFile(this ZipArchive destination, string sourceFileName, string entryName)
         {
-            Contract.Ensures(Contract.Result<ZipArchiveEntry>() != null);
-            Contract.EndContractBlock();
-
             return DoCreateEntryFromFile(destination, sourceFileName, entryName, null);
         }
 
@@ -86,9 +82,6 @@ namespace System.IO.Compression
         {
             // Checking of compressionLevel is passed down to DeflateStream and the IDeflater implementation
             // as it is a pluggable component that completely encapsulates the meaning of compressionLevel.
-
-            Contract.Ensures(Contract.Result<ZipArchiveEntry>() != null);
-            Contract.EndContractBlock();
 
             return DoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel);
         }
@@ -162,8 +155,6 @@ namespace System.IO.Compression
             if (destinationDirectoryName == null)
                 throw new ArgumentNullException(nameof(destinationDirectoryName));
 
-            Contract.EndContractBlock();
-
             // Rely on Directory.CreateDirectory for validation of destinationDirectoryName.
 
             // Note that this will give us a good DirectoryInfo even if destinationDirectoryName exists:
@@ -212,8 +203,6 @@ namespace System.IO.Compression
             // as it is a pluggable component that completely encapsulates the meaning of compressionLevel.
 
             // Argument checking gets passed down to FileStream's ctor and CreateEntry
-            Contract.Ensures(Contract.Result<ZipArchiveEntry>() != null);
-            Contract.EndContractBlock();
 
             using (Stream fs = new FileStream(sourceFileName, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 0x1000, useAsync: false))
             {
@@ -310,8 +299,6 @@ namespace System.IO.Compression
                 throw new ArgumentNullException(nameof(destinationFileName));
 
             // Rely on FileStream's ctor for further checking destinationFileName parameter
-
-            Contract.EndContractBlock();
 
             FileMode fMode = overwrite ? FileMode.Create : FileMode.CreateNew;
 

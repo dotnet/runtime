@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -10,6 +11,11 @@ namespace System.Dynamic.Utils
 {
     internal static class TypeUtils
     {
+        private static readonly Type[] s_arrayAssignableInterfaces = typeof(int[]).GetInterfaces()
+            .Where(i => i.IsGenericType)
+            .Select(i => i.GetGenericTypeDefinition())
+            .ToArray();
+
         public static Type GetNonNullableType(this Type type) => IsNullableType(type) ? type.GetGenericArguments()[0] : type;
 
         public static Type GetNullableType(this Type type)
@@ -274,8 +280,139 @@ namespace System.Dynamic.Utils
                 return true;
             }
 
-            // Object conversion
-            return source == typeof(object) || dest == typeof(object);
+            // Object conversion handled by assignable above.
+            Debug.Assert(source != typeof(object) && dest != typeof(object));
+
+            return (source.IsArray || dest.IsArray) && StrictHasReferenceConversionTo(source, dest, true);
+        }
+
+        private static bool StrictHasReferenceConversionTo(this Type source, Type dest, bool skipNonArray)
+        {
+            // HasReferenceConversionTo was both too strict and too lax. It was too strict in prohibiting
+            // some valid conversions involving arrays, and too lax in allowing casts between interfaces
+            // and sealed classes that don't implement them. Unfortunately fixing the lax cases would be
+            // a breaking change, especially since such expressions will even work if only given null
+            // arguments.
+            // This method catches the cases that were incorrectly disallowed, but when it needs to
+            // examine possible conversions of element or type parameters it applies stricter rules.
+
+            for(;;)
+            { 
+                if (!skipNonArray) // Skip if we just came from HasReferenceConversionTo and have just tested these
+                {
+                    if (source.IsValueType | dest.IsValueType)
+                    {
+                        return false;
+                    }
+
+                    // Includes to case of either being typeof(object)
+                    if (source.IsAssignableFrom(dest) || dest.IsAssignableFrom(source))
+                    {
+                        return true;
+                    }
+
+                    if (source.IsInterface)
+                    {
+                        if (dest.IsInterface || dest.IsClass && !dest.IsSealed)
+                        {
+                            return true;
+                        }
+                    }
+                    else if (dest.IsInterface)
+                    {
+                        if (source.IsClass && !source.IsSealed)
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                if (source.IsArray)
+                {
+                    if (dest.IsArray)
+                    {
+                        if (source.GetArrayRank() != dest.GetArrayRank() || source.IsSZArray != dest.IsSZArray)
+                        {
+                            return false;
+                        }
+
+                        source = source.GetElementType();
+                        dest = dest.GetElementType();
+                        skipNonArray = false;
+                    }
+                    else
+                    {
+                        return HasArrayToInterfaceConversion(source, dest);
+                    }
+                }
+                else if (dest.IsArray)
+                {
+                    if (HasInterfaceToArrayConversion(source, dest))
+                    {
+                        return true;
+                    }
+
+                    return IsImplicitReferenceConversion(typeof(Array), source);
+                }
+                else
+                {
+                    return IsLegalExplicitVariantDelegateConversion(source, dest);
+                }
+            }
+        }
+
+        private static bool HasArrayToInterfaceConversion(Type source, Type dest)
+        {
+            Debug.Assert(source.IsArray);
+            if (!source.IsSZArray || !dest.IsInterface || !dest.IsGenericType)
+            {
+                return false;
+            }
+
+            Type[] destParams = dest.GetGenericArguments();
+            if (destParams.Length != 1)
+            {
+                return false;
+            }
+
+            Type destGen = dest.GetGenericTypeDefinition();
+
+            foreach (Type iface in s_arrayAssignableInterfaces)
+            {
+                if (AreEquivalent(destGen, iface))
+                {
+                    return StrictHasReferenceConversionTo(source.GetElementType(), destParams[0], false);
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasInterfaceToArrayConversion(Type source, Type dest)
+        {
+            Debug.Assert(dest.IsSZArray);
+            if (!dest.IsSZArray || !source.IsInterface || !source.IsGenericType)
+            {
+                return false;
+            }
+
+            Type[] sourceParams = source.GetGenericArguments();
+            if (sourceParams.Length != 1)
+            {
+                return false;
+            }
+
+            Type sourceGen = source.GetGenericTypeDefinition();
+
+            foreach (Type iface in s_arrayAssignableInterfaces)
+            {
+                if (AreEquivalent(sourceGen, iface))
+                {
+                    return StrictHasReferenceConversionTo(sourceParams[0], dest.GetElementType(), false);
+                }
+            }
+
+            return false;
         }
 
         private static bool IsCovariant(Type t)

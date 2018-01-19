@@ -8,9 +8,9 @@
 
 namespace Windows.UI.Xaml
 {
-    [global::System.Runtime.InteropServices.StructLayoutAttribute(global::System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct CornerRadius
     {
+        private int _dummy;
         public CornerRadius(double uniformRadius) { throw null; }
         public CornerRadius(double topLeft, double topRight, double bottomRight, double bottomLeft) { throw null; }
         public double BottomLeft { get { throw null; } set { } }
@@ -24,9 +24,9 @@ namespace Windows.UI.Xaml
         public static bool operator !=(global::Windows.UI.Xaml.CornerRadius cr1, global::Windows.UI.Xaml.CornerRadius cr2) { throw null; }
         public override string ToString() { throw null; }
     }
-    [global::System.Runtime.InteropServices.StructLayoutAttribute(global::System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Duration
     {
+        private int _dummy;
         public Duration(global::System.TimeSpan timeSpan) { throw null; }
         public static global::Windows.UI.Xaml.Duration Automatic { get { throw null; } }
         public static global::Windows.UI.Xaml.Duration Forever { get { throw null; } }
@@ -57,9 +57,9 @@ namespace Windows.UI.Xaml
         Forever = 2,
         TimeSpan = 1,
     }
-    [global::System.Runtime.InteropServices.StructLayoutAttribute(global::System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct GridLength
     {
+        private int _dummy;
         public GridLength(double pixels) { throw null; }
         public GridLength(double value, global::Windows.UI.Xaml.GridUnitType type) { throw null; }
         public static global::Windows.UI.Xaml.GridLength Auto { get { throw null; } }
@@ -87,9 +87,9 @@ namespace Windows.UI.Xaml
         public LayoutCycleException(string message) { }
         public LayoutCycleException(string message, global::System.Exception innerException) { }
     }
-    [global::System.Runtime.InteropServices.StructLayoutAttribute(global::System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Thickness
     {
+        private int _dummy;
         public Thickness(double uniformLength) { throw null; }
         public Thickness(double left, double top, double right, double bottom) { throw null; }
         public double Bottom { get { throw null; } set { } }
@@ -121,9 +121,9 @@ namespace Windows.UI.Xaml.Automation
 }
 namespace Windows.UI.Xaml.Controls.Primitives
 {
-    [global::System.Runtime.InteropServices.StructLayoutAttribute(global::System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct GeneratorPosition
     {
+        private int _dummy;
         public GeneratorPosition(int index, int offset) { throw null; }
         public int Index { get { throw null; } set { } }
         public int Offset { get { throw null; } set { } }
@@ -145,9 +145,9 @@ namespace Windows.UI.Xaml.Markup
 }
 namespace Windows.UI.Xaml.Media
 {
-    [global::System.Runtime.InteropServices.StructLayoutAttribute(global::System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Matrix : global::System.IFormattable
     {
+        private int _dummy;
         public Matrix(double m11, double m12, double m21, double m22, double offsetX, double offsetY) { throw null; }
         public static global::Windows.UI.Xaml.Media.Matrix Identity { get { throw null; } }
         public bool IsIdentity { get { throw null; } }
@@ -170,9 +170,9 @@ namespace Windows.UI.Xaml.Media
 }
 namespace Windows.UI.Xaml.Media.Animation
 {
-    [global::System.Runtime.InteropServices.StructLayoutAttribute(global::System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct KeyTime
     {
+        private int _dummy;
         public global::System.TimeSpan TimeSpan { get { throw null; } }
         public override bool Equals(object value) { throw null; }
         public bool Equals(global::Windows.UI.Xaml.Media.Animation.KeyTime value) { throw null; }
@@ -184,9 +184,9 @@ namespace Windows.UI.Xaml.Media.Animation
         public static bool operator !=(global::Windows.UI.Xaml.Media.Animation.KeyTime keyTime1, global::Windows.UI.Xaml.Media.Animation.KeyTime keyTime2) { throw null; }
         public override string ToString() { throw null; }
     }
-    [global::System.Runtime.InteropServices.StructLayoutAttribute(global::System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct RepeatBehavior : global::System.IFormattable
     {
+        private int _dummy;
         public RepeatBehavior(double count) { throw null; }
         public RepeatBehavior(global::System.TimeSpan duration) { throw null; }
         public double Count { get { throw null; } set { } }
@@ -214,9 +214,9 @@ namespace Windows.UI.Xaml.Media.Animation
 }
 namespace Windows.UI.Xaml.Media.Media3D
 {
-    [global::System.Runtime.InteropServices.StructLayoutAttribute(global::System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Matrix3D : global::System.IFormattable
     {
+        private int _dummy;
         public Matrix3D(double m11, double m12, double m13, double m14, double m21, double m22, double m23, double m24, double m31, double m32, double m33, double m34, double offsetX, double offsetY, double offsetZ, double m44) { throw null; }
         public bool HasInverse { get { throw null; } }
         public static global::Windows.UI.Xaml.Media.Media3D.Matrix3D Identity { get { throw null; } }

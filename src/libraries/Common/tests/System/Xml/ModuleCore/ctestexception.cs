@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Text;
 
 namespace OLEDB.Test.ModuleCore
 {
@@ -76,6 +77,19 @@ namespace OLEDB.Test.ModuleCore
             Result = result;
             Actual = actual;
             Expected = expected;
+        }
+
+        public override string Message
+        {
+            get
+            {
+                StringBuilder text = new StringBuilder();
+                text.AppendLine(base.Message);
+                text.AppendLine($"Expected: `{Expected.ToString()}`");
+                text.AppendLine($"Actual: `{Actual.ToString()}`");
+                text.AppendLine($"Result: {Result}");
+                return text.ToString();
+            }
         }
     }
 }

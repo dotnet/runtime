@@ -12,6 +12,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
 {
     public class DefaultParameterTests
     {
+
+#pragma warning disable 618
         public class MarshalAsMethods
         {
             // Try every defined type that will compile, even if it's nonsense.
@@ -85,6 +87,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
 
             public object UndefinedType([Optional, MarshalAs((UnmanagedType)2000)] object val) => val;
         }
+#pragma warning restore 618
 
         [Fact]
         public void MarshalAsOptionalsCorrectDefault()

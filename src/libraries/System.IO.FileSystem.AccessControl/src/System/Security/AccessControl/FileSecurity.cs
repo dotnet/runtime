@@ -14,7 +14,6 @@
 using Microsoft.Win32.SafeHandles;
 using Microsoft.Win32;
 using System.Collections;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -181,7 +180,6 @@ namespace System.Security.AccessControl
         {
             if (fileSystemRights < (FileSystemRights)0 || fileSystemRights > FileSystemRights.FullControl)
                 throw new ArgumentOutOfRangeException(nameof(fileSystemRights), SR.Format(SR.Argument_InvalidEnumValue, fileSystemRights, nameof(AccessControl.FileSystemRights)));
-            Contract.EndContractBlock();
 
             if (controlType == AccessControlType.Allow)
             {
@@ -292,7 +290,6 @@ namespace System.Security.AccessControl
         {
             if (fileSystemRights < (FileSystemRights)0 || fileSystemRights > FileSystemRights.FullControl)
                 throw new ArgumentOutOfRangeException(nameof(fileSystemRights), SR.Format(SR.Argument_InvalidEnumValue, fileSystemRights, nameof(AccessControl.FileSystemRights)));
-            Contract.EndContractBlock();
 
             return (int)fileSystemRights;
         }
@@ -480,7 +477,6 @@ namespace System.Security.AccessControl
         {
             if (rule == null)
                 throw new ArgumentNullException(nameof(rule));
-            Contract.EndContractBlock();
 
             // If the rule to be removed matches what is there currently then
             // remove it unaltered. That is, don't mask off the Synchronize bit.
@@ -527,7 +523,6 @@ namespace System.Security.AccessControl
         {
             if (rule == null)
                 throw new ArgumentNullException(nameof(rule));
-            Contract.EndContractBlock();
 
             // If the rule to be removed matches what is there currently then
             // remove it unaltered. That is, don't mask off the Synchronize bit

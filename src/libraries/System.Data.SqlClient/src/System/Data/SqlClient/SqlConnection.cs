@@ -1011,7 +1011,7 @@ namespace System.Data.SqlClient
                     return false;
                 }
             }
-            // does not require GC.KeepAlive(this) because of OnStateChange
+            // does not require GC.KeepAlive(this) because of ReRegisterForFinalize below.
 
             var tdsInnerConnection = (SqlInternalConnectionTds)InnerConnection;
 

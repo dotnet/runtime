@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Text;
 
 namespace System.IO.Compression
@@ -156,8 +155,6 @@ namespace System.IO.Compression
         {
             get
             {
-                Contract.Ensures(Contract.Result<long>() >= 0);
-
                 if (_everOpenedForWrite)
                     throw new InvalidOperationException(SR.LengthAfterWrite);
                 return _compressedSize;
@@ -184,7 +181,6 @@ namespace System.IO.Compression
         {
             get
             {
-                Contract.Ensures(Contract.Result<string>() != null);
                 return _storedEntryName;
             }
 
@@ -245,8 +241,6 @@ namespace System.IO.Compression
         {
             get
             {
-                Contract.Ensures(Contract.Result<long>() >= 0);
-
                 if (_everOpenedForWrite)
                     throw new InvalidOperationException(SR.LengthAfterWrite);
                 return _uncompressedSize;
@@ -291,8 +285,6 @@ namespace System.IO.Compression
         /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
         public Stream Open()
         {
-            Contract.Ensures(Contract.Result<Stream>() != null);
-
             ThrowIfInvalidArchive();
 
             switch (_archive.Mode)
@@ -314,8 +306,6 @@ namespace System.IO.Compression
         /// <returns>FullName of the entry</returns>
         public override string ToString()
         {
-            Contract.Ensures(Contract.Result<string>() != null);
-
             return FullName;
         }
 
@@ -1120,8 +1110,6 @@ namespace System.IO.Compression
             {
                 get
                 {
-                    Contract.Ensures(Contract.Result<long>() >= 0);
-
                     ThrowIfDisposed();
                     return _position;
                 }
@@ -1173,7 +1161,6 @@ namespace System.IO.Compression
                     throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentNeedNonNegative);
                 if ((buffer.Length - offset) < count)
                     throw new ArgumentException(SR.OffsetLengthInvalid);
-                Contract.EndContractBlock();
 
                 ThrowIfDisposed();
                 Debug.Assert(CanWrite);

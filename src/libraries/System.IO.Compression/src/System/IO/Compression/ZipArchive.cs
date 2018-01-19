@@ -8,7 +8,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Text;
 
 namespace System.IO.Compression
@@ -123,8 +122,6 @@ namespace System.IO.Compression
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
 
-            Contract.EndContractBlock();
-
             EntryNameEncoding = entryNameEncoding;
             Init(stream, mode, leaveOpen);
         }
@@ -139,8 +136,6 @@ namespace System.IO.Compression
         {
             get
             {
-                Contract.Ensures(Contract.Result<ReadOnlyCollection<ZipArchiveEntry>>() != null);
-
                 if (_mode == ZipArchiveMode.Create)
                     throw new NotSupportedException(SR.EntriesInCreateMode);
 
@@ -158,11 +153,6 @@ namespace System.IO.Compression
         {
             get
             {
-                Contract.Ensures(
-                       Contract.Result<ZipArchiveMode>() == ZipArchiveMode.Create
-                    || Contract.Result<ZipArchiveMode>() == ZipArchiveMode.Read
-                    || Contract.Result<ZipArchiveMode>() == ZipArchiveMode.Update);
-
                 return _mode;
             }
         }
@@ -184,9 +174,6 @@ namespace System.IO.Compression
         /// <returns>A wrapper for the newly created file entry in the archive.</returns>
         public ZipArchiveEntry CreateEntry(string entryName)
         {
-            Contract.Ensures(Contract.Result<ZipArchiveEntry>() != null);
-            Contract.EndContractBlock();
-
             return DoCreateEntry(entryName, null);
         }
 
@@ -202,9 +189,6 @@ namespace System.IO.Compression
         /// <returns>A wrapper for the newly created file entry in the archive.</returns>
         public ZipArchiveEntry CreateEntry(string entryName, CompressionLevel compressionLevel)
         {
-            Contract.Ensures(Contract.Result<ZipArchiveEntry>() != null);
-            Contract.EndContractBlock();
-
             return DoCreateEntry(entryName, compressionLevel);
         }
 
@@ -261,7 +245,6 @@ namespace System.IO.Compression
         {
             if (entryName == null)
                 throw new ArgumentNullException(nameof(entryName));
-            Contract.EndContractBlock();
 
             if (_mode == ZipArchiveMode.Create)
                 throw new NotSupportedException(SR.EntriesInCreateMode);
@@ -319,8 +302,6 @@ namespace System.IO.Compression
 
         private ZipArchiveEntry DoCreateEntry(string entryName, CompressionLevel? compressionLevel)
         {
-            Contract.Ensures(Contract.Result<ZipArchiveEntry>() != null);
-
             if (entryName == null)
                 throw new ArgumentNullException(nameof(entryName));
 
