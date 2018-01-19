@@ -344,7 +344,7 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128 _mm_rcp_ss (__m128 a)
         /// </summary>
-        public static Vector128<float> ReciprocalScalar(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> ReciprocalScalar(Vector128<float> upper, Vector128<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm_rsqrt_ps (__m128 a)
@@ -354,7 +354,7 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128 _mm_rsqrt_ss (__m128 a)
         /// </summary>
-        public static Vector128<float> ReciprocalSqrtScalar(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> ReciprocalSqrtScalar(Vector128<float> upper, Vector128<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm_set_ps (float e3, float e2, float e1, float e0)
@@ -399,7 +399,7 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128 _mm_sqrt_ss (__m128 a)
         /// </summary>
-        public static Vector128<float> SqrtScalar(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> SqrtScalar(Vector128<float> upper, Vector128<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void _mm_store_ps (float* mem_addr, __m128 a)
