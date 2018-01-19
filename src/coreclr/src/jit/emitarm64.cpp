@@ -3821,12 +3821,11 @@ void emitter::emitIns_R_R(
         case INS_not:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
-            // for 'NOT' we can construct the arrangement: 8B or 16B
-            if ((ins == INS_not) && insOptsNone(opt))
+            if (ins == INS_not)
             {
                 assert(isValidVectorDatasize(size));
-                elemsize = EA_1BYTE;
-                opt      = optMakeArrangement(size, elemsize);
+                // Bitwise behavior is independent of element size, but is always encoded as 1 Byte
+                opt = optMakeArrangement(size, EA_1BYTE);
             }
             if (insOptsNone(opt))
             {
@@ -3841,11 +3840,7 @@ void emitter::emitIns_R_R(
                 assert(isValidVectorDatasize(size));
                 assert(isValidArrangement(size, opt));
                 elemsize = optGetElemsize(opt);
-                if (ins == INS_not)
-                {
-                    assert(elemsize == EA_1BYTE);
-                }
-                fmt = IF_DV_2M;
+                fmt      = IF_DV_2M;
             }
             break;
 
@@ -3854,12 +3849,11 @@ void emitter::emitIns_R_R(
             if (isVectorRegister(reg1))
             {
                 assert(isVectorRegister(reg2));
-                // for 'mvn' we can construct the arrangement: 8B or 16b
-                if ((ins == INS_mvn) && insOptsNone(opt))
+                if (ins == INS_mvn)
                 {
                     assert(isValidVectorDatasize(size));
-                    elemsize = EA_1BYTE;
-                    opt      = optMakeArrangement(size, elemsize);
+                    // Bitwise behavior is independent of element size, but is always encoded as 1 Byte
+                    opt = optMakeArrangement(size, EA_1BYTE);
                 }
                 if (insOptsNone(opt))
                 {
@@ -3873,11 +3867,7 @@ void emitter::emitIns_R_R(
                     assert(isValidVectorDatasize(size));
                     assert(isValidArrangement(size, opt));
                     elemsize = optGetElemsize(opt);
-                    if (ins == INS_mvn)
-                    {
-                        assert(elemsize == EA_1BYTE); // Only supports 8B or 16B
-                    }
-                    fmt = IF_DV_2M;
+                    fmt      = IF_DV_2M;
                 }
                 break;
             }
