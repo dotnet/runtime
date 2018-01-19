@@ -47,7 +47,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Name _name;
         private int _arity;
         private MemLookFlags _flags;
-        private CMemberLookupResults _results;
 
         // For maintaining the type array. We throw the first 8 or so here.
         private readonly List<AggregateType> _rgtypeStart;
@@ -603,15 +602,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
 
-            // if we are requested with extension methods
-            _results = new CMemberLookupResults(GetAllTypes(), _name);
-
             return !FError();
-        }
-
-        public CMemberLookupResults GetResults()
-        {
-            return _results;
         }
 
         // Whether there were errors.
