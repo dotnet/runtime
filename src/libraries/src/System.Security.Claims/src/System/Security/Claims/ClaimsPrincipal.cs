@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Security.Principal;
@@ -97,8 +96,6 @@ namespace System.Security.Claims
                 throw new ArgumentNullException(nameof(identities));
             }
 
-            Contract.EndContractBlock();
-
             _identities.AddRange(identities);
         }
 
@@ -113,8 +110,6 @@ namespace System.Security.Claims
             {
                 throw new ArgumentNullException(nameof(identity));
             }
-
-            Contract.EndContractBlock();
 
             ClaimsIdentity ci = identity as ClaimsIdentity;
             if (ci != null)
@@ -138,8 +133,6 @@ namespace System.Security.Claims
             {
                 throw new ArgumentNullException(nameof(principal));
             }
-
-            Contract.EndContractBlock();
 
             //
             // If IPrincipal is a ClaimsPrincipal add all of the identities
@@ -211,8 +204,6 @@ namespace System.Security.Claims
                 throw new ArgumentNullException(nameof(identity));
             }
 
-            Contract.EndContractBlock();
-
             _identities.Add(identity);
         }
 
@@ -227,8 +218,6 @@ namespace System.Security.Claims
             {
                 throw new ArgumentNullException(nameof(identities));
             }
-
-            Contract.EndContractBlock();
 
             _identities.AddRange(identities);
         }
@@ -316,8 +305,6 @@ namespace System.Security.Claims
                 throw new ArgumentNullException(nameof(match));
             }
 
-            Contract.EndContractBlock();
-
             foreach (ClaimsIdentity identity in Identities)
             {
                 if (identity != null)
@@ -344,7 +331,6 @@ namespace System.Security.Claims
                 throw new ArgumentNullException(nameof(type));
             }
 
-            Contract.EndContractBlock();
             foreach (ClaimsIdentity identity in Identities)
             {
                 if (identity != null)
@@ -370,8 +356,6 @@ namespace System.Security.Claims
             {
                 throw new ArgumentNullException(nameof(match));
             }
-
-            Contract.EndContractBlock();
 
             Claim claim = null;
 
@@ -404,8 +388,6 @@ namespace System.Security.Claims
                 throw new ArgumentNullException(nameof(type));
             }
 
-            Contract.EndContractBlock();
-
             Claim claim = null;
 
             for (int i = 0; i < _identities.Count; i++)
@@ -436,8 +418,6 @@ namespace System.Security.Claims
             {
                 throw new ArgumentNullException(nameof(match));
             }
-
-            Contract.EndContractBlock();
 
             for (int i = 0; i < _identities.Count; i++)
             {
@@ -473,8 +453,6 @@ namespace System.Security.Claims
             {
                 throw new ArgumentNullException(nameof(value));
             }
-
-            Contract.EndContractBlock();
 
             for (int i = 0; i < _identities.Count; i++)
             {

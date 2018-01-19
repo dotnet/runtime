@@ -1273,7 +1273,7 @@ static int8_t GetMulticastOptionName(int32_t multicastOption, int8_t isIPv6, int
             return true;
 
         case MulticastOption_MULTICAST_IF:
-            *optionName = IP_MULTICAST_IF;
+            *optionName = isIPv6 ? IPV6_MULTICAST_IF : IP_MULTICAST_IF;
             return true;
 
         default:
@@ -1372,7 +1372,7 @@ int32_t SystemNative_GetIPv6MulticastOption(intptr_t socket, int32_t multicastOp
 
     struct ipv6_mreq opt;
     socklen_t len = sizeof(opt);
-    int err = getsockopt(fd, IPPROTO_IP, optionName, &opt, &len);
+    int err = getsockopt(fd, IPPROTO_IPV6, optionName, &opt, &len);
     if (err != 0)
     {
         return SystemNative_ConvertErrorPlatformToPal(errno);
@@ -1410,7 +1410,7 @@ int32_t SystemNative_SetIPv6MulticastOption(intptr_t socket, int32_t multicastOp
 
     ConvertByteArrayToIn6Addr(&opt.ipv6mr_multiaddr, &option->Address.Address[0], NUM_BYTES_IN_IPV6_ADDRESS);
 
-    int err = setsockopt(fd, IPPROTO_IP, optionName, &opt, sizeof(opt));
+    int err = setsockopt(fd, IPPROTO_IPV6, optionName, &opt, sizeof(opt));
     return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
@@ -1985,6 +1985,10 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionName, int32_t socketO
 
                 case SocketOptionName_SO_IP_PKTINFO:
                     *optName = IPV6_RECVPKTINFO;
+                    return true;
+
+                case SocketOptionName_SO_IP_MULTICAST_IF:
+                    *optName = IPV6_MULTICAST_IF;
                     return true;
 
                 default:

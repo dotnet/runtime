@@ -139,7 +139,6 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\AggregateType.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\ArgumentListType.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\ArrayType.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\ErrorType.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\MethodGroupType.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\NullableType.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\NullType.cs" />

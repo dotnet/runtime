@@ -28,9 +28,9 @@ namespace System
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Exception CreateArgumentNullException(ExceptionArgument argument) { return new ArgumentNullException(argument.ToString()); }
 
-        internal static void ThrowArrayTypeMismatchException_ArrayTypeMustBeExactMatch(Type type) { throw CreateArrayTypeMismatchException_ArrayTypeMustBeExactMatch(type); }
+        internal static void ThrowArrayTypeMismatchException() { throw CreateArrayTypeMismatchException(); }
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Exception CreateArrayTypeMismatchException_ArrayTypeMustBeExactMatch(Type type) { return new ArrayTypeMismatchException(SR.Format(SR.ArrayTypeMustBeExactMatch, type)); }
+        private static Exception CreateArrayTypeMismatchException() { return new ArrayTypeMismatchException(); }
 
         internal static void ThrowArgumentException_InvalidTypeWithPointersNotSupported(Type type) { throw CreateArgumentException_InvalidTypeWithPointersNotSupported(type); }
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -43,6 +43,10 @@ namespace System
         internal static void ThrowIndexOutOfRangeException() { throw CreateIndexOutOfRangeException(); }
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Exception CreateIndexOutOfRangeException() { return new IndexOutOfRangeException(); }
+
+        internal static void ThrowArgumentOutOfRangeException() { throw CreateArgumentOutOfRangeException(); }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Exception CreateArgumentOutOfRangeException() { return new ArgumentOutOfRangeException(); }
 
         internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument) { throw CreateArgumentOutOfRangeException(argument); }
         [MethodImpl(MethodImplOptions.NoInlining)]

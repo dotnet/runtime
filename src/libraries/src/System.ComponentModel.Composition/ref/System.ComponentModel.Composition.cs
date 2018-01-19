@@ -7,6 +7,12 @@
 
 namespace System.ComponentModel.Composition
 {
+    public static partial class AdaptationConstants
+    {
+        public const string AdapterContractName = "System.ComponentModel.Composition.AdapterContract";
+        public const string AdapterFromContractMetadataName = "FromContract";
+        public const string AdapterToContractMetadataName = "ToContract";
+    }
     public static partial class AttributedModelServices
     {
         public static System.ComponentModel.Composition.Primitives.ComposablePart AddExportedValue<T>(this System.ComponentModel.Composition.Hosting.CompositionBatch batch, string contractName, T exportedValue) { throw null; }
@@ -17,6 +23,7 @@ namespace System.ComponentModel.Composition
         public static void ComposeParts(this System.ComponentModel.Composition.Hosting.CompositionContainer container, params object[] attributedParts) { }
         public static System.ComponentModel.Composition.Primitives.ComposablePart CreatePart(System.ComponentModel.Composition.Primitives.ComposablePartDefinition partDefinition, object attributedPart) { throw null; }
         public static System.ComponentModel.Composition.Primitives.ComposablePart CreatePart(object attributedPart) { throw null; }
+        public static System.ComponentModel.Composition.Primitives.ComposablePart CreatePart(object attributedPart, System.Reflection.ReflectionContext reflectionContext) { throw null; }
         public static System.ComponentModel.Composition.Primitives.ComposablePartDefinition CreatePartDefinition(System.Type type, System.ComponentModel.Composition.Primitives.ICompositionElement origin) { throw null; }
         public static System.ComponentModel.Composition.Primitives.ComposablePartDefinition CreatePartDefinition(System.Type type, System.ComponentModel.Composition.Primitives.ICompositionElement origin, bool ensureIsDiscoverable) { throw null; }
         public static bool Exports(this System.ComponentModel.Composition.Primitives.ComposablePartDefinition part, System.Type contractType) { throw null; }
@@ -30,6 +37,13 @@ namespace System.ComponentModel.Composition
         public static bool Imports<T>(this System.ComponentModel.Composition.Primitives.ComposablePartDefinition part) { throw null; }
         public static bool Imports<T>(this System.ComponentModel.Composition.Primitives.ComposablePartDefinition part, System.ComponentModel.Composition.Primitives.ImportCardinality importCardinality) { throw null; }
         public static System.ComponentModel.Composition.Primitives.ComposablePart SatisfyImportsOnce(this System.ComponentModel.Composition.ICompositionService compositionService, object attributedPart) { throw null; }
+        public static System.ComponentModel.Composition.Primitives.ComposablePart SatisfyImportsOnce(this System.ComponentModel.Composition.ICompositionService compositionService, object attributedPart, System.Reflection.ReflectionContext reflectionContext) { throw null; }
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(1), AllowMultiple=false, Inherited=true)]
+    public partial class CatalogReflectionContextAttribute : System.Attribute
+    {
+        public CatalogReflectionContextAttribute(System.Type reflectionContextType) { }
+        public System.Reflection.ReflectionContext CreateReflectionContext() { throw null; }
     }
     public partial class ChangeRejectedException : System.ComponentModel.Composition.CompositionException
     {
@@ -42,6 +56,7 @@ namespace System.ComponentModel.Composition
     public partial class CompositionContractMismatchException : System.Exception
     {
         public CompositionContractMismatchException() { }
+        protected CompositionContractMismatchException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public CompositionContractMismatchException(string message) { }
         public CompositionContractMismatchException(string message, System.Exception innerException) { }
     }
@@ -56,7 +71,6 @@ namespace System.ComponentModel.Composition
         public System.Exception Exception { get { throw null; } }
         public override string ToString() { throw null; }
     }
-    [System.Diagnostics.DebuggerDisplayAttribute("{Message}")]
     public partial class CompositionException : System.Exception
     {
         public CompositionException() { }
@@ -73,15 +87,15 @@ namespace System.ComponentModel.Composition
         NonShared = 2,
         Shared = 1,
     }
-    [System.AttributeUsageAttribute(AttributeTargets.Class | AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Method, AllowMultiple=true, Inherited=false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(452), AllowMultiple=true, Inherited=false)]
     public partial class ExportAttribute : System.Attribute
     {
         public ExportAttribute() { }
         public ExportAttribute(string contractName) { }
         public ExportAttribute(string contractName, System.Type contractType) { }
         public ExportAttribute(System.Type contractType) { }
-        public string ContractName { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
-        public System.Type ContractType { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public string ContractName { get { throw null; } }
+        public System.Type ContractType { get { throw null; } }
     }
     public partial class ExportFactory<T>
     {
@@ -99,56 +113,56 @@ namespace System.ComponentModel.Composition
         public T Value { get { throw null; } }
         public void Dispose() { }
     }
-    [System.AttributeUsageAttribute(AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Property | AttributeTargets.Method | AttributeTargets.Field, AllowMultiple=true, Inherited=false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(1476), AllowMultiple=true, Inherited=false)]
     public sealed partial class ExportMetadataAttribute : System.Attribute
     {
         public ExportMetadataAttribute(string name, object value) { }
-        public bool IsMultiple { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
-        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
-        public object Value { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public bool IsMultiple { get { throw null; } set { } }
+        public string Name { get { throw null; } }
+        public object Value { get { throw null; } }
     }
     public partial interface ICompositionService
     {
         void SatisfyImportsOnce(System.ComponentModel.Composition.Primitives.ComposablePart part);
     }
-    [System.AttributeUsageAttribute(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(2432), AllowMultiple=false, Inherited=false)]
     public partial class ImportAttribute : System.Attribute
     {
         public ImportAttribute() { }
         public ImportAttribute(string contractName) { }
         public ImportAttribute(string contractName, System.Type contractType) { }
         public ImportAttribute(System.Type contractType) { }
-        public bool AllowDefault { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
-        public bool AllowRecomposition { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
-        public string ContractName { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
-        public System.Type ContractType { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
-        public System.ComponentModel.Composition.CreationPolicy RequiredCreationPolicy { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
-        public System.ComponentModel.Composition.ImportSource Source { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public bool AllowDefault { get { throw null; } set { } }
+        public bool AllowRecomposition { get { throw null; } set { } }
+        public string ContractName { get { throw null; } }
+        public System.Type ContractType { get { throw null; } }
+        public System.ComponentModel.Composition.CreationPolicy RequiredCreationPolicy { get { throw null; } set { } }
+        public System.ComponentModel.Composition.ImportSource Source { get { throw null; } set { } }
     }
-    [System.Diagnostics.DebuggerDisplayAttribute("{Message}")]
     public partial class ImportCardinalityMismatchException : System.Exception
     {
         public ImportCardinalityMismatchException() { }
+        protected ImportCardinalityMismatchException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ImportCardinalityMismatchException(string message) { }
         public ImportCardinalityMismatchException(string message, System.Exception innerException) { }
     }
-    [System.AttributeUsageAttribute(AttributeTargets.Constructor, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(32), AllowMultiple=false, Inherited=false)]
     public partial class ImportingConstructorAttribute : System.Attribute
     {
         public ImportingConstructorAttribute() { }
     }
-    [System.AttributeUsageAttribute(AttributeTargets.Parameter | AttributeTargets.Field | AttributeTargets.Property, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(2432), AllowMultiple=false, Inherited=false)]
     public partial class ImportManyAttribute : System.Attribute
     {
         public ImportManyAttribute() { }
         public ImportManyAttribute(string contractName) { }
         public ImportManyAttribute(string contractName, System.Type contractType) { }
         public ImportManyAttribute(System.Type contractType) { }
-        public bool AllowRecomposition { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
-        public string ContractName { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
-        public System.Type ContractType { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
-        public System.ComponentModel.Composition.CreationPolicy RequiredCreationPolicy { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
-        public System.ComponentModel.Composition.ImportSource Source { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public bool AllowRecomposition { get { throw null; } set { } }
+        public string ContractName { get { throw null; } }
+        public System.Type ContractType { get { throw null; } }
+        public System.ComponentModel.Composition.CreationPolicy RequiredCreationPolicy { get { throw null; } set { } }
+        public System.ComponentModel.Composition.ImportSource Source { get { throw null; } set { } }
     }
     public enum ImportSource
     {
@@ -156,7 +170,7 @@ namespace System.ComponentModel.Composition
         Local = 1,
         NonLocal = 2,
     }
-    [System.AttributeUsageAttribute(AttributeTargets.Interface | AttributeTargets.Class, AllowMultiple=true, Inherited=true)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(1028), AllowMultiple=true, Inherited=true)]
     public partial class InheritedExportAttribute : System.ComponentModel.Composition.ExportAttribute
     {
         public InheritedExportAttribute() { }
@@ -168,31 +182,31 @@ namespace System.ComponentModel.Composition
     {
         void OnImportsSatisfied();
     }
-    [System.AttributeUsageAttribute(AttributeTargets.Class, AllowMultiple=false, Inherited=true)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(4), AllowMultiple=false, Inherited=true)]
     public sealed partial class MetadataAttributeAttribute : System.Attribute
     {
         public MetadataAttributeAttribute() { }
     }
-    [System.AttributeUsageAttribute(AttributeTargets.Interface, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(1024), AllowMultiple=false, Inherited=false)]
     public sealed partial class MetadataViewImplementationAttribute : System.Attribute
     {
         public MetadataViewImplementationAttribute(System.Type implementationType) { }
-        public System.Type ImplementationType { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public System.Type ImplementationType { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(AttributeTargets.Class, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(4), AllowMultiple=false, Inherited=false)]
     public sealed partial class PartCreationPolicyAttribute : System.Attribute
     {
         public PartCreationPolicyAttribute(System.ComponentModel.Composition.CreationPolicy creationPolicy) { }
-        public System.ComponentModel.Composition.CreationPolicy CreationPolicy { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public System.ComponentModel.Composition.CreationPolicy CreationPolicy { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(AttributeTargets.Class, AllowMultiple=true, Inherited=false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(4), AllowMultiple=true, Inherited=false)]
     public sealed partial class PartMetadataAttribute : System.Attribute
     {
         public PartMetadataAttribute(string name, object value) { }
-        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
-        public object Value { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public string Name { get { throw null; } }
+        public object Value { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(AttributeTargets.Class, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(4), AllowMultiple=false, Inherited=false)]
     public sealed partial class PartNotDiscoverableAttribute : System.Attribute
     {
         public PartNotDiscoverableAttribute() { }
@@ -226,9 +240,9 @@ namespace System.ComponentModel.Composition.Hosting
     public partial class ApplicationCatalog : System.ComponentModel.Composition.Primitives.ComposablePartCatalog, System.ComponentModel.Composition.Primitives.ICompositionElement
     {
         public ApplicationCatalog() { }
+        public ApplicationCatalog(System.ComponentModel.Composition.Primitives.ICompositionElement definitionOrigin) { }
         public ApplicationCatalog(System.Reflection.ReflectionContext reflectionContext) { }
         public ApplicationCatalog(System.Reflection.ReflectionContext reflectionContext, System.ComponentModel.Composition.Primitives.ICompositionElement definitionOrigin) { }
-        public ApplicationCatalog(System.ComponentModel.Composition.Primitives.ICompositionElement definitionOrigin) { }
         string System.ComponentModel.Composition.Primitives.ICompositionElement.DisplayName { get { throw null; } }
         System.ComponentModel.Composition.Primitives.ICompositionElement System.ComponentModel.Composition.Primitives.ICompositionElement.Origin { get { throw null; } }
         protected override void Dispose(bool disposing) { }
@@ -240,7 +254,12 @@ namespace System.ComponentModel.Composition.Hosting
     {
         public AssemblyCatalog(System.Reflection.Assembly assembly) { }
         public AssemblyCatalog(System.Reflection.Assembly assembly, System.ComponentModel.Composition.Primitives.ICompositionElement definitionOrigin) { }
+        public AssemblyCatalog(System.Reflection.Assembly assembly, System.Reflection.ReflectionContext reflectionContext) { }
+        public AssemblyCatalog(System.Reflection.Assembly assembly, System.Reflection.ReflectionContext reflectionContext, System.ComponentModel.Composition.Primitives.ICompositionElement definitionOrigin) { }
+        public AssemblyCatalog(string codeBase) { }
         public AssemblyCatalog(string codeBase, System.ComponentModel.Composition.Primitives.ICompositionElement definitionOrigin) { }
+        public AssemblyCatalog(string codeBase, System.Reflection.ReflectionContext reflectionContext) { }
+        public AssemblyCatalog(string codeBase, System.Reflection.ReflectionContext reflectionContext, System.ComponentModel.Composition.Primitives.ICompositionElement definitionOrigin) { }
         public System.Reflection.Assembly Assembly { get { throw null; } }
         string System.ComponentModel.Composition.Primitives.ICompositionElement.DisplayName { get { throw null; } }
         System.ComponentModel.Composition.Primitives.ICompositionElement System.ComponentModel.Composition.Primitives.ICompositionElement.Origin { get { throw null; } }
@@ -259,8 +278,8 @@ namespace System.ComponentModel.Composition.Hosting
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public void SetValue(object key, object value) { }
-        public bool TryGetValue<T>(object key, bool localAtomicCompositionOnly, out T value) { value = default(T); throw null; }
-        public bool TryGetValue<T>(object key, out T value) { value = default(T); throw null; }
+        public bool TryGetValue<T>(object key, bool localAtomicCompositionOnly, out T value) { throw null; }
+        public bool TryGetValue<T>(object key, out T value) { throw null; }
     }
     public partial class CatalogExportProvider : System.ComponentModel.Composition.Hosting.ExportProvider, System.IDisposable
     {
@@ -281,7 +300,7 @@ namespace System.ComponentModel.Composition.Hosting
     {
         public ComposablePartCatalogChangeEventArgs(System.Collections.Generic.IEnumerable<System.ComponentModel.Composition.Primitives.ComposablePartDefinition> addedDefinitions, System.Collections.Generic.IEnumerable<System.ComponentModel.Composition.Primitives.ComposablePartDefinition> removedDefinitions, System.ComponentModel.Composition.Hosting.AtomicComposition atomicComposition) { }
         public System.Collections.Generic.IEnumerable<System.ComponentModel.Composition.Primitives.ComposablePartDefinition> AddedDefinitions { get { throw null; } }
-        public System.ComponentModel.Composition.Hosting.AtomicComposition AtomicComposition { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public System.ComponentModel.Composition.Hosting.AtomicComposition AtomicComposition { get { throw null; } }
         public System.Collections.Generic.IEnumerable<System.ComponentModel.Composition.Primitives.ComposablePartDefinition> RemovedDefinitions { get { throw null; } }
     }
     public partial class ComposablePartExportProvider : System.ComponentModel.Composition.Hosting.ExportProvider, System.IDisposable
@@ -368,8 +387,12 @@ namespace System.ComponentModel.Composition.Hosting
     {
         public DirectoryCatalog(string path) { }
         public DirectoryCatalog(string path, System.ComponentModel.Composition.Primitives.ICompositionElement definitionOrigin) { }
+        public DirectoryCatalog(string path, System.Reflection.ReflectionContext reflectionContext) { }
+        public DirectoryCatalog(string path, System.Reflection.ReflectionContext reflectionContext, System.ComponentModel.Composition.Primitives.ICompositionElement definitionOrigin) { }
         public DirectoryCatalog(string path, string searchPattern) { }
         public DirectoryCatalog(string path, string searchPattern, System.ComponentModel.Composition.Primitives.ICompositionElement definitionOrigin) { }
+        public DirectoryCatalog(string path, string searchPattern, System.Reflection.ReflectionContext reflectionContext) { }
+        public DirectoryCatalog(string path, string searchPattern, System.Reflection.ReflectionContext reflectionContext, System.ComponentModel.Composition.Primitives.ICompositionElement definitionOrigin) { }
         public string FullPath { get { throw null; } }
         public System.Collections.ObjectModel.ReadOnlyCollection<string> LoadedFiles { get { throw null; } }
         public string Path { get { throw null; } }
@@ -411,13 +434,13 @@ namespace System.ComponentModel.Composition.Hosting
         public System.Lazy<T, TMetadataView> GetExport<T, TMetadataView>(string contractName) { throw null; }
         protected virtual void OnExportsChanged(System.ComponentModel.Composition.Hosting.ExportsChangeEventArgs e) { }
         protected virtual void OnExportsChanging(System.ComponentModel.Composition.Hosting.ExportsChangeEventArgs e) { }
-        public bool TryGetExports(System.ComponentModel.Composition.Primitives.ImportDefinition definition, System.ComponentModel.Composition.Hosting.AtomicComposition atomicComposition, out System.Collections.Generic.IEnumerable<System.ComponentModel.Composition.Primitives.Export> exports) { exports = default(System.Collections.Generic.IEnumerable<System.ComponentModel.Composition.Primitives.Export>); throw null; }
+        public bool TryGetExports(System.ComponentModel.Composition.Primitives.ImportDefinition definition, System.ComponentModel.Composition.Hosting.AtomicComposition atomicComposition, out System.Collections.Generic.IEnumerable<System.ComponentModel.Composition.Primitives.Export> exports) { throw null; }
     }
     public partial class ExportsChangeEventArgs : System.EventArgs
     {
         public ExportsChangeEventArgs(System.Collections.Generic.IEnumerable<System.ComponentModel.Composition.Primitives.ExportDefinition> addedExports, System.Collections.Generic.IEnumerable<System.ComponentModel.Composition.Primitives.ExportDefinition> removedExports, System.ComponentModel.Composition.Hosting.AtomicComposition atomicComposition) { }
         public System.Collections.Generic.IEnumerable<System.ComponentModel.Composition.Primitives.ExportDefinition> AddedExports { get { throw null; } }
-        public System.ComponentModel.Composition.Hosting.AtomicComposition AtomicComposition { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public System.ComponentModel.Composition.Hosting.AtomicComposition AtomicComposition { get { throw null; } }
         public System.Collections.Generic.IEnumerable<string> ChangedContractNames { get { throw null; } }
         public System.Collections.Generic.IEnumerable<System.ComponentModel.Composition.Primitives.ExportDefinition> RemovedExports { get { throw null; } }
     }
@@ -467,6 +490,8 @@ namespace System.ComponentModel.Composition.Hosting
     {
         public TypeCatalog(System.Collections.Generic.IEnumerable<System.Type> types) { }
         public TypeCatalog(System.Collections.Generic.IEnumerable<System.Type> types, System.ComponentModel.Composition.Primitives.ICompositionElement definitionOrigin) { }
+        public TypeCatalog(System.Collections.Generic.IEnumerable<System.Type> types, System.Reflection.ReflectionContext reflectionContext) { }
+        public TypeCatalog(System.Collections.Generic.IEnumerable<System.Type> types, System.Reflection.ReflectionContext reflectionContext, System.ComponentModel.Composition.Primitives.ICompositionElement definitionOrigin) { }
         public TypeCatalog(params System.Type[] types) { }
         string System.ComponentModel.Composition.Primitives.ICompositionElement.DisplayName { get { throw null; } }
         System.ComponentModel.Composition.Primitives.ICompositionElement System.ComponentModel.Composition.Primitives.ICompositionElement.Origin { get { throw null; } }
@@ -490,7 +515,7 @@ namespace System.ComponentModel.Composition.Primitives
     public abstract partial class ComposablePartCatalog : System.Collections.Generic.IEnumerable<System.ComponentModel.Composition.Primitives.ComposablePartDefinition>, System.Collections.IEnumerable, System.IDisposable
     {
         protected ComposablePartCatalog() { }
-        [System.ComponentModel.EditorBrowsableAttribute(EditorBrowsableState.Never)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public virtual System.Linq.IQueryable<System.ComponentModel.Composition.Primitives.ComposablePartDefinition> Parts { get { throw null; } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
@@ -506,7 +531,6 @@ namespace System.ComponentModel.Composition.Primitives
         public virtual System.Collections.Generic.IDictionary<string, object> Metadata { get { throw null; } }
         public abstract System.ComponentModel.Composition.Primitives.ComposablePart CreatePart();
     }
-    [System.Diagnostics.DebuggerDisplayAttribute("{Message}")]
     public partial class ComposablePartException : System.Exception
     {
         public ComposablePartException() { }
@@ -581,12 +605,12 @@ namespace System.ComponentModel.Composition.Primitives
 }
 namespace System.ComponentModel.Composition.ReflectionModel
 {
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct LazyMemberInfo
     {
-        public LazyMemberInfo(System.Reflection.MemberInfo member) { throw null;}
-        public LazyMemberInfo(System.Reflection.MemberTypes memberType, System.Func<System.Reflection.MemberInfo[]> accessorsCreator) { throw null;}
-        public LazyMemberInfo(System.Reflection.MemberTypes memberType, params System.Reflection.MemberInfo[] accessors) { throw null;}
+        private object _dummy;
+        public LazyMemberInfo(System.Reflection.MemberInfo member) { throw null; }
+        public LazyMemberInfo(System.Reflection.MemberTypes memberType, System.Func<System.Reflection.MemberInfo[]> accessorsCreator) { throw null; }
+        public LazyMemberInfo(System.Reflection.MemberTypes memberType, params System.Reflection.MemberInfo[] accessors) { throw null; }
         public System.Reflection.MemberTypes MemberType { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public System.Reflection.MemberInfo[] GetAccessors() { throw null; }
@@ -611,6 +635,6 @@ namespace System.ComponentModel.Composition.ReflectionModel
         public static bool IsDisposalRequired(System.ComponentModel.Composition.Primitives.ComposablePartDefinition partDefinition) { throw null; }
         public static bool IsExportFactoryImportDefinition(System.ComponentModel.Composition.Primitives.ImportDefinition importDefinition) { throw null; }
         public static bool IsImportingParameter(System.ComponentModel.Composition.Primitives.ImportDefinition importDefinition) { throw null; }
-        public static bool TryMakeGenericPartDefinition(System.ComponentModel.Composition.Primitives.ComposablePartDefinition partDefinition, System.Collections.Generic.IEnumerable<System.Type> genericParameters, out System.ComponentModel.Composition.Primitives.ComposablePartDefinition specialization) { specialization = default(System.ComponentModel.Composition.Primitives.ComposablePartDefinition); throw null; }
+        public static bool TryMakeGenericPartDefinition(System.ComponentModel.Composition.Primitives.ComposablePartDefinition partDefinition, System.Collections.Generic.IEnumerable<System.Type> genericParameters, out System.ComponentModel.Composition.Primitives.ComposablePartDefinition specialization) { throw null; }
     }
 }

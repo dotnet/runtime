@@ -6,6 +6,7 @@ T:System.ComponentModel.Design.Serialization.RootDesignerSerializerAttribute
 T:System.ComponentModel.EditorAttribute
 T:System.ComponentModel.TypeConverterAttribute
 T:System.Configuration.ConfigurationPropertyAttribute
+T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute
 T:System.Diagnostics.CodeAnalysis.SuppressMessageAttribute
 T:System.Diagnostics.DebuggerBrowsableAttribute
 T:System.Diagnostics.DebuggerDisplayAttribute

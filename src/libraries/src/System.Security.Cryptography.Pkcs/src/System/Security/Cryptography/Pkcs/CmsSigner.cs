@@ -115,32 +115,36 @@ namespace System.Security.Cryptography.Pkcs
             if ((SignedAttributes != null && SignedAttributes.Count > 0) || contentTypeOid == null)
             {
                 List<AttributeAsn> signedAttrs = BuildAttributes(SignedAttributes);
-                var writer = new AsnWriter(AsnEncodingRules.DER);
 
-                writer.PushSetOf();
-                writer.WriteOctetString(dataHash);
-                writer.PopSetOf();
-
-                signedAttrs.Add(
-                    new AttributeAsn
-                    {
-                        AttrType = new Oid(Oids.MessageDigest, Oids.MessageDigest),
-                        AttrValues = writer.Encode(),
-                    });
-
-                if (contentTypeOid != null)
+                using (var writer = new AsnWriter(AsnEncodingRules.DER))
                 {
-                    writer = new AsnWriter(AsnEncodingRules.DER);
                     writer.PushSetOf();
-                    writer.WriteObjectIdentifier(contentTypeOid);
+                    writer.WriteOctetString(dataHash);
                     writer.PopSetOf();
 
                     signedAttrs.Add(
                         new AttributeAsn
                         {
-                            AttrType = new Oid(Oids.ContentType, Oids.ContentType),
+                            AttrType = new Oid(Oids.MessageDigest, Oids.MessageDigest),
                             AttrValues = writer.Encode(),
                         });
+                }
+
+                if (contentTypeOid != null)
+                {
+                    using (var writer = new AsnWriter(AsnEncodingRules.DER))
+                    {
+                        writer.PushSetOf();
+                        writer.WriteObjectIdentifier(contentTypeOid);
+                        writer.PopSetOf();
+
+                        signedAttrs.Add(
+                            new AttributeAsn
+                            {
+                                AttrType = new Oid(Oids.ContentType, Oids.ContentType),
+                                AttrValues = writer.Encode(),
+                            });
+                    }
                 }
 
                 // Use the serializer/deserializer to DER-normalize the attribute order.
@@ -276,24 +280,25 @@ namespace System.Security.Cryptography.Pkcs
 
             foreach (CryptographicAttributeObject attributeObject in attributes)
             {
-                var writer = new AsnWriter(AsnEncodingRules.DER);
-
-                writer.PushSetOf();
-
-                foreach (AsnEncodedData objectValue in attributeObject.Values)
+                using (var writer = new AsnWriter(AsnEncodingRules.DER))
                 {
-                    writer.WriteEncodedValue(objectValue.RawData);
+                    writer.PushSetOf();
+
+                    foreach (AsnEncodedData objectValue in attributeObject.Values)
+                    {
+                        writer.WriteEncodedValue(objectValue.RawData);
+                    }
+
+                    writer.PopSetOf();
+
+                    AttributeAsn newAttr = new AttributeAsn
+                    {
+                        AttrType = attributeObject.Oid,
+                        AttrValues = writer.Encode(),
+                    };
+
+                    signedAttrs.Add(newAttr);
                 }
-
-                writer.PopSetOf();
-
-                AttributeAsn newAttr = new AttributeAsn
-                {
-                    AttrType = attributeObject.Oid,
-                    AttrValues = writer.Encode(),
-                };
-
-                signedAttrs.Add(newAttr);
             }
 
             return signedAttrs;

@@ -42,10 +42,12 @@ namespace System.Security.Cryptography.Tests.Asn1
             string expectedHex,
             object value)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            writer.WriteNamedBitList(value);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.WriteNamedBitList(value);
 
-            Verify(writer, expectedHex);
+                Verify(writer, expectedHex);
+            }
         }
 
         [Theory]
@@ -88,10 +90,12 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             Asn1Tag tag = new Asn1Tag(tagClass, ruleSetVal);
 
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            writer.WriteNamedBitList(tag, value);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.WriteNamedBitList(tag, value);
 
-            Verify(writer, expectedHex);
+                Verify(writer, expectedHex);
+            }
         }
 
         [Theory]
@@ -100,18 +104,19 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public static void VerifyWriteNamedBitList_Generic(PublicEncodingRules ruleSet)
         {
-            AsnWriter objWriter = new AsnWriter((AsnEncodingRules)ruleSet);
-            AsnWriter genWriter = new AsnWriter((AsnEncodingRules)ruleSet);
+            using (AsnWriter objWriter = new AsnWriter((AsnEncodingRules)ruleSet))
+            using (AsnWriter genWriter = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                var flagsValue =
+                    ReadNamedBitList.X509KeyUsageCSharpStyle.DigitalSignature |
+                    ReadNamedBitList.X509KeyUsageCSharpStyle.KeyEncipherment |
+                    ReadNamedBitList.X509KeyUsageCSharpStyle.DataEncipherment;
 
-            var flagsValue =
-                ReadNamedBitList.X509KeyUsageCSharpStyle.DigitalSignature |
-                ReadNamedBitList.X509KeyUsageCSharpStyle.KeyEncipherment |
-                ReadNamedBitList.X509KeyUsageCSharpStyle.DataEncipherment;
+                genWriter.WriteNamedBitList(flagsValue);
+                objWriter.WriteNamedBitList((object)flagsValue);
 
-            genWriter.WriteNamedBitList(flagsValue);
-            objWriter.WriteNamedBitList((object)flagsValue);
-
-            Verify(genWriter, objWriter.Encode().ByteArrayToHex());
+                Verify(genWriter, objWriter.Encode().ByteArrayToHex());
+            }
         }
 
         [Theory]
@@ -120,20 +125,21 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public static void VerifyWriteNamedBitList_Generic_WithTag(PublicEncodingRules ruleSet)
         {
-            AsnWriter objWriter = new AsnWriter((AsnEncodingRules)ruleSet);
-            AsnWriter genWriter = new AsnWriter((AsnEncodingRules)ruleSet);
+            using (AsnWriter objWriter = new AsnWriter((AsnEncodingRules)ruleSet))
+            using (AsnWriter genWriter = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 52);
 
-            Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 52);
-           
-            var flagsValue =
-                ReadNamedBitList.X509KeyUsageCSharpStyle.DigitalSignature |
-                ReadNamedBitList.X509KeyUsageCSharpStyle.KeyEncipherment |
-                ReadNamedBitList.X509KeyUsageCSharpStyle.DataEncipherment;
+                var flagsValue =
+                    ReadNamedBitList.X509KeyUsageCSharpStyle.DigitalSignature |
+                    ReadNamedBitList.X509KeyUsageCSharpStyle.KeyEncipherment |
+                    ReadNamedBitList.X509KeyUsageCSharpStyle.DataEncipherment;
 
-            genWriter.WriteNamedBitList(tag, flagsValue);
-            objWriter.WriteNamedBitList(tag, (object)flagsValue);
+                genWriter.WriteNamedBitList(tag, flagsValue);
+                objWriter.WriteNamedBitList(tag, (object)flagsValue);
 
-            Verify(genWriter, objWriter.Encode().ByteArrayToHex());
+                Verify(genWriter, objWriter.Encode().ByteArrayToHex());
+            }
         }
 
         [Theory]
@@ -142,15 +148,16 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public static void VerifyWriteNamedBitList_NonNull(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                AssertExtensions.Throws<ArgumentNullException>(
+                    "enumValue",
+                    () => writer.WriteNamedBitList(null));
 
-            AssertExtensions.Throws<ArgumentNullException>(
-                "enumValue",
-                () => writer.WriteNamedBitList(null));
-
-            AssertExtensions.Throws<ArgumentNullException>(
-                "enumValue",
-                () => writer.WriteNamedBitList(new Asn1Tag(TagClass.ContextSpecific, 1), null));
+                AssertExtensions.Throws<ArgumentNullException>(
+                    "enumValue",
+                    () => writer.WriteNamedBitList(new Asn1Tag(TagClass.ContextSpecific, 1), null));
+            }
         }
 
         [Theory]
@@ -159,19 +166,20 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public static void VerifyWriteNamedBitList_EnumRequired(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                Assert.Throws<ArgumentException>(
+                    () => writer.WriteNamedBitList(3));
 
-            Assert.Throws<ArgumentException>(
-                () => writer.WriteNamedBitList(3));
+                Assert.Throws<ArgumentException>(
+                    () => writer.WriteNamedBitList(new Asn1Tag(TagClass.ContextSpecific, 1), 3));
 
-            Assert.Throws<ArgumentException>(
-                () => writer.WriteNamedBitList(new Asn1Tag(TagClass.ContextSpecific, 1), 3));
+                Assert.Throws<ArgumentException>(
+                    () => writer.WriteNamedBitList((object)3));
 
-            Assert.Throws<ArgumentException>(
-                () => writer.WriteNamedBitList((object)3));
-
-            Assert.Throws<ArgumentException>(
-                () => writer.WriteNamedBitList(new Asn1Tag(TagClass.ContextSpecific, 1), (object)3));
+                Assert.Throws<ArgumentException>(
+                    () => writer.WriteNamedBitList(new Asn1Tag(TagClass.ContextSpecific, 1), (object)3));
+            }
         }
 
         [Theory]
@@ -180,27 +188,28 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public static void VerifyWriteNamedBitList_FlagsEnumRequired(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                AssertExtensions.Throws<ArgumentException>(
+                    "tEnum",
+                    () => writer.WriteNamedBitList(AsnEncodingRules.BER));
 
-            AssertExtensions.Throws<ArgumentException>(
-                "tEnum",
-                () => writer.WriteNamedBitList(AsnEncodingRules.BER));
+                AssertExtensions.Throws<ArgumentException>(
+                    "tEnum",
+                    () => writer.WriteNamedBitList(
+                        new Asn1Tag(TagClass.ContextSpecific, 1),
+                        AsnEncodingRules.BER));
 
-            AssertExtensions.Throws<ArgumentException>(
-                "tEnum",
-                () => writer.WriteNamedBitList(
-                    new Asn1Tag(TagClass.ContextSpecific, 1),
-                    AsnEncodingRules.BER));
+                AssertExtensions.Throws<ArgumentException>(
+                    "tEnum",
+                    () => writer.WriteNamedBitList((object)AsnEncodingRules.BER));
 
-            AssertExtensions.Throws<ArgumentException>(
-                "tEnum",
-                () => writer.WriteNamedBitList((object)AsnEncodingRules.BER));
-
-            AssertExtensions.Throws<ArgumentException>(
-                "tEnum",
-                () => writer.WriteNamedBitList(
-                    new Asn1Tag(TagClass.ContextSpecific, 1),
-                    (object)AsnEncodingRules.BER));
+                AssertExtensions.Throws<ArgumentException>(
+                    "tEnum",
+                    () => writer.WriteNamedBitList(
+                        new Asn1Tag(TagClass.ContextSpecific, 1),
+                        (object)AsnEncodingRules.BER));
+            }
         }
 
         [Theory]
@@ -209,19 +218,20 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public static void VerifyWriteNamedBitList_EndOfContents(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteNamedBitList(
+                        Asn1Tag.EndOfContents,
+                        StringSplitOptions.RemoveEmptyEntries));
 
-            AssertExtensions.Throws<ArgumentException>(
-                "tag",
-                () => writer.WriteNamedBitList(
-                    Asn1Tag.EndOfContents,
-                    StringSplitOptions.RemoveEmptyEntries));
-
-            AssertExtensions.Throws<ArgumentException>(
-                "tag",
-                () => writer.WriteNamedBitList(
-                    Asn1Tag.EndOfContents,
-                    (object)StringSplitOptions.RemoveEmptyEntries));
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteNamedBitList(
+                        Asn1Tag.EndOfContents,
+                        (object)StringSplitOptions.RemoveEmptyEntries));
+            }
         }
     }
 }

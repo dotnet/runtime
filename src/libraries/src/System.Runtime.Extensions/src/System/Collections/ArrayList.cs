@@ -14,11 +14,7 @@
 
 using System.Security;
 using System.Diagnostics;
-#if FEATURE_NETCORE
-using System.Runtime.CompilerServices;
-#endif
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 
 namespace System.Collections
 {
@@ -28,9 +24,6 @@ namespace System.Collections
     // of the ArrayList is automatically increased as required by reallocating the
     // internal array.
     // 
-#if FEATURE_NETCORE
-    [FriendAccessAllowed]
-#endif
     [DebuggerTypeProxy(typeof(System.Collections.ArrayList.ArrayListDebugView))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
@@ -38,7 +31,6 @@ namespace System.Collections
     public class ArrayList : IList, ICloneable
     {
         private Object[] _items; // Do not rename (binary serialization)
-        [ContractPublicPropertyName("Count")]
         private int _size; // Do not rename (binary serialization)
         private int _version; // Do not rename (binary serialization)
         [NonSerialized]
@@ -70,7 +62,6 @@ namespace System.Collections
         public ArrayList(int capacity)
         {
             if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity), SR.Format(SR.ArgumentOutOfRange_MustBeNonNegNum, nameof(capacity)));
-            Contract.EndContractBlock();
 
             if (capacity == 0)
                 _items = Array.Empty<Object>();
@@ -86,7 +77,6 @@ namespace System.Collections
         {
             if (c == null)
                 throw new ArgumentNullException(nameof(c), SR.ArgumentNull_Collection);
-            Contract.EndContractBlock();
 
             int count = c.Count;
             if (count == 0)
@@ -108,7 +98,6 @@ namespace System.Collections
         {
             get
             {
-                Contract.Ensures(Contract.Result<int>() >= Count);
                 return _items.Length;
             }
             set
@@ -117,8 +106,7 @@ namespace System.Collections
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_SmallCapacity);
                 }
-                Contract.Ensures(Capacity >= 0);
-                Contract.EndContractBlock();
+
                 // We don't want to update the version number when we change the capacity.
                 // Some existing applications have dependency on this.
                 if (value != _items.Length)
@@ -145,7 +133,6 @@ namespace System.Collections
         {
             get
             {
-                Contract.Ensures(Contract.Result<int>() >= 0);
                 return _size;
             }
         }
@@ -188,13 +175,11 @@ namespace System.Collections
             get
             {
                 if (index < 0 || index >= _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
-                Contract.EndContractBlock();
                 return _items[index];
             }
             set
             {
                 if (index < 0 || index >= _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
-                Contract.EndContractBlock();
                 _items[index] = value;
                 _version++;
             }
@@ -212,8 +197,6 @@ namespace System.Collections
         {
             if (list == null)
                 throw new ArgumentNullException(nameof(list));
-            Contract.Ensures(Contract.Result<ArrayList>() != null);
-            Contract.EndContractBlock();
             return new IListWrapper(list);
         }
 
@@ -223,7 +206,6 @@ namespace System.Collections
         //
         public virtual int Add(Object value)
         {
-            Contract.Ensures(Contract.Result<int>() >= 0);
             if (_size == _items.Length) EnsureCapacity(_size + 1);
             _items[_size] = value;
             _version++;
@@ -267,22 +249,17 @@ namespace System.Collections
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (_size - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.Ensures(Contract.Result<int>() < Count);
-            Contract.Ensures(Contract.Result<int>() < index + count);
-            Contract.EndContractBlock();
 
             return Array.BinarySearch((Array)_items, index, count, value, comparer);
         }
 
         public virtual int BinarySearch(Object value)
         {
-            Contract.Ensures(Contract.Result<int>() < Count);
             return BinarySearch(0, Count, value, null);
         }
 
         public virtual int BinarySearch(Object value, IComparer comparer)
         {
-            Contract.Ensures(Contract.Result<int>() < Count);
             return BinarySearch(0, Count, value, comparer);
         }
 
@@ -303,7 +280,6 @@ namespace System.Collections
         // are not cloned).
         public virtual Object Clone()
         {
-            Contract.Ensures(Contract.Result<Object>() != null);
             ArrayList la = new ArrayList(_size);
             la._size = _size;
             la._version = _version;
@@ -349,7 +325,7 @@ namespace System.Collections
         {
             if ((array != null) && (array.Rank != 1))
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
-            Contract.EndContractBlock();
+
             // Delegate rest of error checking to Array.Copy.
             Array.Copy(_items, 0, array, arrayIndex, _size);
         }
@@ -364,7 +340,7 @@ namespace System.Collections
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             if ((array != null) && (array.Rank != 1))
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
-            Contract.EndContractBlock();
+
             // Delegate rest of error checking to Array.Copy.
             Array.Copy(_items, index, array, arrayIndex, count);
         }
@@ -393,8 +369,6 @@ namespace System.Collections
         {
             if (list == null)
                 throw new ArgumentNullException(nameof(list));
-            Contract.Ensures(Contract.Result<IList>() != null);
-            Contract.EndContractBlock();
             return new FixedSizeList(list);
         }
 
@@ -405,8 +379,6 @@ namespace System.Collections
         {
             if (list == null)
                 throw new ArgumentNullException(nameof(list));
-            Contract.Ensures(Contract.Result<ArrayList>() != null);
-            Contract.EndContractBlock();
             return new FixedSizeArrayList(list);
         }
 
@@ -417,7 +389,6 @@ namespace System.Collections
         //
         public virtual IEnumerator GetEnumerator()
         {
-            Contract.Ensures(Contract.Result<IEnumerator>() != null);
             return new ArrayListEnumeratorSimple(this);
         }
 
@@ -434,9 +405,6 @@ namespace System.Collections
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (_size - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.Ensures(Contract.Result<IEnumerator>() != null);
-            Contract.EndContractBlock();
-
             return new ArrayListEnumerator(this, index, count);
         }
 
@@ -450,7 +418,6 @@ namespace System.Collections
         // 
         public virtual int IndexOf(Object value)
         {
-            Contract.Ensures(Contract.Result<int>() < Count);
             return Array.IndexOf((Array)_items, value, 0, _size);
         }
 
@@ -467,8 +434,6 @@ namespace System.Collections
         {
             if (startIndex > _size)
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
-            Contract.Ensures(Contract.Result<int>() < Count);
-            Contract.EndContractBlock();
             return Array.IndexOf((Array)_items, value, startIndex, _size - startIndex);
         }
 
@@ -486,8 +451,6 @@ namespace System.Collections
             if (startIndex > _size)
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
             if (count < 0 || startIndex > _size - count) throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
-            Contract.Ensures(Contract.Result<int>() < Count);
-            Contract.EndContractBlock();
             return Array.IndexOf((Array)_items, value, startIndex, count);
         }
 
@@ -499,8 +462,6 @@ namespace System.Collections
         {
             // Note that insertions at the end are legal.
             if (index < 0 || index > _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_ArrayListInsert);
-            //Contract.Ensures(Count == Contract.OldValue(Count) + 1);
-            Contract.EndContractBlock();
 
             if (_size == _items.Length) EnsureCapacity(_size + 1);
             if (index < _size)
@@ -522,8 +483,6 @@ namespace System.Collections
             if (c == null)
                 throw new ArgumentNullException(nameof(c), SR.ArgumentNull_Collection);
             if (index < 0 || index > _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
-            //Contract.Ensures(Count == Contract.OldValue(Count) + c.Count);
-            Contract.EndContractBlock();
 
             int count = c.Count;
             if (count > 0)
@@ -553,7 +512,6 @@ namespace System.Collections
         // 
         public virtual int LastIndexOf(Object value)
         {
-            Contract.Ensures(Contract.Result<int>() < _size);
             return LastIndexOf(value, _size - 1, _size);
         }
 
@@ -570,8 +528,6 @@ namespace System.Collections
         {
             if (startIndex >= _size)
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
-            Contract.Ensures(Contract.Result<int>() < Count);
-            Contract.EndContractBlock();
             return LastIndexOf(value, startIndex, startIndex + 1);
         }
 
@@ -588,8 +544,6 @@ namespace System.Collections
         {
             if (Count != 0 && (startIndex < 0 || count < 0))
                 throw new ArgumentOutOfRangeException(startIndex < 0 ? nameof(startIndex) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            Contract.Ensures(Contract.Result<int>() < Count);
-            Contract.EndContractBlock();
 
             if (_size == 0)  // Special case for an empty list
                 return -1;
@@ -602,15 +556,10 @@ namespace System.Collections
 
         // Returns a read-only IList wrapper for the given IList.
         //
-#if FEATURE_NETCORE
-        [FriendAccessAllowed]
-#endif
         public static IList ReadOnly(IList list)
         {
             if (list == null)
                 throw new ArgumentNullException(nameof(list));
-            Contract.Ensures(Contract.Result<IList>() != null);
-            Contract.EndContractBlock();
             return new ReadOnlyList(list);
         }
 
@@ -620,8 +569,6 @@ namespace System.Collections
         {
             if (list == null)
                 throw new ArgumentNullException(nameof(list));
-            Contract.Ensures(Contract.Result<ArrayList>() != null);
-            Contract.EndContractBlock();
             return new ReadOnlyArrayList(list);
         }
 
@@ -630,8 +577,6 @@ namespace System.Collections
         // 
         public virtual void Remove(Object obj)
         {
-            Contract.Ensures(Count >= 0);
-
             int index = IndexOf(obj);
             if (index >= 0)
                 RemoveAt(index);
@@ -643,9 +588,6 @@ namespace System.Collections
         public virtual void RemoveAt(int index)
         {
             if (index < 0 || index >= _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
-            Contract.Ensures(Count >= 0);
-            //Contract.Ensures(Count == Contract.OldValue(Count) - 1);
-            Contract.EndContractBlock();
 
             _size--;
             if (index < _size)
@@ -666,9 +608,6 @@ namespace System.Collections
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (_size - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.Ensures(Count >= 0);
-            //Contract.Ensures(Count == Contract.OldValue(Count) - count);
-            Contract.EndContractBlock();
 
             if (count > 0)
             {
@@ -689,8 +628,6 @@ namespace System.Collections
         {
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            Contract.Ensures(Contract.Result<ArrayList>() != null);
-            Contract.EndContractBlock();
 
             ArrayList list = new ArrayList((count > _defaultCapacity) ? count : _defaultCapacity);
             for (int i = 0; i < count; i++)
@@ -720,7 +657,7 @@ namespace System.Collections
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (_size - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
+
             Array.Reverse(_items, index, count);
             _version++;
         }
@@ -731,7 +668,7 @@ namespace System.Collections
         public virtual void SetRange(int index, ICollection c)
         {
             if (c == null) throw new ArgumentNullException(nameof(c), SR.ArgumentNull_Collection);
-            Contract.EndContractBlock();
+
             int count = c.Count;
             if (index < 0 || index > _size - count) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
 
@@ -748,8 +685,6 @@ namespace System.Collections
                 throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (_size - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.Ensures(Contract.Result<ArrayList>() != null);
-            Contract.EndContractBlock();
             return new Range(this, index, count);
         }
 
@@ -783,7 +718,6 @@ namespace System.Collections
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (_size - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
 
             Array.Sort(_items, index, count, comparer);
             _version++;
@@ -795,8 +729,6 @@ namespace System.Collections
         {
             if (list == null)
                 throw new ArgumentNullException(nameof(list));
-            Contract.Ensures(Contract.Result<IList>() != null);
-            Contract.EndContractBlock();
             return new SyncIList(list);
         }
 
@@ -806,8 +738,6 @@ namespace System.Collections
         {
             if (list == null)
                 throw new ArgumentNullException(nameof(list));
-            Contract.Ensures(Contract.Result<ArrayList>() != null);
-            Contract.EndContractBlock();
             return new SyncArrayList(list);
         }
 
@@ -815,8 +745,6 @@ namespace System.Collections
         // This requires copying the ArrayList, which is an O(n) operation.
         public virtual Object[] ToArray()
         {
-            Contract.Ensures(Contract.Result<Object[]>() != null);
-
             if (_size == 0)
                 return Array.Empty<Object>();
 
@@ -834,8 +762,7 @@ namespace System.Collections
         {
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
-            Contract.Ensures(Contract.Result<Array>() != null);
-            Contract.EndContractBlock();
+
             Array array = Array.CreateInstance(type, _size);
             Array.Copy(_items, 0, array, 0, _size);
             return array;
@@ -874,7 +801,6 @@ namespace System.Collections
                 set
                 {
                     if (value < Count) throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_SmallCapacity);
-                    Contract.EndContractBlock();
                 }
             }
 
@@ -936,7 +862,7 @@ namespace System.Collections
                     throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
                 if (Count - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
-                Contract.EndContractBlock();
+
                 if (comparer == null)
                     comparer = Comparer.Default;
 
@@ -1001,7 +927,6 @@ namespace System.Collections
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
                 if (array.Rank != 1)
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
-                Contract.EndContractBlock();
 
                 if (_list.Count - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
@@ -1019,7 +944,7 @@ namespace System.Collections
             {
                 if (index < 0 || count < 0)
                     throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-                Contract.EndContractBlock();
+
                 if (_list.Count - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -1041,7 +966,6 @@ namespace System.Collections
             {
                 if (startIndex < 0 || startIndex > Count) throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
                 if (count < 0 || startIndex > Count - count) throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
-                Contract.EndContractBlock();
 
                 int endIndex = startIndex + count;
                 if (value == null)
@@ -1071,7 +995,6 @@ namespace System.Collections
                 if (c == null)
                     throw new ArgumentNullException(nameof(c), SR.ArgumentNull_Collection);
                 if (index < 0 || index > Count) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
-                Contract.EndContractBlock();
 
                 if (c.Count > 0)
                 {
@@ -1149,7 +1072,7 @@ namespace System.Collections
             {
                 if (index < 0 || count < 0)
                     throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-                Contract.EndContractBlock();
+
                 if (_list.Count - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -1167,7 +1090,7 @@ namespace System.Collections
             {
                 if (index < 0 || count < 0)
                     throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-                Contract.EndContractBlock();
+
                 if (_list.Count - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -1188,7 +1111,6 @@ namespace System.Collections
                 {
                     throw new ArgumentNullException(nameof(c), SR.ArgumentNull_Collection);
                 }
-                Contract.EndContractBlock();
 
                 if (index < 0 || index > _list.Count - c.Count)
                 {
@@ -1210,7 +1132,6 @@ namespace System.Collections
             {
                 if (index < 0 || count < 0)
                     throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-                Contract.EndContractBlock();
                 if (_list.Count - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
                 return new Range(this, index, count);
@@ -1220,7 +1141,6 @@ namespace System.Collections
             {
                 if (index < 0 || count < 0)
                     throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-                Contract.EndContractBlock();
                 if (_list.Count - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -1248,7 +1168,7 @@ namespace System.Collections
             {
                 if (type == null)
                     throw new ArgumentNullException(nameof(type));
-                Contract.EndContractBlock();
+
                 Array array = Array.CreateInstance(type, _list.Count);
                 _list.CopyTo(array, 0);
                 return array;
@@ -2089,7 +2009,6 @@ namespace System.Collections
                     throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
                 if (Count - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
-                Contract.EndContractBlock();
 
                 return new Range(this, index, count);
             }
@@ -2400,7 +2319,6 @@ namespace System.Collections
                     throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
                 if (Count - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
-                Contract.EndContractBlock();
 
                 return new Range(this, index, count);
             }
@@ -2502,7 +2420,6 @@ namespace System.Collections
         {
             private ArrayList _baseList;
             private int _baseIndex;
-            [ContractPublicPropertyName("Count")]
             private int _baseSize;
             private int _baseVersion;
 
@@ -2542,7 +2459,6 @@ namespace System.Collections
                 {
                     throw new ArgumentNullException(nameof(c));
                 }
-                Contract.EndContractBlock();
 
                 InternalUpdateRange();
                 int count = c.Count;
@@ -2560,7 +2476,7 @@ namespace System.Collections
                     throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
                 if (_baseSize - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
-                Contract.EndContractBlock();
+
                 InternalUpdateRange();
 
                 int i = _baseList.BinarySearch(_baseIndex + index, count, value, comparer);
@@ -2578,7 +2494,6 @@ namespace System.Collections
                 set
                 {
                     if (value < Count) throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_SmallCapacity);
-                    Contract.EndContractBlock();
                 }
             }
 
@@ -2631,7 +2546,6 @@ namespace System.Collections
                     throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
                 if (array.Length - index < _baseSize)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
-                Contract.EndContractBlock();
 
                 InternalUpdateRange();
                 _baseList.CopyTo(_baseIndex, array, index, _baseSize);
@@ -2649,7 +2563,6 @@ namespace System.Collections
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
                 if (_baseSize - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
-                Contract.EndContractBlock();
 
                 InternalUpdateRange();
                 _baseList.CopyTo(_baseIndex + index, array, arrayIndex, count);
@@ -2690,7 +2603,6 @@ namespace System.Collections
                     throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
                 if (_baseSize - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
-                Contract.EndContractBlock();
 
                 InternalUpdateRange();
                 return _baseList.GetEnumerator(_baseIndex + index, count);
@@ -2702,7 +2614,6 @@ namespace System.Collections
                     throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
                 if (_baseSize - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
-                Contract.EndContractBlock();
 
                 InternalUpdateRange();
                 return new Range(this, index, count);
@@ -2731,7 +2642,6 @@ namespace System.Collections
                     throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
                 if (startIndex > _baseSize)
                     throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
-                Contract.EndContractBlock();
 
                 InternalUpdateRange();
                 int i = _baseList.IndexOf(value, _baseIndex + startIndex, _baseSize - startIndex);
@@ -2746,7 +2656,6 @@ namespace System.Collections
 
                 if (count < 0 || (startIndex > _baseSize - count))
                     throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
-                Contract.EndContractBlock();
 
                 InternalUpdateRange();
                 int i = _baseList.IndexOf(value, _baseIndex + startIndex, count);
@@ -2757,7 +2666,6 @@ namespace System.Collections
             public override void Insert(int index, Object value)
             {
                 if (index < 0 || index > _baseSize) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
-                Contract.EndContractBlock();
 
                 InternalUpdateRange();
                 _baseList.Insert(_baseIndex + index, value);
@@ -2772,7 +2680,6 @@ namespace System.Collections
                 {
                     throw new ArgumentNullException(nameof(c));
                 }
-                Contract.EndContractBlock();
 
                 InternalUpdateRange();
                 int count = c.Count;
@@ -2820,7 +2727,6 @@ namespace System.Collections
             public override void RemoveAt(int index)
             {
                 if (index < 0 || index >= _baseSize) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
-                Contract.EndContractBlock();
 
                 InternalUpdateRange();
                 _baseList.RemoveAt(_baseIndex + index);
@@ -2834,7 +2740,6 @@ namespace System.Collections
                     throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
                 if (_baseSize - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
-                Contract.EndContractBlock();
 
                 InternalUpdateRange();
                 // No need to call _bastList.RemoveRange if count is 0.
@@ -2853,7 +2758,6 @@ namespace System.Collections
                     throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
                 if (_baseSize - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
-                Contract.EndContractBlock();
 
                 InternalUpdateRange();
                 _baseList.Reverse(_baseIndex + index, count);
@@ -2878,7 +2782,6 @@ namespace System.Collections
                     throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
                 if (_baseSize - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
-                Contract.EndContractBlock();
 
                 InternalUpdateRange();
                 _baseList.Sort(_baseIndex + index, count, comparer);
@@ -2916,7 +2819,6 @@ namespace System.Collections
             {
                 if (type == null)
                     throw new ArgumentNullException(nameof(type));
-                Contract.EndContractBlock();
 
                 InternalUpdateRange();
                 Array array = Array.CreateInstance(type, _baseSize);

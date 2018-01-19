@@ -13,11 +13,6 @@ namespace Microsoft.CSharp.RuntimeBinder
             return new RuntimeBinderInternalCompilerException(SR.InternalCompilerError);
         }
 
-        internal static Exception BindCallFailedOverloadResolution()
-        {
-            return new RuntimeBinderException(SR.BindCallFailedOverloadResolution);
-        }
-
         internal static Exception BindPropertyFailedMethodGroup(object p0)
         {
             return new RuntimeBinderException(SR.Format(SR.BindPropertyFailedMethodGroup, p0));

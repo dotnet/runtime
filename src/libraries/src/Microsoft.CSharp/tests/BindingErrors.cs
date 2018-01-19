@@ -376,40 +376,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
-        public void NamedArgumentBeforeFixedStatic()
-        {
-            CallSite<Func<CallSite, object, object, object, object>> site =
-                CallSite<Func<CallSite, object, object, object, object>>.Create(
-                    Binder.InvokeMember(
-                        CSharpBinderFlags.None, "Equals", null, GetType(),
-                        new[]
-                        {
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.IsStaticType, null),
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.NamedArgument, "objA"),
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
-                        }));
-            Func<CallSite, object, object, object, object> target = site.Target;
-            Assert.Throws<RuntimeBinderException>(() => target.Invoke(site, typeof(object), 2, 2));
-        }
-
-        [Fact]
-        public void NamedArgumentBeforeFixedInstance()
-        {
-            CallSite<Func<CallSite, object, object, object, object>> site =
-                CallSite<Func<CallSite, object, object, object, object>>.Create(
-                    Microsoft.CSharp.RuntimeBinder.Binder.InvokeMember(
-                        CSharpBinderFlags.None, "Equals", null, GetType(),
-                        new[]
-                        {
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.NamedArgument, "x"),
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
-                        }));
-            Func<CallSite, object, object, object, object> target = site.Target;
-            Assert.Throws<RuntimeBinderException>(() => target.Invoke(site, EqualityComparer<int>.Default, 2, 2));
-        }
-
-        [Fact]
         public void DuplicateNamedArgument()
         {
             CallSite<Func<CallSite, object, object, object, object>> site =
@@ -446,6 +412,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
                 .AsReadOnly();
             // Throws ArgumentOutOfRangeException for zero arguments, ArgumentException for 1 or 3 or more.
             Assert.ThrowsAny<ArgumentException>(() => binder.Bind(args, parameters, target));
+        }
+
+        public static void DoStuff<T>(IEnumerable<T> x)
+        {
+            // Don't actually do stuff!
+        }
+
+        [Fact]
+        public void CannotInferTypeArgument()
+        {
+            dynamic d = new object();
+            Assert.Throws<RuntimeBinderException>(() => DoStuff(d));
         }
     }
 }

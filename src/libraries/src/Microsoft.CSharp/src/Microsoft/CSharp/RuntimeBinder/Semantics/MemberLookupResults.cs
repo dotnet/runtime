@@ -22,19 +22,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 TypeArray containingTypes,
                 Name name)
         {
+            Debug.Assert(containingTypes != null);
+            Debug.Assert(containingTypes.Count != 0);
             _pName = name;
             ContainingTypes = containingTypes;
-            if (ContainingTypes == null)
-            {
-                ContainingTypes = BSYMMGR.EmptyTypeArray();
-            }
         }
 
         public CMethodIterator GetMethodIterator(
-            CSemanticChecker pChecker, SymbolLoader pSymLoader, CType pObject, CType pQualifyingType, AggregateDeclaration pContext, bool allowBogusAndInaccessible, bool allowExtensionMethods, int arity, EXPRFLAG flags, symbmask_t mask)
+            CSemanticChecker pChecker, SymbolLoader pSymLoader, CType pQualifyingType, AggregateDeclaration pContext, int arity, EXPRFLAG flags, symbmask_t mask, ArgInfos nonTrailingNamedArguments)
         {
             Debug.Assert(pSymLoader != null);
-            CMethodIterator iterator = new CMethodIterator(pChecker, pSymLoader, _pName, ContainingTypes, pObject, pQualifyingType, pContext, allowBogusAndInaccessible, allowExtensionMethods, arity, flags, mask);
+            CMethodIterator iterator = new CMethodIterator(pChecker, pSymLoader, _pName, ContainingTypes, pQualifyingType, pContext, arity, flags, mask, nonTrailingNamedArguments);
             return iterator;
         }
 

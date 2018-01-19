@@ -81,7 +81,6 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Vector.cs</LastGenOutput>
     </Content>
-    <Reference Include="System.Diagnostics.Contracts" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Globalization" />
     <Reference Include="System.Resources.ResourceManager" />

@@ -41,7 +41,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Name name = method.Sym?.name;
             MethodOrPropertySymbol methProp = method.MethProp();
 
-            CType type = method.GetType() ?? (CType)Types.GetErrorSym();
+            CType type = method.GetType();
 
             return CreateMemGroup(
                 0, name, method.TypeArgs, methProp?.getKind() ?? SYMKIND.SK_MethodSymbol, method.GetType(), methProp,

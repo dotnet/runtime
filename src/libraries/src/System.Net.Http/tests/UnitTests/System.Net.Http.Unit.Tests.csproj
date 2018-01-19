@@ -84,6 +84,9 @@
     <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
       <Link>ProductionCode\Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\System\Net\Http\Managed\AuthenticationHelper.Digest.cs">
+      <Link>ProductionCode\System\Net\Http\Managed\AuthenticationHelper.Digest.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\Http\ByteArrayContent.cs">
       <Link>ProductionCode\System\Net\Http\ByteArrayContent.cs</Link>
     </Compile>
@@ -300,6 +303,7 @@
     <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs">
       <Link>ProductionCode\System\Net\Http\HttpHandlerDefaults.cs</Link>
     </Compile>
+    <Compile Include="DigestAuthenticationTests.cs" />
     <Compile Include="Fakes\HttpClientHandler.cs" />
     <Compile Include="Headers\AuthenticationHeaderValueTest.cs" />
     <Compile Include="Headers\ByteArrayHeaderParserTest.cs" />

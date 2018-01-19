@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Threading;
-using System.Diagnostics.Contracts;
 
 namespace System.Reflection.Emit
 {
@@ -157,7 +156,6 @@ namespace System.Reflection.Emit
             }
         }
 
-        [Pure]
         public override bool Equals(Object obj)
         {
             if (obj is OpCode)
@@ -166,19 +164,16 @@ namespace System.Reflection.Emit
                 return false;
         }
 
-        [Pure]
         public bool Equals(OpCode obj)
         {
             return obj.Value == Value;
         }
 
-        [Pure]
         public static bool operator ==(OpCode a, OpCode b)
         {
             return a.Equals(b);
         }
 
-        [Pure]
         public static bool operator !=(OpCode a, OpCode b)
         {
             return !(a == b);

@@ -101,8 +101,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return true;
                 }
 
-                if (_typeSrc == null || _typeDest == null || _typeSrc is ErrorType ||
-                    _typeDest is ErrorType || _typeDest.IsNeverSameType())
+                if (_typeSrc == null || _typeDest == null || _typeDest is MethodGroupType)
                 {
                     return false;
                 }
@@ -294,7 +293,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 CType typeArr = arrayDest.GetElementType();
                 CType typeLst = aggSrc.GetTypeArgsAll()[0];
 
-                Debug.Assert(!typeArr.IsNeverSameType());
+                Debug.Assert(!(typeArr is MethodGroupType));
                 if (typeArr != typeLst && !CConversions.FExpRefConv(GetSymbolLoader(), typeArr, typeLst))
                 {
                     return false;

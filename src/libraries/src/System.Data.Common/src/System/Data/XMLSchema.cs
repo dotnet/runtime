@@ -47,7 +47,7 @@ namespace System.Data
                         object propValue;
                         if (converter.CanConvertFrom(typeof(string)))
                         {
-                            propValue = converter.ConvertFromString(value);
+                            propValue = converter.ConvertFromInvariantString(value);
                         }
                         else if (type == typeof(Type))
                         {
@@ -298,7 +298,7 @@ namespace System.Data
                         object propValue;
                         if (converter.CanConvertFrom(typeof(string)))
                         {
-                            propValue = converter.ConvertFromString(value);
+                            propValue = converter.ConvertFromInvariantString(value);
                         }
                         else if (type == typeof(Type))
                         {

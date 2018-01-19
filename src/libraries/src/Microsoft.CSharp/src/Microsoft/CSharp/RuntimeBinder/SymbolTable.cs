@@ -953,10 +953,8 @@ namespace Microsoft.CSharp.RuntimeBinder
             else if (type.IsNested)
             {
                 // If its nested, we may have other accessibility options.
-                if (type.IsNestedAssembly || type.IsNestedFamANDAssem)
+                if (type.IsNestedAssembly)
                 {
-                    // Note that we don't directly support NestedFamANDAssem, but we're just
-                    // going to default to internal.
                     access = ACCESS.ACC_INTERNAL;
                 }
                 else if (type.IsNestedFamORAssem)
@@ -970,6 +968,10 @@ namespace Microsoft.CSharp.RuntimeBinder
                 else if (type.IsNestedFamily)
                 {
                     access = ACCESS.ACC_PROTECTED;
+                }
+                else if (type.IsNestedFamANDAssem)
+                {
+                    access = ACCESS.ACC_INTERNAL_AND_PROTECTED;
                 }
                 else
                 {
@@ -1105,14 +1107,18 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 access = ACCESS.ACC_PROTECTED;
             }
-            else if (fieldInfo.IsAssembly || fieldInfo.IsFamilyAndAssembly)
+            else if (fieldInfo.IsAssembly)
             {
                 access = ACCESS.ACC_INTERNAL;
             }
+            else if (fieldInfo.IsFamilyOrAssembly)
+            {
+                access = ACCESS.ACC_INTERNALPROTECTED;
+            }
             else
             {
-                Debug.Assert(fieldInfo.IsFamilyOrAssembly);
-                access = ACCESS.ACC_INTERNALPROTECTED;
+                Debug.Assert(fieldInfo.IsFamilyAndAssembly);
+                access = ACCESS.ACC_INTERNAL_AND_PROTECTED;
             }
             field.SetAccess(access);
             field.isReadOnly = fieldInfo.IsInitOnly;
@@ -1499,10 +1505,14 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 access = ACCESS.ACC_INTERNALPROTECTED;
             }
+            else if (member.IsAssembly)
+            {
+                access = ACCESS.ACC_INTERNAL;
+            }
             else
             {
-                Debug.Assert(member.IsAssembly || member.IsFamilyAndAssembly);
-                access = ACCESS.ACC_INTERNAL;
+                Debug.Assert(member.IsFamilyAndAssembly);
+                access = ACCESS.ACC_INTERNAL_AND_PROTECTED;
             }
 
             methodSymbol.SetAccess(access);
@@ -1531,7 +1541,6 @@ namespace Microsoft.CSharp.RuntimeBinder
             methodSymbol.isParamArray = DoesMethodHaveParameterArray(parameters);
             methodSymbol.isHideByName = false;
 
-            methodSymbol.errExpImpl = null;
             methodSymbol.Params = CreateParameterArray(methodSymbol.AssociatedMemberInfo, parameters);
 
             SetParameterDataForMethProp(methodSymbol, parameters);
@@ -1819,16 +1828,10 @@ namespace Microsoft.CSharp.RuntimeBinder
 
                 AggregateSymbol aggregate = GetCTypeFromType(baseMethodInfo.DeclaringType).getAggregate();
                 MethodSymbol baseMethod = FindMethodFromMemberInfo(baseMethodInfo);
-
-                // This assert is temporarily disabled to improve testability of the area on .NetNative
-                //Debug.Assert(baseMethod != null);
-                if ((object)baseMethod == null)
-                {
-                    throw Error.InternalCompilerError();
-                }
-
+                Debug.Assert(baseMethod != null);
                 return new SymWithType(baseMethod, aggregate.getThisType());
             }
+
             return null;
         }
 

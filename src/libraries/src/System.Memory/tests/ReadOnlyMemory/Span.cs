@@ -66,10 +66,10 @@ namespace System.MemoryTests
             ReadOnlyMemory<int> memory;
 
             memory = new ReadOnlyMemory<int>(empty);
-            memory.Span.Validate();
+            memory.Span.ValidateNonNullEmpty();
 
             memory = new ReadOnlyMemory<int>(empty, 0, empty.Length);
-            memory.Span.Validate();
+            memory.Span.ValidateNonNullEmpty();
 
             OwnedMemory<int> owner = new CustomMemoryForTest<int>(empty);
             ((ReadOnlyMemory<int>)owner.Memory).Span.Validate();

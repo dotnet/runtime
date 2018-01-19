@@ -10,7 +10,6 @@
 using Microsoft.Win32.SafeHandles;
 using Microsoft.Win32;
 using System.Collections;
-using System.Diagnostics.Contracts;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -45,7 +44,6 @@ namespace System.Security.AccessControl
             {
                 throw new ArgumentNullException(nameof(securityDescriptor));
             }
-            Contract.EndContractBlock();
 
             _securityDescriptor = securityDescriptor;
         }
@@ -530,7 +528,6 @@ nameof(modification),
             //        SR.AccessControl_InvalidAccessRuleType,
             //        "rule");
             //}
-            Contract.EndContractBlock();
             return ModifyAccess(modification, rule as ObjectAccessRule, out modified);
         }
 
@@ -543,7 +540,6 @@ nameof(modification),
             //        SR.AccessControl_InvalidAuditRuleType,
             //        "rule");
             //}
-            Contract.EndContractBlock();
             return ModifyAudit(modification, rule as ObjectAuditRule, out modified);
         }
         #endregion
@@ -556,7 +552,6 @@ nameof(modification),
             {
                 throw new ArgumentNullException(nameof(rule));
             }
-            Contract.EndContractBlock();
 
             WriteLock();
 
@@ -579,7 +574,6 @@ nameof(modification),
             {
                 throw new ArgumentNullException(nameof(rule));
             }
-            Contract.EndContractBlock();
 
             WriteLock();
 
@@ -600,7 +594,6 @@ nameof(modification),
             {
                 throw new ArgumentNullException(nameof(rule));
             }
-            Contract.EndContractBlock();
 
             WriteLock();
 
@@ -621,7 +614,6 @@ nameof(modification),
             {
                 throw new ArgumentNullException(nameof(rule));
             }
-            Contract.EndContractBlock();
 
             WriteLock();
 
@@ -647,7 +639,6 @@ nameof(modification),
             {
                 throw new ArgumentNullException(nameof(rule));
             }
-            Contract.EndContractBlock();
 
             WriteLock();
 
@@ -673,7 +664,6 @@ nameof(modification),
             {
                 throw new ArgumentNullException(nameof(rule));
             }
-            Contract.EndContractBlock();
 
             if (_securityDescriptor == null)
             {
@@ -699,7 +689,6 @@ nameof(modification),
             {
                 throw new ArgumentNullException(nameof(rule));
             }
-            Contract.EndContractBlock();
 
             WriteLock();
 
@@ -720,7 +709,6 @@ nameof(modification),
             {
                 throw new ArgumentNullException(nameof(rule));
             }
-            Contract.EndContractBlock();
 
             WriteLock();
 
@@ -741,7 +729,6 @@ nameof(modification),
             {
                 throw new ArgumentNullException(nameof(rule));
             }
-            Contract.EndContractBlock();
 
             WriteLock();
 
@@ -762,7 +749,6 @@ nameof(modification),
             {
                 throw new ArgumentNullException(nameof(rule));
             }
-            Contract.EndContractBlock();
 
             WriteLock();
 
@@ -783,7 +769,6 @@ nameof(modification),
             {
                 throw new ArgumentNullException(nameof(rule));
             }
-            Contract.EndContractBlock();
 
             WriteLock();
 

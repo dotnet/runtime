@@ -5,7 +5,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
 namespace System.Diagnostics
 {
     public partial class StackFrame
@@ -52,7 +51,6 @@ namespace System.Diagnostics
         public override string ToString() { throw null; }
     }
 }
-
 namespace System.Diagnostics.SymbolStore
 {
     public partial interface ISymbolBinder
@@ -172,9 +170,9 @@ namespace System.Diagnostics.SymbolStore
         NativeSectionOffset = 10,
         NativeStackRegister = 8,
     }
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public readonly partial struct SymbolToken
     {
+        private readonly object _dummy;
         public SymbolToken(int val) { throw null; }
         public bool Equals(System.Diagnostics.SymbolStore.SymbolToken obj) { throw null; }
         public override bool Equals(object obj) { throw null; }

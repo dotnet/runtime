@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
@@ -11,256 +12,158 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     {
         public partial class CMethodIterator
         {
-            private SymbolLoader _pSymbolLoader;
-            private CSemanticChecker _pSemanticChecker;
+            private readonly SymbolLoader _symbolLoader;
+            private readonly CSemanticChecker _semanticChecker;
             // Inputs.
-            private AggregateType _pCurrentType;
-            private MethodOrPropertySymbol _pCurrentSym;
-            private AggregateDeclaration _pContext;
-            private TypeArray _pContainingTypes;
-            private CType _pQualifyingType;
-            private Name _pName;
-            private int _nArity;
-            private symbmask_t _mask;
-            private EXPRFLAG _flags;
+            private readonly AggregateDeclaration _context;
+            private readonly TypeArray _containingTypes;
+            private readonly CType _qualifyingType;
+            private readonly Name _name;
+            private readonly int _arity;
+            private readonly symbmask_t _mask;
+            private readonly EXPRFLAG _flags;
+            private readonly ArgInfos _nonTrailingNamedArguments;
             // Internal state.
-            private int _nCurrentTypeCount;
-            private bool _bIsCheckingInstanceMethods;
-            private bool _bAtEnd;
-            private bool _bAllowBogusAndInaccessible;
-            // Flags for the current sym.
-            private bool _bCurrentSymIsBogus;
-            private bool _bCurrentSymIsInaccessible;
-            // if Extension can be part of the results that are returned by the iterator
-            // this may be false if an applicable instance method was found by bindgrptoArgs
-            private bool _bcanIncludeExtensionsInResults;
+            private int _currentTypeIndex;
 
-            public CMethodIterator(CSemanticChecker checker, SymbolLoader symLoader, Name name, TypeArray containingTypes, CType @object, CType qualifyingType, AggregateDeclaration context, bool allowBogusAndInaccessible, bool allowExtensionMethods, int arity, EXPRFLAG flags, symbmask_t mask)
+            public CMethodIterator(CSemanticChecker checker, SymbolLoader symLoader, Name name, TypeArray containingTypes, CType qualifyingType, AggregateDeclaration context, int arity, EXPRFLAG flags, symbmask_t mask, ArgInfos nonTrailingNamedArguments)
             {
                 Debug.Assert(name != null);
                 Debug.Assert(symLoader != null);
                 Debug.Assert(checker != null);
                 Debug.Assert(containingTypes != null);
-                _pSemanticChecker = checker;
-                _pSymbolLoader = symLoader;
-                _pCurrentType = null;
-                _pCurrentSym = null;
-                _pName = name;
-                _pContainingTypes = containingTypes;
-                _pQualifyingType = qualifyingType;
-                _pContext = context;
-                _bAllowBogusAndInaccessible = allowBogusAndInaccessible;
-                _nArity = arity;
+                Debug.Assert(containingTypes.Count != 0);
+                _semanticChecker = checker;
+                _symbolLoader = symLoader;
+                _name = name;
+                _containingTypes = containingTypes;
+                _qualifyingType = qualifyingType;
+                _context = context;
+                _arity = arity;
                 _flags = flags;
                 _mask = mask;
-                _nCurrentTypeCount = 0;
-                _bIsCheckingInstanceMethods = true;
-                _bAtEnd = false;
-                _bCurrentSymIsBogus = false;
-                _bCurrentSymIsInaccessible = false;
-                _bcanIncludeExtensionsInResults = allowExtensionMethods;
+                _nonTrailingNamedArguments = nonTrailingNamedArguments;
             }
-            public MethodOrPropertySymbol GetCurrentSymbol()
-            {
-                return _pCurrentSym;
-            }
-            public AggregateType GetCurrentType()
-            {
-                return _pCurrentType;
-            }
-            public bool IsCurrentSymbolInaccessible()
-            {
-                return _bCurrentSymIsInaccessible;
-            }
-            public bool IsCurrentSymbolBogus()
-            {
-                return _bCurrentSymIsBogus;
-            }
-            public bool MoveNext(bool canIncludeExtensionsInResults)
-            {
-                if (_bcanIncludeExtensionsInResults)
-                {
-                    _bcanIncludeExtensionsInResults = canIncludeExtensionsInResults;
-                }
 
-                if (_bAtEnd)
-                {
-                    return false;
-                }
+            public MethodOrPropertySymbol CurrentSymbol { get; private set; }
 
-                if (_pCurrentType == null) // First guy.
+            public AggregateType CurrentType { get; private set; }
+
+            public bool IsCurrentSymbolInaccessible { get; private set; }
+
+            public bool IsCurrentSymbolBogus { get; private set; }
+
+            public bool IsCurrentSymbolMisnamed { get; private set; }
+
+            public bool MoveNext() => (CurrentType != null || FindNextTypeForInstanceMethods()) && FindNextMethod();
+
+            public bool AtEnd => CurrentSymbol == null;
+
+            public bool CanUseCurrentSymbol
+            {
+                get
                 {
-                    if (_pContainingTypes.Count == 0)
+                    // Make sure that whether we're seeing a ctor is consistent with the flag.
+                    // The only properties we handle are indexers.
+                    if (_mask == symbmask_t.MASK_MethodSymbol && (
+                            0 == (_flags & EXPRFLAG.EXF_CTOR) != !((MethodSymbol)CurrentSymbol).IsConstructor() ||
+                            0 == (_flags & EXPRFLAG.EXF_OPERATOR) != !((MethodSymbol)CurrentSymbol).isOperator) ||
+                        _mask == symbmask_t.MASK_PropertySymbol && !(CurrentSymbol is IndexerSymbol))
                     {
-                        // No instance methods, only extensions.
-                        _bIsCheckingInstanceMethods = false;
-                        _bAtEnd = true;
+                        // Get the next symbol.
                         return false;
                     }
-                    else
-                    {
-                        if (!FindNextTypeForInstanceMethods())
-                        {
-                            // No instance or extensions.
 
-                            _bAtEnd = true;
-                            return false;
+                    // If our arity is non-0, we must match arity with this symbol.
+                    if (_arity > 0 & _mask == symbmask_t.MASK_MethodSymbol && ((MethodSymbol)CurrentSymbol).typeVars.Count != _arity)
+                    {
+                        return false;
+                    }
+
+                    // If this guy's not callable, no good.
+                    if (!ExpressionBinder.IsMethPropCallable(CurrentSymbol, (_flags & EXPRFLAG.EXF_USERCALLABLE) != 0))
+                    {
+                        return false;
+                    }
+
+                    // Check access. If Sym is not accessible, then let it through and mark it.
+                    IsCurrentSymbolInaccessible = !_semanticChecker.CheckAccess(CurrentSymbol, CurrentType, _context, _qualifyingType);
+
+                    // Check bogus. If Sym is bogus, then let it through and mark it.
+                    IsCurrentSymbolBogus = CSemanticChecker.CheckBogus(CurrentSymbol);
+
+                    IsCurrentSymbolMisnamed = CheckArgumentNames();
+
+                    return true;
+                }
+            }
+
+            private bool CheckArgumentNames()
+            {
+                ArgInfos args = _nonTrailingNamedArguments;
+                if (args != null)
+                {
+                    List<Name> paramNames = ExpressionBinder.GroupToArgsBinder
+                        .FindMostDerivedMethod(_symbolLoader, CurrentSymbol, _qualifyingType)
+                        .ParameterNames;
+
+                    List<Expr> argExpressions = args.prgexpr;
+                    for (int i = 0; i < args.carg; i++)
+                    {
+                        if (argExpressions[i] is ExprNamedArgumentSpecification named)
+                        {
+                            // Either wrong name, or correct name but we have more params arguments to follow.
+                            if (paramNames[i] != named.Name || i == paramNames.Count - 1 && i != args.carg - 1)
+                            {
+                                return true;
+                            }
                         }
                     }
                 }
-                if (!FindNextMethod())
-                {
-                    _bAtEnd = true;
-                    return false;
-                }
-                return true;
-            }
-            public bool AtEnd()
-            {
-                return _pCurrentSym == null;
-            }
-            private CSemanticChecker GetSemanticChecker()
-            {
-                return _pSemanticChecker;
-            }
-            private SymbolLoader GetSymbolLoader()
-            {
-                return _pSymbolLoader;
-            }
-            public bool CanUseCurrentSymbol()
-            {
-                _bCurrentSymIsInaccessible = false;
-                _bCurrentSymIsBogus = false;
 
-                // Make sure that whether we're seeing a ctor is consistent with the flag.
-                // The only properties we handle are indexers.
-                if (_mask == symbmask_t.MASK_MethodSymbol && (
-                        0 == (_flags & EXPRFLAG.EXF_CTOR) != !((MethodSymbol)_pCurrentSym).IsConstructor() ||
-                        0 == (_flags & EXPRFLAG.EXF_OPERATOR) != !((MethodSymbol)_pCurrentSym).isOperator) ||
-                    _mask == symbmask_t.MASK_PropertySymbol && !(_pCurrentSym is IndexerSymbol))
-                {
-                    // Get the next symbol.
-                    return false;
-                }
-
-                // If our arity is non-0, we must match arity with this symbol.
-                if (_nArity > 0)
-                {
-                    if (_mask == symbmask_t.MASK_MethodSymbol && ((MethodSymbol)_pCurrentSym).typeVars.Count != _nArity)
-                    {
-                        return false;
-                    }
-                }
-
-                // If this guy's not callable, no good.
-                if (!ExpressionBinder.IsMethPropCallable(_pCurrentSym, (_flags & EXPRFLAG.EXF_USERCALLABLE) != 0))
-                {
-                    return false;
-                }
-
-                // Check access.
-                if (!GetSemanticChecker().CheckAccess(_pCurrentSym, _pCurrentType, _pContext, _pQualifyingType))
-                {
-                    // Sym is not accessible. However, if we're allowing inaccessible, then let it through and mark it.
-                    if (_bAllowBogusAndInaccessible)
-                    {
-                        _bCurrentSymIsInaccessible = true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-
-                // Check bogus.
-                if (CSemanticChecker.CheckBogus(_pCurrentSym))
-                {
-                    // Sym is bogus, but if we're allow it, then let it through and mark it.
-                    if (_bAllowBogusAndInaccessible)
-                    {
-                        _bCurrentSymIsBogus = true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-
-                return _bIsCheckingInstanceMethods;
+                return false;
             }
 
             private bool FindNextMethod()
             {
-                while (true)
+                for (;;)
                 {
-                    if (_pCurrentSym == null)
+                    CurrentSymbol = (CurrentSymbol == null
+                        ? _symbolLoader.LookupAggMember(_name, CurrentType.getAggregate(), _mask)
+                        : SymbolLoader.LookupNextSym(CurrentSymbol, CurrentType.getAggregate(), _mask)) as MethodOrPropertySymbol;
+
+                    // If we couldn't find a sym, we look up the type chain and get the next type.
+                    if (CurrentSymbol == null)
                     {
-                        _pCurrentSym = GetSymbolLoader().LookupAggMember(
-                                _pName, _pCurrentType.getAggregate(), _mask) as MethodOrPropertySymbol;
+                        if (!FindNextTypeForInstanceMethods())
+                        {
+                            return false;
+                        }
                     }
                     else
                     {
-                        _pCurrentSym = SymbolLoader.LookupNextSym(
-                                _pCurrentSym, _pCurrentType.getAggregate(), _mask) as MethodOrPropertySymbol;
+                        // Note that we do not filter the current symbol for the user. They must do that themselves.
+                        // This is because for instance, BindGrpToArgs wants to filter on arguments before filtering
+                        // on bogosity.
+
+                        // If we're here, we're good to go.
+
+                        return true;
                     }
-
-                    // If we couldn't find a sym, we look up the type chain and get the next type.
-                    if (_pCurrentSym == null)
-                    {
-                        if (_bIsCheckingInstanceMethods)
-                        {
-                            if (!FindNextTypeForInstanceMethods() && _bcanIncludeExtensionsInResults)
-                            {
-                                // We didn't find any more instance methods, set us into extension mode.
-
-                                _bIsCheckingInstanceMethods = false;
-                            }
-                            else if (_pCurrentType == null && !_bcanIncludeExtensionsInResults)
-                            {
-                                return false;
-                            }
-                            else
-                            {
-                                // Found an instance method.
-                                continue;
-                            }
-                        }
-                        continue;
-                    }
-
-                    // Note that we do not filter the current symbol for the user. They must do that themselves.
-                    // This is because for instance, BindGrpToArgs wants to filter on arguments before filtering
-                    // on bogosity.
-
-                    // If we're here, we're good to go.
-
-                    break;
                 }
-                return true;
             }
 
             private bool FindNextTypeForInstanceMethods()
             {
-                // Otherwise, search through other types listed as well as our base class.
-                if (_pContainingTypes.Count > 0)
+                if (_currentTypeIndex >= _containingTypes.Count)
                 {
-                    if (_nCurrentTypeCount >= _pContainingTypes.Count)
-                    {
-                        // No more types to check.
-                        _pCurrentType = null;
-                    }
-                    else
-                    {
-                        _pCurrentType = _pContainingTypes[_nCurrentTypeCount++] as AggregateType;
-                    }
+                    // No more types to check.
+                    CurrentType = null;
+                    return false;
                 }
-                else
-                {
-                    // We have no more types to consider, so check out the base class.
 
-                    _pCurrentType = _pCurrentType.GetBaseClass();
-                }
-                return _pCurrentType != null;
+                CurrentType = _containingTypes[_currentTypeIndex++] as AggregateType;
+                return true;
             }
         }
     }

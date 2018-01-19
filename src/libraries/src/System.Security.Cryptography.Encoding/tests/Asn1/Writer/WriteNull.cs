@@ -15,10 +15,12 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.CER)]
         public void VerifyWriteNull(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            writer.WriteNull();
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.WriteNull();
 
-            Verify(writer, "0500");
+                Verify(writer, "0500");
+            }
         }
 
         [Theory]
@@ -27,11 +29,12 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.CER)]
         public void VerifyWriteNull_EndOfContents(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-
-            AssertExtensions.Throws<ArgumentException>(
-                "tag",
-                () => writer.WriteNull(Asn1Tag.EndOfContents));
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteNull(Asn1Tag.EndOfContents));
+            }
         }
 
         [Theory]
@@ -40,11 +43,13 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.CER)]
         public void VerifyWriteNull_ConstructedIgnored(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            writer.WriteNull(new Asn1Tag(TagClass.ContextSpecific, 7, true));
-            writer.WriteNull(new Asn1Tag(UniversalTagNumber.Null, true));
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.WriteNull(new Asn1Tag(TagClass.ContextSpecific, 7, true));
+                writer.WriteNull(new Asn1Tag(UniversalTagNumber.Null, true));
 
-            Verify(writer, "87000500");
+                Verify(writer, "87000500");
+            }
         }
     }
 }

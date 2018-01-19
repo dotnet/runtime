@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Security.Principal;
@@ -433,8 +432,6 @@ namespace System.Security.Claims
                 throw new ArgumentNullException(nameof(claim));
             }
 
-            Contract.EndContractBlock();
-
             if (object.ReferenceEquals(claim.Subject, this))
             {
                 _instanceClaims.Add(claim);
@@ -457,8 +454,6 @@ namespace System.Security.Claims
             {
                 throw new ArgumentNullException(nameof(claims));
             }
-
-            Contract.EndContractBlock();
 
             foreach (Claim claim in claims)
             {
@@ -577,8 +572,6 @@ namespace System.Security.Claims
                 throw new ArgumentNullException(nameof(match));
             }
 
-            Contract.EndContractBlock();
-
             foreach (Claim claim in Claims)
             {
                 if (match(claim))
@@ -601,8 +594,6 @@ namespace System.Security.Claims
             {
                 throw new ArgumentNullException(nameof(type));
             }
-
-            Contract.EndContractBlock();
 
             foreach (Claim claim in Claims)
             {
@@ -629,8 +620,6 @@ namespace System.Security.Claims
                 throw new ArgumentNullException(nameof(match));
             }
 
-            Contract.EndContractBlock();
-
             foreach (Claim claim in Claims)
             {
                 if (match(claim))
@@ -655,8 +644,6 @@ namespace System.Security.Claims
             {
                 throw new ArgumentNullException(nameof(type));
             }
-
-            Contract.EndContractBlock();
 
             foreach (Claim claim in Claims)
             {
@@ -684,8 +671,6 @@ namespace System.Security.Claims
             {
                 throw new ArgumentNullException(nameof(match));
             }
-
-            Contract.EndContractBlock();
 
             foreach (Claim claim in Claims)
             {
@@ -718,8 +703,6 @@ namespace System.Security.Claims
             {
                 throw new ArgumentNullException(nameof(value));
             }
-
-            Contract.EndContractBlock();
 
             foreach (Claim claim in Claims)
             {

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process
+// Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Drawing
@@ -227,10 +227,10 @@ namespace System.Drawing
     {
         public static System.Drawing.BufferedGraphicsContext Current { get { throw null; } }
     }
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct CharacterRange
     {
-        public CharacterRange(int First, int Length) { throw null;}
+        private int _dummy;
+        public CharacterRange(int First, int Length) { throw null; }
         public int First { get { throw null; } set { } }
         public int Length { get { throw null; } set { } }
         public override bool Equals(object obj) { throw null; }
@@ -280,7 +280,7 @@ namespace System.Drawing
         SourcePaint = 15597702,
         Whiteness = 16711778,
     }
-    public sealed partial class Font : System.MarshalByRefObject, System.ICloneable, System.IDisposable, Runtime.Serialization.ISerializable
+    public sealed partial class Font : System.MarshalByRefObject, System.ICloneable, System.IDisposable, System.Runtime.Serialization.ISerializable
     {
         public Font(System.Drawing.Font prototype, System.Drawing.FontStyle newStyle) { }
         public Font(System.Drawing.FontFamily family, float emSize) { }
@@ -337,7 +337,7 @@ namespace System.Drawing
         public float GetHeight() { throw null; }
         public float GetHeight(System.Drawing.Graphics graphics) { throw null; }
         public float GetHeight(float dpi) { throw null; }
-        void Runtime.Serialization.ISerializable.GetObjectData(Runtime.Serialization.SerializationInfo info, Runtime.Serialization.StreamingContext context) { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
         public System.IntPtr ToHfont() { throw null; }
         public void ToLogFont(object logFont) { }
         public void ToLogFont(object logFont, System.Drawing.Graphics graphics) { }
@@ -592,7 +592,7 @@ namespace System.Drawing
         public System.Drawing.SizeF MeasureString(string text, System.Drawing.Font font, System.Drawing.PointF origin, System.Drawing.StringFormat stringFormat) { throw null; }
         public System.Drawing.SizeF MeasureString(string text, System.Drawing.Font font, System.Drawing.SizeF layoutArea) { throw null; }
         public System.Drawing.SizeF MeasureString(string text, System.Drawing.Font font, System.Drawing.SizeF layoutArea, System.Drawing.StringFormat stringFormat) { throw null; }
-        public System.Drawing.SizeF MeasureString(string text, System.Drawing.Font font, System.Drawing.SizeF layoutArea, System.Drawing.StringFormat stringFormat, out int charactersFitted, out int linesFilled) { charactersFitted = default(int); linesFilled = default(int); throw null; }
+        public System.Drawing.SizeF MeasureString(string text, System.Drawing.Font font, System.Drawing.SizeF layoutArea, System.Drawing.StringFormat stringFormat, out int charactersFitted, out int linesFilled) { throw null; }
         public System.Drawing.SizeF MeasureString(string text, System.Drawing.Font font, int width) { throw null; }
         public System.Drawing.SizeF MeasureString(string text, System.Drawing.Font font, int width, System.Drawing.StringFormat format) { throw null; }
         public void MultiplyTransform(System.Drawing.Drawing2D.Matrix matrix) { }
@@ -638,7 +638,7 @@ namespace System.Drawing
         Point = 3,
         World = 0,
     }
-    public sealed partial class Icon : System.MarshalByRefObject, System.ICloneable, System.IDisposable, Runtime.Serialization.ISerializable
+    public sealed partial class Icon : System.MarshalByRefObject, System.ICloneable, System.IDisposable, System.Runtime.Serialization.ISerializable
     {
         public Icon(System.Drawing.Icon original, System.Drawing.Size size) { }
         public Icon(System.Drawing.Icon original, int width, int height) { }
@@ -661,8 +661,8 @@ namespace System.Drawing
         public static System.Drawing.Icon ExtractAssociatedIcon(string filePath) { throw null; }
         ~Icon() { }
         public static System.Drawing.Icon FromHandle(System.IntPtr handle) { throw null; }
-        void Runtime.Serialization.ISerializable.GetObjectData(Runtime.Serialization.SerializationInfo info, Runtime.Serialization.StreamingContext context) { }
         public void Save(System.IO.Stream outputStream) { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.Drawing.Bitmap ToBitmap() { throw null; }
         public override string ToString() { throw null; }
     }
@@ -672,7 +672,7 @@ namespace System.Drawing
         void ReleaseHdc();
     }
     [System.ComponentModel.ImmutableObjectAttribute(true)]
-    public abstract partial class Image : System.MarshalByRefObject, System.ICloneable, System.IDisposable, Runtime.Serialization.ISerializable
+    public abstract partial class Image : System.MarshalByRefObject, System.ICloneable, System.IDisposable, System.Runtime.Serialization.ISerializable
     {
         internal Image() { }
         [System.ComponentModel.BrowsableAttribute(false)]
@@ -716,7 +716,6 @@ namespace System.Drawing
         public System.Drawing.RectangleF GetBounds(ref System.Drawing.GraphicsUnit pageUnit) { throw null; }
         public System.Drawing.Imaging.EncoderParameters GetEncoderParameterList(System.Guid encoder) { throw null; }
         public int GetFrameCount(System.Drawing.Imaging.FrameDimension dimension) { throw null; }
-        void Runtime.Serialization.ISerializable.GetObjectData(Runtime.Serialization.SerializationInfo info, Runtime.Serialization.StreamingContext context) { }
         public static int GetPixelFormatSize(System.Drawing.Imaging.PixelFormat pixfmt) { throw null; }
         public System.Drawing.Imaging.PropertyItem GetPropertyItem(int propid) { throw null; }
         public System.Drawing.Image GetThumbnailImage(int thumbWidth, int thumbHeight, System.Drawing.Image.GetThumbnailImageAbort callback, System.IntPtr callbackData) { throw null; }
@@ -734,6 +733,7 @@ namespace System.Drawing
         public void SaveAdd(System.Drawing.Imaging.EncoderParameters encoderParams) { }
         public int SelectActiveFrame(System.Drawing.Imaging.FrameDimension dimension, int frameIndex) { throw null; }
         public void SetPropertyItem(System.Drawing.Imaging.PropertyItem propitem) { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public delegate bool GetThumbnailImageAbort();
     }
     public sealed partial class ImageAnimator
@@ -1043,7 +1043,7 @@ namespace System.Drawing
         public object Clone() { throw null; }
         public void Dispose() { }
         ~StringFormat() { }
-        public float[] GetTabStops(out float firstTabOffset) { firstTabOffset = default(float); throw null; }
+        public float[] GetTabStops(out float firstTabOffset) { throw null; }
         public void SetDigitSubstitution(int language, System.Drawing.StringDigitSubstitute substitute) { }
         public void SetMeasurableCharacterRanges(System.Drawing.CharacterRange[] ranges) { }
         public void SetTabStops(float firstTabOffset, float[] tabStops) { }
@@ -1337,7 +1337,7 @@ namespace System.Drawing.Drawing2D
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         ~CustomLineCap() { }
-        public void GetStrokeCaps(out System.Drawing.Drawing2D.LineCap startCap, out System.Drawing.Drawing2D.LineCap endCap) { startCap = default(System.Drawing.Drawing2D.LineCap); endCap = default(System.Drawing.Drawing2D.LineCap); }
+        public void GetStrokeCaps(out System.Drawing.Drawing2D.LineCap startCap, out System.Drawing.Drawing2D.LineCap endCap) { throw null; }
         public void SetStrokeCaps(System.Drawing.Drawing2D.LineCap startCap, System.Drawing.Drawing2D.LineCap endCap) { }
     }
     public enum DashCap
@@ -1479,10 +1479,10 @@ namespace System.Drawing.Drawing2D
         ~GraphicsPathIterator() { }
         public bool HasCurve() { throw null; }
         public int NextMarker(System.Drawing.Drawing2D.GraphicsPath path) { throw null; }
-        public int NextMarker(out int startIndex, out int endIndex) { startIndex = default(int); endIndex = default(int); throw null; }
-        public int NextPathType(out byte pathType, out int startIndex, out int endIndex) { pathType = default(byte); startIndex = default(int); endIndex = default(int); throw null; }
-        public int NextSubpath(System.Drawing.Drawing2D.GraphicsPath path, out bool isClosed) { isClosed = default(bool); throw null; }
-        public int NextSubpath(out int startIndex, out int endIndex, out bool isClosed) { startIndex = default(int); endIndex = default(int); isClosed = default(bool); throw null; }
+        public int NextMarker(out int startIndex, out int endIndex) { throw null; }
+        public int NextPathType(out byte pathType, out int startIndex, out int endIndex) { throw null; }
+        public int NextSubpath(System.Drawing.Drawing2D.GraphicsPath path, out bool isClosed) { throw null; }
+        public int NextSubpath(out int startIndex, out int endIndex, out bool isClosed) { throw null; }
         public void Rewind() { }
     }
     public sealed partial class GraphicsState : System.MarshalByRefObject
@@ -2519,8 +2519,9 @@ namespace System.Drawing.Printing
     }
     public partial class InvalidPrinterException : System.SystemException
     {
-        protected InvalidPrinterException(Runtime.Serialization.SerializationInfo info, Runtime.Serialization.StreamingContext context) { }
         public InvalidPrinterException(System.Drawing.Printing.PrinterSettings settings) { }
+        protected InvalidPrinterException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class Margins : System.ICloneable
     {

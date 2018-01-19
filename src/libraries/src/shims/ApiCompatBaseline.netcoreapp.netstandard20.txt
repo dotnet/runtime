@@ -1,5 +1,7 @@
 Compat issues with assembly mscorlib:
+TypeCannotChangeClassification : Type 'System.RuntimeArgumentHandle' is a 'ref struct' in the implementation but is a 'struct' in the contract.
 TypesMustExist : Type 'System.TupleExtensions' does not exist in the implementation but it does exist in the contract.
+TypeCannotChangeClassification : Type 'System.TypedReference' is a 'ref struct' in the implementation but is a 'struct' in the contract.
 TypesMustExist : Type 'System.ValueTuple' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ValueTuple<T1>' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ValueTuple<T1, T2>' does not exist in the implementation but it does exist in the contract.
@@ -10,8 +12,11 @@ TypesMustExist : Type 'System.ValueTuple<T1, T2, T3, T4, T5, T6>' does not exist
 TypesMustExist : Type 'System.ValueTuple<T1, T2, T3, T4, T5, T6, T7>' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.CompilerServices.TupleElementNamesAttribute' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly netstandard:
+TypeCannotChangeClassification : Type 'System.RuntimeArgumentHandle' is a 'ref struct' in the implementation but is a 'struct' in the contract.
+TypeCannotChangeClassification : Type 'System.TypedReference' is a 'ref struct' in the implementation but is a 'struct' in the contract.
 Compat issues with assembly System.Core:
 TypesMustExist : Type 'System.Security.Cryptography.ECCurve' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.ECParameters' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.ECPoint' does not exist in the implementation but it does exist in the contract.
-Total Issues: 14
+Total Issues: 18

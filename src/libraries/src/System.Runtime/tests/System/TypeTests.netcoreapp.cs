@@ -219,6 +219,7 @@ namespace System.Tests
                 Type theT = typeof(Outside<>).GetTypeInfo().GenericTypeParameters[0];
 
                 yield return new object[] { typeof(TypedReference), true };
+                yield return new object[] { typeof(RuntimeArgumentHandle), true };
                 yield return new object[] { typeof(Span<>), true };
                 yield return new object[] { typeof(Span<int>), true };
                 yield return new object[] { typeof(Span<>).MakeGenericType(theT), true };

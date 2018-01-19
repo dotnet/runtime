@@ -1,0 +1,23 @@
+<!-- Not a bug. clrcompression.dll is a native components that ship as part of the package. -->
+clrcompression.dll!BrotliDecoderCreateInstance
+clrcompression.dll!BrotliDecoderDecompress
+clrcompression.dll!BrotliDecoderDecompressStream
+clrcompression.dll!BrotliDecoderDestroyInstance
+clrcompression.dll!BrotliDecoderErrorString
+clrcompression.dll!BrotliDecoderGetErrorCode
+clrcompression.dll!BrotliDecoderHasMoreOutput
+clrcompression.dll!BrotliDecoderIsFinished
+clrcompression.dll!BrotliDecoderIsUsed
+clrcompression.dll!BrotliDecoderSetParameter
+clrcompression.dll!BrotliDecoderTakeOutput
+clrcompression.dll!BrotliDecoderVersion
+clrcompression.dll!BrotliEncoderCompress
+clrcompression.dll!BrotliEncoderCompressStream
+clrcompression.dll!BrotliEncoderCreateInstance
+clrcompression.dll!BrotliEncoderDestroyInstance
+clrcompression.dll!BrotliEncoderHasMoreOutput
+clrcompression.dll!BrotliEncoderIsFinished
+clrcompression.dll!BrotliEncoderMaxCompressedSize
+clrcompression.dll!BrotliEncoderSetParameter
+clrcompression.dll!BrotliEncoderTakeOutput
+clrcompression.dll!BrotliEncoderVersion

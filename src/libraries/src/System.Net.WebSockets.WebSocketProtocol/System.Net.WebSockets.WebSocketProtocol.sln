@@ -1,0 +1,55 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27214.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebSockets.WebSocketProtocol", "src\System.Net.WebSockets.WebSocketProtocol.csproj", "{747BE014-7C1D-4460-95AF-B41C35717165}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{D5A36F24-E27C-43DF-8658-10C5290423E0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{9D10D7AD-2F8C-4F7A-B0FA-E5EB3ECE287F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebSockets.WebSocketProtocol", "ref\System.Net.WebSockets.WebSocketProtocol.csproj", "{4EDBE9F5-D10A-4553-AE24-2E0E946B15B0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{F47347C3-433C-4D3B-90F9-487FE7F4F444}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebSockets.WebSocketProtocol.Tests", "tests\System.Net.WebSockets.WebSocketProtocol.Tests.csproj", "{CF73547B-07D2-4290-A14A-CA2A354F4D21}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		netstandard-Debug|Any CPU = netstandard-Debug|Any CPU
+		netstandard-Release|Any CPU = netstandard-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{747BE014-7C1D-4460-95AF-B41C35717165}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{747BE014-7C1D-4460-95AF-B41C35717165}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{747BE014-7C1D-4460-95AF-B41C35717165}.netstandard-Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{747BE014-7C1D-4460-95AF-B41C35717165}.netstandard-Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{747BE014-7C1D-4460-95AF-B41C35717165}.netstandard-Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{747BE014-7C1D-4460-95AF-B41C35717165}.netstandard-Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{4EDBE9F5-D10A-4553-AE24-2E0E946B15B0}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{4EDBE9F5-D10A-4553-AE24-2E0E946B15B0}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{4EDBE9F5-D10A-4553-AE24-2E0E946B15B0}.netstandard-Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{4EDBE9F5-D10A-4553-AE24-2E0E946B15B0}.netstandard-Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{4EDBE9F5-D10A-4553-AE24-2E0E946B15B0}.netstandard-Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{4EDBE9F5-D10A-4553-AE24-2E0E946B15B0}.netstandard-Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{CF73547B-07D2-4290-A14A-CA2A354F4D21}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{CF73547B-07D2-4290-A14A-CA2A354F4D21}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{CF73547B-07D2-4290-A14A-CA2A354F4D21}.netstandard-Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{CF73547B-07D2-4290-A14A-CA2A354F4D21}.netstandard-Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{CF73547B-07D2-4290-A14A-CA2A354F4D21}.netstandard-Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{CF73547B-07D2-4290-A14A-CA2A354F4D21}.netstandard-Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{747BE014-7C1D-4460-95AF-B41C35717165} = {D5A36F24-E27C-43DF-8658-10C5290423E0}
+		{4EDBE9F5-D10A-4553-AE24-2E0E946B15B0} = {9D10D7AD-2F8C-4F7A-B0FA-E5EB3ECE287F}
+		{CF73547B-07D2-4290-A14A-CA2A354F4D21} = {F47347C3-433C-4D3B-90F9-487FE7F4F444}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6618B298-BA53-4E58-9795-756C6DC1BA38}
+	EndGlobalSection
+EndGlobal

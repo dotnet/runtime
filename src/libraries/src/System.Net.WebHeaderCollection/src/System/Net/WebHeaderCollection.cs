@@ -227,9 +227,71 @@ namespace System.Net
             return InnerCollection.GetValues(index);
         }
 
+        // GetValues
+        // Routine Description:
+        //     This method takes a header name and returns a string array representing
+        //     the individual values for that headers. For example, if the headers
+        //     contained the line Accept: text/plain, text/html then
+        //     GetValues("Accept") would return an array of two strings: "text/plain"
+        //     and "text/html".
+        // Arguments:
+        //     header      - Name of the header.
+        // Return Value:
+        //     string[] - array of parsed string objects
         public override string[] GetValues(string header)
         {
-            return InnerCollection.GetValues(header);
+            // First get the information about the header and the values for
+            // the header.
+            HeaderInfo info = HeaderInfo[header];
+            string[] values = InnerCollection.GetValues(header);
+            // If we have no information about the header or it doesn't allow
+            // multiple values, just return the values.
+            if (info == null || values == null || !info.AllowMultiValues)
+            {
+                return values;
+            }
+            // Here we have a multi value header. We need to go through
+            // each entry in the multi values array, and if an entry itself
+            // has multiple values we'll need to combine those in.
+            //
+            // We do some optimazation here, where we try not to copy the
+            // values unless there really is one that have multiple values.
+            string[] tempValues;
+            List<string> valueList = null;
+            for (int i = 0; i < values.Length; i++)
+            {
+                // Parse this value header.
+                tempValues = info.Parser(values[i]);
+                // If we don't have an array list yet, see if this
+                // value has multiple values.
+                if (valueList == null)
+                {
+                    // If it's not empty, replace valueList.
+                    // Because for invalid WebRequest headers, we will return empty
+                    // valueList instead of the default NameValueCollection.GetValues().
+                    if (tempValues != null)
+                    {
+                        // It does, so we need to create an array list that
+                        // represents the Values, then trim out this one and
+                        // the ones after it that haven't been parsed yet.
+                        valueList = new List<string>(values);
+                        valueList.RemoveRange(i, values.Length - i);
+                        valueList.AddRange(tempValues);
+                    }
+                }
+                else
+                {
+                    // We already have an List, so just add the values.
+                    valueList.AddRange(tempValues);
+                }
+            }
+            // See if we have an List. If we don't, just return the values.
+            // Otherwise convert the List to a string array and return that.
+            if (valueList != null)
+            {
+                return valueList.ToArray();
+            }
+            return values;
         }
 
         public override string GetKey(int index)

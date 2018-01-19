@@ -17,7 +17,6 @@ using Microsoft.Win32.SafeHandles;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -385,7 +384,6 @@ namespace System.Security.AccessControl
             {
                 throw new ArgumentNullException(nameof(privilegeName));
             }
-            Contract.EndContractBlock();
 
             this.luid = LuidFromPrivilege(privilegeName);
         }
@@ -647,7 +645,6 @@ namespace System.Security.AccessControl
             {
                 throw new ArgumentNullException( "helper" );
             }
-            Contract.EndContractBlock();
             
             Privilege p = new Privilege( privilege );
 

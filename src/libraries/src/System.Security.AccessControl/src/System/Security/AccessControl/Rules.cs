@@ -6,7 +6,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Security.Principal;
-using System.Diagnostics.Contracts;
 
 namespace System.Security.AccessControl
 {
@@ -64,7 +63,6 @@ nameof(inheritanceFlags),
 nameof(propagationFlags),
                     SR.Format(SR.Argument_InvalidEnumValue, inheritanceFlags, "PropagationFlags"));
             }
-            Contract.EndContractBlock();
 
             if (identity.IsValidTargetType(typeof(SecurityIdentifier)) == false)
             {
@@ -161,7 +159,6 @@ nameof(inheritanceFlags),
 nameof(propagationFlags),
                     SR.Format(SR.Argument_InvalidEnumValue, inheritanceFlags, "PropagationFlags"));
             }
-            Contract.EndContractBlock();
 
             _type = type;
         }

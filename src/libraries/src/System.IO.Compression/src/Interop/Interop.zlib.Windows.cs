@@ -11,26 +11,26 @@ internal static partial class Interop
     {
         private static readonly byte[] ZLibVersion = { (byte)'1', (byte)'.', (byte)'2', (byte)'.', (byte)'3', 0 };
 
-        [DllImport(Libraries.Zlib)]
+        [DllImport(Libraries.CompressionNative)]
         private extern static unsafe int deflateInit2_(byte* stream, int level, int method, int windowBits, int memLevel, int strategy,
                                                 byte* version, int stream_size);
 
-        [DllImport(Libraries.Zlib)]
+        [DllImport(Libraries.CompressionNative)]
         private extern static unsafe int deflate(byte* stream, int flush);
 
-        [DllImport(Libraries.Zlib)]
+        [DllImport(Libraries.CompressionNative)]
         private extern static unsafe int deflateEnd(byte* strm);
 
-        [DllImport(Libraries.Zlib)]
+        [DllImport(Libraries.CompressionNative)]
         internal extern static unsafe uint crc32(uint crc, byte* buffer, int len);
 
-        [DllImport(Libraries.Zlib)]
+        [DllImport(Libraries.CompressionNative)]
         private extern static unsafe int inflateInit2_(byte* stream, int windowBits, byte* version, int stream_size);
 
-        [DllImport(Libraries.Zlib)]
+        [DllImport(Libraries.CompressionNative)]
         private extern static unsafe int inflate(byte* stream, int flush);
 
-        [DllImport(Libraries.Zlib)]
+        [DllImport(Libraries.CompressionNative)]
         private extern static unsafe int inflateEnd(byte* stream);
 
         internal static unsafe ZLibNative.ErrorCode DeflateInit2_(

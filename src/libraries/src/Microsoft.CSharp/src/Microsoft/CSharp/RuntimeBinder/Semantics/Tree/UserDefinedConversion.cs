@@ -18,10 +18,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Argument = argument;
             UserDefinedCall = call;
             UserDefinedCallMethod = method;
-            if (call.HasError)
-            {
-                SetError();
-            }
         }
 
         public Expr Argument { get; set; }

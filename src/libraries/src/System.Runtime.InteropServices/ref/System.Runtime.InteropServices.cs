@@ -139,9 +139,9 @@ namespace System.Runtime.InteropServices
         public AutomationProxyAttribute(bool val) { }
         public bool Value { get { throw null; } }
     }     
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct ArrayWithOffset
     {
+        private object _dummy;
         public ArrayWithOffset(object array, int offset) { throw null; }
         public override bool Equals(object obj) { throw null; }
         public bool Equals(System.Runtime.InteropServices.ArrayWithOffset obj) { throw null; }
@@ -415,6 +415,7 @@ namespace System.Runtime.InteropServices
     }
     public struct HandleRef
     {
+        private object _dummy;
         public HandleRef(object wrapper, System.IntPtr handle) : this() { }
         public System.IntPtr Handle { get; }
         public object Wrapper { get; }

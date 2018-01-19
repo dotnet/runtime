@@ -6,11 +6,9 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Globalization;
-using System.Diagnostics.Contracts;
 
 namespace System.IO
 {
-    [Pure]
     internal static class Error
     {
         // An alternative to Win32Marshal with friendlier messages for drives
