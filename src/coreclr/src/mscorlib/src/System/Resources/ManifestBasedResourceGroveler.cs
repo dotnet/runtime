@@ -357,11 +357,10 @@ namespace System.Resources
             sb.Append(name);
 
             String givenName = sb.ToString();
-            CompareInfo comparer = CultureInfo.InvariantCulture.CompareInfo;
             String canonicalName = null;
             foreach (String existingName in satellite.GetManifestResourceNames())
             {
-                if (comparer.Compare(existingName, givenName, CompareOptions.IgnoreCase) == 0)
+                if (String.Equals(existingName, givenName, StringComparison.InvariantCultureIgnoreCase))
                 {
                     if (canonicalName == null)
                     {

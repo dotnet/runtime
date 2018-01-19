@@ -395,10 +395,10 @@ namespace System
                     return CultureInfo.CurrentCulture.CompareInfo.Compare(strA, strB, CompareOptions.IgnoreCase);
 
                 case StringComparison.InvariantCulture:
-                    return CultureInfo.InvariantCulture.CompareInfo.Compare(strA, strB, CompareOptions.None);
+                    return CompareInfo.Invariant.Compare(strA, strB, CompareOptions.None);
 
                 case StringComparison.InvariantCultureIgnoreCase:
-                    return CultureInfo.InvariantCulture.CompareInfo.Compare(strA, strB, CompareOptions.IgnoreCase);
+                    return CompareInfo.Invariant.Compare(strA, strB, CompareOptions.IgnoreCase);
 
                 case StringComparison.Ordinal:
                     // Most common case: first character is different.
@@ -592,10 +592,10 @@ namespace System
                     return CultureInfo.CurrentCulture.CompareInfo.Compare(strA, indexA, lengthA, strB, indexB, lengthB, CompareOptions.IgnoreCase);
 
                 case StringComparison.InvariantCulture:
-                    return CultureInfo.InvariantCulture.CompareInfo.Compare(strA, indexA, lengthA, strB, indexB, lengthB, CompareOptions.None);
+                    return CompareInfo.Invariant.Compare(strA, indexA, lengthA, strB, indexB, lengthB, CompareOptions.None);
 
                 case StringComparison.InvariantCultureIgnoreCase:
-                    return CultureInfo.InvariantCulture.CompareInfo.Compare(strA, indexA, lengthA, strB, indexB, lengthB, CompareOptions.IgnoreCase);
+                    return CompareInfo.Invariant.Compare(strA, indexA, lengthA, strB, indexB, lengthB, CompareOptions.IgnoreCase);
 
                 case StringComparison.Ordinal:
                     return CompareOrdinalHelper(strA, indexA, lengthA, strB, indexB, lengthB);
@@ -771,10 +771,10 @@ namespace System
                     return CultureInfo.CurrentCulture.CompareInfo.IsSuffix(this, value, CompareOptions.IgnoreCase);
 
                 case StringComparison.InvariantCulture:
-                    return CultureInfo.InvariantCulture.CompareInfo.IsSuffix(this, value, CompareOptions.None);
+                    return CompareInfo.Invariant.IsSuffix(this, value, CompareOptions.None);
 
                 case StringComparison.InvariantCultureIgnoreCase:
-                    return CultureInfo.InvariantCulture.CompareInfo.IsSuffix(this, value, CompareOptions.IgnoreCase);
+                    return CompareInfo.Invariant.IsSuffix(this, value, CompareOptions.IgnoreCase);
 
                 case StringComparison.Ordinal:
                     return this.Length < value.Length ? false : (CompareOrdinalHelper(this, this.Length - value.Length, value.Length, value, 0, value.Length) == 0);
@@ -867,10 +867,10 @@ namespace System
                     return (CultureInfo.CurrentCulture.CompareInfo.Compare(this, value, CompareOptions.IgnoreCase) == 0);
 
                 case StringComparison.InvariantCulture:
-                    return (CultureInfo.InvariantCulture.CompareInfo.Compare(this, value, CompareOptions.None) == 0);
+                    return (CompareInfo.Invariant.Compare(this, value, CompareOptions.None) == 0);
 
                 case StringComparison.InvariantCultureIgnoreCase:
-                    return (CultureInfo.InvariantCulture.CompareInfo.Compare(this, value, CompareOptions.IgnoreCase) == 0);
+                    return (CompareInfo.Invariant.Compare(this, value, CompareOptions.IgnoreCase) == 0);
 
                 case StringComparison.Ordinal:
                     if (this.Length != value.Length)
@@ -935,10 +935,10 @@ namespace System
                     return (CultureInfo.CurrentCulture.CompareInfo.Compare(a, b, CompareOptions.IgnoreCase) == 0);
 
                 case StringComparison.InvariantCulture:
-                    return (CultureInfo.InvariantCulture.CompareInfo.Compare(a, b, CompareOptions.None) == 0);
+                    return (CompareInfo.Invariant.Compare(a, b, CompareOptions.None) == 0);
 
                 case StringComparison.InvariantCultureIgnoreCase:
-                    return (CultureInfo.InvariantCulture.CompareInfo.Compare(a, b, CompareOptions.IgnoreCase) == 0);
+                    return (CompareInfo.Invariant.Compare(a, b, CompareOptions.IgnoreCase) == 0);
 
                 case StringComparison.Ordinal:
                     if (a.Length != b.Length)
@@ -1090,10 +1090,10 @@ namespace System
                     return CultureInfo.CurrentCulture.CompareInfo.IsPrefix(this, value, CompareOptions.IgnoreCase);
 
                 case StringComparison.InvariantCulture:
-                    return CultureInfo.InvariantCulture.CompareInfo.IsPrefix(this, value, CompareOptions.None);
+                    return CompareInfo.Invariant.IsPrefix(this, value, CompareOptions.None);
 
                 case StringComparison.InvariantCultureIgnoreCase:
-                    return CultureInfo.InvariantCulture.CompareInfo.IsPrefix(this, value, CompareOptions.IgnoreCase);
+                    return CompareInfo.Invariant.IsPrefix(this, value, CompareOptions.IgnoreCase);
 
                 case StringComparison.Ordinal:
                     if (this.Length < value.Length || _firstChar != value._firstChar)
