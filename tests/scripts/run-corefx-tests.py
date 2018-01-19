@@ -120,9 +120,6 @@ def validate_args(args):
     validate_arg(build_type, lambda item: item in valid_build_types)
     validate_arg(fx_branch, lambda item: True)
 
-    if fx_commit is None:
-        fx_commit = 'HEAD'
-
     if clr_root is None:
         clr_root = nth_dirname(os.path.abspath(sys.argv[0]), 3)
     else:
@@ -198,6 +195,53 @@ def main(args):
                              'Product',
                              '%s.%s.%s' % (clr_os, arch, build_type))
 
+    # If the user doesn't specify a specific corefx commit hash to use, try to find the matching
+    # commit hash in the coreclr repro. If the matching hash can't be found, use 'HEAD'.
+    #
+    # We find the matching corefx commit hash by first parsing file 'dependencies.props' at the root
+    # of the coreclr repro, looking for this:
+    #    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview1-26112-01</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
+    # This determines the corefx package version that matches. Next, we look for the version.txt
+    # file in the package cache, e.g.,
+    #    <coreclr_root>\packages\microsoft.private.corefx.netcoreapp\4.5.0-preview1-26112-01\version.txt
+    # The contents of this file is exactly the git commit hash we need to use, e.g.:
+    #    197a0699b08087ea85581679afdd9fd7b5c465c3
+    # The version.txt file is created when the corefx package is restored, which happens when doing one of:
+    #    Windows: tests\runtests.cmd GenerateLayoutOnly
+    #    non-Windows: build-test.sh generatelayoutonly
+    #
+    # It would also be possible to not depend on the package already being downloaded, but instead
+    # download the correct package here, using the determined "MicrosoftPrivateCoreFxNETCoreAppPackageVersion"
+    # package version, e.g.:
+    #    https://dotnet.myget.org/F/dotnet-core/api/v2/package/Microsoft.Private.CoreFx.NETCoreApp/4.5.0-preview1-26112-01
+    # and then extracting the ZIP archive to find the version.txt file.
+    #
+    # This might get easier if the corefx commit hash is added directly to dependencies.props, as
+    # discussed in https://github.com/dotnet/buildtools/issues/1141.
+
+    if fx_commit is None:
+        # Default to 'HEAD'; overwrite if we find an actual commit hash.
+        fx_commit = 'HEAD'
+        try:
+            dependencies_filename = os.path.join(clr_root, 'dependencies.props')
+            if os.path.isfile(dependencies_filename):
+                with open(dependencies_filename, 'r') as dependencies_file_handle:
+                    dependencies_file = dependencies_file_handle.read()
+                matchObj = re.search(r'.*<MicrosoftPrivateCoreFxNETCoreAppPackageVersion>(.+)</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>.*', dependencies_file)
+                if matchObj:
+                    package_version_string = matchObj.group(1)
+                    version_filename = os.path.join(clr_root, 'packages', 'microsoft.private.corefx.netcoreapp', package_version_string, 'version.txt')
+                    if os.path.isfile(version_filename):
+                        with open(version_filename, 'r') as f:
+                            version_file = f.readlines()
+                        fx_commit = version_file[0].strip()
+                        log("Using matching corefx commit hash: %s" % fx_commit)
+        except:
+            log("Failed to find matching corefx commit hash")
+
+        if fx_commit == 'HEAD':
+            log("Using default corefx commit hash: HEAD")
+
     # corefx creates both files that are read-only and files that include non-ascii
     # characters. Using onerror=del_rw allows us to delete all of the read-only files.
     # To delete the files with non-ascii characters, when rmtree fails due to those
@@ -250,9 +294,6 @@ def main(args):
         os.putenv('HOME', fx_home)
         log('HOME=' + fx_home)
 
-    # Determine the RID to specify the to corefix build scripts.  This seems to
-    # be way harder than it ought to be.
- 
     # Gather up some arguments to pass to both build and build-tests.
 
     config_args = '-Release -os:%s -buildArch:%s' % (clr_os, arch)
