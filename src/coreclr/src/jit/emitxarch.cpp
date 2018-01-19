@@ -2916,179 +2916,330 @@ void emitter::emitInsStoreLcl(instruction ins, emitAttr attr, GenTreeLclVarCommo
     codeGen->genUpdateLife(varNode);
 }
 
-// The callee must call genConsumeReg() for all sources, including address registers
-// of both source and destination, and genProduceReg() for the destination register, if any.
-
+//------------------------------------------------------------------------
+// emitInsBinary: Emits an instruction for a node which takes two operands
+//
+// Arguments:
+//    ins - the instruction to emit
+//    attr - the instruction operand size
+//    dst - the destination and first source operand
+//    src - the second source operand
+//
+// Assumptions:
+//  i) caller of this routine needs to call genConsumeReg()
+// ii) caller of this routine needs to call genProduceReg()
 regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src)
 {
-    // dst can only be a reg or modrm
-    assert(!dst->isContained() || dst->isUsedFromMemory() || instrIs3opImul(ins)); // dst on these isn't really the dst
+    // We can only have one memory operand and only src can be a constant operand
+    // However, the handling for a given operand type (mem, cns, or other) is fairly
+    // consistent regardless of whether they are src or dst. As such, we will find
+    // the type of each operand and only check them against src/dst where relevant.
 
-#ifdef DEBUG
-    // src can be anything but both src and dst cannot be addr modes
-    // or at least cannot be contained addr modes
-    if (dst->isUsedFromMemory())
+    GenTree* memOp   = nullptr;
+    GenTree* cnsOp   = nullptr;
+    GenTree* otherOp = nullptr;
+
+    if (dst->isContained() || (dst->isLclField() && (dst->gtRegNum == REG_NA)) || dst->isUsedFromSpillTemp())
     {
+        // dst can only be a modrm
+        assert(dst->isUsedFromMemory() || (dst->gtRegNum == REG_NA) ||
+               instrIs3opImul(ins)); // dst on 3opImul isn't really the dst
         assert(!src->isUsedFromMemory());
-    }
 
-    if (src->isUsedFromMemory())
-    {
-        assert(!dst->isUsedFromMemory());
-    }
-#endif
+        memOp = dst;
 
-    // find which operand is a memory op (if any)
-    // and what its base is
-    GenTreeIndir* mem     = nullptr;
-    GenTree*      memBase = nullptr;
-
-    if (dst->isContainedIndir())
-    {
-        mem = dst->AsIndir();
-    }
-    else if (src->isContainedIndir())
-    {
-        mem = src->AsIndir();
-    }
-
-    if (mem)
-    {
-        memBase = mem->gtOp1;
-    }
-
-    // Find immed (if any) - it cannot be the dst
-    // SSE2 instructions allow only the second operand to be a memory operand.
-    GenTreeIntConCommon* intConst = nullptr;
-    GenTreeDblCon*       dblConst = nullptr;
-    if (src->isContainedIntOrIImmed())
-    {
-        intConst = src->AsIntConCommon();
-    }
-    else if (src->isContainedFltOrDblImmed())
-    {
-        dblConst = src->AsDblCon();
-    }
-
-    // find local field if any
-    GenTreeLclFld* lclField = nullptr;
-    if (src->isLclFldUsedFromMemory())
-    {
-        lclField = src->AsLclFld();
-    }
-    else if (dst->isLclField() && dst->gtRegNum == REG_NA)
-    {
-        lclField = dst->AsLclFld();
-    }
-
-    // find contained lcl var if any
-    GenTreeLclVar* lclVar = nullptr;
-    if (src->isLclVarUsedFromMemory())
-    {
-        assert(src->IsRegOptional() || !emitComp->lvaTable[src->gtLclVar.gtLclNum].lvIsRegCandidate());
-        lclVar = src->AsLclVar();
-    }
-    if (dst->isLclVarUsedFromMemory())
-    {
-        assert(dst->IsRegOptional() || !emitComp->lvaTable[dst->gtLclVar.gtLclNum].lvIsRegCandidate());
-        lclVar = dst->AsLclVar();
-    }
-
-    // find contained spill tmp if any
-    TempDsc* tmpDsc = nullptr;
-    if (src->isUsedFromSpillTemp())
-    {
-        assert(src->IsRegOptional());
-        tmpDsc = codeGen->getSpillTempDsc(src);
-    }
-    else if (dst->isUsedFromSpillTemp())
-    {
-        assert(dst->IsRegOptional());
-        tmpDsc = codeGen->getSpillTempDsc(dst);
-    }
-
-    // First handle the simple non-memory cases
-    //
-    if ((mem == nullptr) && (lclField == nullptr) && (lclVar == nullptr) && (tmpDsc == nullptr))
-    {
-        if (intConst != nullptr)
+        if (src->isContained())
         {
-            // reg, immed
-            assert(!dst->isContained());
-
-            emitIns_R_I(ins, attr, dst->gtRegNum, intConst->IconValue());
-            // TODO-XArch-Bug?: does the caller call regTracker.rsTrackRegTrash(dst->gtRegNum) or
-            // rsTrackRegIntCns(dst->gtRegNum, intConst->IconValue()) (as appropriate)?
-        }
-        else if (dblConst != nullptr)
-        {
-            // Emit a data section constant for float or double constant.
-            CORINFO_FIELD_HANDLE hnd = emitFltOrDblConst(dblConst->AsDblCon()->gtDconVal, emitTypeSize(dblConst));
-
-            emitIns_R_C(ins, attr, dst->gtRegNum, hnd, 0);
+            assert(src->IsCnsIntOrI());
+            cnsOp = src;
         }
         else
         {
-            // reg, reg
-            assert(!src->isContained() && !dst->isContained());
-
-            if (instrHasImplicitRegPairDest(ins))
-            {
-                emitIns_R(ins, attr, src->gtRegNum);
-            }
-            else
-            {
-                emitIns_R_R(ins, attr, dst->gtRegNum, src->gtRegNum);
-            }
-            // ToDo-XArch-Bug?: does the caller call regTracker.rsTrackRegTrash(dst->gtRegNum) or, for ins=MOV:
-            // regTracker.rsTrackRegCopy(dst->gtRegNum, src->gtRegNum); ?
+            otherOp = src;
         }
+    }
+    else if (src->isContained() || src->isUsedFromSpillTemp())
+    {
+        assert(!dst->isUsedFromMemory());
+        otherOp = dst;
 
-        return dst->gtRegNum;
+        if ((src->IsCnsIntOrI() || src->IsCnsFltOrDbl()) && !src->isUsedFromSpillTemp())
+        {
+            assert(!src->isUsedFromMemory() || src->IsCnsFltOrDbl());
+            cnsOp = src;
+        }
+        else
+        {
+            assert(src->isUsedFromMemory());
+            memOp = src;
+        }
     }
 
-    // Next handle the cases where we have a stack based local memory operand.
+    // At this point, we either have a memory operand or we don't.
     //
-    unsigned varNum = BAD_VAR_NUM;
-    unsigned offset = (unsigned)-1;
+    // If we don't then the logic is very simple and  we will either be emitting a
+    // `reg, immed` instruction (if src is a cns) or a `reg, reg` instruction otherwise.
+    //
+    // If we do have a memory operand, the logic is a bit more complicated as we need
+    // to do different things depending on the type of memory operand. These types include:
+    //  * Spill temp
+    //  * Indirect access
+    //    * Local variable
+    //    * Class variable
+    //    * Addressing mode [base + index * scale + offset]
+    //  * Local field
+    //  * Local variable
+    //
+    // Most of these types (except Indirect: Class variable and Indirect: Addressing mode)
+    // give us a a local variable number and an offset and access memory on the stack
+    //
+    // Indirect: Class variable is used for access static class variables and gives us a handle
+    // to the memory location we read from
+    //
+    // Indirect: Addressing mode is used for the remaining memory accesses and will give us
+    // a base address, an index, a scale, and an offset. These are combined to let us easily
+    // access the given memory location.
+    //
+    // In all of the memory access cases, we determine which form to emit (e.g. `reg, [mem]`
+    // or `[mem], reg`) by comparing memOp to src to determine which `emitIns_*` method needs
+    // to be called. The exception is for the `[mem], immed` case (for Indirect: Class variable)
+    // where only src can be the immediate.
 
-    if (lclField != nullptr)
+    if (memOp != nullptr)
     {
-        varNum = lclField->AsLclVarCommon()->GetLclNum();
-        offset = lclField->gtLclFld.gtLclOffs;
-    }
-    else if (lclVar != nullptr)
-    {
-        varNum = lclVar->AsLclVarCommon()->GetLclNum();
-        offset = 0;
-    }
-    else if (tmpDsc != nullptr)
-    {
-        varNum = tmpDsc->tdTempNum();
-        offset = 0;
-    }
-    else
-    {
-        // At this point we must have a memory operand that is a contained indir: if we do not, we should have handled
-        // this instruction above in the reg/imm or reg/reg case.
-        assert(mem != nullptr);
-        assert(memBase != nullptr);
+        TempDsc* tmpDsc = nullptr;
+        unsigned varNum = BAD_VAR_NUM;
+        unsigned offset = (unsigned)-1;
 
-        if (memBase->OperGet() == GT_LCL_VAR_ADDR)
+        if (memOp->isUsedFromSpillTemp())
         {
-            varNum = memBase->AsLclVarCommon()->GetLclNum();
+            assert(memOp->IsRegOptional());
+
+            tmpDsc = codeGen->getSpillTempDsc(memOp);
+            varNum = tmpDsc->tdTempNum();
             offset = 0;
-        }
-    }
 
-    // Spill temp numbers are negative and start with -1
-    // which also happens to be BAD_VAR_NUM. For this reason
-    // we also need to check 'tmpDsc != nullptr' here.
-    if (varNum != BAD_VAR_NUM || tmpDsc != nullptr)
-    {
-        // Is the memory op in the source position?
-        if (src->isUsedFromMemory())
+            emitComp->tmpRlsTemp(tmpDsc);
+        }
+        else if (memOp->isIndir())
         {
+            GenTreeIndir* memIndir = memOp->AsIndir();
+            GenTree*      memBase  = memIndir->gtOp1;
+
+            switch (memBase->OperGet())
+            {
+                case GT_LCL_VAR_ADDR:
+                {
+                    varNum = memBase->AsLclVarCommon()->GetLclNum();
+                    offset = 0;
+
+                    // Ensure that all the GenTreeIndir values are set to their defaults.
+                    assert(!memIndir->HasIndex());
+                    assert(memIndir->Scale() == 1);
+                    assert(memIndir->Offset() == 0);
+
+                    break;
+                }
+
+                case GT_CLS_VAR_ADDR:
+                {
+                    if (memOp == src)
+                    {
+                        assert(otherOp == dst);
+                        assert(cnsOp == nullptr);
+
+                        if (instrHasImplicitRegPairDest(ins))
+                        {
+                            // src is a class static variable
+                            // dst is implicit - RDX:RAX
+                            emitIns_C(ins, attr, memBase->gtClsVar.gtClsVarHnd, 0);
+                        }
+                        else
+                        {
+                            // src is a class static variable
+                            // dst is a register
+                            emitIns_R_C(ins, attr, dst->gtRegNum, memBase->gtClsVar.gtClsVarHnd, 0);
+                        }
+                    }
+                    else
+                    {
+                        assert(memOp == dst);
+
+                        if (cnsOp != nullptr)
+                        {
+                            assert(cnsOp == src);
+                            assert(otherOp == nullptr);
+                            assert(src->IsCnsIntOrI());
+
+                            // src is an contained immediate
+                            // dst is a class static variable
+                            emitIns_C_I(ins, attr, memBase->gtClsVar.gtClsVarHnd, 0,
+                                        (int)src->gtIntConCommon.IconValue());
+                        }
+                        else
+                        {
+                            assert(otherOp == src);
+
+                            // src is a register
+                            // dst is a class static variable
+                            emitIns_C_R(ins, attr, memBase->gtClsVar.gtClsVarHnd, src->gtRegNum, 0);
+                        }
+                    }
+
+                    return dst->gtRegNum;
+                }
+
+                default: // Addressing mode [base + index * scale + offset]
+                {
+                    instrDesc* id = nullptr;
+
+                    if (cnsOp != nullptr)
+                    {
+                        assert(memOp == dst);
+                        assert(cnsOp == src);
+                        assert(otherOp == nullptr);
+                        assert(src->IsCnsIntOrI());
+
+                        id = emitNewInstrAmdCns(attr, memIndir->Offset(), (int)src->gtIntConCommon.IconValue());
+                    }
+                    else
+                    {
+                        ssize_t offset = memIndir->Offset();
+                        id             = emitNewInstrAmd(attr, offset);
+                        id->idIns(ins);
+
+                        GenTree* regTree = (memOp == src) ? dst : src;
+
+                        // there must be one non-contained op
+                        assert(!regTree->isContained());
+                        id->idReg1(regTree->gtRegNum);
+                    }
+                    assert(id != nullptr);
+
+                    id->idIns(ins); // Set the instruction.
+
+                    // Determine the instruction format
+                    insFormat fmt = IF_NONE;
+
+                    if (memOp == src)
+                    {
+                        assert(cnsOp == nullptr);
+                        assert(otherOp == dst);
+
+                        if (instrHasImplicitRegPairDest(ins))
+                        {
+                            fmt = emitInsModeFormat(ins, IF_ARD);
+                        }
+                        else
+                        {
+                            fmt = emitInsModeFormat(ins, IF_RRD_ARD);
+                        }
+                    }
+                    else
+                    {
+                        assert(memOp == dst);
+
+                        if (cnsOp != nullptr)
+                        {
+                            assert(cnsOp == src);
+                            assert(otherOp == nullptr);
+                            assert(src->IsCnsIntOrI());
+
+                            fmt = emitInsModeFormat(ins, IF_ARD_CNS);
+                        }
+                        else
+                        {
+                            assert(otherOp == src);
+                            fmt = emitInsModeFormat(ins, IF_ARD_RRD);
+                        }
+                    }
+                    assert(fmt != IF_NONE);
+                    emitHandleMemOp(memIndir, id, fmt, ins);
+
+                    // Determine the instruction size
+                    UNATIVE_OFFSET sz = 0;
+
+                    if (memOp == src)
+                    {
+                        assert(otherOp == dst);
+                        assert(cnsOp == nullptr);
+
+                        if (instrHasImplicitRegPairDest(ins))
+                        {
+                            sz = emitInsSizeAM(id, insCode(ins));
+                        }
+                        else
+                        {
+                            sz = emitInsSizeAM(id, insCodeRM(ins));
+                        }
+                    }
+                    else
+                    {
+                        assert(memOp == dst);
+
+                        if (cnsOp != nullptr)
+                        {
+                            assert(memOp == dst);
+                            assert(cnsOp == src);
+                            assert(otherOp == nullptr);
+
+                            sz = emitInsSizeAM(id, insCodeMI(ins), (int)src->gtIntConCommon.IconValue());
+                        }
+                        else
+                        {
+                            assert(otherOp == src);
+                            sz = emitInsSizeAM(id, insCodeMR(ins));
+                        }
+                    }
+                    assert(sz != 0);
+
+                    id->idCodeSize(sz);
+
+                    dispIns(id);
+                    emitCurIGsize += sz;
+
+                    return (memOp == src) ? dst->gtRegNum : REG_NA;
+                }
+            }
+        }
+        else
+        {
+            switch (memOp->OperGet())
+            {
+                case GT_LCL_FLD:
+                case GT_STORE_LCL_FLD:
+                {
+                    GenTreeLclFld* lclField = memOp->AsLclFld();
+                    varNum                  = lclField->GetLclNum();
+                    offset                  = lclField->gtLclFld.gtLclOffs;
+                    break;
+                }
+
+                case GT_LCL_VAR:
+                {
+                    assert(memOp->IsRegOptional() || !emitComp->lvaTable[memOp->gtLclVar.gtLclNum].lvIsRegCandidate());
+                    varNum = memOp->AsLclVar()->GetLclNum();
+                    offset = 0;
+                    break;
+                }
+
+                default:
+                    unreached();
+                    break;
+            }
+        }
+
+        // Ensure we got a good varNum and offset.
+        // We also need to check for `tmpDsc != nullptr` since spill temp numbers
+        // are negative and start with -1, which also happens to be BAD_VAR_NUM.
+        assert((varNum != BAD_VAR_NUM) || (tmpDsc != nullptr));
+        assert(offset != (unsigned)-1);
+
+        if (memOp == src)
+        {
+            assert(otherOp == dst);
+            assert(cnsOp == nullptr);
+
             if (instrHasImplicitRegPairDest(ins))
             {
                 // src is a stack based local variable
@@ -3102,173 +3253,68 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                 emitIns_R_S(ins, attr, dst->gtRegNum, varNum, offset);
             }
         }
-        else // The memory op is in the dest position.
+        else
         {
-            assert(dst->gtRegNum == REG_NA || dst->IsRegOptional());
+            assert(memOp == dst);
+            assert((dst->gtRegNum == REG_NA) || dst->IsRegOptional());
 
-            // src could be int or reg
-            if (src->isContainedIntOrIImmed())
+            if (cnsOp != nullptr)
             {
+                assert(cnsOp == src);
+                assert(otherOp == nullptr);
+                assert(src->IsCnsIntOrI());
+
                 // src is an contained immediate
                 // dst is a stack based local variable
                 emitIns_S_I(ins, attr, varNum, offset, (int)src->gtIntConCommon.IconValue());
             }
             else
             {
+                assert(otherOp == src);
+                assert(!src->isContained());
+
                 // src is a register
                 // dst is a stack based local variable
-                assert(!src->isContained());
                 emitIns_S_R(ins, attr, src->gtRegNum, varNum, offset);
             }
         }
-
-        if (tmpDsc != nullptr)
-        {
-            emitComp->tmpRlsTemp(tmpDsc);
-        }
-
-        return dst->gtRegNum;
     }
-
-    // Now we are left with only the cases where the instruction has some kind of a memory operand
-    //
-    assert(mem != nullptr);
-
-    // Next handle the class static variable cases
-    //
-    if (memBase->OperGet() == GT_CLS_VAR_ADDR)
+    else if (cnsOp != nullptr) // reg, immed
     {
-        // Is the memory op in the source position?
-        if (mem == src)
+        assert(cnsOp == src);
+        assert(otherOp == dst);
+
+        if (src->IsCnsIntOrI())
         {
-            if (instrHasImplicitRegPairDest(ins))
-            {
-                // src is a class static variable
-                // dst is implicit - RDX:RAX
-                emitIns_C(ins, attr, memBase->gtClsVar.gtClsVarHnd, 0);
-            }
-            else
-            {
-                // src is a class static variable
-                // dst is a register
-                emitIns_R_C(ins, attr, dst->gtRegNum, memBase->gtClsVar.gtClsVarHnd, 0);
-            }
-        }
-        else // The memory op is in the dest position.
-        {
-            if (src->isContained())
-            {
-                // src is an contained immediate
-                // dst is a class static variable
-                emitIns_C_I(ins, attr, memBase->gtClsVar.gtClsVarHnd, 0, (int)src->gtIntConCommon.IconValue());
-            }
-            else
-            {
-                // src is a register
-                // dst is a class static variable
-                emitIns_C_R(ins, attr, memBase->gtClsVar.gtClsVarHnd, src->gtRegNum, 0);
-            }
-        }
-
-        return dst->gtRegNum;
-    }
-
-    // Finally we handle addressing modes case [regBase + regIndex*scale + const]
-    //
-    // We will have to construct and fill in the instruction descriptor for this case
-    //
-    instrDesc* id = nullptr;
-
-    // Is the src an immediate constant?
-    if (intConst)
-    {
-        // [mem], imm
-        id = emitNewInstrAmdCns(attr, mem->Offset(), (int)intConst->IconValue());
-    }
-    else // [mem], reg OR reg, [mem]
-    {
-        ssize_t offset = mem->Offset();
-        id             = emitNewInstrAmd(attr, offset);
-        id->idIns(ins);
-
-        GenTree* regTree = (src == mem) ? dst : src;
-
-        // there must be one non-contained src
-        assert(!regTree->isContained());
-        id->idReg1(regTree->gtRegNum);
-    }
-    assert(id != nullptr);
-
-    id->idIns(ins); // Set the instruction.
-
-    // Determine the instruction format
-    //
-    insFormat fmt = IF_NONE;
-    if (mem == dst)
-    {
-        if (!src->isContained())
-        {
-            fmt = emitInsModeFormat(ins, IF_ARD_RRD);
+            assert(!dst->isContained());
+            GenTreeIntConCommon* intCns = src->AsIntConCommon();
+            emitIns_R_I(ins, attr, dst->gtRegNum, intCns->IconValue());
         }
         else
         {
-            fmt = emitInsModeFormat(ins, IF_ARD_CNS);
+            assert(src->IsCnsFltOrDbl());
+            GenTreeDblCon* dblCns = src->AsDblCon();
+
+            CORINFO_FIELD_HANDLE hnd = emitFltOrDblConst(dblCns->gtDconVal, emitTypeSize(dblCns));
+            emitIns_R_C(ins, attr, dst->gtRegNum, hnd, 0);
         }
     }
-    else
+    else // reg, reg
     {
-        assert(!dst->isContained());
+        assert(otherOp == nullptr);
+        assert(!src->isContained() && !dst->isContained());
+
         if (instrHasImplicitRegPairDest(ins))
         {
-            fmt = emitInsModeFormat(ins, IF_ARD);
+            emitIns_R(ins, attr, src->gtRegNum);
         }
         else
         {
-            fmt = emitInsModeFormat(ins, IF_RRD_ARD);
+            emitIns_R_R(ins, attr, dst->gtRegNum, src->gtRegNum);
         }
     }
-    assert(fmt != IF_NONE);
-    emitHandleMemOp(mem, id, fmt, ins);
 
-    // Determine the instruction size
-    //
-    UNATIVE_OFFSET sz = 0;
-    if (intConst)
-    {
-        sz = emitInsSizeAM(id, insCodeMI(ins), (int)intConst->IconValue());
-    }
-    else
-    {
-        if (mem == dst)
-        {
-            sz = emitInsSizeAM(id, insCodeMR(ins));
-        }
-        else // mem == src
-        {
-            if (instrHasImplicitRegPairDest(ins))
-            {
-                sz = emitInsSizeAM(id, insCode(ins));
-            }
-            else
-            {
-                sz = emitInsSizeAM(id, insCodeRM(ins));
-            }
-        }
-    }
-    assert(sz != 0);
-
-    regNumber result = REG_NA;
-    if (src == mem)
-    {
-        result = dst->gtRegNum;
-    }
-
-    id->idCodeSize(sz);
-
-    dispIns(id);
-    emitCurIGsize += sz;
-
-    return result;
+    return dst->gtRegNum;
 }
 
 //------------------------------------------------------------------------
