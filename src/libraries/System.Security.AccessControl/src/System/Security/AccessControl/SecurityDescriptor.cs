@@ -12,7 +12,6 @@
 using Microsoft.Win32;
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
@@ -276,7 +275,6 @@ namespace System.Security.AccessControl
 nameof(binaryForm),
                     SR.ArgumentOutOfRange_ArrayTooSmall);
             }
-            Contract.EndContractBlock();
 
             //
             // the offset will grow as we go for each additional field (owner, group,
@@ -512,7 +510,6 @@ nameof(binaryForm),
                 throw new ArgumentOutOfRangeException(nameof(binaryForm),
                      SR.AccessControl_InvalidSecurityDescriptorRevision);
             }
-            Contract.EndContractBlock();
 
 
             ControlFlags flags;
@@ -632,7 +629,6 @@ nameof(binaryForm));
             {
                 throw new ArgumentNullException(nameof(sddlForm));
             }
-            Contract.EndContractBlock();
 
             int error;
             IntPtr byteArray = IntPtr.Zero;
@@ -951,7 +947,6 @@ nameof(discretionaryAcl));
             {
                 throw new ArgumentNullException(nameof(rawSecurityDescriptor));
             }
-            Contract.EndContractBlock();
 
             CreateFromParts(
                 isContainer,
@@ -1212,7 +1207,6 @@ nameof(value));
             {
                 throw new ArgumentNullException(nameof(sid));
             }
-            Contract.EndContractBlock();
 
             if (DiscretionaryAcl != null)
             {
@@ -1226,7 +1220,6 @@ nameof(value));
             {
                 throw new ArgumentNullException(nameof(sid));
             }
-            Contract.EndContractBlock();
 
             if (SystemAcl != null)
             {

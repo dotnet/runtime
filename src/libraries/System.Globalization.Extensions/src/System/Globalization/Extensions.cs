@@ -4,7 +4,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Globalization
 {
@@ -74,7 +73,6 @@ namespace System.Globalization
             {
                 throw new ArgumentNullException(nameof(obj));
             }
-            Contract.EndContractBlock();
 
             // StringSort used in compare operation and not with the hashing
             return _compareInfo.GetHashCode(obj, _options & (~CompareOptions.StringSort));

@@ -2,13 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if !netstandard
-using Internal.Runtime.CompilerServices;
-#else
-using System.Runtime.CompilerServices;
-#endif
-
-using System.Runtime.InteropServices;
+using System.Diagnostics;
 
 namespace System.Buffers.Text
 {
@@ -27,104 +21,202 @@ namespace System.Buffers.Text
         /// </returns>
         /// <remarks>
         /// Formats supported:
-        ///     c/t/T (default) [-][d.]hh:mm:ss[.fffffff]             (constant format)
-        ///     G               [-]d:hh:mm:ss.fffffff                 (general long)
-        ///     g               [-][d:]h:mm:ss[.f[f[f[f[f[f[f[]]]]]]] (general short)
+        ///     c/t/T (default) [-][d.]hh:mm:ss[.fffffff]              (constant format)
+        ///     G               [-]d:hh:mm:ss.fffffff                  (general long)
+        ///     g               [-][d:][h]h:mm:ss[.f[f[f[f[f[f[f]]]]]] (general short)
         /// </remarks>
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
         public static bool TryFormat(TimeSpan value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default)
         {
-            char symbol = format.IsDefault ? 'c' : format.Symbol;
+            char symbol = FormattingHelpers.GetSymbolOrDefault(format, 'c');
 
             switch (symbol)
             {
+                case 'c':
                 case 'G':
                 case 'g':
-                case 'c':
+                    break;
+
                 case 't':
                 case 'T':
-                    {
-                        bool longForm = (symbol == 'G');
-                        bool constant = (symbol == 't' || symbol == 'T' || symbol == 'c');
-
-                        long ticks = value.Ticks;
-                        int days = (int)FormattingHelpers.DivMod(ticks, TimeSpan.TicksPerDay, out long timeLeft);
-
-                        bool showSign = false;
-                        if (ticks < 0)
-                        {
-                            showSign = true;
-                            days = -days;
-                            timeLeft = -timeLeft;
-                        }
-
-                        int hours = (int)FormattingHelpers.DivMod(timeLeft, TimeSpan.TicksPerHour, out timeLeft);
-                        int minutes = (int)FormattingHelpers.DivMod(timeLeft, TimeSpan.TicksPerMinute, out timeLeft);
-                        int seconds = (int)FormattingHelpers.DivMod(timeLeft, TimeSpan.TicksPerSecond, out long fraction);
-
-                        int dayDigits = 0;
-                        int hourDigits = (constant || longForm || hours > 9) ? 2 : 1;
-                        int fractionDigits = 0;
-
-                        bytesWritten = hourDigits + 6; // [h]h:mm:ss
-                        if (showSign)
-                            bytesWritten += 1;  // [-]
-                        if (longForm || days > 0)
-                        {
-                            dayDigits = FormattingHelpers.CountDigits(days);
-                            bytesWritten += dayDigits + 1; // [d'.']
-                        }
-                        if (longForm || fraction > 0)
-                        {
-                            fractionDigits = (longForm || constant) ? Utf8Constants.DateTimeNumFractionDigits : FormattingHelpers.CountFractionDigits(fraction);
-                            bytesWritten += fractionDigits + 1; // ['.'fffffff] or ['.'FFFFFFF] for short-form
-                        }
-
-                        if (buffer.Length < bytesWritten)
-                        {
-                            bytesWritten = 0;
-                            return false;
-                        }
-
-                        ref byte utf8Bytes = ref MemoryMarshal.GetReference(buffer);
-                        int idx = 0;
-
-                        if (showSign)
-                            Unsafe.Add(ref utf8Bytes, idx++) = Utf8Constants.Minus;
-
-                        if (dayDigits > 0)
-                        {
-                            FormattingHelpers.WriteDigits(days, dayDigits, ref utf8Bytes, idx);
-                            idx += dayDigits;
-                            Unsafe.Add(ref utf8Bytes, idx++) = constant ? Utf8Constants.Period : Utf8Constants.Colon;
-                        }
-
-                        FormattingHelpers.WriteDigits(hours, hourDigits, ref utf8Bytes, idx);
-                        idx += hourDigits;
-                        Unsafe.Add(ref utf8Bytes, idx++) = Utf8Constants.Colon;
-
-                        FormattingHelpers.WriteDigits(minutes, 2, ref utf8Bytes, idx);
-                        idx += 2;
-                        Unsafe.Add(ref utf8Bytes, idx++) = Utf8Constants.Colon;
-
-                        FormattingHelpers.WriteDigits(seconds, 2, ref utf8Bytes, idx);
-                        idx += 2;
-
-                        if (fractionDigits > 0)
-                        {
-                            Unsafe.Add(ref utf8Bytes, idx++) = Utf8Constants.Period;
-                            FormattingHelpers.WriteFractionDigits(fraction, fractionDigits, ref utf8Bytes, idx);
-                            idx += fractionDigits;
-                        }
-
-                        return true;
-                    }
+                    symbol = 'c';
+                    break;
 
                 default:
                     return ThrowHelper.TryFormatThrowFormatException(out bytesWritten);
             }
+
+            // First, calculate how large an output buffer is needed to hold the entire output.
+
+            int requiredOutputLength = 8; // start with "hh:mm:ss" and adjust as necessary
+
+            uint fraction;
+            ulong totalSecondsRemaining;
+            {
+                // Turn this into a non-negative TimeSpan if possible.
+                var ticks = value.Ticks;
+                if (ticks < 0)
+                {
+                    ticks = -ticks;
+                    if (ticks < 0)
+                    {
+                        Debug.Assert(ticks == Int64.MinValue /* -9223372036854775808 */);
+
+                        // We computed these ahead of time; they're straight from the decimal representation of Int64.MinValue.
+                        fraction = 4775808;
+                        totalSecondsRemaining = 922337203685;
+                        goto AfterComputeFraction;
+                    }
+                }
+
+                totalSecondsRemaining = FormattingHelpers.DivMod((ulong)Math.Abs(value.Ticks), TimeSpan.TicksPerSecond, out ulong fraction64);
+                fraction = (uint)fraction64;
+            }
+
+AfterComputeFraction:
+
+            int fractionDigits = 0;
+            if (symbol == 'c')
+            {
+                // Only write out the fraction if it's non-zero, and in that
+                // case write out the entire fraction (all digits).
+                if (fraction != 0)
+                {
+                    fractionDigits = Utf8Constants.DateTimeNumFractionDigits;
+                }
+            }
+            else if (symbol == 'G')
+            {
+                // Always write out the fraction, even if it's zero.
+                fractionDigits = Utf8Constants.DateTimeNumFractionDigits;
+            }
+            else
+            {
+                // Only write out the fraction if it's non-zero, and in that
+                // case write out only the most significant digits.
+                if (fraction != 0)
+                {
+                    fractionDigits = Utf8Constants.DateTimeNumFractionDigits - FormattingHelpers.CountDecimalTrailingZeros(fraction, out fraction);
+                }
+            }
+
+            Debug.Assert(fraction < 10_000_000);
+
+            // If we're going to write out a fraction, also need to write the leading decimal.
+            if (fractionDigits != 0)
+            {
+                requiredOutputLength += fractionDigits + 1;
+            }
+
+            ulong totalMinutesRemaining = 0;
+            ulong seconds = 0;
+            if (totalSecondsRemaining > 0)
+            {
+                // Only compute minutes if the TimeSpan has an absolute value of >= 1 minute.
+                totalMinutesRemaining = FormattingHelpers.DivMod(totalSecondsRemaining, 60 /* seconds per minute */, out seconds);
+            }
+
+            Debug.Assert(seconds < 60);
+
+            ulong totalHoursRemaining = 0;
+            ulong minutes = 0;
+            if (totalMinutesRemaining > 0)
+            {
+                // Only compute hours if the TimeSpan has an absolute value of >= 1 hour.
+                totalHoursRemaining = FormattingHelpers.DivMod(totalMinutesRemaining, 60 /* minutes per hour */, out minutes);
+            }
+
+            Debug.Assert(minutes < 60);
+
+            // At this point, we can switch over to 32-bit divmod since the data has shrunk far enough.
+            Debug.Assert(totalHoursRemaining <= UInt32.MaxValue);
+
+            uint days = 0;
+            uint hours = 0;
+            if (totalHoursRemaining > 0)
+            {
+                // Only compute days if the TimeSpan has an absolute value of >= 1 day.
+                days = FormattingHelpers.DivMod((uint)totalHoursRemaining, 24 /* hours per day */, out hours);
+            }
+
+            Debug.Assert(hours < 24);
+
+            int hourDigits = 2;
+            if (hours < 10 && symbol == 'g')
+            {
+                // Only writing a one-digit hour, not a two-digit hour
+                hourDigits--;
+                requiredOutputLength--;
+            }
+
+            int dayDigits = 0;
+            if (days == 0)
+            {
+                if (symbol == 'G')
+                {
+                    requiredOutputLength += 2; // for the leading "0:"
+                    dayDigits = 1;
+                }
+            }
+            else
+            {
+                dayDigits = FormattingHelpers.CountDigits(days);
+                requiredOutputLength += dayDigits + 1; // for the leading "d:" (or "d.")
+            }
+
+            if (value.Ticks < 0)
+            {
+                requiredOutputLength++; // for the leading '-' sign
+            }
+
+            if (buffer.Length < requiredOutputLength)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            bytesWritten = requiredOutputLength;
+
+            int idx = 0;
+
+            // Write leading '-' if necessary
+            if (value.Ticks < 0)
+            {
+                buffer[idx++] = Utf8Constants.Minus;
+            }
+
+            // Write day (and separator) if necessary
+            if (dayDigits > 0)
+            {
+                FormattingHelpers.WriteDigits(days, buffer.Slice(idx, dayDigits));
+                idx += dayDigits;
+                buffer[idx++] = (symbol == 'c') ? Utf8Constants.Period : Utf8Constants.Colon;
+            }
+
+            // Write "[h]h:mm:ss"
+            FormattingHelpers.WriteDigits(hours, buffer.Slice(idx, hourDigits));
+            idx += hourDigits;
+            buffer[idx++] = Utf8Constants.Colon;
+            FormattingHelpers.WriteDigits((uint)minutes, buffer.Slice(idx, 2));
+            idx += 2;
+            buffer[idx++] = Utf8Constants.Colon;
+            FormattingHelpers.WriteDigits((uint)seconds, buffer.Slice(idx, 2));
+            idx += 2;
+
+            // Write fraction (and separator) if necessary
+            if (fractionDigits > 0)
+            {
+                buffer[idx++] = Utf8Constants.Period;
+                FormattingHelpers.WriteDigits(fraction, buffer.Slice(idx, fractionDigits));
+                idx += fractionDigits;
+            }
+
+            // And we're done!
+
+            Debug.Assert(idx == requiredOutputLength);
+            return true;
         }
     }
 }

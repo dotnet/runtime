@@ -20,6 +20,7 @@ namespace System.ServiceProcess.Tests
 
         private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(() => AdminHelpers.IsProcessElevated());
         protected static bool IsProcessElevated => s_isElevated.Value;
+        protected static bool IsElevatedAndSupportsEventLogs => IsProcessElevated && PlatformDetection.IsNotWindowsNanoServer;
 
         private bool _disposed;
 
@@ -172,6 +173,46 @@ OnStop
             controller.Stop();
             controller.WaitForStatus(ServiceControllerStatus.Stopped);
             Assert.Equal(expected, _testService.GetServiceOutput());
+        }
+
+        [ConditionalFact(nameof(IsElevatedAndSupportsEventLogs))]
+        public void LogWritten()
+        {
+            using (EventLog eventLog = new EventLog("Application"))
+            {
+                ServiceBase sb = new ServiceBase() { ServiceName = nameof(LogWritten) + Guid.NewGuid().ToString() };
+                Assert.False(EventLog.SourceExists(sb.ServiceName));
+                try
+                {
+                    ServiceBase.Run(sb);
+                    eventLog.Source = sb.ServiceName;
+                    Assert.True(EventLog.SourceExists(sb.ServiceName));
+                }
+                finally
+                {
+                    sb.Stop();
+                    EventLog.DeleteEventSource(sb.ServiceName);
+                }
+            } 
+        }
+
+        [ConditionalFact(nameof(IsElevatedAndSupportsEventLogs))]
+        public void LogWritten_AutoLog_False()
+        {
+            using (EventLog eventLog = new EventLog("Application"))
+            {
+                ServiceBase sb = new ServiceBase() { ServiceName = nameof(LogWritten) + Guid.NewGuid().ToString(), AutoLog = false };
+                Assert.False(EventLog.SourceExists(sb.ServiceName));
+                try
+                {
+                    ServiceBase.Run(sb);
+                    Assert.False(EventLog.SourceExists(sb.ServiceName));
+                }
+                finally
+                {
+                    sb.Stop();
+                }
+            }
         }
 
         public void Dispose()

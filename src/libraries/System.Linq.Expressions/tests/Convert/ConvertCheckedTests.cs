@@ -18458,5 +18458,169 @@ namespace System.Linq.Expressions.Tests
                 .Compile(useInterpreter);
             act();
         }
+
+        interface IInterface
+        {
+        }
+
+        class NonSealed
+        {
+        }
+
+        class Derived : NonSealed, IInterface
+        {
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void NonSealedArrayToIfaceArray(bool useInterpreter)
+        {
+            checked
+            {
+                Expression<Func<NonSealed[][], IInterface[][]>> e = a => (IInterface[][])a;
+                Func<NonSealed[][], IInterface[][]> f = e.Compile(useInterpreter);
+                Derived[][] arr = new[] {new[] {new Derived(), new Derived(), new Derived(), new Derived()}};
+                Assert.Same(arr, f(arr));
+                Assert.Null(f(null));
+                Assert.Throws<InvalidCastException>(() => f(Array.Empty<NonSealed[]>()));
+            }
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void IfaceArrayToNonSealedArray(bool useInterpreter)
+        {
+            checked
+            {
+                Expression<Func<IInterface[][], NonSealed[][]>> e = a => (NonSealed[][])a;
+                Func<IInterface[][], NonSealed[][]> f = e.Compile(useInterpreter);
+                Derived[][] arr = new[] {new[] {new Derived(), new Derived(), new Derived(), new Derived()}};
+                Assert.Same(arr, f(arr));
+                Assert.Null(f(null));
+                Assert.Throws<InvalidCastException>(() => f(Array.Empty<IInterface[]>()));
+            }
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void NonSealedICollectionToIfaceArray(bool useInterpreter)
+        {
+            checked
+            {
+                Expression<Func<ICollection<NonSealed[]>, IInterface[][]>> e = a => (IInterface[][])a;
+                Func<ICollection<NonSealed[]>, IInterface[][]> f = e.Compile(useInterpreter);
+                Derived[][] arr = new[] {new[] {new Derived(), new Derived(), new Derived(), new Derived()}};
+                Assert.Same(arr, f(arr));
+                Assert.Null(f(null));
+                Assert.Throws<InvalidCastException>(() => f(Array.Empty<NonSealed[]>()));
+            }
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void IfaceArrayToNonSealedIList(bool useInterpreter)
+        {
+            checked
+            {
+                Expression<Func<IInterface[][], IList<NonSealed>[]>> e = a => (IList<NonSealed>[])a;
+                Func<IInterface[][], IList<NonSealed>[]> f = e.Compile(useInterpreter);
+                Derived[][] arr = new[] {new[] {new Derived(), new Derived(), new Derived(), new Derived()}};
+                Assert.Same(arr, f(arr));
+                Assert.Null(f(null));
+                Assert.Throws<InvalidCastException>(() => f(Array.Empty<IInterface[]>()));
+            }
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void NonSealedArrayToIfaceIEnumerable(bool useInterpreter)
+        {
+            checked
+            {
+                Expression<Func<NonSealed[][], IEnumerable<IInterface>[]>> e = a => (IEnumerable<IInterface>[])a;
+                Func<NonSealed[][], IEnumerable<IInterface>[]> f = e.Compile(useInterpreter);
+                Derived[][] arr = new[] {new[] {new Derived(), new Derived(), new Derived(), new Derived()}};
+                Assert.Same(arr, f(arr));
+                Assert.Null(f(null));
+                Assert.Throws<InvalidCastException>(() => f(Array.Empty<NonSealed[]>()));
+            }
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void IfaceIReadonlyCollectionToNonSealedArray(bool useInterpreter)
+        {
+            checked
+            {
+                Expression<Func<IReadOnlyCollection<IInterface>[], NonSealed[][]>> e = a => (NonSealed[][])a;
+                Func<IReadOnlyCollection<IInterface>[], NonSealed[][]> f = e.Compile(useInterpreter);
+                Derived[][] arr = new[] {new[] {new Derived(), new Derived(), new Derived(), new Derived()}};
+                Assert.Same(arr, f(arr));
+                Assert.Null(f(null));
+                Assert.Throws<InvalidCastException>(() => f(Array.Empty<IInterface[]>()));
+            }
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void IFaceIListToObjectArray(bool useInterpreter)
+        {
+            checked
+            {
+                Expression<Func<IList<IInterface[]>, object[][]>> e = a => (object[][])a;
+                Func<IList<IInterface[]>, object[][]> f = e.Compile(useInterpreter);
+                Derived[][] arr = new[] {new[] {new Derived(), new Derived(), new Derived(), new Derived()}};
+                Assert.Same(arr, f(arr));
+                Assert.Null(f(null));
+            }
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ObjectIListToIFaceArray(bool useInterpreter)
+        {
+            checked
+            {
+                Expression<Func<IList<object[]>, IInterface[][]>> e = a => (IInterface[][])a;
+                Func<IList<object[]>, IInterface[][]> f = e.Compile(useInterpreter);
+                Derived[][] arr = new[] {new[] {new Derived(), new Derived(), new Derived(), new Derived()}};
+                Assert.Same(arr, f(arr));
+                Assert.Null(f(null));
+                Assert.Throws<InvalidCastException>(() => f(Array.Empty<string[]>()));
+            }
+        }
+
+        [Fact]
+        public static void IfaceToNonSZArray()
+        {
+            Assert.Throws<InvalidOperationException>(
+                () => Expression.ConvertChecked(Expression.Default(typeof(IList<NonSealed>[])), typeof(NonSealed[,][])));
+        }
+
+        [Fact]
+        public static void NonSZArrayToIface()
+        {
+            Assert.Throws<InvalidOperationException>(
+                () => Expression.ConvertChecked(Expression.Default(typeof(NonSealed[,][])), typeof(IList<NonSealed>[])));
+        }
+
+        [Fact]
+        public static void ArrayToNonArrayCompatibleIFace()
+        {
+            Assert.Throws<InvalidOperationException>(
+                () => Expression.ConvertChecked(Expression.Default(typeof(NonSealed[][])), typeof(IEquatable<NonSealed>[])));
+            Assert.Throws<InvalidOperationException>(
+                () => Expression.ConvertChecked(
+                    Expression.Default(typeof(NonSealed[][])), typeof(IDictionary<NonSealed, NonSealed>[])));
+        }
+
+        [Fact]
+        public static void NonArrayCompatibleIFaceToArray()
+        {
+            Assert.Throws<InvalidOperationException>(
+                () => Expression.ConvertChecked(Expression.Default(typeof(IEquatable<NonSealed>[])), typeof(NonSealed[][])));
+            Assert.Throws<InvalidOperationException>(
+                () => Expression.ConvertChecked(
+                    Expression.Default(typeof(IDictionary<NonSealed, NonSealed>[])), typeof(NonSealed[][])));
+        }
+
+        [Fact]
+        public static void ArrayToNotRelated()
+        {
+            Assert.Throws<InvalidOperationException>(
+                () => Expression.ConvertChecked(Expression.Default(typeof(NonSealed[][][])), typeof(string[][])));
+        }
     }
 }

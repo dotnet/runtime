@@ -39,7 +39,7 @@ namespace System.SpanTests
         {
             int[] empty = Array.Empty<int>();
             Span<int> span = empty.AsSpan();
-            span.Validate();
+            span.ValidateNonNullEmpty();
         }
 
         [Fact]
@@ -79,12 +79,12 @@ namespace System.SpanTests
             int[] empty = Array.Empty<int>();
             ArraySegment<int> segmentEmpty = new ArraySegment<int>(empty);
             Span<int> spanEmpty = segmentEmpty.AsSpan();
-            spanEmpty.Validate();
+            spanEmpty.ValidateNonNullEmpty();
 
             int[] a = { 91, 92, -93, 94 };
             ArraySegment<int> segmentInt = new ArraySegment<int>(a, 0, 0);
             Span<int> spanInt = segmentInt.AsSpan();
-            spanInt.Validate();
+            spanInt.ValidateNonNullEmpty();
         }
     }
 }

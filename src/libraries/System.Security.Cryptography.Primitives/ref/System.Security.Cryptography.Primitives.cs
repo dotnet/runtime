@@ -17,10 +17,10 @@ namespace System.Security.Cryptography
         public virtual string KeyExchangeAlgorithm { get { throw null; } }
         public virtual int KeySize { get { throw null; } set { } }
         public virtual System.Security.Cryptography.KeySizes[] LegalKeySizes { get { throw null; } }
-        public static System.Security.Cryptography.AsymmetricAlgorithm Create() { throw null; }
-        public static System.Security.Cryptography.AsymmetricAlgorithm Create(string algName) { throw null; }
         public virtual string SignatureAlgorithm { get { throw null; } }
         public void Clear() { }
+        public static System.Security.Cryptography.AsymmetricAlgorithm Create() { throw null; }
+        public static System.Security.Cryptography.AsymmetricAlgorithm Create(string algName) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public virtual void FromXmlString(string xmlString) { }
@@ -51,11 +51,15 @@ namespace System.Security.Cryptography
         public override bool CanRead { get { throw null; } }
         public override bool CanSeek { get { throw null; } }
         public override bool CanWrite { get { throw null; } }
-        public void Clear() { }
         public bool HasFlushedFinalBlock { get { throw null; } }
         public override long Length { get { throw null; } }
         public override long Position { get { throw null; } set { } }
+        public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { throw null; }
+        public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { throw null; }
+        public void Clear() { }
         protected override void Dispose(bool disposing) { }
+        public override int EndRead(System.IAsyncResult asyncResult) { throw null; }
+        public override void EndWrite(System.IAsyncResult asyncResult) { }
         public override void Flush() { }
         public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public void FlushFinalBlock() { }
@@ -75,8 +79,8 @@ namespace System.Security.Cryptography
     }
     public abstract partial class HashAlgorithm : System.IDisposable, System.Security.Cryptography.ICryptoTransform
     {
-        protected internal byte[] HashValue;
         protected int HashSizeValue;
+        protected internal byte[] HashValue;
         protected int State;
         protected HashAlgorithm() { }
         public virtual bool CanReuseTransform { get { throw null; } }
@@ -94,17 +98,17 @@ namespace System.Security.Cryptography
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         protected abstract void HashCore(byte[] array, int ibStart, int cbSize);
-        protected virtual void HashCore(ReadOnlySpan<byte> source) { throw null; }
+        protected virtual void HashCore(System.ReadOnlySpan<byte> source) { }
         protected abstract byte[] HashFinal();
         public abstract void Initialize();
         public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset) { throw null; }
         public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount) { throw null; }
-        public bool TryComputeHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten) { throw null; }
-        protected virtual bool TryHashFinal(Span<byte> destination, out int bytesWritten) { throw null; }
+        public bool TryComputeHash(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        protected virtual bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public readonly partial struct HashAlgorithmName : System.IEquatable<System.Security.Cryptography.HashAlgorithmName>
     {
+        private readonly object _dummy;
         public HashAlgorithmName(string name) { throw null; }
         public static System.Security.Cryptography.HashAlgorithmName MD5 { get { throw null; } }
         public string Name { get { throw null; } }
@@ -122,15 +126,17 @@ namespace System.Security.Cryptography
     public abstract partial class HMAC : System.Security.Cryptography.KeyedHashAlgorithm
     {
         protected HMAC() { }
-        protected int BlockSizeValue { get { throw null; } set {} }
+        protected int BlockSizeValue { get { throw null; } set { } }
         public string HashName { get { throw null; } set { } }
         public override byte[] Key { get { throw null; } set { } }
         public static new System.Security.Cryptography.HMAC Create() { throw null; }
         public static new System.Security.Cryptography.HMAC Create(string algorithmName) { throw null; }
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
+        protected override void HashCore(System.ReadOnlySpan<byte> source) { }
         protected override byte[] HashFinal() { throw null; }
         public override void Initialize() { }
+        protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public partial interface ICryptoTransform : System.IDisposable
     {
@@ -159,16 +165,16 @@ namespace System.Security.Cryptography
     }
     public enum PaddingMode
     {
+        ANSIX923 = 4,
+        ISO10126 = 5,
         None = 1,
         PKCS7 = 2,
         Zeros = 3,
-        ANSIX923 = 4,
-        ISO10126 = 5,
     }
     public abstract partial class SymmetricAlgorithm : System.IDisposable
     {
-        protected int FeedbackSizeValue;
         protected int BlockSizeValue;
+        protected int FeedbackSizeValue;
         protected byte[] IVValue;
         protected int KeySizeValue;
         protected byte[] KeyValue;
@@ -177,8 +183,8 @@ namespace System.Security.Cryptography
         protected System.Security.Cryptography.CipherMode ModeValue;
         protected System.Security.Cryptography.PaddingMode PaddingValue;
         protected SymmetricAlgorithm() { }
-        public virtual int FeedbackSize { get { throw null; } set { } }
         public virtual int BlockSize { get { throw null; } set { } }
+        public virtual int FeedbackSize { get { throw null; } set { } }
         public virtual byte[] IV { get { throw null; } set { } }
         public virtual byte[] Key { get { throw null; } set { } }
         public virtual int KeySize { get { throw null; } set { } }
@@ -186,13 +192,13 @@ namespace System.Security.Cryptography
         public virtual System.Security.Cryptography.KeySizes[] LegalKeySizes { get { throw null; } }
         public virtual System.Security.Cryptography.CipherMode Mode { get { throw null; } set { } }
         public virtual System.Security.Cryptography.PaddingMode Padding { get { throw null; } set { } }
+        public void Clear() { }
         public static System.Security.Cryptography.SymmetricAlgorithm Create() { throw null; }
         public static System.Security.Cryptography.SymmetricAlgorithm Create(string algName) { throw null; }
         public virtual System.Security.Cryptography.ICryptoTransform CreateDecryptor() { throw null; }
         public abstract System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV);
         public virtual System.Security.Cryptography.ICryptoTransform CreateEncryptor() { throw null; }
         public abstract System.Security.Cryptography.ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV);
-        public void Clear() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public abstract void GenerateIV();

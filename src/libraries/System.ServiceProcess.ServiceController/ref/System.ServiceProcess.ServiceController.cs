@@ -23,6 +23,7 @@ namespace System.ServiceProcess
     {
         public const int MaxNameLength = 80;
         public ServiceBase() { }
+        public bool AutoLog { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(false)]
         public bool CanHandlePowerEvent { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(false)]
@@ -33,6 +34,7 @@ namespace System.ServiceProcess
         public bool CanShutdown { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(true)]
         public bool CanStop { get { throw null; } set { } }
+        public virtual System.Diagnostics.EventLog EventLog { get { throw null; } }
         public int ExitCode { get { throw null; } set { } }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
         protected System.IntPtr ServiceHandle { get { throw null; } }
@@ -115,9 +117,9 @@ namespace System.ServiceProcess
         Win32OwnProcess = 16,
         Win32ShareProcess = 32,
     }
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public readonly partial struct SessionChangeDescription
     {
+        private readonly int _dummy;
         public System.ServiceProcess.SessionChangeReason Reason { get { throw null; } }
         public int SessionId { get { throw null; } }
         public override bool Equals(object obj) { throw null; }

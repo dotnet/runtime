@@ -1040,6 +1040,13 @@
     ]
   },
   {
+    "Name": "System.Net.WebSockets.WebSocketProtocol",
+    "Description": "Provides the WebSocketProtocol class, which allows creating a websocket from a connected stream using WebSocketsProtocol.CreateFromConnectedStream.",
+    "CommonTypes": [
+      "System.Net.WebSockets.WebSocketProtocol"
+    ]
+  },
+  {
     "Name": "System.Net.Http.WinHttpHandler",
     "Description": "Provides a message handler for HttpClient based on the WinHTTP interface of Windows. While similar to HttpClientHandler, it provides developers more granular control over the application's HTTP communication than the HttpClientHandler.",
     "CommonTypes": [

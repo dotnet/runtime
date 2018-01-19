@@ -19,10 +19,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             OptionalUserDefinedCall = call;
             UserDefinedCallMethod = userDefinedMethod;
-            if (call.HasError)
-            {
-                SetError();
-            }
         }
 
         public Expr OptionalUserDefinedCall { get; }

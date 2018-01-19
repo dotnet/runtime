@@ -44,6 +44,6 @@ namespace System.Reflection
     // In the meantime, these will be exposed via wrapper factory methods in System.Private.Reflection.Extensibility.
     public partial struct CustomAttributeNamedArgument
     {
-        internal CustomAttributeNamedArgument(Type attributeType, string memberName, bool isField, CustomAttributeTypedArgument typedValue) { }
+        internal CustomAttributeNamedArgument(Type attributeType, string memberName, bool isField, CustomAttributeTypedArgument typedValue) { throw null; }
     }
 }

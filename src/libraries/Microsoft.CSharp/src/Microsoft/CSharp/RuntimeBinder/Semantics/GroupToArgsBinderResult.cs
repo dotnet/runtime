@@ -15,54 +15,33 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         internal sealed class GroupToArgsBinderResult
         {
-            public MethPropWithInst BestResult;
-            public MethPropWithInst GetBestResult() { return BestResult; }
-            public MethPropWithInst AmbiguousResult;
-            public MethPropWithInst GetAmbiguousResult() { return AmbiguousResult; }
-            private MethPropWithInst InaccessibleResult;
-            public MethPropWithInst GetInaccessibleResult() { return InaccessibleResult; }
-            private MethPropWithInst UninferableResult;
-            public MethPropWithInst GetUninferableResult() { return UninferableResult; }
-            private MethPropWithInst InconvertibleResult;
+            public MethPropWithInst BestResult { get; set; }
+
+            public MethPropWithInst AmbiguousResult { get; set; }
+
+            public MethPropWithInst InaccessibleResult { get; }
+
+            public MethPropWithInst UninferableResult { get; }
+
             public GroupToArgsBinderResult()
             {
                 BestResult = new MethPropWithInst();
                 AmbiguousResult = new MethPropWithInst();
                 InaccessibleResult = new MethPropWithInst();
                 UninferableResult = new MethPropWithInst();
-                InconvertibleResult = new MethPropWithInst();
-                _inconvertibleResults = new List<MethPropWithInst>();
             }
-
-            private readonly List<MethPropWithInst> _inconvertibleResults;
-
-            /////////////////////////////////////////////////////////////////////////////////
-
-            public void AddInconvertibleResult(
-                MethodSymbol method,
-                AggregateType currentType,
-                TypeArray currentTypeArgs)
-            {
-                if (InconvertibleResult.Sym == null)
-                {
-                    // This is the first one, so set it for error reporting usage.
-                    InconvertibleResult.Set(method, currentType, currentTypeArgs);
-                }
-                _inconvertibleResults.Add(new MethPropWithInst(method, currentType, currentTypeArgs));
-            }
-
-            /////////////////////////////////////////////////////////////////////////////////
 
             private static int NumberOfErrorTypes(TypeArray pTypeArgs)
             {
                 int nCount = 0;
                 for (int i = 0; i < pTypeArgs.Count; i++)
                 {
-                    if (pTypeArgs[i] is ErrorType)
+                    if (pTypeArgs[i] == null)
                     {
                         nCount++;
                     }
                 }
+
                 return nCount;
             }
 

@@ -67,6 +67,27 @@ namespace System.IO.Tests
             ValidateSetTimes(item, beforeTime, afterTime);
         }
 
+        [Fact]
+        [ActiveIssue(26349, TestPlatforms.AnyUnix)]
+        public void TimesIncludeMillisecondPart()
+        {
+            T item = GetExistingItem();
+            Assert.All(TimeFunctions(), (function) =>
+            {
+                var msec = 0;
+                for (int i = 0; i < 3; i++)
+                {
+                    msec = function.Getter(item).Millisecond;
+                    if (msec != 0)
+                        break;
+
+                    item = GetExistingItem(); // try a new file/directory
+                }
+
+                Assert.NotEqual(0, msec);
+            });
+        }
+
         protected void ValidateSetTimes(T item, DateTime beforeTime, DateTime afterTime)
         {
             Assert.All(TimeFunctions(), (function) =>

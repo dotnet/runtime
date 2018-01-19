@@ -12,7 +12,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 
 namespace System.Collections
 {
@@ -60,7 +59,6 @@ namespace System.Collections
                 throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (!(growFactor >= 1.0 && growFactor <= 10.0))
                 throw new ArgumentOutOfRangeException(nameof(growFactor), SR.Format(SR.ArgumentOutOfRange_QueueGrowFactor, 1, 10));
-            Contract.EndContractBlock();
 
             _array = new Object[capacity];
             _head = 0;
@@ -76,7 +74,7 @@ namespace System.Collections
         {
             if (col == null)
                 throw new ArgumentNullException(nameof(col));
-            Contract.EndContractBlock();
+
             IEnumerator en = col.GetEnumerator();
             while (en.MoveNext())
                 Enqueue(en.Current);
@@ -153,7 +151,7 @@ namespace System.Collections
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
-            Contract.EndContractBlock();
+
             int arrayLen = array.Length;
             if (arrayLen - index < _size)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
@@ -202,7 +200,6 @@ namespace System.Collections
         {
             if (Count == 0)
                 throw new InvalidOperationException(SR.InvalidOperation_EmptyQueue);
-            Contract.EndContractBlock();
 
             Object removed = _array[_head];
             _array[_head] = null;
@@ -219,7 +216,6 @@ namespace System.Collections
         {
             if (Count == 0)
                 throw new InvalidOperationException(SR.InvalidOperation_EmptyQueue);
-            Contract.EndContractBlock();
 
             return _array[_head];
         }
@@ -232,7 +228,7 @@ namespace System.Collections
         {
             if (queue == null)
                 throw new ArgumentNullException(nameof(queue));
-            Contract.EndContractBlock();
+
             return new SynchronizedQueue(queue);
         }
 
@@ -515,7 +511,6 @@ namespace System.Collections
             {
                 if (queue == null)
                     throw new ArgumentNullException(nameof(queue));
-                Contract.EndContractBlock();
 
                 _queue = queue;
             }

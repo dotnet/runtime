@@ -189,7 +189,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     CType typeArr = arrayDest.GetElementType();
                     CType typeLst = aggtypeSrc.GetTypeArgsAll()[0];
 
-                    Debug.Assert(!typeArr.IsNeverSameType());
+                    Debug.Assert(!(typeArr is MethodGroupType));
                     return typeArr == typeLst || FExpRefConv(loader, typeArr, typeLst);
                 }
                 if (HasGenericDelegateExplicitReferenceConversion(loader, typeSrc, typeDst))
@@ -248,10 +248,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 // If they're identical then this one is automatically good, so skip it.
                 // If we have an error type, then we're in some fault tolerance. Let it through.
-                if (pSourceArg == pTargetArg || pTargetArg is ErrorType || pSourceArg is ErrorType)
+                if (pSourceArg == pTargetArg)
                 {
                     continue;
                 }
+
                 TypeParameterType pParam = (TypeParameterType)pTypeParams[iParam];
                 if (pParam.Invariant)
                 {

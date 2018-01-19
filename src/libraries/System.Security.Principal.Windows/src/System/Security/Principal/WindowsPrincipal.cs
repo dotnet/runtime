@@ -5,7 +5,6 @@
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics.Contracts;
 using System.Security.Claims;
 
 namespace System.Security.Principal
@@ -38,7 +37,6 @@ namespace System.Security.Principal
         {
             if (ntIdentity == null)
                 throw new ArgumentNullException(nameof(ntIdentity));
-            Contract.EndContractBlock();
 
             _identity = ntIdentity;
         }
@@ -131,7 +129,6 @@ namespace System.Security.Principal
         {
             if (role < WindowsBuiltInRole.Administrator || role > WindowsBuiltInRole.Replicator)
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)role), nameof(role));
-            Contract.EndContractBlock();
 
             return IsInRole((int)role);
         }
@@ -153,7 +150,6 @@ namespace System.Security.Principal
         {
             if (sid == null)
                 throw new ArgumentNullException(nameof(sid));
-            Contract.EndContractBlock();
 
             // special case the anonymous identity.
             if (_identity.AccessToken.IsInvalid)

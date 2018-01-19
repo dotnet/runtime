@@ -3,6 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{F3E72F35-0351-4D67-2209-725BCAD807BA}</ProjectGuid>
+    <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);TargetsWindows</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
@@ -17,15 +18,17 @@
     <Compile Include="CommandBuilderTests.cs" />
     <Compile Include="ReaderTests.cs" />
     <Compile Include="SmokeTest.cs" />
+    <Compile Include="TestCommon\DataTestUtility.cs" />
+    <Compile Include="TestCommon\CheckConnStrSetupFactAttribute.cs" />
+    <Compile Include="OdbcParameterTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libdl\Interop.dlopen.cs">
       <Link>Common\Interop\Unix\libdl\Interop.dlopen.cs</Link>
     </Compile>
-    <Compile Include="TestCommon\DataTestUtility.cs" />
-    <Compile Include="TestCommon\CheckConnStrSetupFactAttribute.cs" />
-    <Compile Include="OdbcParameterTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
     <Compile Include="$(CommonPath)\Interop\Linux\Interop.Libraries.cs">

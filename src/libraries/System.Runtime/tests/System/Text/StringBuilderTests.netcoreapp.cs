@@ -199,5 +199,133 @@ namespace System.Text.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.Insert(builder.Length + 1, new ReadOnlySpan<char>(new char[0]))); // Index > builder.Length
             AssertExtensions.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Insert(builder.Length, new ReadOnlySpan<char>(new char[1]))); // New length > builder.MaxCapacity
         }
+
+        private static IEnumerable<object[]> Append_StringBuilder_TestData()
+        {
+            string mediumString = new string('a', 30);
+            string largeString = new string('b', 1000);
+
+            var sb1 = new StringBuilder("Hello");
+            var sb2 = new StringBuilder("one");
+            var sb3 = new StringBuilder(20).Append(mediumString);
+
+            yield return new object[] { new StringBuilder("Hello"), sb1, "HelloHello" };
+            yield return new object[] { new StringBuilder("Hello"), sb2, "Helloone" };
+            yield return new object[] { new StringBuilder("Hello"), new StringBuilder(), "Hello" };
+
+            yield return new object[] { new StringBuilder("one"), sb3, "one" + mediumString };
+
+            yield return new object[] { new StringBuilder(20).Append(mediumString), sb3, mediumString + mediumString };
+            yield return new object[] { new StringBuilder(10).Append(mediumString), sb3, mediumString + mediumString };
+
+            yield return new object[] { new StringBuilder(20).Append(largeString), sb3, largeString + mediumString };
+            yield return new object[] { new StringBuilder(10).Append(largeString), sb3, largeString + mediumString };
+
+            yield return new object[] { new StringBuilder(10), sb3, mediumString };
+            yield return new object[] { new StringBuilder(30), sb3, mediumString };
+            yield return new object[] { new StringBuilder(10), new StringBuilder(20), string.Empty};
+
+            yield return new object[] { sb1, null, "Hello" };
+            yield return new object[] { sb1, sb1, "HelloHello" };
+        }
+
+        [Theory]
+        [MemberData(nameof(Append_StringBuilder_TestData))]
+        public static void Append_StringBuilder(StringBuilder s1, StringBuilder s2, string s)
+        {
+            Assert.Equal(s, s1.Append(s2).ToString());
+        }
+
+        private static IEnumerable<object[]> Append_StringBuilder_Substring_TestData()
+        {
+            string mediumString = new string('a', 30);
+            string largeString = new string('b', 1000);
+
+            var sb1 = new StringBuilder("Hello");
+            var sb2 = new StringBuilder("one");
+            var sb3 = new StringBuilder(20).Append(mediumString);
+
+            yield return new object[] { new StringBuilder("Hello"), sb1, 0, 5, "HelloHello" };
+            yield return new object[] { new StringBuilder("Hello"), sb1, 0, 0, "Hello" };
+            yield return new object[] { new StringBuilder("Hello"), sb1, 2, 3, "Hellollo" };
+            yield return new object[] { new StringBuilder("Hello"), sb1, 2, 2, "Helloll" };
+            yield return new object[] { new StringBuilder("Hello"), sb1, 2, 0, "Hello" };
+            yield return new object[] { new StringBuilder("Hello"), new StringBuilder(), 0, 0, "Hello" };
+            yield return new object[] { new StringBuilder("Hello"), null, 0, 0, "Hello" };
+            yield return new object[] { new StringBuilder(), new StringBuilder("Hello"), 2, 3, "llo" };
+            yield return new object[] { new StringBuilder("Hello"), sb2, 0, 3, "Helloone" };
+
+            yield return new object[] { new StringBuilder("one"), sb3, 5, 25, "one" + new string('a', 25) };
+            yield return new object[] { new StringBuilder("one"), sb3, 5, 20, "one" + new string('a', 20) };
+            yield return new object[] { new StringBuilder("one"), sb3, 10, 10, "one" + new string('a', 10) };
+
+            yield return new object[] { new StringBuilder(20).Append(mediumString), sb3, 20, 10, new string('a', 40) };
+            yield return new object[] { new StringBuilder(10).Append(mediumString), sb3, 10, 10, new string('a', 40) };
+
+            yield return new object[] { new StringBuilder(20).Append(largeString), new StringBuilder(20).Append(largeString), 100, 50, largeString + new string('b', 50) };
+            yield return new object[] { new StringBuilder(10).Append(mediumString), new StringBuilder(20).Append(largeString), 20, 10, mediumString + new string('b', 10) };
+            yield return new object[] { new StringBuilder(10).Append(mediumString), new StringBuilder(20).Append(largeString), 100, 50, mediumString + new string('b', 50) };
+
+            yield return new object[] { sb1, sb1, 2, 3, "Hellollo" };
+            yield return new object[] { sb2, sb2, 2, 0, "one" };
+        }
+
+        [Theory]
+        [MemberData(nameof(Append_StringBuilder_Substring_TestData))]
+        public static void Append_StringBuilder_Substring(StringBuilder s1, StringBuilder s2, int startIndex, int count, string s)
+        {
+            Assert.Equal(s, s1.Append(s2, startIndex, count).ToString());
+        }
+
+        [Fact]
+        public static void Append_StringBuilder_InvalidInput()
+        {
+            StringBuilder sb = new StringBuilder(5, 5).Append("Hello");
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => sb.Append(sb, -1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => sb.Append(sb, 0, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => sb.Append(sb, 4, 5));
+            
+            Assert.Throws<ArgumentNullException>(() => sb.Append( (StringBuilder)null, 2, 2));
+            Assert.Throws<ArgumentNullException>(() => sb.Append((StringBuilder)null, 2, 3));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new StringBuilder(3, 6).Append("Hello").Append(sb));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new StringBuilder(3, 6).Append("Hello").Append("Hello"));
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => sb.Append(sb));
+        }
+
+        public static IEnumerable<object[]> Equals_String_TestData()
+        {
+            string mediumString = new string('a', 30);
+            string largeString = new string('a', 1000);
+            string extraLargeString = new string('a', 41000); // 8000 is the maximum chunk size
+
+            var sb1 = new StringBuilder("Hello");
+            var sb2 = new StringBuilder(20).Append(mediumString);
+            var sb3 = new StringBuilder(20).Append(largeString);
+            var sb4 = new StringBuilder(20).Append(extraLargeString);
+
+            yield return new object[] { sb1, "Hello", true };
+            yield return new object[] { sb1, "Hel", false };
+            yield return new object[] { sb1, "Hellz", false };
+            yield return new object[] { sb1, "Helloz", false };
+            yield return new object[] { sb1, "", false };
+            yield return new object[] { new StringBuilder(), "", true };
+            yield return new object[] { new StringBuilder(), "Hello", false };
+            yield return new object[] { sb2, mediumString, true };
+            yield return new object[] { sb2, "H", false };
+            yield return new object[] { sb3, largeString, true };
+            yield return new object[] { sb3, "H", false };
+            yield return new object[] { sb3, new string('a', 999) + 'b', false };
+            yield return new object[] { sb4, extraLargeString, true };
+            yield return new object[] { sb4, "H", false };
+        }
+
+        [Theory]
+        [MemberData(nameof(Equals_String_TestData))]
+        public static void Equals(StringBuilder sb1, string value, bool expected)
+        {
+            Assert.Equal(expected, sb1.Equals(value.AsReadOnlySpan()));
+        }
     }
 }

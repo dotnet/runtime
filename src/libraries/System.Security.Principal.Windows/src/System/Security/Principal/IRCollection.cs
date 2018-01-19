@@ -6,7 +6,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Reflection;
 
 namespace System.Security.Principal
@@ -74,7 +73,6 @@ namespace System.Security.Principal
             {
                 throw new ArgumentNullException(nameof(identity));
             }
-            Contract.EndContractBlock();
 
             _Identities.Add(identity);
         }
@@ -85,7 +83,6 @@ namespace System.Security.Principal
             {
                 throw new ArgumentNullException(nameof(identity));
             }
-            Contract.EndContractBlock();
 
             if (Contains(identity))
             {
@@ -106,7 +103,6 @@ namespace System.Security.Principal
             {
                 throw new ArgumentNullException(nameof(identity));
             }
-            Contract.EndContractBlock();
 
             return _Identities.Contains(identity);
         }
@@ -142,7 +138,6 @@ namespace System.Security.Principal
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
-                Contract.EndContractBlock();
 
                 _Identities[index] = value;
             }
@@ -176,7 +171,6 @@ namespace System.Security.Principal
             {
                 throw new ArgumentException(SR.IdentityReference_MustBeIdentityReference, nameof(targetType));
             }
-            Contract.EndContractBlock();
 
             //
             // if the source collection is empty, just return an empty collection
@@ -408,7 +402,6 @@ namespace System.Security.Principal
             {
                 throw new ArgumentNullException(nameof(collection));
             }
-            Contract.EndContractBlock();
 
             _collection = collection;
             _current = -1;

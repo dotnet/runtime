@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -59,7 +58,6 @@ namespace System.Security.Cryptography
 
         public override bool CanRead
         {
-            [Pure]
             get { return _canRead; }
         }
 
@@ -67,13 +65,11 @@ namespace System.Security.Cryptography
         // and get the state right.  This is too strict.
         public override bool CanSeek
         {
-            [Pure]
             get { return false; }
         }
 
         public override bool CanWrite
         {
-            [Pure]
             get { return _canWrite; }
         }
 

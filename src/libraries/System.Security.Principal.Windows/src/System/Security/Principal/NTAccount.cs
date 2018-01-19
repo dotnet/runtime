@@ -6,7 +6,6 @@ using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime.InteropServices;
 
@@ -53,7 +52,6 @@ namespace System.Security.Principal
             {
                 throw new ArgumentException(SR.IdentityReference_DomainNameTooLong, nameof(domainName));
             }
-            Contract.EndContractBlock();
 
             if (domainName == null || domainName.Length == 0)
             {
@@ -81,7 +79,6 @@ namespace System.Security.Principal
             {
                 throw new ArgumentException(SR.IdentityReference_AccountNameTooLong, nameof(name));
             }
-            Contract.EndContractBlock();
 
             _name = name;
         }
@@ -119,7 +116,6 @@ namespace System.Security.Principal
             {
                 throw new ArgumentNullException(nameof(targetType));
             }
-            Contract.EndContractBlock();
 
             if (targetType == typeof(NTAccount))
             {
@@ -187,7 +183,6 @@ namespace System.Security.Principal
             {
                 throw new ArgumentNullException(nameof(sourceAccounts));
             }
-            Contract.EndContractBlock();
 
             if (targetType == typeof(SecurityIdentifier))
             {
@@ -241,7 +236,6 @@ namespace System.Security.Principal
             {
                 throw new ArgumentException(SR.Arg_EmptyCollection, nameof(sourceAccounts));
             }
-            Contract.EndContractBlock();
 
             SafeLsaPolicyHandle LsaHandle = SafeLsaPolicyHandle.InvalidHandle;
             SafeLsaMemoryHandle ReferencedDomainsPtr = SafeLsaMemoryHandle.InvalidHandle;

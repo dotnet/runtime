@@ -11,7 +11,7 @@ namespace System.SpanTests
     public static partial class SpanTests
     {
         [Fact]
-        public static void PortableCastUIntToUShort()
+        public static void NonPortableCastUIntToUShort()
         {
             uint[] a = { 0x44332211, 0x88776655 };
             Span<uint> span = new Span<uint>(a);
@@ -22,14 +22,34 @@ namespace System.SpanTests
         }
 
         [Fact]
-        public static void PortableCastToTypeContainsReferences()
+        public static void NonPortableCastShortToLong()
+        {
+            short[] a = { 0x1234, 0x2345, 0x3456, 0x4567, 0x5678 };
+            Span<short> span = new Span<short>(a);
+            Span<long> asLong = span.NonPortableCast<short, long>();
+
+            Assert.True(Unsafe.AreSame<long>(ref Unsafe.As<short, long>(ref MemoryMarshal.GetReference(span)), ref MemoryMarshal.GetReference(asLong)));
+            asLong.Validate<long>(0x4567345623451234);
+        }
+
+        [Fact]
+        public static unsafe void NonPortableCastOverflow()
+        {
+            Span<TestHelpers.TestStructExplicit> span = new Span<TestHelpers.TestStructExplicit>(null, Int32.MaxValue);
+
+            TestHelpers.AssertThrows<OverflowException, TestHelpers.TestStructExplicit>(span, (_span) => _span.NonPortableCast<TestHelpers.TestStructExplicit, byte>().DontBox());
+            TestHelpers.AssertThrows<OverflowException, TestHelpers.TestStructExplicit>(span, (_span) => _span.NonPortableCast<TestHelpers.TestStructExplicit, ulong>().DontBox());
+        }
+
+        [Fact]
+        public static void NonPortableCastToTypeContainsReferences()
         {
             Span<uint> span = new Span<uint>(Array.Empty<uint>());
             TestHelpers.AssertThrows<ArgumentException, uint>(span, (_span) => _span.NonPortableCast<uint, StructWithReferences>().DontBox());
         }
 
         [Fact]
-        public static void PortableCastFromTypeContainsReferences()
+        public static void NonPortableCastFromTypeContainsReferences()
         {
             Span<StructWithReferences> span = new Span<StructWithReferences>(Array.Empty<StructWithReferences>());
             TestHelpers.AssertThrows<ArgumentException, StructWithReferences>(span, (_span) => _span.NonPortableCast<StructWithReferences, uint>().DontBox());

@@ -248,6 +248,20 @@
           }
         },
         {
+          "Name": "DotNet-CoreFx-Trusted-Windows-NoTest",
+          "Parameters": {
+            "PB_Platform": "arm64",
+            "PB_BuildArguments": "-framework=uapaot -buildArch=arm64 -$(PB_ConfigurationGroup) -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
+            "PB_SyncArguments": "-p -- /p:ArchGroup=arm64 /p:RuntimeOS=win10 /p:TargetGroup=uapaot /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "Type": "build/product/",
+            "Platform": "arm64",
+            "SubType": "uapaot"
+          }
+        },
+        {
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x64",

@@ -105,6 +105,7 @@ namespace System.Data.SqlClient.SNI
 
             ContextFlagsPal requestedContextFlags = ContextFlagsPal.Connection
                 | ContextFlagsPal.Confidentiality
+                | ContextFlagsPal.Delegate
                 | ContextFlagsPal.MutualAuth;
 
             string serverSPN = System.Text.Encoding.UTF8.GetString(serverName);

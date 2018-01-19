@@ -1,3 +1,0 @@
-Compat issues with assembly System.IO.UnmanagedMemoryStream:
-CannotRemoveBaseTypeOrInterface : Type 'System.IO.UnmanagedMemoryStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-Total Issues: 1

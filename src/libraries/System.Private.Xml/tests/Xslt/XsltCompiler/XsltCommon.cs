@@ -5,6 +5,7 @@
 using OLEDB.Test.ModuleCore;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -332,22 +333,31 @@ namespace XmlCoreTest.Common
 
         public static string SearchPath(String fileName)
         {
-            const string ToolsDirectorySuffix = @"bin\NETFX 4.5.1 Tools";
+            var locations = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            var tools64 = new DirectoryInfo(@"C:\program Files (x86)\Microsoft SDKs\Windows");
-            var tools32 = new DirectoryInfo(@"C:\program Files\Microsoft SDKs\Windows");
+            // 32 bit if on 64 bit Windows
+            locations.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), @"Microsoft SDKs\Windows"));
+            // 32 bit if on 32 bit Windows, otherwise 64 bit
+            locations.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"Microsoft SDKs\Windows"));
+            // 64 bit if in 32 bit process on 64 bit Windows
+            locations.Add(Path.Combine(Environment.GetEnvironmentVariable("ProgramW6432"), @"Microsoft SDKs\Windows"));
 
-            var directories64 = tools64.Exists ? tools64.EnumerateDirectories() : Enumerable.Empty<DirectoryInfo>();
-            var directories32 = tools32.Exists ? tools32.EnumerateDirectories() : Enumerable.Empty<DirectoryInfo>();
+            var files = new List<string>();
 
-            var toolPath = directories64.Concat(directories32)
-                .Select(dir => Path.Combine(dir.FullName, ToolsDirectorySuffix, fileName))
-                .SingleOrDefault(File.Exists);
+            foreach (var location in locations)
+            {
+                if (Directory.Exists(location))
+                    files.AddRange(Directory.GetFiles(location, fileName, SearchOption.AllDirectories));
+            }
 
-            if (toolPath == null)
+            if (files.Count == 0)
                 throw new FileNotFoundException(fileName);
 
-            return toolPath;
+            // Crudely prefer newer versions, eg 4.6.2 over 4.6.1,
+            // but it currently is not important
+            files.Sort(StringComparer.OrdinalIgnoreCase);
+
+            return files[files.Count - 1];
         }
     }
 

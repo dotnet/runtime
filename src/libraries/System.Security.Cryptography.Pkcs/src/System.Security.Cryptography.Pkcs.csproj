@@ -193,7 +193,6 @@
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Contracts" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />

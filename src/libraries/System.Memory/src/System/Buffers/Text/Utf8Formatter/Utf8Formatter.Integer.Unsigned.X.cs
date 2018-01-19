@@ -2,14 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if !netstandard
-using Internal.Runtime.CompilerServices;
-#else
-using System.Runtime.CompilerServices;
-#endif
-
-using System.Runtime.InteropServices;
-
 namespace System.Buffers.Text
 {
     /// <summary>
@@ -19,50 +11,35 @@ namespace System.Buffers.Text
     {
         private static bool TryFormatUInt64X(ulong value, byte precision, bool useLower, Span<byte> buffer, out int bytesWritten)
         {
-            const string HexTableLower = "0123456789abcdef";
-            const string HexTableUpper = "0123456789ABCDEF";
+            int actualDigitCount = FormattingHelpers.CountHexDigits(value);
+            int computedOutputLength = (precision == StandardFormat.NoPrecision)
+                ? actualDigitCount
+                : Math.Max(precision, actualDigitCount);
 
-            int digits = 1;
-            ulong v = value;
-            if (v > 0xFFFFFFFF)
-            {
-                digits += 8;
-                v >>= 0x20;
-            }
-            if (v > 0xFFFF)
-            {
-                digits += 4;
-                v >>= 0x10;
-            }
-            if (v > 0xFF)
-            {
-                digits += 2;
-                v >>= 0x8;
-            }
-            if (v > 0xF)
-                digits++;
-
-            int paddingCount = (precision == StandardFormat.NoPrecision) ? 0 : precision - digits;
-            if (paddingCount < 0)
-                paddingCount = 0;
-
-            bytesWritten = digits + paddingCount;
-            if (buffer.Length < bytesWritten)
+            if (buffer.Length < computedOutputLength)
             {
                 bytesWritten = 0;
                 return false;
             }
 
-            string hexTable = useLower ? HexTableLower : HexTableUpper;
-            ref byte utf8Bytes = ref MemoryMarshal.GetReference(buffer);
-            int idx = bytesWritten;
+            bytesWritten = computedOutputLength;
+            string hexTable = (useLower) ? FormattingHelpers.HexTableLower : FormattingHelpers.HexTableUpper;
 
-            for (v = value; digits-- > 0; v >>= 4)
-                Unsafe.Add(ref utf8Bytes, --idx) = (byte)hexTable[(int)(v & 0xF)];
+            // Writing the output backward in this manner allows the JIT to elide
+            // bounds checking on the output buffer. The JIT won't elide the bounds
+            // check on the hex table lookup, but we can live with that for now.
 
-            while (paddingCount-- > 0)
-                Unsafe.Add(ref utf8Bytes, --idx) = (byte)'0';
+            // It doesn't quite make sense to use the fast hex conversion functionality
+            // for this method since that routine works on bytes, and here we're working
+            // directly with nibbles. There may be opportunity for improvement by special-
+            // casing output lengths of 2, 4, 8, and 16 and running them down optimized
+            // code paths.
 
+            while ((uint)(--computedOutputLength) < (uint)buffer.Length)
+            {
+                buffer[computedOutputLength] = (byte)hexTable[(int)value & 0xf];
+                value >>= 4;
+            }
             return true;
         }
     }

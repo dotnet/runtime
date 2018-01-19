@@ -15,10 +15,12 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public void WriteEmpty(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            writer.WriteOctetString(ReadOnlySpan<byte>.Empty);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.WriteOctetString(ReadOnlySpan<byte>.Empty);
 
-            Verify(writer, "0400");
+                Verify(writer, "0400");
+            }
         }
 
         [Theory]
@@ -41,10 +43,12 @@ namespace System.Security.Cryptography.Tests.Asn1
             string expectedHex = hexStart + payloadHex;
             byte[] data = new byte[length];
 
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-            writer.WriteOctetString(data);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                writer.WriteOctetString(data);
 
-            Verify(writer, expectedHex);
+                Verify(writer, expectedHex);
+            }
         }
         
         [Theory]
@@ -63,10 +67,12 @@ namespace System.Security.Cryptography.Tests.Asn1
                 data[i] = 0x88;
             }
 
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.CER);
-            writer.WriteOctetString(data);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
+            {
+                writer.WriteOctetString(data);
 
-            Verify(writer, expectedHex);
+                Verify(writer, expectedHex);
+            }
         }
 
         [Theory]
@@ -116,10 +122,12 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             foreach (Asn1Tag toTry in tagsToTry)
             {
-                AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
-                writer.WriteOctetString(toTry, data);
+                using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+                {
+                    writer.WriteOctetString(toTry, data);
 
-                Assert.True(writer.TryEncode(answerBuf, out _));
+                    Assert.True(writer.TryEncode(answerBuf, out _));
+                }
                 Assert.True(Asn1Tag.TryParse(answerBuf, out Asn1Tag writtenTag, out _));
 
                 if (expectConstructed)
@@ -142,15 +150,16 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.DER)]
         public void VerifyWriteOctetString_EndOfContents(PublicEncodingRules ruleSet)
         {
-            AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet);
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteOctetString(Asn1Tag.EndOfContents, ReadOnlySpan<byte>.Empty));
 
-            AssertExtensions.Throws<ArgumentException>(
-                "tag",
-                () => writer.WriteOctetString(Asn1Tag.EndOfContents, ReadOnlySpan<byte>.Empty));
-
-            AssertExtensions.Throws<ArgumentException>(
-                "tag",
-                () => writer.WriteOctetString(Asn1Tag.EndOfContents, new byte[1]));
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteOctetString(Asn1Tag.EndOfContents, new byte[1]));
+            }
         }
     }
 }
