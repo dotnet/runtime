@@ -57,6 +57,9 @@ namespace System.Globalization
             ~(CompareOptions.IgnoreCase | CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace |
               CompareOptions.IgnoreWidth | CompareOptions.IgnoreKanaType | CompareOptions.StringSort);
 
+        // Cache the invariant CompareInfo
+        internal static readonly CompareInfo Invariant = CultureInfo.InvariantCulture.CompareInfo;
+
         //
         // CompareInfos have an interesting identity.  They are attached to the locale that created them,
         // ie: en-US would have an en-US sort.  For haw-US (custom), then we serialize it as haw-US.
