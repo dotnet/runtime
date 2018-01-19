@@ -4224,6 +4224,58 @@ void emitter::emitIns_R_R(
             fmt = IF_DV_2J;
             break;
 
+        case INS_cmeq:
+        case INS_cmge:
+        case INS_cmgt:
+        case INS_cmle:
+        case INS_cmlt:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+
+            if (isValidVectorDatasize(size))
+            {
+                // Vector operation
+                assert(insOptsAnyArrangement(opt));
+                assert(isValidArrangement(size, opt));
+                elemsize = optGetElemsize(opt);
+                fmt      = IF_DV_2M;
+            }
+            else
+            {
+                NYI("Untested");
+                // Scalar operation
+                assert(size == EA_8BYTE); // Only Double supported
+                fmt = IF_DV_2L;
+            }
+            break;
+
+        case INS_fcmeq:
+        case INS_fcmge:
+        case INS_fcmgt:
+        case INS_fcmle:
+        case INS_fcmlt:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+
+            if (isValidVectorDatasize(size))
+            {
+                // Vector operation
+                assert(insOptsAnyArrangement(opt));
+                assert(isValidArrangement(size, opt));
+                elemsize = optGetElemsize(opt);
+                assert((elemsize == EA_8BYTE) || (elemsize == EA_4BYTE)); // Only Double/Float supported
+                assert(opt != INS_OPTS_1D);                               // Reserved encoding
+                fmt = IF_DV_2A;
+            }
+            else
+            {
+                NYI("Untested");
+                // Scalar operation
+                assert((size == EA_8BYTE) || (size == EA_4BYTE)); // Only Double/Float supported
+                fmt = IF_DV_2G;
+            }
+            break;
+
         default:
             unreached();
             break;
