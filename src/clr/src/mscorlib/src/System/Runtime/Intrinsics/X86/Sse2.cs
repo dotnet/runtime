@@ -601,12 +601,12 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128d _mm_loadh_pd (__m128d a, double const* mem_addr)
         /// </summary>
-        public static unsafe Vector128<double> LoadHigh(Vector128<double> value, double* address) => LoadHigh(value, address);
+        public static unsafe Vector128<double> LoadHigh(Vector128<double> lower, double* address) => LoadHigh(lower, address);
 
         /// <summary>
         /// __m128d _mm_loadl_pd (__m128d a, double const* mem_addr)
         /// </summary>
-        public static unsafe Vector128<double> LoadLow(Vector128<double> value, double* address) => LoadLow(value, address);
+        public static unsafe Vector128<double> LoadLow(Vector128<double> upper, double* address) => LoadLow(upper, address);
 
         /// <summary>
         /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr)
