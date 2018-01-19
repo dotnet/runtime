@@ -691,8 +691,8 @@ unwinder_unwind_frame (Unwinder *unwinder,
 					   mgreg_t **save_locations,
 					   StackFrameInfo *frame)
 {
+	gpointer parent;
 	if (unwinder->in_interp) {
-		gpointer parent;
 		memcpy (new_ctx, ctx, sizeof (MonoContext));
 
 		/* Process debugger invokes */
@@ -725,6 +725,8 @@ unwinder_unwind_frame (Unwinder *unwinder,
 		if (frame->type == FRAME_TYPE_INTERP_TO_MANAGED) {
 			unwinder->in_interp = TRUE;
 			mini_get_interp_callbacks ()->frame_iter_init (&unwinder->interp_iter, frame->interp_exit_data);
+			parent = mini_get_interp_callbacks ()->frame_get_parent (frame->interp_exit_data);
+			MONO_CONTEXT_SET_SP (new_ctx, parent);
 		}
 		return TRUE;
 	}
