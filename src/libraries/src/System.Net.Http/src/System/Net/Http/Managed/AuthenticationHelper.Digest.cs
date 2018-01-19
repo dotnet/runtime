@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http.Headers;
@@ -126,15 +127,8 @@ namespace System.Net.Http
             if (realm != string.Empty)
                 sb.AppendKeyValue(Realm, realm);
 
-            // If nonce is same as previous request, update nonce count.
-            if (nonce == digestResponse.Nonce)
-            {
-                digestResponse.NonceCount++;
-            }
-
             // Add nonce
             sb.AppendKeyValue(Nonce, nonce);
-            digestResponse.Nonce = nonce;
 
             // Add uri
             sb.AppendKeyValue(Uri, request.RequestUri.PathAndQuery);
@@ -183,7 +177,7 @@ namespace System.Net.Http
 
             string response = ComputeHash(ComputeHash(a1, algorithm) + ":" +
                                         nonce + ":" +
-                                        digestResponse.NonceCount.ToString("x8") + ":" +
+                                        DigestResponse.NonceCount + ":" +
                                         cnonce + ":" +
                                         qop + ":" +
                                         ComputeHash(a2, algorithm), algorithm);
@@ -201,7 +195,7 @@ namespace System.Net.Http
             sb.AppendKeyValue(Qop, qop, includeQuotes: false);
 
             // Add nc
-            sb.AppendKeyValue(NC, digestResponse.NonceCount.ToString("x8"), includeQuotes: false);
+            sb.AppendKeyValue(NC, DigestResponse.NonceCount, includeQuotes: false);
 
             // Add cnonce
             sb.AppendKeyValue(CNonce, cnonce, includeComma: false);
@@ -222,7 +216,7 @@ namespace System.Net.Http
             s_rng.GetBytes(randomNumbers);
 
             StringBuilder sb = StringBuilderCache.Acquire(Length);
-            for (int i = 0; i < randomNumbers.Length; )
+            for (int i = 0; i < randomNumbers.Length;)
             {
                 // Get a random digit 0-9, a random alphabet in a-z, or a random alphabeta in A-Z
                 int rangeIndex = randomNumbers[i++] % 3;
@@ -251,128 +245,144 @@ namespace System.Net.Http
             }
         }
 
-        public class DigestResponse
+        internal class DigestResponse
         {
-            public readonly Dictionary<string, string> Parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            internal readonly Dictionary<string, string> Parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            internal const string NonceCount = "00000001";
 
-            // Keep track of request values for this response.
-            public string Nonce;
-            public uint NonceCount;
-
-            public DigestResponse(string challenge)
+            internal DigestResponse(string challenge)
             {
-                Nonce = null;
-                NonceCount = 1;
-
                 Parse(challenge);
             }
 
-            private unsafe string GetNextKey(ref char* p)
+            private static bool CharIsSpaceOrTab(char ch)
             {
-                // It is generally cheaper to change a local and then write back to ref at the end
-                // rather than updating the ref on each operation.
-                char* temp = p;
+                return ch == ' ' || ch == '\t';
+            }
 
-                StringBuilder sb = StringBuilderCache.Acquire();
-
-                // Skip leading whitespace
-                while (*temp == ' ')
+            private string GetNextKey(string data, int currentIndex, out int parsedIndex)
+            {
+                // Skip leading space or tab.
+                while (currentIndex < data.Length && CharIsSpaceOrTab(data[currentIndex]))
                 {
-                    temp++;
+                    currentIndex++;
                 }
 
                 // Start parsing key
-                while (*temp != '=')
-                {
-                    // Key cannot have whitespace
-                    if (*temp == ' ')
-                        break;
+                int start = currentIndex;
 
-                    sb.Append(*temp);
-                    temp++;
+                // Parse till '=' is encountered marking end of key.
+                // Key cannot contain space or tab, break if either is found.
+                while (currentIndex < data.Length && data[currentIndex] != '=' && !CharIsSpaceOrTab(data[currentIndex]))
+                {
+                    currentIndex++;
                 }
 
-                // Skip trailing whitespace and '='
-                while (*temp == ' ' || *temp == '=')
+                if (currentIndex == data.Length)
                 {
-                    temp++;
+                    // Key didn't terminate with '='
+                    parsedIndex = currentIndex;
+                    return null;
                 }
 
-                // Set the ref p to temp
-                p = temp;
+                // Record end of key.
+                int length = currentIndex - start;
+                if (CharIsSpaceOrTab(data[currentIndex]))
+                {
+                    // Key parsing terminated due to ' ' or '\t'.
+                    // Parse till '=' is found.
+                    while (currentIndex < data.Length && CharIsSpaceOrTab(data[currentIndex]))
+                    {
+                        currentIndex++;
+                    }
 
-                return StringBuilderCache.GetStringAndRelease(sb);
+                    if (currentIndex == data.Length || data[currentIndex] != '=')
+                    {
+                        // Key is invalid.
+                        parsedIndex = currentIndex;
+                        return null;
+                    }
+                }
+
+                // Skip trailing space and tab and '='
+                while (currentIndex < data.Length && (CharIsSpaceOrTab(data[currentIndex]) || data[currentIndex] == '='))
+                {
+                    currentIndex++;
+                }
+
+                // Set the parsedIndex to current valid char.
+                parsedIndex = currentIndex;
+                return data.Substring(start, length);
             }
 
-            private unsafe string GetNextValue(ref char* p)
+            private string GetNextValue(string data, int currentIndex, out int parsedIndex)
             {
-                // It is generally cheaper to change a local and then write back to ref at the end
-                // rather than updating the ref on each operation.
-                char* temp = p;
-
-                StringBuilder sb = StringBuilderCache.Acquire();
-
-                // Skip leading whitespace
-                while (*temp == ' ')
-                {
-                    temp++;
-                }
+                Debug.Assert(currentIndex < data.Length && !CharIsSpaceOrTab(data[currentIndex]));
 
                 // If quoted value, skip first quote.
                 bool quotedValue = false;
-                if (*temp == '"')
+                if (data[currentIndex] == '"')
                 {
                     quotedValue = true;
-                    temp++;
+                    currentIndex++;
                 }
 
-                while ((quotedValue && *temp != '"') || (!quotedValue && *temp != ',' && *temp != '\0'))
+                StringBuilder sb = StringBuilderCache.Acquire();
+                while (currentIndex < data.Length && ((quotedValue && data[currentIndex] != '"') || (!quotedValue && data[currentIndex] != ',')))
                 {
-                    sb.Append(*temp);
-                    temp++;
+                    sb.Append(data[currentIndex]);
+                    currentIndex++;
 
-                    if (!quotedValue && *temp == ' ')
+                    if (currentIndex == data.Length)
                         break;
 
-                    if (quotedValue && *temp == '"' && *(temp - 1) == '\\')
+                    if (!quotedValue && CharIsSpaceOrTab(data[currentIndex]))
+                        break;
+
+                    if (quotedValue && data[currentIndex] == '"' && data[currentIndex - 1] == '\\')
                     {
                         // Include the escaped quote.
-                        sb.Append(*temp);
-                        temp++;
+                        sb.Append(data[currentIndex]);
+                        currentIndex++;
                     }
                 }
 
                 // Return if this is last value.
-                if (*temp == '\0')
-                    return sb.ToString();
-
-                // Skip the end quote or ',' or whitespace
-                temp++;
-
-                // Skip whitespace and ,
-                while (*temp == ' ' || *temp == ',')
+                if (currentIndex == data.Length)
                 {
-                    temp++;
+                    parsedIndex = currentIndex;
+                    return StringBuilderCache.GetStringAndRelease(sb);
                 }
 
-                // Set ref p to temp
-                p = temp;
+                // Skip the end quote or ',' or space or tab.
+                currentIndex++;
 
+                // Skip space and tab and ,
+                while (currentIndex < data.Length && (CharIsSpaceOrTab(data[currentIndex]) || data[currentIndex] == ','))
+                {
+                    currentIndex++;
+                }
+
+                // Set parsedIndex to current valid char.
+                parsedIndex = currentIndex;
                 return StringBuilderCache.GetStringAndRelease(sb);
             }
 
             private unsafe void Parse(string challenge)
             {
-                fixed (char* p = challenge)
+                int parsedIndex = 0;
+                while (parsedIndex < challenge.Length)
                 {
-                    char* counter = p;
-                    while (*counter != '\0')
-                    {
-                        string key = GetNextKey(ref counter);
-                        string value = GetNextValue(ref counter);
+                    // Get the key.
+                    string key = GetNextKey(challenge, parsedIndex, out parsedIndex);
+                    // Ensure key is not empty and parsedIndex is still in range.
+                    if (string.IsNullOrEmpty(key) || parsedIndex >= challenge.Length)
+                        break;
 
-                        Parameters.Add(key, value);
-                    }
+                    // Get the value.
+                    string value = GetNextValue(challenge, parsedIndex, out parsedIndex);
+                    // Add the key-value pair to Parameters.
+                    Parameters.Add(key, value);
                 }
             }
         }
