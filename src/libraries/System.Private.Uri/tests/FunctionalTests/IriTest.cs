@@ -64,30 +64,34 @@ namespace System.PrivateUri.Tests
         public void Iri_Uri_SchemaParsing_ShouldNotThrowArgumentOutOfRange()
         {
             string root = "viewcode://./codeschema_class?";
-            string uriDataFra = root + Uri.EscapeDataString("Type=\u00E9");
+            string uriDataFra = root + "Type=" + Uri.EscapeDataString("\u00E9");
 
             Uri u1 = new Uri(uriDataFra);
 
-            // TODO #8330 : Normalization should produce the same result for escaped/unescaped URIs.
-            // Assert.Equal(root + "Type=%C3%A9", u1.AbsoluteUri);
-
-            Assert.NotEqual(root + "Type=%C3%A9", u1.AbsoluteUri);
+            Assert.Equal(root + "Type=%C3%A9", u1.AbsoluteUri);
         }
 
         [Fact]
-        public void Iri_IncorrectNormalization()
+        public void Iri_ReservedCharacters_NotNormalized()
         {
             Uri u1 = new Uri(@"http://test.com/%2c");
             Uri u2 = new Uri(@"http://test.com/,");
 
-            // TODO #8330 : Normalization should produce the same result for escaped/unescaped URIs.
-            //Assert.Equal(
-            //    u1.ToString(),
-            //    u2.ToString());
-
             Assert.NotEqual(
                 u1.ToString(),
                 u2.ToString());
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Requires fix shipping in .NET 4.7.2")]
+        public void Iri_UnknownSchemeWithoutAuthority_DoesNormalize()
+        {
+            string[] paths = { "\u00E8", "%C3%A8" };
+            foreach (string path in paths)
+            {
+                Uri noAuthority = new Uri("scheme:" + path);
+                Assert.Equal("scheme:\u00E8", noAuthority.ToString());
+            }
         }
 
         [Fact]
