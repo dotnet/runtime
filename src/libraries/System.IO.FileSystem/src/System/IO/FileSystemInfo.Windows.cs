@@ -6,7 +6,7 @@ using System.Security;
 
 namespace System.IO
 {
-    partial class FileSystemInfo : IFileSystemObject
+    partial class FileSystemInfo
     {
         // Cache the file/directory information
         private Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA _data;
@@ -28,7 +28,7 @@ namespace System.IO
             _dataInitialized = 0;
         }
 
-        FileAttributes IFileSystemObject.Attributes
+        public FileAttributes Attributes
         {
             get
             {
@@ -37,12 +37,12 @@ namespace System.IO
             }
             set
             {
-                FileSystem.Current.SetAttributes(FullPath, value);
+                FileSystem.SetAttributes(FullPath, value);
                 _dataInitialized = -1;
             }
         }
 
-        bool IFileSystemObject.Exists
+        internal bool ExistsCore
         {
             get
             {
@@ -59,7 +59,7 @@ namespace System.IO
             }
         }
 
-        DateTimeOffset IFileSystemObject.CreationTime
+        internal DateTimeOffset CreationTimeCore
         {
             get
             {
@@ -68,12 +68,12 @@ namespace System.IO
             }
             set
             {
-                FileSystem.Current.SetCreationTime(FullPath, value, this is DirectoryInfo);
+                FileSystem.SetCreationTime(FullPath, value, this is DirectoryInfo);
                 _dataInitialized = -1;
             }
         }
 
-        DateTimeOffset IFileSystemObject.LastAccessTime
+        internal DateTimeOffset LastAccessTimeCore
         {
             get
             {
@@ -82,12 +82,12 @@ namespace System.IO
             }
             set
             {
-                FileSystem.Current.SetLastAccessTime(FullPath, value, (this is DirectoryInfo));
+                FileSystem.SetLastAccessTime(FullPath, value, (this is DirectoryInfo));
                 _dataInitialized = -1;
             }
         }
 
-        DateTimeOffset IFileSystemObject.LastWriteTime
+        internal DateTimeOffset LastWriteTimeCore
         {
             get
             {
@@ -96,12 +96,12 @@ namespace System.IO
             }
             set
             {
-                FileSystem.Current.SetLastWriteTime(FullPath, value, (this is DirectoryInfo));
+                FileSystem.SetLastWriteTime(FullPath, value, (this is DirectoryInfo));
                 _dataInitialized = -1;
             }
         }
 
-        long IFileSystemObject.Length
+        internal long LengthCore
         {
             get
             {
@@ -122,11 +122,11 @@ namespace System.IO
                 throw Win32Marshal.GetExceptionForWin32Error(_dataInitialized, FullPath);
         }
 
-        void IFileSystemObject.Refresh()
+        public void Refresh()
         {
             // This should not throw, instead we store the result so that we can throw it
             // when someone actually accesses a property
-            _dataInitialized = Win32FileSystem.FillAttributeInfo(FullPath, ref _data, returnErrorOnNotFound: false);
+            _dataInitialized = FileSystem.FillAttributeInfo(FullPath, ref _data, returnErrorOnNotFound: false);
         }
     }
 }

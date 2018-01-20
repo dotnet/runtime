@@ -4,7 +4,7 @@
 
 namespace System.IO
 {
-    partial class FileSystemInfo : IFileSystemObject
+    partial class FileSystemInfo
     {
         private const int NanosecondsPerTick = 100;
 
@@ -26,17 +26,12 @@ namespace System.IO
         /// </summary>
         private int _fileStatusInitialized = -1;
 
-        internal IFileSystemObject FileSystemObject
-        {
-            get { return this; }
-        }
-
         internal void Invalidate()
         {
             _fileStatusInitialized = -1;
         }
 
-        FileAttributes IFileSystemObject.Attributes
+        public FileAttributes Attributes
         {
             get
             {
@@ -181,7 +176,7 @@ namespace System.IO
             }
         }
 
-        bool IFileSystemObject.Exists
+        internal bool ExistsCore
         {
             get
             {
@@ -196,7 +191,7 @@ namespace System.IO
             }
         }
 
-        DateTimeOffset IFileSystemObject.CreationTime
+        internal DateTimeOffset CreationTimeCore
         {
             get
             {
@@ -223,7 +218,7 @@ namespace System.IO
             }
         }
 
-        DateTimeOffset IFileSystemObject.LastAccessTime
+        internal DateTimeOffset LastAccessTimeCore
         {
             get
             {
@@ -235,7 +230,7 @@ namespace System.IO
             set { SetAccessWriteTimes(value.ToUnixTimeSeconds(), null); }
         }
 
-        DateTimeOffset IFileSystemObject.LastWriteTime
+        internal DateTimeOffset LastWriteTimeCore
         {
             get
             {
@@ -265,7 +260,7 @@ namespace System.IO
             _fileStatusInitialized = -1;
         }
 
-        long IFileSystemObject.Length
+        internal long LengthCore
         {
             get
             {
@@ -274,7 +269,7 @@ namespace System.IO
             }
         }
 
-        void IFileSystemObject.Refresh()
+        public void Refresh()
         {
             // This should not throw, instead we store the result so that we can throw it
             // when someone actually accesses a property.

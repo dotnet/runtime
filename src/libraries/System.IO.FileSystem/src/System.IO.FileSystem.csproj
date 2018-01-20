@@ -25,9 +25,7 @@
     <Compile Include="System\IO\DirectoryInfo.cs" />
     <Compile Include="System\IO\File.cs" />
     <Compile Include="System\IO\FileInfo.cs" />
-    <Compile Include="System\IO\FileSystem.cs" />
     <Compile Include="System\IO\FileSystemInfo.cs" />
-    <Compile Include="System\IO\IFileSystemObject.cs" />
     <Compile Include="System\IO\Iterator.cs" />
     <Compile Include="System\IO\PathHelpers.cs" />
     <Compile Include="System\IO\PathPair.cs" />
@@ -77,7 +75,7 @@
     <Compile Include="System\IO\FileSystemInfo.Windows.cs" />
     <Compile Include="System\IO\PathHelpers.Windows.cs" />
     <Compile Include="System\IO\RawFindData.cs" />
-    <Compile Include="System\IO\Win32FileSystem.cs" />
+    <Compile Include="System\IO\FileSystem.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
@@ -190,7 +188,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GET_FILEEX_INFO_LEVELS.cs">
       <Link>Common\Interop\Windows\Interop.GET_FILEEX_INFO_LEVELS.cs</Link>
     </Compile>
-    <Compile Include="System\IO\FileSystem.Current.Win32.cs" />
     <Compile Include="System\IO\FileSystemInfo.Win32.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetThreadErrorMode.cs">
       <Link>Common\Interop\Windows\Interop.SetThreadErrorMode.cs</Link>
@@ -294,10 +291,9 @@
   <!-- Unix -->
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\IO\CharSpanExtensions.Unix.cs" />
-    <Compile Include="System\IO\FileSystem.Current.Unix.cs" />
     <Compile Include="System\IO\FileSystemInfo.Unix.cs" />
     <Compile Include="System\IO\PathHelpers.Unix.cs" />
-    <Compile Include="System\IO\UnixFileSystem.cs" />
+    <Compile Include="System\IO\FileSystem.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
