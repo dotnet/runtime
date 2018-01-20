@@ -50,8 +50,8 @@ namespace System.SpanTests
             var actualSpan = new Span<byte>(actualFull, start, length - start - 1);
             actualSpan.Fill(fill);
 
-            var actual = actualSpan.ToArray();
-            var expected = expectedSpan.ToArray();
+            byte[] actual = actualSpan.ToArray();
+            byte[] expected = expectedSpan.ToArray();
             Assert.Equal<byte>(expected, actual);
             Assert.Equal(0, actualFull[0]);
             Assert.Equal(0, actualFull[length - 1]);

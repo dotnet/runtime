@@ -120,6 +120,24 @@ namespace System
         }
 
         /// <summary>
+        /// Reverses the sequence of the elements in the entire span.
+        /// </summary>
+        public static void Reverse<T>(this Span<T> span)
+        {
+            ref T p = ref MemoryMarshal.GetReference(span);
+            int i = 0;
+            int j = span.Length - 1;
+            while (i < j)
+            {
+                T temp = Unsafe.Add(ref p, i);
+                Unsafe.Add(ref p, i) = Unsafe.Add(ref p, j);
+                Unsafe.Add(ref p, j) = temp;
+                i++;
+                j--;
+            }
+        }
+
+        /// <summary>
         /// Searches for the specified value and returns the index of its first occurrence. If not found, returns -1. Values are compared using IEquatable{T}.Equals(T). 
         /// </summary>
         /// <param name="span">The span to search.</param>
