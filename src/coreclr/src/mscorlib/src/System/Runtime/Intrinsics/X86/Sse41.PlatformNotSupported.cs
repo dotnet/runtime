@@ -63,10 +63,21 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// __m128d _mm_ceil_sd (__m128d a)
+        /// The above native signature does not exist. We provide this additional overload for the recommended use case of this intrinsic.
+        /// </summary>
+        public static Vector128<double> CeilingScalar(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128 _mm_ceil_ss (__m128 a)
+        /// The above native signature does not exist. We provide this additional overload for the recommended use case of this intrinsic.
+        /// </summary>
+        public static Vector128<float> CeilingScalar(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128d _mm_ceil_sd (__m128d a, __m128d b)
         /// </summary>
         public static Vector128<double> CeilingScalar(Vector128<double> upper, Vector128<double> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
-        /// __m128 _mm_ceil_ss (__m128 a)
+        /// __m128 _mm_ceil_ss (__m128 a, __m128 b)
         /// </summary>
         public static Vector128<float> CeilingScalar(Vector128<float> upper, Vector128<float> value) { throw new PlatformNotSupportedException(); }
 
@@ -177,10 +188,21 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// __m128d _mm_floor_sd (__m128d a)
+        /// The above native signature does not exist. We provide this additional overload for the recommended use case of this intrinsic.
+        /// </summary>
+        public static Vector128<double> FloorScalar(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128 _mm_floor_ss (__m128 a)
+        /// The above native signature does not exist. We provide this additional overload for the recommended use case of this intrinsic.
+        /// </summary>
+        public static Vector128<float> FloorScalar(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128d _mm_floor_sd (__m128d a, __m128d b)
         /// </summary>
         public static Vector128<double> FloorScalar(Vector128<double> upper, Vector128<double> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
-        /// __m128 _mm_floor_ss (__m128 a)
+        /// __m128 _mm_floor_ss (__m128 a, __m128 b)
         /// </summary>
         public static Vector128<float> FloorScalar(Vector128<float> upper, Vector128<float> value) { throw new PlatformNotSupportedException(); }
 
@@ -317,46 +339,96 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<double> RoundCurrentDirection(Vector128<double> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// _MM_FROUND_CUR_DIRECTION
+        /// __m128d _mm_round_sd (__m128d a, _MM_FROUND_CUR_DIRECTION)
+        /// The above native signature does not exist. We provide this additional overload for the recommended use case of this intrinsic.
+        /// </summary>
+        public static Vector128<double> RoundCurrentDirectionScalar(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_round_sd (__m128d a, _MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC)
+        /// The above native signature does not exist. We provide this additional overload for the recommended use case of this intrinsic.
+        /// </summary>
+        public static Vector128<double> RoundToNearestIntegerScalar(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_round_sd (__m128d a, _MM_FROUND_TO_NEG_INF |_MM_FROUND_NO_EXC)
+        /// The above native signature does not exist. We provide this additional overload for the recommended use case of this intrinsic.
+        /// </summary>
+        public static Vector128<double> RoundToNegativeInfinityScalar(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_round_sd (__m128d a, _MM_FROUND_TO_POS_INF |_MM_FROUND_NO_EXC)
+        /// The above native signature does not exist. We provide this additional overload for the recommended use case of this intrinsic.
+        /// </summary>
+        public static Vector128<double> RoundToPositiveInfinityScalar(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_round_sd (__m128d a, _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC)
+        /// The above native signature does not exist. We provide this additional overload for the recommended use case of this intrinsic.
+        /// </summary>
+        public static Vector128<double> RoundToZeroScalar(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128d _mm_round_sd (__m128d a, __m128d b, _MM_FROUND_CUR_DIRECTION)
         /// </summary>
         public static Vector128<double> RoundCurrentDirectionScalar(Vector128<double> upper, Vector128<double> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
-        /// __m128d _mm_round_sd (__m128d a, int rounding)
-        /// _MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC
+        /// __m128d _mm_round_sd (__m128d a, __m128d b, _MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC)
         /// </summary>
         public static Vector128<double> RoundToNearestIntegerScalar(Vector128<double> upper, Vector128<double> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
-        /// _MM_FROUND_TO_NEG_INF |_MM_FROUND_NO_EXC
+        /// __m128d _mm_round_sd (__m128d a, __m128d b, _MM_FROUND_TO_NEG_INF |_MM_FROUND_NO_EXC)
         /// </summary>
         public static Vector128<double> RoundToNegativeInfinityScalar(Vector128<double> upper, Vector128<double> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
-        /// _MM_FROUND_TO_POS_INF |_MM_FROUND_NO_EXC
+        /// __m128d _mm_round_sd (__m128d a, __m128d b, _MM_FROUND_TO_POS_INF |_MM_FROUND_NO_EXC)
         /// </summary>
         public static Vector128<double> RoundToPositiveInfinityScalar(Vector128<double> upper, Vector128<double> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
-        /// _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC
+        /// __m128d _mm_round_sd (__m128d a, __m128d b, _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC)
         /// </summary>
         public static Vector128<double> RoundToZeroScalar(Vector128<double> upper, Vector128<double> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// _MM_FROUND_CUR_DIRECTION
+        /// __m128 _mm_round_ss (__m128 a, _MM_FROUND_CUR_DIRECTION)
+        /// The above native signature does not exist. We provide this additional overload for the recommended use case of this intrinsic.
+        /// </summary>
+        public static Vector128<float> RoundCurrentDirectionScalar(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128 _mm_round_ss (__m128 a, _MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC)
+        /// The above native signature does not exist. We provide this additional overload for the recommended use case of this intrinsic.
+        /// </summary>
+        public static Vector128<float> RoundToNearestIntegerScalar(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128 _mm_round_ss (__m128 a, _MM_FROUND_TO_NEG_INF |_MM_FROUND_NO_EXC)
+        /// The above native signature does not exist. We provide this additional overload for the recommended use case of this intrinsic.
+        /// </summary>
+        public static Vector128<float> RoundToNegativeInfinityScalar(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128 _mm_round_ss (__m128 a, _MM_FROUND_TO_POS_INF |_MM_FROUND_NO_EXC)
+        /// The above native signature does not exist. We provide this additional overload for the recommended use case of this intrinsic.
+        /// </summary>
+        public static Vector128<float> RoundToPositiveInfinityScalar(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128 _mm_round_ss (__m128 a, _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC)
+        /// The above native signature does not exist. We provide this additional overload for the recommended use case of this intrinsic.
+        /// </summary>
+        public static Vector128<float> RoundToZeroScalar(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+        
+        /// <summary>
+        /// __m128 _mm_round_ss (__m128 a, __m128 b, _MM_FROUND_CUR_DIRECTION)
         /// </summary>
         public static Vector128<float> RoundCurrentDirectionScalar(Vector128<float> upper, Vector128<float> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
-        /// __m128 _mm_round_ss (__m128 a, int rounding)
-        /// _MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC
+        /// __m128 _mm_round_ss (__m128 a, __m128 b, _MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC)
         /// </summary>
         public static Vector128<float> RoundToNearestIntegerScalar(Vector128<float> upper, Vector128<float> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
-        /// _MM_FROUND_TO_NEG_INF |_MM_FROUND_NO_EXC
+        /// __m128 _mm_round_ss (__m128 a, __m128 b, _MM_FROUND_TO_NEG_INF |_MM_FROUND_NO_EXC)
         /// </summary>
         public static Vector128<float> RoundToNegativeInfinityScalar(Vector128<float> upper, Vector128<float> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
-        /// _MM_FROUND_TO_POS_INF |_MM_FROUND_NO_EXC
+        /// __m128 _mm_round_ss (__m128 a, __m128 b, _MM_FROUND_TO_POS_INF |_MM_FROUND_NO_EXC)
         /// </summary>
         public static Vector128<float> RoundToPositiveInfinityScalar(Vector128<float> upper, Vector128<float> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
-        /// _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC
+        /// __m128 _mm_round_ss (__m128 a, __m128 b, _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC)
         /// </summary>
         public static Vector128<float> RoundToZeroScalar(Vector128<float> upper, Vector128<float> value) { throw new PlatformNotSupportedException(); }
 
