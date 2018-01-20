@@ -44,7 +44,7 @@ namespace System.MemoryTests
             unsafe
             {
                 Retain();
-                if (offset < 0 || (_array.Length > 0 && offset >= _array.Length)) throw new ArgumentOutOfRangeException(nameof(offset));
+                if (offset < 0 || offset > _array.Length) throw new ArgumentOutOfRangeException(nameof(offset));
                 var handle = GCHandle.Alloc(_array, GCHandleType.Pinned);
                 return new MemoryHandle(this, Unsafe.Add<byte>((void*)handle.AddrOfPinnedObject(), offset), handle);
             }
