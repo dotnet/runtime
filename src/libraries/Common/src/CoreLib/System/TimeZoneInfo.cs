@@ -1894,7 +1894,7 @@ namespace System
             if (result == TimeZoneInfoResult.Success)
             {
                 if (cachedData._systemTimeZones == null)
-                    cachedData._systemTimeZones = new Dictionary<string, TimeZoneInfo>();
+                    cachedData._systemTimeZones = new Dictionary<string, TimeZoneInfo>(StringComparer.OrdinalIgnoreCase);
 
                 cachedData._systemTimeZones.Add(id, match);
 
