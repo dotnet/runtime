@@ -1599,7 +1599,7 @@ bool emitter::emitVerifyEncodable(instruction ins, emitAttr size, regNumber reg1
 
     if ((ins != INS_movsx) && // These three instructions support high register
         (ins != INS_movzx)    // encodings for reg1
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
         && (ins != INS_crc32)
 #endif
             )
@@ -4274,17 +4274,7 @@ void emitter::emitIns_R_R_S_I(
     emitCurIGsize += sz;
 }
 
-#ifdef DEBUG
-static bool isAvxBlendv(instruction ins)
-{
-    return ins == INS_vblendvps || ins == INS_vblendvpd || ins == INS_vpblendvb;
-}
-
-static bool isSse41Blendv(instruction ins)
-{
-    return ins == INS_blendvps || ins == INS_blendvpd || ins == INS_pblendvb;
-}
-#endif
+#ifndef LEGACY_BACKEND
 
 void emitter::emitIns_R_R_R_R(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber reg1, regNumber reg2, regNumber reg3)
@@ -4312,6 +4302,8 @@ void emitter::emitIns_R_R_R_R(
     dispIns(id);
     emitCurIGsize += sz;
 }
+
+#endif // !LEGACY_BACKEND
 
 /*****************************************************************************
  *
@@ -5251,7 +5243,7 @@ void emitter::emitIns_AX_R(instruction ins, emitAttr attr, regNumber ireg, regNu
     emitAdjustStackDepthPushPop(ins);
 }
 
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
 void emitter::emitIns_SIMD_R_R_A(instruction ins, emitAttr attr, regNumber reg, regNumber reg1, GenTreeIndir* indir)
 {
     if (UseVEXEncoding())
@@ -7738,7 +7730,7 @@ void emitter::emitDispIns(
                 // INS_bt operands are reversed. Display them in the normal order.
                 printf("%s, %s", emitRegName(id->idReg2(), attr), emitRegName(id->idReg1(), attr));
             }
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
             else if (ins == INS_crc32 && attr != EA_8BYTE)
             {
                 printf("%s, %s", emitRegName(id->idReg1(), EA_4BYTE), emitRegName(id->idReg2(), attr));
@@ -10108,7 +10100,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 
 #endif // _TARGET_AMD64_
     }
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
     else if ((ins == INS_crc32) || (ins == INS_lzcnt) || (ins == INS_popcnt))
     {
         code = insEncodeRMreg(ins, code);

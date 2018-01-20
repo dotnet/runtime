@@ -1593,7 +1593,7 @@ public:
         return OperIsSIMD(gtOper);
     }
 
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
     inline bool OperIsSimdHWIntrinsic() const;
 #else
     inline bool OperIsSimdHWIntrinsic() const
@@ -1663,7 +1663,7 @@ public:
             case GT_LEA:
             case GT_RETFILT:
             case GT_NOP:
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
             case GT_HWIntrinsic:
 #endif // FEATURE_HW_INTRINSICS
                 return true;
@@ -1691,7 +1691,7 @@ public:
             case GT_SIMD:
 #endif // !FEATURE_SIMD
 
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
             case GT_HWIntrinsic:
 #endif // FEATURE_HW_INTRINSICS
 
@@ -4223,7 +4223,7 @@ struct GenTreeSIMD : public GenTreeJitIntrinsic
 };
 #endif // FEATURE_SIMD
 
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
 struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 {
     NamedIntrinsic gtHWIntrinsicId;
