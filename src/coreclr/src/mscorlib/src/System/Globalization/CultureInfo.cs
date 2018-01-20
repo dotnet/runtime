@@ -148,17 +148,16 @@ namespace System.Globalization
         internal const int LOCALE_CUSTOM_DEFAULT  = 0x0c00;
         internal const int LOCALE_INVARIANT       = 0x007F;
 
-        //
-        // The CultureData  instance that reads the data provided by our CultureData class.
-        //
-        // Using a field initializer rather than a static constructor so that the whole class can be lazy
-        // init.
-        private static readonly bool init = Init();
-        private static bool Init()
+        private static CultureInfo InitializeUserDefaultCulture()
         {
-            s_userDefaultCulture = GetUserDefaultCulture();
-            s_userDefaultUICulture = GetUserDefaultUILanguage();
-            return true;
+            Interlocked.CompareExchange(ref s_userDefaultCulture, GetUserDefaultCulture(), null);
+            return s_userDefaultCulture;
+        }
+
+        private static CultureInfo InitializeUserDefaultUICulture()
+        {
+            Interlocked.CompareExchange(ref s_userDefaultUICulture, GetUserDefaultUICulture(), null);
+            return s_userDefaultUICulture;
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -166,7 +165,6 @@ namespace System.Globalization
         //  CultureInfo Constructors
         //
         ////////////////////////////////////////////////////////////////////////
-
 
         public CultureInfo(String name)
             : this(name, true)
@@ -423,34 +421,9 @@ namespace System.Globalization
             return UserDefaultUICulture;
         }
 
-        internal static CultureInfo UserDefaultUICulture
-        {
-            get
-            {
-                // if s_userDefaultUICulture == null means CultureInfo statics didn't get initialized yet. this can happen if there early static
-                // method get executed which eventually hit the cultureInfo code while CultureInfo statics didn’t get chance to initialize
-                if (s_userDefaultUICulture == null)
-                {
-                    Init();
-                }
+        internal static CultureInfo UserDefaultUICulture => s_userDefaultUICulture ?? InitializeUserDefaultUICulture();
 
-                Debug.Assert(s_userDefaultUICulture != null);
-                return s_userDefaultUICulture;
-            }
-        }
-
-        public static CultureInfo InstalledUICulture
-        {
-            get
-            {
-                if (s_userDefaultCulture == null)
-                {
-                    Init();
-                }
-                Debug.Assert(s_userDefaultCulture != null, "[CultureInfo.InstalledUICulture] s_userDefaultCulture != null");
-                return s_userDefaultCulture;
-            }
-        }
+        public static CultureInfo InstalledUICulture => s_userDefaultCulture ?? InitializeUserDefaultCulture();
 
         public static CultureInfo DefaultThreadCurrentCulture
         {
@@ -920,7 +893,9 @@ namespace System.Globalization
 
         public void ClearCachedData()
         {
-            Init(); // reset the default culture values
+            // reset the default culture values
+            s_userDefaultCulture = GetUserDefaultCulture();
+            s_userDefaultUICulture = GetUserDefaultUICulture();
 
             RegionInfo.s_currentRegionInfo = null;
             #pragma warning disable 0618 // disable the obsolete warning 
