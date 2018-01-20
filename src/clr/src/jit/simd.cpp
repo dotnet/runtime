@@ -348,7 +348,7 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
             setUsesSIMDTypes(true);
         }
     }
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
     else if (isIntrinsicType(typeHnd))
     {
         const size_t Vector64SizeBytes  = 64 / 8;

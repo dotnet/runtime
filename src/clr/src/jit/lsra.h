@@ -1587,7 +1587,7 @@ private:
     void TreeNodeInfoInitSIMD(GenTreeSIMD* tree, TreeNodeInfo* info);
 #endif // FEATURE_SIMD
 
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
     void TreeNodeInfoInitHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, TreeNodeInfo* info);
 #endif // FEATURE_HW_INTRINSICS
 
