@@ -2116,7 +2116,7 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     SIMDVector3Handle = nullptr;
     SIMDVector4Handle = nullptr;
     SIMDVectorHandle  = nullptr;
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
 #if defined(_TARGET_ARM64_)
     Vector64FloatHandle  = nullptr;
     Vector64DoubleHandle = nullptr;
