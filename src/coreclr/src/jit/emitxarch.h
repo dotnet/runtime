@@ -184,6 +184,14 @@ bool IsThreeOperandAVXInstruction(instruction ins)
     return (IsDstDstSrcAVXInstruction(ins) || IsDstSrcSrcAVXInstruction(ins));
 }
 bool Is4ByteAVXInstruction(instruction ins);
+bool isAvxBlendv(instruction ins)
+{
+    return ins == INS_vblendvps || ins == INS_vblendvpd || ins == INS_vpblendvb;
+}
+bool isSse41Blendv(instruction ins)
+{
+    return ins == INS_blendvps || ins == INS_blendvpd || ins == INS_pblendvb;
+}
 #else  // LEGACY_BACKEND
 bool UseVEXEncoding()
 {
@@ -223,6 +231,14 @@ bool IsThreeOperandAVXInstruction(instruction ins)
     return false;
 }
 bool Is4ByteAVXInstruction(instruction ins)
+{
+    return false;
+}
+bool isAvxBlendv(instruction ins)
+{
+    return false;
+}
+bool isSse41Blendv(instruction ins)
 {
     return false;
 }
@@ -398,7 +414,9 @@ void emitIns_R_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber r
 
 void emitIns_R_R_S_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int varx, int offs, int ival);
 
+#ifndef LEGACY_BACKEND
 void emitIns_R_R_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3, regNumber reg4);
+#endif // !LEGACY_BACKEND
 
 void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
 
@@ -454,7 +472,7 @@ void emitIns_R_AX(instruction ins, emitAttr attr, regNumber ireg, regNumber reg,
 
 void emitIns_AX_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, unsigned mul, int disp);
 
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
 void emitIns_SIMD_R_R_AR(instruction ins, emitAttr attr, regNumber reg, regNumber reg1, regNumber base);
 void emitIns_SIMD_R_R_A_I(instruction ins, emitAttr attr, regNumber reg, regNumber reg1, GenTreeIndir* indir, int ival);
 void emitIns_SIMD_R_R_C_I(
@@ -468,7 +486,7 @@ void emitIns_SIMD_R_R_S(instruction ins, emitAttr attr, regNumber reg, regNumber
 void emitIns_SIMD_R_R_R(instruction ins, emitAttr attr, regNumber reg, regNumber reg1, regNumber reg2);
 void emitIns_SIMD_R_R_R_R(
     instruction ins, emitAttr attr, regNumber reg, regNumber reg1, regNumber reg2, regNumber reg3);
-#endif
+#endif // FEATURE_HW_INTRINSICS
 
 #if FEATURE_STACK_FP_X87
 void emitIns_F_F0(instruction ins, unsigned fpreg);

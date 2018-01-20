@@ -1613,7 +1613,7 @@ GenTreePtr Compiler::impNormStructVal(GenTreePtr           structVal,
             assert(varTypeIsSIMD(structVal) && (structVal->gtType == structType));
             break;
 #endif // FEATURE_SIMD
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
         case GT_HWIntrinsic:
             assert(varTypeIsSIMD(structVal) && (structVal->gtType == structType));
             break;
@@ -1652,7 +1652,7 @@ GenTreePtr Compiler::impNormStructVal(GenTreePtr           structVal,
             }
             else
 #endif
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
                 if (blockNode->OperGet() == GT_HWIntrinsic && blockNode->AsHWIntrinsic()->isSIMD())
             {
                 parent->gtOp.gtOp2 = impNormStructVal(blockNode, structHnd, curLevel, forceNormalization);
@@ -3395,7 +3395,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         {
             ni = lookupNamedIntrinsic(method);
 
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
 #ifdef _TARGET_XARCH_
             if (ni > NI_HW_INTRINSIC_START && ni < NI_HW_INTRINSIC_END)
             {
@@ -4118,13 +4118,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         }
     }
 
-#if FEATURE_HW_INTRINSICS && defined(_TARGET_XARCH_)
+#if defined(FEATURE_HW_INTRINSICS) && defined(_TARGET_XARCH_)
     if ((namespaceName != nullptr) && strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0)
     {
         InstructionSet isa = lookupHWIntrinsicISA(className);
         result             = lookupHWIntrinsic(methodName, isa);
     }
-#endif // FEATURE_HW_INTRINSICS
+#endif // defined(FEATURE_HW_INTRINSICS) && defined(_TARGET_XARCH_)
     return result;
 }
 
