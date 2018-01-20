@@ -11,11 +11,11 @@ using System.Threading;
 namespace System.IO
 {
     /// <summary>Provides an implementation of FileSystem for Unix systems.</summary>
-    internal sealed partial class UnixFileSystem : FileSystem
+    internal static partial class FileSystem
     {
         internal const int DefaultBufferSize = 4096;
 
-        public override void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
+        public static void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
             // The destination path may just be a directory into which the file should be copied.
             // If it is, append the filename from the source onto the destination directory
@@ -32,7 +32,7 @@ namespace System.IO
             }
         }
 
-        public override void ReplaceFile(string sourceFullPath, string destFullPath, string destBackupFullPath, bool ignoreMetadataErrors)
+        public static void ReplaceFile(string sourceFullPath, string destFullPath, string destBackupFullPath, bool ignoreMetadataErrors)
         {
             if (destBackupFullPath != null)
             {
@@ -69,7 +69,7 @@ namespace System.IO
             Interop.CheckIo(Interop.Sys.Rename(sourceFullPath, destFullPath));
         }
 
-        public override void MoveFile(string sourceFullPath, string destFullPath)
+        public static void MoveFile(string sourceFullPath, string destFullPath)
         {
             // The desired behavior for Move(source, dest) is to not overwrite the destination file
             // if it exists. Since rename(source, dest) will replace the file at 'dest' if it exists,
@@ -145,7 +145,7 @@ namespace System.IO
             DeleteFile(sourceFullPath);
         }
 
-        public override void DeleteFile(string fullPath)
+        public static void DeleteFile(string fullPath)
         {
             if (Interop.Sys.Unlink(fullPath) < 0)
             {
@@ -179,7 +179,7 @@ namespace System.IO
             }
         }
 
-        public override void CreateDirectory(string fullPath)
+        public static void CreateDirectory(string fullPath)
         {
             // NOTE: This logic is primarily just carried forward from Win32FileSystem.CreateDirectory.
 
@@ -280,7 +280,7 @@ namespace System.IO
             }
         }
 
-        public override void MoveDirectory(string sourceFullPath, string destFullPath)
+        public static void MoveDirectory(string sourceFullPath, string destFullPath)
         {
             // Windows doesn't care if you try and copy a file via "MoveDirectory"...
             if (FileExists(sourceFullPath))
@@ -313,7 +313,7 @@ namespace System.IO
             }
         }
 
-        public override void RemoveDirectory(string fullPath, bool recursive)
+        public static void RemoveDirectory(string fullPath, bool recursive)
         {
             var di = new DirectoryInfo(fullPath);
             if (!di.Exists)
@@ -323,7 +323,7 @@ namespace System.IO
             RemoveDirectoryInternal(di, recursive, throwOnTopLevelDirectoryNotFound: true);
         }
 
-        private void RemoveDirectoryInternal(DirectoryInfo directory, bool recursive, bool throwOnTopLevelDirectoryNotFound)
+        private static void RemoveDirectoryInternal(DirectoryInfo directory, bool recursive, bool throwOnTopLevelDirectoryNotFound)
         {
             Exception firstException = null;
 
@@ -399,7 +399,7 @@ namespace System.IO
             }
         }
 
-        public override bool DirectoryExists(string fullPath)
+        public static bool DirectoryExists(string fullPath)
         {
             Interop.ErrorInfo ignored;
             return DirectoryExists(fullPath, out ignored);
@@ -410,7 +410,7 @@ namespace System.IO
             return FileExists(fullPath, Interop.Sys.FileTypes.S_IFDIR, out errorInfo);
         }
 
-        public override bool FileExists(string fullPath)
+        public static bool FileExists(string fullPath)
         {
             Interop.ErrorInfo ignored;
 
@@ -444,12 +444,12 @@ namespace System.IO
                 ((fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
         }
 
-        public override IEnumerable<string> EnumeratePaths(string path, string searchPattern, SearchOption searchOption, SearchTarget searchTarget)
+        public static IEnumerable<string> EnumeratePaths(string path, string searchPattern, SearchOption searchOption, SearchTarget searchTarget)
         {
             return new FileSystemEnumerable<string>(path, searchPattern, searchOption, searchTarget, (p, _) => p);
         }
 
-        public override IEnumerable<FileSystemInfo> EnumerateFileSystemInfos(string fullPath, string searchPattern, SearchOption searchOption, SearchTarget searchTarget)
+        public static IEnumerable<FileSystemInfo> EnumerateFileSystemInfos(string fullPath, string searchPattern, SearchOption searchOption, SearchTarget searchTarget)
         {
             switch (searchTarget)
             {
@@ -695,17 +695,17 @@ namespace System.IO
             return name == "." || name == "..";
         }
 
-        public override string GetCurrentDirectory()
+        public static string GetCurrentDirectory()
         {
             return Interop.Sys.GetCwd();
         }
 
-        public override void SetCurrentDirectory(string fullPath)
+        public static void SetCurrentDirectory(string fullPath)
         {
             Interop.CheckIo(Interop.Sys.ChDir(fullPath), fullPath, isDirectory:true);
         }
 
-        public override FileAttributes GetAttributes(string fullPath)
+        public static FileAttributes GetAttributes(string fullPath)
         {
             FileAttributes attributes = new FileInfo(fullPath, null).Attributes;
 
@@ -715,61 +715,61 @@ namespace System.IO
             return attributes;
         }
 
-        public override void SetAttributes(string fullPath, FileAttributes attributes)
+        public static void SetAttributes(string fullPath, FileAttributes attributes)
         {
             new FileInfo(fullPath, null).Attributes = attributes;
         }
 
-        public override DateTimeOffset GetCreationTime(string fullPath)
+        public static DateTimeOffset GetCreationTime(string fullPath)
         {
             return new FileInfo(fullPath, null).CreationTime;
         }
 
-        public override void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
+        public static void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
         {
-            IFileSystemObject info = asDirectory ?
-                (IFileSystemObject)new DirectoryInfo(fullPath, null) :
-                (IFileSystemObject)new FileInfo(fullPath, null);
+            FileSystemInfo info = asDirectory ?
+                (FileSystemInfo)new DirectoryInfo(fullPath, null) :
+                (FileSystemInfo)new FileInfo(fullPath, null);
 
-            info.CreationTime = time;
+            info.CreationTimeCore = time;
         }
 
-        public override DateTimeOffset GetLastAccessTime(string fullPath)
+        public static DateTimeOffset GetLastAccessTime(string fullPath)
         {
             return new FileInfo(fullPath, null).LastAccessTime;
         }
 
-        public override void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)
+        public static void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)
         {
-            IFileSystemObject info = asDirectory ?
-                (IFileSystemObject)new DirectoryInfo(fullPath, null) :
-                (IFileSystemObject)new FileInfo(fullPath, null);
+            FileSystemInfo info = asDirectory ?
+                (FileSystemInfo)new DirectoryInfo(fullPath, null) :
+                (FileSystemInfo)new FileInfo(fullPath, null);
 
-            info.LastAccessTime = time;
+            info.LastAccessTimeCore = time;
         }
 
-        public override DateTimeOffset GetLastWriteTime(string fullPath)
+        public static DateTimeOffset GetLastWriteTime(string fullPath)
         {
             return new FileInfo(fullPath, null).LastWriteTime;
         }
 
-        public override void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)
+        public static void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)
         {
-            IFileSystemObject info = asDirectory ?
-                (IFileSystemObject)new DirectoryInfo(fullPath, null) :
-                (IFileSystemObject)new FileInfo(fullPath, null);
+            FileSystemInfo info = asDirectory ?
+                (FileSystemInfo)new DirectoryInfo(fullPath, null) :
+                (FileSystemInfo)new FileInfo(fullPath, null);
 
-            info.LastWriteTime = time;
+            info.LastWriteTimeCore = time;
         }
 
-        public override IFileSystemObject GetFileSystemInfo(string fullPath, bool asDirectory)
+        public static FileSystemInfo GetFileSystemInfo(string fullPath, bool asDirectory)
         {
             return asDirectory ?
-                (IFileSystemObject)new DirectoryInfo(fullPath, null) :
-                (IFileSystemObject)new FileInfo(fullPath, null);
+                (FileSystemInfo)new DirectoryInfo(fullPath, null) :
+                (FileSystemInfo)new FileInfo(fullPath, null);
         }
 
-        public override string[] GetLogicalDrives()
+        public static string[] GetLogicalDrives()
         {
             return DriveInfoInternal.GetLogicalDrives();
         }

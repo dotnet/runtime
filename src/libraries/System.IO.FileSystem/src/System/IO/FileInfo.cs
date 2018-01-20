@@ -42,11 +42,11 @@ namespace System.IO
         {
             get
             {
-                if ((FileSystemObject.Attributes & FileAttributes.Directory) == FileAttributes.Directory)
+                if ((Attributes & FileAttributes.Directory) == FileAttributes.Directory)
                 {
                     throw new FileNotFoundException(SR.Format(SR.IO_FileNotFound_FileName, DisplayPath), DisplayPath);
                 }
-                return FileSystemObject.Length;
+                return LengthCore;
             }
         }
 
@@ -158,7 +158,7 @@ namespace System.IO
         // 
         public override void Delete()
         {
-            FileSystem.Current.DeleteFile(FullPath);
+            FileSystem.DeleteFile(FullPath);
         }
 
         // Tests if the given file exists. The result is true if the file
@@ -172,7 +172,7 @@ namespace System.IO
             {
                 try
                 {
-                    return FileSystemObject.Exists;
+                    return ExistsCore;
                 }
                 catch
                 {
@@ -238,7 +238,7 @@ namespace System.IO
                 throw new FileNotFoundException(SR.Format(SR.IO_FileNotFound_FileName, FullName), FullName);
             }
 
-            FileSystem.Current.MoveFile(FullPath, fullDestFileName);
+            FileSystem.MoveFile(FullPath, fullDestFileName);
 
             FullPath = fullDestFileName;
             OriginalPath = destFileName;
