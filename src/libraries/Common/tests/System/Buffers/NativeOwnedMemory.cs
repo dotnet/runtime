@@ -55,7 +55,7 @@ namespace System.Buffers
 
         public override unsafe MemoryHandle Pin(int offset = 0)
         {
-            if (offset < 0 || (_length > 0 && offset >= _length)) throw new ArgumentOutOfRangeException(nameof(offset));
+            if (offset < 0 || offset > _length) throw new ArgumentOutOfRangeException(nameof(offset));
             void* pointer = (void*)((byte*)_ptr + offset);
             return new MemoryHandle(this, pointer);
         }
