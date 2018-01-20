@@ -5614,7 +5614,7 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
     }
 #endif
 
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
     if (oper == GT_HWIntrinsic)
     {
         // TODO-CQ: For now hardware intrinsics are not handled by value numbering to be amenable for CSE'ing.
