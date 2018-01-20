@@ -35,7 +35,7 @@ namespace System.IO
 
             string fullPath = Path.GetFullPath(path);
 
-            FileSystem.Current.CreateDirectory(fullPath);
+            FileSystem.CreateDirectory(fullPath);
 
             return new DirectoryInfo(fullPath, null);
         }
@@ -71,7 +71,7 @@ namespace System.IO
 
                 string fullPath = Path.GetFullPath(path);
 
-                return FileSystem.Current.DirectoryExists(fullPath);
+                return FileSystem.DirectoryExists(fullPath);
             }
             catch (ArgumentException) { }
             catch (NotSupportedException) { }  // Security can throw this on ":"
@@ -85,13 +85,13 @@ namespace System.IO
         public static void SetCreationTime(string path, DateTime creationTime)
         {
             string fullPath = Path.GetFullPath(path);
-            FileSystem.Current.SetCreationTime(fullPath, creationTime, asDirectory: true);
+            FileSystem.SetCreationTime(fullPath, creationTime, asDirectory: true);
         }
 
         public static void SetCreationTimeUtc(string path, DateTime creationTimeUtc)
         {
             string fullPath = Path.GetFullPath(path);
-            FileSystem.Current.SetCreationTime(fullPath, File.GetUtcDateTimeOffset(creationTimeUtc), asDirectory: true);
+            FileSystem.SetCreationTime(fullPath, File.GetUtcDateTimeOffset(creationTimeUtc), asDirectory: true);
         }
 
         public static DateTime GetCreationTime(string path)
@@ -107,13 +107,13 @@ namespace System.IO
         public static void SetLastWriteTime(string path, DateTime lastWriteTime)
         {
             string fullPath = Path.GetFullPath(path);
-            FileSystem.Current.SetLastWriteTime(fullPath, lastWriteTime, asDirectory: true);
+            FileSystem.SetLastWriteTime(fullPath, lastWriteTime, asDirectory: true);
         }
 
         public static void SetLastWriteTimeUtc(string path, DateTime lastWriteTimeUtc)
         {
             string fullPath = Path.GetFullPath(path);
-            FileSystem.Current.SetLastWriteTime(fullPath, File.GetUtcDateTimeOffset(lastWriteTimeUtc), asDirectory: true);
+            FileSystem.SetLastWriteTime(fullPath, File.GetUtcDateTimeOffset(lastWriteTimeUtc), asDirectory: true);
         }
 
         public static DateTime GetLastWriteTime(string path)
@@ -129,13 +129,13 @@ namespace System.IO
         public static void SetLastAccessTime(string path, DateTime lastAccessTime)
         {
             string fullPath = Path.GetFullPath(path);
-            FileSystem.Current.SetLastAccessTime(fullPath, lastAccessTime, asDirectory: true);
+            FileSystem.SetLastAccessTime(fullPath, lastAccessTime, asDirectory: true);
         }
 
         public static void SetLastAccessTimeUtc(string path, DateTime lastAccessTimeUtc)
         {
             string fullPath = Path.GetFullPath(path);
-            FileSystem.Current.SetLastAccessTime(fullPath, File.GetUtcDateTimeOffset(lastAccessTimeUtc), asDirectory: true);
+            FileSystem.SetLastAccessTime(fullPath, File.GetUtcDateTimeOffset(lastAccessTimeUtc), asDirectory: true);
         }
 
         public static DateTime GetLastAccessTime(string path)
@@ -296,7 +296,7 @@ namespace System.IO
             Debug.Assert(searchPattern != null);
             Debug.Assert(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
 
-            IEnumerable<string> enumerable = FileSystem.Current.EnumeratePaths(path, searchPattern, searchOption,
+            IEnumerable<string> enumerable = FileSystem.EnumeratePaths(path, searchPattern, searchOption,
                 (includeFiles ? SearchTarget.Files : 0) | (includeDirs ? SearchTarget.Directories : 0));
             return EnumerableHelpers.ToArray(enumerable);
         }
@@ -425,7 +425,7 @@ namespace System.IO
             Debug.Assert(searchPattern != null);
             Debug.Assert(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
 
-            return FileSystem.Current.EnumeratePaths(path, searchPattern, searchOption,
+            return FileSystem.EnumeratePaths(path, searchPattern, searchOption,
                 (includeFiles ? SearchTarget.Files : 0) | (includeDirs ? SearchTarget.Directories : 0));
         }
 
@@ -455,7 +455,7 @@ namespace System.IO
        ==============================================================================*/
         public static string GetCurrentDirectory()
         {
-            return FileSystem.Current.GetCurrentDirectory();
+            return FileSystem.GetCurrentDirectory();
         }
 
         public static void SetCurrentDirectory(string path)
@@ -467,7 +467,7 @@ namespace System.IO
 
             string fulldestDirName = Path.GetFullPath(path);
 
-            FileSystem.Current.SetCurrentDirectory(fulldestDirName);
+            FileSystem.SetCurrentDirectory(fulldestDirName);
         }
 
         public static void Move(string sourceDirName, string destDirName)
@@ -500,30 +500,30 @@ namespace System.IO
 
             // Windows will throw if the source file/directory doesn't exist, we preemptively check
             // to make sure our cross platform behavior matches NetFX behavior.
-            if (!FileSystem.Current.DirectoryExists(fullsourceDirName) && !FileSystem.Current.FileExists(fullsourceDirName))
+            if (!FileSystem.DirectoryExists(fullsourceDirName) && !FileSystem.FileExists(fullsourceDirName))
                 throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, fullsourceDirName));
             
-            if (FileSystem.Current.DirectoryExists(fulldestDirName))
+            if (FileSystem.DirectoryExists(fulldestDirName))
                 throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, fulldestDirName));
 
-            FileSystem.Current.MoveDirectory(fullsourceDirName, fulldestDirName);
+            FileSystem.MoveDirectory(fullsourceDirName, fulldestDirName);
         }
 
         public static void Delete(string path)
         {
             string fullPath = Path.GetFullPath(path);
-            FileSystem.Current.RemoveDirectory(fullPath, false);
+            FileSystem.RemoveDirectory(fullPath, false);
         }
 
         public static void Delete(string path, bool recursive)
         {
             string fullPath = Path.GetFullPath(path);
-            FileSystem.Current.RemoveDirectory(fullPath, recursive);
+            FileSystem.RemoveDirectory(fullPath, recursive);
         }
 
         public static string[] GetLogicalDrives()
         {
-            return FileSystem.Current.GetLogicalDrives();
+            return FileSystem.GetLogicalDrives();
         }
     }
 }

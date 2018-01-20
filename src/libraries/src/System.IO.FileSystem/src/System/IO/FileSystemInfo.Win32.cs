@@ -6,11 +6,6 @@ namespace System.IO
 {
     partial class FileSystemInfo
     {
-        internal IFileSystemObject FileSystemObject
-        {
-            get { return this; }
-        }
-
         internal void Invalidate()
         {
             _dataInitialized = -1;

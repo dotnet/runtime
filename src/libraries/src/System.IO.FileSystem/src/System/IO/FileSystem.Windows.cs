@@ -9,11 +9,11 @@ using System.Text;
 
 namespace System.IO
 {
-    internal sealed partial class Win32FileSystem : FileSystem
+    internal static partial class FileSystem
     {
         internal const int GENERIC_READ = unchecked((int)0x80000000);
 
-        public override void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
+        public static void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
             int errorCode = Interop.Kernel32.CopyFile(sourceFullPath, destFullPath, !overwrite);
 
@@ -42,7 +42,7 @@ namespace System.IO
             }
         }
 
-        public override void ReplaceFile(string sourceFullPath, string destFullPath, string destBackupFullPath, bool ignoreMetadataErrors)
+        public static void ReplaceFile(string sourceFullPath, string destFullPath, string destBackupFullPath, bool ignoreMetadataErrors)
         {
             int flags = ignoreMetadataErrors ? Interop.Kernel32.REPLACEFILE_IGNORE_MERGE_ERRORS : 0;
 
@@ -52,7 +52,7 @@ namespace System.IO
             }
         }
 
-        public override void CreateDirectory(string fullPath)
+        public static void CreateDirectory(string fullPath)
         {
             // We can save a bunch of work if the directory we want to create already exists.  This also
             // saves us in the case where sub paths are inaccessible (due to ERROR_ACCESS_DENIED) but the
@@ -156,7 +156,7 @@ namespace System.IO
                 throw Win32Marshal.GetExceptionForWin32Error(firstError, errorString);
         }
 
-        public override void DeleteFile(string fullPath)
+        public static void DeleteFile(string fullPath)
         {
             bool r = Interop.Kernel32.DeleteFile(fullPath);
             if (!r)
@@ -169,13 +169,12 @@ namespace System.IO
             }
         }
 
-        public override bool DirectoryExists(string fullPath)
+        public static bool DirectoryExists(string fullPath)
         {
-            int lastError = Interop.Errors.ERROR_SUCCESS;
-            return DirectoryExists(fullPath, out lastError);
+            return DirectoryExists(fullPath, out int lastError);
         }
 
-        private bool DirectoryExists(string path, out int lastError)
+        private static bool DirectoryExists(string path, out int lastError)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
             lastError = FillAttributeInfo(path, ref data, returnErrorOnNotFound: true);
@@ -184,7 +183,7 @@ namespace System.IO
                     && ((data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0);
         }
 
-        public override IEnumerable<string> EnumeratePaths(string fullPath, string searchPattern, SearchOption searchOption, SearchTarget searchTarget)
+        public static IEnumerable<string> EnumeratePaths(string fullPath, string searchPattern, SearchOption searchOption, SearchTarget searchTarget)
         {
             FindEnumerableFactory.NormalizeInputs(ref fullPath, ref searchPattern);
             switch (searchTarget)
@@ -200,7 +199,7 @@ namespace System.IO
             }
         }
 
-        public override IEnumerable<FileSystemInfo> EnumerateFileSystemInfos(string fullPath, string searchPattern, SearchOption searchOption, SearchTarget searchTarget)
+        public static IEnumerable<FileSystemInfo> EnumerateFileSystemInfos(string fullPath, string searchPattern, SearchOption searchOption, SearchTarget searchTarget)
         {
             FindEnumerableFactory.NormalizeInputs(ref fullPath, ref searchPattern);
             switch (searchTarget)
@@ -273,7 +272,7 @@ namespace System.IO
             return errorCode;
         }
 
-        public override bool FileExists(string fullPath)
+        public static bool FileExists(string fullPath)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
             int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true);
@@ -282,7 +281,7 @@ namespace System.IO
                     && ((data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) == 0);
         }
 
-        public override FileAttributes GetAttributes(string fullPath)
+        public static FileAttributes GetAttributes(string fullPath)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
             int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true);
@@ -292,7 +291,7 @@ namespace System.IO
             return (FileAttributes)data.dwFileAttributes;
         }
 
-        public override string GetCurrentDirectory()
+        public static string GetCurrentDirectory()
         {
             StringBuilder sb = StringBuilderCache.Acquire(Interop.Kernel32.MAX_PATH + 1);
             if (Interop.Kernel32.GetCurrentDirectory(sb.Capacity, sb) == 0)
@@ -322,7 +321,7 @@ namespace System.IO
             return currentDirectory;
         }
 
-        public override DateTimeOffset GetCreationTime(string fullPath)
+        public static DateTimeOffset GetCreationTime(string fullPath)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
             int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: false);
@@ -332,14 +331,14 @@ namespace System.IO
             return data.ftCreationTime.ToDateTimeOffset();
         }
 
-        public override IFileSystemObject GetFileSystemInfo(string fullPath, bool asDirectory)
+        public static FileSystemInfo GetFileSystemInfo(string fullPath, bool asDirectory)
         {
             return asDirectory ?
-                (IFileSystemObject)new DirectoryInfo(fullPath, null) :
-                (IFileSystemObject)new FileInfo(fullPath, null);
+                (FileSystemInfo)new DirectoryInfo(fullPath, null) :
+                (FileSystemInfo)new FileInfo(fullPath, null);
         }
 
-        public override DateTimeOffset GetLastAccessTime(string fullPath)
+        public static DateTimeOffset GetLastAccessTime(string fullPath)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
             int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: false);
@@ -349,7 +348,7 @@ namespace System.IO
             return data.ftLastAccessTime.ToDateTimeOffset();
         }
 
-        public override DateTimeOffset GetLastWriteTime(string fullPath)
+        public static DateTimeOffset GetLastWriteTime(string fullPath)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
             int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: false);
@@ -359,7 +358,7 @@ namespace System.IO
             return data.ftLastWriteTime.ToDateTimeOffset();
         }
 
-        public override void MoveDirectory(string sourceFullPath, string destFullPath)
+        public static void MoveDirectory(string sourceFullPath, string destFullPath)
         {
             if (!Interop.Kernel32.MoveFile(sourceFullPath, destFullPath))
             {
@@ -376,7 +375,7 @@ namespace System.IO
             }
         }
 
-        public override void MoveFile(string sourceFullPath, string destFullPath)
+        public static void MoveFile(string sourceFullPath, string destFullPath)
         {
             if (!Interop.Kernel32.MoveFile(sourceFullPath, destFullPath))
             {
@@ -416,7 +415,7 @@ namespace System.IO
             return handle;
         }
 
-        public override void RemoveDirectory(string fullPath, bool recursive)
+        public static void RemoveDirectory(string fullPath, bool recursive)
         {
             // Do not recursively delete through reparse points.
             if (!recursive || IsReparsePoint(fullPath))
@@ -573,7 +572,7 @@ namespace System.IO
             }
         }
 
-        public override void SetAttributes(string fullPath, FileAttributes attributes)
+        public static void SetAttributes(string fullPath, FileAttributes attributes)
         {
             if (!Interop.Kernel32.SetFileAttributes(fullPath, (int)attributes))
             {
@@ -584,7 +583,7 @@ namespace System.IO
             }
         }
 
-        public override void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
+        public static void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
         {
             using (SafeFileHandle handle = OpenHandle(fullPath, asDirectory))
             {
@@ -595,7 +594,7 @@ namespace System.IO
             }
         }
 
-        public override void SetCurrentDirectory(string fullPath)
+        public static void SetCurrentDirectory(string fullPath)
         {
             if (!Interop.Kernel32.SetCurrentDirectory(fullPath))
             {
@@ -609,7 +608,7 @@ namespace System.IO
             }
         }
 
-        public override void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)
+        public static void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)
         {
             using (SafeFileHandle handle = OpenHandle(fullPath, asDirectory))
             {
@@ -620,7 +619,7 @@ namespace System.IO
             }
         }
 
-        public override void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)
+        public static void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)
         {
             using (SafeFileHandle handle = OpenHandle(fullPath, asDirectory))
             {
@@ -631,7 +630,7 @@ namespace System.IO
             }
         }
 
-        public override string[] GetLogicalDrives()
+        public static string[] GetLogicalDrives()
         {
             return DriveInfoInternal.GetLogicalDrives();
         }
