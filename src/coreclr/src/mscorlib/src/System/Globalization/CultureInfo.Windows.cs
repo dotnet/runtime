@@ -72,7 +72,7 @@ namespace System.Globalization
             return temp;
         }
 
-        private static CultureInfo GetUserDefaultUILanguage()
+        private static CultureInfo GetUserDefaultUICulture()
         {
             if (GlobalizationMode.Invariant)
                 return CultureInfo.InvariantCulture;
@@ -150,15 +150,7 @@ namespace System.Globalization
                     return ci;
                 }
 
-                // if s_userDefaultCulture == null means CultureInfo statics didn't get initialized yet. this can happen if there early static 
-                // method get executed which eventually hit the cultureInfo code while CultureInfo statics didn’t get chance to initialize
-                if (s_userDefaultCulture == null)
-                {
-                    Init();
-                }
-
-                Debug.Assert(s_userDefaultCulture != null);
-                return s_userDefaultCulture;
+                return s_userDefaultCulture ?? InitializeUserDefaultCulture();
             }
 
             set
