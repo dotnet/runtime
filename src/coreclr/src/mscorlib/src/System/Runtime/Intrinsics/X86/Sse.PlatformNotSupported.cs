@@ -344,6 +344,12 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128 _mm_rcp_ss (__m128 a)
         /// </summary>
+        public static Vector128<float> ReciprocalScalar(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128 _mm_rcp_ss (__m128 a, __m128 b)
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
         public static Vector128<float> ReciprocalScalar(Vector128<float> upper, Vector128<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -353,6 +359,12 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// __m128 _mm_rsqrt_ss (__m128 a)
+        /// </summary>
+        public static Vector128<float> ReciprocalSqrtScalar(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128 _mm_rsqrt_ss (__m128 a, __m128 b)
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<float> ReciprocalSqrtScalar(Vector128<float> upper, Vector128<float> value) { throw new PlatformNotSupportedException(); }
 
@@ -398,6 +410,12 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// __m128 _mm_sqrt_ss (__m128 a)
+        /// </summary>
+        public static Vector128<float> SqrtScalar(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128 _mm_sqrt_ss (__m128 a, __m128 b)
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<float> SqrtScalar(Vector128<float> upper, Vector128<float> value) { throw new PlatformNotSupportedException(); }
 

@@ -1104,6 +1104,12 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// __m128d _mm_sqrt_sd (__m128d a)
+        /// The above native signature does not exist. We provide this additional overload for the recommended use case of this intrinsic.
+        /// </summary>
+        public static Vector128<double> SqrtScalar(Vector128<double> value) => SqrtScalar(value);
+
+        /// <summary>
+        /// __m128d _mm_sqrt_sd (__m128d a, __m128d b)
         /// </summary>
         public static Vector128<double> SqrtScalar(Vector128<double> upper, Vector128<double> value) => SqrtScalar(upper, value);
 
