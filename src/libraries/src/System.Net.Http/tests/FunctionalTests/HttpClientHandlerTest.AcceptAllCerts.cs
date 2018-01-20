@@ -14,7 +14,6 @@ namespace System.Net.Http.Functional.Tests
 
     public class HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test : HttpClientTestBase
     {
-        // TODO: https://github.com/dotnet/corefx/issues/7812
         private static bool ClientSupportsDHECipherSuites => (!PlatformDetection.IsWindows || PlatformDetection.IsWindows10Version1607OrGreater);
 
         [Fact]
