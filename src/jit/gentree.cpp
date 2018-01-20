@@ -1425,7 +1425,7 @@ AGAIN:
                     break;
 #endif // FEATURE_SIMD
 
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
                 case GT_HWIntrinsic:
                     if ((op1->AsHWIntrinsic()->gtHWIntrinsicId != op2->AsHWIntrinsic()->gtHWIntrinsicId) ||
                         (op1->AsHWIntrinsic()->gtSIMDBaseType != op2->AsHWIntrinsic()->gtSIMDBaseType) ||
@@ -2110,7 +2110,7 @@ AGAIN:
                     break;
 #endif // FEATURE_SIMD
 
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
                 case GT_HWIntrinsic:
                     hash += tree->gtHWIntrinsic.gtHWIntrinsicId;
                     hash += tree->gtHWIntrinsic.gtSIMDBaseType;
@@ -7929,7 +7929,7 @@ GenTreePtr Compiler::gtCloneExpr(
             break;
 #endif
 
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
             case GT_HWIntrinsic:
             {
                 GenTreeHWIntrinsic* hwintrinsicOp = tree->AsHWIntrinsic();
@@ -9235,7 +9235,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             return;
 #endif // FEATURE_SIMD
 
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
         case GT_HWIntrinsic:
             if (m_node->AsHWIntrinsic()->gtOp1 == nullptr)
             {
@@ -11268,7 +11268,7 @@ extern const char* const simdIntrinsicNames[] = {
 };
 #endif // FEATURE_SIMD
 
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
 extern const char* getHWIntrinsicName(NamedIntrinsic intrinsic);
 #endif // FEATURE_HW_INTRINSICS
 
@@ -11606,7 +11606,7 @@ void Compiler::gtDispTree(GenTreePtr   tree,
         }
 #endif // FEATURE_SIMD
 
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
         if (tree->gtOper == GT_HWIntrinsic)
         {
             printf(" %s %s",
@@ -17102,7 +17102,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                 structHnd = gtGetStructHandleForSIMD(tree->gtType, tree->AsSIMD()->gtSIMDBaseType);
                 break;
 #endif // FEATURE_SIMD
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
             case GT_HWIntrinsic:
                 structHnd = gtGetStructHandleForHWSIMD(tree->gtType, tree->AsHWIntrinsic()->gtSIMDBaseType);
                 break;
@@ -17904,7 +17904,7 @@ bool GenTree::isCommutativeSIMDIntrinsic()
 }
 #endif // FEATURE_SIMD
 
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
 GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
                                                        NamedIntrinsic hwIntrinsicID,
                                                        var_types      baseType,

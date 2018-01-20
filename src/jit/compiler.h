@@ -2056,7 +2056,7 @@ public:
     void SetOpLclRelatedToSIMDIntrinsic(GenTreePtr op);
 #endif
 
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
     GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(var_types      type,
                                                  NamedIntrinsic hwIntrinsicID,
                                                  var_types      baseType,
@@ -3041,7 +3041,7 @@ protected:
                               bool                  tailCall);
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
 
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
     static InstructionSet lookupHWIntrinsicISA(const char* className);
     static NamedIntrinsic lookupHWIntrinsic(const char* methodName, InstructionSet isa);
     static InstructionSet isaOfHWIntrinsic(NamedIntrinsic intrinsic);
@@ -7479,7 +7479,7 @@ private:
     CORINFO_CLASS_HANDLE SIMDVector4Handle;
     CORINFO_CLASS_HANDLE SIMDVectorHandle;
 
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
 #if defined(_TARGET_ARM64_)
     CORINFO_CLASS_HANDLE Vector64FloatHandle;
     CORINFO_CLASS_HANDLE Vector64DoubleHandle;
@@ -7830,7 +7830,7 @@ private:
     // AVX2: 32-byte Vector<T> and Vector256<T>
     unsigned int maxSIMDStructBytes()
     {
-#if FEATURE_HW_INTRINSICS && defined(_TARGET_XARCH_)
+#if defined(FEATURE_HW_INTRINSICS) && defined(_TARGET_XARCH_)
         if (compSupports(InstructionSet_AVX))
         {
             return YMM_REGSIZE_BYTES;
