@@ -15,6 +15,7 @@
 #ifndef DISABLE_JIT
 
 #include "mini.h"
+#include "mini-runtime.h"
 
 /*
  * Returns true if @bb is a basic block which falls through the next block.

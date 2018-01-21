@@ -52,6 +52,7 @@
 #include <mono/utils/dtrace.h>
 
 #include "mini.h"
+#include "mini-runtime.h"
 #include <string.h>
 #include <ctype.h>
 #include "trace.h"

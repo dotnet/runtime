@@ -11,6 +11,7 @@
  */
 
 #include "mini.h"
+#include "mini-runtime.h"
 #include "ir-emit.h"
 #include "jit-icalls.h"
 

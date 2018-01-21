@@ -20,6 +20,7 @@
 #endif
 #include <string.h>
 #include "mini.h"
+#include "mini-runtime.h"
 #include <mono/metadata/debug-helpers.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-memory-model.h>

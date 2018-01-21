@@ -9,6 +9,7 @@
  */
 
 #include "mini.h"
+#include "mini-runtime.h"
 #include "jit.h"
 #include "config.h"
 #include <mono/metadata/verify.h>

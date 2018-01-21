@@ -12,6 +12,7 @@
 
 #include "config.h"
 #include "mini-gc.h"
+#include "mini-runtime.h"
 #include <mono/metadata/gc-internals.h>
 
 static gboolean

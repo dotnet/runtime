@@ -27,6 +27,7 @@
 #include "config.h"
 #include <glib.h>
 #include "mini.h"
+#include "mini-runtime.h"
 
 #include <sys/types.h>
 #ifdef HAVE_UNISTD_H

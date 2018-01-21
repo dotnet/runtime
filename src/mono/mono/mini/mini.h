@@ -315,32 +315,14 @@ typedef struct MonoLMF MonoLMF;
 typedef struct MonoSpillInfo MonoSpillInfo;
 
 extern MonoCallSpec *mono_jit_trace_calls;
-extern gboolean mono_break_on_exc;
-extern gboolean mono_compile_aot;
-extern gboolean mono_aot_only;
-extern gboolean mono_llvm_only;
-extern MonoAotMode mono_aot_mode;
 extern MonoMethodDesc *mono_inject_async_exc_method;
 extern int mono_inject_async_exc_pos;
 extern MonoMethodDesc *mono_break_at_bb_method;
 extern int mono_break_at_bb_bb_num;
-extern gboolean mono_verify_all;
 extern gboolean mono_do_x86_stack_align;
-extern MONO_API const char *mono_build_date;
-extern gboolean mono_do_signal_chaining;
-extern gboolean mono_do_crash_chaining;
-extern MONO_API gboolean mono_use_llvm;
-extern MONO_API gboolean mono_use_interpreter;
-extern const char* mono_interp_opts_string;
-extern gboolean mono_do_single_method_regression;
-extern guint32 mono_single_method_regression_opt;
-extern MonoMethod *mono_current_single_method;
-extern GSList *mono_single_method_list;
-extern GHashTable *mono_single_method_hash;
 extern gboolean	mono_using_xdebug;
 extern int mini_verbose;
 extern int valgrind_register;
-extern GList* mono_aot_paths;
 
 #define INS_INFO(opcode) (&ins_info [((opcode) - OP_START - 1) * 4])
 
@@ -1062,104 +1044,9 @@ typedef enum {
 	MONO_PATCH_INFO_NUM
 } MonoJumpInfoType;
 
-/*
- * We need to store the image which the token refers to along with the token,
- * since the image might not be the same as the image of the method which
- * contains the relocation, because of inlining.
- */
-typedef struct MonoJumpInfoToken {
-	MonoImage *image;
-	guint32 token;
-	gboolean has_context;
-	MonoGenericContext context;
-} MonoJumpInfoToken;
-
-typedef struct MonoJumpInfoBBTable {
-	MonoBasicBlock **table;
-	int table_size;
-} MonoJumpInfoBBTable;
-
 typedef struct MonoJumpInfoRgctxEntry MonoJumpInfoRgctxEntry;
-
-/* Contains information describing an LLVM IMT trampoline */
-typedef struct MonoJumpInfoImtTramp {
-	MonoMethod *method;
-	int vt_offset;
-} MonoJumpInfoImtTramp;
-
-typedef struct MonoJumpInfoGSharedVtCall MonoJumpInfoGSharedVtCall;
-
-/*
- * Represents the method which is called when a virtual call is made to METHOD
- * on a receiver of type KLASS.
- */
-typedef struct {
-	/* Receiver class */
-	MonoClass *klass;
-	/* Virtual method */
-	MonoMethod *method;
-} MonoJumpInfoVirtMethod;
-
 typedef struct MonoJumpInfo MonoJumpInfo;
-struct MonoJumpInfo {
-	MonoJumpInfo *next;
-	/* Relocation type for patching */
-	int relocation;
-	union {
-		int i;
-		guint8 *p;
-		MonoInst *label;
-	} ip;
-
-	MonoJumpInfoType type;
-	union {
-		gconstpointer   target;
-#if SIZEOF_VOID_P == 8
-		gint64          offset;
-#else
-		int             offset;
-#endif
-		int index;
-		MonoBasicBlock *bb;
-		MonoInst       *inst;
-		MonoMethod     *method;
-		MonoClass      *klass;
-		MonoClassField *field;
-		MonoImage      *image;
-		MonoVTable     *vtable;
-		const char     *name;
-		MonoJumpInfoToken  *token;
-		MonoJumpInfoBBTable *table;
-		MonoJumpInfoRgctxEntry *rgctx_entry;
-		MonoJumpInfoImtTramp *imt_tramp;
-		MonoJumpInfoGSharedVtCall *gsharedvt;
-		MonoGSharedVtMethodInfo *gsharedvt_method;
-		MonoMethodSignature *sig;
-		MonoDelegateClassMethodPair *del_tramp;
-		/* MONO_PATCH_INFO_VIRT_METHOD */
-		MonoJumpInfoVirtMethod *virt_method;
-	} data;
-};
- 
-/*
- * Contains information for computing the
- * property given by INFO_TYPE of the runtime
- * object described by DATA.
- */
-struct MonoJumpInfoRgctxEntry {
-	MonoMethod *method;
-	gboolean in_mrgctx;
-	MonoJumpInfo *data; /* describes the data to be loaded */
-	MonoRgctxInfoType info_type;
-};
-
-/* Contains information about a gsharedvt call */
-struct MonoJumpInfoGSharedVtCall {
-	/* The original signature of the call */
-	MonoMethodSignature *sig;
-	/* The method which is called */
-	MonoMethod *method;
-};
+typedef struct MonoJumpInfoGSharedVtCall MonoJumpInfoGSharedVtCall;
 
 typedef enum {
 	MONO_TRAMPOLINE_JIT,
@@ -1834,70 +1721,6 @@ typedef struct {
 	guint8  pad;
 } MonoJitArgumentInfo;
 
-typedef struct {
-	gboolean handle_sigint;
-	gboolean keep_delegates;
-	gboolean reverse_pinvoke_exceptions;
-	gboolean collect_pagefault_stats;
-	gboolean break_on_unverified;
-	gboolean better_cast_details;
-	gboolean mdb_optimizations;
-	gboolean no_gdb_backtrace;
-	gboolean suspend_on_native_crash;
-	gboolean suspend_on_exception;
-	gboolean suspend_on_unhandled;
-	gboolean dyn_runtime_invoke;
-	gboolean gdb;
-	gboolean lldb;
-	gboolean use_fallback_tls;
-	/*
-	 * Whenever data such as next sequence points and flags is required.
-	 * Next sequence points and flags are required by the debugger agent.
-	 */
-	gboolean gen_sdb_seq_points;
-	gboolean no_seq_points_compact_data;
-	/*
-	 * Setting single_imm_size should guarantee that each time managed code is compiled
-	 * the same instructions and registers are used, regardless of the size of used values.
-	 */
-	gboolean single_imm_size;
-	gboolean explicit_null_checks;
-	/*
-	 * Fill stack frames with 0x2a in method prologs. This helps with the
-	 * debugging of the stack marking code in the GC.
-	 */
-	gboolean init_stacks;
-
-	/*
-	 * Whenever to implement single stepping and breakpoints without signals in the
-	 * soft debugger. This is useful on platforms without signals, like the ps3, or during
-	 * runtime debugging, since it avoids SIGSEGVs when a single step location or breakpoint
-	 * is hit.
-	 */
-	gboolean soft_breakpoints;
-	/*
-	 * Whenever to break in the debugger using G_BREAKPOINT on unhandled exceptions.
-	 */
-	gboolean break_on_exc;
-	/*
-	 * Load AOT JIT info eagerly.
-	 */
-	gboolean load_aot_jit_info_eagerly;
-	/*
-	 * Check for pinvoke calling convention mismatches.
-	 */
-	gboolean check_pinvoke_callconv;
-	/*
-	 * Translate Debugger.Break () into a native breakpoint signal
-	 */
-	gboolean native_debugger_break;
-	/*
-	 * Disabling the frame pointer emit optimization can allow debuggers to more easily
-	 * identify the stack on some platforms
-	 */
-	gboolean disable_omit_fp;
-} MonoDebugOptions;
-
 enum {
 	BRANCH_NOT_TAKEN,
 	BRANCH_TAKEN,
@@ -1934,12 +1757,6 @@ enum {
 	MONO_EXC_ARRAY_TYPE_MISMATCH,
 	MONO_EXC_ARGUMENT,
 	MONO_EXC_INTRINS_NUM
-};
-
-enum {
-	MINI_TOKEN_SOURCE_CLASS,
-	MINI_TOKEN_SOURCE_METHOD,
-	MINI_TOKEN_SOURCE_FIELD
 };
 
  /* 
@@ -2056,12 +1873,6 @@ void mono_cfg_dump_close_group (MonoCompile *cfg);
 void mono_cfg_dump_ir (MonoCompile *cfg, const char *phase_name);
 
 /* helper methods */
-void      mono_set_bisect_methods          (guint32 opt, const char *method_list_filename);
-guint32   mono_get_optimizations_for_method (MonoMethod *method, guint32 default_opt);
-char*     mono_opt_descr                   (guint32 flags);
-void      mono_set_verbose_level           (guint32 level);
-MonoJumpInfoToken* mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token);
-MonoJumpInfoToken* mono_jump_info_token_new2 (MonoMemPool *mp, MonoImage *image, guint32 token, MonoGenericContext *context);
 MonoInst* mono_find_spvar_for_region        (MonoCompile *cfg, int region);
 MonoInst* mono_find_exvar_for_offset        (MonoCompile *cfg, int offset);
 int       mono_get_block_region_notry       (MonoCompile *cfg, int region) MONO_LLVM_INTERNAL;
@@ -2101,17 +1912,11 @@ void      mono_merge_basic_blocks           (MonoCompile *cfg, MonoBasicBlock *b
 void      mono_optimize_branches            (MonoCompile *cfg);
 
 void      mono_blockset_print               (MonoCompile *cfg, MonoBitSet *set, const char *name, guint idom);
-const char*mono_ji_type_to_string           (MonoJumpInfoType type) MONO_LLVM_INTERNAL;
-void      mono_print_ji                     (const MonoJumpInfo *ji);
 void      mono_print_ins_index              (int i, MonoInst *ins);
 GString  *mono_print_ins_index_strbuf       (int i, MonoInst *ins);
 void      mono_print_ins                    (MonoInst *ins);
 void      mono_print_bb                     (MonoBasicBlock *bb, const char *msg);
 void      mono_print_code                   (MonoCompile *cfg, const char *msg);
-MONO_API void      mono_print_method_from_ip         (void *ip);
-MONO_API char     *mono_pmip                         (void *ip);
-MONO_API int mono_ee_api_version (void);
-gboolean  mono_debug_count                  (void);
 MONO_LLVM_INTERNAL const char* mono_inst_name                  (int op);
 int       mono_op_to_op_imm                 (int opcode);
 int       mono_op_imm_to_op                 (int opcode);
@@ -2126,15 +1931,6 @@ void      mono_disassemble_code             (MonoCompile *cfg, guint8 *code, int
 void      mono_add_patch_info               (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target) MONO_LLVM_INTERNAL;
 void      mono_add_patch_info_rel           (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target, int relocation) MONO_LLVM_INTERNAL;
 void      mono_remove_patch_info            (MonoCompile *cfg, int ip);
-MonoJumpInfo* mono_patch_info_dup_mp        (MonoMemPool *mp, MonoJumpInfo *patch_info);
-guint     mono_patch_info_hash (gconstpointer data);
-gint      mono_patch_info_equal (gconstpointer ka, gconstpointer kb);
-MonoJumpInfo *mono_patch_info_list_prepend  (MonoJumpInfo *list, int ip, MonoJumpInfoType type, gconstpointer target);
-gpointer  mono_resolve_patch_target         (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *patch_info, gboolean run_cctors, MonoError *error) MONO_LLVM_INTERNAL;
-gpointer  mono_jit_find_compiled_method_with_jit_info (MonoDomain *domain, MonoMethod *method, MonoJitInfo **ji);
-gpointer  mono_jit_find_compiled_method     (MonoDomain *domain, MonoMethod *method);
-gpointer  mono_jit_compile_method           (MonoMethod *method, MonoError *error);
-gpointer  mono_jit_compile_method_jit_only  (MonoMethod *method, MonoError *error);
 gpointer  mono_jit_compile_method_inner     (MonoMethod *method, MonoDomain *target_domain, int opt, MonoError *error);
 GList    *mono_varlist_insert_sorted        (MonoCompile *cfg, GList *list, MonoMethodVar *mv, int sort_type);
 GList    *mono_varlist_sort                 (MonoCompile *cfg, GList *list, int sort_type);
@@ -2176,32 +1972,18 @@ void      mono_liveness_handle_exception_clauses (MonoCompile *cfg);
 
 gpointer mono_realloc_native_code (MonoCompile *cfg);
 
-extern MonoDebugOptions debug_options;
-
-static inline MonoMethod*
-jinfo_get_method (MonoJitInfo *ji)
-{
-	return mono_jit_info_get_method (ji);
-}
-
 void     mono_xdebug_init                   (const char *xdebug_opts);
 void     mono_save_xdebug_info              (MonoCompile *cfg);
 void     mono_save_trampoline_xdebug_info   (MonoTrampInfo *info);
 /* This is an exported function */
 void     mono_xdebug_flush                  (void);
 
-gboolean  mono_method_same_domain           (MonoJitInfo *caller, MonoJitInfo *callee);
 void      mono_register_opcode_emulation    (int opcode, const char* name, const char *sigstr, gpointer func, gboolean no_throw);
 void      mono_draw_graph                   (MonoCompile *cfg, MonoGraphOptions draw_options);
 void      mono_add_ins_to_end               (MonoBasicBlock *bb, MonoInst *inst);
-gpointer  mono_create_ftnptr                (MonoDomain *domain, gpointer addr);
 
 void      mono_replace_ins                  (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst **prev, MonoBasicBlock *first_bb, MonoBasicBlock *last_bb);
 
-int               mono_find_method_opcode      (MonoMethod *method);
-MonoJitICallInfo *mono_register_jit_icall      (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save);
-gconstpointer     mono_icall_get_wrapper       (MonoJitICallInfo* callinfo) MONO_LLVM_INTERNAL;
-gconstpointer     mono_icall_get_wrapper_full  (MonoJitICallInfo* callinfo, gboolean do_compile);
 void              mini_register_opcode_emulation (int opcode, const char *name, const char *sigstr, gpointer func, const char *symbol, gboolean no_throw);
 
 void              mono_trampolines_init (void);
@@ -2809,83 +2591,5 @@ gboolean    mono_class_is_magic_int (MonoClass *klass);
 gboolean    mono_class_is_magic_float (MonoClass *klass);
 MonoInst*   mono_emit_native_types_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoType*   mini_native_type_replace_type (MonoType *type) MONO_LLVM_INTERNAL;
-
-#ifdef __linux__
-#define XDEBUG_ENABLED 1
-#endif
-
-#ifdef __linux__
-/* maybe enable also for other systems? */
-#define ENABLE_JIT_MAP 1
-void mono_enable_jit_map (void);
-void mono_emit_jit_map   (MonoJitInfo *jinfo);
-void mono_emit_jit_tramp (void *start, int size, const char *desc);
-gboolean mono_jit_map_is_enabled (void);
-#else
-#define mono_enable_jit_map()
-#define mono_emit_jit_map(ji)
-#define mono_emit_jit_tramp(s,z,d)
-#define mono_jit_map_is_enabled() (0)
-#endif
-
-/*
- * Per-OS implementation functions.
- */
-void mono_runtime_install_handlers (void);
-gboolean mono_runtime_install_custom_handlers (const char *handlers);
-void mono_runtime_install_custom_handlers_usage (void);
-void mono_runtime_cleanup_handlers (void);
-void mono_runtime_setup_stat_profiler (void);
-void mono_runtime_shutdown_stat_profiler (void);
-void mono_runtime_posix_install_handlers (void);
-void mono_gdb_render_native_backtraces (pid_t crashed_pid);
-
-void mono_cross_helpers_run (void);
-
-/*
- * Signal handling
- */
-
-#if defined(DISABLE_HW_TRAPS) || defined(MONO_ARCH_DISABLE_HW_TRAPS)
- // Signal handlers not available
-#define MONO_ARCH_NEED_DIV_CHECK 1
-#endif
-
-void MONO_SIG_HANDLER_SIGNATURE (mono_sigfpe_signal_handler) ;
-void MONO_SIG_HANDLER_SIGNATURE (mono_sigill_signal_handler) ;
-void MONO_SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler);
-void MONO_SIG_HANDLER_SIGNATURE (mono_sigint_signal_handler) ;
-gboolean MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal);
-
-#ifdef MONO_ARCH_VARARG_ICALLS
-#define ARCH_VARARG_ICALLS 1
-#else
-#define ARCH_VARARG_ICALLS 0
-#endif
-
-#if defined (HOST_WASM)
-
-#define MONO_RETURN_ADDRESS_N(N) NULL
-#define MONO_RETURN_ADDRESS() MONO_RETURN_ADDRESS_N(0)
-
-
-#elif defined (__GNUC__)
-
-#define MONO_RETURN_ADDRESS_N(N) (__builtin_extract_return_addr (__builtin_return_address (N)))
-#define MONO_RETURN_ADDRESS() MONO_RETURN_ADDRESS_N(0)
-
-#elif defined(_MSC_VER)
-
-#include <intrin.h>
-#pragma intrinsic(_ReturnAddress)
-
-#define MONO_RETURN_ADDRESS() _ReturnAddress()
-#define MONO_RETURN_ADDRESS_N(N) NULL
-
-#else
-
-#error "Missing return address intrinsics implementation"
-
-#endif
 
 #endif /* __MONO_MINI_H__ */

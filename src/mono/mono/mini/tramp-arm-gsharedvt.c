@@ -21,6 +21,7 @@
 
 #include "mini.h"
 #include "mini-arm.h"
+#include "mini-runtime.h"
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 

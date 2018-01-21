@@ -19,6 +19,7 @@
 #ifndef DISABLE_JIT
 
 #include "mini.h"
+#include "mini-runtime.h"
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
 #endif

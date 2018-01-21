@@ -21,6 +21,7 @@
 #include <mono/utils/mono-math.h>
 
 #include "mini.h"
+#include "mini-runtime.h"
 #include "trace.h"
 #include "mini-arch.h"
 
