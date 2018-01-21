@@ -27,10 +27,6 @@ namespace System.IO
             (char)31
         };
 
-        // The max total path is 260, and the max individual component length is 255. 
-        // For example, D:\<256 char file name> isn't legal, even though it's under 260 chars.
-        internal const int MaxPath = 260;
-
         // Expands the given path to a fully qualified path. 
         public static string GetFullPath(string path)
         {
@@ -93,8 +89,8 @@ namespace System.IO
 
         public static string GetTempPath()
         {
-            StringBuilder sb = StringBuilderCache.Acquire(MaxPath);
-            uint r = Interop.Kernel32.GetTempPathW(MaxPath, sb);
+            StringBuilder sb = StringBuilderCache.Acquire(Interop.Kernel32.MAX_PATH);
+            uint r = Interop.Kernel32.GetTempPathW(Interop.Kernel32.MAX_PATH, sb);
             if (r == 0)
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             return GetFullPath(StringBuilderCache.GetStringAndRelease(sb));
@@ -106,7 +102,7 @@ namespace System.IO
         {
             string path = GetTempPath();
 
-            StringBuilder sb = StringBuilderCache.Acquire(MaxPath);
+            StringBuilder sb = StringBuilderCache.Acquire(Interop.Kernel32.MAX_PATH);
             uint r = Interop.Kernel32.GetTempFileNameW(path, "tmp", 0, sb);
             if (r == 0)
                 throw Win32Marshal.GetExceptionForLastWin32Error();
