@@ -74,9 +74,9 @@ namespace System
             }
             _displayName = _standardDisplayName;
 
-            GetDisplayName(Interop.GlobalizationInterop.TimeZoneDisplayNameType.Generic, ref _displayName);
-            GetDisplayName(Interop.GlobalizationInterop.TimeZoneDisplayNameType.Standard, ref _standardDisplayName);
-            GetDisplayName(Interop.GlobalizationInterop.TimeZoneDisplayNameType.DaylightSavings, ref _daylightDisplayName);
+            GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.Generic, ref _displayName);
+            GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.Standard, ref _standardDisplayName);
+            GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.DaylightSavings, ref _daylightDisplayName);
 
             // TZif supports seconds-level granularity with offsets but TimeZoneInfo only supports minutes since it aligns
             // with DateTimeOffset, SQL Server, and the W3C XML Specification
@@ -94,7 +94,7 @@ namespace System
             ValidateTimeZoneInfo(_id, _baseUtcOffset, _adjustmentRules, out _supportsDaylightSavingTime);
         }
 
-        private void GetDisplayName(Interop.GlobalizationInterop.TimeZoneDisplayNameType nameType, ref string displayName)
+        private void GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType nameType, ref string displayName)
         {
             if (GlobalizationMode.Invariant)
             {
@@ -104,7 +104,7 @@ namespace System
 
             string timeZoneDisplayName;
             bool result = Interop.CallStringMethod(
-                (locale, id, type, stringBuilder) => Interop.GlobalizationInterop.GetTimeZoneDisplayName(
+                (locale, id, type, stringBuilder) => Interop.Globalization.GetTimeZoneDisplayName(
                     locale,
                     id,
                     type,
