@@ -4,7 +4,7 @@
 
 internal static partial class Interop
 {
-    internal static partial class GlobalizationInterop
+    internal static partial class Globalization
     {
         // needs to be kept in sync with ResultCode in System.Globalization.Native
         internal enum ResultCode

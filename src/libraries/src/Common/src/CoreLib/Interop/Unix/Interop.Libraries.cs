@@ -6,7 +6,7 @@ internal static partial class Interop
 {
     internal static partial class Libraries
     {
-        internal const string GlobalizationInterop = "System.Globalization.Native";
+        internal const string GlobalizationNative = "System.Globalization.Native";
         internal const string SystemNative = "System.Native";
     }
 }

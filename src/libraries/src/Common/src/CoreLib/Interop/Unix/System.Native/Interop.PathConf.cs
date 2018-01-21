@@ -9,8 +9,6 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        internal static int DEFAULT_PC_NAME_MAX = 255;
-
         internal enum PathConfName : int
         {
             PC_LINK_MAX         = 1,

@@ -8,9 +8,9 @@ using System.Runtime.CompilerServices;
 
 internal static partial class Interop
 {
-    internal static partial class GlobalizationInterop
+    internal static partial class Globalization
     {
-        [DllImport(Libraries.GlobalizationInterop, EntryPoint = "GlobalizationNative_LoadICU")]
+        [DllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_LoadICU")]
         internal static extern int LoadICU();
     }
 }
