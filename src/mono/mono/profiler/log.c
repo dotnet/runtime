@@ -36,6 +36,7 @@
 #include <mono/utils/mono-os-semaphore.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-threads-api.h>
+#include <mono/utils/mono-error-internals.h>
 #include "log.h"
 
 #ifdef HAVE_DLFCN_H
@@ -3346,7 +3347,7 @@ create_method_node (MonoMethod *method)
 static gboolean
 coverage_filter (MonoProfiler *prof, MonoMethod *method)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoClass *klass;
 	MonoImage *image;
 	MonoAssembly *assembly;
@@ -3432,8 +3433,8 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 		g_free (classname);
 	}
 
-	header = mono_method_get_header_checked (method, &error);
-	mono_error_cleanup (&error);
+	header = mono_method_get_header_checked (method, error);
+	mono_error_cleanup (error);
 
 	mono_method_header_get_code (header, &code_size, NULL);
 

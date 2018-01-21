@@ -23,6 +23,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <glib.h>
+#include <mono/utils/mono-error-internals.h>
 
 struct _MonoProfiler {
 	GHashTable *classes;
@@ -357,12 +358,12 @@ add_class (MonoProfiler *prof, MonoClass *klass)
 static void
 add_method (MonoProfiler *prof, MonoMethod *m)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMethodSignature *sig;
 	char *s;
 
-	sig = mono_method_signature_checked (m, &error);
-	g_assert (mono_error_ok (&error));
+	sig = mono_method_signature_checked (m, error);
+	g_assert (mono_error_ok (error));
 
 	int class_id = add_class (prof, m->klass);
 	if (class_id == -1)

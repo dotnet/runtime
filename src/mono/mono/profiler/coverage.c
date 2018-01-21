@@ -657,7 +657,7 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 	for (int i = 1; i <= rows; i++) {
 		ERROR_DECL (error);
 
-		MonoClass *klass = mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF | i, &error);
+		MonoClass *klass = mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF | i, error);
 
 		/*
 		 * Swallow the error. The program will get an exception later on anyway
@@ -665,7 +665,7 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 		 * there's not much we can do; in that case, we just won't write it as
 		 * uncovered to the output file.
 		 */
-		mono_error_cleanup (&error);
+		mono_error_cleanup (error);
 
 		if (!klass || !consider_class (image, klass))
 			continue;

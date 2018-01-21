@@ -666,7 +666,7 @@ dis_locals (MonoImage *m, MonoMethodHeader *mh, const char *ptr)
 static void
 dis_code (MonoImage *m, guint32 token, guint32 rva, MonoGenericContainer *container)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoMethodHeader *mh;
 	const char *ptr = mono_image_rva_map (m, rva);
 	const char *loc;
@@ -682,7 +682,7 @@ dis_code (MonoImage *m, guint32 token, guint32 rva, MonoGenericContainer *contai
 		g_free (override);
 	}
 
-	mh = mono_metadata_parse_mh_full (m, container, ptr, &error);
+	mh = mono_metadata_parse_mh_full (m, container, ptr, error);
 	entry_point = mono_image_get_entry_point (m);
 	if (entry_point && mono_metadata_token_index (entry_point) && mono_metadata_token_table (entry_point) == MONO_TABLE_METHOD) {
 		loc = mono_metadata_locate_token (m, entry_point);
@@ -703,7 +703,7 @@ dis_code (MonoImage *m, guint32 token, guint32 rva, MonoGenericContainer *contai
 */
 		mono_metadata_free_mh (mh);
 	} else {
-		mono_error_cleanup (&error);
+		mono_error_cleanup (error);
 	}
 }
 
@@ -840,7 +840,7 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 	}
 
 	for (i = start; i < end; i++){
-		MonoError error;
+		ERROR_DECL (error);
 		MonoMethodSignature *ms;
 		MonoGenericContainer *container;
 		char *flags, *impl_flags;
@@ -860,21 +860,21 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 
 		container = mono_metadata_load_generic_params (m, MONO_TOKEN_METHOD_DEF | (i + 1), type_container);
 		if (container) {
-			MonoError error;
-			mono_metadata_load_generic_param_constraints_checked (m, MONO_TOKEN_METHOD_DEF | (i + 1), container, &error);
-			g_assert (mono_error_ok (&error)); /*FIXME don't swallow the error message*/
+			ERROR_DECL (error);
+			mono_metadata_load_generic_param_constraints_checked (m, MONO_TOKEN_METHOD_DEF | (i + 1), container, error);
+			g_assert (mono_error_ok (error)); /*FIXME don't swallow the error message*/
 		} else {
 			container = type_container;
 		}
 
-		ms = mono_metadata_parse_method_signature_full (m, container, i + 1, sig, &sig, &error);
+		ms = mono_metadata_parse_method_signature_full (m, container, i + 1, sig, &sig, error);
 		if (ms != NULL){
 			sig_str = dis_stringify_method_signature (m, ms, i + 1, container, FALSE);
 			method_name = mono_metadata_string_heap (m, cols [MONO_METHOD_NAME]);
 		} else {
 			sig_str = NULL;
 			method_name = g_strdup ("<NULL METHOD SIGNATURE>");
-			mono_error_cleanup (&error);
+			mono_error_cleanup (error);
 		}
 
 		fprintf (output, "    // method line %d\n", i + 1);
@@ -964,7 +964,7 @@ dis_property_methods (MonoImage *m, guint32 prop, MonoGenericContainer *containe
 static char*
 dis_property_signature (MonoImage *m, guint32 prop_idx, MonoGenericContainer *container)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoTableInfo *propt = &m->tables [MONO_TABLE_PROPERTY];
 	const char *ptr;
 	guint32 pcount, i;
@@ -987,12 +987,12 @@ dis_property_signature (MonoImage *m, guint32 prop_idx, MonoGenericContainer *co
 		g_string_append (res, "instance ");
 	ptr++;
 	pcount = mono_metadata_decode_value (ptr, &ptr);
-	type = mono_metadata_parse_type_checked (m, container, 0, FALSE, ptr, &ptr, &error);
+	type = mono_metadata_parse_type_checked (m, container, 0, FALSE, ptr, &ptr, error);
 	if (type) {
 		blurb = dis_stringify_type (m, type, TRUE);
 	} else {
-		blurb = g_strdup_printf ("Invalid type due to %s", mono_error_get_message (&error));
-		mono_error_cleanup (&error);
+		blurb = g_strdup_printf ("Invalid type due to %s", mono_error_get_message (error));
+		mono_error_cleanup (error);
 	}
 	if (prop_flags & 0x0200)
 		g_string_append (res, "specialname ");
@@ -1005,12 +1005,12 @@ dis_property_signature (MonoImage *m, guint32 prop_idx, MonoGenericContainer *co
 	for (i = 0; i < pcount; i++) {
 		if (i)
 			g_string_append (res, ", ");
-		param = mono_metadata_parse_type_checked (m, container, 0, FALSE, ptr, &ptr, &error);
+		param = mono_metadata_parse_type_checked (m, container, 0, FALSE, ptr, &ptr, error);
 		if (type) {
 			blurb = dis_stringify_param (m, param);
 		} else {
-			blurb = g_strdup_printf ("Invalid type due to %s", mono_error_get_message (&error));
-			mono_error_cleanup (&error);
+			blurb = g_strdup_printf ("Invalid type due to %s", mono_error_get_message (error));
+			mono_error_cleanup (error);
 		}
 
 		g_string_append (res, blurb);
@@ -1203,9 +1203,9 @@ dis_type (MonoImage *m, int n, int is_nested, int forward)
 
 	container = mono_metadata_load_generic_params (m, MONO_TOKEN_TYPE_DEF | (n + 1), NULL);
 	if (container) {
-		MonoError error;
-		mono_metadata_load_generic_param_constraints_checked (m, MONO_TOKEN_TYPE_DEF | (n + 1), container, &error);
-		g_assert (mono_error_ok (&error)); /*FIXME don't swallow the error message*/
+		ERROR_DECL (error);
+		mono_metadata_load_generic_param_constraints_checked (m, MONO_TOKEN_TYPE_DEF | (n + 1), container, error);
+		g_assert (mono_error_ok (error)); /*FIXME don't swallow the error message*/
 	}
 
 	esname = get_escaped_name (name);
@@ -1533,17 +1533,17 @@ dis_data (MonoImage *m)
 	MonoType *type;
 
 	for (i = 0; i < t->rows; i++) {
-		MonoError error;
+		ERROR_DECL (error);
 		mono_metadata_decode_row (t, i, cols, MONO_FIELD_RVA_SIZE);
 		rva = mono_image_rva_map (m, cols [MONO_FIELD_RVA_RVA]);
 		sig = mono_metadata_blob_heap (m, mono_metadata_decode_row_col (ft, cols [MONO_FIELD_RVA_FIELD] -1, MONO_FIELD_SIGNATURE));
 		mono_metadata_decode_value (sig, &sig);
 		/* FIELD signature == 0x06 */
 		g_assert (*sig == 0x06);
-		type = mono_metadata_parse_type_checked (m, NULL, 0, FALSE, sig + 1, &sig, &error);
+		type = mono_metadata_parse_type_checked (m, NULL, 0, FALSE, sig + 1, &sig, error);
 		if (!type) {
-			fprintf (output, "// invalid field %d due to %s\n", i, mono_error_get_message (&error));
-			mono_error_cleanup (&error);
+			fprintf (output, "// invalid field %d due to %s\n", i, mono_error_get_message (error));
+			mono_error_cleanup (error);
 			continue;
 		}
 		mono_class_init (mono_class_from_mono_type (type));
