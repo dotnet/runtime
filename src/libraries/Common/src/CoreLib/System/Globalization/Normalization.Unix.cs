@@ -20,7 +20,7 @@ namespace System.Globalization
 
             ValidateArguments(strInput, normalizationForm);
 
-            int ret = Interop.GlobalizationInterop.IsNormalized(normalizationForm, strInput, strInput.Length);
+            int ret = Interop.Globalization.IsNormalized(normalizationForm, strInput, strInput.Length);
 
             if (ret == -1)
             {
@@ -45,7 +45,7 @@ namespace System.Globalization
 
             for (int attempts = 2; attempts > 0; attempts--)
             {
-                int realLen = Interop.GlobalizationInterop.NormalizeString(normalizationForm, strInput, strInput.Length, buf, buf.Length);
+                int realLen = Interop.Globalization.NormalizeString(normalizationForm, strInput, strInput.Length, buf, buf.Length);
 
                 if (realLen == -1)
                 {
