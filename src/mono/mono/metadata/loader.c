@@ -2620,8 +2620,10 @@ mono_method_get_token (MonoMethod *method)
 	return method->token;
 }
 
+// FIXME Replace all internal callers of mono_method_get_header_checked with
+// mono_method_get_header_internal; the difference is in error initialization.
 MonoMethodHeader*
-mono_method_get_header_checked (MonoMethod *method, MonoError *error)
+mono_method_get_header_internal (MonoMethod *method, MonoError *error)
 {
 	int idx;
 	guint32 rva;
@@ -2689,6 +2691,13 @@ mono_method_get_header_checked (MonoMethod *method, MonoError *error)
 	return mono_metadata_parse_mh_full (img, container, (const char *)loc, error);
 }
 
+MonoMethodHeader*
+mono_method_get_header_checked (MonoMethod *method, MonoError *error)
+// Public function that must initialize MonoError for compatibility.
+{
+	MONO_API_ERROR_INIT (error);
+	return mono_method_get_header_internal (method, error);
+}
 /**
  * mono_method_get_header:
  */
