@@ -90,9 +90,9 @@ namespace System.Threading
 #if !PLATFORM_UNIX
         private static void VerifyNameForCreate(string name)
         {
-            if (name != null && (Path.MaxPath < name.Length))
+            if (name != null && (Interop.Kernel32.MAX_PATH < name.Length))
             {
-                throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, name, Path.MaxPath), nameof(name));
+                throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, name, Interop.Kernel32.MAX_PATH), nameof(name));
             }
         }
 #endif
@@ -100,7 +100,7 @@ namespace System.Threading
         private void CreateMutexCore(bool initiallyOwned, string name, out bool createdNew)
         {
 #if !PLATFORM_UNIX
-            Debug.Assert(name == null || name.Length <= Path.MaxPath);
+            Debug.Assert(name == null || name.Length <= Interop.Kernel32.MAX_PATH);
 #endif
 
             uint mutexFlags = initiallyOwned ? Win32Native.CREATE_MUTEX_INITIAL_OWNER : 0;

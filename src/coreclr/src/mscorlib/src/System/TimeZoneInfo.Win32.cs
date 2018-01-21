@@ -818,9 +818,8 @@ namespace System
 
             try
             {
-                StringBuilder fileMuiPath = StringBuilderCache.Acquire(Path.MaxPath);
-                fileMuiPath.Length = Path.MaxPath;
-                int fileMuiPathLength = Path.MaxPath;
+                StringBuilder fileMuiPath = StringBuilderCache.Acquire(Interop.Kernel32.MAX_PATH);
+                int fileMuiPathLength = Interop.Kernel32.MAX_PATH;
                 int languageLength = 0;
                 long enumerator = 0;
 

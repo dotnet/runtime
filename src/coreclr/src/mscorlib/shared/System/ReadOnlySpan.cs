@@ -165,7 +165,6 @@ namespace System
         /// <exception cref="System.IndexOutOfRangeException">
         /// Thrown when index less than 0 or index greater than or equal to Length
         /// </exception>
-
         public ref readonly T this[int index]
         {
 #if PROJECTN
