@@ -91,7 +91,7 @@ namespace System.Globalization
         {
             // Get the locale name from ICU
             StringBuilder sb = StringBuilderCache.Acquire(ICU_ULOC_FULLNAME_CAPACITY);
-            if (!Interop.GlobalizationInterop.GetLocaleName(localeName, sb, sb.Capacity))
+            if (!Interop.Globalization.GetLocaleName(localeName, sb, sb.Capacity))
             {
                 StringBuilderCache.Release(sb);
                 windowsName = null;
@@ -107,7 +107,7 @@ namespace System.Globalization
         {
             // Get the default (system) locale name from ICU
             StringBuilder sb = StringBuilderCache.Acquire(ICU_ULOC_FULLNAME_CAPACITY);
-            if (!Interop.GlobalizationInterop.GetDefaultLocaleName(sb, sb.Capacity))
+            if (!Interop.Globalization.GetDefaultLocaleName(sb, sb.Capacity))
             {
                 StringBuilderCache.Release(sb);
                 windowsName = null;
@@ -143,7 +143,7 @@ namespace System.Globalization
 
             StringBuilder sb = StringBuilderCache.Acquire(ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY);
 
-            bool result = Interop.GlobalizationInterop.GetLocaleInfoString(localeName, (uint)type, sb, sb.Capacity);
+            bool result = Interop.Globalization.GetLocaleInfoString(localeName, (uint)type, sb, sb.Capacity);
             if (!result)
             {
                 // Failed, just use empty string
@@ -169,7 +169,7 @@ namespace System.Globalization
             
 
             int value = 0;
-            bool result = Interop.GlobalizationInterop.GetLocaleInfoInt(_sWindowsName, (uint)type, ref value);
+            bool result = Interop.Globalization.GetLocaleInfoInt(_sWindowsName, (uint)type, ref value);
             if (!result)
             {
                 // Failed, just use 0
@@ -185,7 +185,7 @@ namespace System.Globalization
 
             int primaryGroupingSize = 0;
             int secondaryGroupingSize = 0;
-            bool result = Interop.GlobalizationInterop.GetLocaleInfoGroupingSizes(_sWindowsName, (uint)type, ref primaryGroupingSize, ref secondaryGroupingSize);
+            bool result = Interop.Globalization.GetLocaleInfoGroupingSizes(_sWindowsName, (uint)type, ref primaryGroupingSize, ref secondaryGroupingSize);
             if (!result)
             {
                 Debug.Fail("[CultureData.GetLocaleInfo(LocaleGroupingData type)] failed");
@@ -210,7 +210,7 @@ namespace System.Globalization
 
             StringBuilder sb = StringBuilderCache.Acquire(ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY);
 
-            bool result = Interop.GlobalizationInterop.GetLocaleTimeFormat(_sWindowsName, shortFormat, sb, sb.Capacity);
+            bool result = Interop.Globalization.GetLocaleTimeFormat(_sWindowsName, shortFormat, sb, sb.Capacity);
             if (!result)
             {
                 // Failed, just use empty string
@@ -365,7 +365,7 @@ namespace System.Globalization
                 return Array.Empty<CultureInfo>();
             }
             
-            int bufferLength = Interop.GlobalizationInterop.GetLocales(null, 0);
+            int bufferLength = Interop.Globalization.GetLocales(null, 0);
             if (bufferLength <= 0)
             {
                 return Array.Empty<CultureInfo>();
@@ -373,7 +373,7 @@ namespace System.Globalization
             
             Char [] chars = new Char[bufferLength];
             
-            bufferLength = Interop.GlobalizationInterop.GetLocales(chars, bufferLength);
+            bufferLength = Interop.Globalization.GetLocales(chars, bufferLength);
             if (bufferLength <= 0)
             {
                 return Array.Empty<CultureInfo>();

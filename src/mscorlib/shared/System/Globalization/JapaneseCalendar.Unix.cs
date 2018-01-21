@@ -31,7 +31,7 @@ namespace System.Globalization
             List<EraInfo> eras = new List<EraInfo>();
             int lastMaxYear = GregorianCalendar.MaxYear;
 
-            int latestEra = Interop.GlobalizationInterop.GetLatestJapaneseEra();
+            int latestEra = Interop.Globalization.GetLatestJapaneseEra();
             for (int i = latestEra; i >= 0; i--)
             {
                 DateTime dt;
@@ -79,7 +79,7 @@ namespace System.Globalization
             int startYear;
             int startMonth;
             int startDay;
-            bool result = Interop.GlobalizationInterop.GetJapaneseEraStartDate(
+            bool result = Interop.Globalization.GetJapaneseEraStartDate(
                 era,
                 out startYear,
                 out startMonth,

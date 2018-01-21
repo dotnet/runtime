@@ -68,7 +68,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
 
             // NOTE: there are no 'user overrides' on Linux
-            int count = Interop.GlobalizationInterop.GetCalendars(localeName, calendars, calendars.Length);
+            int count = Interop.Globalization.GetCalendars(localeName, calendars, calendars.Length);
 
             // ensure there is at least 1 calendar returned
             if (count == 0 && calendars.Length > 0)
@@ -93,7 +93,7 @@ namespace System.Globalization
 
             return Interop.CallStringMethod(
                 (locale, calId, type, stringBuilder) =>
-                    Interop.GlobalizationInterop.GetCalendarInfo(
+                    Interop.Globalization.GetCalendarInfo(
                         locale,
                         calId,
                         type,
@@ -295,7 +295,7 @@ namespace System.Globalization
 
         private static unsafe bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, ref EnumCalendarsData callbackContext)
         {
-            return Interop.GlobalizationInterop.EnumCalendarInfo(EnumCalendarInfoCallback, localeName, calendarId, dataType, (IntPtr)Unsafe.AsPointer(ref callbackContext));
+            return Interop.Globalization.EnumCalendarInfo(EnumCalendarInfoCallback, localeName, calendarId, dataType, (IntPtr)Unsafe.AsPointer(ref callbackContext));
         }
 
         private static unsafe void EnumCalendarInfoCallback(string calendarString, IntPtr context)
