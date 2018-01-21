@@ -12,7 +12,7 @@ namespace System.Globalization
     public partial class CompareInfo
     {
         [NonSerialized]
-        private Interop.GlobalizationInterop.SafeSortHandle _sortHandle;
+        private Interop.Globalization.SafeSortHandle _sortHandle;
 
         [NonSerialized]
         private bool _isAsciiEqualityOrdinal;
@@ -27,12 +27,12 @@ namespace System.Globalization
             }
             else
             {
-                Interop.GlobalizationInterop.ResultCode resultCode = Interop.GlobalizationInterop.GetSortHandle(GetNullTerminatedUtf8String(_sortName), out _sortHandle); 
-                if (resultCode != Interop.GlobalizationInterop.ResultCode.Success)
+                Interop.Globalization.ResultCode resultCode = Interop.Globalization.GetSortHandle(GetNullTerminatedUtf8String(_sortName), out _sortHandle); 
+                if (resultCode != Interop.Globalization.ResultCode.Success)
                 {
                     _sortHandle.Dispose();
                     
-                    if (resultCode == Interop.GlobalizationInterop.ResultCode.OutOfMemory)
+                    if (resultCode == Interop.Globalization.ResultCode.OutOfMemory)
                         throw new OutOfMemoryException();
                     
                     throw new ExternalException(SR.Arg_ExternalException);
@@ -62,7 +62,7 @@ namespace System.Globalization
             {
                 fixed (char* pSource = source)
                 {
-                    int index = Interop.GlobalizationInterop.IndexOfOrdinalIgnoreCase(value, value.Length, pSource + startIndex, count, findLast: false);
+                    int index = Interop.Globalization.IndexOfOrdinalIgnoreCase(value, value.Length, pSource + startIndex, count, findLast: false);
                     return index != -1 ?
                         startIndex + index :
                         -1;
@@ -113,7 +113,7 @@ namespace System.Globalization
             {
                 fixed (char* pSource = source)
                 {
-                    int lastIndex = Interop.GlobalizationInterop.IndexOfOrdinalIgnoreCase(value, value.Length, pSource + leftStartIndex, count, findLast: true);
+                    int lastIndex = Interop.Globalization.IndexOfOrdinalIgnoreCase(value, value.Length, pSource + leftStartIndex, count, findLast: true);
                     return lastIndex != -1 ?
                         leftStartIndex + lastIndex :
                         -1;
@@ -140,7 +140,7 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            return Interop.GlobalizationInterop.CompareStringOrdinalIgnoreCase(string1, count1, string2, count2);
+            return Interop.Globalization.CompareStringOrdinalIgnoreCase(string1, count1, string2, count2);
         }
 
         // TODO https://github.com/dotnet/coreclr/issues/13827:
@@ -155,7 +155,7 @@ namespace System.Globalization
             fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
             fixed (char* pString2 = &string2.GetRawStringData())
             {
-                return Interop.GlobalizationInterop.CompareString(_sortHandle, pString1, string1.Length, pString2, string2.Length, options);
+                return Interop.Globalization.CompareString(_sortHandle, pString1, string1.Length, pString2, string2.Length, options);
             }
         }
 
@@ -167,7 +167,7 @@ namespace System.Globalization
             fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
             fixed (char* pString2 = &MemoryMarshal.GetReference(string2))
             {
-                return Interop.GlobalizationInterop.CompareString(_sortHandle, pString1, string1.Length, pString2, string2.Length, options);
+                return Interop.Globalization.CompareString(_sortHandle, pString1, string1.Length, pString2, string2.Length, options);
             }
         }
 
@@ -212,7 +212,7 @@ namespace System.Globalization
             
             fixed (char* pSource = source)
             {
-                index = Interop.GlobalizationInterop.IndexOf(_sortHandle, target, target.Length, pSource + startIndex, count, options, matchLengthPtr);
+                index = Interop.Globalization.IndexOf(_sortHandle, target, target.Length, pSource + startIndex, count, options, matchLengthPtr);
 
                 return index != -1 ? index + startIndex : -1;
             }
@@ -247,7 +247,7 @@ namespace System.Globalization
 
             fixed (char* pSource = source)
             {
-                int lastIndex = Interop.GlobalizationInterop.LastIndexOf(_sortHandle, target, target.Length, pSource + (startIndex - count + 1), count, options);
+                int lastIndex = Interop.Globalization.LastIndexOf(_sortHandle, target, target.Length, pSource + (startIndex - count + 1), count, options);
 
                 return lastIndex != -1 ? lastIndex + leftStartIndex : -1;
             }
@@ -266,7 +266,7 @@ namespace System.Globalization
                 return IsPrefix(source, prefix, GetOrdinalCompareOptions(options));
             }
 
-            return Interop.GlobalizationInterop.StartsWith(_sortHandle, prefix, prefix.Length, source, source.Length, options);
+            return Interop.Globalization.StartsWith(_sortHandle, prefix, prefix.Length, source, source.Length, options);
         }
 
         private bool EndsWith(string source, string suffix, CompareOptions options)
@@ -282,7 +282,7 @@ namespace System.Globalization
                 return IsSuffix(source, suffix, GetOrdinalCompareOptions(options));
             }
 
-            return Interop.GlobalizationInterop.EndsWith(_sortHandle, suffix, suffix.Length, source, source.Length, options);
+            return Interop.Globalization.EndsWith(_sortHandle, suffix, suffix.Length, source, source.Length, options);
         }
         
         private unsafe SortKey CreateSortKey(String source, CompareOptions options)
@@ -303,12 +303,12 @@ namespace System.Globalization
             }
             else
             {
-                int sortKeyLength = Interop.GlobalizationInterop.GetSortKey(_sortHandle, source, source.Length, null, 0, options);
+                int sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, source, source.Length, null, 0, options);
                 keyData = new byte[sortKeyLength];
 
                 fixed (byte* pSortKey = keyData)
                 {
-                    Interop.GlobalizationInterop.GetSortKey(_sortHandle, source, source.Length, pSortKey, sortKeyLength, options);
+                    Interop.Globalization.GetSortKey(_sortHandle, source, source.Length, pSortKey, sortKeyLength, options);
                 }
             }
 
@@ -370,13 +370,13 @@ namespace System.Globalization
                 return 0;
             }
 
-            int sortKeyLength = Interop.GlobalizationInterop.GetSortKey(_sortHandle, source, source.Length, null, 0, options);
+            int sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, source, source.Length, null, 0, options);
 
             // As an optimization, for small sort keys we allocate the buffer on the stack.
             if (sortKeyLength <= 256)
             {
                 byte* pSortKey = stackalloc byte[sortKeyLength];
-                Interop.GlobalizationInterop.GetSortKey(_sortHandle, source, source.Length, pSortKey, sortKeyLength, options);
+                Interop.Globalization.GetSortKey(_sortHandle, source, source.Length, pSortKey, sortKeyLength, options);
                 return InternalHashSortKey(pSortKey, sortKeyLength);
             }
 
@@ -384,7 +384,7 @@ namespace System.Globalization
 
             fixed (byte* pSortKey = sortKey)
             {
-                Interop.GlobalizationInterop.GetSortKey(_sortHandle, source, source.Length, pSortKey, sortKeyLength, options);
+                Interop.Globalization.GetSortKey(_sortHandle, source, source.Length, pSortKey, sortKeyLength, options);
                 return InternalHashSortKey(pSortKey, sortKeyLength);
             }
         }
@@ -428,7 +428,7 @@ namespace System.Globalization
         {
             Debug.Assert(!_invariantMode);
 
-            int sortVersion = Interop.GlobalizationInterop.GetSortVersion(_sortHandle);
+            int sortVersion = Interop.Globalization.GetSortVersion(_sortHandle);
             return new SortVersion(sortVersion, LCID, new Guid(sortVersion, 0, 0, 0, 0, 0, 0,
                                                              (byte) (LCID >> 24),
                                                              (byte) ((LCID  & 0x00FF0000) >> 16),

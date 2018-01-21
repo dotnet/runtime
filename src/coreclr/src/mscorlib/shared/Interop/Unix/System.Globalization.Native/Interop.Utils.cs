@@ -13,7 +13,7 @@ internal static partial class Interop
     /// increasing buffer until the size is big enough.
     /// </summary>
     internal static bool CallStringMethod<TArg1, TArg2, TArg3>(
-        Func<TArg1, TArg2, TArg3, StringBuilder, GlobalizationInterop.ResultCode> interopCall,
+        Func<TArg1, TArg2, TArg3, StringBuilder, Interop.Globalization.ResultCode> interopCall,
         TArg1 arg1,
         TArg2 arg2,
         TArg3 arg3,
@@ -26,14 +26,14 @@ internal static partial class Interop
 
         for (int i = 0; i < maxDoubleAttempts; i++)
         {
-            GlobalizationInterop.ResultCode resultCode = interopCall(arg1, arg2, arg3, stringBuilder);
+            Interop.Globalization.ResultCode resultCode = interopCall(arg1, arg2, arg3, stringBuilder);
 
-            if (resultCode == GlobalizationInterop.ResultCode.Success)
+            if (resultCode == Interop.Globalization.ResultCode.Success)
             {
                 result = StringBuilderCache.GetStringAndRelease(stringBuilder);
                 return true;
             }
-            else if (resultCode == GlobalizationInterop.ResultCode.InsufficentBuffer)
+            else if (resultCode == Interop.Globalization.ResultCode.InsufficentBuffer)
             {
                 // increase the string size and loop
                 stringBuilder.EnsureCapacity(stringBuilder.Capacity * 2);
