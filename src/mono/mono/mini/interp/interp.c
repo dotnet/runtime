@@ -4544,7 +4544,20 @@ array_constructed:
 			}
 
 			if (frame->imethod->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
-				MonoException *abort_exc = mono_thread_get_undeniable_exception ();
+				stackval tmp_sp;
+
+				child_frame.parent = frame;
+				child_frame.imethod = NULL;
+				/*
+				 * We need for mono_thread_get_undeniable_exception to be able to unwind
+				 * to check the abort threshold. For this to work we use child_frame as a
+				 * dummy frame that is stored in the lmf and serves as the transition frame
+				 */
+				context->current_frame = &child_frame;
+				do_icall (context, MINT_ICALL_V_P, &tmp_sp, mono_thread_get_undeniable_exception);
+				context->current_frame = frame;
+
+				MonoException *abort_exc = (MonoException*)tmp_sp.data.p;
 				if (abort_exc)
 					THROW_EX (abort_exc, frame->ip);
 			}
