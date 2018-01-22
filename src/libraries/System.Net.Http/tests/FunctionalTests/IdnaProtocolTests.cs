@@ -11,25 +11,23 @@ namespace System.Net.Http.Functional.Tests
 {
     public abstract class IdnaProtocolTests : HttpClientTestBase
     {
-        private const string s_IdnaHost = "âbçdë.com";
-        private static Uri s_IdnaUri = new Uri($"http://{s_IdnaHost}/");
-        private static string s_EncodedHostName = s_IdnaUri.IdnHost;
-        private static string s_EncodedUri = $"http://{s_EncodedHostName}/";
-
-        [Fact]
-        public async Task InternationalUrl_UsesIdnaEncoding_Success()
+        [Theory]
+        [MemberData(nameof(InternationalHostNames))]
+        public async Task InternationalUrl_UsesIdnaEncoding_Success(string hostname)
         {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            Uri uri = new Uri($"http://{hostname}/");
+
+            await LoopbackServer.CreateServerAsync(async (server, serverUrl) =>
             {
                 // We don't actually want to do DNS lookup on the IDNA host name in the URL.
                 // So instead, configure the loopback server as a proxy so we will send to it.
                 HttpClientHandler handler = CreateHttpClientHandler();
                 handler.UseProxy = true;
-                handler.Proxy = new SimpleWebProxy(url);
+                handler.Proxy = new WebProxy(serverUrl.ToString());
 
                 using (HttpClient client = new HttpClient(handler))
                 {
-                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(s_IdnaUri);
+                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(uri);
                     Task<List<string>> serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(server, LoopbackServer.DefaultHttpResponse);
 
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
@@ -37,23 +35,26 @@ namespace System.Net.Http.Functional.Tests
                     List<string> requestLines = await serverTask;
 
                     // Note since we're using a proxy, host name is included in the request line
-                    Assert.Equal($"GET http://{s_EncodedHostName}/ HTTP/1.1", requestLines[0]);
-                    Assert.Contains($"Host: {s_EncodedHostName}", requestLines);
+                    Assert.Equal($"GET http://{uri.IdnHost}/ HTTP/1.1", requestLines[0]);
+                    Assert.Contains($"Host: {uri.IdnHost}", requestLines);
                 }
             });
         }
 
         [ActiveIssue(26355)] // We aren't doing IDNA encoding properly
-        [Fact]
-        public async Task InternationalRequestHeaderValues_UsesIdnaEncoding_Success()
+        [Theory]
+        [MemberData(nameof(InternationalHostNames))]
+        public async Task InternationalRequestHeaderValues_UsesIdnaEncoding_Success(string hostname)
         {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            Uri uri = new Uri($"http://{hostname}/");
+
+            await LoopbackServer.CreateServerAsync(async (server, serverUrl) =>
             {
                 using (HttpClient client = new HttpClient(CreateHttpClientHandler()))
                 {
-                    var request = new HttpRequestMessage(HttpMethod.Get, url);
-                    request.Headers.Host = s_IdnaHost;
-                    request.Headers.Referrer = s_IdnaUri;
+                    var request = new HttpRequestMessage(HttpMethod.Get, serverUrl);
+                    request.Headers.Host = hostname;
+                    request.Headers.Referrer = uri;
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
                     Task<List<string>> serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(server, LoopbackServer.DefaultHttpResponse);
 
@@ -61,53 +62,58 @@ namespace System.Net.Http.Functional.Tests
 
                     List<string> requestLines = await serverTask;
 
-                    Assert.Contains($"Host: {s_EncodedHostName}", requestLines);
-                    Assert.Contains($"Referer: {s_EncodedUri}", requestLines);
+                    Assert.Contains($"Host: {uri.IdnHost}", requestLines);
+                    Assert.Contains($"Referer: http://{uri.IdnHost}/", requestLines);
                 }
             });
         }
 
         [ActiveIssue(26355)] // We aren't doing IDNA decoding properly
-        [Fact]
-        public async Task InternationalResponseHeaderValues_UsesIdnaDecoding_Success()
+        [Theory]
+        [MemberData(nameof(InternationalHostNames))]
+        public async Task InternationalResponseHeaderValues_UsesIdnaDecoding_Success(string hostname)
         {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            Uri uri = new Uri($"http://{hostname}/");
+
+            await LoopbackServer.CreateServerAsync(async (server, serverUrl) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
                 handler.AllowAutoRedirect = false;
 
                 using (HttpClient client = new HttpClient(handler))
                 {
-                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
+                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(serverUrl);
                     Task<List<string>> serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(server, 
-                        $"HTTP/1.1 302 Redirect\r\nLocation: {s_EncodedUri}\r\n\r\n");
+                        $"HTTP/1.1 302 Redirect\r\nLocation: http://{uri.IdnHost}/\r\n\r\n");
 
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
                     HttpResponseMessage response = await getResponseTask;
-                    Console.WriteLine($"Location header={response.Headers.Location}");
-                    Console.WriteLine($"Location header.Host={response.Headers.Location.Host}");
-                    Console.WriteLine($"Location header.IdnHost={response.Headers.Location.IdnHost}");
+
+                    Assert.Equal(uri, response.Headers.Location);
                 }
             });
         }
 
-        sealed class SimpleWebProxy : IWebProxy
+        private static IEnumerable<object[]> InternationalHostNames()
         {
-            private Uri _proxyUri;
+            // Latin-1 supplement
+            yield return new object[] { "\u00E1.com" };
+            yield return new object[] { "\u00E1b\u00E7d\u00EB.com" };
+            yield return new object[] { "b\u00E7.com" };
+            yield return new object[] { "b\u00E7d.com" };
 
-            public SimpleWebProxy(Uri proxyUri)
-            {
-                _proxyUri = proxyUri;
-            }
+            // Hebrew
+            yield return new object[] { "\u05E1.com" };
+            yield return new object[] { "\u05D1\u05F1.com" };
 
-            public ICredentials Credentials { get => null; set => throw new NotImplementedException(); }
-            public Uri GetProxy(Uri destination) => _proxyUri;
-            public bool IsBypassed(Uri host) => false;
+            // Katakana
+            yield return new object[] { "\u30A5.com" };
+            yield return new object[] { "\u30B6\u30C7\u30D8.com" };
         }
     }
 
-    public sealed class DefaultHandler_IdnaProtocolTests : IdnaProtocolTests
+    public sealed class HttpClientHandler_IdnaProtocolTests : IdnaProtocolTests
     {
     }
 
