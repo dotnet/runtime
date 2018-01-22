@@ -774,7 +774,11 @@ class MsbuildGenerator {
 		var refs = new StringBuilder ();
 
 		if (response.Contains ("_test")) {
-			refs.Append ($@"    <Reference Include=""..\lib\{profile}\nunitlite.dll"" />{NewLine}");
+			refs.Append ($@"    <Reference Include=""nunitlite"">{NewLine}");
+			refs.Append ($@"      <HintPath>..\lib\{profile}\nunitlite.dll</HintPath>{NewLine}");
+			refs.Append ($@"      <Private>False</Private>{NewLine}");
+			refs.Append ($@"    </Reference>{NewLine}");
+
 		}
 
 		//
