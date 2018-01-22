@@ -50,7 +50,6 @@ namespace System.Runtime.InteropServices
         /// <exception cref="System.ArgumentException">
         /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
         /// </exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Span<TTo> Cast<TFrom, TTo>(Span<TFrom> source)
             where TFrom : struct
             where TTo : struct
@@ -76,7 +75,6 @@ namespace System.Runtime.InteropServices
         /// <exception cref="System.ArgumentException">
         /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
         /// </exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlySpan<TTo> Cast<TFrom, TTo>(ReadOnlySpan<TFrom> source)
             where TFrom : struct
             where TTo : struct

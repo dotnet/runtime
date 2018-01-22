@@ -108,19 +108,6 @@ namespace System
             _length = length;
         }
 
-        /// <summary>
-        /// Create a new span over a portion of a regular managed object. This can be useful
-        /// if part of a managed object represents a "fixed array." This is dangerous because neither the
-        /// <paramref name="length"/> is checked, nor <paramref name="obj"/> being null, nor the fact that
-        /// "rawPointer" actually lies within <paramref name="obj"/>.
-        /// </summary>
-        /// <param name="obj">The managed object that contains the data to span over.</param>
-        /// <param name="objectData">A reference to data within that object.</param>
-        /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public static Span<T> DangerousCreate(object obj, ref T objectData, int length) => new Span<T>(ref objectData, length);
-
         // Constructor for internal use only.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal Span(ref T ptr, int length)
