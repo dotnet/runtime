@@ -133,8 +133,6 @@ namespace System.Net.Tests
 
         public static IEnumerable<object[]> CloseStatus_Valid_TestData()
         {
-            yield return new object[] { (WebSocketCloseStatus)(-1), "Negative", 65535 };
-            yield return new object[] { WebSocketCloseStatus.Empty, null, WebSocketCloseStatus.Empty };
             yield return new object[] { WebSocketCloseStatus.EndpointUnavailable, "", WebSocketCloseStatus.EndpointUnavailable };
             yield return new object[] { WebSocketCloseStatus.MandatoryExtension, "StatusDescription", WebSocketCloseStatus.MandatoryExtension };
         }
