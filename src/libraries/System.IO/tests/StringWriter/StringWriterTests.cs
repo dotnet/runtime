@@ -4,6 +4,7 @@
 
 using Xunit;
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -11,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace System.IO.Tests
 {
-    public partial class StringWriterTests
+    public partial class StringWriterTests : RemoteExecutorTestBase
     {
         static int[] iArrInvalidValues = new int[] { -1, -2, -100, -1000, -10000, -100000, -1000000, -10000000, -100000000, -1000000000, int.MinValue, short.MinValue };
         static int[] iArrLargeValues = new int[] { int.MaxValue, int.MaxValue - 1, int.MaxValue / 2, int.MaxValue / 10, int.MaxValue / 100 };
@@ -291,10 +292,9 @@ namespace System.IO.Tests
         [Fact]
         public static void TestWriteMisc()
         {
-            CultureInfo old = CultureInfo.CurrentCulture;
-            CultureInfo.CurrentCulture = new CultureInfo("en-US"); // floating-point formatting comparison depends on culture
-            try
+            RemoteInvoke(() => 
             {
+                CultureInfo.CurrentCulture = new CultureInfo("en-US"); // floating-point formatting comparison depends on culture
                 var sw = new StringWriter();
 
                 sw.Write(true);
@@ -308,11 +308,7 @@ namespace System.IO.Tests
                 sw.Write((ulong)ulong.MaxValue);
 
                 Assert.Equal("Truea1234.013452342.0123456-92233720368547758081234.5429496729518446744073709551615", sw.ToString());
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = old;
-            }
+            });
         }
 
         [Fact]
@@ -326,10 +322,9 @@ namespace System.IO.Tests
         [Fact]
         public static void TestWriteLineMisc()
         {
-            CultureInfo old = CultureInfo.CurrentCulture;
-            CultureInfo.CurrentCulture = new CultureInfo("en-US"); // floating-point formatting comparison depends on culture
-            try
+            RemoteInvoke(() =>
             {
+                CultureInfo.CurrentCulture = new CultureInfo("en-US"); // floating-point formatting comparison depends on culture
                 var sw = new StringWriter();
                 sw.WriteLine((bool)false);
                 sw.WriteLine((char)'B');
@@ -342,11 +337,7 @@ namespace System.IO.Tests
                 Assert.Equal(
                     string.Format("False{0}B{0}987{0}875634{0}1.23457{0}45634563{0}18446744073709551615{0}", Environment.NewLine),
                     sw.ToString());
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = old;
-            }
+            });
         }
 
         [Fact]
