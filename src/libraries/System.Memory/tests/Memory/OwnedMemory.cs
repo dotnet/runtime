@@ -86,6 +86,36 @@ namespace System.MemoryTests
             owner.Dispose();
             Assert.True(owner.IsDisposed);
         }
+        
+        [Fact]
+        public static void OwnedMemoryPinEmptyArray()
+        {
+            int[] a = {};
+            OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
+            MemoryHandle handle = owner.Pin();
+            Assert.True(handle.HasPointer);
+        }
+
+        [Fact]
+        public static void OwnedMemoryPinArray()
+        {
+            int[] array = { 1, 2, 3, 4, 5 };
+            OwnedMemory<int> owner = new CustomMemoryForTest<int>(array);
+            MemoryHandle handle = owner.Pin();
+            Assert.True(handle.HasPointer);
+            unsafe
+            {
+                int* pointer = (int*)handle.Pointer;
+
+                GC.Collect();
+
+                for (int i = 0; i < owner.Memory.Length; i++)
+                {
+                    Assert.Equal(array[i], pointer[i]);
+                }
+            }
+            handle.Dispose();
+        }
 
         [Fact]
         public static void MemoryFromOwnedMemoryAfterDispose()
