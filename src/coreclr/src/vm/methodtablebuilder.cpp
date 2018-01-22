@@ -9684,6 +9684,9 @@ void MethodTableBuilder::CheckForSystemTypes()
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 4;
                     break;
                 }
+
+                default:
+                    break;
             }
 #endif // _TARGET_X86_ && UNIX_X86_ABI
 
