@@ -1722,6 +1722,20 @@ EEClass::CheckForHFA()
     if (HasExplicitFieldOffsetLayout())
         return false;
 
+    // The SIMD Intrinsic types are meant to be handled specially and should not be treated as HFA
+    if (GetMethodTable()->IsIntrinsicType())
+    {
+        LPCUTF8 namespaceName;
+        LPCUTF8 className = GetMethodTable()->GetFullyQualifiedNameInfo(&namespaceName);
+
+        if ((strcmp(className, "Vector256`1") == 0) || (strcmp(className, "Vector128`1") == 0) ||
+            (strcmp(className, "Vector64`1") == 0))
+        {
+            assert(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
+            return false;
+        }
+    }
+
     CorElementType hfaType = ELEMENT_TYPE_END;
 
     FieldDesc *pFieldDescList = GetFieldDescList();
