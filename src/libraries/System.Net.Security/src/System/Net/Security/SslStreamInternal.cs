@@ -282,7 +282,7 @@ namespace System.Net.Security
                             _sslState.ReplyOnReAuthentication(extraBuffer);
 
                             // Loop on read.
-                            return -1;
+                            continue;
                         }
 
                         if (message.CloseConnection)
