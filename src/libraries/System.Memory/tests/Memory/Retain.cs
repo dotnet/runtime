@@ -116,14 +116,6 @@ namespace System.MemoryTests
             Memory<int> memory = new int[0];
             MemoryHandle handle = memory.Retain(pin: true);
             Assert.True(handle.HasPointer);
-            unsafe
-            {
-                int* pointer = (int*)handle.Pointer;
-
-                GC.Collect();
-
-                Assert.True(pointer != null);
-            }
             handle.Dispose();
         }
 
