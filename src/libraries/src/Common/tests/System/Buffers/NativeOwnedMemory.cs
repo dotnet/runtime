@@ -53,10 +53,10 @@ namespace System.Buffers
 
         public override unsafe Span<byte> Span => new Span<byte>((void*)_ptr, _length);
 
-        public override unsafe MemoryHandle Pin(int offset = 0)
+        public override unsafe MemoryHandle Pin(int byteOffset = 0)
         {
-            if (offset < 0 || offset > _length) throw new ArgumentOutOfRangeException(nameof(offset));
-            void* pointer = (void*)((byte*)_ptr + offset);
+            if (byteOffset < 0 || byteOffset > _length) throw new ArgumentOutOfRangeException(nameof(byteOffset));
+            void* pointer = (void*)((byte*)_ptr + byteOffset);
             return new MemoryHandle(this, pointer);
         }
 
