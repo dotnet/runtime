@@ -1240,9 +1240,6 @@
   <data name="Argument_InvalidPathChars" xml:space="preserve">
     <value>Illegal characters in path.</value>
   </data>
-  <data name="Argument_InvalidREG_TZI_FORMAT" xml:space="preserve">
-    <value>The REG_TZI_FORMAT structure is corrupt.</value>
-  </data>
   <data name="Argument_InvalidRegistryViewCheck" xml:space="preserve">
     <value>The specified RegistryView value is invalid.</value>
   </data>
