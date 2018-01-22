@@ -2512,11 +2512,6 @@ void InitJITHelpers1()
 {
     STANDARD_VM_CONTRACT;
 
-#if CHECK_APP_DOMAIN_LEAKS
-    if(g_pConfig->AppDomainLeaks())
-        SetJitHelperFunction(CORINFO_HELP_ARRADDR_ST, JIT_Stelem_Ref_Portable);
-#endif
-
     // Allocation helpers, faster but non-logging.
     if (!(TrackAllocationsEnabled()
           || LoggingOn(LF_GCALLOC, LL_INFO10)

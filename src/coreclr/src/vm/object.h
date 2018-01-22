@@ -97,71 +97,6 @@ class ArgDestination;
 
 struct RCW;
 
-#if CHECK_APP_DOMAIN_LEAKS
-
-class Object;
-
-class SetAppDomainAgilePendingTable
-{
-public:
-
-    SetAppDomainAgilePendingTable ();
-    ~SetAppDomainAgilePendingTable ();
-
-    void PushReference (Object *pObject)
-    {
-        STATIC_CONTRACT_THROWS;
-        STATIC_CONTRACT_GC_NOTRIGGER;
-
-        PendingEntry entry;
-        entry.pObject = pObject;
-
-        m_Stack.Push(entry);
-    }
-
-    void PushParent (Object *pObject)
-    {
-        STATIC_CONTRACT_THROWS;
-        STATIC_CONTRACT_GC_NOTRIGGER;
-
-        PendingEntry entry;
-        entry.pObject = (Object*)((size_t)pObject | 1);
-
-        m_Stack.Push(entry);
-    }
-
-    Object *GetPendingObject (bool *pfReturnedToParent)
-    {
-        STATIC_CONTRACT_THROWS;
-        STATIC_CONTRACT_GC_NOTRIGGER;
-
-        if (!m_Stack.Count())
-            return NULL;
-
-        PendingEntry *pPending = m_Stack.Pop();
-
-        *pfReturnedToParent = pPending->fMarked != 0;
-        return (Object*)((size_t)pPending->pObject & ~1);
-    }
-
-private:
-
-    union PendingEntry
-    {
-        Object *pObject;
-
-        // Indicates whether the current thread set BIT_SBLK_AGILE_IN_PROGRESS
-        // on the object.  Entries without this flag set are unexplored
-        // objects.
-        size_t fMarked:1;
-    };
-
-    CStackArray<PendingEntry> m_Stack;
-};
-
-#endif //CHECK_APP_DOMAIN_LEAKS
-
-
 //
 // The generational GC requires that every object be at least 12 bytes
 // in size.   
@@ -357,101 +292,6 @@ class Object
 
     void DEBUG_SetAppDomain(AppDomain *pDomain);
 #endif //_DEBUG
-    
-#if CHECK_APP_DOMAIN_LEAKS
-
-    // Mark object as app domain agile
-    BOOL SetAppDomainAgile(BOOL raiseAssert=TRUE, SetAppDomainAgilePendingTable *pTable = NULL);
-    BOOL TrySetAppDomainAgile(BOOL raiseAssert=TRUE);
-
-    // Mark sync block as app domain agile
-    void SetSyncBlockAppDomainAgile();
-
-    // Check if object is app domain agile
-    BOOL IsAppDomainAgile();
-
-    // Check if object is app domain agile
-    BOOL IsAppDomainAgileRaw()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        SyncBlock *psb = PassiveGetSyncBlock();
-
-        return (psb && psb->IsAppDomainAgile());
-    }
-
-    BOOL IsCheckedForAppDomainAgile()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        SyncBlock *psb = PassiveGetSyncBlock();
-        return (psb && psb->IsCheckedForAppDomainAgile());
-    }
-
-    void SetIsCheckedForAppDomainAgile()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        SyncBlock *psb = PassiveGetSyncBlock();
-        if (psb)
-            psb->SetIsCheckedForAppDomainAgile();
-    }
-
-    // Check object to see if it is usable in the current domain 
-    BOOL CheckAppDomain() { WRAPPER_NO_CONTRACT; return CheckAppDomain(::GetAppDomain()); }
-
-    //Check object to see if it is usable in the given domain 
-    BOOL CheckAppDomain(AppDomain *pDomain);
-
-    // Check if the object's type is app domain agile
-    BOOL IsTypeAppDomainAgile();
-
-    // Check if the object's type is conditionally app domain agile
-    BOOL IsTypeCheckAppDomainAgile();
-
-    // Check if the object's type is naturally app domain agile
-    BOOL IsTypeTypesafeAppDomainAgile();
-
-    // Check if the object's type is possibly app domain agile
-    BOOL IsTypeNeverAppDomainAgile();
-
-    // Validate object & fields to see that it's usable from the current app domain
-    BOOL ValidateAppDomain() { WRAPPER_NO_CONTRACT; return ValidateAppDomain(::GetAppDomain()); }
-
-    // Validate object & fields to see that it's usable from any app domain
-    BOOL ValidateAppDomainAgile() { WRAPPER_NO_CONTRACT; return ValidateAppDomain(NULL); }
-
-    // Validate object & fields to see that it's usable from the given app domain (or null for agile)
-    BOOL ValidateAppDomain(AppDomain *pAppDomain);
-
-    // Validate fields to see that they are usable from the object's app domain 
-    // (or from any domain if the object is agile)
-    BOOL ValidateAppDomainFields() { WRAPPER_NO_CONTRACT; return ValidateAppDomainFields(GetAppDomain()); }
-
-    // Validate fields to see that they are usable from the given app domain (or null for agile)
-    BOOL ValidateAppDomainFields(AppDomain *pAppDomain);
-
-    // Validate a value type's fields to see that it's usable from the current app domain
-    static BOOL ValidateValueTypeAppDomain(MethodTable *pMT, void *base, BOOL raiseAssert = TRUE) 
-      { WRAPPER_NO_CONTRACT; return ValidateValueTypeAppDomain(pMT, base, ::GetAppDomain(), raiseAssert); }
-
-    // Validate a value type's fields to see that it's usable from any app domain
-    static BOOL ValidateValueTypeAppDomainAgile(MethodTable *pMT, void *base, BOOL raiseAssert = TRUE) 
-      { WRAPPER_NO_CONTRACT; return ValidateValueTypeAppDomain(pMT, base, NULL, raiseAssert); }
-
-    // Validate a value type's fields to see that it's usable from the given app domain (or null for agile)
-    static BOOL ValidateValueTypeAppDomain(MethodTable *pMT, void *base, AppDomain *pAppDomain, BOOL raiseAssert = TRUE);
-
-    // Call when we are assigning this object to a dangerous field 
-    // in an object in a given app domain (or agile if null)
-    BOOL AssignAppDomain(AppDomain *pAppDomain, BOOL raiseAssert = TRUE);
-    BOOL TryAssignAppDomain(AppDomain *pAppDomain, BOOL raiseAssert = TRUE);
-
-    // Call when we are assigning to a dangerous value type field 
-    // in an object in a given app domain (or agile if null)
-    static BOOL AssignValueTypeAppDomain(MethodTable *pMT, void *base, AppDomain *pAppDomain, BOOL raiseAssert = TRUE);
-
-#endif // CHECK_APP_DOMAIN_LEAKS
 
     // DO NOT ADD ANY ASSERTS TO THIS METHOD.
     // DO NOT USE THIS METHOD.
@@ -672,15 +512,6 @@ class Object
  private:
     VOID ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock);
 
-#if CHECK_APP_DOMAIN_LEAKS
-    friend class ObjHeader;
-    BOOL SetFieldsAgile(BOOL raiseAssert = TRUE, SetAppDomainAgilePendingTable *pTable = NULL);
-    static BOOL SetClassFieldsAgile(MethodTable *pMT, void *base, BOOL baseIsVT, BOOL raiseAssert = TRUE, SetAppDomainAgilePendingTable *pTable = NULL); 
-    static BOOL ValidateClassFields(MethodTable *pMT, void *base, BOOL baseIsVT, AppDomain *pAppDomain, BOOL raiseAssert = TRUE);
-    BOOL SetAppDomainAgileWorker(BOOL raiseAssert, SetAppDomainAgilePendingTable *pTable);
-    BOOL ShouldCheckAppDomainAgile(BOOL raiseAssert, BOOL *pfResult);
-#endif
-
 #ifdef _DEBUG
     void AssertNotArray()
     {
@@ -733,23 +564,9 @@ inline void InitValueClass(void *dest, MethodTable *pMT)
 // Initialize value class argument
 void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT);
 
-#if CHECK_APP_DOMAIN_LEAKS
-
-void SetObjectReferenceChecked(OBJECTREF *dst,OBJECTREF ref, AppDomain *pAppDomain);
-void CopyValueClassChecked(void* dest, void* src, MethodTable *pMT, AppDomain *pAppDomain);
-void CopyValueClassArgChecked(ArgDestination *argDest, void* src, MethodTable *pMT, AppDomain *pAppDomain, int destOffset);
-
-#define SetObjectReference(_d,_r,_a)        SetObjectReferenceChecked(_d, _r, _a)
-#define CopyValueClass(_d,_s,_m,_a)         CopyValueClassChecked(_d,_s,_m,_a)      
-#define CopyValueClassArg(_d,_s,_m,_a,_o)   CopyValueClassArgChecked(_d,_s,_m,_a,_o)      
-
-#else
-
 #define SetObjectReference(_d,_r,_a)        SetObjectReferenceUnchecked(_d, _r)
 #define CopyValueClass(_d,_s,_m,_a)         CopyValueClassUnchecked(_d,_s,_m)       
 #define CopyValueClassArg(_d,_s,_m,_a,_o)   CopyValueClassArgUnchecked(_d,_s,_m,_o)       
-
-#endif
 
 #include <pshpack4.h>
 
@@ -840,11 +657,7 @@ public:
     SIZE_T GetComponentSize() const {
         WRAPPER_NO_CONTRACT;
         MethodTable * pMT;
-#if CHECK_APP_DOMAIN_LEAKS
-        pMT = GetGCSafeMethodTable();
-#else
         pMT = GetMethodTable();
-#endif //CHECK_APP_DOMAIN_LEAKS
         _ASSERTE(pMT->HasComponentSize());
         return pMT->RawGetComponentSize();
     }

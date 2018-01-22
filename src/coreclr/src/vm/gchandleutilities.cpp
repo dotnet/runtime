@@ -20,19 +20,6 @@ void ValidateObjectAndAppDomain(OBJECTREF objRef, ADIndex appDomainIndex)
     assert(domain != nullptr);
     assert(!domain->NoAccessToHandleTable());
 
-#if CHECK_APP_DOMAIN_LEAKS
-    if (g_pConfig->AppDomainLeaks() && objRef != NULL)
-    {
-        if (appDomainIndex.m_dwIndex)
-        {
-            objRef->TryAssignAppDomain(domain);
-        }
-        else
-        {
-            objRef->TrySetAppDomainAgile();
-        }
-    }
-#endif // CHECK_APP_DOMAIN_LEAKS
 #endif // _DEBUG_IMPL
 }
 

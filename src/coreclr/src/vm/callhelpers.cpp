@@ -418,20 +418,6 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
         }
 #endif // DEBUGGING_SUPPORTED
 
-#if CHECK_APP_DOMAIN_LEAKS
-        if (g_pConfig->AppDomainLeaks())
-        {
-            // See if we are in the correct domain to call on the object
-            if (m_methodSig.HasThis() && !m_pMD->GetMethodTable()->IsValueType())
-            {
-                CONTRACT_VIOLATION(ThrowsViolation|GCViolation|FaultViolation);
-                OBJECTREF pThis = ArgSlotToObj(pArguments[0]);
-                if (!pThis->AssignAppDomain(GetAppDomain()))
-                    _ASSERTE(!"Attempt to call method on object in wrong domain");
-            }
-        }
-#endif // CHECK_APP_DOMAIN_LEAKS
-
 #ifdef _DEBUG
         {
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
@@ -546,17 +532,6 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
                                                                     TransitionBlock::GetOffsetOfFloatArgumentRegisters());
             }
 #endif
-
-#if CHECK_APP_DOMAIN_LEAKS
-            // Make sure the arg is in the right app domain
-            if (g_pConfig->AppDomainLeaks() && m_argIt.GetArgType() == ELEMENT_TYPE_CLASS)
-            {
-                CONTRACT_VIOLATION(ThrowsViolation|GCViolation|FaultViolation);
-                OBJECTREF objRef = ArgSlotToObj(pArguments[arg]);
-                if (!objRef->AssignAppDomain(GetAppDomain()))
-                    _ASSERTE(!"Attempt to pass object in wrong app domain to method");
-            }
-#endif // CHECK_APP_DOMAIN_LEAKS
 
             ArgDestination argDest(pTransitionBlock, ofs, m_argIt.GetArgLocDescForStructInRegs());
 

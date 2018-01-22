@@ -2777,13 +2777,6 @@ HCIMPL1(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
         _ASSERTE(object->HasEmptySyncBlockInfo());
         object->SetMethodTable(methodTable);
 
-#if CHECK_APP_DOMAIN_LEAKS
-        if (g_pConfig->AppDomainLeaks())
-        {
-            object->SetAppDomain();
-        }
-#endif // CHECK_APP_DOMAIN_LEAKS
-
         return object;
     } while (false);
 
@@ -2879,13 +2872,6 @@ HCIMPL1(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength)
         stringObject->SetMethodTable(g_pStringClass);
         stringObject->SetStringLength(stringLength);
         _ASSERTE(stringObject->GetBuffer()[stringLength] == W('\0'));
-
-#if CHECK_APP_DOMAIN_LEAKS
-        if (g_pConfig->AppDomainLeaks())
-        {
-            stringObject->SetAppDomain();
-        }
-#endif // CHECK_APP_DOMAIN_LEAKS
 
         return stringObject;
     } while (false);
@@ -3055,13 +3041,6 @@ HCIMPL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, IN
         _ASSERTE(static_cast<DWORD>(componentCount) == componentCount);
         array->m_NumComponents = static_cast<DWORD>(componentCount);
 
-#if CHECK_APP_DOMAIN_LEAKS
-        if (g_pConfig->AppDomainLeaks())
-        {
-            array->SetAppDomain();
-        }
-#endif // CHECK_APP_DOMAIN_LEAKS
-
         return array;
     } while (false);
 
@@ -3120,13 +3099,6 @@ HCIMPL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, I
         array->SetArrayMethodTable(pArrayMT);
         _ASSERTE(static_cast<DWORD>(componentCount) == componentCount);
         array->m_NumComponents = static_cast<DWORD>(componentCount);
-
-#if CHECK_APP_DOMAIN_LEAKS
-        if (g_pConfig->AppDomainLeaks())
-        {
-            array->SetAppDomain();
-        }
-#endif // CHECK_APP_DOMAIN_LEAKS
 
         return array;
     } while (false);
@@ -3369,11 +3341,6 @@ HCIMPL2(LPVOID, ArrayStoreCheck, Object** pElement, PtrArray** pArray)
 
     GCStress<cfg_any, EeconfigFastGcSPolicy>::MaybeTrigger();
 
-#if CHECK_APP_DOMAIN_LEAKS
-    if (g_pConfig->AppDomainLeaks())
-      (*pElement)->AssignAppDomain((*pArray)->GetAppDomain());
-#endif // CHECK_APP_DOMAIN_LEAKS
-
     if (!ObjIsInstanceOf(*pElement, (*pArray)->GetArrayElementTypeHandle()))
         COMPlusThrow(kArrayTypeMismatchException);
 
@@ -3404,22 +3371,6 @@ HCIMPL3(void, JIT_Stelem_Ref_Portable, PtrArray* array, unsigned idx, Object *va
         MethodTable *valMT = val->GetMethodTable();
         TypeHandle arrayElemTH = array->GetArrayElementTypeHandle();
 
-#if CHECK_APP_DOMAIN_LEAKS
-        // If the instance is agile or check agile
-        if (g_pConfig->AppDomainLeaks() && !arrayElemTH.IsAppDomainAgile() && !arrayElemTH.IsCheckAppDomainAgile())
-        {
-            // FCALL_CONTRACT increase ForbidGC count.  Normally, HELPER_METHOD_FRAME macros decrease the count.
-            // But to avoid perf hit, we manually decrease the count here before calling another HCCALL.
-            ENDFORBIDGC();
-
-            if (HCCALL2(ArrayStoreCheck,(Object**)&val, (PtrArray**)&array) != NULL)
-            {
-                // This return is never executed. It helps epilog walker to find its way out.
-                return;
-            }
-        }
-        else
-#endif
         if (arrayElemTH != TypeHandle(valMT) && arrayElemTH != TypeHandle(g_pObjectClass))
         {   
             TypeHandle::CastResult result = ObjIsInstanceOfNoGC(val, arrayElemTH);

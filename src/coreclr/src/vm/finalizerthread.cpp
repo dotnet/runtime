@@ -147,13 +147,6 @@ Object * FinalizerThread::DoOneFinalization(Object* fobj, Thread* pThread,int bi
     {
         // if can't get into domain to finalize it, then it must be agile so finalize in current domain
         targetAppDomain = currentDomain;
-#if CHECK_APP_DOMAIN_LEAKS
-        {
-        // object must be agile if can't get into it's domain
-        if (g_pConfig->AppDomainLeaks() && !fobj->TrySetAppDomainAgile(FALSE))   
-            _ASSERTE(!"Found non-agile GC object which should have been finalized during app domain unload.");
-        }
-#endif
     }
 
     if (targetAppDomain == currentDomain)

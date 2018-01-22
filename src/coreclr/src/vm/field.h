@@ -313,7 +313,7 @@ public:
             );
     }
 
-#if defined(CHECK_APP_DOMAIN_LEAKS) || defined(_DEBUG)
+#if defined(_DEBUG)
     BOOL   IsDangerousAppDomainAgileField()
     {
         LIMITED_METHOD_CONTRACT;

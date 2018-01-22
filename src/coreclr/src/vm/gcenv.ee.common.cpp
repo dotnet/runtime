@@ -191,10 +191,6 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
     Frame       *pFrame;
     GCCONTEXT   *gcctx = (GCCONTEXT*) pData;
 
-#if CHECK_APP_DOMAIN_LEAKS
-    gcctx->sc->pCurrentDomain = pCF->GetAppDomain();
-#endif //CHECK_APP_DOMAIN_LEAKS
-
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
     if (g_fEnableARM)
     {

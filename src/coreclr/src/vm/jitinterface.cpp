@@ -1645,24 +1645,6 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
     {
         BOOL fInstanceHelper = FALSE;
 
-#if CHECK_APP_DOMAIN_LEAKS
-        if (g_pConfig->EnableFullDebug()
-            && pField->IsDangerousAppDomainAgileField()
-            && CorTypeInfo::IsObjRef(pField->GetFieldType()))
-        {
-            //
-            // In a checked field with all checks turned on, we use a helper to enforce the app domain
-            // agile invariant.
-            //
-            // <REVISIT_TODO>@todo: we'd like to check this for value type fields as well - we
-            // just need to add some code to iterate through the fields for
-            // references during the assignment.
-            // </REVISIT_TODO>
-            fInstanceHelper = TRUE;
-        }
-        else
-#endif // CHECK_APP_DOMAIN_LEAKS
-
         if (fInstanceHelper)
         {
             if (flags & CORINFO_ACCESS_ADDRESS)

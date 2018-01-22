@@ -1904,7 +1904,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
     SetFinalizationSemantics();
 
-#if defined(CHECK_APP_DOMAIN_LEAKS) || defined(_DEBUG)
+#if defined(_DEBUG)
     // Figure out if we're domain agile..
     // Note that this checks a bunch of field directly on the class & method table,
     // so it needs to come late in the game.

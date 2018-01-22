@@ -368,15 +368,6 @@ void ValidateFetchObjrefForHandle(OBJECTREF objref, ADIndex appDomainIndex)
     _ASSERTE(pDomain != NULL);
     _ASSERTE(!pDomain->NoAccessToHandleTable());
 
-#if CHECK_APP_DOMAIN_LEAKS
-    if (g_pConfig->AppDomainLeaks() && objref != NULL)
-    {
-        if (appDomainIndex.m_dwIndex)
-            objref->TryAssignAppDomain(pDomain);
-        else
-            objref->TrySetAppDomainAgile();
-    }
-#endif
     END_DEBUG_ONLY_CODE;
 }
 
@@ -398,15 +389,6 @@ void ValidateAssignObjrefForHandle(OBJECTREF objref, ADIndex appDomainIndex)
     _ASSERTE(pDomain != NULL);
     _ASSERTE(!pDomain->NoAccessToHandleTable());
 
-#if CHECK_APP_DOMAIN_LEAKS
-    if (g_pConfig->AppDomainLeaks() && objref != NULL)
-    {
-        if (appDomainIndex.m_dwIndex)
-            objref->TryAssignAppDomain(pDomain);
-        else
-            objref->TrySetAppDomainAgile();
-    }
-#endif
     END_DEBUG_ONLY_CODE;
 }
 
