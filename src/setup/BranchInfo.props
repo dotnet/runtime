@@ -4,9 +4,9 @@
     <MinorVersion>1</MinorVersion>
     <PatchVersion>0</PatchVersion>
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
-    <PreReleaseLabel>preview1</PreReleaseLabel>
+    <PreReleaseLabel>preview2</PreReleaseLabel>
     <ReleaseSuffix>$(PreReleaseLabel)</ReleaseSuffix>
-    <ReleaseBrandSuffix>Preview 1</ReleaseBrandSuffix>
+    <ReleaseBrandSuffix>Preview 2</ReleaseBrandSuffix>
     <Channel>master</Channel>
     <BranchName>master</BranchName>
     <ContainerName>dotnet</ContainerName>
