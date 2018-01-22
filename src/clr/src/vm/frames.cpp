@@ -41,11 +41,7 @@
 
 #include "argdestination.h"
 
-#if CHECK_APP_DOMAIN_LEAKS
-#define CHECK_APP_DOMAIN    GC_CALL_CHECK_APP_DOMAIN
-#else
 #define CHECK_APP_DOMAIN    0
-#endif
 
 //-----------------------------------------------------------------------
 #if _DEBUG

@@ -410,22 +410,6 @@ LEAF_ENTRY JIT_Stelem_Ref, _TEXT
         test    rdx, rdx
         jz      LOCAL_LABEL(AssigningNull)
 
-#ifdef CHECK_APP_DOMAIN_LEAKS     
-        // get Array TypeHandle
-        mov     rcx, [r10 + OFFSETOF__MethodTable__m_ElementType]   // 10h -> typehandle offset, 
-        // check for non-MT
-        test    rcx, 2
-        jnz     LOCAL_LABEL(NoCheck)
-
-        // Check VMflags of element type
-        mov     rcx, [rcx + OFFSETOF__MethodTable__m_pEEClass]
-        mov     ecx, dword ptr [rcx + OFFSETOF__EEClass__m_wAuxFlags]
-        test    ecx, EEClassFlags
-        jnz     C_FUNC(ArrayStoreCheck_Helper)
-
-    LOCAL_LABEL(NoCheck):
-#endif
-
         mov     rcx, [r10 + OFFSETOF__MethodTable__m_ElementType]   // 10h -> typehandle offset
 
         // check for exact match

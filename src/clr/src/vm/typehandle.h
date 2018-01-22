@@ -574,7 +574,7 @@ public:
 
     INDEBUGIMPL(BOOL Verify();)             // DEBUGGING Make certain this is a valid type handle 
 
-#if defined(CHECK_APP_DOMAIN_LEAKS) || defined(_DEBUG)
+#if defined(_DEBUG)
     BOOL IsAppDomainAgile() const;
     BOOL IsCheckAppDomainAgile() const;
 

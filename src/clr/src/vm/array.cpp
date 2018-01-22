@@ -432,7 +432,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
         pClass->SetArrayElementType (elemType);
         pClass->SetMethodTable (pMT);
 
-#if defined(CHECK_APP_DOMAIN_LEAKS) || defined(_DEBUG)
+#if defined(_DEBUG)
         // Non-covariant arrays of agile types are agile
         if (elemType != ELEMENT_TYPE_CLASS && elemTypeHnd.IsAppDomainAgile())
             pClass->SetAppDomainAgile();

@@ -1034,7 +1034,7 @@ CorElementType EEClass::ComputeInternalCorElementTypeForValueType(MethodTable * 
     return ELEMENT_TYPE_VALUETYPE;
 }
 
-#if defined(CHECK_APP_DOMAIN_LEAKS) || defined(_DEBUG)
+#if defined(_DEBUG)
 //*******************************************************************************
 void EEClass::GetPredefinedAgility(Module *pModule, mdTypeDef td,
                                    BOOL *pfIsAgile, BOOL *pfCheckAgile)
@@ -1506,7 +1506,7 @@ exit:
     LOG((LF_CLASSLOADER, LL_INFO1000, "CLASSLOADER: AppDomainAgileAttribute for %s is %d\n", pClass->GetDebugClassName(), pClass->IsAppDomainAgile()));
     pClass->SetAppDomainAgilityDone();
 }
-#endif // defined(CHECK_APP_DOMAIN_LEAKS) || defined(_DEBUG)
+#endif // defined(_DEBUG)
 
 //*******************************************************************************
 //
