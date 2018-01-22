@@ -2931,21 +2931,6 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
     _ASSERTE(param.pThread);
     param.pExState = param.pThread->GetExceptionState();
 
-    // Make sure that the object being thrown belongs in the current appdomain.
-    #if defined(_DEBUG) && CHECK_APP_DOMAIN_LEAKS
-    if (param.throwable != NULL)
-    {
-        GCPROTECT_BEGIN(param.throwable);
-        if (!CLRException::IsPreallocatedExceptionObject(param.throwable))
-            _ASSERTE(param.throwable->CheckAppDomain(GetAppDomain()));
-        GCPROTECT_END();
-    }
-    else
-    {   // throwable is NULL -- that shouldn't happen
-        _ASSERTE(NingenEnabled() || param.throwable != NULL);
-    }
-    #endif
-
     if (param.pThread->IsRudeAbortInitiated())
     {
         // Nobody should be able to swallow rude thread abort.

@@ -2527,35 +2527,6 @@ CLRLastThrownObjectException* CLRLastThrownObjectException::Validate()
                 "To suppress this assert 'set COMPlus_SuppressLostExceptionTypeAssert=1'");
         }
     }
-    else
-    {   // If there IS a LastThrownObject, then, for
-        //  exceptions other than the pre-allocated ones...
-        if (!CLRException::IsPreallocatedExceptionObject(throwable))
-        {   // ...check that the exception is from the current appdomain.
-#if CHECK_APP_DOMAIN_LEAKS
-            if (!throwable->CheckAppDomain(GetAppDomain()))
-            {   // We've lost track of the exception's type.  Raise an assert.  (This is configurable to allow
-                //  stress labs to turn off the assert.)
-    
-                static int iSuppress = -1;
-                if (iSuppress == -1) 
-                    iSuppress = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuppressLostExceptionTypeAssert);
-                if (!iSuppress)
-                {   
-                    // Raising an assert message can  cause a mode violation.
-                    CONTRACT_VIOLATION(ModeViolation);
-
-                    // Use DbgAssertDialog to get the formatting right.
-                    DbgAssertDialog(__FILE__, __LINE__, 
-                        "The 'LastThrownObject' does not belong to the current appdomain.\n"
-                        "The runtime may have lost track of the type of an exception in flight.\n"
-                        "Please get a good stack trace, find the caller of Validate, and file a bug against the owner.\n\n"
-                        "To suppress this assert 'set COMPlus_SuppressLostExceptionTypeAssert=1'");
-                }
-            }
-#endif
-        }
-    }
 
     GCPROTECT_END();
 

@@ -62,10 +62,6 @@ VOID FieldDesc::Init(mdFieldDef mb, CorElementType FieldType, DWORD dwMemberAttr
     m_debugName = (LPUTF8)pszFieldName;
 #endif
 
-#if CHECK_APP_DOMAIN_LEAKS
-    m_isDangerousAppDomainAgileField = 0;
-#endif
-
     _ASSERTE(GetMemberDef() == mb);                 // no truncation
     _ASSERTE(GetFieldType() == FieldType);
     _ASSERTE(GetFieldProtection() == (fdFieldAccessMask & dwMemberAttrs));

@@ -1721,10 +1721,6 @@ void OleVariant::MarshalInterfaceArrayOleToCom(void *oleArray, BASEARRAYREF *pCo
     BASEARRAYREF unprotectedArray = *pComArray;
     OBJECTREF *pCom = (OBJECTREF *) unprotectedArray->GetDataPtr();
 
-#if CHECK_APP_DOMAIN_LEAKS
-    AppDomain *pDomain = unprotectedArray->GetAppDomain();
-#endif  // CHECK_APP_DOMAIN_LEAKS
-
     OBJECTREF obj = NULL; 
     GCPROTECT_BEGIN(obj)
     {
@@ -1886,10 +1882,6 @@ void OleVariant::MarshalBSTRArrayOleToCom(void *oleArray, BASEARRAYREF *pComArra
 
     BASEARRAYREF unprotectedArray = *pComArray;
     STRINGREF *pCom = (STRINGREF *) unprotectedArray->GetDataPtr();
-    
-#if CHECK_APP_DOMAIN_LEAKS
-    AppDomain *pDomain = unprotectedArray->GetAppDomain();
-#endif  // CHECK_APP_DOMAIN_LEAKS
 
     while (pOle < pOleEnd)
     {
@@ -2104,10 +2096,6 @@ void OleVariant::MarshalLPWSTRArrayOleToCom(void *oleArray, BASEARRAYREF *pComAr
 
     BASEARRAYREF unprotectedArray = *pComArray;
     STRINGREF *pCom = (STRINGREF *) unprotectedArray->GetDataPtr();
-    
-#if CHECK_APP_DOMAIN_LEAKS
-    AppDomain *pDomain = unprotectedArray->GetAppDomain();
-#endif  // CHECK_APP_DOMAIN_LEAKS
 
     while (pOle < pOleEnd)
     {
@@ -2244,10 +2232,6 @@ void OleVariant::MarshalLPSTRArrayOleToCom(void *oleArray, BASEARRAYREF *pComArr
 
     BASEARRAYREF unprotectedArray = *pComArray;
     STRINGREF *pCom = (STRINGREF *) unprotectedArray->GetDataPtr();
-    
-#if CHECK_APP_DOMAIN_LEAKS
-    AppDomain *pDomain = unprotectedArray->GetAppDomain();
-#endif  // CHECK_APP_DOMAIN_LEAKS
 
     while (pOle < pOleEnd)
     {
