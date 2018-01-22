@@ -81,9 +81,6 @@
   <data name="ValueCantBeNull" xml:space="preserve">
     <value>'{0}'은(는) null을 허용하지 않는 값 형식이므로 null을 이 형식으로 변환할 수 없습니다.</value>
   </data>
-  <data name="WrongNestedThis" xml:space="preserve">
-    <value>중첩 형식 '{1}'을(를) 통해 외부 형식 '{0}'의 static이 아닌 멤버에 액세스할 수 없습니다.</value>
-  </data>
   <data name="NoSuchMember" xml:space="preserve">
     <value>'{0}'에 '{1}'에 대한 정의가 없습니다.</value>
   </data>
