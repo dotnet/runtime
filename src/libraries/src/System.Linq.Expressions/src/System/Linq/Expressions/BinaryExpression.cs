@@ -2787,12 +2787,34 @@ namespace System.Linq.Expressions
             ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
-                method = Math_Pow_Double_Double;
-                if (method == null)
+                if (left.Type == right.Type && left.Type.IsArithmetic())
                 {
-                    throw Error.BinaryOperatorNotDefined(ExpressionType.Power, left.Type, right.Type);
+                    method = Math_Pow_Double_Double;
+                    Debug.Assert(method != null);
+                }
+                else
+                {
+                    // VB uses op_Exponent, F# uses op_Exponentiation. This inconsistency is unfortunate, but we can
+                    // test for either.
+                    string name = "op_Exponent";
+                    BinaryExpression b = GetUserDefinedBinaryOperator(ExpressionType.Power, name, left, right, liftToNull: true);
+                    if (b == null)
+                    {
+                        name = "op_Exponentiation";
+                        b = GetUserDefinedBinaryOperator(ExpressionType.Power, name, left, right, liftToNull: true);
+                        if (b == null)
+                        {
+                            throw Error.BinaryOperatorNotDefined(ExpressionType.Power, left.Type, right.Type);
+                        }
+                    }
+
+                    ParameterInfo[] pis = b.Method.GetParametersCached();
+                    ValidateParamswithOperandsOrThrow(pis[0].ParameterType, left.Type, ExpressionType.Power, name);
+                    ValidateParamswithOperandsOrThrow(pis[1].ParameterType, right.Type, ExpressionType.Power, name);
+                    return b;
                 }
             }
+
             return GetMethodBasedBinaryOperator(ExpressionType.Power, left, right, method, liftToNull: true);
         }
 
