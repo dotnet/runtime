@@ -43,7 +43,7 @@ namespace System.Buffers
         /// <summary>
         /// Returns a handle for the array that has been pinned and hence its address can be taken
         /// </summary>
-        public abstract MemoryHandle Pin(int offset = 0);
+        public abstract MemoryHandle Pin(int byteOffset = 0);
 
         /// <summary>
         /// Returns an array segment.
