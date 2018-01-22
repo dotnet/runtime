@@ -3730,10 +3730,13 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 			buffer_add_typeid (&buf, domain, (MonoClass *)arg);
 			break;
 		case EVENT_KIND_BREAKPOINT:
-		case EVENT_KIND_STEP:
-			buffer_add_methodid (&buf, domain, (MonoMethod *)arg);
+		case EVENT_KIND_STEP: {
+			MonoMethod *method = (MonoMethod *)arg;
+
+			buffer_add_methodid (&buf, domain, method);
 			buffer_add_long (&buf, il_offset);
 			break;
+		}
 		case EVENT_KIND_VM_START:
 			buffer_add_domainid (&buf, mono_get_root_domain ());
 			break;
@@ -4666,6 +4669,42 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 	MonoDebugMethodInfo *minfo;
 	MonoDebugSourceLocation *loc = NULL;
 	gboolean hit = TRUE;
+
+	if ((ss_req->filter & STEP_FILTER_STATIC_CTOR)) {
+		mono_thread_state_init_from_monoctx (&tls->context, ctx);
+		compute_frame_info (tls->thread, tls);
+
+		gboolean ret = FALSE;
+		gboolean method_in_stack = FALSE;
+
+		for (int i=0; i < tls->frame_count; i++) {
+			MonoMethod *external_method = tls->frames [i]->method;
+			if (method == external_method)
+				method_in_stack = TRUE;
+
+			if (!ret) {
+				ret = (external_method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME);
+				ret = ret && !strcmp (external_method->name, ".cctor");
+				ret = ret && (external_method != req->start_method);
+			}
+		}
+
+		if (!method_in_stack) {
+			fprintf (stderr, "[%p] The instruction pointer of the currently executing method(%s) is not on the recorded stack. This is likely due to a runtime bug. The %d frames are as follow: \n", (gpointer)(gsize)mono_native_thread_id_get (), mono_method_full_name (method, TRUE), tls->frame_count);
+			/*DEBUG_PRINTF (1, "[%p] The instruction pointer of the currently executing method(%s) is not on the recorded stack. This is likely due to a runtime bug. The %d frames are as follow: \n", (gpointer)(gsize)mono_native_thread_id_get (), mono_method_full_name (method, TRUE), tls->frame_count);*/
+
+			for (int i=0; i < tls->frame_count; i++)
+				DEBUG_PRINTF (1, "\t [%p] Frame (%d / %d): %s\n", (gpointer)(gsize)mono_native_thread_id_get (), i, tls->frame_count, mono_method_full_name (tls->frames [i]->method, TRUE));
+		}
+		g_assert (method_in_stack);
+
+		tls->context.valid = FALSE;
+		tls->async_state.valid = FALSE;
+		invalidate_frames (tls);
+
+		if (ret)
+			return FALSE;
+	}
 
 	if (req->async_stepout_method == method) {
 		DEBUG_PRINTF (1, "[%p] Breakpoint hit during async step-out at %s hit, continuing stepping out.\n", (gpointer)(gsize)mono_native_thread_id_get (), method->name);
