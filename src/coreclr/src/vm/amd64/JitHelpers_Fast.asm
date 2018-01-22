@@ -754,22 +754,6 @@ LEAF_ENTRY JIT_Stelem_Ref, _TEXT
         test    r8, r8
         jz      AssigningNull
 
-ifdef CHECK_APP_DOMAIN_LEAKS
-        ; get Array TypeHandle
-        mov     r9, [r10 + OFFSETOF__MethodTable__m_ElementType]   ; 10h -> typehandle offset
-        ; check for non-MT
-        test    r9, 2
-        jnz     NoCheck
-
-        ; Check VMflags of element type
-        mov     r9, [r9 + OFFSETOF__MethodTable__m_pEEClass]
-        mov     r9d, dword ptr [r9 + OFFSETOF__EEClass__m_wAuxFlags]
-        test    r9d, EEClassFlags
-        jnz     ArrayStoreCheck_Helper
-
-    NoCheck:
-endif
-
         mov     r9, [r10 + OFFSETOF__MethodTable__m_ElementType]   ; 10h -> typehandle offset
 
         ; check for exact match

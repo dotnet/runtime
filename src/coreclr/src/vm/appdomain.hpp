@@ -1290,10 +1290,6 @@ public:
     OBJECTHANDLE CreatePinningHandle(OBJECTREF object)
     {
         WRAPPER_NO_CONTRACT;
-#if CHECK_APP_DOMAIN_LEAKS
-        if(IsAppDomain())
-            object->TryAssignAppDomain((AppDomain*)this,TRUE);
-#endif
         return ::CreatePinningHandle(m_handleStore, object);
     }
 

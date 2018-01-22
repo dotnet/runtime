@@ -1724,46 +1724,6 @@ void SyncBlockCache::VerifySyncTableEntry()
 
 #endif // VERIFY_HEAP
 
-#if CHECK_APP_DOMAIN_LEAKS
-void SyncBlockCache::CheckForUnloadedInstances(ADIndex unloadingIndex)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // Can only do in leak mode because agile objects will be in the domain with
-    // their index set to their creating domain and check will fail.
-    if (! g_pConfig->AppDomainLeaks())
-        return;
-
-    for (DWORD nb = 1; nb < m_FreeSyncTableIndex; nb++)
-    {
-        SyncTableEntry *pEntry = &SyncTableEntry::GetSyncTableEntry()[nb];
-        Object *oref = (Object *) pEntry->m_Object;
-        if (((size_t) oref & 1) != 0)
-            continue;
-
-        ADIndex idx;
-        if (oref)
-            idx = pEntry->m_Object->GetHeader()->GetRawAppDomainIndex();
-        if (! idx.m_dwIndex && pEntry->m_SyncBlock)
-            idx = pEntry->m_SyncBlock->GetAppDomainIndex();
-        // if the following assert fires, someobody is holding a reference to an object in an unloaded appdomain
-        if (idx == unloadingIndex)
-        {
-            // object must be agile to have survived the unload. If can't make it agile, that's a bug            
-            if (!oref->TrySetAppDomainAgile(TRUE))
-                _ASSERTE(!"Detected instance of unloaded appdomain that survived GC\n");
-        }
-    }
-}
-#endif
-
 #ifdef _DEBUG
 
 void DumpSyncBlockCache()
@@ -2580,25 +2540,8 @@ BOOL ObjHeader::Validate (BOOL bVerifySyncBlkIndex)
         }
         else
         {
-#if CHECK_APP_DOMAIN_LEAKS
-            if (bVerifyMore)
-            {  
-                if (bits & BIT_SBLK_AGILE_IN_PROGRESS)
-                {
-                    BOOL fResult;
-                    ASSERT_AND_CHECK (
-                        //BIT_SBLK_AGILE_IN_PROGRESS is set only if the object needs to check appdomain agile
-                        obj->ShouldCheckAppDomainAgile(FALSE, &fResult)
-                        //before BIT_SBLK_AGILE_IN_PROGRESS is cleared, the object might already be marked as agile 
-                        ||(obj->PassiveGetSyncBlock () && obj->PassiveGetSyncBlock ()->IsAppDomainAgile ())
-                        ||(obj->PassiveGetSyncBlock () && obj->PassiveGetSyncBlock ()->IsCheckedForAppDomainAgile ())
-                    );
-                }
-            }
-#else //CHECK_APP_DOMAIN_LEAKS
             //BIT_SBLK_AGILE_IN_PROGRESS is set only in debug build
             ASSERT_AND_CHECK (!(bits & BIT_SBLK_AGILE_IN_PROGRESS));
-#endif  //CHECK_APP_DOMAIN_LEAKS
             if (bits & BIT_SBLK_FINALIZER_RUN)
             {
                 ASSERT_AND_CHECK (obj->GetGCSafeMethodTable ()->HasFinalizer ());

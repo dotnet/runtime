@@ -628,11 +628,6 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     orArray = (ArrayBase *) OBJECTREFToObject(objref);
 #endif
 
-#if CHECK_APP_DOMAIN_LEAKS
-    if (!bDontSetAppDomain && g_pConfig->AppDomainLeaks())
-        orArray->SetAppDomain();
-#endif
-
     if (kind == ELEMENT_TYPE_ARRAY)
     {
         INT32 *pCountsPtr      = (INT32 *) orArray->GetBoundsPtr();
@@ -859,11 +854,6 @@ OBJECTREF   FastAllocatePrimitiveArray(MethodTable* pMT, DWORD cElements, BOOL b
     g_IBCLogger.LogMethodTableAccess(pMT);
 
     LogAlloc(totalSize, pMT, orObject);
-
-#if CHECK_APP_DOMAIN_LEAKS
-    if (g_pConfig->AppDomainLeaks())
-        orObject->SetAppDomain();
-#endif
     
     return( ObjectToOBJECTREF((Object*)orObject) );
 }
@@ -1066,11 +1056,6 @@ STRINGREF SlowAllocateString( DWORD cchStringLength )
 
     LogAlloc(ObjectSize, g_pStringClass, orObject);
 
-#if CHECK_APP_DOMAIN_LEAKS
-    if (g_pConfig->AppDomainLeaks())
-        orObject->SetAppDomain(); 
-#endif
-
     return( ObjectToSTRINGREF(orObject) );
 }
 
@@ -1187,11 +1172,6 @@ OBJECTREF AllocateObject(MethodTable *pMT
             orObject->SetMethodTable(pMT);
         }
 
-#if CHECK_APP_DOMAIN_LEAKS
-        if (g_pConfig->AppDomainLeaks())
-            orObject->SetAppDomain(); 
-        else
-#endif
         if (pMT->HasFinalizer())
             orObject->SetAppDomain(); 
 

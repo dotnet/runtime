@@ -58,11 +58,6 @@ private:
     static void EmitDummyObject(CPUSTUBLINKER *psl, X86Reg regTestAlign, Flags flags);
     static void EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *noAlloc, Flags flags);
     static void EmitNoAllocCode(CPUSTUBLINKER *psl, Flags flags);
-
-#if CHECK_APP_DOMAIN_LEAKS
-    static void EmitSetAppDomain(CPUSTUBLINKER *psl);
-    static void EmitCheckRestore(CPUSTUBLINKER *psl);
-#endif
 };
 
 extern "C" LONG g_global_alloc_lock;
@@ -113,10 +108,6 @@ __declspec(naked) void F_CALL_CONV JIT_Stelem_Ref(PtrArray* array, unsigned idx,
     STATIC_CONTRACT_GC_TRIGGERS;
 
     enum { CanCast = TypeHandle::CanCast,
-#if CHECK_APP_DOMAIN_LEAKS 
-           EEClassFlags = EEClass::AUXFLAG_APP_DOMAIN_AGILE |
-                          EEClass::AUXFLAG_CHECK_APP_DOMAIN_AGILE,
-#endif // CHECK_APP_DOMAIN_LEAKS
          };
 
     __asm {
@@ -130,25 +121,6 @@ __declspec(naked) void F_CALL_CONV JIT_Stelem_Ref(PtrArray* array, unsigned idx,
 
         test EAX, EAX
         jz Assigning0
-
-#if CHECK_APP_DOMAIN_LEAKS 
-        mov EAX,[g_pConfig]
-        movzx EAX, [EAX]EEConfig.fAppDomainLeaks;
-        test EAX, EAX
-        jz NoCheck
-        // Check if the instance is agile or check agile
-        mov EAX, [ECX]
-        mov EAX, [EAX]MethodTable.m_ElementTypeHnd
-        test EAX, 2                 // Check for non-MT
-        jnz NoCheck
-        // Check VMflags of element type
-        mov EAX, [EAX]MethodTable.m_pEEClass
-        mov EAX, dword ptr [EAX]EEClass.m_wAuxFlags
-        test EAX, EEClassFlags
-        jnz NeedFrame             // Jump to the generic case so we can do an app domain check
- NoCheck:
-        mov EAX, [ESP+4]            // EAX = val
-#endif // CHECK_APP_DOMAIN_LEAKS
 
         push EDX
         mov EDX, [ECX]
@@ -192,9 +164,6 @@ NotExactMatch:
         cmp EAX, CanCast
         je DoWrite
 
-#if CHECK_APP_DOMAIN_LEAKS 
-NeedFrame:
-#endif
         // Call the helper that knows how to erect a frame
         push EDX
         push ECX
@@ -424,21 +393,6 @@ void STDCALL JIT_TailCallHelper(Thread * pThread)
 }
 #endif // FEATURE_HIJACK
 
-#if CHECK_APP_DOMAIN_LEAKS 
-HCIMPL1(void *, SetObjectAppDomain, Object *pObject)
-{
-    FCALL_CONTRACT;
-    DEBUG_ONLY_FUNCTION;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_NOPOLL(Frame::FRAME_ATTR_CAPTURE_DEPTH_2|Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_NO_THREAD_ABORT);
-    pObject->SetAppDomain();
-    HELPER_METHOD_FRAME_END();
-
-    return pObject;
-}
-HCIMPLEND
-#endif // CHECK_APP_DOMAIN_LEAKS
-
     // emit code that adds MIN_OBJECT_SIZE to reg if reg is unaligned thus making it aligned
 void JIT_TrialAlloc::EmitAlignmentRoundup(CPUSTUBLINKER *psl, X86Reg testAlignReg, X86Reg adjReg, Flags flags)
 {
@@ -496,10 +450,6 @@ void JIT_TrialAlloc::EmitDummyObject(CPUSTUBLINKER *psl, X86Reg alignTestReg, Fl
 
     // mov [EAX], EDX
     psl->X86EmitOffsetModRM(0x89, kEDX, kEAX, 0);
-
-#if CHECK_APP_DOMAIN_LEAKS 
-    EmitSetAppDomain(psl);
-#endif
 
     // add EAX, MIN_OBJECT_SIZE
     psl->X86EmitAddReg(kEAX, MIN_OBJECT_SIZE);
@@ -652,52 +602,6 @@ void JIT_TrialAlloc::EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *
 #endif // INCREMENTAL_MEMCLR
 }
 
-#if CHECK_APP_DOMAIN_LEAKS 
-void JIT_TrialAlloc::EmitSetAppDomain(CPUSTUBLINKER *psl)
-{
-    STANDARD_VM_CONTRACT;
-
-    if (!g_pConfig->AppDomainLeaks())
-        return;
-
-    // At both entry & exit, eax contains the allocated object.
-    // ecx is preserved, edx is not.
-
-    //
-    // Add in a call to SetAppDomain.  (Note that this
-    // probably would have been easier to implement by just not using
-    // the generated helpers in a checked build, but we'd lose code
-    // coverage that way.)
-    //
-
-    // Save ECX over function call
-    psl->X86EmitPushReg(kECX);
-
-#ifdef UNIX_X86_ABI
-#define STACK_ALIGN_PADDING 8
-    // sub esp, STACK_ALIGN_PADDING; to align the stack
-    psl->X86EmitSubEsp(STACK_ALIGN_PADDING);
-#endif // UNIX_X86_ABI
-
-    // mov object to ECX
-    // mov ecx, eax
-    psl->Emit16(0xc88b);
-
-    // SetObjectAppDomain pops its arg & returns object in EAX
-    psl->X86EmitCall(psl->NewExternalCodeLabel((LPVOID)SetObjectAppDomain), 4);
-
-#ifdef UNIX_X86_ABI
-    // add esp, STACK_ALIGN_PADDING
-    psl->X86EmitAddEsp(STACK_ALIGN_PADDING);
-#undef STACK_ALIGN_PADDING
-#endif // UNIX_X86_ABI
-
-    psl->X86EmitPopReg(kECX);
-}
-
-#endif // CHECK_APP_DOMAIN_LEAKS
-
-
 void JIT_TrialAlloc::EmitNoAllocCode(CPUSTUBLINKER *psl, Flags flags)
 {
     STANDARD_VM_CONTRACT;
@@ -727,10 +631,6 @@ void *JIT_TrialAlloc::GenAllocSFast(Flags flags)
 
     // Emit the main body of the trial allocator, be it SP or MP
     EmitCore(&sl, noLock, noAlloc, flags);
-
-#if CHECK_APP_DOMAIN_LEAKS 
-    EmitSetAppDomain(&sl);
-#endif
 
     // Here we are at the end of the success case - just emit a ret
     sl.X86EmitReturn(0);
@@ -785,10 +685,6 @@ void *JIT_TrialAlloc::GenBox(Flags flags)
 
     // Emit the main body of the trial allocator
     EmitCore(&sl, noLock, noAlloc, flags);
-
-#if CHECK_APP_DOMAIN_LEAKS 
-    EmitSetAppDomain(&sl);
-#endif
 
     // Here we are at the end of the success case
 
@@ -1082,10 +978,6 @@ void *JIT_TrialAlloc::GenAllocArray(Flags flags)
     // mov             dword ptr [eax]ArrayBase.m_NumComponents, edx
     sl.X86EmitIndexRegStore(kEAX, offsetof(ArrayBase,m_NumComponents), kEDX);
 
-#if CHECK_APP_DOMAIN_LEAKS 
-    EmitSetAppDomain(&sl);
-#endif
-
     // no stack parameters
     sl.X86EmitReturn(0);
 
@@ -1197,10 +1089,6 @@ void *JIT_TrialAlloc::GenAllocString(Flags flags)
 
     // mov             dword ptr [eax]ArrayBase.m_StringLength, ecx
     sl.X86EmitIndexRegStore(kEAX, offsetof(StringObject,m_StringLength), kECX);
-
-#if CHECK_APP_DOMAIN_LEAKS 
-    EmitSetAppDomain(&sl);
-#endif
 
     // no stack parameters
     sl.X86EmitReturn(0);

@@ -844,14 +844,6 @@ class SyncBlock
     // can never be 0. ObjectNative::GetHashCode in COMObject.cpp makes sure to enforce this.
     DWORD m_dwHashCode;
 
-#if CHECK_APP_DOMAIN_LEAKS 
-    DWORD m_dwFlags;
-
-    enum {
-        IsObjectAppDomainAgile = 1,
-        IsObjectCheckedForAppDomainAgile = 2,
-    };
-#endif
     // In some early version of VB when there were no arrays developers used to use BSTR as arrays
     // The way this was done was by adding a trail byte at the end of the BSTR
     // To support this scenario, we need to use the sync block for this special case and
@@ -866,9 +858,6 @@ class SyncBlock
         , m_pEnCInfo(PTR_NULL)
 #endif // EnC_SUPPORTED
         , m_dwHashCode(0)
-#if CHECK_APP_DOMAIN_LEAKS 
-        , m_dwFlags(0)
-#endif
         , m_BSTRTrailByte(0)
     {
         LIMITED_METHOD_CONTRACT;
@@ -1088,34 +1077,6 @@ class SyncBlock
         SyncBlockPrecious   = 0x80000000,
     };
 
-#if CHECK_APP_DOMAIN_LEAKS 
-    BOOL IsAppDomainAgile() 
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_dwFlags & IsObjectAppDomainAgile;
-    }
-    void SetIsAppDomainAgile() 
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_dwFlags |= IsObjectAppDomainAgile;
-    }
-    void UnsetIsAppDomainAgile()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_dwFlags = m_dwFlags & ~IsObjectAppDomainAgile;
-    }
-    BOOL IsCheckedForAppDomainAgile() 
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_dwFlags & IsObjectCheckedForAppDomainAgile;
-    }
-    void SetIsCheckedForAppDomainAgile() 
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_dwFlags |= IsObjectCheckedForAppDomainAgile;
-    }
-#endif //CHECK_APP_DOMAIN_LEAKS
-
     BOOL HasCOMBstrTrailByte()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1315,9 +1276,6 @@ class SyncBlockCache
     };
     friend class LockHolder;
 
-#if CHECK_APP_DOMAIN_LEAKS 
-    void CheckForUnloadedInstances(ADIndex unloadingIndex);
-#endif
 #ifdef _DEBUG
     friend void DumpSyncBlockCache();
 #endif

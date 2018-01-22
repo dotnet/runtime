@@ -2292,9 +2292,6 @@ void SystemDomain::PreallocateSpecialObjects()
     _ASSERTE(g_pPreallocatedSentinelObject == NULL);
 
     OBJECTREF pPreallocatedSentinalObject = AllocateObject(g_pObjectClass);
-#if CHECK_APP_DOMAIN_LEAKS
-    pPreallocatedSentinalObject->SetSyncBlockAppDomainAgile();
-#endif
     g_pPreallocatedSentinelObject = CreatePinningHandle( pPreallocatedSentinalObject );
 
 #ifdef FEATURE_PREJIT
@@ -2346,9 +2343,6 @@ void SystemDomain::CreatePreallocatedExceptions()
 
 
     EXCEPTIONREF pRudeAbortException = (EXCEPTIONREF)AllocateObject(g_pThreadAbortExceptionClass);
-#if CHECK_APP_DOMAIN_LEAKS
-    pRudeAbortException->SetSyncBlockAppDomainAgile();
-#endif
     pRudeAbortException->SetHResult(COR_E_THREADABORTED);
     pRudeAbortException->SetXCode(EXCEPTION_COMPLUS);
     _ASSERTE(g_pPreallocatedRudeThreadAbortException == NULL);
@@ -2356,9 +2350,6 @@ void SystemDomain::CreatePreallocatedExceptions()
 
 
     EXCEPTIONREF pAbortException = (EXCEPTIONREF)AllocateObject(g_pThreadAbortExceptionClass);
-#if CHECK_APP_DOMAIN_LEAKS
-    pAbortException->SetSyncBlockAppDomainAgile();
-#endif
     pAbortException->SetHResult(COR_E_THREADABORTED);
     pAbortException->SetXCode(EXCEPTION_COMPLUS);
     _ASSERTE(g_pPreallocatedThreadAbortException == NULL);
@@ -8200,12 +8191,6 @@ void AppDomain::Close()
     LOG((LF_APPDOMAIN | LF_CORDB, LL_INFO10, "AppDomain::Domain [%d] %#08x %ls is collected.\n",
          GetId().m_dwId, this, GetFriendlyNameForLogging()));
 
-
-#if CHECK_APP_DOMAIN_LEAKS
-    if (g_pConfig->AppDomainLeaks())
-        // at this point shouldn't have any non-agile objects in the heap because we finalized all the non-agile ones.
-        SyncBlockCache::GetSyncBlockCache()->CheckForUnloadedInstances(GetIndex());
-#endif // CHECK_APP_DOMAIN_LEAKS
     {
         GCX_PREEMP();
         RemoveMemoryPressure();

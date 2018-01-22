@@ -1793,7 +1793,7 @@ public:
         SigPointer sp,
         CorGenericParamAttr position);
 
-#if defined(CHECK_APP_DOMAIN_LEAKS) || defined(_DEBUG)
+#if defined(_DEBUG)
 public:
     enum{
         AUXFLAG_APP_DOMAIN_AGILE                = 0x00000001,
@@ -1890,7 +1890,7 @@ public:
     static void SetAppDomainAgileAttribute(MethodTable * pMT);
 
     static void GetPredefinedAgility(Module *pModule, mdTypeDef td, BOOL *pfIsAgile, BOOL *pfIsCheckAgile);
-#endif // defined(CHECK_APP_DOMAIN_LEAKS) || defined(_DEBUG)
+#endif // defined(_DEBUG)
 
     //-------------------------------------------------------------
     // CONCRETE DATA LAYOUT
@@ -2033,10 +2033,10 @@ private:
     DWORD m_VMFlags;
 
     /*
-     * We maintain some auxillary flags in DEBUG or CHECK_APP_DOMAIN_LEAKS builds,
+     * We maintain some auxillary flags in DEBUG builds,
      * this frees up some bits in m_wVMFlags
      */
-#if defined(CHECK_APP_DOMAIN_LEAKS) || defined(_DEBUG)
+#if defined(_DEBUG)
     WORD m_wAuxFlags;
 #endif
 
