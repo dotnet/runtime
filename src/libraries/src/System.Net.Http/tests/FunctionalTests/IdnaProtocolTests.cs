@@ -11,10 +11,18 @@ namespace System.Net.Http.Functional.Tests
 {
     public abstract class IdnaProtocolTests : HttpClientTestBase
     {
+        protected abstract bool SupportsIdna { get; }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP does not support custom proxies.")]
         [Theory]
         [MemberData(nameof(InternationalHostNames))]
         public async Task InternationalUrl_UsesIdnaEncoding_Success(string hostname)
         {
+            if (!SupportsIdna)
+            {
+                return;
+            }
+
             Uri uri = new Uri($"http://{hostname}/");
 
             await LoopbackServer.CreateServerAsync(async (server, serverUrl) =>
@@ -46,6 +54,11 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(InternationalHostNames))]
         public async Task InternationalRequestHeaderValues_UsesIdnaEncoding_Success(string hostname)
         {
+            if (!SupportsIdna)
+            {
+                return;
+            }
+
             Uri uri = new Uri($"http://{hostname}/");
 
             await LoopbackServer.CreateServerAsync(async (server, serverUrl) =>
@@ -73,6 +86,11 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(InternationalHostNames))]
         public async Task InternationalResponseHeaderValues_UsesIdnaDecoding_Success(string hostname)
         {
+            if (!SupportsIdna)
+            {
+                return;
+            }
+
             Uri uri = new Uri($"http://{hostname}/");
 
             await LoopbackServer.CreateServerAsync(async (server, serverUrl) =>
@@ -115,10 +133,13 @@ namespace System.Net.Http.Functional.Tests
 
     public sealed class HttpClientHandler_IdnaProtocolTests : IdnaProtocolTests
     {
+        // WinHttp on Win7 does not support IDNA
+        protected override bool SupportsIdna => !PlatformDetection.IsWindows7;
     }
 
     public sealed class ManagedHandler_IdnaProtocolTests : IdnaProtocolTests
     {
         protected override bool UseManagedHandler => true;
+        protected override bool SupportsIdna => true;
     }
 }
