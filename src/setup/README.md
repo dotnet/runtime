@@ -416,29 +416,3 @@ Daily Builds
 [rhel-6-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.rhel.6.x64.version
 [rhel-6-targz-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-latest-rhel.6-x64.tar.gz
 
-# Debian daily feed
-
-Newest Runtime binaries for 2.0.0 in debian feed may be delayed due to external issues by up to 24h.
-
-## Obtaining binaries
-
-Add debian feed:
-
-For ubuntu 14.04 : trusty , ubuntu 16.04:xenial
-```
-sudo sh -c 'echo "deb [arch=amd64] http://apt-mo.trafficmanager.net/repos/dotnet/ trusty main" > /etc/apt/sources.list.d/dotnetdev.list'
-
-sudo apt-key adv --keyserver apt-mo.trafficmanager.net --recv-keys 417A0893
-
-sudo apt-get update
-```
-
-Install:
-```
-sudo apt-get install <DebianPackageName>=<Version>
-```
-
-To list available packages:
-```
-apt-cache search dotnet-sharedframework | grep 2.0.0
-```
