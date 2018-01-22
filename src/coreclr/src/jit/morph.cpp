@@ -4967,7 +4967,7 @@ GenTreePtr Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr f
         if (lcl != nullptr)
         {
             // Its fields will need to accessed by address.
-            lvaSetVarDoNotEnregister(lcl->gtLclNum, DNER_IsStructArg);
+            lvaSetVarDoNotEnregister(lcl->gtLclNum DEBUG_ARG(DNER_IsStructArg));
         }
 
         return arg;
