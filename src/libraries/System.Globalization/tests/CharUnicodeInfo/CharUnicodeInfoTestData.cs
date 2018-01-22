@@ -30,7 +30,7 @@ namespace System.Globalization.Tests
         private static int s_rangeMinCodePoint;
         private static void Parse(List<CharUnicodeInfoTestCase> testCases, string line)
         {
-            // Data is in the format: 
+            // Data is in the format:
             // code-value;
             // character-name;
             // general-category;
@@ -48,7 +48,7 @@ namespace System.Globalization.Tests
 
             int codePoint = int.Parse(charValueString, NumberStyles.HexNumber);
             Parse(testCases, codePoint, charCategoryString, numericValueString);
-            
+
             if (charName.EndsWith("First>"))
             {
                 s_rangeMinCodePoint = codePoint;
@@ -110,7 +110,8 @@ namespace System.Globalization.Tests
             {
                 Utf32CodeValue = codeValueRepresentation,
                 GeneralCategory = generalCategory,
-                NumericValue = numericValue
+                NumericValue = numericValue,
+                CodePoint = codePoint
             });
         }
 
@@ -144,6 +145,7 @@ namespace System.Globalization.Tests
     public class CharUnicodeInfoTestCase
     {
         public string Utf32CodeValue { get; set; }
+        public int CodePoint { get; set; }
         public UnicodeCategory GeneralCategory { get; set; }
         public double NumericValue { get; set; }
     }
