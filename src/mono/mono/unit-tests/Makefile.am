@@ -43,8 +43,6 @@ endif
 
 if !CROSS_COMPILE
 if !HOST_WIN32
-if SUPPORT_BOEHM
-if SUPPORT_SGEN
 
 noinst_LTLIBRARIES = libtestlib.la
 libtestlib_la_SOURCES =
@@ -110,8 +108,6 @@ clean-local:
 %.exe: %.cs
 	$(MCS) -r:$(CLASS)/System.dll -r:$(CLASS)/System.Xml.dll -r:$(CLASS)/System.Core.dll -out:$@ $<
 
-endif SUPPORT_SGEN
-endif SUPPORT_BOEHM
 endif !HOST_WIN32
 endif !CROSS_COMPILE
 
