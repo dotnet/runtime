@@ -81,9 +81,6 @@
   <data name="ValueCantBeNull" xml:space="preserve">
     <value>NULL kann nicht in {0} konvertiert werden, da dieser Werttyp nicht auf NULL festgelegt werden kann.</value>
   </data>
-  <data name="WrongNestedThis" xml:space="preserve">
-    <value>Auf einen nicht statischen Member des äußeren {0}-Typs kann nicht über den geschachtelten {1}-Typ zugegriffen werden.</value>
-  </data>
   <data name="NoSuchMember" xml:space="preserve">
     <value>{0} enthält keine Definition für {1}.</value>
   </data>

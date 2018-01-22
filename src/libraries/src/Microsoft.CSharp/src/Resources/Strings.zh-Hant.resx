@@ -81,9 +81,6 @@
   <data name="ValueCantBeNull" xml:space="preserve">
     <value>無法將 null 轉換成 '{0}'，因為它是不可為 null 的實值型別</value>
   </data>
-  <data name="WrongNestedThis" xml:space="preserve">
-    <value>無法透過巢狀型別 '{1}' 存取外部型別 '{0}' 的非靜態成員</value>
-  </data>
   <data name="NoSuchMember" xml:space="preserve">
     <value>'{0}' 不包含 '{1}' 的定義</value>
   </data>

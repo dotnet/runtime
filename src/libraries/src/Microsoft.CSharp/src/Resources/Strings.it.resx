@@ -81,9 +81,6 @@
   <data name="ValueCantBeNull" xml:space="preserve">
     <value>Impossibile convertire Null in '{0}' perché è un tipo di valore non nullable</value>
   </data>
-  <data name="WrongNestedThis" xml:space="preserve">
-    <value>Impossibile accedere a un membro non statico di tipo outer '{0}' tramite il tipo annidato '{1}'</value>
-  </data>
   <data name="NoSuchMember" xml:space="preserve">
     <value>'{0}' non contiene una definizione per '{1}'</value>
   </data>

@@ -1150,18 +1150,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     pfConstrained = true;
                 }
 
-                Expr objNew = tryConvert(pObject, swt.GetType(), CONVERTTYPE.NOUDC);
-
-                // This check ensures that we do not bind to methods in an outer class
-                // which are visible, but whose this pointer is of an incorrect type...
-                // ... also handles case of calling an pObject method on a RefAny value.
-                // WE don't give a great message for this, but it'll do.
-                if (objNew == null)
-                {
-                    throw ErrorContext.Error(ErrorCode.ERR_WrongNestedThis, swt.GetType(), pObject.Type);
-                }
-
-                pObject = objNew;
+                pObject = tryConvert(pObject, swt.GetType(), CONVERTTYPE.NOUDC);
+                Debug.Assert(pObject != null);
             }
 
             return pObject;

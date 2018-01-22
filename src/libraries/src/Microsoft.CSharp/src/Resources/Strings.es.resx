@@ -81,9 +81,6 @@
   <data name="ValueCantBeNull" xml:space="preserve">
     <value>No se puede convertir NULL en '{0}' porque es un tipo de valor que no acepta valores NULL.</value>
   </data>
-  <data name="WrongNestedThis" xml:space="preserve">
-    <value>No se puede obtener acceso a un miembro no estático de tipo externo '{0}' mediante el tipo anidado '{1}'.</value>
-  </data>
   <data name="NoSuchMember" xml:space="preserve">
     <value>'{0}' no contiene una definición para '{1}'.</value>
   </data>

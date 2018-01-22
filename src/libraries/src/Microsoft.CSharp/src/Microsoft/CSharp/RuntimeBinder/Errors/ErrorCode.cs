@@ -16,7 +16,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         ERR_AmbigBinaryOps = 34,
         ERR_AmbigUnaryOp = 35,
         ERR_ValueCantBeNull = 37,
-        ERR_WrongNestedThis = 38,
         ERR_NoSuchMember = 117,
         ERR_ObjectRequired = 120,
         ERR_AmbigCall = 121,
