@@ -38,10 +38,10 @@ if [ "$1" != "" ] && [[ "$1" != -* ]]; then
     fi
 fi
 
-"$__scriptpath/build-native.sh" $*
+"$__scriptpath/build-native.sh" "$@"
 if [ $? -ne 0 ];then
    exit 1
 fi
 
-"$__scriptpath/build-managed.sh" -BuildPackages=true $*
+"$__scriptpath/build-managed.sh" -BuildPackages=true "$@"
 exit $?
