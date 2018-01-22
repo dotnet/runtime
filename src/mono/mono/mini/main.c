@@ -214,6 +214,7 @@ search_directories(const char *envPath, const char *program, char **new_program)
 		while ((ent = readdir (dir))){
 			if (!strcmp (ent->d_name, program)){
 				*new_program = g_strdup_printf ("%s%s%s", path, path [path_len - 1] == '/' ? "" : "/", program);
+				closedir (dir);
 				g_strfreev (paths);
 				return TRUE;
 			}
