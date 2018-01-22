@@ -594,7 +594,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Environment.Windows.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\TimeZoneInfo.Win32.cs" />
   </ItemGroup>
   <!-- Include additional sources shared files in the compilation -->
   <ItemGroup>
