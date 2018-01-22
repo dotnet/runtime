@@ -33,5 +33,5 @@ if [ $# == 0 ]; then
     __args=-b
 fi
 
-$__working_tree_root/run.sh clean $__args $*
+$__working_tree_root/run.sh clean $__args "$@"
 exit $?

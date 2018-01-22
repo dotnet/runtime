@@ -14,5 +14,5 @@ __toolRuntime=$__scriptpath/Tools
 __dotnet=$__toolRuntime/dotnetcli/dotnet
 
 cd $__scriptpath
-$__dotnet $__toolRuntime/run.exe $__scriptpath/config.json $*
+$__dotnet $__toolRuntime/run.exe $__scriptpath/config.json "$@"
 exit $?
