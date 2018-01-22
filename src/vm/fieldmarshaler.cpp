@@ -1669,7 +1669,9 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
             if (!(alignmentRequirement == 1 ||
                      alignmentRequirement == 2 ||
                      alignmentRequirement == 4 ||
-                  alignmentRequirement == 8))
+                  alignmentRequirement == 8 ||
+                  alignmentRequirement == 16 ||
+                  alignmentRequirement == 32))
             {
                 COMPlusThrowHR(COR_E_INVALIDPROGRAM, BFA_METADATA_CORRUPT);
             }
@@ -1680,7 +1682,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     
             // This assert means I forgot to special-case some NFT in the
             // above switch.
-            _ASSERTE(alignmentRequirement <= 8);
+            _ASSERTE(alignmentRequirement <= 32);
     
             // Check if this field is overlapped with other(s)
             pfwalk->m_fIsOverlapped = FALSE;
@@ -1806,7 +1808,9 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
             if (!(alignmentRequirement == 1 ||
                      alignmentRequirement == 2 ||
                      alignmentRequirement == 4 ||
-                  alignmentRequirement == 8))
+                  alignmentRequirement == 8 ||
+                  alignmentRequirement == 16 ||
+                  alignmentRequirement == 32))
             {
                 COMPlusThrowHR(COR_E_INVALIDPROGRAM, BFA_METADATA_CORRUPT);
             }
@@ -1815,7 +1819,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
             
             LargestAlignmentRequirement = max(LargestAlignmentRequirement, alignmentRequirement);
             
-            _ASSERTE(alignmentRequirement <= 8);
+            _ASSERTE(alignmentRequirement <= 32);
             
             // Insert enough padding to align the current data member.
             while (cbCurOffset % alignmentRequirement)

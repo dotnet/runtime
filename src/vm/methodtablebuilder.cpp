@@ -9535,42 +9535,118 @@ void MethodTableBuilder::CheckForSystemTypes()
 {
     STANDARD_VM_CONTRACT;
 
+    LPCUTF8 name, nameSpace;
+
     MethodTable * pMT = GetHalfBakedMethodTable();
     EEClass * pClass = GetHalfBakedClass();
 
     // We can exit early for generic types - there are just a few cases to check for.
-    if (bmtGenerics->HasInstantiation() && g_pNullableClass != NULL)
+    if (bmtGenerics->HasInstantiation())
     {
-        _ASSERTE(g_pByReferenceClass != NULL);
-        _ASSERTE(g_pByReferenceClass->IsByRefLike());
+        if (pClass->HasLayout())
+        {
+            if (FAILED(GetMDImport()->GetNameOfTypeDef(GetCl(), &name, &nameSpace)))
+            {
+                BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
+            }
+
+            if (strcmp(nameSpace, g_IntrinsicsNS) == 0)
+            {
+                EEClassLayoutInfo * pLayout = pClass->GetLayoutInfo();
+
+                // The SIMD Hardware Intrinsic types correspond to fundamental data types in the underlying ABIs:
+                // * Vector64<T>:  __m64
+                // * Vector128<T>: __m128
+                // * Vector256<T>: __m256
+
+                // These __m128 and __m256 types, among other requirements, are special in that they must always
+                // be aligned properly.
+
+                if (strcmp(name, g_Vector64Name) == 0)
+                {
+                    // The System V ABI for i386 defaults to 8-byte alignment for __m64, except for parameter passing,
+                    // where it has an alignment of 4.
+
+                    pLayout->m_LargestAlignmentRequirementOfAllMembers        = 8; // sizeof(__m64)
+                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 8; // sizeof(__m64)
+                }
+                else if (strcmp(name, g_Vector128Name) == 0)
+                {
+    #ifdef _TARGET_ARM_
+                    // The Procedure Call Standard for ARM defaults to 8-byte alignment for __m128
+
+                    pLayout->m_LargestAlignmentRequirementOfAllMembers        = 8;
+                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 8;
+    #else
+                    pLayout->m_LargestAlignmentRequirementOfAllMembers        = 16; // sizeof(__m128)
+                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16; // sizeof(__m128)
+    #endif // _TARGET_ARM_
+                }
+                else if (strcmp(name, g_Vector256Name) == 0)
+                {
+    #ifdef _TARGET_ARM_
+                    // No such type exists for the Procedure Call Standard for ARM. We will default
+                    // to the same alignment as __m128, which is supported by the ABI.
+
+                    pLayout->m_LargestAlignmentRequirementOfAllMembers        = 8;
+                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 8;
+    #elif defined(_TARGET_ARM64_)
+                    // The Procedure Call Standard for ARM 64-bit (with SVE support) defaults to
+                    // 16-byte alignment for __m256.
+
+                    pLayout->m_LargestAlignmentRequirementOfAllMembers        = 16;
+                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
+    #else
+                    pLayout->m_LargestAlignmentRequirementOfAllMembers        = 32; // sizeof(__m256)
+                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 32; // sizeof(__m256)
+    #endif // _TARGET_ARM_ elif _TARGET_ARM64_
+                }
+                else
+                {
+                    // These types should be handled or explicitly skipped below to ensure that we don't
+                    // miss adding required ABI support for future types.
+
+                    _ASSERTE_MSG((strcmp(name, "Vector64DebugView`1") == 0) ||
+                                 (strcmp(name, "Vector128DebugView`1") == 0) ||
+                                 (strcmp(name, "Vector256DebugView`1") == 0),
+                                 "Unhandled Hardware Intrinsic Type.");
+                }
+
+                return;
+            }
+        }
+
+        if (g_pNullableClass != NULL)
+        {
+            _ASSERTE(g_pByReferenceClass != NULL);
+            _ASSERTE(g_pByReferenceClass->IsByRefLike());
 
 #ifdef _TARGET_X86_
-        if (GetCl() == g_pByReferenceClass->GetCl())
-        {
-            // x86 by default treats the type of ByReference<T> as the actual type of its IntPtr field, see calls to
-            // ComputeInternalCorElementTypeForValueType in this file. This is a special case where the struct needs to be
-            // treated as a value type so that its field can be considered as a by-ref pointer.
-            _ASSERTE(pMT->GetFlag(MethodTable::enum_flag_Category_Mask) == MethodTable::enum_flag_Category_PrimitiveValueType);
-            pMT->ClearFlag(MethodTable::enum_flag_Category_Mask);
-            pMT->SetInternalCorElementType(ELEMENT_TYPE_VALUETYPE);
-            return;
-        }
+            if (GetCl() == g_pByReferenceClass->GetCl())
+            {
+                // x86 by default treats the type of ByReference<T> as the actual type of its IntPtr field, see calls to
+                // ComputeInternalCorElementTypeForValueType in this file. This is a special case where the struct needs to be
+                // treated as a value type so that its field can be considered as a by-ref pointer.
+                _ASSERTE(pMT->GetFlag(MethodTable::enum_flag_Category_Mask) == MethodTable::enum_flag_Category_PrimitiveValueType);
+                pMT->ClearFlag(MethodTable::enum_flag_Category_Mask);
+                pMT->SetInternalCorElementType(ELEMENT_TYPE_VALUETYPE);
+                return;
+            }
 #endif
 
-        _ASSERTE(g_pNullableClass->IsNullable());
+            _ASSERTE(g_pNullableClass->IsNullable());
 
-        // Pre-compute whether the class is a Nullable<T> so that code:Nullable::IsNullableType is efficient
-        // This is useful to the performance of boxing/unboxing a Nullable
-        if (GetCl() == g_pNullableClass->GetCl())
-            pMT->SetIsNullable();
+            // Pre-compute whether the class is a Nullable<T> so that code:Nullable::IsNullableType is efficient
+            // This is useful to the performance of boxing/unboxing a Nullable
+            if (GetCl() == g_pNullableClass->GetCl())
+                pMT->SetIsNullable();
 
-        return;
+            return;
+        }
     }
 
     if (IsNested() || IsEnum())
         return;
-      
-    LPCUTF8 name, nameSpace;
 
     if (FAILED(GetMDImport()->GetNameOfTypeDef(GetCl(), &name, &nameSpace)))
     {
