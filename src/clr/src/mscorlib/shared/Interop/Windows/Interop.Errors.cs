@@ -39,6 +39,7 @@ internal partial class Interop
         internal const int ERROR_NO_UNICODE_TRANSLATION = 0x459;
         internal const int ERROR_NOT_FOUND = 0x490;
         internal const int ERROR_BAD_IMPERSONATION_LEVEL = 0x542;
+        internal const int ERROR_NO_SYSTEM_RESOURCES = 0x5AA;        
         internal const int E_FILENOTFOUND = unchecked((int)0x80070002);
         internal const int ERROR_TIMEOUT = 0x000005B4;
     }
