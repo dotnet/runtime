@@ -1316,14 +1316,11 @@ find_category (MonoString *category)
 
 void*
 mono_perfcounter_get_impl (MonoString* category, MonoString* counter, MonoString* instance,
-		MonoString* machine, int *type, MonoBoolean *custom)
+		int *type, MonoBoolean *custom)
 {
 	ERROR_DECL (error);
 	const CategoryDesc *cdesc;
 	void *result = NULL;
-	/* no support for counters on other machines */
-	if (mono_string_compare_ascii (machine, "."))
-		return NULL;
 	cdesc = find_category (category);
 	if (!cdesc) {
 		SharedCategory *scat = find_custom_category (category);
@@ -1419,15 +1416,12 @@ mono_perfcounter_category_del (MonoString *name)
 
 /* this is an icall */
 MonoString*
-mono_perfcounter_category_help (MonoString *category, MonoString *machine)
+mono_perfcounter_category_help (MonoString *category)
 {
 	ERROR_DECL (error);
 	MonoString *result = NULL;
 	const CategoryDesc *cdesc;
 	error_init (error);
-	/* no support for counters on other machines */
-	if (mono_string_compare_ascii (machine, "."))
-		return NULL;
 	cdesc = find_category (category);
 	if (!cdesc) {
 		SharedCategory *scat = find_custom_category (category);
@@ -1445,16 +1439,13 @@ mono_perfcounter_category_help (MonoString *category, MonoString *machine)
 }
 
 /*
- * Check if the category named @category exists on @machine. If @counter is not NULL, return
+ * Check if the category named @category exists. If @counter is not NULL, return
  * TRUE only if a counter with that name exists in the category.
  */
 MonoBoolean
-mono_perfcounter_category_exists (MonoString *counter, MonoString *category, MonoString *machine)
+mono_perfcounter_category_exists (MonoString *counter, MonoString *category)
 {
 	const CategoryDesc *cdesc;
-	/* no support for counters on other machines */
-	if (mono_string_compare_ascii (machine, "."))
-		return FALSE;
 	cdesc = find_category (category);
 	if (!cdesc) {
 		SharedCategory *scat = find_custom_category (category);
@@ -1570,17 +1561,13 @@ failure:
 	return result;
 }
 
-int
-mono_perfcounter_instance_exists (MonoString *instance, MonoString *category, MonoString *machine)
+MonoBoolean
+mono_perfcounter_instance_exists (MonoString *instance, MonoString *category)
 {
 	ERROR_DECL (error);
 	const CategoryDesc *cdesc;
 	SharedInstance *sinst;
 	char *name;
-	/* no support for counters on other machines */
-	/*FIXME: machine appears to be wrong
-	if (mono_string_compare_ascii (machine, "."))
-		return FALSE;*/
 	cdesc = find_category (category);
 	if (!cdesc) {
 		SharedCategory *scat;
@@ -1602,19 +1589,13 @@ mono_perfcounter_instance_exists (MonoString *instance, MonoString *category, Mo
 
 /* this is an icall */
 MonoArray*
-mono_perfcounter_category_names (MonoString *machine)
+mono_perfcounter_category_names (void)
 {
 	ERROR_DECL (error);
 	int i;
 	MonoArray *res;
 	MonoDomain *domain = mono_domain_get ();
 	GSList *custom_categories, *tmp;
-	/* no support for counters on other machines */
-	if (mono_string_compare_ascii (machine, ".")) {
-		res = mono_array_new_checked (domain, mono_get_string_class (), 0, error);
-		mono_error_set_pending_exception (error);
-		return res;
-	}
 	perfctr_lock ();
 	custom_categories = get_custom_categories ();
 	res = mono_array_new_checked (domain, mono_get_string_class (), NUM_CATEGORIES + g_slist_length (custom_categories), error);
@@ -1644,7 +1625,7 @@ leave:
 }
 
 MonoArray*
-mono_perfcounter_counter_names (MonoString *category, MonoString *machine)
+mono_perfcounter_counter_names (MonoString *category)
 {
 	ERROR_DECL (error);
 	int i;
@@ -1652,12 +1633,6 @@ mono_perfcounter_counter_names (MonoString *category, MonoString *machine)
 	const CategoryDesc *cdesc;
 	MonoArray *res;
 	MonoDomain *domain = mono_domain_get ();
-	/* no support for counters on other machines */
-	if (mono_string_compare_ascii (machine, ".")) {
-		res =  mono_array_new_checked (domain, mono_get_string_class (), 0, error);
-		mono_error_set_pending_exception (error);
-		return res;
-	}
 	cdesc = find_category (category);
 	if (cdesc) {
 		res = mono_array_new_checked (domain, mono_get_string_class (), cdesc [1].first_counter - cdesc->first_counter, error);
@@ -1842,16 +1817,11 @@ get_custom_instances (MonoString *category, MonoError *error)
 }
 
 MonoArray*
-mono_perfcounter_instance_names (MonoString *category, MonoString *machine)
+mono_perfcounter_instance_names (MonoString *category)
 {
 	ERROR_DECL (error);
 	const CategoryDesc* cat;
 	MonoArray *result = NULL;
-	if (mono_string_compare_ascii (machine, ".")) {
-		result = mono_array_new_checked (mono_domain_get (), mono_get_string_class (), 0, error);
-		mono_error_set_pending_exception (error);
-		return result;
-	}
 	
 	cat = find_category (category);
 	if (!cat) {
@@ -1939,7 +1909,7 @@ mono_perfcounter_foreach (PerfCounterEnumCallback cb, gpointer data)
 
 #else
 void*
-mono_perfcounter_get_impl (MonoString* category, MonoString* counter, MonoString* instance, MonoString* machine, int *type, MonoBoolean *custom)
+mono_perfcounter_get_impl (MonoString* category, MonoString* counter, MonoString* instance, int *type, MonoBoolean *custom)
 {
 	g_assert_not_reached ();
 }
@@ -1970,13 +1940,13 @@ mono_perfcounter_category_del (MonoString *name)
 }
 
 MonoString*
-mono_perfcounter_category_help (MonoString *category, MonoString *machine)
+mono_perfcounter_category_help (MonoString *category)
 {
 	g_assert_not_reached ();
 }
 
 MonoBoolean
-mono_perfcounter_category_exists (MonoString *counter, MonoString *category, MonoString *machine)
+mono_perfcounter_category_exists (MonoString *counter, MonoString *category)
 {
 	g_assert_not_reached ();
 }
@@ -1988,25 +1958,25 @@ mono_perfcounter_create (MonoString *category, MonoString *help, int type, MonoA
 }
 
 int
-mono_perfcounter_instance_exists (MonoString *instance, MonoString *category, MonoString *machine)
+mono_perfcounter_instance_exists (MonoString *instance, MonoString *category)
 {
 	g_assert_not_reached ();
 }
 
 MonoArray*
-mono_perfcounter_category_names (MonoString *machine)
+mono_perfcounter_category_names (void)
 {
 	g_assert_not_reached ();
 }
 
 MonoArray*
-mono_perfcounter_counter_names (MonoString *category, MonoString *machine)
+mono_perfcounter_counter_names (MonoString *category)
 {
 	g_assert_not_reached ();
 }
 
 MonoArray*
-mono_perfcounter_instance_names (MonoString *category, MonoString *machine)
+mono_perfcounter_instance_names (MonoString *category)
 {
 	g_assert_not_reached ();
 }
