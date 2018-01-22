@@ -475,41 +475,41 @@ namespace Span
         }
         #endregion
 
-        #region TestSpanDangerousCreate<T>
+        #region TestSpanCreate<T>
         [Benchmark(InnerIterationCount = BaseIterations)]
         [InlineData(100)]
-        public static void TestSpanDangerousCreateByte(int length)
+        public static void TestSpanCreateByte(int length)
         {
-            InvokeTestSpanDangerousCreate<byte>(length);
+            InvokeTestSpanCreate<byte>(length);
         }
 
         [Benchmark(InnerIterationCount = BaseIterations)]
         [InlineData(100)]
-        public static void TestSpanDangerousCreateString(int length)
+        public static void TestSpanCreateString(int length)
         {
-            InvokeTestSpanDangerousCreate<string>(length);
+            InvokeTestSpanCreate<string>(length);
         }
 
-        static void InvokeTestSpanDangerousCreate<T>(int length)
+        static void InvokeTestSpanCreate<T>(int length)
         {
             TestClass<T> testClass = new TestClass<T>();
             testClass.C0 = new T[length];
 
-            Invoke((int innerIterationCount) => TestSpanDangerousCreate<T>(testClass, innerIterationCount, false),
-                "TestSpanDangerousCreate<{0}>({1})", typeof(T).Name, length);
+            Invoke((int innerIterationCount) => TestSpanCreate<T>(testClass, innerIterationCount, false),
+                "TestSpanCreate<{0}>({1})", typeof(T).Name, length);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static void TestSpanDangerousCreate<T>(TestClass<T> testClass, int iterationCount, bool untrue)
+        static void TestSpanCreate<T>(TestClass<T> testClass, int iterationCount, bool untrue)
         {
             var sink = Sink<T>.Instance;
 
             for (int i = 0; i < iterationCount; i++)
             {
-                var span = Span<T>.DangerousCreate(testClass, ref testClass.C0[0], testClass.C0.Length);
+                var span = MemoryMarshal.CreateSpan<T>(ref testClass.C0[0], testClass.C0.Length);
                 // Under a condition that we know is false but the jit doesn't,
                 // add a read from 'span' to make sure it's not dead, and an assignment
-                // to 'testClass' so the DangerousCreate call won't get hoisted.
+                // to 'testClass' so the Create call won't get hoisted.
                 if (untrue) { sink.Data = span[0]; testClass = new TestClass<T>(); }
             }
         }
@@ -967,33 +967,33 @@ namespace Span
         }
         #endregion
 
-        #region TestSpanNonPortableCast<T>
+        #region TestSpanCast<T>
         [Benchmark(InnerIterationCount = BaseIterations)]
         [InlineData(100)]
-        public static void TestSpanNonPortableCastFromByteToInt(int length)
+        public static void TestSpanCastFromByteToInt(int length)
         {
-            InvokeTestSpanNonPortableCast<byte, int>(length);
+            InvokeTestSpanCast<byte, int>(length);
         }
 
         [Benchmark(InnerIterationCount = BaseIterations)]
         [InlineData(100)]
-        public static void TestSpanNonPortableCastFromIntToByte(int length)
+        public static void TestSpanCastFromIntToByte(int length)
         {
-            InvokeTestSpanNonPortableCast<int, byte>(length);
+            InvokeTestSpanCast<int, byte>(length);
         }
 
-        static void InvokeTestSpanNonPortableCast<From, To>(int length)
+        static void InvokeTestSpanCast<From, To>(int length)
             where From : struct
             where To : struct
         {
             var array = new From[length];
 
-            Invoke((int innerIterationCount) => TestSpanNonPortableCast<From, To>(array, innerIterationCount, false),
-                "TestSpanNonPortableCast<{0}, {1}>({2})", typeof(From).Name, typeof(To).Name, length);
+            Invoke((int innerIterationCount) => TestSpanCast<From, To>(array, innerIterationCount, false),
+                "TestSpanCast<{0}, {1}>({2})", typeof(From).Name, typeof(To).Name, length);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static void TestSpanNonPortableCast<From, To>(From[] array, int iterationCount, bool untrue)
+        static void TestSpanCast<From, To>(From[] array, int iterationCount, bool untrue)
             where From : struct
             where To : struct
         {
@@ -1002,7 +1002,7 @@ namespace Span
 
             for (int i = 0; i < iterationCount; i++)
             {
-                var toSpan = span.NonPortableCast<From, To>();
+                var toSpan = MemoryMarshal.Cast<From, To>(span);
                 // Under a condition that we know is false but the jit doesn't,
                 // add a read from 'toSpan' to make sure it's not dead, and an assignment
                 // to 'span' so the AsBytes call won't get hoisted.
