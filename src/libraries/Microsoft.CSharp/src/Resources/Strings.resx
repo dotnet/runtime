@@ -109,9 +109,6 @@
   <data name="ValueCantBeNull" xml:space="preserve">
     <value>Cannot convert null to '{0}' because it is a non-nullable value type</value>
   </data>
-  <data name="WrongNestedThis" xml:space="preserve">
-    <value>Cannot access a non-static member of outer type '{0}' via nested type '{1}'</value>
-  </data>
   <data name="NoSuchMember" xml:space="preserve">
     <value>'{0}' does not contain a definition for '{1}'</value>
   </data>

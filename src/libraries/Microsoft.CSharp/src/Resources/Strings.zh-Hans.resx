@@ -81,9 +81,6 @@
   <data name="ValueCantBeNull" xml:space="preserve">
     <value>无法将 null 转换为“{0}”，因为后者是不可以为 null 的值类型</value>
   </data>
-  <data name="WrongNestedThis" xml:space="preserve">
-    <value>无法通过嵌套类型“{1}”来访问外部类型“{0}”的非静态成员</value>
-  </data>
   <data name="NoSuchMember" xml:space="preserve">
     <value>“{0}”未包含“{1}”的定义</value>
   </data>

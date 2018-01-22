@@ -44,9 +44,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 case ErrorCode.ERR_ValueCantBeNull:
                     codeStr = SR.ValueCantBeNull;
                     break;
-                case ErrorCode.ERR_WrongNestedThis:
-                    codeStr = SR.WrongNestedThis;
-                    break;
                 case ErrorCode.ERR_NoSuchMember:
                     codeStr = SR.NoSuchMember;
                     break;

@@ -81,9 +81,6 @@
   <data name="ValueCantBeNull" xml:space="preserve">
     <value>Null 非許容の値型であるため、Null を '{0}' に変換できません</value>
   </data>
-  <data name="WrongNestedThis" xml:space="preserve">
-    <value>入れ子にされた型 '{1}' を経由して、外の型 '{0}' の静的でないメンバーにアクセスすることはできません</value>
-  </data>
   <data name="NoSuchMember" xml:space="preserve">
     <value>'{0}' に '{1}' の定義がありません</value>
   </data>
