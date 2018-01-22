@@ -72,6 +72,15 @@
 #define g_DecimalClassName "System.Decimal"
 #define g_DecimalName "Decimal"
 
+#define g_Vector64ClassName "System.Runtime.Intrinsics.Vector64`1"
+#define g_Vector64Name "Vector64`1"
+
+#define g_Vector128ClassName "System.Runtime.Intrinsics.Vector128`1"
+#define g_Vector128Name "Vector128`1"
+
+#define g_Vector256ClassName "System.Runtime.Intrinsics.Vector256`1"
+#define g_Vector256Name "Vector256`1"
+
 #ifdef FEATURE_COMINTEROP
 
 #define g_WindowsFoundationActivatableAttributeClassName      "Windows.Foundation.Metadata.ActivatableAttribute"
