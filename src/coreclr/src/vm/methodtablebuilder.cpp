@@ -9594,6 +9594,23 @@ void MethodTableBuilder::CheckForSystemTypes()
             pMT->SetInternalCorElementType(type);
             pMT->SetIsTruePrimitive();
 
+#if defined(_TARGET_X86_) && defined(UNIX_X86_ABI)
+            switch (type)
+            {
+                // The System V ABI for i386 defines different packing for these types.
+
+                case ELEMENT_TYPE_I8:
+                case ELEMENT_TYPE_U8:
+                case ELEMENT_TYPE_R8:
+                {
+                    EEClassLayoutInfo * pLayout = pClass->GetLayoutInfo();
+                    pLayout->m_LargestAlignmentRequirementOfAllMembers        = 4;
+                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 4;
+                    break;
+                }
+            }
+#endif // _TARGET_X86_ && UNIX_X86_ABI
+
 #ifdef _DEBUG 
             if (FAILED(GetMDImport()->GetNameOfTypeDef(GetCl(), &name, &nameSpace)))
             {
