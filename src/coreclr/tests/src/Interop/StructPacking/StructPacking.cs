@@ -1208,28 +1208,53 @@ unsafe class Program
     {
         bool succeeded = true;
 
-        succeeded &= Test<DefaultLayoutDefaultPacking<Vector128<byte>>>(
-            expectedSize: 24,
-            expectedOffsetByte: 0,
-            expectedOffsetValue: 8
-        );
+        if (RuntimeInformation.OSArchitecture == Architecture.Arm)
+        {
+            // The Procedure Call Standard for ARM defines this type as having 8-byte alignment
 
-        succeeded &= Test<SequentialLayoutDefaultPacking<Vector128<byte>>>(
-            expectedSize: 24,
-            expectedOffsetByte: 0,
-            expectedOffsetValue: 8
-        );
+            succeeded &= Test<DefaultLayoutDefaultPacking<Vector128<byte>>>(
+                expectedSize: 24,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 8
+            );
+
+            succeeded &= Test<SequentialLayoutDefaultPacking<Vector128<byte>>>(
+                expectedSize: 24,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 8
+            );
+
+            succeeded &= Test<SequentialLayoutMaxPacking<Vector128<byte>>>(
+                expectedSize: 24,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 8
+            );
+        }
+        else
+        {
+            succeeded &= Test<DefaultLayoutDefaultPacking<Vector128<byte>>>(
+                expectedSize: 32,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 16
+            );
+
+            succeeded &= Test<SequentialLayoutDefaultPacking<Vector128<byte>>>(
+                expectedSize: 32,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 16
+            );
+
+            succeeded &= Test<SequentialLayoutMaxPacking<Vector128<byte>>>(
+                expectedSize: 32,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 16
+            );
+        }
 
         succeeded &= Test<SequentialLayoutMinPacking<Vector128<byte>>>(
             expectedSize: 17,
             expectedOffsetByte: 0,
             expectedOffsetValue: 1
-        );
-
-        succeeded &= Test<SequentialLayoutMaxPacking<Vector128<byte>>>(
-            expectedSize: 24,
-            expectedOffsetByte: 0,
-            expectedOffsetValue: 8
         );
 
         if (Environment.Is64BitProcess)
@@ -1280,28 +1305,75 @@ unsafe class Program
     {
         bool succeeded = true;
 
-        succeeded &= Test<DefaultLayoutDefaultPacking<Vector256<byte>>>(
-            expectedSize: 40,
-            expectedOffsetByte: 0,
-            expectedOffsetValue: 8
-        );
+        if (RuntimeInformation.OSArchitecture == Architecture.Arm)
+        {
+            // The Procedure Call Standard for ARM defines this type as having 8-byte alignment
 
-        succeeded &= Test<SequentialLayoutDefaultPacking<Vector256<byte>>>(
-            expectedSize: 40,
-            expectedOffsetByte: 0,
-            expectedOffsetValue: 8
-        );
+            succeeded &= Test<DefaultLayoutDefaultPacking<Vector256<byte>>>(
+                expectedSize: 40,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 8
+            );
+
+            succeeded &= Test<SequentialLayoutDefaultPacking<Vector256<byte>>>(
+                expectedSize: 40,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 8
+            );
+
+            succeeded &= Test<SequentialLayoutMaxPacking<Vector256<byte>>>(
+                expectedSize: 40,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 8
+            );
+        }
+        else if (RuntimeInformation.OSArchitecture == Architecture.Arm64)
+        {
+            // The Procedure Call Standard for ARM64 defines this type as having 16-byte alignment
+
+            succeeded &= Test<DefaultLayoutDefaultPacking<Vector256<byte>>>(
+                expectedSize: 48,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 16
+            );
+
+            succeeded &= Test<SequentialLayoutDefaultPacking<Vector256<byte>>>(
+                expectedSize: 48,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 16
+            );
+
+            succeeded &= Test<SequentialLayoutMaxPacking<Vector256<byte>>>(
+                expectedSize: 48,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 16
+            );
+        }
+        else
+        {
+            succeeded &= Test<DefaultLayoutDefaultPacking<Vector256<byte>>>(
+                expectedSize: 64,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 32
+            );
+
+            succeeded &= Test<SequentialLayoutDefaultPacking<Vector256<byte>>>(
+                expectedSize: 64,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 32
+            );
+
+            succeeded &= Test<SequentialLayoutMaxPacking<Vector256<byte>>>(
+                expectedSize: 64,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 32
+            );
+        }
 
         succeeded &= Test<SequentialLayoutMinPacking<Vector256<byte>>>(
             expectedSize: 33,
             expectedOffsetByte: 0,
             expectedOffsetValue: 1
-        );
-
-        succeeded &= Test<SequentialLayoutMaxPacking<Vector256<byte>>>(
-            expectedSize: 40,
-            expectedOffsetByte: 0,
-            expectedOffsetValue: 8
         );
 
         if (Environment.Is64BitProcess)
