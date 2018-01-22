@@ -88,7 +88,7 @@ enum NStructFieldType
 // Currently we set this to the packing size of the largest supported
 // fundamental type and let the field marshaller downsize where needed.
 //=======================================================================
-#define DEFAULT_PACKING_SIZE 8
+#define DEFAULT_PACKING_SIZE 32
 
 
 //=======================================================================
