@@ -44,6 +44,10 @@ namespace Mono.Tuner {
 			get { return context.Annotations; }
 		}
 
+		internal Tracer Tracer {
+			get { return context.Tracer; }
+		}
+
 		public abstract SubStepTargets Targets { get; }
 
 		public virtual void Initialize (LinkContext context)
@@ -184,10 +188,10 @@ namespace Mono.Tuner {
 			foreach (var substep in on_assemblies) {
 				var bs = substep as BaseSubStep;
 				if (bs != null)
-					bs.Annotations.Push (substep);
+					bs.Tracer.Push (substep);
 				substep.ProcessAssembly (assembly);
 				if (bs != null)
-					bs.Annotations.Pop ();
+					bs.Tracer.Pop ();
 			}
 		}
 
@@ -196,10 +200,10 @@ namespace Mono.Tuner {
 			foreach (var substep in on_types) {
 				var bs = substep as BaseSubStep;
 				if (bs != null)
-					bs.Annotations.Push (substep);
+					bs.Tracer.Push (substep);
 				substep.ProcessType (type);
 				if (bs != null)
-					bs.Annotations.Pop ();
+					bs.Tracer.Pop ();
 			}
 		}
 
