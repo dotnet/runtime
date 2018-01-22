@@ -576,5 +576,87 @@ namespace System.Linq.Expressions.Tests
             BinaryExpression e2 = Expression.MultiplyChecked(Expression.Parameter(typeof(int), "a"), Expression.Parameter(typeof(int), "b"));
             Assert.Equal("(a * b)", e2.ToString());
         }
+
+        // Simulate VB-style overloading of exponentiation operation
+        public struct VBStyleExponentiation
+        {
+            public VBStyleExponentiation(double value) => Value = value;
+
+            public double Value { get; }
+
+            public static implicit operator VBStyleExponentiation(double value) => new VBStyleExponentiation(value);
+
+            public static VBStyleExponentiation op_Exponent(VBStyleExponentiation x, VBStyleExponentiation y) => Math.Pow(x.Value, y.Value);
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void VBStyleOperatorOverloading(bool useInterpreter)
+        {
+            var b = Expression.Parameter(typeof(VBStyleExponentiation));
+            var e = Expression.Parameter(typeof(VBStyleExponentiation));
+            var func = Expression.Lambda<Func<VBStyleExponentiation, VBStyleExponentiation, VBStyleExponentiation>>(
+                    Expression.Power(b, e), b, e).Compile(useInterpreter);
+            Assert.Equal(8.0, func(2.0, 3.0).Value);
+            Assert.Equal(10000.0, func(10.0, 4.0).Value);
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void VBStyleOperatorOverloadingLifted(bool useInterpreter)
+        {
+            var b = Expression.Parameter(typeof(VBStyleExponentiation?));
+            var e = Expression.Parameter(typeof(VBStyleExponentiation?));
+            var func = Expression.Lambda<Func<VBStyleExponentiation?, VBStyleExponentiation?, VBStyleExponentiation?>>(
+                Expression.Power(b, e), b, e).Compile(useInterpreter);
+            Assert.Equal(8.0, func(2.0, 3.0).Value.Value);
+            Assert.Equal(10000.0, func(10.0, 4.0).Value.Value);
+            Assert.Null(func(2.0, null));
+            Assert.Null(func(null, 2.0));
+            Assert.Null(func(null, null));
+        }
+
+        // Simulate F#-style overloading of exponentiation operation
+        public struct FSStyleExponentiation
+        {
+            public FSStyleExponentiation(double value) => Value = value;
+
+            public static implicit operator FSStyleExponentiation(double value) => new FSStyleExponentiation(value);
+
+            public double Value { get; }
+
+            public static FSStyleExponentiation op_Exponentiation(FSStyleExponentiation x, FSStyleExponentiation y)
+                => new FSStyleExponentiation(Math.Pow(x.Value, y.Value));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void FSStyleOperatorOverloading(bool useInterpreter)
+        {
+            var b = Expression.Parameter(typeof(FSStyleExponentiation));
+            var e = Expression.Parameter(typeof(FSStyleExponentiation));
+            var func = Expression.Lambda<Func<FSStyleExponentiation, FSStyleExponentiation, FSStyleExponentiation>>(
+                Expression.Power(b, e), b, e).Compile(useInterpreter);
+            Assert.Equal(8.0, func(2.0, 3.0).Value);
+            Assert.Equal(10000.0, func(10.0, 4.0).Value);
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void FSStyleOperatorOverloadingLifted(bool useInterpreter)
+        {
+            var b = Expression.Parameter(typeof(FSStyleExponentiation?));
+            var e = Expression.Parameter(typeof(FSStyleExponentiation?));
+            var func = Expression.Lambda<Func<FSStyleExponentiation?, FSStyleExponentiation?, FSStyleExponentiation?>>(
+                Expression.Power(b, e), b, e).Compile(useInterpreter);
+            Assert.Equal(8.0, func(2.0, 3.0).Value.Value);
+            Assert.Equal(10000.0, func(10.0, 4.0).Value.Value);
+            Assert.Null(func(2.0, null));
+            Assert.Null(func(null, 2.0));
+            Assert.Null(func(null, null));
+        }
+
+        [Fact]
+        public static void ExponentiationNotSupported()
+        {
+            ConstantExpression arg = Expression.Constant("");
+            Assert.Throws<InvalidOperationException>(() => Expression.Power(arg, arg));
+        }
     }
 }
