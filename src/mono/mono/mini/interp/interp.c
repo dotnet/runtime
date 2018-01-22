@@ -358,7 +358,7 @@ interp_pop_lmf (MonoLMFExt *ext)
 	mono_pop_lmf (&ext->lmf);
 }
 
-static inline InterpMethod*
+static InterpMethod*
 get_virtual_method (InterpMethod *imethod, MonoObject *obj)
 {
 	MonoMethod *m = imethod->method;
@@ -674,7 +674,7 @@ stackval_to_data_addr (MonoType *type_, stackval *val)
  * interp_throw:
  *   Throw an exception from the interpreter.
  */
-static void
+static MONO_NEVER_INLINE void
 interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, gconstpointer ip, gboolean rethrow)
 {
 	MonoLMFExt ext;
@@ -1155,7 +1155,7 @@ interp_frame_arg_to_storage (MonoInterpFrameHandle frame, MonoMethodSignature *s
 		return stackval_to_data_addr (sig->params [index], &iframe->stack_args [index]);
 }
 
-static void 
+static MONO_NEVER_INLINE void
 ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr, gboolean string_ctor, ThreadContext *context)
 {
 	MonoLMFExt ext;
@@ -1227,7 +1227,7 @@ interp_init_delegate (MonoDelegate *del)
  * runtime specifies that the implementation of the method is automatically
  * provided by the runtime and is primarily used for the methods of delegates.
  */
-static void
+static MONO_NEVER_INLINE void
 ves_imethod (InterpFrame *frame, ThreadContext *context)
 {
 	MonoMethod *method = frame->imethod->method;
@@ -1716,7 +1716,7 @@ interp_entry (InterpEntryData *data)
 	}
 }
 
-static stackval * 
+static MONO_NEVER_INLINE stackval *
 do_icall (ThreadContext *context, int op, stackval *sp, gpointer ptr)
 {
 	MonoLMFExt ext;
@@ -1801,7 +1801,7 @@ do_icall (ThreadContext *context, int op, stackval *sp, gpointer ptr)
 	return sp;
 }
 
-static stackval *
+static MONO_NEVER_INLINE stackval *
 do_jit_call (stackval *sp, unsigned char *vt_sp, ThreadContext *context, InterpFrame *frame, InterpMethod *rmethod)
 {
 	MonoMethodSignature *sig;
@@ -2012,7 +2012,7 @@ do_jit_call (stackval *sp, unsigned char *vt_sp, ThreadContext *context, InterpF
 	return sp;
 }
 
-static void
+static MONO_NEVER_INLINE void
 do_debugger_tramp (void (*tramp) (void), InterpFrame *frame)
 {
 	MonoLMFExt ext;
@@ -2021,7 +2021,7 @@ do_debugger_tramp (void (*tramp) (void), InterpFrame *frame)
 	interp_pop_lmf (&ext);
 }
 
-static void
+static MONO_NEVER_INLINE void
 do_transform_method (InterpFrame *frame, ThreadContext *context)
 {
 	MonoLMFExt ext;
