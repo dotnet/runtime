@@ -114,6 +114,7 @@
     <Compile Include="System\SpanHelpers.cs" />
     <Compile Include="System\Pinnable.cs" />
     <Compile Include="System\SpanHelpers.Clear.cs" />
+    <Compile Include="System\Runtime\InteropServices\MemoryMarshal.Portable.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Common or Common-branched source files -->
