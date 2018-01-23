@@ -241,6 +241,7 @@
     <ItemGroup>
       <_NativeResolvedDepsToPublish Include="@(ResolvedAssembliesToPublish)" />
       <_NativeResolvedDepsToPublish Remove="@(_ManagedResolvedAssembliesToPublish)" />
+      <_NativeResolvedDepsToPublish Remove="@(_NativeResolvedDepsToPublish->WithMetadataValue('AssetType', 'resources'))" />
     </ItemGroup>
 
     <ItemGroup>
