@@ -30,6 +30,8 @@ namespace System.Runtime.CompilerServices
         public unsafe static void InitBlock(void* startAddress, byte value, uint byteCount) { }
         public static void InitBlockUnaligned(ref byte startAddress, byte value, uint byteCount) { }
         public unsafe static void InitBlockUnaligned(void* startAddress, byte value, uint byteCount) { }
+        public static bool IsAddressGreaterThan<T>(ref T left, ref T right) { throw null; }
+        public static bool IsAddressLessThan<T>(ref T left, ref T right) { throw null; }
         public unsafe static T Read<T>(void* source) { throw null; }
         public unsafe static T ReadUnaligned<T>(void* source) { throw null; }
         public static T ReadUnaligned<T>(ref byte source) { throw null; }

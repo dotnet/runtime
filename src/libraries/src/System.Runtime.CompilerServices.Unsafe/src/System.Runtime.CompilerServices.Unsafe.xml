@@ -201,6 +201,30 @@
             <param name="right">The second reference to compare.</param>
             <returns><c>true</c> if <paramref name="left"/> and <paramref name="right"/> point to the same location; otherwise <c>false</c>.</returns>
         </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.IsAddressGreaterThan``1(``0@,``0@)">
+            <summary>
+            Determines whether the memory address referenced by <paramref name="left"/> is greater than the memory address referenced by <paramref name="right"/>.
+            </summary>
+            <param name="left">The first reference to compare.</param>
+            <param name="right">The second reference to compare.</param>
+            <returns><c>true</c> if the memory address referenced by <paramref name="left"/> is greater than the memory address referenced by <paramref name="right"/>; otherwise <c>false</c>.</returns>
+            <remarks>
+            This check is conceptually similar to "(void*)(&amp;left) &gt; (void*)(&amp;right)". Both parameters must reference the same object, array, or span;
+            or the objects being referenced must both be pinned; or both references must represent unmanaged pointers; otherwise the result is undefined.
+            </remarks>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.IsAddressLessThan``1(``0@,``0@)">
+            <summary>
+            Determines whether the memory address referenced by <paramref name="left"/> is less than the memory address referenced by <paramref name="right"/>.
+            </summary>
+            <param name="left">The first reference to compare.</param>
+            <param name="right">The second reference to compare.</param>
+            <returns><c>true</c> if the memory address referenced by <paramref name="left"/> is less than the memory address referenced by <paramref name="right"/>; otherwise <c>false</c>.</returns>
+            <remarks>
+            This check is conceptually similar to "(void*)(&amp;left) &lt; (void*)(&amp;right)". Both parameters must reference the same object, array, or span;
+            or the objects being referenced must both be pinned; or both references must represent unmanaged pointers; otherwise the result is undefined.
+            </remarks>
+        </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.CopyBlock(System.Void*,System.Void*,System.UInt32)">
             <summary>
             Copies bytes from the source address to the destination address.
