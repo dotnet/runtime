@@ -8,11 +8,7 @@ set AssetDir=%1
 set ExitCode=0
 pushd %LinkBenchRoot%
 
-set __CORFLAGS="%VS140COMNTOOLS%\..\..\..\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6.1 Tools\CorFlags.exe"
-if not exist %__CORFLAGS% (
-    echo corflags.exe not found
-    exit /b -1
-)
+where.exe /Q CorFlags.exe || (echo [Error] CorFlags.exe is not on the environment & exit /b 1)
 
 if defined __test_HelloWorld call :HelloWorld
 if defined __test_WebAPI call :WebAPI
@@ -88,7 +84,7 @@ copy ..\..\..\..\..\..\crossgen.exe
 FOR /F %%I IN ('dir /b *.dll ^| find /V /I ".ni.dll"  ^| find /V /I "System.Private.CoreLib" ^| find /V /I "mscorlib.dll"') DO (
     REM Don't crossgen Corlib, since the native image already exists.
     REM For all other MSIL files (corflags returns 0), run crossgen
-    %__CORFLAGS% %%I 
+    CorFlags.exe %%I 
     if not errorlevel 1 (
         crossgen.exe /Platform_Assemblies_Paths . %%I 
         if errorlevel 1 (
