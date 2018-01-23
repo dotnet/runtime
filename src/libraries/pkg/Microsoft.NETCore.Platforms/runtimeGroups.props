@@ -32,13 +32,14 @@
     <RuntimeGroup Include="debian">
       <Parent>linux</Parent>
       <Architectures>x64;x86;arm;armel;arm64</Architectures>
-      <Versions>8</Versions>
+      <Versions>8;9</Versions>
+      <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
     <RuntimeGroup Include="fedora">
       <Parent>linux</Parent>
       <Architectures>x64</Architectures>
-      <Versions>23;24;25;26</Versions>
+      <Versions>23;24;25;26;27;28</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
@@ -47,6 +48,7 @@
       <Architectures>x64</Architectures>
     </RuntimeGroup>
 
+    <!-- linux mint includes major version in Include because Parent is different for each major -->
     <RuntimeGroup Include="linuxmint.17">
       <Parent>ubuntu.14.04</Parent>
       <Architectures>x64</Architectures>
@@ -55,13 +57,18 @@
     <RuntimeGroup Include="linuxmint.18">
       <Parent>ubuntu.16.04</Parent>
       <Architectures>x64</Architectures>
-      <Versions>1</Versions>
+      <Versions>1;2;3</Versions>
+    </RuntimeGroup>
+    <RuntimeGroup Include="linuxmint.19">
+      <Parent>ubuntu.18.04</Parent>
+      <Architectures>x64</Architectures>
+      <Versions></Versions><!-- Empty because there are no point releases yet -->
     </RuntimeGroup>
 
     <RuntimeGroup Include="ol">
       <Parent>rhel</Parent>
       <Architectures>x64</Architectures>
-      <Versions>7;7.0;7.1;7.2</Versions>
+      <Versions>7;7.0;7.1;7.2;7.3;7.4</Versions>
       <ApplyVersionsToParent>true</ApplyVersionsToParent>
     </RuntimeGroup>
 
@@ -69,14 +76,14 @@
     <RuntimeGroup Include="opensuse">
       <Parent>linux</Parent>
       <Architectures>x64</Architectures>
-      <Versions>13.2;42.1</Versions>
+      <Versions>13.2;42.1;42.2;42.3</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
     <RuntimeGroup Include="osx">
       <Parent>unix</Parent>
       <Architectures>x64</Architectures>
-      <Versions>10.10;10.11;10.12</Versions>
+      <Versions>10.10;10.11;10.12;10.13</Versions>
     </RuntimeGroup>
 
     <!-- rhel 6 is independent -->
@@ -92,13 +99,18 @@
       <Versions>7;7.0;7.1;7.2;7.3;7.4</Versions>
     </RuntimeGroup>
 
+    <RuntimeGroup Include="sles">
+      <Parent>linux</Parent>
+      <Architectures>x64</Architectures>
+      <Versions>12;12.1;12.2;12.3</Versions>
+    </RuntimeGroup>
+
     <RuntimeGroup Include="tizen">
       <Parent>linux</Parent>
       <Architectures>armel</Architectures>
       <Versions>4.0.0</Versions>
     </RuntimeGroup>
 
-    <!-- ubuntu releases are compatible on major versions-->
     <RuntimeGroup Include="ubuntu">
       <Parent>debian</Parent>
       <Architectures>x64;x86;arm</Architectures>
@@ -108,7 +120,7 @@
     <RuntimeGroup Include="ubuntu">
       <Parent>debian</Parent>
       <Architectures>x64;x86;arm;arm64</Architectures>
-      <Versions>16.04;16.10</Versions>
+      <Versions>16.04;16.10;17.04;17.10;18.04</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
