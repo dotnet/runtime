@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -703,7 +704,7 @@ namespace System
                         if (nextChar >= 0 && nextChar != '%')
                         {
                             char nextCharChar = (char)nextChar;
-                            StringBuilder origStringBuilder = FormatCustomized(dateTime, ReadOnlySpan<char>.DangerousCreate(null, ref nextCharChar, 1), dtfi, offset, result);
+                            StringBuilder origStringBuilder = FormatCustomized(dateTime, MemoryMarshal.CreateReadOnlySpan<char>(ref nextCharChar, 1), dtfi, offset, result);
                             Debug.Assert(ReferenceEquals(origStringBuilder, result));
                             tokenLen = 2;
                         }
