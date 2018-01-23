@@ -2404,6 +2404,12 @@ retry:
 	}
 }
 
+gboolean
+mono_type_in_image (MonoType *type, MonoImage *image)
+{
+	return type_in_image (type, image);
+}
+
 static inline void
 image_sets_lock (void)
 {
