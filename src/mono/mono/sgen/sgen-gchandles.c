@@ -432,7 +432,7 @@ scan_for_weak (gpointer hidden, GCHandleType handle_type, int max_generation, gp
 	GCObject *obj = (GCObject *)MONO_GC_REVEAL_POINTER (hidden, is_weak);
 
 	/* If the object is dead we free the gc handle */
-	if (!sgen_is_object_alive (obj))
+	if (!sgen_is_object_alive_for_current_gen (obj))
 		return NULL;
 
 	/* Relocate it */
@@ -446,7 +446,7 @@ scan_for_weak (gpointer hidden, GCHandleType handle_type, int max_generation, gp
 			GCObject *field = *addr;
 
 			/* if the object in the weak field is alive, we relocate it */
-			if (field && sgen_is_object_alive (field))
+			if (field && sgen_is_object_alive_for_current_gen (field))
 				ctx->ops->copy_or_mark_object (addr, ctx->queue);
 			else
 				*addr = NULL;
