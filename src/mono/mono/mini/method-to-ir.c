@@ -377,6 +377,13 @@ break_on_unverified (void)
 		G_BREAKPOINT ();
 }
 
+static void
+clear_cfg_error (MonoCompile *cfg)
+{
+	mono_error_cleanup (&cfg->error);
+	error_init (&cfg->error);
+}
+
 static MONO_NEVER_INLINE void
 field_access_failure (MonoCompile *cfg, MonoMethod *method, MonoClassField *field)
 {
@@ -6117,6 +6124,8 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 		if (cfg->verbose_level > 2)
 			printf ("INLINE END %s -> %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
 
+		mono_error_assert_ok (&cfg->error);
+
 		cfg->stat_inlined_methods++;
 
 		/* always add some code to avoid block split failures */
@@ -6186,9 +6195,13 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 		cfg->headers_to_free = g_slist_prepend_mempool (cfg->mempool, cfg->headers_to_free, cheader);
 		return costs + 1;
 	} else {
-		if (cfg->verbose_level > 2)
-			printf ("INLINE ABORTED %s (cost %d)\n", mono_method_full_name (cmethod, TRUE), costs);
+		if (cfg->verbose_level > 2) {
+			const char *msg = mono_error_get_message (&cfg->error);
+			printf ("INLINE ABORTED %s (cost %d) %s\n", mono_method_full_name (cmethod, TRUE), costs, msg ? msg : "");
+		}
 		cfg->exception_type = MONO_EXCEPTION_NONE;
+
+		clear_cfg_error (cfg);
 
 		/* This gets rid of the newly added bblocks */
 		cfg->cbb = prev_cbb;
