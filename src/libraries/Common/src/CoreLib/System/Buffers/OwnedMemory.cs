@@ -34,7 +34,7 @@ namespace System.Buffers
             {
                 if (IsDisposed)
                 {
-                    ThrowHelper.ThrowObjectDisposedException_MemoryDisposed(nameof(OwnedMemory<T>));
+                    ThrowHelper.ThrowObjectDisposedException_MemoryDisposed();
                 }
                 return new Memory<T>(owner: this, 0, Length);
             }
