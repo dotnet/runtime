@@ -341,6 +341,11 @@ namespace System
         }
 
         /// <summary>
+        /// Returns a <see cref="String"/> with the name of the type and the number of elements
+        /// </summary>
+        public override string ToString() => "System.Span[" + Length.ToString() + "]";
+
+        /// <summary>
         /// Defines an implicit conversion of an array to a <see cref="Span{T}"/>
         /// </summary>
         public static implicit operator Span<T>(T[] array) => array != null ? new Span<T>(array) : default;

@@ -4,9 +4,7 @@
 
 using System.Buffers;
 using System.Runtime.CompilerServices;
-#if !FEATURE_PORTABLE_SPAN
-using Internal.Runtime.CompilerServices;
-#endif // FEATURE_PORTABLE_SPAN
+using System.Collections.Generic;
 
 namespace System.Runtime.InteropServices
 {
@@ -14,58 +12,8 @@ namespace System.Runtime.InteropServices
     /// Provides a collection of methods for interoperating with <see cref="Memory{T}"/>, <see cref="ReadOnlyMemory{T}"/>,
     /// <see cref="Span{T}"/>, and <see cref="ReadOnlySpan{T}"/>.
     /// </summary>
-    public static class MemoryMarshal
+    public static partial class MemoryMarshal
     {
-        /// <summary>Creates a <see cref="Memory{T}"/> from a <see cref="ReadOnlyMemory{T}"/>.</summary>
-        /// <param name="readOnlyMemory">The <see cref="ReadOnlyMemory{T}"/>.</param>
-        /// <returns>A <see cref="Memory{T}"/> representing the same memory as the <see cref="ReadOnlyMemory{T}"/>, but writable.</returns>
-        /// <remarks>
-        /// <see cref="AsMemory{T}(ReadOnlyMemory{T})"/> must be used with extreme caution.  <see cref="ReadOnlyMemory{T}"/> is used
-        /// to represent immutable data and other memory that is not meant to be written to; <see cref="Memory{T}"/> instances created
-        /// by <see cref="AsMemory{T}(ReadOnlyMemory{T})"/> should not be written to.  The method exists to enable variables typed
-        /// as <see cref="Memory{T}"/> but only used for reading to store a <see cref="ReadOnlyMemory{T}"/>.
-        /// </remarks>
-        public static Memory<T> AsMemory<T>(ReadOnlyMemory<T> readOnlyMemory) =>
-            Unsafe.As<ReadOnlyMemory<T>, Memory<T>>(ref readOnlyMemory);
-
-#if FEATURE_PORTABLE_SPAN
-        /// <summary>
-        /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to the location where the 0th element
-        /// would have been stored. Such a reference can be used for pinning but must never be dereferenced.
-        /// </summary>
-        public static ref T GetReference<T>(Span<T> span)
-        {
-            if (span.Pinnable == null)
-                unsafe { return ref Unsafe.AsRef<T>(span.ByteOffset.ToPointer()); }
-            else
-                return ref Unsafe.AddByteOffset<T>(ref span.Pinnable.Data, span.ByteOffset);
-        }
-
-        /// <summary>
-        /// Returns a reference to the 0th element of the ReadOnlySpan. If the Span is empty, returns a reference to the location where the 0th element
-        /// would have been stored. Such a reference can be used for pinning but must never be dereferenced.
-        /// </summary>
-        public static ref T GetReference<T>(ReadOnlySpan<T> span)
-        {
-            if (span.Pinnable == null)
-                unsafe { return ref Unsafe.AsRef<T>(span.ByteOffset.ToPointer()); }
-            else
-                return ref Unsafe.AddByteOffset<T>(ref span.Pinnable.Data, span.ByteOffset);
-        }
-#else
-        /// <summary>
-        /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to the location where the 0th element
-        /// would have been stored. Such a reference can be used for pinning but must never be dereferenced.
-        /// </summary>
-        public static ref T GetReference<T>(Span<T> span) => ref span._pointer.Value;
-
-        /// <summary>
-        /// Returns a reference to the 0th element of the ReadOnlySpan. If the Span is empty, returns a reference to the location where the 0th element
-        /// would have been stored. Such a reference can be used for pinning but must never be dereferenced.
-        /// </summary>
-        public static ref T GetReference<T>(ReadOnlySpan<T> span) => ref span._pointer.Value;
-#endif // FEATURE_PORTABLE_SPAN
-
         /// <summary>
         /// Get an array segment from the underlying memory.
         /// If unable to get the array segment, return false with a default array segment.
@@ -89,6 +37,19 @@ namespace System.Runtime.InteropServices
 
             arraySegment = default;
             return false;
+        }
+
+        /// <summary>
+        /// Creates an <see cref="IEnumerable{T}"/> view of the given <paramref name="memory" /> to allow
+        /// the <paramref name="memory" /> to be used in existing APIs that take an <see cref="IEnumerable{T}"/>.
+        /// </summary>
+        /// <typeparam name="T">The element type of the <paramref name="memory" />.</typeparam>
+        /// <param name="memory">The ReadOnlyMemory to view as an <see cref="IEnumerable{T}"/></param>
+        /// <returns>An <see cref="IEnumerable{T}"/> view of the given <paramref name="memory" /></returns>
+        public static IEnumerable<T> ToEnumerable<T>(ReadOnlyMemory<T> memory)
+        {
+            for (int i = 0; i < memory.Length; i++)
+                yield return memory.Span[i];
         }
     }
 }
