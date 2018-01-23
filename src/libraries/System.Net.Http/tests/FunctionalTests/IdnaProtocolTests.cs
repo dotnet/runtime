@@ -136,10 +136,4 @@ namespace System.Net.Http.Functional.Tests
         // WinHttp on Win7 does not support IDNA
         protected override bool SupportsIdna => !PlatformDetection.IsWindows7 && !PlatformDetection.IsFullFramework;
     }
-
-    public sealed class ManagedHandler_IdnaProtocolTests : IdnaProtocolTests
-    {
-        protected override bool UseManagedHandler => true;
-        protected override bool SupportsIdna => true;
-    }
 }
