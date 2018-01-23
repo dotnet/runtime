@@ -49,11 +49,12 @@ Breaking Change Rules
 > For example, `CultureInfo.GetCultureInfo(String)` used to throw `ArgumentException` in .NET Framework 3.5. In .NET Framework 4.0, this was changed to throw `CultureNotFoundException` which derives from `ArgumentException`, and therefore is an acceptable change.
 
 * Throwing a more specific exception than `NotSupportedException`, `NotImplementedException`, `NullReferenceException` or an exception that is considered unrecoverable  
-> Unrecoverable exceptions should not be getting caught and will be dealt with on a broad level by a high-level catch-all handler. Therefore, users are not expected to have code that catches these explicit exceptions. The list of unrecoverable exceptions are:
-     * `StackOverflowException`
-     * `SEHException`
-     * `ExecutionEngineException`
-     * `AccessViolationException`
+> Unrecoverable exceptions should not be getting caught and will be dealt with on a broad level by a high-level catch-all handler. Therefore, users are not expected to have code that catches these explicit exceptions. The unrecoverable exceptions are:
+>
+> * `StackOverflowException`
+> * `SEHException`
+> * `ExecutionEngineException`
+> * `AccessViolationException`
 
 * Throwing a new exception that only applies to a code-path which can only be observed with new parameter values, or state (that couldn't hit by existing code targeting the previous version)
 
