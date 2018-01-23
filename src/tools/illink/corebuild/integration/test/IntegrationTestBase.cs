@@ -30,7 +30,7 @@ namespace ILLink.Tests
 		protected int Dotnet(string args, string workingDir, string additionalPath = null)
 		{
 			return RunCommand(Path.GetFullPath(context.DotnetToolPath), args,
-							  workingDir, additionalPath, out string commandOutput);
+				workingDir, additionalPath, out string commandOutput);
 		}
 
 		protected int RunCommand(string command, string args, int timeout = Int32.MaxValue)
@@ -43,71 +43,16 @@ namespace ILLink.Tests
 			return RunCommand(command, args, workingDir, null, out string commandOutput);
 		}
 
-		protected int RunCommand(string command, string args, string workingDir, string additionalPath, out string commandOutput, int timeout = Int32.MaxValue)
+		protected int RunCommand(string command, string args, string workingDir, string additionalPath,
+			out string commandOutput, int timeout = Int32.MaxValue, string terminatingOutput = null)
 		{
-			output.WriteLine($"{command} {args}");
-			if (workingDir != null)
-				output.WriteLine($"working directory: {workingDir}");
-			var psi = new ProcessStartInfo
-			{
-				FileName = command,
-				Arguments = args,
-				UseShellExecute = false,
-				RedirectStandardOutput = true,
-				RedirectStandardError = true,
-				WorkingDirectory = workingDir,
-			};
-
-			if (additionalPath != null) {
-				string path = psi.Environment["PATH"];
-				psi.Environment["PATH"] = path + ";" + additionalPath;
-			}
-			var process = new Process();
-			process.StartInfo = psi;
-
-			// dotnet sets some environment variables that
-			// may cause problems in the child process.
-			psi.Environment.Remove("MSBuildExtensionsPath");
-			psi.Environment.Remove("MSBuildLoadMicrosoftTargetsReadOnly");
-			psi.Environment.Remove("MSBuildSDKsPath");
-			psi.Environment.Remove("VbcToolExe");
-			psi.Environment.Remove("CscToolExe");
-			psi.Environment.Remove("MSBUILD_EXE_PATH");
-
-			StringBuilder processOutput = new StringBuilder();
-			DataReceivedEventHandler handler = (sender, e) => {
-				processOutput.Append(e.Data);
-				processOutput.AppendLine();
-			};
-			StringBuilder processError = new StringBuilder();
-			DataReceivedEventHandler ehandler = (sender, e) => {
-				processError.Append(e.Data);
-				processError.AppendLine();
-			};
-			process.OutputDataReceived += handler;
-			process.ErrorDataReceived += ehandler;
-			output.WriteLine("environment:");
-			foreach (var item in psi.Environment) {
-				output.WriteLine($"\t{item.Key}={item.Value}");
-			}
-			process.Start();
-			process.BeginOutputReadLine();
-			process.BeginErrorReadLine();
-			if (!process.WaitForExit(timeout)) {
-				output.WriteLine($"killing process after {timeout} ms");
-				process.Kill();
-			}
-			// WaitForExit with timeout doesn't guarantee
-			// that the async output handlers have been
-			// called, so WaitForExit needs to be called
-			// afterwards.
-			process.WaitForExit();
-			string processOutputStr = processOutput.ToString();
-			string processErrorStr = processError.ToString();
-			output.WriteLine(processOutputStr);
-			output.WriteLine(processErrorStr);
-			commandOutput = processOutputStr;
-			return process.ExitCode;
+			return (new CommandRunner(command, output))
+				.WithArguments(args)
+				.WithWorkingDir(workingDir)
+				.WithAdditionalPath(additionalPath)
+				.WithTimeout(timeout)
+				.WithTerminatingOutput(terminatingOutput)
+				.Run(out commandOutput);
 		}
 
 		/// <summary>
@@ -142,7 +87,7 @@ namespace ILLink.Tests
 			}
 		}
 
-		public int RunApp(string csproj, out string processOutput, int timeout = Int32.MaxValue)
+		public int RunApp(string csproj, out string processOutput, int timeout = Int32.MaxValue, string terminatingOutput = null)
 		{
 			string demoRoot = Path.GetDirectoryName(csproj);
 			// detect the target framework for which the app was published
@@ -159,7 +104,7 @@ namespace ILLink.Tests
 
 			int ret = RunCommand(executablePath, null,
 				Directory.GetParent(executablePath).FullName,
-				null, out processOutput, timeout);
+				null, out processOutput, timeout, terminatingOutput);
 			return ret;
 		}
 

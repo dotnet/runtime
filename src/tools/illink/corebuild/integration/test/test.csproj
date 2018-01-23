@@ -22,6 +22,7 @@
   </Target>
 
   <ItemGroup>
+    <Compile Include="CommandRunner.cs" />
     <Compile Include="IntegrationTestBase.cs" />
     <Compile Include="TestContext.cs" />
     <Compile Include="MusicStoreTest.cs" />
