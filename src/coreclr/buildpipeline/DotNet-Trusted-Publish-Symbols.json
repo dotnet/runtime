@@ -42,7 +42,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Extract symbol packages; if release branch, archive",
+      "displayName": "Extract symbol packages",
       "timeoutInMinutes": 0,
       "task": {
         "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
@@ -54,7 +54,7 @@
         "scriptName": "",
         "arguments": "-BuildType $(PB_BuildType) -SymPkgGlob $(PB_AzureContainerSymbolPackageGlob) -Branch $(SourceBranch)",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
-        "inlineScript": "param($BuildType, $SymPkgGlob, $Branch)\nif ($BuildType -ne \"Release\") { exit }\n$archive = $Branch.StartsWith(\"release/\")\n\n$target = \"UnzipSymbolPackagesForPublish\"\nif ($archive) { $target = \"SubmitSymbolsRequest\" }\n\n.\\run.cmd build -- `\n/t:$target `\n/p:SymbolPackagesToPublishGlob=$SymPkgGlob `\n/p:ArchiveSymbols=$archive `\n/p:SkipCreateWindowsPdbsFromPortablePdbs=true `\n/v:D",
+        "inlineScript": "param($BuildType, $SymPkgGlob, $Branch)\nif ($BuildType -ne \"Release\") { exit }\n\n.\\run.cmd build -- `\n/t:UnzipSymbolPackagesForPublish `\n/p:SymbolPackagesToPublishGlob=$SymPkgGlob `\n/v:D",
         "failOnStandardError": "true"
       }
     },
