@@ -193,6 +193,12 @@
         <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeGeneratorTests\TypeGeneratorTest683\Generated683\*">
             <Issue>6707</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\tracing\eventsourcetrace\**">
+            <Issue>15919</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\tracing\eventpipetrace\**">
+            <Issue>15924</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- The following are x86 failures -->
@@ -1725,12 +1731,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\managed\Compilation\Compilation\Compilation.cmd">
             <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\tracing\eventsourcetrace\**">
-            <Issue>15919</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\tracing\eventpipetrace\**">
-            <Issue>15924</Issue>
         </ExcludeList>
     </ItemGroup>
 
