@@ -1123,6 +1123,8 @@ private:
 
     void applyCalleeSaveHeuristics(RefPosition* rp);
 
+    void checkConflictingDefUse(RefPosition* rp);
+
     void associateRefPosWithInterval(RefPosition* rp);
 
     void associateRefPosWithRegister(RefPosition* rp);
