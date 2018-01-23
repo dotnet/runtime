@@ -13,7 +13,7 @@
     <CoreClrCurrentRef>7cdb5883b68036368159ab405e0bfa9878190abb</CoreClrCurrentRef>
     <StandardCurrentRef>6298244e25cf84d91e3cda9627315f2425274624</StandardCurrentRef>
     <WCFCurrentRef>7cdb5883b68036368159ab405e0bfa9878190abb</WCFCurrentRef>
-    <BuildToolsCurrentRef>7cdb5883b68036368159ab405e0bfa9878190abb</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>106e48588e04f88bba1bad3e651ab31bbc2760cb</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -50,7 +50,7 @@
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>2.1.0-prerelease-02422-01</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>2.1.0-prerelease-02423-02</FeedTasksPackageVersion>
   </PropertyGroup>
 
   <!-- Publish symbol build task package -->
