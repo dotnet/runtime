@@ -4,6 +4,7 @@
 
 using System.Text;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.Globalization
 {
@@ -315,7 +316,7 @@ namespace System.Globalization
                         if (nextChar >= 0 && nextChar != (int)'%')
                         {
                             char nextCharChar = (char)nextChar;
-                            StringBuilder origStringBuilder = FormatCustomized(value, ReadOnlySpan<char>.DangerousCreate(null, ref nextCharChar, 1), dtfi, result);
+                            StringBuilder origStringBuilder = FormatCustomized(value, MemoryMarshal.CreateReadOnlySpan<char>(ref nextCharChar, 1), dtfi, result);
                             Debug.Assert(ReferenceEquals(origStringBuilder, result));
                             tokenLen = 2;
                         }
