@@ -31,18 +31,26 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
         [InlineData("\0")]
         [InlineData("[")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Access to path is denied when in App container")]
-        public void GetDomainController_InvalidName_ThrowsActiveDirectoryObjectNotFoundException(string name)
+        public void GetDomainController_InvalidName(string name)
         {
             var context = new DirectoryContext(DirectoryContextType.DirectoryServer, name);
-            Assert.Throws<ActiveDirectoryObjectNotFoundException>(() => DomainController.GetDomainController(context));
+            Exception exception = Record.Exception(() => DomainController.GetDomainController(context));
+            Assert.NotNull(exception);
+            Assert.True(exception is ActiveDirectoryObjectNotFoundException ||
+                        exception is ActiveDirectoryOperationException,
+                        $"We got unrecognized exception {exception}");
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Access to path is denied when in App container")]
-        public void GetDomainController_InvalidIPV6_ThrowsActiveDirectoryObjectNotFoundException()
+        public void GetDomainController_InvalidIPV6()
         {
             var context = new DirectoryContext(DirectoryContextType.DirectoryServer, "[::1]:port");
-            Assert.Throws<ActiveDirectoryObjectNotFoundException>(() => DomainController.GetDomainController(context));
+            Exception exception = Record.Exception(() => DomainController.GetDomainController(context));
+            Assert.NotNull(exception);
+            Assert.True(exception is ActiveDirectoryObjectNotFoundException ||
+                        exception is ActiveDirectoryOperationException,
+                        $"We got unrecognized exception {exception}");
         }
 
         [Fact]

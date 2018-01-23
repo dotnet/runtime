@@ -53,15 +53,25 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
         [InlineData(DirectoryContextType.Forest, "\0")]
         [InlineData(DirectoryContextType.DirectoryServer, "server:port")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
-        public void GetForest_NonNullNameAndNotRootedDomain_ThrowsActiveDirectoryObjectNotFoundException_NonUap(DirectoryContextType type, string name)
+        public void GetForest_NonNullNameAndNotRootedDomain_NonUap(DirectoryContextType type, string name)
         {
             var context = new DirectoryContext(type, name);
             if (!PlatformDetection.IsDomainJoinedMachine)
             {
                 Assert.Throws<ActiveDirectoryObjectNotFoundException>(() => Forest.GetForest(context));
+                Exception exception = Record.Exception(() => Forest.GetForest(context));
+                Assert.NotNull(exception);
+                Assert.True(exception is ActiveDirectoryObjectNotFoundException ||
+                            exception is ActiveDirectoryOperationException,
+                            $"We got unrecognized exception {exception}");
+
 
                 // The result of validation is cached, so repeat this to make sure it's cached properly.
-                Assert.Throws<ActiveDirectoryObjectNotFoundException>(() => Forest.GetForest(context));
+                exception = Record.Exception(() => Forest.GetForest(context));
+                Assert.NotNull(exception);
+                Assert.True(exception is ActiveDirectoryObjectNotFoundException ||
+                            exception is ActiveDirectoryOperationException,
+                            $"We got unrecognized exception {exception}");
             }
         }
     }
