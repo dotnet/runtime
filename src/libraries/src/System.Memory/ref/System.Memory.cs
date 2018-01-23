@@ -86,7 +86,7 @@ namespace System
         public static implicit operator System.Memory<T> (System.ArraySegment<T> arraySegment) { throw null; }
         public static implicit operator System.ReadOnlyMemory<T> (System.Memory<T> memory) { throw null; }
         public static implicit operator System.Memory<T> (T[] array) { throw null; }
-        public System.Buffers.MemoryHandle Retain(bool pin=false) { throw null; }
+        public System.Buffers.MemoryHandle Retain(bool pin = false) { throw null; }
         public System.Memory<T> Slice(int start) { throw null; }
         public System.Memory<T> Slice(int start, int length) { throw null; }
         public T[] ToArray() { throw null; }
@@ -110,7 +110,7 @@ namespace System
         public override int GetHashCode() { throw null; }
         public static implicit operator System.ReadOnlyMemory<T> (System.ArraySegment<T> arraySegment) { throw null; }
         public static implicit operator System.ReadOnlyMemory<T> (T[] array) { throw null; }
-        public System.Buffers.MemoryHandle Retain(bool pin=false) { throw null; }
+        public System.Buffers.MemoryHandle Retain(bool pin = false) { throw null; }
         public System.ReadOnlyMemory<T> Slice(int start) { throw null; }
         public System.ReadOnlyMemory<T> Slice(int start, int length) { throw null; }
         public T[] ToArray() { throw null; }
@@ -203,7 +203,7 @@ namespace System.Buffers
     {
         private object _dummy;
         [System.CLSCompliantAttribute(false)]
-        public unsafe MemoryHandle(System.Buffers.IRetainable retainable, void* pointer=null, System.Runtime.InteropServices.GCHandle handle=default(System.Runtime.InteropServices.GCHandle)) { throw null; }
+        public unsafe MemoryHandle(System.Buffers.IRetainable retainable, void* pointer = null, System.Runtime.InteropServices.GCHandle handle = default(System.Runtime.InteropServices.GCHandle)) { throw null; }
         public bool HasPointer { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
         public unsafe void* Pointer { get { throw null; } }
@@ -226,7 +226,7 @@ namespace System.Buffers
         public abstract System.Span<T> Span { get; }
         public void Dispose() { }
         protected abstract void Dispose(bool disposing);
-        public abstract System.Buffers.MemoryHandle Pin(int byteOffset=0);
+        public abstract System.Buffers.MemoryHandle Pin(int byteOffset = 0);
         public abstract bool Release();
         public abstract void Retain();
         protected internal abstract bool TryGetArray(out System.ArraySegment<T> arraySegment);
@@ -236,7 +236,7 @@ namespace System.Buffers
         private readonly int _dummy;
         public const byte MaxPrecision = (byte)99;
         public const byte NoPrecision = (byte)255;
-        public StandardFormat(char symbol, byte precision=(byte)255) { throw null; }
+        public StandardFormat(char symbol, byte precision = (byte)255) { throw null; }
         public bool HasPrecision { get { throw null; } }
         public bool IsDefault { get { throw null; } }
         public byte Precision { get { throw null; } }
@@ -350,58 +350,58 @@ namespace System.Buffers.Text
 {
     public static partial class Base64
     {
-        public static System.Buffers.OperationStatus DecodeFromUtf8(System.ReadOnlySpan<byte> utf8, System.Span<byte> bytes, out int consumed, out int written, bool isFinalBlock=true) { throw null; }
+        public static System.Buffers.OperationStatus DecodeFromUtf8(System.ReadOnlySpan<byte> utf8, System.Span<byte> bytes, out int consumed, out int written, bool isFinalBlock = true) { throw null; }
         public static System.Buffers.OperationStatus DecodeFromUtf8InPlace(System.Span<byte> buffer, out int written) { throw null; }
-        public static System.Buffers.OperationStatus EncodeToUtf8(System.ReadOnlySpan<byte> bytes, System.Span<byte> utf8, out int consumed, out int written, bool isFinalBlock=true) { throw null; }
+        public static System.Buffers.OperationStatus EncodeToUtf8(System.ReadOnlySpan<byte> bytes, System.Span<byte> utf8, out int consumed, out int written, bool isFinalBlock = true) { throw null; }
         public static System.Buffers.OperationStatus EncodeToUtf8InPlace(System.Span<byte> buffer, int dataLength, out int written) { throw null; }
         public static int GetMaxDecodedFromUtf8Length(int length) { throw null; }
         public static int GetMaxEncodedToUtf8Length(int length) { throw null; }
     }
     public static partial class Utf8Formatter
     {
-        public static bool TryFormat(bool value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format=default(System.Buffers.StandardFormat)) { throw null; }
-        public static bool TryFormat(byte value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format=default(System.Buffers.StandardFormat)) { throw null; }
-        public static bool TryFormat(System.DateTime value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format=default(System.Buffers.StandardFormat)) { throw null; }
-        public static bool TryFormat(System.DateTimeOffset value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format=default(System.Buffers.StandardFormat)) { throw null; }
-        public static bool TryFormat(decimal value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format=default(System.Buffers.StandardFormat)) { throw null; }
-        public static bool TryFormat(double value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format=default(System.Buffers.StandardFormat)) { throw null; }
-        public static bool TryFormat(System.Guid value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format=default(System.Buffers.StandardFormat)) { throw null; }
-        public static bool TryFormat(short value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format=default(System.Buffers.StandardFormat)) { throw null; }
-        public static bool TryFormat(int value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format=default(System.Buffers.StandardFormat)) { throw null; }
-        public static bool TryFormat(long value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format=default(System.Buffers.StandardFormat)) { throw null; }
+        public static bool TryFormat(bool value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format = default(System.Buffers.StandardFormat)) { throw null; }
+        public static bool TryFormat(byte value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format = default(System.Buffers.StandardFormat)) { throw null; }
+        public static bool TryFormat(System.DateTime value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format = default(System.Buffers.StandardFormat)) { throw null; }
+        public static bool TryFormat(System.DateTimeOffset value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format = default(System.Buffers.StandardFormat)) { throw null; }
+        public static bool TryFormat(decimal value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format = default(System.Buffers.StandardFormat)) { throw null; }
+        public static bool TryFormat(double value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format = default(System.Buffers.StandardFormat)) { throw null; }
+        public static bool TryFormat(System.Guid value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format = default(System.Buffers.StandardFormat)) { throw null; }
+        public static bool TryFormat(short value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format = default(System.Buffers.StandardFormat)) { throw null; }
+        public static bool TryFormat(int value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format = default(System.Buffers.StandardFormat)) { throw null; }
+        public static bool TryFormat(long value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format = default(System.Buffers.StandardFormat)) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static bool TryFormat(sbyte value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format=default(System.Buffers.StandardFormat)) { throw null; }
-        public static bool TryFormat(float value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format=default(System.Buffers.StandardFormat)) { throw null; }
-        public static bool TryFormat(System.TimeSpan value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format=default(System.Buffers.StandardFormat)) { throw null; }
+        public static bool TryFormat(sbyte value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format = default(System.Buffers.StandardFormat)) { throw null; }
+        public static bool TryFormat(float value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format = default(System.Buffers.StandardFormat)) { throw null; }
+        public static bool TryFormat(System.TimeSpan value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format = default(System.Buffers.StandardFormat)) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static bool TryFormat(ushort value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format=default(System.Buffers.StandardFormat)) { throw null; }
+        public static bool TryFormat(ushort value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format = default(System.Buffers.StandardFormat)) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static bool TryFormat(uint value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format=default(System.Buffers.StandardFormat)) { throw null; }
+        public static bool TryFormat(uint value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format = default(System.Buffers.StandardFormat)) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static bool TryFormat(ulong value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format=default(System.Buffers.StandardFormat)) { throw null; }
+        public static bool TryFormat(ulong value, System.Span<byte> buffer, out int bytesWritten, System.Buffers.StandardFormat format = default(System.Buffers.StandardFormat)) { throw null; }
     }
     public static partial class Utf8Parser
     {
-        public static bool TryParse(System.ReadOnlySpan<byte> text, out bool value, out int bytesConsumed, char standardFormat='\0') { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<byte> text, out byte value, out int bytesConsumed, char standardFormat='\0') { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<byte> text, out System.DateTime value, out int bytesConsumed, char standardFormat='\0') { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<byte> text, out System.DateTimeOffset value, out int bytesConsumed, char standardFormat='\0') { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<byte> text, out decimal value, out int bytesConsumed, char standardFormat='\0') { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<byte> text, out double value, out int bytesConsumed, char standardFormat='\0') { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<byte> text, out System.Guid value, out int bytesConsumed, char standardFormat='\0') { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<byte> text, out short value, out int bytesConsumed, char standardFormat='\0') { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<byte> text, out int value, out int bytesConsumed, char standardFormat='\0') { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<byte> text, out long value, out int bytesConsumed, char standardFormat='\0') { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> text, out bool value, out int bytesConsumed, char standardFormat = '\0') { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> text, out byte value, out int bytesConsumed, char standardFormat = '\0') { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> text, out System.DateTime value, out int bytesConsumed, char standardFormat = '\0') { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> text, out System.DateTimeOffset value, out int bytesConsumed, char standardFormat = '\0') { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> text, out decimal value, out int bytesConsumed, char standardFormat = '\0') { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> text, out double value, out int bytesConsumed, char standardFormat = '\0') { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> text, out System.Guid value, out int bytesConsumed, char standardFormat = '\0') { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> text, out short value, out int bytesConsumed, char standardFormat = '\0') { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> text, out int value, out int bytesConsumed, char standardFormat = '\0') { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> text, out long value, out int bytesConsumed, char standardFormat = '\0') { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static bool TryParse(System.ReadOnlySpan<byte> text, out sbyte value, out int bytesConsumed, char standardFormat='\0') { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<byte> text, out float value, out int bytesConsumed, char standardFormat='\0') { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<byte> text, out System.TimeSpan value, out int bytesConsumed, char standardFormat='\0') { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> text, out sbyte value, out int bytesConsumed, char standardFormat = '\0') { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> text, out float value, out int bytesConsumed, char standardFormat = '\0') { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> text, out System.TimeSpan value, out int bytesConsumed, char standardFormat = '\0') { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static bool TryParse(System.ReadOnlySpan<byte> text, out ushort value, out int bytesConsumed, char standardFormat='\0') { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> text, out ushort value, out int bytesConsumed, char standardFormat = '\0') { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static bool TryParse(System.ReadOnlySpan<byte> text, out uint value, out int bytesConsumed, char standardFormat='\0') { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> text, out uint value, out int bytesConsumed, char standardFormat = '\0') { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static bool TryParse(System.ReadOnlySpan<byte> text, out ulong value, out int bytesConsumed, char standardFormat='\0') { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> text, out ulong value, out int bytesConsumed, char standardFormat = '\0') { throw null; }
     }
 }
 namespace System.Runtime.InteropServices

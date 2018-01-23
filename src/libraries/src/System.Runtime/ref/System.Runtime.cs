@@ -459,7 +459,7 @@ namespace System
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
-        public static System.Byte Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style=(System.Globalization.NumberStyles)(7), System.IFormatProvider provider=null) { throw null; }
+        public static System.Byte Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = (System.Globalization.NumberStyles)(7), System.IFormatProvider provider = null) { throw null; }
         public static System.Byte Parse(string s) { throw null; }
         public static System.Byte Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static System.Byte Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
@@ -483,7 +483,7 @@ namespace System
         public string ToString(System.IFormatProvider provider) { throw null; }
         public string ToString(string format) { throw null; }
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format=default(System.ReadOnlySpan<char>), System.IFormatProvider provider=null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Byte result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out System.Byte result) { throw null; }
         public static bool TryParse(string s, out System.Byte result) { throw null; }
@@ -652,12 +652,12 @@ namespace System
         public static bool operator <=(System.DateTime t1, System.DateTime t2) { throw null; }
         public static System.TimeSpan operator -(System.DateTime d1, System.DateTime d2) { throw null; }
         public static System.DateTime operator -(System.DateTime d, System.TimeSpan t) { throw null; }
-        public static System.DateTime Parse(System.ReadOnlySpan<char> s, System.IFormatProvider provider=null, System.Globalization.DateTimeStyles styles=(System.Globalization.DateTimeStyles)(0)) { throw null; }
+        public static System.DateTime Parse(System.ReadOnlySpan<char> s, System.IFormatProvider provider = null, System.Globalization.DateTimeStyles styles = (System.Globalization.DateTimeStyles)(0)) { throw null; }
         public static System.DateTime Parse(string s) { throw null; }
         public static System.DateTime Parse(string s, System.IFormatProvider provider) { throw null; }
         public static System.DateTime Parse(string s, System.IFormatProvider provider, System.Globalization.DateTimeStyles styles) { throw null; }
-        public static System.DateTime ParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, System.IFormatProvider provider, System.Globalization.DateTimeStyles style=(System.Globalization.DateTimeStyles)(0)) { throw null; }
-        public static System.DateTime ParseExact(System.ReadOnlySpan<char> s, string[] formats, System.IFormatProvider provider, System.Globalization.DateTimeStyles style=(System.Globalization.DateTimeStyles)(0)) { throw null; }
+        public static System.DateTime ParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, System.IFormatProvider provider, System.Globalization.DateTimeStyles style = (System.Globalization.DateTimeStyles)(0)) { throw null; }
+        public static System.DateTime ParseExact(System.ReadOnlySpan<char> s, string[] formats, System.IFormatProvider provider, System.Globalization.DateTimeStyles style = (System.Globalization.DateTimeStyles)(0)) { throw null; }
         public static System.DateTime ParseExact(string s, string format, System.IFormatProvider provider) { throw null; }
         public static System.DateTime ParseExact(string s, string format, System.IFormatProvider provider, System.Globalization.DateTimeStyles style) { throw null; }
         public static System.DateTime ParseExact(string s, string[] formats, System.IFormatProvider provider, System.Globalization.DateTimeStyles style) { throw null; }
@@ -694,7 +694,7 @@ namespace System
         public string ToString(string format) { throw null; }
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
         public System.DateTime ToUniversalTime() { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format=default(System.ReadOnlySpan<char>), System.IFormatProvider provider=null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.DateTime result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider provider, System.Globalization.DateTimeStyles styles, out System.DateTime result) { throw null; }
         public static bool TryParse(string s, out System.DateTime result) { throw null; }
@@ -770,12 +770,12 @@ namespace System
         public static bool operator <=(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
         public static System.TimeSpan operator -(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
         public static System.DateTimeOffset operator -(System.DateTimeOffset dateTimeOffset, System.TimeSpan timeSpan) { throw null; }
-        public static System.DateTimeOffset Parse(System.ReadOnlySpan<char> input, System.IFormatProvider formatProvider=null, System.Globalization.DateTimeStyles styles=(System.Globalization.DateTimeStyles)(0)) { throw null; }
+        public static System.DateTimeOffset Parse(System.ReadOnlySpan<char> input, System.IFormatProvider formatProvider = null, System.Globalization.DateTimeStyles styles = (System.Globalization.DateTimeStyles)(0)) { throw null; }
         public static System.DateTimeOffset Parse(string input) { throw null; }
         public static System.DateTimeOffset Parse(string input, System.IFormatProvider formatProvider) { throw null; }
         public static System.DateTimeOffset Parse(string input, System.IFormatProvider formatProvider, System.Globalization.DateTimeStyles styles) { throw null; }
-        public static System.DateTimeOffset ParseExact(System.ReadOnlySpan<char> input, System.ReadOnlySpan<char> format, System.IFormatProvider formatProvider, System.Globalization.DateTimeStyles styles=(System.Globalization.DateTimeStyles)(0)) { throw null; }
-        public static System.DateTimeOffset ParseExact(System.ReadOnlySpan<char> input, string[] formats, System.IFormatProvider formatProvider, System.Globalization.DateTimeStyles styles=(System.Globalization.DateTimeStyles)(0)) { throw null; }
+        public static System.DateTimeOffset ParseExact(System.ReadOnlySpan<char> input, System.ReadOnlySpan<char> format, System.IFormatProvider formatProvider, System.Globalization.DateTimeStyles styles = (System.Globalization.DateTimeStyles)(0)) { throw null; }
+        public static System.DateTimeOffset ParseExact(System.ReadOnlySpan<char> input, string[] formats, System.IFormatProvider formatProvider, System.Globalization.DateTimeStyles styles = (System.Globalization.DateTimeStyles)(0)) { throw null; }
         public static System.DateTimeOffset ParseExact(string input, string format, System.IFormatProvider formatProvider) { throw null; }
         public static System.DateTimeOffset ParseExact(string input, string format, System.IFormatProvider formatProvider, System.Globalization.DateTimeStyles styles) { throw null; }
         public static System.DateTimeOffset ParseExact(string input, string[] formats, System.IFormatProvider formatProvider, System.Globalization.DateTimeStyles styles) { throw null; }
@@ -794,7 +794,7 @@ namespace System
         public System.DateTimeOffset ToUniversalTime() { throw null; }
         public long ToUnixTimeMilliseconds() { throw null; }
         public long ToUnixTimeSeconds() { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format=default(System.ReadOnlySpan<char>), System.IFormatProvider formatProvider=null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider formatProvider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> input, out System.DateTimeOffset result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> input, System.IFormatProvider formatProvider, System.Globalization.DateTimeStyles styles, out System.DateTimeOffset result) { throw null; }
         public static bool TryParse(string input, out System.DateTimeOffset result) { throw null; }
@@ -922,7 +922,7 @@ namespace System
         public static System.Decimal operator -(System.Decimal d1, System.Decimal d2) { throw null; }
         public static System.Decimal operator -(System.Decimal d) { throw null; }
         public static System.Decimal operator +(System.Decimal d) { throw null; }
-        public static System.Decimal Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style=(System.Globalization.NumberStyles)(7), System.IFormatProvider provider=null) { throw null; }
+        public static System.Decimal Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = (System.Globalization.NumberStyles)(7), System.IFormatProvider provider = null) { throw null; }
         public static System.Decimal Parse(string s) { throw null; }
         public static System.Decimal Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static System.Decimal Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
@@ -969,7 +969,7 @@ namespace System
         [System.CLSCompliantAttribute(false)]
         public static ulong ToUInt64(System.Decimal d) { throw null; }
         public static System.Decimal Truncate(System.Decimal d) { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format=default(System.ReadOnlySpan<char>), System.IFormatProvider provider=null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Decimal result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out System.Decimal result) { throw null; }
         public static bool TryParse(string s, out System.Decimal result) { throw null; }
@@ -1044,7 +1044,7 @@ namespace System
         public static bool operator !=(System.Double left, System.Double right) { throw null; }
         public static bool operator <(System.Double left, System.Double right) { throw null; }
         public static bool operator <=(System.Double left, System.Double right) { throw null; }
-        public static System.Double Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style=(System.Globalization.NumberStyles)(7), System.IFormatProvider provider=null) { throw null; }
+        public static System.Double Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = (System.Globalization.NumberStyles)(7), System.IFormatProvider provider = null) { throw null; }
         public static System.Double Parse(string s) { throw null; }
         public static System.Double Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static System.Double Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
@@ -1068,7 +1068,7 @@ namespace System
         public string ToString(System.IFormatProvider provider) { throw null; }
         public string ToString(string format) { throw null; }
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format=default(System.ReadOnlySpan<char>), System.IFormatProvider provider=null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Double result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out System.Double result) { throw null; }
         public static bool TryParse(string s, out System.Double result) { throw null; }
@@ -1332,7 +1332,7 @@ namespace System
         public override string ToString() { throw null; }
         public string ToString(string format) { throw null; }
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format=default(System.ReadOnlySpan<char>)) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>)) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> input, out System.Guid result) { throw null; }
         public static bool TryParse(string input, out System.Guid result) { throw null; }
         public static bool TryParseExact(System.ReadOnlySpan<char> input, System.ReadOnlySpan<char> format, out System.Guid result) { throw null; }
@@ -1453,7 +1453,7 @@ namespace System
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
-        public static System.Int16 Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style=(System.Globalization.NumberStyles)(7), System.IFormatProvider provider=null) { throw null; }
+        public static System.Int16 Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = (System.Globalization.NumberStyles)(7), System.IFormatProvider provider = null) { throw null; }
         public static System.Int16 Parse(string s) { throw null; }
         public static System.Int16 Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static System.Int16 Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
@@ -1477,7 +1477,7 @@ namespace System
         public string ToString(System.IFormatProvider provider) { throw null; }
         public string ToString(string format) { throw null; }
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format=default(System.ReadOnlySpan<char>), System.IFormatProvider provider=null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out System.Int16 result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Int16 result) { throw null; }
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out System.Int16 result) { throw null; }
@@ -1494,7 +1494,7 @@ namespace System
         public override bool Equals(object obj) { throw null; }
         public override System.Int32 GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
-        public static System.Int32 Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style=(System.Globalization.NumberStyles)(7), System.IFormatProvider provider=null) { throw null; }
+        public static System.Int32 Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = (System.Globalization.NumberStyles)(7), System.IFormatProvider provider = null) { throw null; }
         public static System.Int32 Parse(string s) { throw null; }
         public static System.Int32 Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static System.Int32 Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
@@ -1518,7 +1518,7 @@ namespace System
         public string ToString(System.IFormatProvider provider) { throw null; }
         public string ToString(string format) { throw null; }
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
-        public bool TryFormat(System.Span<char> destination, out System.Int32 charsWritten, System.ReadOnlySpan<char> format=default(System.ReadOnlySpan<char>), System.IFormatProvider provider=null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out System.Int32 charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out System.Int32 result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Int32 result) { throw null; }
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out System.Int32 result) { throw null; }
@@ -1535,7 +1535,7 @@ namespace System
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
-        public static System.Int64 Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style=(System.Globalization.NumberStyles)(7), System.IFormatProvider provider=null) { throw null; }
+        public static System.Int64 Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = (System.Globalization.NumberStyles)(7), System.IFormatProvider provider = null) { throw null; }
         public static System.Int64 Parse(string s) { throw null; }
         public static System.Int64 Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static System.Int64 Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
@@ -1559,7 +1559,7 @@ namespace System
         public string ToString(System.IFormatProvider provider) { throw null; }
         public string ToString(string format) { throw null; }
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format=default(System.ReadOnlySpan<char>), System.IFormatProvider provider=null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out System.Int64 result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Int64 result) { throw null; }
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out System.Int64 result) { throw null; }
@@ -1700,7 +1700,7 @@ namespace System
         public static implicit operator System.Memory<T> (System.ArraySegment<T> arraySegment) { throw null; }
         public static implicit operator System.ReadOnlyMemory<T> (System.Memory<T> memory) { throw null; }
         public static implicit operator System.Memory<T> (T[] array) { throw null; }
-        public System.Buffers.MemoryHandle Retain(bool pin=false) { throw null; }
+        public System.Buffers.MemoryHandle Retain(bool pin = false) { throw null; }
         public System.Memory<T> Slice(int start) { throw null; }
         public System.Memory<T> Slice(int start, int length) { throw null; }
         public T[] ToArray() { throw null; }
@@ -1947,7 +1947,7 @@ namespace System
         public override int GetHashCode() { throw null; }
         public static implicit operator System.ReadOnlyMemory<T> (System.ArraySegment<T> arraySegment) { throw null; }
         public static implicit operator System.ReadOnlyMemory<T> (T[] array) { throw null; }
-        public System.Buffers.MemoryHandle Retain(bool pin=false) { throw null; }
+        public System.Buffers.MemoryHandle Retain(bool pin = false) { throw null; }
         public System.ReadOnlyMemory<T> Slice(int start) { throw null; }
         public System.ReadOnlyMemory<T> Slice(int start, int length) { throw null; }
         public T[] ToArray() { throw null; }
@@ -2050,7 +2050,7 @@ namespace System
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.SByte Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style=(System.Globalization.NumberStyles)(7), System.IFormatProvider provider=null) { throw null; }
+        public static System.SByte Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = (System.Globalization.NumberStyles)(7), System.IFormatProvider provider = null) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.SByte Parse(string s) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -2078,7 +2078,7 @@ namespace System
         public string ToString(System.IFormatProvider provider) { throw null; }
         public string ToString(string format) { throw null; }
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format=default(System.ReadOnlySpan<char>), System.IFormatProvider provider=null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider provider = null) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out System.SByte result) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -2122,7 +2122,7 @@ namespace System
         public static bool operator !=(System.Single left, System.Single right) { throw null; }
         public static bool operator <(System.Single left, System.Single right) { throw null; }
         public static bool operator <=(System.Single left, System.Single right) { throw null; }
-        public static System.Single Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style=(System.Globalization.NumberStyles)(7), System.IFormatProvider provider=null) { throw null; }
+        public static System.Single Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = (System.Globalization.NumberStyles)(7), System.IFormatProvider provider = null) { throw null; }
         public static System.Single Parse(string s) { throw null; }
         public static System.Single Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static System.Single Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
@@ -2146,7 +2146,7 @@ namespace System
         public string ToString(System.IFormatProvider provider) { throw null; }
         public string ToString(string format) { throw null; }
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format=default(System.ReadOnlySpan<char>), System.IFormatProvider provider=null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out System.Single result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Single result) { throw null; }
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out System.Single result) { throw null; }
@@ -2331,14 +2331,14 @@ namespace System
         public System.String Replace(System.String oldValue, System.String newValue) { throw null; }
         public System.String Replace(System.String oldValue, System.String newValue, bool ignoreCase, System.Globalization.CultureInfo culture) { throw null; }
         public System.String Replace(System.String oldValue, System.String newValue, System.StringComparison comparisonType) { throw null; }
-        public string[] Split(char separator, int count, System.StringSplitOptions options=(System.StringSplitOptions)(0)) { throw null; }
-        public string[] Split(char separator, System.StringSplitOptions options=(System.StringSplitOptions)(0)) { throw null; }
+        public string[] Split(char separator, int count, System.StringSplitOptions options = (System.StringSplitOptions)(0)) { throw null; }
+        public string[] Split(char separator, System.StringSplitOptions options = (System.StringSplitOptions)(0)) { throw null; }
         public string[] Split(params char[] separator) { throw null; }
         public string[] Split(char[] separator, int count) { throw null; }
         public string[] Split(char[] separator, int count, System.StringSplitOptions options) { throw null; }
         public string[] Split(char[] separator, System.StringSplitOptions options) { throw null; }
-        public string[] Split(System.String separator, int count, System.StringSplitOptions options=(System.StringSplitOptions)(0)) { throw null; }
-        public string[] Split(System.String separator, System.StringSplitOptions options=(System.StringSplitOptions)(0)) { throw null; }
+        public string[] Split(System.String separator, int count, System.StringSplitOptions options = (System.StringSplitOptions)(0)) { throw null; }
+        public string[] Split(System.String separator, System.StringSplitOptions options = (System.StringSplitOptions)(0)) { throw null; }
         public string[] Split(string[] separator, int count, System.StringSplitOptions options) { throw null; }
         public string[] Split(string[] separator, System.StringSplitOptions options) { throw null; }
         public bool StartsWith(char value) { throw null; }
@@ -2477,11 +2477,11 @@ namespace System
         public static System.TimeSpan operator -(System.TimeSpan t1, System.TimeSpan t2) { throw null; }
         public static System.TimeSpan operator -(System.TimeSpan t) { throw null; }
         public static System.TimeSpan operator +(System.TimeSpan t) { throw null; }
-        public static System.TimeSpan Parse(System.ReadOnlySpan<char> input, System.IFormatProvider formatProvider=null) { throw null; }
+        public static System.TimeSpan Parse(System.ReadOnlySpan<char> input, System.IFormatProvider formatProvider = null) { throw null; }
         public static System.TimeSpan Parse(string s) { throw null; }
         public static System.TimeSpan Parse(string input, System.IFormatProvider formatProvider) { throw null; }
-        public static System.TimeSpan ParseExact(System.ReadOnlySpan<char> input, System.ReadOnlySpan<char> format, System.IFormatProvider formatProvider, System.Globalization.TimeSpanStyles styles=(System.Globalization.TimeSpanStyles)(0)) { throw null; }
-        public static System.TimeSpan ParseExact(System.ReadOnlySpan<char> input, string[] formats, System.IFormatProvider formatProvider, System.Globalization.TimeSpanStyles styles=(System.Globalization.TimeSpanStyles)(0)) { throw null; }
+        public static System.TimeSpan ParseExact(System.ReadOnlySpan<char> input, System.ReadOnlySpan<char> format, System.IFormatProvider formatProvider, System.Globalization.TimeSpanStyles styles = (System.Globalization.TimeSpanStyles)(0)) { throw null; }
+        public static System.TimeSpan ParseExact(System.ReadOnlySpan<char> input, string[] formats, System.IFormatProvider formatProvider, System.Globalization.TimeSpanStyles styles = (System.Globalization.TimeSpanStyles)(0)) { throw null; }
         public static System.TimeSpan ParseExact(string input, string format, System.IFormatProvider formatProvider) { throw null; }
         public static System.TimeSpan ParseExact(string input, string format, System.IFormatProvider formatProvider, System.Globalization.TimeSpanStyles styles) { throw null; }
         public static System.TimeSpan ParseExact(string input, string[] formats, System.IFormatProvider formatProvider) { throw null; }
@@ -2490,7 +2490,7 @@ namespace System
         public override string ToString() { throw null; }
         public string ToString(string format) { throw null; }
         public string ToString(string format, System.IFormatProvider formatProvider) { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format=default(System.ReadOnlySpan<char>), System.IFormatProvider formatProvider=null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider formatProvider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> input, System.IFormatProvider formatProvider, out System.TimeSpan result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.TimeSpan result) { throw null; }
         public static bool TryParse(string input, System.IFormatProvider formatProvider, out System.TimeSpan result) { throw null; }
@@ -3112,7 +3112,7 @@ namespace System
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.UInt16 Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style=(System.Globalization.NumberStyles)(7), System.IFormatProvider provider=null) { throw null; }
+        public static System.UInt16 Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = (System.Globalization.NumberStyles)(7), System.IFormatProvider provider = null) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.UInt16 Parse(string s) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -3140,7 +3140,7 @@ namespace System
         public string ToString(System.IFormatProvider provider) { throw null; }
         public string ToString(string format) { throw null; }
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format=default(System.ReadOnlySpan<char>), System.IFormatProvider provider=null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider provider = null) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out System.UInt16 result) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -3163,7 +3163,7 @@ namespace System
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.UInt32 Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style=(System.Globalization.NumberStyles)(7), System.IFormatProvider provider=null) { throw null; }
+        public static System.UInt32 Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = (System.Globalization.NumberStyles)(7), System.IFormatProvider provider = null) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.UInt32 Parse(string s) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -3191,7 +3191,7 @@ namespace System
         public string ToString(System.IFormatProvider provider) { throw null; }
         public string ToString(string format) { throw null; }
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format=default(System.ReadOnlySpan<char>), System.IFormatProvider provider=null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider provider = null) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out System.UInt32 result) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -3214,7 +3214,7 @@ namespace System
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.UInt64 Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style=(System.Globalization.NumberStyles)(7), System.IFormatProvider provider=null) { throw null; }
+        public static System.UInt64 Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = (System.Globalization.NumberStyles)(7), System.IFormatProvider provider = null) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.UInt64 Parse(string s) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -3242,7 +3242,7 @@ namespace System
         public string ToString(System.IFormatProvider provider) { throw null; }
         public string ToString(string format) { throw null; }
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format=default(System.ReadOnlySpan<char>), System.IFormatProvider provider=null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider provider = null) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out System.UInt64 result) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -3712,7 +3712,7 @@ namespace System.Buffers
     {
         private object _dummy;
         [System.CLSCompliantAttribute(false)]
-        public unsafe MemoryHandle(System.Buffers.IRetainable owner, void* pointer=null, System.Runtime.InteropServices.GCHandle handle=default(System.Runtime.InteropServices.GCHandle)) { throw null; }
+        public unsafe MemoryHandle(System.Buffers.IRetainable owner, void* pointer = null, System.Runtime.InteropServices.GCHandle handle = default(System.Runtime.InteropServices.GCHandle)) { throw null; }
         public bool HasPointer { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
         public unsafe void* Pointer { get { throw null; } }
@@ -3728,7 +3728,7 @@ namespace System.Buffers
         public abstract System.Span<T> Span { get; }
         public void Dispose() { }
         protected abstract void Dispose(bool disposing);
-        public abstract MemoryHandle Pin(int byteOffset=0);
+        public abstract System.Buffers.MemoryHandle Pin(int byteOffset = 0);
         public abstract bool Release();
         public abstract void Retain();
         protected internal abstract bool TryGetArray(out System.ArraySegment<T> arraySegment);
@@ -5129,7 +5129,7 @@ namespace System.IO
         public virtual int Read(System.Span<byte> destination) { throw null; }
         public System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count) { throw null; }
         public virtual System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public virtual System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public virtual System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public virtual int ReadByte() { throw null; }
         public abstract long Seek(long offset, System.IO.SeekOrigin origin);
         public abstract void SetLength(long value);
@@ -5138,7 +5138,7 @@ namespace System.IO
         public virtual void Write(System.ReadOnlySpan<byte> source) { }
         public System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count) { throw null; }
         public virtual System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public virtual System.Threading.Tasks.Task WriteAsync(System.ReadOnlyMemory<byte> source, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public virtual System.Threading.Tasks.Task WriteAsync(System.ReadOnlyMemory<byte> source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public virtual void WriteByte(byte value) { }
     }
 }
@@ -7495,13 +7495,13 @@ namespace System.Text
         public System.Text.StringBuilder Append(long value) { throw null; }
         public System.Text.StringBuilder Append(object value) { throw null; }
         public System.Text.StringBuilder Append(System.ReadOnlySpan<char> value) { throw null; }
-        public System.Text.StringBuilder Append(System.Text.StringBuilder value) { throw null; }
-        public System.Text.StringBuilder Append(System.Text.StringBuilder value, int startIndex, int count) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public System.Text.StringBuilder Append(sbyte value) { throw null; }
         public System.Text.StringBuilder Append(float value) { throw null; }
         public System.Text.StringBuilder Append(string value) { throw null; }
         public System.Text.StringBuilder Append(string value, int startIndex, int count) { throw null; }
+        public System.Text.StringBuilder Append(System.Text.StringBuilder value) { throw null; }
+        public System.Text.StringBuilder Append(System.Text.StringBuilder value, int startIndex, int count) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public System.Text.StringBuilder Append(ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -7528,8 +7528,8 @@ namespace System.Text
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) { }
         public void CopyTo(int sourceIndex, System.Span<char> destination, int count) { }
         public int EnsureCapacity(int capacity) { throw null; }
-        public bool Equals(System.Text.StringBuilder sb) { throw null; }
         public bool Equals(System.ReadOnlySpan<char> value) { throw null; }
+        public bool Equals(System.Text.StringBuilder sb) { throw null; }
         public System.Text.StringBuilder Insert(int index, bool value) { throw null; }
         public System.Text.StringBuilder Insert(int index, byte value) { throw null; }
         public System.Text.StringBuilder Insert(int index, char value) { throw null; }
