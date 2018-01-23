@@ -10,11 +10,11 @@
   -->
   <PropertyGroup>
     <CoreFxCurrentRef>84dda27b9ffddfc50a140551bc004708d24d2559</CoreFxCurrentRef>
-    <CoreClrCurrentRef>84dda27b9ffddfc50a140551bc004708d24d2559</CoreClrCurrentRef>
+    <CoreClrCurrentRef>7cdb5883b68036368159ab405e0bfa9878190abb</CoreClrCurrentRef>
     <CoreSetupCurrentRef>84dda27b9ffddfc50a140551bc004708d24d2559</CoreSetupCurrentRef>
     <ExternalCurrentRef>96dc7805f5df4a70a55783964ce69dcd91bfca80</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>f9f2dcffe189a681d43949ee3b02dd1fc9d9e636</ProjectNTfsCurrentRef>
-    <ProjectNTfsTestILCCurrentRef>f9f2dcffe189a681d43949ee3b02dd1fc9d9e636</ProjectNTfsTestILCCurrentRef>
+    <ProjectNTfsCurrentRef>7cdb5883b68036368159ab405e0bfa9878190abb</ProjectNTfsCurrentRef>
+    <ProjectNTfsTestILCCurrentRef>7cdb5883b68036368159ab405e0bfa9878190abb</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>6298244e25cf84d91e3cda9627315f2425274624</StandardCurrentRef>
     <BuildToolsCurrentRef>84dda27b9ffddfc50a140551bc004708d24d2559</BuildToolsCurrentRef>
@@ -33,10 +33,10 @@
   <PropertyGroup>
     <CoreFxExpectedPrerelease>preview2-26123-01</CoreFxExpectedPrerelease>
     <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview2-26123-01</MicrosoftNETCorePlatformsPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview2-26123-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
-    <ProjectNTfsExpectedPrerelease>beta-26122-00</ProjectNTfsExpectedPrerelease>
-    <ProjectNTfsTestILCExpectedPrerelease>beta-26122-00</ProjectNTfsTestILCExpectedPrerelease>
-    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-26122-00</ProjectNTfsTestILCPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview2-26123-05</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <ProjectNTfsExpectedPrerelease>beta-26123-01</ProjectNTfsExpectedPrerelease>
+    <ProjectNTfsTestILCExpectedPrerelease>beta-26123-01</ProjectNTfsTestILCExpectedPrerelease>
+    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-26123-01</ProjectNTfsTestILCPackageVersion>
     <MicrosoftNETCoreDotNetHostPackageVersion>2.1.0-preview1-26122-02</MicrosoftNETCoreDotNetHostPackageVersion>
     <MicrosoftNETCoreDotNetHostPolicyPackageVersion>2.1.0-preview1-26122-02</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
     <MicrosoftNETCoreAppPackageVersion>2.1.0-preview1-26122-02</MicrosoftNETCoreAppPackageVersion>
