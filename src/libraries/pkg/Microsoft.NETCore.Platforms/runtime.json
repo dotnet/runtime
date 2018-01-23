@@ -348,6 +348,87 @@
         "debian-x86-corert"
       ]
     },
+    "debian.9": {
+      "#import": [
+        "debian"
+      ]
+    },
+    "debian.9-arm": {
+      "#import": [
+        "debian.9",
+        "debian-arm"
+      ]
+    },
+    "debian.9-arm-corert": {
+      "#import": [
+        "debian.9-corert",
+        "debian.9-arm",
+        "debian.9",
+        "debian-arm-corert"
+      ]
+    },
+    "debian.9-arm64": {
+      "#import": [
+        "debian.9",
+        "debian-arm64"
+      ]
+    },
+    "debian.9-arm64-corert": {
+      "#import": [
+        "debian.9-corert",
+        "debian.9-arm64",
+        "debian.9",
+        "debian-arm64-corert"
+      ]
+    },
+    "debian.9-armel": {
+      "#import": [
+        "debian.9",
+        "debian-armel"
+      ]
+    },
+    "debian.9-armel-corert": {
+      "#import": [
+        "debian.9-corert",
+        "debian.9-armel",
+        "debian.9",
+        "debian-armel-corert"
+      ]
+    },
+    "debian.9-corert": {
+      "#import": [
+        "debian.9",
+        "debian-corert"
+      ]
+    },
+    "debian.9-x64": {
+      "#import": [
+        "debian.9",
+        "debian-x64"
+      ]
+    },
+    "debian.9-x64-corert": {
+      "#import": [
+        "debian.9-corert",
+        "debian.9-x64",
+        "debian.9",
+        "debian-x64-corert"
+      ]
+    },
+    "debian.9-x86": {
+      "#import": [
+        "debian.9",
+        "debian-x86"
+      ]
+    },
+    "debian.9-x86-corert": {
+      "#import": [
+        "debian.9-corert",
+        "debian.9-x86",
+        "debian.9",
+        "debian-x86-corert"
+      ]
+    },
     "fedora": {
       "#import": [
         "linux"
@@ -469,6 +550,56 @@
         "fedora.26-corert",
         "fedora.26-x64",
         "fedora.26",
+        "fedora-x64-corert"
+      ]
+    },
+    "fedora.27": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.27-corert": {
+      "#import": [
+        "fedora.27",
+        "fedora-corert"
+      ]
+    },
+    "fedora.27-x64": {
+      "#import": [
+        "fedora.27",
+        "fedora-x64"
+      ]
+    },
+    "fedora.27-x64-corert": {
+      "#import": [
+        "fedora.27-corert",
+        "fedora.27-x64",
+        "fedora.27",
+        "fedora-x64-corert"
+      ]
+    },
+    "fedora.28": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.28-corert": {
+      "#import": [
+        "fedora.28",
+        "fedora-corert"
+      ]
+    },
+    "fedora.28-x64": {
+      "#import": [
+        "fedora.28",
+        "fedora-x64"
+      ]
+    },
+    "fedora.28-x64-corert": {
+      "#import": [
+        "fedora.28-corert",
+        "fedora.28-x64",
+        "fedora.28",
         "fedora-x64-corert"
       ]
     },
@@ -720,6 +851,80 @@
         "linuxmint.18-x64-corert"
       ]
     },
+    "linuxmint.18.2": {
+      "#import": [
+        "linuxmint.18.1"
+      ]
+    },
+    "linuxmint.18.2-corert": {
+      "#import": [
+        "linuxmint.18.2",
+        "linuxmint.18.1-corert"
+      ]
+    },
+    "linuxmint.18.2-x64": {
+      "#import": [
+        "linuxmint.18.2",
+        "linuxmint.18.1-x64"
+      ]
+    },
+    "linuxmint.18.2-x64-corert": {
+      "#import": [
+        "linuxmint.18.2-corert",
+        "linuxmint.18.2-x64",
+        "linuxmint.18.2",
+        "linuxmint.18.1-x64-corert"
+      ]
+    },
+    "linuxmint.18.3": {
+      "#import": [
+        "linuxmint.18.2"
+      ]
+    },
+    "linuxmint.18.3-corert": {
+      "#import": [
+        "linuxmint.18.3",
+        "linuxmint.18.2-corert"
+      ]
+    },
+    "linuxmint.18.3-x64": {
+      "#import": [
+        "linuxmint.18.3",
+        "linuxmint.18.2-x64"
+      ]
+    },
+    "linuxmint.18.3-x64-corert": {
+      "#import": [
+        "linuxmint.18.3-corert",
+        "linuxmint.18.3-x64",
+        "linuxmint.18.3",
+        "linuxmint.18.2-x64-corert"
+      ]
+    },
+    "linuxmint.19": {
+      "#import": [
+        "ubuntu.18.04"
+      ]
+    },
+    "linuxmint.19-corert": {
+      "#import": [
+        "linuxmint.19",
+        "ubuntu.18.04-corert"
+      ]
+    },
+    "linuxmint.19-x64": {
+      "#import": [
+        "linuxmint.19",
+        "ubuntu.18.04-x64"
+      ]
+    },
+    "linuxmint.19-x64-corert": {
+      "#import": [
+        "linuxmint.19-corert",
+        "linuxmint.19-x64",
+        "ubuntu.18.04-x64-corert"
+      ]
+    },
     "ol": {
       "#import": [
         "rhel"
@@ -856,6 +1061,62 @@
         "ol.7.1-x64-corert"
       ]
     },
+    "ol.7.3": {
+      "#import": [
+        "ol.7.2",
+        "rhel.7.3"
+      ]
+    },
+    "ol.7.3-corert": {
+      "#import": [
+        "ol.7.3",
+        "ol.7.2-corert",
+        "rhel.7.3-corert"
+      ]
+    },
+    "ol.7.3-x64": {
+      "#import": [
+        "ol.7.3",
+        "ol.7.2-x64",
+        "rhel.7.3-x64"
+      ]
+    },
+    "ol.7.3-x64-corert": {
+      "#import": [
+        "ol.7.3-corert",
+        "ol.7.3-x64",
+        "ol.7.3",
+        "ol.7.2-x64-corert"
+      ]
+    },
+    "ol.7.4": {
+      "#import": [
+        "ol.7.3",
+        "rhel.7.4"
+      ]
+    },
+    "ol.7.4-corert": {
+      "#import": [
+        "ol.7.4",
+        "ol.7.3-corert",
+        "rhel.7.4-corert"
+      ]
+    },
+    "ol.7.4-x64": {
+      "#import": [
+        "ol.7.4",
+        "ol.7.3-x64",
+        "rhel.7.4-x64"
+      ]
+    },
+    "ol.7.4-x64-corert": {
+      "#import": [
+        "ol.7.4-corert",
+        "ol.7.4-x64",
+        "ol.7.4",
+        "ol.7.3-x64-corert"
+      ]
+    },
     "opensuse": {
       "#import": [
         "linux"
@@ -927,6 +1188,56 @@
         "opensuse.42.1-corert",
         "opensuse.42.1-x64",
         "opensuse.42.1",
+        "opensuse-x64-corert"
+      ]
+    },
+    "opensuse.42.2": {
+      "#import": [
+        "opensuse"
+      ]
+    },
+    "opensuse.42.2-corert": {
+      "#import": [
+        "opensuse.42.2",
+        "opensuse-corert"
+      ]
+    },
+    "opensuse.42.2-x64": {
+      "#import": [
+        "opensuse.42.2",
+        "opensuse-x64"
+      ]
+    },
+    "opensuse.42.2-x64-corert": {
+      "#import": [
+        "opensuse.42.2-corert",
+        "opensuse.42.2-x64",
+        "opensuse.42.2",
+        "opensuse-x64-corert"
+      ]
+    },
+    "opensuse.42.3": {
+      "#import": [
+        "opensuse"
+      ]
+    },
+    "opensuse.42.3-corert": {
+      "#import": [
+        "opensuse.42.3",
+        "opensuse-corert"
+      ]
+    },
+    "opensuse.42.3-x64": {
+      "#import": [
+        "opensuse.42.3",
+        "opensuse-x64"
+      ]
+    },
+    "opensuse.42.3-x64-corert": {
+      "#import": [
+        "opensuse.42.3-corert",
+        "opensuse.42.3-x64",
+        "opensuse.42.3",
         "opensuse-x64-corert"
       ]
     },
@@ -1027,6 +1338,31 @@
         "osx.10.12-x64",
         "osx.10.12",
         "osx.10.11-x64-corert"
+      ]
+    },
+    "osx.10.13": {
+      "#import": [
+        "osx.10.12"
+      ]
+    },
+    "osx.10.13-corert": {
+      "#import": [
+        "osx.10.13",
+        "osx.10.12-corert"
+      ]
+    },
+    "osx.10.13-x64": {
+      "#import": [
+        "osx.10.13",
+        "osx.10.12-x64"
+      ]
+    },
+    "osx.10.13-x64-corert": {
+      "#import": [
+        "osx.10.13-corert",
+        "osx.10.13-x64",
+        "osx.10.13",
+        "osx.10.12-x64-corert"
       ]
     },
     "rhel": {
@@ -1226,6 +1562,130 @@
         "rhel.7.4-x64",
         "rhel.7.4",
         "rhel.7.3-x64-corert"
+      ]
+    },
+    "sles": {
+      "#import": [
+        "linux"
+      ]
+    },
+    "sles-corert": {
+      "#import": [
+        "sles",
+        "linux-corert"
+      ]
+    },
+    "sles-x64": {
+      "#import": [
+        "sles",
+        "linux-x64"
+      ]
+    },
+    "sles-x64-corert": {
+      "#import": [
+        "sles-corert",
+        "sles-x64",
+        "linux-x64-corert"
+      ]
+    },
+    "sles.12": {
+      "#import": [
+        "sles"
+      ]
+    },
+    "sles.12-corert": {
+      "#import": [
+        "sles.12",
+        "sles-corert"
+      ]
+    },
+    "sles.12-x64": {
+      "#import": [
+        "sles.12",
+        "sles-x64"
+      ]
+    },
+    "sles.12-x64-corert": {
+      "#import": [
+        "sles.12-corert",
+        "sles.12-x64",
+        "sles.12",
+        "sles-x64-corert"
+      ]
+    },
+    "sles.12.1": {
+      "#import": [
+        "sles.12"
+      ]
+    },
+    "sles.12.1-corert": {
+      "#import": [
+        "sles.12.1",
+        "sles.12-corert"
+      ]
+    },
+    "sles.12.1-x64": {
+      "#import": [
+        "sles.12.1",
+        "sles.12-x64"
+      ]
+    },
+    "sles.12.1-x64-corert": {
+      "#import": [
+        "sles.12.1-corert",
+        "sles.12.1-x64",
+        "sles.12.1",
+        "sles.12-x64-corert"
+      ]
+    },
+    "sles.12.2": {
+      "#import": [
+        "sles.12.1"
+      ]
+    },
+    "sles.12.2-corert": {
+      "#import": [
+        "sles.12.2",
+        "sles.12.1-corert"
+      ]
+    },
+    "sles.12.2-x64": {
+      "#import": [
+        "sles.12.2",
+        "sles.12.1-x64"
+      ]
+    },
+    "sles.12.2-x64-corert": {
+      "#import": [
+        "sles.12.2-corert",
+        "sles.12.2-x64",
+        "sles.12.2",
+        "sles.12.1-x64-corert"
+      ]
+    },
+    "sles.12.3": {
+      "#import": [
+        "sles.12.2"
+      ]
+    },
+    "sles.12.3-corert": {
+      "#import": [
+        "sles.12.3",
+        "sles.12.2-corert"
+      ]
+    },
+    "sles.12.3-x64": {
+      "#import": [
+        "sles.12.3",
+        "sles.12.2-x64"
+      ]
+    },
+    "sles.12.3-x64-corert": {
+      "#import": [
+        "sles.12.3-corert",
+        "sles.12.3-x64",
+        "sles.12.3",
+        "sles.12.2-x64-corert"
       ]
     },
     "tizen": {
@@ -1683,6 +2143,207 @@
         "ubuntu.16.10-corert",
         "ubuntu.16.10-x86",
         "ubuntu.16.10",
+        "ubuntu-x86-corert"
+      ]
+    },
+    "ubuntu.17.04": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.17.04-arm": {
+      "#import": [
+        "ubuntu.17.04",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.17.04-arm-corert": {
+      "#import": [
+        "ubuntu.17.04-corert",
+        "ubuntu.17.04-arm",
+        "ubuntu.17.04",
+        "ubuntu-arm-corert"
+      ]
+    },
+    "ubuntu.17.04-arm64": {
+      "#import": [
+        "ubuntu.17.04",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.17.04-arm64-corert": {
+      "#import": [
+        "ubuntu.17.04-corert",
+        "ubuntu.17.04-arm64",
+        "ubuntu.17.04",
+        "ubuntu-arm64-corert"
+      ]
+    },
+    "ubuntu.17.04-corert": {
+      "#import": [
+        "ubuntu.17.04",
+        "ubuntu-corert"
+      ]
+    },
+    "ubuntu.17.04-x64": {
+      "#import": [
+        "ubuntu.17.04",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.17.04-x64-corert": {
+      "#import": [
+        "ubuntu.17.04-corert",
+        "ubuntu.17.04-x64",
+        "ubuntu.17.04",
+        "ubuntu-x64-corert"
+      ]
+    },
+    "ubuntu.17.04-x86": {
+      "#import": [
+        "ubuntu.17.04",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.17.04-x86-corert": {
+      "#import": [
+        "ubuntu.17.04-corert",
+        "ubuntu.17.04-x86",
+        "ubuntu.17.04",
+        "ubuntu-x86-corert"
+      ]
+    },
+    "ubuntu.17.10": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.17.10-arm": {
+      "#import": [
+        "ubuntu.17.10",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.17.10-arm-corert": {
+      "#import": [
+        "ubuntu.17.10-corert",
+        "ubuntu.17.10-arm",
+        "ubuntu.17.10",
+        "ubuntu-arm-corert"
+      ]
+    },
+    "ubuntu.17.10-arm64": {
+      "#import": [
+        "ubuntu.17.10",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.17.10-arm64-corert": {
+      "#import": [
+        "ubuntu.17.10-corert",
+        "ubuntu.17.10-arm64",
+        "ubuntu.17.10",
+        "ubuntu-arm64-corert"
+      ]
+    },
+    "ubuntu.17.10-corert": {
+      "#import": [
+        "ubuntu.17.10",
+        "ubuntu-corert"
+      ]
+    },
+    "ubuntu.17.10-x64": {
+      "#import": [
+        "ubuntu.17.10",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.17.10-x64-corert": {
+      "#import": [
+        "ubuntu.17.10-corert",
+        "ubuntu.17.10-x64",
+        "ubuntu.17.10",
+        "ubuntu-x64-corert"
+      ]
+    },
+    "ubuntu.17.10-x86": {
+      "#import": [
+        "ubuntu.17.10",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.17.10-x86-corert": {
+      "#import": [
+        "ubuntu.17.10-corert",
+        "ubuntu.17.10-x86",
+        "ubuntu.17.10",
+        "ubuntu-x86-corert"
+      ]
+    },
+    "ubuntu.18.04": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.18.04-arm": {
+      "#import": [
+        "ubuntu.18.04",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.18.04-arm-corert": {
+      "#import": [
+        "ubuntu.18.04-corert",
+        "ubuntu.18.04-arm",
+        "ubuntu.18.04",
+        "ubuntu-arm-corert"
+      ]
+    },
+    "ubuntu.18.04-arm64": {
+      "#import": [
+        "ubuntu.18.04",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.18.04-arm64-corert": {
+      "#import": [
+        "ubuntu.18.04-corert",
+        "ubuntu.18.04-arm64",
+        "ubuntu.18.04",
+        "ubuntu-arm64-corert"
+      ]
+    },
+    "ubuntu.18.04-corert": {
+      "#import": [
+        "ubuntu.18.04",
+        "ubuntu-corert"
+      ]
+    },
+    "ubuntu.18.04-x64": {
+      "#import": [
+        "ubuntu.18.04",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.18.04-x64-corert": {
+      "#import": [
+        "ubuntu.18.04-corert",
+        "ubuntu.18.04-x64",
+        "ubuntu.18.04",
+        "ubuntu-x64-corert"
+      ]
+    },
+    "ubuntu.18.04-x86": {
+      "#import": [
+        "ubuntu.18.04",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.18.04-x86-corert": {
+      "#import": [
+        "ubuntu.18.04-corert",
+        "ubuntu.18.04-x86",
+        "ubuntu.18.04",
         "ubuntu-x86-corert"
       ]
     },
