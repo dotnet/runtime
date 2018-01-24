@@ -240,6 +240,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             dotnet.Build(buildArgs.ToArray())
                 .WorkingDirectory(_testProject.ProjectDirectory)
                 .Environment("NUGET_PACKAGES", _repoDirectoriesProvider.NugetPackages)
+                .Environment("VERSION", "") // Generate with package version 1.0.0, not %VERSION%
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
