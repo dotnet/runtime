@@ -8,6 +8,7 @@
     <BuildConfigurations>
       $(PackageConfigurations);
       netcoreapp-Windows_NT;
+      _netfx;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
