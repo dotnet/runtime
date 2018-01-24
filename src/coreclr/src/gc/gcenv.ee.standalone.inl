@@ -270,4 +270,10 @@ inline void GCToEEInterface::WalkAsyncPinned(Object* object, void* context, void
     return g_theGCToCLR->WalkAsyncPinned(object, context, callback);
 }
 
+inline IGCToCLREventSink* GCToEEInterface::EventSink()
+{
+    assert(g_theGCToCLR != nullptr);
+    return g_theGCToCLR->EventSink();
+}
+
 #endif // __GCTOENV_EE_STANDALONE_INL__
