@@ -70,6 +70,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentProcess_IntPtr.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetCurrentProcess_IntPtr.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\System\PasteArguments.Windows.cs">
+      <Link>Common\System\PasteArguments.Windows.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.OpenProcessToken_SafeAccessTokenHandle.cs">
       <Link>Common\Interop\Windows\advapi32\Interop.OpenProcessToken_SafeAccessTokenHandle.cs</Link>
     </Compile>
@@ -96,6 +99,9 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\PasteArguments.Unix.cs">
+      <Link>Common\System\PasteArguments.Unix.cs</Link>
     </Compile>
     <Compile Include="System\AdminHelpers.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEUid.cs">
