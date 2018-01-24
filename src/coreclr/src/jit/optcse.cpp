@@ -544,7 +544,7 @@ unsigned Compiler::optValnumCSE_Index(GenTreePtr tree, GenTreePtr stmt)
     {
         if (hashDsc->csdHashValue == key)
         {
-            treeStmtLstPtr newElem;
+            treeStmtLst* newElem;
 
             /* Have we started the list of matching nodes? */
 
@@ -912,9 +912,9 @@ void Compiler::optValnumCSE_InitDataFlow()
     //
     for (unsigned cnt = 0; cnt < optCSECandidateCount; cnt++)
     {
-        CSEdsc*        dsc      = optCSEtab[cnt];
-        unsigned       CSEindex = dsc->csdIndex;
-        treeStmtLstPtr lst      = dsc->csdTreeList;
+        CSEdsc*      dsc      = optCSEtab[cnt];
+        unsigned     CSEindex = dsc->csdIndex;
+        treeStmtLst* lst      = dsc->csdTreeList;
         noway_assert(lst);
 
         while (lst != nullptr)
@@ -1912,7 +1912,7 @@ public:
             We also unmark nested CSE's for all uses.
         */
 
-        Compiler::treeStmtLstPtr lst;
+        Compiler::treeStmtLst* lst;
         lst = successfulCandidate->CseDsc()->csdTreeList;
         noway_assert(lst);
 

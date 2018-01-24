@@ -16431,7 +16431,7 @@ size_t CodeGen::genPushArgList(GenTreeCall* call)
 
         assert(!curr->IsArgPlaceHolderNode()); // No place holders nodes are in the late args
 
-        fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, curr);
+        fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(call, curr);
         assert(curArgTabEntry);
         regNumber regNum = curArgTabEntry->regNum;
 
@@ -16541,7 +16541,7 @@ size_t CodeGen::genPushArgList(GenTreeCall* call)
         /* Get hold of the next argument value */
         curr = args->Current();
 
-        fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, curr);
+        fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(call, curr);
         assert(curArgTabEntry);
         regNumber regNum    = curArgTabEntry->regNum;
         int       argOffset = curArgTabEntry->slotNum * TARGET_POINTER_SIZE;
@@ -16958,18 +16958,18 @@ size_t CodeGen::genPushArgList(GenTreeCall* call)
 }
 
 #ifdef _TARGET_ARM_
-bool CodeGen::genFillSlotFromPromotedStruct(GenTreePtr       arg,
-                                            fgArgTabEntryPtr curArgTabEntry,
-                                            LclVarDsc*       promotedStructLocalVarDesc,
-                                            emitAttr         fieldSize,
-                                            unsigned*        pNextPromotedStructFieldVar,
-                                            unsigned*        pBytesOfNextSlotOfCurPromotedStruct,
-                                            regNumber*       pCurRegNum,
-                                            int              argOffset,
-                                            int              fieldOffsetOfFirstStackSlot,
-                                            int              argOffsetOfFirstStackSlot,
-                                            regMaskTP*       deadFieldVarRegs,
-                                            regNumber*       pRegTmp)
+bool CodeGen::genFillSlotFromPromotedStruct(GenTreePtr     arg,
+                                            fgArgTabEntry* curArgTabEntry,
+                                            LclVarDsc*     promotedStructLocalVarDesc,
+                                            emitAttr       fieldSize,
+                                            unsigned*      pNextPromotedStructFieldVar,
+                                            unsigned*      pBytesOfNextSlotOfCurPromotedStruct,
+                                            regNumber*     pCurRegNum,
+                                            int            argOffset,
+                                            int            fieldOffsetOfFirstStackSlot,
+                                            int            argOffsetOfFirstStackSlot,
+                                            regMaskTP*     deadFieldVarRegs,
+                                            regNumber*     pRegTmp)
 {
     unsigned nextPromotedStructFieldVar = *pNextPromotedStructFieldVar;
     unsigned limitPromotedStructFieldVar =
@@ -17497,7 +17497,7 @@ void CodeGen::SetupLateArgs(GenTreeCall* call)
         curr = lateArgs->Current();
         assert(curr);
 
-        fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, curr);
+        fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(call, curr);
         assert(curArgTabEntry);
         regNumber regNum    = curArgTabEntry->regNum;
         unsigned  argOffset = curArgTabEntry->slotNum * TARGET_POINTER_SIZE;
@@ -18084,7 +18084,7 @@ void CodeGen::SetupLateArgs(GenTreeCall* call)
 // been pushed onto the stack, but *no* registers have been marked
 // as 'in-use', that is the responsibility of the caller.
 //
-void CodeGen::PushMkRefAnyArg(GenTreePtr mkRefAnyTree, fgArgTabEntryPtr curArgTabEntry, regMaskTP regNeedMask)
+void CodeGen::PushMkRefAnyArg(GenTreePtr mkRefAnyTree, fgArgTabEntry* curArgTabEntry, regMaskTP regNeedMask)
 {
     regNumber regNum = curArgTabEntry->regNum;
     regNumber regNum2;

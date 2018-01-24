@@ -986,7 +986,7 @@ void Lowering::ReplaceArgWithPutArgOrBitcast(GenTree** argSlot, GenTree* putArgO
 //    layout object, so the codegen of the GT_PUTARG_STK could use this for optimizing copying to the stack by value.
 //    (using block copy primitives for non GC pointers and a single TARGET_POINTER_SIZE copy with recording GC info.)
 //
-GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryPtr info, var_types type)
+GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntry* info, var_types type)
 {
     assert(call != nullptr);
     assert(arg != nullptr);
@@ -1393,7 +1393,7 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
         return;
     }
 
-    fgArgTabEntryPtr info = comp->gtArgEntryByNode(call, arg);
+    fgArgTabEntry* info = comp->gtArgEntryByNode(call, arg);
     assert(info->node == arg);
     var_types type = arg->TypeGet();
 
@@ -2109,7 +2109,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
         // stack slots required for both Caller and Callee for passing params
         // and allow fast tail call only if stack slots required by Caller >=
         // Callee.
-        fgArgTabEntryPtr argTabEntry = comp->gtArgEntryByNode(call, putArgStkNode);
+        fgArgTabEntry* argTabEntry = comp->gtArgEntryByNode(call, putArgStkNode);
         assert(argTabEntry);
         unsigned callerArgNum = argTabEntry->argNum - calleeNonStandardArgCount;
         noway_assert(callerArgNum < comp->info.compArgsCount);
@@ -3224,8 +3224,8 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
         const unsigned argNum  = 2;
 #endif // !_TARGET_X86_
 
-        fgArgTabEntryPtr thisArgTabEntry = comp->gtArgEntryByArgNum(call, argNum);
-        thisArgNode                      = thisArgTabEntry->node;
+        fgArgTabEntry* thisArgTabEntry = comp->gtArgEntryByArgNum(call, argNum);
+        thisArgNode                    = thisArgTabEntry->node;
     }
     else
     {

@@ -159,7 +159,7 @@ private:
     GenTree* LowerVirtualStubCall(GenTreeCall* call);
     void LowerArgsForCall(GenTreeCall* call);
     void ReplaceArgWithPutArgOrBitcast(GenTreePtr* ppChild, GenTreePtr newNode);
-    GenTree* NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryPtr info, var_types type);
+    GenTree* NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntry* info, var_types type);
     void LowerArg(GenTreeCall* call, GenTreePtr* ppTree);
 #ifdef _TARGET_ARMARCH_
     GenTree* LowerFloatArg(GenTree** pArg, fgArgTabEntry* info);

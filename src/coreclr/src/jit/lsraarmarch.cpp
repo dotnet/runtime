@@ -480,8 +480,8 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call, TreeNodeInfo* info)
 #ifdef DEBUG
         // During TreeNodeInfoInit, we only use the ArgTabEntry for validation,
         // as getting it is rather expensive.
-        fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, argNode);
-        regNumber        argReg         = curArgTabEntry->regNum;
+        fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(call, argNode);
+        regNumber      argReg         = curArgTabEntry->regNum;
         assert(curArgTabEntry);
 #endif
 
@@ -587,7 +587,7 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call, TreeNodeInfo* info)
         if (!(args->gtFlags & GTF_LATE_ARG))
         {
 #ifdef DEBUG
-            fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, arg);
+            fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(call, arg);
             assert(curArgTabEntry);
 #endif
 #ifdef _TARGET_ARM_
