@@ -6,8 +6,6 @@
 #if !defined(_EX_H_)
 #define _EX_H_
 
-void RetailAssertIfExpectedClean();             // Defined in src/utilcode/debug.cpp
-
 #ifdef FEATURE_PAL
 #define EX_TRY_HOLDER                                   \
     HardwareExceptionHolder                             \
