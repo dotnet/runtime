@@ -24,15 +24,18 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			_metadataProvider = metadataProvider;
 		}
 
-		public NPath CompileTestIn (NPath outputDirectory, string outputName, IEnumerable<string> sourceFiles, IEnumerable<string> references, IEnumerable<string> defines, NPath[] resources, string[] additionalArguments)
+		public NPath CompileTestIn (NPath outputDirectory, string outputName, IEnumerable<string> sourceFiles, string[] commonReferences, string[] mainAssemblyReferences, IEnumerable<string> defines, NPath[] resources, string[] additionalArguments)
 		{
-			var originalReferences = references.Select (r => r.ToNPath ()).ToArray ();
+			var originalCommonReferences = commonReferences.Select (r => r.ToNPath ()).ToArray ();
 			var originalDefines = defines?.ToArray () ?? new string [0];
 
 			Prepare (outputDirectory);
 
-			var compiledReferences = CompileBeforeTestCaseAssemblies (outputDirectory, originalReferences, originalDefines).ToArray ();
-			var allTestCaseReferences = originalReferences.Concat (compiledReferences).ToArray ();
+			var compiledReferences = CompileBeforeTestCaseAssemblies (outputDirectory, originalCommonReferences, originalDefines).ToArray ();
+			var allTestCaseReferences = originalCommonReferences
+				.Concat (compiledReferences)
+				.Concat (mainAssemblyReferences.Select (r => r.ToNPath ()))
+				.ToArray ();
 
 			var options = CreateOptionsForTestCase (
 				outputDirectory.Combine (outputName),
@@ -48,7 +51,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			// expectations assemblies because this would undermine our ability to inspect them for expected results during ResultChecking.  The UnityLinker UnresolvedHandling tests depend on this
 			// behavior of skipping the after test compile
 			if (outputDirectory != _sandbox.ExpectationsDirectory)
-				CompileAfterTestCaseAssemblies (outputDirectory, originalReferences, originalDefines);
+				CompileAfterTestCaseAssemblies (outputDirectory, originalCommonReferences, originalDefines);
 
 			return testAssembly;
 		}
@@ -74,12 +77,14 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		{
 			var allDefines = defines.Concat (setupCompileInfo.Defines ?? new string [0]).ToArray ();
 			var allReferences = references.Concat (setupCompileInfo.References?.Select (p => MakeSupportingAssemblyReferencePathAbsolute (outputDirectory, p)) ?? new NPath [0]).ToArray ();
+			string[] additionalArguments = string.IsNullOrEmpty (setupCompileInfo.AdditionalArguments) ? null : new[] { setupCompileInfo.AdditionalArguments };
 			return new CompilerOptions
 			{
 				OutputPath = outputDirectory.Combine (setupCompileInfo.OutputName),
 				SourceFiles = sourceFiles,
 				References = allReferences,
-				Defines = allDefines
+				Defines = allDefines,
+				AdditionalArguments = additionalArguments
 			};
 		}
 

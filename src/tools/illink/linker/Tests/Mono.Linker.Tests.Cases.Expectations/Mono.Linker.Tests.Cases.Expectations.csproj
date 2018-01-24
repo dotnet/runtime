@@ -77,6 +77,7 @@
     <Compile Include="Metadata\SetupLinkerArgumentAttribute.cs" />
     <Compile Include="Metadata\SetupLinkerCoreActionAttribute.cs" />
     <Compile Include="Metadata\SetupCompileResourceAttribute.cs" />
+    <Compile Include="Metadata\SetupLinkerLinkSymbolsAttribute.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

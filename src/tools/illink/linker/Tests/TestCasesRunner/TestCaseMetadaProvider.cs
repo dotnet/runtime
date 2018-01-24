@@ -30,6 +30,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				Il8n = GetOptionAttributeValue (nameof (Il8nAttribute), "none"),
 				IncludeBlacklistStep = GetOptionAttributeValue (nameof (IncludeBlacklistStepAttribute), false),
 				KeepTypeForwarderOnlyAssemblies = GetOptionAttributeValue (nameof (KeepTypeForwarderOnlyAssembliesAttribute), string.Empty),
+				LinkSymbols = GetOptionAttributeValue (nameof (SetupLinkerLinkSymbolsAttribute), string.Empty),
 				CoreAssembliesAction = GetOptionAttributeValue<string> (nameof (SetupLinkerCoreActionAttribute), null)
 			};
 
@@ -49,13 +50,21 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			return tclo;
 		}
 
-		public virtual IEnumerable<string> GetReferencedAssemblies (NPath workingDirectory)
+		public virtual IEnumerable<string> GetCommonReferencedAssemblies (NPath workingDirectory)
 		{
 			yield return workingDirectory.Combine ("Mono.Linker.Tests.Cases.Expectations.dll").ToString ();
 			yield return "mscorlib.dll";
+		}
 
+		public virtual IEnumerable<string> GetReferencedAssemblies (NPath workingDirectory)
+		{
 			foreach (var referenceAttr in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (ReferenceAttribute))) {
-				yield return (string) referenceAttr.ConstructorArguments.First ().Value;
+				var fileName = (string) referenceAttr.ConstructorArguments.First ().Value;
+				if (fileName.StartsWith ("System.", StringComparison.Ordinal) || fileName.StartsWith ("Mono.", StringComparison.Ordinal) || fileName.StartsWith ("Microsoft.", StringComparison.Ordinal))
+					yield return fileName;
+				else
+					yield return workingDirectory.Combine (fileName);
+
 			}
 		}
 
@@ -153,7 +162,8 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				SourceFiles = ((CustomAttributeArgument []) ctorArguments [1].Value).Select (arg => _testCase.SourceFile.Parent.Combine (arg.Value.ToString ())).ToArray (),
 				References = ((CustomAttributeArgument []) ctorArguments [2].Value)?.Select (arg => arg.Value.ToString ()).ToArray (),
 				Defines = ((CustomAttributeArgument []) ctorArguments [3].Value)?.Select (arg => arg.Value.ToString ()).ToArray (),
-				AddAsReference = ctorArguments.Count >= 5 ? (bool) ctorArguments [4].Value : true
+				AdditionalArguments = (string) ctorArguments [4].Value,
+				AddAsReference = ctorArguments.Count >= 6 ? (bool) ctorArguments [5].Value : true
 			};
 		}
 	}
