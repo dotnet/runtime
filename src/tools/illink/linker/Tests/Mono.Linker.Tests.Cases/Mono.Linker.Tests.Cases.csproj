@@ -120,6 +120,35 @@
     <Compile Include="Resources\EmbeddedLinkXmlFileIsNotProcessedWhenCoreLinkActionIsSkip.cs" />
     <Compile Include="Resources\EmbeddedLinkXmlFileIsProcessed.cs" />
     <Compile Include="Resources\NonLinkerEmbeddedResourceHasNoImpact.cs" />
+    <Compile Include="Symbols\Dependencies\LibraryWithEmbeddedPdbSymbols.cs" />
+    <Compile Include="Symbols\Dependencies\LibraryWithPortablePdbSymbols.cs" />
+    <Compile Include="Symbols\ReferenceWithEmbeddedPdb.cs" />
+    <Compile Include="Symbols\ReferenceWithEmbeddedPdbAndSymbolLinkingEnabled.cs" />
+    <Compile Include="Symbols\ReferenceWithEmbeddedPdbCopyAction.cs" />
+    <Compile Include="Symbols\ReferenceWithEmbeddedPdbCopyActionAndSymbolLinkingEnabled.cs" />
+    <Compile Include="Symbols\ReferenceWithEmbeddedPdbDeleteAction.cs" />
+    <Compile Include="Symbols\ReferenceWithEmbeddedPdbDeleteActionAndSymbolLinkingEnabled.cs" />
+    <Compile Include="Symbols\ReferenceWithMdbCopyAction.cs" />
+    <Compile Include="Symbols\ReferenceWithMdbCopyActionAndSymbolLinkingEnabled.cs" />
+    <Compile Include="Symbols\ReferenceWithMdbDeleteAction.cs" />
+    <Compile Include="Symbols\ReferenceWithMdbDeleteActionAndSymbolLinkingEnabled.cs" />
+    <Compile Include="Symbols\ReferenceWithPdb.cs" />
+    <Compile Include="Symbols\ReferenceWithPdbAndSymbolLinkingEnabled.cs" />
+    <Compile Include="Symbols\AssemlbyWithDefaultSymbolsAndSymbolLinkingEnabled.cs" />
+    <Compile Include="Symbols\AssemblyWithDefaultSymbols.cs" />
+    <Compile Include="Symbols\Dependencies\LibraryWithCompilerDefaultSymbols.cs" />
+    <Compile Include="Symbols\Dependencies\LibraryWithPdb\LibraryWithPdb.cs" />
+    <Compile Include="Symbols\Dependencies\LibraryWithMdb\LibraryWithMdb.cs" />
+    <Compile Include="Symbols\ReferenceWithPdbCopyAction.cs" />
+    <Compile Include="Symbols\ReferenceWithPdbCopyActionAndSymbolLinkingEnabled.cs" />
+    <Compile Include="Symbols\ReferenceWithPdbDeleteAction.cs" />
+    <Compile Include="Symbols\ReferenceWithPdbDeleteActionAndSymbolLinkingEnabled.cs" />
+    <Compile Include="Symbols\ReferenceWithPortablePdb.cs" />
+    <Compile Include="Symbols\ReferenceWithPortablePdbAndSymbolLinkingEnabled.cs" />
+    <Compile Include="Symbols\ReferenceWithPortablePdbCopyAction.cs" />
+    <Compile Include="Symbols\ReferenceWithPortablePdbCopyActionAndSymbolLinkingEnabled.cs" />
+    <Compile Include="Symbols\ReferenceWithPortablePdbDeleteAction.cs" />
+    <Compile Include="Symbols\ReferenceWithPortablePdbDeleteActionAndSymbolLinkingEnabled.cs" />
     <Compile Include="TestFramework\CanCompileILAssembly.cs" />
     <Compile Include="TestFramework\CanCompileTestCaseWithDebugPdbs.cs" />
     <Compile Include="TestFramework\CanCompileTestCaseWithCsc.cs" />
@@ -211,6 +240,10 @@
     <None Include="TypeForwarding\Dependencies\TypeForwarderMissingReference.il" />
     <Compile Include="Basic\UsedInterfaceIsKept.cs" />
     <Compile Include="LinkXml\PreserveBackingFieldWhenPropertyIsKept.cs" />
+    <Compile Include="Symbols\ReferencesWithMixedSymbolTypes.cs" />
+    <Compile Include="Symbols\ReferencesWithMixedSymbolTypesAndSymbolLinkingEnabled.cs" />
+    <Compile Include="Symbols\ReferenceWithMdb.cs" />
+    <Compile Include="Symbols\ReferenceWithMdbAndSymbolLinkingEnabled.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Attributes\OnlyKeepUsed\UnusedAttributePreservedViaLinkXmlIsKept.xml" />

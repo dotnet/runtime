@@ -51,10 +51,12 @@
     <Compile Include="Assertions\KeptResourceAttribute.cs" />
     <Compile Include="Assertions\KeptResourceInAssemblyAttribute.cs" />
     <Compile Include="Assertions\KeptSecurityAttribute.cs" />
+    <Compile Include="Assertions\KeptSymbolsAttribute.cs" />
     <Compile Include="Assertions\KeptTypeInAssemblyAttribute.cs" />
     <Compile Include="Assertions\RemovedAssemblyAttribute.cs" />
     <Compile Include="Assertions\RemovedMemberInAssemblyAttribute.cs" />
     <Compile Include="Assertions\RemovedResourceInAssemblyAttribute.cs" />
+    <Compile Include="Assertions\RemovedSymbolsAttribute.cs" />
     <Compile Include="Assertions\RemovedTypeInAssemblyAttribute.cs" />
     <Compile Include="Assertions\SkipPeVerifyAttribute.cs" />
     <Compile Include="Metadata\BaseMetadataAttribute.cs" />
