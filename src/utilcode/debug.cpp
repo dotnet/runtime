@@ -879,18 +879,3 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
 
     UNREACHABLE();
 }
-
-//===================================================================================
-// Used by the ex.h macro: EX_CATCH_HRESULT_AND_NGEN_CLEAN(_hr)
-// which is used by ngen and mscorsvc to catch unexpected HRESULT
-// from one of the RPC calls.
-//===================================================================================
-void RetailAssertIfExpectedClean()
-{
-    static ConfigDWORD g_NGenClean;
-    if (g_NGenClean.val(CLRConfig::EXTERNAL_NGenClean) == 1) 
-    {
-        _ASSERTE_ALL_BUILDS("clr/src/Utilcode/Debug.cpp", !"Error during NGen:  expected no exceptions to be thrown");
-    }
-}
-

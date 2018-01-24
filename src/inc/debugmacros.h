@@ -75,9 +75,7 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
 #define FreeBuildDebugBreak() __FreeBuildDebugBreak()
 
 // At this point, EEPOLICY_HANDLE_FATAL_ERROR may or may not be defined. It will be defined
-// if we are building the VM folder, but outside VM, its not necessarily defined. Currently,
-// this is applicable to the usage of RetailAssertIfExpectedClean that is used from outside
-// the VM folder and uses _ASSERTE_ALL_BUILDS macro as well.
+// if we are building the VM folder, but outside VM, its not necessarily defined.
 //
 // Thus, if EEPOLICY_HANDLE_FATAL_ERROR is not defined, we will call into __FreeBuildAssertFail,
 // but if it is defined, we will use it.
