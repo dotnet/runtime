@@ -435,35 +435,35 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128i _mm_stream_load_si128 (const __m128i* mem_addr); MOVNTDQA xmm, m128
         /// </summary>
-        public static unsafe Vector128<sbyte> LoadAlignedNonTemporal(sbyte* address) => LoadAlignedNonTemporal(address);
+        public static unsafe Vector128<sbyte> LoadAlignedVector128NonTemporal(sbyte* address) => LoadAlignedVector128NonTemporal(address);
         /// <summary>
         /// __m128i _mm_stream_load_si128 (const __m128i* mem_addr); MOVNTDQA xmm, m128
         /// </summary>
-        public static unsafe Vector128<byte> LoadAlignedNonTemporal(byte* address) => LoadAlignedNonTemporal(address);
+        public static unsafe Vector128<byte> LoadAlignedVector128NonTemporal(byte* address) => LoadAlignedVector128NonTemporal(address);
         /// <summary>
         /// __m128i _mm_stream_load_si128 (const __m128i* mem_addr); MOVNTDQA xmm, m128
         /// </summary>
-        public static unsafe Vector128<short> LoadAlignedNonTemporal(short* address) => LoadAlignedNonTemporal(address);
+        public static unsafe Vector128<short> LoadAlignedVector128NonTemporal(short* address) => LoadAlignedVector128NonTemporal(address);
         /// <summary>
         /// __m128i _mm_stream_load_si128 (const __m128i* mem_addr); MOVNTDQA xmm, m128
         /// </summary>
-        public static unsafe Vector128<ushort> LoadAlignedNonTemporal(ushort* address) => LoadAlignedNonTemporal(address);
+        public static unsafe Vector128<ushort> LoadAlignedVector128NonTemporal(ushort* address) => LoadAlignedVector128NonTemporal(address);
         /// <summary>
         /// __m128i _mm_stream_load_si128 (const __m128i* mem_addr); MOVNTDQA xmm, m128
         /// </summary>
-        public static unsafe Vector128<int> LoadAlignedNonTemporal(int* address) => LoadAlignedNonTemporal(address);
+        public static unsafe Vector128<int> LoadAlignedVector128NonTemporal(int* address) => LoadAlignedVector128NonTemporal(address);
         /// <summary>
         /// __m128i _mm_stream_load_si128 (const __m128i* mem_addr); MOVNTDQA xmm, m128
         /// </summary>
-        public static unsafe Vector128<uint> LoadAlignedNonTemporal(uint* address) => LoadAlignedNonTemporal(address);
+        public static unsafe Vector128<uint> LoadAlignedVector128NonTemporal(uint* address) => LoadAlignedVector128NonTemporal(address);
         /// <summary>
         /// __m128i _mm_stream_load_si128 (const __m128i* mem_addr); MOVNTDQA xmm, m128
         /// </summary>
-        public static unsafe Vector128<long> LoadAlignedNonTemporal(long* address) => LoadAlignedNonTemporal(address);
+        public static unsafe Vector128<long> LoadAlignedVector128NonTemporal(long* address) => LoadAlignedVector128NonTemporal(address);
         /// <summary>
         /// __m128i _mm_stream_load_si128 (const __m128i* mem_addr); MOVNTDQA xmm, m128
         /// </summary>
-        public static unsafe Vector128<ulong> LoadAlignedNonTemporal(ulong* address) => LoadAlignedNonTemporal(address);
+        public static unsafe Vector128<ulong> LoadAlignedVector128NonTemporal(ulong* address) => LoadAlignedVector128NonTemporal(address);
 
         /// <summary>
         /// int _mm_test_all_ones (__m128i a); HELPER
