@@ -169,6 +169,46 @@ namespace Internal.Runtime.CompilerServices
         }
 
         /// <summary>
+        /// Determines whether the memory address referenced by <paramref name="left"/> is greater than
+        /// the memory address referenced by <paramref name="right"/>.
+        /// </summary>
+        /// <remarks>
+        /// This check is conceptually similar to "(void*)(&amp;left) &gt; (void*)(&amp;right)".
+        /// </remarks>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsAddressGreaterThan<T>(ref T left, ref T right)
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg.0
+            // ldarg.1
+            // cgt.un
+            // ret
+        }
+
+        /// <summary>
+        /// Determines whether the memory address referenced by <paramref name="left"/> is less than
+        /// the memory address referenced by <paramref name="right"/>.
+        /// </summary>
+        /// <remarks>
+        /// This check is conceptually similar to "(void*)(&amp;left) &lt; (void*)(&amp;right)".
+        /// </remarks>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsAddressLessThan<T>(ref T left, ref T right)
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg.0
+            // ldarg.1
+            // clt.un
+            // ret
+        }
+
+        /// <summary>
         /// Initializes a block of memory at the given location with a given initial value 
         /// without assuming architecture dependent alignment of the address.
         /// </summary>
