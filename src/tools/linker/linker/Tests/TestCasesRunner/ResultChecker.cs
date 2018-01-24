@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Mono.Cecil;
+using Mono.Cecil.Cil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Extensions;
 using NUnit.Framework;
@@ -12,18 +13,24 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 	{
 		readonly BaseAssemblyResolver _originalsResolver;
 		readonly BaseAssemblyResolver _linkedResolver;
+		readonly ReaderParameters _readerParameters;
 		readonly PeVerifier _peVerifier;
 
 		public ResultChecker ()
-			: this(new DefaultAssemblyResolver (), new DefaultAssemblyResolver (), new PeVerifier ())
+			: this(new TestCaseAssemblyResolver (), new TestCaseAssemblyResolver (), new PeVerifier (),
+					new ReaderParameters
+					{
+						SymbolReaderProvider = new DefaultSymbolReaderProvider (false)
+					})
 		{
 		}
 
-		public ResultChecker (BaseAssemblyResolver originalsResolver, BaseAssemblyResolver linkedResolver, PeVerifier peVerifier)
+		public ResultChecker (BaseAssemblyResolver originalsResolver, BaseAssemblyResolver linkedResolver, PeVerifier peVerifier, ReaderParameters readerParameters)
 		{
 			_originalsResolver = originalsResolver;
 			_linkedResolver = linkedResolver;
 			_peVerifier = peVerifier;
+			_readerParameters = readerParameters;
 		}
 
 		public virtual void Check (LinkedTestCaseResult linkResult)
@@ -36,6 +43,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			{
 				var original = ResolveOriginalsAssembly (linkResult.ExpectationsAssemblyPath.FileNameWithoutExtension);
 				PerformOutputAssemblyChecks (original, linkResult.OutputAssemblyPath.Parent);
+				PerformOutputSymbolChecks (original, linkResult.OutputAssemblyPath.Parent);
 
 				var linked = ResolveLinkedAssembly (linkResult.OutputAssemblyPath.FileNameWithoutExtension);
 
@@ -70,7 +78,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			var cleanAssemblyName = assemblyName;
 			if (assemblyName.EndsWith(".exe") || assemblyName.EndsWith(".dll"))
 				cleanAssemblyName = System.IO.Path.GetFileNameWithoutExtension (assemblyName);
-			return _linkedResolver.Resolve (new AssemblyNameReference (cleanAssemblyName, null));
+			return _linkedResolver.Resolve (new AssemblyNameReference (cleanAssemblyName, null), _readerParameters);
 		}
 
 		AssemblyDefinition ResolveOriginalsAssembly (string assemblyName)
@@ -78,7 +86,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			var cleanAssemblyName = assemblyName;
 			if (assemblyName.EndsWith (".exe") || assemblyName.EndsWith (".dll"))
 				cleanAssemblyName = Path.GetFileNameWithoutExtension (assemblyName);
-			return _originalsResolver.Resolve (new AssemblyNameReference (cleanAssemblyName, null));
+			return _originalsResolver.Resolve (new AssemblyNameReference (cleanAssemblyName, null), _readerParameters);
 		}
 
 		void PerformOutputAssemblyChecks (AssemblyDefinition original, NPath outputDirectory)
@@ -95,6 +103,56 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 					Assert.IsTrue (expectedPath.FileExists (), $"Expected the assembly {name} to exist in {outputDirectory}, but it did not");
 				else
 					throw new NotImplementedException($"Unknown assembly assertion of type {assemblyAttr.AttributeType}");
+			}
+		}
+
+		void PerformOutputSymbolChecks (AssemblyDefinition original, NPath outputDirectory)
+		{
+			var symbolFilesToCheck = original.MainModule.Types.SelectMany (t => t.CustomAttributes).Where (ExpectationsProvider.IsSymbolAssertion);
+			
+			foreach (var symbolAttr in symbolFilesToCheck) {
+				if (symbolAttr.AttributeType.Name == nameof (RemovedSymbolsAttribute))
+					VerifyRemovedSymbols (symbolAttr, outputDirectory);
+				else if (symbolAttr.AttributeType.Name == nameof (KeptSymbolsAttribute))
+					VerifyKeptSymbols (symbolAttr);
+				else
+					throw new NotImplementedException($"Unknown symbol file assertion of type {symbolAttr.AttributeType}");
+			}
+		}
+
+		void VerifyKeptSymbols (CustomAttribute symbolsAttribute)
+		{
+			var assemblyName = (string) symbolsAttribute.ConstructorArguments [0].Value;
+			var originalAssembly = ResolveOriginalsAssembly (assemblyName);
+			var linkedAssembly = ResolveLinkedAssembly (assemblyName);
+
+			if (linkedAssembly.MainModule.SymbolReader == null)
+				Assert.Fail ($"Missing symbols for assembly `{linkedAssembly.MainModule.FileName}`");
+
+			if (linkedAssembly.MainModule.SymbolReader.GetType () != originalAssembly.MainModule.SymbolReader.GetType ())
+				Assert.Fail ($"Expected symbol provider of type `{originalAssembly.MainModule.SymbolReader}`, but was `{linkedAssembly.MainModule.SymbolReader}`");
+		}
+
+		void VerifyRemovedSymbols (CustomAttribute symbolsAttribute, NPath outputDirectory)
+		{
+			var assemblyName = (string) symbolsAttribute.ConstructorArguments [0].Value;
+			try
+			{
+				var linkedAssembly = ResolveLinkedAssembly (assemblyName);
+
+				if (linkedAssembly.MainModule.SymbolReader != null)
+					Assert.Fail ($"Expected no symbols to be found for assembly `{linkedAssembly.MainModule.FileName}`, however, symbols were found of type {linkedAssembly.MainModule.SymbolReader}");
+			} catch (AssemblyResolutionException) {
+				// If we failed to resolve, then the entire assembly may be gone.
+				// The assembly being gone confirms that embedded pdbs were removed, but technically, for the other symbol types, the symbol file could still exist on disk
+				// let's check to make sure that it does not.
+				var possibleSymbolFilePath = outputDirectory.Combine ($"{assemblyName}").ChangeExtension ("pdb");
+				if (possibleSymbolFilePath.Exists ())
+					Assert.Fail ($"Expected no symbols to be found for assembly `{assemblyName}`, however, a symbol file was found at {possibleSymbolFilePath}");
+				
+				possibleSymbolFilePath = outputDirectory.Combine ($"{assemblyName}.mdb");
+				if (possibleSymbolFilePath.Exists ())
+					Assert.Fail ($"Expected no symbols to be found for assembly `{assemblyName}`, however, a symbol file was found at {possibleSymbolFilePath}");
 			}
 		}
 

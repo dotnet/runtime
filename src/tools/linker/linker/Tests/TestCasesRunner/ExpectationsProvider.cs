@@ -8,5 +8,10 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		{
 			return attr.AttributeType.Name == nameof (KeptAssemblyAttribute) || attr.AttributeType.Name == nameof (RemovedAssemblyAttribute);
 		}
+		
+		public static bool IsSymbolAssertion (CustomAttribute attr)
+		{
+			return attr.AttributeType.Name == nameof (KeptSymbolsAttribute) || attr.AttributeType.Name == nameof (RemovedSymbolsAttribute);
+		}
 	}
 }

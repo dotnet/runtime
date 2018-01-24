@@ -55,6 +55,10 @@
       <Project>{D68133BD-1E63-496E-9EDE-4FBDBF77B486}</Project>
       <Name>Mono.Cecil</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj">
+      <Project>{63e6915c-7ea4-4d76-ab28-0d7191eea626}</Project>
+      <Name>Mono.Cecil.Pdb</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Mono.Linker.csproj">
       <Project>{DD28E2B1-057B-4B4D-A04D-B2EBD9E76E46}</Project>
       <Name>Mono.Linker</Name>
@@ -77,6 +81,7 @@
     <Compile Include="TestCasesRunner\SourceAndDestinationPair.cs" />
     <Compile Include="TestCasesRunner\SetupCompileInfo.cs" />
     <Compile Include="TestCasesRunner\PeVerifier.cs" />
+    <Compile Include="TestCasesRunner\TestCaseAssemblyResolver.cs" />
     <Compile Include="TestCases\IndividualTests.cs" />
     <Compile Include="TestCases\TestSuites.cs" />
     <Compile Include="TestCases\TestDatabase.cs" />
