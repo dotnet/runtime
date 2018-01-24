@@ -408,13 +408,27 @@ T ValueNumStore::EvalOpIntegral(VNFunc vnf, T v0, T v1, ValueNum* pExcSet)
         case GT_AND:
             return v0 & v1;
         case GT_LSH:
-            return v0 << v1;
+            if (sizeof(T) == 8)
+            {
+                return v0 << (v1 & 0x3F);
+            }
+            else
+            {
+                return v0 << v1;
+            }
         case GT_RSH:
-            return v0 >> v1;
+            if (sizeof(T) == 8)
+            {
+                return v0 >> (v1 & 0x3F);
+            }
+            else
+            {
+                return v0 >> v1;
+            }
         case GT_RSZ:
             if (sizeof(T) == 8)
             {
-                return UINT64(v0) >> v1;
+                return UINT64(v0) >> (v1 & 0x3F);
             }
             else
             {
