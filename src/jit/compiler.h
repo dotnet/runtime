@@ -1293,7 +1293,6 @@ struct fgArgTabEntry
     void Dump();
 #endif
 };
-typedef struct fgArgTabEntry* fgArgTabEntryPtr;
 
 //-------------------------------------------------------------------------
 //
@@ -1322,44 +1321,43 @@ class fgArgInfo
     unsigned outArgSize; // Size of the out arg area for the call, will be at least MIN_ARG_AREA_FOR_CALL
 #endif
 
-    unsigned          argTableSize; // size of argTable array (equal to the argCount when done with fgMorphArgs)
-    bool              hasRegArgs;   // true if we have one or more register arguments
-    bool              hasStackArgs; // true if we have one or more stack arguments
-    bool              argsComplete; // marker for state
-    bool              argsSorted;   // marker for state
-    fgArgTabEntryPtr* argTable;     // variable sized array of per argument descrption: (i.e. argTable[argTableSize])
+    unsigned        argTableSize; // size of argTable array (equal to the argCount when done with fgMorphArgs)
+    bool            hasRegArgs;   // true if we have one or more register arguments
+    bool            hasStackArgs; // true if we have one or more stack arguments
+    bool            argsComplete; // marker for state
+    bool            argsSorted;   // marker for state
+    fgArgTabEntry** argTable;     // variable sized array of per argument descrption: (i.e. argTable[argTableSize])
 
 private:
-    void AddArg(fgArgTabEntryPtr curArgTabEntry);
+    void AddArg(fgArgTabEntry* curArgTabEntry);
 
 public:
     fgArgInfo(Compiler* comp, GenTreeCall* call, unsigned argCount);
     fgArgInfo(GenTreeCall* newCall, GenTreeCall* oldCall);
 
-    fgArgTabEntryPtr AddRegArg(
+    fgArgTabEntry* AddRegArg(
         unsigned argNum, GenTreePtr node, GenTreePtr parent, regNumber regNum, unsigned numRegs, unsigned alignment);
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    fgArgTabEntryPtr AddRegArg(
-        unsigned                                                         argNum,
-        GenTreePtr                                                       node,
-        GenTreePtr                                                       parent,
-        regNumber                                                        regNum,
-        unsigned                                                         numRegs,
-        unsigned                                                         alignment,
-        const bool                                                       isStruct,
-        const regNumber                                                  otherRegNum   = REG_NA,
-        const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* const structDescPtr = nullptr);
+    fgArgTabEntry* AddRegArg(unsigned                                                         argNum,
+                             GenTreePtr                                                       node,
+                             GenTreePtr                                                       parent,
+                             regNumber                                                        regNum,
+                             unsigned                                                         numRegs,
+                             unsigned                                                         alignment,
+                             const bool                                                       isStruct,
+                             const regNumber                                                  otherRegNum   = REG_NA,
+                             const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* const structDescPtr = nullptr);
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
-    fgArgTabEntryPtr AddStkArg(unsigned   argNum,
-                               GenTreePtr node,
-                               GenTreePtr parent,
-                               unsigned   numSlots,
-                               unsigned alignment FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(const bool isStruct));
+    fgArgTabEntry* AddStkArg(unsigned   argNum,
+                             GenTreePtr node,
+                             GenTreePtr parent,
+                             unsigned   numSlots,
+                             unsigned alignment FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(const bool isStruct));
 
-    void             RemorphReset();
-    fgArgTabEntryPtr RemorphRegArg(
+    void           RemorphReset();
+    fgArgTabEntry* RemorphRegArg(
         unsigned argNum, GenTreePtr node, GenTreePtr parent, regNumber regNum, unsigned numRegs, unsigned alignment);
 
     void RemorphStkArg(unsigned argNum, GenTreePtr node, GenTreePtr parent, unsigned numSlots, unsigned alignment);
@@ -1381,7 +1379,7 @@ public:
     {
         return argCount;
     }
-    fgArgTabEntryPtr* ArgTable()
+    fgArgTabEntry** ArgTable()
     {
         return argTable;
     }
@@ -2109,10 +2107,10 @@ public:
     GenTreeArgList* gtNewArgList(GenTreePtr op1, GenTreePtr op2, GenTreePtr op3);
     GenTreeArgList* gtNewArgList(GenTreePtr op1, GenTreePtr op2, GenTreePtr op3, GenTreePtr op4);
 
-    static fgArgTabEntryPtr gtArgEntryByArgNum(GenTreeCall* call, unsigned argNum);
-    static fgArgTabEntryPtr gtArgEntryByNode(GenTreeCall* call, GenTreePtr node);
-    fgArgTabEntryPtr gtArgEntryByLateArgIndex(GenTreeCall* call, unsigned lateArgInx);
-    bool gtArgIsThisPtr(fgArgTabEntryPtr argEntry);
+    static fgArgTabEntry* gtArgEntryByArgNum(GenTreeCall* call, unsigned argNum);
+    static fgArgTabEntry* gtArgEntryByNode(GenTreeCall* call, GenTreePtr node);
+    fgArgTabEntry* gtArgEntryByLateArgIndex(GenTreeCall* call, unsigned lateArgInx);
+    bool gtArgIsThisPtr(fgArgTabEntry* argEntry);
 
     GenTreePtr gtNewAssignNode(GenTreePtr dst, GenTreePtr src);
 
@@ -4923,12 +4921,12 @@ private:
     bool fgCheckStmtAfterTailCall();
     void fgMorphTailCall(GenTreeCall* call);
     void fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCall* recursiveTailCall);
-    GenTreePtr fgAssignRecursiveCallArgToCallerParam(GenTreePtr       arg,
-                                                     fgArgTabEntryPtr argTabEntry,
-                                                     BasicBlock*      block,
-                                                     IL_OFFSETX       callILOffset,
-                                                     GenTreePtr       tmpAssignmentInsertionPoint,
-                                                     GenTreePtr       paramAssignmentInsertionPoint);
+    GenTreePtr fgAssignRecursiveCallArgToCallerParam(GenTreePtr     arg,
+                                                     fgArgTabEntry* argTabEntry,
+                                                     BasicBlock*    block,
+                                                     IL_OFFSETX     callILOffset,
+                                                     GenTreePtr     tmpAssignmentInsertionPoint,
+                                                     GenTreePtr     paramAssignmentInsertionPoint);
     static int fgEstimateCallStackSize(GenTreeCall* call);
     GenTreePtr fgMorphCall(GenTreeCall* call);
     void fgMorphCallInline(GenTreeCall* call, InlineResult* result);
@@ -5667,8 +5665,6 @@ protected:
         GenTreePtr tlTree;
     };
 
-    typedef struct treeLst* treeLstPtr;
-
     struct treeStmtLst
     {
         treeStmtLst* tslNext;
@@ -5676,8 +5672,6 @@ protected:
         GenTreePtr   tslStmt;  // statement containing the tree
         BasicBlock*  tslBlock; // block containing the statement
     };
-
-    typedef struct treeStmtLst* treeStmtLstPtr;
 
     // The following logic keeps track of expressions via a simple hash table.
 
@@ -5700,8 +5694,8 @@ protected:
         GenTreePtr  csdStmt;  // stmt containing the 1st occurance
         BasicBlock* csdBlock; // block containing the 1st occurance
 
-        treeStmtLstPtr csdTreeList; // list of matching tree nodes: head
-        treeStmtLstPtr csdTreeLast; // list of matching tree nodes: tail
+        treeStmtLst* csdTreeList; // list of matching tree nodes: head
+        treeStmtLst* csdTreeLast; // list of matching tree nodes: tail
 
         ValueNum defConservativeVN; // if all def occurrences share the same conservative value
                                     // number, this will reflect it; otherwise, NoVN.
@@ -9687,7 +9681,7 @@ public:
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
     void fgMorphMultiregStructArgs(GenTreeCall* call);
-    GenTreePtr fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr fgEntryPtr);
+    GenTreePtr fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntry* fgEntryPtr);
 
     bool killGCRefs(GenTreePtr tree);
 

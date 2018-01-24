@@ -331,18 +331,18 @@ size_t genPushArgList(GenTreeCall* call);
 //       allocates a register, uses it, and sets "*pRegTmp" to the allocated register.
 //
 // Returns "true" iff it filled two slots with an 8-byte value.
-bool genFillSlotFromPromotedStruct(GenTreePtr       arg,
-                                   fgArgTabEntryPtr curArgTabEntry,
-                                   LclVarDsc*       promotedStructLocalVarDesc,
-                                   emitAttr         fieldSize,
-                                   unsigned*        pNextPromotedStructFieldVar,         // IN/OUT
-                                   unsigned*        pBytesOfNextSlotOfCurPromotedStruct, // IN/OUT
-                                   regNumber*       pCurRegNum,                          // IN/OUT
-                                   int              argOffset,
-                                   int              fieldOffsetOfFirstStackSlot,
-                                   int              argOffsetOfFirstStackSlot,
-                                   regMaskTP*       deadFieldVarRegs, // OUT
-                                   regNumber*       pRegTmp);         // IN/OUT
+bool genFillSlotFromPromotedStruct(GenTreePtr     arg,
+                                   fgArgTabEntry* curArgTabEntry,
+                                   LclVarDsc*     promotedStructLocalVarDesc,
+                                   emitAttr       fieldSize,
+                                   unsigned*      pNextPromotedStructFieldVar,         // IN/OUT
+                                   unsigned*      pBytesOfNextSlotOfCurPromotedStruct, // IN/OUT
+                                   regNumber*     pCurRegNum,                          // IN/OUT
+                                   int            argOffset,
+                                   int            fieldOffsetOfFirstStackSlot,
+                                   int            argOffsetOfFirstStackSlot,
+                                   regMaskTP*     deadFieldVarRegs, // OUT
+                                   regNumber*     pRegTmp);         // IN/OUT
 
 #endif // _TARGET_ARM_
 // Requires that "curr" is a cpblk.  If the RHS is a promoted struct local,
@@ -354,7 +354,7 @@ regMaskTP genFindDeadFieldRegs(GenTreePtr cpBlk);
 void SetupLateArgs(GenTreeCall* call);
 
 #ifdef _TARGET_ARM_
-void PushMkRefAnyArg(GenTreePtr mkRefAnyTree, fgArgTabEntryPtr curArgTabEntry, regMaskTP regNeedMask);
+void PushMkRefAnyArg(GenTreePtr mkRefAnyTree, fgArgTabEntry* curArgTabEntry, regMaskTP regNeedMask);
 #endif // _TARGET_ARM_
 
 regMaskTP genLoadIndirectCallTarget(GenTreeCall* call);

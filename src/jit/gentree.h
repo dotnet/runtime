@@ -3178,7 +3178,6 @@ struct GenTreeColon : public GenTreeOp
 };
 
 // gtCall   -- method call      (GT_CALL)
-typedef class fgArgInfo* fgArgInfoPtr;
 enum class InlineObservation;
 
 // Return type descriptor of a GT_CALL node.
@@ -3324,6 +3323,8 @@ public:
     regMaskTP GetABIReturnRegs();
 };
 
+class fgArgInfo;
+
 struct GenTreeCall final : public GenTree
 {
     GenTreePtr      gtCallObjp;     // The instance argument ('this' pointer)
@@ -3331,7 +3332,7 @@ struct GenTreeCall final : public GenTree
     GenTreeArgList* gtCallLateArgs; // On x86:     The register arguments in an optimal order
                                     // On ARM/x64: - also includes any outgoing arg space arguments
                                     //             - that were evaluated into a temp LclVar
-    fgArgInfoPtr fgArgInfo;
+    fgArgInfo* fgArgInfo;
 
 #if !FEATURE_FIXED_OUT_ARGS
     int     regArgListCount;

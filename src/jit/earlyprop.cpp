@@ -123,7 +123,7 @@ GenTreePtr Compiler::getObjectHandleNodeFromAllocation(GenTreePtr tree)
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_ALIGN8))
             {
                 // This is an object allocation site. Return the runtime type handle node.
-                fgArgTabEntryPtr argTabEntry = gtArgEntryByArgNum(call, 0);
+                fgArgTabEntry* argTabEntry = gtArgEntryByArgNum(call, 0);
                 return argTabEntry->node;
             }
         }
