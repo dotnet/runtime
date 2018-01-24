@@ -69,6 +69,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     formattype.cpp
     fptrstubs.cpp
     frames.cpp
+    gctoclreventsink.cpp
     gcheaputilities.cpp
     gchandleutilities.cpp
     genericdict.cpp
