@@ -1236,7 +1236,6 @@ HRESULT Zapper::Compile(LPCWSTR string, CORCOMPILE_NGEN_SIGNATURE * pNativeImage
         Error(W("\n"));
 
         hr = GET_EXCEPTION()->GetHR();
-        RetailAssertIfExpectedClean();
     }
     EX_END_CATCH(SwallowAllExceptions);
 

@@ -909,8 +909,6 @@ private: //----------------------------------------------------------------
     LPUTF8 pszBreakOnComToClrNativeInfoInit; // Halt before we init the native info for a COM to CLR call
     LPUTF8 pszBreakOnStructMarshalSetup; // Halt before the field marshallers are set up for a struct
 
-    bool   fAppDomainLeaks;             // Enable appdomain leak detection for object refs
-
     bool   m_fAssertOnBadImageFormat;   // If false, don't assert on invalid IL (for testing)
     bool   m_fAssertOnFailFast;         // If false, don't assert if we detect a stack corruption
 
