@@ -497,13 +497,11 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             break;
 
         case SIMDIntrinsicConvertToInt32:
-        case SIMDIntrinsicConvertToUInt32:
             assert(baseType == TYP_FLOAT);
             result = INS_cvttps2dq;
             break;
 
         case SIMDIntrinsicConvertToInt64:
-        case SIMDIntrinsicConvertToUInt64:
             assert(baseType == TYP_DOUBLE);
             result = INS_cvttsd2si;
             break;
