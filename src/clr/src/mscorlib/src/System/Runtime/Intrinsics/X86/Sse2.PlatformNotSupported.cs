@@ -704,6 +704,15 @@ namespace System.Runtime.Intrinsics.X86
         public static int MoveMask(Vector128<double> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m128i _mm_move_epi64 (__m128i a); MOVQ xmm, xmm
+        /// </summary>
+        public static Vector128<long> MoveScalar(Vector128<long> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128i _mm_move_epi64 (__m128i a); MOVQ xmm, xmm
+        /// </summary>
+        public static Vector128<ulong> MoveScalar(Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m128i _mm_mul_epu32 (__m128i a,  __m128i b); PMULUDQ xmm, xmm/m128
         /// </summary>
         public static Vector128<ulong> Multiply(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
