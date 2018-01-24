@@ -5101,7 +5101,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
         GenTreePtr argNode = list->Current();
 
-        fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, argNode->gtSkipReloadOrCopy());
+        fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(call, argNode->gtSkipReloadOrCopy());
         assert(curArgTabEntry);
 
         if (curArgTabEntry->regNum == REG_STK)
@@ -5186,7 +5186,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                 unsigned size   = arg->AsPutArgStk()->getArgSize();
                 stackArgBytes += size;
 #ifdef DEBUG
-                fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, arg);
+                fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(call, arg);
                 assert(curArgTabEntry);
                 assert(size == (curArgTabEntry->numSlots * TARGET_POINTER_SIZE));
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
@@ -8051,10 +8051,10 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
         // Get argument offset on stack.
         // Here we cross check that argument offset hasn't changed from lowering to codegen since
         // we are storing arg slot number in GT_PUTARG_STK node in lowering phase.
-        int              argOffset      = putArgStk->getArgOffset();
+        int            argOffset      = putArgStk->getArgOffset();
 
 #ifdef DEBUG
-        fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(putArgStk->gtCall, putArgStk);
+        fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(putArgStk->gtCall, putArgStk);
         assert(curArgTabEntry);
         assert(argOffset == (int)curArgTabEntry->slotNum * TARGET_POINTER_SIZE);
 #endif

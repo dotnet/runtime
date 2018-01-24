@@ -4611,7 +4611,7 @@ regMaskTP Compiler::rpPredictTreeRegUse(GenTreePtr   tree,
 
                 assert(!args->IsArgPlaceHolderNode()); // No place holders nodes are in gtCallLateArgs;
 
-                fgArgTabEntryPtr curArgTabEntry = gtArgEntryByNode(tree->AsCall(), args);
+                fgArgTabEntry* curArgTabEntry = gtArgEntryByNode(tree->AsCall(), args);
                 assert(curArgTabEntry);
 
                 regNumber regNum = curArgTabEntry->regNum; // first register use to pass this argument

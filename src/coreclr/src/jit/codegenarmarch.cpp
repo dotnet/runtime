@@ -556,7 +556,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
     unsigned argOffsetOut = treeNode->gtSlotNum * TARGET_POINTER_SIZE;
 
 #ifdef DEBUG
-    fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(treeNode->gtCall, treeNode);
+    fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(treeNode->gtCall, treeNode);
     assert(curArgTabEntry);
     assert(argOffsetOut == (curArgTabEntry->slotNum * TARGET_POINTER_SIZE));
 #endif // DEBUG
@@ -2194,7 +2194,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
         GenTreePtr argNode = list->Current();
 
-        fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, argNode);
+        fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(call, argNode);
         assert(curArgTabEntry);
 
         // GT_RELOAD/GT_COPY use the child node
