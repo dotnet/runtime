@@ -72,7 +72,6 @@ GC/Features/LOHFragmentation/lohfragmentation/lohfragmentation.sh
 GC/Features/SustainedLowLatency/scenario/scenario.sh
 GC/Regressions/dev10bugs/536168/536168/536168.sh
 Loader/classloader/DefaultInterfaceMethods/diamondshape/diamondshape/diamondshape.sh
-Loader/classloader/DefaultInterfaceMethods/sharedgenerics/sharedgenerics/sharedgenerics.sh
 Loader/classloader/DefaultInterfaceMethods/constrainedcall/constrainedcall/constrainedcall.sh
 Loader/classloader/TypeGeneratorTests/TypeGeneratorTest612/Generated612/Generated612.sh
 Loader/classloader/TypeGeneratorTests/TypeGeneratorTest613/Generated613/Generated613.sh
