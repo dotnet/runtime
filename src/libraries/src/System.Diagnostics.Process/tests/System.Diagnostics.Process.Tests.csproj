@@ -54,5 +54,17 @@
       <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
   </ItemGroup>
+  <!-- WINDOWS: Shared CoreCLR and .NET Native -->
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="..\..\Common\src\System\PasteArguments.Windows.cs">
+      <Link>Common\System\PasteArguments.Windows.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- UNIX -->
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="..\..\Common\src\System\PasteArguments.Unix.cs">
+      <Link>Common\System\PasteArguments.Unix.cs</Link>
+    </Compile>
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
