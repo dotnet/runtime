@@ -464,7 +464,7 @@ HCIMPLEND
 HCIMPL2_VV(INT64, JIT_LRsh, INT64 num, int shift)
 {
     FCALL_CONTRACT;
-    return num >> shift;
+    return num >> (shift & 0x3F);
 }
 HCIMPLEND
 
@@ -472,7 +472,7 @@ HCIMPLEND
 HCIMPL2_VV(UINT64, JIT_LRsz, UINT64 num, int shift)
 {
     FCALL_CONTRACT;
-    return num >> shift;
+    return num >> (shift & 0x3F);
 }
 HCIMPLEND
 #endif // !BIT64 && !_TARGET_X86_
