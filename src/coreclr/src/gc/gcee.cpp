@@ -687,6 +687,15 @@ bool GCHeap::RuntimeStructuresValid()
     return GCScan::GetGcRuntimeStructuresValid();
 }
 
+void GCHeap::ControlEvents(GCEventKeyword keyword, GCEventLevel level)
+{
+    GCEventStatus::Set(GCEventProvider_Default, keyword, level);
+}
+
+void GCHeap::ControlPrivateEvents(GCEventKeyword keyword, GCEventLevel level)
+{
+    GCEventStatus::Set(GCEventProvider_Private, keyword, level);
+}
 
 #endif // !DACCESS_COMPILE
 
