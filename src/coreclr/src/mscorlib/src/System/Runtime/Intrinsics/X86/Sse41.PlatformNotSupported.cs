@@ -435,35 +435,35 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128i _mm_stream_load_si128 (const __m128i* mem_addr); MOVNTDQA xmm, m128
         /// </summary>
-        public static unsafe Vector128<sbyte> LoadAlignedNonTemporal(sbyte* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<sbyte> LoadAlignedVector128NonTemporal(sbyte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_stream_load_si128 (const __m128i* mem_addr); MOVNTDQA xmm, m128
         /// </summary>
-        public static unsafe Vector128<byte> LoadAlignedNonTemporal(byte* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<byte> LoadAlignedVector128NonTemporal(byte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_stream_load_si128 (const __m128i* mem_addr); MOVNTDQA xmm, m128
         /// </summary>
-        public static unsafe Vector128<short> LoadAlignedNonTemporal(short* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<short> LoadAlignedVector128NonTemporal(short* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_stream_load_si128 (const __m128i* mem_addr); MOVNTDQA xmm, m128
         /// </summary>
-        public static unsafe Vector128<ushort> LoadAlignedNonTemporal(ushort* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<ushort> LoadAlignedVector128NonTemporal(ushort* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_stream_load_si128 (const __m128i* mem_addr); MOVNTDQA xmm, m128
         /// </summary>
-        public static unsafe Vector128<int> LoadAlignedNonTemporal(int* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<int> LoadAlignedVector128NonTemporal(int* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_stream_load_si128 (const __m128i* mem_addr); MOVNTDQA xmm, m128
         /// </summary>
-        public static unsafe Vector128<uint> LoadAlignedNonTemporal(uint* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<uint> LoadAlignedVector128NonTemporal(uint* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_stream_load_si128 (const __m128i* mem_addr); MOVNTDQA xmm, m128
         /// </summary>
-        public static unsafe Vector128<long> LoadAlignedNonTemporal(long* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<long> LoadAlignedVector128NonTemporal(long* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_stream_load_si128 (const __m128i* mem_addr); MOVNTDQA xmm, m128
         /// </summary>
-        public static unsafe Vector128<ulong> LoadAlignedNonTemporal(ulong* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<ulong> LoadAlignedVector128NonTemporal(ulong* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int _mm_test_all_ones (__m128i a); HELPER
