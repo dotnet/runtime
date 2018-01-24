@@ -8860,13 +8860,32 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethodHelper(CORINFO_METHOD_HANDLE 
                 pOwnerMT = pOwnerMT->GetCanonicalMethodTable();
             }
 
-            pDevirtMD = pDerivedMT->GetMethodDescForInterfaceMethod(TypeHandle(pOwnerMT), pBaseMD);
+            // In a try block because the interface method resolution might end up being
+            // ambiguous (diamond inheritance case of default interface methods).
+            EX_TRY
+            {
+                pDevirtMD = pDerivedMT->GetMethodDescForInterfaceMethod(TypeHandle(pOwnerMT), pBaseMD);
+            }
+            EX_CATCH
+            {
+            }
+            EX_END_CATCH(RethrowTransientExceptions)
         }
         else if (!pBaseMD->HasClassOrMethodInstantiation())
         {
-            pDevirtMD = pDerivedMT->GetMethodDescForInterfaceMethod(pBaseMD);
+            // In a try block because the interface method resolution might end up being
+            // ambiguous (diamond inheritance case of default interface methods).
+            EX_TRY
+            {
+                pDevirtMD = pDerivedMT->GetMethodDescForInterfaceMethod(pBaseMD);
+            }
+            EX_CATCH
+            {
+            }
+            EX_END_CATCH(RethrowTransientExceptions)
         }
-        else
+        
+        if (pDevirtMD == nullptr)
         {
             return nullptr;
         }
