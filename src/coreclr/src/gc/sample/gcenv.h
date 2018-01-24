@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+#ifndef __GCENV_H__
+#define __GCENV_H__
 
 // The sample is to be kept simple, so building the sample
 // in tandem with a standalone GC is currently not supported.
@@ -200,3 +202,5 @@ extern EEConfig * g_pConfig;
 
 #include "etmdummy.h"
 #define ETW_EVENT_ENABLED(e,f) false
+
+#endif // __GCENV_H__

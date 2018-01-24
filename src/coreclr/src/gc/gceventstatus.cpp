@@ -2,23 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-
 #include "common.h"
-
-#include "gcenv.h"
-
-#include "gc.h"
-#include "gcscan.h"
-#include "gchandletableimpl.h"
 #include "gceventstatus.h"
 
-#ifdef SERVER_GC
-#undef SERVER_GC
-#endif
-
-namespace WKS { 
-#include "gcimpl.h"
-#include "gcee.cpp"
-}
-
+Volatile<GCEventLevel> GCEventStatus::enabledLevels[2] = {GCEventLevel_None, GCEventLevel_None};
+Volatile<GCEventKeyword> GCEventStatus::enabledKeywords[2] = {GCEventKeyword_None, GCEventKeyword_None};
