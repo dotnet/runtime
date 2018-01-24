@@ -369,35 +369,6 @@ inline static CorInfoType toJitType(TypeHandle typeHnd, CORINFO_CLASS_HANDLE *cl
     return CEEInfo::asCorInfoType(typeHnd.GetInternalCorElementType(), typeHnd, clsRet);
 }
 
-#ifdef _DEBUG
-void DebugSecurityCalloutStress(CORINFO_METHOD_HANDLE methodBeingCompiledHnd,
-                                CorInfoIsAccessAllowedResult& currentAnswer,
-                                CorInfoSecurityRuntimeChecks& currentRuntimeChecks)
-{
-    WRAPPER_NO_CONTRACT;
-    if (currentAnswer != CORINFO_ACCESS_ALLOWED)
-    {
-        return;
-    }
-    static ConfigDWORD AlwaysInsertCallout;
-    switch (AlwaysInsertCallout.val(CLRConfig::INTERNAL_Security_AlwaysInsertCallout))
-    {
-    case 0: //No stress
-        return;
-    case 1: //Always
-        break;
-    default: //2 (or anything else), do so half the time
-        if (((size_t(methodBeingCompiledHnd) / sizeof(void*)) % 64) < 32)
-            return;
-    }
-    //Do the stress
-    currentAnswer = CORINFO_ACCESS_RUNTIME_CHECK;
-    currentRuntimeChecks = CORINFO_ACCESS_SECURITY_NONE;
-}
-#else
-#define DebugSecurityCalloutStress(a, b, c) do {} while(0)
-#endif //_DEBUG
-
 void CheckForEquivalenceAndLoadTypeBeforeCodeIsRun(Module *pModule, mdToken token, Module *pDefModule, mdToken defToken, const SigParser *ptr, SigTypeContext *pTypeContext, void *pData)
 {
     CONTRACTL
@@ -1776,37 +1747,6 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                     //see code:CEEInfo::getCallInfo for more information.
                     if (pCallerForSecurity->ContainsGenericVariables())
                         COMPlusThrowNonLocalized(kNotSupportedException, W("Cannot embed generic MethodDesc"));
-                }
-            }
-            else
-            {
-                CorInfoIsAccessAllowedResult isAccessAllowed = CORINFO_ACCESS_ALLOWED;
-                CorInfoSecurityRuntimeChecks runtimeChecks = CORINFO_ACCESS_SECURITY_NONE;
-
-                DebugSecurityCalloutStress(getMethodBeingCompiled(), isAccessAllowed, runtimeChecks);
-                if (isAccessAllowed == CORINFO_ACCESS_RUNTIME_CHECK)
-                {
-                    pResult->accessAllowed = isAccessAllowed;
-                    //Explain the callback to the JIT.
-                    pResult->accessCalloutHelper.helperNum = CORINFO_HELP_FIELD_ACCESS_CHECK;
-                    pResult->accessCalloutHelper.numArgs = 3;
-
-                    pResult->accessCalloutHelper.args[0].Set(CORINFO_METHOD_HANDLE(pCallerForSecurity));
-
-                    /* REVISIT_TODO Wed 4/8/2009
-                     * This field handle is not useful on its own.  We also need to embed the enclosing class
-                     * handle.
-                     */
-                    pResult->accessCalloutHelper.args[1].Set(CORINFO_FIELD_HANDLE(pField));
-
-                    pResult->accessCalloutHelper.args[2].Set(runtimeChecks);
-
-                    if (IsCompilingForNGen())
-                    {
-                        //see code:CEEInfo::getCallInfo for more information.
-                        if (pCallerForSecurity->ContainsGenericVariables())
-                            COMPlusThrowNonLocalized(kNotSupportedException, W("Cannot embed generic MethodDesc"));
-                    }
                 }
             }
         }
@@ -5149,35 +5089,6 @@ CorInfoIsAccessAllowedResult CEEInfo::canAccessClass(
             //see code:CEEInfo::getCallInfo for more information.
             if (pCallerForSecurity->ContainsGenericVariables() || pCalleeForSecurity.ContainsGenericVariables())
                 COMPlusThrowNonLocalized(kNotSupportedException, W("Cannot embed generic TypeHandle"));
-        }
-    }
-
-    if (isAccessAllowed == CORINFO_ACCESS_ALLOWED)
-    {
-        //Finally let's get me some transparency checks.
-        CorInfoSecurityRuntimeChecks runtimeChecks = CORINFO_ACCESS_SECURITY_NONE; 
-
-
-        DebugSecurityCalloutStress(getMethodBeingCompiled(), isAccessAllowed,
-                                   runtimeChecks);
-
-        if (isAccessAllowed != CORINFO_ACCESS_ALLOWED)
-        {
-            _ASSERTE(isAccessAllowed == CORINFO_ACCESS_RUNTIME_CHECK);
-            //Well, time for the runtime helper
-            pAccessHelper->helperNum = CORINFO_HELP_CLASS_ACCESS_CHECK;
-            pAccessHelper->numArgs = 3;
-
-            pAccessHelper->args[0].Set(CORINFO_METHOD_HANDLE(pCallerForSecurity));
-            pAccessHelper->args[1].Set(CORINFO_CLASS_HANDLE(pCalleeForSecurity.AsPtr()));
-            pAccessHelper->args[2].Set(runtimeChecks);
-
-            if (IsCompilingForNGen())
-            {
-                //see code:CEEInfo::getCallInfo for more information.
-                if (pCallerForSecurity->ContainsGenericVariables() || pCalleeForSecurity.ContainsGenericVariables())
-                    COMPlusThrowNonLocalized(kNotSupportedException, W("Cannot embed generic TypeHandle"));
-            }
         }
     }
 

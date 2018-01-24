@@ -492,13 +492,6 @@ COR_ILMETHOD_DECODER* MethodDesc::GetAndVerifyMetadataILHeader(PrepareCodeConfig
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
     }
 
-#ifdef _VER_EE_VERIFICATION_ENABLED 
-    static ConfigDWORD peVerify;
-
-    if (peVerify.val(CLRConfig::EXTERNAL_PEVerify))
-        m_pMethod->Verify(pHeader, TRUE, FALSE);   // Throws a VerifierException if verification fails
-#endif // _VER_EE_VERIFICATION_ENABLED
-
     return pHeader;
 }
 

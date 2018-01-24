@@ -46,13 +46,6 @@ Disp::Disp() : m_cRef(0)
     m_OptionValue.m_MergeOptions = MergeFlagsNone;
     m_OptionValue.m_InitialSize = MDInitialSizeDefault;
     m_OptionValue.m_LocalRefPreservation = MDPreserveLocalRefsNone;
-
-    // Allow Avalon to use the SecurityCriticalAttribute
-    if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_FORCE_ASSEMREF_DUPCHECK))
-    {
-        m_OptionValue.m_DupCheck = (CorCheckDuplicatesFor)(m_OptionValue.m_DupCheck|MDDupAssemblyRef);
-    }
-
 } // Disp::Disp
 
 Disp::~Disp()
