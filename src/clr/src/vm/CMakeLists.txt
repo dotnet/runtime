@@ -259,6 +259,7 @@ set(VM_SOURCES_WKS
 
 set(GC_SOURCES_WKS
     ${GC_SOURCES_DAC_AND_WKS_COMMON}
+    ../gc/gceventstatus.cpp
     ../gc/gcconfig.cpp
     ../gc/gccommon.cpp
     ../gc/gcscan.cpp

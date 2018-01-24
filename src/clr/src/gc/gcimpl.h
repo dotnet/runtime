@@ -230,6 +230,10 @@ public:	// FIX
     virtual segment_handle RegisterFrozenSegment(segment_info *pseginfo);
     virtual void UnregisterFrozenSegment(segment_handle seg);
 
+    // Event control functions
+    void ControlEvents(GCEventKeyword keyword, GCEventLevel level);
+    void ControlPrivateEvents(GCEventKeyword keyword, GCEventLevel level);
+
     void    WaitUntilConcurrentGCComplete ();                               // Use in managd threads
 #ifndef DACCESS_COMPILE    
     HRESULT WaitUntilConcurrentGCCompleteAsync(int millisecondsTimeout);    // Use in native threads. TRUE if succeed. FALSE if failed or timeout

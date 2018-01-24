@@ -80,6 +80,78 @@ HMODULE GCHeapUtilities::GetGCModule()
 namespace
 {
 
+// This block of code contains all of the state necessary to handle incoming
+// EtwCallbacks before the GC has been initialized. This is a tricky problem
+// because EtwCallbacks can appear at any time, even when we are just about
+// finished initializing the GC.
+//
+// The below lock is taken by the "main" thread (the thread in EEStartup) and
+// the "ETW" thread, the one calling EtwCallback. EtwCallback may or may not
+// be called on the main thread.
+DangerousNonHostedSpinLock g_eventStashLock;
+
+GCEventLevel g_stashedLevel = GCEventLevel_None;
+GCEventKeyword g_stashedKeyword = GCEventKeyword_None;
+GCEventLevel g_stashedPrivateLevel = GCEventLevel_None;
+GCEventKeyword g_stashedPrivateKeyword = GCEventKeyword_None;
+
+BOOL g_gcEventTracingInitialized = FALSE;
+
+// FinalizeLoad is called by the main thread to complete initialization of the GC.
+// At this point, the GC has provided us with an IGCHeap instance and we are preparing
+// to "publish" it by assigning it to g_pGCHeap.
+//
+// This function can proceed concurrently with StashKeywordAndLevel below.
+void FinalizeLoad(IGCHeap* gcHeap, IGCHandleManager* handleMgr, HMODULE gcModule)
+{
+    g_pGCHeap = gcHeap;
+
+    {
+        DangerousNonHostedSpinLockHolder lockHolder(&g_eventStashLock);
+
+        // Ultimately, g_eventStashLock ensures that no two threads call ControlEvents at any
+        // point in time.
+        g_pGCHeap->ControlEvents(g_stashedKeyword, g_stashedLevel);
+        g_pGCHeap->ControlPrivateEvents(g_stashedPrivateKeyword, g_stashedPrivateLevel);
+        g_gcEventTracingInitialized = TRUE;
+    }
+
+    g_pGCHandleManager = handleMgr;
+    g_gcDacGlobals = &g_gc_dac_vars;
+    g_gc_load_status = GC_LOAD_STATUS_LOAD_COMPLETE;
+    g_gc_module = gcModule;
+    LOG((LF_GC, LL_INFO100, "GC load successful\n"));
+}
+
+void StashKeywordAndLevel(bool isPublicProvider, GCEventKeyword keywords, GCEventLevel level)
+{
+    DangerousNonHostedSpinLockHolder lockHolder(&g_eventStashLock);
+    if (!g_gcEventTracingInitialized)
+    {
+        if (isPublicProvider)
+        {
+            g_stashedKeyword = keywords;
+            g_stashedLevel = level;
+        }
+        else
+        {
+            g_stashedPrivateKeyword = keywords;
+            g_stashedPrivateLevel = level;
+        }
+    }
+    else
+    {
+        if (isPublicProvider)
+        {
+            g_pGCHeap->ControlEvents(keywords, level);
+        }
+        else
+        {
+            g_pGCHeap->ControlPrivateEvents(keywords, level);
+        }
+    }
+}
+
 // Loads and initializes a standalone GC, given the path to the GC
 // that we should load. Returns S_OK on success and the failed HRESULT
 // on failure.
@@ -153,12 +225,7 @@ HRESULT LoadAndInitializeGC(LPWSTR standaloneGcLocation)
     HRESULT initResult = initFunc(gcToClr, &heap, &manager, &g_gc_dac_vars);
     if (initResult == S_OK)
     {
-        g_pGCHeap = heap;
-        g_pGCHandleManager = manager;
-        g_gcDacGlobals = &g_gc_dac_vars;
-        g_gc_load_status = GC_LOAD_STATUS_LOAD_COMPLETE;
-        g_gc_module = hMod;
-        LOG((LF_GC, LL_INFO100, "GC load successful\n"));
+        FinalizeLoad(heap, manager, hMod);
     }
     else
     {
@@ -198,12 +265,7 @@ HRESULT InitializeDefaultGC()
     HRESULT initResult = GC_Initialize(nullptr, &heap, &manager, &g_gc_dac_vars);
     if (initResult == S_OK)
     {
-        g_pGCHeap = heap;
-        g_pGCHandleManager = manager;
-        g_gcDacGlobals = &g_gc_dac_vars;
-        g_gc_load_status = GC_LOAD_STATUS_LOAD_COMPLETE;
-        g_gc_module = GetModuleInst();
-        LOG((LF_GC, LL_INFO100, "GC load successful\n"));
+        FinalizeLoad(heap, manager, GetModuleInst());
     }
     else
     {
@@ -242,6 +304,18 @@ HRESULT GCHeapUtilities::LoadAndInitialize()
     {
         return LoadAndInitializeGC(standaloneGcLocation);
     }
+}
+
+void GCHeapUtilities::RecordEventStateChange(bool isPublicProvider, GCEventKeyword keywords, GCEventLevel level)
+{
+    CONTRACTL {
+      MODE_ANY;
+      NOTHROW;
+      GC_NOTRIGGER;
+      CAN_TAKE_LOCK;
+    } CONTRACTL_END;
+
+    StashKeywordAndLevel(isPublicProvider, keywords, level);
 }
 
 #endif // DACCESS_COMPILE

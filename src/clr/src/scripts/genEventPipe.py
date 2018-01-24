@@ -130,6 +130,7 @@ def generateClrEventPipeWriteEventsImpl(
         WriteEventImpl.append("\n    return ERROR_SUCCESS;\n}\n\n")
 
     # EventPipeProvider and EventPipeEvent initialization
+    callbackName = 'EventPipeEtwCallback' + providerPrettyName
     if extern: WriteEventImpl.append('extern "C" ')
     WriteEventImpl.append(
         "void Init" +
@@ -140,7 +141,7 @@ def generateClrEventPipeWriteEventsImpl(
         providerPrettyName +
         " = EventPipe::CreateProvider(SL(" +
         providerPrettyName +
-        "Name));\n")
+        "Name), " + callbackName + ");\n")
     for eventNode in eventNodes:
         eventName = eventNode.getAttribute('symbol')
         templateName = eventNode.getAttribute('template')
