@@ -14,6 +14,8 @@
 #include "comcallablewrapper.h"
 #endif // FEATURE_COMINTEROP
 
+#include "gctoclreventsink.h"
+
 // the method table for the WeakReference class
 extern MethodTable* pWeakReferenceMT;
 

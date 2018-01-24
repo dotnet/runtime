@@ -187,4 +187,26 @@ private:
     GCEventStatus() = delete;
 };
 
+class GCDynamicEvent
+{
+    /* TODO(segilles) - Not Yet Implemented */
+};
+
+#if FEATURE_EVENT_TRACE
+#define KNOWN_EVENT(name, _provider, _level, _keyword)   \
+  inline bool GCEventEnabled##name() { return GCEventStatus::IsEnabled(_provider, _level, _keyword); }
+#include "gcevents.h"
+
+#define EVENT_ENABLED(name) GCEventEnabled##name()
+#define FIRE_EVENT(name, ...) \
+  do {                                                      \
+    IGCToCLREventSink* sink = GCToEEInterface::EventSink(); \
+    assert(sink != nullptr);                                \
+    sink->Fire##name(__VA_ARGS__);                          \
+  } while(0)
+#else
+#define EVENT_ENABLED(name) false
+#define FIRE_EVENT(name, ...) 0
+#endif // FEATURE_EVENT_TRACE
+
 #endif // __GCEVENTSTATUS_H__

@@ -1384,3 +1384,10 @@ void GCToEEInterface::WalkAsyncPinned(Object* object, void* context, void (*call
         }
     }
 }
+
+IGCToCLREventSink* GCToEEInterface::EventSink()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return &g_gcToClrEventSink;
+}
