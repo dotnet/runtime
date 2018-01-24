@@ -67,6 +67,10 @@ GPTR_IMPL(Debugger,         g_pDebugger);
 GPTR_IMPL(EEDebugInterface, g_pEEInterface);
 SVAL_IMPL_INIT(BOOL, Debugger, s_fCanChangeNgenFlags, TRUE);
 
+// This is a public export so debuggers can read and determine if the coreclr 
+// process is waiting for JIT debugging attach.
+GVAL_IMPL_INIT(ULONG, CLRJitAttachState, 0);
+
 bool g_EnableSIS = false;
 
 // The following instances are used for invoking overloaded new/delete
@@ -941,9 +945,7 @@ Debugger::Debugger()
 #endif //_DEBUG
     m_threadsAtUnsafePlaces(0),
     m_jitAttachInProgress(FALSE),
-    m_attachingForManagedEvent(FALSE),
     m_launchingDebugger(FALSE),
-    m_userRequestedDebuggerLaunch(FALSE),
     m_LoggingEnabled(TRUE),
     m_pAppDomainCB(NULL),
     m_dClassLoadCallbackCount(0),
@@ -6738,9 +6740,8 @@ DebuggerLaunchSetting Debugger::GetDbgJITDebugLaunchSetting()
 CLR_DEBUGGING_PROCESS_FLAGS Debugger::GetAttachStateFlags()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return (CLR_DEBUGGING_PROCESS_FLAGS)
-        ((m_attachingForManagedEvent ? CLR_DEBUGGING_MANAGED_EVENT_PENDING : 0)
-         | (m_userRequestedDebuggerLaunch ? CLR_DEBUGGING_MANAGED_EVENT_DEBUGGER_LAUNCH : 0));
+    ULONG flags = CLRJitAttachState;
+    return (CLR_DEBUGGING_PROCESS_FLAGS)flags;
 }
 
 #ifndef DACCESS_COMPILE
@@ -6965,9 +6966,8 @@ BOOL Debugger::PreJitAttach(BOOL willSendManagedEvent, BOOL willLaunchDebugger, 
         if (!m_jitAttachInProgress)
         {
             m_jitAttachInProgress = TRUE;
-            m_attachingForManagedEvent = willSendManagedEvent;
             m_launchingDebugger = willLaunchDebugger;
-            m_userRequestedDebuggerLaunch = explicitUserRequest;
+            CLRJitAttachState = (willSendManagedEvent ? CLR_DEBUGGING_MANAGED_EVENT_PENDING : 0) | (explicitUserRequest ? CLR_DEBUGGING_MANAGED_EVENT_DEBUGGER_LAUNCH : 0);
             ResetEvent(GetUnmanagedAttachEvent());
             ResetEvent(GetAttachEvent());
             LOG( (LF_CORDB, LL_INFO10000, "D::PreJA: Leaving - first thread\n") );
@@ -7139,9 +7139,9 @@ void Debugger::PostJitAttach()
 
     // clear the attaching flags which allows other threads to initiate jit attach if needed
     m_jitAttachInProgress = FALSE;
-    m_attachingForManagedEvent = FALSE;
     m_launchingDebugger = FALSE;
-    m_userRequestedDebuggerLaunch = FALSE;
+    CLRJitAttachState = 0;
+
     // set the attaching events to unblock other threads waiting on this attach
     // regardless of whether or not it completed
     SetEvent(GetUnmanagedAttachEvent());
