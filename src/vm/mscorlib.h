@@ -780,6 +780,8 @@ DEFINE_METHOD(UNSAFE,               PTR_ADD,                Add, GM_PtrVoid_Int_
 DEFINE_METHOD(UNSAFE,               BYREF_BYTE_OFFSET,      ByteOffset, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_ADD_BYTE_OFFSET,  AddByteOffset, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_ARE_SAME,         AreSame, NoSig)
+DEFINE_METHOD(UNSAFE,               BYREF_IS_ADDRESS_GREATER_THAN, IsAddressGreaterThan, NoSig)
+DEFINE_METHOD(UNSAFE,               BYREF_IS_ADDRESS_LESS_THAN, IsAddressLessThan, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_INIT_BLOCK_UNALIGNED, InitBlockUnaligned, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_READ_UNALIGNED,   ReadUnaligned, GM_RefByte_RetT)
 DEFINE_METHOD(UNSAFE,               BYREF_WRITE_UNALIGNED,  WriteUnaligned, GM_RefByte_T_RetVoid)
