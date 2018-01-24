@@ -58,7 +58,6 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
             var context = new DirectoryContext(type, name);
             if (!PlatformDetection.IsDomainJoinedMachine)
             {
-                Assert.Throws<ActiveDirectoryObjectNotFoundException>(() => Forest.GetForest(context));
                 Exception exception = Record.Exception(() => Forest.GetForest(context));
                 Assert.NotNull(exception);
                 Assert.True(exception is ActiveDirectoryObjectNotFoundException ||
