@@ -10,6 +10,7 @@ add_definitions(-DFEATURE_REDHAWK)
 set(SOURCES
     GCSample.cpp
     gcenv.ee.cpp
+    ../gceventstatus.cpp
     ../gcconfig.cpp
     ../gccommon.cpp
     ../gceewks.cpp

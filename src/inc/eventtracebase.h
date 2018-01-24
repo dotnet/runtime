@@ -251,6 +251,42 @@ public:
 
 #if defined(FEATURE_EVENT_TRACE)
 
+VOID EventPipeEtwCallbackDotNETRuntimeStress(
+    _In_ LPCGUID SourceId,
+    _In_ ULONG ControlCode,
+    _In_ UCHAR Level,
+    _In_ ULONGLONG MatchAnyKeyword,
+    _In_ ULONGLONG MatchAllKeyword,
+    _In_opt_ PVOID FilterData,
+    _Inout_opt_ PVOID CallbackContext);
+
+VOID EventPipeEtwCallbackDotNETRuntime(
+    _In_ LPCGUID SourceId,
+    _In_ ULONG ControlCode,
+    _In_ UCHAR Level,
+    _In_ ULONGLONG MatchAnyKeyword,
+    _In_ ULONGLONG MatchAllKeyword,
+    _In_opt_ PVOID FilterData,
+    _Inout_opt_ PVOID CallbackContext);
+
+VOID EventPipeEtwCallbackDotNETRuntimeRundown(
+    _In_ LPCGUID SourceId,
+    _In_ ULONG ControlCode,
+    _In_ UCHAR Level,
+    _In_ ULONGLONG MatchAnyKeyword,
+    _In_ ULONGLONG MatchAllKeyword,
+    _In_opt_ PVOID FilterData,
+    _Inout_opt_ PVOID CallbackContext);
+
+VOID EventPipeEtwCallbackDotNETRuntimePrivate(
+    _In_ LPCGUID SourceId,
+    _In_ ULONG ControlCode,
+    _In_ UCHAR Level,
+    _In_ ULONGLONG MatchAnyKeyword,
+    _In_ ULONGLONG MatchAllKeyword,
+    _In_opt_ PVOID FilterData,
+    _Inout_opt_ PVOID CallbackContext);
+
 #ifndef  FEATURE_PAL
 // Callback and stack support
 #if !defined(DONOT_DEFINE_ETW_CALLBACK) && !defined(DACCESS_COMPILE)

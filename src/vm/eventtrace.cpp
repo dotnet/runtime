@@ -4313,6 +4313,110 @@ void InitializeEventTracing()
     ETW::TypeSystemLog::PostRegistrationInit();
 }
 
+// Plumbing to funnel event pipe callbacks and ETW callbacks together into a single common
+// handler, for the purposes of informing the GC of changes to the event state.
+//
+// There is one callback for every EventPipe provider and one for all of ETW. The reason
+// for this is that ETW passes the registration handle of the provider that was enabled
+// as a field on the "CallbackContext" field of the callback, while EventPipe passes null
+// unless another token is given to it when the provider is constructed. In the absence of
+// a suitable token, this implementation has a different callback for every EventPipe provider
+// that ultimately funnels them all into a common handler.
+
+// CallbackProviderIndex provides a quick identification of which provider triggered the
+// ETW callback.
+enum CallbackProviderIndex
+{
+    DotNETRuntime = 0,
+    DotNETRuntimeRundown = 1,
+    DotNETRuntimeStress = 2,
+    DotNETRuntimePrivate = 3
+};
+
+// Common handler for all ETW or EventPipe event notifications. Based on the provider that
+// was enabled/disabled, this implementation forwards the event state change onto GCHeapUtilities
+// which will inform the GC to update its local state about what events are enabled.
+VOID EtwCallbackCommon(
+    CallbackProviderIndex ProviderIndex,
+    ULONG ControlCode,
+    UCHAR Level,
+    ULONGLONG MatchAnyKeyword)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    bool bIsPublicTraceHandle = ProviderIndex == DotNETRuntime;
+#if !defined(FEATURE_PAL)
+    static_assert(GCEventLevel_None == TRACE_LEVEL_NONE, "GCEventLevel_None value mismatch");
+    static_assert(GCEventLevel_Fatal == TRACE_LEVEL_FATAL, "GCEventLevel_Fatal value mismatch");
+    static_assert(GCEventLevel_Error == TRACE_LEVEL_ERROR, "GCEventLevel_Error value mismatch");
+    static_assert(GCEventLevel_Warning == TRACE_LEVEL_WARNING, "GCEventLevel_Warning mismatch");
+    static_assert(GCEventLevel_Information == TRACE_LEVEL_INFORMATION, "GCEventLevel_Information mismatch");
+    static_assert(GCEventLevel_Verbose == TRACE_LEVEL_VERBOSE, "GCEventLevel_Verbose mismatch");
+#endif // !defined(FEATURE_PAL)
+    GCEventKeyword keywords = static_cast<GCEventKeyword>(MatchAnyKeyword);
+    GCEventLevel level = static_cast<GCEventLevel>(Level);
+    GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
+}
+
+// Individual callbacks for each EventPipe provider.
+
+VOID EventPipeEtwCallbackDotNETRuntimeStress(
+    _In_ LPCGUID SourceId,
+    _In_ ULONG ControlCode,
+    _In_ UCHAR Level,
+    _In_ ULONGLONG MatchAnyKeyword,
+    _In_ ULONGLONG MatchAllKeyword,
+    _In_opt_ PVOID FilterData,
+    _Inout_opt_ PVOID CallbackContext)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    EtwCallbackCommon(DotNETRuntimeStress, ControlCode, Level, MatchAnyKeyword);
+}
+
+VOID EventPipeEtwCallbackDotNETRuntime(
+    _In_ LPCGUID SourceId,
+    _In_ ULONG ControlCode,
+    _In_ UCHAR Level,
+    _In_ ULONGLONG MatchAnyKeyword,
+    _In_ ULONGLONG MatchAllKeyword,
+    _In_opt_ PVOID FilterData,
+    _Inout_opt_ PVOID CallbackContext)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    EtwCallbackCommon(DotNETRuntime, ControlCode, Level, MatchAnyKeyword);
+}
+
+VOID EventPipeEtwCallbackDotNETRuntimeRundown(
+    _In_ LPCGUID SourceId,
+    _In_ ULONG ControlCode,
+    _In_ UCHAR Level,
+    _In_ ULONGLONG MatchAnyKeyword,
+    _In_ ULONGLONG MatchAllKeyword,
+    _In_opt_ PVOID FilterData,
+    _Inout_opt_ PVOID CallbackContext)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    EtwCallbackCommon(DotNETRuntimeRundown, ControlCode, Level, MatchAnyKeyword);
+}
+
+VOID EventPipeEtwCallbackDotNETRuntimePrivate(
+    _In_ LPCGUID SourceId,
+    _In_ ULONG ControlCode,
+    _In_ UCHAR Level,
+    _In_ ULONGLONG MatchAnyKeyword,
+    _In_ ULONGLONG MatchAllKeyword,
+    _In_opt_ PVOID FilterData,
+    _Inout_opt_ PVOID CallbackContext)
+{
+    WRAPPER_NO_CONTRACT;
+
+    EtwCallbackCommon(DotNETRuntimePrivate, ControlCode, Level, MatchAnyKeyword);
+}
+
+
 #if !defined(FEATURE_PAL)
 HRESULT ETW::CEtwTracer::Register()
 {
@@ -4397,7 +4501,6 @@ extern "C"
 
 extern "C"
 {
-
     // #EtwCallback:
     // During the build, MC generates the code to register our provider, and to register
     // our ETW callback. (This is buried under Intermediates, in a path like
@@ -4446,12 +4549,30 @@ extern "C"
 
         BOOLEAN bIsRundownTraceHandle = (context->RegistrationHandle==Microsoft_Windows_DotNETRuntimeRundownHandle);
 
-		// TypeSystemLog needs a notification when certain keywords are modified, so
-		// give it a hook here.
-		if (g_fEEStarted && !g_fEEShutDown && bIsPublicTraceHandle)
-		{
-			ETW::TypeSystemLog::OnKeywordsChanged();
-		}
+        // EventPipeEtwCallback contains some GC eventing functionality shared between EventPipe and ETW.
+        // Eventually, we'll want to merge these two codepaths whenever we can.
+        CallbackProviderIndex providerIndex = DotNETRuntime;
+        if (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimeHandle) {
+            providerIndex = DotNETRuntime;
+        } else if (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimeRundownHandle) {
+            providerIndex = DotNETRuntimeRundown;
+        } else if (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimeStressHandle) {
+            providerIndex = DotNETRuntimeStress;
+        } else if (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimePrivateHandle) {
+            providerIndex = DotNETRuntimePrivate;
+        } else {
+            assert(!"unknown registration handle");
+            return;
+        }
+
+        EtwCallbackCommon(providerIndex, ControlCode, Level, MatchAnyKeyword);
+
+        // TypeSystemLog needs a notification when certain keywords are modified, so
+        // give it a hook here.
+        if (g_fEEStarted && !g_fEEShutDown && bIsPublicTraceHandle)
+        {
+            ETW::TypeSystemLog::OnKeywordsChanged();
+        }
 
         // A manifest based provider can be enabled to multiple event tracing sessions
         // As long as there is atleast 1 enabled session, IsEnabled will be TRUE
