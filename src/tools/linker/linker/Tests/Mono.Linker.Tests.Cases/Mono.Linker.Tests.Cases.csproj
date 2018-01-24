@@ -60,7 +60,9 @@
     <Compile Include="Basic\NestedDelegateInvokeMethodsPreserved.cs" />
     <Compile Include="Basic\UninvokedInterfaceMemberGetsRemoved.cs" />
     <Compile Include="Basic\UnusedDelegateGetsRemoved.cs" />
+    <Compile Include="Basic\UnusedEnumGetsRemoved.cs" />
     <Compile Include="Basic\UnusedEventGetsRemoved.cs" />
+    <Compile Include="Basic\UsedEnumIsKept.cs" />
     <Compile Include="Basic\UsedEventOnInterfaceIsKept.cs" />
     <Compile Include="Basic\UnusedFieldGetsRemoved.cs" />
     <Compile Include="Basic\UnusedMethodGetsRemoved.cs" />
