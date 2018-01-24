@@ -9,6 +9,7 @@ using System.Diagnostics;
 namespace System.Reflection
 {
 #if CORERT
+    [System.Runtime.CompilerServices.ReflectionBlocked]
     public // Needs to be public so that Reflection.Core can see it.
 #else
     internal
