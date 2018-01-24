@@ -169,9 +169,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\DefaultInterfaceMethods\diamondshape\diamondshape\*">
             <Issue>15591</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\DefaultInterfaceMethods\sharedgenerics\sharedgenerics\*">
-            <Issue>15591</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\DefaultInterfaceMethods\constrainedcall\constrainedcall\*">
             <Issue>15353</Issue>
         </ExcludeList>
