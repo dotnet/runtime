@@ -42,13 +42,15 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 			var assemblyName = metadataProvider.GetAssemblyName ();
 
-			var references = metadataProvider.GetReferencedAssemblies(sandbox.InputDirectory);
+			var commonReferences = metadataProvider.GetCommonReferencedAssemblies(sandbox.InputDirectory).ToArray ();
+			var mainAssemblyReferences = metadataProvider.GetReferencedAssemblies(sandbox.InputDirectory).ToArray ();
 			var resources = sandbox.ResourceFiles.ToArray ();
 			var additionalArguments = metadataProvider.GetSetupCompilerArguments ().ToArray ();
-			var inputAssemblyPath = compiler.CompileTestIn (sandbox.InputDirectory, assemblyName, sourceFiles, references, null, resources, additionalArguments);
+			var inputAssemblyPath = compiler.CompileTestIn (sandbox.InputDirectory, assemblyName, sourceFiles, commonReferences, mainAssemblyReferences, null, resources, additionalArguments);
 
-			references = metadataProvider.GetReferencedAssemblies(sandbox.ExpectationsDirectory);
-			var expectationsAssemblyPath = compiler.CompileTestIn (sandbox.ExpectationsDirectory, assemblyName, sourceFiles, references, new [] { "INCLUDE_EXPECTATIONS" }, resources, additionalArguments);
+			commonReferences = metadataProvider.GetCommonReferencedAssemblies(sandbox.ExpectationsDirectory).ToArray ();
+			mainAssemblyReferences = metadataProvider.GetReferencedAssemblies(sandbox.ExpectationsDirectory).ToArray ();
+			var expectationsAssemblyPath = compiler.CompileTestIn (sandbox.ExpectationsDirectory, assemblyName, sourceFiles,  commonReferences, mainAssemblyReferences, new [] { "INCLUDE_EXPECTATIONS" }, resources, additionalArguments);
 			return new ManagedCompilationResult (inputAssemblyPath, expectationsAssemblyPath);
 		}
 

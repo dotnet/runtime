@@ -10,6 +10,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		public string Il8n;
 		public bool IncludeBlacklistStep;
 		public string KeepTypeForwarderOnlyAssemblies;
+		public string LinkSymbols;
 
 		public List<KeyValuePair<string, string[]>> AdditionalArguments = new List<KeyValuePair<string, string[]>> ();
 	}

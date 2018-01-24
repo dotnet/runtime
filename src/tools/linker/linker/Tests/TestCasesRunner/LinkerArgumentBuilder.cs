@@ -52,6 +52,12 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			if (bool.Parse (value))
 				Append ("-t");
 		}
+		
+		public virtual void AddLinkSymbols (string value)
+		{
+			Append ("-b");
+			Append (value);
+		}
 
 		public virtual void AddAssemblyAction (string action, string assembly)
 		{
@@ -98,6 +104,9 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 			if (!string.IsNullOrEmpty (options.KeepTypeForwarderOnlyAssemblies))
 				AddKeepTypeForwarderOnlyAssemblies (options.KeepTypeForwarderOnlyAssemblies);
+			
+			if (!string.IsNullOrEmpty (options.LinkSymbols))
+				AddLinkSymbols (options.LinkSymbols);
 
 			// Unity uses different argument format and needs to be able to translate to their format.  In order to make that easier
 			// we keep the information in flag + values format for as long as we can so that this information doesn't have to be parsed out of a single string

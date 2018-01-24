@@ -67,7 +67,14 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			CopyToInputAndExpectations (GetExpectationsAssemblyPath ());
 
 			foreach (var dep in metadataProvider.AdditionalFilesToSandbox ()) {
-				dep.Source.FileMustExist ().Copy (_directory.Combine (dep.DestinationFileName));
+				var destination = _directory.Combine (dep.DestinationFileName);
+				dep.Source.FileMustExist ().Copy (destination);
+
+				// In a few niche tests we need to copy pre-built assemblies directly into the input directory.
+				// When this is done, we also need to copy them into the expectations directory so that if they are used
+				// as references we can still compile the expectations version of the assemblies
+				if (destination.Parent == InputDirectory)
+					dep.Source.Copy (ExpectationsDirectory.Combine (destination.RelativeTo (InputDirectory)));
 			}
 
 			foreach (var res in metadataProvider.GetResources ()) {
