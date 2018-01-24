@@ -15,6 +15,9 @@ namespace System.Net.Http.Functional.Tests
         protected virtual Stream GetStream(Stream s) => s;
 
         [Theory]
+        // The following disabled by ActiveIssue: 26540
+        // [InlineData("HTTP/1.1 200      ", 200, "     ")]
+        // [InlineData("HTTP/1.1 200      Something", 200, "     Something")]
         [InlineData("HTTP/1.1 200 OK", 200, "OK")]
         [InlineData("HTTP/1.1 200 Sure why not?", 200, "Sure why not?")]
         [InlineData("HTTP/1.1 200 OK\x0080", 200, "OK?")]
@@ -27,17 +30,24 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("HTTP/1.1 500 Internal Server Error", 500, "Internal Server Error")]
         [InlineData("HTTP/1.1 555 we just don't like you", 555, "we just don't like you")]
         [InlineData("HTTP/1.1 600 still valid", 600, "still valid")]
-        // TODO #24713: The following pass on Windows on .NET Core but fail on .NET Framework.
-        //[InlineData("HTTP/1.1 200      ", 200, "")]
-        //[InlineData("HTTP/1.1 200      Something", 200, "Something")]
-        //[InlineData("HTTP/1.1\t200 OK", 200, "OK")]
-        //[InlineData("HTTP/1.1 200\tOK", 200, "OK")]
-        //[InlineData("HTTP/1.1 200", 200, "")]
-        //[InlineData("HTTP/1.1 200\t", 200, "")]
-        //[InlineData("HTTP/1.1 200 O\tK", 200, "O\tK")]
-        //[InlineData("HTTP/1.1 200 O    \t\t  \t\t\t\t  \t K", 200, "O    \t\t  \t\t\t\t  \t K")]
-        //[InlineData("HTTP/1.1 999 this\ttoo\t", 999, "this\ttoo\t")]
         public async Task GetAsync_ExpectedStatusCodeAndReason_Success(string statusLine, int expectedStatusCode, string expectedReason)
+        {
+            await GetAsyncSuccessHelper(statusLine, expectedStatusCode, expectedReason);
+        }
+
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The following pass on .NET Core but fail on .NET Framework.")]
+        [InlineData("HTTP/1.1 200", 200, "")] // This test data requires the fix in .NET Framework 4.7.3
+        [InlineData("HTTP/1.1 200 O\tK", 200, "O\tK")]
+        [InlineData("HTTP/1.1 200 O    \t\t  \t\t\t\t  \t K", 200, "O    \t\t  \t\t\t\t  \t K")]
+        // TODO #24713: The following pass on Windows but fail on CurlHandler on Linux.
+        // [InlineData("HTTP/1.1 999 this\ttoo\t", 999, "this\ttoo\t")]
+        public async Task GetAsync_StatusLineNotFollowRFC_SuccessOnCore(string statusLine, int expectedStatusCode, string expectedReason)
+        {
+            await GetAsyncSuccessHelper(statusLine, expectedStatusCode, expectedReason);
+        }
+
+        private async Task GetAsyncSuccessHelper(string statusLine, int expectedStatusCode, string expectedReason)
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
@@ -64,6 +74,10 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("HTTP/1.1 2345")]
         [InlineData("HTTP/A.1 200 OK")]
         [InlineData("HTTP/X.Y.Z 200 OK")]
+        // The following disabled by ActiveIssue: 26542
+        //[InlineData("HTTP/1.1\t200 OK")]
+        //[InlineData("HTTP/1.1 200\tOK")]
+        //[InlineData("HTTP/1.1 200\t")]
         // TODO #24713: The following pass on Windows on .NET Core but fail on .NET Framework.
         //[InlineData("HTTP/0.1 200 OK")]
         //[InlineData("HTTP/3.5 200 OK")]
