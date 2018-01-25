@@ -3771,10 +3771,8 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
         case SIMDIntrinsicCast:
         case SIMDIntrinsicConvertToSingle:
         case SIMDIntrinsicConvertToInt32:
-        case SIMDIntrinsicConvertToUInt32:
         case SIMDIntrinsicConvertToDouble:
         case SIMDIntrinsicConvertToInt64:
-        case SIMDIntrinsicConvertToUInt64:
             genSIMDIntrinsicUnOp(simdNode);
             break;
 
@@ -3917,10 +3915,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             case SIMDIntrinsicConvertToInt32:
             case SIMDIntrinsicConvertToInt64:
                 result = INS_fcvtns;
-                break;
-            case SIMDIntrinsicConvertToUInt32:
-            case SIMDIntrinsicConvertToUInt64:
-                result = INS_fcvtnu;
                 break;
             case SIMDIntrinsicDiv:
                 result = INS_fdiv;
@@ -4199,10 +4193,8 @@ void CodeGen::genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode)
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicAbs ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicConvertToSingle ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicConvertToInt32 ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicConvertToUInt32 ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicConvertToDouble ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicConvertToInt64 ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicConvertToUInt64);
+           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicConvertToInt64);
 
     GenTree*  op1       = simdNode->gtGetOp1();
     var_types baseType  = simdNode->gtSIMDBaseType;
