@@ -34,8 +34,11 @@ namespace System.Net.Http
                     return true;
                 }
 
-                // Indicates end of response body. We expect final CRLF after this.
-                await _connection.ReadCrLfAsync(cancellationToken).ConfigureAwait(false);
+                // We received a chunk size of 0, which indicates end of response body. 
+                // Read and discard any trailing headers, until we see an empty line.
+                while (!LineIsEmpty(await _connection.ReadNextLineAsync(cancellationToken).ConfigureAwait(false)))
+                    ;
+
                 _connection.ReturnConnectionToPool();
                 _connection = null;
                 return false;
@@ -43,6 +46,11 @@ namespace System.Net.Http
 
             private ulong ParseHexSize(ArraySegment<byte> line)
             {
+                if (line.Count == 0)
+                {
+                    throw new IOException(SR.net_http_invalid_response);
+                }
+
                 ulong size = 0;
                 try
                 {
@@ -63,10 +71,6 @@ namespace System.Net.Http
                         }
                         else
                         {
-                            if (c == '\r' && i > 0)
-                            {
-                                break;
-                            }
                             throw new IOException(SR.net_http_invalid_response);
                         }
                     }
@@ -84,7 +88,7 @@ namespace System.Net.Http
                 _chunkBytesRemaining -= bytesConsumed;
                 if (_chunkBytesRemaining == 0)
                 {
-                    await _connection.ReadCrLfAsync(cancellationToken).ConfigureAwait(false);
+                    await _connection.ReadEmptyLineAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
 

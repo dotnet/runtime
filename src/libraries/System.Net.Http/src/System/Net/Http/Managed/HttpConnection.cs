@@ -407,12 +407,8 @@ namespace System.Net.Http
                         // And if this was 100 continue, deal with the extra headers.
                         if (response.StatusCode == HttpStatusCode.Continue)
                         {
-                            // We got our continue header.  Read the subsequent \r\n and parse the additional status line.
-                            if (!LineIsEmpty(await ReadNextLineAsync(cancellationToken).ConfigureAwait(false)))
-                            {
-                                ThrowInvalidHttpResponse();
-                            }
-
+                            // We got our continue header.  Read the subsequent empty line and parse the additional status line.
+                            await ReadEmptyLineAsync(cancellationToken).ConfigureAwait(false);
                             ParseStatusLine(await ReadNextLineAsync(cancellationToken).ConfigureAwait(false), response);
                         }
                     }
@@ -511,8 +507,7 @@ namespace System.Net.Http
 
         private static bool LineIsEmpty(ArraySegment<byte> line)
         {
-            Debug.Assert(line.Count >= 2, "Lines should always be \r\n terminated.");
-            return line.Count == 2;
+            return line.Count == 0;
         }
 
         private async Task SendRequestContentAsync(Task copyTask, HttpContentWriteStream stream)
@@ -572,7 +567,7 @@ namespace System.Net.Http
             // We sent the request version as either 1.0 or 1.1.
             // We expect a response version of the form 1.X, where X is a single digit as per RFC.
 
-            if (line.Length < 14 || // "HTTP/1.1 123\r\n" with optional phrase before the crlf
+            if (line.Length < 12 || // "HTTP/1.1 123" with optional phrase 
                 line[0] != 'H' ||
                 line[1] != 'T' ||
                 line[2] != 'T' ||
@@ -604,18 +599,17 @@ namespace System.Net.Http
                 (HttpStatusCode)(100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0'));
 
             // Parse (optional) reason phrase
-            byte c = line[12];
-            if (c == '\r')
+            if (line.Length == 12)
             {
                 response.ReasonPhrase = string.Empty;
             }
-            else if (c != ' ')
+            else if (line[12] != ' ')
             {
                 ThrowInvalidHttpResponse();
             }
             else
             {
-                Span<byte> reasonBytes = line.Slice(13, line.Length - 13 - 2); // 2 == \r\n ending trimmed off
+                Span<byte> reasonBytes = line.Slice(13);
                 string knownReasonPhrase = HttpStatusDescription.Get(response.StatusCode);
                 if (knownReasonPhrase != null && EqualsOrdinal(knownReasonPhrase, reasonBytes))
                 {
@@ -623,20 +617,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    unsafe
-                    {
-                        try
-                        {
-                            fixed (byte* reasonPtr = &MemoryMarshal.GetReference(reasonBytes))
-                            {
-                                response.ReasonPhrase = Encoding.ASCII.GetString(reasonPtr, reasonBytes.Length);
-                            }
-                        }
-                        catch (FormatException e)
-                        {
-                            ThrowInvalidHttpResponse(e);
-                        }
-                    }
+                    response.ReasonPhrase = Encoding.ASCII.GetString(reasonBytes);
                 }
             }
         }
@@ -649,6 +630,8 @@ namespace System.Net.Http
 
         private void ParseHeaderNameValue(Span<byte> line, HttpResponseMessage response)
         {
+            Debug.Assert(line.Length > 0);
+
             int pos = 0;
             while (line[pos] != (byte)':' && line[pos] != (byte)' ')
             {
@@ -665,8 +648,6 @@ namespace System.Net.Http
                 // Ignore invalid empty header name.
                 return;
             }
-
-            // CONSIDER: trailing whitespace?
 
             if (!HeaderDescriptor.TryGet(line.Slice(0, pos), out HeaderDescriptor descriptor))
             {
@@ -692,12 +673,12 @@ namespace System.Net.Http
             }
 
             // Skip whitespace after colon
-            while (pos < line.Length && (line[pos] == (byte)' ' || line[pos] == '\t'))
+            while (pos < line.Length && (line[pos] == (byte)' ' || line[pos] == (byte)'\t'))
             {
                 pos++;
             }
 
-            string headerValue = descriptor.GetHeaderValue(line.Slice(pos, line.Length - pos - 2));     // trim trailing \r\n
+            string headerValue = descriptor.GetHeaderValue(line.Slice(pos));
 
             // Note we ignore the return value from TryAddWithoutValidation; 
             // if the header can't be added, we silently drop it.
@@ -933,54 +914,37 @@ namespace System.Net.Http
 
         private async ValueTask<ArraySegment<byte>> ReadNextLineAsync(CancellationToken cancellationToken)
         {
-            int searchOffset = 0;
+            int previouslyScannedBytes = 0;
             while (true)
             {
-                int startIndex = _readOffset + searchOffset;
-                int length = _readLength - startIndex;
-                int crPos = Array.IndexOf(_readBuffer, (byte)'\r', startIndex, length);
-                if (crPos < 0)
+                int scanOffset = _readOffset + previouslyScannedBytes;
+                int endIndex = Array.IndexOf(_readBuffer, (byte)'\n', scanOffset, _readLength - scanOffset);
+                if (endIndex >= 0)
                 {
-                    // Couldn't find a \r.  Read more.
-                    searchOffset = length;
-                    await FillAsync(cancellationToken).ConfigureAwait(false);
+                    int startIndex = _readOffset;
+                    _readOffset = endIndex + 1;
+
+                    if (endIndex > startIndex && _readBuffer[endIndex - 1] == '\r')
+                    {
+                        endIndex--;
+                    }
+
+                    return new ArraySegment<byte>(_readBuffer, startIndex, endIndex - startIndex);
                 }
-                else if (crPos + 1 >= _readLength)
-                {
-                    // We found a \r, but we don't have enough data buffered to read the \n.
-                    searchOffset = length - 1;
-                    await FillAsync(cancellationToken).ConfigureAwait(false);
-                }
-                else if (_readBuffer[crPos + 1] == '\n')
-                {
-                    // We found a \r\n.  Return the data up to and including it.
-                    int lineLength = crPos - _readOffset + 2;
-                    var result = new ArraySegment<byte>(_readBuffer, _readOffset, lineLength);
-                    _readOffset += lineLength;
-                    return result;
-                }
-                else
-                {
-                    ThrowInvalidHttpResponse();
-                }
+
+                // Couldn't find LF.  Read more.
+                // Note this may cause _readOffset to change.
+                previouslyScannedBytes = _readLength - _readOffset;
+                await FillAsync(cancellationToken).ConfigureAwait(false);
             }
         }
 
-        private async Task ReadCrLfAsync(CancellationToken cancellationToken)
+        private async Task ReadEmptyLineAsync(CancellationToken cancellationToken)
         {
-            while (_readLength - _readOffset < 2)
-            {
-                // We have fewer than 2 chars buffered.  Get more.
-                await FillAsync(cancellationToken).ConfigureAwait(false);
-            }
-
-            // We expect \r\n.  If so, consume them.  If not, it's an error.
-            if (_readBuffer[_readOffset] != '\r' || _readBuffer[_readOffset + 1] != '\n')
+            if (!LineIsEmpty(await ReadNextLineAsync(cancellationToken).ConfigureAwait(false)))
             {
                 ThrowInvalidHttpResponse();
             }
-
-            _readOffset += 2;
         }
 
         // Throws IOException on EOF.  This is only called when we expect more data.

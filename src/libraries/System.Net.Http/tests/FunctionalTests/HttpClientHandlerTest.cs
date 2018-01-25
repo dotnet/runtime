@@ -1159,15 +1159,15 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ActiveIssue(17174, TestPlatforms.AnyUnix)] // https://github.com/curl/curl/issues/1354
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task GetAsync_TrailingHeaders_Ignored(bool includeTrailerHeader)
         {
-            if (UseManagedHandler)
+            if (IsCurlHandler)
             {
-                // TODO #23130: The managed handler isn't correctly handling trailing headers.
+                // ActiveIssue #17174: CurlHandler has a problem here
+                // https://github.com/curl/curl/issues/1354
                 return;
             }
 
