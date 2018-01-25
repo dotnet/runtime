@@ -262,19 +262,24 @@ class Constants {
                'tailcallstress':                         ["TAILCALLSTRESS_FAIL", "TAILCALLSTRESS_EXCLUDE"],
                // 'jitsse2only'                          // Only relevant to xarch
                'jitnosimd':                              [],    // Only interesting on platforms where SIMD support exists.
-               // 'corefx_baseline'
-               // 'corefx_minopts'
-               // 'corefx_tieredcompilation'
-               // 'corefx_jitstress1'
-               // 'corefx_jitstress2'
-               // 'corefx_jitstressregs1'
-               // 'corefx_jitstressregs2'
-               // 'corefx_jitstressregs3'
-               // 'corefx_jitstressregs4'
-               // 'corefx_jitstressregs8'
-               // 'corefx_jitstressregs0x10'
-               // 'corefx_jitstressregs0x80'
-               // 'corefx_jitstressregs0x1000'
+               // 'jitincompletehwintrinsic'
+               // 'jitx86hwintrinsicnoavx'
+               // 'jitx86hwintrinsicnoavx2'
+               // 'jitx86hwintrinsicnosimd'
+               // 'jitnox86hwintrinsic'
+               'corefx_baseline':                        [],    // corefx tests don't use smarty
+               'corefx_minopts':                         [],    // corefx tests don't use smarty
+               'corefx_tieredcompilation':               [],    // corefx tests don't use smarty
+               'corefx_jitstress1':                      [],    // corefx tests don't use smarty
+               'corefx_jitstress2':                      [],    // corefx tests don't use smarty
+               'corefx_jitstressregs1':                  [],    // corefx tests don't use smarty
+               'corefx_jitstressregs2':                  [],    // corefx tests don't use smarty
+               'corefx_jitstressregs3':                  [],    // corefx tests don't use smarty
+               'corefx_jitstressregs4':                  [],    // corefx tests don't use smarty
+               'corefx_jitstressregs8':                  [],    // corefx tests don't use smarty
+               'corefx_jitstressregs0x10':               [],    // corefx tests don't use smarty
+               'corefx_jitstressregs0x80':               [],    // corefx tests don't use smarty
+               'corefx_jitstressregs0x1000':             [],    // corefx tests don't use smarty
                'gcstress0x3':                            ["GCSTRESS_FAIL", "GCSTRESS_EXCLUDE"],
                'gcstress0xc':                            ["GCSTRESS_FAIL", "GCSTRESS_EXCLUDE"],
                'zapdisable':                             ["ZAPDISABLE_FAIL", "ZAPDISABLE_EXCLUDE"],
@@ -1951,13 +1956,13 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         buildCommands += "powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${arch}.${configuration}', '.\\bin\\tests\\tests.zip')\"";
 
                         if (!isJitStressScenario(scenario)) {
-                            // For windows, pull full test results and test drops for x86/x64.
+                            // For Windows, pull full test results and test drops for x86/x64.
                             // No need to pull for stress mode scenarios (downstream builds use the default scenario)
                             Utilities.addArchival(newJob, "bin/Product/**,bin/tests/tests.zip", "bin/Product/**/.nuget/**")
                         }
 
                         if (scenario == 'jitdiff') {
-                            // retrive jit-dasm output for base commit, and run jit-diff
+                            // retrieve jit-dasm output for base commit, and run jit-diff
                             if (!isBuildOnly) {
                                 // if this is a build only job, we want to keep the default (build) artifacts for the flow job
                                 Utilities.addArchival(newJob, "bin/tests/${osGroup}.${arch}.${configuration}/dasm/**")
@@ -1978,22 +1983,65 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 
                     def buildArchitecture = 'arm'
 
+                    def buildOpts = ''
+
                     // For 'armlb' (the JIT LEGACY_BACKEND architecture for arm), tell build.cmd to use legacy backend for crossgen compilation.
                     // Legacy backend is not the default JIT; it is an aljit. So, this is a special case.
-                    def armCrossgenOpt = ''
                     if (architecture == 'armlb') {
-                        armCrossgenOpt = '-crossgenaltjit legacyjit.dll'
+                        buildOpts += ' -crossgenaltjit legacyjit.dll'
+                    }
+
+                    if (enableCorefxTesting) {
+                        // We shouldn't need to build the tests. However, run-corefx-tests.py currently depends on having the restored corefx
+                        // package available, to determine the correct corefx version git commit hash, and we need to build the tests before
+                        // running "tests\\runtest.cmd GenerateLayoutOnly". So build the pri-0 tests to make this happen.
+                        //
+                        // buildOpts += ' skiptests';
+                        buildOpts += " -priority=0"
+                    } else {
+                        buildOpts += " -priority=${priority}"
                     }
 
                     // This is now a build only job. Do not run tests. Use the flow job.
-                    buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${buildArchitecture} -priority=${priority} ${armCrossgenOpt}"
-                    
-                    // Zip up the tests directory so that we don't use so much space/time copying
-                    // 10s of thousands of files around.
-                    buildCommands += "powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${buildArchitecture}.${configuration}', '.\\bin\\tests\\tests.zip')\"";
+                    buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${buildArchitecture} ${buildOpts}"
 
-                    // Add archival.
-                    Utilities.addArchival(newJob, "bin/Product/**,bin/tests/tests.zip", "bin/Product/**/.nuget/**")
+                    if (enableCorefxTesting) {
+                        assert isBuildOnly
+                        assert architecture == 'arm'
+
+                        // Generate the test layout because it restores the corefx package which allows run-corefx-tests.py
+                        // to determine the correct matching corefx version git commit hash.
+                        buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture} GenerateLayoutOnly"
+
+                        // Set the stress mode variables; this is incorporated into the generated CoreFx RunTests.cmd files.
+                        def envScriptPath = ''
+                        def buildCommandsStr = ''
+                        envScriptPath = "%WORKSPACE%\\SetStressModes.bat"
+                        buildCommandsStr += envScriptCreate(os, envScriptPath)
+                        buildCommandsStr += envScriptSetStressModeVariables(os, Constants.jitStressModeScenarios[scenario], envScriptPath)
+                        envScriptFinalize(os, envScriptPath)
+                        buildCommands += buildCommandsStr
+
+                        def workspaceRelativeFxRootLinux = "_/fx"
+                        def workspaceRelativeFxRootWin = "_\\fx"
+                        def absoluteFxRoot = "%WORKSPACE%\\_\\fx"
+
+                        buildCommands += "python -u %WORKSPACE%\\tests\\scripts\\run-corefx-tests.py -arch ${architecture} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${branch} -env_script ${envScriptPath} -no_run_tests"
+
+                        // Zip up the CoreFx runtime and tests. We don't need the CoreCLR binaries; they have been copied to the CoreFX tree.
+                        buildCommands += "powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('${workspaceRelativeFxRootWin}\\bin\\testhost\\netcoreapp-Windows_NT-Release-arm', '${workspaceRelativeFxRootWin}\\fxruntime.zip')\"";
+                        buildCommands += "powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('${workspaceRelativeFxRootWin}\\bin\\tests', '${workspaceRelativeFxRootWin}\\fxtests.zip')\"";
+
+                        Utilities.addArchival(newJob, "${workspaceRelativeFxRootLinux}/fxruntime.zip")
+                        Utilities.addArchival(newJob, "${workspaceRelativeFxRootLinux}/fxtests.zip")
+                    } else {
+                        // Zip up the tests directory so that we don't use so much space/time copying
+                        // 10s of thousands of files around.
+                        buildCommands += "powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${buildArchitecture}.${configuration}', '.\\bin\\tests\\tests.zip')\"";
+
+                        // Add archival.
+                        Utilities.addArchival(newJob, "bin/Product/**,bin/tests/tests.zip", "bin/Product/**/.nuget/**")
+                    }
                     break
                 case 'arm64':
                     assert isArmWindowsScenario(scenario)
@@ -2237,7 +2285,7 @@ Constants.allScenarios.each { scenario ->
                         // Since these are just execution time differences,
                         // skip platforms that don't execute the tests here (Windows_NT only)
                         def isEnabledOS = (os == 'Windows_NT') || (os == 'Ubuntu' && isCoreFxScenario(scenario))
-                        if (!isEnabledOS || isBuildOnly) {
+                        if (!isEnabledOS) {
                             return
                         }
 
@@ -2250,11 +2298,20 @@ Constants.allScenarios.each { scenario ->
                                 if ((os == 'Ubuntu') && (architecture == 'x86')) {
                                     return
                                 }
-                                // Windows: Everything implemented
+                                if (isBuildOnly) {
+                                    return
+                                }
+                                break
+
+                            case 'arm':
+                                // We use build only jobs for Windows arm cross-compilation corefx testing, so we need to generate builds for that.
+                                if (!isBuildOnly || !isCoreFxScenario(scenario)) {
+                                    return
+                                }
                                 break
 
                             default:
-                                // arm, arm64, armlb: stress is handled through flow jobs.
+                                // arm64, armlb: stress is handled through flow jobs.
                                 return
                         }
                     }
@@ -2543,8 +2600,9 @@ Constants.allScenarios.each { scenario ->
                         if (configuration != 'Checked') {
                             return
                         }
-                        // CoreFx JIT stress tests currently not implemented for flow jobs.
-                        if (isCoreFxScenario(scenario)) {
+
+                        // CoreFx JIT stress tests currently only implemented for ARM.
+                        if (isCoreFxScenario(scenario) && (architecture != 'arm')) {
                             return
                         }
                     }
@@ -2612,131 +2670,144 @@ Constants.allScenarios.each { scenario ->
 
                     // Done filtering. Now, create the jobs.
 
+                    // =============================================================================================
+                    // Create the test job
+                    // =============================================================================================
+
+                    def windowsArmJob = (os == "Windows_NT" && architecture in validWindowsNTCrossArches)
+
                     def lowerConfiguration = configuration.toLowerCase()
                     def osGroup = getOSGroup(os)
                     def jobName = getJobName(configuration, architecture, os, scenario, false) + "_tst"
 
-                    def buildScenario = scenario == 'innerloop' ? 'innerloop' : 'normal'
-
-                    def inputCoreCLRBuildName = projectFolder + '/' +
-                        Utilities.getFullJobName(project, getJobName(configuration, architecture, os, buildScenario, false), isPR)
-
-                    // If this is a stress scenario, there isn't any difference in the build job, so we didn't create a build only
-                    // job for Windows_NT specific to that stress mode. Just copy from the default scenario.
-                    def testBuildScenario = scenario == 'innerloop' ? 'innerloop' : 'normal'
-                    def inputWindowsTestBuildArch = architecture
-                    if (architecture == "arm64" && os != "Windows_NT") {
-                        // Use the x64 test build for arm64 unix
-                        inputWindowsTestBuildArch = "x64"
+                    def inputCoreCLRBuildScenario = scenario == 'innerloop' ? 'innerloop' : 'normal'
+                    def inputCoreCLRBuildIsBuildOnly = false
+                    if (isCoreFxScenario(scenario)) {
+                        // Every CoreFx test depends on its own unique build.
+                        inputCoreCLRBuildScenario = scenario
+                        inputCoreCLRBuildIsBuildOnly = true
                     }
+                    def inputCoreCLRFolderName = getJobFolder(inputCoreCLRBuildScenario)
+                    def inputCoreCLRBuildName = projectFolder + '/' +
+                        Utilities.getFullJobName(project, getJobName(configuration, architecture, os, inputCoreCLRBuildScenario, inputCoreCLRBuildIsBuildOnly), isPR, inputCoreCLRFolderName)
 
                     def inputWindowsTestsBuildName = ""
+                    if (windowsArmJob != true) {
+                        // If this is a stress scenario, there isn't any difference in the build job, so we didn't create a build only
+                        // job for Windows_NT specific to that stress mode. Just copy from the default scenario.
 
-                    if (isJitStressScenario(scenario)) {
-                        inputWindowsTestsBuildName = projectFolder + '/' +
-                            Utilities.getFullJobName(project, getJobName(configuration, inputWindowsTestBuildArch, 'windows_nt', testBuildScenario, false), isPR)
-                    } else {
-                        inputWindowsTestsBuildName = projectFolder + '/' +
-                            Utilities.getFullJobName(project, getJobName(configuration, inputWindowsTestBuildArch, 'windows_nt', testBuildScenario, true), isPR)
+                        def testBuildScenario = scenario == 'innerloop' ? 'innerloop' : 'normal'
 
-                    }
+                        def inputWindowsTestBuildArch = architecture
+                        if (architecture == "arm64" && os != "Windows_NT") {
+                            // Use the x64 test build for arm64 unix
+                            inputWindowsTestBuildArch = "x64"
+                        }
 
-                     
-                    // Enable Server GC for Ubuntu PR builds
+                        if (isJitStressScenario(scenario)) {
+                            inputWindowsTestsBuildName = projectFolder + '/' +
+                                Utilities.getFullJobName(project, getJobName(configuration, inputWindowsTestBuildArch, 'windows_nt', testBuildScenario, false), isPR)
+                        } else {
+                            inputWindowsTestsBuildName = projectFolder + '/' +
+                                Utilities.getFullJobName(project, getJobName(configuration, inputWindowsTestBuildArch, 'windows_nt', testBuildScenario, true), isPR)
+                        }
+                    } // if (windowsArmJob != true)
+
                     def serverGCString = ''
-                    if (os == 'Ubuntu' && isPR) {
-                        serverGCString = '--useServerGC'
-                    }
-
                     def testOpts = ''
 
-                    if (isR2RScenario(scenario)) {
+                    if (windowsArmJob != true) {
+                        // Enable Server GC for Ubuntu PR builds
+                        if (os == 'Ubuntu' && isPR) {
+                            serverGCString = '--useServerGC'
+                        }
 
-                        testOpts += ' --crossgen --runcrossgentests'
+                        if (isR2RScenario(scenario)) {
 
-                        if (scenario == 'r2r_jitstress1') {
-                            testOpts += ' --jitstress=1'
-                        }
-                        else if (scenario == 'r2r_jitstress2') {
-                            testOpts += ' --jitstress=2'
-                        }
-                        else if (scenario == 'r2r_jitstressregs1') {
-                            testOpts += ' --jitstressregs=1'
-                        }
-                        else if (scenario == 'r2r_jitstressregs2') {
-                            testOpts += ' --jitstressregs=2'
-                        }
-                        else if (scenario == 'r2r_jitstressregs3') {
-                            testOpts += ' --jitstressregs=3'
-                        }
-                        else if (scenario == 'r2r_jitstressregs4') {
-                            testOpts += ' --jitstressregs=4'
-                        }
-                        else if (scenario == 'r2r_jitstressregs8') {
-                            testOpts += ' --jitstressregs=8'
-                        }
-                        else if (scenario == 'r2r_jitstressregs0x10') {
-                            testOpts += ' --jitstressregs=0x10'
-                        }
-                        else if (scenario == 'r2r_jitstressregs0x80') {
-                            testOpts += ' --jitstressregs=0x80'
-                        }
-                        else if (scenario == 'r2r_jitstressregs0x1000') {
-                            testOpts += ' --jitstressregs=0x1000'
-                        }
-                        else if (scenario == 'r2r_jitminopts') {
-                            testOpts += ' --jitminopts'
-                        }
-                        else if (scenario == 'r2r_jitforcerelocs') {
-                            testOpts += ' --jitforcerelocs'
-                        }
-                        else if (scenario == 'r2r_gcstress15') {
-                            testOpts += ' --gcstresslevel=0xF'
-                        }
-                    }
-                    else if (scenario == 'jitdiff') {
-                        testOpts += ' --jitdisasm --crossgen'
-                    }
-                    else if (scenario == 'illink') {
-                        testOpts += ' --link=\$WORKSPACE/linker/linker/bin/netcore_Release/netcoreapp2.0/ubuntu-x64/publish/illink'
-                    }
-                    else if (isLongGc(scenario)) {
-                        // Long GC tests behave very poorly when they are not
-                        // the only test running (many of them allocate until OOM).
-                        testOpts += ' --sequential'
+                            testOpts += ' --crossgen --runcrossgentests'
 
-                        // A note - runtest.sh does have "--long-gc" and "--gcsimulator" options
-                        // for running long GC and GCSimulator tests, respectively. We don't use them
-                        // here because using a playlist file produces much more readable output on the CI machines
-                        // and reduces running time.
-                        //
-                        // The Long GC playlist contains all of the tests that are
-                        // going to be run. The GCSimulator playlist contains all of
-                        // the GC simulator tests.
-                        if (scenario == 'longgc') {
-                            testOpts += ' --long-gc --playlist=./tests/longRunningGcTests.txt'
+                            if (scenario == 'r2r_jitstress1') {
+                                testOpts += ' --jitstress=1'
+                            }
+                            else if (scenario == 'r2r_jitstress2') {
+                                testOpts += ' --jitstress=2'
+                            }
+                            else if (scenario == 'r2r_jitstressregs1') {
+                                testOpts += ' --jitstressregs=1'
+                            }
+                            else if (scenario == 'r2r_jitstressregs2') {
+                                testOpts += ' --jitstressregs=2'
+                            }
+                            else if (scenario == 'r2r_jitstressregs3') {
+                                testOpts += ' --jitstressregs=3'
+                            }
+                            else if (scenario == 'r2r_jitstressregs4') {
+                                testOpts += ' --jitstressregs=4'
+                            }
+                            else if (scenario == 'r2r_jitstressregs8') {
+                                testOpts += ' --jitstressregs=8'
+                            }
+                            else if (scenario == 'r2r_jitstressregs0x10') {
+                                testOpts += ' --jitstressregs=0x10'
+                            }
+                            else if (scenario == 'r2r_jitstressregs0x80') {
+                                testOpts += ' --jitstressregs=0x80'
+                            }
+                            else if (scenario == 'r2r_jitstressregs0x1000') {
+                                testOpts += ' --jitstressregs=0x1000'
+                            }
+                            else if (scenario == 'r2r_jitminopts') {
+                                testOpts += ' --jitminopts'
+                            }
+                            else if (scenario == 'r2r_jitforcerelocs') {
+                                testOpts += ' --jitforcerelocs'
+                            }
+                            else if (scenario == 'r2r_gcstress15') {
+                                testOpts += ' --gcstresslevel=0xF'
+                            }
                         }
-                        else if (scenario == 'gcsimulator') {
-                            testOpts += ' --gcsimulator --playlist=./tests/gcSimulatorTests.txt'
+                        else if (scenario == 'jitdiff') {
+                            testOpts += ' --jitdisasm --crossgen'
                         }
-                    }
-                    else if (isGcReliabilityFramework(scenario)) {
-                        testOpts += ' --build-overlay-only'
-                    }
-                    else if (scenario == 'standalone_gc') {
-                        if (osGroup == 'OSX') {
-                            testOpts += ' --gcname=libclrgc.dylib'
+                        else if (scenario == 'illink') {
+                            testOpts += ' --link=\$WORKSPACE/linker/linker/bin/netcore_Release/netcoreapp2.0/ubuntu-x64/publish/illink'
                         }
-                        else if (osGroup == 'Linux') {
-                            testOpts += ' --gcname=libclrgc.so'
-                        }
-                        else {
-                            println("Unexpected OS group: ${osGroup} for os ${os}")
-                            assert false
-                        }
-                    }
+                        else if (isLongGc(scenario)) {
+                            // Long GC tests behave very poorly when they are not
+                            // the only test running (many of them allocate until OOM).
+                            testOpts += ' --sequential'
 
-                    def windowsArmJob = (os == "Windows_NT" && architecture in validWindowsNTCrossArches)
+                            // A note - runtest.sh does have "--long-gc" and "--gcsimulator" options
+                            // for running long GC and GCSimulator tests, respectively. We don't use them
+                            // here because using a playlist file produces much more readable output on the CI machines
+                            // and reduces running time.
+                            //
+                            // The Long GC playlist contains all of the tests that are
+                            // going to be run. The GCSimulator playlist contains all of
+                            // the GC simulator tests.
+                            if (scenario == 'longgc') {
+                                testOpts += ' --long-gc --playlist=./tests/longRunningGcTests.txt'
+                            }
+                            else if (scenario == 'gcsimulator') {
+                                testOpts += ' --gcsimulator --playlist=./tests/gcSimulatorTests.txt'
+                            }
+                        }
+                        else if (isGcReliabilityFramework(scenario)) {
+                            testOpts += ' --build-overlay-only'
+                        }
+                        else if (scenario == 'standalone_gc') {
+                            if (osGroup == 'OSX') {
+                                testOpts += ' --gcname=libclrgc.dylib'
+                            }
+                            else if (osGroup == 'Linux') {
+                                testOpts += ' --gcname=libclrgc.so'
+                            }
+                            else {
+                                println("Unexpected OS group: ${osGroup} for os ${os}")
+                                assert false
+                            }
+                        }
+                    } // if (windowsArmJob != true)
 
                     def folder = getJobFolder(scenario)
                     def newJob = job(Utilities.getFullJobName(project, jobName, isPR, folder)) {
@@ -2749,7 +2820,7 @@ Constants.allScenarios.each { scenario ->
                         }
                         else {
                             parameters {
-                                stringParam('CORECLR_WINDOWS_BUILD', '', 'Build number to copy CoreCLR windows test binaries from')
+                                stringParam('CORECLR_WINDOWS_BUILD', '', 'Build number to copy CoreCLR Windows test binaries from')
                                 stringParam('CORECLR_BUILD', '', "Build number to copy CoreCLR ${osGroup} binaries from")
                             }
                         }
@@ -2770,7 +2841,7 @@ Constants.allScenarios.each { scenario ->
 
                             // Coreclr build we are trying to test
                             //
-                            //  ** NOTE ** This will, correctly, overwrite over the CORE_ROOT from the windows test archive
+                            //  ** NOTE ** This will, correctly, overwrite the CORE_ROOT from the Windows test archive
 
                             copyArtifacts(inputCoreCLRBuildName) {
                                 excludePatterns('**/testResults.xml', '**/*.ni.dll')
@@ -2858,53 +2929,71 @@ Constants.allScenarios.each { scenario ->
                                     shell("${dockerCmd}./tests/scripts/run-gc-reliability-framework.sh ${architecture} ${configuration}")
                                 }
                             } 
-
                             else { // windowsArmJob == true
-                                // Unzip tests.
-                                batchFile("powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::ExtractToDirectory('bin\\tests\\tests.zip', 'bin\\tests\\${osGroup}.${architecture}.${configuration}')")
                                 
-                                // Build the build commands
-                                def buildCommands = ""
-                                
-                                def coreRootLocation = "%WORKSPACE%\\bin\\tests\\Windows_NT.${architecture}.${configuration}\\Tests\\Core_Root"
-                                def addEnvVariable =  { variable, value -> buildCommands += "set ${variable}=${value}\r\n"}
-                                def addCommand = { cmd -> buildCommands += "${cmd}\r\n"}
+                                if (isCoreFxScenario(scenario)) {
 
-                                // Make sure Command Extensions are enabled. Used so %ERRORLEVEL% is available.
-                                addCommand("SETLOCAL ENABLEEXTENSIONS")
-    
-                                // For all jobs 
-                                addEnvVariable("CORE_ROOT", coreRootLocation)
+                                    // Only arm supported for corefx testing now.
+                                    assert architecture == 'arm'
 
-                                addEnvVariable("COMPlus_NoGuiOnAssert", "1")
-                                addEnvVariable("COMPlus_ContinueOnAssert", "0")
+                                    // Unzip CoreFx runtime
+                                    batchFile("powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::ExtractToDirectory('_\\fx\\fxruntime.zip', '_\\fx\\bin\\testhost\\netcoreapp-Windows_NT-Release-arm')")
 
-                                // ARM legacy backend; this is an altjit.
-                                if (architecture == "armlb") {
-                                    addEnvVariable("COMPlus_AltJit", "*")
-                                    addEnvVariable("COMPlus_AltJitNgen", "*")
-                                    addEnvVariable("COMPlus_AltJitName", "legacyjit.dll")
-                                    addEnvVariable("COMPlus_AltJitAssertOnNYI", "1")
-                                }
+                                    // Unzip CoreFx tests.
+                                    batchFile("powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::ExtractToDirectory('_\\fx\\fxtests.zip', '_\\fx\\bin\\tests')")
 
-                                // If we are running a stress mode, we'll set those variables as well
-                                if (isJitStressScenario(scenario) || isR2RStressScenario(scenario)) {
-                                    def stressValues = null
-                                    if (isJitStressScenario(scenario)) {
-                                        stressValues = Constants.jitStressModeScenarios[scenario]
+                                    // Add the script to run the corefx tests
+                                    def corefx_runtime_path   = "_\\fx\\bin\\testhost\\netcoreapp-Windows_NT-Release-arm"
+                                    def corefx_tests_dir      = "_\\fx\\bin\\tests"
+                                    def corefx_exclusion_file = "%WORKSPACE%\\tests\\arm\\corefx_test_exclusions.txt"
+                                    batchFile("call %WORKSPACE%\\tests\\scripts\\run-corefx-tests.bat ${corefx_runtime_path} ${corefx_tests_dir} ${corefx_exclusion_file}")
+
+                                } else { // !isCoreFxScenario(scenario)
+
+                                    // Unzip tests.
+                                    batchFile("powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::ExtractToDirectory('bin\\tests\\tests.zip', 'bin\\tests\\${osGroup}.${architecture}.${configuration}')")
+
+                                    def buildCommands = ""
+
+                                    def coreRootLocation = "%WORKSPACE%\\bin\\tests\\Windows_NT.${architecture}.${configuration}\\Tests\\Core_Root"
+                                    def addEnvVariable =  { variable, value -> buildCommands += "set ${variable}=${value}\r\n"}
+                                    def addCommand = { cmd -> buildCommands += "${cmd}\r\n"}
+
+                                    // Make sure Command Extensions are enabled. Used so %ERRORLEVEL% is available.
+                                    addCommand("SETLOCAL ENABLEEXTENSIONS")
+        
+                                    // For all jobs 
+                                    addEnvVariable("CORE_ROOT", coreRootLocation)
+
+                                    addEnvVariable("COMPlus_NoGuiOnAssert", "1")
+                                    addEnvVariable("COMPlus_ContinueOnAssert", "0")
+
+                                    // ARM legacy backend; this is an altjit.
+                                    if (architecture == "armlb") {
+                                        addEnvVariable("COMPlus_AltJit", "*")
+                                        addEnvVariable("COMPlus_AltJitNgen", "*")
+                                        addEnvVariable("COMPlus_AltJitName", "legacyjit.dll")
+                                        addEnvVariable("COMPlus_AltJitAssertOnNYI", "1")
                                     }
-                                    else {
-                                        stressValues = Constants.r2rStressScenarios[scenario]
+
+                                    // If we are running a stress mode, we'll set those variables as well
+                                    if (isJitStressScenario(scenario) || isR2RStressScenario(scenario)) {
+                                        def stressValues = null
+                                        if (isJitStressScenario(scenario)) {
+                                            stressValues = Constants.jitStressModeScenarios[scenario]
+                                        }
+                                        else {
+                                            stressValues = Constants.r2rStressScenarios[scenario]
+                                        }
+
+                                        stressValues.each { key, value -> 
+                                            addEnvVariable(key, value)
+                                        }
                                     }
 
-                                    stressValues.each { key, value -> 
-                                        addEnvVariable(key, value)
-                                    }
-                                }
-
-                                if (isR2RScenario(scenario)) {
-                                    // Crossgen the framework assemblies.
-                                    buildCommands += """
+                                    if (isR2RScenario(scenario)) {
+                                        // Crossgen the framework assemblies.
+                                        buildCommands += """
 @for %%F in (%CORE_ROOT%\\*.dll) do @call :PrecompileAssembly "%CORE_ROOT%" "%%F" %%~nxF
 @goto skip_PrecompileAssembly
 
@@ -2928,78 +3017,79 @@ Constants.allScenarios.each { scenario ->
 :skip_PrecompileAssembly
 """
 
-                                    // Set RunCrossGen variable to cause test wrappers to invoke their logic to run
-                                    // crossgen on tests before running them.
-                                    addEnvVariable("RunCrossGen", "true")
-                                }
+                                        // Set RunCrossGen variable to cause test wrappers to invoke their logic to run
+                                        // crossgen on tests before running them.
+                                        addEnvVariable("RunCrossGen", "true")
+                                    } // isR2RScenario(scenario)
 
-                                // Create the smarty command
-                                def smartyCommand = "C:\\Tools\\Smarty.exe /noecid /noie /workers 9 /inc EXPECTED_PASS "
-                                def addSmartyFlag = { flag -> smartyCommand += flag + " "}
-                                def addExclude = { exclude -> addSmartyFlag("/exc " + exclude)}
+                                    // Create the smarty command
+                                    def smartyCommand = "C:\\Tools\\Smarty.exe /noecid /noie /workers 9 /inc EXPECTED_PASS "
+                                    def addSmartyFlag = { flag -> smartyCommand += flag + " "}
+                                    def addExclude = { exclude -> addSmartyFlag("/exc " + exclude)}
 
-                                def addArchSpecificExclude = { architectureToExclude, exclude -> if (architectureToExclude == "armlb") { addExclude("LEGACYJIT_" + exclude) } else { addExclude(exclude) } }
+                                    def addArchSpecificExclude = { architectureToExclude, exclude -> if (architectureToExclude == "armlb") { addExclude("LEGACYJIT_" + exclude) } else { addExclude(exclude) } }
 
-                                if (architecture == "armlb") {
-                                    addExclude("LEGACYJIT_FAIL")
-                                }
-
-                                if (isJitStressScenario(scenario) || isR2RStressScenario(scenario)) {
-                                    def failTag = "JITSTRESS_FAIL"
-                                    def excludeTag = "JITSTRESS_EXCLUDE"
-
-                                    if (scenario.contains('gc')) {
-                                        failTag = "GCSTRESS_FAIL"
-                                        excludeTag = "GCSTRESS_EXCLUDE"
+                                    if (architecture == "armlb") {
+                                        addExclude("LEGACYJIT_FAIL")
                                     }
 
-                                    addArchSpecificExclude(architecture, failTag)
-                                    addArchSpecificExclude(architecture, excludeTag)
-                                }
-                                else {
-                                    addExclude("pri1")
-                                }
+                                    if (isJitStressScenario(scenario) || isR2RStressScenario(scenario)) {
+                                        def failTag = "JITSTRESS_FAIL"
+                                        def excludeTag = "JITSTRESS_EXCLUDE"
 
-                                // Exclude any test marked LONG_RUNNING; these often exceed the standard timeout and fail as a result.
-                                // TODO: We should create a "long running" job that runs these with a longer timeout.
-                                addExclude("LONG_RUNNING")
+                                        if (scenario.contains('gc')) {
+                                            failTag = "GCSTRESS_FAIL"
+                                            excludeTag = "GCSTRESS_EXCLUDE"
+                                        }
 
-                                smartyCommand += "/lstFile Tests.lst"
+                                        addArchSpecificExclude(architecture, failTag)
+                                        addArchSpecificExclude(architecture, excludeTag)
+                                    }
+                                    else {
+                                        addExclude("pri1")
+                                    }
 
-                                def testListArch = [
-                                    'arm64': 'arm64',
-                                    'arm': 'arm',
-                                    'armlb': 'arm'
-                                ]
+                                    // Exclude any test marked LONG_RUNNING; these often exceed the standard timeout and fail as a result.
+                                    // TODO: We should create a "long running" job that runs these with a longer timeout.
+                                    addExclude("LONG_RUNNING")
 
-                                def archLocation = testListArch[architecture]
+                                    smartyCommand += "/lstFile Tests.lst"
 
-                                addCommand("copy %WORKSPACE%\\tests\\${archLocation}\\Tests.lst bin\\tests\\${osGroup}.${architecture}.${configuration}")
-                                addCommand("pushd bin\\tests\\${osGroup}.${architecture}.${configuration}")
-                                addCommand("${smartyCommand}")
+                                    def testListArch = [
+                                        'arm64': 'arm64',
+                                        'arm': 'arm',
+                                        'armlb': 'arm'
+                                    ]
 
-                                // Save the errorlevel from the smarty command to be used as the errorlevel of this batch file.
-                                // However, we also need to remove all the variables that were set during this batch file, so we
-                                // can run the ZIP powershell command (below) in a clean environment. (We can't run the powershell
-                                // command with the COMPlus_AltJit variables set, for example.) To do that, we do ENDLOCAL as well
-                                // as save the current errorlevel on the same line. This works because CMD evaluates the %errorlevel%
-                                // variable expansion (or any variable expansion on the line) BEFORE it executes the ENDLOCAL command.
-                                // Note that the ENDLOCAL also undoes the pushd command, but we add the popd here for clarity.
-                                addCommand("popd & ENDLOCAL & set __save_smarty_errorlevel=%errorlevel%")
+                                    def archLocation = testListArch[architecture]
 
-                                // ZIP up the smarty output, no matter what the smarty result.
-                                addCommand("powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${architecture}.${configuration}\\Smarty.run.0', '.\\bin\\tests\\${osGroup}.${architecture}.${configuration}\\Smarty.run.0.zip')\"")
+                                    addCommand("copy %WORKSPACE%\\tests\\${archLocation}\\Tests.lst bin\\tests\\${osGroup}.${architecture}.${configuration}")
+                                    addCommand("pushd bin\\tests\\${osGroup}.${architecture}.${configuration}")
+                                    addCommand("${smartyCommand}")
 
-                                addCommand("echo %errorlevel%")
-                                addCommand("dir .\\bin\\tests\\${osGroup}.${architecture}.${configuration}")
+                                    // Save the errorlevel from the smarty command to be used as the errorlevel of this batch file.
+                                    // However, we also need to remove all the variables that were set during this batch file, so we
+                                    // can run the ZIP powershell command (below) in a clean environment. (We can't run the powershell
+                                    // command with the COMPlus_AltJit variables set, for example.) To do that, we do ENDLOCAL as well
+                                    // as save the current errorlevel on the same line. This works because CMD evaluates the %errorlevel%
+                                    // variable expansion (or any variable expansion on the line) BEFORE it executes the ENDLOCAL command.
+                                    // Note that the ENDLOCAL also undoes the pushd command, but we add the popd here for clarity.
+                                    addCommand("popd & ENDLOCAL & set __save_smarty_errorlevel=%errorlevel%")
 
-                                // Use the smarty errorlevel as the script errorlevel.
-                                addCommand("exit /b %__save_smarty_errorlevel%")
+                                    // ZIP up the smarty output, no matter what the smarty result.
+                                    addCommand("powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${architecture}.${configuration}\\Smarty.run.0', '.\\bin\\tests\\${osGroup}.${architecture}.${configuration}\\Smarty.run.0.zip')\"")
 
-                                batchFile(buildCommands)
-                            }
-                        }
-                    }
+                                    addCommand("echo %errorlevel%")
+                                    addCommand("dir .\\bin\\tests\\${osGroup}.${architecture}.${configuration}")
+
+                                    // Use the smarty errorlevel as the script errorlevel.
+                                    addCommand("exit /b %__save_smarty_errorlevel%")
+
+                                    batchFile(buildCommands)
+                                } // non-corefx testing
+                            } // windowsArmJob == true
+                        } // steps
+                    } // job
 
                     addToViews(newJob, isPR, architecture, os)
 
@@ -3037,22 +3127,29 @@ Constants.allScenarios.each { scenario ->
                         Utilities.addXUnitDotNETResults(newJob, '**/coreclrtests.xml')
                     }
                     else {
-                        Utilities.addArchival(newJob, "bin/tests/${osGroup}.${architecture}.${configuration}/Smarty.run.0/*.smrt", '', true, false)
+                        if (!isCoreFxScenario(scenario)) {
+                            Utilities.addArchival(newJob, "bin/tests/${osGroup}.${architecture}.${configuration}/Smarty.run.0/*.smrt", '', true, false)
 
-                        // Archive a ZIP file of the entire Smarty.run.0 directory. This is possibly a little too much,
-                        // but there is no easy way to only archive the HTML/TXT files of the failing tests, so we get
-                        // all the passing test info as well. Not necessarily a bad thing, but possibly somewhat large.
-                        Utilities.addArchival(newJob, "bin/tests/${osGroup}.${architecture}.${configuration}/Smarty.run.0.zip", '', true, false)
+                            // Archive a ZIP file of the entire Smarty.run.0 directory. This is possibly a little too much,
+                            // but there is no easy way to only archive the HTML/TXT files of the failing tests, so we get
+                            // all the passing test info as well. Not necessarily a bad thing, but possibly somewhat large.
+                            Utilities.addArchival(newJob, "bin/tests/${osGroup}.${architecture}.${configuration}/Smarty.run.0.zip", '', true, false)
+                        }
                     }
 
+                    // =============================================================================================
                     // Create a build flow to join together the build and tests required to run this test.
+                    // =============================================================================================
+
                     // Windows CoreCLR build and Linux CoreCLR build (in parallel) ->
                     // Linux CoreCLR test
                     def flowJobName = getJobName(configuration, architecture, os, scenario, false) + "_flow"
                     def fullTestJobName = projectFolder + '/' + newJob.name
                     // Add a reference to the input jobs for report purposes
                     JobReport.Report.addReference(inputCoreCLRBuildName)
-                    JobReport.Report.addReference(inputWindowsTestsBuildName)
+                    if (windowsArmJob != true) {
+                        JobReport.Report.addReference(inputWindowsTestsBuildName)
+                    }
                     JobReport.Report.addReference(fullTestJobName)
                     def newFlowJob = null
 
@@ -3067,7 +3164,7 @@ Constants.allScenarios.each { scenario ->
                         // The product build supports building and archiving the tests.
 
                         newFlowJob = buildFlowJob(Utilities.getFullJobName(project, flowJobName, isPR, folder)) {
-                        buildFlow("""
+                        buildFlow("""\
 coreclrBuildJob = build(params, '${inputCoreCLRBuildName}')
 
 // And then build the test build
@@ -3077,7 +3174,7 @@ build(params + [CORECLR_BUILD: coreclrBuildJob.build.number], '${fullTestJobName
                     }
                     else {
                         newFlowJob = buildFlowJob(Utilities.getFullJobName(project, flowJobName, isPR, folder)) {
-                        buildFlow("""
+                        buildFlow("""\
 // Build the input jobs in parallel
 parallel (
 { coreclrBuildJob = build(params, '${inputCoreCLRBuildName}') },
