@@ -170,36 +170,33 @@ namespace System.Threading.Channels
             public override bool TryWrite(T item)
             {
                 SingleConsumerUnboundedChannel<T> parent = _parent;
-                while (true) // in case a reader was canceled and we need to try again
+                ReaderInteractor<bool> waitingReader = null;
+
+                lock (parent.SyncObj)
                 {
-                    ReaderInteractor<bool> waitingReader = null;
-
-                    lock (parent.SyncObj)
+                    // If writing is completed, exit out without writing.
+                    if (parent._doneWriting != null)
                     {
-                        // If writing is completed, exit out without writing.
-                        if (parent._doneWriting != null)
-                        {
-                            return false;
-                        }
-
-                        // Queue the item being written; then if there's a waiting
-                        // reader, store it for notification outside of the lock.
-                        parent._items.Enqueue(item);
-
-                        waitingReader = parent._waitingReader;
-                        if (waitingReader == null)
-                        {
-                            return true;
-                        }
-                        parent._waitingReader = null;
+                        return false;
                     }
 
-                    // If we get here, we grabbed a waiting reader.
-                    // Notify it that an item was written and exit.
-                    Debug.Assert(waitingReader != null, "Expected a waiting reader");
-                    waitingReader.Success(item: true);
-                    return true;
+                    // Queue the item being written; then if there's a waiting
+                    // reader, store it for notification outside of the lock.
+                    parent._items.Enqueue(item);
+
+                    waitingReader = parent._waitingReader;
+                    if (waitingReader == null)
+                    {
+                        return true;
+                    }
+                    parent._waitingReader = null;
                 }
+
+                // If we get here, we grabbed a waiting reader.
+                // Notify it that an item was written and exit.
+                Debug.Assert(waitingReader != null, "Expected a waiting reader");
+                waitingReader.Success(item: true);
+                return true;
             }
 
             public override Task<bool> WaitToWriteAsync(CancellationToken cancellationToken)

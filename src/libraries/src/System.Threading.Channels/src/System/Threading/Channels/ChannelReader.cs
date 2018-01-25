@@ -31,8 +31,8 @@ namespace System.Threading.Channels
         /// </returns>
         public abstract Task<bool> WaitToReadAsync(CancellationToken cancellationToken = default);
 
-        /// <summary>Asynchronously reads an item from the channel.</summary>		
-        /// <param name="cancellationToken">A <see cref="CancellationToken"/> used to cancel the read operation.</param>		
+        /// <summary>Asynchronously reads an item from the channel.</summary>
+        /// <param name="cancellationToken">A <see cref="CancellationToken"/> used to cancel the read operation.</param>
         /// <returns>A <see cref="ValueTask{TResult}"/> that represents the asynchronous read operation.</returns>
         public virtual ValueTask<T> ReadAsync(CancellationToken cancellationToken = default)
         {
@@ -61,7 +61,7 @@ namespace System.Threading.Channels
                 {
                     while (true)
                     {
-                        if (!await WaitToReadAsync(ct))
+                        if (!await WaitToReadAsync(ct).ConfigureAwait(false))
                         {
                             throw new ChannelClosedException();
                         }
