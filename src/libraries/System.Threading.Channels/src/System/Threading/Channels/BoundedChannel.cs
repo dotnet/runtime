@@ -186,9 +186,12 @@ namespace System.Threading.Channels
                 // We also know that only one thread (this one) will ever get here, as only that thread
                 // will be the one to transition from _doneWriting false to true.  As such, we can
                 // freely manipulate them without any concurrency concerns.
-                ChannelUtilities.FailInteractors<WriterInteractor<T>, VoidResult>(parent._blockedWriters, ChannelUtilities.CreateInvalidCompletionException(error));
-                ChannelUtilities.WakeUpWaiters(ref parent._waitingReaders, result: false, error: error);
-                ChannelUtilities.WakeUpWaiters(ref parent._waitingWriters, result: false, error: error);
+
+                 // The following 3 line are not safe to do it outside the lock https://github.com/dotnet/corefx/issues/26587
+                 ChannelUtilities.FailInteractors<WriterInteractor<T>, VoidResult>(parent._blockedWriters, ChannelUtilities.CreateInvalidCompletionException(error));
+                 ChannelUtilities.WakeUpWaiters(ref parent._waitingReaders, result: false, error: error);
+                 ChannelUtilities.WakeUpWaiters(ref parent._waitingWriters, result: false, error: error);
+
 
                 // Successfully transitioned to completed.
                 return true;
