@@ -533,14 +533,10 @@ namespace System.Net.Http
 
             // Set the response HttpVersion
             byte minorVersion = line[7];
-            if (!IsDigit(minorVersion))
-            {
-                ThrowInvalidHttpResponse();
-            }
-
             response.Version =
                 minorVersion == '1' ? HttpVersion.Version11 :
                 minorVersion == '0' ? HttpVersion.Version10 :
+                !IsDigit(minorVersion) ? throw new HttpRequestException(SR.net_http_invalid_response) :
                 new Version(1, minorVersion - '0');
 
             // Set the status code
