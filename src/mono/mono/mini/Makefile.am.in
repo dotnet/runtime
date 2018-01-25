@@ -648,6 +648,10 @@ endif
 
 libmono_ee_interp_la_SOURCES = $(interp_sources)
 libmono_ee_interp_la_CFLAGS = $(mono_CFLAGS)
+libmono_ee_interp_la_LDFLAGS = $(libmonoldflags)
+if BITCODE
+libmono_ee_interp_la_LIBADD = libmonosgen-2.0.la
+endif
 
 libmini_la_SOURCES = $(common_sources) $(llvm_sources) $(llvm_runtime_sources) $(arch_sources) $(os_sources)
 libmini_la_CFLAGS = $(mono_CFLAGS)
@@ -668,12 +672,15 @@ libmonosgen_2_0_la_LDFLAGS = $(libmonoldflags) $(monobin_platform_ldflags)
 #
 libmini_static_la_SOURCES = $(libmini_la_SOURCES)
 libmini_static_la_CFLAGS = $(AM_CFLAGS)
-libmini_static_la_LDFLAGS = -static
+libmini_static_la_LDFLAGS = $(libmonoldflags) -static
 libmini_static_la_LIBADD = $(MONO_DTRACE_OBJECT)
 
 libmono_ee_interp_static_la_SOURCES = $(libmono_ee_interp_la_SOURCES)
 libmono_ee_interp_static_la_CFLAGS = $(AM_CFLAGS)
 libmono_ee_interp_static_la_LDFLAGS = -static
+if BITCODE
+libmono_ee_interp_static_la_LIBADD = libmonosgen-2.0.la
+endif
 
 libmonoincludedir = $(includedir)/mono-$(API_VER)/mono/jit
 
