@@ -169,6 +169,16 @@ class Constants {
                 'Checked'
             ]
         ],
+        'Windows_NT_buildOnly': [
+            'x64': [
+                'Checked',
+                'Release'
+            ],
+            'x86': [
+                'Checked',
+                'Release'
+            ], 
+        ],
         'Ubuntu': [
             'x64': [
                 'Checked'
@@ -582,7 +592,11 @@ def static isArmWindowsScenario(def scenario) {
     return Constants.validArmWindowsScenarios.containsKey(scenario)
 }
 
-def static isValidPrTriggeredInnerLoopJob(os, architecture, configuration) {
+def static isValidPrTriggeredInnerLoopJob(os, architecture, configuration, isBuildOnly) {
+    if (isBuildOnly == true) {
+        os = 'Windows_NT_buildOnly'
+    }
+
     def validOsPrTriggerArchConfigs = Constants.prTriggeredValidInnerLoopCombos[os]
 
     if (validOsPrTriggerArchConfigs == null) {
@@ -2351,7 +2365,7 @@ Constants.allScenarios.each { scenario ->
                                 // Nothing skipped
                                 break
                             case 'innerloop':
-                                if (!isValidPrTriggeredInnerLoopJob(os, architecture, configuration)) {
+                                if (!isValidPrTriggeredInnerLoopJob(os, architecture, configuration, isBuildOnly)) {
                                     return
                                 }
                                 break
@@ -2597,7 +2611,7 @@ Constants.allScenarios.each { scenario ->
 
                             case 'innerloop':
                                 // Nothing skipped
-                                if (!isValidPrTriggeredInnerLoopJob(os, architecture, configuration)) {
+                                if (!isValidPrTriggeredInnerLoopJob(os, architecture, configuration, false)) {
                                     return
                                 }
                                 break
