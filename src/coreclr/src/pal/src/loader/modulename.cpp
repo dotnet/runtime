@@ -60,7 +60,7 @@ const char *PAL_dladdr(LPVOID ProcAddress)
     Dl_info dl_info;
     if (!dladdr(ProcAddress, &dl_info))
     {
-        WARN("dladdr() call failed! dlerror says '%s'\n", dlerror());
+        WARN("dladdr() call failed!\n");
         /* If we get an error, return NULL */
         return (NULL);
     }
