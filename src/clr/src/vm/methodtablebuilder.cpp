@@ -6983,7 +6983,6 @@ MethodTableBuilder::NeedsNativeCodeSlot(bmtMDMethod * pMDMethod)
 #ifdef FEATURE_TIERED_COMPILATION
     // Keep in-sync with MethodDesc::IsEligibleForTieredCompilation()
     if (g_pConfig->TieredCompilation() &&
-        !GetModule()->HasNativeOrReadyToRunImage() &&
         (pMDMethod->GetMethodType() == METHOD_TYPE_NORMAL || pMDMethod->GetMethodType() == METHOD_TYPE_INSTANTIATED))
     {
         return TRUE;

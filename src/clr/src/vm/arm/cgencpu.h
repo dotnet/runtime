@@ -29,6 +29,8 @@ class BaseDomain;
 class ZapNode;
 struct ArgLocDesc;
 
+extern PCODE GetPreStubEntryPoint();
+
 #define USE_REDIRECT_FOR_GCSTRESS
 
 // CPU-dependent functions
@@ -1113,6 +1115,19 @@ struct StubPrecode {
         return m_pTarget;
     }
 
+    void ResetTargetInterlocked()
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+        }
+        CONTRACTL_END;
+
+        EnsureWritableExecutablePages(&m_pTarget);
+        InterlockedExchange((LONG*)&m_pTarget, (LONG)GetPreStubEntryPoint());
+    }
+
     BOOL SetTargetInterlocked(TADDR target, TADDR expected)
     {
         CONTRACTL
@@ -1204,6 +1219,19 @@ struct FixupPrecode {
     {
         LIMITED_METHOD_DAC_CONTRACT; 
         return m_pTarget;
+    }
+
+    void ResetTargetInterlocked()
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+        }
+        CONTRACTL_END;
+
+        EnsureWritableExecutablePages(&m_pTarget);
+        InterlockedExchange((LONG*)&m_pTarget, (LONG)GetEEFuncEntryPoint(PrecodeFixupThunk));
     }
 
     BOOL SetTargetInterlocked(TADDR target, TADDR expected)

@@ -10,6 +10,8 @@
 struct ArrayOpScript;
 class MetaSig;
 
+extern PCODE GetPreStubEntryPoint();
+
 //=======================================================================
 
 #define X86_INSTR_CALL_REL32    0xE8        // call rel32
@@ -454,6 +456,7 @@ inline TADDR rel32Decode(/*PTR_INT32*/ TADDR pRel32)
     return pRel32 + 4 + *PTR_INT32(pRel32);
 }
 
+void rel32SetInterlocked(/*PINT32*/ PVOID pRel32, TADDR target, MethodDesc* pMD);
 BOOL rel32SetInterlocked(/*PINT32*/ PVOID pRel32, TADDR target, TADDR expected, MethodDesc* pMD);
 
 //------------------------------------------------------------------------
@@ -531,6 +534,19 @@ struct StubPrecode {
         LIMITED_METHOD_DAC_CONTRACT;
 
         return rel32Decode(PTR_HOST_MEMBER_TADDR(StubPrecode, this, m_rel32));
+    }
+
+    void ResetTargetInterlocked()
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+        }
+        CONTRACTL_END;
+
+        EnsureWritableExecutablePages(&m_rel32);
+        return rel32SetInterlocked(&m_rel32, GetPreStubEntryPoint(), (MethodDesc*)GetMethodDesc());
     }
 
     BOOL SetTargetInterlocked(TADDR target, TADDR expected)
@@ -714,6 +730,7 @@ struct FixupPrecode {
         return rel32Decode(PTR_HOST_MEMBER_TADDR(FixupPrecode, this, m_rel32));
     }
 
+    void ResetTargetInterlocked();
     BOOL SetTargetInterlocked(TADDR target, TADDR expected);
 
     static BOOL IsFixupPrecodeByASM(TADDR addr)

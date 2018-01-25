@@ -261,6 +261,7 @@ public:
     void Init(PrecodeType t, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
 
 #ifndef DACCESS_COMPILE
+    void ResetTargetInterlocked();
     BOOL SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub = TRUE);
 
     // Reset precode to point to prestub
