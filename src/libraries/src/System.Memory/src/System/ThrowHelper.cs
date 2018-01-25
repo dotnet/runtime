@@ -60,9 +60,17 @@ namespace System
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Exception CreateArgumentOutOfRangeException_SymbolDoesNotFit() { return new ArgumentOutOfRangeException("symbol", SR.Argument_BadFormatSpecifier); }
 
+        internal static void ThrowInvalidOperationException() { throw CreateInvalidOperationException(); }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Exception CreateInvalidOperationException() { return new InvalidOperationException(); }
+
         internal static void ThrowInvalidOperationException_OutstandingReferences() { throw CreateInvalidOperationException_OutstandingReferences(); }
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Exception CreateInvalidOperationException_OutstandingReferences() { return new InvalidOperationException(SR.OutstandingReferences); }
+
+        internal static void ThrowObjectDisposedException_ArrayMemoryPoolBuffer() { throw CreateObjectDisposedException_ArrayMemoryPoolBuffer(); }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Exception CreateObjectDisposedException_ArrayMemoryPoolBuffer() { return new ObjectDisposedException("ArrayMemoryPoolBuffer"); }
 
         internal static void ThrowObjectDisposedException_MemoryDisposed() { throw CreateObjectDisposedException_MemoryDisposed(); }
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -106,6 +114,8 @@ namespace System
         text,
         obj,
         ownedMemory,
+        minimumBufferSize,
+        byteOffset,
         pointer,
         comparable,
         comparer
