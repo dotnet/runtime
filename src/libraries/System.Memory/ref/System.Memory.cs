@@ -43,6 +43,7 @@ namespace System
         public static int IndexOf<T>(this System.ReadOnlySpan<T> span, T value) where T : System.IEquatable<T> { throw null; }
         public static int IndexOf<T>(this System.Span<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T> { throw null; }
         public static int IndexOf<T>(this System.Span<T> span, T value) where T : System.IEquatable<T> { throw null; }
+        public static bool IsWhiteSpace(this System.ReadOnlySpan<char> span) { throw null; }
         public static int LastIndexOfAny<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> values) where T : System.IEquatable<T> { throw null; }
         public static int LastIndexOfAny<T>(this System.ReadOnlySpan<T> span, T value0, T value1) where T : System.IEquatable<T> { throw null; }
         public static int LastIndexOfAny<T>(this System.ReadOnlySpan<T> span, T value0, T value1, T value2) where T : System.IEquatable<T> { throw null; }
@@ -66,6 +67,15 @@ namespace System
         public static bool SequenceEqual<T>(this System.Span<T> first, System.ReadOnlySpan<T> second) where T : System.IEquatable<T> { throw null; }
         public static bool StartsWith<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T> { throw null; }
         public static bool StartsWith<T>(this System.Span<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T> { throw null; }
+        public static System.ReadOnlySpan<char> Trim(this System.ReadOnlySpan<char> span) { throw null; }
+        public static System.ReadOnlySpan<char> Trim(this System.ReadOnlySpan<char> span, char trimChar) { throw null; }
+        public static System.ReadOnlySpan<char> Trim(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> trimChars) { throw null; }
+        public static System.ReadOnlySpan<char> TrimEnd(this System.ReadOnlySpan<char> span) { throw null; }
+        public static System.ReadOnlySpan<char> TrimEnd(this System.ReadOnlySpan<char> span, char trimChar) { throw null; }
+        public static System.ReadOnlySpan<char> TrimEnd(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> trimChars) { throw null; }
+        public static System.ReadOnlySpan<char> TrimStart(this System.ReadOnlySpan<char> span) { throw null; }
+        public static System.ReadOnlySpan<char> TrimStart(this System.ReadOnlySpan<char> span, char trimChar) { throw null; }
+        public static System.ReadOnlySpan<char> TrimStart(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> trimChars) { throw null; }
         public static bool TryGetString(this System.ReadOnlyMemory<char> readOnlyMemory, out string text, out int start, out int length) { throw null; }
     }
     public readonly partial struct Memory<T>
