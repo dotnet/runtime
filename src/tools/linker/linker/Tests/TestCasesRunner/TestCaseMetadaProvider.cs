@@ -129,6 +129,11 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			return GetOptionAttributeValue (nameof (SetupCompileAssemblyNameAttribute), "test.exe");
 		}
 
+		public virtual string GetCSharpCompilerToUse ()
+		{
+			return GetOptionAttributeValue (nameof (SetupCSharpCompilerToUseAttribute), string.Empty).ToLower ();
+		}
+
 		public virtual IEnumerable<string> GetSetupCompilerArguments ()
 		{
 			return _testCaseTypeDefinition.CustomAttributes
@@ -167,7 +172,8 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				References = ((CustomAttributeArgument []) ctorArguments [2].Value)?.Select (arg => arg.Value.ToString ()).ToArray (),
 				Defines = ((CustomAttributeArgument []) ctorArguments [3].Value)?.Select (arg => arg.Value.ToString ()).ToArray (),
 				AdditionalArguments = (string) ctorArguments [4].Value,
-				AddAsReference = ctorArguments.Count >= 6 ? (bool) ctorArguments [5].Value : true
+				CompilerToUse = (string) ctorArguments [5].Value,
+				AddAsReference = ctorArguments.Count >= 7 ? (bool) ctorArguments [6].Value : true
 			};
 		}
 	}

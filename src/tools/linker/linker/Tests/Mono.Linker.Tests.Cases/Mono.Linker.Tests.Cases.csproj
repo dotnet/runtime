@@ -100,6 +100,10 @@
     <Compile Include="Resources\NonLinkerEmbeddedResourceHasNoImpact.cs" />
     <Compile Include="TestFramework\CanCompileILAssembly.cs" />
     <Compile Include="TestFramework\CanCompileTestCaseWithDebugPdbs.cs" />
+    <Compile Include="TestFramework\CanCompileTestCaseWithCsc.cs" />
+    <Compile Include="TestFramework\CanCompileTestCaseWithMsc.cs" />
+    <Compile Include="TestFramework\Dependencies\CanCompileTestCaseWithCsc_Lib.cs" />
+    <Compile Include="TestFramework\Dependencies\CanCompileTestCaseWithMcs_Lib.cs" />
     <Compile Include="TestFramework\VerifyDefineAttributeBehavior.cs" />
     <None Include="TypeForwarding\Dependencies\ForwarderLibrary.cs" />
     <Compile Include="TestFramework\VerifyResourceInAssemblyAttributesBehavior.cs" />
@@ -211,6 +215,8 @@
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileIsNotProcessedWhenCoreLinkActionIsSkip.xml" />
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileIsProcessed.xml" />
     <Content Include="Resources\Dependencies\NonLinkerEmbeddedResourceHasNoImpact.xml" />
+    <Content Include="TestFramework\Dependencies\CanCompileTestCaseWithCsc.txt" />
+    <Content Include="TestFramework\Dependencies\CanCompileTestCaseWithMcs.txt" />
     <Content Include="TestFramework\Dependencies\VerifyResourceInAssemblyAttributesBehavior.txt" />
     <Content Include="LinkXml\PreserveBackingFieldWhenPropertyIsKept.xml" />
   </ItemGroup>
