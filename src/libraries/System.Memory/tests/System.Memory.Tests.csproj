@@ -131,6 +131,9 @@
     <Compile Include="MemoryMarshal\TryGetArray.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MemoryPool\MemoryPool.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="ReadOnlyMemory\CopyTo.cs" />
     <Compile Include="ReadOnlyMemory\CtorArray.cs" />
     <Compile Include="ReadOnlyMemory\CtorArrayIntInt.cs" />
