@@ -3043,7 +3043,6 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
         case SIMDIntrinsicConvertToSingle:
         case SIMDIntrinsicConvertToDouble:
         case SIMDIntrinsicConvertToInt32:
-        case SIMDIntrinsicConvertToUInt32:
         {
             op1 = impSIMDPopStack(simdType, instMethod);
 
@@ -3053,7 +3052,6 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
         break;
 
         case SIMDIntrinsicConvertToInt64:
-        case SIMDIntrinsicConvertToUInt64:
         {
 #ifdef _TARGET_64BIT_
             op1 = impSIMDPopStack(simdType, instMethod);
@@ -3061,7 +3059,7 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
             simdTree = gtNewSIMDNode(simdType, op1, nullptr, simdIntrinsicID, baseType, size);
             retVal   = simdTree;
 #else
-            JITDUMP("SIMD Conversion to Int64/UInt64 is not supported on this platform\n");
+            JITDUMP("SIMD Conversion to Int64 is not supported on this platform\n");
             return nullptr;
 #endif
         }
