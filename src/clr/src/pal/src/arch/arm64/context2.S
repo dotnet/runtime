@@ -133,6 +133,17 @@ LEAF_END RtlCaptureContext, _TEXT
 //  x1: Exception*
 //
 LEAF_ENTRY RtlRestoreContext, _TEXT
+
+#ifdef HAS_ASAN
+    ldr w17, [x0, #(CONTEXT_ContextFlags)]
+    tbz w17, #CONTEXT_CONTROL_BIT, LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT)
+
+    stp x0, x1, [sp]
+    bl EXTERNAL_C_FUNC(__asan_handle_no_return)
+    ldp x0, x1, [sp]
+
+LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT):
+#endif
     // aarch64 specifies:
     //   IP0 and IP1, the Intra-Procedure Call temporary registers,
     //   are available for use by e.g. veneers or branch islands during a procedure call.

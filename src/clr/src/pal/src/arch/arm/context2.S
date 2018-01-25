@@ -112,7 +112,18 @@ LEAF_END RtlCaptureContext, _TEXT
 //
 LEAF_ENTRY RtlRestoreContext, _TEXT
     END_PROLOGUE
-    
+
+#ifdef HAS_ASAN
+    ldr r2, [r0, #(CONTEXT_ContextFlags)]
+    tst r2, #(CONTEXT_CONTROL)
+    beq     LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT)
+
+    push {r0, r1}
+    bl EXTERNAL_C_FUNC(__asan_handle_no_return)
+    pop {r0, r1}
+
+LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT):
+#endif
     ldr r2, [r0, #(CONTEXT_ContextFlags)]
     tst r2, #(CONTEXT_FLOATING_POINT)
     

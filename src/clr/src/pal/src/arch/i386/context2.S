@@ -94,8 +94,11 @@ LEAF_ENTRY RtlCaptureContext, _TEXT
 LEAF_END RtlCaptureContext, _TEXT
 
 LEAF_ENTRY RtlRestoreContext, _TEXT
-    mov   eax, [esp + 4]
 
+#ifdef HAS_ASAN
+    call    EXTERNAL_C_FUNC(__asan_handle_no_return)
+#endif
+    mov     eax, [esp + 4]
     test    BYTE PTR [eax + CONTEXT_ContextFlags], CONTEXT_FLOATING_POINT
     je      LOCAL_LABEL(Done_Restore_CONTEXT_FLOATING_POINT)
     frstor  [eax + CONTEXT_FloatSave]
