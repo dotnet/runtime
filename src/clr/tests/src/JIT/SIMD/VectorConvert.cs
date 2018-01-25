@@ -24,6 +24,18 @@ partial class VectorTest
     static SByte[] sbytes;
     static Byte[] bytes;
 
+    // Arrays with some boundary condition values
+    static Double[] firstDoubles;
+    static Single[] firstSingles;
+    static Int64[] firstInt64s;
+    static UInt64[] firstUInt64s;
+    static Int32[] firstInt32s;
+    static UInt32[] firstUInt32s;
+    static Int16[] firstInt16s;
+    static UInt16[] firstUInt16s;
+    static SByte[] firstSBytes;
+    static Byte[] firstBytes;
+
     static VectorTest()
     {
         doubles = new Double[Vector<Double>.Count];
@@ -36,40 +48,83 @@ partial class VectorTest
         uint16s = new UInt16[Vector<UInt16>.Count];
         sbytes = new SByte[Vector<SByte>.Count];
         bytes = new Byte[Vector<Byte>.Count];
+        unchecked {
+            firstDoubles = new Double[] { Double.MinValue, Double.MaxValue,
+                                        (Double)Int64.MinValue, (Double)(Int64.MinValue),
+                                        (Double)(UInt64.MinValue), (Double)(UInt64.MaxValue) };
+            firstSingles = new Single[] { Single.MinValue, Single.MaxValue,
+                                        (Single)Int32.MinValue, (Single)(Int32.MinValue),
+                                        (Single)(UInt32.MinValue), (Single)(UInt32.MaxValue) };
+            firstInt64s = new Int64[] { Int64.MinValue, Int64.MaxValue,
+                                        (Int64)Double.MinValue, (Int64)(Double.MinValue),
+                                        (Int64)(UInt64.MinValue), (Int64)(UInt64.MaxValue) };
+            firstUInt64s = new UInt64[] { UInt64.MinValue, UInt64.MaxValue,
+                                        (UInt64)Double.MinValue, (UInt64)(Double.MinValue),
+                                        (UInt64)(Int64.MinValue), (UInt64)(Int64.MaxValue) };
+            firstInt32s = new Int32[] { Int32.MinValue, Int32.MaxValue,
+                                        (Int32)Single.MinValue, (Int32)(Single.MinValue),
+                                        (Int32)(UInt32.MinValue), (Int32)(UInt32.MaxValue) };
+            firstUInt32s = new UInt32[] { UInt32.MinValue, UInt32.MaxValue,
+                                        (UInt32)Single.MinValue, (UInt32)(Single.MinValue),
+                                        (UInt32)(Int32.MinValue), (UInt32)(Int32.MaxValue) };
+            firstInt16s = new Int16[] { Int16.MinValue, Int16.MaxValue,
+                                       SByte.MinValue, SByte.MaxValue,
+                                       (Int16)(UInt16.MinValue), (Int16)(UInt16.MaxValue) };
+            firstUInt16s = new UInt16[] { UInt16.MinValue, UInt16.MaxValue,
+                                       Byte.MinValue, Byte.MaxValue,
+                                       (UInt16)(Int16.MinValue), (UInt16)(Int16.MaxValue) };
+            firstSBytes = new SByte[] { SByte.MinValue, SByte.MaxValue,
+                                       (SByte)(Byte.MinValue), (SByte)(Byte.MaxValue) };
+            firstBytes = new Byte[] { Byte.MinValue, Byte.MaxValue,
+                                       (Byte)(SByte.MinValue), (Byte)(SByte.MaxValue) };
+        }
 
         random = new Random(1234);
     }
 
-    static T getRandomValue<T>()
+    static T getRandomValue<T>(int i, int j) where T : struct
     {
+        int element = i + j * Vector<T>.Count;
         int sign = (random.Next(0, 2) < 1) ? -1 : 1;
+        double randomDouble = random.NextDouble();
         if (typeof(T) == typeof(float))
         {
-            float floatValue = (float)random.NextDouble() * (float)(Int32.MaxValue) * (float)sign;
+            if (element < firstSingles.Length) return (T)(object)firstSingles[element];
+            float floatValue = (float)randomDouble * (float)(Int32.MaxValue) * (float)sign;
             return (T)(object)floatValue;
         }
         if (typeof(T) == typeof(double))
         {
-            return (T)(object)(random.NextDouble() * (double)(Int64.MaxValue) * (double)sign);
+            if (element < firstDoubles.Length) return (T)(object)firstDoubles[element];
+            return (T)(object)(randomDouble * (double)(Int64.MaxValue) * (double)sign);
         }
         if (typeof(T) == typeof(Int64))
         {
-            return (T)(object)(Int64)(random.NextDouble() * (double)(Int64.MaxValue) * (double)sign);
+            if (element < firstInt64s.Length) return (T)(object)firstInt64s[element];
+            return (T)(object)(Int64)(randomDouble * (double)(Int64.MaxValue) * (double)sign);
         }
         if (typeof(T) == typeof(UInt64))
         {
-            return (T)(object)(UInt64)(random.NextDouble() * (double)(Int64.MaxValue));
+            if (element < firstUInt64s.Length) return (T)(object)firstUInt64s[element];
+            return (T)(object)(UInt64)(randomDouble * (double)(Int64.MaxValue));
         }
-        int intValue = (int)(random.NextDouble() * (double)(Int32.MaxValue));
+        if ((typeof(T) == typeof(Int32)) && (element < firstInt32s.Length)) return (T)(object)firstInt32s[element];
+        if ((typeof(T) == typeof(UInt32)) && (element < firstUInt32s.Length)) return (T)(object)firstUInt32s[element];
+        if ((typeof(T) == typeof(Int16)) && (element < firstInt16s.Length)) return (T)(object)firstInt16s[element];
+        if ((typeof(T) == typeof(UInt16)) && (element < firstUInt16s.Length)) return (T)(object)firstUInt16s[element];
+        if ((typeof(T) == typeof(SByte)) && (element < firstSBytes.Length)) return (T)(object)firstSBytes[element];
+        if ((typeof(T) == typeof(Byte)) && (element < firstBytes.Length)) return (T)(object)firstBytes[element];
+
+        int intValue = sign * (int)(randomDouble * (double)(Int32.MaxValue));
         T value = GetValueFromInt<T>(intValue);
         return value;
     }
 
-    static Vector<T> getRandomVector<T>(T[] valueArray) where T : struct
+    static Vector<T> getRandomVector<T>(T[] valueArray, int j) where T : struct
     {
         for (int i = 0; i < Vector<T>.Count; i++)
         {
-            valueArray[i] = getRandomValue<T>();
+            valueArray[i] = getRandomValue<T>(i, j);
         }
         return new Vector<T>(valueArray);
     }
@@ -110,14 +165,10 @@ partial class VectorTest
             {
                 UInt32 uint32Val = (UInt32)A[i];
                 Single cvtSglVal = (Single)uint32Val;
-                if (B[i] != uint32Val)
+                if ((B[i] != uint32Val) || (C[i] != cvtSglVal))
                 {
-                    Console.WriteLine("B[" + i + "] = " + B[i] + ", UInt32Val = " + uint32Val);
-                    returnVal = Fail;
-                }
-                if (C[i] != cvtSglVal)
-                {
-                    Console.WriteLine("C[" + i + "] = " + C[i] + ", cvtSglVal = " + cvtSglVal);
+                    Console.WriteLine("A[{0}] = {1}, B[{0}] = {2}, C[{0}] = {3}, uint32Val = {4}, cvtSglVal = {5}",
+                                      i, A[i], B[i], C[i], uint32Val, cvtSglVal);
                     returnVal = Fail;
                 }
             }
@@ -158,14 +209,10 @@ partial class VectorTest
             {
                 UInt64 uint64Val = (UInt64)A[i];
                 Double cvtDblVal = (Double)uint64Val;
-                if (B[i] != uint64Val)
+                if ((B[i] != uint64Val) || (C[i] != cvtDblVal))
                 {
-                    Console.WriteLine("B[" + i + "] = " + B[i] + ", uint64Val = " + uint64Val);
-                    returnVal = Fail;
-                }
-                if (C[i] != cvtDblVal)
-                {
-                    Console.WriteLine("C[" + i + "] = " + C[i] + ", cvtDblVal = " + cvtDblVal);
+                    Console.WriteLine("A[{0}] = {1}, B[{0}] = {2}, C[{0}] = {3}, uint64Val = {4}, cvtDblVal = {5}",
+                                      i, A[i], B[i], C[i], uint64Val, cvtDblVal);
                     returnVal = Fail;
                 }
             }
@@ -445,7 +492,7 @@ partial class VectorTest
 
         for (int i = 0; i < 10; i++)
         {
-            Vector<Single> singleVector = getRandomVector<Single>(singles);
+            Vector<Single> singleVector = getRandomVector<Single>(singles, i);
             if (VectorConvertTest.VectorConvertSingleInt(singleVector) != Pass)
             {
                 Console.WriteLine("Testing Converts Between Single and Int32 failed");
@@ -455,7 +502,7 @@ partial class VectorTest
         
         for (int i = 0; i < 10; i++)
         {
-            Vector<Single> singleVector = getRandomVector<Single>(singles);
+            Vector<Single> singleVector = getRandomVector<Single>(singles, i);
             if (VectorConvertTest.VectorConvertSingleUInt(singleVector) != Pass)
             {
                 Console.WriteLine("Testing Converts Between Single and UInt32 failed");
@@ -465,7 +512,7 @@ partial class VectorTest
         
         for (int i = 0; i < 10; i++)
         {
-            Vector<Double> doubleVector = getRandomVector<Double>(doubles);
+            Vector<Double> doubleVector = getRandomVector<Double>(doubles, i);
             if (VectorConvertTest.VectorConvertDoubleInt64(doubleVector) != Pass)
             {
                 Console.WriteLine("Testing Converts between Double and Int64 failed");
@@ -475,7 +522,7 @@ partial class VectorTest
         
         for (int i = 0; i < 10; i++)
         {
-            Vector<Double> doubleVector = getRandomVector<Double>(doubles);
+            Vector<Double> doubleVector = getRandomVector<Double>(doubles, i);
             if (VectorConvertTest.VectorConvertDoubleUInt64(doubleVector) != Pass)
             {
                 Console.WriteLine("Testing Converts between Double and UInt64 failed");
@@ -485,8 +532,8 @@ partial class VectorTest
         
         for (int i = 0; i < 10; i++)
         {
-            Vector<Double> doubleVector1 = getRandomVector<Double>(doubles);
-            Vector<Double> doubleVector2 = getRandomVector<Double>(doubles);
+            Vector<Double> doubleVector1 = getRandomVector<Double>(doubles, i);
+            Vector<Double> doubleVector2 = getRandomVector<Double>(doubles, i);
             if (VectorConvertTest.VectorConvertDoubleSingle(doubleVector1, doubleVector2) != Pass)
             {
                 Console.WriteLine("Testing Converts between Single and Double failed");
@@ -496,8 +543,8 @@ partial class VectorTest
         
         for (int i = 0; i < 10; i++)
         {
-            Vector<Int64> int64Vector1 = getRandomVector<Int64>(int64s);
-            Vector<Int64> int64Vector2 = getRandomVector<Int64>(int64s);
+            Vector<Int64> int64Vector1 = getRandomVector<Int64>(int64s, i);
+            Vector<Int64> int64Vector2 = getRandomVector<Int64>(int64s, i);
             if (VectorConvertTest.VectorConvertInt64And32(int64Vector1, int64Vector2) != Pass)
             {
                 Console.WriteLine("Testing Converts between Int64 and Int32 failed");
@@ -507,8 +554,8 @@ partial class VectorTest
         
         for (int i = 0; i < 10; i++)
         {
-            Vector<Int32> int32Vector1 = getRandomVector<Int32>(int32s);
-            Vector<Int32> int32Vector2 = getRandomVector<Int32>(int32s);
+            Vector<Int32> int32Vector1 = getRandomVector<Int32>(int32s, i);
+            Vector<Int32> int32Vector2 = getRandomVector<Int32>(int32s, i);
             if (VectorConvertTest.VectorConvertInt32And16(int32Vector1, int32Vector2) != Pass)
             {
                 Console.WriteLine("Testing Converts between Int32 and Int16 failed");
@@ -518,8 +565,8 @@ partial class VectorTest
         
         for (int i = 0; i < 10; i++)
         {
-            Vector<Int16> int16Vector1 = getRandomVector<Int16>(int16s);
-            Vector<Int16> int16Vector2 = getRandomVector<Int16>(int16s);
+            Vector<Int16> int16Vector1 = getRandomVector<Int16>(int16s, i);
+            Vector<Int16> int16Vector2 = getRandomVector<Int16>(int16s, i);
             if (VectorConvertTest.VectorConvertInt16And8(int16Vector1, int16Vector2) != Pass)
             {
                 Console.WriteLine("Testing Converts between Int16 and SByte failed");
@@ -529,8 +576,8 @@ partial class VectorTest
         
         for (int i = 0; i < 10; i++)
         {
-            Vector<UInt64> uint64Vector1 = getRandomVector<UInt64>(uint64s);
-            Vector<UInt64> uint64Vector2 = getRandomVector<UInt64>(uint64s);
+            Vector<UInt64> uint64Vector1 = getRandomVector<UInt64>(uint64s, i);
+            Vector<UInt64> uint64Vector2 = getRandomVector<UInt64>(uint64s, i);
             if (VectorConvertTest.VectorConvertUInt64And32(uint64Vector1, uint64Vector2) != Pass)
             {
                 Console.WriteLine("Testing Converts between UInt64 and UInt32 failed");
@@ -540,8 +587,8 @@ partial class VectorTest
         
         for (int i = 0; i < 10; i++)
         {
-            Vector<UInt32> uint32Vector1 = getRandomVector<UInt32>(uint32s);
-            Vector<UInt32> uint32Vector2 = getRandomVector<UInt32>(uint32s);
+            Vector<UInt32> uint32Vector1 = getRandomVector<UInt32>(uint32s, i);
+            Vector<UInt32> uint32Vector2 = getRandomVector<UInt32>(uint32s, i);
             if (VectorConvertTest.VectorConvertUInt32And16(uint32Vector1, uint32Vector2) != Pass)
             {
                 Console.WriteLine("Testing Converts between UInt32 and UInt16 failed");
@@ -551,8 +598,8 @@ partial class VectorTest
         
         for (int i = 0; i < 10; i++)
         {
-            Vector<UInt16> uint16Vector1 = getRandomVector<UInt16>(uint16s);
-            Vector<UInt16> uint16Vector2 = getRandomVector<UInt16>(uint16s);
+            Vector<UInt16> uint16Vector1 = getRandomVector<UInt16>(uint16s, i);
+            Vector<UInt16> uint16Vector2 = getRandomVector<UInt16>(uint16s, i);
             if (VectorConvertTest.VectorConvertUInt16And8(uint16Vector1, uint16Vector2) != Pass)
             {
                 Console.WriteLine("Testing Converts between UInt16 and Byte failed");
@@ -560,14 +607,14 @@ partial class VectorTest
             }
         }
 
-        JitLog jitLog = new JitLog();        
+        JitLog jitLog = new JitLog();       
+        // SIMD conversions from floating point to unsigned are not supported on x86 or x64
+   
         if (!jitLog.Check("System.Numerics.Vector:ConvertToInt32(struct):struct")) returnVal = Fail;
-        if (!jitLog.Check("System.Numerics.Vector:ConvertToUInt32(struct):struct")) returnVal = Fail;
         if (!jitLog.Check("System.Numerics.Vector:ConvertToSingle(struct):struct")) returnVal = Fail;
-        // Note: SIMD Conversion to Int64/UInt64 is not supported on x86
+        // SIMD Conversion to Int64 is not supported on x86
 #if !BIT32
         if (!jitLog.Check("System.Numerics.Vector:ConvertToInt64(struct):struct")) returnVal = Fail;
-        if (!jitLog.Check("System.Numerics.Vector:ConvertToUInt64(struct):struct")) returnVal = Fail;
 #endif // !BIT32
         if (!jitLog.Check("System.Numerics.Vector:ConvertToDouble(struct):struct")) returnVal = Fail;
         if (!jitLog.Check("System.Numerics.Vector:Narrow(struct,struct):struct")) returnVal = Fail;
