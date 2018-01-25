@@ -25,13 +25,23 @@ public:
 #endif
 
     void Init(ADID appDomainId);
-    BOOL OnMethodCalled(MethodDesc* pMethodDesc, DWORD currentCallCount);
+
+    void InitiateTier1CountingDelay();
+    void OnTier0JitInvoked();
+
+    void OnMethodCalled(MethodDesc* pMethodDesc, DWORD currentCallCount, BOOL* shouldStopCountingCallsRef, BOOL* wasPromotedToTier1Ref);
+    void OnMethodCallCountingStoppedWithoutTier1Promotion(MethodDesc* pMethodDesc);
     void AsyncPromoteMethodToTier1(MethodDesc* pMethodDesc);
     static void ShutdownAllDomains();
     void Shutdown(BOOL fBlockUntilAsyncWorkIsComplete);
     static CORJIT_FLAGS GetJitFlags(NativeCodeVersion nativeCodeVersion);
 
 private:
+
+    static VOID WINAPI Tier1DelayTimerCallback(PVOID parameter, BOOLEAN timerFired);
+    static void Tier1DelayTimerCallbackInAppDomain(LPVOID parameter);
+    void Tier1DelayTimerCallbackWorker();
+    static void ResumeCountingCalls(MethodDesc* pMethodDesc);
 
     static DWORD StaticOptimizeMethodsCallback(void* args);
     void OptimizeMethodsCallback();
@@ -50,6 +60,12 @@ private:
     DWORD m_countOptimizationThreadsRunning;
     DWORD m_callCountOptimizationThreshhold;
     DWORD m_optimizationQuantumMs;
+
+    SpinLock m_tier1CountingDelayLock;
+    SArray<MethodDesc*>* m_methodsPendingCountingForTier1;
+    HANDLE m_tier1CountingDelayTimerHandle;
+    bool m_wasTier0JitInvokedSinceCountingDelayReset;
+
     CLREvent m_asyncWorkDoneEvent;
 };
 
