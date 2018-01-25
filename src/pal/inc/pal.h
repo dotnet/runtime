@@ -2719,6 +2719,11 @@ LPCVOID
 PAL_GetSymbolModuleBase(void *symbol);
 
 PALIMPORT
+LPCSTR
+PALAPI
+PAL_GetLoadLibraryError();
+
+PALIMPORT
 LPVOID
 PALAPI
 PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(

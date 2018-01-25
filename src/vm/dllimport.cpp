@@ -5721,11 +5721,18 @@ public:
         m_priorityOfLastError = 0;
     }
 
-    VOID TrackErrorCode(DWORD dwLastError)
+    VOID TrackErrorCode()
     {
         LIMITED_METHOD_CONTRACT;
 
         DWORD priority;
+
+#ifdef FEATURE_PAL
+
+        SetMessage(PAL_GetLoadLibraryError());
+#else
+        
+        DWORD dwLastError = GetLastError();
 
         switch (dwLastError)
         {
@@ -5747,8 +5754,8 @@ public:
                 priority = const_priorityCouldNotLoad;
                 break;
         }
-
         UpdateHR(priority, HRESULT_FROM_WIN32(dwLastError));
+#endif
     }
 
     // Sets the error code to HRESULT as could not load DLL
@@ -5762,10 +5769,20 @@ public:
         return m_hr;
     }
 
+    SString& GetMessage()
+    {
+        return m_message;
+    }
+
     void DECLSPEC_NORETURN Throw(SString &libraryNameOrPath)
     {
         STANDARD_VM_CONTRACT;
 
+#if defined(__APPLE__)
+        COMPlusThrow(kDllNotFoundException, IDS_EE_NDIRECT_LOADLIB_MAC, libraryNameOrPath.GetUnicode(), GetMessage());
+#elif defined(FEATURE_PAL)
+        COMPlusThrow(kDllNotFoundException, IDS_EE_NDIRECT_LOADLIB_LINUX, libraryNameOrPath.GetUnicode(), GetMessage());
+#else // __APPLE__
         HRESULT theHRESULT = GetHR();
         if (theHRESULT == HRESULT_FROM_WIN32(ERROR_BAD_EXE_FORMAT))
         {
@@ -5775,8 +5792,9 @@ public:
         {
             SString hrString;
             GetHRMsg(theHRESULT, hrString);
-            COMPlusThrow(kDllNotFoundException, IDS_EE_NDIRECT_LOADLIB, libraryNameOrPath.GetUnicode(), hrString);
+            COMPlusThrow(kDllNotFoundException, IDS_EE_NDIRECT_LOADLIB_WIN, libraryNameOrPath.GetUnicode(), hrString);
         }
+#endif // FEATURE_PAL
 
         __UNREACHABLE();
     }
@@ -5791,8 +5809,14 @@ private:
         }
     }
 
+    void SetMessage(LPCSTR message)
+    {
+        m_message = SString(SString::Utf8, message);
+    }
+
     HRESULT m_hr;
     DWORD   m_priorityOfLastError;
+    SString  m_message;
 };  // class LoadLibErrorTracker
 
 //  Local helper function for the LoadLibraryModule function below
@@ -5819,7 +5843,7 @@ static HMODULE LocalLoadLibraryHelper( LPCWSTR name, DWORD flags, LoadLibErrorTr
         DWORD dwLastError = GetLastError();
         if (dwLastError != ERROR_INVALID_PARAMETER)
         {
-            pErrorTracker->TrackErrorCode(dwLastError);
+            pErrorTracker->TrackErrorCode();
             return hmod;
         }
     }
@@ -5832,7 +5856,7 @@ static HMODULE LocalLoadLibraryHelper( LPCWSTR name, DWORD flags, LoadLibErrorTr
         
     if (hmod == NULL)
     {
-        pErrorTracker->TrackErrorCode(GetLastError());
+        pErrorTracker->TrackErrorCode();
     }
     
     return hmod;
@@ -5852,7 +5876,7 @@ static HMODULE LocalLoadLibraryDirectHelper(LPCWSTR name, DWORD flags, LoadLibEr
 
     if (hmod == NULL)
     {
-        pErrorTracker->TrackErrorCode(GetLastError());
+        pErrorTracker->TrackErrorCode();
     }
 
     return hmod;
@@ -6298,7 +6322,7 @@ VOID NDirect::NDirectLink(NDirectMethodDesc *pMD)
     {
         if (pMD->GetLibName() == NULL)
             COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDRESS_NONAME);
-        
+
         StackSString ssLibName(SString::Utf8, pMD->GetLibName());
 
         if (!hmod)
@@ -6312,8 +6336,11 @@ VOID NDirect::NDirectLink(NDirectMethodDesc *pMD)
             wszEPName[0] = W('?');
             wszEPName[1] = W('\0');
         }
-
-        COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDRESS, ssLibName.GetUnicode(), wszEPName);
+#ifdef FEATURE_PAL
+        COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDRESS_UNIX, ssLibName.GetUnicode(), wszEPName);
+#else
+        COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDRESS_WIN, ssLibName.GetUnicode(), wszEPName);
+#endif
     }
 }
 

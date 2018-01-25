@@ -367,8 +367,8 @@ GetProcAddress(
     }
     else
     {
-        TRACE("Symbol %s not found in module %p (named %S), dlerror message is \"%s\"\n",
-              lpProcName, module, MODNAME(module), dlerror());
+        TRACE("Symbol %s not found in module %p (named %S)\n",
+              lpProcName, module, MODNAME(module));
         SetLastError(ERROR_PROC_NOT_FOUND);
     }
 done:
@@ -840,6 +840,33 @@ PAL_GetSymbolModuleBase(void *symbol)
     return retval;
 }
 
+/*++
+    PAL_GetLoadLibraryError
+
+    Wrapper for dlerror() to be used by PAL functions
+
+Return value:
+
+A LPCSTR containing the output of dlerror()
+
+--*/
+PALIMPORT
+LPCSTR
+PALAPI
+PAL_GetLoadLibraryError()
+{
+
+    PERF_ENTRY(PAL_GetLoadLibraryError);
+    ENTRY("PAL_GetLoadLibraryError");
+
+    LPCSTR last_error = dlerror();
+
+    LOGEXIT("PAL_GetLoadLibraryError returns %p\n", last_error);
+    PERF_EXIT(PAL_GetLoadLibraryError);
+    return last_error;
+}
+
+
 /* Internal PAL functions *****************************************************/
 
 /*++
@@ -870,7 +897,7 @@ BOOL LOADInitializeModules()
     exe_module.dl_handle = dlopen(nullptr, RTLD_LAZY);
     if (exe_module.dl_handle == nullptr)
     {
-        ERROR("Executable module will be broken : dlopen(nullptr) failed dlerror message is \"%s\" \n", dlerror());
+        ERROR("Executable module will be broken : dlopen(nullptr) failed\n");
         return FALSE;
     }
     exe_module.lib_name = nullptr;
@@ -1107,7 +1134,7 @@ static BOOL LOADFreeLibrary(MODSTRUCT *module, BOOL fCallDllMain)
     if (module->dl_handle && 0 != dlclose(module->dl_handle))
     {
         /* report dlclose() failure, but proceed anyway. */
-        WARN("dlclose() call failed! error message is \"%s\"\n", dlerror());
+        WARN("dlclose() call failed!\n");
     }
 
     /* release all memory */
@@ -1376,7 +1403,6 @@ static void *LOADLoadLibraryDirect(LPCSTR libraryNameOrPath)
     void *dl_handle = dlopen(libraryNameOrPath, RTLD_LAZY);
     if (dl_handle == nullptr)
     {
-        WARN("dlopen() failed; dlerror says '%s'\n", dlerror());
         SetLastError(ERROR_MOD_NOT_FOUND);
     }
     else
@@ -1696,7 +1722,7 @@ MODSTRUCT *LOADGetPalLibrary()
         Dl_info info;
         if (dladdr((PVOID)&LOADGetPalLibrary, &info) == 0)
         {
-            ERROR("LOADGetPalLibrary: dladdr() failed. dlerror message is \"%s\"\n", dlerror());
+            ERROR("LOADGetPalLibrary: dladdr() failed.\n");
             goto exit;
         }
         // Stash a copy of the CoreCLR installation path in a global variable.
