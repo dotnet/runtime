@@ -83,8 +83,9 @@ else
         unset DEBUG_SANITIZERS
         echo "Setting DEBUG_SANITIZERS="
     else
-        # for now, specify alloc_dealloc_mismatch=0 as there are too many error reports that are not an issue
-        ASAN_OPTIONS="symbolize=1 alloc_dealloc_mismatch=0"
+        # for now, specify alloc_dealloc_mismatch=0 as there are too many error reports that are not an issue.
+        # Also specify use_sigaltstack=0 as coreclr uses own alternate stack for signal handlers
+        ASAN_OPTIONS="symbolize=1 alloc_dealloc_mismatch=0 use_sigaltstack=0"
         # when Clang 3.8 available, add: suppressions=$(readlink -f sanitizersuppressions.txt)
         UBSAN_OPTIONS="print_stacktrace=1"
 
