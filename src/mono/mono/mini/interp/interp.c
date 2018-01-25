@@ -1233,7 +1233,6 @@ ves_imethod (InterpFrame *frame, ThreadContext *context)
 	MonoMethod *method = frame->imethod->method;
 	const char *name = method->name;
 	MonoObject *obj = (MonoObject*) frame->stack_args->data.p;
-	MonoObject *isinst_obj;
 	ERROR_DECL (error);
 
 	mono_class_init (method->klass);
@@ -1249,11 +1248,12 @@ ves_imethod (InterpFrame *frame, ThreadContext *context)
 			ves_array_get (frame, FALSE);
 			return;
 		}
-	}
-
-	isinst_obj = mono_object_isinst_checked (obj, mono_defaults.array_class, error);
-	mono_error_cleanup (error); /* FIXME: don't swallow the error */
-	if (obj && isinst_obj) {
+	} else if (mini_class_is_system_array (method->klass)) {
+		if (!obj) {
+			frame->ex = mono_get_exception_null_reference ();
+			FILL_IN_TRACE (frame->ex, frame);
+			return;
+		}
 		if (*name == 'S' && (strcmp (name, "Set") == 0)) {
 			ves_array_set (frame);
 			return;
@@ -2658,13 +2658,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			sp->data.p = vt_sp;
 			child_frame.retval = sp;
 			/* decrement by the actual number of args */
-			sp -= child_frame.imethod->param_count;
-			if (child_frame.imethod->hasthis) {
-				--sp;
-				MonoObject *this_arg = sp->data.p;
-				if (!this_arg && (child_frame.imethod->method->flags & METHOD_ATTRIBUTE_VIRTUAL))
-					THROW_EX (mono_get_exception_null_reference(), ip - 2);
-			}
+			sp -= child_frame.imethod->param_count + child_frame.imethod->hasthis;
 
 			child_frame.stack_args = sp;
 
@@ -2694,13 +2688,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			sp->data.p = vt_sp;
 			child_frame.retval = sp;
 			/* decrement by the actual number of args */
-			sp -= child_frame.imethod->param_count;
-			if (child_frame.imethod->hasthis) {
-				--sp;
-				MonoObject *this_arg = sp->data.p;
-				if (!this_arg)
-					THROW_EX (mono_get_exception_null_reference(), ip - 2);
-			}
+			sp -= child_frame.imethod->param_count + child_frame.imethod->hasthis;
 			child_frame.stack_args = sp;
 
 			interp_exec_method (&child_frame, context);
@@ -2759,8 +2747,6 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			sp -= child_frame.imethod->param_count + 1;
 			child_frame.stack_args = sp;
 			this_arg = sp->data.p;
-			if (!this_arg)
-				THROW_EX (mono_get_exception_null_reference(), ip - 2);
 			child_frame.imethod = get_virtual_method (child_frame.imethod, this_arg);
 
 			MonoClass *this_class = this_arg->vtable->klass;
@@ -2804,8 +2790,6 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			sp -= child_frame.imethod->param_count + 1;
 			child_frame.stack_args = sp;
 			this_arg = sp->data.p;
-			if (!this_arg)
-				THROW_EX (mono_get_exception_null_reference(), ip - 2);
 			child_frame.imethod = get_virtual_method (child_frame.imethod, this_arg);
 
 			MonoClass *this_class = this_arg->vtable->klass;

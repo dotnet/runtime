@@ -838,7 +838,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	int op = -1;
 	int native = 0;
 	int is_void = 0;
-	int need_null_check = 0;
+	int need_null_check = virtual;
 
 	guint32 token = read32 (td->ip + 1);
 
