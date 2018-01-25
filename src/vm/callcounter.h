@@ -70,7 +70,7 @@ public:
     CallCounter();
 #endif
 
-    BOOL OnMethodCalled(MethodDesc* pMethodDesc);
+    void OnMethodCalled(MethodDesc* pMethodDesc, TieredCompilationManager *pTieredCompilationManager, BOOL* shouldStopCountingCallsRef, BOOL* wasPromotedToTier1Ref);
 
 private:
 

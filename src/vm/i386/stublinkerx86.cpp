@@ -6416,6 +6416,21 @@ void FixupPrecode::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 #ifndef DACCESS_COMPILE
 
+void rel32SetInterlocked(/*PINT32*/ PVOID pRel32, TADDR target, MethodDesc* pMD)
+{
+    CONTRACTL
+    {
+        THROWS;         // Creating a JumpStub could throw OutOfMemory
+        GC_TRIGGERS;
+    }
+    CONTRACTL_END;
+
+    INT32 targetRel32 = rel32UsingJumpStub((INT32*)pRel32, target, pMD);
+
+    _ASSERTE(IS_ALIGNED(pRel32, sizeof(INT32)));
+    FastInterlockExchange((LONG*)pRel32, (LONG)targetRel32);
+}
+
 BOOL rel32SetInterlocked(/*PINT32*/ PVOID pRel32, TADDR target, TADDR expected, MethodDesc* pMD)
 {
     CONTRACTL
@@ -6533,6 +6548,33 @@ void FixupPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int 
     {
         m_rel32 = rel32UsingJumpStub(&m_rel32, target, NULL /* pMD */, pLoaderAllocator);
     }
+}
+
+void FixupPrecode::ResetTargetInterlocked()
+{
+    CONTRACTL
+    {
+        THROWS;         // Creating a JumpStub could throw OutOfMemory
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    FixupPrecode newValue = *this;
+    newValue.m_op = X86_INSTR_CALL_REL32; // call PrecodeFixupThunk
+    newValue.m_type = FixupPrecode::TypePrestub;
+
+    PCODE target = (PCODE)GetEEFuncEntryPoint(PrecodeFixupThunk);
+    MethodDesc* pMD = (MethodDesc*)GetMethodDesc();
+    newValue.m_rel32 =
+#ifdef FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
+        pMD->IsLCGMethod() ?
+            rel32UsingPreallocatedJumpStub(&m_rel32, target, GetDynamicMethodEntryJumpStub()) :
+#endif // FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
+            rel32UsingJumpStub(&m_rel32, target, pMD);
+
+    _ASSERTE(IS_ALIGNED(this, sizeof(INT64)));
+    EnsureWritableExecutablePages(this, sizeof(INT64));
+    FastInterlockExchangeLong((INT64*)this, *(INT64*)&newValue);
 }
 
 BOOL FixupPrecode::SetTargetInterlocked(TADDR target, TADDR expected)

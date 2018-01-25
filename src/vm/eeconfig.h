@@ -285,6 +285,8 @@ public:
     // Tiered Compilation config
 #if defined(FEATURE_TIERED_COMPILATION)
     bool          TieredCompilation(void)           const {LIMITED_METHOD_CONTRACT;  return fTieredCompilation; }
+    DWORD         TieredCompilation_Tier1CallCountThreshold() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_tier1CallCountThreshold; }
+    DWORD         TieredCompilation_Tier1CallCountingDelayMs() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_tier1CallCountingDelayMs; }
 #endif
 
 #if defined(FEATURE_GDBJIT) && defined(_DEBUG)
@@ -1107,6 +1109,8 @@ private: //----------------------------------------------------------------
 
 #if defined(FEATURE_TIERED_COMPILATION)
     bool fTieredCompilation;
+    DWORD tieredCompilation_tier1CallCountThreshold;
+    DWORD tieredCompilation_tier1CallCountingDelayMs;
 #endif
 
 #if defined(FEATURE_GDBJIT) && defined(_DEBUG)

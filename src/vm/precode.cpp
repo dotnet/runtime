@@ -425,6 +425,29 @@ void Precode::Init(PrecodeType t, MethodDesc* pMD, LoaderAllocator *pLoaderAlloc
     _ASSERTE(IsValidType(GetType()));
 }
 
+void Precode::ResetTargetInterlocked()
+{
+    WRAPPER_NO_CONTRACT;
+
+    PrecodeType precodeType = GetType();
+    switch (precodeType)
+    {
+        case PRECODE_STUB:
+            AsStubPrecode()->ResetTargetInterlocked();
+            break;
+
+#ifdef HAS_FIXUP_PRECODE
+        case PRECODE_FIXUP:
+            AsFixupPrecode()->ResetTargetInterlocked();
+            break;
+#endif // HAS_FIXUP_PRECODE
+
+        default:
+            UnexpectedPrecodeType("Precode::ResetTargetInterlocked", precodeType);
+            break;
+    }
+}
+
 BOOL Precode::SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub)
 {
     WRAPPER_NO_CONTRACT;

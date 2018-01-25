@@ -376,6 +376,8 @@ HRESULT EEConfig::Init()
 
 #if defined(FEATURE_TIERED_COMPILATION)
     fTieredCompilation = false;
+    tieredCompilation_tier1CallCountThreshold = 1;
+    tieredCompilation_tier1CallCountingDelayMs = 0;
 #endif
     
 #if defined(FEATURE_GDBJIT) && defined(_DEBUG)
@@ -1239,6 +1241,14 @@ HRESULT EEConfig::sync()
 
 #if defined(FEATURE_TIERED_COMPILATION)
     fTieredCompilation = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredCompilation) != 0;
+    tieredCompilation_tier1CallCountThreshold =
+        CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredCompilation_Tier1CallCountThreshold);
+    if (tieredCompilation_tier1CallCountThreshold < 1)
+    {
+        tieredCompilation_tier1CallCountThreshold = 1;
+    }
+    tieredCompilation_tier1CallCountingDelayMs =
+        CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredCompilation_Tier1CallCountingDelayMs);
 #endif
 
 #if defined(FEATURE_GDBJIT) && defined(_DEBUG)
