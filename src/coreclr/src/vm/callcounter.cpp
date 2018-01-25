@@ -32,11 +32,18 @@ CallCounter::CallCounter()
 // Returns TRUE if no future invocations are needed (we reached the count we cared about)
 // and FALSE otherwise. It is permissible to keep calling even when TRUE was previously
 // returned and multi-threaded race conditions will surely cause this to occur.
-BOOL CallCounter::OnMethodCalled(MethodDesc* pMethodDesc)
+void CallCounter::OnMethodCalled(
+    MethodDesc* pMethodDesc,
+    TieredCompilationManager *pTieredCompilationManager,
+    BOOL* shouldStopCountingCallsRef,
+    BOOL* wasPromotedToTier1Ref)
 {
     STANDARD_VM_CONTRACT;
 
     _ASSERTE(pMethodDesc->IsEligibleForTieredCompilation());
+    _ASSERTE(pTieredCompilationManager != nullptr);
+    _ASSERTE(shouldStopCountingCallsRef != nullptr);
+    _ASSERTE(wasPromotedToTier1Ref != nullptr);
 
     // PERF: This as a simple to implement, but not so performant, call counter
     // Currently this is only called until we reach a fixed call count and then
@@ -75,7 +82,7 @@ BOOL CallCounter::OnMethodCalled(MethodDesc* pMethodDesc)
         }
     }
 
-    return GetAppDomain()->GetTieredCompilationManager()->OnMethodCalled(pMethodDesc, callCount);
+    pTieredCompilationManager->OnMethodCalled(pMethodDesc, callCount, shouldStopCountingCallsRef, wasPromotedToTier1Ref);
 }
 
 #endif // FEATURE_TIERED_COMPILATION
