@@ -3051,14 +3051,6 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
         }
         break;
 
-        case SIMDIntrinsicConvertToUInt32:
-        case SIMDIntrinsicConvertToUInt64:
-        {
-            JITDUMP("SIMD Conversion to UInt32/UInt64 is not supported on this platform\n");
-            return nullptr;
-        }
-        break;
-
         case SIMDIntrinsicConvertToInt64:
         {
 #ifdef _TARGET_64BIT_
