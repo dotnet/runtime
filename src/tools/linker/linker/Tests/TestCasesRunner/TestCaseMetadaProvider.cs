@@ -115,9 +115,13 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		public virtual IEnumerable<string> GetDefines ()
 		{
-			return _testCaseTypeDefinition.CustomAttributes
-				.Where (attr => attr.AttributeType.Name == nameof (DefineAttribute))
-				.Select (attr => (string) attr.ConstructorArguments.First ().Value);
+			// There are a few tests related to native pdbs where the assertions are different between windows and non-windows
+			// To enable test cases to define different expected behavior we set this special define
+			if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+				yield return "WIN32";
+
+			foreach (var attr in  _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (DefineAttribute)))
+				yield return (string) attr.ConstructorArguments.First ().Value;
 		}
 
 		public virtual string GetAssemblyName ()
