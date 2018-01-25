@@ -134,6 +134,7 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_pcmpgtq:
         case INS_pcmpgtw:
         case INS_phaddd:
+        case INS_pinsrw:
         case INS_pmaxsb:
         case INS_pmaxsd:
         case INS_pmaxsw:
