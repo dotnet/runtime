@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Test.Common;
 using System.Threading;
@@ -13,6 +14,176 @@ namespace System.Net.Http.Functional.Tests
     public class HttpProtocolTests : HttpClientTestBase
     {
         protected virtual Stream GetStream(Stream s) => s;
+
+        [Fact]
+        public async Task GetAsyncVersion10_SendsVersion10_Success()
+        {
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                {
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
+                    request.Version = HttpVersion.Version10;
+
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
+                    Task<List<string>> serverTask =
+                        LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                            $"HTTP/1.1 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n",
+                            new LoopbackServer.Options { ResponseStreamWrapper = GetStream });
+
+                    await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
+
+                    var requestLines = await serverTask;
+                    Assert.Equal($"GET {url.PathAndQuery} HTTP/1.0", requestLines[0]);
+                }
+            });
+        }
+
+        [Fact]
+        public async Task GetAsyncVersion11_SendsVersion11_Success()
+        {
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                {
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
+                    request.Version = HttpVersion.Version11;
+
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
+                    Task<List<string>> serverTask =
+                        LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                            $"HTTP/1.1 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n",
+                            new LoopbackServer.Options { ResponseStreamWrapper = GetStream });
+
+                    await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
+
+                    var requestLines = await serverTask;
+                    Assert.Equal($"GET {url.PathAndQuery} HTTP/1.1", requestLines[0]);
+                }
+            });
+        }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(0, 1)]
+        [InlineData(0, 9)]
+        public async Task GetAsync_BadVersion_Throws(int majorVersion, int minorVersion)
+        {
+            if (!UseManagedHandler)
+            {
+                return;
+            }
+
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                {
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
+                    request.Version = new Version(majorVersion, minorVersion);
+
+                    await Assert.ThrowsAsync<NotSupportedException>(async () => await client.SendAsync(request));
+                }
+            });
+        }
+
+        [Theory]
+        [InlineData(1, 2)]
+        [InlineData(1, 6)]
+        [InlineData(2, 0)]
+        [InlineData(2, 1)]
+        [InlineData(2, 7)]
+        [InlineData(3, 0)]
+        [InlineData(4, 2)]
+        public async Task GetAsync_UnknownVersion_DegradesTo11(int majorVersion, int minorVersion)
+        {
+            if (!UseManagedHandler)
+            {
+                return;
+            }
+
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                {
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
+                    request.Version = new Version(majorVersion, minorVersion);
+
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
+                    Task<List<string>> serverTask =
+                        LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                            $"HTTP/1.1 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n",
+                            new LoopbackServer.Options { ResponseStreamWrapper = GetStream });
+
+                    await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
+
+                    var requestLines = await serverTask;
+                    Assert.Equal($"GET {url.PathAndQuery} HTTP/1.1", requestLines[0]);
+                }
+            });
+        }
+
+        [Theory]
+        [InlineData(0, false)]
+        [InlineData(1, false)]
+        [InlineData(2, true)]
+        [InlineData(7, true)]
+        public async Task GetAsync_ResponseVersion1X_Success(int responseMinorVersion, bool managedHandlerOnly)
+        {
+            if (managedHandlerOnly && !UseManagedHandler)
+            {
+                return;
+            }
+
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                {
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
+                    request.Version = HttpVersion.Version11;
+
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
+                    Task<List<string>> serverTask =
+                        LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                            $"HTTP/1.{responseMinorVersion} 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n",
+                            new LoopbackServer.Options { ResponseStreamWrapper = GetStream });
+
+                    await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
+
+                    using (HttpResponseMessage response = await getResponseTask)
+                    {
+                        Assert.Equal(1, response.Version.Major);
+                        Assert.Equal(responseMinorVersion, response.Version.Minor);
+                    }
+                }
+            });
+        }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(0, 1)]
+        [InlineData(2, 0)]
+        [InlineData(2, 1)]
+        [InlineData(3, 0)]
+        [InlineData(4, 2)]
+        public async Task GetAsyncVersion11_BadResponseVersion_Throws(int responseMajorVersion, int responseMinorVersion)
+        {
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                {
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
+                    request.Version = HttpVersion.Version11;
+
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
+                    Task<List<string>> serverTask =
+                        LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                            $"HTTP/{responseMajorVersion}.{responseMinorVersion} 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n",
+                            new LoopbackServer.Options { ResponseStreamWrapper = GetStream });
+
+                    await Assert.ThrowsAsync<HttpRequestException>(async () => await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask));
+                }
+            });
+        }
 
         [Theory]
         // The following disabled by ActiveIssue: 26540
