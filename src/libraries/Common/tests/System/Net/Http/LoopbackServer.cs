@@ -153,6 +153,7 @@ namespace System.Net.Test.Common
         {
             options = options ?? new Options();
             Socket s = await server.AcceptAsync().ConfigureAwait(false);
+            s.NoDelay = true;
             try
             {
                 Stream stream = new NetworkStream(s, ownsSocket: false);
