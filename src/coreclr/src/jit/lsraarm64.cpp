@@ -830,10 +830,8 @@ void LinearScan::TreeNodeInfoInitSIMD(GenTreeSIMD* simdTree, TreeNodeInfo* info)
         case SIMDIntrinsicAbs:
         case SIMDIntrinsicConvertToSingle:
         case SIMDIntrinsicConvertToInt32:
-        case SIMDIntrinsicConvertToUInt32:
         case SIMDIntrinsicConvertToDouble:
         case SIMDIntrinsicConvertToInt64:
-        case SIMDIntrinsicConvertToUInt64:
         case SIMDIntrinsicWidenLo:
         case SIMDIntrinsicWidenHi:
             assert(info->srcCount == 1);
