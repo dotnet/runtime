@@ -1,0 +1,7 @@
+System.Console.Tests
+System.Data.SqlClient.Tests
+System.Diagnostics.Process.Tests
+System.Drawing.Common.Tests
+System.IO.FileSystem.Tests
+System.IO.Ports.Tests
+System.Management.Tests
