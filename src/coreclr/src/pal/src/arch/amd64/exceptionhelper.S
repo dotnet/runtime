@@ -14,6 +14,12 @@
 // Then it uses the ThrowExceptionHelper to throw the passed in exception from that context.
 // EXTERN_C void ThrowExceptionFromContextInternal(CONTEXT* context, PAL_SEHException* ex);
 LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
+#ifdef HAS_ASAN
+        // Need to call __asan_handle_no_return explicitly here because we re-intialize RSP before
+        // throwing exception in ThrowExceptionHelper
+        call    EXTERNAL_C_FUNC(__asan_handle_no_return)
+#endif
+
         // Save the RBP to the stack so that the unwind can work at the instruction after
         // loading the RBP from the context, but before loading the RSP from the context.
         push_nonvol_reg rbp

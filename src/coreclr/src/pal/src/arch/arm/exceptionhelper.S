@@ -11,6 +11,12 @@
 // EXTERN_C void ThrowExceptionFromContextInternal(CONTEXT* context, PAL_SEHException* ex);
 LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
     // Ported from src/pal/src/arch/amd64/exceptionhelper.S
+#ifdef HAS_ASAN
+    // Need to call __asan_handle_no_return explicitly here because we re-intialize SP before
+    // throwing exception in ThrowExceptionHelper
+    bl  EXTERNAL_C_FUNC(__asan_handle_no_return)
+#endif
+
     push_nonvol_reg {r7} /* FP. x64-RBP */
 
     ldr	r4,	[r0, #(CONTEXT_R4)]
