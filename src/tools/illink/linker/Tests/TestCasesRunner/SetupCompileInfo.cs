@@ -8,6 +8,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		public string[] Defines;
 		public string[] References;
 		public string AdditionalArguments;
+		public string CompilerToUse;
 		public bool AddAsReference;
 	}
 }

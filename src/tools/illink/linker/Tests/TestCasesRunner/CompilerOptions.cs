@@ -9,5 +9,6 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		public NPath[] References;
 		public NPath[] Resources;
 		public string[] AdditionalArguments;
+		public string CompilerToUse;
 	}
 }

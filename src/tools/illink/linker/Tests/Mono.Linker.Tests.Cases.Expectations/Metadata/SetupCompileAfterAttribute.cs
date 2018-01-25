@@ -6,7 +6,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Metadata {
 	/// </summary>
 	[AttributeUsage (AttributeTargets.Class, AllowMultiple = true)]
 	public class SetupCompileAfterAttribute : BaseMetadataAttribute {
-		public SetupCompileAfterAttribute (string outputName, string[] sourceFiles, string[] references = null, string[] defines = null, string additionalArguments = null)
+		public SetupCompileAfterAttribute (string outputName, string[] sourceFiles, string[] references = null, string[] defines = null, string additionalArguments = null, string compilerToUse = null)
 		{
 			if (sourceFiles == null)
 				throw new ArgumentNullException (nameof (sourceFiles));
