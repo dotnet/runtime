@@ -2025,13 +2025,17 @@ static MONO_NEVER_INLINE void
 do_transform_method (InterpFrame *frame, ThreadContext *context)
 {
 	MonoLMFExt ext;
+	/* Don't push lmf if we have no interp data */
+	gboolean push_lmf = frame->parent != NULL;
 
 	/* Use the parent frame as the current frame is not complete yet */
-	interp_push_lmf (&ext, frame->parent);
+	if (push_lmf)
+		interp_push_lmf (&ext, frame->parent);
 
 	frame->ex = mono_interp_transform_method (frame->imethod, context, frame);
 
-	interp_pop_lmf (&ext);
+	if (push_lmf)
+		interp_pop_lmf (&ext);
 }
 
 /*
