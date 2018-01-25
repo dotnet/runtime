@@ -104,7 +104,18 @@ LEAF_END RtlCaptureContext, _TEXT
 LEAF_ENTRY RtlRestoreContext, _TEXT
     push_nonvol_reg rbp
     alloc_stack (IRetFrameLengthAligned)
-    
+
+#ifdef HAS_ASAN
+    test    BYTE PTR [rdi + CONTEXT_ContextFlags], CONTEXT_CONTROL
+    je      LOCAL_LABEL(Restore_CONTEXT_DEBUG_REGISTERS)
+
+    push_nonvol_reg rdi
+    push_nonvol_reg rsi
+    call    EXTERNAL_C_FUNC(__asan_handle_no_return)
+    pop_nonvol_reg rsi
+    pop_nonvol_reg rdi
+LOCAL_LABEL(Restore_CONTEXT_DEBUG_REGISTERS):
+#endif
     test    BYTE PTR [rdi + CONTEXT_ContextFlags], CONTEXT_DEBUG_REGISTERS
     je      LOCAL_LABEL(Done_Restore_CONTEXT_DEBUG_REGISTERS)
     mov     rdx, [rdi + CONTEXT_Dr0]

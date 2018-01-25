@@ -12,6 +12,12 @@
 // Then it uses the ThrowExceptionHelper to throw the passed in exception from that context.
 // EXTERN_C void ThrowExceptionFromContextInternal(CONTEXT* context, PAL_SEHException* ex);
 LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
+#ifdef HAS_ASAN
+        // Need to call __asan_handle_no_return explicitly here because we re-intialize SP before
+        // throwing exception in ThrowExceptionHelper
+        bl  EXTERNAL_C_FUNC(__asan_handle_no_return)
+#endif
+
     // Save the FP & LR to the stack so that the unwind can work at the instruction after
     // loading the FP from the context, but before loading the SP from the context.
     stp fp, lr,  [sp, -16]!

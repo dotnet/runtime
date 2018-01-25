@@ -18,6 +18,12 @@
 //////////////////////////////////////////////////////////////////////////
 
 LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
+#ifdef HAS_ASAN
+        // Need to call __asan_handle_no_return explicitly here because we re-intialize ESP before
+        // throwing exception in ThrowExceptionHelper
+        call  EXTERNAL_C_FUNC(__asan_handle_no_return)
+#endif
+
         push  ebp
         mov   ecx, [esp + 12] // ecx: PAL_SEHException * (first argument for ThrowExceptionHelper)
         mov   eax, [esp + 8]  // ebx: CONTEXT *
