@@ -219,6 +219,15 @@ namespace System.Buffers
         public unsafe void* Pointer { get { throw null; } }
         public void Dispose() { }
     }
+    public abstract class MemoryPool<T> : IDisposable
+    {
+        public static System.Buffers.MemoryPool<T> Shared { get; }
+        public abstract System.Buffers.OwnedMemory<T> Rent(int minBufferSize=-1);
+        public abstract int MaxBufferSize { get; }
+        protected MemoryPool() { throw null; }
+        public void Dispose() { throw null; }
+        protected abstract void Dispose(bool disposing);
+    }
     public enum OperationStatus
     {
         DestinationTooSmall = 1,
