@@ -2385,7 +2385,6 @@ void LinearScan::TreeNodeInfoInitSIMD(GenTreeSIMD* simdTree, TreeNodeInfo* info)
             }
             break;
 
-        case SIMDIntrinsicConvertToUInt32:
         case SIMDIntrinsicConvertToInt32:
             assert(info->srcCount == 1);
             break;
@@ -2403,7 +2402,6 @@ void LinearScan::TreeNodeInfoInitSIMD(GenTreeSIMD* simdTree, TreeNodeInfo* info)
             break;
 
         case SIMDIntrinsicConvertToInt64:
-        case SIMDIntrinsicConvertToUInt64:
             assert(info->srcCount == 1);
             // We need an internal register different from targetReg.
             info->isInternalRegDelayFree = true;

@@ -137,12 +137,8 @@ SIMD_INTRINSIC("ConvertToSingle",           false,       ConvertToSingle,       
 SIMD_INTRINSIC("ConvertToDouble",           false,       ConvertToDouble,          "ConvertToDouble",        TYP_STRUCT,     1,      {TYP_STRUCT, TYP_UNDEF,  TYP_UNDEF},   {TYP_LONG, TYP_ULONG, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
 // Convert single to int
 SIMD_INTRINSIC("ConvertToInt32",            false,       ConvertToInt32,           "ConvertToInt32",         TYP_STRUCT,     1,      {TYP_STRUCT, TYP_UNDEF,  TYP_UNDEF},   {TYP_FLOAT, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
-// Convert single to uint
-SIMD_INTRINSIC("ConvertToUInt32",           false,       ConvertToUInt32,          "ConvertToUInt32",        TYP_STRUCT,     1,      {TYP_STRUCT, TYP_UNDEF,  TYP_UNDEF},   {TYP_FLOAT, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
 // Convert double to long
 SIMD_INTRINSIC("ConvertToInt64",            false,       ConvertToInt64,           "ConvertToInt64",         TYP_STRUCT,     1,      {TYP_STRUCT, TYP_UNDEF,  TYP_UNDEF},   {TYP_DOUBLE, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
-// Convert double to ulong
-SIMD_INTRINSIC("ConvertToUInt64",           false,       ConvertToUInt64,          "ConvertToUInt64",        TYP_STRUCT,     1,      {TYP_STRUCT, TYP_UNDEF,  TYP_UNDEF},   {TYP_DOUBLE, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
 // Narrow two input Vector<T>s to a single Vector<T>. The return value's lower elements are the elements from src1, and the upper elements are from src2.
 SIMD_INTRINSIC("Narrow",                    false,       Narrow,                   "Narrow",                 TYP_STRUCT,     2,      {TYP_STRUCT, TYP_STRUCT, TYP_UNDEF},   {TYP_INT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_SHORT, TYP_UINT, TYP_ULONG, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
 // Widen one input Vector<T> to two Vector<T>s: dest1 contains the lower half of elements in src, and dest2 contains the upper half of elements in src.
