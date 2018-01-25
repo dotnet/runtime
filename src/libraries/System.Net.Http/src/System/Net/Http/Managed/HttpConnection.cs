@@ -204,7 +204,17 @@ namespace System.Net.Http
             _currentRequest = request;
             try
             {
-                bool isHttp10 = request.Version.Major == 1 && request.Version.Minor == 0;
+                // Our max supported version is 1.1, so if Version > 1.1, degrade to 1.1.
+                Debug.Assert(request.Version.Major >= 0 && request.Version.Minor >= 0);     // guaranteed by Version class
+                bool isHttp10 = false;
+                if (request.Version.Major == 0)
+                {
+                    throw new NotSupportedException(SR.net_http_unsupported_version);
+                }
+                else if (request.Version.Major == 1 && request.Version.Minor == 0)
+                {
+                    isHttp10 = true;
+                }
 
                 // Send the request.
                 if (NetEventSource.IsEnabled) Trace($"Sending request: {request}");
@@ -505,29 +515,41 @@ namespace System.Net.Http
 
         private void ParseStatusLine(Span<byte> line, HttpResponseMessage response)
         {
+            // We sent the request version as either 1.0 or 1.1.
+            // We expect a response version of the form 1.X, where X is a single digit as per RFC.
+
             if (line.Length < 14 || // "HTTP/1.1 123\r\n" with optional phrase before the crlf
                 line[0] != 'H' ||
                 line[1] != 'T' ||
                 line[2] != 'T' ||
                 line[3] != 'P' ||
                 line[4] != '/' ||
+                line[5] != '1' ||
+                line[6] != '.' ||
                 line[8] != ' ')
             {
                 ThrowInvalidHttpResponse();
             }
 
-            // Set the response HttpVersion and status code
-            byte majorVersion = line[5], minorVersion = line[7];
-            byte status1 = line[9], status2 = line[10], status3 = line[11];
-            if (!IsDigit(majorVersion) || line[6] != (byte)'.' || !IsDigit(minorVersion) ||
-                !IsDigit(status1) || !IsDigit(status2) || !IsDigit(status3))
+            // Set the response HttpVersion
+            byte minorVersion = line[7];
+            if (!IsDigit(minorVersion))
             {
                 ThrowInvalidHttpResponse();
             }
+
             response.Version =
-                (majorVersion == '1' && minorVersion == '1') ? HttpVersionInternal.Version11 :
-                (majorVersion == '1' && minorVersion == '0') ? HttpVersionInternal.Version10 :
-                HttpVersionInternal.Unknown;
+                minorVersion == '1' ? HttpVersion.Version11 :
+                minorVersion == '0' ? HttpVersion.Version10 :
+                new Version(1, minorVersion - '0');
+
+            // Set the status code
+            byte status1 = line[9], status2 = line[10], status3 = line[11];
+            if (!IsDigit(status1) || !IsDigit(status2) || !IsDigit(status3))
+            {
+                ThrowInvalidHttpResponse();
+            }
+
             response.StatusCode =
                 (HttpStatusCode)(100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0'));
 
