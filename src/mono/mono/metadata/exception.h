@@ -5,6 +5,7 @@
 #ifndef _MONO_METADATA_EXCEPTION_H_
 #define _MONO_METADATA_EXCEPTION_H_
 
+#include <mono/metadata/object-forward.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/image.h>
 

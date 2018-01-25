@@ -111,6 +111,42 @@ mono_runtime_object_init (MonoObject *this_obj)
  * on error and sets \p error.
  */
 gboolean
+mono_runtime_object_init_handle (MonoObjectHandle this_obj, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	error_init (error);
+
+	MonoClass * const klass = MONO_HANDLE_GETVAL (this_obj, vtable)->klass;
+	MonoMethod * const method = mono_class_get_method_from_name (klass, ".ctor", 0);
+	g_assertf (method, "Could not lookup zero argument constructor for class %s", mono_type_get_full_name (klass));
+
+	guint gchandle = 0;
+	gpointer raw;
+
+	if (method->klass->valuetype) {
+		raw = mono_object_handle_pin_unbox (this_obj, &gchandle);
+	} else {
+		gchandle = mono_gchandle_from_handle (this_obj, TRUE);
+		raw = MONO_HANDLE_RAW (this_obj);
+	}
+
+	mono_runtime_invoke_checked (method, raw, NULL, error);
+
+	mono_gchandle_free (gchandle);
+
+	return is_ok (error);
+}
+
+/**
+ * mono_runtime_object_init_checked:
+ * \param this_obj the object to initialize
+ * \param error set on error.
+ * This function calls the zero-argument constructor (which must
+ * exist) for the given object and returns TRUE on success, or FALSE
+ * on error and sets \p error.
+ */
+gboolean
 mono_runtime_object_init_checked (MonoObject *this_obj, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;

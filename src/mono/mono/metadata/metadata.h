@@ -10,6 +10,7 @@
 #include <mono/metadata/blob.h>
 #include <mono/metadata/row-indexes.h>
 #include <mono/metadata/image.h>
+#include <mono/metadata/object-forward.h>
 
 MONO_BEGIN_DECLS
 
@@ -22,9 +23,7 @@ MONO_BEGIN_DECLS
 
 #define MONO_CLASS_IS_IMPORT(c) ((mono_class_get_flags (c) & TYPE_ATTRIBUTE_IMPORT))
 
-typedef struct _MonoClass MonoClass;
 typedef struct _MonoDomain MonoDomain;
-typedef struct _MonoMethod MonoMethod;
 
 typedef enum {
 	MONO_EXCEPTION_CLAUSE_NONE,

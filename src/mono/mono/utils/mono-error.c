@@ -553,6 +553,13 @@ set_message_on_exception (MonoException *exception, MonoErrorInternal *error, Mo
 		mono_error_set_out_of_memory (error_out, "Could not allocate exception object");
 }
 
+MonoExceptionHandle
+mono_error_prepare_exception_handle (MonoError *oerror, MonoError *error_out)
+// Can fail with out-of-memory
+{
+	return MONO_HANDLE_NEW (MonoException, mono_error_prepare_exception (oerror, error_out));
+}
+
 /*Can fail with out-of-memory*/
 MonoException*
 mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
@@ -675,6 +682,36 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 Convert this MonoError to an exception if it's faulty or return NULL.
 The error object is cleant after.
 */
+
+MonoExceptionHandle
+mono_error_convert_to_exception_handle (MonoError *target_error)
+{
+	ERROR_DECL (error);
+
+	HANDLE_FUNCTION_ENTER ()
+
+	MonoExceptionHandle ex = MONO_HANDLE_NEW (MonoException, NULL);
+
+	/* Mempool stored error shouldn't be cleaned up */
+	g_assert (!is_boxed ((MonoErrorInternal*)target_error));
+
+	if (mono_error_ok (target_error))
+		goto exit;
+
+	ex = mono_error_prepare_exception_handle (target_error, error);
+	if (!mono_error_ok (error)) {
+		ERROR_DECL_VALUE (second_chance);
+		/*Try to produce the exception for the second error. FIXME maybe we should log about the original one*/
+		ex = mono_error_prepare_exception_handle (error, &second_chance);
+
+		g_assert (mono_error_ok (&second_chance)); /*We can't reasonable handle double faults, maybe later.*/
+		mono_error_cleanup (error);
+	}
+	mono_error_cleanup (target_error);
+
+exit:
+	HANDLE_FUNCTION_RETURN_REF (MonoException, ex)
+}
 
 MonoException*
 mono_error_convert_to_exception (MonoError *target_error)

@@ -5,8 +5,8 @@
 #ifndef __MONO_ERROR_INTERNALS_H__
 #define __MONO_ERROR_INTERNALS_H__
 
+#include <mono/metadata/object-forward.h>
 #include "mono/utils/mono-compiler.h"
-#include "mono/metadata/class-internals.h"
 
 /*Keep in sync with MonoError*/
 typedef struct {
@@ -113,7 +113,9 @@ Different names indicate different scenarios, but the same code.
 #define return_if_nok(error) do { if (!is_ok ((error))) return; } while (0)
 #define return_val_if_nok(error,val) do { if (!is_ok ((error))) return (val); } while (0)
 
-#define goto_if_nok(error,label) do { if (!is_ok ((error))) goto label; } while (0)
+#define goto_if(expr, label) 	  do { if (expr) goto label; } while (0)
+#define goto_if_ok(error, label)  goto_if (is_ok (error), label)
+#define goto_if_nok(error, label) goto_if (!is_ok (error), label)
 
 /* Only use this in icalls */
 #define return_val_and_set_pending_if_nok(error, value) \

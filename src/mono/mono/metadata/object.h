@@ -5,6 +5,7 @@
 #ifndef _MONO_CLI_OBJECT_H_
 #define _MONO_CLI_OBJECT_H_
 
+#include <mono/metadata/object-forward.h>
 #include <mono/metadata/class.h>
 #include <mono/utils/mono-error.h>
 
@@ -22,7 +23,6 @@ typedef struct _MonoReflectionProperty MONO_RT_MANAGED_ATTR MonoReflectionProper
 typedef struct _MonoReflectionEvent MONO_RT_MANAGED_ATTR MonoReflectionEvent;
 typedef struct _MonoReflectionType MONO_RT_MANAGED_ATTR MonoReflectionType;
 typedef struct _MonoDelegate MONO_RT_MANAGED_ATTR MonoDelegate;
-typedef struct _MonoException MONO_RT_MANAGED_ATTR MonoException;
 typedef struct _MonoThreadsSync MonoThreadsSync;
 typedef struct _MonoThread MONO_RT_MANAGED_ATTR MonoThread;
 typedef struct _MonoDynamicAssembly MonoDynamicAssembly;

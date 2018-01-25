@@ -22,6 +22,7 @@
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/checked-build.h>
+#include <mono/metadata/class-internals.h>
 
 G_BEGIN_DECLS
 
@@ -208,11 +209,13 @@ Icall macros
 	CLEAR_ICALL_FRAME;			\
 	} while (0)
 
+// Return a non-pointer or non-managed pointer, e.g. gboolean.
 #define HANDLE_FUNCTION_RETURN_VAL(VAL)		\
 	CLEAR_ICALL_FRAME;			\
 	return (VAL);				\
 	} while (0)
 
+// Return a raw pointer from coop handle.
 #define HANDLE_FUNCTION_RETURN_OBJ(HANDLE)			\
 	do {							\
 		void* __result = MONO_HANDLE_RAW (HANDLE);	\
@@ -220,6 +223,7 @@ Icall macros
 		return __result;				\
 	} while (0); } while (0);
 
+// Return a coop handle from coop handle.
 #define HANDLE_FUNCTION_RETURN_REF(TYPE, HANDLE)			\
 	do {								\
 		MonoRawHandle __result;					\

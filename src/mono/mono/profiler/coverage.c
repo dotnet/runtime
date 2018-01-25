@@ -64,6 +64,7 @@
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/tokentype.h>
+#include <mono/metadata/class-internals.h>
 
 #include <mono/mini/jit.h>
 

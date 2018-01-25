@@ -8,10 +8,10 @@
 #include <stdio.h>
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/mono-error.h>
+#include <mono/metadata/object-forward.h>
 
 MONO_BEGIN_DECLS
 
-typedef struct _MonoImage MonoImage;
 typedef struct _MonoAssembly MonoAssembly;
 typedef struct _MonoAssemblyName MonoAssemblyName;
 typedef struct _MonoTableInfo MonoTableInfo;

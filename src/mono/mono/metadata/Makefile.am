@@ -347,6 +347,7 @@ libmonoruntimeinclude_HEADERS = \
 	mono-debug.h		\
 	mono-gc.h		\
 	object.h		\
+	object-forward.h	\
 	opcodes.h		\
 	profiler.h		\
 	profiler-events.h	\
