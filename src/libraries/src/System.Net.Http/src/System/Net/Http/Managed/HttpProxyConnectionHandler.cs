@@ -74,7 +74,6 @@ namespace System.Net.Http
             {
                 foreach (AuthenticationHeaderValue h in response.Headers.ProxyAuthenticate)
                 {
-                    // We only support Basic auth, ignore others
                     if (h.Scheme == AuthenticationHelper.Basic)
                     {
                         NetworkCredential credential =
@@ -111,7 +110,7 @@ namespace System.Net.Http
                                 response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
                                 // Retry in case of nonce timeout in server.
-                                if (response.StatusCode == HttpStatusCode.Unauthorized)
+                                if (response.StatusCode == HttpStatusCode.ProxyAuthenticationRequired)
                                 {
                                     foreach (AuthenticationHeaderValue ahv in response.Headers.ProxyAuthenticate)
                                     {

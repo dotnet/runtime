@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public class HttpProtocolTests : HttpClientTest
+    public class HttpProtocolTests : HttpClientTestBase
     {
         protected virtual Stream GetStream(Stream s) => s;
 
@@ -122,7 +122,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    public class HttpProtocolTests_Dribble : HttpProtocolTests, IDisposable
+    public class HttpProtocolTests_Dribble : HttpProtocolTests
     {
         protected override Stream GetStream(Stream s) => new DribbleStream(s);
 
@@ -137,7 +137,7 @@ namespace System.Net.Http.Functional.Tests
                 for (int i = 0; i < count; i++)
                 {
                     await _wrapped.WriteAsync(buffer, offset + i, 1);
-                    await Task.Yield(); // introduce short delays, enough to send packets individually but so long as to extend test duration significantly
+                    await Task.Delay(3); // introduce short delays, enough to send packets individually but not so long as to extend test duration significantly
                 }
             }
 
