@@ -15,9 +15,6 @@ namespace System.Net.Http.Functional.Tests
         protected virtual Stream GetStream(Stream s) => s;
 
         [Theory]
-        // The following disabled by ActiveIssue: 26540
-        // [InlineData("HTTP/1.1 200      ", 200, "     ")]
-        // [InlineData("HTTP/1.1 200      Something", 200, "     Something")]
         [InlineData("HTTP/1.1 200 OK", 200, "OK")]
         [InlineData("HTTP/1.1 200 Sure why not?", 200, "Sure why not?")]
         [InlineData("HTTP/1.1 200 OK\x0080", 200, "OK?")]
@@ -33,6 +30,24 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_ExpectedStatusCodeAndReason_Success(string statusLine, int expectedStatusCode, string expectedReason)
         {
             await GetAsyncSuccessHelper(statusLine, expectedStatusCode, expectedReason);
+        }
+
+        [Theory]
+        [InlineData("HTTP/1.1 200      ", 200, "     ", "")]
+        [InlineData("HTTP/1.1 200      Something", 200, "     Something", "Something")]
+        public async Task GetAsync_ExpectedStatusCodeAndReason_PlatformBehaviorTest(string statusLine,
+            int expectedStatusCode, string reasonWithSpace, string reasonNoSpace)
+        {
+            if (UseManagedHandler || PlatformDetection.IsFullFramework)
+            {
+                // ManagedHandler and .NET Framework will keep the space characters.
+                await GetAsyncSuccessHelper(statusLine, expectedStatusCode, reasonWithSpace);
+            }
+            else
+            {
+                // WinRT, WinHttpHandler, and CurlHandler will trim space characters.
+                await GetAsyncSuccessHelper(statusLine, expectedStatusCode, reasonNoSpace);
+            }
         }
 
         [Theory]
@@ -74,10 +89,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("HTTP/1.1 2345")]
         [InlineData("HTTP/A.1 200 OK")]
         [InlineData("HTTP/X.Y.Z 200 OK")]
-        // The following disabled by ActiveIssue: 26542
-        //[InlineData("HTTP/1.1\t200 OK")]
-        //[InlineData("HTTP/1.1 200\tOK")]
-        //[InlineData("HTTP/1.1 200\t")]
         // TODO #24713: The following pass on Windows on .NET Core but fail on .NET Framework.
         //[InlineData("HTTP/0.1 200 OK")]
         //[InlineData("HTTP/3.5 200 OK")]
@@ -106,6 +117,25 @@ namespace System.Net.Http.Functional.Tests
         //[InlineData("HTTP/1.1  ")]
         //[InlineData("NOTHTTP/1.1 200 OK")]
         public async Task GetAsync_InvalidStatusLine_ThrowsException(string responseString)
+        {
+            await GetAsyncThrowsExceptionHelper(responseString);
+        }
+
+        [Theory]
+        [InlineData("HTTP/1.1\t200 OK")]
+        [InlineData("HTTP/1.1 200\tOK")]
+        [InlineData("HTTP/1.1 200\t")]
+        public async Task GetAsync_InvalidStatusLine_ThrowsExceptionOnManagedHandler(string responseString)
+        {
+            if (UseManagedHandler || PlatformDetection.IsFullFramework)
+            {
+                // ManagedHandler and .NET Framework will throw HttpRequestException.
+                await GetAsyncThrowsExceptionHelper(responseString);
+            }
+            // WinRT, WinHttpHandler, and CurlHandler will succeed.
+        }
+
+        private async Task GetAsyncThrowsExceptionHelper(string responseString)
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
