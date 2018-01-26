@@ -63,6 +63,9 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT);
 #include <elf.h>
 #include <link.h>
 
+#ifndef ElfW
+#define ElfW(foo) Elf_ ## foo
+#endif
 #define Ehdr   ElfW(Ehdr)
 #define Phdr   ElfW(Phdr)
 #define Shdr   ElfW(Shdr)
