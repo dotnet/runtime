@@ -105,14 +105,14 @@
       </xsd:complexType>
     </xsd:element>
   </xsd:schema>
-  <resheader name="reader">
-    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </resheader>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
   </resheader>
   <resheader name="version">
     <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
@@ -154,7 +154,7 @@
     <value>The feed created a null category.</value>
   </data>
   <data name="FeedCreatedNullItem" xml:space="preserve">
-    <value>=The feed created a null item.</value>
+    <value>The feed created a null item.</value>
   </data>
   <data name="FeedCreatedNullPerson" xml:space="preserve">
     <value>The feed created a null person.</value>
@@ -260,5 +260,8 @@
   </data>
   <data name="InvalidSkipHourValue" xml:space="preserve">
     <value>Cannot parse string `{0}` as skip hour. The value for skip hours must be an integer betwen 0 and 23.</value>
+  </data>
+  <data name="InvalidTimeToLiveValue" xml:space="preserve">
+    <value>The value for TimeToLive must be a non-negative whole number of minutes.</value>
   </data>
 </root>

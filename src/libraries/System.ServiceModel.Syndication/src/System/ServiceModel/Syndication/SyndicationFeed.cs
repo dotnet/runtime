@@ -36,7 +36,7 @@ namespace System.ServiceModel.Syndication
 
         // optional RSS tags
         private SyndicationLink _documentation;
-        private int? _timeToLive;
+        private TimeSpan? _timeToLive;
         private Collection<int> _skipHours;
         private Collection<string> _skipDays;
         private SyndicationTextInput _textInput;
@@ -291,13 +291,13 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        internal int? InternalTimeToLive => _timeToLive;
+        internal TimeSpan? InternalTimeToLive => _timeToLive;
 
-        public int? TimeToLive
+        public TimeSpan? TimeToLive
         {
             get
             {
-                if (_timeToLive == null)
+                if (!_timeToLive.HasValue)
                 {
                     _timeToLive = TryReadTimeToLiveFromExtension(ElementExtensions);
                 }
@@ -306,6 +306,11 @@ namespace System.ServiceModel.Syndication
             }
             set
             {
+                if (value.HasValue && (value.Value.Milliseconds != 0 || value.Value.Seconds != 0 || value.Value.TotalMinutes < 0))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value.Value, SR.InvalidTimeToLiveValue);
+                }
+
                 _timeToLive = value;
             }
         }
@@ -379,11 +384,10 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        private int? TryReadTimeToLiveFromExtension(SyndicationElementExtensionCollection elementExtensions)
+        private TimeSpan? TryReadTimeToLiveFromExtension(SyndicationElementExtensionCollection elementExtensions)
         {
             SyndicationElementExtension timeToLiveElement = elementExtensions
-                                      .Where(e => e.OuterName == Rss20Constants.TimeToLiveTag && e.OuterNamespace == Rss20Constants.Rss20Namespace)
-                                      .FirstOrDefault();
+                                      .FirstOrDefault(e => e.OuterName == Rss20Constants.TimeToLiveTag && e.OuterNamespace == Rss20Constants.Rss20Namespace);
 
             if (timeToLiveElement == null)
                 return null;
@@ -393,7 +397,14 @@ namespace System.ServiceModel.Syndication
                 string value = reader.ReadElementString();
                 if (int.TryParse(value, out int timeToLive))
                 {
-                    return timeToLive;
+                    if (timeToLive >= 0)
+                    {
+                        return TimeSpan.FromMinutes(timeToLive);
+                    }
+                    else
+                    {
+                        return null;
+                    }
                 }
                 else
                 {
