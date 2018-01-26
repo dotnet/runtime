@@ -340,7 +340,7 @@ private:
     ReJITID m_rejitId;
     PTR_ILCodeVersionNode m_pNextILVersionNode;
     Volatile<ILCodeVersion::RejitFlags> m_rejitState;
-    VolatilePtr<COR_ILMETHOD> m_pIL;
+    VolatilePtr<COR_ILMETHOD, PTR_COR_ILMETHOD> m_pIL;
     Volatile<DWORD> m_jitFlags;
     InstrumentedILOffsetMapping m_instrumentedILMap;
 };
