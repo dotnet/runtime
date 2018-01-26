@@ -66,7 +66,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                 }
 
-                if (pObject != null && pObject.Type.isStructOrEnum())
+                if (pObject != null && pObject.Type.IsStructOrEnum)
                 {
                     if (pObject is ExprWithArgs withArgs)
                     {
@@ -91,7 +91,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // everything else
                 if (pObject != null && !pObject.isLvalue() && (expr is ExprField || !isNested))
                 {
-                    Debug.Assert(pObject.Type.isStructOrEnum());
+                    Debug.Assert(pObject.Type.IsStructOrEnum);
                     Debug.Assert(!(pObject is ExprLocal));
                     expr = pObject;
                 }

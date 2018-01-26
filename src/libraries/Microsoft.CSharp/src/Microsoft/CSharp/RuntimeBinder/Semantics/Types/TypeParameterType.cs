@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Diagnostics;
+using System.Reflection;
+using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
@@ -10,26 +13,54 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
     internal sealed class TypeParameterType : CType
     {
-        public TypeParameterSymbol GetTypeParameterSymbol() { return _pTypeParameterSymbol; }
-        public void SetTypeParameterSymbol(TypeParameterSymbol pTypePArameterSymbol) { _pTypeParameterSymbol = pTypePArameterSymbol; }
+        public TypeParameterType(TypeParameterSymbol symbol)
+            : base(TypeKind.TK_TypeParameterType)
+        {
+            Debug.Assert(symbol.GetTypeParameterType() == null);
+            Symbol = symbol;
+            symbol.SetTypeParameterType(this);
+        }
 
-        public ParentSymbol GetOwningSymbol() { return _pTypeParameterSymbol.parent; }
+        public TypeParameterSymbol Symbol { get; }
 
         // Forward calls into the symbol.
-        public bool Covariant { get { return _pTypeParameterSymbol.Covariant; } }
-        public bool Invariant { get { return _pTypeParameterSymbol.Invariant; } }
-        public bool Contravariant { get { return _pTypeParameterSymbol.Contravariant; } }
-        public bool IsValueType() { return _pTypeParameterSymbol.IsValueType(); }
-        public bool IsReferenceType() { return _pTypeParameterSymbol.IsReferenceType(); }
-        public bool IsNonNullableValueType() { return _pTypeParameterSymbol.IsNonNullableValueType(); }
-        public bool HasNewConstraint() { return _pTypeParameterSymbol.HasNewConstraint(); }
-        public bool HasRefConstraint() { return _pTypeParameterSymbol.HasRefConstraint(); }
-        public bool HasValConstraint() { return _pTypeParameterSymbol.HasValConstraint(); }
-        public bool IsMethodTypeParameter() { return _pTypeParameterSymbol.IsMethodTypeParameter(); }
-        public int GetIndexInOwnParameters() { return _pTypeParameterSymbol.GetIndexInOwnParameters(); }
-        public int GetIndexInTotalParameters() { return _pTypeParameterSymbol.GetIndexInTotalParameters(); }
-        public TypeArray GetBounds() { return _pTypeParameterSymbol.GetBounds(); }
 
-        private TypeParameterSymbol _pTypeParameterSymbol;
+        public ParentSymbol OwningSymbol => Symbol.parent;
+
+        public Name Name => Symbol.name;
+
+        public bool Covariant => Symbol.Covariant;
+
+        public bool Invariant => Symbol.Invariant;
+
+        public bool Contravariant => Symbol.Contravariant;
+
+        public override bool IsValueType => Symbol.IsValueType();
+
+        public override bool IsReferenceType => Symbol.IsReferenceType();
+
+        public override bool IsNonNullableValueType => Symbol.IsNonNullableValueType();
+
+        public bool HasNewConstraint => Symbol.HasNewConstraint();
+
+        public bool HasRefConstraint => Symbol.HasRefConstraint();
+
+        public bool HasValConstraint => Symbol.HasValConstraint();
+
+        public bool IsMethodTypeParameter => Symbol.IsMethodTypeParameter();
+
+        public int IndexInOwnParameters => Symbol.GetIndexInOwnParameters();
+
+        public int IndexInTotalParameters => Symbol.GetIndexInTotalParameters();
+
+        public TypeArray Bounds => Symbol.GetBounds();
+
+        public override Type AssociatedSystemType =>
+            (IsMethodTypeParameter
+                ? ((MethodInfo)((MethodSymbol)OwningSymbol).AssociatedMemberInfo).GetGenericArguments()
+                : ((AggregateSymbol)OwningSymbol).AssociatedSystemType.GetGenericArguments()
+            )[IndexInOwnParameters];
+
+        public override FUNDTYPE FundamentalType => FUNDTYPE.FT_VAR;
     }
 }

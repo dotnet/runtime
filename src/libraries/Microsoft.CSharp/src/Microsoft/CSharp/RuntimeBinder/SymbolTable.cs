@@ -206,7 +206,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     CType cType = GetCTypeFromType(type);
                     if (!(cType is AggregateType aggType))
                         continue;
-                    AggregateSymbol aggregate = aggType.getAggregate();
+                    AggregateSymbol aggregate = aggType.OwningAggregate;
                     FieldSymbol addedField = null;
 
                     // We need to add fields before the actual events, so do the first iteration
@@ -313,14 +313,14 @@ namespace Microsoft.CSharp.RuntimeBinder
             // If we have a WinRT type then we should load the members of it's collection interfaces
             // as well as those members are on this type as far as the user is concerned.
             CType ctype = GetCTypeFromType(type);
-            if (ctype.IsWindowsRuntimeType())
+            if (ctype.IsWindowsRuntimeType)
             {
                 TypeArray collectioniFaces = ((AggregateType)ctype).GetWinRTCollectionIfacesAll(_semanticChecker.SymbolLoader);
 
                 for (int i = 0; i < collectioniFaces.Count; i++)
                 {
                     CType collectionType = collectioniFaces[i];
-                    Debug.Assert(collectionType.isInterfaceType());
+                    Debug.Assert(collectionType.IsInterfaceType);
 
                     // Insert into our list of Types.
                     list.Add(collectionType.AssociatedSystemType);
@@ -376,9 +376,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 for (int i = 0; i < genericArguments.Length; i++)
                 {
                     Type t = genericArguments[i];
-                    ((TypeParameterType)ctypes[i]).GetTypeParameterSymbol().SetBounds(
-                        _bsymmgr.AllocParams(
-                        GetCTypeArrayFromTypes(t.GetGenericParameterConstraints())));
+                    ((TypeParameterType)ctypes[i]).Symbol.SetBounds(_bsymmgr.AllocParams(GetCTypeArrayFromTypes(t.GetGenericParameterConstraints())));
                 }
                 return _bsymmgr.AllocParams(ctypes.Length, ctypes);
             }
@@ -430,7 +428,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
                     // We check to make sure we own the type parameter - this is because we're
                     // currently calculating TypeArgsThis, NOT TypeArgsAll.
-                    if (((TypeParameterType)ctype).GetOwningSymbol() == agg)
+                    if (((TypeParameterType)ctype).OwningSymbol == agg)
                     {
                         ctypes.Add(ctype);
                     }
@@ -1002,9 +1000,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     Type t = genericArguments[i];
                     if (agg.GetTypeVars()[i] is TypeParameterType typeVar)
                     {
-                        typeVar.GetTypeParameterSymbol().SetBounds(
-                            _bsymmgr.AllocParams(
-                            GetCTypeArrayFromTypes(t.GetGenericParameterConstraints())));
+                        typeVar.Symbol.SetBounds(_bsymmgr.AllocParams(GetCTypeArrayFromTypes(t.GetGenericParameterConstraints())));
                     }
                 }
             }
@@ -1533,7 +1529,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 methodSymbol.isOverride = false;
                 methodSymbol.isOperator = false;
                 methodSymbol.swtSlot = null;
-                methodSymbol.RetType = _typeManager.GetVoid();
+                methodSymbol.RetType = VoidType.Instance;
             }
 
             methodSymbol.modOptCount = GetCountOfModOpts(parameters);
@@ -1745,19 +1741,20 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private TypeArray CreateParameterArray(MemberInfo associatedInfo, ParameterInfo[] parameters)
         {
-            List<CType> types = new List<CType>();
+            bool isVarArg = associatedInfo is MethodBase mb && (mb.CallingConvention & CallingConventions.VarArgs) != 0;
+            CType[] types = new CType[isVarArg ? parameters.Length + 1 : parameters.Length];
 
-            foreach (ParameterInfo p in parameters)
+            for (int i = 0; i < parameters.Length; i++)
             {
-                types.Add(GetTypeOfParameter(p, associatedInfo));
+                types[i] = GetTypeOfParameter(parameters[i], associatedInfo);
             }
 
-            if (associatedInfo is MethodBase mb && (mb.CallingConvention & CallingConventions.VarArgs) != 0)
+            if (isVarArg)
             {
-                types.Add(_typeManager.GetArgListType());
+                types[types.Length - 1] = ArgumentListType.Instance;
             }
 
-            return _bsymmgr.AllocParams(types.Count, types.ToArray());
+            return _bsymmgr.AllocParams(types);
         }
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -1779,7 +1776,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             // Check if we have an out parameter.
             if (ctype is ParameterModifierType mod && p.IsOut && !p.IsIn)
             {
-                CType parameterType = mod.GetParameterType();
+                CType parameterType = mod.ParameterType;
                 ctype = _typeManager.GetParameterModifier(parameterType, true);
             }
 
@@ -1826,7 +1823,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 // the methods in order. As such, our parent methods should be in the
                 // symbol table at this point.
 
-                AggregateSymbol aggregate = GetCTypeFromType(baseMethodInfo.DeclaringType).getAggregate();
+                AggregateSymbol aggregate = ((AggregateType)GetCTypeFromType(baseMethodInfo.DeclaringType)).OwningAggregate;
                 MethodSymbol baseMethod = FindMethodFromMemberInfo(baseMethodInfo);
                 Debug.Assert(baseMethod != null);
                 return new SymWithType(baseMethod, aggregate.getThisType());
@@ -1841,7 +1838,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
             CType t = GetCTypeFromType(baseMemberInfo.DeclaringType);
             Debug.Assert(t is AggregateType);
-            AggregateSymbol aggregate = t.getAggregate();
+            AggregateSymbol aggregate = ((AggregateType)t).OwningAggregate;
             Debug.Assert(aggregate != null);
 
             MethodSymbol meth = _semanticChecker.SymbolLoader.LookupAggMember(
@@ -1900,7 +1897,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             if (!(t is AggregateType))
             {
                 CType endT;
-                while ((endT = t.GetBaseOrParameterOrElementType()) != null)
+                while ((endT = t.BaseOrParameterOrElementType) != null)
                 {
                     t = endT;
                 }
@@ -1909,7 +1906,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             if (t is TypeParameterType paramType)
             {
                 // Add conversions for the bounds.
-                foreach (CType bound in paramType.GetBounds().Items)
+                foreach (CType bound in paramType.Bounds.Items)
                 {
                     AddConversionsForType(bound.AssociatedSystemType);
                 }
@@ -1917,7 +1914,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
 
             Debug.Assert(t is AggregateType);
-            AggregateSymbol aggregate = ((AggregateType)t).getAggregate();
+            AggregateSymbol aggregate = ((AggregateType)t).OwningAggregate;
 
             // Now find all the conversions and make them.
             foreach (MethodInfo conversion in type.GetRuntimeMethods())

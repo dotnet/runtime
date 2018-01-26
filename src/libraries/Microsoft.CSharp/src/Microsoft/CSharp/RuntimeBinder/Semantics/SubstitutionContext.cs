@@ -45,7 +45,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private SubstContext(AggregateType type, TypeArray typeArgsMeth, SubstTypeFlags grfst)
         {
-            Init(type?.GetTypeArgsAll(), typeArgsMeth, grfst);
+            Init(type?.TypeArgsAll, typeArgsMeth, grfst);
         }
 
         public SubstContext(CType[] prgtypeCls, int ctypeCls, CType[] prgtypeMeth, int ctypeMeth)

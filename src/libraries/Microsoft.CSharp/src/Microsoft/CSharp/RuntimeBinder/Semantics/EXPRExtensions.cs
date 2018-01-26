@@ -61,7 +61,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         public static bool isNull(this Expr expr)
-            => expr is ExprConstant constant && expr.Type.fundType() == FUNDTYPE.FT_REF && constant.Val.IsNullRef;
+            => expr is ExprConstant constant && expr.Type.FundamentalType == FUNDTYPE.FT_REF && constant.Val.IsNullRef;
 
         public static bool IsZero(this Expr expr) => expr is ExprConstant constant && constant.IsZero;
 

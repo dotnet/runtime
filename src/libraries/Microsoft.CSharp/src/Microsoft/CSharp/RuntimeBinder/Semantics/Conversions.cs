@@ -24,10 +24,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             when the source is a reference type and the destination is a base type of the source. Note
             that typeDst.IsRefType() may still return false (when both are type parameters).
         ***************************************************************************************************/
-        public static bool FImpRefConv(SymbolLoader loader, CType typeSrc, CType typeDst)
-        {
-            return typeSrc.IsRefType() && loader.HasIdentityOrImplicitReferenceConversion(typeSrc, typeDst);
-        }
+        public static bool FImpRefConv(SymbolLoader loader, CType typeSrc, CType typeDst) =>
+            typeSrc.IsReferenceType && loader.HasIdentityOrImplicitReferenceConversion(typeSrc, typeDst);
 
         /***************************************************************************************************
             Determine whether there is an explicit or implicit reference conversion (or identity conversion)
@@ -77,7 +75,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(typeSrc != null);
             Debug.Assert(typeDst != null);
-            if (typeSrc.IsRefType() && typeDst.IsRefType())
+            if (typeSrc.IsReferenceType && typeDst.IsReferenceType)
             {
                 // is there an implicit reference conversion in either direction?
                 // this handles the bulk of the cases ...
@@ -90,11 +88,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // For a type-parameter T that is known to be a reference type (§25.7), the following explicit reference conversions exist:
                 // •    From any interface-type to T.
                 // •    From T to any interface-type I provided there isn’t already an implicit reference conversion from T to I.
-                if (typeSrc.isInterfaceType() && typeDst is TypeParameterType)
-                {
-                    return true;
-                }
-                if (typeSrc is TypeParameterType && typeDst.isInterfaceType())
+                if (typeSrc.IsInterfaceType && typeDst is TypeParameterType || typeSrc is TypeParameterType && typeDst.IsInterfaceType)
                 {
                     return true;
                 }
@@ -104,8 +98,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // * From any interface-type S to any interface-type T, provided S is not derived from T.
                 if (typeSrc is AggregateType atSrc && typeDst is AggregateType atDst)
                 {
-                    AggregateSymbol aggSrc = atSrc.getAggregate();
-                    AggregateSymbol aggDest = atDst.getAggregate();
+                    AggregateSymbol aggSrc = atSrc.OwningAggregate;
+                    AggregateSymbol aggDest = atDst.OwningAggregate;
 
                     if ((aggSrc.IsClass() && !aggSrc.IsSealed() && aggDest.IsInterface()) ||
                         (aggSrc.IsInterface() && aggDest.IsClass() && !aggDest.IsSealed()) ||
@@ -122,21 +116,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     //     o    An explicit reference conversion exists from SE to TE.
                     if (typeDst is ArrayType arrDst)
                     {
-                        return arrSrc.rank == arrDst.rank
+                        return arrSrc.Rank == arrDst.Rank
                                && arrSrc.IsSZArray == arrDst.IsSZArray
-                               && FExpRefConv(loader, arrSrc.GetElementType(), arrDst.GetElementType());
+                               && FExpRefConv(loader, arrSrc.ElementType, arrDst.ElementType);
                     }
 
                     // *    From a one-dimensional array-type S[] to System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyList<T> 
                     //      and their base interfaces, provided there is an explicit reference conversion from S to T.
-                    if (!arrSrc.IsSZArray ||
-                        !typeDst.isInterfaceType())
+                    if (!arrSrc.IsSZArray || !typeDst.IsInterfaceType)
                     {
                         return false;
                     }
 
                     AggregateType aggDst = (AggregateType)typeDst;
-                    TypeArray typeArgsAll = aggDst.GetTypeArgsAll();
+                    TypeArray typeArgsAll = aggDst.TypeArgsAll;
 
                     if (typeArgsAll.Count != 1)
                     {
@@ -147,14 +140,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     AggregateSymbol aggIReadOnlyList = loader.GetPredefAgg(PredefinedType.PT_G_IREADONLYLIST);
 
                     if ((aggIList == null ||
-                        !SymbolLoader.IsBaseAggregate(aggIList, aggDst.getAggregate())) &&
+                        !SymbolLoader.IsBaseAggregate(aggIList, aggDst.OwningAggregate)) &&
                         (aggIReadOnlyList == null ||
-                        !SymbolLoader.IsBaseAggregate(aggIReadOnlyList, aggDst.getAggregate())))
+                        !SymbolLoader.IsBaseAggregate(aggIReadOnlyList, aggDst.OwningAggregate)))
                     {
                         return false;
                     }
 
-                    return FExpRefConv(loader, arrSrc.GetElementType(), typeArgsAll[0]);
+                    return FExpRefConv(loader, arrSrc.ElementType, typeArgsAll[0]);
                 }
 
                 if (typeDst is ArrayType arrayDest && typeSrc is AggregateType aggtypeSrc)
@@ -169,8 +162,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     //      one-dimensional array-type S[], provided there is an implicit or explicit reference conversion from S[] to 
                     //      System.Collections.Generic.IList<T> or System.Collections.Generic.IReadOnlyList<T>. This is precisely when either S and T
                     //      are the same type or there is an implicit or explicit reference conversion from S to T.
-                    if (!arrayDest.IsSZArray || !typeSrc.isInterfaceType() ||
-                        aggtypeSrc.GetTypeArgsAll().Count != 1)
+                    if (!arrayDest.IsSZArray || !typeSrc.IsInterfaceType || aggtypeSrc.TypeArgsAll.Count != 1)
                     {
                         return false;
                     }
@@ -179,15 +171,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     AggregateSymbol aggIReadOnlyList = loader.GetPredefAgg(PredefinedType.PT_G_IREADONLYLIST);
 
                     if ((aggIList == null ||
-                        !SymbolLoader.IsBaseAggregate(aggIList, aggtypeSrc.getAggregate())) &&
+                        !SymbolLoader.IsBaseAggregate(aggIList, aggtypeSrc.OwningAggregate)) &&
                         (aggIReadOnlyList == null ||
-                        !SymbolLoader.IsBaseAggregate(aggIReadOnlyList, aggtypeSrc.getAggregate())))
+                        !SymbolLoader.IsBaseAggregate(aggIReadOnlyList, aggtypeSrc.OwningAggregate)))
                     {
                         return false;
                     }
 
-                    CType typeArr = arrayDest.GetElementType();
-                    CType typeLst = aggtypeSrc.GetTypeArgsAll()[0];
+                    CType typeArr = arrayDest.ElementType;
+                    CType typeLst = aggtypeSrc.TypeArgsAll[0];
 
                     Debug.Assert(!(typeArr is MethodGroupType));
                     return typeArr == typeLst || FExpRefConv(loader, typeArr, typeLst);
@@ -197,13 +189,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return true;
                 }
             }
-            else if (typeSrc.IsRefType())
+            else if (typeSrc.IsReferenceType)
             {
                 // conversion of T . U, where T : class, U
                 // .. these constraints implies where U : class
                 return loader.HasIdentityOrImplicitReferenceConversion(typeSrc, typeDst);
             }
-            else if (typeDst.IsRefType())
+            else if (typeDst.IsReferenceType)
             {
                 // conversion of T . U, where U : class, T 
                 // .. these constraints implies where T : class
@@ -224,19 +216,23 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             o If type parameter Xi is declared to be contravariant ("in") then either Si must be identical to Ti, 
               or Si and Ti must both be reference types.
         ***************************************************************************************************/
-        public static bool HasGenericDelegateExplicitReferenceConversion(SymbolLoader loader, CType pSource, CType pTarget)
+        public static bool HasGenericDelegateExplicitReferenceConversion(SymbolLoader loader, CType source, CType target) =>
+            target is AggregateType aggTarget && HasGenericDelegateExplicitReferenceConversion(loader, source, aggTarget);
+
+        public static bool HasGenericDelegateExplicitReferenceConversion(SymbolLoader loader, CType pSource, AggregateType pTarget)
         {
-            if (!pSource.isDelegateType() ||
-                !pTarget.isDelegateType() ||
-                pSource.getAggregate() != pTarget.getAggregate() ||
-                loader.HasIdentityOrImplicitReferenceConversion(pSource, pTarget))
+            if (!(pSource is AggregateType aggSrc) ||
+                !aggSrc.IsDelegateType ||
+                !pTarget.IsDelegateType ||
+                aggSrc.OwningAggregate != pTarget.OwningAggregate ||
+                loader.HasIdentityOrImplicitReferenceConversion(aggSrc, pTarget))
             {
                 return false;
             }
 
-            TypeArray pTypeParams = pSource.getAggregate().GetTypeVarsAll();
-            TypeArray pSourceArgs = ((AggregateType)pSource).GetTypeArgsAll();
-            TypeArray pTargetArgs = ((AggregateType)pTarget).GetTypeArgsAll();
+            TypeArray pTypeParams = aggSrc.OwningAggregate.GetTypeVarsAll();
+            TypeArray pSourceArgs = aggSrc.TypeArgsAll;
+            TypeArray pTargetArgs = pTarget.TypeArgsAll;
 
             Debug.Assert(pTypeParams.Count == pSourceArgs.Count);
             Debug.Assert(pTypeParams.Count == pTargetArgs.Count);
@@ -268,12 +264,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
                 else if (pParam.Contravariant)
                 {
-                    if (!pSourceArg.IsRefType() || !pTargetArg.IsRefType())
+                    if (!pSourceArg.IsReferenceType || !pTargetArg.IsReferenceType)
                     {
                         return false;
                     }
                 }
             }
+
             return true;
         }
 
@@ -322,10 +319,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         *   The term wrapping denotes the process of packaging a value, of type T, in an instance of type T?. 
             A value x of type T is wrapped to type T? by evaluating the expression new T?(x).
         ***************************************************************************************************/
-        public static bool FWrappingConv(CType typeSrc, CType typeDst)
-        {
-            return typeDst is NullableType nubDst && typeSrc == nubDst.GetUnderlyingType();
-        }
+        public static bool FWrappingConv(CType typeSrc, CType typeDst) => typeDst is NullableType nubDst && typeSrc == nubDst.UnderlyingType;
 
         /***************************************************************************************************
             Determines whether there is a unwrapping conversion from typeSrc to typeDst

@@ -18,7 +18,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     {
         None = 0x00,
         Outer = 0x01,
-        NoDupErrors = 0x02,
         NoErrors = 0x04,
     }
 
@@ -37,67 +36,84 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             type = type.GetNakedType(false);
 
-            if (type is NullableType nub)
-            {
-                type = nub.GetAts();
-            }
-
             if (!(type is AggregateType ats))
-                return true;
-
-            if (ats.GetTypeArgsAll().Count == 0)
             {
-                // Common case: there are no type vars, so there are no constraints.
-                ats.fConstraintsChecked = true;
-                ats.fConstraintError = false;
-                return true;
-            }
-
-            if (ats.fConstraintsChecked)
-            {
-                // Already checked.
-                if (!ats.fConstraintError || (flags & CheckConstraintsFlags.NoDupErrors) != 0)
+                if (type is NullableType nub)
                 {
-                    // No errors or no need to report errors again.
-                    return !ats.fConstraintError;
+                    ats = nub.GetAts();
+                }
+                else
+                {
+                    return true;
                 }
             }
 
-            TypeArray typeVars = ats.getAggregate().GetTypeVars();
-            TypeArray typeArgsThis = ats.GetTypeArgsThis();
-            TypeArray typeArgsAll = ats.GetTypeArgsAll();
+            if (ats.TypeArgsAll.Count == 0)
+            {
+                // Common case: there are no type vars, so there are no constraints.
+                ats.ConstraintError = false;
+                return true;
+            }
+
+            // Already checked.
+            if (ats.ConstraintError.HasValue)
+            {
+                // No errors
+                if (!ats.ConstraintError.GetValueOrDefault())
+                {
+                    return true;
+                }
+
+                // We want the result, not an exception.
+                if ((flags & CheckConstraintsFlags.NoErrors) != 0)
+                {
+                    return false;
+                }
+            }
+
+            TypeArray typeVars = ats.OwningAggregate.GetTypeVars();
+            TypeArray typeArgsThis = ats.TypeArgsThis;
+            TypeArray typeArgsAll = ats.TypeArgsAll;
 
             Debug.Assert(typeVars.Count == typeArgsThis.Count);
 
-            if (!ats.fConstraintsChecked)
-            {
-                ats.fConstraintsChecked = true;
-                ats.fConstraintError = false;
-            }
-
             // Check the outer type first. If CheckConstraintsFlags.Outer is not specified and the
             // outer type has already been checked then don't bother checking it.
-            if (ats.outerType != null && ((flags & CheckConstraintsFlags.Outer) != 0 || !ats.outerType.fConstraintsChecked))
+            if (ats.OuterType != null && ((flags & CheckConstraintsFlags.Outer) != 0 || !ats.OuterType.ConstraintError.HasValue))
             {
-                CheckConstraints(checker, errHandling, ats.outerType, flags);
-                ats.fConstraintError |= ats.outerType.fConstraintError;
+                if (!CheckConstraints(checker, errHandling, ats.OuterType, flags))
+                {
+                    ats.ConstraintError = true;
+                    return false;
+                }
             }
 
             if (typeVars.Count > 0)
-                ats.fConstraintError |= !CheckConstraintsCore(checker, errHandling, ats.getAggregate(), typeVars, typeArgsThis, typeArgsAll, null, (flags & CheckConstraintsFlags.NoErrors));
+            {
+                if (!CheckConstraintsCore(checker, errHandling, ats.OwningAggregate, typeVars, typeArgsThis, typeArgsAll, null, flags & CheckConstraintsFlags.NoErrors))
+                {
+                    ats.ConstraintError = true;
+                    return false;
+                }
+            }
 
             // Now check type args themselves.
             for (int i = 0; i < typeArgsThis.Count; i++)
             {
                 CType arg = typeArgsThis[i].GetNakedType(true);
-                if (arg is AggregateType atArg && !atArg.fConstraintsChecked)
+                if (arg is AggregateType atArg && !atArg.ConstraintError.HasValue)
                 {
                     CheckConstraints(checker, errHandling, atArg, flags | CheckConstraintsFlags.Outer);
-                    if (atArg.fConstraintError)
-                        ats.fConstraintError = true;
+                    if (atArg.ConstraintError.GetValueOrDefault())
+                    {
+                        ats.ConstraintError = true;
+                        return false;
+                    }
                 }
             }
-            return !ats.fConstraintError;
+
+            ats.ConstraintError = false;
+            return true;
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -106,11 +122,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(mwi.Meth() != null && mwi.GetType() != null && mwi.TypeArgs != null);
             Debug.Assert(mwi.Meth().typeVars.Count == mwi.TypeArgs.Count);
-            Debug.Assert(mwi.GetType().getAggregate() == mwi.Meth().getClass());
+            Debug.Assert(mwi.GetType().OwningAggregate == mwi.Meth().getClass());
 
             if (mwi.TypeArgs.Count > 0)
             {
-                CheckConstraintsCore(checker, errCtx, mwi.Meth(), mwi.Meth().typeVars, mwi.TypeArgs, mwi.GetType().GetTypeArgsAll(), mwi.TypeArgs, CheckConstraintsFlags.None);
+                CheckConstraintsCore(checker, errCtx, mwi.Meth(), mwi.Meth().typeVars, mwi.TypeArgs, mwi.GetType().TypeArgsAll, mwi.TypeArgs, CheckConstraintsFlags.None);
             }
         }
         ////////////////////////////////////////////////////////////////////////////////
@@ -124,43 +140,42 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(typeVars.Count > 0);
             Debug.Assert(flags == CheckConstraintsFlags.None || flags == CheckConstraintsFlags.NoErrors);
 
-            bool fError = false;
-
             for (int i = 0; i < typeVars.Count; i++)
             {
                 // Empty bounds should be set to object.
                 TypeParameterType var = (TypeParameterType)typeVars[i];
                 CType arg = typeArgs[i];
 
-                bool fOK = CheckSingleConstraint(checker, errHandling, symErr, var, arg, typeArgsCls, typeArgsMeth, flags);
-                fError |= !fOK;
+                if (!CheckSingleConstraint(checker, errHandling, symErr, var, arg, typeArgsCls, typeArgsMeth, flags))
+                {
+                    return false;
+                }
             }
 
-            return !fError;
+            return true;
         }
 
         private static bool CheckSingleConstraint(CSemanticChecker checker, ErrorHandling errHandling, Symbol symErr, TypeParameterType var, CType arg, TypeArray typeArgsCls, TypeArray typeArgsMeth, CheckConstraintsFlags flags)
         {
             Debug.Assert(!(arg is PointerType));
-            Debug.Assert(!arg.isStaticClass());
+            Debug.Assert(!arg.IsStaticClass);
 
             bool fReportErrors = 0 == (flags & CheckConstraintsFlags.NoErrors);
 
-            bool fError = false;
-            if (var.HasRefConstraint() && !arg.IsRefType())
+            if (var.HasRefConstraint && !arg.IsReferenceType)
             {
                 if (fReportErrors)
                 {
                     throw errHandling.Error(ErrorCode.ERR_RefConstraintNotSatisfied, symErr, new ErrArgNoRef(var), arg);
                 }
 
-                fError = true;
+                return false;
             }
 
-            TypeArray bnds = checker.SymbolLoader.GetTypeManager().SubstTypeArray(var.GetBounds(), typeArgsCls, typeArgsMeth);
+            TypeArray bnds = checker.SymbolLoader.GetTypeManager().SubstTypeArray(var.Bounds, typeArgsCls, typeArgsMeth);
             int itypeMin = 0;
 
-            if (var.HasValConstraint())
+            if (var.HasValConstraint)
             {
                 // If we have a type variable that is constrained to a value type, then we
                 // want to check if its a nullable type, so that we can report the 
@@ -170,18 +185,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // To check whether or not its a nullable type, we need to get the resolved
                 // bound from the type argument and check against that.
 
-                if (!arg.IsValType() || arg is NullableType)
+                if (!arg.IsNonNullableValueType)
                 {
                     if (fReportErrors)
                     {
                         throw errHandling.Error(ErrorCode.ERR_ValConstraintNotSatisfied, symErr, new ErrArgNoRef(var), arg);
                     }
 
-                    fError = true;
+                    return false;
                 }
 
                 // Since FValCon() is set it is redundant to check System.ValueType as well.
-                if (bnds.Count != 0 && bnds[0].isPredefType(PredefinedType.PT_VALUE))
+                if (bnds.Count != 0 && bnds[0].IsPredefType(PredefinedType.PT_VALUE))
                 {
                     itypeMin = 1;
                 }
@@ -205,17 +220,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         // and b) Nullable is one funky type, and user's can use all the help they can get
                         // when using it.
                         ErrorCode error;
-                        if (arg.IsRefType())
+                        if (arg.IsReferenceType)
                         {
                             // A reference type can only satisfy bounds to types 
                             // to which they have an implicit reference conversion
                             error = ErrorCode.ERR_GenericConstraintNotSatisfiedRefType;
                         }
-                        else if (arg is NullableType nubArg && checker.SymbolLoader.HasBaseConversion(nubArg.GetUnderlyingType(), typeBnd))    // This is inlining FBoxingConv
+                        else if (arg is NullableType nubArg && checker.SymbolLoader.HasBaseConversion(nubArg.UnderlyingType, typeBnd))    // This is inlining FBoxingConv
                         {
                             // nullable types do not satisfy bounds to every type that they are boxable to
                             // They only satisfy bounds of object and ValueType
-                            if (typeBnd.isPredefType(PredefinedType.PT_ENUM) || nubArg.GetUnderlyingType() == typeBnd)
+                            if (typeBnd.IsPredefType(PredefinedType.PT_ENUM) || nubArg.UnderlyingType == typeBnd)
                             {
                                 // Nullable types don't satisfy bounds of EnumType, or the underlying type of the enum
                                 // even though the conversion from Nullable to these types is a boxing conversion
@@ -231,7 +246,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                                 // even when there is a boxing conversion from the Nullable type to 
                                 // the interface type. This will be a relatively common scenario
                                 // so we cal it out separately from the previous case.
-                                Debug.Assert(typeBnd.isInterfaceType());
+                                Debug.Assert(typeBnd.IsInterfaceType);
                                 error = ErrorCode.ERR_GenericConstraintNotSatisfiedNullableInterface;
                             }
                         }
@@ -245,19 +260,19 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         throw errHandling.Error(error, new ErrArg(symErr), new ErrArg(typeBnd, ErrArgFlags.Unique), var, new ErrArg(arg, ErrArgFlags.Unique));
                     }
 
-                    fError = true;
+                    return false;
                 }
             }
 
             // Check the newable constraint.
-            if (!var.HasNewConstraint() || arg.IsValType())
+            if (!var.HasNewConstraint || arg.IsValueType)
             {
-                return !fError;
+                return true;
             }
 
-            if (arg.isClassType())
+            if (arg.IsClassType)
             {
-                AggregateSymbol agg = ((AggregateType)arg).getAggregate();
+                AggregateSymbol agg = ((AggregateType)arg).OwningAggregate;
 
                 // Due to late binding nature of IDE created symbols, the AggregateSymbol might not
                 // have all the information necessary yet, if it is not fully bound.
@@ -267,7 +282,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if (agg.HasPubNoArgCtor() && !agg.IsAbstract())
                 {
-                    return !fError;
+                    return true;
                 }
             }
 
@@ -289,7 +304,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (typeBnd == arg)
                 return true;
 
-            switch (typeBnd.GetTypeKind())
+            switch (typeBnd.TypeKind)
             {
                 default:
                     Debug.Assert(false, "Unexpected type.");
@@ -313,7 +328,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             Debug.Assert(typeBnd is AggregateType || typeBnd is TypeParameterType || typeBnd is ArrayType);
 
-            switch (arg.GetTypeKind())
+            switch (arg.TypeKind)
             {
                 default:
                     return false;

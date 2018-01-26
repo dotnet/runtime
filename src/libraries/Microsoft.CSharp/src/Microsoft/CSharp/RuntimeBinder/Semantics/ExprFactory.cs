@@ -33,8 +33,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ExprProperty CreateProperty(CType type, Expr optionalObjectThrough, Expr arguments, ExprMemberGroup memberGroup, PropWithType property, MethWithType setMethod) => 
             new ExprProperty(type, optionalObjectThrough, arguments, memberGroup, property, setMethod);
 
-        public ExprMemberGroup CreateMemGroup(EXPRFLAG flags, Name name, TypeArray typeArgs, SYMKIND symKind, CType parentType, MethodOrPropertySymbol memberSymbol, Expr obj, CMemberLookupResults memberLookupResults) => 
-            new ExprMemberGroup(Types.GetMethGrpType(), flags, name, typeArgs, symKind, parentType, memberSymbol, obj, memberLookupResults);
+        public ExprMemberGroup CreateMemGroup(EXPRFLAG flags, Name name, TypeArray typeArgs, SYMKIND symKind, CType parentType, MethodOrPropertySymbol memberSymbol, Expr obj, CMemberLookupResults memberLookupResults) =>
+            new ExprMemberGroup(flags, name, typeArgs, symKind, parentType, memberSymbol, obj, memberLookupResults);
 
         public ExprMemberGroup CreateMemGroup(Expr obj, MethPropWithInst method)
         {
@@ -106,16 +106,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(type != null);
 
-            if (type.isEnumType())
+            if (type.IsEnumType)
             {
                 // For enum types, we create a constant that has the default value
                 // as an object pointer.
                 return CreateConstant(type, ConstVal.Get(Activator.CreateInstance(type.AssociatedSystemType)));
             }
 
-            Debug.Assert(type.fundType() > FUNDTYPE.FT_NONE);
-            Debug.Assert(type.fundType() < FUNDTYPE.FT_COUNT);
-            switch (type.fundType())
+            Debug.Assert(type.FundamentalType > FUNDTYPE.FT_NONE);
+            Debug.Assert(type.FundamentalType < FUNDTYPE.FT_COUNT);
+            switch (type.FundamentalType)
             {
                 case FUNDTYPE.FT_PTR:
                     {
@@ -124,7 +124,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
 
                 case FUNDTYPE.FT_STRUCT:
-                    if (type.isPredefType(PredefinedType.PT_DECIMAL))
+                    if (type.IsPredefType(PredefinedType.PT_DECIMAL))
                     {
                         goto default;
                     }
@@ -135,7 +135,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return new ExprZeroInit(type);
 
                 default:
-                    return CreateConstant(type, ConstVal.GetDefaultValue(type.constValKind()));
+                    return CreateConstant(type, ConstVal.GetDefaultValue(type.ConstValKind));
             }
         }
 
@@ -207,7 +207,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return expr;
         }
 
-        public ExprConstant CreateNull() => CreateConstant(Types.GetNullType(), default(ConstVal));
+        public ExprConstant CreateNull() => CreateConstant(NullType.Instance, default);
 
         public void AppendItemToList(
             Expr newItem,
