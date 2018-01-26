@@ -32,6 +32,7 @@ using System.IO;
 
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using Mono.Cecil.Pdb;
 using Mono.Cecil.PE;
 
 namespace Mono.Linker.Steps {
@@ -161,6 +162,10 @@ namespace Mono.Linker.Steps {
 				return parameters;
 
 			if (!assembly.MainModule.HasSymbols)
+				return parameters;
+
+			// NativePdb's can't be written on non-windows platforms
+			if (Environment.OSVersion.Platform != PlatformID.Win32NT && assembly.MainModule.SymbolReader is NativePdbReader)
 				return parameters;
 
 			if (Context.SymbolWriterProvider != null)
