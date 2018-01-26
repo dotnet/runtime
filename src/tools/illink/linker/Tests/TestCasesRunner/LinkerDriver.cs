@@ -2,7 +2,7 @@
 	public class LinkerDriver {
 		public virtual void Link (string [] args)
 		{
-			Driver.Main (args);
+			new Driver (args).Run ();
 		}
 	}
 }
