@@ -529,7 +529,7 @@ GenTree* Compiler::impX86HWIntrinsic(NamedIntrinsic        intrinsic,
     // table-driven importer of simple intrinsics
     if (impIsTableDrivenHWIntrinsic(category, flags))
     {
-        if (!varTypeIsSIMD(retType))
+        if (!varTypeIsSIMD(retType) || (flags & HW_Flag_BaseTypeFromArg))
         {
             if (retType != TYP_VOID)
             {
@@ -791,9 +791,38 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic        intrinsic,
     GenTree*  retNode  = nullptr;
     GenTree*  op1      = nullptr;
     GenTree*  op2      = nullptr;
+    int       ival     = -1;
+    int       simdSize = simdSizeOfHWIntrinsic(intrinsic, sig);
     var_types baseType = TYP_UNKNOWN;
+    var_types retType  = TYP_UNKNOWN;
+
     switch (intrinsic)
     {
+        case NI_SSE2_CompareLessThan:
+            assert(sig->numArgs == 2);
+            op2      = impSIMDPopStack(TYP_SIMD16);
+            op1      = impSIMDPopStack(TYP_SIMD16);
+            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            if (baseType == TYP_DOUBLE)
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, baseType, simdSize);
+            }
+            else
+            {
+                retNode =
+                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareGreaterThan, baseType, simdSize);
+            }
+            break;
+
+        case NI_SSE2_MoveMask:
+            assert(sig->numArgs == 1);
+            retType = JITtype2varType(sig->retType);
+            assert(retType == TYP_INT);
+            op1      = impSIMDPopStack(TYP_SIMD16);
+            baseType = getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args));
+            retNode  = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
+            break;
+
         default:
             JITDUMP("Not implemented hardware intrinsic");
             break;
