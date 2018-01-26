@@ -283,14 +283,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         // When we find a method, we check if the type has interfaces. If so, mark the other interfaces
                         // as hidden, and object as well.
 
-                        if (_pCurrentType.isInterfaceType())
+                        if (_pCurrentType.IsInterfaceType)
                         {
-                            TypeArray ifaces = _pCurrentType.GetIfacesAll();
-                            for (int i = 0; i < ifaces.Count; i++)
+                            foreach (AggregateType type in _pCurrentType.IfacesAll.Items)
                             {
-                                AggregateType type = ifaces[i] as AggregateType;
-
-                                Debug.Assert(type.isInterfaceType());
+                                Debug.Assert(type.IsInterfaceType);
                                 _HiddenTypes.Add(type);
                             }
 
@@ -533,8 +530,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     CType pConstValType = methprop.GetDefaultParameterValueConstValType(index);
                     ConstVal cv = methprop.GetDefaultParameterValue(index);
 
-                    if (pConstValType.isPredefType(PredefinedType.PT_DATETIME) &&
-                        (pRawParamType.isPredefType(PredefinedType.PT_DATETIME) || pRawParamType.isPredefType(PredefinedType.PT_OBJECT) || pRawParamType.isPredefType(PredefinedType.PT_VALUE)))
+                    if (pConstValType.IsPredefType(PredefinedType.PT_DATETIME) &&
+                        (pRawParamType.IsPredefType(PredefinedType.PT_DATETIME) || pRawParamType.IsPredefType(PredefinedType.PT_OBJECT) || pRawParamType.IsPredefType(PredefinedType.PT_VALUE)))
                     {
                         // This is the specific case where we want to create a DateTime
                         // but the constval that stores it is a long.
@@ -542,7 +539,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         AggregateType dateTimeType = symbolLoader.GetPredefindType(PredefinedType.PT_DATETIME);
                         optionalArgument = exprFactory.CreateConstant(dateTimeType, ConstVal.Get(DateTime.FromBinary(cv.Int64Val)));
                     }
-                    else if (pConstValType.isSimpleOrEnumOrString())
+                    else if (pConstValType.IsSimpleOrEnumOrString)
                     {
                         // In this case, the constval is a simple type (all the numerics, including
                         // decimal), or an enum or a string. This covers all the substantial values,
@@ -551,16 +548,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         // For enum parameters, we create a constant of the enum type. For everything
                         // else, we create the appropriate constant.
 
-                        if (pRawParamType.isEnumType() && pConstValType == pRawParamType.underlyingType())
-                        {
-                            optionalArgument = exprFactory.CreateConstant(pRawParamType, cv);
-                        }
-                        else
-                        {
-                            optionalArgument = exprFactory.CreateConstant(pConstValType, cv);
-                        }
+                        optionalArgument = exprFactory.CreateConstant(
+                            pRawParamType.IsEnumType && pConstValType == pRawParamType.UnderlyingEnumType
+                                ? pRawParamType
+                                : pConstValType,
+                            cv);
                     }
-                    else if ((pParamType.IsRefType() || pParamType is NullableType) && cv.IsNullRef)
+                    else if ((pParamType.IsReferenceType || pParamType is NullableType) && cv.IsNullRef)
                     {
                         // We have an "= null" default value with a reference type or a nullable type.
 
@@ -580,7 +574,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // There was no default parameter specified, so generally use default(T),
                     // except for some cases when the parameter type in metatdata is object.
 
-                    if (pParamType.isPredefType(PredefinedType.PT_OBJECT))
+                    if (pParamType.IsPredefType(PredefinedType.PT_OBJECT))
                     {
                         if (methprop.MarshalAsObject(index))
                         {
@@ -664,7 +658,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return method;
                 }
 
-                for (AggregateSymbol pAggregate = agg.GetOwningAggregate();
+                for (AggregateSymbol pAggregate = agg.OwningAggregate;
                         pAggregate?.GetBaseAgg() != null;
                         pAggregate = pAggregate.GetBaseAgg())
                 {
@@ -852,7 +846,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 if (_pCurrentType != type &&
                         _pCurrentType != null &&
                         !_methList.IsEmpty() &&
-                        !_methList.Head().mpwi.GetType().isInterfaceType())
+                        !_methList.Head().mpwi.GetType().IsInterfaceType)
                 {
                     return false;
                 }
@@ -1017,8 +1011,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                                 // (think ErrorType != ErrorType)
                                 // See if they just differ in out / ref.
                                 CType argStripped = _pArguments.types[ivar] is ParameterModifierType modArg ?
-                                    modArg.GetParameterType() : _pArguments.types[ivar];
-                                CType varStripped = var is ParameterModifierType modVar ? modVar.GetParameterType() : var;
+                                    modArg.ParameterType : _pArguments.types[ivar];
+                                CType varStripped = var is ParameterModifierType modVar ? modVar.ParameterType : var;
 
                                 if (argStripped == varStripped)
                                 {
@@ -1104,7 +1098,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return false;
                 }
 
-                TypeArray typeVars = varAgg.GetTypeArgsAll();
+                TypeArray typeVars = varAgg.TypeArgsAll;
                 for (int i = 0; i < typeVars.Count; i++)
                 {
                     CType type = typeVars[i];
@@ -1204,15 +1198,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Name nameErr = _pGroup.Name;
 
                 // Check for an invoke.
-                if (_pGroup.OptionalObject != null &&
-                        _pGroup.OptionalObject.Type != null &&
-                        _pGroup.OptionalObject.Type.isDelegateType() &&
-                        _pGroup.Name == NameManager.GetPredefinedName(PredefinedName.PN_INVOKE))
+                if (_pGroup.OptionalObject?.Type != null &&
+                    _pGroup.OptionalObject.Type.IsDelegateType &&
+                    _pGroup.Name == NameManager.GetPredefinedName(PredefinedName.PN_INVOKE))
                 {
                     Debug.Assert(!_results.BestResult || _results.BestResult.MethProp().getClass().IsDelegate());
-                    Debug.Assert(!_results.BestResult || _results.BestResult.GetType().getAggregate().IsDelegate());
+                    Debug.Assert(!_results.BestResult || _results.BestResult.GetType().OwningAggregate.IsDelegate());
                     bUseDelegateErrors = true;
-                    nameErr = _pGroup.OptionalObject.Type.getAggregate().name;
+                    nameErr = ((AggregateType)_pGroup.OptionalObject.Type).OwningAggregate.name;
                 }
 
                 if (_results.BestResult)
@@ -1252,10 +1245,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 if (_pInvalidSpecifiedName != null)
                 {
                     // Give a better message for delegate invoke.
-                    return _pGroup.OptionalObject != null && _pGroup.OptionalObject.Type is AggregateType agg
-                           && agg.GetOwningAggregate().IsDelegate()
+                    return _pGroup.OptionalObject?.Type is AggregateType agg && agg.OwningAggregate.IsDelegate()
                         ? GetErrorContext().Error(
-                            ErrorCode.ERR_BadNamedArgumentForDelegateInvoke, agg.GetOwningAggregate().name,
+                            ErrorCode.ERR_BadNamedArgumentForDelegateInvoke, agg.OwningAggregate.name,
                             _pInvalidSpecifiedName)
                         : GetErrorContext().Error(ErrorCode.ERR_BadNamedArgument, _pGroup.Name, _pInvalidSpecifiedName);
                 }

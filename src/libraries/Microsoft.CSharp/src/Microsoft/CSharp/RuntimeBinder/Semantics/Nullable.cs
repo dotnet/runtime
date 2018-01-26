@@ -66,7 +66,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             NullableType nubSrc = (NullableType)exprSrc.Type;
-            CType typeBase = nubSrc.GetUnderlyingType();
+            CType typeBase = nubSrc.UnderlyingType;
             AggregateType ats = nubSrc.GetAts();
             PropertySymbol prop = GetSymbolLoader().getBSymmgr().propNubValue;
             if (prop == null)

@@ -259,11 +259,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 return BetterType.Same;
             }
-            if (typeGiven.isPredefType(pt1))
+            if (typeGiven.IsPredefType(pt1))
             {
                 return BetterType.Left;
             }
-            if (typeGiven.isPredefType(pt2))
+            if (typeGiven.IsPredefType(pt2))
             {
                 return BetterType.Right;
             }
@@ -312,14 +312,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             if (!(type1 is NullableType nub1) || !(type2 is NullableType nub2) ||
-                !nub1.UnderlyingType.isPredefined() ||
-                !nub2.UnderlyingType.isPredefined())
+                !nub1.UnderlyingType.IsPredefined ||
+                !nub2.UnderlyingType.IsPredefined)
             {
                 return BetterType.Neither;
             }
 
-            PredefinedType pt1 = (type1 as NullableType).UnderlyingType.getPredefType();
-            PredefinedType pt2 = (type2 as NullableType).UnderlyingType.getPredefType();
+            PredefinedType pt1 = (type1 as NullableType).UnderlyingType.PredefinedType;
+            PredefinedType pt2 = (type2 as NullableType).UnderlyingType.PredefinedType;
 
             if ((int)pt1 < NUM_EXT_TYPES && (int)pt2 < NUM_EXT_TYPES)
             {
@@ -360,11 +360,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             // For certain situations, try to give a better error.
 
-            FUNDTYPE ftSrc = expr.Type.fundType();
-            FUNDTYPE ftDest = dest.fundType();
+            FUNDTYPE ftSrc = expr.Type.FundamentalType;
+            FUNDTYPE ftDest = dest.FundamentalType;
 
             if (expr is ExprConstant constant &&
-                expr.Type.isSimpleType() && dest.isSimpleType())
+                expr.Type.IsSimpleType && dest.IsSimpleType)
             {
                 if ((ftSrc == FUNDTYPE.FT_I4 && (ftDest <= FUNDTYPE.FT_LASTNONLONG || ftDest == FUNDTYPE.FT_U8)) ||
                     (ftSrc == FUNDTYPE.FT_I8 && ftDest == FUNDTYPE.FT_U8))
@@ -375,7 +375,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
 
-            if (expr.Type is NullType && dest.fundType() != FUNDTYPE.FT_REF)
+            if (expr.Type is NullType && dest.FundamentalType != FUNDTYPE.FT_REF)
             {
                 throw ErrorContext.Error(ErrorCode.ERR_ValueCantBeNull, dest);
             }
@@ -425,7 +425,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(!(expr is ExprMemberGroup));
             Debug.Assert(dest != null);
 
-            SemanticChecker.CheckForStaticClass(null, dest, ErrorCode.ERR_ConvertToStaticClass);
+            SemanticChecker.CheckForStaticClass(dest);
             if (BindExplicitConversion(expr, expr.Type, dest, out Expr exprResult, flags))
             {
                 // Conversion works.
@@ -436,12 +436,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             // For certain situations, try to give a better error.
             Expr exprConst = expr.GetConst();
-            bool simpleConstToSimpleDestination = exprConst != null && expr.Type.isSimpleOrEnum() &&
-                dest.isSimpleOrEnum();
+            bool simpleConstToSimpleDestination = exprConst != null && expr.Type.IsSimpleOrEnum && dest.IsSimpleOrEnum;
 
             if (simpleConstToSimpleDestination)
             {
-                FUNDTYPE exprType = expr.Type.fundType();
+                FUNDTYPE exprType = expr.Type.FundamentalType;
                 if (exprType == FUNDTYPE.FT_STRUCT)
                 {
                     // We have a constant decimal that is out of range of the destination type.
@@ -464,7 +463,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     string value;
                     if (exprType <= FUNDTYPE.FT_LASTINTEGRAL)
                     {
-                        value = expr.Type.isUnsigned()
+                        value = expr.Type.IsUnsigned
                             ? ((ulong)((ExprConstant)exprConst).Int64Value).ToString(CultureInfo.InvariantCulture)
                             : ((ExprConstant)exprConst).Int64Value.ToString(CultureInfo.InvariantCulture);
                     }
@@ -478,7 +477,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
 
-            if (expr.Type is NullType && dest.fundType() != FUNDTYPE.FT_REF)
+            if (expr.Type is NullType && dest.FundamentalType != FUNDTYPE.FT_REF)
             {
                 throw ErrorContext.Error(ErrorCode.ERR_ValueCantBeNull, dest);
             }
@@ -595,8 +594,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(exprSrc == null || exprSrc.Type == typeSrc);
 
             // If either type is an interface we should never employ a UD conversion.
-            if (typeSrc == null || typeDst == null || typeSrc.isInterfaceType() || typeDst.isInterfaceType())
+            if (typeSrc == null || typeDst == null || typeSrc.IsInterfaceType || typeDst.IsInterfaceType)
+            {
                 return false;
+            }
+
             CType typeSrcBase = typeSrc.StripNubs();
             CType typeDstBase = typeDst.StripNubs();
 
@@ -604,7 +606,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // true exactly when both the source and destination types are nullable.
             bool fLiftSrc = typeSrcBase != typeSrc;
             bool fLiftDst = typeDstBase != typeDst;
-            bool fDstHasNull = fLiftDst || typeDst.IsRefType() || typeDst is PointerType;
+            bool fDstHasNull = fLiftDst || typeDst.IsReferenceType || typeDst is PointerType;
             AggregateType[] rgats = new AggregateType[2];
             int cats = 0;
 
@@ -618,21 +620,21 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             bool fIntPtrOverride2 = false;
 
             // Get the list of operators from the source.
-            if (typeSrcBase is AggregateType atSrcBase && atSrcBase.getAggregate().HasConversion(GetSymbolLoader()))
+            if (typeSrcBase is AggregateType atSrcBase && atSrcBase.OwningAggregate.HasConversion(GetSymbolLoader()))
             {
                 rgats[cats++] = atSrcBase;
-                fIntPtrOverride2 = atSrcBase.isPredefType(PredefinedType.PT_INTPTR) || atSrcBase.isPredefType(PredefinedType.PT_UINTPTR);
+                fIntPtrOverride2 = atSrcBase.IsPredefType(PredefinedType.PT_INTPTR) || atSrcBase.IsPredefType(PredefinedType.PT_UINTPTR);
             }
 
             // Get the list of operators from the destination.
             if (typeDstBase is AggregateType atDstBase)
             {
-                if (typeDstBase.getAggregate().HasConversion(GetSymbolLoader()))
+                if (atDstBase.OwningAggregate.HasConversion(GetSymbolLoader()))
                 {
                     rgats[cats++] = atDstBase;
                 }
 
-                if (fIntPtrOverride2 && !typeDstBase.isPredefType(PredefinedType.PT_LONG) && !typeDstBase.isPredefType(PredefinedType.PT_ULONG))
+                if (fIntPtrOverride2 && !typeDstBase.IsPredefType(PredefinedType.PT_LONG) && !typeDstBase.IsPredefType(PredefinedType.PT_ULONG))
                 {
                     fIntPtrOverride2 = false;
                 }
@@ -660,9 +662,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // In the first pass if we find types that are non-comparable, keep one of the types and keep going.
             for (int iats = 0; iats < cats; iats++)
             {
-                for (AggregateType atsCur = rgats[iats]; atsCur != null && atsCur.getAggregate().HasConversion(GetSymbolLoader()); atsCur = atsCur.GetBaseClass())
+                for (AggregateType atsCur = rgats[iats]; atsCur != null && atsCur.OwningAggregate.HasConversion(GetSymbolLoader()); atsCur = atsCur.BaseClass)
                 {
-                    AggregateSymbol aggCur = atsCur.getAggregate();
+                    AggregateSymbol aggCur = atsCur.OwningAggregate;
 
                     // We need to replicate behavior that allows non-standard conversions with these guys.
                     PredefinedType aggPredefType = aggCur.GetPredefType();
@@ -705,8 +707,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             FUNDTYPE ftFrom;
                             FUNDTYPE ftTo;
 
-                            if ((ftTo = typeTo.fundType()) <= FUNDTYPE.FT_LASTNUMERIC && ftTo > FUNDTYPE.FT_NONE &&
-                                (ftFrom = typeFrom.fundType()) <= FUNDTYPE.FT_LASTNUMERIC && ftFrom > FUNDTYPE.FT_NONE)
+                            if ((ftTo = typeTo.FundamentalType) <= FUNDTYPE.FT_LASTNUMERIC && ftTo > FUNDTYPE.FT_NONE &&
+                                (ftFrom = typeFrom.FundamentalType) <= FUNDTYPE.FT_LASTNUMERIC && ftFrom > FUNDTYPE.FT_NONE)
                             {
                                 continue;
                             }
@@ -714,13 +716,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                         // Ignore the IntPtr/UIntPtr -> int/uint conversion in favor of
                         // the IntPtr/UIntPtr -> long/ulong conversion.
-                        if (fIntPtrOverride2 && (typeTo.isPredefType(PredefinedType.PT_INT) || typeTo.isPredefType(PredefinedType.PT_UINT)))
+                        if (fIntPtrOverride2 && (typeTo.IsPredefType(PredefinedType.PT_INT) || typeTo.IsPredefType(PredefinedType.PT_UINT)))
                             continue;
 
                         // Lift the conversion if needed.
-                        if (fLiftSrc && (fDstHasNull || !fNeedImplicit) && typeFrom.IsNonNubValType())
+                        if (fLiftSrc && (fDstHasNull || !fNeedImplicit) && typeFrom.IsNonNullableValueType)
                             typeFrom = GetTypes().GetNullable(typeFrom);
-                        if (fLiftDst && typeTo.IsNonNubValType())
+                        if (fLiftDst && typeTo.IsNonNullableValueType)
                             typeTo = GetTypes().GetNullable(typeTo);
 
                         // Check for applicability.
@@ -853,12 +855,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 int ctypeLift = 0;
 
                 // Lift the conversion if needed.
-                if (fLiftSrc && typeFrom.IsNonNubValType())
+                if (fLiftSrc && typeFrom.IsNonNullableValueType)
                 {
                     typeFrom = GetTypes().GetNullable(typeFrom);
                     ctypeLift++;
                 }
-                if (fLiftDst && typeTo.IsNonNubValType())
+
+                if (fLiftDst && typeTo.IsNonNullableValueType)
                 {
                     typeTo = GetTypes().GetNullable(typeTo);
                     ctypeLift++;
@@ -1081,8 +1084,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             pexprDest = null;
             long valueInt = 0;
             double valueFlt = 0;
-            FUNDTYPE ftSrc = exprSrc.Type.fundType();
-            FUNDTYPE ftDest = typeDest.fundType();
+            FUNDTYPE ftSrc = exprSrc.Type.FundamentalType;
+            FUNDTYPE ftDest = typeDest.FundamentalType;
             bool srcIntegral = (ftSrc <= FUNDTYPE.FT_LASTINTEGRAL);
             bool srcNumeric = (ftSrc <= FUNDTYPE.FT_LASTNUMERIC);
 
@@ -1120,7 +1123,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // Get the source constant value into valueInt or valueFlt.
             if (srcIntegral)
             {
-                if (constSrc.Type.fundType() == FUNDTYPE.FT_U8)
+                if (constSrc.Type.FundamentalType == FUNDTYPE.FT_U8)
                 {
                     // If we're going from ulong to something, make sure we can fit.
                     if (ftDest == FUNDTYPE.FT_U8)
@@ -1345,7 +1348,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 // Casting to decimal.
 
-                FUNDTYPE ftSrc = srcType.fundType();
+                FUNDTYPE ftSrc = srcType.FundamentalType;
                 decimal result;
 
                 switch (ftSrc)
@@ -1387,7 +1390,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // Casting from decimal
                 decimal decTrunc = 0;
 
-                FUNDTYPE ftDest = destType.fundType();
+                FUNDTYPE ftDest = destType.FundamentalType;
                 try
                 {
                     if (ftDest != FUNDTYPE.FT_R4 && ftDest != FUNDTYPE.FT_R8)

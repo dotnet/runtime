@@ -14,7 +14,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(first?.Type != null);
             Debug.Assert(second?.Type != null);
-            Debug.Assert(first.Type.isPredefType(PredefinedType.PT_STRING) || second.Type.isPredefType(PredefinedType.PT_STRING));
+            Debug.Assert(first.Type.IsPredefType(PredefinedType.PT_STRING) || second.Type.IsPredefType(PredefinedType.PT_STRING));
             FirstArgument = first;
             SecondArgument = second;
         }
@@ -22,12 +22,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private static CType TypeFromOperands(Expr first, Expr second)
         {
             CType type = first.Type;
-            if (type.isPredefType(PredefinedType.PT_STRING))
+            if (type.IsPredefType(PredefinedType.PT_STRING))
             {
                 return type;
             }
 
-            Debug.Assert(second.Type.isPredefType(PredefinedType.PT_STRING));
+            Debug.Assert(second.Type.IsPredefType(PredefinedType.PT_STRING));
             return second.Type;
         }
 

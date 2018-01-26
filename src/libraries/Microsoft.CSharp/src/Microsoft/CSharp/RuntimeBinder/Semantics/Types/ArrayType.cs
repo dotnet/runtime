@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     // ----------------------------------------------------------------------------
@@ -10,27 +12,52 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
     internal sealed class ArrayType : CType
     {
-        // rank of the array. zero means unknown rank int [?].
-        public int rank;
-
-        public bool IsSZArray { get; set; }
-
-        public CType GetElementType() { return _pElementType; }
-        public void SetElementType(CType pType) { _pElementType = pType; }
-
-        // Returns the first non-array type in the parent chain.
-        public CType GetBaseElementType()
+        public ArrayType(CType elementType, int rank, bool isSZArray)
+            : base(TypeKind.TK_ArrayType)
         {
-            CType type = GetElementType();
-            while (type is ArrayType arr)
-            {
-                type = arr.GetElementType();
-            }
-
-            return type;
+            Rank = rank;
+            IsSZArray = isSZArray;
+            ElementType = elementType;
         }
 
-        private CType _pElementType;
+        public int Rank { get; }
+
+        public bool IsSZArray { get; }
+
+        public CType ElementType { get; }
+
+        // Returns the first non-array type in the parent chain.
+        public CType BaseElementType
+        {
+            get
+            {
+                CType type = ElementType;
+                while (type is ArrayType arr)
+                {
+                    type = arr.ElementType;
+                }
+
+                return type;
+            }
+        }
+
+        public override bool IsReferenceType => true;
+
+        public override bool IsUnsafe() => BaseElementType is PointerType;
+
+        public override Type AssociatedSystemType
+        {
+            get
+            {
+                Type elementType = ElementType.AssociatedSystemType;
+                return IsSZArray ? elementType.MakeArrayType() : elementType.MakeArrayType(Rank);
+            }
+        }
+
+        public override CType BaseOrParameterOrElementType => ElementType;
+
+        public override FUNDTYPE FundamentalType => FUNDTYPE.FT_REF;
+
+        public override ConstValKind ConstValKind => ConstValKind.IntPtr;
     }
 }
-
