@@ -5059,9 +5059,191 @@ void CodeGen::genHWIntrinsicSimdBinaryOp(GenTreeHWIntrinsic* node)
     genProduceReg(node);
 }
 
+//------------------------------------------------------------------------
+// genHWIntrinsicSwitchTable:
+//
+// Generate code for an immediate switch table
+//
+// In cases where an instruction only supports const immediate operands, we
+// need to generate functionally correct code when the operand is not constant
+//
+// This is required by the HW Intrinsic design to handle:
+//   debugger calls
+//   reflection
+//   call backs
+//
+// Generated code implements a switch of this form
+//
+// switch (swReg)
+// {
+// case 0:
+//    ins0; // emitSwCase(0)
+//    break;
+// case 1:
+//    ins1; // emitSwCase(1)
+//    break;
+// ...
+// ...
+// ...
+// case swMax - 1:
+//    insLast; // emitSwCase(swMax - 1)
+//    break;
+// default:
+//    throw ArgumentOutOfRangeException
+// }
+//
+// Generated code looks like:
+//
+//     cmp swReg, #swMax
+//     b.hs ThrowArgumentOutOfRangeExceptionHelper
+//     adr tmpReg, labelFirst
+//     add tmpReg, tmpReg, swReg, LSL #3
+//     b   [tmpReg]
+// labelFirst:
+//     ins0
+//     b labelBreakTarget
+//     ins1
+//     b labelBreakTarget
+//     ...
+//     ...
+//     ...
+//     insLast
+//     b labelBreakTarget
+// labelBreakTarget:
+//
+//
+// Arguments:
+//    swReg      - register containing the switch case to execute
+//    tmpReg     - temporary integer register for calculating the switch indirect branch target
+//    swMax      - the number of switch cases.  If swReg >= swMax throw SCK_ARG_RNG_EXCPN
+//    emitSwCase - function like argument taking an immediate value and emitting one instruction
+//
+// Return Value:
+//    None.
+//
+template <typename HWIntrinsicSwitchCaseBody>
+void CodeGen::genHWIntrinsicSwitchTable(regNumber                 swReg,
+                                        regNumber                 tmpReg,
+                                        int                       swMax,
+                                        HWIntrinsicSwitchCaseBody emitSwCase)
+{
+    assert(swMax > 0);
+    assert(swMax <= 256);
+
+    assert(genIsValidIntReg(tmpReg));
+    assert(genIsValidIntReg(swReg));
+
+    BasicBlock* labelFirst       = genCreateTempLabel();
+    BasicBlock* labelBreakTarget = genCreateTempLabel();
+
+    // Detect and throw out of range exception
+    getEmitter()->emitIns_R_I(INS_cmp, EA_4BYTE, swReg, swMax);
+
+    emitJumpKind jmpGEU = genJumpKindForOper(GT_GE, CK_UNSIGNED);
+    genJumpToThrowHlpBlk(jmpGEU, SCK_ARG_RNG_EXCPN);
+
+    // Calculate switch target
+    labelFirst->bbFlags |= BBF_JMP_TARGET;
+
+    // tmpReg = labelFirst
+    getEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, labelFirst, tmpReg);
+
+    // tmpReg = labelFirst + swReg * 8
+    getEmitter()->emitIns_R_R_R_I(INS_add, EA_PTRSIZE, tmpReg, tmpReg, swReg, 3, INS_OPTS_LSL);
+
+    // br tmpReg
+    getEmitter()->emitIns_R(INS_br, EA_PTRSIZE, tmpReg);
+
+    genDefineTempLabel(labelFirst);
+    for (int i = 0; i < swMax; ++i)
+    {
+        unsigned prevInsCount = getEmitter()->emitInsCount;
+
+        emitSwCase(i);
+
+        assert(getEmitter()->emitInsCount == prevInsCount + 1);
+
+        inst_JMP(EJ_jmp, labelBreakTarget);
+
+        assert(getEmitter()->emitInsCount == prevInsCount + 2);
+    }
+    genDefineTempLabel(labelBreakTarget);
+}
+
+//------------------------------------------------------------------------
+// genHWIntrinsicSimdExtractOp:
+//
+// Produce code for a GT_HWIntrinsic node with form SimdExtractOp.
+//
+// Consumes one SIMD operand and one scalar
+//
+// The element index operand is typically a const immediate
+// When it is not, a switch table is generated
+//
+// See genHWIntrinsicSwitchTable comments
+//
+// Arguments:
+//    node - the GT_HWIntrinsic node
+//
+// Return Value:
+//    None.
+//
 void CodeGen::genHWIntrinsicSimdExtractOp(GenTreeHWIntrinsic* node)
 {
-    NYI("HWIntrinsic form not implemented");
+    GenTree*  op1        = node->gtGetOp1();
+    GenTree*  op2        = node->gtGetOp2();
+    var_types simdType   = op1->TypeGet();
+    var_types targetType = node->TypeGet();
+    regNumber targetReg  = node->gtRegNum;
+
+    assert(targetReg != REG_NA);
+
+    genConsumeOperands(node);
+
+    regNumber op1Reg = op1->gtRegNum;
+
+    assert(genIsValidFloatReg(op1Reg));
+
+    emitAttr baseTypeSize = emitTypeSize(targetType);
+
+    int elements = emitTypeSize(simdType) / baseTypeSize;
+
+    auto emitSwCase = [&](int element) {
+        assert(element >= 0);
+        assert(element < elements);
+
+        if (varTypeIsFloating(targetType))
+        {
+            assert(genIsValidFloatReg(targetReg));
+            getEmitter()->emitIns_R_R_I_I(INS_mov, baseTypeSize, targetReg, op1Reg, 0, element);
+        }
+        else if (varTypeIsUnsigned(targetType) || (baseTypeSize == EA_8BYTE))
+        {
+            assert(genIsValidIntReg(targetReg));
+            getEmitter()->emitIns_R_R_I(INS_umov, baseTypeSize, targetReg, op1Reg, element);
+        }
+        else
+        {
+            assert(genIsValidIntReg(targetReg));
+            getEmitter()->emitIns_R_R_I(INS_smov, baseTypeSize, targetReg, op1Reg, element);
+        }
+    };
+
+    if (op2->isContainedIntOrIImmed())
+    {
+        int element = (int)op2->AsIntConCommon()->IconValue();
+
+        emitSwCase(element);
+    }
+    else
+    {
+        regNumber elementReg = op2->gtRegNum;
+        regNumber tmpReg     = node->GetSingleTempReg();
+
+        genHWIntrinsicSwitchTable(elementReg, tmpReg, elements, emitSwCase);
+    }
+
+    genProduceReg(node);
 }
 
 void CodeGen::genHWIntrinsicSimdInsertOp(GenTreeHWIntrinsic* node)

@@ -982,6 +982,7 @@ void LinearScan::TreeNodeInfoInitSIMD(GenTreeSIMD* simdTree, TreeNodeInfo* info)
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
+#include "hwintrinsicArm64.h"
 //------------------------------------------------------------------------
 // TreeNodeInfoInitHWIntrinsic: Set the NodeInfo for a GT_HWIntrinsic tree.
 //
@@ -998,6 +999,20 @@ void LinearScan::TreeNodeInfoInitHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, 
     if (intrinsicTree->gtGetOp2IfPresent() != nullptr)
     {
         info->srcCount += GetOperandInfo(intrinsicTree->gtOp.gtOp2);
+    }
+
+    switch (compiler->getHWIntrinsicInfo(intrinsicID).form)
+    {
+        case HWIntrinsicInfo::SimdExtractOp:
+            if (!intrinsicTree->gtOp.gtOp2->isContained())
+            {
+                // We need a temp to create a switch table
+                info->internalIntCount = 1;
+                info->setInternalCandidates(this, allRegs(TYP_INT));
+            }
+            break;
+        default:
+            break;
     }
 }
 #endif

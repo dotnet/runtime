@@ -144,6 +144,8 @@ void genHWIntrinsicSimdExtractOp(GenTreeHWIntrinsic* node);
 void genHWIntrinsicSimdInsertOp(GenTreeHWIntrinsic* node);
 void genHWIntrinsicSimdSelectOp(GenTreeHWIntrinsic* node);
 void genHWIntrinsicSimdUnaryOp(GenTreeHWIntrinsic* node);
+template <typename HWIntrinsicSwitchCaseBody>
+void genHWIntrinsicSwitchTable(regNumber swReg, regNumber tmpReg, int swMax, HWIntrinsicSwitchCaseBody emitSwCase);
 #endif // defined(_TARGET_XARCH_)
 #endif // FEATURE_HW_INTRINSICS
 
