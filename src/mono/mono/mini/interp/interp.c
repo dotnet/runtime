@@ -4314,10 +4314,14 @@ array_constructed:
 			MonoTypedRef *tref = sp [-1].data.p;
 			gpointer addr = tref->value;
 
+			c = rtm->data_items [*(guint16 *)(ip + 1)];
+			if (c != tref->klass)
+				THROW_EX (mono_get_exception_invalid_cast (), ip);
+
 			vt_sp -= sizeof (MonoTypedRef);
 
 			sp [-1].data.p = addr;
-			ip ++;
+			ip += 2;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDTOKEN)

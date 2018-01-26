@@ -3567,9 +3567,12 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			break;
 		case CEE_REFANYVAL: {
 			CHECK_STACK (td, 1);
+
 			token = read32 (td->ip + 1);
+			klass = mini_get_class (method, token, generic_context);
 
 			ADD_CODE (td, MINT_REFANYVAL);
+			ADD_CODE (td, get_data_item_index (td, klass));
 
 			POP_VT (td, sizeof (MonoTypedRef));
 			SET_SIMPLE_TYPE(td->sp - 1, STACK_TYPE_MP);
