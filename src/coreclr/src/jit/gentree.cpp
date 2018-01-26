@@ -404,6 +404,10 @@ void GenTree::InitNodeSize()
 #ifdef FEATURE_SIMD
     static_assert_no_msg(sizeof(GenTreeSIMD)         <= TREE_NODE_SZ_SMALL);
 #endif // FEATURE_SIMD
+
+#ifdef FEATURE_HW_INTRINSICS
+    static_assert_no_msg(sizeof(GenTreeHWIntrinsic)  <= TREE_NODE_SZ_SMALL);
+#endif // FEATURE_HW_INTRINSICS
     // clang-format on
 }
 
@@ -8838,6 +8842,16 @@ unsigned GenTree::NumChildren()
             }
             return childCount;
         }
+#ifdef FEATURE_HW_INTRINSICS
+        // GT_HWIntrinsic require special handling
+        if (OperGet() == GT_HWIntrinsic)
+        {
+            if (gtOp.gtOp1 == nullptr)
+            {
+                return 0;
+            }
+        }
+#endif
         // Special case for assignment of dynamic block.
         // This is here to duplicate the former case where the size may be evaluated prior to the
         // source and destination addresses. In order to do this, we treat the size as a child of the
