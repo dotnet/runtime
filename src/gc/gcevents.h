@@ -6,7 +6,7 @@
 #endif // KNOWN_EVENT
 
 #ifndef DYNAMIC_EVENT
- #define DYNAMIC_EVENT(name, provider, level, keyword, ...)
+ #define DYNAMIC_EVENT(name, level, keyword, ...)
 #endif // DYNAMIC_EVENT
 
 #undef KNOWN_EVENT

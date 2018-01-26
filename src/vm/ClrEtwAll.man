@@ -116,6 +116,7 @@
                             <opcode name="GCBulkRootCCW" message="$(string.RuntimePublisher.GCBulkRootCCWOpcodeMessage)" symbol="CLR_GC_BULKROOTCCW_OPCODE" value="38"> </opcode>
                             <opcode name="GCBulkRCW" message="$(string.RuntimePublisher.GCBulkRCWOpcodeMessage)" symbol="CLR_GC_BULKRCW_OPCODE" value="39"> </opcode>
                             <opcode name="GCBulkRootStaticVar" message="$(string.RuntimePublisher.GCBulkRootStaticVarOpcodeMessage)" symbol="CLR_GC_BULKROOTSTATICVAR_OPCODE" value="40"> </opcode>
+                            <opcode name="GCDynamicEvent" message="$(string.RuntimePublisher.GCDynamicEventOpcodeMessage)" symbol="CLR_GC_DYNAMICEVENT_OPCODE" value="41"> </opcode>
                             <opcode name="IncreaseMemoryPressure" message="$(string.RuntimePublisher.IncreaseMemoryPressureOpcodeMessage)" symbol="CLR_GC_INCREASEMEMORYPRESSURE_OPCODE" value="200"> </opcode>
                             <opcode name="DecreaseMemoryPressure" message="$(string.RuntimePublisher.DecreaseMemoryPressureOpcodeMessage)" symbol="CLR_GC_DECREASEMEMORYPRESSURE_OPCODE" value="201"> </opcode>
                             <opcode name="GCMarkWithType" message="$(string.RuntimePublisher.GCMarkOpcodeMessage)" symbol="CLR_GC_MARK_OPCODE" value="202"> </opcode>
@@ -1184,6 +1185,13 @@
                         <data name="ObjectID" inType="win:Pointer" />
                         <data name="ObjectSize" inType="win:UInt64" />
                         <data name="TypeName" inType="win:UnicodeString" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                    </template>
+
+                    <template tid="GCDynamicEvent">
+                        <data name="Name" inType="win:UnicodeString" />
+                        <data name="DataSize" inType="win:UInt32" />
+                        <data name="Data" inType="win:Binary" length="DataSize" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
                     </template>
                     
@@ -2566,6 +2574,12 @@
                            keywords ="GCHeapDumpKeyword"  opcode="GCBulkRootStaticVar"
                            task="GarbageCollection"
                            symbol="GCBulkRootStaticVar" message="$(string.RuntimePublisher.GCBulkRootStaticVarEventMessage)"/>
+
+                    <event value="39" version="0" level="win:LogAlways" template="GCDynamicEvent"
+                           keywords= "GCKeyword GCHandleKeyword GCHeapDumpKeyword GCSampledObjectAllocationHighKeyword GCHeapSurvivalAndMovementKeyword GCHeapCollectKeyword GCHeapAndTypeNamesKeyword GCSampledObjectAllocationLowKeyword"
+                           opcode="GCDynamicEvent"
+                           task="GarbageCollection"
+                           symbol="GCDynamicEvent"/>
 
                     <!-- CLR Threading events, value reserved from 40 to 79 -->
                     <event value="40" version="0" level="win:Informational"  template="ClrWorkerThread"
@@ -6194,6 +6208,7 @@
                 <string id="RuntimePublisher.GCBulkRootCCWEventMessage" value="ClrInstanceID=%1;%nIndex=%2;%nCount=%3" />
                 <string id="RuntimePublisher.GCBulkRCWEventMessage" value="ClrInstanceID=%1;%nIndex=%2;%nCount=%3" />
                 <string id="RuntimePublisher.GCBulkRootStaticVarEventMessage" value="ClrInstanceID=%1;%nIndex=%2;%nCount=%3" />
+                <string id="RuntimePublisher.GCDynamicEventMessage" value="ClrInstanceID=%1;Data=%2;Size=%3" />
                 <string id="RuntimePublisher.GCBulkRootConditionalWeakTableElementEdgeEventMessage" value="ClrInstanceID=%1;%nIndex=%2;%nCount=%3" />
                 <string id="RuntimePublisher.GCBulkNodeEventMessage" value="ClrInstanceID=%1;%nIndex=%2;%nCount=%3" />
                 <string id="RuntimePublisher.GCBulkEdgeEventMessage" value="ClrInstanceID=%1;%nIndex=%2;%nCount=%3" />
@@ -6788,6 +6803,7 @@
                 <string id="RuntimePublisher.GCBulkRootCCWOpcodeMessage" value="GCBulkRootCCW" />
                 <string id="RuntimePublisher.GCBulkRCWOpcodeMessage" value="GCBulkRCW" />
                 <string id="RuntimePublisher.GCBulkRootStaticVarOpcodeMessage" value="GCBulkRootStaticVar" />
+                <string id="RuntimePublisher.GCDynamicEventOpcodeMessage" value="GCDynamicEvent" />
                 <string id="RuntimePublisher.GCBulkRootConditionalWeakTableElementEdgeOpcodeMessage" value="GCBulkRootConditionalWeakTableElementEdge" />
                 <string id="RuntimePublisher.GCBulkNodeOpcodeMessage" value="GCBulkNode" />
                 <string id="RuntimePublisher.GCBulkEdgeOpcodeMessage" value="GCBulkEdge" />
