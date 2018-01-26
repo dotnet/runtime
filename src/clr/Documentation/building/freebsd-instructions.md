@@ -23,6 +23,9 @@ Install the following packages for the toolchain:
 - libunwind
 - gettext
 - icu
+- ninja (optional)
+- lttng-ust
+- python27
 
 To install the packages you need:
 
