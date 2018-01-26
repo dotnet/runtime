@@ -16,7 +16,15 @@
 // to the EE. ([LOCALGC TODO dynamic event implementation])
 class IGCToCLREventSink
 {
-    /* [LOCALGC TODO] This will be filled with events as they get ported */
+public:
+    // Fires a dynamic event with the given event name and payload. Dynamic
+    // events are not known to the EE and are fired as an unschematized event
+    // to the underlying eventing implementation.
+    virtual
+    void FireDynamicEvent(
+        const char* eventName,
+        void* payload,
+        uint32_t payloadSize) = 0;
 };
 
 // This interface provides the interface that the GC will use to speak to the rest
