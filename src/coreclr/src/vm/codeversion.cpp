@@ -518,9 +518,11 @@ ILCodeVersionNode::ILCodeVersionNode() :
     m_rejitId(0),
     m_pNextILVersionNode(dac_cast<PTR_ILCodeVersionNode>(nullptr)),
     m_rejitState(ILCodeVersion::kStateRequested),
-    m_pIL(dac_cast<PTR_COR_ILMETHOD>(nullptr)),
+    m_pIL(),
     m_jitFlags(0)
-{}
+{
+    m_pIL.Store(dac_cast<PTR_COR_ILMETHOD>(nullptr));
+}
 
 #ifndef DACCESS_COMPILE
 ILCodeVersionNode::ILCodeVersionNode(Module* pModule, mdMethodDef methodDef, ReJITID id) :
