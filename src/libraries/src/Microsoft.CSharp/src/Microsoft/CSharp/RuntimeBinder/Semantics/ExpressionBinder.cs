@@ -361,10 +361,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GetSymbolLoader().GetPredefindType(pt);
         }
 
-        private CType VoidType { get { return GetSymbolLoader().GetTypeManager().GetVoid(); } }
-
-        private CType getVoidType() { return VoidType; }
-
         private Expr GenerateAssignmentConversion(Expr op1, Expr op2, bool allowExplicit) =>
             allowExplicit ? mustCastCore(op2, op1.Type, 0) : mustConvertCore(op2, op1.Type);
 
@@ -391,7 +387,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             ArrayType pArrayType = pOp1.Type as ArrayType;
             Debug.Assert(pArrayType != null);
-            CType elementType = pArrayType.GetElementType();
+            CType elementType = pArrayType.ElementType;
             checkUnsafe(elementType); // added to the binder so we don't bind to pointer ops
             // Check the rank of the array against the number of indices provided, and
             // convert the indexes to ints
@@ -437,8 +433,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // original tree to the cast.
 
             if (exprConst is ExprConstant constant && exprFlags == 0 &&
-                exprSrc.Type.fundType() == typeDest.fundType() &&
-                (!exprSrc.Type.isPredefType(PredefinedType.PT_STRING) || constant.Val.IsNullRef))
+                exprSrc.Type.FundamentalType == typeDest.FundamentalType &&
+                (!exprSrc.Type.IsPredefType(PredefinedType.PT_STRING) || constant.Val.IsNullRef))
             {
                 ExprConstant expr = GetExprFactory().CreateConstant(typeDest, constant.Val);
                 pexprDest = expr;
@@ -491,7 +487,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
                 else
                 {
-                    Debug.Assert(pResult.Type == getVoidType());
+                    Debug.Assert(pResult.Type == VoidType.Instance);
                 }
             }
 
@@ -512,7 +508,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         internal Expr BindToField(Expr pOptionalObject, FieldWithType fwt, BindingFlag bindFlags)
         {
-            Debug.Assert(fwt.GetType() != null && fwt.Field().getClass() == fwt.GetType().getAggregate());
+            Debug.Assert(fwt.GetType() != null && fwt.Field().getClass() == fwt.GetType().OwningAggregate);
 
             CType pFieldType = GetTypes().SubstType(fwt.Field().GetType(), fwt.GetType());
             pOptionalObject = AdjustMemberObject(fwt, pOptionalObject, out _);
@@ -553,7 +549,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         getOrCreateMethodName.Text, null, fieldType.AssociatedSystemType);
                 MethodSymbol getOrCreateMethod =
                     GetSymbolLoader()
-                        .LookupAggMember(getOrCreateMethodName, fieldType.getAggregate(), symbmask_t.MASK_MethodSymbol)
+                        .LookupAggMember(getOrCreateMethodName, fieldType.OwningAggregate, symbmask_t.MASK_MethodSymbol)
                          as MethodSymbol;
 
                 MethPropWithInst getOrCreatempwi = new MethPropWithInst(getOrCreateMethod, fieldType);
@@ -562,7 +558,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Expr getOrCreateCall = BindToMethod(
                     new MethWithInst(getOrCreatempwi), pResult, getOrCreateGrp, (MemLookFlags)MemLookFlags.None);
 
-                AggregateSymbol fieldTypeSymbol = fieldType.GetOwningAggregate();
+                AggregateSymbol fieldTypeSymbol = fieldType.OwningAggregate;
                 Name invocationListName = NameManager.GetPredefinedName(PredefinedName.PN_INVOCATIONLIST);
 
                 // InvocationList might not be populated in the symbol table as no one would have called it.
@@ -591,7 +587,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(pwt.Sym is PropertySymbol &&
                     pwt.GetType() != null &&
-                    pwt.Prop().getClass() == pwt.GetType().getAggregate());
+                    pwt.Prop().getClass() == pwt.GetType().OwningAggregate);
             Debug.Assert(pwt.Prop().Params.Count == 0 || pwt.Prop() is IndexerSymbol);
 
             bool fConstrained;
@@ -681,13 +677,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             CType typeSrc = arg.Type;
 
         LAgain:
-            switch (typeSrc.GetTypeKind())
+            switch (typeSrc.TypeKind)
             {
                 case TypeKind.TK_NullableType:
                     typeSrc = typeSrc.StripNubs();
                     goto LAgain;
                 case TypeKind.TK_AggregateType:
-                    if (!typeSrc.isClassType() && !typeSrc.isStructType() || ((AggregateType)typeSrc).getAggregate().IsSkipUDOps())
+                    if (!typeSrc.IsClassType && !typeSrc.IsStructType || ((AggregateType)typeSrc).OwningAggregate.IsSkipUDOps())
                         return null;
                     break;
                 default:
@@ -707,24 +703,33 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 // Find the next operator.
                 methCur = methCur == null
-                    ? GetSymbolLoader().LookupAggMember(pName, atsCur.getAggregate(), symbmask_t.MASK_MethodSymbol) as MethodSymbol
-                    : SymbolLoader.LookupNextSym(methCur, atsCur.getAggregate(), symbmask_t.MASK_MethodSymbol) as MethodSymbol;
+                    ? GetSymbolLoader().LookupAggMember(pName, atsCur.OwningAggregate, symbmask_t.MASK_MethodSymbol) as MethodSymbol
+                    : SymbolLoader.LookupNextSym(methCur, atsCur.OwningAggregate, symbmask_t.MASK_MethodSymbol) as MethodSymbol;
 
                 if (methCur == null)
                 {
                     // Find the next type.
                     // If we've found some applicable methods in a class then we don't need to look any further.
                     if (!methFirstList.IsEmpty())
+                    {
                         break;
-                    atsCur = atsCur.GetBaseClass();
+                    }
+
+                    atsCur = atsCur.BaseClass;
                     if (atsCur == null)
+                    {
                         break;
+                    }
+
                     continue;
                 }
 
                 // Only look at operators with 1 args.
                 if (!methCur.isOperator || methCur.Params.Count != 1)
+                {
                     continue;
+                }
+
                 Debug.Assert(methCur.typeVars.Count == 0);
 
                 TypeArray paramsCur = GetTypes().SubstTypeArray(methCur.Params, atsCur);
@@ -739,8 +744,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                                     0,
                                     false));
                 }
-                else if (typeParam.IsNonNubValType() &&
-                         GetTypes().SubstType(methCur.RetType, atsCur).IsNonNubValType() &&
+                else if (typeParam.IsNonNullableValueType &&
+                         GetTypes().SubstType(methCur.RetType, atsCur).IsNonNullableValueType &&
                          canConvert(arg, nubParam = GetTypes().GetNullable(typeParam)))
                 {
                     methFirstList.Add(new CandidateFunctionMember(
@@ -1077,7 +1082,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Expr AdjustMemberObject(SymWithType swt, Expr pObject, out bool pfConstrained)
         {
             // Assert that the type is present and is an instantiation of the member's parent.
-            Debug.Assert(swt.GetType() != null && swt.GetType().getAggregate() == swt.Sym.parent as AggregateSymbol);
+            Debug.Assert(swt.GetType() != null && swt.GetType().OwningAggregate == swt.Sym.parent as AggregateSymbol);
             bool bIsMatchingStatic = IsMatchingStatic(swt, pObject);
             pfConstrained = false;
 
@@ -1131,19 +1136,19 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (typeObj is TypeParameterType || typeObj is AggregateType)
             {
                 AggregateSymbol aggCalled = swt.Sym.parent as AggregateSymbol;
-                Debug.Assert(swt.GetType().getAggregate() == aggCalled);
+                Debug.Assert(swt.GetType().OwningAggregate == aggCalled);
 
                 // If we're invoking code on a struct-valued field, mark the struct as assigned (to
                 // avoid warning CS0649).
                 if (pObject is ExprField field && !field.FieldWithType.Field().isAssigned && !(swt.Sym is FieldSymbol) &&
-                    typeObj.isStructType() && !typeObj.isPredefined())
+                    typeObj.IsStructType && !typeObj.IsPredefined)
                 {
                     field.FieldWithType.Field().isAssigned = true;
                 }
 
                 if (pfConstrained &&
                     (typeObj is TypeParameterType ||
-                     typeObj.isStructType() && swt.GetType().IsRefType() && swt.Sym.IsVirtual()))
+                     typeObj.IsStructType && swt.GetType().IsReferenceType && swt.Sym.IsVirtual()))
                 {
                     // For calls on type parameters or virtual calls on struct types (not enums),
                     // use the constrained prefix.
@@ -1204,7 +1209,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                        // things marked as lvalues have props/fields which are lvalues, with one exception:  props of structs
                        // do not have fields/structs as lvalues
 
-                       !pObject.Type.isStructOrEnum()
+                       !pObject.Type.IsStructOrEnum
                    // non-struct types are lvalues (such as non-struct method returns)
                    );
         }
@@ -1376,7 +1381,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return;
             }
 
-            CType elementType = subArr.GetElementType();
+            CType elementType = subArr.ElementType;
 
             // Use an EK_ARRINIT even in the empty case so empty param arrays in attributes work.
             ExprArrayInit exprArrayInit = GetExprFactory().CreateArrayInit(substitutedArrayType, null, null, new[] { 0 }, 1);
@@ -1537,7 +1542,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             // At this point, we have an array sym.
-            CType elementType = arr.GetElementType();
+            CType elementType = arr.ElementType;
 
             for (int itype = @params.Count - 1; itype < count; itype++)
             {
@@ -1582,8 +1587,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private static bool isConstantInRange(ExprConstant exprSrc, CType typeDest, bool realsOk)
         {
-            FUNDTYPE ftSrc = exprSrc.Type.fundType();
-            FUNDTYPE ftDest = typeDest.fundType();
+            FUNDTYPE ftSrc = exprSrc.Type.FundamentalType;
+            FUNDTYPE ftDest = typeDest.FundamentalType;
 
             if (ftSrc > FUNDTYPE.FT_LASTINTEGRAL || ftDest > FUNDTYPE.FT_LASTINTEGRAL)
             {
@@ -1778,7 +1783,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private void checkUnsafe(CType type)
         {
-            if (type == null || type.isUnsafe())
+            if (type == null || type.IsUnsafe())
             {
                 throw ErrorContext.Error(ErrorCode.ERR_UnsafeNeeded);
             }

@@ -147,7 +147,6 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\PredefinedTypes.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\Type.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\TypeArray.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\TypeFactory.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\TypeKind.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\TypeManager.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\TypeParameterType.cs" />

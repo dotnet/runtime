@@ -21,10 +21,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 type2 = arg2.Type;
                 typeRaw1 = type1.StripNubs();
                 typeRaw2 = type2.StripNubs();
-                pt1 = type1.isPredefined() ? type1.getPredefType() : PredefinedType.PT_COUNT;
-                pt2 = type2.isPredefined() ? type2.getPredefType() : PredefinedType.PT_COUNT;
-                ptRaw1 = typeRaw1.isPredefined() ? typeRaw1.getPredefType() : PredefinedType.PT_COUNT;
-                ptRaw2 = typeRaw2.isPredefined() ? typeRaw2.getPredefType() : PredefinedType.PT_COUNT;
+                pt1 = type1.IsPredefined ? type1.PredefinedType : PredefinedType.PT_COUNT;
+                pt2 = type2.IsPredefined ? type2.PredefinedType : PredefinedType.PT_COUNT;
+                ptRaw1 = typeRaw1.IsPredefined ? typeRaw1.PredefinedType : PredefinedType.PT_COUNT;
+                ptRaw2 = typeRaw2.IsPredefined ? typeRaw2.PredefinedType : PredefinedType.PT_COUNT;
             }
 
             public Expr arg1;

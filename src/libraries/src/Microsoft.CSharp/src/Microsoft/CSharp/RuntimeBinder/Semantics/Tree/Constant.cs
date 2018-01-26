@@ -16,7 +16,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public Expr OptionalConstructorCall { get; set; }
 
-        public bool IsZero => Val.IsZero(Type.constValKind());
+        public bool IsZero => Val.IsZero(Type.ConstValKind);
 
         public ConstVal Val { get; }
 
@@ -26,22 +26,21 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             get
             {
-                switch (Type.fundType())
+                switch (Type.FundamentalType)
                 {
                     case FUNDTYPE.FT_I8:
                     case FUNDTYPE.FT_U8:
                         return Val.Int64Val;
+
                     case FUNDTYPE.FT_U4:
                         return Val.UInt32Val;
-                    case FUNDTYPE.FT_I1:
-                    case FUNDTYPE.FT_I2:
-                    case FUNDTYPE.FT_I4:
-                    case FUNDTYPE.FT_U1:
-                    case FUNDTYPE.FT_U2:
-                        return Val.Int32Val;
+
                     default:
-                        Debug.Assert(false, "Bad fundType in getI64Value");
-                        return 0;
+                        Debug.Assert(
+                            Type.FundamentalType == FUNDTYPE.FT_I1 || Type.FundamentalType == FUNDTYPE.FT_I2
+                            || Type.FundamentalType == FUNDTYPE.FT_I4 || Type.FundamentalType == FUNDTYPE.FT_U1
+                            || Type.FundamentalType == FUNDTYPE.FT_U2, "Bad fundType in getI64Value");
+                        return Val.Int32Val;
                 }
             }
         }

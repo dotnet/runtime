@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
@@ -48,8 +47,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     {
         // Two way hashes
         private readonly Dictionary<KeyPair<AggregateSymbol, KeyPair<AggregateType, TypeArray>>, AggregateType> _aggregateTable;
-        private readonly Dictionary<KeyPair<CType, Name>, ArrayType> _pArrayTable;
-        private readonly Dictionary<KeyPair<CType, Name>, ParameterModifierType> _pParameterModifierTable;
+        private readonly Dictionary<KeyPair<CType, int>, ArrayType> _pArrayTable;
+        private readonly Dictionary<KeyPair<CType, bool>, ParameterModifierType> _pParameterModifierTable;
 
         // One way hashes
         private readonly Dictionary<CType, PointerType> _pPointerTable;
@@ -58,8 +57,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public TypeTable()
         {
             _aggregateTable = new Dictionary<KeyPair<AggregateSymbol, KeyPair<AggregateType, TypeArray>>, AggregateType>();
-            _pArrayTable = new Dictionary<KeyPair<CType, Name>, ArrayType>();
-            _pParameterModifierTable = new Dictionary<KeyPair<CType, Name>, ParameterModifierType>();
+            _pArrayTable = new Dictionary<KeyPair<CType, int>, ArrayType>();
+            _pParameterModifierTable = new Dictionary<KeyPair<CType, bool>, ParameterModifierType>();
             _pPointerTable = new Dictionary<CType, PointerType>();
             _pNullableTable = new Dictionary<CType, NullableType>();
         }
@@ -80,70 +79,52 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             _aggregateTable.Add(MakeKey(aggregate, MakeKey(outer, args)), pAggregate);
         }
 
-        public ArrayType LookupArray(Name pName, CType pElementType)
+        // rankNum is 0 for SZ arrays, equal to rank otherwise.
+        public ArrayType LookupArray(CType pElementType, int rankNum)
         {
-            var key = new KeyPair<CType, Name>(pElementType, pName);
-            ArrayType result;
-            if (_pArrayTable.TryGetValue(key, out result))
-            {
-                return result;
-            }
-            return null;
+            _pArrayTable.TryGetValue(new KeyPair<CType, int>(pElementType, rankNum), out ArrayType result);
+            return result;
         }
 
-        public void InsertArray(Name pName, CType pElementType, ArrayType pArray)
+        public void InsertArray(CType pElementType, int rankNum, ArrayType pArray)
         {
-            Debug.Assert(LookupArray(pName, pElementType) == null);
-            _pArrayTable.Add(new KeyPair<CType, Name>(pElementType, pName), pArray);
+            Debug.Assert(LookupArray(pElementType, rankNum) == null);
+            _pArrayTable.Add(new KeyPair<CType, int>(pElementType, rankNum), pArray);
         }
 
-        public ParameterModifierType LookupParameterModifier(Name pName, CType pElementType)
+        public ParameterModifierType LookupParameterModifier(CType pElementType, bool isOut)
         {
-            var key = new KeyPair<CType, Name>(pElementType, pName);
-            ParameterModifierType result;
-            if (_pParameterModifierTable.TryGetValue(key, out result))
-            {
-                return result;
-            }
-            return null;
+            _pParameterModifierTable.TryGetValue(new KeyPair<CType, bool>(pElementType, isOut), out ParameterModifierType result);
+            return result;
         }
 
-        public void InsertParameterModifier(
-                Name pName,
-                CType pElementType,
-                ParameterModifierType pParameterModifier)
+        public void InsertParameterModifier(CType pElementType, bool isOut, ParameterModifierType pParameterModifier)
         {
-            Debug.Assert(LookupParameterModifier(pName, pElementType) == null);
-            _pParameterModifierTable.Add(new KeyPair<CType, Name>(pElementType, pName), pParameterModifier);
+            Debug.Assert(LookupParameterModifier(pElementType, isOut) == null);
+            _pParameterModifierTable.Add(new KeyPair<CType, bool>(pElementType, isOut), pParameterModifier);
         }
 
         public PointerType LookupPointer(CType pElementType)
         {
-            PointerType result;
-            if (_pPointerTable.TryGetValue(pElementType, out result))
-            {
-                return result;
-            }
-            return null;
+            _pPointerTable.TryGetValue(pElementType, out PointerType result);
+            return result;
         }
 
         public void InsertPointer(CType pElementType, PointerType pPointer)
         {
+            Debug.Assert(LookupPointer(pElementType) == null);
             _pPointerTable.Add(pElementType, pPointer);
         }
 
         public NullableType LookupNullable(CType pUnderlyingType)
         {
-            NullableType result;
-            if (_pNullableTable.TryGetValue(pUnderlyingType, out result))
-            {
-                return result;
-            }
-            return null;
+            _pNullableTable.TryGetValue(pUnderlyingType, out NullableType result);
+            return result;
         }
 
         public void InsertNullable(CType pUnderlyingType, NullableType pNullable)
         {
+            Debug.Assert(LookupNullable(pUnderlyingType) == null);
             _pNullableTable.Add(pUnderlyingType, pNullable);
         }
     }

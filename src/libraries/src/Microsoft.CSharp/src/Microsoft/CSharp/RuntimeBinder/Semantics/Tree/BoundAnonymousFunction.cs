@@ -12,7 +12,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             : base(ExpressionKind.BoundLambda, type)
         {
             Debug.Assert(type != null);
-            Debug.Assert(type.isDelegateType());
+            Debug.Assert(type.IsDelegateType);
             Debug.Assert(argumentScope != null);
             ArgumentScope = argumentScope;
             Expression = expression;
