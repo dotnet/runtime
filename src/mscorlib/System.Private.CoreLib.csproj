@@ -641,5 +641,12 @@
     <!-- Use a different nativeresource file to avoid conflicts with mscorlib-->
     <Win32Resource Condition="'$(GenerateNativeVersionInfo)'=='true'">$(IntermediateOutputPath)\System.Private.CoreLib.res</Win32Resource>
   </PropertyGroup>
+
+  <Import Project="CreateRuntimeRootILLinkDescriptorFile.targets" />
+
+  <ItemGroup>
+    <EmbeddedResource Include="$(_ILLinkRuntimeRootDescriptorFilePath)" />
+  </ItemGroup>
+
   <Import Project="GenerateCompilerResponseFile.targets" />
 </Project>
