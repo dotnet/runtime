@@ -2620,6 +2620,15 @@ mono_method_get_token (MonoMethod *method)
 	return method->token;
 }
 
+gboolean
+mono_method_has_no_body (MonoMethod *method)
+{
+	return ((method->flags & METHOD_ATTRIBUTE_ABSTRACT) ||
+		(method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
+		(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+		(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
+}
+
 // FIXME Replace all internal callers of mono_method_get_header_checked with
 // mono_method_get_header_internal; the difference is in error initialization.
 MonoMethodHeader*
@@ -2634,7 +2643,9 @@ mono_method_get_header_internal (MonoMethod *method, MonoError *error)
 	error_init (error);
 	img = method->klass->image;
 
-	if ((method->flags & METHOD_ATTRIBUTE_ABSTRACT) || (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
+	// FIXME: for internal callers maybe it makes sense to do this check at the call site, not
+	// here?
+	if (mono_method_has_no_body (method)) {
 		mono_error_set_bad_image (error, img, "Method has no body");
 		return NULL;
 	}

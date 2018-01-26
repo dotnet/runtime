@@ -1534,6 +1534,9 @@ mono_class_get_weak_bitmap (MonoClass *klass, int *nbits);
 MonoMethod *
 mono_class_get_method_from_name_checked (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error);
 
+gboolean
+mono_method_has_no_body (MonoMethod *method);
+
 // FIXME Replace all internal callers of mono_method_get_header_checked with
 // mono_method_get_header_internal; the difference is in error initialization.
 //
