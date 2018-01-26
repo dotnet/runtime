@@ -728,10 +728,12 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_EnableRCWCleanupOnSTAShutdown, W("EnableRCWCle
 RETAIL_CONFIG_STRING_INFO(INTERNAL_LocalWinMDPath, W("LocalWinMDPath"), "Additional path to probe for WinMD files in if a WinRT type is not resolved using the standard paths.")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_AllowDComReflection, W("AllowDComReflection"), 0, "Allows out of process DCOM clients to marshal blocked reflection types.")
 
-///
-/// Performance Tracing
-///
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_PerformanceTracing, W("PerformanceTracing"), 0, "Enable/disable performance tracing.  Non-zero values enable tracing.")
+//
+// EventPipe
+//
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_EnableEventPipe, W("EnableEventPipe"), 0, "Enable/disable event pipe.  Non-zero values enable tracing.")
+RETAIL_CONFIG_STRING_INFO(INTERNAL_EventPipeOutputFile, W("EventPipeOutputFile"), "The full path including file name for the trace file that will be written when COMPlus_EnableEventPipe&=1")
+RETAIL_CONFIG_STRING_INFO(INTERNAL_EventPipeConfig, W("EventPipeConfig"), "Configuration for EventPipe.")
 
 #ifdef FEATURE_GDBJIT
 ///
