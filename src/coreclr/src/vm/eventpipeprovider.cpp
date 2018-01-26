@@ -31,6 +31,7 @@ EventPipeProvider::EventPipeProvider(EventPipeConfiguration *pConfig, const SStr
     m_pCallbackFunction = pCallbackFunction;
     m_pCallbackData = pCallbackData;
     m_pConfig = pConfig;
+    m_deleteDeferred = false;
 }
 
 EventPipeProvider::~EventPipeProvider()
