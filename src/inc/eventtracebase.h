@@ -72,6 +72,13 @@ enum EtwThreadFlags
 #ifndef FEATURE_REDHAWK
 
 #if defined(FEATURE_EVENT_TRACE)
+
+#if defined(FEATURE_PERFTRACING)
+#define EVENT_PIPE_ENABLED() (EventPipeHelper::Enabled())
+#else
+#define EVENT_PIPE_ENABLED() (FALSE)
+#endif
+
 #if  !defined(FEATURE_PAL)
 
 //
@@ -79,27 +86,27 @@ enum EtwThreadFlags
 //
 
 #define ETW_TRACING_INITIALIZED(RegHandle) \
-    (g_pEtwTracer && RegHandle)
+    ((g_pEtwTracer && RegHandle) || EVENT_PIPE_ENABLED())
 
 //
 // Use this macro to check if an event is enabled
 // if the fields in the event are not cheap to calculate
 //
 #define ETW_EVENT_ENABLED(Context, EventDescriptor) \
-    (MCGEN_ENABLE_CHECK(Context, EventDescriptor))
+    ((MCGEN_ENABLE_CHECK(Context, EventDescriptor)) || EVENT_PIPE_ENABLED())
 
 //
 // Use this macro to check if a category of events is enabled
 //
 
 #define ETW_CATEGORY_ENABLED(Context, Level, Keyword) \
-    (Context.IsEnabled && McGenEventProviderEnabled(&Context, Level, Keyword))
+    ((Context.IsEnabled && McGenEventProviderEnabled(&Context, Level, Keyword)) || EVENT_PIPE_ENABLED())
 
 
 // This macro only checks if a provider is enabled
 // It does not check the flags and keywords for which it is enabled
 #define ETW_PROVIDER_ENABLED(ProviderSymbol)                 \
-        ProviderSymbol##_Context.IsEnabled
+        ((ProviderSymbol##_Context.IsEnabled) || EVENT_PIPE_ENABLED())
 
 
 #else //defined(FEATURE_PAL)
@@ -183,7 +190,7 @@ struct ProfilingScanContext;
 // Use this macro to check if ETW is initialized and the event is enabled
 //
 #define ETW_TRACING_ENABLED(Context, EventDescriptor) \
-    (Context.IsEnabled && ETW_TRACING_INITIALIZED(Context.RegistrationHandle) && ETW_EVENT_ENABLED(Context, EventDescriptor))
+    ((Context.IsEnabled && ETW_TRACING_INITIALIZED(Context.RegistrationHandle) && ETW_EVENT_ENABLED(Context, EventDescriptor)) || EVENT_PIPE_ENABLED())
 
 //
 // Using KEYWORDZERO means when checking the events category ignore the keyword
@@ -194,7 +201,7 @@ struct ProfilingScanContext;
 // Use this macro to check if ETW is initialized and the category is enabled
 //
 #define ETW_TRACING_CATEGORY_ENABLED(Context, Level, Keyword) \
-    (ETW_TRACING_INITIALIZED(Context.RegistrationHandle) && ETW_CATEGORY_ENABLED(Context, Level, Keyword))
+    ((ETW_TRACING_INITIALIZED(Context.RegistrationHandle) && ETW_CATEGORY_ENABLED(Context, Level, Keyword)) || EVENT_PIPE_ENABLED())
 
     #define ETWOnStartup(StartEventName, EndEventName) \
         ETWTraceStartup trace##StartEventName##(Microsoft_Windows_DotNETRuntimePrivateHandle, &StartEventName, &StartupId, &EndEventName, &StartupId);
