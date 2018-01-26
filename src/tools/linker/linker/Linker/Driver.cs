@@ -75,7 +75,7 @@ namespace Mono.Linker {
 			return _queue.Count > 0;
 		}
 
-		void Run ()
+		public void Run ()
 		{
 			Pipeline p = GetStandardPipeline ();
 			using (LinkContext context = GetDefaultContext (p)) {
