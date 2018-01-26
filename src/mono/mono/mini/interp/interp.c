@@ -658,6 +658,8 @@ stackval_to_data_addr (MonoType *type_, stackval *val)
 			return stackval_to_data_addr (mono_class_enum_basetype (type->data.klass), val);
 		else
 			return val->data.vt;
+	case MONO_TYPE_TYPEDBYREF:
+		return val->data.vt;
 	case MONO_TYPE_GENERICINST: {
 		MonoClass *container_class = type->data.generic_class->container_class;
 
