@@ -7,6 +7,7 @@
 #include "eventpipeconfiguration.h"
 #include "eventpipeeventinstance.h"
 #include "eventpipeprovider.h"
+#include "eventpipesession.h"
 
 #ifdef FEATURE_PERFTRACING
 
@@ -18,9 +19,8 @@ EventPipeConfiguration::EventPipeConfiguration()
 
     m_enabled = false;
     m_rundownEnabled = false;
-    m_circularBufferSizeInBytes = 1024 * 1024 * 1000; // Default to 1000MB.
-    m_pEnabledProviderList = NULL;
     m_pConfigProvider = NULL;
+    m_pSession = NULL;
     m_pProviderList = new SList<SListElem<EventPipeProvider*>>();
 }
 
@@ -46,11 +46,10 @@ EventPipeConfiguration::~EventPipeConfiguration()
         EX_CATCH { }
         EX_END_CATCH(SwallowAllExceptions);
     }
-
-    if(m_pEnabledProviderList != NULL)
+    if(m_pSession != NULL)
     {
-        delete(m_pEnabledProviderList);
-        m_pEnabledProviderList = NULL;
+        DeleteSession(m_pSession);
+        m_pSession = NULL;
     }
 
     if(m_pProviderList != NULL)
@@ -173,16 +172,16 @@ bool EventPipeConfiguration::RegisterProvider(EventPipeProvider &provider)
         m_pProviderList->InsertTail(new SListElem<EventPipeProvider*>(&provider));
     }
 
-    // Set the provider configuration and enable it if we know anything about the provider before it is registered.
-    if(m_pEnabledProviderList != NULL)
+    // Set the provider configuration and enable it if it has been requested by a session.
+    if(m_pSession != NULL)
     {
-        EventPipeEnabledProvider *pEnabledProvider = m_pEnabledProviderList->GetEnabledProvider(&provider);
-        if(pEnabledProvider != NULL)
+        EventPipeSessionProvider *pSessionProvider = GetSessionProvider(m_pSession, &provider);
+        if(pSessionProvider != NULL)
         {
             provider.SetConfiguration(
                 true /* providerEnabled */,
-                pEnabledProvider->GetKeywords(),
-                pEnabledProvider->GetLevel());
+                pSessionProvider->GetKeywords(),
+                pSessionProvider->GetLevel());
         }
     }
 
@@ -278,40 +277,83 @@ EventPipeProvider* EventPipeConfiguration::GetProviderNoLock(const SString &prov
     return NULL;
 }
 
-size_t EventPipeConfiguration::GetCircularBufferSize() const
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return m_circularBufferSizeInBytes;
-}
-
-void EventPipeConfiguration::SetCircularBufferSize(size_t circularBufferSize)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if(!m_enabled)
-    {
-        m_circularBufferSizeInBytes = circularBufferSize;
-    }
-}
-
-void EventPipeConfiguration::Enable(
-    unsigned int circularBufferSizeInMB,
-    EventPipeProviderConfiguration *pProviders,
-    int numProviders)
+EventPipeSessionProvider* EventPipeConfiguration::GetSessionProvider(EventPipeSession *pSession, EventPipeProvider *pProvider)
 {
     CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
+        PRECONDITION(EventPipe::GetLock()->OwnedByCurrentThread());
+    }
+    CONTRACTL_END;
+
+    EventPipeSessionProvider *pRet = NULL;
+    if(pSession != NULL)
+    {
+       pRet = pSession->GetSessionProvider(pProvider);
+    }
+    return pRet;
+}
+
+size_t EventPipeConfiguration::GetCircularBufferSize() const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    size_t ret = 0;
+    if(m_pSession != NULL)
+    {
+        ret = m_pSession->GetCircularBufferSize();
+    }
+    return ret;
+}
+
+EventPipeSession* EventPipeConfiguration::CreateSession(unsigned int circularBufferSizeInMB, EventPipeProviderConfiguration *pProviders, unsigned int numProviders)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    return new EventPipeSession(circularBufferSizeInMB, pProviders, numProviders);
+}
+
+void EventPipeConfiguration::DeleteSession(EventPipeSession *pSession)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(pSession != NULL);
+        PRECONDITION(m_enabled == false);
+    }
+    CONTRACTL_END;
+
+    // TODO: Multiple session support will require individual enabled bits.
+    if(pSession != NULL && !m_enabled)
+    {
+        delete(pSession);
+    }
+}
+
+void EventPipeConfiguration::Enable(EventPipeSession *pSession)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(pSession != NULL);
         // Lock must be held by EventPipe::Enable.
         PRECONDITION(EventPipe::GetLock()->OwnedByCurrentThread());
     }
     CONTRACTL_END;
 
-    m_circularBufferSizeInBytes = circularBufferSizeInMB * 1024 * 1024;
-    m_pEnabledProviderList = new EventPipeEnabledProviderList(pProviders, static_cast<unsigned int>(numProviders));
+    m_pSession = pSession;
     m_enabled = true;
 
     // The provider list should be non-NULL, but can be NULL on shutdown.
@@ -323,13 +365,13 @@ void EventPipeConfiguration::Enable(
             EventPipeProvider *pProvider = pElem->GetValue();
 
             // Enable the provider if it has been configured.
-            EventPipeEnabledProvider *pEnabledProvider = m_pEnabledProviderList->GetEnabledProvider(pProvider);
-            if(pEnabledProvider != NULL)
+            EventPipeSessionProvider *pSessionProvider = GetSessionProvider(m_pSession, pProvider);
+            if(pSessionProvider != NULL)
             {
                 pProvider->SetConfiguration(
                     true /* providerEnabled */,
-                    pEnabledProvider->GetKeywords(),
-                    pEnabledProvider->GetLevel());
+                    pSessionProvider->GetKeywords(),
+                    pSessionProvider->GetLevel());
             }
 
             pElem = m_pProviderList->GetNext(pElem);
@@ -337,13 +379,16 @@ void EventPipeConfiguration::Enable(
     }
 }
 
-void EventPipeConfiguration::Disable()
+void EventPipeConfiguration::Disable(EventPipeSession *pSession)
 {
     CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
+        // TODO: Multiple session support will require that the session be specified.
+        PRECONDITION(pSession != NULL);
+        PRECONDITION(pSession == m_pSession);
         // Lock must be held by EventPipe::Disable.
         PRECONDITION(EventPipe::GetLock()->OwnedByCurrentThread());
     }
@@ -364,13 +409,7 @@ void EventPipeConfiguration::Disable()
 
     m_enabled = false;
     m_rundownEnabled = false;
-
-    // Free the enabled providers list.
-    if(m_pEnabledProviderList != NULL)
-    {
-        delete(m_pEnabledProviderList);
-        m_pEnabledProviderList = NULL;
-    }
+    m_pSession = NULL;
 }
 
 bool EventPipeConfiguration::Enabled() const
@@ -385,30 +424,28 @@ bool EventPipeConfiguration::RundownEnabled() const
     return m_rundownEnabled;
 }
 
-void EventPipeConfiguration::EnableRundown()
+void EventPipeConfiguration::EnableRundown(EventPipeSession *pSession)
 {
     CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
+        PRECONDITION(pSession != NULL);
         // Lock must be held by EventPipe::Disable.
         PRECONDITION(EventPipe::GetLock()->OwnedByCurrentThread());
     }
     CONTRACTL_END;
 
     // Build the rundown configuration.
-    _ASSERTE(m_pEnabledProviderList == NULL);
-    const unsigned int numRundownProviders = 2;
-    EventPipeProviderConfiguration rundownProviders[numRundownProviders];
-    rundownProviders[0] = EventPipeProviderConfiguration(W("Microsoft-Windows-DotNETRuntime"), 0x80020138, static_cast<unsigned int>(EventPipeEventLevel::Verbose)); // Public provider.
-    rundownProviders[1] = EventPipeProviderConfiguration(W("Microsoft-Windows-DotNETRuntimeRundown"), 0x80020138, static_cast<unsigned int>(EventPipeEventLevel::Verbose)); // Rundown provider.
+    _ASSERTE(m_pSession == NULL);
 
     // Enable rundown.
+    // TODO: Move this into EventPipeSession once Enable takes an EventPipeSession object.
     m_rundownEnabled = true;
 
-    // Enable tracing.  The circular buffer size doesn't matter because we're going to write all events synchronously during rundown.
-    Enable(1 /* circularBufferSizeInMB */, rundownProviders, numRundownProviders);
+    // Enable tracing.
+    Enable(pSession);
 }
 
 EventPipeEventInstance* EventPipeConfiguration::BuildEventMetadataEvent(EventPipeEventInstance &sourceInstance)
@@ -506,179 +543,4 @@ void EventPipeConfiguration::DeleteDeferredProviders()
         }
     }
 }
-
-EventPipeEnabledProviderList::EventPipeEnabledProviderList(
-    EventPipeProviderConfiguration *pConfigs,
-    unsigned int numConfigs)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    m_pProviders = NULL;
-    m_pCatchAllProvider = NULL;
-    m_numProviders = 0;
-
-    // Test COMPLUS variable to enable tracing at start-up.
-    // If tracing is enabled at start-up create the catch-all provider and always return it.
-    if((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PerformanceTracing) & 1) == 1)
-    {
-        m_pCatchAllProvider = new EventPipeEnabledProvider();
-        m_pCatchAllProvider->Set(NULL, 0xFFFFFFFFFFFFFFFF, EventPipeEventLevel::Verbose);
-        return;
-    }
-
-    m_pCatchAllProvider = NULL;
-    m_numProviders = numConfigs;
-    if(m_numProviders == 0)
-    {
-        return;
-    }
-
-    m_pProviders = new EventPipeEnabledProvider[m_numProviders];
-    for(unsigned int i=0; i<m_numProviders; i++)
-    {
-        m_pProviders[i].Set(
-            pConfigs[i].GetProviderName(),
-            pConfigs[i].GetKeywords(),
-            (EventPipeEventLevel)pConfigs[i].GetLevel());
-    }
-}
-
-EventPipeEnabledProviderList::~EventPipeEnabledProviderList()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if(m_pProviders != NULL)
-    {
-        delete[] m_pProviders;
-        m_pProviders = NULL;
-    }
-    if(m_pCatchAllProvider != NULL)
-    {
-        delete(m_pCatchAllProvider);
-        m_pCatchAllProvider = NULL;
-    }
-}
-
-EventPipeEnabledProvider* EventPipeEnabledProviderList::GetEnabledProvider(
-    EventPipeProvider *pProvider)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // If tracing was enabled on start-up, all events should be on (this is a diagnostic config).
-    if(m_pCatchAllProvider != NULL)
-    {
-        return m_pCatchAllProvider;
-    }
-
-    if(m_pProviders == NULL)
-    {
-        return NULL;
-    }
-
-    SString providerNameStr = pProvider->GetProviderName();
-    LPCWSTR providerName = providerNameStr.GetUnicode();
-
-    EventPipeEnabledProvider *pEnabledProvider = NULL;
-    for(unsigned int i=0; i<m_numProviders; i++)
-    {
-        EventPipeEnabledProvider *pCandidate = &m_pProviders[i];
-        if(pCandidate != NULL)
-        {
-            if(wcscmp(providerName, pCandidate->GetProviderName()) == 0)
-            {
-                pEnabledProvider = pCandidate;
-                break;
-            }
-        }
-    }
-
-    return pEnabledProvider;
-}
-
-EventPipeEnabledProvider::EventPipeEnabledProvider()
-{
-    LIMITED_METHOD_CONTRACT;
-    m_pProviderName = NULL;
-    m_keywords = 0;
-}
-
-EventPipeEnabledProvider::~EventPipeEnabledProvider()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if(m_pProviderName != NULL)
-    {
-        delete[] m_pProviderName;
-        m_pProviderName = NULL;
-    }
-}
-
-void EventPipeEnabledProvider::Set(LPCWSTR providerName, UINT64 keywords, EventPipeEventLevel loggingLevel)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if(m_pProviderName != NULL)
-    {
-        delete(m_pProviderName);
-        m_pProviderName = NULL;
-    }
-
-    if(providerName != NULL)
-    {
-        size_t bufSize = wcslen(providerName) + 1;
-        m_pProviderName = new WCHAR[bufSize];
-        wcscpy_s(m_pProviderName, bufSize, providerName);
-    }
-    m_keywords = keywords;
-    m_loggingLevel = loggingLevel;
-}
-
-LPCWSTR EventPipeEnabledProvider::GetProviderName() const
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_pProviderName;
-}
-
-UINT64 EventPipeEnabledProvider::GetKeywords() const
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_keywords;
-}
-
-EventPipeEventLevel EventPipeEnabledProvider::GetLevel() const
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_loggingLevel;
-}
-
 #endif // FEATURE_PERFTRACING
