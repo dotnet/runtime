@@ -6,9 +6,9 @@ namespace System.ServiceModel.Syndication
 {
     public class SyndicationTextInput
     {
-        public string Description;
-        public string Title;
-        public SyndicationLink Link;
-        public string Name;
+        public string Description { get; set; }
+        public string Title { get; set; }
+        public SyndicationLink Link { get; set; }
+        public string Name { get; set; }
     }
 }

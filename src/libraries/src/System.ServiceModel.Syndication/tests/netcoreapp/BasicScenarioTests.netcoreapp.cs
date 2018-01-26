@@ -2,14 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Text;
-using System.ServiceModel.Syndication;
-using System.Xml;
-using System.IO;
-using Xunit;
 using System.Linq;
+using System.Xml;
+using Xunit;
 
 namespace System.ServiceModel.Syndication.Tests
 {
@@ -146,7 +142,7 @@ namespace System.ServiceModel.Syndication.Tests
                 Assert.Equal("http://contoso.com/rss", feed.Documentation.GetAbsoluteUri().ToString());
 
                 Assert.NotNull(feed.TimeToLive);
-                Assert.Equal(60, feed.TimeToLive);
+                Assert.Equal(TimeSpan.FromMinutes(60), feed.TimeToLive.Value);
 
                 Assert.NotNull(feed.SkipHours);
                 Assert.Equal(3, feed.SkipHours.Count);
@@ -170,7 +166,7 @@ namespace System.ServiceModel.Syndication.Tests
                 file: "rssOptionalElements.xml",
                 feedFormatter: (feedObject) => new Rss20FeedFormatter(feedObject),
                 allowableDifferences: allowableDifferences
-                );
+            );
         }
 
         [Fact]
@@ -188,7 +184,7 @@ namespace System.ServiceModel.Syndication.Tests
                     Assert.True(feed.Documentation.GetAbsoluteUri().ToString() == "http://contoso.com/rss");
 
                     Assert.NotNull(feed.TimeToLive);
-                    Assert.Equal(60, feed.TimeToLive);
+                    Assert.Equal(TimeSpan.FromMinutes(60), feed.TimeToLive.Value);
 
                     Assert.NotNull(feed.SkipHours);
                     Assert.Equal(3, feed.SkipHours.Count);
@@ -203,5 +199,63 @@ namespace System.ServiceModel.Syndication.Tests
                     Assert.Equal("http://www.contoso.no/search?", feed.TextInput.Link.Uri.ToString());
                 });
         }
+
+        public static TheoryData<TimeSpan> InvalidTimeToLiveValues
+        {
+            get
+            {
+                TheoryData<TimeSpan> data = new TheoryData<TimeSpan>();
+
+                data.Add(new TimeSpan(days: 0, hours: 0, minutes: 1, seconds: 1, milliseconds: 0));
+                data.Add(new TimeSpan(days: 0, hours: 0, minutes: 1, seconds: 0, milliseconds: 1));
+                data.Add(new TimeSpan(hours: 0, minutes: -1, seconds: 0));
+
+                return data;
+            }
+        }
+
+        public static TheoryData<TimeSpan> ValidTimeToLiveValues
+        {
+            get
+            {
+                TheoryData<TimeSpan> data = new TheoryData<TimeSpan>();
+
+                data.Add(new TimeSpan(hours: 0, minutes: 0, seconds: 0));
+                data.Add(new TimeSpan(hours: 0, minutes: 1, seconds: 0));
+                data.Add(new TimeSpan(hours: 0, minutes: 1000, seconds: 0));
+
+                return data;
+            }
+        }
+
+        [Theory, MemberData(nameof(InvalidTimeToLiveValues))]
+        public static void SyndicationFeed_TimeToLive_Validation_Throws(TimeSpan invalidTimeToLive)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                var feed = new SyndicationFeed("Contoso News", "<div>Most recent news from Contoso</div>",
+                    new Uri("http://www.Contoso.com/news"));
+                feed.TimeToLive = invalidTimeToLive;
+            });
+        }
+
+        [Theory, MemberData(nameof(ValidTimeToLiveValues))]
+        public static void SyndicationFeed_TimeToLive_Success(TimeSpan validTimeToLive)
+        {
+            var feed = new SyndicationFeed("Contoso News", "<div>Most recent news from Contoso</div>",
+                new Uri("http://www.Contoso.com/news"));
+            feed.TimeToLive = validTimeToLive;
+            Assert.Equal(validTimeToLive, feed.TimeToLive.Value);
+        }
+
+        [Fact]
+        public static void SyndicationFeed_TimeToLive_Null_Success()
+        {
+            var feed = new SyndicationFeed("Contoso News", "<div>Most recent news from Contoso</div>",
+                new Uri("http://www.Contoso.com/news"));
+            feed.TimeToLive = null;
+            Assert.False(feed.TimeToLive.HasValue);
+        }
+
     }
 }

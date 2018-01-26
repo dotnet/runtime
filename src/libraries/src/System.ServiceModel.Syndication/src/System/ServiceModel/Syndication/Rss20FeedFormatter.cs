@@ -1034,7 +1034,7 @@ namespace System.ServiceModel.Syndication
 
             if (Feed.InternalTimeToLive != null)
             {
-                writer.WriteElementString(Rss20Constants.TimeToLiveTag, Feed.InternalTimeToLive.ToString());
+                writer.WriteElementString(Rss20Constants.TimeToLiveTag, ((int)Feed.InternalTimeToLive.Value.TotalMinutes).ToString());
             }
 
             if (Feed.InternalSkipHours?.Count > 0)
