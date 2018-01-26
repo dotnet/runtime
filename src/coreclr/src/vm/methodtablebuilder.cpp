@@ -1858,24 +1858,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
         pMT->SetIsByRefLike();
     }
 
-    // If this type is marked by [Intrinsic] attribute, it may be specially treated by the runtime/compiler
-    // Currently, only SIMD types have [Intrinsic] attribute
-    //
-    // We check this here, before the SystemVAmd64CheckForPass[Native]StructInRegister calls to ensure the SIMD
-    // intrinsics are not enregistered incorrectly.
-    if ((GetModule()->IsSystem() || GetAssembly()->IsSIMDVectorAssembly()) && IsValueClass() && bmtGenerics->HasInstantiation())
-    {
-        HRESULT hr = GetMDImport()->GetCustomAttributeByName(bmtInternal->pType->GetTypeDefToken(), 
-            g_CompilerServicesIntrinsicAttribute, 
-            NULL, 
-            NULL);
-
-        if (hr == S_OK)
-        {
-            pMT->SetIsIntrinsicType();
-        }
-    }
-
     if (IsValueClass())
     {
         if (bmtFP->NumInstanceFieldBytes != totalDeclaredFieldSize || HasOverLayedField())
@@ -9543,7 +9525,7 @@ void MethodTableBuilder::CheckForSystemTypes()
     // We can exit early for generic types - there are just a few cases to check for.
     if (bmtGenerics->HasInstantiation())
     {
-        if (pClass->HasLayout())
+        if (pMT->IsIntrinsicType() && pClass->HasLayout())
         {
             if (FAILED(GetMDImport()->GetNameOfTypeDef(GetCl(), &name, &nameSpace)))
             {
@@ -9606,10 +9588,7 @@ void MethodTableBuilder::CheckForSystemTypes()
                     // These types should be handled or explicitly skipped below to ensure that we don't
                     // miss adding required ABI support for future types.
 
-                    _ASSERTE_MSG((strcmp(name, "Vector64DebugView`1") == 0) ||
-                                 (strcmp(name, "Vector128DebugView`1") == 0) ||
-                                 (strcmp(name, "Vector256DebugView`1") == 0),
-                                 "Unhandled Hardware Intrinsic Type.");
+                    _ASSERTE_MSG(FALSE, "Unhandled Hardware Intrinsic Type.");
                 }
 
                 return;
@@ -10448,6 +10427,23 @@ MethodTableBuilder::SetupMethodTable2(
         }
     }
     pMT->SetInternalCorElementType(normalizedType);
+
+    // If this type is marked by [Intrinsic] attribute, it may be specially treated by the runtime/compiler
+    // Currently, only SIMD types have [Intrinsic] attribute
+    //
+    // We check this here fairly early to ensure other downstream checks on these types can be slightly more efficient.
+    if ((GetModule()->IsSystem() || GetAssembly()->IsSIMDVectorAssembly()) && IsValueClass() && bmtGenerics->HasInstantiation())
+    {
+        HRESULT hr = GetMDImport()->GetCustomAttributeByName(bmtInternal->pType->GetTypeDefToken(), 
+            g_CompilerServicesIntrinsicAttribute, 
+            NULL, 
+            NULL);
+
+        if (hr == S_OK)
+        {
+            pMT->SetIsIntrinsicType();
+        }
+    }
 
     if (GetModule()->IsSystem())
     {
