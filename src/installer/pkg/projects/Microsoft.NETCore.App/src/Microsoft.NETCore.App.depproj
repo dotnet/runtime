@@ -35,7 +35,7 @@
       <Version>$(MicrosoftNETCorePlatformsPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.Targets">
-      <Version>2.0.0</Version>
+      <Version>$(MicrosoftNETCoreTargetsPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="NETStandard.Library">
       <Version>$(NETStandardLibraryPackageVersion)</Version>
