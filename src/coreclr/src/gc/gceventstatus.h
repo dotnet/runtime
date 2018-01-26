@@ -27,6 +27,7 @@
 #include "common.h"
 #include "gcenv.h"
 #include "gc.h"
+#include "gcevent_serializers.h"
 
 // Uncomment this define to print out event state changes to standard error.
 // #define TRACE_GC_EVENT_STATE 1
@@ -187,23 +188,70 @@ private:
     GCEventStatus() = delete;
 };
 
-class GCDynamicEvent
+/*
+ * FireDynamicEvent is a variadic function that fires a dynamic event with the
+ * given name and event payload. This function serializes the arguments into
+ * a binary payload that is then passed to IGCToCLREventSink::FireDynamicEvent.
+ */
+template<typename... EventArgument>
+void FireDynamicEvent(const char* name, EventArgument... arguments)
 {
-    /* TODO(segilles) - Not Yet Implemented */
+    size_t size = gc_event::SerializedSize(arguments...);
+    if (size > UINT32_MAX)
+    {
+        // ETW can't handle anything this big.
+        // we shouldn't be firing events that big anyway.
+        return;
+    }
+
+    uint8_t* buf = new (nothrow) uint8_t[size];
+    if (!buf)
+    {
+        // best effort - if we're OOM, don't bother with the event.
+        return;
+    }
+
+    memset(buf, 0, size);
+    uint8_t* cursor = buf;
+    gc_event::Serialize(&cursor, arguments...);
+    IGCToCLREventSink* sink = GCToEEInterface::EventSink();
+    assert(sink != nullptr);
+    sink->FireDynamicEvent(name, buf, static_cast<uint32_t>(size));
+    delete[] buf;
 };
 
+/*
+ * In order to provide a consistent interface between known and dynamic events,
+ * two wrapper functions are generated for each known and dynamic event:
+ *   GCEventEnabled##name() - Returns true if the event is enabled, false otherwise.
+ *   GCEventFire##name(...) - Fires the event, with the event payload consisting of
+ *                            the arguments to the function.
+ *
+ * Because the schema of dynamic events comes from the DYNAMIC_EVENT xmacro, we use
+ * the arguments vector as the argument list to `FireDynamicEvent`, which will traverse
+ * the list of arguments and call `IGCToCLREventSink::FireDynamicEvent` with a serialized
+ * payload. Known events will delegate to IGCToCLREventSink::Fire##name.
+ */
 #if FEATURE_EVENT_TRACE
-#define KNOWN_EVENT(name, _provider, _level, _keyword)   \
-  inline bool GCEventEnabled##name() { return GCEventStatus::IsEnabled(_provider, _level, _keyword); }
+#define KNOWN_EVENT(name, provider, level, keyword)               \
+  inline bool GCEventEnabled##name() { return GCEventStatus::IsEnabled(provider, keyword, level); } \
+  template<typename... EventActualArgument>                       \
+  inline void GCEventFire##name(EventActualArgument... arguments) \
+  {                                                               \
+      IGCToCLREventSink* sink = GCToEEInterface::EventSink();     \
+      assert(sink != nullptr);                                    \
+      sink->Fire##name(arguments...);                             \
+  }
+
+#define DYNAMIC_EVENT(name, level, keyword, ...)                                                                   \
+  inline bool GCEventEnabled##name() { return GCEventStatus::IsEnabled(GCEventProvider_Default, keyword, level); } \
+  template<typename... EventActualArgument>                                                                        \
+  inline void GCEventFire##name(EventActualArgument... arguments) { FireDynamicEvent<__VA_ARGS__>(#name, arguments...); }
+
 #include "gcevents.h"
 
 #define EVENT_ENABLED(name) GCEventEnabled##name()
-#define FIRE_EVENT(name, ...) \
-  do {                                                      \
-    IGCToCLREventSink* sink = GCToEEInterface::EventSink(); \
-    assert(sink != nullptr);                                \
-    sink->Fire##name(__VA_ARGS__);                          \
-  } while(0)
+#define FIRE_EVENT(name, ...) GCEventFire##name(__VA_ARGS__)
 #else
 #define EVENT_ENABLED(name) false
 #define FIRE_EVENT(name, ...) 0
