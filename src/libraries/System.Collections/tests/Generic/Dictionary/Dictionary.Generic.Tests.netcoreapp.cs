@@ -84,5 +84,82 @@ namespace System.Collections.Tests
         }
 
         #endregion
+
+        #region EnsureCapacity
+        
+        [Fact]
+        public void EnsureCapacity_NegativeCapacityRequested_Throws()
+        {
+            var dictionary = new Dictionary<string, string>();
+            Assert.Throws<ArgumentOutOfRangeException>(() => dictionary.EnsureCapacity(-1));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(3)]
+        public void EnsureCapacity_DefaultCapacityOnEmptyDictionary_ReturnsCapacityRequestedLargerOrEqual(int requestedCapacity)
+        {
+            var dictionary = new Dictionary<string, string>();
+            Assert.InRange(dictionary.EnsureCapacity(requestedCapacity), requestedCapacity, int.MaxValue);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(3)]
+        public void EnsureCapacity_CapacityRequestedSmallerThanCurrentCapacity_CapacityUnchanged(int requestedCapacity)
+        {
+            var dictionary = new Dictionary<string, string>();
+            var capacity = dictionary.EnsureCapacity(requestedCapacity);
+            Assert.Equal(capacity, dictionary.EnsureCapacity(requestedCapacity - 1));
+        }
+        
+        [Theory]
+        [InlineData(1)]
+        [InlineData(5)]
+        public void EnsureCapacity_CapacityRequestedSmallerThanCount_SetsCapacityToLargerOrEqualToExistingCount(int count)
+        {
+            var dictionary = new Dictionary<int, int>();
+            for (int i = 0; i < count; i++)
+            {
+                dictionary.Add(i, i);
+            }
+            Assert.InRange(dictionary.EnsureCapacity(count - 1), dictionary.Count, int.MaxValue);
+        }
+
+        [Fact]
+        public void EnsureCapacity_GivenNonEmptyDictionary_CapacityRemainsTheSameUnlessCalledWithValueLargerThanExisting()
+        {
+            int count = 20;
+            var dictionary = new Dictionary<int, int>();
+            for (int i = 0; i < count; i++)
+            {
+                dictionary.Add(i, i);
+            }
+
+            // assert capacity won't change when ensuring a capacity smaller or equal than existing
+            int currentCapacity = dictionary.EnsureCapacity(0);
+            Assert.Equal(currentCapacity, dictionary.EnsureCapacity(currentCapacity));
+            Assert.Equal(currentCapacity, dictionary.EnsureCapacity(currentCapacity - 2));
+
+            // assert we can update to a larger capacity
+            int newCapacity = dictionary.EnsureCapacity(currentCapacity * 2);
+            Assert.InRange(newCapacity, currentCapacity * 2, int.MaxValue);
+
+            // assert new capacity remains the newly updated one
+            Assert.Equal(newCapacity, dictionary.EnsureCapacity(0));
+        }
+
+        [Fact]
+        public void EnsureCapacity_SetsToNextPrimeNumber()
+        {
+            var dictionary = new Dictionary<int, int>();
+            Assert.Equal(17, dictionary.EnsureCapacity(17));
+
+            dictionary = new Dictionary<int, int>();
+            Assert.Equal(17, dictionary.EnsureCapacity(15));
+        }
+
+        #endregion
     }
 }
