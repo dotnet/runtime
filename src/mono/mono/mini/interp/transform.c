@@ -7,6 +7,7 @@
  * Copyright (c) 2004.
  */
 
+#include "config.h"
 #include <string.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>

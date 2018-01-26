@@ -8,7 +8,6 @@
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-internals.h>
-#include "config.h"
 #include "interp.h"
 
 #define MINT_TYPE_I1 0
