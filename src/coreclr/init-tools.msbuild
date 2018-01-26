@@ -17,5 +17,8 @@
     <PackageReference Include="$(FeedTasksPackage)">
       <Version>$(FeedTasksPackageVersion)</Version>
     </PackageReference>
+    <PackageReference Include="$(ILLinkTasksPackage)">
+      <Version>$(ILLinkTasksPackageVersion)</Version>
+    </PackageReference>
   </ItemGroup>
 </Project>
