@@ -190,7 +190,7 @@ class Constants {
         'CentOS7.1': [
             'x64': [
                 'Debug',
-                'Release'
+                'Checked'
             ]
         ],
         'OSX10.12': [
@@ -1361,7 +1361,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             }
                             
                             // Make sure this is a flow job to get build and test.
-                            if (configuration == 'Release' && isFlowJob) {
+                            if (configuration == 'Checked' && isFlowJob) {
                                 assert job.name.contains("flow")
                                 // Default trigger
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Innerloop Build and Test")
