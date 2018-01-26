@@ -828,6 +828,7 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
+#include "hwintrinsicArm64.h"
 //----------------------------------------------------------------------------------------------
 // ContainCheckHWIntrinsic: Perform containment analysis for a hardware intrinsic node.
 //
@@ -840,10 +841,16 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
     GenTree*       op1         = node->gtOp.gtOp1;
     GenTree*       op2         = node->gtOp.gtOp2;
 
-    switch (node->gtHWIntrinsicId)
+    switch (comp->getHWIntrinsicInfo(node->gtHWIntrinsicId).form)
     {
+        case HWIntrinsicInfo::SimdExtractOp:
+            if (op2->IsCnsIntOrI())
+            {
+                MakeSrcContained(node, op2);
+            }
+            break;
+
         default:
-            assert((intrinsicID > NI_HW_INTRINSIC_START) && (intrinsicID < NI_HW_INTRINSIC_END));
             break;
     }
 }

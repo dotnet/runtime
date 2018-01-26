@@ -126,6 +126,14 @@ NamedIntrinsic Compiler::lookupHWIntrinsic(const char* className, const char* me
 }
 
 //------------------------------------------------------------------------
+// impCheckImmediate: check if immediate is const and in range for inlining
+//
+bool Compiler::impCheckImmediate(GenTree* immediateOp, unsigned int max)
+{
+    return immediateOp->IsCnsIntOrI() && (immediateOp->AsIntConCommon()->IconValue() < max);
+}
+
+//------------------------------------------------------------------------
 // impHWIntrinsic: dispatch hardware intrinsics to their own implementation
 // function
 //
@@ -142,28 +150,38 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                   CORINFO_SIG_INFO*     sig,
                                   bool                  mustExpand)
 {
-    GenTree*  retNode       = nullptr;
-    GenTree*  op1           = nullptr;
-    GenTree*  op2           = nullptr;
-    var_types simdType      = TYP_UNKNOWN;
-    var_types simdBaseType  = TYP_UNKNOWN;
-    unsigned  simdSizeBytes = 0;
+    GenTree*             retNode       = nullptr;
+    GenTree*             op1           = nullptr;
+    GenTree*             op2           = nullptr;
+    GenTree*             op3           = nullptr;
+    CORINFO_CLASS_HANDLE simdClass     = nullptr;
+    var_types            simdType      = TYP_UNKNOWN;
+    var_types            simdBaseType  = TYP_UNKNOWN;
+    unsigned             simdSizeBytes = 0;
 
-    // Instantiation type check
     switch (getHWIntrinsicInfo(intrinsic).form)
     {
         case HWIntrinsicInfo::SimdBinaryOp:
         case HWIntrinsicInfo::SimdUnaryOp:
-            simdBaseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeClass, &simdSizeBytes);
-
-            if (simdBaseType == TYP_UNKNOWN)
-            {
-                return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED, method, sig, mustExpand);
-            }
-            simdType = getSIMDTypeForSize(simdSizeBytes);
+            simdClass = sig->retTypeClass;
+            break;
+        case HWIntrinsicInfo::SimdExtractOp:
+            info.compCompHnd->getArgType(sig, sig->args, &simdClass);
             break;
         default:
             break;
+    }
+
+    // Simd instantiation type check
+    if (simdClass != nullptr)
+    {
+        simdBaseType = getBaseTypeAndSizeOfSIMDType(simdClass, &simdSizeBytes);
+
+        if (simdBaseType == TYP_UNKNOWN)
+        {
+            return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED, method, sig, mustExpand);
+        }
+        simdType = getSIMDTypeForSize(simdSizeBytes);
     }
 
     switch (getHWIntrinsicInfo(intrinsic).form)
@@ -186,6 +204,17 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             op1 = impSIMDPopStack(simdType);
 
             return gtNewSimdHWIntrinsicNode(simdType, op1, nullptr, intrinsic, simdBaseType, simdSizeBytes);
+
+        case HWIntrinsicInfo::SimdExtractOp:
+            if (!mustExpand && !impCheckImmediate(impStackTop(0).val, getSIMDVectorLength(simdSizeBytes, simdBaseType)))
+            {
+                // Immediate lane not constant or out of range
+                return nullptr;
+            }
+            op2 = impPopStack().val;
+            op1 = impSIMDPopStack(simdType);
+
+            return gtNewScalarHWIntrinsicNode(JITtype2varType(sig->retType), op1, op2, intrinsic);
 
         default:
             JITDUMP("Not implemented hardware intrinsic form");
