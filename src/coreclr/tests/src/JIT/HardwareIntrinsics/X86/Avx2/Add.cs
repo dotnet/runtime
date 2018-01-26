@@ -11,7 +11,7 @@ using System.Runtime.Intrinsics;
 
 namespace IntelHardwareIntrinsicTest
 {
-    class Program
+    static class Program
     {
         const int Pass = 100;
         const int Fail = 0;
