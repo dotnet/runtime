@@ -19,7 +19,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         private static MethodInfo s_SingleIsNaN;
 
         internal static DynamicMetaObject Bind(
-                DynamicMetaObjectBinder action,
+                ICSharpBinder action,
                 RuntimeBinder binder,
                 DynamicMetaObject[] args,
                 IEnumerable<CSharpArgumentInfo> arginfos,
@@ -89,8 +89,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             // Get the bound expression.
             try
             {
-                DynamicMetaObject deferredBinding;
-                Expression expression = binder.Bind(action, parameters, args, out deferredBinding);
+                Expression expression = binder.Bind(action, parameters, args, out DynamicMetaObject deferredBinding);
 
                 if (deferredBinding != null)
                 {
@@ -282,7 +281,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private static Expression ConvertResult(Expression binding, DynamicMetaObjectBinder action)
+        private static Expression ConvertResult(Expression binding, ICSharpBinder action)
         {
             // Need to handle the following cases:
             //   (1) Call to a constructor: no conversions.
@@ -292,25 +291,21 @@ namespace Microsoft.CSharp.RuntimeBinder
             // In all other cases, binding.Type should be equivalent or
             // reference assignable to resultType.
 
-            var invokeConstructor = action as CSharpInvokeConstructorBinder;
-            if (invokeConstructor != null)
+            // No conversions needed for , the call site has the correct type.
+            if (action is CSharpInvokeConstructorBinder)
             {
-                // No conversions needed, the call site has the correct type.
                 return binding;
             }
 
             if (binding.Type == typeof(void))
             {
-                var invoke = action as ICSharpInvokeOrInvokeMemberBinder;
-                if (invoke != null && invoke.ResultDiscarded)
+                if (action is ICSharpInvokeOrInvokeMemberBinder invoke && invoke.ResultDiscarded)
                 {
                     Debug.Assert(action.ReturnType == typeof(object));
                     return Expression.Block(binding, Expression.Default(action.ReturnType));
                 }
-                else
-                {
-                    throw Error.BindToVoidMethodButExpectResult();
-                }
+
+                throw Error.BindToVoidMethodButExpectResult();
             }
 
             if (binding.Type.IsValueType && !action.ReturnType.IsValueType)
@@ -324,7 +319,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private static Type GetTypeForErrorMetaObject(DynamicMetaObjectBinder action, DynamicMetaObject[] args)
+        private static Type GetTypeForErrorMetaObject(ICSharpBinder action, DynamicMetaObject[] args)
         {
             // This is similar to ConvertResult but has fewer things to worry about.
 
@@ -341,13 +336,9 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private static bool IsIncrementOrDecrementActionOnLocal(DynamicMetaObjectBinder action)
-        {
-            CSharpUnaryOperationBinder operatorPayload = action as CSharpUnaryOperationBinder;
-
-            return operatorPayload != null &&
-                (operatorPayload.Operation == ExpressionType.Increment || operatorPayload.Operation == ExpressionType.Decrement);
-        }
+        private static bool IsIncrementOrDecrementActionOnLocal(ICSharpBinder action) =>
+            action is CSharpUnaryOperationBinder operatorPayload
+            && (operatorPayload.Operation == ExpressionType.Increment || operatorPayload.Operation == ExpressionType.Decrement);
 
         /////////////////////////////////////////////////////////////////////////////////
 
