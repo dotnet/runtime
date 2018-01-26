@@ -795,8 +795,9 @@ DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_OBJECT,CompareExchange, SM_
 DEFINE_CLASS(PINNING_HELPER,        CompilerServices,       PinningHelper)
 DEFINE_FIELD(PINNING_HELPER,        M_DATA,                 m_data)
 
-DEFINE_CLASS(ARRAY_PINNING_HELPER,  CompilerServices,       ArrayPinningHelper)
-DEFINE_FIELD(ARRAY_PINNING_HELPER,  M_ARRAY_DATA,           m_arrayData)
+DEFINE_CLASS(ARRAY_PINNING_HELPER,  CompilerServices,                     ArrayPinningHelper)
+DEFINE_FIELD(ARRAY_PINNING_HELPER,  M_ARRAY_DATA,                         m_arrayData)
+DEFINE_FIELD(ARRAY_PINNING_HELPER,  M_ARRAY_LENGTH_AND_PADDING,           m_lengthAndPadding)
 
 DEFINE_CLASS(RUNTIME_WRAPPED_EXCEPTION, CompilerServices,   RuntimeWrappedException)
 DEFINE_METHOD(RUNTIME_WRAPPED_EXCEPTION, OBJ_CTOR,          .ctor,                      IM_Obj_RetVoid)
@@ -1422,8 +1423,13 @@ DEFINE_FIELD_U(_userMessage,        ContractExceptionObject,    _UserMessage)
 DEFINE_FIELD_U(_condition,          ContractExceptionObject,    _Condition)
 
 #ifdef FEATURE_COMINTEROP
+DEFINE_CLASS(CAUSALITY_TRACE_LEVEL, WindowsFoundationDiag,   CausalityTraceLevel)
 DEFINE_CLASS(ASYNC_TRACING_EVENT_ARGS,       WindowsFoundationDiag,         TracingStatusChangedEventArgs)
+DEFINE_PROPERTY(ASYNC_TRACING_EVENT_ARGS, ENABLED, Enabled, Bool)
+DEFINE_PROPERTY(ASYNC_TRACING_EVENT_ARGS, TRACELEVEL, TraceLevel, CausalityTraceLevel)
 DEFINE_CLASS(IASYNC_TRACING_EVENT_ARGS,      WindowsFoundationDiag,         ITracingStatusChangedEventArgs)
+DEFINE_PROPERTY(IASYNC_TRACING_EVENT_ARGS, ENABLED, Enabled, Bool)
+DEFINE_PROPERTY(IASYNC_TRACING_EVENT_ARGS, TRACELEVEL, TraceLevel, CausalityTraceLevel)
 #endif // FEATURE_COMINTEROP
 
 DEFINE_CLASS(MODULEBASE,        Reflection,         Module)
