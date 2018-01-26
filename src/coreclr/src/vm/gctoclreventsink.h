@@ -9,7 +9,8 @@
 
 class GCToCLREventSink : public IGCToCLREventSink
 {
-    /* [LOCALGC TODO] This will be filled with events as they get ported */
+public:
+    void FireDynamicEvent(const char* eventName, void* payload, uint32_t payloadSize);
 };
 
 extern GCToCLREventSink g_gcToClrEventSink;
