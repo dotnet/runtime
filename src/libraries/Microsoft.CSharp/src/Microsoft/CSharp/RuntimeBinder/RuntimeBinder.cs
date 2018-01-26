@@ -75,11 +75,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        public Expression Bind(
-            DynamicMetaObjectBinder payload,
-            Expression[] parameters,
-            DynamicMetaObject[] args,
-            out DynamicMetaObject deferredBinding)
+        public Expression Bind(ICSharpBinder payload, Expression[] parameters, DynamicMetaObject[] args, out DynamicMetaObject deferredBinding)
         {
             // The lock is here to protect this instance of the binder from itself
             // when called on multiple threads. The cost in time of a single lock
@@ -98,12 +94,9 @@ namespace Microsoft.CSharp.RuntimeBinder
             // ...subsequent calls that were cache hits, i.e., already bound, took less
             // than 1/1000 sec for the whole 4000 of them.
 
-            ICSharpBinder binder = payload as ICSharpBinder;
-            Debug.Assert(binder != null);
-
             lock (_bindLock)
             {
-                return BindCore(binder, parameters, args, out deferredBinding);
+                return BindCore(payload, parameters, args, out deferredBinding);
             }
         }
 
