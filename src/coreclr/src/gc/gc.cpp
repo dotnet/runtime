@@ -3000,23 +3000,23 @@ void gc_history_global::print()
 void gc_heap::fire_per_heap_hist_event (gc_history_per_heap* current_gc_data_per_heap, int heap_num)
 {
     maxgen_size_increase* maxgen_size_info = &(current_gc_data_per_heap->maxgen_size_info);
-    FireEtwGCPerHeapHistory_V3(GetClrInstanceId(),
-                               (uint8_t*)(maxgen_size_info->free_list_allocated),
-                               (uint8_t*)(maxgen_size_info->free_list_rejected),
-                               (uint8_t*)(maxgen_size_info->end_seg_allocated),
-                               (uint8_t*)(maxgen_size_info->condemned_allocated),
-                               (uint8_t*)(maxgen_size_info->pinned_allocated),
-                               (uint8_t*)(maxgen_size_info->pinned_allocated_advance),
-                               maxgen_size_info->running_free_list_efficiency,
-                               current_gc_data_per_heap->gen_to_condemn_reasons.get_reasons0(),
-                               current_gc_data_per_heap->gen_to_condemn_reasons.get_reasons1(),
-                               current_gc_data_per_heap->mechanisms[gc_heap_compact],
-                               current_gc_data_per_heap->mechanisms[gc_heap_expand],
-                               current_gc_data_per_heap->heap_index,
-                               (uint8_t*)(current_gc_data_per_heap->extra_gen0_committed),
-                               (max_generation + 2),
-                               sizeof (gc_generation_data),
-                               &(current_gc_data_per_heap->gen_data[0]));
+    FIRE_EVENT(GCPerHeapHistory_V3, 
+               (void *)(maxgen_size_info->free_list_allocated),
+               (void *)(maxgen_size_info->free_list_rejected),                              
+               (void *)(maxgen_size_info->end_seg_allocated),
+               (void *)(maxgen_size_info->condemned_allocated),
+               (void *)(maxgen_size_info->pinned_allocated),
+               (void *)(maxgen_size_info->pinned_allocated_advance),
+               maxgen_size_info->running_free_list_efficiency,
+               current_gc_data_per_heap->gen_to_condemn_reasons.get_reasons0(),
+               current_gc_data_per_heap->gen_to_condemn_reasons.get_reasons1(),
+               current_gc_data_per_heap->mechanisms[gc_heap_compact],
+               current_gc_data_per_heap->mechanisms[gc_heap_expand],
+               current_gc_data_per_heap->heap_index,
+               (void *)(current_gc_data_per_heap->extra_gen0_committed),
+               (max_generation + 2),
+               (uint32_t)(sizeof (gc_generation_data)),
+               (void *)&(current_gc_data_per_heap->gen_data[0]));
 
     current_gc_data_per_heap->print();
     current_gc_data_per_heap->gen_to_condemn_reasons.print (heap_num);
@@ -9750,11 +9750,11 @@ void fire_alloc_wait_event (alloc_wait_reason awr, BOOL begin_p)
     {
         if (begin_p)
         {
-            FireEtwBGCAllocWaitBegin (awr, GetClrInstanceId());
+            FIRE_EVENT(BGCAllocWaitBegin, awr);
         }
         else
         {
-            FireEtwBGCAllocWaitEnd (awr, GetClrInstanceId());
+            FIRE_EVENT(BGCAllocWaitEnd, awr);
         }
     }
 }
@@ -11750,7 +11750,7 @@ void gc_heap::send_full_gc_notification (int gen_num, BOOL due_to_alloc_p)
     if (!full_gc_approach_event_set)
     {
         assert (full_gc_approach_event.IsValid());
-        FireEtwGCFullNotify_V1 (gen_num, due_to_alloc_p, GetClrInstanceId());
+        FIRE_EVENT(GCFullNotify_V1, gen_num, due_to_alloc_p);
 
         full_gc_end_event.Reset();
         full_gc_approach_event.Set();
@@ -15234,12 +15234,10 @@ void gc_heap::init_background_gc ()
 
 #endif //BACKGROUND_GC
 
-#define fire_bgc_event(x) { FireEtw##x(GetClrInstanceId()); }
-
 inline
 void fire_drain_mark_list_event (size_t mark_list_objects)
 {
-    FireEtwBGCDrainMark (mark_list_objects, GetClrInstanceId());
+    FIRE_EVENT(BGCDrainMark, mark_list_objects);
 }
 
 inline
@@ -15247,7 +15245,7 @@ void fire_revisit_event (size_t dirtied_pages,
                          size_t marked_objects,
                          BOOL large_objects_p)
 {
-    FireEtwBGCRevisit (dirtied_pages, marked_objects, large_objects_p, GetClrInstanceId());
+    FIRE_EVENT(BGCRevisit, dirtied_pages, marked_objects, large_objects_p);
 }
 
 inline
@@ -15256,9 +15254,7 @@ void fire_overflow_event (uint8_t* overflow_min,
                           size_t marked_objects, 
                           int large_objects_p)
 {
-    FireEtwBGCOverflow ((uint64_t)overflow_min, (uint64_t)overflow_max, 
-                        marked_objects, large_objects_p, 
-                        GetClrInstanceId());
+    FIRE_EVENT(BGCOverflow, (uint64_t)overflow_min, (uint64_t)overflow_max, marked_objects, large_objects_p);
 }
 
 void gc_heap::concurrent_print_time_delta (const char* msg)
@@ -15383,7 +15379,7 @@ void gc_heap::gc1()
             time_bgc_last = GetHighPrecisionTimeStamp();
 #endif //TRACE_GC
 
-            fire_bgc_event (BGCBegin);
+            FIRE_EVENT(BGCBegin);
 
             concurrent_print_time_delta ("BGC");
 
@@ -25664,7 +25660,7 @@ void gc_heap::background_mark_phase ()
         //concurrent_print_time_delta ("copying stack roots");
         concurrent_print_time_delta ("CS");
 
-        fire_bgc_event (BGC1stNonConEnd);
+        FIRE_EVENT(BGC1stNonConEnd);
 
         expanded_in_fgc = FALSE;
         saved_overflow_ephemeral_seg = 0;
@@ -25859,7 +25855,7 @@ void gc_heap::background_mark_phase ()
         concurrent_print_time_delta ("CRov");
 
         // Stop all threads, crawl all stacks and revisit changed pages.
-        fire_bgc_event (BGC1stConEnd);
+        FIRE_EVENT(BGC1stConEnd);
 
         dprintf (2, ("Stopping the EE"));
 
@@ -25903,7 +25899,7 @@ void gc_heap::background_mark_phase ()
         //concurrent_print_time_delta ("concurrent marking ended");
         concurrent_print_time_delta ("CR");
 
-        fire_bgc_event (BGC2ndNonConBegin);
+        FIRE_EVENT(BGC2ndNonConBegin);
 
         mark_absorb_new_alloc();
 
@@ -31305,7 +31301,7 @@ void gc_heap::background_sweep()
         generation_allocation_segment (gen_to_reset) = heap_segment_rw (generation_start_segment (gen_to_reset));
     }
 
-    fire_bgc_event (BGC2ndNonConEnd);
+    FIRE_EVENT(BGC2ndNonConEnd);
 
     current_bgc_state = bgc_sweep_soh;
     verify_soh_segment_list();
@@ -31351,7 +31347,7 @@ void gc_heap::background_sweep()
         restart_EE ();
     }
 
-    fire_bgc_event (BGC2ndConBegin);
+    FIRE_EVENT(BGC2ndConBegin);
 
     background_ephemeral_sweep();
 
@@ -31577,7 +31573,7 @@ void gc_heap::background_sweep()
         generation_free_list_space (generation_of (max_generation + 1)),
         generation_free_obj_space (generation_of (max_generation + 1))));
 
-    fire_bgc_event (BGC2ndConEnd);
+    FIRE_EVENT(BGC2ndConEnd);
     concurrent_print_time_delta ("background sweep");
     
     heap_segment* reset_seg = heap_segment_rw (generation_start_segment (generation_of (max_generation)));
