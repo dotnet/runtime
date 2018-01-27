@@ -31,6 +31,19 @@ private static readonly (string templateFileName, string[] templateData)[] AvxIn
     ("SimpleBinOpTest.template", new string[] { "Avx", "Multiply", "Single", "Vector256", "32",       "(float)(random.NextDouble())",  "BitConverter.SingleToInt32Bits(left[0] * right[0]) != BitConverter.SingleToInt32Bits(result[0])", "BitConverter.SingleToInt32Bits(left[i] * right[i]) != BitConverter.SingleToInt32Bits(result[i])"}),
 };
 
+private static readonly (string templateFileName, string[] templateData)[] Avx2Inputs = new []
+{
+    // TemplateName                             Isa,    Method, BaseType, VectorType,  VectorSize, NextValue,                                              ValidateFirstResult,                         ValidateRemainingResults
+    ("SimpleBinOpTest.template", new string[] { "Avx2", "Add",  "Byte",   "Vector256", "32",       "(byte)(random.Next(0, byte.MaxValue))",                "(byte)(left[0] + right[0]) != result[0]",   "(byte)(left[i] + right[i]) != result[i]"}),
+    ("SimpleBinOpTest.template", new string[] { "Avx2", "Add",  "Int16",  "Vector256", "32",       "(short)(random.Next(short.MinValue, short.MaxValue))", "(short)(left[0] + right[0]) != result[0]",  "(short)(left[i] + right[i]) != result[i]"}),
+    ("SimpleBinOpTest.template", new string[] { "Avx2", "Add",  "Int32",  "Vector256", "32",       "(int)(random.Next(int.MinValue, int.MaxValue))",       "(int)(left[0] + right[0]) != result[0]",    "(int)(left[i] + right[i]) != result[i]"}),
+    ("SimpleBinOpTest.template", new string[] { "Avx2", "Add",  "Int64",  "Vector256", "32",       "(long)(random.Next(int.MinValue, int.MaxValue))",      "(long)(left[0] + right[0]) != result[0]",   "(long)(left[i] + right[i]) != result[i]"}),
+    ("SimpleBinOpTest.template", new string[] { "Avx2", "Add",  "SByte",  "Vector256", "32",       "(sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue))", "(sbyte)(left[0] + right[0]) != result[0]",  "(sbyte)(left[i] + right[i]) != result[i]"}),
+    ("SimpleBinOpTest.template", new string[] { "Avx2", "Add",  "UInt16", "Vector256", "32",       "(ushort)(random.Next(0, ushort.MaxValue))",            "(ushort)(left[0] + right[0]) != result[0]", "(ushort)(left[i] + right[i]) != result[i]"}),
+    ("SimpleBinOpTest.template", new string[] { "Avx2", "Add",  "UInt32", "Vector256", "32",       "(uint)(random.Next(0, int.MaxValue))",                 "(uint)(left[0] + right[0]) != result[0]",   "(uint)(left[i] + right[i]) != result[i]"}),
+    ("SimpleBinOpTest.template", new string[] { "Avx2", "Add",  "UInt64", "Vector256", "32",       "(ulong)(random.Next(0, int.MaxValue))",                "(ulong)(left[0] + right[0]) != result[0]",  "(ulong)(left[i] + right[i]) != result[i]"}),
+};
+
 private static void ProcessInputs(string isa, (string templateFileName, string[] templateData)[] inputs)
 {
     var testListFileName = Path.Combine("..", isa, $"Program.{isa}.cs");
@@ -84,3 +97,4 @@ private static void ProcessInput(StreamWriter testListFile, (string templateFile
 
 ProcessInputs("Sse2", Sse2Inputs);
 ProcessInputs("Avx", AvxInputs);
+ProcessInputs("Avx2", Avx2Inputs);
