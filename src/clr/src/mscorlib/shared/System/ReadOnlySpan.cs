@@ -10,6 +10,12 @@ using Internal.Runtime.CompilerServices;
 
 #pragma warning disable 0809  //warning CS0809: Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
 
+#if BIT64
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
+
 namespace System
 {
     /// <summary>
@@ -198,8 +204,18 @@ namespace System
         /// </summary>
         public void CopyTo(Span<T> destination)
         {
-            if (!TryCopyTo(destination))
+            // Using "if (!TryCopyTo(...))" results in two branches: one for the length
+            // check, and one for the result of TryCopyTo. Since these checks are equivalent,
+            // we can optimize by performing the check once ourselves then calling Memmove directly.
+
+            if ((uint)_length <= (uint)destination.Length)
+            {
+                Buffer.Memmove(ref destination.DangerousGetPinnableReference(), ref _pointer.Value, (nuint)_length);
+            }
+            else
+            {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
         }
 
         /// Copies the contents of this read-only span into destination span. If the source
@@ -211,11 +227,13 @@ namespace System
         /// <param name="destination">The span to copy items into.</param>
         public bool TryCopyTo(Span<T> destination)
         {
-            if ((uint)_length > (uint)destination.Length)
-                return false;
-
-            Span.CopyTo<T>(ref destination.DangerousGetPinnableReference(), ref _pointer.Value, _length);
-            return true;
+            bool retVal = false;
+            if ((uint)_length <= (uint)destination.Length)
+            {
+                Buffer.Memmove(ref destination.DangerousGetPinnableReference(), ref _pointer.Value, (nuint)_length);
+                retVal = true;
+            }
+            return retVal;
         }
 
         /// <summary>
@@ -319,7 +337,7 @@ namespace System
                 return Array.Empty<T>();
 
             var destination = new T[_length];
-            Span.CopyTo<T>(ref Unsafe.As<byte, T>(ref destination.GetRawSzArrayData()), ref _pointer.Value, _length);
+            Buffer.Memmove(ref Unsafe.As<byte, T>(ref destination.GetRawSzArrayData()), ref _pointer.Value, (nuint)_length);
             return destination;
         }
 
