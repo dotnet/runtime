@@ -14,7 +14,6 @@ namespace System.Data.SqlClient.Tests
     public class SqlConnectionBasicTests
     {
         [Fact]
-        [ActiveIssue("dotnet/corefx #23435", TestPlatforms.Any)]
         public void ConnectionTest()
         {
             using (TestTdsServer server = TestTdsServer.StartTestServer())
@@ -27,7 +26,6 @@ namespace System.Data.SqlClient.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotArmProcess))] 
-        [ActiveIssue("dotnet/corefx #23435", TestPlatforms.Any)]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void IntegratedAuthConnectionTest()
         {
