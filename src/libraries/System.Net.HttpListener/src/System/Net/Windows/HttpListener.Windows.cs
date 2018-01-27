@@ -851,7 +851,7 @@ namespace System.Net
                             NetEventSource.Info(this, $"authenticationScheme: {authenticationScheme}");
                         }
                         SendError(requestId, HttpStatusCode.InternalServerError, null);
-                        httpContext.Close();
+                        FreeContext(ref httpContext, memoryBlob);
                         return null;
                     }
                 }
@@ -935,9 +935,7 @@ namespace System.Net
                     }
 
                     httpError = HttpStatusCode.Unauthorized;
-                    httpContext.Request.DetachBlob(memoryBlob);
-                    httpContext.Close();
-                    httpContext = null;
+                    FreeContext(ref httpContext, memoryBlob);
                 }
                 else
                 {
@@ -1161,9 +1159,7 @@ namespace System.Net
                             NetEventSource.Info(this, "Handshake has failed.");
                         }
 
-                        httpContext.Request.DetachBlob(memoryBlob);
-                        httpContext.Close();
-                        httpContext = null;
+                        FreeContext(ref httpContext, memoryBlob);
                     }
                 }
 
@@ -1240,8 +1236,7 @@ namespace System.Net
 
                         if (NetEventSource.IsEnabled) NetEventSource.Info(this, "connectionId:" + connectionId + " because of failed HttpWaitForDisconnect");
                         SendError(requestId, HttpStatusCode.InternalServerError, null);
-                        httpContext.Request.DetachBlob(memoryBlob);
-                        httpContext.Close();
+                        FreeContext(ref httpContext, memoryBlob);
                         return null;
                     }
                 }
@@ -1282,11 +1277,7 @@ namespace System.Net
             }
             catch
             {
-                if (httpContext != null)
-                {
-                    httpContext.Request.DetachBlob(memoryBlob);
-                    httpContext.Close();
-                }
+                FreeContext(ref httpContext, memoryBlob);
                 if (newContext != null)
                 {
                     if (newContext == context)
@@ -1339,6 +1330,16 @@ namespace System.Net
                         disconnectResult.FinishOwningDisconnectHandling();
                     }
                 }
+            }
+        }
+        
+        private static void FreeContext(ref HttpListenerContext httpContext, RequestContextBase memoryBlob)
+        {
+            if (httpContext != null)
+            {
+                httpContext.Request.DetachBlob(memoryBlob);
+                httpContext.Close();
+                httpContext = null;
             }
         }
 
