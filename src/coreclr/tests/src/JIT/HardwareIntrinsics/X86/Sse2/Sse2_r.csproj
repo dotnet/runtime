@@ -27,7 +27,18 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Add.cs" />
+    <Compile Include="Add.Byte.cs" />
+    <Compile Include="Add.Double.cs" />
+    <Compile Include="Add.Int16.cs" />
+    <Compile Include="Add.Int32.cs" />
+    <Compile Include="Add.Int64.cs" />
+    <Compile Include="Add.SByte.cs" />
+    <Compile Include="Add.UInt16.cs" />
+    <Compile Include="Add.UInt32.cs" />
+    <Compile Include="Add.UInt64.cs" />
+    <Compile Include="Program.Sse2.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup Condition=" '$(MsBuildProjectDirOverride)' != '' "></PropertyGroup>
