@@ -21,13 +21,19 @@
   </ItemGroup>
   <PropertyGroup>
     <DebugType>None</DebugType>
-    <Optimize></Optimize>
+    <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Add.cs" />
+    <Compile Include="Add.Double.cs" />
+    <Compile Include="Add.Single.cs" />
+    <Compile Include="Multiply.Double.cs" />
+    <Compile Include="Multiply.Single.cs" />
+    <Compile Include="Program.Avx.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup Condition=" '$(MsBuildProjectDirOverride)' != '' "></PropertyGroup>
