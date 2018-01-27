@@ -8258,10 +8258,11 @@ DONE:
             copy->gtOp.gtOp1->gtFlags |= GTF_RELOP_QMARK;
         }
 
-        // Clear the copy's GTF_ASG and GTF_EXCEPT bits; these will instead be taken from the source.
-        copy->gtFlags &= ~(GTF_ASG | GTF_EXCEPT);
-
         copy->gtFlags |= addFlags;
+
+        // Update side effect flags since they may be different from the source side effect flags.
+        // For example, we may have replaced some locals with constants and made indirections non-throwing.
+        gtUpdateNodeSideEffects(copy);
     }
 
     /* GTF_COLON_COND should be propagated from 'tree' to 'copy' */
@@ -8414,12 +8415,7 @@ void Compiler::gtUpdateTreeAncestorsSideEffects(GenTree* tree)
     assert(fgStmtListThreaded);
     while (tree != nullptr)
     {
-        gtResetNodeSideEffects(tree);
-        unsigned nChildren = tree->NumChildren();
-        for (unsigned childNum = 0; childNum < nChildren; childNum++)
-        {
-            tree->gtFlags |= (tree->GetChild(childNum)->gtFlags & GTF_ALL_EFFECT);
-        }
+        gtUpdateNodeSideEffects(tree);
         tree = tree->gtGetParent(nullptr);
     }
 }
@@ -8436,7 +8432,7 @@ void Compiler::gtUpdateStmtSideEffects(GenTree* stmt)
 }
 
 //------------------------------------------------------------------------
-// gtResetNodeSideEffects: Update the side effects based on the node operation.
+// gtUpdateNodeOperSideEffects: Update the side effects based on the node operation.
 //
 // Arguments:
 //    tree            - Tree to update the side effects on
@@ -8446,7 +8442,7 @@ void Compiler::gtUpdateStmtSideEffects(GenTree* stmt)
 //    flags may remain unnecessarily (conservatively) set.
 //    The caller of this method is expected to update the flags based on the children's flags.
 
-void Compiler::gtResetNodeSideEffects(GenTree* tree)
+void Compiler::gtUpdateNodeOperSideEffects(GenTree* tree)
 {
     if (tree->OperMayThrow(this))
     {
@@ -8472,6 +8468,31 @@ void Compiler::gtResetNodeSideEffects(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
+// gtUpdateNodeSideEffects: Update the side effects based on the node operation and
+//                          children's side efects.
+//
+// Arguments:
+//    tree            - Tree to update the side effects on
+//
+// Notes:
+//    This method currently only updates GTF_EXCEPT and GTF_ASG flags. The other side effect
+//    flags may remain unnecessarily (conservatively) set.
+
+void Compiler::gtUpdateNodeSideEffects(GenTree* tree)
+{
+    gtUpdateNodeOperSideEffects(tree);
+    unsigned nChildren = tree->NumChildren();
+    for (unsigned childNum = 0; childNum < nChildren; childNum++)
+    {
+        GenTree* child = tree->GetChild(childNum);
+        if (child != nullptr)
+        {
+            tree->gtFlags |= (child->gtFlags & GTF_ALL_EFFECT);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // fgUpdateSideEffectsPre: Update the side effects based on the tree operation.
 //
 // Arguments:
@@ -8484,7 +8505,7 @@ void Compiler::gtResetNodeSideEffects(GenTree* tree)
 
 Compiler::fgWalkResult Compiler::fgUpdateSideEffectsPre(GenTree** pTree, fgWalkData* fgWalkPre)
 {
-    fgWalkPre->compiler->gtResetNodeSideEffects(*pTree);
+    fgWalkPre->compiler->gtUpdateNodeOperSideEffects(*pTree);
 
     return WALK_CONTINUE;
 }
