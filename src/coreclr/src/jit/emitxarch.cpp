@@ -225,6 +225,7 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
         case INS_movhps:
         case INS_movlpd:
         case INS_movlps:
+        case INS_movsdsse2:
         case INS_movss:
         case INS_rcpss:
         case INS_roundsd:
@@ -284,7 +285,7 @@ bool emitter::Is4ByteSSE4OrAVXInstruction(instruction ins)
 bool emitter::TakesVexPrefix(instruction ins)
 {
     // special case vzeroupper as it requires 2-byte VEX prefix
-    // special case (l|m|s)fence and the prefetch instructions as they never take a VEX prefix
+    // special case the fencing and the prefetch instructions as they never take a VEX prefix
     switch (ins)
     {
         case INS_lfence:

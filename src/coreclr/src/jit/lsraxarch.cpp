@@ -2286,6 +2286,10 @@ void LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
         case NI_SSE_CompareEqualUnorderedScalar:
         case NI_SSE_CompareNotEqualOrderedScalar:
         case NI_SSE_CompareNotEqualUnorderedScalar:
+        case NI_SSE2_CompareEqualOrderedScalar:
+        case NI_SSE2_CompareEqualUnorderedScalar:
+        case NI_SSE2_CompareNotEqualOrderedScalar:
+        case NI_SSE2_CompareNotEqualUnorderedScalar:
             info->internalIntCount = 1;
             info->setInternalCandidates(this, RBM_BYTE_REGS);
             break;
@@ -2317,6 +2321,7 @@ void LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
         case NI_SSE_ConvertToSingle:
         case NI_SSE_StaticCast:
+        case NI_SSE2_ConvertToDouble:
             assert(info->srcCount == 1);
             assert(info->dstCount == 1);
             useList.Last()->info.isTgtPref = true;
