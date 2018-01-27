@@ -2164,7 +2164,9 @@ public:
 
     void gtUpdateStmtSideEffects(GenTree* stmt);
 
-    void gtResetNodeSideEffects(GenTree* tree);
+    void gtUpdateNodeSideEffects(GenTree* tree);
+
+    void gtUpdateNodeOperSideEffects(GenTree* tree);
 
     // Returns "true" iff the complexity (not formally defined, but first interpretation
     // is #of nodes in subtree) of "tree" is greater than "limit".
