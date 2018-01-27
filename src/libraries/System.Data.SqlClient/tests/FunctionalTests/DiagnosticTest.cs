@@ -18,7 +18,6 @@ using System.Runtime.CompilerServices;
 
 namespace System.Data.SqlClient.Tests
 {
-    [ActiveIssue("dotnet/corefx #17925", TestPlatforms.Any)]
     public class DiagnosticTest : RemoteExecutorTestBase
     {
         private const string BadConnectionString = "data source = bad; initial catalog = bad; uid = bad; password = bad; connection timeout = 1;";
