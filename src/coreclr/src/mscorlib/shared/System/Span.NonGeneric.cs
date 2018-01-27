@@ -241,41 +241,7 @@ namespace System
 
             return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetRawStringData(), start), length);
         }
-
-        internal static unsafe void CopyTo<T>(ref T destination, ref T source, int elementsCount)
-        {
-            if (Unsafe.AreSame(ref destination, ref source))
-                return;
-
-            if (elementsCount <= 1)
-            {
-                if (elementsCount == 1)
-                {
-                    destination = source;
-                }
-                return;
-            }
-
-            nuint byteCount = (nuint)elementsCount * (nuint)Unsafe.SizeOf<T>();
-            if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                fixed (byte* pDestination = &Unsafe.As<T, byte>(ref destination))
-                {
-                    fixed (byte* pSource = &Unsafe.As<T, byte>(ref source))
-                    {
-                        Buffer.Memmove(pDestination, pSource, byteCount);
-                    }
-                }
-            }
-            else
-            {
-                RuntimeImports.RhBulkMoveWithWriteBarrier(
-                    ref Unsafe.As<T, byte>(ref destination),
-                    ref Unsafe.As<T, byte>(ref source),
-                    byteCount);
-            }
-        }
-
+        
         internal static unsafe void ClearWithoutReferences(ref byte b, nuint byteLength)
         {
             if (byteLength == 0)
