@@ -25,6 +25,57 @@ public:
         const char* eventName,
         void* payload,
         uint32_t payloadSize) = 0;
+    virtual
+    void FireGCPerHeapHistory_V3(void *freeListAllocated,
+                                 void *freeListRejected,
+                                 void *endOfSegAllocated,
+                                 void *condemnedAllocated,
+                                 void *pinnedAllocated,
+                                 void *pinnedAllocatedAdvance,
+                                 uint32_t runningFreeListEfficiency,
+                                 uint32_t condemnReasons0,
+                                 uint32_t condemnReasons1,
+                                 uint32_t compactMechanisms,
+                                 uint32_t expandMechanisms,
+                                 uint32_t heapIndex,
+                                 void *extraGen0Commit,
+                                 uint32_t count,
+                                 uint32_t valuesLen,
+                                 void *values) = 0;
+    virtual
+    void FireBGCBegin() = 0;
+    virtual
+    void FireBGC1stNonConEnd() = 0;
+    virtual
+    void FireBGC1stConEnd() = 0;
+    virtual
+    void FireBGC2ndNonConBegin() = 0;
+    virtual
+    void FireBGC2ndNonConEnd() = 0;
+    virtual
+    void FireBGC2ndConBegin() = 0;
+    virtual
+    void FireBGC2ndConEnd() = 0;
+    virtual
+    void FireBGCDrainMark(uint64_t objects) = 0;
+    virtual
+    void FireBGCRevisit(uint64_t pages, uint64_t objects, uint32_t isLarge) = 0;
+    virtual
+    void FireBGCOverflow(uint64_t min, uint64_t max, uint64_t objects, uint32_t isLarge) = 0;
+    virtual
+    void FireBGCAllocWaitBegin(uint32_t reason) = 0;
+    virtual
+    void FireBGCAllocWaitEnd(uint32_t reason) = 0;
+    virtual
+    void FireGCFullNotify_V1(uint32_t genNumber, uint32_t isAlloc) = 0;
+    virtual
+    void FireSetGCHandle(void *handleID, void *objectID, uint32_t kind, uint32_t generation, uint64_t appDomainID) = 0;
+    virtual
+    void FirePrvSetGCHandle(void *handleID, void *objectID, uint32_t kind, uint32_t generation, uint64_t appDomainID) = 0;
+    virtual
+    void FireDestroyGCHandle(void *handleID) = 0;
+    virtual
+    void FirePrvDestroyGCHandle(void *handleID) = 0;
 };
 
 // This interface provides the interface that the GC will use to speak to the rest
