@@ -22,6 +22,15 @@ private static readonly (string templateFileName, string[] templateData)[] Sse2I
     ("SimpleBinOpTest.template", new string[] { "Sse2", "Add",  "UInt64", "Vector128", "16",       "(ulong)(random.Next(0, int.MaxValue))",                "(ulong)(left[0] + right[0]) != result[0]",                                                        "(ulong)(left[i] + right[i]) != result[i]"}),
 };
 
+private static readonly (string templateFileName, string[] templateData)[] AvxInputs = new []
+{
+    // TemplateName                             Isa,    Method,     BaseType, VectorType,  VectorSize, NextValue,                      ValidateFirstResult,                                                                               ValidateRemainingResults
+    ("SimpleBinOpTest.template", new string[] { "Avx", "Add",      "Double", "Vector256", "32",       "(double)(random.NextDouble())", "BitConverter.DoubleToInt64Bits(left[0] + right[0]) != BitConverter.DoubleToInt64Bits(result[0])", "BitConverter.DoubleToInt64Bits(left[i] + right[i]) != BitConverter.DoubleToInt64Bits(result[i])"}),
+    ("SimpleBinOpTest.template", new string[] { "Avx", "Add",      "Single", "Vector256", "32",       "(float)(random.NextDouble())",  "BitConverter.SingleToInt32Bits(left[0] + right[0]) != BitConverter.SingleToInt32Bits(result[0])", "BitConverter.SingleToInt32Bits(left[i] + right[i]) != BitConverter.SingleToInt32Bits(result[i])"}),
+    ("SimpleBinOpTest.template", new string[] { "Avx", "Multiply", "Double", "Vector256", "32",       "(double)(random.NextDouble())", "BitConverter.DoubleToInt64Bits(left[0] * right[0]) != BitConverter.DoubleToInt64Bits(result[0])", "BitConverter.DoubleToInt64Bits(left[i] * right[i]) != BitConverter.DoubleToInt64Bits(result[i])"}),
+    ("SimpleBinOpTest.template", new string[] { "Avx", "Multiply", "Single", "Vector256", "32",       "(float)(random.NextDouble())",  "BitConverter.SingleToInt32Bits(left[0] * right[0]) != BitConverter.SingleToInt32Bits(result[0])", "BitConverter.SingleToInt32Bits(left[i] * right[i]) != BitConverter.SingleToInt32Bits(result[i])"}),
+};
+
 private static void ProcessInputs(string isa, (string templateFileName, string[] templateData)[] inputs)
 {
     var testListFileName = Path.Combine("..", isa, $"Program.{isa}.cs");
@@ -74,3 +83,4 @@ private static void ProcessInput(StreamWriter testListFile, (string templateFile
 }
 
 ProcessInputs("Sse2", Sse2Inputs);
+ProcessInputs("Avx", AvxInputs);
