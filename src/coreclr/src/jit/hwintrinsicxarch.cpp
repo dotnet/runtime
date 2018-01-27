@@ -736,11 +736,17 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic        intrinsic,
     var_types baseType = TYP_UNKNOWN;
     var_types retType  = TYP_UNKNOWN;
 
+    // The  fencing intrinsics don't take any operands and simdSize is 0
     assert((simdSize == 16) || (simdSize == 0));
+
+    CORINFO_ARG_LIST_HANDLE argList = sig->args;
+    CORINFO_CLASS_HANDLE    argClass;
+    var_types               argType = TYP_UNKNOWN;
 
     switch (intrinsic)
     {
         case NI_SSE2_CompareLessThan:
+        {
             assert(sig->numArgs == 2);
             op2      = impSIMDPopStack(TYP_SIMD16);
             op1      = impSIMDPopStack(TYP_SIMD16);
@@ -755,6 +761,89 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic        intrinsic,
                     gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareGreaterThan, baseType, simdSize);
             }
             break;
+        }
+
+        case NI_SSE2_ConvertScalarToVector128Double:
+        {
+            assert(sig->numArgs == 2);
+            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_DOUBLE);
+
+            argList = info.compCompHnd->getArgNext(sig->args);
+            CorInfoType corType =
+                strip(info.compCompHnd->getArgType(sig, argList, &argClass)); // type of the second argument
+
+            baseType = JITtype2varType(corType);
+
+#ifdef _TARGET_X86_
+            if (varTypeIsLong(JITtype2varType(corType)))
+            {
+                return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
+            }
+#endif // _TARGET_X86_
+
+            if (baseType == TYP_STRUCT)
+            {
+                baseType = TYP_FLOAT; // it is the only type passed as Vector
+                op2      = impSIMDPopStack(TYP_SIMD16);
+            }
+            else
+            {
+                op2 = impPopStack().val;
+            }
+
+            op1     = impSIMDPopStack(TYP_SIMD16);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, baseType, simdSize);
+
+            break;
+        }
+
+        case NI_SSE2_ConvertScalarToVector128Int64:
+        case NI_SSE2_ConvertScalarToVector128UInt64:
+        {
+            assert(sig->numArgs == 1);
+            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            assert(baseType == TYP_LONG || baseType == TYP_ULONG);
+
+#ifdef _TARGET_X86_
+            return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
+#endif // _TARGET_X86_
+
+            op1     = impPopStack().val;
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, intrinsic, baseType, simdSize);
+            break;
+        }
+
+        case NI_SSE2_ConvertScalarToVector128Single:
+        {
+            assert(sig->numArgs == 2);
+            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
+
+            op2     = impSIMDPopStack(TYP_SIMD16);
+            op1     = impSIMDPopStack(TYP_SIMD16);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, TYP_DOUBLE, simdSize);
+            break;
+        }
+
+        case NI_SSE2_ConvertToInt32:
+        case NI_SSE2_ConvertToInt64:
+        {
+            assert(sig->numArgs == 1);
+            op1      = impSIMDPopStack(TYP_SIMD16);
+            retType  = JITtype2varType(sig->retType);
+            baseType = getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args));
+            retNode  = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
+            break;
+        }
+
+        case NI_SSE2_ConvertToUInt32:
+        case NI_SSE2_ConvertToUInt64:
+        {
+            assert(sig->numArgs == 1);
+            op1      = impSIMDPopStack(TYP_SIMD16);
+            baseType = JITtype2varType(sig->retType);
+            retNode  = gtNewSimdHWIntrinsicNode(baseType, op1, intrinsic, baseType, simdSize);
+            break;
+        }
 
         case NI_SSE2_LoadFence:
         case NI_SSE2_MemoryFence:
@@ -768,6 +857,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_SSE2_MoveMask:
+        {
             assert(sig->numArgs == 1);
             retType = JITtype2varType(sig->retType);
             assert(retType == TYP_INT);
@@ -775,6 +865,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic        intrinsic,
             baseType = getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args));
             retNode  = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
             break;
+        }
 
         default:
             JITDUMP("Not implemented hardware intrinsic");
