@@ -8,6 +8,23 @@ using System.IO;
 // NOTE: This file isn't very robust and makes several assumptions.
 //       It must be run such that its own directory is the working directory.
 
+private static readonly (string templateFileName, string[] templateData)[] SseInputs = new []
+{                                                                        
+    // TemplateName                             Isa,    Method,          BaseType, VectorType,  VectorSize, NextValue,                      ValidateFirstResult,                                                                               ValidateRemainingResults
+    ("SimpleBinOpTest.template", new string[] { "Sse", "Add",            "Single", "Vector128", "16",       "(float)(random.NextDouble())",  "BitConverter.SingleToInt32Bits(left[0] + right[0]) != BitConverter.SingleToInt32Bits(result[0])", "BitConverter.SingleToInt32Bits(left[i] + right[i]) != BitConverter.SingleToInt32Bits(result[i])"}),
+    ("SimpleBinOpTest.template", new string[] { "Sse", "AddScalar",      "Single", "Vector128", "16",       "(float)(random.NextDouble())",  "BitConverter.SingleToInt32Bits(left[0] + right[0]) != BitConverter.SingleToInt32Bits(result[0])", "BitConverter.SingleToInt32Bits(left[i]) != BitConverter.SingleToInt32Bits(result[i])"}),
+    ("SimpleBinOpTest.template", new string[] { "Sse", "And",            "Single", "Vector128", "16",       "(float)(random.NextDouble())",  "(BitConverter.SingleToInt32Bits(left[0]) & BitConverter.SingleToInt32Bits(right[0])) != BitConverter.SingleToInt32Bits(result[0])", "(BitConverter.SingleToInt32Bits(left[0]) & BitConverter.SingleToInt32Bits(right[0])) != BitConverter.SingleToInt32Bits(result[0])"}),
+    ("SimpleBinOpTest.template", new string[] { "Sse", "AndNot",         "Single", "Vector128", "16",       "(float)(random.NextDouble())",  "(~BitConverter.SingleToInt32Bits(left[0]) & BitConverter.SingleToInt32Bits(right[0])) != BitConverter.SingleToInt32Bits(result[0])", "(~BitConverter.SingleToInt32Bits(left[0]) & BitConverter.SingleToInt32Bits(right[0])) != BitConverter.SingleToInt32Bits(result[0])"}),
+    ("SimpleBinOpTest.template", new string[] { "Sse", "Divide",         "Single", "Vector128", "16",       "(float)(random.NextDouble())",  "BitConverter.SingleToInt32Bits(left[0] / right[0]) != BitConverter.SingleToInt32Bits(result[0])", "BitConverter.SingleToInt32Bits(left[i] / right[i]) != BitConverter.SingleToInt32Bits(result[i])"}),
+    ("SimpleBinOpTest.template", new string[] { "Sse", "DivideScalar",   "Single", "Vector128", "16",       "(float)(random.NextDouble())",  "BitConverter.SingleToInt32Bits(left[0] / right[0]) != BitConverter.SingleToInt32Bits(result[0])", "BitConverter.SingleToInt32Bits(left[i]) != BitConverter.SingleToInt32Bits(result[i])"}),
+    ("SimpleBinOpTest.template", new string[] { "Sse", "Multiply",       "Single", "Vector128", "16",       "(float)(random.NextDouble())",  "BitConverter.SingleToInt32Bits(left[0] * right[0]) != BitConverter.SingleToInt32Bits(result[0])", "BitConverter.SingleToInt32Bits(left[i] * right[i]) != BitConverter.SingleToInt32Bits(result[i])"}),
+    ("SimpleBinOpTest.template", new string[] { "Sse", "MultiplyScalar", "Single", "Vector128", "16",       "(float)(random.NextDouble())",  "BitConverter.SingleToInt32Bits(left[0] * right[0]) != BitConverter.SingleToInt32Bits(result[0])", "BitConverter.SingleToInt32Bits(left[i]) != BitConverter.SingleToInt32Bits(result[i])"}),
+    ("SimpleBinOpTest.template", new string[] { "Sse", "Or",             "Single", "Vector128", "16",       "(float)(random.NextDouble())",  "(BitConverter.SingleToInt32Bits(left[0]) | BitConverter.SingleToInt32Bits(right[0])) != BitConverter.SingleToInt32Bits(result[0])", "(BitConverter.SingleToInt32Bits(left[0]) | BitConverter.SingleToInt32Bits(right[0])) != BitConverter.SingleToInt32Bits(result[0])"}),
+    ("SimpleBinOpTest.template", new string[] { "Sse", "Subtract",       "Single", "Vector128", "16",       "(float)(random.NextDouble())",  "BitConverter.SingleToInt32Bits(left[0] - right[0]) != BitConverter.SingleToInt32Bits(result[0])", "BitConverter.SingleToInt32Bits(left[i] - right[i]) != BitConverter.SingleToInt32Bits(result[i])"}),
+    ("SimpleBinOpTest.template", new string[] { "Sse", "SubtractScalar", "Single", "Vector128", "16",       "(float)(random.NextDouble())",  "BitConverter.SingleToInt32Bits(left[0] - right[0]) != BitConverter.SingleToInt32Bits(result[0])", "BitConverter.SingleToInt32Bits(left[i]) != BitConverter.SingleToInt32Bits(result[i])"}),
+    ("SimpleBinOpTest.template", new string[] { "Sse", "Xor",            "Single", "Vector128", "16",       "(float)(random.NextDouble())",  "(BitConverter.SingleToInt32Bits(left[0]) ^ BitConverter.SingleToInt32Bits(right[0])) != BitConverter.SingleToInt32Bits(result[0])", "(BitConverter.SingleToInt32Bits(left[0]) ^ BitConverter.SingleToInt32Bits(right[0])) != BitConverter.SingleToInt32Bits(result[0])"}),
+};
+
 private static readonly (string templateFileName, string[] templateData)[] Sse2Inputs = new []
 {
     // TemplateName                             Isa,    Method, BaseType, VectorType,  VectorSize, NextValue,                                              ValidateFirstResult,                                                                               ValidateRemainingResults
@@ -95,6 +112,7 @@ private static void ProcessInput(StreamWriter testListFile, (string templateFile
     File.WriteAllText(testFileName, template);
 }
 
+ProcessInputs("Sse", SseInputs);
 ProcessInputs("Sse2", Sse2Inputs);
 ProcessInputs("Avx", AvxInputs);
 ProcessInputs("Avx2", Avx2Inputs);

@@ -21,13 +21,27 @@
   </ItemGroup>
   <PropertyGroup>
     <DebugType>None</DebugType>
-    <Optimize></Optimize>
+    <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Add.cs" />
+    <Compile Include="Add.Single.cs" />
+    <Compile Include="AddScalar.Single.cs" />
+    <Compile Include="And.Single.cs" />
+    <Compile Include="AndNot.Single.cs" />
+    <Compile Include="Divide.Single.cs" />
+    <Compile Include="DivideScalar.Single.cs" />
+    <Compile Include="Multiply.Single.cs" />
+    <Compile Include="MultiplyScalar.Single.cs" />
+    <Compile Include="Or.Single.cs" />
+    <Compile Include="Subtract.Single.cs" />
+    <Compile Include="SubtractScalar.Single.cs" />
+    <Compile Include="Xor.Single.cs" />
+    <Compile Include="Program.Sse.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup Condition=" '$(MsBuildProjectDirOverride)' != '' "></PropertyGroup>
