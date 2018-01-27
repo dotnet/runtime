@@ -238,6 +238,7 @@ class TestSet
         // which nodes were collected).
         GC.Collect();
         GC.WaitForPendingFinalizers();
+        GC.WaitForPendingFinalizers(); // the above call may correspond to a GC prior to the Collect above, call it again
 
         // Calculate our own view of which nodes should be alive or dead. Use a simple mark array for this.
         // Once the algorithm is complete a true value at a given index in the array indicates a node that
