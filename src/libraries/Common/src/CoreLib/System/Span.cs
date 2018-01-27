@@ -278,8 +278,18 @@ namespace System
         /// </exception>
         public void CopyTo(Span<T> destination)
         {
-            if (!TryCopyTo(destination))
+            // Using "if (!TryCopyTo(...))" results in two branches: one for the length
+            // check, and one for the result of TryCopyTo. Since these checks are equivalent,
+            // we can optimize by performing the check once ourselves then calling Memmove directly.
+
+            if ((uint)_length <= (uint)destination.Length)
+            {
+                Buffer.Memmove(ref destination.DangerousGetPinnableReference(), ref _pointer.Value, (nuint)_length);
+            }
+            else
+            {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
         }
 
         /// <summary>
@@ -292,11 +302,13 @@ namespace System
         /// return false and no data is written to the destination.</returns>        
         public bool TryCopyTo(Span<T> destination)
         {
-            if ((uint)_length > (uint)destination.Length)
-                return false;
-
-            Span.CopyTo<T>(ref destination._pointer.Value, ref _pointer.Value, _length);
-            return true;
+            bool retVal = false;
+            if ((uint)_length <= (uint)destination.Length)
+            {
+                Buffer.Memmove(ref destination.DangerousGetPinnableReference(), ref _pointer.Value, (nuint)_length);
+                retVal = true;
+            }
+            return retVal;
         }
 
         /// <summary>
@@ -406,7 +418,7 @@ namespace System
                 return Array.Empty<T>();
 
             var destination = new T[_length];
-            Span.CopyTo<T>(ref Unsafe.As<byte, T>(ref destination.GetRawSzArrayData()), ref _pointer.Value, _length);
+            Buffer.Memmove(ref Unsafe.As<byte, T>(ref destination.GetRawSzArrayData()), ref _pointer.Value, (nuint)_length);
             return destination;
         }
 
