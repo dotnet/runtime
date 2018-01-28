@@ -193,8 +193,6 @@ public:
         static FCDECL3(LPVOID, CompareExchangeObject, LPVOID* location, LPVOID value, LPVOID comparand);
         static FCDECL2(INT32, ExchangeAdd32, INT32 *location, INT32 value);
         static FCDECL2_IV(INT64, ExchangeAdd64, INT64 *location, INT64 value);
-        static FCDECL2_VV(void, ExchangeGeneric, FC_TypedByRef location, FC_TypedByRef value);
-        static FCDECL3_VVI(void, CompareExchangeGeneric, FC_TypedByRef location, FC_TypedByRef value, LPVOID comparand);
 
         static FCDECL0(void, FCMemoryBarrier);
         static void QCALLTYPE MemoryBarrierProcessWide();
