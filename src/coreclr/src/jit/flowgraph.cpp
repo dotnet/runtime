@@ -10028,7 +10028,7 @@ bool Compiler::fgCheckRemoveStmt(BasicBlock* block, GenTreePtr node)
     GenTreePtr tree = stmt->gtStmtExpr;
     genTreeOps oper = tree->OperGet();
 
-    if (OperIsControlFlow(oper) || oper == GT_NO_OP)
+    if (OperIsControlFlow(oper) || GenTree::OperIsHWIntrinsic(oper) || oper == GT_NO_OP)
     {
         return false;
     }
