@@ -531,7 +531,17 @@ GenTree* Compiler::impX86HWIntrinsic(NamedIntrinsic        intrinsic,
     {
         if (!varTypeIsSIMD(retType))
         {
-            baseType = getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args));
+            if (retType != TYP_VOID)
+            {
+                baseType = getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args));
+            }
+            else
+            {
+                assert(category == HW_Category_MemoryStore);
+                baseType =
+                    getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, info.compCompHnd->getArgNext(sig->args)));
+            }
+
             assert(baseType != TYP_UNKNOWN);
         }
 
