@@ -1807,46 +1807,6 @@ FCIMPL2(LPVOID,COMInterlocked::ExchangeObject, LPVOID*location, LPVOID value)
 }
 FCIMPLEND
 
-FCIMPL2_VV(void,COMInterlocked::ExchangeGeneric, FC_TypedByRef location, FC_TypedByRef value)
-{
-    FCALL_CONTRACT;
-
-    LPVOID* loc = (LPVOID*)location.data;
-    if( NULL == loc) {
-        FCThrowVoid(kNullReferenceException);
-    }
-
-    LPVOID val = *(LPVOID*)value.data;
-    *(LPVOID*)value.data = FastInterlockExchangePointer(loc, val);
-#ifdef _DEBUG
-    Thread::ObjectRefAssign((OBJECTREF *)loc);
-#endif
-    ErectWriteBarrier((OBJECTREF*) loc, ObjectToOBJECTREF((Object*) val));
-}
-FCIMPLEND
-
-FCIMPL3_VVI(void,COMInterlocked::CompareExchangeGeneric, FC_TypedByRef location, FC_TypedByRef value, LPVOID comparand)
-{
-    FCALL_CONTRACT;
-
-    LPVOID* loc = (LPVOID*)location.data;
-    LPVOID val = *(LPVOID*)value.data;
-    if( NULL == loc) {
-        FCThrowVoid(kNullReferenceException);
-    }
-
-    LPVOID ret = FastInterlockCompareExchangePointer(loc, val, comparand);
-    *(LPVOID*)value.data = ret;
-    if(ret == comparand)
-    {
-#ifdef _DEBUG
-        Thread::ObjectRefAssign((OBJECTREF *)loc);
-#endif
-        ErectWriteBarrier((OBJECTREF*) loc, ObjectToOBJECTREF((Object*) val));
-    }
-}
-FCIMPLEND
-
 FCIMPL3(LPVOID,COMInterlocked::CompareExchangeObject, LPVOID *location, LPVOID value, LPVOID comparand)
 {
     FCALL_CONTRACT;
