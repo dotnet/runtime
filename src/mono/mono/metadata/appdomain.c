@@ -2234,6 +2234,9 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomainHandle ad,
 		return refass; 
 	}
 
+	/* Clear the reference added by mono_image_open_from_data_full above */
+	mono_image_close (image);
+
 	refass = mono_assembly_get_object_handle (domain, ass, error);
 	if (!MONO_HANDLE_IS_NULL(refass))
 		MONO_HANDLE_SET (refass, evidence, evidence);
