@@ -34,10 +34,6 @@ int  CallJitEHFilter (CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHC
 void CallJitEHFinally(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHClausePtr, DWORD nestingLevel);
 #endif // _TARGET_X86_
 
-
-// get number of logical to physical processors.  Returns 1 on failure or non-intel x86 processors.
-DWORD GetLogicalCpuCount();
-
 //These are in util.cpp
 extern size_t GetLogicalProcessorCacheSizeFromOS();
 extern size_t GetIntelDeterministicCacheEnum();
@@ -47,7 +43,7 @@ extern DWORD GetLogicalCpuCountFallback();
 
 
 // Try to determine the largest last-level cache size of the machine - return 0 if unknown or no L2/L3 cache
-size_t GetLargestOnDieCacheSize(BOOL bTrueSize = TRUE);
+size_t GetCacheSizePerLogicalCpu(BOOL bTrueSize = TRUE);
 
 
 #ifdef FEATURE_COMINTEROP

@@ -3369,13 +3369,6 @@ void emitCOMStubCall (ComCallMethodDesc *pCOMMethod, PCODE target)
 
 #ifndef CROSSGEN_COMPILE
 
-DWORD GetLogicalCpuCount()
-{
-    // Just use the OS to return this information (the APIs used exist on all versions of Windows which
-    // support ARM).
-    return GetLogicalCpuCountFromOS();
-}
-
 #ifdef FEATURE_READYTORUN
 
 //

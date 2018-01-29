@@ -1854,9 +1854,10 @@ fDone:
 
 #endif // _TARGET_X86_ || _TARGET_AMD64_
 
-size_t GetLargestOnDieCacheSize(BOOL bTrueSize)
+// fix this if/when AMD does multicore or SMT
+size_t GetCacheSizePerLogicalCpu(BOOL bTrueSize)
 {
-    // No CONTRACT possible because GetLargestOnDieCacheSize uses SEH
+    // No CONTRACT possible because GetCacheSizePerLogicalCpu uses SEH
 
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -1909,6 +1910,31 @@ size_t GetLargestOnDieCacheSize(BOOL bTrueSize)
                         {                    // deterministic enumeration failed, fallback to legacy enumeration using descriptor values            
                             tempSize = GetIntelDescriptorValuesCache();   
                         }   
+                    }
+
+                    // TODO: Currently GetLogicalCpuCountFromOS() and GetLogicalCpuCountFallback() are broken on 
+                    // multi-core processor, but we never call into those two functions since we don't halve the
+                    // gen0size when it's prescott and above processor. We keep the old version here for earlier
+                    // generation system(Northwood based), perf data suggests on those systems, halve gen0 size 
+                    // still boost the performance(ex:Biztalk boosts about 17%). So on earlier systems(Northwood) 
+                    // based, we still go ahead and halve gen0 size.  The logic in GetLogicalCpuCountFromOS() 
+                    // and GetLogicalCpuCountFallback() works fine for those earlier generation systems. 
+                    // If it's a Prescott and above processor or Multi-core, perf data suggests not to halve gen0 
+                    // size at all gives us overall better performance. 
+                    // This is going to be fixed with a new version in orcas time frame.
+                    if (maxCpuId >= 2 && !((maxCpuId > 3) && (maxCpuId < 0x80000000)))
+                    {
+                        DWORD logicalProcessorCount = GetLogicalCpuCountFromOS(); //try to obtain HT enumeration from OS API
+
+                        if (!logicalProcessorCount)
+                        {
+                            logicalProcessorCount = GetLogicalCpuCountFallback();    // OS API failed, Fallback to HT enumeration using CPUID
+                        }
+
+                        if (logicalProcessorCount)
+                        {
+                            tempSize = tempSize / logicalProcessorCount;
+                        }
                     }
 
                     // update maxSize once with final value
@@ -2009,7 +2035,7 @@ size_t GetLargestOnDieCacheSize(BOOL bTrueSize)
     maxSize = maxTrueSize * 3;
 #endif
 
-    //    printf("GetLargestOnDieCacheSize returns %d, adjusted size %d\n", maxSize, maxTrueSize);
+    //    printf("GetCacheSizePerLogicalCpu returns %d, adjusted size %d\n", maxSize, maxTrueSize);
     if (bTrueSize)
         return maxTrueSize;
     else
