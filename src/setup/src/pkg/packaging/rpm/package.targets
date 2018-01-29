@@ -8,14 +8,19 @@
   <PropertyGroup>
     <IsRPMBasedDistro Condition="'$(InstallerExtension)' == '.rpm'">true</IsRPMBasedDistro>
     <BuildRpmPackage Condition="'$(IsRPMBasedDistro)' == true and '$(TargetArchitecture)' == 'x64'">true</BuildRpmPackage>
+    <BuildRuntimeRpms>true</BuildRuntimeRpms>
   </PropertyGroup>
 
   <Target Name="GenerateRpms"
           DependsOnTargets="TestFPMTool;BuildRpms;"
           Condition="'$(BuildRpmPackage)'=='true'" />
+  
+  <Target Name="GenerateRuntimeRpms" 
+          DependsOnTargets="GenerateSharedHostRpm;GenerateHostFxrRpm;GenerateSharedFrameworkRpm"
+          Condition="'$(BuildRuntimeRpms)' == 'true'" />
 
   <Target Name="BuildRpms"
-          DependsOnTargets="GenerateSharedHostRpm;GenerateHostFxrRpm;GenerateSharedFrameworkRpm"
+          DependsOnTargets="GenerateRuntimeRpms; GenerateRuntimeDependenciesRpm"
           Condition="'$(BuildRpmPackage)'=='true' and '$(FPMPresent)'=='true'" />
 
   <Target Name="GenerateSharedHostRpm">
@@ -66,6 +71,12 @@
     <ItemGroup>
       <SharedHostTokenValue Include="%SHARED_HOST_BRAND_NAME%">
         <ReplacementString>$(SharedHostBrandName)</ReplacementString>
+      </SharedHostTokenValue>
+      <SharedHostTokenValue Include="%RUNTIME_DEPS_RPM_PACKAGE_NAME%">
+        <ReplacementString>$(RuntimeDependenciesRpmPkgName)</ReplacementString>
+      </SharedHostTokenValue>
+      <SharedHostTokenValue Include="%RUNTIME_DEPS_VERSION%">
+        <ReplacementString>$(RuntimeDepsRpmVersion)</ReplacementString> 
       </SharedHostTokenValue>
     </ItemGroup>
 
@@ -191,7 +202,6 @@
       <InputRoot>$(SharedFrameworkPublishRoot)</InputRoot>
       <RpmFile>$(SharedFrameworkInstallerFile)</RpmFile>
       <ConfigJsonName>dotnet-sharedframework-rpm_config.json</ConfigJsonName>
-      <ConfigJsonName Condition="$(PackageTargetRid.StartsWith('opensuse'))">dotnet-sharedframework-opensuse-rpm_config.json</ConfigJsonName>
       <ConfigJsonFile>$(rpmPackagingConfigPath)$(ConfigJsonName)</ConfigJsonFile>
       <RpmIntermediatesDir>$(PackagesIntermediateDir)$(RpmPackageName)/$(RpmPackageVersion)</RpmIntermediatesDir>
     </PropertyGroup>
@@ -256,6 +266,86 @@
     <!-- Build the RPM package by calling the FPM tool and passing the parameter list -->
     <Exec Command="fpm $(FPMCmdParameters)"  WorkingDirectory="$(RpmIntermediatesDir)" />
     
+    <!-- Copy package to output -->
+    <ItemGroup>
+      <GeneratedRpmFiles Remove="@(GeneratedRpmFiles)" />
+      <GeneratedRpmFiles Include="$(RpmIntermediatesDir)/*.rpm" />
+    </ItemGroup>
+
+    <Error Text="@(GeneratedRpmFiles->Count()) .rpm files generated." Condition="'@(GeneratedRpmFiles->Count())' != 1" />
+
+    <Copy SourceFiles="@(GeneratedRpmFiles)"
+          DestinationFiles="$(RpmFile)"
+          OverwriteReadOnlyFiles="True"
+          SkipUnchangedFiles="False"
+          UseHardlinksIfPossible="False" />
+
+  </Target>
+  
+  <Target Name="GenerateRuntimeDependenciesRpm">
+    <PropertyGroup>
+      <RpmPackageName>$(RuntimeDependenciesRpmPkgName)</RpmPackageName>
+      <RpmPackageVersion>$(SharedFrameworkNugetVersion)</RpmPackageVersion>
+      <RpmFile>$(DotnetRuntimeDependenciesPackageInstallerFile)</RpmFile>
+      <ConfigJsonName>dotnet-runtime-deps-rpm_config_$(OutputRid).json</ConfigJsonName>
+      <ConfigJsonFile>$(rpmPackagingConfigPath)$(ConfigJsonName)</ConfigJsonFile>
+      <RpmIntermediatesDir>$(PackagesIntermediateDir)$(RpmPackageName)/$(RpmPackageVersion)</RpmIntermediatesDir>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <rpmLayoutDirectory>$(RpmIntermediatesDir)/rpmLayoutDirectory/</rpmLayoutDirectory>
+      <rpmLayoutPackageRoot>$(rpmLayoutDirectory)package_root</rpmLayoutPackageRoot>
+      <rpmLayoutDocs>$(rpmLayoutDirectory)docs</rpmLayoutDocs>
+      <rpmLayoutTemplates>$(rpmLayoutDirectory)templates</rpmLayoutTemplates> <!-- Copyright, Changelog -->
+    </PropertyGroup>
+
+    <!-- Error out if the configuration file doesn't exist -->
+    <Error Condition="!Exists('$(ConfigJsonFile)')" Text="Config file does not exist : '$(ConfigJsonFile)'" />
+
+    <RemoveDir Condition="Exists('$(RpmIntermediatesDir)')" Directories="$(RpmIntermediatesDir)" />
+    <MakeDir Directories="$(RpmIntermediatesDir)" />
+
+    <!-- Create empty rpm layout -->
+    <RemoveDir Condition="Exists('$(rpmLayoutDirectory)')" Directories="$(rpmLayoutDirectory)" />
+    <MakeDir Directories="$(rpmLayoutDirectory)" />
+    <MakeDir Directories="$(rpmLayoutPackageRoot)" />
+    <MakeDir Directories="$(rpmLayoutDocs)" />
+    <MakeDir Directories="$(rpmLayoutTemplates)" />
+    
+     <!-- Copy files to rpm layout -->
+    <ItemGroup>
+        <HFFiles Include="$(InputRoot)/**/*" />
+        <HFTemplatesFiles Include="$(TemplatesDir)/**/*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(HFFiles)" DestinationFiles="@(HFFiles->'$(rpmLayoutPackageRoot)/%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(HFTemplatesFiles)" DestinationFiles="@(HFTemplatesFiles->'$(rpmLayoutTemplates)/%(RecursiveDir)%(Filename)%(Extension)')" />
+
+    <!-- Replace config json variables -->
+    <ItemGroup>
+      <SharedFrameworkTokenValue Include="%RUNTIME_DEPS_RPM_PACKAGE_NAME%">
+        <ReplacementString>$(RuntimeDependenciesRpmPkgName)</ReplacementString>
+      </SharedFrameworkTokenValue>
+      <SharedFrameworkTokenValue Include="%RUNTIME_DEPS_VERSION%">
+        <ReplacementString>$(RuntimeDepsRpmVersion)</ReplacementString> 
+      </SharedFrameworkTokenValue>
+    </ItemGroup>
+
+    <ReplaceFileContents InputFile="$(ConfigJsonFile)"
+                         DestinationFile="$(rpmLayoutDirectory)$(rpmConfigJsonName)"
+                         ReplacementItems="@(SharedFrameworkTokenValue)" />
+
+    <!-- Call the task to build the pre-reqs (parameters, copyright, changelog) for calling the FPM tool -->
+    <BuildFPMToolPreReqs  InputDir="$(rpmLayoutDirectory)"
+                          OutputDir="$(RpmIntermediatesDir)"
+                          PackageVersion="$(RpmPackageVersion)"
+                          ConfigJsonFile="$(rpmLayoutDirectory)$(rpmConfigJsonName)">
+                          <Output TaskParameter="FPMParameters" PropertyName="FPMCmdParameters" />
+    </BuildFPMToolPreReqs>
+
+    <!-- Build the RPM package by calling the FPM tool and passing the parameter list -->
+    <Exec Command="fpm $(FPMCmdParameters)"  WorkingDirectory="$(RpmIntermediatesDir)" />
+
     <!-- Copy package to output -->
     <ItemGroup>
       <GeneratedRpmFiles Remove="@(GeneratedRpmFiles)" />
