@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Drawing.Text;
-using System.Globalization;
 using Xunit;
 
 namespace System.Drawing.Tests
@@ -57,7 +56,6 @@ namespace System.Drawing.Tests
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(null)]
-        [InlineData("")]
         [InlineData("NoSuchFont")]
         [InlineData("Serif")]
         public void Ctor_NoSuchFontName_ThrowsArgumentException(string name)
