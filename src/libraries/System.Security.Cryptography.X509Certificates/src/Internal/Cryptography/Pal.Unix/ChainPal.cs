@@ -163,11 +163,7 @@ namespace Internal.Cryptography.Pal
                     {
                         userIntermediate.Add(cert);
                     }
-                    catch (CryptographicException)
-                    {
-                        // Saving is opportunistic, just ignore failures
-                    }
-                    catch (IOException)
+                    catch
                     {
                         // Saving is opportunistic, just ignore failures
                     }
