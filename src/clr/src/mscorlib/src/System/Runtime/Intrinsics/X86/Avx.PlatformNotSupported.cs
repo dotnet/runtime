@@ -72,16 +72,16 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128 _mm_broadcast_ss (float const * mem_addr); VBROADCASTSS xmm, m32
         /// </summary>
-        public static Vector128<float> BroadcastElementToVector128(ref float source) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> BroadcastElementToVector128(float* source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256 _mm256_broadcast_ss (float const * mem_addr); VBROADCASTSS ymm, m32
         /// </summary>
-        public static Vector256<float> BroadcastElementToVector256(ref float source) { throw new PlatformNotSupportedException(); }
+        public static Vector256<float> BroadcastElementToVector256(float* source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256d _mm256_broadcast_sd (double const * mem_addr); VBROADCASTSD ymm, m64
         /// </summary>
-        public static Vector256<double> BroadcastElementToVector256(ref double source) { throw new PlatformNotSupportedException(); }
+        public static Vector256<double> BroadcastElementToVector256(double* source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256 _mm256_broadcast_ps (__m128 const * mem_addr); VBROADCASTF128, ymm, m128
