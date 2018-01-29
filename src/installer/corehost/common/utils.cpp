@@ -183,7 +183,7 @@ const pal::char_t* get_arch()
 }
 
 pal::string_t get_last_known_arg(
-    const std::unordered_map<pal::string_t, std::vector<pal::string_t>>& opts,
+    const opt_map_t& opts,
     const pal::string_t& opt_key,
     const pal::string_t& de_fault)
 {
@@ -201,7 +201,7 @@ bool parse_known_args(
     const std::vector<host_option>& known_opts,
     // Although multimap would provide this functionality the order of kv, values are
     // not preserved in C++ < C++0x
-    std::unordered_map<pal::string_t, std::vector<pal::string_t>>* opts,
+    opt_map_t* opts,
     int* num_args)
 {
     int arg_i = *num_args;

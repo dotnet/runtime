@@ -376,7 +376,7 @@ bool deps_resolver_t::resolve_tpa_list(
 
     auto process_entry = [&](const pal::string_t& deps_dir, const deps_entry_t& entry) -> bool
     {
-        if (entry.is_serviceable)
+        if (breadcrumb != nullptr && entry.is_serviceable)
         {
             breadcrumb->insert(entry.library_name + _X(",") + entry.library_version);
             breadcrumb->insert(entry.library_name);
@@ -629,7 +629,7 @@ bool deps_resolver_t::resolve_probe_dirs(
 
     auto add_package_cache_entry = [&](const deps_entry_t& entry, const pal::string_t& deps_dir) -> bool
     {
-        if (entry.is_serviceable)
+        if (breadcrumb != nullptr && entry.is_serviceable)
         {
             breadcrumb->insert(entry.library_name + _X(",") + entry.library_version);
             breadcrumb->insert(entry.library_name);
