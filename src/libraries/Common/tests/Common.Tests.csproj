@@ -62,8 +62,8 @@
     <Compile Include="$(CommonPath)\System\Text\ReusableTextReader.cs">
       <Link>Common\System\Text\ReusableTextReader.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Text\ValueStringBuilder.cs">
-      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\System\Text\ValueStringBuilder.cs">
+      <Link>Common\CoreLib\System\Text\ValueStringBuilder.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\IdentityHelper.cs">
       <Link>Common\System\Security\IdentityHelper.cs</Link>
