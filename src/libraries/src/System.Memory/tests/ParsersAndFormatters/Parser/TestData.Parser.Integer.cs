@@ -115,6 +115,12 @@ namespace System.Buffers.Text.Tests
                 // This value will overflow a UInt32 accumulator upon assimilating the 0 in a way such that the wrapped-around value still looks like
                 // it's in the range of an Int32. Unless, of course, the implementation had the foresight to check before assimilating. 
                 yield return new ParserTestData<int>("9999999990", 0, 'D', expectedSuccess: false);
+
+                // "N" format parsing
+                foreach (ParserTestData<int> testData in TestDataForNFormat.ConvertTestDataForNFormat<int>())
+                {
+                    yield return testData;
+                }
             }
         }
 
@@ -260,6 +266,74 @@ namespace System.Buffers.Text.Tests
                     }
                 }
             }
+        }
+
+        // Test data specific to the "N" format. This set is up-converted and reused for all the integer types.
+        // Non-N-specific issues like overflow and underflow detection are already covered by GeneralIntegerParserTestData().
+        private static IEnumerable<ParserTestData<sbyte>> TestDataForNFormat
+        {
+            get
+            {
+                yield return new ParserTestData<sbyte>("12,3", 123, 'N', expectedSuccess: true);
+                yield return new ParserTestData<sbyte>("1,0,4", 104, 'N', expectedSuccess: true);
+
+                yield return new ParserTestData<sbyte>("1,,23", 123, 'N', expectedSuccess: true); // Comma placement is completely flexible.
+                yield return new ParserTestData<sbyte>("+1,,23", 123, 'N', expectedSuccess: true); // Comma placement is completely flexible.
+                yield return new ParserTestData<sbyte>("-1,,23", -123, 'N', expectedSuccess: true); // Comma placement is completely flexible.
+
+                yield return new ParserTestData<sbyte>(",234", default, 'N', expectedSuccess: false); // Leading comma not allowed.
+                yield return new ParserTestData<sbyte>("+,234", default, 'N', expectedSuccess: false); // Leading comma not allowed.
+                yield return new ParserTestData<sbyte>("-,234", default, 'N', expectedSuccess: false); // Leading comma not allowed.
+
+                yield return new ParserTestData<sbyte>("104,", 104, 'N', expectedSuccess: true); // Trailing comma is allowed.
+                yield return new ParserTestData<sbyte>("104,,", 104, 'N', expectedSuccess: true); // Trailing comma is allowed.
+                yield return new ParserTestData<sbyte>("104,.00", 104, 'N', expectedSuccess: true); // Trailing comma is allowed.
+
+                yield return new ParserTestData<sbyte>(".", default, 'N', expectedSuccess: false); // Standalone period not allowed.
+                yield return new ParserTestData<sbyte>(".0", 0, 'N', expectedSuccess: true); // But missing digits on either side allowed (as long as not both)
+                yield return new ParserTestData<sbyte>("5.", 5, 'N', expectedSuccess: true); // But missing digits on either side allowed (as long as not both)
+
+                yield return new ParserTestData<sbyte>("+", default, 'N', expectedSuccess: false); // Standalone sign symbol not allowed
+                yield return new ParserTestData<sbyte>("-", default, 'N', expectedSuccess: false); // Standalone sign symbol not allowed
+
+                yield return new ParserTestData<sbyte>("2.000000000000000000000000000000000", 2, 'N', expectedSuccess: true); // Decimal portion allowed as long as its 0.
+                yield return new ParserTestData<sbyte>("2.000000000000000000000000000000001", default, 'N', expectedSuccess: false);
+                yield return new ParserTestData<sbyte>(".1", default, 'N', expectedSuccess: false);
+
+                yield return new ParserTestData<sbyte>("2.0,0", 2, 'N', expectedSuccess: true) { ExpectedBytesConsumed = 3 }; // Commas must appear before the decimal point, not after.
+            }
+        }
+
+        private static IEnumerable<ParserTestData<T>> ConvertTestDataForNFormat<T>(this IEnumerable<ParserTestData<sbyte>> testData) => testData.Select(td => td.ConvertTestDataForNFormat<T>());
+
+        private static ParserTestData<T> ConvertTestDataForNFormat<T>(this ParserTestData<sbyte> testData)
+        {
+            Type t = typeof(T);
+            bool isSignedType = t == typeof(sbyte) || t == typeof(short) || t == typeof(int) || t == typeof(long);
+            if (testData.ExpectedValue < 0 && !isSignedType)
+                return new ParserTestData<T>(testData.Text, default, testData.FormatSymbol, expectedSuccess: false);  // Unsigned parsers will never produce negative values.
+
+            T convertedValue;
+            if (t == typeof(sbyte))
+                convertedValue = (T)(object)testData.ExpectedValue;
+            else if (t == typeof(byte))
+                convertedValue = (T)(object)Convert.ToByte(testData.ExpectedValue);
+            else if (t == typeof(short))
+                convertedValue = (T)(object)Convert.ToInt16(testData.ExpectedValue);
+            else if (t == typeof(ushort))
+                convertedValue = (T)(object)Convert.ToUInt16(testData.ExpectedValue);
+            else if (t == typeof(int))
+                convertedValue = (T)(object)Convert.ToInt32(testData.ExpectedValue);
+            else if (t == typeof(uint))
+                convertedValue = (T)(object)Convert.ToUInt32(testData.ExpectedValue);
+            else if (t == typeof(long))
+                convertedValue = (T)(object)Convert.ToInt64(testData.ExpectedValue);
+            else if (t == typeof(ulong))
+                convertedValue = (T)(object)Convert.ToUInt64(testData.ExpectedValue);
+            else
+                throw new Exception("Not an integer type: " + t);
+
+            return new ParserTestData<T>(testData.Text, convertedValue, testData.FormatSymbol, testData.ExpectedSuccess) { ExpectedBytesConsumed = testData.ExpectedBytesConsumed };
         }
     }
 }
