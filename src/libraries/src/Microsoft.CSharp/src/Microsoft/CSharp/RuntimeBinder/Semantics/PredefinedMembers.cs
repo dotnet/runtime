@@ -406,9 +406,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         methsym.isStatic == isStatic &&
                         methsym.isVirtual == isVirtual &&
                         methsym.typeVars.Count == cMethodTyVars &&
-                        GetTypeManager().SubstEqualTypes(methsym.RetType, returnType, null, methsym.typeVars, SubstTypeFlags.DenormMeth) &&
-                        GetTypeManager().SubstEqualTypeArrays(methsym.Params, argumentTypes, (TypeArray)null,
-                            methsym.typeVars, SubstTypeFlags.DenormMeth))
+                        GetTypeManager().SubstEqualTypes(methsym.RetType, returnType, null, methsym.typeVars, true) &&
+                        GetTypeManager().SubstEqualTypeArrays(methsym.Params, argumentTypes, null, methsym.typeVars))
                     {
                         return methsym;
                     }

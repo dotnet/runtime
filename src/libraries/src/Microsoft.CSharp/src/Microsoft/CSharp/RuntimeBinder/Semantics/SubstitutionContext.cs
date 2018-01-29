@@ -6,95 +6,36 @@ using System;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    // Used to specify whether and which type variables should be normalized.
-    [Flags]
-    internal enum SubstTypeFlags
-    {
-        NormNone = 0x00,
-        NormClass = 0x01,  // Replace class type variables with the normalized (standard) ones.
-        NormMeth = 0x02,   // Replace method type variables with the normalized (standard) ones.
-        NormAll = NormClass | NormMeth,
-        DenormClass = 0x04,  // Replace normalized (standard) class type variables with the given class type args.
-        DenormMeth = 0x08,   // Replace normalized (standard) method type variables with the given method type args.
-        DenormAll = DenormClass | DenormMeth,
-        NoRefOutDifference = 0x10
-    }
-
     internal sealed class SubstContext
     {
-        public CType[] prgtypeCls;
-        public int ctypeCls;
-        public CType[] prgtypeMeth;
-        public int ctypeMeth;
-        public SubstTypeFlags grfst;
+        public readonly CType[] ClassTypes;
+        public readonly CType[] MethodTypes;
+        public readonly bool DenormMeth;
 
-        public SubstContext(TypeArray typeArgsCls, TypeArray typeArgsMeth, SubstTypeFlags grfst)
+        public SubstContext(TypeArray typeArgsCls, TypeArray typeArgsMeth, bool denormMeth)
         {
-            Init(typeArgsCls, typeArgsMeth, grfst);
+            typeArgsCls?.AssertValid();
+            ClassTypes = typeArgsCls?.Items ?? Array.Empty<CType>();
+            typeArgsMeth?.AssertValid();
+            MethodTypes = typeArgsMeth?.Items ?? Array.Empty<CType>();
+            DenormMeth = denormMeth;
         }
 
         public SubstContext(AggregateType type)
-            : this(type, null, SubstTypeFlags.NormNone)
+            : this(type, null, false)
         {
         }
 
         public SubstContext(AggregateType type, TypeArray typeArgsMeth)
-            : this(type, typeArgsMeth, SubstTypeFlags.NormNone)
+            : this(type, typeArgsMeth, false)
         {
         }
 
-        private SubstContext(AggregateType type, TypeArray typeArgsMeth, SubstTypeFlags grfst)
-        {
-            Init(type?.TypeArgsAll, typeArgsMeth, grfst);
-        }
-
-        public SubstContext(CType[] prgtypeCls, int ctypeCls, CType[] prgtypeMeth, int ctypeMeth)
-            : this(prgtypeCls, ctypeCls, prgtypeMeth, ctypeMeth, SubstTypeFlags.NormNone)
+        private SubstContext(AggregateType type, TypeArray typeArgsMeth, bool denormMeth)
+            : this(type?.TypeArgsAll, typeArgsMeth, denormMeth)
         {
         }
 
-        private SubstContext(CType[] prgtypeCls, int ctypeCls, CType[] prgtypeMeth, int ctypeMeth, SubstTypeFlags grfst)
-        {
-            this.prgtypeCls = prgtypeCls;
-            this.ctypeCls = ctypeCls;
-            this.prgtypeMeth = prgtypeMeth;
-            this.ctypeMeth = ctypeMeth;
-            this.grfst = grfst;
-        }
-
-        public bool FNop()
-        {
-            return 0 == ctypeCls && 0 == ctypeMeth && 0 == (grfst & SubstTypeFlags.NormAll);
-        }
-
-        // Initializes a substitution context. Returns false iff no substitutions will ever be performed.
-        private void Init(TypeArray typeArgsCls, TypeArray typeArgsMeth, SubstTypeFlags grfst)
-        {
-            if (typeArgsCls != null)
-            {
-                typeArgsCls.AssertValid();
-                ctypeCls = typeArgsCls.Count;
-                prgtypeCls = typeArgsCls.Items;
-            }
-            else
-            {
-                ctypeCls = 0;
-                prgtypeCls = null;
-            }
-
-            if (typeArgsMeth != null)
-            {
-                typeArgsMeth.AssertValid();
-                ctypeMeth = typeArgsMeth.Count;
-                prgtypeMeth = typeArgsMeth.Items;
-            }
-            else
-            {
-                ctypeMeth = 0;
-                prgtypeMeth = null;
-            }
-
-            this.grfst = grfst;
-        }
+        public bool IsNop => ClassTypes.Length == 0 & MethodTypes.Length == 0;
     }
 }
