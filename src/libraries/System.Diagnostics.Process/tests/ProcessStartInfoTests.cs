@@ -887,20 +887,10 @@ namespace System.Diagnostics.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("domain")]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void UserName_SetWindows_GetReturnsExpected(string userName)
+        public void UserName_Set_GetReturnsExpected(string userName)
         {
             var info = new ProcessStartInfo { UserName = userName };
             Assert.Equal(userName ?? string.Empty, info.UserName);
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void UserName_GetSetUnix_ThrowsPlatformNotSupportedException()
-        {
-            var info = new ProcessStartInfo();
-            Assert.Throws<PlatformNotSupportedException>(() => info.UserName);
-            Assert.Throws<PlatformNotSupportedException>(() => info.UserName = "username");
         }
 
         [Theory]

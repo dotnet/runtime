@@ -8,16 +8,9 @@ namespace System.Diagnostics
 {
     public sealed partial class ProcessStartInfo
     {
-        private string _userName;
         private string _domain;
 
         private const bool CaseSensitiveEnvironmentVariables = false;
-
-        public string UserName
-        {
-            get => _userName ?? string.Empty;
-            set => _userName = value;
-        }
 
         public string PasswordInClearText { get; set; }
 

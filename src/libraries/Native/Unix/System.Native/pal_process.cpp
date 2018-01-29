@@ -151,6 +151,9 @@ extern "C" int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       int32_t redirectStdin,
                                       int32_t redirectStdout,
                                       int32_t redirectStderr,
+                                      int32_t setCredentials,
+                                      uint32_t userId,
+                                      uint32_t groupId,
                                       int32_t* childPid,
                                       int32_t* stdinFd,
                                       int32_t* stdoutFd,
@@ -170,7 +173,7 @@ extern "C" int32_t SystemNative_ForkAndExecProcess(const char* filename,
         goto done;
     }
 
-    if ((redirectStdin & ~1) != 0 || (redirectStdout & ~1) != 0 || (redirectStderr & ~1) != 0)
+    if ((redirectStdin & ~1) != 0 || (redirectStdout & ~1) != 0 || (redirectStderr & ~1) != 0 || (setCredentials & ~1) != 0)
     {
         assert(false && "Boolean redirect* inputs must be 0 or 1.");
         errno = EINVAL;
@@ -231,6 +234,14 @@ extern "C" int32_t SystemNative_ForkAndExecProcess(const char* filename,
             (redirectStderr && Dup2WithInterruptedRetry(stderrFds[WRITE_END_OF_PIPE], STDERR_FILENO) == -1))
         {
             ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno);
+        }
+
+        if (setCredentials)
+        {
+            if (setgid(groupId) == -1 || setuid(userId) == -1)
+            {
+                ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno);
+            }
         }
 
         // Change to the designated working directory, if one was specified

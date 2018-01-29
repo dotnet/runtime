@@ -22,5 +22,8 @@ internal static partial class Interop
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPwUidR", SetLastError = false)]
         internal static extern unsafe int GetPwUidR(uint uid, out Passwd pwd, byte* buf, int bufLen);
+
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPwNamR", SetLastError = false)]
+        internal static extern unsafe int GetPwNamR(string name, out Passwd pwd, byte* buf, int bufLen);
     }
 }

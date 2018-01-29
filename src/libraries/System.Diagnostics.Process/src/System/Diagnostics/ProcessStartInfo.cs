@@ -20,6 +20,7 @@ namespace System.Diagnostics
         private string _fileName;
         private string _arguments;
         private string _directory;
+        private string _userName;
         private string _verb;
         private ProcessWindowStyle _windowStyle;
 
@@ -124,6 +125,12 @@ namespace System.Diagnostics
 
         public bool ErrorDialog { get; set; }
         public IntPtr ErrorDialogParentHandle { get; set; }
+
+        public string UserName
+        {
+            get => _userName ?? string.Empty;
+            set => _userName = value;
+        }
 
         [DefaultValue("")]
         public string Verb 
