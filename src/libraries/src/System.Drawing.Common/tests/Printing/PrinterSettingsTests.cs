@@ -55,7 +55,7 @@ namespace System.Drawing.Printing.Tests
         public void Copies_Default_ReturnsExpected()
         {
             var printerSettings = new PrinterSettings();
-            Assert.Equal(1, printerSettings.Copies);
+            int copies = printerSettings.Copies;
         }
 
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
@@ -396,7 +396,7 @@ namespace System.Drawing.Printing.Tests
         public void IsDirectPrintingSupported_ImageFormatSupported_ReturnsExpected(ImageFormat imageFormat)
         {
             var printerSettings = new PrinterSettings();
-            Assert.Equal(true, printerSettings.IsDirectPrintingSupported(imageFormat));
+            bool supported = printerSettings.IsDirectPrintingSupported(imageFormat);
         }
 
         public static IEnumerable<object[]> IsDirectPrintingSupported_ImageFormatNotSupported_TestData()
@@ -436,7 +436,7 @@ namespace System.Drawing.Printing.Tests
         public void SupportsColor_ReturnsExpected()
         {
             var printerSettings = new PrinterSettings();
-            Assert.Equal(true, printerSettings.SupportsColor);
+            bool supportsColor = printerSettings.SupportsColor;
         }
 
         [Theory]
@@ -578,6 +578,7 @@ namespace System.Drawing.Printing.Tests
             Assert.NotEqual(IntPtr.Zero, handle);
         }
 
+        [ActiveIssue(26637)]
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void SetHdevmode_IntPtr_Success()
