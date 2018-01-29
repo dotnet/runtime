@@ -1216,7 +1216,7 @@ namespace System.Net.WebSockets
                 toMask.Length >= Vector<byte>.Count)
             {
                 Vector<byte> maskVector = Vector.AsVectorByte(new Vector<int>(shiftedMask));
-                Span<Vector<byte>> toMaskVector = toMask.NonPortableCast<byte, Vector<byte>>();
+                Span<Vector<byte>> toMaskVector = MemoryMarshal.Cast<byte, Vector<byte>>(toMask);
                 for (int i = 0; i < toMaskVector.Length; i++)
                 {
                     toMaskVector[i] ^= maskVector;

@@ -7,6 +7,7 @@
     <!-- disable warnings about obsolete APIs -->
     <NoWarn>$(NoWarn);0809</NoWarn>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netcoreapp' Or '$(TargetGroup)' == 'uap'">true</IsPartialFacadeAssembly>
+    <DefineConstants Condition="'$(IsPartialFacadeAssembly)' != 'true'">$(DefineConstants);FEATURE_PORTABLE_SPAN</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />

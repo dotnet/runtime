@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.SpanTests
@@ -49,9 +50,9 @@ namespace System.SpanTests
             {
                 int[] a = new int[] { 1, 2, 3, 4, 5, 6 };
 
-                ReadOnlySpan<int> source = a.AsReadOnlySpan().AsBytes()
-                    .Slice(2, 5 * sizeof(int))
-                    .NonPortableCast<byte, int>();
+                ReadOnlySpan<int> source = MemoryMarshal.Cast<byte, int>(
+                    a.AsReadOnlySpan().AsBytes()
+                    .Slice(2, 5 * sizeof(int)));
 
                 Span<int> actual = a.AsSpan().Slice(0, 5);
 
@@ -62,9 +63,9 @@ namespace System.SpanTests
             {
                 int[] a = new int[] { 1, 2, 3, 4, 5, 6 };
 
-                ReadOnlySpan<int> source = a.AsReadOnlySpan().AsBytes()
-                    .Slice(2, 5 * sizeof(int))
-                    .NonPortableCast<byte, int>();
+                ReadOnlySpan<int> source = MemoryMarshal.Cast<byte, int>(
+                    a.AsReadOnlySpan().AsBytes()
+                    .Slice(2, 5 * sizeof(int)));
 
                 Span<int> actual = a.AsSpan().Slice(1, 5);
 
@@ -113,9 +114,8 @@ namespace System.SpanTests
             {
                 int[] a = new int[] { 1, 2, 3, 4, 5, 6 };
 
-                ReadOnlySpan<int> source = a.AsReadOnlySpan().AsBytes()
-                    .Slice(2, 5 * sizeof(int))
-                    .NonPortableCast<byte, int>();
+                ReadOnlySpan<int> source = MemoryMarshal.Cast<byte, int>(
+                    a.AsReadOnlySpan().AsBytes().Slice(2, 5 * sizeof(int)));
 
                 Span<int> actual = a.AsSpan().Slice(0, 5);
 
@@ -126,9 +126,8 @@ namespace System.SpanTests
             {
                 int[] a = new int[] { 1, 2, 3, 4, 5, 6 };
 
-                ReadOnlySpan<int> source = a.AsReadOnlySpan().AsBytes()
-                    .Slice(2, 5 * sizeof(int))
-                    .NonPortableCast<byte, int>();
+                ReadOnlySpan<int> source = MemoryMarshal.Cast<byte, int>(
+                    a.AsReadOnlySpan().AsBytes().Slice(2, 5 * sizeof(int)));
 
                 Span<int> actual = a.AsSpan().Slice(1, 5);
 

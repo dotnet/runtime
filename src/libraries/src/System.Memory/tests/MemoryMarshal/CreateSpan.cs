@@ -10,10 +10,10 @@ using static System.TestHelpers;
 
 namespace System.SpanTests
 {
-    public static partial class SpanTests
+    public static partial class MemoryMarshalTests
     {
         [Fact]
-        public static void DangerousCreate1()
+        public static void CreateSpan()
         {
             TestClass testClass = new TestClass
             {
@@ -23,11 +23,22 @@ namespace System.SpanTests
                 C3 = 'd',
                 C4 = 'e'
             };
-            Span<char> span = Span<char>.DangerousCreate(testClass, ref testClass.C1, 3);
+            Span<char> span = MemoryMarshal.CreateSpan<char>(ref testClass.C1, 3);
             span.Validate('b', 'c', 'd');
 
             ref char pc1 = ref MemoryMarshal.GetReference(span);
             Assert.True(Unsafe.AreSame(ref testClass.C1, ref pc1));
         }
+
+        [Fact]
+        public static void SpanGetReferencePointerCreateSpan()
+        {
+            TestClass testClass = new TestClass();
+            Span<char> span = MemoryMarshal.CreateSpan<char>(ref testClass.C1, 3);
+
+            ref char pinnableReference = ref MemoryMarshal.GetReference(span);
+            Assert.True(Unsafe.AreSame(ref testClass.C1, ref pinnableReference));
+        }
+
     }
 }
