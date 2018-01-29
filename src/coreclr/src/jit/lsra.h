@@ -30,15 +30,60 @@ const unsigned int   MaxLocation = UINT_MAX;
 const unsigned int MaxInternalRegisters = 8;
 const unsigned int RegisterTypeCount    = 2;
 
+/*****************************************************************************
+* Register types
+*****************************************************************************/
 typedef var_types RegisterType;
 #define IntRegisterType TYP_INT
 #define FloatRegisterType TYP_FLOAT
 
+//------------------------------------------------------------------------
+// regType: Return the RegisterType to use for a given type
+//
+// Arguments:
+//    type - the type of interest
+//
+template <class T>
+RegisterType regType(T type)
+{
+#ifdef FEATURE_SIMD
+    if (varTypeIsSIMD(type))
+    {
+        return FloatRegisterType;
+    }
+#endif // FEATURE_SIMD
+    return varTypeIsFloating(TypeGet(type)) ? FloatRegisterType : IntRegisterType;
+}
+
+//------------------------------------------------------------------------
+// useFloatReg: Check if the given var_type should be allocated to a FloatRegisterType
+//
+inline bool useFloatReg(var_types type)
+{
+    return (regType(type) == FloatRegisterType);
+}
+
+//------------------------------------------------------------------------
+// registerTypesEquivalent: Check to see if two RegisterTypes are equivalent
+//
+inline bool registerTypesEquivalent(RegisterType a, RegisterType b)
+{
+    return varTypeIsIntegralOrI(a) == varTypeIsIntegralOrI(b);
+}
+
+//------------------------------------------------------------------------
+// registerTypesEquivalent: Get the set of callee-save registers of the given RegisterType
+//
 inline regMaskTP calleeSaveRegs(RegisterType rt)
 {
     return varTypeIsIntegralOrI(rt) ? RBM_INT_CALLEE_SAVED : RBM_FLT_CALLEE_SAVED;
 }
 
+//------------------------------------------------------------------------
+// LocationInfo: Captures the necessary information for a node that is "in-flight"
+//               during `buildIntervals` (i.e. its definition has been encountered,
+//               but not its use).
+//
 struct LocationInfo
 {
     Interval*    interval;
@@ -87,7 +132,7 @@ public:
 //                   node during `buildIntervals`.
 //
 // This list of 'LocationInfoListNode's contains the source nodes consumed by
-// a node, and is created by 'TreeNodeInfoInit'.
+// a node, and is created by 'BuildNode'.
 //
 class LocationInfoList final
 {
@@ -228,10 +273,10 @@ public:
     }
 
     //------------------------------------------------------------------------
-    // GetTreeNodeInfo - retrieve the TreeNodeInfo for the given node
+    // removeListNode - retrieve the TreeNodeInfo for the given node
     //
     // Notes:
-    //     The TreeNodeInfoInit methods use this helper to retrieve the TreeNodeInfo for child nodes
+    //     The BuildNode methods use this helper to retrieve the TreeNodeInfo for child nodes
     //     from the useList being constructed. Note that, if the user knows the order of the operands,
     //     it is expected that they should just retrieve them directly.
 
@@ -260,7 +305,7 @@ public:
             }
             prevListNode = listNode;
         }
-        assert(!"GetTreeNodeInfo didn't find the node");
+        assert(!"removeListNode didn't find the node");
         unreached();
     }
 
@@ -268,7 +313,7 @@ public:
     // GetTreeNodeInfo - retrieve the TreeNodeInfo for the given node
     //
     // Notes:
-    //     The TreeNodeInfoInit methods use this helper to retrieve the TreeNodeInfo for child nodes
+    //     The Build methods use this helper to retrieve the TreeNodeInfo for child nodes
     //     from the useList being constructed. Note that, if the user knows the order of the operands,
     //     it is expected that they should just retrieve them directly.
 
@@ -298,6 +343,35 @@ public:
         assert(second->treeNode == treeNode);
         return second;
     }
+};
+
+//------------------------------------------------------------------------
+// LocationInfoListNodePool: manages a pool of `LocationInfoListNode`
+//                           values to decrease overall memory usage
+//                           during `buildIntervals`.
+//
+// `buildIntervals` involves creating a list of location info values per
+// node that either directly produces a set of registers or that is a
+// contained node with register-producing sources. However, these lists
+// are short-lived: they are destroyed once the use of the corresponding
+// node is processed. As such, there is typically only a small number of
+// `LocationInfoListNode` values in use at any given time. Pooling these
+// values avoids otherwise frequent allocations.
+class LocationInfoListNodePool final
+{
+    LocationInfoListNode* m_freeList;
+    Compiler*             m_compiler;
+    static const unsigned defaultPreallocation = 8;
+
+public:
+    // Creates a pool of `LocationInfoListNode` values.
+    LocationInfoListNodePool(Compiler* compiler, unsigned preallocate = defaultPreallocation);
+
+    // Fetches an unused node from the pool.
+    LocationInfoListNode* GetNode(LsraLocation l, Interval* i, GenTree* t, unsigned regIdx = 0);
+
+    // Returns a list of nodes to the pool.
+    void ReturnNodes(LocationInfoList& list);
 };
 
 struct LsraBlockInfo
@@ -622,6 +696,11 @@ public:
     RegMaskIndex GetIndexForRegMask(regMaskTP mask);
     regMaskTP GetRegMaskForIndex(RegMaskIndex index);
     void RemoveRegisterFromMasks(regNumber reg);
+
+    static bool isSingleRegister(regMaskTP regMask)
+    {
+        return (genExactlyOneBit(regMask));
+    }
 
 #ifdef DEBUG
     void dspRegisterMaskTable();
@@ -954,6 +1033,8 @@ private:
 
 #ifdef DEBUG
     void checkLastUses(BasicBlock* block);
+    static int ComputeOperandDstCount(GenTree* operand);
+    static int ComputeAvailableSrcCount(GenTree* node);
 #endif // DEBUG
 
     void setFrameType();
@@ -993,10 +1074,7 @@ private:
 
     void resolveConflictingDefAndUse(Interval* interval, RefPosition* defRefPosition);
 
-    void buildRefPositionsForNode(GenTree*                  tree,
-                                  BasicBlock*               block,
-                                  LocationInfoListNodePool& listNodePool,
-                                  LsraLocation              loc);
+    void buildRefPositionsForNode(GenTree* tree, BasicBlock* block, LsraLocation loc);
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     VARSET_VALRET_TP buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc);
@@ -1053,7 +1131,11 @@ private:
     void freeRegister(RegRecord* physRegRecord);
     void freeRegisters(regMaskTP regsToFree);
 
-    var_types getDefType(GenTree* tree);
+    // Get the type that this tree defines.
+    var_types getDefType(GenTree* tree)
+    {
+        return tree->TypeGet();
+    }
 
     RefPosition* defineNewInternalTemp(GenTree* tree, RegisterType regType, regMaskTP regMask);
 
@@ -1479,18 +1561,26 @@ private:
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
     //-----------------------------------------------------------------------
-    // TreeNodeInfo methods
+    // Build methods
     //-----------------------------------------------------------------------
 
+    // The listNodePool is used to maintain the TreeNodeInfo for nodes that are "in flight"
+    // i.e. whose consuming node has not yet been handled.
+    LocationInfoListNodePool listNodePool;
+
     // The defList is used for the transient TreeNodeInfo that is computed by
-    // the TreeNodeInfoInit methods, and used in building RefPositions.
+    // the Build methods, and used in building RefPositions.
     // When Def RefPositions are built for a node, their NodeInfo is placed
     // in the defList. As the consuming node is handled, it moves the NodeInfo
     // into an ordered useList corresponding to the uses for that node.
     LocationInfoList defList;
-    // The useList is constructed for each node by the TreeNodeInfoInit methods.
+
+    // The useList is constructed for each node by the Build methods.
     // It contains the TreeNodeInfo for its operands, in their order of use.
     LocationInfoList useList;
+
+    // During the build phase, this is the NodeInfo for the current node.
+    TreeNodeInfo* currentNodeInfo;
 
     // Remove the LocationInfoListNode for the given node from the defList, and put it into the useList.
     // The node must not be contained, and must have been processed by buildRefPositionsForNode().
@@ -1545,34 +1635,34 @@ private:
     }
 
     // This is the main entry point for computing the TreeNodeInfo for a node.
-    void TreeNodeInfoInit(GenTree* stmt, TreeNodeInfo* info);
+    void BuildNode(GenTree* stmt);
 
-    void TreeNodeInfoInitCheckByteable(GenTree* tree, TreeNodeInfo* info);
+    void BuildCheckByteable(GenTree* tree);
 
     bool CheckAndSetDelayFree(GenTree* delayUseSrc);
 
-    void TreeNodeInfoInitSimple(GenTree* tree, TreeNodeInfo* info);
+    void BuildSimple(GenTree* tree);
     int GetOperandInfo(GenTree* node);
     int GetOperandInfo(GenTree* node, LocationInfoListNode** pFirstInfo);
     int GetIndirInfo(GenTreeIndir* indirTree);
-    void HandleFloatVarArgs(GenTreeCall* call, TreeNodeInfo* info, GenTree* argNode, bool* callHasFloatRegArgs);
+    void HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs);
 
-    void TreeNodeInfoInitStoreLoc(GenTree* tree, TreeNodeInfo* info);
-    void TreeNodeInfoInitReturn(GenTree* tree, TreeNodeInfo* info);
+    void BuildStoreLoc(GenTree* tree);
+    void BuildReturn(GenTree* tree);
     // This method, unlike the others, returns the number of sources, since it may be called when
     // 'tree' is contained.
-    int TreeNodeInfoInitShiftRotate(GenTree* tree, TreeNodeInfo* info);
-    void TreeNodeInfoInitPutArgReg(GenTreeUnOp* node, TreeNodeInfo* info);
-    void TreeNodeInfoInitCall(GenTreeCall* call, TreeNodeInfo* info);
-    void TreeNodeInfoInitCmp(GenTree* tree, TreeNodeInfo* info);
-    void TreeNodeInfoInitStructArg(GenTree* structArg, TreeNodeInfo* info);
-    void TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode, TreeNodeInfo* info);
-    void TreeNodeInfoInitModDiv(GenTree* tree, TreeNodeInfo* info);
-    void TreeNodeInfoInitIntrinsic(GenTree* tree, TreeNodeInfo* info);
-    void TreeNodeInfoInitStoreLoc(GenTreeLclVarCommon* tree, TreeNodeInfo* info);
-    void TreeNodeInfoInitIndir(GenTreeIndir* indirTree, TreeNodeInfo* info);
-    void TreeNodeInfoInitGCWriteBarrier(GenTree* tree, TreeNodeInfo* info);
-    void TreeNodeInfoInitCast(GenTree* tree, TreeNodeInfo* info);
+    int BuildShiftRotate(GenTree* tree);
+    void BuildPutArgReg(GenTreeUnOp* node);
+    void BuildCall(GenTreeCall* call);
+    void BuildCmp(GenTree* tree);
+    void BuildStructArg(GenTree* structArg);
+    void BuildBlockStore(GenTreeBlk* blkNode);
+    void BuildModDiv(GenTree* tree);
+    void BuildIntrinsic(GenTree* tree);
+    void BuildStoreLoc(GenTreeLclVarCommon* tree);
+    void BuildIndir(GenTreeIndir* indirTree);
+    void BuildGCWriteBarrier(GenTree* tree);
+    void BuildCast(GenTree* tree);
 
 #ifdef _TARGET_X86_
     bool ExcludeNonByteableRegisters(GenTree* tree);
@@ -1581,23 +1671,23 @@ private:
 #if defined(_TARGET_XARCH_)
     // returns true if the tree can use the read-modify-write memory instruction form
     bool isRMWRegOper(GenTree* tree);
-    void TreeNodeInfoInitMul(GenTree* tree, TreeNodeInfo* info);
+    void BuildMul(GenTree* tree);
     void SetContainsAVXFlags(bool isFloatingPointType = true, unsigned sizeOfSIMDVector = 0);
 #endif // defined(_TARGET_XARCH_)
 
 #ifdef FEATURE_SIMD
-    void TreeNodeInfoInitSIMD(GenTreeSIMD* tree, TreeNodeInfo* info);
+    void BuildSIMD(GenTreeSIMD* tree);
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
-    void TreeNodeInfoInitHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, TreeNodeInfo* info);
+    void BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree);
 #endif // FEATURE_HW_INTRINSICS
 
-    void TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode, TreeNodeInfo* info);
+    void BuildPutArgStk(GenTreePutArgStk* argNode);
 #ifdef _TARGET_ARM_
-    void TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* tree, TreeNodeInfo* info);
+    void BuildPutArgSplit(GenTreePutArgSplit* tree);
 #endif
-    void TreeNodeInfoInitLclHeap(GenTree* tree, TreeNodeInfo* info);
+    void BuildLclHeap(GenTree* tree);
 };
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
