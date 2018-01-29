@@ -270,7 +270,7 @@ namespace System.Json.Tests
             {
                 obj.Save(stream);
                 string result = Encoding.UTF8.GetString(stream.ToArray());
-                Assert.Equal("{\"key\", true\"key2\", null}", result);
+                Assert.Equal("{\"key\": true, \"key2\": null}", result);
             }
         }
 
