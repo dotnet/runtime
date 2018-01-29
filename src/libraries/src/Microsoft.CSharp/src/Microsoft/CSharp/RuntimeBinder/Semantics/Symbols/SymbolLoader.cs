@@ -34,21 +34,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GlobalSymbolContext;
         }
 
-        public MethodSymbol LookupInvokeMeth(AggregateSymbol pAggDel)
-        {
-            Debug.Assert(pAggDel.AggKind() == AggKindEnum.Delegate);
-            for (Symbol pSym = LookupAggMember(NameManager.GetPredefinedName(PredefinedName.PN_INVOKE), pAggDel, symbmask_t.MASK_ALL);
-                 pSym != null;
-                 pSym = LookupNextSym(pSym, pAggDel, symbmask_t.MASK_ALL))
-            {
-                if (pSym is MethodSymbol meth && meth.isInvoke())
-                {
-                    return meth;
-                }
-            }
-            return null;
-        }
-
         public PredefinedTypes GetPredefindTypes()
         {
             return GlobalSymbolContext.GetPredefTypes();

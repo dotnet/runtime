@@ -1223,8 +1223,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                     Debug.Assert(_results.UninferableResult.Sym is MethodSymbol);
 
-                    MethWithType mwtCantInfer = new MethWithType();
-                    mwtCantInfer.Set(_results.UninferableResult.Meth(), _results.UninferableResult.GetType());
+                    MethWithType mwtCantInfer = new MethWithType(_results.UninferableResult.Meth(), _results.UninferableResult.GetType());
                     return GetErrorContext().Error(ErrorCode.ERR_CantInferMethTypeArgs, mwtCantInfer);
                 }
 

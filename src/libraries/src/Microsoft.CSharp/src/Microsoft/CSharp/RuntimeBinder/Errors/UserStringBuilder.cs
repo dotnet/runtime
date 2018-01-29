@@ -182,82 +182,92 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 return;
             }
 
-            if (meth.isPropertyAccessor())
+            MethodKindEnum methodKind = meth.MethKind;
+            switch (methodKind)
             {
-                PropertySymbol prop = meth.getProperty();
+                case MethodKindEnum.PropAccessor:
+                    PropertySymbol prop = meth.getProperty();
 
-                // this includes the parent class
-                ErrAppendSym(prop, pctx);
+                    // this includes the parent class
+                    ErrAppendSym(prop, pctx);
 
-                // add accessor name
-                if (prop.GetterMethod == meth)
-                {
-                    ErrAppendString(".get");
-                }
-                else
-                {
-                    Debug.Assert(meth == prop.SetterMethod);
-                    ErrAppendString(".set");
-                }
+                    // add accessor name
+                    if (prop.GetterMethod == meth)
+                    {
+                        ErrAppendString(".get");
+                    }
+                    else
+                    {
+                        Debug.Assert(meth == prop.SetterMethod);
+                        ErrAppendString(".set");
+                    }
 
-                // args already added
-                return;
-            }
+                    // args already added
+                    return;
 
-            if (meth.isEventAccessor())
-            {
-                EventSymbol @event = meth.getEvent();
+                case MethodKindEnum.EventAccessor:
+                    EventSymbol @event = meth.getEvent();
 
-                // this includes the parent class
-                ErrAppendSym(@event, pctx);
+                    // this includes the parent class
+                    ErrAppendSym(@event, pctx);
 
-                // add accessor name
-                if (@event.methAdd == meth)
-                {
-                    ErrAppendString(".add");
-                }
-                else
-                {
-                    Debug.Assert(meth == @event.methRemove);
-                    ErrAppendString(".remove");
-                }
+                    // add accessor name
+                    if (@event.methAdd == meth)
+                    {
+                        ErrAppendString(".add");
+                    }
+                    else
+                    {
+                        Debug.Assert(meth == @event.methRemove);
+                        ErrAppendString(".remove");
+                    }
 
-                // args already added
-                return;
+                    // args already added
+                    return;
             }
 
             ErrAppendParentSym(meth, pctx);
-            if (meth.IsConstructor())
+            switch (methodKind)
             {
-                // Use the name of the parent class instead of the name "<ctor>".
-                ErrAppendName(meth.getClass().name);
-            }
-            else if (meth.IsDestructor())
-            {
-                // Use the name of the parent class instead of the name "Finalize".
-                ErrAppendChar('~');
-                ErrAppendName(meth.getClass().name);
-            }
-            else if (meth.isConversionOperator())
-            {
-                // implicit/explicit
-                ErrAppendString(meth.isImplicit() ? "implicit" : "explicit");
-                ErrAppendString(" operator ");
+                case MethodKindEnum.Constructor:
+                    // Use the name of the parent class instead of the name "<ctor>".
+                    ErrAppendName(meth.getClass().name);
+                    break;
 
-                // destination type name
-                ErrAppendType(meth.RetType, pctx);
-            }
-            else if (meth.isOperator)
-            {
-                // handle user defined operators
-                // map from CLS predefined names to "operator <X>"
-                ErrAppendString("operator ");
-                ErrAppendString(Operators.OperatorOfMethodName(meth.name));
-            }
-            else if (!meth.IsExpImpl())
-            {
-                // regular method
-                ErrAppendName(meth.name);
+                case MethodKindEnum.Destructor:
+                    // Use the name of the parent class instead of the name "Finalize".
+                    ErrAppendChar('~');
+                    goto case MethodKindEnum.Constructor;
+
+                case MethodKindEnum.ExplicitConv:
+                    ErrAppendString("explicit");
+                    goto convOperatorName;
+
+                case MethodKindEnum.ImplicitConv:
+                    ErrAppendString("implicit");
+
+                convOperatorName:
+                    ErrAppendString(" operator ");
+
+                    // destination type name
+                    ErrAppendType(meth.RetType, pctx);
+                    break;
+
+                default:
+                    if (meth.isOperator)
+                    {
+                        // handle user defined operators
+                        // map from CLS predefined names to "operator <X>"
+                        ErrAppendString("operator ");
+                        ErrAppendString(Operators.OperatorOfMethodName(meth.name));
+                    }
+                    else if (!meth.IsExpImpl())
+                    {
+                        // regular method
+                        ErrAppendName(meth.name);
+                    }
+
+                    break;
             }
 
             ErrAppendTypeParameters(meth.typeVars, pctx, false);
@@ -266,9 +276,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             {
                 // append argument types
                 ErrAppendChar('(');
-
                 ErrAppendParamList(GetTypeManager().SubstTypeArray(meth.Params, pctx), meth.isParamArray);
-
                 ErrAppendChar(')');
             }
         }

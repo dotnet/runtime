@@ -21,10 +21,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return _exprFactory;
         }
-        private ErrorHandling GetErrorContext()
-        {
-            return _pErrorContext;
-        }
 
         private static bool IsNullableConstructor(Expr expr, out ExprCall call)
         {

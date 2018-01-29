@@ -762,11 +762,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 return _binder.GetSymbolLoader();
             }
-
-            private ExprFactory GetExprFactory()
-            {
-                return _binder.GetExprFactory();
-            }
         }
     }
 }

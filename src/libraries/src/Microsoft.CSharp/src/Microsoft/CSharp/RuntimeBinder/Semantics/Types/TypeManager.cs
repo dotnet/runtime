@@ -564,38 +564,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        public static bool ParametersContainTyVar(TypeArray @params, TypeParameterType typeFind)
-        {
-            Debug.Assert(@params != null);
-            Debug.Assert(typeFind != null);
-            for (int p = 0; p < @params.Count; p++)
-            {
-                CType sym = @params[p];
-                if (TypeContainsType(sym, typeFind))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         public AggregateSymbol GetPredefAgg(PredefinedType pt) => _predefTypes.GetPredefinedAggregate(pt);
 
         public TypeArray ConcatenateTypeArrays(TypeArray pTypeArray1, TypeArray pTypeArray2)
         {
             return _BSymmgr.ConcatParams(pTypeArray1, pTypeArray2);
-        }
-
-        public TypeArray GetStdMethTyVarArray(int cTyVars)
-        {
-            TypeParameterType[] prgvar = new TypeParameterType[cTyVars];
-
-            for (int ivar = 0; ivar < cTyVars; ivar++)
-            {
-                prgvar[ivar] = GetStdMethTypeVar(ivar);
-            }
-
-            return _BSymmgr.AllocParams(cTyVars, (CType[])prgvar);
         }
 
         public AggregateType SubstType(AggregateType typeSrc, SubstContext ctx) =>
