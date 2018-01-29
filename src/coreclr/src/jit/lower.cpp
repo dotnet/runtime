@@ -2666,7 +2666,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
     ssize_t        op2Value = op2->IconValue();
 
 #ifdef _TARGET_XARCH_
-    if (IsContainableMemoryOp(op1) && varTypeIsSmall(op1Type) && genTypeCanRepresentValue(op1Type, op2Value))
+    if (IsContainableMemoryOp(op1) && varTypeIsSmall(op1Type) && genSmallTypeCanRepresentValue(op1Type, op2Value))
     {
         //
         // If op1's type is small then try to narrow op2 so it has the same type as op1.
