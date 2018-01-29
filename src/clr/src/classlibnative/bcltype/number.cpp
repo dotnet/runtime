@@ -13,6 +13,8 @@
 #include "string.h"
 #include "decimal.h"
 #include "bignum.h"
+#include "grisu3.h"
+#include "fp.h"
 #include <stdlib.h>
 
 typedef wchar_t wchar;
@@ -28,32 +30,6 @@ typedef wchar_t wchar;
 
 #define SCALE_NAN 0x80000000
 #define SCALE_INF 0x7FFFFFFF
-
-struct FPSINGLE {
-#if BIGENDIAN
-    unsigned int sign: 1;
-    unsigned int exp: 8;
-    unsigned int mant: 23;
-#else
-    unsigned int mant: 23;
-    unsigned int exp: 8;
-    unsigned int sign: 1;
-#endif
-};
-
-struct FPDOUBLE {
-#if BIGENDIAN
-    unsigned int sign: 1;
-    unsigned int exp: 11;
-    unsigned int mantHi: 20;
-    unsigned int mantLo;
-#else
-    unsigned int mantLo;
-    unsigned int mantHi: 20;
-    unsigned int exp: 11;
-    unsigned int sign: 1;
-#endif
-};
 
 
 static const char* const posCurrencyFormats[] = {
@@ -117,11 +93,7 @@ L2:             dec     ecx
 
 #else // _TARGET_X86_ && !FEATURE_PAL
 
-// Convert a double value to a NUMBER struct.
-// 
-// 1. You should ensure the input value is not infinity or NaN.
-// 2. For 0.0, number->digits will be set as an empty string. i.e the value of the first bucket is 0.
-void DoubleToNumberWorker( double value, int count, int* dec, int* sign, wchar_t* digits )
+void Dragon4( double value, int count, int* dec, int* sign, wchar_t* digits )
 {
     // ========================================================================================================================================
     // This implementation is based on the paper: https://www.cs.indiana.edu/~dyb/pubs/FP-Printing-PLDI96.pdf
@@ -142,52 +114,21 @@ void DoubleToNumberWorker( double value, int count, int* dec, int* sign, wchar_t
     // s: denominator.
     // k: value = d0.d1d2 . . . dn * 10^k
 
-    _ASSERTE(dec != nullptr && sign != nullptr && digits != nullptr);
-
-    // The caller of DoubleToNumberWorker should already checked the Infinity and NAN values.
-    _ASSERTE(((FPDOUBLE*)&value)->exp != 0x7ff);
-
-    // Shortcut for zero.
-    if (value == 0.0)
-    {
-        *dec = 0;
-        *sign = 0;
-
-        // Instead of zeroing digits, we just make it as an empty string due to performance reason.
-        *digits = 0;
-
-        return;
-    } 
-
     // Step 1:
     // Extract meta data from the input double value.
     //
     // Refer to IEEE double precision floating point format.
     UINT64 f = 0;
     int e = 0;
+    ExtractFractionAndBiasedExponent(value, &f, &e);
+
     UINT32 mantissaHighBitIdx = 0;
     if (((FPDOUBLE*)&value)->exp != 0)
     {
-        // For normalized value, according to https://en.wikipedia.org/wiki/Double-precision_floating-point_format
-        // value = 1.fraction * 2^(exp - 1023) 
-        //       = (1 + mantissa / 2^52) * 2^(exp - 1023) 
-        //       = (2^52 + mantissa) * 2^(exp - 1023 - 52)
-        //
-        // So f = (2^52 + mantissa), e = exp - 1075; 
-        f = ((UINT64)(((FPDOUBLE*)&value)->mantHi) << 32) | ((FPDOUBLE*)&value)->mantLo + ((UINT64)1 << 52);
-        e = ((FPDOUBLE*)&value)->exp - 1075;
         mantissaHighBitIdx = 52;
     }
     else
     {
-        // For denormalized value, according to https://en.wikipedia.org/wiki/Double-precision_floating-point_format
-        // value = 0.fraction * 2^(1 - 1023)
-        //       = (mantissa / 2^52) * 2^(-1022)
-        //       = mantissa * 2^(-1022 - 52)
-        //       = mantissa * 2^(-1074)
-        // So f = mantissa, e = -1074
-        f = ((UINT64)(((FPDOUBLE*)&value)->mantHi) << 32) | ((FPDOUBLE*)&value)->mantLo;
-        e = -1074;
         mantissaHighBitIdx = BigNum::LogBase2(f);
     }
 
@@ -398,6 +339,39 @@ void DoubleToNumberWorker( double value, int count, int* dec, int* sign, wchar_t
 
     ++*dec;
     *sign = ((FPDOUBLE*)&value)->sign;
+}
+
+// Convert a double value to a NUMBER struct.
+//
+// 1. You should ensure the input value is not infinity or NaN.
+// 2. For 0.0, number->digits will be set as an empty string. i.e the value of the first bucket is 0.
+void DoubleToNumberWorker( double value, int count, int* dec, int* sign, wchar_t* digits )
+{
+    _ASSERTE(dec != nullptr && sign != nullptr && digits != nullptr);
+
+    // The caller of DoubleToNumberWorker should already checked the Infinity and NAN values.
+    _ASSERTE(((FPDOUBLE*)&value)->exp != 0x7ff);
+
+    // Shortcut for zero.
+    if (value == 0.0)
+    {
+        *dec = 0;
+        *sign = 0;
+
+        // Instead of zeroing digits, we just make it as an empty string due to performance reason.
+        *digits = 0;
+
+        return;
+    }
+
+    // Try Grisu3 first.
+    if (Grisu3::Run(value, count, dec, sign, digits))
+    {
+        return;
+    }
+
+    // Grisu3 failed, fall back to Dragon4.
+    Dragon4(value, count, dec, sign, digits);
 }
 
 void DoubleToNumber(double value, int precision, NUMBER* number)
