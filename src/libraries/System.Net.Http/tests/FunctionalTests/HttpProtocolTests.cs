@@ -275,8 +275,20 @@ namespace System.Net.Http.Functional.Tests
             // Full framework reports 1.0 or 1.1, depending on minor version, instead of throwing
             bool reportAs1X = PlatformDetection.IsFullFramework;
 
-            // CurlHandler reports this as 0.0, instead of throwing.
-            bool reportAs00 = (!PlatformDetection.IsWindows && !UseManagedHandler);
+            // CurlHandler reports these as 0.0, except for 2.0 which is reported as 2.0, instead of throwing.
+            bool reportAs00 = false;
+            bool reportAs20 = false;
+            if (!PlatformDetection.IsWindows && !UseManagedHandler)
+            {
+                if (responseMajorVersion == 2 && responseMinorVersion == 0)
+                {
+                    reportAs20 = true;
+                }
+                else
+                {
+                    reportAs00 = true;
+                }
+            }
 
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
@@ -298,6 +310,16 @@ namespace System.Net.Http.Functional.Tests
                         using (HttpResponseMessage response = await getResponseTask)
                         {
                             Assert.Equal(0, response.Version.Major);
+                            Assert.Equal(0, response.Version.Minor);
+                        }
+                    }
+                    else if (reportAs20)
+                    {
+                        await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
+
+                        using (HttpResponseMessage response = await getResponseTask)
+                        {
+                            Assert.Equal(2, response.Version.Major);
                             Assert.Equal(0, response.Version.Minor);
                         }
                     }
