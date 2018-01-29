@@ -145,13 +145,6 @@ void GCToOSInterface::DebugBreak()
     ::DebugBreak();
 }
 
-// Get number of logical processors
-uint32_t GCToOSInterface::GetLogicalCpuCount()
-{
-    LIMITED_METHOD_CONTRACT;
-    return ::GetLogicalCpuCount();
-}
-
 // Causes the calling thread to sleep for the specified number of milliseconds
 // Parameters:
 //  sleepMSec   - time to sleep before switching to another thread
@@ -322,11 +315,11 @@ bool GCToOSInterface::GetWriteWatch(bool resetState, void* address, size_t size,
 //             the processor architecture
 // Return:
 //  Size of the cache
-size_t GCToOSInterface::GetLargestOnDieCacheSize(bool trueSize)
+size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 {
     LIMITED_METHOD_CONTRACT;
 
-    return ::GetLargestOnDieCacheSize(trueSize);
+    return ::GetCacheSizePerLogicalCpu(trueSize);
 }
 
 // Sets the calling thread's affinity to only run on the processor specified

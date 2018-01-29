@@ -477,7 +477,6 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM)
     )
 elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
     set(VM_SOURCES_DAC_AND_WKS_ARCH
-        ${ARCH_SOURCES_DIR}/cgenarm64.cpp
         ${ARCH_SOURCES_DIR}/stubs.cpp
         exceptionhandling.cpp
         gcinfodecoder.cpp

@@ -228,13 +228,6 @@ void GCToOSInterface::DebugBreak()
     ::DebugBreak();
 }
 
-// Get number of logical processors
-uint32_t GCToOSInterface::GetLogicalCpuCount()
-{
-    // TODO(segilles) processor detection
-    return 1;
-}
-
 // Causes the calling thread to sleep for the specified number of milliseconds
 // Parameters:
 //  sleepMSec   - time to sleep before switching to another thread
@@ -381,7 +374,7 @@ bool GCToOSInterface::GetWriteWatch(bool resetState, void* address, size_t size,
 //             the processor architecture
 // Return:
 //  Size of the cache
-size_t GCToOSInterface::GetLargestOnDieCacheSize(bool trueSize)
+size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 {
     // TODO(segilles) processor detection (see src/vm/util.cpp:1935)
     return 0;

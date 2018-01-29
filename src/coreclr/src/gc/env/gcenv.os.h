@@ -282,16 +282,13 @@ public:
     // Processor topology
     //
 
-    // Get number of logical processors
-    static uint32_t GetLogicalCpuCount();
-
-    // Get size of the largest cache on the processor die
+    // Get size of the on die cache per logical processor
     // Parameters:
     //  trueSize - true to return true cache size, false to return scaled up size based on
     //             the processor architecture
     // Return:
     //  Size of the cache
-    static size_t GetLargestOnDieCacheSize(bool trueSize = true);
+    static size_t GetCacheSizePerLogicalCpu(bool trueSize = true);
 
     // Get number of processors assigned to the current process
     // Return:
