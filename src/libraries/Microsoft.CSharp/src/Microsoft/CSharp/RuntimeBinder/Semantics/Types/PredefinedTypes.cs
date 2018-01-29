@@ -59,8 +59,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public static string GetNiceName(AggregateSymbol type) =>
             type.IsPredefined() ? GetNiceName(type.GetPredefType()) : null;
-
-        public static string GetFullName(PredefinedType pt) => PredefinedTypeFacts.GetName(pt);
     }
 
     internal static class PredefinedTypeFacts

@@ -50,7 +50,5 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         internal static Exception DynamicArgumentNeedsValue(string paramName) =>
             new ArgumentException(SR.DynamicArgumentNeedsValue, paramName);
-
-        internal static Exception BindingNameCollision() => new RuntimeBinderException(SR.BindingNameCollision);
     }
 }

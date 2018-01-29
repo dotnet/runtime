@@ -268,9 +268,6 @@
   <data name="DynamicArgumentNeedsValue" xml:space="preserve">
     <value>The runtime binder cannot bind a metaobject without a value</value>
   </data>
-  <data name="BindingNameCollision" xml:space="preserve">
-    <value>More than one type in the binding has the same full name.</value>
-  </data>
   <data name="BadNonTrailingNamedArgument" xml:space="preserve">
     <value>Named argument '{0}' is used out-of-position but is followed by an unnamed argument</value>
   </data>

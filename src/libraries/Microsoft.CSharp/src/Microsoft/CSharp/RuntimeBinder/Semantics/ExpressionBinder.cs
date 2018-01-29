@@ -12,11 +12,18 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     // Used by bindUserDefinedConversion
-    internal sealed class UdConvInfo
+    internal readonly struct UdConvInfo
     {
-        public MethWithType mwt;
-        public bool fSrcImplicit;
-        public bool fDstImplicit;
+        public readonly MethWithType Meth;
+        public readonly bool SrcImplicit;
+        public readonly bool DstImplicit;
+
+        public UdConvInfo(MethWithType mwt, bool srcImplicit, bool dstImplicit)
+        {
+            Meth = mwt;
+            SrcImplicit = srcImplicit;
+            DstImplicit = dstImplicit;
+        }
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////
@@ -1052,30 +1059,19 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private void PostBindProperty(PropWithType pwt, Expr pObject, out MethWithType pmwtGet, out MethWithType pmwtSet)
         {
-            pmwtGet = new MethWithType();
-            pmwtSet = new MethWithType();
+            PropertySymbol prop = pwt.Prop();
+            Debug.Assert(prop != null);
             // Get the accessors.
-            if (pwt.Prop().GetterMethod != null)
-            {
-                pmwtGet.Set(pwt.Prop().GetterMethod, pwt.GetType());
-            }
-            else
-            {
-                pmwtGet.Clear();
-            }
+            pmwtGet = prop.GetterMethod != null
+                ? new MethWithType(prop.GetterMethod, pwt.GetType())
+                : new MethWithType();
+            pmwtSet = prop.SetterMethod != null
+                ? new MethWithType(prop.SetterMethod, pwt.GetType())
+                : new MethWithType();
 
-            if (pwt.Prop().SetterMethod != null)
+            if (prop.RetType != null)
             {
-                pmwtSet.Set(pwt.Prop().SetterMethod, pwt.GetType());
-            }
-            else
-            {
-                pmwtSet.Clear();
-            }
-
-            if (pwt.Prop().RetType != null)
-            {
-                checkUnsafe(pwt.Prop().RetType);
+                checkUnsafe(prop.RetType);
             }
         }
 
@@ -1566,10 +1562,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             foreach (UdConvInfo conv in convTable)
             {
-                if (conv.mwt.Meth() == meth &&
-                    conv.mwt.GetType() == ats &&
-                    conv.fSrcImplicit == fSrc &&
-                    conv.fDstImplicit == fDst)
+                if (conv.Meth.Meth() == meth &&
+                    conv.Meth.GetType() == ats &&
+                    conv.SrcImplicit == fSrc &&
+                    conv.DstImplicit == fDst)
                 {
                     return true;
                 }
