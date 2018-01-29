@@ -116,6 +116,22 @@ namespace Internal.Cryptography.Pal
                 throw new CryptographicException(SR.Cryptography_X509_StoreReadOnly);
             }
 
+            try
+            {
+                AddCertToStore(certPal);
+            }
+            catch (CryptographicException)
+            {
+                throw;
+            }
+            catch (Exception e)
+            {
+                throw new CryptographicException(SR.Cryptography_X509_StoreAddFailure, e);
+            }
+        }
+
+        private void AddCertToStore(ICertificatePal certPal)
+        {
             // This may well be the first time that we've added something to this store.
             Directory.CreateDirectory(_storePath);
 

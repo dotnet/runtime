@@ -235,6 +235,9 @@
   <data name="Cryptography_X509_PKCS7_NoSigner" xml:space="preserve">
     <value>Cannot find the original signer.</value>
   </data>
+  <data name="Cryptography_X509_StoreAddFailure" xml:space="preserve">
+    <value>The X509 certificate could not be added to the store.</value>
+  </data>
   <data name="Cryptography_X509_StoreNoFileAvailable" xml:space="preserve">
     <value>The X509 certificate could not be added to the store because all candidate file names were in use.</value>
   </data>
