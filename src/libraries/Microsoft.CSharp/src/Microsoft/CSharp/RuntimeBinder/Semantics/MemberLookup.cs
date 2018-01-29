@@ -163,15 +163,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 if (methProp != null && (_flags & MemLookFlags.UserCallable) != 0 && !methProp.isUserCallable())
                 {
                     // If its an indexed property method symbol, let it through.
-                    if (meth != null &&
-                        meth.isPropertyAccessor() &&
-                        ((symCur.name.Text.StartsWith("set_", StringComparison.Ordinal) && meth.Params.Count > 1) ||
-                        (symCur.name.Text.StartsWith("get_", StringComparison.Ordinal) && meth.Params.Count > 0)))
+                    // This is too liberal, but maintained for compatibility.
+                    if (meth == null ||
+                        !meth.isPropertyAccessor() ||
+                        (!symCur.name.Text.StartsWith("set_", StringComparison.Ordinal) || meth.Params.Count <= 1) &&
+                        (!symCur.name.Text.StartsWith("get_", StringComparison.Ordinal) || meth.Params.Count <= 0))
                     {
                         if (!_swtInaccess)
                         {
                             _swtInaccess.Set(symCur, typeCur);
                         }
+
                         continue;
                     }
                 }
