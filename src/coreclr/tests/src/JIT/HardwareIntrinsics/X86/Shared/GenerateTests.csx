@@ -5,8 +5,18 @@
 using System;
 using System.IO;
 
-// NOTE: This file isn't very robust and makes several assumptions.
-//       It must be run such that its own directory is the working directory.
+// DIRECTIONS:
+//    This file isn't very robust and makes several assumptions
+//    You can execute it by calling "csi .\GenerateTests.csx"
+//
+//    csi can be found under the <repo-root>\tools\net46\roslyn directory
+//    It must be run such from the directory that contains the csx script
+//
+//    New tests can be generated from the template by adding an entry to the
+//    appropriate <Isa>Inputs array below.
+//
+//    You can support a new Isa by creating a new array and adding a new
+//    "ProcessInputs" call at the bottom of the script.
 
 private static readonly (string templateFileName, string[] templateData)[] SseInputs = new []
 {                                                                        
