@@ -256,8 +256,6 @@ namespace System.Drawing.Printing.Tests
                     break;
             }
 
-            Assert.False(pageSettings.Landscape);
-            Assert.Equal(PaperSourceKind.FormSource, pageSettings.PaperSource.Kind);
             Assert.Equal(PrinterResolutionKind.Custom, pageSettings.PrinterResolution.Kind);
             Assert.True(pageSettings.PrinterSettings.IsDefaultPrinter);
         }
