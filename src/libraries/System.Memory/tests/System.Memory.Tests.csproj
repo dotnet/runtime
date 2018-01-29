@@ -4,9 +4,19 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ProjectGuid>{15DB0DCC-68B4-4CFB-8BD2-F26BCCAF5A3F}</ProjectGuid>
+    <IncludePartialFacadeTests Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'">true</IncludePartialFacadeTests>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(IncludePartialFacadeTests)' == 'true'">
+    <!-- Tests specific to the fast span -->
+    <Compile Include="MemoryMarshal\CreateSpan.cs" />
+    <Compile Include="MemoryMarshal\CreateReadOnlySpan.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="AllocationHelper.cs" />
     <Compile Include="TInt.cs" />
@@ -22,7 +32,6 @@
     <Compile Include="Span\CtorArray.cs" />
     <Compile Include="Span\CtorArrayIntInt.cs" />
     <Compile Include="Span\CtorPointerInt.cs" />
-    <Compile Include="Span\DangerousCreate.cs" />
     <Compile Include="Span\Empty.cs" />
     <Compile Include="Span\EndsWith.byte.cs" />
     <Compile Include="Span\EndsWith.T.cs" />
@@ -47,7 +56,6 @@
     <Compile Include="Span\LastIndexOfSequence.T.cs" />
     <Compile Include="Span\LastIndexOfSequence.byte.cs" />
     <Compile Include="Span\LastIndexOfSequence.char.cs" />
-    <Compile Include="Span\NonPortableCast.cs" />
     <Compile Include="Span\Overflow.cs" />
     <Compile Include="Span\Reverse.cs" />
     <Compile Include="Span\SequenceCompareTo.T.cs" />
@@ -68,7 +76,6 @@
     <Compile Include="ReadOnlySpan\CtorArray.cs" />
     <Compile Include="ReadOnlySpan\CtorArrayIntInt.cs" />
     <Compile Include="ReadOnlySpan\CtorPointerInt.cs" />
-    <Compile Include="ReadOnlySpan\DangerousCreate.cs" />
     <Compile Include="ReadOnlySpan\Empty.cs" />
     <Compile Include="ReadOnlySpan\EndsWith.byte.cs" />
     <Compile Include="ReadOnlySpan\EndsWith.T.cs" />
@@ -93,7 +100,6 @@
     <Compile Include="ReadOnlySpan\LastIndexOfSequence.T.cs" />
     <Compile Include="ReadOnlySpan\LastIndexOfSequence.byte.cs" />
     <Compile Include="ReadOnlySpan\LastIndexOfSequence.char.cs" />
-    <Compile Include="ReadOnlySpan\NonPortableCast.cs" />
     <Compile Include="ReadOnlySpan\Overflow.cs" />
     <Compile Include="ReadOnlySpan\Overlaps.cs" />
     <Compile Include="ReadOnlySpan\SequenceEqual.T.cs" />
@@ -127,8 +133,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="MemoryMarshal\AsMemory.cs" />
+    <Compile Include="MemoryMarshal\CastReadOnlySpan.cs" />
+    <Compile Include="MemoryMarshal\CastSpan.cs" />
     <Compile Include="MemoryMarshal\GetReference.cs" />
     <Compile Include="MemoryMarshal\TryGetArray.cs" />
+    <Compile Include="MemoryMarshal\ToEnumerable.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="MemoryPool\MemoryPool.cs" />

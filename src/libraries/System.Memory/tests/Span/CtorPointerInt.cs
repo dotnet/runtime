@@ -64,13 +64,13 @@ namespace System.SpanTests
             }
         }
 
-        private struct StructWithReferences
+        internal struct StructWithReferences
         {
             public int I;
             public InnerStruct Inner;
         }
 
-        private struct InnerStruct
+        internal struct InnerStruct
         {
             public int J;
             public object O;

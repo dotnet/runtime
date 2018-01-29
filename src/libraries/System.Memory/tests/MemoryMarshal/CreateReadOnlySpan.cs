@@ -10,10 +10,10 @@ using static System.TestHelpers;
 
 namespace System.SpanTests
 {
-    public static partial class ReadOnlySpanTests
+    public static partial class MemoryMarshalTests
     {
         [Fact]
-        public static void DangerousCreate1()
+        public static void CreateReadOnlySpan()
         {
             TestClass testClass = new TestClass
             {
@@ -23,11 +23,21 @@ namespace System.SpanTests
                 C3 = 'd',
                 C4 = 'e'
             };
-            ReadOnlySpan<char> span = ReadOnlySpan<char>.DangerousCreate(testClass, ref testClass.C1, 3);
+            ReadOnlySpan<char> span = MemoryMarshal.CreateReadOnlySpan<char>(ref testClass.C1, 3);
             span.Validate('b', 'c', 'd');
 
             ref char pc1 = ref Unsafe.AsRef(in MemoryMarshal.GetReference(span));
             Assert.True(Unsafe.AreSame(ref testClass.C1, ref pc1));
+        }
+
+        [Fact]
+        public static void ReadOnlySpanGetReferencePointerCreateReadOnlySpan()
+        {
+            TestClass testClass = new TestClass();
+            ReadOnlySpan<char> span = MemoryMarshal.CreateReadOnlySpan<char>(ref testClass.C1, 3);
+
+            ref char pinnableReference = ref Unsafe.AsRef(in MemoryMarshal.GetReference(span));
+            Assert.True(Unsafe.AreSame(ref testClass.C1, ref pinnableReference));
         }
     }
 }

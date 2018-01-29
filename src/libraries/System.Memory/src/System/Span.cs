@@ -95,24 +95,6 @@ namespace System
             _byteOffset = new IntPtr(pointer);
         }
 
-        /// <summary>
-        /// Create a new span over a portion of a regular managed object. This can be useful
-        /// if part of a managed object represents a "fixed array." This is dangerous because neither the
-        /// <paramref name="length"/> is checked, nor <paramref name="obj"/> being null, nor the fact that
-        /// "rawPointer" actually lies within <paramref name="obj"/>.
-        /// </summary>
-        /// <param name="obj">The managed object that contains the data to span over.</param>
-        /// <param name="objectData">A reference to data within that object.</param>
-        /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public static Span<T> DangerousCreate(object obj, ref T objectData, int length)
-        {
-            Pinnable<T> pinnable = Unsafe.As<Pinnable<T>>(obj);
-            IntPtr byteOffset = Unsafe.ByteOffset<T>(ref pinnable.Data, ref objectData);
-            return new Span<T>(pinnable, byteOffset, length);
-        }
-
         // Constructor for internal use only.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal Span(Pinnable<T> pinnable, IntPtr byteOffset, int length)
@@ -124,8 +106,8 @@ namespace System
             _byteOffset = byteOffset;
         }
 
-        //Debugger Display = {T[length]}
-        private string DebuggerDisplay => string.Format("{{{0}[{1}]}}", typeof(T).Name, _length);
+        //Debugger Display = System.Span<T>[length]
+        private string DebuggerDisplay => string.Format("System.Span<{0}>[{1}]", typeof(T).Name, _length);
 
         /// <summary>
         /// The number of items in the span.
@@ -345,6 +327,12 @@ namespace System
         {
             throw new NotSupportedException(SR.CannotCallGetHashCodeOnSpan);
         }
+
+        /// <summary>
+        /// Returns a <see cref="String"/> with the name of the type and the number of elements
+        /// </summary>
+        /// <returns>A <see cref="String"/> with the name of the type and the number of elements</returns>
+        public override string ToString() => string.Format("System.Span<{0}>[{1}]", typeof(T).Name, Length);
 
         /// <summary>
         /// Defines an implicit conversion of an array to a <see cref="Span{T}"/>
