@@ -514,7 +514,7 @@ inline regNumber genRegNumFromMask(regMaskTP mask)
 }
 
 //------------------------------------------------------------------------------
-// genTypeCanRepresentValue: Checks if a value can be represented by a given type.
+// genSmallTypeCanRepresentValue: Checks if a value can be represented by a given small type.
 //
 // Arguments:
 //    value - the value to check
@@ -522,13 +522,8 @@ inline regNumber genRegNumFromMask(regMaskTP mask)
 //
 // Return Value:
 //    True if the value is representable, false otherwise.
-//
-// Notes:
-//    If the type is not integral or ref like (ref/byref/array) then false is
-//    always returned.
 
-template <typename TValue>
-inline bool genTypeCanRepresentValue(var_types type, TValue value)
+inline bool genSmallTypeCanRepresentValue(var_types type, ssize_t value)
 {
     switch (type)
     {
@@ -541,19 +536,8 @@ inline bool genTypeCanRepresentValue(var_types type, TValue value)
             return FitsIn<UINT16>(value);
         case TYP_SHORT:
             return FitsIn<INT16>(value);
-        case TYP_UINT:
-            return FitsIn<UINT32>(value);
-        case TYP_INT:
-            return FitsIn<INT32>(value);
-        case TYP_ULONG:
-            return FitsIn<UINT64>(value);
-        case TYP_LONG:
-            return FitsIn<INT64>(value);
-        case TYP_REF:
-        case TYP_BYREF:
-            return FitsIn<UINT_PTR>(value);
         default:
-            return false;
+            unreached();
     }
 }
 
