@@ -28,5 +28,8 @@ enum StatusCode
     AppArgNotRunnable           = 0x80008094,
     AppHostExeNotBoundFailure   = 0x80008095,
     FrameworkMissingFailure     = 0x80008096,
+    HostApiFailed               = 0x80008097,
+    HostApiBufferTooSmall       = 0x80008098,
+    LibHostUnknownCommand       = 0x80008099,
 };
 #endif // __ERROR_CODES_H__
