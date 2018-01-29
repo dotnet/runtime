@@ -131,8 +131,8 @@ namespace System
             _length = length;
         }
 
-        //Debugger Display = {T[length]}
-        private string DebuggerDisplay => string.Format("{{{0}[{1}]}}", typeof(T).Name, _length);
+        //Debugger Display = System.Span<T>[length]
+        private string DebuggerDisplay => string.Format("System.Span<{0}>[{1}]", typeof(T).Name, _length);
 
         /// <summary>
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to the location where the 0th element
@@ -355,7 +355,7 @@ namespace System
         /// <summary>
         /// Returns a <see cref="String"/> with the name of the type and the number of elements
         /// </summary>
-        public override string ToString() => "System.Span[" + Length.ToString() + "]";
+        public override string ToString() => string.Format("System.Span<{0}>[{1}]", typeof(T).Name, Length);
 
         /// <summary>
         /// Defines an implicit conversion of an array to a <see cref="Span{T}"/>
