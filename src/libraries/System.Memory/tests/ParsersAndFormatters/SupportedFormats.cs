@@ -33,7 +33,7 @@ namespace System.Buffers.Text.Tests
         //
         public static bool IsParsingImplemented(this SupportedFormat f, Type t)
         {
-            if (IntegerTypes.Contains(t) && (f.Symbol == 'N' || f.Symbol == 'n'))
+            if (IntegerTypes.Contains(t) && t != typeof(int) && (f.Symbol == 'N' || f.Symbol == 'n'))
                 return false;
 
             return true;
