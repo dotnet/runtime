@@ -14,11 +14,19 @@ enum NamedIntrinsic : unsigned int
     NI_MathF_Round                                             = 2,
     NI_Math_Round                                              = 3,
     NI_System_Collections_Generic_EqualityComparer_get_Default = 4,
-#if FEATURE_HW_INTRINSICS
+#ifdef FEATURE_HW_INTRINSICS
     NI_HW_INTRINSIC_START,
+#if defined(_TARGET_XARCH_)
 #define HARDWARE_INTRINSIC(id, name, isa, ival, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
     NI_##id,
 #include "hwintrinsiclistxarch.h"
+#elif defined(_TARGET_ARM64_)
+    NI_ARM64_IsSupported_False,
+    NI_ARM64_IsSupported_True,
+    NI_ARM64_PlatformNotSupported,
+#define HARDWARE_INTRINSIC(id, isa, name, form, ins0, ins1, ins2, flags) id,
+#include "hwintrinsiclistArm64.h"
+#endif // !defined(_TARGET_XARCH_) && !defined(_TARGET_ARM64_)
     NI_HW_INTRINSIC_END
 #endif
 };

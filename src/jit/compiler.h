@@ -1507,6 +1507,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
+struct HWIntrinsicInfo;
+
 class Compiler
 {
     friend class emitter;
@@ -3042,12 +3044,12 @@ protected:
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
 
 #ifdef FEATURE_HW_INTRINSICS
+#ifdef _TARGET_XARCH_
     static InstructionSet lookupHWIntrinsicISA(const char* className);
     static NamedIntrinsic lookupHWIntrinsic(const char* methodName, InstructionSet isa);
     static InstructionSet isaOfHWIntrinsic(NamedIntrinsic intrinsic);
     static bool isIntrinsicAnIsSupportedPropertyGetter(NamedIntrinsic intrinsic);
     static bool isFullyImplmentedISAClass(InstructionSet isa);
-#ifdef _TARGET_XARCH_
     GenTree* impUnsupportedHWIntrinsic(unsigned              helper,
                                        CORINFO_METHOD_HANDLE method,
                                        CORINFO_SIG_INFO*     sig,
@@ -3126,6 +3128,19 @@ protected:
     GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass);
     GenTreeArgList* buildArgList(CORINFO_SIG_INFO* sig);
 #endif // _TARGET_XARCH_
+#ifdef _TARGET_ARM64_
+    InstructionSet lookupHWIntrinsicISA(const char* className);
+    NamedIntrinsic lookupHWIntrinsic(const char* className, const char* methodName);
+    GenTree* impHWIntrinsic(NamedIntrinsic        intrinsic,
+                            CORINFO_METHOD_HANDLE method,
+                            CORINFO_SIG_INFO*     sig,
+                            bool                  mustExpand);
+    GenTree* impUnsupportedHWIntrinsic(unsigned              helper,
+                                       CORINFO_METHOD_HANDLE method,
+                                       CORINFO_SIG_INFO*     sig,
+                                       bool                  mustExpand);
+    const HWIntrinsicInfo& getHWIntrinsicInfo(NamedIntrinsic);
+#endif // _TARGET_ARM64_
 #endif // FEATURE_HW_INTRINSICS
     GenTreePtr impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
                                        CORINFO_SIG_INFO*    sig,
@@ -7478,15 +7493,12 @@ private:
 #ifdef FEATURE_HW_INTRINSICS
 #if defined(_TARGET_ARM64_)
     CORINFO_CLASS_HANDLE Vector64FloatHandle;
-    CORINFO_CLASS_HANDLE Vector64DoubleHandle;
-    CORINFO_CLASS_HANDLE Vector64IntHandle;
+    CORINFO_CLASS_HANDLE Vector64UIntHandle;
     CORINFO_CLASS_HANDLE Vector64UShortHandle;
     CORINFO_CLASS_HANDLE Vector64UByteHandle;
     CORINFO_CLASS_HANDLE Vector64ShortHandle;
     CORINFO_CLASS_HANDLE Vector64ByteHandle;
-    CORINFO_CLASS_HANDLE Vector64LongHandle;
-    CORINFO_CLASS_HANDLE Vector64UIntHandle;
-    CORINFO_CLASS_HANDLE Vector64ULongHandle;
+    CORINFO_CLASS_HANDLE Vector64IntHandle;
 #endif // defined(_TARGET_ARM64_)
     CORINFO_CLASS_HANDLE Vector128FloatHandle;
     CORINFO_CLASS_HANDLE Vector128DoubleHandle;
