@@ -32,6 +32,15 @@ struct Passwd
 extern "C" int32_t SystemNative_GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, int32_t buflen);
 
 /**
+* Gets a password structure for the given user name.
+* Implemented as shim to getpwnam_r(3).
+*
+* Returns 0 for success, -1 if no entry found, positive error
+* number for any other failure.
+*/
+extern "C" int32_t SystemNative_GetPwNamR(const char* name, Passwd* pwd, char* buf, int32_t buflen);
+
+/**
 * Gets and returns the effective user's identity.
 * Implemented as shim to geteuid(2).
 *

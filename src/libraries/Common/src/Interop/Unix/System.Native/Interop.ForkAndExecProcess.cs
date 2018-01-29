@@ -15,6 +15,7 @@ internal static partial class Interop
         internal static unsafe void ForkAndExecProcess(
             string filename, string[] argv, string[] envp, string cwd,
             bool redirectStdin, bool redirectStdout, bool redirectStderr,
+            bool setUser, uint userId, uint groupId,
             out int lpChildPid, out int stdinFd, out int stdoutFd, out int stderrFd, bool shouldThrow = true)
         {
             byte** argvPtr = null, envpPtr = null;
@@ -26,6 +27,7 @@ internal static partial class Interop
                 result = ForkAndExecProcess(
                     filename, argvPtr, envpPtr, cwd,
                     redirectStdin ? 1 : 0, redirectStdout ? 1 : 0, redirectStderr ? 1 :0,
+                    setUser ? 1 : 0, userId, groupId,
                     out lpChildPid, out stdinFd, out stdoutFd, out stderrFd);
                 if (result != 0)
                 {
@@ -53,6 +55,7 @@ internal static partial class Interop
         private static extern unsafe int ForkAndExecProcess(
             string filename, byte** argv, byte** envp, string cwd,
             int redirectStdin, int redirectStdout, int redirectStderr,
+            int setUser, uint userId, uint groupId,
             out int lpChildPid, out int stdinFd, out int stdoutFd, out int stderrFd);
 
         private static unsafe void AllocNullTerminatedArray(string[] arr, ref byte** arrPtr)

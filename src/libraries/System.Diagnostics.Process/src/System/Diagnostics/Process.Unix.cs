@@ -293,6 +293,14 @@ namespace System.Diagnostics
                 throw new Win32Exception(Interop.Error.ENOENT.Info().RawErrno);
             }
 
+            bool setCredentials = !string.IsNullOrEmpty(startInfo.UserName);
+            uint userId = 0;
+            uint groupId = 0;
+            if (setCredentials)
+            {
+                (userId, groupId) = GetUserAndGroupIds(startInfo);
+            }
+
             // Invoke the shim fork/execve routine.  It will create pipes for all requested
             // redirects, fork a child process, map the pipe ends onto the appropriate stdin/stdout/stderr
             // descriptors, and execve to execute the requested process.  The shim implementation
@@ -301,6 +309,7 @@ namespace System.Diagnostics
             Interop.Sys.ForkAndExecProcess(
                     filename, argv, envp, cwd,
                     startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
+                    setCredentials, userId, groupId, 
                     out childPid,
                     out stdinFd, out stdoutFd, out stderrFd);
 
@@ -595,6 +604,97 @@ namespace System.Diagnostics
                 _waitStateHolder = new ProcessWaitState.Holder(_processId);
             }
             return _waitStateHolder._state;
+        }
+
+        private static (uint userId, uint groupId) GetUserAndGroupIds(ProcessStartInfo startInfo)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(startInfo.UserName));
+
+            (uint? userId, uint? groupId) = GetUserAndGroupIds(startInfo.UserName);
+
+            Debug.Assert(userId.HasValue == groupId.HasValue, "userId and groupId both need to have values, or both need to be null.");
+            if (!userId.HasValue)
+            {
+                throw new Win32Exception(SR.Format(SR.UserDoesNotExist, startInfo.UserName));
+            }
+
+            return (userId.Value, groupId.Value);
+        }
+
+        private unsafe static (uint? userId, uint? groupId) GetUserAndGroupIds(string userName)
+        {
+            Interop.Sys.Passwd? passwd;
+#if DEBUG
+            // Use an artificially small buffer in DEBUG to test the fallback path
+            const int BufLen = 2;
+#else
+            // First try with a buffer that should suffice for 99% of cases.
+            const int BufLen = 1024;
+#endif
+            byte* stackBuf = stackalloc byte[BufLen];
+            if (TryGetPasswd(userName, stackBuf, BufLen, out passwd))
+            {
+                if (passwd == null)
+                {
+                    return (null, null);
+                }
+                return (passwd.Value.UserId, passwd.Value.GroupId);
+            }
+
+            // Fallback to heap allocations if necessary, growing the buffer until
+            // we succeed.  TryGetPasswd will throw if there's an unexpected error.
+            int lastBufLen = BufLen;
+            while (true)
+            {
+                lastBufLen *= 2;
+                byte[] heapBuf = new byte[lastBufLen];
+                fixed (byte* buf = &heapBuf[0])
+                {
+                    if (TryGetPasswd(userName, buf, heapBuf.Length, out passwd))
+                    {
+                        if (passwd == null)
+                        {
+                            return (null, null);
+                        }
+                        return (passwd.Value.UserId, passwd.Value.GroupId);
+                    }
+                }
+            }
+        }
+
+        private static unsafe bool TryGetPasswd(string name, byte* buf, int bufLen, out Interop.Sys.Passwd? passwd)
+        {
+            // Call getpwnam_r to get the passwd struct
+            Interop.Sys.Passwd tempPasswd;
+            int error = Interop.Sys.GetPwNamR(name, out tempPasswd, buf, bufLen);
+
+            // If the call succeeds, give back the passwd retrieved
+            if (error == 0)
+            {
+                passwd = tempPasswd;
+                return true;
+            }
+
+            // If the current user's entry could not be found, give back null,
+            // but still return true as false indicates the buffer was too small.
+            if (error == -1)
+            {
+                passwd = null;
+                return true;
+            }
+
+            var errorInfo = new Interop.ErrorInfo(error);
+
+            // If the call failed because the buffer was too small, return false to 
+            // indicate the caller should try again with a larger buffer.
+            if (errorInfo.Error == Interop.Error.ERANGE)
+            {
+                passwd = null;
+                return false;
+            }
+
+            // Otherwise, fail.
+            throw new Win32Exception(errorInfo.RawErrno, errorInfo.GetErrorMessage());
         }
 
         public IntPtr MainWindowHandle => IntPtr.Zero;
