@@ -768,8 +768,9 @@ namespace System.Collections.Generic
         {
             if (capacity < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
-            if (_entries != null && _entries.Length >= capacity)
-                return _entries.Length;
+            int currentCapacity = _entries == null ? 0 : _entries.Length;
+            if (currentCapacity >= capacity)
+                return currentCapacity;
             if (_buckets == null)
                 return Initialize(capacity);
             int newSize = HashHelpers.GetPrime(capacity);
