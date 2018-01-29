@@ -1455,8 +1455,7 @@ namespace System.Globalization
                             if (thousandsSepCtr >= thousandsSepPos.Length)
                             {
                                 var newThousandsSepPos = new int[thousandsSepPos.Length * 2];
-                                bool copied = thousandsSepPos.TryCopyTo(newThousandsSepPos);
-                                Debug.Assert(copied, "Expect copy to succeed, as the new array is larger than the original");
+                                thousandsSepPos.CopyTo(newThousandsSepPos);
                                 thousandsSepPos = newThousandsSepPos;
                             }
 
