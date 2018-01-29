@@ -59,7 +59,7 @@ namespace System.Threading.Tasks
         public static readonly TplEtwProvider Log = new TplEtwProvider();
 
         /// <summary>Prevent external instantiation.  All logging should go through the Log instance.</summary>
-        private TplEtwProvider() { }
+        private TplEtwProvider() : base(new Guid(0x2e5dba47, 0xa3d2, 0x4d16, 0x8e, 0xe0, 0x66, 0x71, 0xff, 0xdc, 0xd7, 0xb5), "System.Threading.Tasks.TplEventSource") { }
 
         /// <summary>Configured behavior of a task wait operation.</summary>
         public enum TaskWaitBehavior : int
