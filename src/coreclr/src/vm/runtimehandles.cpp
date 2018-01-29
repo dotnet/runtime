@@ -1181,11 +1181,11 @@ void QCALLTYPE RuntimeTypeHandle::VerifyInterfaceIsImplemented(EnregisteredTypeH
     END_QCALL;
 }
 
-INT32 QCALLTYPE RuntimeTypeHandle::GetInterfaceMethodImplementationSlot(EnregisteredTypeHandle pTypeHandle, EnregisteredTypeHandle pOwner, MethodDesc * pMD)
+MethodDesc* QCALLTYPE RuntimeTypeHandle::GetInterfaceMethodImplementation(EnregisteredTypeHandle pTypeHandle, EnregisteredTypeHandle pOwner, MethodDesc * pMD)
 {
     QCALL_CONTRACT;
 
-    INT32 slotNumber = -1;
+    MethodDesc* pResult = nullptr;
 
     BEGIN_QCALL;
 
@@ -1199,11 +1199,11 @@ INT32 QCALLTYPE RuntimeTypeHandle::GetInterfaceMethodImplementationSlot(Enregist
         //@TODO:              be done faster - just need to make a function FindDispatchDecl.
         DispatchSlot slot(typeHandle.GetMethodTable()->FindDispatchSlotForInterfaceMD(thOwnerOfMD, pMD));
     if (!slot.IsNull())
-            slotNumber = slot.GetMethodDesc()->GetSlot();
+            pResult = slot.GetMethodDesc();
 
     END_QCALL;
     
-    return slotNumber;
+    return pResult;
     }
     
 void QCALLTYPE RuntimeTypeHandle::GetDefaultConstructor(EnregisteredTypeHandle pTypeHandle, QCall::ObjectHandleOnStack retMethod)
