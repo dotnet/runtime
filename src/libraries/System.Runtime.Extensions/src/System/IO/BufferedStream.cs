@@ -440,8 +440,7 @@ namespace System.IO
             Debug.Assert(readbytes >= 0);
             if (readbytes > 0)
             {
-                bool copied = new Span<byte>(_buffer, _readPos, readbytes).TryCopyTo(destination);
-                Debug.Assert(copied);
+                new ReadOnlySpan<byte>(_buffer, _readPos, readbytes).CopyTo(destination);
                 _readPos += readbytes;
             }
             return readbytes;
