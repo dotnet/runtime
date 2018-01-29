@@ -8,34 +8,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal abstract class ExprVisitorBase
     {
-        public Expr Visit(Expr pExpr)
-        {
-            if (pExpr == null)
-            {
-                return null;
-            }
-
-            Expr pResult;
-            if (IsCachedExpr(pExpr, out pResult))
-            {
-                return pResult;
-            }
-
-            return CacheExprMapping(pExpr, Dispatch(pExpr));
-        }
-
-        private bool IsCachedExpr(Expr pExpr, out Expr pTransformedExpr)
-        {
-            pTransformedExpr = null;
-            return false;
-        }
-
-        /////////////////////////////////////////////////////////////////////////////////
-
-        private Expr CacheExprMapping(Expr pExpr, Expr pTransformedExpr)
-        {
-            return pTransformedExpr;
-        }
+        protected Expr Visit(Expr pExpr) => pExpr == null ? null : Dispatch(pExpr);
 
         protected virtual Expr Dispatch(Expr pExpr)
         {
