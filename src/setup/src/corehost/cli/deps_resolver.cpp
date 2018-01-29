@@ -691,7 +691,7 @@ bool deps_resolver_t::resolve_probe_dirs(
     // Handle any additional deps.json that were specified.
     for (const auto& additional_deps : m_additional_deps)
     {
-        const auto additional_deps_entries = additional_deps->get_entries(deps_entry_t::asset_types::runtime);
+        const auto additional_deps_entries = additional_deps->get_entries(asset_type);
         for (const auto entry : additional_deps_entries)
         {
             if (!add_package_cache_entry(entry, m_app_dir))
