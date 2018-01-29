@@ -205,7 +205,7 @@ namespace Microsoft.Win32
             // From windows 2003 server, if the name is too long we will get error code ERROR_FILENAME_EXCED_RANGE  
             // This still means the name doesn't exist. We need to be consistent with previous OS.
             //
-            if (errorCode == Win32Native.ERROR_FILE_NOT_FOUND || errorCode == Win32Native.ERROR_FILENAME_EXCED_RANGE)
+            if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND || errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
             {
                 if (throwOnMissingValue)
                 {
@@ -287,7 +287,7 @@ namespace Microsoft.Win32
             }
 
             // Return null if we didn't find the key.
-            if (ret == Win32Native.ERROR_ACCESS_DENIED || ret == Win32Native.ERROR_BAD_IMPERSONATION_LEVEL)
+            if (ret == Interop.Errors.ERROR_ACCESS_DENIED || ret == Interop.Errors.ERROR_BAD_IMPERSONATION_LEVEL)
             {
                 // We need to throw SecurityException here for compatibility reasons,
                 // although UnauthorizedAccessException will make more sense.
@@ -503,7 +503,7 @@ namespace Microsoft.Win32
 
                     int r;
                     byte[] blob = new byte[size];
-                    while (Win32Native.ERROR_MORE_DATA == (r = Win32Native.RegQueryValueEx(hkey, name, null, ref type, blob, ref sizeInput)))
+                    while (Interop.Errors.ERROR_MORE_DATA == (r = Win32Native.RegQueryValueEx(hkey, name, null, ref type, blob, ref sizeInput)))
                     {
                         if (size == Int32.MaxValue)
                         {
@@ -531,7 +531,7 @@ namespace Microsoft.Win32
                     // For stuff like ERROR_FILE_NOT_FOUND, we want to return null (data).
                     // Some OS's returned ERROR_MORE_DATA even in success cases, so we 
                     // want to continue on through the function. 
-                    if (ret != Win32Native.ERROR_MORE_DATA)
+                    if (ret != Interop.Errors.ERROR_MORE_DATA)
                         return data;
                 }
             }
@@ -960,13 +960,13 @@ namespace Microsoft.Win32
         {
             switch (errorCode)
             {
-                case Win32Native.ERROR_ACCESS_DENIED:
+                case Interop.Errors.ERROR_ACCESS_DENIED:
                     if (str != null)
                         throw new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_RegistryKeyGeneric_Key, str));
                     else
                         throw new UnauthorizedAccessException();
 
-                case Win32Native.ERROR_INVALID_HANDLE:
+                case Interop.Errors.ERROR_INVALID_HANDLE:
                     /**
                      * For normal RegistryKey instances we dispose the SafeRegHandle and throw IOException.
                      * However, for HKEY_PERFORMANCE_DATA (on a local or remote machine) we avoid disposing the
@@ -986,7 +986,7 @@ namespace Microsoft.Win32
                     }
                     goto default;
 
-                case Win32Native.ERROR_FILE_NOT_FOUND:
+                case Interop.Errors.ERROR_FILE_NOT_FOUND:
                     throw new IOException(SR.Arg_RegKeyNotFound, errorCode);
 
                 default:

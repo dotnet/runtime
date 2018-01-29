@@ -498,7 +498,7 @@ namespace System
         {
             int requiredSize = Win32Native.GetEnvironmentVariable(variable, buffer);
 
-            if (requiredSize == 0 && Marshal.GetLastWin32Error() == Win32Native.ERROR_ENVVAR_NOT_FOUND)
+            if (requiredSize == 0 && Marshal.GetLastWin32Error() == Interop.Errors.ERROR_ENVVAR_NOT_FOUND)
             {
                 return null;
             }
@@ -664,15 +664,15 @@ namespace System
 
                 switch (errorCode)
                 {
-                    case Win32Native.ERROR_ENVVAR_NOT_FOUND:
+                    case Interop.Errors.ERROR_ENVVAR_NOT_FOUND:
                         // Allow user to try to clear a environment variable
                         return;
-                    case Win32Native.ERROR_FILENAME_EXCED_RANGE:
+                    case Interop.Errors.ERROR_FILENAME_EXCED_RANGE:
                         // The error message from Win32 is "The filename or extension is too long",
                         // which is not accurate.
                         throw new ArgumentException(SR.Format(SR.Argument_LongEnvVarValue));
-                    case Win32Native.ERROR_NOT_ENOUGH_MEMORY:
-                    case Win32Native.ERROR_NO_SYSTEM_RESOURCES:
+                    case Interop.Errors.ERROR_NOT_ENOUGH_MEMORY:
+                    case Interop.Errors.ERROR_NO_SYSTEM_RESOURCES:
                         throw new OutOfMemoryException(Interop.Kernel32.GetMessage(errorCode));
                     default:
                         throw new ArgumentException(Interop.Kernel32.GetMessage(errorCode));
