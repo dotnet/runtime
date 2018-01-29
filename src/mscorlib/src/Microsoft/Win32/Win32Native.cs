@@ -215,34 +215,6 @@ namespace Microsoft.Win32
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct WIN32_FILE_ATTRIBUTE_DATA
-        {
-            internal int fileAttributes;
-            internal uint ftCreationTimeLow;
-            internal uint ftCreationTimeHigh;
-            internal uint ftLastAccessTimeLow;
-            internal uint ftLastAccessTimeHigh;
-            internal uint ftLastWriteTimeLow;
-            internal uint ftLastWriteTimeHigh;
-            internal int fileSizeHigh;
-            internal int fileSizeLow;
-
-            internal void PopulateFrom(WIN32_FIND_DATA findData)
-            {
-                // Copy the information to data
-                fileAttributes = findData.dwFileAttributes;
-                ftCreationTimeLow = findData.ftCreationTime_dwLowDateTime;
-                ftCreationTimeHigh = findData.ftCreationTime_dwHighDateTime;
-                ftLastAccessTimeLow = findData.ftLastAccessTime_dwLowDateTime;
-                ftLastAccessTimeHigh = findData.ftLastAccessTime_dwHighDateTime;
-                ftLastWriteTimeLow = findData.ftLastWriteTime_dwLowDateTime;
-                ftLastWriteTimeHigh = findData.ftLastWriteTime_dwHighDateTime;
-                fileSizeHigh = findData.nFileSizeHigh;
-                fileSizeLow = findData.nFileSizeLow;
-            }
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
         internal struct MEMORYSTATUSEX
         {
             // The length field must be set to the size of this data structure.
@@ -374,142 +346,12 @@ namespace Microsoft.Win32
         [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
         internal static extern IntPtr GetStdHandle(int nStdHandle);  // param is NOT a handle, but it returns one!
 
-        // From WinBase.h
-        internal const int FILE_TYPE_DISK = 0x0001;
-        internal const int FILE_TYPE_CHAR = 0x0002;
-        internal const int FILE_TYPE_PIPE = 0x0003;
-
-        internal const int REPLACEFILE_WRITE_THROUGH = 0x1;
-        internal const int REPLACEFILE_IGNORE_MERGE_ERRORS = 0x2;
-
-        private const int FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
-        private const int FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
-        private const int FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000;
-
-        internal const uint FILE_MAP_WRITE = 0x0002;
-        internal const uint FILE_MAP_READ = 0x0004;
-
-        // Constants from WinNT.h
-        internal const int FILE_ATTRIBUTE_READONLY = 0x00000001;
-        internal const int FILE_ATTRIBUTE_DIRECTORY = 0x00000010;
-        internal const int FILE_ATTRIBUTE_REPARSE_POINT = 0x00000400;
-
-        internal const int IO_REPARSE_TAG_MOUNT_POINT = unchecked((int)0xA0000003);
-
         internal const int PAGE_READWRITE = 0x04;
 
         internal const int MEM_COMMIT = 0x1000;
         internal const int MEM_RESERVE = 0x2000;
         internal const int MEM_RELEASE = 0x8000;
         internal const int MEM_FREE = 0x10000;
-
-        // Error codes from WinError.h
-        internal const int ERROR_SUCCESS = 0x0;
-        internal const int ERROR_INVALID_FUNCTION = 0x1;
-        internal const int ERROR_FILE_NOT_FOUND = 0x2;
-        internal const int ERROR_PATH_NOT_FOUND = 0x3;
-        internal const int ERROR_ACCESS_DENIED = 0x5;
-        internal const int ERROR_INVALID_HANDLE = 0x6;
-        internal const int ERROR_NOT_ENOUGH_MEMORY = 0x8;
-        internal const int ERROR_INVALID_DATA = 0xd;
-        internal const int ERROR_INVALID_DRIVE = 0xf;
-        internal const int ERROR_NO_MORE_FILES = 0x12;
-        internal const int ERROR_NOT_READY = 0x15;
-        internal const int ERROR_BAD_LENGTH = 0x18;
-        internal const int ERROR_SHARING_VIOLATION = 0x20;
-        internal const int ERROR_NOT_SUPPORTED = 0x32;
-        internal const int ERROR_FILE_EXISTS = 0x50;
-        internal const int ERROR_INVALID_PARAMETER = 0x57;
-        internal const int ERROR_BROKEN_PIPE = 0x6D;
-        internal const int ERROR_CALL_NOT_IMPLEMENTED = 0x78;
-        internal const int ERROR_INSUFFICIENT_BUFFER = 0x7A;
-        internal const int ERROR_INVALID_NAME = 0x7B;
-        internal const int ERROR_BAD_PATHNAME = 0xA1;
-        internal const int ERROR_ALREADY_EXISTS = 0xB7;
-        internal const int ERROR_ENVVAR_NOT_FOUND = 0xCB;
-        internal const int ERROR_FILENAME_EXCED_RANGE = 0xCE;  // filename too long.
-        internal const int ERROR_NO_DATA = 0xE8;
-        internal const int ERROR_PIPE_NOT_CONNECTED = 0xE9;
-        internal const int ERROR_MORE_DATA = 0xEA;
-        internal const int ERROR_DIRECTORY = 0x10B;
-        internal const int ERROR_OPERATION_ABORTED = 0x3E3;  // 995; For IO Cancellation
-        internal const int ERROR_NOT_FOUND = 0x490;          // 1168; For IO Cancellation
-        internal const int ERROR_NO_TOKEN = 0x3f0;
-        internal const int ERROR_DLL_INIT_FAILED = 0x45A;
-        internal const int ERROR_NON_ACCOUNT_SID = 0x4E9;
-        internal const int ERROR_NOT_ALL_ASSIGNED = 0x514;
-        internal const int ERROR_UNKNOWN_REVISION = 0x519;
-        internal const int ERROR_INVALID_OWNER = 0x51B;
-        internal const int ERROR_INVALID_PRIMARY_GROUP = 0x51C;
-        internal const int ERROR_NO_SUCH_PRIVILEGE = 0x521;
-        internal const int ERROR_PRIVILEGE_NOT_HELD = 0x522;
-        internal const int ERROR_NONE_MAPPED = 0x534;
-        internal const int ERROR_INVALID_ACL = 0x538;
-        internal const int ERROR_INVALID_SID = 0x539;
-        internal const int ERROR_INVALID_SECURITY_DESCR = 0x53A;
-        internal const int ERROR_BAD_IMPERSONATION_LEVEL = 0x542;
-        internal const int ERROR_CANT_OPEN_ANONYMOUS = 0x543;
-        internal const int ERROR_NO_SECURITY_ON_OBJECT = 0x546;
-        internal const int ERROR_NO_SYSTEM_RESOURCES = 0x5AA;
-        internal const int ERROR_TRUSTED_RELATIONSHIP_FAILURE = 0x6FD;
-
-        // Error codes from ntstatus.h
-        internal const uint STATUS_SUCCESS = 0x00000000;
-        internal const uint STATUS_SOME_NOT_MAPPED = 0x00000107;
-        internal const uint STATUS_NO_MEMORY = 0xC0000017;
-        internal const uint STATUS_OBJECT_NAME_NOT_FOUND = 0xC0000034;
-        internal const uint STATUS_NONE_MAPPED = 0xC0000073;
-        internal const uint STATUS_INSUFFICIENT_RESOURCES = 0xC000009A;
-        internal const uint STATUS_ACCESS_DENIED = 0xC0000022;
-
-        internal const int INVALID_FILE_SIZE = -1;
-
-        // From WinStatus.h
-        internal const int STATUS_ACCOUNT_RESTRICTION = unchecked((int)0xC000006E);
-
-        // Win32 Structs in N/Direct style
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-        [BestFitMapping(false)]
-        internal class WIN32_FIND_DATA
-        {
-            internal int dwFileAttributes = 0;
-            // ftCreationTime was a by-value FILETIME structure
-            internal uint ftCreationTime_dwLowDateTime = 0;
-            internal uint ftCreationTime_dwHighDateTime = 0;
-            // ftLastAccessTime was a by-value FILETIME structure
-            internal uint ftLastAccessTime_dwLowDateTime = 0;
-            internal uint ftLastAccessTime_dwHighDateTime = 0;
-            // ftLastWriteTime was a by-value FILETIME structure
-            internal uint ftLastWriteTime_dwLowDateTime = 0;
-            internal uint ftLastWriteTime_dwHighDateTime = 0;
-            internal int nFileSizeHigh = 0;
-            internal int nFileSizeLow = 0;
-            // If the file attributes' reparse point flag is set, then
-            // dwReserved0 is the file tag (aka reparse tag) for the 
-            // reparse point.  Use this to figure out whether something is
-            // a volume mount point or a symbolic link.
-            internal int dwReserved0 = 0;
-            internal int dwReserved1 = 0;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
-            internal String cFileName = null;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 14)]
-            internal String cAlternateFileName = null;
-        }
-
-        [DllImport(Interop.Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern SafeFindHandle FindFirstFile(String fileName, [In, Out] Win32Native.WIN32_FIND_DATA data);
-
-        [DllImport(Interop.Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern bool FindNextFile(
-                    SafeFindHandle hndFindFile,
-                    [In, Out, MarshalAs(UnmanagedType.LPStruct)]
-                    WIN32_FIND_DATA lpFindFileData);
-
-        [DllImport(Interop.Libraries.Kernel32)]
-        internal static extern bool FindClose(IntPtr handle);
-
-        [DllImport(Interop.Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern bool GetFileAttributesEx(String name, int fileInfoLevel, ref WIN32_FILE_ATTRIBUTE_DATA lpFileInformation);
 
         [DllImport(Interop.Libraries.Kernel32)]
         internal static extern unsafe int WideCharToMultiByte(uint cp, uint flags, char* pwzSource, int cchSource, byte* pbDestBuffer, int cbDestBuffer, IntPtr null1, IntPtr null2);

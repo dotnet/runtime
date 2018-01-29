@@ -41,7 +41,7 @@ namespace System.Threading
             {
                 int errorCode = Marshal.GetLastWin32Error();
 
-                if (null != name && 0 != name.Length && Win32Native.ERROR_INVALID_HANDLE == errorCode)
+                if (null != name && 0 != name.Length && Interop.Errors.ERROR_INVALID_HANDLE == errorCode)
                     throw new WaitHandleCannotBeOpenedException(
                         SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
 
@@ -72,12 +72,12 @@ namespace System.Threading
             int errorCode = Marshal.GetLastWin32Error();
             if (myHandle.IsInvalid)
             {
-                if (null != name && 0 != name.Length && Win32Native.ERROR_INVALID_HANDLE == errorCode)
+                if (null != name && 0 != name.Length && Interop.Errors.ERROR_INVALID_HANDLE == errorCode)
                     throw new WaitHandleCannotBeOpenedException(
                         SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             }
-            createdNew = errorCode != Win32Native.ERROR_ALREADY_EXISTS;
+            createdNew = errorCode != Interop.Errors.ERROR_ALREADY_EXISTS;
             this.SafeWaitHandle = myHandle;
         }
 
@@ -115,7 +115,7 @@ namespace System.Threading
                 case OpenExistingResult.NameInvalid:
                     throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
                 case OpenExistingResult.PathNotFound:
-                    throw new IOException(Interop.Kernel32.GetMessage(Win32Native.ERROR_PATH_NOT_FOUND));
+                    throw new IOException(Interop.Kernel32.GetMessage(Interop.Errors.ERROR_PATH_NOT_FOUND));
                 default:
                     return result;
             }
@@ -147,11 +147,11 @@ namespace System.Threading
 
                 int errorCode = Marshal.GetLastWin32Error();
 
-                if (Win32Native.ERROR_FILE_NOT_FOUND == errorCode || Win32Native.ERROR_INVALID_NAME == errorCode)
+                if (Interop.Errors.ERROR_FILE_NOT_FOUND == errorCode || Interop.Errors.ERROR_INVALID_NAME == errorCode)
                     return OpenExistingResult.NameNotFound;
-                if (Win32Native.ERROR_PATH_NOT_FOUND == errorCode)
+                if (Interop.Errors.ERROR_PATH_NOT_FOUND == errorCode)
                     return OpenExistingResult.PathNotFound;
-                if (null != name && 0 != name.Length && Win32Native.ERROR_INVALID_HANDLE == errorCode)
+                if (null != name && 0 != name.Length && Interop.Errors.ERROR_INVALID_HANDLE == errorCode)
                     return OpenExistingResult.NameInvalid;
                 //this is for passed through NativeMethods Errors
                 throw Win32Marshal.GetExceptionForLastWin32Error();
