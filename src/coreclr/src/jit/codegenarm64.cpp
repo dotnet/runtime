@@ -4958,6 +4958,152 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 
 #endif // FEATURE_SIMD
 
+#ifdef FEATURE_HW_INTRINSICS
+#include "hwintrinsicArm64.h"
+
+instruction CodeGen::getOpForHWIntrinsic(GenTreeHWIntrinsic* node, var_types instrType)
+{
+    NamedIntrinsic intrinsicID = node->gtHWIntrinsicId;
+
+    unsigned int instrTypeIndex = varTypeIsFloating(instrType) ? 0 : varTypeIsUnsigned(instrType) ? 2 : 1;
+
+    return compiler->getHWIntrinsicInfo(intrinsicID).instrs[instrTypeIndex];
+}
+
+void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
+{
+    NamedIntrinsic intrinsicID = node->gtHWIntrinsicId;
+
+    switch (compiler->getHWIntrinsicInfo(intrinsicID).form)
+    {
+        case HWIntrinsicInfo::UnaryOp:
+            genHWIntrinsicUnaryOp(node);
+            break;
+        case HWIntrinsicInfo::CrcOp:
+            genHWIntrinsicCrcOp(node);
+            break;
+        case HWIntrinsicInfo::SimdBinaryOp:
+            genHWIntrinsicSimdBinaryOp(node);
+            break;
+        case HWIntrinsicInfo::SimdExtractOp:
+            genHWIntrinsicSimdExtractOp(node);
+            break;
+        case HWIntrinsicInfo::SimdInsertOp:
+            genHWIntrinsicSimdInsertOp(node);
+            break;
+        case HWIntrinsicInfo::SimdSelectOp:
+            genHWIntrinsicSimdSelectOp(node);
+            break;
+        case HWIntrinsicInfo::SimdUnaryOp:
+            genHWIntrinsicSimdUnaryOp(node);
+            break;
+        default:
+            NYI("HWIntrinsic form not implemented");
+    }
+}
+
+void CodeGen::genHWIntrinsicUnaryOp(GenTreeHWIntrinsic* node)
+{
+    GenTree*  op1       = node->gtGetOp1();
+    regNumber targetReg = node->gtRegNum;
+    emitAttr  attr      = emitActualTypeSize(node);
+
+    assert(targetReg != REG_NA);
+    var_types targetType = node->TypeGet();
+
+    genConsumeOperands(node);
+
+    regNumber op1Reg = op1->gtRegNum;
+
+    instruction ins = getOpForHWIntrinsic(node, node->TypeGet());
+    assert(ins != INS_invalid);
+
+    getEmitter()->emitIns_R_R(ins, attr, targetReg, op1Reg);
+
+    genProduceReg(node);
+}
+
+void CodeGen::genHWIntrinsicCrcOp(GenTreeHWIntrinsic* node)
+{
+    NYI("genHWIntrinsicCrcOp not implemented");
+}
+
+void CodeGen::genHWIntrinsicSimdBinaryOp(GenTreeHWIntrinsic* node)
+{
+    GenTree*  op1       = node->gtGetOp1();
+    GenTree*  op2       = node->gtGetOp2();
+    var_types baseType  = node->gtSIMDBaseType;
+    regNumber targetReg = node->gtRegNum;
+
+    assert(targetReg != REG_NA);
+    var_types targetType = node->TypeGet();
+
+    genConsumeOperands(node);
+
+    regNumber op1Reg = op1->gtRegNum;
+    regNumber op2Reg = op2->gtRegNum;
+
+    assert(genIsValidFloatReg(op1Reg));
+    assert(genIsValidFloatReg(op2Reg));
+    assert(genIsValidFloatReg(targetReg));
+
+    instruction ins = getOpForHWIntrinsic(node, baseType);
+    assert(ins != INS_invalid);
+
+    bool     is16Byte = (node->gtSIMDSize > 8);
+    emitAttr attr     = is16Byte ? EA_16BYTE : EA_8BYTE;
+    insOpts  opt      = genGetSimdInsOpt(is16Byte, baseType);
+
+    getEmitter()->emitIns_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, opt);
+
+    genProduceReg(node);
+}
+
+void CodeGen::genHWIntrinsicSimdExtractOp(GenTreeHWIntrinsic* node)
+{
+    NYI("HWIntrinsic form not implemented");
+}
+
+void CodeGen::genHWIntrinsicSimdInsertOp(GenTreeHWIntrinsic* node)
+{
+    NYI("genHWIntrinsicSimdExtractOp not implemented");
+}
+
+void CodeGen::genHWIntrinsicSimdSelectOp(GenTreeHWIntrinsic* node)
+{
+    NYI("genHWIntrinsicSimdSelectOp not implemented");
+}
+
+void CodeGen::genHWIntrinsicSimdUnaryOp(GenTreeHWIntrinsic* node)
+{
+    GenTree*  op1       = node->gtGetOp1();
+    var_types baseType  = node->gtSIMDBaseType;
+    regNumber targetReg = node->gtRegNum;
+
+    assert(targetReg != REG_NA);
+    var_types targetType = node->TypeGet();
+
+    genConsumeOperands(node);
+
+    regNumber op1Reg = op1->gtRegNum;
+
+    assert(genIsValidFloatReg(op1Reg));
+    assert(genIsValidFloatReg(targetReg));
+
+    instruction ins = getOpForHWIntrinsic(node, baseType);
+    assert(ins != INS_invalid);
+
+    bool     is16Byte = (node->gtSIMDSize > 8);
+    emitAttr attr     = is16Byte ? EA_16BYTE : EA_8BYTE;
+    insOpts  opt      = genGetSimdInsOpt(is16Byte, baseType);
+
+    getEmitter()->emitIns_R_R(ins, attr, targetReg, op1Reg, opt);
+
+    genProduceReg(node);
+}
+
+#endif // FEATURE_HW_INTRINSICS
+
 /*****************************************************************************
  * Unit testing of the ARM64 emitter: generate a bunch of instructions into the prolog
  * (it's as good a place as any), then use COMPlus_JitLateDisasm=* to see if the late
