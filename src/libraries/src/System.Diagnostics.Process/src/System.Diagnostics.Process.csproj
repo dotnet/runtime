@@ -318,6 +318,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPid.cs">
       <Link>Common\Interop\Unix\Interop.GetPid.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPwUid.cs">
+      <Link>Common\Interop\Unix\Interop.GetPwUid.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetSetPriority.cs">
       <Link>Common\Interop\Unix\Interop.GetSetPriority.cs</Link>
     </Compile>

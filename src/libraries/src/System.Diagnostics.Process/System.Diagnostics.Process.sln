@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27309.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.Process.Tests", "tests\System.Diagnostics.Process.Tests.csproj", "{E1114510-844C-4BB2-BBAD-8595BD16E24B}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -56,5 +56,8 @@ Global
 		{4E05E43A-1DC9-47C7-8280-13CF4EF741EA} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{F55047F8-E47B-46E3-B221-C23595AFE168} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{98B33275-39D8-4997-867D-04C69C69885E} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C8916A08-4E92-4222-8398-B0A8BBF3F952}
 	EndGlobalSection
 EndGlobal

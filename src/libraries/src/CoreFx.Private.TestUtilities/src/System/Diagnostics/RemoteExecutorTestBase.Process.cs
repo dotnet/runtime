@@ -58,8 +58,16 @@ namespace System.Diagnostics
             if (!File.Exists(HostRunner))
                 throw new IOException($"{HostRunner} test app isn't present in the test runtime directory.");
 
-            psi.FileName = HostRunner;
-            psi.Arguments = testConsoleAppArgs;
+            if (options.RunAsSudo)
+            {
+                psi.FileName = "sudo";
+                psi.Arguments = HostRunner + " " + testConsoleAppArgs;
+            }
+            else
+            {
+                psi.FileName = HostRunner;
+                psi.Arguments = testConsoleAppArgs;
+            }
 
             // Return the handle to the process, which may or not be started
             return new RemoteInvokeHandle(options.Start ?

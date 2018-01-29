@@ -312,4 +312,7 @@
   <data name="StandardInputEncodingNotAllowed" xml:space="preserve">
     <value>StandardInputEncoding is only supported when standard input is redirected.</value>
   </data>
+  <data name="UserDoesNotExist" xml:space="preserve">
+    <value>User with name '{0}' was not found.</value>
+  </data>
 </root>
