@@ -150,9 +150,9 @@ unsigned __int64 genFindHighestBit(unsigned __int64 mask)
 #endif // 0
 
 /*****************************************************************************
- *
- *  Return true if the given 64-bit value has exactly zero or one bits set.
- */
+*
+*  Return true if the given 64-bit value has exactly zero or one bits set.
+*/
 
 template <typename T>
 inline BOOL genMaxOneBit(T value)
@@ -161,13 +161,34 @@ inline BOOL genMaxOneBit(T value)
 }
 
 /*****************************************************************************
- *
- *  Return true if the given 32-bit value has exactly zero or one bits set.
- */
+*
+*  Return true if the given 32-bit value has exactly zero or one bits set.
+*/
 
 inline BOOL genMaxOneBit(unsigned value)
 {
     return (value & (value - 1)) == 0;
+}
+
+/*****************************************************************************
+*
+*  Return true if the given 64-bit value has exactly one bit set.
+*/
+
+template <typename T>
+inline BOOL genExactlyOneBit(T value)
+{
+    return ((value != 0) && genMaxOneBit(value));
+}
+
+/*****************************************************************************
+*
+*  Return true if the given 32-bit value has exactly zero or one bits set.
+*/
+
+inline BOOL genExactlyOneBit(unsigned value)
+{
+    return ((value != 0) && genMaxOneBit(value));
 }
 
 /*****************************************************************************
