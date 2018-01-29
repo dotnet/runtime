@@ -141,7 +141,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 return;
             }
 
-            if (pctx != null && !pctx.FNop() && parent is AggregateSymbol agg && 0 != agg.GetTypeVarsAll().Count)
+            if (pctx != null && !pctx.IsNop && parent is AggregateSymbol agg && 0 != agg.GetTypeVarsAll().Count)
             {
                 CType pType = GetTypeManager().SubstType(agg.getThisType(), pctx);
                 ErrAppendType(pType, null);
@@ -406,21 +406,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             }
         }
 
-        private void ErrAppendType(CType pType, SubstContext pCtx)
+        private void ErrAppendType(CType pType, SubstContext pctx)
         {
-            ErrAppendType(pType, pCtx, true);
-        }
-
-        private void ErrAppendType(CType pType, SubstContext pctx, bool fArgs)
-        {
-            if (pctx != null)
+            if (pctx != null && !pctx.IsNop)
             {
-                if (!pctx.FNop())
-                {
-                    pType = GetTypeManager().SubstType(pType, pctx);
-                }
-                // We shouldn't use the SubstContext again so set it to NULL.
-                pctx = null;
+                pType = GetTypeManager().SubstType(pType, pctx);
             }
 
             switch (pType.TypeKind)
@@ -441,19 +431,19 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                         {
                             if (pAggType.OuterType != null)
                             {
-                                ErrAppendType(pAggType.OuterType, pctx);
+                                ErrAppendType(pAggType.OuterType, null);
                                 ErrAppendChar('.');
                             }
                             else
                             {
                                 // In a namespace.
-                                ErrAppendParentSym(pAggType.OwningAggregate, pctx);
+                                ErrAppendParentSym(pAggType.OwningAggregate, null);
                             }
 
                             ErrAppendName(pAggType.OwningAggregate.name);
                         }
 
-                        ErrAppendTypeParameters(pAggType.TypeArgsThis, pctx, true);
+                        ErrAppendTypeParameters(pAggType.TypeArgsThis, null, true);
                         break;
                     }
 
@@ -494,13 +484,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     {
                         CType elementType = ((ArrayType)pType).BaseElementType;
 
-                        if (null == elementType)
-                        {
-                            Debug.Assert(false, "No element type");
-                            break;
-                        }
+                        Debug.Assert(elementType != null, "No element type");
 
-                        ErrAppendType(elementType, pctx);
+                        ErrAppendType(elementType, null);
 
                         for (elementType = pType;
                                 elementType is ArrayType arrType;
@@ -542,12 +528,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     ErrAppendString(mod.IsOut ? "out " : "ref ");
 
                     // add base type name
-                    ErrAppendType(mod.ParameterType, pctx);
+                    ErrAppendType(mod.ParameterType, null);
                     break;
 
                 case TypeKind.TK_PointerType:
                     // Generate the base type.
-                    ErrAppendType(((PointerType)pType).ReferentType, pctx);
+                    ErrAppendType(((PointerType)pType).ReferentType, null);
                     {
                         // add the trailing *
                         ErrAppendChar('*');
@@ -555,7 +541,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     break;
 
                 case TypeKind.TK_NullableType:
-                    ErrAppendType(((NullableType)pType).UnderlyingType, pctx);
+                    ErrAppendType(((NullableType)pType).UnderlyingType, null);
                     ErrAppendChar('?');
                     break;
 
