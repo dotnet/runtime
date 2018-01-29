@@ -95,11 +95,7 @@ namespace System.Net.Http
                 return null;
             }
 
-            string opaque;
-            if (!digestResponse.Parameters.TryGetValue(Opaque, out opaque))
-            {
-                return null;
-            }
+            string opaque = digestResponse.Parameters.ContainsKey(Opaque) ? digestResponse.Parameters[Opaque] : null;
 
             string realm = digestResponse.Parameters.ContainsKey(Realm) ? digestResponse.Parameters[Realm] : string.Empty;
 
@@ -189,7 +185,10 @@ namespace System.Net.Http
             sb.AppendKeyValue(Algorithm, algorithm, includeQuotes: false);
 
             // Add opaque
-            sb.AppendKeyValue(Opaque, opaque);
+            if (opaque != null)
+            {
+                sb.AppendKeyValue(Opaque, opaque);
+            }
 
             // Add qop
             sb.AppendKeyValue(Qop, qop, includeQuotes: false);
