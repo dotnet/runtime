@@ -8,9 +8,11 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using Xunit;
 
 namespace Microsoft.CSharp.RuntimeBinder.Tests
@@ -424,6 +426,50 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         {
             dynamic d = new object();
             Assert.Throws<RuntimeBinderException>(() => DoStuff(d));
+        }
+
+        [Fact]
+        public void CannotCallOperatorDirectly()
+        {
+            CultureInfo prev = CultureInfo.CurrentCulture;
+            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+            dynamic d = "";
+            RuntimeBinderException e = Assert.Throws<RuntimeBinderException>(() => d.op_Equality("", ""));
+            Assert.Equal("'string.operator ==(string, string)': cannot explicitly call operator or accessor", e.Message);
+            Thread.CurrentThread.CurrentCulture = prev;
+        }
+
+        [Fact]
+        public void CannotCallAccessorDirectly()
+        {
+            CultureInfo prev = CultureInfo.CurrentCulture;
+            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+            dynamic d = "";
+            RuntimeBinderException e = Assert.Throws<RuntimeBinderException>(() => d.get_Length());
+            Assert.Equal("'string.Length.get': cannot explicitly call operator or accessor", e.Message);
+            Thread.CurrentThread.CurrentCulture = prev;
+        }
+
+        [Fact]
+        public void AllowIndexerAccess()
+        {
+            // Indexers' accessors can be accessed directly. This is against the C# rules, which only allow
+            // direct access of indexer accessors when they are not the default member as C# has no other
+            // way to express such access, but being stricter would be a breaking change.
+            List<int> list = new List<int> { 1, 2, 3 };
+            dynamic d = list;
+            d.set_Item(2, 4);
+            dynamic e = d.get_Item(2);
+            Assert.Equal(4, e);
+            Assert.Equal(4, list[2]);
+        }
+
+        [Fact]
+        public void AllowStringIndexerAccess()
+        {
+            dynamic d = "abcd";
+            char c = d.get_Chars(2);
+            Assert.Equal('c', c);
         }
     }
 }
