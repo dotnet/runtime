@@ -580,25 +580,24 @@ namespace System
 
                             #region Loop through all methods on the interface
                             Debug.Assert(!methodHandle.IsNullHandle());
-                            // Except for .ctor, .cctor, IL_STUB*, and static methods, all interface methods should be abstract, virtual, and non-RTSpecialName.
-                            // Note that this assumption will become invalid when we add support for non-abstract or static methods on interfaces.
+
+                            MethodAttributes methodAttributes = RuntimeMethodHandle.GetAttributes(methodHandle);
+
+                            #region Continue if this is a constructor
                             Debug.Assert(
-                                (RuntimeMethodHandle.GetAttributes(methodHandle) & (MethodAttributes.RTSpecialName | MethodAttributes.Abstract | MethodAttributes.Virtual)) == (MethodAttributes.Abstract | MethodAttributes.Virtual) ||
-                                (RuntimeMethodHandle.GetAttributes(methodHandle) & MethodAttributes.Static) == MethodAttributes.Static ||
-                                RuntimeMethodHandle.GetName(methodHandle).Equals(".ctor") ||
-                                RuntimeMethodHandle.GetName(methodHandle).Equals(".cctor") ||
-                                RuntimeMethodHandle.GetName(methodHandle).StartsWith("IL_STUB", StringComparison.Ordinal));
+                                (RuntimeMethodHandle.GetAttributes(methodHandle) & MethodAttributes.RTSpecialName) == 0 ||
+                                RuntimeMethodHandle.GetName(methodHandle).Equals(".cctor"));
+
+                            if ((methodAttributes & MethodAttributes.RTSpecialName) != 0)
+                                continue;
+                            #endregion
 
                             #region Calculate Binding Flags
-                            MethodAttributes methodAttributes = RuntimeMethodHandle.GetAttributes(methodHandle);
                             bool isPublic = (methodAttributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public;
                             bool isStatic = (methodAttributes & MethodAttributes.Static) != 0;
                             bool isInherited = false;
                             BindingFlags bindingFlags = RuntimeType.FilterPreCalculate(isPublic, isInherited, isStatic);
                             #endregion
-
-                            if ((methodAttributes & MethodAttributes.RTSpecialName) != 0)
-                                continue;
 
                             // get the unboxing stub or instantiating stub if needed
                             RuntimeMethodHandleInternal instantiatedHandle = RuntimeMethodHandle.GetStubIfNeeded(methodHandle, declaringType, null);
@@ -2747,15 +2746,19 @@ namespace System
                 Debug.Assert(ifaceMethodBase is RuntimeMethodInfo);
                 im.InterfaceMethods[i] = (MethodInfo)ifaceMethodBase;
 
-                // If the slot is -1, then virtual stub dispatch is active.
-                int slot = GetTypeHandleInternal().GetInterfaceMethodImplementationSlot(ifaceRtTypeHandle, ifaceRtMethodHandle);
+                // If the impl is null, then virtual stub dispatch is active.
+                RuntimeMethodHandleInternal classRtMethodHandle = GetTypeHandleInternal().GetInterfaceMethodImplementation(ifaceRtTypeHandle, ifaceRtMethodHandle);
 
-                if (slot == -1) continue;
+                if (classRtMethodHandle.IsNullHandle())
+                    continue;
 
-                RuntimeMethodHandleInternal classRtMethodHandle = RuntimeTypeHandle.GetMethodAt(this, slot);
+                // If we resolved to an interface method, use the interface type as reflected type. Otherwise use `this`.
+                RuntimeType reflectedType = RuntimeMethodHandle.GetDeclaringType(classRtMethodHandle);
+                if (!reflectedType.IsInterface)
+                    reflectedType = this;
 
                 // GetMethodBase will convert this to the instantiating/unboxing stub if necessary
-                MethodBase rtTypeMethodBase = RuntimeType.GetMethodBase(this, classRtMethodHandle);
+                MethodBase rtTypeMethodBase = RuntimeType.GetMethodBase(reflectedType, classRtMethodHandle);
                 // a class may not implement all the methods of an interface (abstract class) so null is a valid value 
                 Debug.Assert(rtTypeMethodBase == null || rtTypeMethodBase is RuntimeMethodInfo);
                 im.TargetMethods[i] = (MethodInfo)rtTypeMethodBase;

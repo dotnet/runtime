@@ -248,7 +248,7 @@ public:
     void QCALLTYPE VerifyInterfaceIsImplemented(EnregisteredTypeHandle pTypeHandle, EnregisteredTypeHandle pIFaceHandle);
 
     static
-    INT32 QCALLTYPE GetInterfaceMethodImplementationSlot(EnregisteredTypeHandle pTypeHandle, EnregisteredTypeHandle pOwner, MethodDesc * pMD);
+    MethodDesc* QCALLTYPE GetInterfaceMethodImplementation(EnregisteredTypeHandle pTypeHandle, EnregisteredTypeHandle pOwner, MethodDesc * pMD);
 
     static FCDECL3(FC_BOOL_RET, GetFields, ReflectClassBaseObject *pType, INT32 **result, INT32 *pCount);
 
