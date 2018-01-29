@@ -10,6 +10,8 @@ using System.Text;
 using System.Threading;
 using System.Security;
 
+using Internal.IO;
+
 namespace System
 {
     public sealed partial class TimeZoneInfo
@@ -396,6 +398,87 @@ namespace System
         }
 
         /// <summary>
+        /// Enumerate files 
+        /// </summary>
+        private static IEnumerable<string> EnumerateFilesRecursively(string path)
+        {
+            List<string> toExplore = null; // List used as a stack
+
+            string currentPath = path;
+            for(;;)
+            {
+                using (Microsoft.Win32.SafeHandles.SafeDirectoryHandle dirHandle = Interop.Sys.OpenDir(currentPath))
+                {
+                    if (dirHandle.IsInvalid)
+                    {
+                        throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), currentPath, isDirectory: true);
+                    }
+
+                    // Read each entry from the enumerator
+                    Interop.Sys.DirectoryEntry dirent;
+                    while (Interop.Sys.ReadDir(dirHandle, out dirent) == 0)
+                    {
+                        if (dirent.InodeName == "." || dirent.InodeName == "..")
+                            continue;
+
+                        string fullPath = Path.Combine(currentPath, dirent.InodeName);
+
+                        // Get from the dir entry whether the entry is a file or directory.
+                        // We classify everything as a file unless we know it to be a directory.
+                        bool isDir;
+                        if (dirent.InodeType == Interop.Sys.NodeType.DT_DIR)
+                        {
+                            // We know it's a directory.
+                            isDir = true;
+                        }
+                        else if (dirent.InodeType == Interop.Sys.NodeType.DT_LNK || dirent.InodeType == Interop.Sys.NodeType.DT_UNKNOWN)
+                        {
+                            // It's a symlink or unknown: stat to it to see if we can resolve it to a directory.
+                            // If we can't (e.g. symlink to a file, broken symlink, etc.), we'll just treat it as a file.
+
+                            Interop.Sys.FileStatus fileinfo;
+                            if (Interop.Sys.Stat(fullPath, out fileinfo) >= 0)
+                            {
+                                isDir = (fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
+                            }
+                            else
+                            {
+                                isDir = false;
+                            }
+                        }
+                        else
+                        {
+                            // Otherwise, treat it as a file.  This includes regular files, FIFOs, etc.
+                            isDir = false;
+                        }
+
+                        // Yield the result if the user has asked for it.  In the case of directories,
+                        // always explore it by pushing it onto the stack, regardless of whether
+                        // we're returning directories.
+                        if (isDir)
+                        {
+                            if (toExplore == null)
+                            {
+                                toExplore = new List<string>();
+                            }
+                            toExplore.Add(fullPath);
+                        }
+                        else
+                        {
+                            yield return fullPath;
+                        }
+                    }
+                }
+
+                if (toExplore == null || toExplore.Count == 0)
+                    break;
+
+                currentPath = toExplore[toExplore.Count - 1];
+                toExplore.RemoveAt(toExplore.Count - 1);
+            }
+        }
+
+        /// <summary>
         /// Find the time zone id by searching all the tzfiles for the one that matches rawData
         /// and return its file name.
         /// </summary>
@@ -410,7 +493,7 @@ namespace System
 
             try
             {
-                foreach (string filePath in Directory.EnumerateFiles(timeZoneDirectory, "*", SearchOption.AllDirectories))
+                foreach (string filePath in EnumerateFilesRecursively(timeZoneDirectory))
                 {
                     // skip the localtime and posixrules file, since they won't give us the correct id
                     if (!string.Equals(filePath, localtimeFilePath, StringComparison.OrdinalIgnoreCase)
