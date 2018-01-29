@@ -8,51 +8,51 @@ using System.Runtime.InteropServices;
 
 namespace System.SpanTests
 {
-    public static partial class ReadOnlySpanTests
+    public static partial class MemoryMarshalTests
     {
         [Fact]
-        public static void NonPortableCastUIntToUShort()
+        public static void CastReadOnlySpanUIntToUShort()
         {
             uint[] a = { 0x44332211, 0x88776655 };
             ReadOnlySpan<uint> span = new ReadOnlySpan<uint>(a);
-            ReadOnlySpan<ushort> asUShort = span.NonPortableCast<uint, ushort>();
+            ReadOnlySpan<ushort> asUShort = MemoryMarshal.Cast<uint, ushort>(span);
 
             Assert.True(Unsafe.AreSame<ushort>(ref Unsafe.As<uint, ushort>(ref Unsafe.AsRef(in MemoryMarshal.GetReference(span))), ref Unsafe.AsRef(in MemoryMarshal.GetReference(asUShort))));
             asUShort.Validate<ushort>(0x2211, 0x4433, 0x6655, 0x8877);
         }
 
         [Fact]
-        public static void NonPortableCastShortToLong()
+        public static void CastReadOnlySpanShortToLong()
         {
             short[] a = { 0x1234, 0x2345, 0x3456, 0x4567, 0x5678 };
             ReadOnlySpan<short> span = new ReadOnlySpan<short>(a);
-            ReadOnlySpan<long> asLong = span.NonPortableCast<short, long>();
+            ReadOnlySpan<long> asLong = MemoryMarshal.Cast<short, long>(span);
 
             Assert.True(Unsafe.AreSame<long>(ref Unsafe.As<short, long>(ref MemoryMarshal.GetReference(span)), ref MemoryMarshal.GetReference(asLong)));
             asLong.Validate<long>(0x4567345623451234);
         }
 
         [Fact]
-        public static unsafe void NonPortableCastOverflow()
+        public static unsafe void CastReadOnlySpanOverflow()
         {
             ReadOnlySpan<TestHelpers.TestStructExplicit> span = new ReadOnlySpan<TestHelpers.TestStructExplicit>(null, Int32.MaxValue);
 
-            TestHelpers.AssertThrows<OverflowException, TestHelpers.TestStructExplicit>(span, (_span) => _span.NonPortableCast<TestHelpers.TestStructExplicit, byte>().DontBox());
-            TestHelpers.AssertThrows<OverflowException, TestHelpers.TestStructExplicit>(span, (_span) => _span.NonPortableCast<TestHelpers.TestStructExplicit, ulong>().DontBox());
+            TestHelpers.AssertThrows<OverflowException, TestHelpers.TestStructExplicit>(span, (_span) => MemoryMarshal.Cast<TestHelpers.TestStructExplicit, byte>(_span).DontBox());
+            TestHelpers.AssertThrows<OverflowException, TestHelpers.TestStructExplicit>(span, (_span) => MemoryMarshal.Cast<TestHelpers.TestStructExplicit, ulong>(_span).DontBox());
         }
 
         [Fact]
-        public static void NonPortableCastToTypeContainsReferences()
+        public static void CastReadOnlySpanToTypeContainsReferences()
         {
             ReadOnlySpan<uint> span = new ReadOnlySpan<uint>(Array.Empty<uint>());
-            TestHelpers.AssertThrows<ArgumentException, uint>(span, (_span) => _span.NonPortableCast<uint, StructWithReferences>().DontBox());
+            TestHelpers.AssertThrows<ArgumentException, uint>(span, (_span) => MemoryMarshal.Cast<uint, SpanTests.StructWithReferences>(_span).DontBox());
         }
 
         [Fact]
-        public static void NonPortableCastFromTypeContainsReferences()
+        public static void CastReadOnlySpanFromTypeContainsReferences()
         {
-            ReadOnlySpan<StructWithReferences> span = new ReadOnlySpan<StructWithReferences>(Array.Empty<StructWithReferences>());
-            TestHelpers.AssertThrows<ArgumentException, StructWithReferences>(span, (_span) => _span.NonPortableCast<StructWithReferences, uint>().DontBox());
+            ReadOnlySpan<SpanTests.StructWithReferences> span = new ReadOnlySpan<SpanTests.StructWithReferences>(Array.Empty<SpanTests.StructWithReferences>());
+            TestHelpers.AssertThrows<ArgumentException, SpanTests.StructWithReferences>(span, (_span) => MemoryMarshal.Cast<SpanTests.StructWithReferences, uint>(_span).DontBox());
         }
     }
 }

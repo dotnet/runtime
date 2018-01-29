@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
 namespace System
@@ -30,7 +31,7 @@ namespace System
 
             if (data.Length >= sizeof(uint))
             {
-                ReadOnlySpan<uint> uData = data.NonPortableCast<byte, uint>();
+                ReadOnlySpan<uint> uData = MemoryMarshal.Cast<byte, uint>(data);
 
                 for (int i = 0; i < uData.Length; i++)
                 {
@@ -56,11 +57,11 @@ namespace System
                     break;
 
                 case 2:
-                    p0 += 0x800000u | data.NonPortableCast<byte, ushort>()[0];
+                    p0 += 0x800000u | MemoryMarshal.Cast<byte, ushort>(data)[0];
                     break;
 
                 case 3:
-                    p0 += 0x80000000u | (((uint)data[2]) << 16) | (uint)(data.NonPortableCast<byte, ushort>()[0]);
+                    p0 += 0x80000000u | (((uint)data[2]) << 16) | (uint)(MemoryMarshal.Cast<byte, ushort>(data)[0]);
                     break;
 
                 default:
