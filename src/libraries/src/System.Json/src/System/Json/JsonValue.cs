@@ -15,6 +15,8 @@ namespace System.Json
 {
     public abstract class JsonValue : IEnumerable
     {
+        private static readonly UTF8Encoding s_encoding = new UTF8Encoding(false, true);
+
         public static JsonValue Load(Stream stream)
         {
             if (stream == null)
@@ -122,7 +124,10 @@ namespace System.Json
                 throw new ArgumentNullException(nameof(stream));
             }
 
-            Save(new StreamWriter(stream));
+            using (StreamWriter writer = new StreamWriter(stream, s_encoding, 1024, true))
+            {
+                Save(writer);
+            }
         }
 
         public virtual void Save(TextWriter textWriter)

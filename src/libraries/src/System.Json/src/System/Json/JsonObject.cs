@@ -114,35 +114,7 @@ namespace System.Json
 
         public override void Save(Stream stream)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
-            stream.WriteByte((byte)'{');
-
-            foreach (JsonPair pair in _map)
-            {
-                stream.WriteByte((byte)'"');
-                byte[] bytes = Encoding.UTF8.GetBytes(EscapeString(pair.Key));
-                stream.Write(bytes, 0, bytes.Length);
-                stream.WriteByte((byte)'"');
-                stream.WriteByte((byte)',');
-                stream.WriteByte((byte)' ');
-                if (pair.Value == null)
-                {
-                    stream.WriteByte((byte)'n');
-                    stream.WriteByte((byte)'u');
-                    stream.WriteByte((byte)'l');
-                    stream.WriteByte((byte)'l');
-                }
-                else
-                {
-                    pair.Value.Save(stream);
-                }
-            }
-
-            stream.WriteByte((byte)'}');
+            base.Save(stream);
         }
 
         public bool TryGetValue(string key, out JsonValue value) => _map.TryGetValue(key, out value);
