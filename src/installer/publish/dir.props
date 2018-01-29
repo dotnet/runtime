@@ -59,5 +59,10 @@
     <PublishRid Include="linux-arm" />
     <PublishRid Include="rhel.7-x64" />
     <PublishRid Include="opensuse.42-x64" />
+    <PublishRid Include="centos.7-x64" />
+    <PublishRid Include="fedora.26-x64" />
+    <PublishRid Include="fedora.27-x64" />
+    <PublishRid Include="oraclelinux.7-x64" />
+    <PublishRid Include="sles.12-x64" />
   </ItemGroup>
 </Project>
