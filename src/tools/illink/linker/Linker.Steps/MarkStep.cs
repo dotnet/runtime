@@ -1574,6 +1574,11 @@ namespace Mono.Linker.Steps {
 			foreach (Instruction instruction in body.Instructions)
 				MarkInstruction (instruction);
 
+			MarkThingsUsedViaReflection (body);
+		}
+
+		protected virtual void MarkThingsUsedViaReflection (MethodBody body)
+		{
 			MarkSomethingUsedViaReflection ("GetConstructor", MarkConstructorsUsedViaReflection, body.Instructions);
 			MarkSomethingUsedViaReflection ("GetMethod", MarkMethodsUsedViaReflection, body.Instructions);
 			MarkSomethingUsedViaReflection ("GetProperty", MarkPropertyUsedViaReflection, body.Instructions);
