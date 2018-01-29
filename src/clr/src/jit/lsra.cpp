@@ -5308,8 +5308,8 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
             {
                 relatedInterval = nullptr;
             }
-            // Is the relatedInterval simply a copy to another relatedInterval?
-            else if ((relatedInterval->relatedInterval != nullptr) &&
+            // Is the relatedInterval not assigned and simply a copy to another relatedInterval?
+            else if ((relatedInterval->assignedReg == nullptr) && (relatedInterval->relatedInterval != nullptr) &&
                      (nextRelatedRefPosition->nextRefPosition != nullptr) &&
                      (nextRelatedRefPosition->nextRefPosition->nextRefPosition == nullptr) &&
                      (nextRelatedRefPosition->nextRefPosition->nodeLocation <
