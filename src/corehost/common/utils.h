@@ -18,6 +18,8 @@ struct host_option
 
 #define RUNTIME_STORE_DIRECTORY_NAME _X("store")
 
+typedef std::unordered_map<pal::string_t, std::vector<pal::string_t>> opt_map_t;
+
 bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool match_case);
 bool starts_with(const pal::string_t& value, const pal::string_t& prefix, bool match_case);
 pal::string_t get_executable(const pal::string_t& filename);
@@ -32,14 +34,14 @@ void remove_trailing_dir_seperator(pal::string_t* dir);
 void replace_char(pal::string_t* path, pal::char_t match, pal::char_t repl);
 const pal::char_t* get_arch();
 pal::string_t get_last_known_arg(
-    const std::unordered_map<pal::string_t, std::vector<pal::string_t>>& opts,
+    const opt_map_t& opts,
     const pal::string_t& opt_key,
     const pal::string_t& de_fault);
 bool parse_known_args(
     const int argc,
     const pal::char_t* argv[],
     const std::vector<host_option>& known_opts,
-    std::unordered_map<pal::string_t, std::vector<pal::string_t>>* opts,
+    opt_map_t* opts,
     int* num_args);
 bool skip_utf8_bom(pal::ifstream_t* stream);
 bool get_env_shared_store_dirs(std::vector<pal::string_t>* dirs, const pal::string_t& arch, const pal::string_t& tfm);

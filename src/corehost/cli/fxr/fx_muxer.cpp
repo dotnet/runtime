@@ -1146,10 +1146,18 @@ std::vector<host_option> fx_muxer_t::get_known_opts(bool exec_mode, host_mode_t 
     return known_opts;
 }
 
-int fx_muxer_t::parse_args_and_execute(
+int fx_muxer_t::parse_args(
     const pal::string_t& own_dir,
     const pal::string_t& own_dll,
-    int argoff, int argc, const pal::char_t* argv[], bool exec_mode, host_mode_t mode, bool* is_an_app)
+    int argoff,
+    int argc,
+    const pal::char_t* argv[],
+    bool exec_mode,
+    host_mode_t mode,
+    bool* is_an_app,
+    int* new_argoff,
+    pal::string_t& app_candidate,
+    opt_map_t& opts)
 {
     *is_an_app = true;
 
@@ -1157,7 +1165,6 @@ int fx_muxer_t::parse_args_and_execute(
 
     // Parse the known arguments if any.
     int num_parsed = 0;
-    std::unordered_map<pal::string_t, std::vector<pal::string_t>> opts;
     if (!parse_known_args(argc - argoff, &argv[argoff], known_opts, &opts, &num_parsed))
     {
         trace::error(_X("Failed to parse supported options or their values:"));
@@ -1168,20 +1175,17 @@ int fx_muxer_t::parse_args_and_execute(
         return InvalidArgFailure;
     }
 
-    const pal::char_t** new_argv = argv;
-    int new_argc = argc;
-    std::vector<const pal::char_t*> vec_argv;
-    pal::string_t app_candidate = own_dll;
-    int cur_i = argoff + num_parsed;
+    app_candidate = own_dll;
+    *new_argoff = argoff + num_parsed;
     if (mode != host_mode_t::standalone)
     {
         trace::verbose(_X("Detected a non-standalone application, expecting app.dll to execute."));
-        if (cur_i >= argc)
+        if (*new_argoff >= argc)
         {
             return muxer_usage(!is_sdk_dir_present(own_dir));
         }
 
-        app_candidate = argv[cur_i];
+        app_candidate = argv[*new_argoff];
         bool is_app_managed = (ends_with(app_candidate, _X(".dll"), false) || ends_with(app_candidate, _X(".exe"), false)) && pal::realpath(&app_candidate);
 
         if (!is_app_managed)
@@ -1210,17 +1214,7 @@ int fx_muxer_t::parse_args_and_execute(
         return InvalidArgFailure;
     }
 
-    if (cur_i != 1)
-    {
-        vec_argv.reserve(argc - cur_i + 1); // +1 for dotnet
-        vec_argv.push_back(argv[0]);
-        vec_argv.insert(vec_argv.end(), argv + cur_i, argv + argc);
-        new_argv = vec_argv.data();
-        new_argc = vec_argv.size();
-    }
-
-    // Transform dotnet [exec] [--additionalprobingpath path] [--depsfile file] [dll] [args] -> dotnet [dll] [args]
-    return read_config_and_execute(own_dir, app_candidate, opts, new_argc, new_argv, mode);
+    return 0;
 }
 
 int read_config(
@@ -1259,10 +1253,16 @@ int read_config(
 }
 
 int fx_muxer_t::read_config_and_execute(
+    const pal::string_t& host_command,
     const pal::string_t& own_dir,
     const pal::string_t& app_candidate,
-    const std::unordered_map<pal::string_t, std::vector<pal::string_t>>& opts,
-    int new_argc, const pal::char_t** new_argv, host_mode_t mode)
+    const opt_map_t& opts,
+    int new_argc,
+    const pal::char_t** new_argv,
+    host_mode_t mode,
+    pal::char_t out_buffer[],
+    int32_t buffer_size,
+    int32_t* required_buffer_size)
 {
     pal::string_t opts_fx_version = _X("--fx-version");
     pal::string_t opts_roll_fwd_on_no_candidate_fx = _X("--roll-forward-on-no-candidate-fx");
@@ -1380,15 +1380,26 @@ int fx_muxer_t::read_config_and_execute(
         return CoreHostLibMissingFailure;
     }
 
-    corehost_init_t init(deps_file, additional_deps_serialized, probe_realpaths, mode, fx_definitions);
-    return execute_app(impl_dir, &init, new_argc, new_argv);
+    corehost_init_t init(host_command, deps_file, additional_deps_serialized, probe_realpaths, mode, fx_definitions);
+
+    if (host_command.size() == 0)
+    {
+        rc = execute_app(impl_dir, &init, new_argc, new_argv);
+    }
+    else
+    {
+        rc = execute_host_command(impl_dir, &init, new_argc, new_argv, out_buffer, buffer_size, required_buffer_size);
+    }
+
+    return rc;
 }
 
-/**
-*  Main entrypoint to detect operating mode and perform corehost, muxer,
-*  standalone application activation and the SDK activation.
-*/
-int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
+int fx_muxer_t::parse_path_args(
+    const int argc,
+    const pal::char_t* argv[],
+    pal::string_t& own_dir,
+    pal::string_t& own_dll,
+    pal::string_t& own_name)
 {
     pal::string_t own_path;
 
@@ -1414,63 +1425,141 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
         return StatusCode::LibHostCurExeFindFailure;
     }
 
-    pal::string_t own_name = get_filename(own_path);
-    pal::string_t own_dir = get_directory(own_path);
+    own_name = get_filename(own_path);
+    own_dir = get_directory(own_path);
     pal::string_t own_dll_filename = get_executable(own_name) + _X(".dll");
-    pal::string_t own_dll = own_dir;
+    own_dll = own_dir;
     append_path(&own_dll, own_dll_filename.c_str());
 
     trace::info(_X("Own dll path '%s'"), own_dll.c_str());
+    return 0;
+}
 
-    // Flag to indicate activation of an app instead of an invocation of the SDK.
-    bool is_an_app = true;
+/**
+*  Main entrypoint to detect operating mode and perform corehost, muxer,
+*  standalone application activation and the SDK activation.
+*/
+int fx_muxer_t::execute(
+    const pal::string_t host_command,
+    const int argc,
+    const pal::char_t* argv[],
+    pal::char_t result_buffer[],
+    int32_t buffer_size,
+    int32_t* required_buffer_size)
+{
+    pal::string_t own_dir;
+    pal::string_t own_dll;
+    pal::string_t own_name;
 
-    // Detect invocation mode
-    auto mode = detect_operating_mode(own_dir, own_dll, own_name);
-
-    //
-    // Invoked as corehost
-    //
-
-    if (mode == host_mode_t::split_fx)
-    {
-        trace::verbose(_X("--- Executing in split/FX mode..."));
-        return parse_args_and_execute(own_dir, own_dll, 1, argc, argv, false, host_mode_t::split_fx, &is_an_app);
-    }
-
-    //
-    // Invoked from the application base.
-    //
-
-    if (mode == host_mode_t::standalone)
-    {
-        trace::verbose(_X("--- Executing in standalone mode..."));
-        return parse_args_and_execute(own_dir, own_dll, 1, argc, argv, false, host_mode_t::standalone, &is_an_app);
-    }
-
-    //
-    // Invoked as the dotnet.exe muxer.
-    //
-
-    trace::verbose(_X("--- Executing in muxer mode..."));
-
-    if (argc <= 1)
-    {
-        return muxer_usage(!is_sdk_dir_present(own_dir));
-    }
-
-    if (pal::strcasecmp(_X("exec"), argv[1]) == 0)
-    {
-        return parse_args_and_execute(own_dir, own_dll, 2, argc, argv, true, host_mode_t::muxer, &is_an_app); // arg offset 2 for dotnet, exec
-    }
-
-    int result = parse_args_and_execute(own_dir, own_dll, 1, argc, argv, false, host_mode_t::muxer, &is_an_app); // arg offset 1 for dotnet
-
-    if (is_an_app)
+    int result = parse_path_args(argc, argv, own_dir, own_dll, own_name);
+    if (result)
     {
         return result;
     }
 
+    // Detect invocation mode
+    host_mode_t mode = detect_operating_mode(own_dir, own_dll, own_name);
+
+    bool is_an_app = true; // Indicates activation of an app instead of an invocation of the SDK.
+    int new_argoff;
+    pal::string_t app_candidate;
+    opt_map_t opts;
+
+    if (mode == host_mode_t::split_fx)
+    {
+        // Invoked as corehost
+        trace::verbose(_X("--- Executing in split/FX mode..."));
+        result = parse_args(own_dir, own_dll, 1, argc, argv, false, mode, &is_an_app, &new_argoff, app_candidate, opts);
+    }
+    else if (mode == host_mode_t::standalone)
+    {
+        // Invoked from the application base.
+        trace::verbose(_X("--- Executing in standalone mode..."));
+        result = parse_args(own_dir, own_dll, 1, argc, argv, false, mode, &is_an_app, &new_argoff, app_candidate, opts);
+    }
+    else
+    {
+        // Invoked as the dotnet.exe muxer.
+        assert(mode == host_mode_t::muxer);
+        trace::verbose(_X("--- Executing in muxer mode..."));
+
+        if (argc <= 1)
+        {
+            return muxer_usage(!is_sdk_dir_present(own_dir));
+        }
+
+        if (pal::strcasecmp(_X("exec"), argv[1]) == 0)
+        {
+            result = parse_args(own_dir, own_dll, 2, argc, argv, true, mode, &is_an_app, &new_argoff, app_candidate, opts); // arg offset 2 for dotnet, exec
+        }
+        else
+        {
+            result = parse_args(own_dir, own_dll, 1, argc, argv, false, mode, &is_an_app, &new_argoff, app_candidate, opts); // arg offset 1 for dotnet
+
+            if (!is_an_app)
+            {
+                return handle_cli(own_dir, own_dll, argc, argv);
+            }
+        }
+    }
+
+    if (!result && is_an_app)
+    {
+        // Transform dotnet [exec] [--additionalprobingpath path] [--depsfile file] [dll] [args] -> dotnet [dll] [args]
+        result = handle_exec_host_command(host_command, own_dir, app_candidate, opts, argc, argv, new_argoff, mode, result_buffer, buffer_size, required_buffer_size);
+    }
+
+    return result;
+}
+
+int fx_muxer_t::handle_exec(
+    const pal::string_t& own_dir,
+    const pal::string_t& app_candidate,
+    const opt_map_t& opts,
+    int argc,
+    const pal::char_t* argv[],
+    int argoff,
+    host_mode_t mode)
+{
+    return handle_exec_host_command(pal::string_t(), own_dir, app_candidate, opts, argc, argv, argoff, mode, nullptr, 0, nullptr);
+}
+
+int fx_muxer_t::handle_exec_host_command(
+    const pal::string_t& host_command,
+    const pal::string_t& own_dir,
+    const pal::string_t& app_candidate,
+    const opt_map_t& opts,
+    int argc,
+    const pal::char_t* argv[],
+    int argoff,
+    host_mode_t mode,
+    pal::char_t result_buffer[],
+    int32_t buffer_size,
+    int32_t* required_buffer_size)
+{
+    const pal::char_t** new_argv = argv;
+    int new_argc = argc;
+    std::vector<const pal::char_t*> vec_argv;
+
+    if (argoff != 1)
+    {
+        vec_argv.reserve(argc - argoff + 1); // +1 for dotnet
+        vec_argv.push_back(argv[0]);
+        vec_argv.insert(vec_argv.end(), argv + argoff, argv + argc);
+        new_argv = vec_argv.data();
+        new_argc = vec_argv.size();
+    }
+
+    // Transform dotnet [exec] [--additionalprobingpath path] [--depsfile file] [dll] [args] -> dotnet [dll] [args]
+    return read_config_and_execute(host_command, own_dir, app_candidate, opts, new_argc, new_argv, mode, result_buffer, buffer_size, required_buffer_size);
+}
+
+int fx_muxer_t::handle_cli(
+    const pal::string_t& own_dir,
+    const pal::string_t& own_dll,
+    int argc,
+    const pal::char_t* argv[])
+{
     // Check for commands that don't depend on the CLI SDK to be loaded
     if (pal::strcasecmp(_X("--list-sdks"), argv[1]) == 0)
     {
@@ -1502,6 +1591,7 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
         trace::error(_X("  %s"), DOTNET_CORE_URL);
         return StatusCode::LibHostSdkFindFailure;
     }
+
     append_path(&sdk_dotnet, _X("dotnet.dll"));
 
     if (!pal::file_exists(sdk_dotnet))
@@ -1519,7 +1609,18 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
     new_argv.insert(new_argv.end(), argv + 1, argv + argc);
 
     trace::verbose(_X("Using dotnet SDK dll=[%s]"), sdk_dotnet.c_str());
-    result = parse_args_and_execute(own_dir, own_dll, 1, new_argv.size(), new_argv.data(), false, host_mode_t::muxer, &is_an_app);
+
+    bool is_an_app;
+    int new_argoff;
+    pal::string_t app_candidate;
+    opt_map_t opts;
+    
+    int result = parse_args(own_dir, own_dll, 1, new_argv.size(), new_argv.data(), false, host_mode_t::muxer, &is_an_app, &new_argoff, app_candidate, opts); // arg offset 1 for dotnet
+    if (!result)
+    {
+        // Transform dotnet [exec] [--additionalprobingpath path] [--depsfile file] [dll] [args] -> dotnet [dll] [args]
+        result = handle_exec(own_dir, app_candidate, opts, new_argv.size(), new_argv.data(), new_argoff, host_mode_t::muxer);
+    }
 
     if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
     {
