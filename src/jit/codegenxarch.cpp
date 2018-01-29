@@ -6219,7 +6219,7 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
 #ifdef _TARGET_X86_
             (!op1->isUsedFromReg() || isByteReg(op1->gtRegNum)) &&
 #endif
-            (op2->IsCnsIntOrI() && genTypeCanRepresentValue(TYP_UBYTE, op2->AsIntCon()->IconValue())))
+            (op2->IsCnsIntOrI() && genSmallTypeCanRepresentValue(TYP_UBYTE, op2->AsIntCon()->IconValue())))
         {
             type = TYP_UBYTE;
         }
@@ -6266,8 +6266,9 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
         assert((genTypeSize(op1Type) >= genTypeSize(type)) || !op1->isUsedFromMemory());
         // If op2 is smaller then it cannot be in memory, we're probably missing a cast
         assert((genTypeSize(op2Type) >= genTypeSize(type)) || !op2->isUsedFromMemory());
-        // If op2 is a constant then it should fit in the common type
-        assert(!op2->IsCnsIntOrI() || genTypeCanRepresentValue(type, op2->AsIntCon()->IconValue()));
+        // If we ended up with a small type and op2 is a constant then make sure we don't lose constant bits
+        assert(!op2->IsCnsIntOrI() || !varTypeIsSmall(type) ||
+               genSmallTypeCanRepresentValue(type, op2->AsIntCon()->IconValue()));
     }
 
     // The type cannot be larger than the machine word size
