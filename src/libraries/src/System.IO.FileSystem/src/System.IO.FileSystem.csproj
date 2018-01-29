@@ -44,8 +44,8 @@
     <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Text\ValueStringBuilder.cs">
-      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\System\Text\ValueStringBuilder.cs">
+      <Link>Common\CoreLib\System\Text\ValueStringBuilder.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\PathInternal.cs">
       <Link>Common\System\IO\PathInternal.cs</Link>
