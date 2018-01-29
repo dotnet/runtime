@@ -247,10 +247,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             return _loader;
         }
-        private ErrorHandling GetErrorContext()
-        {
-            return GetSymbolLoader().GetErrorContext();
-        }
+
         private TypeManager GetTypeManager()
         {
             return GetSymbolLoader().GetTypeManager();

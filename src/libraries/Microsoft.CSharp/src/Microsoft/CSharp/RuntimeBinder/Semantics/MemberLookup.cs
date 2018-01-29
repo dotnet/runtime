@@ -41,7 +41,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private CSemanticChecker _pSemanticChecker;
         private SymbolLoader _pSymbolLoader;
         private CType _typeSrc;
-        private Expr _obj;
         private CType _typeQual;
         private ParentSymbol _symWhere;
         private Name _name;
@@ -556,7 +555,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             _pSemanticChecker = checker;
             _pSymbolLoader = checker.SymbolLoader;
             _typeSrc = typeSrc;
-            _obj = obj is ExprClass ? null : obj;
             _symWhere = symWhere;
             _name = name;
             _arity = arity;
@@ -613,34 +611,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         // The first symbol found.
-        public Symbol SymFirst()
-        {
-            return _swtFirst.Sym;
-        }
         public SymWithType SwtFirst()
         {
             return _swtFirst;
-        }
-
-        public Expr GetObject()
-        {
-            return _obj;
-        }
-
-        public CType GetSourceType()
-        {
-            return _typeSrc;
-        }
-
-        public MemLookFlags GetFlags()
-        {
-            return _flags;
-        }
-
-        // Put all the types in a type array.
-        private TypeArray GetAllTypes()
-        {
-            return GetSymbolLoader().getBSymmgr().AllocParams(_prgtype.Count, _prgtype.ToArray());
         }
 
         /******************************************************************************
