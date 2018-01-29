@@ -29,7 +29,7 @@ namespace Microsoft.Win32.SafeHandles
 
         override protected bool ReleaseHandle()
         {
-            return (RegCloseKey(handle) == Win32Native.ERROR_SUCCESS);
+            return (RegCloseKey(handle) == Interop.Errors.ERROR_SUCCESS);
         }
 
         [DllImport(Win32Native.ADVAPI32)]

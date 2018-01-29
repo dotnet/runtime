@@ -31,7 +31,7 @@ internal partial class Interop
 
         internal struct WIN32_FILE_ATTRIBUTE_DATA
         {
-            internal int fileAttributes;
+            internal int dwFileAttributes;
             internal uint ftCreationTimeLow;
             internal uint ftCreationTimeHigh;
             internal uint ftLastAccessTimeLow;
@@ -44,7 +44,7 @@ internal partial class Interop
             internal void PopulateFrom(ref WIN32_FIND_DATA findData)
             {
                 // Copy the information to data
-                fileAttributes = (int)findData.dwFileAttributes;
+                dwFileAttributes = (int)findData.dwFileAttributes;
                 ftCreationTimeLow = findData.ftCreationTime.dwLowDateTime;
                 ftCreationTimeHigh = findData.ftCreationTime.dwHighDateTime;
                 ftLastAccessTimeLow = findData.ftLastAccessTime.dwLowDateTime;

@@ -66,7 +66,7 @@ namespace System.Threading
                     throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
 
                 case OpenExistingResult.PathNotFound:
-                    throw Win32Marshal.GetExceptionForWin32Error(Win32Native.ERROR_PATH_NOT_FOUND, name);
+                    throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_PATH_NOT_FOUND, name);
 
                 default:
                     return result;
@@ -153,17 +153,17 @@ namespace System.Threading
                 int errorCode = Marshal.GetLastWin32Error();
 
 #if PLATFORM_UNIX
-                if (name != null && errorCode == Win32Native.ERROR_FILENAME_EXCED_RANGE)
+                if (name != null && errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
                 {
                     // On Unix, length validation is done by CoreCLR's PAL after converting to utf-8
                     throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, name, WaitHandleNameMax), nameof(name));
                 }
 #endif
-                if (Win32Native.ERROR_FILE_NOT_FOUND == errorCode || Win32Native.ERROR_INVALID_NAME == errorCode)
+                if (Interop.Errors.ERROR_FILE_NOT_FOUND == errorCode || Interop.Errors.ERROR_INVALID_NAME == errorCode)
                     return OpenExistingResult.NameNotFound;
-                if (Win32Native.ERROR_PATH_NOT_FOUND == errorCode)
+                if (Interop.Errors.ERROR_PATH_NOT_FOUND == errorCode)
                     return OpenExistingResult.PathNotFound;
-                if (null != name && Win32Native.ERROR_INVALID_HANDLE == errorCode)
+                if (null != name && Interop.Errors.ERROR_INVALID_HANDLE == errorCode)
                     return OpenExistingResult.NameInvalid;
 
                 // this is for passed through Win32Native Errors
