@@ -2225,11 +2225,6 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 #endif
 					} else {
 						MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
-						/*
-						 * When the exception is thrown in async fashion, we can have the stack pointer
-						 * unaligned. Make sure we resume to the catch handler with an aligned stack.
-						 */
-						MONO_CONTEXT_SET_SP (ctx, (mgreg_t)MONO_CONTEXT_GET_SP (ctx) & ~(MONO_ARCH_FRAME_ALIGNMENT - 1));
 					}
 					mono_set_lmf (lmf);
 #ifndef DISABLE_PERFCOUNTERS
