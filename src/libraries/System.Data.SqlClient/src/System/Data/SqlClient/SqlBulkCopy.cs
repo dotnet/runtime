@@ -1871,16 +1871,22 @@ namespace System.Data.SqlClient
                     finishedSynchronously = false;
                     return resultTask.ContinueWith((t) =>
                     {
-                        AbortTransaction(); // If there is one, on success transactions will be committed.
-                        _isBulkCopyingInProgress = false;
-                        if (_parser != null)
+                        try
                         {
-                            _parser._asyncWrite = false;
+                            AbortTransaction(); // If there is one, on success transactions will be committed.
                         }
-                        if (_parserLock != null)
+                        finally
                         {
-                            _parserLock.Release();
-                            _parserLock = null;
+                            _isBulkCopyingInProgress = false;
+                            if (_parser != null)
+                            {
+                                _parser._asyncWrite = false;
+                            }
+                            if (_parserLock != null)
+                            {
+                                _parserLock.Release();
+                                _parserLock = null;
+                            }
                         }
                         return t;
                     }, TaskScheduler.Default).Unwrap();
@@ -1907,16 +1913,22 @@ namespace System.Data.SqlClient
                 _columnMappings.ReadOnly = false;
                 if (finishedSynchronously)
                 {
-                    AbortTransaction(); // If there is one, on success transactions will be committed.
-                    _isBulkCopyingInProgress = false;
-                    if (_parser != null)
+                    try
                     {
-                        _parser._asyncWrite = false;
+                        AbortTransaction(); // If there is one, on success transactions will be committed.
                     }
-                    if (_parserLock != null)
+                    finally
                     {
-                        _parserLock.Release();
-                        _parserLock = null;
+                        _isBulkCopyingInProgress = false;
+                        if (_parser != null)
+                        {
+                            _parser._asyncWrite = false;
+                        }
+                        if (_parserLock != null)
+                        {
+                            _parserLock.Release();
+                            _parserLock = null;
+                        }
                     }
                 }
             }
