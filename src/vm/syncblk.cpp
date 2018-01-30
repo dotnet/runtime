@@ -2888,7 +2888,7 @@ void AwareLock::Enter()
     CONTRACTL_END;
 
     Thread *pCurThread = GetThread();
-    LockState state = m_lockState;
+    LockState state = m_lockState.VolatileLoadWithoutBarrier();
     if (!state.IsLocked() || m_HoldingThread != pCurThread)
     {
         if (m_lockState.InterlockedTryLock_Or_RegisterWaiter(this, state))
@@ -2950,7 +2950,7 @@ BOOL AwareLock::TryEnter(INT32 timeOut)
         pCurThread->HandleThreadAbort();
     }
 
-    LockState state = m_lockState;
+    LockState state = m_lockState.VolatileLoadWithoutBarrier();
     if (!state.IsLocked() || m_HoldingThread != pCurThread)
     {
         if (timeOut == 0
