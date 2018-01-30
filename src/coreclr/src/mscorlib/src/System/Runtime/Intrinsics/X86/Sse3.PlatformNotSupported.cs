@@ -17,28 +17,34 @@ namespace System.Runtime.Intrinsics.X86
         
         /// <summary>
         /// __m128 _mm_addsub_ps (__m128 a, __m128 b)
+        ///   ADDSUBPS xmm, xmm/m128
         /// </summary>
         public static Vector128<float> AddSubtract(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128d _mm_addsub_pd (__m128d a, __m128d b)
+        ///   ADDSUBPD xmm, xmm/m128
         /// </summary>
         public static Vector128<double> AddSubtract(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm_hadd_ps (__m128 a, __m128 b)
+        ///   HADDPS xmm, xmm/m128
         /// </summary>
         public static Vector128<float> HorizontalAdd(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128d _mm_hadd_pd (__m128d a, __m128d b)
+        ///   HADDPD xmm, xmm/m128
         /// </summary>
         public static Vector128<double> HorizontalAdd(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm_hsub_ps (__m128 a, __m128 b)
+        ///   HSUBPS xmm, xmm/m128
         /// </summary>
         public static Vector128<float> HorizontalSubtract(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128d _mm_hsub_pd (__m128d a, __m128d b)
+        ///   HSUBPD xmm, xmm/m128
         /// </summary>
         public static Vector128<double> HorizontalSubtract(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
@@ -49,6 +55,7 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// __m128i _mm_lddqu_si128 (__m128i const* mem_addr)
+        ///   LDDQU xmm, m128
         /// </summary>
         public static unsafe Vector128<sbyte> LoadDquVector128(sbyte* address) { throw new PlatformNotSupportedException(); }
         public static unsafe Vector128<byte> LoadDquVector128(byte* address) { throw new PlatformNotSupportedException(); }
@@ -61,16 +68,19 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// __m128d _mm_movedup_pd (__m128d a)
+        ///   MOVDDUP xmm, xmm/m64
         /// </summary>
         public static Vector128<double> MoveAndDuplicate(Vector128<double> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm_movehdup_ps (__m128 a)
+        ///   MOVSHDUP xmm, xmm/m128
         /// </summary>
         public static Vector128<float> MoveHighAndDuplicate(Vector128<float> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm_moveldup_ps (__m128 a)
+        ///   MOVSLDUP xmm, xmm/m128
         /// </summary>
         public static Vector128<float> MoveLowAndDuplicate(Vector128<float> source) { throw new PlatformNotSupportedException(); }
 

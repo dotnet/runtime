@@ -78,3 +78,9 @@ Loader/classloader/TypeGeneratorTests/TypeGeneratorTest614/Generated614/Generate
 Loader/classloader/TypeGeneratorTests/TypeGeneratorTest681/Generated681/Generated681.sh
 Loader/classloader/TypeGeneratorTests/TypeGeneratorTest682/Generated682/Generated682.sh
 Loader/classloader/TypeGeneratorTests/TypeGeneratorTest683/Generated683/Generated683.sh
+JIT/HardwareIntrinsics/X86/Sse/ConvertToVector128SingleScalar_r/ConvertToVector128SingleScalar_r.sh
+JIT/HardwareIntrinsics/X86/Sse/ConvertToVector128SingleScalar_ro/ConvertToVector128SingleScalar_ro.sh
+JIT/HardwareIntrinsics/X86/Sse/LoadScalar_r/LoadScalar_r.sh
+JIT/HardwareIntrinsics/X86/Sse/LoadScalar_ro/LoadScalar_ro.sh
+JIT/HardwareIntrinsics/X86/Sse/SetScalar_r/SetScalar_r.sh
+JIT/HardwareIntrinsics/X86/Sse/SetScalar_ro/SetScalar_ro.sh
