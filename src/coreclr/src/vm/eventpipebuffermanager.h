@@ -10,6 +10,7 @@
 #include "eventpipe.h"
 #include "eventpipefile.h"
 #include "eventpipebuffer.h"
+#include "eventpipesession.h"
 #include "spinlock.h"
 
 class EventPipeBufferList;
@@ -69,7 +70,7 @@ public:
     // This is because the thread that writes the events is not the same as the "event thread".
     // An optional stack trace can be provided for sample profiler events.
     // Otherwise, if a stack trace is needed, one will be automatically collected.
-    bool WriteEvent(Thread *pThread, EventPipeEvent &event, EventPipeEventPayload &payload, LPCGUID pActivityId, LPCGUID pRelatedActivityId, Thread *pEventThread = NULL, StackContents *pStack = NULL);
+    bool WriteEvent(Thread *pThread, EventPipeSession &session, EventPipeEvent &event, EventPipeEventPayload &payload, LPCGUID pActivityId, LPCGUID pRelatedActivityId, Thread *pEventThread = NULL, StackContents *pStack = NULL);
 
     // Write the contents of the managed buffers to the specified file.
     // The stopTimeStamp is used to determine when tracing was stopped to ensure that we
