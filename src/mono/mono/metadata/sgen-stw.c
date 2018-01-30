@@ -151,6 +151,9 @@ sgen_client_restart_world (int generation, gboolean serial_collection, gint64 *s
 	if (MONO_PROFILER_ENABLED (gc_moves))
 		mono_sgen_gc_event_moves ();
 
+	if (MONO_PROFILER_ENABLED (gc_resize))
+		mono_sgen_gc_event_resize ();
+
 	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_PRE_START_WORLD, generation));
 	MONO_PROFILER_RAISE (gc_event2, (MONO_GC_EVENT_PRE_START_WORLD, generation, serial_collection));
 
