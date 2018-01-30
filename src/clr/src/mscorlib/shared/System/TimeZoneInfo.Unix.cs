@@ -525,7 +525,8 @@ namespace System
         {
             try
             {
-                using (FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                // bufferSize == 1 used to avoid unnecessary buffer in FileStream
+                using (FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1))
                 {
                     if (stream.Length == rawData.Length)
                     {
