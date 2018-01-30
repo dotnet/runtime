@@ -3395,18 +3395,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             ni = lookupNamedIntrinsic(method);
 
 #ifdef FEATURE_HW_INTRINSICS
-#ifdef _TARGET_XARCH_
-            if (ni > NI_HW_INTRINSIC_START && ni < NI_HW_INTRINSIC_END)
-            {
-                return impX86HWIntrinsic(ni, method, sig, mustExpand);
-            }
-#endif // _TARGET_XARCH_
-#ifdef _TARGET_ARM64_
             if (ni > NI_HW_INTRINSIC_START && ni < NI_HW_INTRINSIC_END)
             {
                 return impHWIntrinsic(ni, method, sig, mustExpand);
             }
-#endif // _TARGET_XARCH_
 #endif // FEATURE_HW_INTRINSICS
         }
     }
