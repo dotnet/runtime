@@ -4,6 +4,7 @@
 
   <PropertyGroup>
     <PackageVersion>2.0.0</PackageVersion>
+    <ServiceModelVersion>4.4.1</ServiceModelVersion>
   </PropertyGroup>
 
   <ItemDefinitionGroup>
@@ -50,18 +51,26 @@
     <PrereleaseLibraryPackage Include="System.Text.Encoding.CodePages" />
     <PrereleaseLibraryPackage Include="System.Threading.AccessControl" />
 
-    <!-- External pre-release packages -->
+    <!-- Service model packages -->
     <LibraryPackage Include="System.ServiceModel.Primitives">
-      <Version>4.4.1-servicing-25917-01</Version>
+      <Version>$(ServiceModelVersion)</Version>
+    </LibraryPackage>
+    <LibraryPackage Include="System.ServiceModel.Duplex">
+      <Version>$(ServiceModelVersion)</Version>
+    </LibraryPackage>
+    <LibraryPackage Include="System.ServiceModel.Http">
+      <Version>$(ServiceModelVersion)</Version>
+    </LibraryPackage>
+    <LibraryPackage Include="System.ServiceModel.NetTcp">
+      <Version>$(ServiceModelVersion)</Version>
+    </LibraryPackage>
+    <LibraryPackage Include="System.ServiceModel.Security">
+      <Version>$(ServiceModelVersion)</Version>
     </LibraryPackage>
 
     <!-- Stable packages shipped already for netcoreapp2.0 -->
     <LibraryPackage Include="System.Data.SqlClient" />
     <LibraryPackage Include="System.Security.Cryptography.Cng" />
-    <LibraryPackage Include="System.ServiceModel.Duplex" />
-    <LibraryPackage Include="System.ServiceModel.Http" />
-    <LibraryPackage Include="System.ServiceModel.NetTcp" />
-    <LibraryPackage Include="System.ServiceModel.Security" />
   </ItemGroup>
 
   <ItemGroup>
