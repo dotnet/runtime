@@ -40,5 +40,19 @@ namespace System.Net.Http.Tests
             yield return new object[] { "=value1,key2=,", s_emptyStringList, s_emptyStringList };
             yield return new object[] { "key1\tm= value1", s_emptyStringList, s_emptyStringList };
         }
+
+        [Theory]
+        [InlineData("realm=\"NetCore\", nonce=\"qMRqWgAAAAAQMjIABgAAAFwEiEwAAAAA\", qop=\"auth\", stale=false", true)]
+        [InlineData("realm=\"NetCore\", nonce=\"qMRqWgAAAAAQMjIABgAAAFwEiEwAAAAA\"", true)]
+        [InlineData("nonce=\"qMRqWgAAAAAQMjIABgAAAFwEiEwAAAAA\", qop=\"auth\", stale=false", false)]
+        [InlineData("realm=\"NetCore\", qop=\"auth\", stale=false", false)]
+        public async void DigestResponse_AuthToken_Handling(string response, bool expectedResult)
+        {
+            NetworkCredential credential = new NetworkCredential("foo","bar");
+            AuthenticationHelper.DigestResponse digestResponse = new AuthenticationHelper.DigestResponse(response);
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://microsoft.com/");
+
+            Assert.Equal(expectedResult, await AuthenticationHelper.TrySetDigestAuthToken(request, credential, digestResponse, HttpKnownHeaderNames.ProxyAuthorization).ConfigureAwait(false));
+        }
     }
 }

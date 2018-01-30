@@ -95,13 +95,15 @@ namespace System.Net.Http
                 return null;
             }
 
+            // opaque token may or may not exist
             string opaque;
-            if (!digestResponse.Parameters.TryGetValue(Opaque, out opaque))
+            digestResponse.Parameters.TryGetValue(Opaque, out opaque);
+
+            string realm;
+            if (!digestResponse.Parameters.TryGetValue(Realm, out realm))
             {
                 return null;
             }
-
-            string realm = digestResponse.Parameters.ContainsKey(Realm) ? digestResponse.Parameters[Realm] : string.Empty;
 
             // Add username
             string userhash;
@@ -189,7 +191,10 @@ namespace System.Net.Http
             sb.AppendKeyValue(Algorithm, algorithm, includeQuotes: false);
 
             // Add opaque
-            sb.AppendKeyValue(Opaque, opaque);
+            if (opaque != null)
+            {
+                sb.AppendKeyValue(Opaque, opaque);
+            }
 
             // Add qop
             sb.AppendKeyValue(Qop, qop, includeQuotes: false);
