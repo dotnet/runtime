@@ -612,7 +612,12 @@ internal class SqlDependencyProcessDispatcher : MarshalByRefObject
                         _timeoutParam.Value = _defaultWaitforTimeout; // If success, reset to default for re-queue.
                         AsynchronouslyQueryServiceBrokerQueue();
                         _errorState = false;
-                        _retryTimer = null;
+                        Timer retryTimer = _retryTimer;
+                        if (retryTimer != null)
+                        {
+                            _retryTimer = null;
+                            retryTimer.Dispose();
+                        }
                     }
                 }
 
