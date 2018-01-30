@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -77,7 +76,7 @@ namespace System.Threading.Tasks
             }
 
             _task = task;
-            _result = default(TResult);
+            _result = default;
         }
 
         /// <summary>Returns the hash code for this instance.</summary>
@@ -166,13 +165,5 @@ namespace System.Threading.Tasks
                     string.Empty;
             }
         }
-
-        // TODO https://github.com/dotnet/corefx/issues/22171:
-        // Remove CreateAsyncMethodBuilder once the C# compiler relies on the AsyncBuilder attribute.
-
-        /// <summary>Creates a method builder for use with an async method.</summary>
-        /// <returns>The created builder.</returns>
-        [EditorBrowsable(EditorBrowsableState.Never)] // intended only for compiler consumption
-        public static AsyncValueTaskMethodBuilder<TResult> CreateAsyncMethodBuilder() => AsyncValueTaskMethodBuilder<TResult>.Create();
     }
 }
