@@ -132,7 +132,7 @@ NamedIntrinsic Compiler::lookupHWIntrinsic(const char* methodName, InstructionSe
     NamedIntrinsic result = NI_Illegal;
     if (isa != InstructionSet_ILLEGAL)
     {
-        for (int i = 0; i < NI_HW_INTRINSIC_END - NI_HW_INTRINSIC_START; i++)
+        for (int i = 0; i < NI_HW_INTRINSIC_END - NI_HW_INTRINSIC_START - 1; i++)
         {
             if (isa == hwIntrinsicInfoArray[i].isa && strcmp(methodName, hwIntrinsicInfoArray[i].intrinsicName) == 0)
             {
