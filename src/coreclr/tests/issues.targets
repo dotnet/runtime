@@ -193,6 +193,24 @@
         <ExcludeList Include="$(XunitTestBinBase)\tracing\eventpipetrace\**">
             <Issue>15924</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\ConvertToVector128SingleScalar_r\*">
+            <Issue>16094</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\ConvertToVector128SingleScalar_ro\*">
+            <Issue>16094</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\LoadScalar_r\*">
+            <Issue>16094</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\LoadScalar_ro\*">
+            <Issue>16094</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\SetScalar_r\*">
+            <Issue>16094</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\HardwareIntrinsics\X86\Sse\SetScalar_ro\*">
+            <Issue>16094</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- The following are x86 failures -->
