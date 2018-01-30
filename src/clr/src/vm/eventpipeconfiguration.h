@@ -6,6 +6,7 @@
 
 #ifdef FEATURE_PERFTRACING
 
+#include "eventpipe.h"
 #include "slist.h"
 
 class EventPipeSessionProvider;
