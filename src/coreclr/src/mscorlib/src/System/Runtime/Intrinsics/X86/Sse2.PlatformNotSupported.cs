@@ -681,7 +681,7 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128d _mm_load_sd (double const* mem_address);
         ///   MOVSD xmm, m64
         /// </summary>
-        public static unsafe Vector128<double> LoadScalar(double* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<double> LoadScalarVector128(double* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm_load_si128 (__m128i const* mem_address);
@@ -745,42 +745,42 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr);
         ///   MOVQ xmm, reg/m64
         /// </summary>
-        public static unsafe Vector128<sbyte> LoadScalar(sbyte* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<sbyte> LoadScalarVector128(sbyte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr);
         ///   MOVQ xmm, reg/m64
         /// </summary>
-        public static unsafe Vector128<byte> LoadScalar(byte* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<byte> LoadScalarVector128(byte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr);
         ///   MOVQ xmm, reg/m64
         /// </summary>
-        public static unsafe Vector128<short> LoadScalar(short* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<short> LoadScalarVector128(short* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr);
         ///   MOVQ xmm, reg/m64
         /// </summary>
-        public static unsafe Vector128<ushort> LoadScalar(ushort* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<ushort> LoadScalarVector128(ushort* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr);
         ///   MOVQ xmm, reg/m64
         /// </summary>
-        public static unsafe Vector128<int> LoadScalar(int* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<int> LoadScalarVector128(int* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr);
         ///   MOVQ xmm, reg/m64
         /// </summary>
-        public static unsafe Vector128<uint> LoadScalar(uint* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<uint> LoadScalarVector128(uint* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr);
         ///   MOVQ xmm, reg/m64
         /// </summary>
-        public static unsafe Vector128<long> LoadScalar(long* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<long> LoadScalarVector128(long* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr);
         ///   MOVQ xmm, reg/m64
         /// </summary>
-        public static unsafe Vector128<ulong> LoadScalar(ulong* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<ulong> LoadScalarVector128(ulong* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void _mm_maskmoveu_si128 (__m128i a,  __m128i mask, char* mem_address);
