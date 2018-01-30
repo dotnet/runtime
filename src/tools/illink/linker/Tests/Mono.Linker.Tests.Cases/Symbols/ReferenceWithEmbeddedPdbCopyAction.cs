@@ -3,7 +3,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Symbols.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Symbols {
-	[IgnoreTestCase ("Will fix in follow on PR.  Fails due to embedded symbols not being removed")]
 	[SetupCompileBefore ("LibraryWithEmbeddedPdbSymbols.dll", new[] { "Dependencies/LibraryWithEmbeddedPdbSymbols.cs" }, additionalArguments: "/debug:embedded", compilerToUse: "csc")]
 	[SetupLinkerLinkSymbols ("false")]
 	[SetupLinkerAction ("copy", "LibraryWithEmbeddedPdbSymbols")]

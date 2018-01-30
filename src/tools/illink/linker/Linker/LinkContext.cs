@@ -161,6 +161,8 @@ namespace Mono.Linker {
 			_actions = new Dictionary<string, AssemblyAction> ();
 			_parameters = new Dictionary<string, string> ();
 			_readerParameters = readerParameters;
+			
+			SymbolReaderProvider = new DefaultSymbolReaderProvider (false);
 
 			if (factory == null)
 				throw new ArgumentNullException (nameof (factory));
@@ -225,23 +227,21 @@ namespace Mono.Linker {
 
 		public virtual void SafeReadSymbols (AssemblyDefinition assembly)
 		{
-			if (!_linkSymbols)
-				return;
-
 			if (assembly.MainModule.HasSymbols)
 				return;
 
-			try {
-				if (_symbolReaderProvider != null) {
-					var symbolReader = _symbolReaderProvider.GetSymbolReader (
-						assembly.MainModule,
-						assembly.MainModule.FileName);
+			if (_symbolReaderProvider == null)
+				throw new ArgumentNullException (nameof (_symbolReaderProvider));
+			
+			var symbolReader = _symbolReaderProvider.GetSymbolReader (
+				assembly.MainModule,
+				assembly.MainModule.FileName);
 
-					_annotations.AddSymbolReader (assembly, symbolReader);
-					assembly.MainModule.ReadSymbols (symbolReader);
-				} else
-					assembly.MainModule.ReadSymbols ();
-			} catch {}
+			if (symbolReader == null)
+				return;
+
+			_annotations.AddSymbolReader (assembly, symbolReader);
+			assembly.MainModule.ReadSymbols (symbolReader);
 		}
 
 		public virtual ICollection<AssemblyDefinition> ResolveReferences (AssemblyDefinition assembly)

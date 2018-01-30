@@ -94,7 +94,12 @@ namespace Mono.Linker.Steps {
 				(module.Attributes & (ModuleAttributes) 0x04) != 0;
 		}
 
-		protected virtual void WriteAssembly (AssemblyDefinition assembly, string directory)
+		protected void WriteAssembly (AssemblyDefinition assembly, string directory)
+		{
+			WriteAssembly (assembly, directory, SaveSymbols (assembly));
+		}
+
+		protected virtual void WriteAssembly (AssemblyDefinition assembly, string directory, WriterParameters writerParameters)
 		{
 			foreach (var module in assembly.Modules) {
 				// Write back pure IL even for R2R assemblies
@@ -105,7 +110,7 @@ namespace Mono.Linker.Steps {
 				}
 			}
 
-			assembly.Write (GetAssemblyFileName (assembly, directory), SaveSymbols (assembly));
+			assembly.Write (GetAssemblyFileName (assembly, directory), writerParameters);
 		}
 
 		void OutputAssembly (AssemblyDefinition assembly)
@@ -201,6 +206,14 @@ namespace Mono.Linker.Steps {
 
 		protected virtual void CopyAssembly (AssemblyDefinition assembly, string directory)
 		{
+			// Special case.  When an assembly has embedded pdbs, link symbols is not enabled, and the assembly's action is copy,
+			// we want to match the behavior of assemblies with the other symbol types and end up with an assembly that does not have symbols.
+			// In order to do that, we can't simply copy files.  We need to write the assembly without symbols
+			if (assembly.MainModule.HasSymbols && !Context.LinkSymbols && assembly.MainModule.SymbolReader is EmbeddedPortablePdbReader) {
+				WriteAssembly (assembly, directory, new WriterParameters ());
+				return;
+			}
+
 			FileInfo fi = GetOriginalAssemblyFileInfo (assembly);
 			string target = Path.GetFullPath (Path.Combine (directory, fi.Name));
 			string source = fi.FullName;
