@@ -386,6 +386,12 @@ private:
         }
 
     public:
+        LockState VolatileLoadWithoutBarrier() const
+        {
+            WRAPPER_NO_CONTRACT;
+            return ::VolatileLoadWithoutBarrier(&m_state);
+        }
+
         LockState VolatileLoad() const
         {
             WRAPPER_NO_CONTRACT;
@@ -423,7 +429,27 @@ private:
     friend class LockState;
 
 private:
+    // Take care to use 'm_lockState.VolatileLoadWithoutBarrier()` when loading this value into a local variable that will be
+    // reused. That prevents an optimization in the compiler that avoids stack-spilling a value loaded from memory and instead
+    // reloads the value from the original memory location under the assumption that it would not be changed by another thread,
+    // which can result in the local variable's value changing between reads if the memory location is modifed by another
+    // thread. This is important for patterns such as:
+    //
+    //     T x = m_x; // no barrier
+    //     if (meetsCondition(x))
+    //     {
+    //         assert(meetsCondition(x)); // This may fail!
+    //     }
+    //
+    // The code should be written like this instead:
+    //
+    //     T x = VolatileLoadWithoutBarrier(&m_x); // compile-time barrier, no run-time barrier
+    //     if (meetsCondition(x))
+    //     {
+    //         assert(meetsCondition(x)); // This will not fail
+    //     }
     LockState m_lockState;
+
     ULONG           m_Recursion;
     PTR_Thread      m_HoldingThread;
 
@@ -482,13 +508,13 @@ public:
     UINT32 GetLockState() const
     {
         WRAPPER_NO_CONTRACT;
-        return m_lockState.GetState();
+        return m_lockState.VolatileLoadWithoutBarrier().GetState();
     }
 
     bool IsUnlockedWithNoWaiters() const
     {
         WRAPPER_NO_CONTRACT;
-        return m_lockState.IsUnlockedWithNoWaiters();
+        return m_lockState.VolatileLoadWithoutBarrier().IsUnlockedWithNoWaiters();
     }
 
     UINT32 GetMonitorHeldStateVolatile() const

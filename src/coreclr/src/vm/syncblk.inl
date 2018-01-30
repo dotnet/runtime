@@ -11,7 +11,7 @@
 FORCEINLINE bool AwareLock::LockState::InterlockedTryLock()
 {
     WRAPPER_NO_CONTRACT;
-    return InterlockedTryLock(*this);
+    return InterlockedTryLock(VolatileLoadWithoutBarrier());
 }
 
 FORCEINLINE bool AwareLock::LockState::InterlockedTryLock(LockState state)
@@ -80,7 +80,7 @@ FORCEINLINE bool AwareLock::LockState::InterlockedUnlock()
 FORCEINLINE bool AwareLock::LockState::InterlockedTrySetShouldNotPreemptWaitersIfNecessary(AwareLock *awareLock)
 {
     WRAPPER_NO_CONTRACT;
-    return InterlockedTrySetShouldNotPreemptWaitersIfNecessary(awareLock, *this);
+    return InterlockedTrySetShouldNotPreemptWaitersIfNecessary(awareLock, VolatileLoadWithoutBarrier());
 }
 
 FORCEINLINE bool AwareLock::LockState::InterlockedTrySetShouldNotPreemptWaitersIfNecessary(
@@ -178,7 +178,7 @@ FORCEINLINE AwareLock::EnterHelperResult AwareLock::LockState::InterlockedTry_Lo
     WRAPPER_NO_CONTRACT;
 
     // This function is called from inside a spin loop, it must unregister the spinner if and only if the lock is acquired
-    LockState state = *this;
+    LockState state = VolatileLoadWithoutBarrier();
     while (true)
     {
         _ASSERTE(state.HasAnySpinners());
@@ -288,7 +288,7 @@ FORCEINLINE void AwareLock::LockState::InterlockedUnregisterWaiter()
 {
     WRAPPER_NO_CONTRACT;
 
-    LockState state = *this;
+    LockState state = VolatileLoadWithoutBarrier();
     while (true)
     {
         _ASSERTE(state.HasAnyWaiters());
@@ -319,7 +319,7 @@ FORCEINLINE bool AwareLock::LockState::InterlockedTry_LockAndUnregisterWaiterAnd
     // This function is called from the waiter's spin loop and should observe the wake signal only if the lock is taken, to
     // prevent a lock releaser from waking another waiter while one is already spinning to acquire the lock
     bool waiterStarvationStartTimeWasRecorded = false;
-    LockState state = *this;
+    LockState state = VolatileLoadWithoutBarrier();
     while (true)
     {
         _ASSERTE(state.HasAnyWaiters());
@@ -502,7 +502,7 @@ FORCEINLINE AwareLock::EnterHelperResult AwareLock::TryEnterBeforeSpinLoopHelper
         MODE_ANY;
     } CONTRACTL_END;
 
-    LockState state = m_lockState;
+    LockState state = m_lockState.VolatileLoadWithoutBarrier();
 
     // Check the recursive case once before the spin loop. If it's not the recursive case in the beginning, it will not
     // be in the future, so the spin loop can avoid checking the recursive case.
@@ -685,7 +685,7 @@ FORCEINLINE AwareLock::LeaveHelperAction AwareLock::LeaveHelper(Thread* pCurThre
     if (m_HoldingThread != pCurThread)
         return AwareLock::LeaveHelperAction_Error;
 
-    _ASSERTE(m_lockState.IsLocked());
+    _ASSERTE(m_lockState.VolatileLoadWithoutBarrier().IsLocked());
     _ASSERTE(m_Recursion >= 1);
 
 #if defined(_DEBUG) && defined(TRACK_SYNC) && !defined(CROSSGEN_COMPILE)
