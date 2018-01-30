@@ -6,17 +6,22 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System;
 using System.Collections;
-using System.IO;
 using System.Reflection;
 using System.Threading;
 using System.Text;
 using System.Runtime.InteropServices;
 using System.Globalization;
+using System.IO.Pipes;
+using System.Threading.Tasks;
 
 namespace System.ServiceProcess.Tests
 {
     public class TestService : ServiceBase
     {
+        private bool _disposed;
+        private Task _waitClientConnect;
+        private NamedPipeServerStream _serverStream;
+
         public TestService(string serviceName)
         {
             this.ServiceName = serviceName;
@@ -29,66 +34,93 @@ namespace System.ServiceProcess.Tests
             // We cannot easily test these so disable the events
             this.CanHandleSessionChangeEvent = false;
             this.CanHandlePowerEvent = false;
-        }
 
-        public static string GetLogPath(string serviceName)
-        {
-            return typeof(TestService).Assembly.Location + "." + serviceName + ".log";
+            this._serverStream = new NamedPipeServerStream(serviceName);
+            _waitClientConnect = this._serverStream.WaitForConnectionAsync();
         }
 
         protected override void OnContinue()
         {
-            WriteLog(nameof(OnContinue));
             base.OnContinue();
+            WriteStreamAsync(PipeMessageByteCode.Continue).Wait();
         }
 
         protected override void OnCustomCommand(int command)
         {
-            WriteLog(nameof(OnCustomCommand) + " command=" + command);
             base.OnCustomCommand(command);
+            WriteStreamAsync(PipeMessageByteCode.OnCustomCommand, command).Wait();
         }
 
         protected override void OnPause()
         {
-            WriteLog(nameof(OnPause));
             base.OnPause();
+            WriteStreamAsync(PipeMessageByteCode.Pause).Wait();
         }
 
         protected override void OnSessionChange(SessionChangeDescription changeDescription)
         {
-            WriteLog(nameof(OnSessionChange) + " change=" + changeDescription.ToString());
             base.OnSessionChange(changeDescription);
         }
 
         protected override bool OnPowerEvent(PowerBroadcastStatus powerStatus)
         {
-            WriteLog(nameof(OnPowerEvent) + " status=" + powerStatus.ToString());
             return base.OnPowerEvent(powerStatus);
         }
 
         protected override void OnShutdown()
         {
-            WriteLog(nameof(OnShutdown));
             base.OnShutdown();
         }
 
         protected override void OnStart(string[] args)
         {
-            File.Delete(GetLogPath(ServiceName));
-
-            WriteLog(nameof(OnStart) + " args=" + string.Join(",", args));
             base.OnStart(args);
+            if (args.Length == 4 && args[0] == "StartWithArguments")
+            {
+                Debug.Assert(args[1] == "a");
+                Debug.Assert(args[2] == "b");
+                Debug.Assert(args[3] == "c");
+                WriteStreamAsync(PipeMessageByteCode.Start).Wait();
+            }
         }
 
         protected override void OnStop()
         {
-            WriteLog(nameof(OnStop));
             base.OnStop();
+            WriteStreamAsync(PipeMessageByteCode.Stop).Wait();
         }
 
-        private void WriteLog(string msg)
+        private async Task WriteStreamAsync(PipeMessageByteCode code, int command = 0)
         {
-             File.AppendAllText(GetLogPath(ServiceName), msg + Environment.NewLine);
+            const int writeTimeout = 60000;
+            Task writeCompleted;
+            if (_waitClientConnect.IsCompleted)
+            {
+                if (code == PipeMessageByteCode.OnCustomCommand)
+                {
+                    writeCompleted = _serverStream.WriteAsync(new byte[] { (byte)command }, 0, 1);
+                    await writeCompleted.TimeoutAfter(writeTimeout).ConfigureAwait(false);
+                }
+                else
+                {
+                    writeCompleted = _serverStream.WriteAsync(new byte[] { (byte)code }, 0, 1);
+                    await writeCompleted.TimeoutAfter(writeTimeout).ConfigureAwait(false);
+                }
+            }
+            else
+            {
+                throw new TimeoutException($"Client didn't connect to the pipe");
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                _serverStream.Dispose();
+                _disposed = true;
+                base.Dispose();
+            }
         }
     }
 }

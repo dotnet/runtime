@@ -7,6 +7,7 @@ using System;
 using System.Diagnostics;
 using System.Security.Principal;
 using Xunit;
+using System.Threading.Tasks;
 
 /// <summary>
 /// NOTE: All tests checking the output file should always call Stop before checking because Stop will flush the file to disk.
@@ -16,6 +17,7 @@ namespace System.ServiceProcess.Tests
     [OuterLoop(/* Modifies machine state */)]
     public class ServiceBaseTests : IDisposable
     {
+        private const int connectionTimeout = 30000;
         private readonly TestServiceProvider _testService;
 
         private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(() => AdminHelpers.IsProcessElevated());
@@ -75,104 +77,102 @@ namespace System.ServiceProcess.Tests
         [ConditionalFact(nameof(IsProcessElevated))]
         public void TestOnStartThenStop()
         {
+            _testService.Client.Connect(connectionTimeout);
             var controller = new ServiceController(_testService.TestServiceName);
             AssertExpectedProperties(controller);
-            string expected =
-@"OnStart args=
-OnStop
-";
+
             controller.Stop();
+            Assert.Equal((int)PipeMessageByteCode.Stop, _testService.GetByte());
             controller.WaitForStatus(ServiceControllerStatus.Stopped);
-            Assert.Equal(expected, _testService.GetServiceOutput());
         }
 
         [ConditionalFact(nameof(IsProcessElevated))]
         public void TestOnStartWithArgsThenStop()
         {
             var controller = new ServiceController(_testService.TestServiceName);
+            _testService.Client.Connect(connectionTimeout);
             AssertExpectedProperties(controller);
+
             controller.Stop();
+            Assert.Equal((int)PipeMessageByteCode.Stop, _testService.GetByte());
             controller.WaitForStatus(ServiceControllerStatus.Stopped);
 
-            string expected =
-@"OnStart args=a,b,c
-OnStop
-";
-            controller.Start(new string[] { "a", "b", "c" });
+            controller.Start(new string[] { "StartWithArguments", "a", "b", "c" });
+            _testService.Client = null;
+            _testService.Client.Connect();
+
+            Assert.Equal((int)PipeMessageByteCode.Start, _testService.GetByte());
             controller.WaitForStatus(ServiceControllerStatus.Running);
+
             controller.Stop();
+            Assert.Equal((int)PipeMessageByteCode.Stop, _testService.GetByte());
             controller.WaitForStatus(ServiceControllerStatus.Stopped);
-            Assert.Equal(expected, _testService.GetServiceOutput());
         }
 
         [ConditionalFact(nameof(IsProcessElevated))]
         public void TestOnPauseThenStop()
         {
+            _testService.Client.Connect(connectionTimeout);
             var controller = new ServiceController(_testService.TestServiceName);
             AssertExpectedProperties(controller);
-            string expected =
-@"OnStart args=
-OnPause
-OnStop
-";
+
             controller.Pause();
+            Assert.Equal((int)PipeMessageByteCode.Pause, _testService.GetByte());
             controller.WaitForStatus(ServiceControllerStatus.Paused);
+
             controller.Stop();
+            Assert.Equal((int)PipeMessageByteCode.Stop, _testService.GetByte());
             controller.WaitForStatus(ServiceControllerStatus.Stopped);
-            Assert.Equal(expected, _testService.GetServiceOutput());
         }
 
         [ConditionalFact(nameof(IsProcessElevated))]
         public void TestOnPauseAndContinueThenStop()
         {
+            _testService.Client.Connect(connectionTimeout);
             var controller = new ServiceController(_testService.TestServiceName);
             AssertExpectedProperties(controller);
-            string expected =
-@"OnStart args=
-OnPause
-OnContinue
-OnStop
-";
+
             controller.Pause();
+            Assert.Equal((int)PipeMessageByteCode.Pause, _testService.GetByte());
             controller.WaitForStatus(ServiceControllerStatus.Paused);
+
             controller.Continue();
+            Assert.Equal((int)PipeMessageByteCode.Continue, _testService.GetByte());
             controller.WaitForStatus(ServiceControllerStatus.Running);
+
             controller.Stop();
+            Assert.Equal((int)PipeMessageByteCode.Stop, _testService.GetByte());
             controller.WaitForStatus(ServiceControllerStatus.Stopped);
-            Assert.Equal(expected, _testService.GetServiceOutput());
         }
 
         [ConditionalFact(nameof(IsProcessElevated))]
         public void TestOnExecuteCustomCommand()
         {
+            _testService.Client.Connect(connectionTimeout);
             var controller = new ServiceController(_testService.TestServiceName);
             AssertExpectedProperties(controller);
-            string expected =
-@"OnStart args=
-OnCustomCommand command=128
-OnStop
-";
+
             controller.ExecuteCommand(128);
-            controller.WaitForStatus(ServiceControllerStatus.Running);
+            Assert.Equal(128, _testService.GetByte());
+
             controller.Stop();
+            Assert.Equal((int)PipeMessageByteCode.Stop, _testService.GetByte());
             controller.WaitForStatus(ServiceControllerStatus.Stopped);
-            Assert.Equal(expected, _testService.GetServiceOutput());
         }
 
         [ConditionalFact(nameof(IsProcessElevated))]
         public void TestOnContinueBeforePause()
         {
+            _testService.Client.Connect(connectionTimeout);
             var controller = new ServiceController(_testService.TestServiceName);
             AssertExpectedProperties(controller);
-            string expected =
-@"OnStart args=
-OnStop
-";
+
             controller.Continue();
             controller.WaitForStatus(ServiceControllerStatus.Running);
+
             controller.Stop();
+            Assert.Equal((int)PipeMessageByteCode.Stop, _testService.GetByte());
             controller.WaitForStatus(ServiceControllerStatus.Stopped);
-            Assert.Equal(expected, _testService.GetServiceOutput());
         }
 
         [ConditionalFact(nameof(IsElevatedAndSupportsEventLogs))]
@@ -193,7 +193,7 @@ OnStop
                     sb.Stop();
                     EventLog.DeleteEventSource(sb.ServiceName);
                 }
-            } 
+            }
         }
 
         [ConditionalFact(nameof(IsElevatedAndSupportsEventLogs))]
