@@ -23,30 +23,37 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <!-- Shared -->
   <ItemGroup>
-    <Compile Include="..\..\Common\src\System\Numerics\Hashing\HashHelpers.cs">
+    <Compile Include="$(CommonPath)\System\Numerics\Hashing\HashHelpers.cs">
       <Link>Common\System\Numerics\Hashing\HashHelpers.cs</Link>
     </Compile>
-    <Compile Include="System\Numerics\ConstantHelper.cs">
+    <Compile Include="$(CommonPath)\CoreLib\System\Numerics\ConstantHelper.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>ConstantHelper.tt</DependentUpon>
+      <Link>System\Numerics\ConstantHelper.cs</Link>
     </Compile>
-    <Compile Include="System\Numerics\JitIntrinsicAttribute.cs" />
-    <Compile Include="System\Numerics\Register.cs">
+    <Compile Include="$(CommonPath)\CoreLib\System\Numerics\JitIntrinsicAttribute.cs">
+      <Link>System\Numerics\JitIntrinsicAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Numerics\Register.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Register.tt</DependentUpon>
+      <Link>System\Numerics\Register.cs</Link>
     </Compile>
-    <Compile Include="System\Numerics\Vector.cs">
+    <Compile Include="$(CommonPath)\CoreLib\System\Numerics\Vector.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Vector.tt</DependentUpon>
+      <Link>System\Numerics\Vector.cs</Link>
     </Compile>
-    <Compile Include="System\Numerics\Vector_Operations.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Numerics\Vector_Operations.cs">
+      <Link>System\Numerics\Vector_Operations.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- Carry a copy of MathF where not available -->
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true' OR $(TargetGroup.StartsWith('netstandard'))">
-    <Compile Include="..\..\Common\src\System\MathF.netstandard.cs">
+    <Compile Include="$(CommonPath)\System\MathF.netstandard.cs">
       <Link>System\MathF.netstandard.cs</Link>
     </Compile>
   </ItemGroup>
@@ -68,18 +75,23 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="System\Numerics\GenerationConfig.ttinclude" />
-    <Content Include="System\Numerics\ConstantHelper.tt">
+    <None Include="$(CommonPath)\CoreLib\System\Numerics\GenerationConfig.ttinclude">
+      <Link>System\Numerics\GenerationConfig.ttinclude</Link>
+    </None>
+    <Content Include="$(CommonPath)\CoreLib\System\Numerics\ConstantHelper.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>ConstantHelper.cs</LastGenOutput>
+      <Link>System\Numerics\ConstantHelper.tt</Link>
     </Content>
-    <Content Include="System\Numerics\Register.tt">
+    <Content Include="$(CommonPath)\CoreLib\System\Numerics\Register.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Register.cs</LastGenOutput>
+      <Link>System\Numerics\Register.tt</Link>
     </Content>
-    <Content Include="System\Numerics\Vector.tt">
+    <Content Include="$(CommonPath)\CoreLib\System\Numerics\Vector.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Vector.cs</LastGenOutput>
+      <Link>System\Numerics\Vector.tt</Link>
     </Content>
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Globalization" />
