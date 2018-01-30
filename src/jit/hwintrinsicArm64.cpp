@@ -202,9 +202,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
             if (simdBaseType == TYP_UNKNOWN)
             {
-                // TODO-FIXME Add CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED
-                unsigned CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED = CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED;
-
                 return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED, method, sig, mustExpand);
             }
             simdType = getSIMDTypeForSize(simdSizeBytes);

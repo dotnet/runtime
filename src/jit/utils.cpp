@@ -1477,6 +1477,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
             case CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION:
             case CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED:
+            case CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED:
 
                 break;
 
