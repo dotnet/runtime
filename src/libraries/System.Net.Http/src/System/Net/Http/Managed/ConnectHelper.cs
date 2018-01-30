@@ -4,8 +4,11 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,8 +16,11 @@ namespace System.Net.Http
 {
     internal static class ConnectHelper
     {
-        public static async ValueTask<Stream> ConnectAsync(string host, int port, CancellationToken cancellationToken)
+        public static async ValueTask<Stream> ConnectAsync(HttpConnectionKey key, CancellationToken cancellationToken)
         {
+            string host = key.Host;
+            int port = key.Port;
+
             try
             {
                 // Rather than creating a new Socket and calling ConnectAsync on it, we use the static
@@ -95,6 +101,50 @@ namespace System.Net.Http
 
                 CancellationToken = cancellationToken;
             }
+        }
+
+        public static async ValueTask<SslStream> EstablishSslConnection(HttpConnectionSettings settings, string host, HttpRequestMessage request, Stream stream, CancellationToken cancellationToken)
+        {
+            RemoteCertificateValidationCallback callback = null;
+            if (settings._serverCertificateCustomValidationCallback != null)
+            {
+                callback = (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
+                {
+                    try
+                    {
+                        return settings._serverCertificateCustomValidationCallback(request, certificate as X509Certificate2, chain, sslPolicyErrors);
+                    }
+                    catch (Exception e)
+                    {
+                        throw new HttpRequestException(SR.net_http_ssl_connection_failed, e);
+                    }
+                };
+            }
+
+            var sslStream = new SslStream(stream);
+
+            try
+            {
+                await sslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = host,
+                    ClientCertificates = settings._clientCertificates,
+                    EnabledSslProtocols = settings._sslProtocols,
+                    CertificateRevocationCheckMode = settings._checkCertificateRevocationList ? X509RevocationMode.Online : X509RevocationMode.NoCheck,
+                    RemoteCertificateValidationCallback = callback
+                }, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                sslStream.Dispose();
+                if (e is AuthenticationException || e is IOException)
+                {
+                    throw new HttpRequestException(SR.net_http_ssl_connection_failed, e);
+                }
+                throw;
+            }
+
+            return sslStream;
         }
     }
 }
