@@ -311,7 +311,7 @@ build_Tests_internal()
     __msbuildErr="\"/flp2:ErrorsOnly;LogFile=${__BuildErr}\""
 
     # Generate build command
-    buildCommand="$__ProjectRoot/run.sh build -Project=$projectName -MsBuildLog=${__msbuildLog} -MsBuildWrn=${__msbuildWrn} -MsBuildErr=${__msbuildErr} $extraBuildParameters $__RunArgs $__UnprocessedBuildArgs"
+    buildCommand="$__ProjectRoot/run.sh build -Project=$projectName -MsBuildLog=${__msbuildLog} -MsBuildWrn=${__msbuildWrn} -MsBuildErr=${__msbuildErr} -MsBuildEventLogging=\"/l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log\" $extraBuildParameters $__RunArgs $__UnprocessedBuildArgs"
 
     echo "Building step '$stepName' via $buildCommand"
 
