@@ -40,6 +40,8 @@ OPDEF(MINT_LDC_I8, "ldc.i8", 5, MintOpLongInt)
 OPDEF(MINT_LDC_R4, "ldc.r4", 3, MintOpFloat)
 OPDEF(MINT_LDC_R8, "ldc.r8", 5, MintOpDouble)
 
+OPDEF(MINT_ARGLIST, "arglist", 1, MintOpNoArgs)
+
 OPDEF(MINT_LDARG_I1, "ldarg.i1", 2, MintOpUShortInt)
 OPDEF(MINT_LDARG_U1, "ldarg.u1", 2, MintOpUShortInt)
 OPDEF(MINT_LDARG_I2, "ldarg.i2", 2, MintOpUShortInt)

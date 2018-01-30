@@ -92,6 +92,7 @@ typedef struct _InterpMethod
 	guint32 vt_stack_size;
 	guint32 alloca_size;
 	unsigned int init_locals : 1;
+	unsigned int vararg : 1;
 	unsigned short *code;
 	unsigned short *new_body_start; /* after all STINARG instrs */
 	MonoPIFunc func;
@@ -121,6 +122,7 @@ struct _InterpFrame {
 	MonoMethod     *method; /* parent */
 	stackval       *retval; /* parent */
 	char           *args;
+	char           *varargs;
 	stackval       *stack_args; /* parent */
 	stackval       *stack;
 	stackval       *sp; /* For GC stack marking */

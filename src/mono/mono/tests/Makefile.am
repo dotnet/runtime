@@ -1058,10 +1058,7 @@ INTERP_DISABLED_TESTS = \
 	threadpool-exceptions4.exe \
 	threadpool-exceptions5.exe \
 	typeload-unaligned.exe \
-	weak-fields.exe \
-	vararg.exe \
-	vararg2.exe \
-	vararg3.exe
+	weak-fields.exe
 
 TESTS_CS=$(filter-out $(DISABLED_TESTS),$(TESTS_CS_SRC:.cs=.exe))
 TESTS_IL=$(filter-out $(DISABLED_TESTS),$(TESTS_IL_SRC:.il=.exe))

@@ -311,6 +311,7 @@ mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *erro
 	rtm->domain = domain;
 	rtm->param_count = sig->param_count;
 	rtm->hasthis = sig->hasthis;
+	rtm->vararg = sig->call_convention == MONO_CALL_VARARG;
 	rtm->rtype = mini_get_underlying_type (sig->ret);
 	rtm->param_types = mono_domain_alloc0 (domain, sizeof (MonoType*) * sig->param_count);
 	for (i = 0; i < sig->param_count; ++i)
@@ -2040,6 +2041,34 @@ do_transform_method (InterpFrame *frame, ThreadContext *context)
 		interp_pop_lmf (&ext);
 }
 
+#define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
+
+static void
+copy_varargs_vtstack (MonoMethodSignature *csig, stackval *sp, unsigned char **vt_sp)
+{
+	char *vt = *(char**)vt_sp;
+	stackval *first_arg = sp - csig->param_count;
+
+	/*
+	 * We need to have the varargs linearly on the stack so the ArgIterator
+	 * can iterate over them. We pass the signature first and then copy them
+	 * one by one on the vtstack.
+	 */
+	*(gpointer*)vt = csig;
+	vt += sizeof (gpointer);
+
+	for (int i = csig->sentinelpos; i < csig->param_count; i++) {
+		int align, arg_size;
+		arg_size = mono_type_stack_size (csig->params [i], &align);
+		vt = ALIGN_PTR_TO (vt, align);
+
+		stackval_to_data (csig->params [i], &first_arg [i], vt, FALSE);
+		vt += arg_size;
+	}
+
+	*(char**)vt_sp = vt;
+}
+
 /*
  * These functions are the entry points into the interpreter from compiled code.
  * They are called by the interp_in wrappers. They have the following signature:
@@ -2423,6 +2452,14 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			++ip;
 			++sp;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ARGLIST)
+			g_assert (frame->varargs);
+			sp->data.p = vt_sp;
+			*(gpointer*)sp->data.p = frame->varargs;
+			vt_sp += sizeof (gpointer);
+			++ip;
+			++sp;
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_VTRESULT) {
 			int ret_size = * (guint16 *)(ip + 1);
 			unsigned char *ret_vt_sp = vt_sp;
@@ -2657,16 +2694,25 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			gboolean is_void = *ip == MINT_VCALL || *ip == MINT_VCALLVIRT;
 			gboolean is_virtual = *ip == MINT_CALLVIRT || *ip == MINT_VCALLVIRT;
 			stackval *endsp = sp;
+			int num_varargs = 0;;
 
 			frame->ip = ip;
 			
 			child_frame.imethod = rtm->data_items [* (guint16 *)(ip + 1)];
-			ip += 2;
+			if (child_frame.imethod->vararg) {
+				/* The real signature for vararg calls */
+				MonoMethodSignature *csig = (MonoMethodSignature*) rtm->data_items [* (guint16*) (ip + 2)];
+				/* Push all vararg arguments from normal sp to vt_sp together with the signature */
+				num_varargs = csig->param_count - csig->sentinelpos;
+				child_frame.varargs = (char*) vt_sp;
+				copy_varargs_vtstack (csig, sp, &vt_sp);
+			}
+			ip += 2 + child_frame.imethod->vararg;
 			sp->data.p = vt_sp;
 			child_frame.retval = sp;
 
 			/* decrement by the actual number of args */
-			sp -= child_frame.imethod->param_count + child_frame.imethod->hasthis;
+			sp -= child_frame.imethod->param_count + child_frame.imethod->hasthis + num_varargs;
 			child_frame.stack_args = sp;
 
 			if (is_virtual) {
