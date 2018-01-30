@@ -74,7 +74,11 @@ namespace System.Runtime.CompilerServices
 
             /// <summary>Gets the task underlying the incomplete <see cref="_value"/>.</summary>
             /// <remarks>This method is used when awaiting and IsCompleted returned false; thus we expect the value task to be wrapping a non-null task.</remarks>
-            (Task task, bool continueOnCapturedContext) IConfiguredValueTaskAwaiter.GetTask() => (_value.AsTaskExpectNonNull(), _continueOnCapturedContext);
+            Task IConfiguredValueTaskAwaiter.GetTask(out bool continueOnCapturedContext)
+            {
+                continueOnCapturedContext = _continueOnCapturedContext;
+                return _value.AsTaskExpectNonNull();
+            }
         }
     }
 
@@ -83,6 +87,6 @@ namespace System.Runtime.CompilerServices
     /// </summary>
     internal interface IConfiguredValueTaskAwaiter
     {
-        (Task task, bool continueOnCapturedContext) GetTask();
+        Task GetTask(out bool continueOnCapturedContext);
     }
 }
