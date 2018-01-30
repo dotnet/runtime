@@ -9,9 +9,25 @@
  #define DYNAMIC_EVENT(name, level, keyword, ...)
 #endif // DYNAMIC_EVENT
 
+KNOWN_EVENT(GCStart_V2, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GC)
+KNOWN_EVENT(GCEnd_V1, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GC)
+KNOWN_EVENT(GCGenerationRange, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GCHeapSurvivalAndMovement)
+KNOWN_EVENT(GCHeapStats_V1, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GC)
+KNOWN_EVENT(GCCreateSegment_V1, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GC)
+KNOWN_EVENT(GCFreeSegment_V1, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GC)
+KNOWN_EVENT(GCCreateConcurrentThread_V1, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GC)
+KNOWN_EVENT(GCTerminateConcurrentThread_V1, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GC)
+KNOWN_EVENT(GCTriggered, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GC)
+KNOWN_EVENT(GCMarkWithType, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GC)
+KNOWN_EVENT(GCJoin_V2, GCEventProvider_Default, GCEventLevel_Verbose, GCEventKeyword_GC)
+KNOWN_EVENT(GCGlobalHeapHistory_V2, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GC)
+KNOWN_EVENT(GCAllocationTick_V1, GCEventProvider_Default, GCEventLevel_Verbose, GCEventKeyword_GC)
+KNOWN_EVENT(GCAllocationTick_V3, GCEventProvider_Default, GCEventLevel_Verbose, GCEventKeyword_GC)
+KNOWN_EVENT(PinObjectAtGCTime, GCEventProvider_Default, GCEventLevel_Verbose, GCEventKeyword_GC)
+KNOWN_EVENT(GCPerHeapHistory_V3, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GC)
+
 KNOWN_EVENT(SetGCHandle, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GCHandle)
 KNOWN_EVENT(DestroyGCHandle, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GCHandle)
-KNOWN_EVENT(GCPerHeapHistory_V3, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GCPrivate)
 
 KNOWN_EVENT(BGCBegin, GCEventProvider_Private, GCEventLevel_Information, GCEventKeyword_GCPrivate)
 KNOWN_EVENT(BGC1stNonConEnd, GCEventProvider_Private, GCEventLevel_Information, GCEventKeyword_GCPrivate)

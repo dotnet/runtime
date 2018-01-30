@@ -874,15 +874,14 @@ VOID ETW::GCLog::ForceGC(LONGLONG l64ClientSequenceNumber)
 //---------------------------------------------------------------------------------------
 //
 // Helper to fire the GCStart event.  Figures out which version of GCStart to fire, and
-// includes the client sequence number, if available.  Also logs the generation range
-// events.
+// includes the client sequence number, if available.
 //
 // Arguments:
 //      pGcInfo - ETW_GC_INFO containing details from GC about this collection
 //
 
 // static
-VOID ETW::GCLog::FireGcStartAndGenerationRanges(ETW_GC_INFO * pGcInfo)
+VOID ETW::GCLog::FireGcStart(ETW_GC_INFO * pGcInfo)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -902,80 +901,7 @@ VOID ETW::GCLog::FireGcStartAndGenerationRanges(ETW_GC_INFO * pGcInfo)
         }
 
         FireEtwGCStart_V2(pGcInfo->GCStart.Count, pGcInfo->GCStart.Depth, pGcInfo->GCStart.Reason, pGcInfo->GCStart.Type, GetClrInstanceId(), l64ClientSequenceNumberToLog);
-
-        // Fire an event per range per generation
-        IGCHeap *hp = GCHeapUtilities::GetGCHeap();
-        hp->DiagDescrGenerations(FireSingleGenerationRangeEvent, NULL /* context */);
     }
-}
-
-
-//---------------------------------------------------------------------------------------
-//
-// Helper to fire the GCEnd event and the generation range events.
-// 
-// Arguments:
-//      Count - (matching Count from corresponding GCStart event0
-//      Depth - (matching Depth from corresponding GCStart event0
-//
-//
-
-// static
-VOID ETW::GCLog::FireGcEndAndGenerationRanges(ULONG Count, ULONG Depth)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (ETW_TRACING_CATEGORY_ENABLED(
-        MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, 
-        TRACE_LEVEL_INFORMATION, 
-        CLR_GC_KEYWORD))
-    {
-        // Fire an event per range per generation
-        IGCHeap *hp = GCHeapUtilities::GetGCHeap();
-        hp->DiagDescrGenerations(FireSingleGenerationRangeEvent, NULL /* context */);
-
-        // GCEnd
-        FireEtwGCEnd_V1(Count, Depth, GetClrInstanceId());
-    }
-}
- 
-//---------------------------------------------------------------------------------------
-//
-// Callback made by GC when we call GCHeapUtilities::DiagDescrGenerations().  This is
-// called once per range per generation, and results in a single ETW event per range per
-// generation.
-//
-// Arguments:
-//      context - unused
-//      generation - Generation number
-//      rangeStart - Where does this range start?
-//      rangeEnd - How large is the used portion of this range?
-//      rangeEndReserved - How large is the reserved portion of this range?
-//
-
-// static
-VOID ETW::GCLog::FireSingleGenerationRangeEvent(
-    void * /* context */,
-    int generation, 
-    BYTE * rangeStart, 
-    BYTE * rangeEnd,
-    BYTE * rangeEndReserved)
-{
-    CONTRACT_VOID
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY; // can be called even on GC threads        
-        PRECONDITION(0 <= generation && generation <= 3);
-        PRECONDITION(CheckPointer(rangeStart));
-        PRECONDITION(CheckPointer(rangeEnd));
-        PRECONDITION(CheckPointer(rangeEndReserved));
-    } 
-    CONTRACT_END;
-
-    FireEtwGCGenerationRange((BYTE) generation, rangeStart, rangeEnd - rangeStart, rangeEndReserved - rangeStart, GetClrInstanceId());
-
-    RETURN;
 }
 
 //---------------------------------------------------------------------------------------
