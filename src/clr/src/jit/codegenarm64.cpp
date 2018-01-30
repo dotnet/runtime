@@ -5251,9 +5251,77 @@ void CodeGen::genHWIntrinsicSimdInsertOp(GenTreeHWIntrinsic* node)
     NYI("genHWIntrinsicSimdExtractOp not implemented");
 }
 
+//------------------------------------------------------------------------
+// genHWIntrinsicSimdSelectOp:
+//
+// Produce code for a GT_HWIntrinsic node with form SimdSelectOp.
+//
+// Consumes three SIMD operands and produces a SIMD result
+//
+// This intrinsic form requires one of the source registers to be the
+// destination register.  Inserts a INS_mov if this requirement is not met.
+//
+// Arguments:
+//    node - the GT_HWIntrinsic node
+//
+// Return Value:
+//    None.
+//
 void CodeGen::genHWIntrinsicSimdSelectOp(GenTreeHWIntrinsic* node)
 {
-    NYI("genHWIntrinsicSimdSelectOp not implemented");
+    GenTreeArgList* argList   = node->gtGetOp1()->AsArgList();
+    GenTree*        op1       = argList->Current();
+    GenTree*        op2       = argList->Rest()->Current();
+    GenTree*        op3       = argList->Rest()->Rest()->Current();
+    var_types       baseType  = node->gtSIMDBaseType;
+    regNumber       targetReg = node->gtRegNum;
+
+    assert(targetReg != REG_NA);
+    var_types targetType = node->TypeGet();
+
+    genConsumeRegs(op1);
+    genConsumeRegs(op2);
+    genConsumeRegs(op3);
+
+    regNumber op1Reg = op1->gtRegNum;
+    regNumber op2Reg = op2->gtRegNum;
+    regNumber op3Reg = op3->gtRegNum;
+
+    assert(genIsValidFloatReg(op1Reg));
+    assert(genIsValidFloatReg(op2Reg));
+    assert(genIsValidFloatReg(op3Reg));
+    assert(genIsValidFloatReg(targetReg));
+
+    bool     is16Byte = (node->gtSIMDSize > 8);
+    emitAttr attr     = is16Byte ? EA_16BYTE : EA_8BYTE;
+
+    // Arm64 has three bit select forms; each uses three source registers
+    // One of the sources is also the destination
+    if (targetReg == op3Reg)
+    {
+        // op3 is target use bit insert if true
+        // op3 = op3 ^ (op1 & (op2 ^ op3))
+        getEmitter()->emitIns_R_R_R(INS_bit, attr, op3Reg, op2Reg, op1Reg);
+    }
+    else if (targetReg == op2Reg)
+    {
+        // op2 is target use bit insert if false
+        // op2 = op2 ^ (~op1 & (op2 ^ op3))
+        getEmitter()->emitIns_R_R_R(INS_bif, attr, op2Reg, op3Reg, op1Reg);
+    }
+    else
+    {
+        if (targetReg != op1Reg)
+        {
+            // target is not one of the sources, copy op1 to use bit select form
+            getEmitter()->emitIns_R_R(INS_mov, attr, targetReg, op1Reg);
+        }
+        // use bit select
+        // targetReg = op3 ^ (targetReg & (op2 ^ op3))
+        getEmitter()->emitIns_R_R_R(INS_bsl, attr, targetReg, op2Reg, op3Reg);
+    }
+
+    genProduceReg(node);
 }
 
 void CodeGen::genHWIntrinsicSimdUnaryOp(GenTreeHWIntrinsic* node)
