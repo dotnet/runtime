@@ -10040,11 +10040,6 @@ GenTree* Compiler::fgMorphBlkNode(GenTreePtr tree, bool isDest)
     GenTree* addr       = nullptr;
     if (tree->OperIs(GT_COMMA))
     {
-        GenTree* effectiveVal = tree->gtEffectiveVal();
-        addr                  = gtNewOperNode(GT_ADDR, TYP_BYREF, effectiveVal);
-#ifdef DEBUG
-        addr->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif
         // In order to CSE and value number array index expressions and bounds checks,
         // the commas in which they are contained need to match.
         // The pattern is that the COMMA should be the address expression.
@@ -10052,17 +10047,32 @@ GenTree* Compiler::fgMorphBlkNode(GenTreePtr tree, bool isDest)
         // TODO-1stClassStructs: Consider whether this can be improved.
         // Also consider whether some of this can be included in gtNewBlockVal (though note
         // that doing so may cause us to query the type system before we otherwise would).
-        GenTree* lastComma = nullptr;
-        for (GenTree* next = tree; next != nullptr && next->gtOper == GT_COMMA; next = next->gtGetOp2())
+        // Example:
+        //   before: [3] comma struct <- [2] comma struct <- [1] LCL_VAR struct
+        //   after: [3] comma byref <- [2] comma byref <- [4] addr byref <- [1] LCL_VAR struct
+
+        addr                  = tree;
+        GenTree* effectiveVal = tree->gtEffectiveVal();
+
+        GenTreePtrStack commas(this);
+        for (GenTree* comma = tree; comma != nullptr && comma->gtOper == GT_COMMA; comma = comma->gtGetOp2())
         {
-            next->gtType = TYP_BYREF;
-            lastComma    = next;
+            commas.Push(comma);
         }
-        if (lastComma != nullptr)
+
+        GenTree* lastComma = commas.Top();
+        noway_assert(lastComma->gtGetOp2() == effectiveVal);
+        GenTree* effectiveValAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, effectiveVal);
+#ifdef DEBUG
+        effectiveValAddr->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+#endif
+        lastComma->gtOp.gtOp2 = effectiveValAddr;
+
+        while (commas.Height() > 0)
         {
-            noway_assert(lastComma->gtGetOp2() == effectiveVal);
-            lastComma->gtOp.gtOp2 = addr;
-            addr                  = tree;
+            GenTree* comma = commas.Pop();
+            comma->gtType  = TYP_BYREF;
+            gtUpdateNodeSideEffects(comma);
         }
 
         handleTree = effectiveVal;
@@ -10096,6 +10106,8 @@ GenTree* Compiler::fgMorphBlkNode(GenTreePtr tree, bool isDest)
         {
             tree = new (this, GT_BLK) GenTreeBlk(GT_BLK, structType, addr, genTypeSize(structType));
         }
+
+        gtUpdateNodeSideEffects(tree);
 #ifdef DEBUG
         tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif
