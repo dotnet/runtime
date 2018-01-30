@@ -3044,20 +3044,20 @@ protected:
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
 
 #ifdef FEATURE_HW_INTRINSICS
+    GenTree* impHWIntrinsic(NamedIntrinsic        intrinsic,
+                            CORINFO_METHOD_HANDLE method,
+                            CORINFO_SIG_INFO*     sig,
+                            bool                  mustExpand);
+    GenTree* impUnsupportedHWIntrinsic(unsigned              helper,
+                                       CORINFO_METHOD_HANDLE method,
+                                       CORINFO_SIG_INFO*     sig,
+                                       bool                  mustExpand);
 #ifdef _TARGET_XARCH_
     static InstructionSet lookupHWIntrinsicISA(const char* className);
     static NamedIntrinsic lookupHWIntrinsic(const char* methodName, InstructionSet isa);
     static InstructionSet isaOfHWIntrinsic(NamedIntrinsic intrinsic);
     static bool isIntrinsicAnIsSupportedPropertyGetter(NamedIntrinsic intrinsic);
     static bool isFullyImplmentedISAClass(InstructionSet isa);
-    GenTree* impUnsupportedHWIntrinsic(unsigned              helper,
-                                       CORINFO_METHOD_HANDLE method,
-                                       CORINFO_SIG_INFO*     sig,
-                                       bool                  mustExpand);
-    GenTree* impX86HWIntrinsic(NamedIntrinsic        intrinsic,
-                               CORINFO_METHOD_HANDLE method,
-                               CORINFO_SIG_INFO*     sig,
-                               bool                  mustExpand);
     GenTree* impSSEIntrinsic(NamedIntrinsic        intrinsic,
                              CORINFO_METHOD_HANDLE method,
                              CORINFO_SIG_INFO*     sig,
@@ -3131,14 +3131,6 @@ protected:
 #ifdef _TARGET_ARM64_
     InstructionSet lookupHWIntrinsicISA(const char* className);
     NamedIntrinsic lookupHWIntrinsic(const char* className, const char* methodName);
-    GenTree* impHWIntrinsic(NamedIntrinsic        intrinsic,
-                            CORINFO_METHOD_HANDLE method,
-                            CORINFO_SIG_INFO*     sig,
-                            bool                  mustExpand);
-    GenTree* impUnsupportedHWIntrinsic(unsigned              helper,
-                                       CORINFO_METHOD_HANDLE method,
-                                       CORINFO_SIG_INFO*     sig,
-                                       bool                  mustExpand);
     const HWIntrinsicInfo& getHWIntrinsicInfo(NamedIntrinsic);
 #endif // _TARGET_ARM64_
 #endif // FEATURE_HW_INTRINSICS
