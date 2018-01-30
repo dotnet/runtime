@@ -6722,11 +6722,8 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
                     inst_RV_RV(INS_vmov_i2f, reg, initReg, TYP_FLOAT, EA_4BYTE);
                 }
 #elif defined(_TARGET_XARCH_)
-                // Xorpd xmmreg, xmmreg is the fastest way to initialize a float register to
-                // zero instead of moving constant 0.0f.  Though we just need to initialize just the 32-bits
-                // we will use xorpd to initialize 64-bits of the xmm register so that it can be
-                // used to zero initialize xmm registers that hold double values.
-                inst_RV_RV(INS_xorpd, reg, reg, TYP_DOUBLE);
+                // XORPS is the fastest and smallest way to initialize a XMM register to zero.
+                inst_RV_RV(INS_xorps, reg, reg, TYP_DOUBLE);
                 dblInitReg = reg;
 #elif defined(_TARGET_ARM64_)
                 NYI("Initialize floating-point register to zero");
@@ -6759,10 +6756,8 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
                     inst_RV_RV_RV(INS_vmov_i2d, reg, initReg, initReg, EA_8BYTE);
                 }
 #elif defined(_TARGET_XARCH_)
-                // Xorpd xmmreg, xmmreg is the fastest way to initialize a double register to
-                // zero than moving constant 0.0d.  We can also use lower 32-bits of 'reg'
-                // for zero initializing xmm registers subsequently that contain float values.
-                inst_RV_RV(INS_xorpd, reg, reg, TYP_DOUBLE);
+                // XORPS is the fastest and smallest way to initialize a XMM register to zero.
+                inst_RV_RV(INS_xorps, reg, reg, TYP_DOUBLE);
                 fltInitReg = reg;
 #elif defined(_TARGET_ARM64_)
                 // We will just zero out the entire vector register. This sets it to a double zero value
