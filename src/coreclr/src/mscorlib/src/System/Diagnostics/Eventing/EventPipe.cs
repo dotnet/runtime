@@ -169,6 +169,9 @@ namespace System.Diagnostics.Tracing
         internal static extern void DeleteProvider(IntPtr provHandle);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        internal static extern int EventActivityIdControl(uint controlCode, ref Guid activityId);
+
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern unsafe void WriteEvent(IntPtr eventHandle, uint eventID, void* pData, uint length, Guid* activityId, Guid* relatedActivityId);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]

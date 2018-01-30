@@ -356,6 +356,16 @@ public:
 
 class EventPipeInternal
 {
+private:
+
+    enum class ActivityControlCode
+    {
+        EVENT_ACTIVITY_CONTROL_GET_ID = 1,
+        EVENT_ACTIVITY_CONTROL_SET_ID = 2,
+        EVENT_ACTIVITY_CONTROL_CREATE_ID = 3,
+        EVENT_ACTIVITY_CONTROL_GET_SET_ID = 4,
+        EVENT_ACTIVITY_CONTROL_CREATE_SET_ID = 5
+    };
 
 public:
 
@@ -383,6 +393,10 @@ public:
 
     static void QCALLTYPE DeleteProvider(
         INT_PTR provHandle);
+
+    static int QCALLTYPE EventActivityIdControl(
+        uint controlCode,
+        GUID *pActivityId);
 
     static void QCALLTYPE WriteEvent(
         INT_PTR eventHandle,

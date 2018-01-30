@@ -74,7 +74,7 @@ namespace System.Diagnostics.Tracing
         // Get or set the per-thread activity ID.
         int IEventProvider.EventActivityIdControl(UnsafeNativeMethods.ManifestEtw.ActivityControl ControlCode, ref Guid ActivityId)
         {
-            return 0;
+            return EventPipeInternal.EventActivityIdControl((uint)ControlCode, ref ActivityId);
         }
 
         // Define an EventPipeEvent handle.
