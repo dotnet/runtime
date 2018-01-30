@@ -568,13 +568,17 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(23769)]
-        [ActiveIssue(22707, TestPlatforms.AnyUnix)]
-        [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(RedirectStatusCodesOldMethodsNewMethods))]
         public async Task AllowAutoRedirect_True_ValidateNewMethodUsedOnRedirection(
             int statusCode, string oldMethod, string newMethod)
         {
+            if (!PlatformDetection.IsWindows && !UseManagedHandler && statusCode == 300 && oldMethod == "POST")
+            {
+                // Known behavior: curl does not change method to "GET"
+                // https://github.com/dotnet/corefx/issues/26434
+                newMethod = "POST";
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             using (var client = new HttpClient(handler))
             {
@@ -584,29 +588,34 @@ namespace System.Net.Http.Functional.Tests
 
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
 
-                    Task<List<string>> serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(origServer,
-                            $"HTTP/1.1 {statusCode} OK\r\n" +
-                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                            $"Location: {origUrl}\r\n" +
-                            "\r\n");
-                    await Task.WhenAny(getResponseTask, serverTask);
-                    Assert.False(getResponseTask.IsCompleted, $"{getResponseTask.Status}: {getResponseTask.Exception}");
-                    await serverTask;
-
-                    serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(origServer,
-                            $"HTTP/1.1 200 OK\r\n" +
-                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                            "\r\n");
-                    await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
-
-                    List<string> receivedRequest = await serverTask;
-                    string[] statusLineParts = receivedRequest[0].Split(' ');
-
-                    using (HttpResponseMessage response = await getResponseTask)
+                    await LoopbackServer.CreateServerAsync(async (redirServer, redirUrl) =>
                     {
-                        Assert.Equal(200, (int)response.StatusCode);
-                        Assert.Equal(newMethod, statusLineParts[0]);
-                    }
+                        // Original URL will redirect to a different URL
+                        Task<List<string>> serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(origServer,
+                                $"HTTP/1.1 {statusCode} OK\r\n" +
+                                $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                                $"Location: {redirUrl}\r\n" +
+                                "\r\n");
+                        await Task.WhenAny(getResponseTask, serverTask);
+                        Assert.False(getResponseTask.IsCompleted, $"{getResponseTask.Status}: {getResponseTask.Exception}");
+                        await serverTask;
+
+                        // Redirected URL answers with success
+                        serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(redirServer,
+                                $"HTTP/1.1 200 OK\r\n" +
+                                $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                                "\r\n");
+                        await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
+
+                        List<string> receivedRequest = await serverTask;
+                        string[] statusLineParts = receivedRequest[0].Split(' ');
+
+                        using (HttpResponseMessage response = await getResponseTask)
+                        {
+                            Assert.Equal(200, (int)response.StatusCode);
+                            Assert.Equal(newMethod, statusLineParts[0]);
+                        }
+                    });
                 });
             }
         }
