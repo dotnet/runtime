@@ -14,7 +14,9 @@ LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
 #ifdef HAS_ASAN
     // Need to call __asan_handle_no_return explicitly here because we re-intialize SP before
     // throwing exception in ThrowExceptionHelper
+    push_nonvol_reg "{r0, r1}"
     bl  EXTERNAL_C_FUNC(__asan_handle_no_return)
+    pop_nonvol_reg "{r0, r1}"
 #endif
 
     push_nonvol_reg {r7} /* FP. x64-RBP */
