@@ -17,7 +17,11 @@ LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
 #ifdef HAS_ASAN
         // Need to call __asan_handle_no_return explicitly here because we re-intialize RSP before
         // throwing exception in ThrowExceptionHelper
+        push_nonvol_reg rdi
+        push_nonvol_reg rsi
         call    EXTERNAL_C_FUNC(__asan_handle_no_return)
+        pop_nonvol_reg rsi
+        pop_nonvol_reg rdi
 #endif
 
         // Save the RBP to the stack so that the unwind can work at the instruction after
