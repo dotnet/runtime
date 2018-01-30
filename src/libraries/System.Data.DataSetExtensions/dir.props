@@ -3,6 +3,6 @@
   <Import Project="..\dir.props" />
   <PropertyGroup>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
-    <AssemblyKey>MSFT</AssemblyKey>
+    <AssemblyKey>ECMA</AssemblyKey>
   </PropertyGroup>
 </Project>
