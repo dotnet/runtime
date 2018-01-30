@@ -397,6 +397,30 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<float> MultiplyScalar(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// void _mm_prefetch(char* p, int i);
+        ///   PREFETCHT0 m8
+        /// </summary>
+        public static unsafe void Prefetch0(byte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void _mm_prefetch(char* p, int i);
+        ///   PREFETCHT1 m8
+        /// </summary>
+        public static unsafe void Prefetch1(byte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void _mm_prefetch(char* p, int i);
+        ///   PREFETCHT2 m8
+        /// </summary>
+        public static unsafe void Prefetch2(byte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void _mm_prefetch(char* p, int i);
+        ///   PREFETCHNTA m8
+        /// </summary>
+        public static unsafe void PrefetchNonTemporal(byte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m128 _mm_or_ps (__m128 a,  __m128 b);
         ///   ORPS xmm, xmm/m128
         /// </summary>
@@ -522,6 +546,12 @@ namespace System.Runtime.Intrinsics.X86
         ///   MOVUPS m128, xmm
         /// </summary>
         public static unsafe void Store(float* address, Vector128<float> source) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void _mm_sfence(void);
+        ///   SFENCE
+        /// </summary>
+        public static void StoreFence() { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void _mm_store_ss (float* mem_addr, __m128 a);
