@@ -55,6 +55,9 @@
     <Compile Include="$(CommonPath)\System\Data\Common\AdapterUtil.cs">
       <Link>System\Data\Common\AdapterUtil.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Data\Common\AdapterUtil.Drivers.cs">
+      <Link>System\Data\Common\AdapterUtil.Drivers.cs</Link>
+    </Compile>
     <Compile Include="System\Data\Common\AdapterUtil.SqlClient.cs" />
     <Compile Include="System\Data\Common\SR.cs" />
     <Compile Include="System\Data\Common\DbConnectionOptions.cs" />

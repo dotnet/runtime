@@ -664,10 +664,12 @@ namespace System.Data.ProviderBase
             ReclaimEmancipatedObjects();
         }
 
-        private Timer CreateCleanupTimer()
-        {
-            return (new Timer(new TimerCallback(this.CleanupCallback), null, _cleanupWait, _cleanupWait));
-        }
+        private Timer CreateCleanupTimer() =>
+            ADP.UnsafeCreateTimer(
+                new TimerCallback(CleanupCallback),
+                null,
+                _cleanupWait,
+                _cleanupWait);
 
         private DbConnectionInternal CreateObject(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
         {
@@ -728,6 +730,7 @@ namespace System.Data.ProviderBase
 
                 // timer allocation has to be done out of CER block
                 Timer t = new Timer(new TimerCallback(this.ErrorCallback), null, Timeout.Infinite, Timeout.Infinite);
+
                 bool timerIsNotDisposed;
                 try { }
                 finally
