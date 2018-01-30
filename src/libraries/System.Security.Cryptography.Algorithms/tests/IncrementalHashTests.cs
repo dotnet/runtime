@@ -265,5 +265,19 @@ namespace System.Security.Cryptography.Algorithms.Tests
                 Assert.Throws<ObjectDisposedException>(() => hash.GetHashAndReset());
             }
         }
+
+        [Fact]
+        public static void UnknownDigestAlgorithm()
+        {
+            Assert.ThrowsAny<CryptographicException>(
+                () => IncrementalHash.CreateHash(new HashAlgorithmName("SHA0")));
+        }
+
+        [Fact]
+        public static void UnknownHmacAlgorithm()
+        {
+            Assert.ThrowsAny<CryptographicException>(
+                () => IncrementalHash.CreateHMAC(new HashAlgorithmName("SHA0"), Array.Empty<byte>()));
+        }
     }
 }

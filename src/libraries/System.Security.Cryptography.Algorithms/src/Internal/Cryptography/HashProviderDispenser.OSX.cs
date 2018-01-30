@@ -27,7 +27,7 @@ namespace Internal.Cryptography
                     return new AppleDigestProvider(Interop.AppleCrypto.PAL_HashAlgorithm.Sha512);
             }
 
-            throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
+            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
         }
 
         public static HashProvider CreateMacProvider(string hashAlgorithmId, byte[] key)
@@ -46,7 +46,7 @@ namespace Internal.Cryptography
                     return new AppleHmacProvider(Interop.AppleCrypto.PAL_HashAlgorithm.Sha512, key);
             }
 
-            throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
+            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
         }
 
         // -----------------------------
