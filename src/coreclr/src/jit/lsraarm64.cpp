@@ -995,22 +995,42 @@ void LinearScan::TreeNodeInfoInitSIMD(GenTreeSIMD* simdTree, TreeNodeInfo* info)
 void LinearScan::TreeNodeInfoInitHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, TreeNodeInfo* info)
 {
     NamedIntrinsic intrinsicID = intrinsicTree->gtHWIntrinsicId;
-    info->srcCount += GetOperandInfo(intrinsicTree->gtOp.gtOp1);
-    if (intrinsicTree->gtGetOp2IfPresent() != nullptr)
+
+    GenTreeArgList* argList = nullptr;
+    GenTree*        op1     = intrinsicTree->gtOp.gtOp1;
+    GenTree*        op2     = intrinsicTree->gtOp.gtOp2;
+
+    if (op1->OperIs(GT_LIST))
     {
-        info->srcCount += GetOperandInfo(intrinsicTree->gtOp.gtOp2);
+        argList = op1->AsArgList();
+        op1     = argList->Current();
+        op2     = argList->Rest()->Current();
+
+        for (GenTreeArgList* list = argList; list != nullptr; list = list->Rest())
+        {
+            info->srcCount += GetOperandInfo(list->Current());
+        }
+    }
+    else
+    {
+        info->srcCount += GetOperandInfo(op1);
+        if (op2 != nullptr)
+        {
+            info->srcCount += GetOperandInfo(op2);
+        }
     }
 
     switch (compiler->getHWIntrinsicInfo(intrinsicID).form)
     {
         case HWIntrinsicInfo::SimdExtractOp:
-            if (!intrinsicTree->gtOp.gtOp2->isContained())
+            if (!op2->isContained())
             {
                 // We need a temp to create a switch table
                 info->internalIntCount = 1;
                 info->setInternalCandidates(this, allRegs(TYP_INT));
             }
             break;
+
         default:
             break;
     }
