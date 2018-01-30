@@ -11,6 +11,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="Helpers.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="TestServiceInstaller.cs" />
     <Compile Include="TestService.cs">
