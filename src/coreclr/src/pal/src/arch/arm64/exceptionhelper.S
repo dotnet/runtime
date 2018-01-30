@@ -15,7 +15,9 @@ LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
 #ifdef HAS_ASAN
         // Need to call __asan_handle_no_return explicitly here because we re-intialize SP before
         // throwing exception in ThrowExceptionHelper
+        stp x0, x1, [sp, -16]!
         bl  EXTERNAL_C_FUNC(__asan_handle_no_return)
+        ldp x0, x1, [sp], 16
 #endif
 
     // Save the FP & LR to the stack so that the unwind can work at the instruction after

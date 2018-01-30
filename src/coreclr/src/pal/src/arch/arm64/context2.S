@@ -138,9 +138,9 @@ LEAF_ENTRY RtlRestoreContext, _TEXT
     ldr w17, [x0, #(CONTEXT_ContextFlags)]
     tbz w17, #CONTEXT_CONTROL_BIT, LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT)
 
-    stp x0, x1, [sp]
+    stp x0, x1, [sp, -16]!
     bl EXTERNAL_C_FUNC(__asan_handle_no_return)
-    ldp x0, x1, [sp]
+    ldp x0, x1, [sp], 16
 
 LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT):
 #endif
