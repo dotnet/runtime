@@ -35,10 +35,10 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Provides an awaiter for a <see cref="ConfiguredValueTaskAwaitable{TResult}"/>.</summary>
         [StructLayout(LayoutKind.Auto)]
-        public struct ConfiguredValueTaskAwaiter : ICriticalNotifyCompletion, IConfiguredValueTaskAwaiter
+        public readonly struct ConfiguredValueTaskAwaiter : ICriticalNotifyCompletion, IConfiguredValueTaskAwaiter
         {
             /// <summary>The value being awaited.</summary>
-            private ValueTask<TResult> _value; // Methods are called on this; avoid making it readonly so as to avoid unnecessary copies
+            private readonly ValueTask<TResult> _value;
             /// <summary>The value to pass to ConfigureAwait.</summary>
             internal readonly bool _continueOnCapturedContext;
 
@@ -74,7 +74,11 @@ namespace System.Runtime.CompilerServices
 
             /// <summary>Gets the task underlying the incomplete <see cref="_value"/>.</summary>
             /// <remarks>This method is used when awaiting and IsCompleted returned false; thus we expect the value task to be wrapping a non-null task.</remarks>
-            (Task task, bool continueOnCapturedContext) IConfiguredValueTaskAwaiter.GetTask() => (_value.AsTaskExpectNonNull(), _continueOnCapturedContext);
+            Task IConfiguredValueTaskAwaiter.GetTask(out bool continueOnCapturedContext)
+            {
+                continueOnCapturedContext = _continueOnCapturedContext;
+                return _value.AsTaskExpectNonNull();
+            }
         }
     }
 
@@ -83,6 +87,6 @@ namespace System.Runtime.CompilerServices
     /// </summary>
     internal interface IConfiguredValueTaskAwaiter
     {
-        (Task task, bool continueOnCapturedContext) GetTask();
+        Task GetTask(out bool continueOnCapturedContext);
     }
 }
