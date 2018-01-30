@@ -80,7 +80,11 @@ namespace System.Data.SqlClient
             _notificationIdToDependenciesHash = new Dictionary<string, DependencyList>();
             _commandHashToNotificationId = new Dictionary<string, string>();
 
-            _timeoutTimer = new Timer(new TimerCallback(TimeoutTimerCallback), null, Timeout.Infinite, Timeout.Infinite);
+            _timeoutTimer = ADP.UnsafeCreateTimer(
+                new TimerCallback(TimeoutTimerCallback),
+                null,
+                Timeout.Infinite,
+                Timeout.Infinite);
 
             SubscribeToAppDomainUnload();
         }
