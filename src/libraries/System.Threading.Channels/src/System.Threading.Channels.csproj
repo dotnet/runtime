@@ -25,7 +25,6 @@
     <Compile Include="System\Threading\Channels\Interactor.cs" />
     <Compile Include="System\Threading\Channels\SingleConsumerUnboundedChannel.cs" />
     <Compile Include="System\Threading\Channels\UnboundedChannel.cs" />
-    <Compile Include="System\Threading\Channels\UnbufferedChannel.cs" />
     <Compile Include="$(CommonPath)\System\Collections\Concurrent\SingleProducerConsumerQueue.cs">
       <Link>Common\System\Collections\Concurrent\SingleProducerConsumerQueue.cs</Link>
     </Compile>
