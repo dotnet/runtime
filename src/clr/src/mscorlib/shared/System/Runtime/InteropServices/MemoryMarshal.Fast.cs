@@ -60,7 +60,7 @@ namespace System.Runtime.InteropServices
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TTo));
 
             return new Span<TTo>(
-                ref Unsafe.As<TFrom, TTo>(ref source.DangerousGetPinnableReference()),
+                ref Unsafe.As<TFrom, TTo>(ref source._pointer.Value),
                 checked((int)((long)source.Length * Unsafe.SizeOf<TFrom>() / Unsafe.SizeOf<TTo>())));
         }
 

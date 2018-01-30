@@ -113,17 +113,6 @@ namespace System
         }
 
         /// <summary>
-        /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to the location where the 0th element
-        /// would have been stored. Such a reference can be used for pinning but must never be dereferenced.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        internal ref readonly T DangerousGetPinnableReference()
-        {
-            return ref _pointer.Value;
-        }
-
-        /// <summary>
         /// The number of items in the read-only span.
         /// </summary>
         public int Length
@@ -194,7 +183,7 @@ namespace System
 
             if ((uint)_length <= (uint)destination.Length)
             {
-                Buffer.Memmove(ref destination.DangerousGetPinnableReference(), ref _pointer.Value, (nuint)_length);
+                Buffer.Memmove(ref destination._pointer.Value, ref _pointer.Value, (nuint)_length);
             }
             else
             {
@@ -214,7 +203,7 @@ namespace System
             bool retVal = false;
             if ((uint)_length <= (uint)destination.Length)
             {
-                Buffer.Memmove(ref destination.DangerousGetPinnableReference(), ref _pointer.Value, (nuint)_length);
+                Buffer.Memmove(ref destination._pointer.Value, ref _pointer.Value, (nuint)_length);
                 retVal = true;
             }
             return retVal;
