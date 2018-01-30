@@ -77,6 +77,9 @@ enum HWIntrinsicFlag : unsigned int
 
     // Select base type using argument type
     HW_Flag_BaseTypeFromArg = 0x400,
+
+    // Indicates compFloatingPointUsed does not need to be set.
+    HW_Flag_NoFloatingPointUsed = 0x800
 };
 
 inline HWIntrinsicFlag operator|(HWIntrinsicFlag c1, HWIntrinsicFlag c2)

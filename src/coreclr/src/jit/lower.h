@@ -319,11 +319,6 @@ private:
 public:
     static bool IndirsAreEquivalent(GenTree* pTreeA, GenTree* pTreeB);
 
-private:
-    static bool NodesAreEquivalentLeaves(GenTree* candidate, GenTree* storeInd);
-
-    bool AreSourcesPossiblyModifiedLocals(GenTree* addr, GenTree* base, GenTree* index);
-
     // return true if 'childNode' is an immediate that can be contained
     //  by the 'parentNode' (i.e. folded into an instruction)
     //  for example small enough and non-relocatable
@@ -334,6 +329,16 @@ private:
     {
         return m_lsra->isContainableMemoryOp(node);
     }
+
+#ifdef FEATURE_HW_INTRINSICS
+    // Return true if 'node' is a containable HWIntrinsic op.
+    bool IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, GenTree* node);
+#endif // FEATURE_HW_INTRINSICS
+
+private:
+    static bool NodesAreEquivalentLeaves(GenTree* candidate, GenTree* storeInd);
+
+    bool AreSourcesPossiblyModifiedLocals(GenTree* addr, GenTree* base, GenTree* index);
 
     // Makes 'childNode' contained in the 'parentNode'
     void MakeSrcContained(GenTree* parentNode, GenTree* childNode);
