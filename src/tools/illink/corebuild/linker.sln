@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Cecil", "..\cecil\Mono
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Cecil.Pdb", "..\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj", "{63E6915C-7EA4-4D76-AB28-0D7191EEA626}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Cecil.Mdb", "..\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj", "{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILLink.CustomSteps", "integration\ILLink.CustomSteps\ILLink.CustomSteps.csproj", "{275C1D10-168A-4AC4-8F3E-AD969F580B9C}"
 EndProject
 Global
@@ -59,6 +61,18 @@ Global
 		{63E6915C-7EA4-4D76-AB28-0D7191EEA626}.Release|x64.Build.0 = netstandard_Release|x64
 		{63E6915C-7EA4-4D76-AB28-0D7191EEA626}.Release|x86.ActiveCfg = netstandard_Release|x86
 		{63E6915C-7EA4-4D76-AB28-0D7191EEA626}.Release|x86.Build.0 = netstandard_Release|x86
+		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Debug|Any CPU.ActiveCfg = netstandard_Debug|Any CPU
+		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Debug|Any CPU.Build.0 = netstandard_Debug|Any CPU
+		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Debug|x64.ActiveCfg = netstandard_Debug|x64
+		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Debug|x64.Build.0 = netstandard_Debug|x64
+		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Debug|x86.ActiveCfg = netstandard_Debug|x86
+		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Debug|x86.Build.0 = netstandard_Debug|x86
+		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Release|Any CPU.ActiveCfg = netstandard_Release|Any CPU
+		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Release|Any CPU.Build.0 = netstandard_Release|Any CPU
+		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Release|x64.ActiveCfg = netstandard_Release|x64
+		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Release|x64.Build.0 = netstandard_Release|x64
+		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Release|x86.ActiveCfg = netstandard_Release|x86
+		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Release|x86.Build.0 = netstandard_Release|x86
 		{275C1D10-168A-4AC4-8F3E-AD969F580B9C}.Debug|Any CPU.ActiveCfg = illink_Debug|Any CPU
 		{275C1D10-168A-4AC4-8F3E-AD969F580B9C}.Debug|Any CPU.Build.0 = illink_Debug|Any CPU
 		{275C1D10-168A-4AC4-8F3E-AD969F580B9C}.Debug|x64.ActiveCfg = illink_Debug|x64

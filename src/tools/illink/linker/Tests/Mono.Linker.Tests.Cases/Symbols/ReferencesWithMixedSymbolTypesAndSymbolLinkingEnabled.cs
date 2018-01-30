@@ -6,7 +6,6 @@ using Mono.Linker.Tests.Cases.Symbols.Dependencies;
 [assembly: KeptAttributeAttribute (typeof (System.Diagnostics.DebuggableAttribute))]
 
 namespace Mono.Linker.Tests.Cases.Symbols {
-	[IgnoreTestCase ("Will fix in follow on PR.  Fails due to all problems")]
 	[Reference ("LibraryWithMdb.dll")]
 	[SandboxDependency ("Dependencies/LibraryWithMdb/LibraryWithMdb.dll", "input/LibraryWithMdb.dll")]
 	[SandboxDependency ("Dependencies/LibraryWithMdb/LibraryWithMdb.dll.mdb", "input/LibraryWithMdb.dll.mdb")]
